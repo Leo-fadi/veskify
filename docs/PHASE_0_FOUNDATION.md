@@ -41,6 +41,16 @@ Batch 2 records the Batch 1 compatibility proof as the approved repository archi
 
 The existing Batch 1 proof already conforms to this boundary, so Batch 2 requires no product-code expansion.
 
+## P0-02 — canonical domain models
+
+P0-02 implements the editor-agnostic Zod schemas from SDD §15.1–§15.4 for business profiles, projects, navigation, pages, sections and storefront snapshots.
+
+- Project validation preserves separate draft and published snapshot references and enforces enabled/primary locale consistency.
+- Page and section composition is represented once in Veskify domain code, with controlled local style overrides and no Puck types.
+- Snapshot validation enforces unique page and section IDs and requires internal navigation targets to resolve within the snapshot.
+- Component and variant identifiers are stored structurally; registry membership and variant validation belong to P0-03 and are not implemented here.
+- No persistence, snapshot workflow, publishing, Puck mapping, seed catalogue or storefront UI is introduced.
+
 ## Explicitly deferred
 
 Later Phase 0 and Phase 1 work remains out of scope for these batches. The implementation does not add IndexedDB, snapshots, publishing, full editor chrome, chat, onboarding, seed catalogue data, the full component registry, AI providers, authentication, real payments, logistics, shipping, tax, inventory, orders or storefront templates.
