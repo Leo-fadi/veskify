@@ -15,11 +15,12 @@
   },
   "dependencies": {
     "@next/env": "^16.2.10",
+    "@puckeditor/core": "^0.22.2",
+    "idb": "^8.0.3",
     "next": "^16.2.10",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "zod": "^4.4.3",
-    "@puckeditor/core": "^0.22.2"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
@@ -34,6 +35,7 @@
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.2.10",
     "eslint-config-prettier": "^10.1.8",
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^29.1.1",
     "postcss": "^8.5.19",
     "prettier": "^3.9.5",

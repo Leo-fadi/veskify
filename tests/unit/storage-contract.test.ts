@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  IndexedDbProjectRepository,
   ProjectNotFoundError,
   RepositoryValidationError,
   RevisionConflictError,
@@ -20,5 +21,11 @@ describe("storage repository errors", () => {
     expect(new RepositoryValidationError("Invalid repository input.").code).toBe(
       "REPOSITORY_VALIDATION_FAILED",
     );
+  });
+
+  it("constructs the browser adapter without touching IndexedDB", () => {
+    expect(
+      () => new IndexedDbProjectRepository({ databaseName: "lazy-browser-adapter-test" }),
+    ).not.toThrow();
   });
 });
