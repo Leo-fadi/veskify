@@ -1,0 +1,32 @@
+# Phase 0 Foundation — Batch 1
+
+## SDD references
+
+- §1 Executive product definition and §2 Product principles define the standalone design-agent boundary and prohibit real commerce configuration.
+- §6.1 FR-007 requires English and Finnish storefront language support.
+- §6.4 FR-040 requires structured output conforming to schemas.
+- §15.1 and §15.5 define the `BrandSystem` domain entity and schema shape.
+- §16.1 and §16.7 define the recommended Next.js stack and mandatory Puck embedded-editor foundation.
+- §18 NFR-004, NFR-006, NFR-008, and NFR-009 require accessible controls, strict TypeScript/schema validation, no external API keys, and no executable AI markup/code paths.
+- §21.1 and §21.3 require schema/token tests and task-level validation.
+- Appendix D defines global validation expectations for locale fields, colour values, approved fonts, safe external URLs, and immutable protected commerce boundaries.
+
+## Decisions implemented
+
+- Created a pnpm-managed Next.js App Router application using current framework conventions.
+- Added strict TypeScript, ESLint (`eslint .`), Prettier, Tailwind CSS, Vitest/React Testing Library, and Playwright smoke-test configuration.
+- Built a minimal semantic application shell for the fictional Aurum Nordic brand.
+- Added canonical shared Zod schemas for IDs, ISO datetimes, `en`/`fi` locales, localized text, localized SEO, safe external URLs, and asset references.
+- Added `BrandSystem` validation matching SDD §15.5, including controlled colour, typography, shape, spacing, imagery, and voice tokens.
+- Added approved font-token validation and a utility that converts validated brand tokens into CSS custom properties.
+- Added an isolated minimal Puck adapter proof using `@puckeditor/core`, one approved Veskify demo component, Puck Config derived from Veskify-owned component definitions, Puck Render, and Zod validation for Puck draft handoff.
+
+## Architecture correction
+
+Puck is mandatory editor infrastructure, not the Veskify product architecture or source of commerce truth. Veskify owns the domain models, components, schemas, validation, localisation, draft/publish workflows, storage adapters, AI provider boundaries, and future Vesko integration. Puck output is not persisted or published directly; it must pass through Veskify validation and the explicit publish-confirmation workflow in later batches.
+
+HugoBlox is explicitly excluded.
+
+## Explicitly deferred
+
+Tasks 5–16 remain out of scope for this batch. The implementation does not add IndexedDB, publishing, full editor chrome, chat, onboarding, catalogue data, full component registry, AI providers, authentication, real payments, logistics, shipping, tax, inventory, or order integrations.
