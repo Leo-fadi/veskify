@@ -1,4 +1,4 @@
-# Phase 0 Foundation — Batch 1
+# Phase 0 Foundation
 
 ## SDD references
 
@@ -27,6 +27,20 @@ Puck is mandatory editor infrastructure, not the Veskify product architecture or
 
 HugoBlox is explicitly excluded.
 
+## Batch 2 — permanent Puck architecture alignment
+
+Batch 2 records the Batch 1 compatibility proof as the approved repository architecture. The complete rationale and rejected alternatives are in [ADR-001](ADR-001-PUCK_EDITOR_FOUNDATION.md).
+
+- Puck owns canvas mechanics, selection, insertion, drag-and-drop, viewport editing and editor fields.
+- Veskify owns canonical schemas, component contracts, validation, protected fields, snapshots, persistence, publishing, AI operations and storefront rendering boundaries.
+- Puck-specific types and `@puckeditor/core` imports stay isolated under `src/integrations/puck`; canonical domain modules do not depend on them.
+- The adapter derives Puck Config from approved Veskify component contracts and validates/maps Puck output before draft state or persistence.
+- Puck Data is transient editor infrastructure. Veskify stores one canonical page composition and does not persist a parallel Puck tree.
+- Puck publish actions are draft-handoff events and cannot bypass explicit Veskify publish confirmation.
+- Puck Cloud, Puck AI, HugoBlox, custom drag-and-drop infrastructure and arbitrary generated code remain excluded.
+
+The existing Batch 1 proof already conforms to this boundary, so Batch 2 requires no product-code expansion.
+
 ## Explicitly deferred
 
-Tasks 5–16 remain out of scope for this batch. The implementation does not add IndexedDB, publishing, full editor chrome, chat, onboarding, catalogue data, full component registry, AI providers, authentication, real payments, logistics, shipping, tax, inventory, or order integrations.
+Later Phase 0 and Phase 1 work remains out of scope for these batches. The implementation does not add IndexedDB, snapshots, publishing, full editor chrome, chat, onboarding, seed catalogue data, the full component registry, AI providers, authentication, real payments, logistics, shipping, tax, inventory, orders or storefront templates.
