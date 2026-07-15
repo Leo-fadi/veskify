@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Puck, Render, type Config, type Data } from "@puckeditor/core";
+import { Puck, Render, type Data } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
 import { initialPuckData, validatePuckDraftPayload, veskifyPuckConfig } from "./config";
 
 export function VeskifyPuckEditorProof() {
   const [status, setStatus] = useState("No draft handoff has been validated yet.");
-  const runtimeConfig = veskifyPuckConfig as unknown as Config;
 
   function handlePublishAttempt(data: Data) {
     validatePuckDraftPayload(data);
@@ -29,11 +28,11 @@ export function VeskifyPuckEditorProof() {
 
       <section aria-label="Rendered through the same Puck configuration" className="grid gap-3">
         <h2 className="text-xl font-semibold">Shared renderer preview</h2>
-        <Render config={runtimeConfig} data={initialPuckData} />
+        <Render config={veskifyPuckConfig} data={initialPuckData} />
       </section>
 
       <section aria-label="Puck editor proof" className="min-h-[720px] overflow-hidden rounded-xl border border-[var(--brand-color-border)] bg-white">
-        <Puck config={runtimeConfig} data={initialPuckData} onPublish={handlePublishAttempt} />
+        <Puck config={veskifyPuckConfig} data={initialPuckData} onPublish={handlePublishAttempt} />
       </section>
     </div>
   );
