@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { AurumHero, type AurumHeroProps } from "@/components/storefront/aurum-hero";
-import { localizedTextSchema } from "@/domain/shared";
+import { localizedTextSchema, localeSchema } from "@/domain/shared";
 
 export const aurumHeroPropsSchema = z
   .object({
@@ -8,6 +8,8 @@ export const aurumHeroPropsSchema = z
     eyebrow: localizedTextSchema,
     title: localizedTextSchema,
     body: localizedTextSchema,
+    activeLocale: localeSchema,
+    primaryLocale: localeSchema,
   })
   .strict();
 

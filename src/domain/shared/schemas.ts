@@ -27,8 +27,11 @@ export const safeExternalUrlSchema = z
   .string()
   .url()
   .refine((value) => {
-    const url = new URL(value);
-    return url.protocol === "https:";
+    try {
+      return new URL(value).protocol === "https:";
+    } catch {
+      return false;
+    }
   }, "External URLs must use HTTPS.");
 
 export const assetRefSchema = z

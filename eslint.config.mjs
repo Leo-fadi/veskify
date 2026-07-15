@@ -6,10 +6,11 @@ import tseslint from "typescript-eslint";
 export default tseslint.config(
   { ignores: [".next/**", "node_modules/**", "playwright-report/**", "test-results/**", "coverage/**"] },
   js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
   ...next,
+  ...tseslint.configs.recommendedTypeChecked,
   prettier,
   {
+    files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -19,5 +20,9 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/consistent-type-imports": ["error", { prefer: "type-imports" }],
     },
+  },
+  {
+    files: ["**/*.{js,mjs,cjs}"],
+    ...tseslint.configs.disableTypeChecked,
   },
 );
