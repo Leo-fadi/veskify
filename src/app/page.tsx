@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { AURUM_NORDIC_PROJECT_ID } from "@/data/seed/identifiers";
+
 const readinessItems = [
   "Next.js App Router foundation",
   "Strict TypeScript and validation schemas",
@@ -54,6 +57,14 @@ export default function HomePage() {
           ))}
         </ul>
         <p className="mt-6">
+          <Link
+            className="font-semibold text-[var(--brand-color-primary)] underline"
+            href={`/projects/${AURUM_NORDIC_PROJECT_ID}`}
+          >
+            Open the Aurum Nordic draft preview
+          </Link>
+        </p>
+        <p className="mt-3">
           <a className="font-semibold text-[var(--brand-color-primary)] underline" href="/puck-proof">
             Open the isolated Puck adapter proof
           </a>

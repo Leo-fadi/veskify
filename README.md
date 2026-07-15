@@ -10,7 +10,11 @@ Veskify is a standalone AI storefront **design** agent demo for retailers with v
 
 ## Current scope
 
-The completed Phase 0 foundation through P0-06 includes canonical domain schemas, the controlled component registry, the validated **Aurum Nordic** jewellery seed, repository-level draft/publish/restore semantics, and browser persistence through an isolated IndexedDB adapter. UI routes, onboarding, AI operations, and later Phase 0 work remain intentionally deferred.
+The completed Phase 0 foundation through P0-07 includes canonical domain schemas, the controlled component registry, the validated **Aurum Nordic** jewellery seed, repository-level draft/publish/restore semantics, browser persistence through an isolated IndexedDB adapter, and a first read-only persisted project route. Editor UI, onboarding, AI operations, and later work remain intentionally deferred.
+
+After starting the development server, open the seeded draft project at:
+
+`http://localhost:3000/projects/project_aurum_nordic`
 
 ## Setup
 
