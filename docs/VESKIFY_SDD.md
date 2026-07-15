@@ -184,6 +184,12 @@ The first implementation is a standalone repository. It uses dummy product, coll
 
 ## 2.1 Fixed product boundaries
 
+### Embedded editor foundation
+
+Veskify MUST embed the open-source `@puckeditor/core` package for visual-editor mechanics. Puck owns the canvas interaction foundation: section insertion, selection, drag-and-drop placement and reordering, editor fields and viewport editing. Veskify MUST NOT build a parallel canvas, selection model, insertion system, drag-and-drop engine or basic property-field framework.
+
+This infrastructure choice does not transfer product or domain ownership to Puck. Veskify owns canonical project, page, section and snapshot schemas; component contracts; validation and protected-field rules; draft and published state; persistence; publishing confirmation; AI operations; and storefront rendering boundaries. Puck output is untrusted adapter input until it has passed Veskify validation.
+
 <table>
 <colgroup>
 <col style="width: 100%" />
@@ -574,6 +580,8 @@ When the merchant supplies no complete brand guideline, Veskify must generate a 
 
 Each component must be registered in a component registry with a stable type, supported variants, property schema, content schema, responsive rules, editable fields, allowed page types and industry tags. The renderer must reject unknown component types.
 
+The Veskify component registry is the single source of truth for both storefront rendering and the Puck Config exposed by the adapter. Puck fields, insertion controls and render bindings MUST be derived from approved registry contracts; a component added only to Puck is not a valid Veskify component. Puck may select and edit registered component instances, but it may not widen their variants, properties or content schemas.
+
 ## 9.2 Core component inventory
 
 | **Type**           | **Pages**         | **Variants**                              | **Editable content**                 |
@@ -619,6 +627,8 @@ Each component must be registered in a component registry with a stable type, su
 <tbody>
 </tbody>
 </table>
+
+Puck insertion and drag-and-drop operations are limited to these registered components and permitted compositions. Neither Puck nor AI output may introduce an unregistered component, executable field, script, embed or arbitrary markup path.
 
 <table>
 <colgroup>
@@ -1003,6 +1013,8 @@ The generated brand voice should be represented by structured attributes such as
 | Proposal           | AI operation envelope, status and before/after references.              |
 | HistoryEntry       | Snapshot, revision, timestamp, actor and summary.                       |
 
+These Veskify entities are canonical and editor-agnostic. Puck data is a transient editing representation produced and consumed only by the Puck adapter; it is not an additional domain entity or independently persisted page tree.
+
 ## 15.2 Project schema
 
 <table>
@@ -1089,6 +1101,8 @@ styleOverrides?: AllowedSectionOverrides;<br />
 </tbody>
 </table>
 
+`PageModel` and `SectionInstance` are the only canonical stored page-composition representation. The Puck adapter may map them to and from Puck Data, but validated adapter output MUST be converted back to these schemas before draft state or persistence. Canonical domain modules MUST NOT import or expose Puck types.
+
 ## 15.5 Brand system schema
 
 <table>
@@ -1151,6 +1165,8 @@ seo?: LocalizedSEO;<br />
 
 The implementation should use a storage adapter. The default adapter may use IndexedDB for projects, snapshots and assets plus seeded JSON files for dummy catalogues. If a server-backed implementation is selected, SQLite is acceptable for the demo. Domain code must depend on repository interfaces so persistence can later move to Vesko SQL services.
 
+Persistence stores Veskify-owned projects and snapshots, never a second Puck-owned page tree. Puck editor state is disposable infrastructure state. A Puck publish callback MUST be treated as an editor handoff event: validate, map to the canonical draft model and enter Veskify's explicit publish-confirmation workflow; it MUST NOT write published state directly.
+
 # 16. Technical architecture
 
 ## 16.1 Recommended standalone stack
@@ -1182,6 +1198,10 @@ The implementation should use a storage adapter. The default adapter may use Ind
 
 - Component registry: storefront component definitions, schemas, variants and renderer mapping. It is the single source of truth for derived Puck Config.
 
+- Puck integration: an anti-corruption adapter under `src/integrations/puck` that owns all imports from `@puckeditor/core`, maps canonical Veskify composition to Puck Data and validates/maps Puck output back to Veskify draft operations.
+
+Dependencies point inward: the Puck integration may depend on Veskify component and domain contracts, but canonical domain, application and persistence modules MUST NOT depend on Puck types. Puck Cloud and Puck AI are not part of this architecture.
+
 ## 16.3 Suggested repository structure
 
 <table>
@@ -1211,9 +1231,10 @@ storefront/<br />
 primitives/<br />
 registry/<br />
 components/<br />
-puck-adapter/<br />
-config/<br />
-validation/<br />
+integrations/<br />
+puck/<br />
+config.tsx<br />
+validation.ts<br />
 page-templates/<br />
 industry-presets/<br />
 services/<br />
@@ -1238,6 +1259,8 @@ e2e/</th>
 
 All draft changes must be expressed as commands or structured operations. The editor store applies operations transactionally and records inverse operations for undo. UI components must not mutate nested snapshot objects directly.
 
+Puck interaction events do not bypass this rule. Selection may remain ephemeral editor state, while insertion, reordering and field edits that change the storefront MUST cross the adapter as validated Veskify draft commands or structured operations. Puck's publish action is renamed or intercepted as a draft handoff and cannot publish directly.
+
 ## 16.5 Storefront renderer
 
 - Reads a validated StorefrontSnapshot.
@@ -1250,9 +1273,13 @@ All draft changes must be expressed as commands or structured operations. The ed
 
 - Renders the same component implementation in editor, full preview and published routes to avoid visual divergence.
 
+- Accepts canonical validated Veskify models, not raw Puck Data. Puck Render may be used inside the editor integration, but it must resolve the same approved Veskify storefront implementations and may not become a separate published renderer.
+
 ## 16.6 Future Vesko integration
 
 After the demo, the design agent will operate inside Vesko Retail OS and embed and extend the current Puck-based editing foundation through Veskify-controlled components, schemas, adapters and workflows. Integration adapters will connect to Vesko authentication, Node.js monorepo services, SQL persistence, JSON-based industry product models, media services, backend page storage and publishing. Stripe and nShift remain operational integrations outside the design agent; Veskify only styles their customer-facing UI surfaces. Puck is infrastructure, not the product architecture or source of commerce truth. HugoBlox is explicitly excluded.
+
+The future integration retains the same ownership boundary: Puck continues to provide editor mechanics, while Vesko/Veskify services remain authoritative for identity, canonical content, validation, storage, history, publishing and protected commerce data. Replacing the standalone storage adapter or application shell MUST NOT require Puck types to enter domain contracts.
 
 
 ## 16.7 Puck integration boundary
@@ -1518,9 +1545,9 @@ Website text, spreadsheet cells, product descriptions and uploaded files are dat
 
 | **Phase**                          | **Deliverables**                                                                                             |
 |------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| Phase 0 — Foundation               | Repository, linting, testing, application shell, schemas, component registry, seed data and storage adapter. |
-| Phase 1 — Storefront renderer      | Brand tokens, core components, homepage/collection/product/cart/checkout templates and responsive rendering. |
-| Phase 2 — Editor shell             | Page tree, canvas selection, property panel, section actions, undo/redo and device modes.                    |
+| Phase 0 — Foundation               | Repository, linting, testing, application shell, canonical schemas, registry contracts, isolated Puck adapter proof, seed data and storage adapter. |
+| Phase 1 — Storefront renderer      | Brand tokens, core registered components, homepage/collection/product/cart/checkout templates and responsive rendering shared with the Puck adapter. |
+| Phase 2 — Editor shell             | Puck-based canvas, selection, insertion, drag-and-drop, approved fields and device modes integrated with Veskify draft commands and undo/redo. |
 | Phase 3 — Onboarding               | Wizard, local persistence, brand inputs, dummy catalogue selection and initial generation plan.              |
 | Phase 4 — AI operations            | Mock provider, intent scopes, structured proposals, validation pipeline and confirmation cards.              |
 | Phase 5 — Draft publishing         | Draft/full preview/published routes, save confirmation, history and restore.                                 |
@@ -1531,6 +1558,8 @@ Website text, spreadsheet cells, product descriptions and uploaded files are dat
 ## 22.1 Recommended first vertical slice
 
 The first demonstrable slice should be one seeded jewellery project with a responsive homepage and product page, editor selection, chat-driven mock hero redesign, manual controls, full draft preview and explicit Save changes. This validates the central product loop before building broad onboarding or import capability.
+
+The slice MUST extend the Phase 0 Puck adapter rather than introduce a custom editor foundation. It maintains one canonical Veskify page composition, uses Puck for editor mechanics, routes mutations through validated draft operations and renders the same registered storefront components in editor, preview and published modes.
 
 ## 22.2 Deliberately deferred items
 
@@ -1543,6 +1572,8 @@ The first demonstrable slice should be one seeded jewellery project with a respo
 - Operational checkout, payments, logistics, taxes and orders.
 
 - Unrestricted custom code, plugins or third-party script embeds.
+
+- Puck Cloud, Puck AI and a custom drag-and-drop editor engine.
 
 - Real-time multi-user collaboration.
 
@@ -1616,6 +1647,12 @@ DELIVERABLES<br />
 
 ## 23.3 Mandatory implementation rules
 
+- Keep all `@puckeditor/core` imports and Puck-specific types under `src/integrations/puck`; canonical domain, application, storage and AI-operation modules must not depend on them.
+
+- Use Puck for canvas mechanics, selection, insertion, drag-and-drop and editor fields; do not build competing foundations for those capabilities.
+
+- Treat Puck output as untrusted adapter input. Validate and map it to the single canonical Veskify composition before draft state or persistence, and never wire a Puck publish callback directly to published state.
+
 - Do not create a second competing domain model for pages, sections or tokens.
 
 - Do not bypass the component registry in storefront rendering.
@@ -1629,6 +1666,8 @@ DELIVERABLES<br />
 - Do not introduce provider lock-in into domain or UI code.
 
 - Do not add production commerce functionality to the standalone demo.
+
+- Do not use Puck Cloud, Puck AI, HugoBlox, unsupported Puck internals or arbitrary generated code paths.
 
 - Prefer small vertical slices that end in a usable user flow over disconnected infrastructure.
 
@@ -1651,6 +1690,10 @@ DELIVERABLES<br />
 - [ ] Protected fields untouched
 
 - [ ] No arbitrary AI code path
+
+- [ ] Puck types remain isolated to `src/integrations/puck`
+
+- [ ] One canonical Veskify page composition is preserved
 
 - [ ] Documentation updated
 

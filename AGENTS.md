@@ -97,11 +97,15 @@ For every task:
 - Do not build a competing visual editor, drag-and-drop canvas, component selection system, viewport system, or basic property-editing foundation from scratch when Puck provides those capabilities.
 - Veskify owns project/page/storefront domain models, brand tokens, industry templates, controlled storefront components, AI operations and validation, onboarding/chat, product/catalogue data, localisation, draft/preview/history/publishing workflows, storage adapters, and future Vesko backend integration.
 - Puck provides embedded editing canvas, drag-and-drop section placement/reordering, section selection, component fields/property controls, viewport editing, editor UI foundation, and rendering through Puck Config and Render.
+- Puck owns canvas mechanics, selection, insertion, drag-and-drop and editor fields. Do not recreate or compete with those foundations in Veskify code.
 - Veskify’s registered component system is the single source of truth for Puck Config. Puck may expose only approved Veskify storefront components, variants, and fields.
+- Veskify owns canonical schemas and component contracts, validation and protected-field rules, snapshots, storage, draft/history/publishing workflows, AI operations and storefront rendering boundaries.
+- Keep every `@puckeditor/core` import and Puck-specific type under `src/integrations/puck`. Canonical domain, application, storage and AI-operation modules must not import or expose Puck types.
 - Puck output MUST be validated through Veskify Zod schemas before entering draft state or persistence.
 - Maintain one canonical stored page composition representation with an isolated Puck adapter. Do not persist two independent page trees.
 - The same Veskify storefront components MUST render in editor, full preview, and published storefront.
 - Puck publish actions MUST NOT publish directly; they must feed Veskify’s draft and explicit publish-confirmation workflow.
 - Product prices, payment, shipping, tax, inventory, orders, and operational checkout data remain protected and read-only.
 - Do not use Puck Cloud or Puck AI as the Veskify AI provider.
+- Do not use Puck as the source of truth for persistence, publishing, commerce data or AI operations.
 - Do not use unsupported Puck internal APIs unless documented and justified.
