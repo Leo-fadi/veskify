@@ -1,10 +1,7 @@
-import { validateRegisteredSnapshot } from "@/components/registry";
-import { catalogueDisplayModelSchema } from "@/domain/catalogue";
 import { projectSchema, type Project } from "@/domain/project";
-import { storefrontSnapshotSchema, type StorefrontSnapshot } from "@/domain/storefront";
+import type { StorefrontSnapshot } from "@/domain/storefront";
 import {
   ProjectNotFoundError,
-  RepositoryValidationError,
   RevisionConflictError,
   SnapshotNotFoundError,
   SnapshotProjectMismatchError,
@@ -12,6 +9,11 @@ import {
   type ProjectRepository,
   type ProjectSummary,
 } from "./project-repository";
+import {
+  repositoryValidationError,
+  validateProjectAggregate,
+  validateRepositorySnapshot,
+} from "./repository-validation";
 
 type StoredProject = {
   project: Project;
@@ -32,60 +34,14 @@ function freeze<T>(value: T): T {
   return value;
 }
 
-function validationError(message: string, cause: unknown): RepositoryValidationError {
-  return new RepositoryValidationError(message, { cause });
-}
-
-function validateSnapshot(input: unknown): StorefrontSnapshot {
-  try {
-    return validateRegisteredSnapshot(storefrontSnapshotSchema.parse(input));
-  } catch (cause) {
-    throw validationError("Snapshot failed canonical or component-registry validation.", cause);
-  }
-}
-
-function validateAggregate(input: ProjectAggregate): ProjectAggregate {
-  try {
-    const project = projectSchema.parse(input.project);
-    const catalogue = catalogueDisplayModelSchema.parse(input.catalogue);
-    const snapshots = input.snapshots.map(validateSnapshot);
-    const snapshotIds = snapshots.map((snapshot) => snapshot.id);
-
-    if (new Set(snapshotIds).size !== snapshotIds.length) {
-      throw new Error("Snapshot IDs must be unique within a project aggregate.");
-    }
-    if (!snapshotIds.includes(project.draftSnapshotId)) {
-      throw new Error("The draft snapshot reference must resolve.");
-    }
-    if (!snapshotIds.includes(project.publishedSnapshotId)) {
-      throw new Error("The published snapshot reference must resolve.");
-    }
-    if (
-      snapshots.some(
-        (snapshot) =>
-          snapshot.projectId !== project.id || snapshot.catalogueRef !== catalogue.id,
-      )
-    ) {
-      throw new Error("Snapshot project and catalogue references must resolve.");
-    }
-
-    return { project, catalogue, snapshots };
-  } catch (cause) {
-    if (cause instanceof RepositoryValidationError) {
-      throw cause;
-    }
-    throw validationError("Project aggregate failed repository validation.", cause);
-  }
-}
-
 export class InMemoryProjectRepository implements ProjectRepository {
   readonly #projects = new Map<string, StoredProject>();
 
   constructor(initialProjects: readonly ProjectAggregate[]) {
     for (const input of initialProjects) {
-      const aggregate = validateAggregate(clone(input));
+      const aggregate = validateProjectAggregate(clone(input));
       if (this.#projects.has(aggregate.project.id)) {
-        throw validationError(
+        throw repositoryValidationError(
           `Duplicate seeded project ID: ${aggregate.project.id}.`,
           new Error("Project IDs must be unique."),
         );
@@ -129,19 +85,19 @@ export class InMemoryProjectRepository implements ProjectRepository {
   async saveDraft(projectId: string, input: StorefrontSnapshot): Promise<void> {
     await Promise.resolve();
     const stored = this.#requireProject(projectId);
-    const snapshot = validateSnapshot(clone(input));
+    const snapshot = validateRepositorySnapshot(clone(input));
 
     if (snapshot.projectId !== projectId) {
       throw new SnapshotProjectMismatchError(projectId, snapshot.projectId);
     }
     if (snapshot.catalogueRef !== stored.catalogue.id) {
-      throw validationError(
+      throw repositoryValidationError(
         "Draft snapshot references a catalogue outside the project aggregate.",
         new Error("Catalogue reference mismatch."),
       );
     }
     if (snapshot.id === stored.project.publishedSnapshotId) {
-      throw validationError(
+      throw repositoryValidationError(
         "A draft snapshot cannot reuse the current published snapshot ID.",
         new Error("Draft and published snapshots must remain separate."),
       );
@@ -150,7 +106,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
       stored.snapshots.has(snapshot.id) &&
       snapshot.id !== stored.project.draftSnapshotId
     ) {
-      throw validationError(
+      throw repositoryValidationError(
         "A draft snapshot cannot overwrite immutable history.",
         new Error("Historical snapshot IDs cannot be reused."),
       );
@@ -179,7 +135,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
     }
 
     const revision = stored.project.revision + 1;
-    const published = validateSnapshot({
+    const published = validateRepositorySnapshot({
       ...clone(draft),
       id: this.#nextSnapshotId(stored, "published", revision),
       revision,
@@ -206,7 +162,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
       throw new SnapshotNotFoundError(projectId, snapshotId);
     }
 
-    const restored = validateSnapshot({
+    const restored = validateRepositorySnapshot({
       ...clone(historical),
       id: this.#nextSnapshotId(stored, "restored", stored.project.revision),
       createdAt: this.#nextTimestamp(stored),
@@ -233,7 +189,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
   }
 
   #validatedAggregate(stored: StoredProject): ProjectAggregate {
-    return validateAggregate({
+    return validateProjectAggregate({
       project: stored.project,
       catalogue: stored.catalogue,
       snapshots: [...stored.snapshots.values()],

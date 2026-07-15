@@ -83,8 +83,20 @@ P0-05 establishes the canonical `ProjectRepository` boundary and a deterministic
 - Draft saves leave the published reference unchanged. Publish requires the current revision, creates a new published snapshot and retains prior snapshots. Restore creates a new draft snapshot ID without publishing it.
 - Typed errors distinguish missing projects, missing snapshots, revision conflicts, project mismatches and validation failures.
 - Catalogue data remains read-only across repository operations, preserving protected dummy price and stock display fields.
-- P0-06 IndexedDB persistence and all later UI and service workflows remain deferred.
+- At P0-05 completion, IndexedDB persistence and all later UI and service workflows remained deferred.
+
+## P0-06 — IndexedDB persistence
+
+P0-06 adds browser persistence behind the unchanged `ProjectRepository` contract while preserving the P0-05 storage semantics.
+
+- `IndexedDbProjectRepository` uses `idb` with a versioned database and separate project, catalogue and snapshot stores. A `by-project` snapshot index retrieves complete project history.
+- Database access is lazy and adapter-local, so importing storage modules during SSR does not access browser globals.
+- The validated Aurum Nordic aggregate is inserted atomically only when the projects store is empty. Reopening the database preserves user changes and never reseeds over existing data.
+- Draft saves, publishing and restore use multi-store read/write transactions. Full canonical and component-registry validation occurs before writes, preventing partial invalid state.
+- Test-only database names and injectable snapshot ID/time generators make persistence behavior deterministic without adding infrastructure concerns to domain models.
+- The in-memory and IndexedDB adapters run through one shared repository contract suite. IndexedDB-specific coverage uses `fake-indexeddb` for bootstrap, reopen persistence, isolation and failed-operation safety.
+- P0-07 project routes and all later UI, onboarding and AI workflows remain deferred.
 
 ## Explicitly deferred
 
-Later Phase 0 and Phase 1 work remains out of scope for these batches. The implementation does not add IndexedDB or browser persistence, full editor chrome, chat, onboarding, AI providers, authentication, real payments, logistics, shipping, tax, inventory or orders.
+Later Phase 0 and Phase 1 work remains out of scope for these batches. The implementation does not add project/editor UI routes, full editor chrome, chat, onboarding, AI providers, authentication, real payments, logistics, shipping, tax, inventory or orders.

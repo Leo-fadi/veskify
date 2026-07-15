@@ -10,9 +10,7 @@ Veskify is a standalone AI storefront **design** agent demo for retailers with v
 
 ## Current scope
 
-Phase 0 Batch 1 implements only the repository foundation, minimal accessible application shell, shared Zod primitives/localisation schemas, the `BrandSystem` schema/token validation for the fictional **Aurum Nordic** demo brand, and a minimal isolated Puck adapter proof.
-
-Tasks 5–16 are intentionally not implemented yet. There is no onboarding, full editor chrome, full component registry, catalogue data, IndexedDB persistence, AI provider, publishing flow, or commerce integration in this batch. Puck is embedded only as infrastructure proof through Veskify-controlled components and validation.
+The completed Phase 0 foundation through P0-06 includes canonical domain schemas, the controlled component registry, the validated **Aurum Nordic** jewellery seed, repository-level draft/publish/restore semantics, and browser persistence through an isolated IndexedDB adapter. UI routes, onboarding, AI operations, and later Phase 0 work remain intentionally deferred.
 
 ## Setup
 
@@ -38,5 +36,7 @@ pnpm test:e2e   # Run the Playwright smoke test
 - Styling: Tailwind CSS and CSS variables generated from validated brand tokens
 - Validation: Zod schemas in `src/domain/**` and Puck adapter validation in `src/integrations/puck/**`
 - Testing: Vitest, React Testing Library, and Playwright
+- Persistence: `ProjectRepository` adapters for deterministic memory storage and browser IndexedDB via `idb`
+- IndexedDB tests: shared repository contract coverage plus persistence tests using development-only `fake-indexeddb`
 - Embedded editor foundation: `@puckeditor/core` via an isolated Veskify adapter; HugoBlox is not used
 - Supported locales: English (`en`) and Finnish (`fi`)
