@@ -134,7 +134,7 @@ Veskify is a standalone AI storefront design agent for retailers. It allows a me
 
 ## 1.1 Product goal
 
-The goal is to demonstrate how Vesko can replace a traditional drag-and-drop website builder with an AI-guided design environment. The demo must feel like a real product rather than a static prototype, while using dummy commerce data and local/mock integrations.
+The goal is to demonstrate how Vesko can deliver an AI-guided storefront design environment that embeds and extends Puck through Veskify-controlled components, schemas, adapters and workflows rather than exposing a generic website builder. The demo must feel like a real product rather than a static prototype, while using dummy commerce data and local/mock integrations.
 
 ## 1.2 What Veskify designs
 
@@ -1159,9 +1159,11 @@ The implementation should use a storage adapter. The default adapter may use Ind
 |----------------------|------------------------------------------------------------------------------------------|
 | Application          | Next.js App Router with TypeScript and React.                                            |
 | Styling              | Tailwind CSS plus CSS variables generated from validated brand tokens.                   |
-| UI primitives        | Accessible controlled primitives; shadcn/ui or equivalent may be used for editor chrome. |
-| Forms and validation | React Hook Form with Zod schemas.                                                        |
-| Editor state         | Zustand or equivalent predictable store with command-based undo/redo.                    |
+| UI primitives        | Accessible controlled primitives owned by Veskify; editor chrome may wrap Puck rather than replace it. |
+| Embedded editor      | `@puckeditor/core` provides the visual editing canvas, drag-and-drop placement, selection, field controls, viewport editing and Puck Render infrastructure. |
+| Puck adapter         | Veskify owns an isolated adapter that derives Puck Config from the registered Veskify component system and validates Puck output before draft state or persistence. |
+| Forms and validation | React Hook Form with Zod schemas for Veskify-owned workflows and validation boundaries.                                                        |
+| Editor state         | Veskify owns draft, history, publish confirmation and domain mutation state. Puck editor state is infrastructure and must not become a second persisted page tree.                    |
 | Server/state queries | TanStack Query only where asynchronous adapters require it.                              |
 | Persistence          | Storage adapter; IndexedDB default, optional SQLite server adapter.                      |
 | File parsing         | Browser-safe CSV parser and Excel workbook parser.                                       |
@@ -1178,7 +1180,7 @@ The implementation should use a storage adapter. The default adapter may use Ind
 
 - Adapters: storage, AI, image generation, file import and future backend integration.
 
-- Component registry: storefront component definitions, schemas, variants and renderer mapping.
+- Component registry: storefront component definitions, schemas, variants and renderer mapping. It is the single source of truth for derived Puck Config.
 
 ## 16.3 Suggested repository structure
 
@@ -1209,6 +1211,9 @@ storefront/<br />
 primitives/<br />
 registry/<br />
 components/<br />
+puck-adapter/<br />
+config/<br />
+validation/<br />
 page-templates/<br />
 industry-presets/<br />
 services/<br />
@@ -1247,7 +1252,18 @@ All draft changes must be expressed as commands or structured operations. The ed
 
 ## 16.6 Future Vesko integration
 
-After the demo, the design agent will operate inside Vesko Retail OS and replace the current Puck-based website builder. Integration adapters will connect to Vesko authentication, Node.js monorepo services, SQL persistence, JSON-based industry product models, media services, backend page storage and publishing. Stripe and nShift remain operational integrations outside the design agent; Veskify only styles their customer-facing UI surfaces.
+After the demo, the design agent will operate inside Vesko Retail OS and embed and extend the current Puck-based editing foundation through Veskify-controlled components, schemas, adapters and workflows. Integration adapters will connect to Vesko authentication, Node.js monorepo services, SQL persistence, JSON-based industry product models, media services, backend page storage and publishing. Stripe and nShift remain operational integrations outside the design agent; Veskify only styles their customer-facing UI surfaces. Puck is infrastructure, not the product architecture or source of commerce truth. HugoBlox is explicitly excluded.
+
+
+## 16.7 Puck integration boundary
+
+Veskify MUST use the open-source `@puckeditor/core` package as the embedded visual-editor foundation. Puck provides the editor canvas, drag-and-drop section placement and reordering, section selection, component field controls, viewport editing, editor UI foundation and rendering through Puck Config and Render.
+
+Veskify remains the controlling product and domain architecture. Veskify owns project, page and storefront models; brand systems and design tokens; industry templates; controlled storefront components; AI operations and validation; onboarding and chat; product and catalogue data; localisation; draft, preview, history and publishing; storage adapters; and future Vesko backend integration.
+
+The registered Veskify component system is the single source of truth for Puck Config. Puck may expose only approved Veskify storefront components, variants and fields. Puck output MUST be validated through Veskify Zod schemas before entering draft state or persistence. The application MUST maintain one canonical stored page composition representation with an isolated Puck adapter and MUST NOT persist two independent page trees.
+
+The same Veskify storefront components MUST render in the editor, full preview and published storefront. Puck publish actions MUST NOT publish directly; they feed Veskify's draft and explicit publish-confirmation workflow. Product prices, payment, shipping, tax, inventory and operational checkout data remain protected and read-only. Puck Cloud and Puck AI are not Veskify AI providers. Unsupported Puck internal APIs MUST NOT be used unless documented and justified. HugoBlox MUST NOT be used.
 
 # 17. API and service contracts
 
