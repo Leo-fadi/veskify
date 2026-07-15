@@ -8,6 +8,7 @@ import {
 import { aurumNordicBrandSystem } from "@/domain/design-system";
 import { projectSchema, type Project } from "@/domain/project";
 import { storefrontSnapshotSchema, type StorefrontSnapshot } from "@/domain/storefront";
+import { AURUM_NORDIC_PROJECT_ID } from "./identifiers";
 
 const enFi = (en: string, fi: string) => ({ en, fi });
 const optionValues = (...values: Array<[string, string]>) =>
@@ -244,7 +245,7 @@ const navigation = {
 
 const makeSnapshot = (id: string, revision: number, createdBy: "system" | "user") => ({
   id,
-  projectId: "project_aurum_nordic",
+  projectId: AURUM_NORDIC_PROJECT_ID,
   revision,
   brandSystem: aurumNordicBrandSystem,
   navigation,
@@ -287,7 +288,7 @@ function deepFreeze<T>(value: T): Readonly<T> {
 
 const parsedSeed = seedBundleSchema.parse({
   project: {
-    id: "project_aurum_nordic",
+    id: AURUM_NORDIC_PROJECT_ID,
     name: "Aurum Nordic",
     mode: "salesDemo",
     industry: "jewellery",

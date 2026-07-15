@@ -95,8 +95,20 @@ P0-06 adds browser persistence behind the unchanged `ProjectRepository` contract
 - Draft saves, publishing and restore use multi-store read/write transactions. Full canonical and component-registry validation occurs before writes, preventing partial invalid state.
 - Test-only database names and injectable snapshot ID/time generators make persistence behavior deterministic without adding infrastructure concerns to domain models.
 - The in-memory and IndexedDB adapters run through one shared repository contract suite. IndexedDB-specific coverage uses `fake-indexeddb` for bootstrap, reopen persistence, isolation and failed-operation safety.
-- P0-07 project routes and all later UI, onboarding and AI workflows remain deferred.
+- At P0-06 completion, project routes and all later UI, onboarding and AI workflows remained deferred.
+
+## P0-07 — seeded project route
+
+P0-07 adds `/projects/[projectId]` as a read-only, browser-loaded proof of the persisted Aurum Nordic draft. It is not the final editor route.
+
+- The route creates the browser repository without reading IndexedDB during server rendering, then calls `ProjectRepository.get` with the URL project ID after hydration.
+- The current draft and its homepage are resolved from canonical project/snapshot references and rendered only through the shared Veskify registry-backed storefront renderer.
+- Validated BrandSystem tokens are applied as CSS variables. A labelled keyboard-accessible English/Finnish control defaults to the project primary locale and preserves shared fallback behavior.
+- Loading, missing project/draft/homepage, storage failure and validation/rendering failure states use merchant-readable messages and safe retry actions where appropriate.
+- The successful route displays a compact project name, Draft preview status and current locale without Puck chrome, editing, publishing or destructive controls.
+- Unit/integration tests cover repository-to-registry rendering and all route states. Playwright covers the seeded route at desktop/mobile widths and locale switching.
+- P0-08 and all editor, publishing, onboarding and AI workflows remain deferred.
 
 ## Explicitly deferred
 
-Later Phase 0 and Phase 1 work remains out of scope for these batches. The implementation does not add project/editor UI routes, full editor chrome, chat, onboarding, AI providers, authentication, real payments, logistics, shipping, tax, inventory or orders.
+Later Phase 0 and Phase 1 work remains out of scope for these batches. The implementation does not add the full editor route/chrome, editing commands, publishing UI, preview/published/history routes, chat, onboarding, AI providers, authentication, real payments, logistics, shipping, tax, inventory or orders.
