@@ -71,8 +71,20 @@ P0-04 adds one deterministic, locally validated jewellery demo aggregate using t
 - Six local SVG placeholder assets live under `public/seed-assets`; the seed uses no external images, APIs or credentials.
 - Home, collection and product page templates are canonical `PageModel` data. Only the home page contains a section because `hero` is the sole registered component and is not allowed on collection or product pages.
 - Both snapshots pass canonical schema validation and controlled registry validation at module construction time.
-- P0-05 storage and all later UI, publishing, onboarding and AI workflows remain deferred.
+- At P0-04 completion, storage and all later UI, publishing, onboarding and AI workflows remained deferred.
+
+## P0-05 — storage core
+
+P0-05 establishes the canonical `ProjectRepository` boundary and a deterministic in-memory adapter before browser persistence is introduced.
+
+- The repository exposes the SDD §17.4 `list`, `get`, `saveDraft`, `publish` and `restore` contract over the existing canonical Project, StorefrontSnapshot and catalogue models.
+- The in-memory adapter starts from the validated Aurum Nordic aggregate and validates canonical Zod schemas plus registered component compositions at every input and output boundary.
+- `structuredClone` isolates repository state from callers and saved inputs; internally frozen snapshots preserve history as immutable values.
+- Draft saves leave the published reference unchanged. Publish requires the current revision, creates a new published snapshot and retains prior snapshots. Restore creates a new draft snapshot ID without publishing it.
+- Typed errors distinguish missing projects, missing snapshots, revision conflicts, project mismatches and validation failures.
+- Catalogue data remains read-only across repository operations, preserving protected dummy price and stock display fields.
+- P0-06 IndexedDB persistence and all later UI and service workflows remain deferred.
 
 ## Explicitly deferred
 
-Later Phase 0 and Phase 1 work remains out of scope for these batches. The implementation does not add IndexedDB, snapshots, publishing, full editor chrome, chat, onboarding, seed catalogue data, the full component registry, AI providers, authentication, real payments, logistics, shipping, tax, inventory, orders or storefront templates.
+Later Phase 0 and Phase 1 work remains out of scope for these batches. The implementation does not add IndexedDB or browser persistence, full editor chrome, chat, onboarding, AI providers, authentication, real payments, logistics, shipping, tax, inventory or orders.
