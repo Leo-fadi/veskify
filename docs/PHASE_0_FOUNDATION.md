@@ -62,6 +62,17 @@ P0-03 adds the Veskify-owned component registry as the single source for compone
 - Puck-specific types remain under `src/integrations/puck`; the canonical registry and domain modules do not depend on Puck.
 - P0-04 seed data, P0-05 storage and all later workflows remain deferred.
 
+## P0-04 — Aurum Nordic jewellery seed
+
+P0-04 adds one deterministic, locally validated jewellery demo aggregate using the P0-02 domain models and P0-03 registry.
+
+- The Aurum Nordic project enables English and Finnish and references separate published and draft snapshots.
+- The dummy catalogue contains the six Appendix B jewellery/watch products, bilingual display content, collections, protected dummy price/stock fields and §11.4 jewellery attributes.
+- Six local SVG placeholder assets live under `public/seed-assets`; the seed uses no external images, APIs or credentials.
+- Home, collection and product page templates are canonical `PageModel` data. Only the home page contains a section because `hero` is the sole registered component and is not allowed on collection or product pages.
+- Both snapshots pass canonical schema validation and controlled registry validation at module construction time.
+- P0-05 storage and all later UI, publishing, onboarding and AI workflows remain deferred.
+
 ## Explicitly deferred
 
 Later Phase 0 and Phase 1 work remains out of scope for these batches. The implementation does not add IndexedDB, snapshots, publishing, full editor chrome, chat, onboarding, seed catalogue data, the full component registry, AI providers, authentication, real payments, logistics, shipping, tax, inventory, orders or storefront templates.

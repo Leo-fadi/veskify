@@ -37,7 +37,9 @@ export const safeExternalUrlSchema = z
 export const assetRefSchema = z
   .object({
     id: idSchema,
-    url: safeExternalUrlSchema.or(z.string().regex(/^\/(assets|images)\/[a-zA-Z0-9/_:.-]+$/)),
+    url: safeExternalUrlSchema.or(
+      z.string().regex(/^\/(assets|images|seed-assets)\/[a-zA-Z0-9/_:.-]+$/),
+    ),
     alt: localizedTextSchema.optional(),
     decorative: z.boolean().default(false),
   })
