@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { createStorefrontRenderContext } from "@/components/registry";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
@@ -54,5 +55,49 @@ describe("Aurum Nordic product composition", () => {
     expect(screen.getByText("Keltakulta")).toBeInTheDocument();
     expect(screen.getByText("Enintään 20 merkkiä")).toBeInTheDocument();
     expect(screen.getByText("Lumi Halo -sormus")).toBeInTheDocument();
+  });
+
+  it.each([
+    ["inStock", "In stock"],
+    ["lowStock", "Limited availability"],
+    ["outOfStock", "Currently unavailable"],
+    [undefined, "Availability not provided"],
+  ] as const)(
+    "renders %s stock consistently in product and related cards",
+    (stockStatus, expected) => {
+      const catalogue = structuredClone(aurumNordicSeed.catalogue);
+      catalogue.products[0].stockStatus = stockStatus;
+      const stockPage = structuredClone(page);
+      stockPage.sections[6].content.productIds = ["product_aurora_ring_585"];
+      render(
+        <>
+          {renderStorefrontPage(
+            stockPage,
+            createStorefrontRenderContext({
+              activeLocale: "en",
+              primaryLocale: "en",
+              catalogue,
+              snapshot: aurumNordicSeed.draftSnapshot,
+            }),
+          )}
+        </>,
+      );
+      expect(screen.getAllByText(new RegExp(expected))).toHaveLength(2);
+    },
+  );
+
+  it("updates the primary gallery image by pointer and keyboard activation", async () => {
+    const user = userEvent.setup();
+    renderPage("en");
+    const first = screen.getByRole("button", { name: /View image 1:/ });
+    const second = screen.getByRole("button", { name: /View image 2:/ });
+    expect(first).toHaveAttribute("aria-pressed", "true");
+    await user.click(second);
+    expect(second).toHaveAttribute("aria-pressed", "true");
+    expect(first).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getAllByAltText("Aurora ring side detail")[0]).toHaveClass(/primaryImage/);
+    first.focus();
+    await user.keyboard("{Enter}");
+    expect(first).toHaveAttribute("aria-pressed", "true");
   });
 });

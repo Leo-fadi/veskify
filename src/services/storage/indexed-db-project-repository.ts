@@ -90,12 +90,38 @@ function p1_01Snapshot(snapshot: StorefrontSnapshot): StorefrontSnapshot {
   const legacy = clone(snapshot);
   const collectionPage = legacy.pages.find((page) => page.type === "collection");
   if (collectionPage) collectionPage.sections = [];
+  const productPage = legacy.pages.find((page) => page.type === "product");
+  if (productPage) productPage.sections = [];
   return legacy;
 }
 
+function p1_02Snapshot(snapshot: StorefrontSnapshot): StorefrontSnapshot {
+  const legacy = clone(snapshot);
+  const productPage = legacy.pages.find((page) => page.type === "product");
+  if (productPage) productPage.sections = [];
+  return legacy;
+}
+
+function p1_02Catalogue(catalogue: CatalogueDisplayModel): CatalogueDisplayModel {
+  const legacy = clone(catalogue);
+  const aurora = legacy.products.find((product) => product.id === "product_aurora_ring_585");
+  if (aurora)
+    aurora.images = aurora.images.filter((image) => image.id !== "asset_aurora_ring_detail");
+  return legacy;
+}
+
+export const aurumNordicP102SeedState = {
+  project: clone(aurumNordicSeed.project),
+  catalogue: p1_02Catalogue(aurumNordicSeed.catalogue),
+  snapshots: [
+    p1_02Snapshot(aurumNordicSeed.publishedSnapshot),
+    p1_02Snapshot(aurumNordicSeed.draftSnapshot),
+  ],
+};
+
 export const aurumNordicP101SeedState = {
   project: clone(aurumNordicSeed.project),
-  catalogue: clone(aurumNordicSeed.catalogue),
+  catalogue: p1_02Catalogue(aurumNordicSeed.catalogue),
   snapshots: [
     p1_01Snapshot(aurumNordicSeed.publishedSnapshot),
     p1_01Snapshot(aurumNordicSeed.draftSnapshot),
@@ -104,7 +130,7 @@ export const aurumNordicP101SeedState = {
 
 export const aurumNordicPhase0SeedState = {
   project: clone(aurumNordicSeed.project),
-  catalogue: clone(aurumNordicSeed.catalogue),
+  catalogue: p1_02Catalogue(aurumNordicSeed.catalogue),
   snapshots: [
     phase0Snapshot(aurumNordicSeed.publishedSnapshot),
     phase0Snapshot(aurumNordicSeed.draftSnapshot),
@@ -405,7 +431,11 @@ export class IndexedDbProjectRepository implements ProjectRepository {
           .objectStore("snapshots")
           .index("by-project")
           .getAll(aurumNordicSeed.project.id);
-        const untouched = [aurumNordicPhase0SeedState, aurumNordicP101SeedState].some(
+        const untouched = [
+          aurumNordicPhase0SeedState,
+          aurumNordicP101SeedState,
+          aurumNordicP102SeedState,
+        ].some(
           (expectedState) =>
             sameValue(legacyProject, expectedState.project) &&
             sameValue(legacyCatalogue, expectedState.catalogue) &&

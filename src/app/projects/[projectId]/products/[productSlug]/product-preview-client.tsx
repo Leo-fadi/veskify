@@ -30,12 +30,6 @@ type LoadState =
     };
 
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
-const productSlugFor = (title: string) =>
-  title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-
 function StatusPanel({
   title,
   message,
@@ -87,20 +81,22 @@ export function ProductPreviewClient({
           (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
         );
         if (!draft) return setState({ status: "missingDraft" });
-        const product = aggregate.catalogue.products.find(
-          (item) => productSlugFor(item.title.en ?? "") === productSlug,
-        );
-        if (!product) return setState({ status: "productNotFound" });
         const productPage = draft.pages.find(
           (page) => page.type === "product" && page.slug === `/products/${productSlug}`,
         );
         if (!productPage) return setState({ status: "missingProductPage" });
+        const canonicalProductId = productPage.sections.find(
+          (section) => section.component === "productInfo",
+        )?.content.productId;
+        const product = aggregate.catalogue.products.find((item) => item.id === canonicalProductId);
+        if (!product) return setState({ status: "productNotFound" });
         try {
           const context = createStorefrontRenderContext({
             activeLocale: aggregate.project.primaryLocale,
             primaryLocale: aggregate.project.primaryLocale,
             catalogue: aggregate.catalogue,
             snapshot: draft,
+            pagePathPrefix: `/projects/${projectId}`,
           });
           validateRegisteredPage(productPage, context);
           const references = productPage.sections
@@ -189,6 +185,7 @@ export function ProductPreviewClient({
     primaryLocale: state.aggregate.project.primaryLocale,
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
+    pagePathPrefix: `/projects/${projectId}`,
   });
   return (
     <div className="project-preview" lang={locale} style={style}>

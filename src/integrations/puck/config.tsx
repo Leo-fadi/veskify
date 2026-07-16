@@ -12,7 +12,7 @@ import { aurumNordicSeed } from "@/data/seed";
 import { idSchema, localeSchema, type Locale } from "@/domain/shared";
 import type { SectionInstance } from "@/domain/storefront";
 
-type PuckEditorProps = Record<string, string>;
+type PuckEditorProps = Record<string, unknown>;
 
 function toPuckField(metadata: EditorFieldMetadata): Field {
   if (metadata.control === "select") {
@@ -33,7 +33,7 @@ function getLocalizedDefault(value: unknown, locale: Locale): string {
   return Object.values(localized).find((item): item is string => typeof item === "string") ?? "";
 }
 
-function toPuckDefaults(definition: ComponentDefinition): PuckEditorProps {
+export function toPuckDefaults(definition: ComponentDefinition): PuckEditorProps {
   const defaultLocale = "en";
   return Object.fromEntries(
     Object.entries(definition.editorFields).map(([fieldName, metadata]) => {
@@ -42,13 +42,17 @@ function toPuckDefaults(definition: ComponentDefinition): PuckEditorProps {
       const value = source[fieldName];
       return [
         fieldName,
-        metadata.localized ? getLocalizedDefault(value, defaultLocale) : String(value),
+        metadata.localized
+          ? getLocalizedDefault(value, defaultLocale)
+          : metadata.valueType === "boolean"
+            ? value
+            : String(value),
       ];
     }),
   );
 }
 
-function editorPropsToSection(
+export function editorPropsToSection(
   definition: ComponentDefinition,
   editorProps: Record<string, unknown>,
 ): SectionInstance {

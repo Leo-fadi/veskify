@@ -65,9 +65,10 @@ export const productInfoDefinition = defineComponent({
       source: "props",
       control: "select",
       label: "Show visual rating",
+      valueType: "boolean",
       options: [
-        { label: "Show", value: "true" },
-        { label: "Hide", value: "false" },
+        { label: "Show", value: true },
+        { label: "Hide", value: false },
       ],
     },
   },

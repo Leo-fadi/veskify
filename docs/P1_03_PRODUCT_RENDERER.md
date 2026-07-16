@@ -24,6 +24,8 @@ Price, stock, variants and order-option definitions remain read-only catalogue d
 
 Unit and integration coverage exercises strict schemas, variants/page types, contextual references, protected metadata, registry-derived Puck configuration, the exact bilingual composition and catalogue-backed product details. Dedicated Playwright coverage exercises the seeded route, locale keyboard operation, product details, visual-only controls, related products, absence of editor chrome and overflow at 375, 768, 1024 and 1440 pixels.
 
+Review hardening adds an exact, idempotent P1-02 IndexedDB seed migration; typed boolean Puck fields; neutral missing-availability presentation; canonical product resolution from stored page slugs and registered product references; project-scoped preview navigation; and pointer/keyboard-operable multi-image gallery selection. Exact older Phase 0 and P1-01 migration fingerprints remain in the migration chain, while any edited project, catalogue, draft or published data is preserved.
+
 ## Deliberately deferred and parallel ownership
 
 Real zoom, cart, checkout, inventory/availability mutation, order submission, editor/Puck chrome, draft mutation, onboarding, AI operations, publishing UI, real commerce APIs and additional variants remain deferred. This change owns product-page work only: the collection placeholder is preserved, no collection renderer or tests were implemented, and no P1-04 or later work was introduced.

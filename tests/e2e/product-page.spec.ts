@@ -12,6 +12,15 @@ test("loads the bilingual Aurora product draft with visual-only controls", async
   await expect(page.getByRole("button", { name: "Add to cart — demo only" })).toBeVisible();
   await expect(page.getByText("Maximum 20 characters")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Lumi Halo Ring" })).toBeVisible();
+  const gallery = page.getByRole("region", { name: "Product gallery" });
+  const firstImage = gallery.getByRole("button", { name: /View image 1:/ });
+  const secondImage = gallery.getByRole("button", { name: /View image 2:/ });
+  await secondImage.click();
+  await expect(secondImage).toHaveAttribute("aria-pressed", "true");
+  await expect(gallery.locator(":scope > img")).toHaveAttribute("alt", "Aurora ring side detail");
+  await firstImage.focus();
+  await page.keyboard.press("Enter");
+  await expect(firstImage).toHaveAttribute("aria-pressed", "true");
   const finnish = page.getByRole("radio", { name: "Suomi" });
   await finnish.focus();
   await page.keyboard.press("Space");

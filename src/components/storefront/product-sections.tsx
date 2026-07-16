@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 import { resolveLocalizedText, type AssetRef, type LocalizedText } from "@/domain/shared";
 import type { ProductDisplayModel } from "@/domain/catalogue";
 import type { StorefrontRenderContext } from "@/components/registry/contract";
@@ -16,11 +19,13 @@ const price = new Intl.NumberFormat("fi-FI", {
 const label = (en: string, fi: string, context: StorefrontRenderContext) =>
   context.activeLocale === "fi" ? fi : en;
 const stockLabel = (stock: ProductDisplayModel["stockStatus"], context: StorefrontRenderContext) =>
-  stock === "lowStock"
-    ? label("Limited availability", "Rajoitetusti saatavilla", context)
-    : stock === "outOfStock"
-      ? label("Currently unavailable", "Ei juuri nyt saatavilla", context)
-      : label("In stock", "Varastossa", context);
+  stock === undefined
+    ? label("Availability not provided", "Saatavuustietoa ei annettu", context)
+    : stock === "lowStock"
+      ? label("Limited availability", "Rajoitetusti saatavilla", context)
+      : stock === "outOfStock"
+        ? label("Currently unavailable", "Ei juuri nyt saatavilla", context)
+        : label("In stock", "Varastossa", context);
 
 function ProductImage({
   asset,
@@ -50,12 +55,15 @@ export function ProductGallery({
   context: StorefrontRenderContext;
 }) {
   const product = productFor(productId, context);
+  const [selectedImageId, setSelectedImageId] = useState(product.images[0].id);
+  const selectedImage =
+    product.images.find((image) => image.id === selectedImageId) ?? product.images[0];
   return (
     <section
       aria-label={label("Product gallery", "Tuotekuvat", context)}
       className={styles.gallery}
     >
-      <ProductImage asset={product.images[0]} className={styles.primaryImage} context={context} />
+      <ProductImage asset={selectedImage} className={styles.primaryImage} context={context} />
       <div
         aria-label={label("Choose product image", "Valitse tuotekuva", context)}
         className={styles.thumbnails}
@@ -63,9 +71,12 @@ export function ProductGallery({
       >
         {product.images.map((image, index) => (
           <button
-            aria-label={`${label("View image", "Näytä kuva", context)} ${index + 1}`}
-            aria-pressed={index === 0}
+            aria-label={`${label("View image", "Näytä kuva", context)} ${index + 1}: ${
+              image.alt ? text(image.alt, context) : text(product.title, context)
+            }`}
+            aria-pressed={image.id === selectedImage.id}
             key={image.id}
+            onClick={() => setSelectedImageId(image.id)}
             type="button"
           >
             <ProductImage asset={image} context={context} />

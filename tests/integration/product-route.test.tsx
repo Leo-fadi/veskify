@@ -68,8 +68,17 @@ describe("product preview route states", () => {
       repository(() => Promise.resolve(aggregate())),
       "unknown-product",
     );
-    expect(await screen.findByRole("heading", { name: "Product not found" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Product page unavailable" })).toBeVisible();
     second.unmount();
+    const missingProduct = aggregate();
+    missingProduct.snapshots
+      .find((item) => item.id === missingProduct.project.draftSnapshotId)!
+      .pages.find((item) => item.type === "product")!
+      .sections.find((item) => item.component === "productInfo")!.content.productId =
+      "product_missing";
+    const third = route(repository(() => Promise.resolve(missingProduct)));
+    expect(await screen.findByRole("heading", { name: "Product not found" })).toBeVisible();
+    third.unmount();
     const missingPage = aggregate();
     missingPage.snapshots.find((item) => item.id === missingPage.project.draftSnapshotId)!.pages =
       missingPage.snapshots[1].pages.filter((item) => item.type !== "product");
@@ -87,5 +96,36 @@ describe("product preview route states", () => {
     expect(
       await screen.findByRole("heading", { name: "Product page could not be displayed" }),
     ).toBeVisible();
+  });
+
+  it("resolves a Finnish-only product from the canonical reference at a custom stored slug", async () => {
+    const value = aggregate();
+    value.catalogue.products[0].title = { fi: "Vain suomeksi nimetty sormus" };
+    const draft = value.snapshots.find((item) => item.id === value.project.draftSnapshotId)!;
+    draft.pages.find((item) => item.type === "product")!.slug = "/products/custom-aurora-page";
+    route(
+      repository(() => Promise.resolve(value)),
+      "custom-aurora-page",
+    );
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Vain suomeksi nimetty sormus" }),
+    ).toBeVisible();
+  });
+
+  it("keeps preview navigation scoped to the current project", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByRole("heading", { level: 1, name: "Aurora Ring 585" });
+    expect(screen.getAllByRole("link", { name: "Home" })[0]).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic",
+    );
+    expect(screen.getByRole("link", { name: "Rings" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/collections/rings",
+    );
+    expect(screen.getByRole("link", { name: "Aurora Ring" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/products/aurora-ring-585",
+    );
   });
 });

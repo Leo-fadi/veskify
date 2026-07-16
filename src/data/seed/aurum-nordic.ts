@@ -40,6 +40,12 @@ const products = [
         alt: enFi("Aurora yellow-gold diamond ring", "Aurora-keltakultainen timanttisormus"),
         decorative: false,
       },
+      {
+        id: "asset_aurora_ring_detail",
+        url: "/seed-assets/aurora-ring.svg",
+        alt: enFi("Aurora ring side detail", "Aurora-sormuksen sivuyksityiskohta"),
+        decorative: false,
+      },
     ],
     productType: "ring",
     attributes: {
