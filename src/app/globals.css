@@ -315,8 +315,16 @@ a {
 .product-card img {
   width: 100%;
   height: auto;
-  aspect-ratio: 4 / 5;
   object-fit: cover;
+}
+.category-grid--portrait .category-card img {
+  aspect-ratio: 4 / 5;
+}
+.category-grid--square .category-card img {
+  aspect-ratio: 1;
+}
+.product-card img {
+  aspect-ratio: 4 / 5;
 }
 .category-card div,
 .product-card div {

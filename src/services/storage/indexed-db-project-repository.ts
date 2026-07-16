@@ -62,6 +62,37 @@ function sameValue(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
+const currentHomepageHero = aurumNordicSeed.draftSnapshot.pages
+  .find((page) => page.type === "home")
+  ?.sections.find((section) => section.component === "hero");
+
+function migrateLegacyPhase0Hero(snapshot: StorefrontSnapshot): StorefrontSnapshot {
+  const migrated = clone(snapshot);
+  let changed = false;
+  for (const page of migrated.pages) {
+    for (const section of page.sections) {
+      if (
+        section.component !== "hero" ||
+        section.variant !== "editorial" ||
+        !("activeLocale" in section.props || "primaryLocale" in section.props)
+      ) {
+        continue;
+      }
+      if (!currentHomepageHero) throw new Error("The current seed must contain a homepage hero.");
+      section.content = {
+        ...section.content,
+        cta: section.content.cta ?? clone(currentHomepageHero.content.cta),
+        media: section.content.media ?? clone(currentHomepageHero.content.media),
+      };
+      section.props = {
+        mediaPosition: section.props.mediaPosition ?? currentHomepageHero.props.mediaPosition,
+      };
+      changed = true;
+    }
+  }
+  return changed ? migrated : snapshot;
+}
+
 function phase0Snapshot(snapshot: StorefrontSnapshot): StorefrontSnapshot {
   const legacy = p1_01Snapshot(snapshot);
   const homepage = legacy.pages.find((page) => page.type === "home");
@@ -421,6 +452,15 @@ export class IndexedDbProjectRepository implements ProjectRepository {
           await transaction.objectStore("snapshots").put(clone(aurumNordicSeed.publishedSnapshot));
           await transaction.objectStore("snapshots").put(clone(aurumNordicSeed.draftSnapshot));
           await projects.put(clone(aurumNordicSeed.project));
+        } else if (legacyCatalogue) {
+          for (const snapshot of legacySnapshots) {
+            const migrated = migrateLegacyPhase0Hero(snapshot);
+            if (migrated !== snapshot) {
+              await transaction
+                .objectStore("snapshots")
+                .put(validateRepositorySnapshot(migrated, legacyCatalogue));
+            }
+          }
         }
       }
       await transaction.done;
