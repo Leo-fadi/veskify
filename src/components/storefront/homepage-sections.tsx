@@ -10,7 +10,7 @@ const text = (value: LocalizedText, context: StorefrontRenderContext) =>
 const assetAlt = (asset: AssetRef, context: StorefrontRenderContext) =>
   asset.decorative || !asset.alt ? "" : text(asset.alt, context);
 
-function StorefrontImage({
+export function StorefrontImage({
   asset,
   context,
   className = "",
@@ -19,6 +19,19 @@ function StorefrontImage({
   context: StorefrontRenderContext;
   className?: string;
 }) {
+  if (asset.url.startsWith("https://")) {
+    return (
+      // The canonical asset schema permits HTTPS only; native rendering avoids unsafe wildcard hosts.
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        alt={assetAlt(asset, context)}
+        className={className}
+        height={900}
+        src={asset.url}
+        width={1200}
+      />
+    );
+  }
   return (
     <Image
       alt={assetAlt(asset, context)}
@@ -143,10 +156,12 @@ export function EditorialHero({
 export function FeaturedCategories({
   heading,
   collectionIds,
+  cardAspect,
   context,
 }: {
   heading: LocalizedText;
   collectionIds: string[];
+  cardAspect: "portrait" | "square";
   context: StorefrontRenderContext;
 }) {
   const collections = collectionIds.flatMap((id) => {
@@ -160,7 +175,7 @@ export function FeaturedCategories({
         <h2 id="featured-categories-heading">{text(heading, context)}</h2>
       </div>
       {collections.length ? (
-        <div className="category-grid">
+        <div className={`category-grid category-grid--${cardAspect}`}>
           {collections.map((collection) => {
             const product = context.catalogue.products.find(
               (item) => item.id === collection.productIds[0],
@@ -359,14 +374,17 @@ export function Newsletter({
   body,
   emailLabel,
   buttonLabel,
+  sectionId,
   context,
 }: {
   heading: LocalizedText;
   body: LocalizedText;
   emailLabel: LocalizedText;
   buttonLabel: LocalizedText;
+  sectionId: string;
   context: StorefrontRenderContext;
 }) {
+  const emailInputId = `${sectionId}-email`;
   return (
     <section className="newsletter">
       <div>
@@ -375,14 +393,9 @@ export function Newsletter({
         <p>{text(body, context)}</p>
       </div>
       <form onSubmit={(event) => event.preventDefault()}>
-        <label htmlFor="demo-newsletter-email">{text(emailLabel, context)}</label>
+        <label htmlFor={emailInputId}>{text(emailLabel, context)}</label>
         <div>
-          <input
-            id="demo-newsletter-email"
-            name="email"
-            placeholder="name@example.com"
-            type="email"
-          />
+          <input id={emailInputId} name="email" placeholder="name@example.com" type="email" />
           <button type="submit">{text(buttonLabel, context)}</button>
         </div>
         <p>

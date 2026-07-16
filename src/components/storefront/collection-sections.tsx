@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { resolveLocalizedText, type LocalizedText } from "@/domain/shared";
 import type { StorefrontRenderContext } from "@/components/registry/contract";
+import { StorefrontImage } from "./homepage-sections";
 import styles from "./collection-sections.module.css";
 
 const text = (value: LocalizedText, context: StorefrontRenderContext) =>
@@ -29,13 +29,7 @@ export function CollectionHeader({
         <p>{text(collection.description, context)}</p>
       </div>
       {media ? (
-        <Image
-          alt={media.decorative || !media.alt ? "" : text(media.alt, context)}
-          className={styles.collectionMedia}
-          height={900}
-          src={media.url}
-          width={1200}
-        />
+        <StorefrontImage asset={media} className={styles.collectionMedia} context={context} />
       ) : (
         <p className={styles.empty}>
           {text(

@@ -42,4 +42,35 @@ describe("shared schemas", () => {
       assetRefSchema.parse({ id: "asset_missing", url: "/assets/missing.jpg" }),
     ).toThrow();
   });
+
+  it("accepts local and HTTPS image assets but rejects unsafe external images", () => {
+    expect(
+      assetRefSchema.parse({
+        id: "asset_local",
+        url: "/seed-assets/aurora-ring.svg",
+        alt: { en: "Local ring" },
+      }).url,
+    ).toBe("/seed-assets/aurora-ring.svg");
+    expect(
+      assetRefSchema.parse({
+        id: "asset_https",
+        url: "https://media.example.test/ring.jpg",
+        alt: { en: "Remote ring" },
+      }).url,
+    ).toBe("https://media.example.test/ring.jpg");
+    expect(() =>
+      assetRefSchema.parse({
+        id: "asset_http",
+        url: "http://media.example.test/ring.jpg",
+        alt: { en: "Unsafe ring" },
+      }),
+    ).toThrow();
+    expect(() =>
+      assetRefSchema.parse({
+        id: "asset_script",
+        url: "javascript:alert(1)",
+        alt: { en: "Unsafe ring" },
+      }),
+    ).toThrow();
+  });
 });

@@ -26,6 +26,7 @@ export type ProtectedFieldMetadata = {
 };
 
 export type ComponentRenderInput<TContent, TProps, TVariant extends string> = {
+  sectionId: string;
   variant: TVariant;
   content: TContent;
   props: TProps;
@@ -108,6 +109,7 @@ export function defineComponent<
     }
 
     const parsed = {
+      sectionId: section.id,
       content: input.contentSchema.parse(section.content),
       props: input.propsSchema.parse(section.props),
       variant: section.variant as TVariants[number],

@@ -133,4 +133,74 @@ describe("P1-01 homepage registry", () => {
     expect(screen.getByText("Collections will appear here when they are available.")).toBeVisible();
     expect(screen.getByText("Products will appear here when they are available.")).toBeVisible();
   });
+
+  it("renders local and schema-valid HTTPS catalogue images safely", () => {
+    const localRender = render(<>{renderStorefrontPage(homepage, context())}</>);
+    expect(screen.getAllByAltText("Aurora yellow-gold diamond ring")[0]).toHaveAttribute(
+      "src",
+      "/seed-assets/aurora-ring.svg",
+    );
+    localRender.unmount();
+
+    const catalogue = structuredClone(aurumNordicSeed.catalogue);
+    catalogue.products[0].images[0].url = "https://media.example.test/aurora-ring.jpg";
+    const remoteContext = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue,
+      snapshot: aurumNordicSeed.draftSnapshot,
+    });
+    render(<>{renderStorefrontPage(homepage, remoteContext)}</>);
+    for (const image of screen.getAllByAltText("Aurora yellow-gold diamond ring")) {
+      expect(image).toHaveAttribute("src", "https://media.example.test/aurora-ring.jpg");
+    }
+
+    catalogue.products[0].images[0].url = "http://media.example.test/unsafe.jpg";
+    expect(() =>
+      createStorefrontRenderContext({
+        activeLocale: "en",
+        primaryLocale: "en",
+        catalogue,
+        snapshot: aurumNordicSeed.draftSnapshot,
+      }),
+    ).toThrow();
+  });
+
+  it("uses unique accessible newsletter IDs for duplicated sections", () => {
+    const value = structuredClone(homepage);
+    const newsletter = value.sections.find((section) => section.component === "newsletter")!;
+    const duplicate = structuredClone(newsletter);
+    duplicate.id = "section_home_newsletter_duplicate";
+    value.sections.splice(value.sections.indexOf(newsletter) + 1, 0, duplicate);
+
+    const { container } = render(<>{renderStorefrontPage(value, context())}</>);
+    const inputs = screen.getAllByLabelText("Email address");
+    expect(inputs).toHaveLength(2);
+    expect(inputs.map((input) => input.id)).toEqual([
+      "section_home_newsletter-email",
+      "section_home_newsletter_duplicate-email",
+    ]);
+    for (const input of inputs) {
+      expect(container.querySelector(`label[for="${input.id}"]`)).toBeVisible();
+    }
+  });
+
+  it("applies portrait and square featured-category card aspects", () => {
+    const portrait = structuredClone(homepage);
+    const portraitSection = portrait.sections.find(
+      (section) => section.component === "featuredCategories",
+    )!;
+    portraitSection.props.cardAspect = "portrait";
+    const { container, rerender } = render(<>{renderStorefrontPage(portrait, context())}</>);
+    expect(container.querySelector(".category-grid--portrait")).toBeVisible();
+    expect(container.querySelector(".category-grid--square")).not.toBeInTheDocument();
+
+    const square = structuredClone(portrait);
+    square.sections.find(
+      (section) => section.component === "featuredCategories",
+    )!.props.cardAspect = "square";
+    rerender(<>{renderStorefrontPage(square, context())}</>);
+    expect(container.querySelector(".category-grid--square")).toBeVisible();
+    expect(container.querySelector(".category-grid--portrait")).not.toBeInTheDocument();
+  });
 });

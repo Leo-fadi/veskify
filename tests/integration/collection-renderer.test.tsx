@@ -88,4 +88,21 @@ describe("Aurum Nordic collection renderer", () => {
     expect(screen.getAllByRole("heading", { level: 1, name: "Rings" })).toHaveLength(1);
     expect(screen.getAllByRole("region", { name: "Collection controls" })).toHaveLength(1);
   });
+
+  it("renders schema-valid HTTPS catalogue media through the shared image boundary", () => {
+    const { page } = setup();
+    const catalogue = structuredClone(aurumNordicSeed.catalogue);
+    catalogue.products[0].images[0].url = "https://media.example.test/aurora-ring.jpg";
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue,
+      snapshot: aurumNordicSeed.draftSnapshot,
+    });
+
+    render(<>{renderStorefrontPage(page, context)}</>);
+    for (const image of screen.getAllByAltText("Aurora yellow-gold diamond ring")) {
+      expect(image).toHaveAttribute("src", "https://media.example.test/aurora-ring.jpg");
+    }
+  });
 });
