@@ -12,7 +12,7 @@ describe("Veskify Puck adapter", () => {
       Object.keys(veskifyComponentRegistry),
     );
     expect(veskifyPuckConfig.components.hero?.label).toBe("Aurum hero");
-    expect(Object.keys(veskifyPuckConfig.components)).toHaveLength(10);
+    expect(Object.keys(veskifyPuckConfig.components)).toHaveLength(15);
     expect(Object.keys(veskifyPuckConfig.components.hero?.fields ?? {})).toEqual(
       Object.keys(veskifyComponentRegistry.hero.editorFields),
     );

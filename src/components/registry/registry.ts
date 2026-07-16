@@ -13,10 +13,12 @@ import {
 } from "@/domain/storefront";
 import { aurumHeroDefinition } from "./aurum-hero";
 import { homepageDefinitions } from "./homepage";
+import { productDefinitions } from "./product";
 import type { ComponentDefinition, StorefrontRenderContext } from "./contract";
 
 export const veskifyComponentRegistry = {
   ...homepageDefinitions,
+  ...productDefinitions,
   hero: aurumHeroDefinition,
 } as const satisfies Record<string, ComponentDefinition>;
 

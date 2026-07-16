@@ -1,0 +1,244 @@
+.gallery,
+.info,
+.options,
+.related,
+.imageText {
+  min-width: 0;
+  padding: clamp(2rem, 5vw, 5rem) clamp(1rem, 5vw, 5rem);
+}
+.gallery {
+  display: grid;
+  gap: 1rem;
+  background: var(--brand-color-surface);
+}
+.primaryImage {
+  width: 100%;
+  height: auto;
+  max-height: 46rem;
+  object-fit: contain;
+  background: var(--brand-color-background);
+}
+.thumbnails {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding: 0.25rem;
+}
+.thumbnails button {
+  width: 5rem;
+  min-width: 3rem;
+  min-height: 3rem;
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--brand-radius);
+  background: var(--brand-color-background);
+  padding: 0.25rem;
+}
+.thumbnails button[aria-pressed="true"] {
+  border: 2px solid var(--brand-color-primary);
+}
+.thumbnails img {
+  width: 100%;
+  height: auto;
+}
+.info h1 {
+  margin: 0.5rem 0 1rem;
+  font-family: var(--brand-font-heading);
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  line-height: 1;
+}
+.eyebrow {
+  color: var(--brand-color-primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.price {
+  margin: 1rem 0 0.25rem;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+.stock {
+  color: var(--brand-color-primary);
+  font-weight: 700;
+}
+.description {
+  max-width: 40rem;
+  color: var(--brand-color-muted-text);
+  font-size: 1.1rem;
+  line-height: 1.7;
+}
+.attributes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 1.5rem;
+  margin: 2rem 0;
+}
+.attributes div {
+  border-top: 1px solid var(--brand-color-border);
+  padding: 0.8rem 0;
+}
+.attributes dt {
+  color: var(--brand-color-muted-text);
+  font-size: 0.8rem;
+}
+.attributes dd {
+  margin: 0.25rem 0 0;
+  font-weight: 700;
+}
+.addButton {
+  width: 100%;
+  min-height: 3.25rem;
+  border: 0;
+  border-radius: var(--brand-radius);
+  background: var(--brand-color-primary);
+  color: var(--brand-color-surface);
+  padding: 0.75rem;
+  font: inherit;
+  font-weight: 800;
+}
+.demoNote {
+  max-width: 42rem;
+  color: var(--brand-color-muted-text);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.options {
+  background: var(--brand-color-surface);
+}
+.options h2,
+.related h2,
+.imageText h2 {
+  font-family: var(--brand-font-heading);
+  font-size: clamp(2rem, 4vw, 3.5rem);
+}
+.optionGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  max-width: 44rem;
+  margin: 1.5rem 0;
+  padding: 0;
+  border: 0;
+}
+.optionGroup legend,
+.optionGroup > p {
+  width: 100%;
+  font-weight: 800;
+}
+.optionGroup input {
+  position: absolute;
+  opacity: 0;
+}
+.optionGroup span,
+.optionGroup button {
+  display: inline-flex;
+  min-width: 3rem;
+  min-height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--brand-color-border);
+  border-radius: 999px;
+  background: var(--brand-color-background);
+  padding: 0.65rem;
+  font: inherit;
+}
+.optionGroup input:checked + span {
+  background: var(--brand-color-primary);
+  color: white;
+}
+.optionGroup input:focus-visible + span {
+  outline: 3px solid var(--brand-color-accent);
+  outline-offset: 3px;
+}
+.engraving {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 32rem;
+  font-weight: 800;
+}
+.engraving input {
+  min-height: 3rem;
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--brand-radius);
+  padding: 0.75rem;
+  font: inherit;
+}
+.engraving small {
+  color: var(--brand-color-muted-text);
+  font-weight: 400;
+}
+.imageText {
+  display: grid;
+  gap: 2rem;
+  align-items: center;
+}
+.imageText > div {
+  max-width: 40rem;
+}
+.imageText > div > p:not(.eyebrow) {
+  line-height: 1.7;
+}
+.imageText img {
+  width: 100%;
+  height: auto;
+  background: var(--brand-color-surface);
+}
+.related {
+  background: var(--brand-color-surface);
+}
+.relatedGrid {
+  display: grid;
+  gap: 1.5rem;
+}
+.relatedGrid article {
+  min-width: 0;
+}
+.relatedGrid img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4/5;
+  object-fit: cover;
+  background: var(--brand-color-background);
+}
+.relatedGrid h3 {
+  font-family: var(--brand-font-heading);
+  font-size: 1.25rem;
+}
+.relatedGrid p {
+  color: var(--brand-color-muted-text);
+}
+.empty {
+  border: 1px dashed var(--brand-color-border);
+  padding: 2rem;
+  color: var(--brand-color-muted-text);
+}
+@media (min-width: 48rem) {
+  .gallery,
+  .info {
+    display: inline-grid;
+    width: 50%;
+    vertical-align: top;
+  }
+  .gallery {
+    min-height: 42rem;
+  }
+  .info {
+    min-height: 42rem;
+    align-content: center;
+  }
+  .imageText {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .imageText img {
+    order: 2;
+  }
+  .relatedGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 30rem) {
+  .attributes {
+    grid-template-columns: 1fr;
+  }
+}

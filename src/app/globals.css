@@ -60,6 +60,12 @@ a {
   font-family: var(--brand-font-heading);
   font-size: 1.35rem;
 }
+.project-preview__name {
+  margin: 0.25rem 0 0;
+  font-family: var(--brand-font-heading);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
 
 .project-preview__back {
   color: var(--brand-color-primary);

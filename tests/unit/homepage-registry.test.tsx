@@ -55,7 +55,7 @@ describe("P1-01 homepage registry", () => {
       ).toThrow(/Unsupported/);
     }
     expect(() =>
-      getComponentDefinition("header").validate(homepage.sections[1], "product", context()),
+      getComponentDefinition("header").validate(homepage.sections[1], "collection", context()),
     ).toThrow(/not allowed/);
   });
 

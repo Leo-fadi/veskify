@@ -130,6 +130,15 @@ describe("Aurum Nordic jewellery seed", () => {
       "footer",
     ]);
     expect(validated.pages[1]?.sections).toEqual([]);
-    expect(validated.pages[2]?.sections).toEqual([]);
+    expect(validated.pages[2]?.sections.map((section) => section.component)).toEqual([
+      "header",
+      "productGallery",
+      "productInfo",
+      "productOptions",
+      "benefitIcons",
+      "imageText",
+      "relatedProducts",
+      "footer",
+    ]);
   });
 });
