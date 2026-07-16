@@ -76,4 +76,16 @@ describe("Aurum Nordic collection renderer", () => {
       aurumNordicSeed.draftSnapshot.pages.find((page) => page.type === "product")?.sections,
     ).toEqual([]);
   });
+
+  it("renders reordered global sections exactly once", () => {
+    const { page, context } = setup();
+    const footer = page.sections.find((section) => section.component === "footer")!;
+    page.sections = [footer, ...page.sections.filter((section) => section !== footer)];
+
+    render(<>{renderStorefrontPage(page, context)}</>);
+    expect(screen.getAllByRole("banner")).toHaveLength(1);
+    expect(screen.getAllByRole("contentinfo")).toHaveLength(1);
+    expect(screen.getAllByRole("heading", { level: 1, name: "Rings" })).toHaveLength(1);
+    expect(screen.getAllByRole("region", { name: "Collection controls" })).toHaveLength(1);
+  });
 });

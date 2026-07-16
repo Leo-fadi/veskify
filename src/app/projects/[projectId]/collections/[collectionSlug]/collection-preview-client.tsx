@@ -93,6 +93,7 @@ export function CollectionPreviewClient({
             primaryLocale: aggregate.project.primaryLocale,
             catalogue: aggregate.catalogue,
             snapshot: draft,
+            pagePathPrefix: `/projects/${projectId}`,
           });
           void renderStorefrontPage(page, context);
         } catch {
@@ -171,6 +172,7 @@ export function CollectionPreviewClient({
     primaryLocale: state.aggregate.project.primaryLocale,
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
+    pagePathPrefix: `/projects/${projectId}`,
   });
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
 

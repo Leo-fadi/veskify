@@ -13,6 +13,16 @@ test("loads the persisted rings collection and operates bilingual demo controls 
   await expect(page.getByText("Lumi Halo Ring")).toBeVisible();
   await expect(page.getByText("1 290 €")).toBeVisible();
   await expect(page.getByText("1 890 €")).toBeVisible();
+  await expect(
+    page
+      .getByRole("navigation", { name: "Primary navigation" })
+      .getByRole("link", { name: "Home" }),
+  ).toHaveAttribute("href", "/projects/project_aurum_nordic");
+  await expect(
+    page
+      .getByRole("navigation", { name: "Primary navigation" })
+      .getByRole("link", { name: "Rings" }),
+  ).toHaveAttribute("href", "/projects/project_aurum_nordic/collections/rings");
 
   const before = await page.getByRole("article").allTextContents();
   const material = page.getByRole("button", { name: "Material" });

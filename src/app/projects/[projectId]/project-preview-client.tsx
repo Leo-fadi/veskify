@@ -94,6 +94,7 @@ export function ProjectPreviewClient({
             primaryLocale: aggregate.project.primaryLocale,
             catalogue: aggregate.catalogue,
             snapshot: draft,
+            pagePathPrefix: `/projects/${projectId}`,
           });
           void renderStorefrontPage(homepage, context);
         } catch {
@@ -175,6 +176,7 @@ export function ProjectPreviewClient({
     primaryLocale: state.aggregate.project.primaryLocale,
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
+    pagePathPrefix: `/projects/${projectId}`,
   });
 
   return (

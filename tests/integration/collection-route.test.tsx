@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { CollectionPreviewClient } from "@/app/projects/[projectId]/collections/[collectionSlug]/collection-preview-client";
 import { aurumNordicSeed } from "@/data/seed";
@@ -42,6 +42,19 @@ describe("collection route", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Rings" })).toBeVisible();
     expect(get).toHaveBeenCalledWith(aurumNordicSeed.project.id);
     expect(screen.getByText("Draft preview")).toBeVisible();
+    const primaryNavigation = screen.getByRole("navigation", { name: "Primary navigation" });
+    expect(within(primaryNavigation).getByRole("link", { name: "Home" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic",
+    );
+    expect(within(primaryNavigation).getByRole("link", { name: "Rings" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/collections/rings",
+    );
+    expect(screen.getByRole("link", { name: "Aurora Ring" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/products/aurora-ring-585",
+    );
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     expect(screen.getByRole("heading", { level: 1, name: "Sormukset" })).toBeVisible();
   });

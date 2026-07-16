@@ -12,7 +12,12 @@ export function renderStorefrontPage(input: unknown, context: StorefrontRenderCo
   const headerIndex = visibleSections.findIndex((section) => section.component === "header");
   const header = visibleSections.find((section) => section.component === "header");
   const footer = visibleSections.find((section) => section.component === "footer");
-  const beforeHeader = headerIndex < 1 ? [] : visibleSections.slice(0, headerIndex);
+  const beforeHeader =
+    headerIndex < 1
+      ? []
+      : visibleSections
+          .slice(0, headerIndex)
+          .filter((section) => section.component !== "header" && section.component !== "footer");
   const content = visibleSections.filter(
     (section, index) =>
       index >= Math.max(headerIndex, 0) &&
