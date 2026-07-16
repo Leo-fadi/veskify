@@ -58,6 +58,20 @@ describe("shared schemas", () => {
         alt: { en: "Remote ring" },
       }).url,
     ).toBe("https://media.example.test/ring.jpg");
+    expect(
+      assetRefSchema.parse({
+        id: "asset_https_uppercase",
+        url: "HTTPS://media.example.test/ring.jpg",
+        alt: { en: "Remote ring" },
+      }).url,
+    ).toBe("HTTPS://media.example.test/ring.jpg");
+    expect(
+      assetRefSchema.parse({
+        id: "asset_https_whitespace",
+        url: "  https://media.example.test/ring.jpg  ",
+        alt: { en: "Remote ring" },
+      }).url,
+    ).toBe("https://media.example.test/ring.jpg");
     expect(() =>
       assetRefSchema.parse({
         id: "asset_http",

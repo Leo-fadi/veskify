@@ -142,19 +142,27 @@ describe("P1-01 homepage registry", () => {
     );
     localRender.unmount();
 
-    const catalogue = structuredClone(aurumNordicSeed.catalogue);
-    catalogue.products[0].images[0].url = "https://media.example.test/aurora-ring.jpg";
-    const remoteContext = createStorefrontRenderContext({
-      activeLocale: "en",
-      primaryLocale: "en",
-      catalogue,
-      snapshot: aurumNordicSeed.draftSnapshot,
-    });
-    render(<>{renderStorefrontPage(homepage, remoteContext)}</>);
-    for (const image of screen.getAllByAltText("Aurora yellow-gold diamond ring")) {
-      expect(image).toHaveAttribute("src", "https://media.example.test/aurora-ring.jpg");
+    for (const remoteUrl of [
+      "https://media.example.test/aurora-ring.jpg",
+      "HTTPS://media.example.test/aurora-ring.jpg",
+      "  https://media.example.test/aurora-ring.jpg  ",
+    ]) {
+      const catalogue = structuredClone(aurumNordicSeed.catalogue);
+      catalogue.products[0].images[0].url = remoteUrl;
+      const remoteContext = createStorefrontRenderContext({
+        activeLocale: "en",
+        primaryLocale: "en",
+        catalogue,
+        snapshot: aurumNordicSeed.draftSnapshot,
+      });
+      const remoteRender = render(<>{renderStorefrontPage(homepage, remoteContext)}</>);
+      for (const image of screen.getAllByAltText("Aurora yellow-gold diamond ring")) {
+        expect(image).toHaveAttribute("src", "https://media.example.test/aurora-ring.jpg");
+      }
+      remoteRender.unmount();
     }
 
+    const catalogue = structuredClone(aurumNordicSeed.catalogue);
     catalogue.products[0].images[0].url = "http://media.example.test/unsafe.jpg";
     expect(() =>
       createStorefrontRenderContext({

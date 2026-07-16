@@ -1,5 +1,10 @@
 import Image from "next/image";
-import { resolveLocalizedText, type AssetRef, type LocalizedText } from "@/domain/shared";
+import {
+  resolveLocalizedText,
+  safeExternalUrlSchema,
+  type AssetRef,
+  type LocalizedText,
+} from "@/domain/shared";
 import type { StorefrontRenderContext } from "@/components/registry/contract";
 
 export type SafeLink = { label: LocalizedText; href: string };
@@ -19,7 +24,9 @@ export function StorefrontImage({
   context: StorefrontRenderContext;
   className?: string;
 }) {
-  if (asset.url.startsWith("https://")) {
+  const externalUrl = safeExternalUrlSchema.safeParse(asset.url);
+  if (externalUrl.success) {
+    const normalizedUrl = new URL(externalUrl.data.trim()).href;
     return (
       // The canonical asset schema permits HTTPS only; native rendering avoids unsafe wildcard hosts.
       // eslint-disable-next-line @next/next/no-img-element
@@ -27,7 +34,7 @@ export function StorefrontImage({
         alt={assetAlt(asset, context)}
         className={className}
         height={900}
-        src={asset.url}
+        src={normalizedUrl}
         width={1200}
       />
     );
