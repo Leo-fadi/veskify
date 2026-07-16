@@ -1,0 +1,178 @@
+.editor {
+  min-height: 100vh;
+  background: #eef0f3;
+  color: var(--brand-color-text);
+  font-family: var(--brand-font-body);
+}
+
+.topbar {
+  display: grid;
+  gap: 0.8rem 1.5rem;
+  align-items: center;
+  padding: 0.9rem clamp(1rem, 3vw, 2rem);
+  border-bottom: 1px solid #d6dae0;
+  background: white;
+}
+
+.navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.navigation a,
+.previewLink {
+  color: #164b3b;
+  font-weight: 700;
+}
+
+.currentPage span,
+.draftStatus span {
+  display: block;
+  color: #59616d;
+  font-size: 0.75rem;
+}
+
+.currentPage h1 {
+  margin: 0.15rem 0 0;
+  font-family: var(--brand-font-heading);
+  font-size: 1.2rem;
+}
+
+.draftStatus {
+  justify-self: start;
+  padding: 0.55rem 0.8rem;
+  border-radius: 0.6rem;
+  background: #f1f7f4;
+  font-size: 0.8rem;
+}
+
+.workspace {
+  display: grid;
+  min-width: 0;
+}
+
+.sidebar {
+  display: grid;
+  gap: 1.25rem;
+  align-content: start;
+  padding: 1.25rem;
+  border-bottom: 1px solid #d6dae0;
+  background: white;
+}
+
+.sidebar section,
+.sidebar fieldset {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.sidebar label,
+.sidebar legend {
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.sidebar select {
+  min-height: 2.75rem;
+  max-width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #aab1ba;
+  border-radius: 0.45rem;
+  background: white;
+}
+
+.sidebar fieldset label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 2.25rem;
+}
+
+.sidebar p {
+  margin: 0;
+  color: #59616d;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.previewLink {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid #164b3b;
+  border-radius: 0.45rem;
+  text-decoration: none;
+}
+
+.canvas {
+  min-width: 0;
+  overflow: hidden;
+  padding: clamp(0.5rem, 2vw, 1.25rem);
+}
+
+.state {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 1.25rem;
+  background: #eef0f3;
+}
+
+.statePanel {
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 34rem);
+  padding: clamp(1.5rem, 5vw, 3rem);
+  border: 1px solid #d6dae0;
+  border-radius: 1rem;
+  background: white;
+}
+
+.statePanel h1,
+.statePanel p {
+  margin: 0;
+}
+
+.statePanel button {
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: #164b3b;
+  color: white;
+}
+
+.eyebrow {
+  color: #59616d;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 48rem) {
+  .topbar {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .draftStatus {
+    justify-self: end;
+  }
+
+  .workspace {
+    grid-template-columns: 16rem minmax(0, 1fr);
+  }
+
+  .sidebar {
+    min-height: calc(100vh - 5.5rem);
+    border-right: 1px solid #d6dae0;
+    border-bottom: 0;
+  }
+}
