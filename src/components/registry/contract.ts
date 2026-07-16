@@ -1,6 +1,16 @@
 import type { ReactNode } from "react";
 import type { z } from "zod";
-import type { PageType, SectionInstance } from "@/domain/storefront";
+import type { CatalogueDisplayModel } from "@/domain/catalogue";
+import type { Locale } from "@/domain/shared";
+import type { NavigationModel, PageType, SectionInstance } from "@/domain/storefront";
+
+export type StorefrontRenderContext = {
+  activeLocale: Locale;
+  primaryLocale: Locale;
+  catalogue: CatalogueDisplayModel;
+  navigation: NavigationModel;
+  pagePaths: Readonly<Record<string, string>>;
+};
 
 export type EditorFieldMetadata = {
   source: "content" | "props";
@@ -8,6 +18,7 @@ export type EditorFieldMetadata = {
   label: string;
   localized?: boolean;
   options?: ReadonlyArray<{ label: string; value: string }>;
+  valueType?: "string" | "stringList";
 };
 
 export type ProtectedFieldMetadata = {
@@ -18,6 +29,7 @@ export type ComponentRenderInput<TContent, TProps, TVariant extends string> = {
   variant: TVariant;
   content: TContent;
   props: TProps;
+  context: StorefrontRenderContext;
 };
 
 export type ComponentDefinition = {
@@ -32,8 +44,16 @@ export type ComponentDefinition = {
   defaultProps: Readonly<Record<string, unknown>>;
   editorFields: Readonly<Record<string, EditorFieldMetadata>>;
   protectedFields: ProtectedFieldMetadata;
-  validate: (section: SectionInstance, pageType?: PageType) => SectionInstance;
-  render: (section: SectionInstance, pageType?: PageType) => ReactNode;
+  validate: (
+    section: SectionInstance,
+    pageType?: PageType,
+    context?: StorefrontRenderContext,
+  ) => SectionInstance;
+  render: (
+    section: SectionInstance,
+    context: StorefrontRenderContext,
+    pageType?: PageType,
+  ) => ReactNode;
 };
 
 type DefinitionInput<
@@ -52,6 +72,13 @@ type DefinitionInput<
   defaultProps: z.input<TPropsSchema> & Record<string, unknown>;
   editorFields: Readonly<Record<string, EditorFieldMetadata>>;
   protectedFields: ProtectedFieldMetadata;
+  validateContext?: (
+    input: ComponentRenderInput<
+      z.output<TContentSchema>,
+      z.output<TPropsSchema>,
+      TVariants[number]
+    >,
+  ) => void;
   renderer: (
     input: ComponentRenderInput<
       z.output<TContentSchema>,
@@ -69,7 +96,7 @@ export function defineComponent<
   const defaultContent = input.contentSchema.parse(input.defaultContent) as Record<string, unknown>;
   const defaultProps = input.propsSchema.parse(input.defaultProps) as Record<string, unknown>;
 
-  function parse(section: SectionInstance, pageType?: PageType) {
+  function parse(section: SectionInstance, pageType?: PageType, context?: StorefrontRenderContext) {
     if (section.component !== input.type) {
       throw new Error(`Expected component ${input.type}, received ${section.component}.`);
     }
@@ -80,11 +107,14 @@ export function defineComponent<
       throw new Error(`Component ${input.type} is not allowed on ${pageType} pages.`);
     }
 
-    return {
+    const parsed = {
       content: input.contentSchema.parse(section.content),
       props: input.propsSchema.parse(section.props),
       variant: section.variant as TVariants[number],
+      context: context as StorefrontRenderContext,
     };
+    if (context) input.validateContext?.(parsed);
+    return parsed;
   }
 
   return {
@@ -99,12 +129,12 @@ export function defineComponent<
     defaultProps,
     editorFields: input.editorFields,
     protectedFields: input.protectedFields,
-    validate(section, pageType) {
-      parse(section, pageType);
+    validate(section, pageType, context) {
+      parse(section, pageType, context);
       return section;
     },
-    render(section, pageType) {
-      return input.renderer(parse(section, pageType));
+    render(section, context, pageType) {
+      return input.renderer(parse(section, pageType, context));
     },
   };
 }

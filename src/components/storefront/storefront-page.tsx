@@ -1,38 +1,17 @@
 import { Fragment, type ReactNode } from "react";
-import { renderRegisteredSection, validateRegisteredPage } from "@/components/registry";
-import type { Locale } from "@/domain/shared";
-import type { PageModel, SectionInstance } from "@/domain/storefront";
+import {
+  renderRegisteredSection,
+  validateRegisteredPage,
+  type StorefrontRenderContext,
+} from "@/components/registry";
+import type { PageModel } from "@/domain/storefront";
 
-function withLocaleProps(
-  section: SectionInstance,
-  activeLocale: Locale,
-  primaryLocale: Locale,
-): SectionInstance {
-  if (
-    !Object.hasOwn(section.props, "activeLocale") ||
-    !Object.hasOwn(section.props, "primaryLocale")
-  ) {
-    return section;
-  }
-
-  return {
-    ...section,
-    props: { ...section.props, activeLocale, primaryLocale },
-  };
-}
-
-export function renderStorefrontPage(
-  input: unknown,
-  activeLocale: Locale,
-  primaryLocale: Locale,
-): ReactNode {
-  const page = validateRegisteredPage(input);
+export function renderStorefrontPage(input: unknown, context: StorefrontRenderContext): ReactNode {
+  const page = validateRegisteredPage(input, context);
   return page.sections
     .filter((section) => section.visible)
     .map((section) => (
-      <Fragment key={section.id}>
-        {renderRegisteredSection(withLocaleProps(section, activeLocale, primaryLocale), page.type)}
-      </Fragment>
+      <Fragment key={section.id}>{renderRegisteredSection(section, context, page.type)}</Fragment>
     ));
 }
 

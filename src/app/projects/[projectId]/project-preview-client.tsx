@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { createStorefrontRenderContext } from "@/components/registry";
 import {
   renderStorefrontPage,
   validateStorefrontHomepage,
@@ -88,11 +89,13 @@ export function ProjectPreviewClient({
         }
         try {
           validateStorefrontHomepage(homepage);
-          void renderStorefrontPage(
-            homepage,
-            aggregate.project.primaryLocale,
-            aggregate.project.primaryLocale,
-          );
+          const context = createStorefrontRenderContext({
+            activeLocale: aggregate.project.primaryLocale,
+            primaryLocale: aggregate.project.primaryLocale,
+            catalogue: aggregate.catalogue,
+            snapshot: draft,
+          });
+          void renderStorefrontPage(homepage, context);
         } catch {
           setState({ status: "validationFailure" });
           return;
@@ -167,6 +170,12 @@ export function ProjectPreviewClient({
 
   const locale = activeLocale ?? state.aggregate.project.primaryLocale;
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
+  const renderContext = createStorefrontRenderContext({
+    activeLocale: locale,
+    primaryLocale: state.aggregate.project.primaryLocale,
+    catalogue: state.aggregate.catalogue,
+    snapshot: state.draft,
+  });
 
   return (
     <main className="project-preview" lang={locale} style={style}>
@@ -198,7 +207,7 @@ export function ProjectPreviewClient({
         </fieldset>
       </header>
       <div aria-label="Draft storefront" className="project-preview__storefront">
-        {renderStorefrontPage(state.homepage, locale, state.aggregate.project.primaryLocale)}
+        {renderStorefrontPage(state.homepage, renderContext)}
       </div>
     </main>
   );

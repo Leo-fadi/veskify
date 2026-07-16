@@ -5,7 +5,10 @@ import {
   veskifyComponentRegistry,
   type ComponentDefinition,
   type EditorFieldMetadata,
+  createStorefrontRenderContext,
+  type StorefrontRenderContext,
 } from "@/components/registry";
+import { aurumNordicSeed } from "@/data/seed";
 import { idSchema, localeSchema, type Locale } from "@/domain/shared";
 import type { SectionInstance } from "@/domain/storefront";
 
@@ -31,7 +34,7 @@ function getLocalizedDefault(value: unknown, locale: Locale): string {
 }
 
 function toPuckDefaults(definition: ComponentDefinition): PuckEditorProps {
-  const defaultLocale = localeSchema.parse(definition.defaultProps.activeLocale);
+  const defaultLocale = "en";
   return Object.fromEntries(
     Object.entries(definition.editorFields).map(([fieldName, metadata]) => {
       const source =
@@ -49,14 +52,24 @@ function editorPropsToSection(
   definition: ComponentDefinition,
   editorProps: Record<string, unknown>,
 ): SectionInstance {
-  const activeLocale = localeSchema.parse(editorProps.activeLocale);
-  const content: Record<string, unknown> = {};
-  const props: Record<string, unknown> = {};
+  const activeLocale = localeSchema.parse(editorProps.activeLocale ?? "en");
+  const content: Record<string, unknown> = structuredClone(definition.defaultContent);
+  const props: Record<string, unknown> = structuredClone(definition.defaultProps);
 
   for (const [fieldName, metadata] of Object.entries(definition.editorFields)) {
     const value = editorProps[fieldName];
     const target = metadata.source === "content" ? content : props;
-    target[fieldName] = metadata.localized ? { [activeLocale]: value } : value;
+    target[fieldName] = metadata.localized
+      ? {
+          ...(typeof target[fieldName] === "object" ? target[fieldName] : {}),
+          [activeLocale]: value,
+        }
+      : metadata.valueType === "stringList" && typeof value === "string"
+        ? value
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : value;
   }
 
   return {
@@ -69,7 +82,10 @@ function editorPropsToSection(
   };
 }
 
-function componentToPuckConfig(definition: ComponentDefinition): ComponentConfig<PuckEditorProps> {
+function componentToPuckConfig(
+  definition: ComponentDefinition,
+  context: StorefrontRenderContext,
+): ComponentConfig<PuckEditorProps> {
   return {
     label: definition.label,
     fields: Object.fromEntries(
@@ -80,17 +96,27 @@ function componentToPuckConfig(definition: ComponentDefinition): ComponentConfig
     ),
     defaultProps: toPuckDefaults(definition),
     render: (editorProps) => (
-      <>{definition.render(editorPropsToSection(definition, editorProps))}</>
+      <>{definition.render(editorPropsToSection(definition, editorProps), context)}</>
     ),
   };
 }
 
-export function generateVeskifyPuckConfig(): Config {
+const previewSnapshot = aurumNordicSeed.draftSnapshot;
+export const safePuckPreviewContext = createStorefrontRenderContext({
+  activeLocale: "en",
+  primaryLocale: "en",
+  catalogue: aurumNordicSeed.catalogue,
+  snapshot: previewSnapshot,
+});
+
+export function generateVeskifyPuckConfig(
+  context: StorefrontRenderContext = safePuckPreviewContext,
+): Config {
   return {
     components: Object.fromEntries(
       Object.values(veskifyComponentRegistry).map((definition) => [
         definition.type,
-        componentToPuckConfig(definition),
+        componentToPuckConfig(definition, context),
       ]),
     ),
   } as Config;
@@ -131,13 +157,16 @@ export const veskifyPuckDataSchema = z
 
 export type ValidatedPuckData = z.infer<typeof veskifyPuckDataSchema>;
 
-export function validatePuckDraftPayload(data: Data): ValidatedPuckData {
+export function validatePuckDraftPayload(
+  data: Data,
+  context: StorefrontRenderContext = safePuckPreviewContext,
+): ValidatedPuckData {
   const parsed = veskifyPuckDataSchema.parse(data);
   const items = [...parsed.content, ...Object.values(parsed.zones ?? {}).flat()];
 
   items.forEach((item) => {
     const definition = getComponentDefinition(item.type);
-    definition.validate(editorPropsToSection(definition, item.props));
+    definition.validate(editorPropsToSection(definition, item.props), undefined, context);
   });
 
   return parsed;

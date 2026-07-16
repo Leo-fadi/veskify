@@ -1,22 +1,23 @@
 import { z } from "zod";
-import { AurumHero } from "@/components/storefront/aurum-hero";
-import { localizedTextSchema, localeSchema } from "@/domain/shared";
+import { EditorialHero } from "@/components/storefront/homepage-sections";
+import { assetRefSchema, localizedTextSchema, safeExternalUrlSchema } from "@/domain/shared";
 import { defineComponent } from "./contract";
+
+const safeHrefSchema = z.union([z.string().regex(/^\/(?:[a-z0-9-]+\/?)*$/), safeExternalUrlSchema]);
 
 export const aurumHeroContentSchema = z
   .object({
     eyebrow: localizedTextSchema,
     title: localizedTextSchema,
     body: localizedTextSchema,
+    cta: z.object({ label: localizedTextSchema, href: safeHrefSchema }).strict(),
+    media: assetRefSchema.refine((asset) => asset.url.startsWith("/seed-assets/"), {
+      message: "Hero media must use a controlled local seed asset.",
+    }),
   })
   .strict();
 
-export const aurumHeroPropsSchema = z
-  .object({
-    activeLocale: localeSchema,
-    primaryLocale: localeSchema,
-  })
-  .strict();
+export const aurumHeroPropsSchema = z.object({ mediaPosition: z.enum(["left", "right"]) }).strict();
 
 export const aurumHeroDefinition = defineComponent({
   type: "hero",
@@ -27,38 +28,37 @@ export const aurumHeroDefinition = defineComponent({
   contentSchema: aurumHeroContentSchema,
   propsSchema: aurumHeroPropsSchema,
   defaultContent: {
-    eyebrow: { en: "Aurum Nordic" },
-    title: { en: "Nordic jewellery with a warm golden finish" },
-    body: {
-      en: "A controlled demo component rendered through Veskify-owned storefront code and configured through Puck.",
+    eyebrow: { en: "Aurum Nordic", fi: "Aurum Nordic" },
+    title: { en: "Made for northern light", fi: "Tehty pohjoiseen valoon" },
+    body: { en: "Jewellery shaped by Nordic clarity.", fi: "Pohjoismaisen selkeitä koruja." },
+    cta: {
+      label: { en: "Explore the collection", fi: "Tutustu mallistoon" },
+      href: "/collections/rings",
+    },
+    media: {
+      id: "asset_hero_default",
+      url: "/seed-assets/aurora-ring.svg",
+      alt: { en: "Aurora gold ring", fi: "Aurora-kultasormus" },
+      decorative: false,
     },
   },
-  defaultProps: { activeLocale: "en", primaryLocale: "en" },
+  defaultProps: { mediaPosition: "right" },
   editorFields: {
     eyebrow: { source: "content", control: "text", label: "Small heading", localized: true },
     title: { source: "content", control: "text", label: "Main heading", localized: true },
     body: { source: "content", control: "textarea", label: "Supporting text", localized: true },
-    activeLocale: {
+    mediaPosition: {
       source: "props",
       control: "select",
-      label: "Storefront language",
+      label: "Media position",
       options: [
-        { label: "English", value: "en" },
-        { label: "Finnish", value: "fi" },
-      ],
-    },
-    primaryLocale: {
-      source: "props",
-      control: "select",
-      label: "Primary language",
-      options: [
-        { label: "English", value: "en" },
-        { label: "Finnish", value: "fi" },
+        { label: "Right", value: "right" },
+        { label: "Left", value: "left" },
       ],
     },
   },
-  protectedFields: { readOnlyPaths: [] },
-  renderer: ({ variant, content, props }) => (
-    <AurumHero variant={variant} {...content} {...props} />
+  protectedFields: { readOnlyPaths: ["media.url"] },
+  renderer: ({ content, props, context }) => (
+    <EditorialHero {...content} {...props} context={context} />
   ),
 });

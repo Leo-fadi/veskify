@@ -70,6 +70,15 @@ export const pageModelSchema = z
         path: ["sections"],
       });
     }
+    for (const component of ["header", "footer"] as const) {
+      if (page.sections.filter((section) => section.component === component).length > 1) {
+        context.addIssue({
+          code: "custom",
+          message: `A page must not contain more than one ${component}.`,
+          path: ["sections"],
+        });
+      }
+    }
   });
 
 const internalNavigationTargetSchema = z

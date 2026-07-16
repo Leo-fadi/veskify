@@ -83,7 +83,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
   async saveDraft(projectId: string, input: StorefrontSnapshot): Promise<void> {
     await Promise.resolve();
     const stored = this.#requireProject(projectId);
-    const snapshot = validateRepositorySnapshot(clone(input));
+    const snapshot = validateRepositorySnapshot(clone(input), stored.catalogue);
 
     if (snapshot.projectId !== projectId) {
       throw new SnapshotProjectMismatchError(projectId, snapshot.projectId);
@@ -130,13 +130,16 @@ export class InMemoryProjectRepository implements ProjectRepository {
     }
 
     const revision = stored.project.revision + 1;
-    const published = validateRepositorySnapshot({
-      ...clone(draft),
-      id: this.#nextSnapshotId(stored, "published", revision),
-      revision,
-      createdAt: this.#nextTimestamp(stored),
-      createdBy: "user",
-    });
+    const published = validateRepositorySnapshot(
+      {
+        ...clone(draft),
+        id: this.#nextSnapshotId(stored, "published", revision),
+        revision,
+        createdAt: this.#nextTimestamp(stored),
+        createdBy: "user",
+      },
+      stored.catalogue,
+    );
     const nextProject = projectSchema.parse({
       ...stored.project,
       publishedSnapshotId: published.id,
@@ -157,12 +160,15 @@ export class InMemoryProjectRepository implements ProjectRepository {
       throw new SnapshotNotFoundError(projectId, snapshotId);
     }
 
-    const restored = validateRepositorySnapshot({
-      ...clone(historical),
-      id: this.#nextSnapshotId(stored, "restored", stored.project.revision),
-      createdAt: this.#nextTimestamp(stored),
-      createdBy: "user",
-    });
+    const restored = validateRepositorySnapshot(
+      {
+        ...clone(historical),
+        id: this.#nextSnapshotId(stored, "restored", stored.project.revision),
+        createdAt: this.#nextTimestamp(stored),
+        createdBy: "user",
+      },
+      stored.catalogue,
+    );
     const nextProject = projectSchema.parse({
       ...stored.project,
       draftSnapshotId: restored.id,

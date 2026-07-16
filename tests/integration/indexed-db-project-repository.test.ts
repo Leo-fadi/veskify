@@ -1,8 +1,13 @@
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it } from "vitest";
-import { deleteDB } from "idb";
+import { deleteDB, openDB } from "idb";
 import { aurumNordicSeed } from "@/data/seed";
-import { IndexedDbProjectRepository, RepositoryValidationError } from "@/services/storage";
+import { projectSchema } from "@/domain/project";
+import {
+  aurumNordicPhase0SeedState,
+  IndexedDbProjectRepository,
+  RepositoryValidationError,
+} from "@/services/storage";
 import { runProjectRepositoryContract } from "./project-repository.contract";
 
 const openRepositories: IndexedDbProjectRepository[] = [];
@@ -25,6 +30,28 @@ function openRepository(
   return repository;
 }
 
+async function writePhase0Seed(databaseName: string, modified = false) {
+  const database = await openDB(databaseName, 1, {
+    upgrade(db) {
+      db.createObjectStore("projects", { keyPath: "id" });
+      db.createObjectStore("catalogues", { keyPath: "id" });
+      const snapshots = db.createObjectStore("snapshots", { keyPath: "id" });
+      snapshots.createIndex("by-project", "projectId");
+    },
+  });
+  const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readwrite");
+  const project = structuredClone(aurumNordicPhase0SeedState.project);
+  if (modified) project.name = "Merchant-modified Aurum";
+  await transaction.objectStore("projects").put(project);
+  await transaction
+    .objectStore("catalogues")
+    .put(structuredClone(aurumNordicPhase0SeedState.catalogue));
+  for (const snapshot of aurumNordicPhase0SeedState.snapshots)
+    await transaction.objectStore("snapshots").put(structuredClone(snapshot));
+  await transaction.done;
+  database.close();
+}
+
 afterEach(async () => {
   await Promise.all(openRepositories.splice(0).map((repository) => repository.close()));
   await Promise.all([...databaseNames].map((name) => deleteDB(name)));
@@ -36,6 +63,32 @@ runProjectRepositoryContract("IndexedDbProjectRepository", () =>
 );
 
 describe("IndexedDbProjectRepository persistence", () => {
+  it("atomically upgrades the exact untouched Phase 0 Aurum seed", async () => {
+    const databaseName = testDatabaseName("phase0-migration");
+    await writePhase0Seed(databaseName);
+    const repository = openRepository(databaseName);
+
+    const aggregate = await repository.get(aurumNordicSeed.project.id);
+    const homepage = aggregate.snapshots
+      .find((snapshot) => snapshot.id === aggregate.project.draftSnapshotId)
+      ?.pages.find((page) => page.type === "home");
+    expect(homepage?.sections).toHaveLength(10);
+  });
+
+  it("does not overwrite a locally modified Phase 0 project", async () => {
+    const databaseName = testDatabaseName("phase0-modified");
+    await writePhase0Seed(databaseName, true);
+    const repository = openRepository(databaseName);
+    await expect(repository.list()).resolves.toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: "Merchant-modified Aurum" })]),
+    );
+    await repository.close();
+
+    const database = await openDB(databaseName, 1);
+    const stored: unknown = await database.get("projects", aurumNordicSeed.project.id);
+    expect(projectSchema.parse(stored).name).toBe("Merchant-modified Aurum");
+    database.close();
+  });
   it("bootstraps the seed only on the first initialization", async () => {
     const databaseName = testDatabaseName("bootstrap");
     const first = openRepository(databaseName);
