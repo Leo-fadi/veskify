@@ -245,22 +245,18 @@ export function ImageText({
   media,
   context,
   className,
-  mediaPosition,
-  stacked,
+  layout,
 }: {
   heading: LocalizedText;
   body: LocalizedText;
   media: AssetRef;
   context: StorefrontRenderContext;
   className?: string;
-  mediaPosition: "left" | "right";
-  stacked: boolean;
+  layout: "left" | "right" | "stacked";
 }) {
   return (
     <section
-      className={`${styles.imageText} store-image-text store-image-text--${
-        stacked ? "stacked" : mediaPosition
-      } ${className ?? ""}`}
+      className={`${styles.imageText} store-image-text store-image-text--${layout} ${className ?? ""}`}
     >
       <div>
         <p className={styles.eyebrow}>{label("Product guide", "Tuoteopas", context)}</p>

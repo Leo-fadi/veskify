@@ -9,6 +9,8 @@ import {
 } from "@/components/storefront/product-sections";
 import { defineComponent } from "./contract";
 import {
+  designVocabularyDefaults,
+  designVocabularyVariants,
   sectionAlignmentSchema,
   sectionAlignmentEditorField,
   sectionStyleEditorFields,
@@ -110,7 +112,7 @@ export const imageTextContentSchema = z
 export const imageTextPropsSchema = z
   .object({
     demoPlaceholder: z.literal(true),
-    mediaPosition: z.enum(["left", "right"]).default("right"),
+    mediaPosition: z.enum(["left", "right"]).optional(),
     alignment: sectionAlignmentSchema.default("left"),
     ...sectionStyleSchema,
   })
@@ -119,8 +121,8 @@ export const imageTextDefinition = defineComponent({
   type: "imageText",
   label: "Image and text",
   allowedPageTypes: ["product", "content"],
-  variants: ["imageRight", "imageLeft", "stacked"] as const,
-  defaultVariant: "imageRight",
+  variants: designVocabularyVariants.imageText,
+  defaultVariant: designVocabularyDefaults.imageText,
   contentSchema: imageTextContentSchema,
   propsSchema: imageTextPropsSchema,
   defaultContent: {
@@ -140,15 +142,6 @@ export const imageTextDefinition = defineComponent({
   editorFields: {
     heading: { source: "content", control: "text", label: "Heading", localized: true },
     body: { source: "content", control: "textarea", label: "Body", localized: true },
-    mediaPosition: {
-      source: "props",
-      control: "select",
-      label: "Image position",
-      options: [
-        { label: "Left", value: "left" },
-        { label: "Right", value: "right" },
-      ],
-    },
     alignment: sectionAlignmentEditorField,
     ...sectionStyleEditorFields,
   },
@@ -158,8 +151,7 @@ export const imageTextDefinition = defineComponent({
       {...content}
       className={sectionVocabularyClass(variant, props)}
       context={context}
-      mediaPosition={props.mediaPosition}
-      stacked={variant === "stacked"}
+      layout={variant === "imageLeft" ? "left" : variant === "stacked" ? "stacked" : "right"}
     />
   ),
 });

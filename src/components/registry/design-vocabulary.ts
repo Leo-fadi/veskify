@@ -1,5 +1,31 @@
 import { z } from "zod";
 
+export const designVocabularyVariants = {
+  announcementBar: ["singleLine", "rotating", "minimal", "bold"],
+  header: ["centered", "split", "compact", "transparent"],
+  featuredCategories: ["grid", "editorialCards", "carousel", "imageLed"],
+  productGrid: ["standard", "editorial", "compact"],
+  campaignBanner: ["imageOverlay", "split", "minimal"],
+  imageText: ["imageLeft", "imageRight", "stacked"],
+  brandStory: ["editorial", "timeline", "founder", "minimal", "imageLed"],
+  benefitIcons: ["threeColumn", "fourColumn", "minimal", "cards"],
+  newsletter: ["inline", "card", "fullWidth"],
+  footer: ["columns", "editorial", "compact"],
+} as const;
+
+export const designVocabularyDefaults = {
+  announcementBar: "singleLine",
+  header: "centered",
+  featuredCategories: "editorialCards",
+  productGrid: "editorial",
+  campaignBanner: "split",
+  imageText: "imageRight",
+  brandStory: "editorial",
+  benefitIcons: "threeColumn",
+  newsletter: "inline",
+  footer: "columns",
+} as const;
+
 export const sectionBackgroundSchema = z.enum([
   "inherit",
   "background",
@@ -13,6 +39,18 @@ export const sectionTypographySchema = z.enum(["inherit", "serif", "sans", "stro
 export const sectionShapeSchema = z.enum(["inherit", "square", "soft", "rounded"]);
 export const sectionAlignmentSchema = z.enum(["left", "center"]);
 export const ctaPresentationSchema = z.enum(["primary", "secondary", "text"]);
+
+export const sectionForegroundByBackground = {
+  inherit: "inherit",
+  background: "text",
+  surface: "text",
+  primary: "surface",
+  secondary: "surface",
+  accent: "text",
+} as const satisfies Record<
+  z.infer<typeof sectionBackgroundSchema>,
+  "inherit" | "text" | "surface"
+>;
 
 export const sectionStyleSchema = {
   background: sectionBackgroundSchema.default("inherit"),
@@ -30,10 +68,12 @@ export type SectionStyle = {
 };
 
 export function sectionVocabularyClass(variant: string, style: SectionStyle = {}) {
+  const background = style.background ?? "inherit";
   return [
     "store-vocabulary",
     `store-variant--${variant}`,
-    `store-background--${style.background ?? "inherit"}`,
+    `store-background--${background}`,
+    `store-foreground--${sectionForegroundByBackground[background]}`,
     `store-density--${style.density ?? "standard"}`,
     `store-typography--${style.typography ?? "inherit"}`,
     `store-shape--${style.shape ?? "inherit"}`,

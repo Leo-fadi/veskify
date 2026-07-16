@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { getComponentDefinition, veskifyComponentRegistry } from "@/components/registry";
+import {
+  designVocabularyVariants,
+  getComponentDefinition,
+  veskifyComponentRegistry,
+} from "@/components/registry";
 import {
   editorPropsToSection,
   generateVeskifyPuckConfig,
   initialPuckData,
+  sectionToPuckProps,
   toPuckDefaults,
   validatePuckDraftPayload,
   veskifyPuckConfig,
@@ -18,9 +23,55 @@ describe("Veskify Puck adapter", () => {
     expect(veskifyPuckConfig.components.hero?.label).toBe("Aurum hero");
     expect(veskifyPuckConfig.components).not.toHaveProperty("productGallery");
     expect(veskifyPuckConfig.components).not.toHaveProperty("collectionHeader");
-    expect(Object.keys(veskifyPuckConfig.components.hero?.fields ?? {})).toEqual(
-      Object.keys(veskifyComponentRegistry.hero.editorFields),
-    );
+    expect(Object.keys(veskifyPuckConfig.components.hero?.fields ?? {})).toEqual([
+      "variant",
+      ...Object.keys(veskifyComponentRegistry.hero.editorFields),
+    ]);
+  });
+
+  it("derives variant selectors, defaults insertions, and preserves canonical variants", () => {
+    const definition = getComponentDefinition("announcementBar");
+    const config = generateVeskifyPuckConfig(undefined, "home");
+    expect(config.components.announcementBar?.fields?.variant).toMatchObject({
+      type: "select",
+      options: definition.variants.map((variant) => ({ label: variant, value: variant })),
+    });
+    expect(toPuckDefaults(definition).variant).toBe(definition.defaultVariant);
+
+    const canonical = {
+      id: "section_canonical_announcement",
+      component: "announcementBar",
+      variant: "bold",
+      visible: true,
+      content: definition.defaultContent,
+      props: definition.defaultProps,
+    };
+    const editorProps = sectionToPuckProps(definition, canonical);
+    expect(editorProps.variant).toBe("bold");
+    expect(editorPropsToSection(definition, editorProps, "home").variant).toBe("bold");
+    expect(() =>
+      editorPropsToSection(definition, { ...editorProps, variant: "unsupported" }, "home"),
+    ).toThrow(/Unsupported announcementBar variant/);
+  });
+
+  it("exposes every vocabulary variant only on an allowed page-scoped Puck surface", () => {
+    for (const [component, variants] of Object.entries(designVocabularyVariants)) {
+      const definition = getComponentDefinition(component);
+      const pageType = definition.allowedPageTypes[0];
+      const config = generateVeskifyPuckConfig(undefined, pageType);
+      expect(config.components[component]?.fields?.variant).toMatchObject({
+        type: "select",
+        options: variants.map((variant) => ({ label: variant, value: variant })),
+      });
+      const disallowedPage = (["home", "collection", "product"] as const).find(
+        (candidate) => !definition.allowedPageTypes.includes(candidate),
+      );
+      if (disallowedPage) {
+        expect(generateVeskifyPuckConfig(undefined, disallowedPage).components).not.toHaveProperty(
+          component,
+        );
+      }
+    }
   });
 
   it("validates the initial Puck data for draft handoff", () => {

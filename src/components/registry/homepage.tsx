@@ -14,6 +14,8 @@ import {
 import { defineComponent, type StorefrontRenderContext } from "./contract";
 import {
   ctaPresentationSchema,
+  designVocabularyDefaults,
+  designVocabularyVariants,
   ctaPresentationEditorField,
   sectionAlignmentSchema,
   sectionAlignmentEditorField,
@@ -48,8 +50,8 @@ export const announcementBarDefinition = defineComponent({
   type: "announcementBar",
   label: "Announcement bar",
   allowedPageTypes: ["home"],
-  variants: ["singleLine", "minimal", "bold"] as const,
-  defaultVariant: "singleLine",
+  variants: designVocabularyVariants.announcementBar,
+  defaultVariant: designVocabularyDefaults.announcementBar,
   contentSchema: announcementBarContentSchema,
   propsSchema: announcementBarPropsSchema,
   defaultContent: {
@@ -88,8 +90,8 @@ export const headerDefinition = defineComponent({
   type: "header",
   label: "Store header",
   allowedPageTypes: ["home", "collection", "product"],
-  variants: ["centered", "split", "compact"] as const,
-  defaultVariant: "centered",
+  variants: designVocabularyVariants.header,
+  defaultVariant: designVocabularyDefaults.header,
   contentSchema: headerContentSchema,
   propsSchema: headerPropsSchema,
   defaultContent: { brandName: "Aurum Nordic" },
@@ -146,8 +148,8 @@ export const featuredCategoriesDefinition = defineComponent({
   type: "featuredCategories",
   label: "Featured categories",
   allowedPageTypes: ["home"],
-  variants: ["editorialCards", "grid", "imageLed"] as const,
-  defaultVariant: "editorialCards",
+  variants: designVocabularyVariants.featuredCategories,
+  defaultVariant: designVocabularyDefaults.featuredCategories,
   contentSchema: featuredCategoriesContentSchema,
   propsSchema: featuredCategoriesPropsSchema,
   defaultContent: {
@@ -203,8 +205,8 @@ export const productGridDefinition = defineComponent({
   type: "productGrid",
   label: "Product grid",
   allowedPageTypes: ["home", "collection"],
-  variants: ["editorial", "standard", "compact"] as const,
-  defaultVariant: "editorial",
+  variants: designVocabularyVariants.productGrid,
+  defaultVariant: designVocabularyDefaults.productGrid,
   contentSchema: productGridContentSchema,
   propsSchema: productGridPropsSchema,
   defaultContent: {
@@ -271,8 +273,8 @@ export const campaignBannerDefinition = defineComponent({
   type: "campaignBanner",
   label: "Campaign banner",
   allowedPageTypes: ["home", "landing"],
-  variants: ["split", "imageOverlay", "minimal"] as const,
-  defaultVariant: "split",
+  variants: designVocabularyVariants.campaignBanner,
+  defaultVariant: designVocabularyDefaults.campaignBanner,
   contentSchema: campaignBannerContentSchema,
   propsSchema: campaignBannerPropsSchema,
   defaultContent: {
@@ -336,8 +338,8 @@ export const brandStoryDefinition = defineComponent({
   type: "brandStory",
   label: "Brand story",
   allowedPageTypes: ["home", "content"],
-  variants: ["editorial", "minimal", "imageLed"] as const,
-  defaultVariant: "editorial",
+  variants: designVocabularyVariants.brandStory,
+  defaultVariant: designVocabularyDefaults.brandStory,
   contentSchema: brandStoryContentSchema,
   propsSchema: brandStoryPropsSchema,
   defaultContent: {
@@ -389,7 +391,7 @@ const benefitSchema = z
   })
   .strict();
 export const benefitIconsContentSchema = z
-  .object({ benefits: z.array(benefitSchema).length(3) })
+  .object({ benefits: z.array(benefitSchema).min(3).max(4) })
   .strict();
 export const benefitIconsPropsSchema = z
   .object({ alignment: sectionAlignmentSchema.default("center"), ...sectionStyleSchema })
@@ -398,8 +400,8 @@ export const benefitIconsDefinition = defineComponent({
   type: "benefitIcons",
   label: "Benefits",
   allowedPageTypes: ["home", "product", "cart"],
-  variants: ["threeColumn", "minimal", "cards"] as const,
-  defaultVariant: "threeColumn",
+  variants: designVocabularyVariants.benefitIcons,
+  defaultVariant: designVocabularyDefaults.benefitIcons,
   contentSchema: benefitIconsContentSchema,
   propsSchema: benefitIconsPropsSchema,
   defaultContent: {
@@ -455,8 +457,8 @@ export const newsletterDefinition = defineComponent({
   type: "newsletter",
   label: "Newsletter",
   allowedPageTypes: ["home"],
-  variants: ["inline", "card", "fullWidth"] as const,
-  defaultVariant: "inline",
+  variants: designVocabularyVariants.newsletter,
+  defaultVariant: designVocabularyDefaults.newsletter,
   contentSchema: newsletterContentSchema,
   propsSchema: newsletterPropsSchema,
   defaultContent: {
@@ -501,8 +503,8 @@ export const footerDefinition = defineComponent({
   type: "footer",
   label: "Store footer",
   allowedPageTypes: ["home", "collection", "product"],
-  variants: ["columns", "editorial", "compact"] as const,
-  defaultVariant: "columns",
+  variants: designVocabularyVariants.footer,
+  defaultVariant: designVocabularyDefaults.footer,
   contentSchema: footerContentSchema,
   propsSchema: footerPropsSchema,
   defaultContent: {

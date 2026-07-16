@@ -7,21 +7,27 @@ another page representation.
 
 ## Variant contract
 
-| Section             | Controlled variants                  |
-| ------------------- | ------------------------------------ |
-| Announcement bar    | `singleLine`, `minimal`, `bold`      |
-| Store header        | `centered`, `split`, `compact`       |
-| Featured categories | `editorialCards`, `grid`, `imageLed` |
-| Product grid        | `editorial`, `standard`, `compact`   |
-| Campaign banner     | `split`, `imageOverlay`, `minimal`   |
-| Image and text      | `imageRight`, `imageLeft`, `stacked` |
-| Brand story         | `editorial`, `minimal`, `imageLed`   |
-| Benefits            | `threeColumn`, `minimal`, `cards`    |
-| Newsletter          | `inline`, `card`, `fullWidth`        |
-| Footer              | `columns`, `editorial`, `compact`    |
+| Section             | Controlled variants                                       |
+| ------------------- | --------------------------------------------------------- |
+| Announcement bar    | `singleLine`, `rotating`, `minimal`, `bold`               |
+| Store header        | `centered`, `split`, `compact`, `transparent`             |
+| Featured categories | `grid`, `editorialCards`, `carousel`, `imageLed`          |
+| Product grid        | `standard`, `editorial`, `compact`                        |
+| Campaign banner     | `imageOverlay`, `split`, `minimal`                        |
+| Image and text      | `imageLeft`, `imageRight`, `stacked`                      |
+| Brand story         | `editorial`, `timeline`, `founder`, `minimal`, `imageLed` |
+| Benefits            | `threeColumn`, `fourColumn`, `minimal`, `cards`           |
+| Newsletter          | `inline`, `card`, `fullWidth`                             |
+| Footer              | `columns`, `editorial`, `compact`                         |
 
 Each variant changes layout, emphasis, or content balance. Variant names are registry values and must
 be validated against the section definition before rendering or entering canonical page state.
+They are the exact P2-02 values in SDD §9.2 and in the page-scoped Puck variant selector.
+
+Canonical insertion defaults are: announcement bar `singleLine`, header `centered`, featured
+categories `editorialCards`, product grid `editorial`, campaign banner `split`, image and text
+`imageRight`, brand story `editorial`, benefits `threeColumn`, newsletter `inline`, and footer
+`columns`.
 
 ## Token and control contract
 

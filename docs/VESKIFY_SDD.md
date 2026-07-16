@@ -586,22 +586,22 @@ The Veskify component registry is the single source of truth for both storefront
 
 | **Type**           | **Pages**         | **Variants**                              | **Editable content**                 |
 |--------------------|-------------------|-------------------------------------------|--------------------------------------|
-| announcementBar    | Global            | singleLine, rotating                      | Announcement text, link, visibility  |
-| header             | Global            | centered, split, compact, transparent     | Logo, menu, search/cart controls     |
+| announcementBar    | Home              | singleLine, rotating, minimal, bold       | Announcement text, link, visibility  |
+| header             | Home/Collection/Product | centered, split, compact, transparent | Logo, menu, search/cart controls  |
 | hero               | Home/Landing      | editorial, split, fullBleed, productFocus | Eyebrow, heading, copy, CTA, media   |
-| featuredCategories | Home              | grid, editorialCards, carousel            | Category references, labels, media   |
+| featuredCategories | Home              | grid, editorialCards, carousel, imageLed  | Category references, labels, media   |
 | productGrid        | Home/Collection   | standard, editorial, compact              | Product references, columns, heading |
 | productCarousel    | Home/Product      | standard, spotlight                       | Product references, heading          |
 | campaignBanner     | Home/Landing      | imageOverlay, split, minimal              | Heading, copy, CTA, media            |
-| imageText          | Any content page  | imageLeft, imageRight, stacked            | Heading, copy, CTA, media            |
-| brandStory         | Home/About        | editorial, timeline, founder              | Text blocks, media, facts            |
-| benefitIcons       | Home/Product/Cart | threeColumn, fourColumn                   | Icon, title, text                    |
+| imageText          | Product/Content   | imageLeft, imageRight, stacked            | Heading, copy, CTA, media            |
+| brandStory         | Home/Content      | editorial, timeline, founder, minimal, imageLed | Text blocks, media, facts    |
+| benefitIcons       | Home/Product/Cart | threeColumn, fourColumn, minimal, cards   | Icon, title, text                    |
 | testimonials       | Home/Product      | cards, quoteFocus                         | Quotes, people, ratings              |
 | gallery            | Home/About        | masonry, grid, strip                      | Media items, captions                |
-| newsletter         | Global/Home       | inline, card, fullWidth                   | Heading, copy, form labels           |
+| newsletter         | Home              | inline, card, fullWidth                   | Heading, copy, form labels           |
 | faq                | Any               | accordion, grouped                        | Question/answer entries              |
 | storeLocations     | Contact           | cards, mapPlaceholder                     | Locations, hours, contact            |
-| footer             | Global            | columns, editorial, compact               | Menus, contact, social, legal        |
+| footer             | Home/Collection/Product | columns, editorial, compact          | Menus, contact, social, legal        |
 | collectionHeader   | Collection        | editorial, compact, image                 | Title, copy, media                   |
 | filterBar          | Collection        | sidebar, horizontal, drawer               | Filter definitions, sort control     |
 | productGallery     | Product           | grid, thumbnails, editorial               | Images, video placeholders           |
@@ -647,6 +647,23 @@ Puck insertion and drag-and-drop operations are limited to these registered comp
 ## 9.4 Component variant switching
 
 A variant switch must preserve compatible content fields. When fields do not map, the editor must show what will be dropped or moved before applying the change. Variant switching must not silently delete media or copy.
+
+For P2-02, the §9.2 vocabulary is authoritative for the affected storefront sections. The registered
+definition, page-scoped Puck selector, canonical `SectionInstance`, renderer, responsive CSS and any
+deterministic design operation MUST use the exact same variant value. Inserted sections start with the
+registered `defaultVariant`; existing sections expose their stored canonical variant; unsupported
+values fail validation. For `imageText`, `imageLeft`, `imageRight` and `stacked` directly determine
+media layout, and a legacy placement property cannot override the canonical variant.
+
+P2-02 acceptance criteria:
+
+- **P2-02-DV-01:** every §9.2 variant for the affected sections is selectable through the page-scoped
+  Puck configuration and round-trips to canonical section data;
+- **P2-02-DV-02:** background, foreground, typography, spacing and shape choices resolve only through
+  approved brand tokens and retain readable foreground pairing;
+- **P2-02-DV-03:** responsive renderer code produces a distinct outcome for each non-default variant;
+- **P2-02-DV-04:** product identity, SKU, price, stock and catalogue media remain protected and
+  PageType placement remains enforced.
 
 ## 9.5 Responsive contract
 

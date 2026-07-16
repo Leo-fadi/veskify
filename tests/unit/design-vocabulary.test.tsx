@@ -1,12 +1,18 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   createStorefrontRenderContext,
+  designVocabularyDefaults,
+  designVocabularyVariants,
   getComponentDefinition,
   renderRegisteredSection,
+  sectionForegroundByBackground,
 } from "@/components/registry";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
 import { aurumNordicSeed } from "@/data/seed";
+import { editorPropsToSection, toPuckDefaults } from "@/integrations/puck/config";
 
 const context = (activeLocale: "en" | "fi" = "en") =>
   createStorefrontRenderContext({
@@ -16,26 +22,43 @@ const context = (activeLocale: "en" | "fi" = "en") =>
     snapshot: aurumNordicSeed.draftSnapshot,
   });
 
-const contracts = {
-  announcementBar: ["singleLine", "minimal", "bold"],
-  header: ["centered", "split", "compact"],
-  featuredCategories: ["editorialCards", "grid", "imageLed"],
-  productGrid: ["editorial", "standard", "compact"],
-  campaignBanner: ["split", "imageOverlay", "minimal"],
-  imageText: ["imageRight", "imageLeft", "stacked"],
-  brandStory: ["editorial", "minimal", "imageLed"],
-  benefitIcons: ["threeColumn", "minimal", "cards"],
-  newsletter: ["inline", "card", "fullWidth"],
-  footer: ["columns", "editorial", "compact"],
-} as const;
+const contracts = designVocabularyVariants;
 
 afterEach(cleanup);
 
 describe("P2-02 storefront design vocabulary", () => {
+  it("provides renderer-owned CSS for every non-default variant and foreground pairing", () => {
+    const stylesheet = readFileSync(
+      resolve(process.cwd(), "src/components/storefront/design-vocabulary.css"),
+      "utf8",
+    );
+    for (const [component, variants] of Object.entries(designVocabularyVariants)) {
+      for (const variant of variants) {
+        if (
+          variant === designVocabularyDefaults[component as keyof typeof designVocabularyDefaults]
+        ) {
+          continue;
+        }
+        const selector =
+          component === "imageText"
+            ? `.store-image-text--${variant === "imageLeft" ? "left" : "stacked"}`
+            : `.store-variant--${variant}`;
+        expect(stylesheet).toContain(selector);
+      }
+    }
+    expect(stylesheet).toContain(".store-vocabulary.store-foreground--text");
+    expect(stylesheet).toContain(".store-vocabulary.store-foreground--surface");
+    expect(readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8")).toContain(
+      ":focus-visible",
+    );
+  });
   it("validates and renders every controlled variant with token classes", () => {
     for (const [component, variants] of Object.entries(contracts)) {
       const definition = getComponentDefinition(component);
       expect(definition.variants).toEqual(variants);
+      expect(definition.defaultVariant).toBe(
+        designVocabularyDefaults[component as keyof typeof designVocabularyDefaults],
+      );
       for (const variant of variants) {
         const pageType = component === "imageText" ? "product" : definition.allowedPageTypes[0];
         const section = {
@@ -57,12 +80,86 @@ describe("P2-02 storefront design vocabulary", () => {
         expect(root).toHaveClass(`store-variant--${variant}`);
         expect(root).toHaveClass(
           "store-background--accent",
+          "store-foreground--text",
           "store-density--compact",
           "store-typography--strong",
           "store-shape--rounded",
         );
         cleanup();
       }
+    }
+  });
+
+  it("round-trips a non-default Puck variant into visibly distinct canonical rendering", () => {
+    const definition = getComponentDefinition("campaignBanner");
+    const section = editorPropsToSection(
+      definition,
+      {
+        id: "section_puck_campaign_overlay",
+        ...toPuckDefaults(definition),
+        variant: "imageOverlay",
+      },
+      "home",
+      context(),
+    );
+    expect(section.variant).toBe("imageOverlay");
+    const { container } = render(<>{renderRegisteredSection(section, context(), "home")}</>);
+    expect(container.firstElementChild).toHaveClass("store-variant--imageOverlay");
+    expect(container.querySelector("img")).toBeVisible();
+  });
+
+  it("pairs every exposed background with an authoritative foreground token", () => {
+    expect(sectionForegroundByBackground).toEqual({
+      inherit: "inherit",
+      background: "text",
+      surface: "text",
+      primary: "surface",
+      secondary: "surface",
+      accent: "text",
+    });
+    const definition = getComponentDefinition("footer");
+    for (const [background, foreground] of Object.entries(sectionForegroundByBackground)) {
+      const section = {
+        id: `section_footer_${background}`,
+        component: "footer",
+        variant: "editorial",
+        visible: true,
+        content: definition.defaultContent,
+        props: { ...definition.defaultProps, background },
+      };
+      const { container } = render(<>{renderRegisteredSection(section, context(), "home")}</>);
+      expect(container.firstElementChild).toHaveClass(
+        `store-background--${background}`,
+        `store-foreground--${foreground}`,
+      );
+      cleanup();
+    }
+  });
+
+  it("makes image-text variants authoritative over contradictory legacy placement props", () => {
+    const definition = getComponentDefinition("imageText");
+    for (const [variant, legacyPosition, expectedLayout] of [
+      ["imageLeft", "right", "left"],
+      ["imageRight", "left", "right"],
+      ["stacked", "left", "stacked"],
+    ] as const) {
+      const section = {
+        id: `section_image_text_${variant}`.toLowerCase(),
+        component: "imageText",
+        variant,
+        visible: true,
+        content: definition.defaultContent,
+        props: { ...definition.defaultProps, mediaPosition: legacyPosition },
+      };
+      const { container } = render(<>{renderRegisteredSection(section, context(), "product")}</>);
+      expect(container.firstElementChild).toHaveClass(`store-image-text--${expectedLayout}`);
+      if (expectedLayout !== "left") {
+        expect(container.firstElementChild).not.toHaveClass("store-image-text--left");
+      }
+      if (expectedLayout !== "right") {
+        expect(container.firstElementChild).not.toHaveClass("store-image-text--right");
+      }
+      cleanup();
     }
   });
 
