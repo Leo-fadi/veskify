@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Puck, Render, type Data } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
 import type { StorefrontRenderContext } from "@/components/registry";
@@ -10,11 +10,12 @@ import {
   generateVeskifyPuckConfig,
   initialPuckData,
   pageToPuckData,
+  puckDataToPage,
   validatePuckDraftPayload,
   veskifyPuckConfig,
 } from "./config";
 
-const readOnlyPermissions = {
+const editingPermissions = {
   drag: false,
   duplicate: false,
   delete: false,
@@ -26,13 +27,53 @@ export function VeskifyPuckCanvas({
   page,
   context,
   brandSystem,
+  resetKey,
+  onPageChange,
+  onValidationError,
 }: {
   page: PageModel;
   context: StorefrontRenderContext;
   brandSystem: BrandSystem;
+  resetKey: number;
+  onPageChange: (page: PageModel) => void;
+  onValidationError: (message: string) => void;
 }) {
+  const boundaryKey = `${page.id}-${context.activeLocale}-${resetKey}`;
+  return (
+    <VeskifyPuckCanvasSession
+      brandSystem={brandSystem}
+      context={context}
+      key={boundaryKey}
+      onPageChange={onPageChange}
+      onValidationError={onValidationError}
+      page={page}
+    />
+  );
+}
+
+function VeskifyPuckCanvasSession({
+  page,
+  context,
+  brandSystem,
+  onPageChange,
+  onValidationError,
+}: Omit<Parameters<typeof VeskifyPuckCanvas>[0], "resetKey">) {
+  const [recoveryVersion, setRecoveryVersion] = useState(0);
+  const trustedPage = useRef(page);
   const config = generateVeskifyPuckConfig(context, page.type, brandSystem);
   const data = pageToPuckData(page, context);
+
+  function handleChange(nextData: Data) {
+    try {
+      onPageChange(puckDataToPage(nextData, trustedPage.current, context));
+    } catch {
+      onValidationError(
+        "That change could not be applied safely. Your last valid design is still shown.",
+      );
+      trustedPage.current = page;
+      setRecoveryVersion((current) => current + 1);
+    }
+  }
 
   return (
     <section aria-label="Visual editor canvas" className="min-h-[44rem] bg-white">
@@ -41,9 +82,16 @@ export function VeskifyPuckCanvas({
         data={data}
         headerTitle="Visual editor"
         height="calc(100vh - 12rem)"
-        key={`${page.id}-${context.activeLocale}`}
+        key={recoveryVersion}
+        onChange={handleChange}
         overrides={{ headerActions: () => <></> }}
-        permissions={readOnlyPermissions}
+        permissions={{
+          ...editingPermissions,
+          delete: true,
+          drag: true,
+          edit: true,
+          insert: true,
+        }}
       />
     </section>
   );

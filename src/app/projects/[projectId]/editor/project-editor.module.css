@@ -28,6 +28,29 @@
   font-weight: 700;
 }
 
+.discardButton {
+  min-height: 2.75rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid #8b2f2f;
+  border-radius: 0.45rem;
+  background: white;
+  color: #7a2424;
+  font: inherit;
+  font-weight: 700;
+}
+
+.discardButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.validationMessage {
+  padding: 0.75rem;
+  border-left: 0.25rem solid #a64b24;
+  background: #fff4ec;
+  color: #6f2f16 !important;
+}
+
 .currentPage span,
 .draftStatus span {
   display: block;

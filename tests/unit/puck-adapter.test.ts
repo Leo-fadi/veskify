@@ -21,9 +21,10 @@ describe("Veskify Puck adapter", () => {
     expect(veskifyPuckConfig.components.hero?.label).toBe("Aurum hero");
     expect(veskifyPuckConfig.components).not.toHaveProperty("productGallery");
     expect(veskifyPuckConfig.components).not.toHaveProperty("collectionHeader");
-    expect(Object.keys(veskifyPuckConfig.components.hero?.fields ?? {})).toEqual(
-      Object.keys(veskifyComponentRegistry.hero.editorFields),
-    );
+    expect(Object.keys(veskifyPuckConfig.components.hero?.fields ?? {})).toEqual([
+      "variant",
+      ...Object.keys(veskifyComponentRegistry.hero.editorFields),
+    ]);
   });
 
   it("validates the initial Puck data for draft handoff", () => {
@@ -75,6 +76,26 @@ describe("Veskify Puck adapter", () => {
     expect(collectionConfig.components).toHaveProperty("collectionHeader");
     expect(productConfig.components).not.toHaveProperty("collectionHeader");
     expect(productConfig.components).not.toHaveProperty("announcementBar");
+  });
+
+  it("enables optional editing while protecting required global components", () => {
+    const config = generateVeskifyPuckConfig();
+    expect(config.components.hero?.permissions).toMatchObject({
+      insert: true,
+      delete: true,
+      duplicate: false,
+    });
+    expect(config.components.header?.permissions).toMatchObject({
+      insert: false,
+      delete: false,
+      duplicate: false,
+    });
+    expect(config.components.footer?.permissions).toMatchObject({
+      insert: false,
+      delete: false,
+      duplicate: false,
+    });
+    expect(config.components.hero?.fields).toHaveProperty("variant");
   });
 
   it("rejects cross-page Puck payloads and accepts canonical product placement", () => {

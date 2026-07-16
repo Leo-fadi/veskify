@@ -15,10 +15,18 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     page,
     context,
     brandSystem,
+    onPageChange,
+    onValidationError,
   }: {
-    page: { type: string };
+    page: {
+      id: string;
+      type: string;
+      title: Record<string, string | undefined>;
+    };
     context: { activeLocale: string };
     brandSystem: { colors: { primary: string } };
+    onPageChange: (page: unknown) => void;
+    onValidationError: (message: string) => void;
   }) => (
     <section
       aria-label="Visual editor canvas"
@@ -26,6 +34,23 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
       lang={context.activeLocale}
     >
       Canvas: {page.type} / {context.activeLocale}
+      <button
+        onClick={() =>
+          onPageChange({
+            ...page,
+            title: { ...page.title, [context.activeLocale]: `Edited ${page.type}` },
+          })
+        }
+        type="button"
+      >
+        Edit current page
+      </button>
+      <button
+        onClick={() => onValidationError("That change could not be applied safely.")}
+        type="button"
+      >
+        Emit invalid change
+      </button>
     </section>
   ),
 }));
@@ -69,7 +94,7 @@ describe("P2-01 project editor route", () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Aurum Nordic");
     expect(screen.getByRole("navigation", { name: "Editor navigation" })).toBeVisible();
-    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Draft is up to date");
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
     expect(screen.getByRole("link", { name: "View selected page" })).toHaveAttribute(
       "href",
       "/projects/project_aurum_nordic",
@@ -157,13 +182,86 @@ describe("P2-01 project editor route", () => {
     expect(screen.queryByLabelText("Visual editor canvas")).not.toBeInTheDocument();
   });
 
-  it("marks draft differences without mutating the published snapshot", async () => {
+  it("keeps session dirty state separate from stored draft differences", async () => {
     const value = aggregate();
     const publishedBefore = structuredClone(value.snapshots[0]);
     const draft = value.snapshots.find((item) => item.id === value.project.draftSnapshotId)!;
     draft.pages.find((item) => item.type === "home")!.title.en = "Edited homepage";
     route(repository(() => Promise.resolve(value)));
-    expect(await screen.findByLabelText("Draft status")).toHaveTextContent("Unpublished changes");
+    expect(await screen.findByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("stored draft also differs");
     expect(value.snapshots[0]).toEqual(publishedBefore);
+  });
+
+  it("tracks canonical in-memory changes without repository writes", async () => {
+    const repo = repository(() => Promise.resolve(aggregate()));
+    route(repo);
+    await screen.findByText("Canvas: home / en");
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    expect(repo.saveDraft).not.toHaveBeenCalled();
+    expect(repo.publish).not.toHaveBeenCalled();
+  });
+
+  it("confirms discard and restores the originally loaded page", async () => {
+    const confirm = vi.spyOn(window, "confirm");
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    confirm.mockReturnValueOnce(false);
+    fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    confirm.mockReturnValueOnce(true);
+    fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(confirm).toHaveBeenCalledTimes(2);
+    confirm.mockRestore();
+  });
+
+  it("warns before page switches and isolates each page's session edits", async () => {
+    const confirm = vi.spyOn(window, "confirm");
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    confirm.mockReturnValueOnce(false);
+    fireEvent.change(screen.getByLabelText("Storefront page"), {
+      target: { value: "page_collection_rings" },
+    });
+    expect(screen.getByText("Canvas: home / en")).toBeVisible();
+    confirm.mockReturnValueOnce(true);
+    fireEvent.change(screen.getByLabelText("Storefront page"), {
+      target: { value: "page_collection_rings" },
+    });
+    expect(screen.getByText("Canvas: collection / en")).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    fireEvent.change(screen.getByLabelText("Storefront page"), {
+      target: { value: "page_home" },
+    });
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    confirm.mockRestore();
+  });
+
+  it("announces invalid changes while retaining the last valid page", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Emit invalid change" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("could not be applied safely");
+    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+  });
+
+  it("edits only the active Finnish locale in session state", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    fireEvent.click(screen.getByRole("radio", { name: "English" }));
+    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
   });
 });
