@@ -911,6 +911,24 @@ For page-level, design-system or whole-site operations, the agent must present a
 >
 > **10.** Commit or roll back the draft transaction based on user action.
 
+### P2-04 deterministic proposal foundation
+
+P2-04 provides a local deterministic implementation of the structured-operation and proposal
+boundaries without an AI provider, UI, persistence or publishing integration.
+
+- **P2-04-OP-01:** operations accept and return canonical `PageModel` values, never mutate their input,
+  and validate the result through the canonical schemas and registered component rules;
+- **P2-04-OP-02:** supported operations cover localized section text, variants, approved section style
+  tokens, complete approved brand colours, compatible section addition, optional removal and ordering;
+- **P2-04-OP-03:** operations preserve required header/footer composition and cannot edit catalogue
+  identity, SKU, price, stock or media;
+- **P2-04-OP-04:** structured homepage redesign intent expands to a deterministic ordered operation
+  list using only approved variants, tokens and PageType-compatible sections;
+- **P2-04-PR-01:** an in-memory proposal contains original and proposed pages, ordered operations,
+  bilingual summary, validation result, deterministic proposal ID and lifecycle status;
+- **P2-04-PR-02:** accept returns the validated proposal page, while reject returns an unchanged clone
+  of the original page.
+
 ## 12.9 Agent guardrails
 
 - Must not patch price, stock, payment, shipping, tax or order fields.
