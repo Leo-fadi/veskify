@@ -18,6 +18,10 @@ The existing `productGrid` `editorial` variant resolves the collection's two pro
 
 Both draft and published Aurum Nordic snapshots use deterministic collection section IDs and separate snapshot IDs. Homepage data is preserved and the product-page placeholder remains empty. The route loads only through `createBrowserProjectRepository()`, resolves the draft, catalogue collection slug, and canonical page slug, applies validated BrandSystem variables, and renders through the shared registry renderer without Puck/editor chrome.
 
+Internal storefront navigation is scoped to the active project preview. Home resolves to `/projects/[projectId]`, while collection and product targets resolve below that project route instead of nonexistent root-level storefront paths.
+
+IndexedDB recognizes the exact untouched P1-01 seed, whose collection pages had no sections, and atomically upgrades both seeded snapshots to P1-02. The migration uses a complete project, catalogue, and snapshot fingerprint; any edited draft, published snapshot, project, catalogue, history, or reference prevents replacement.
+
 Hidden sections remain validated and persisted but are omitted by the shared renderer. Invalid hidden sections still fail before rendering or repository persistence.
 
 ## Protected commerce and limitations

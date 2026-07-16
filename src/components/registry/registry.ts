@@ -77,17 +77,24 @@ export function createStorefrontRenderContext({
   primaryLocale,
   catalogue,
   snapshot,
+  pagePathPrefix = "",
 }: {
   activeLocale: Locale;
   primaryLocale: Locale;
   catalogue: CatalogueDisplayModel;
   snapshot: Pick<StorefrontSnapshot, "navigation" | "pages">;
+  pagePathPrefix?: string;
 }): StorefrontRenderContext {
   return {
     activeLocale: localeSchema.parse(activeLocale),
     primaryLocale: localeSchema.parse(primaryLocale),
     catalogue: catalogueDisplayModelSchema.parse(catalogue),
     navigation: navigationModelSchema.parse(snapshot.navigation),
-    pagePaths: Object.fromEntries(snapshot.pages.map((page) => [page.id, page.slug])),
+    pagePaths: Object.fromEntries(
+      snapshot.pages.map((page) => [
+        page.id,
+        pagePathPrefix ? `${pagePathPrefix}${page.slug === "/" ? "" : page.slug}` : page.slug,
+      ]),
+    ),
   };
 }
