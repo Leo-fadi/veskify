@@ -11,12 +11,28 @@
   gap: 1rem;
   background: var(--brand-color-surface);
 }
+.primaryMedia {
+  position: relative;
+}
 .primaryImage {
   width: 100%;
   height: auto;
   max-height: 46rem;
   object-fit: contain;
   background: var(--brand-color-background);
+}
+.zoomPlaceholder {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--brand-color-border);
+  border-radius: 999px;
+  background: var(--brand-color-surface);
+  color: var(--brand-color-text);
+  padding: 0.65rem 1rem;
+  font: inherit;
+  font-weight: 700;
 }
 .thumbnails {
   display: flex;

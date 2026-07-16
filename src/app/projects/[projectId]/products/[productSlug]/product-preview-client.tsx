@@ -56,15 +56,21 @@ function StatusPanel({
   );
 }
 
-export function ProductPreviewClient({
-  productId: projectId,
-  productSlug,
-  repositoryFactory = defaultRepositoryFactory,
-}: {
+type ProductPreviewClientProps = {
   productId: string;
   productSlug: string;
   repositoryFactory?: RepositoryFactory;
-}) {
+};
+
+export function ProductPreviewClient(props: ProductPreviewClientProps) {
+  return <ProductPreviewLoader key={`${props.productId}:${props.productSlug}`} {...props} />;
+}
+
+function ProductPreviewLoader({
+  productId: projectId,
+  productSlug,
+  repositoryFactory = defaultRepositoryFactory,
+}: ProductPreviewClientProps) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
   const [attempt, setAttempt] = useState(0);

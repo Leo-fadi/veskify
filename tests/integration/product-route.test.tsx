@@ -135,4 +135,29 @@ describe("product preview route states", () => {
     expect(screen.getAllByRole("main")).toHaveLength(1);
     expect(screen.getByRole("main")).not.toHaveAttribute("aria-label", "Draft product storefront");
   });
+
+  it("immediately clears the previous product while route parameters load", async () => {
+    let request = 0;
+    const repo = repository(() => {
+      request += 1;
+      return request === 1
+        ? Promise.resolve(aggregate())
+        : new Promise<ProjectAggregate>(() => undefined);
+    });
+    const view = route(repo);
+    await screen.findByRole("heading", { level: 1, name: "Aurora Ring 585" });
+
+    view.rerender(
+      <ProductPreviewClient
+        productId="project_aurum_nordic"
+        productSlug="next-product"
+        repositoryFactory={() => repo}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Loading product preview" })).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { level: 1, name: "Aurora Ring 585" }),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -677,8 +677,8 @@ const productPage = {
             icon: "delivery",
             title: enFi("Delivery placeholder", "Toimituksen paikkamerkki"),
             text: enFi(
-              "Demo presentation only; no delivery promise.",
-              "Vain demosisältöä; ei toimituslupausta.",
+              "Draft placeholder — review before publishing. No delivery promise.",
+              "Luonnospaikkamerkki — tarkista ennen julkaisua. Ei toimituslupausta.",
             ),
           },
           {
@@ -701,8 +701,8 @@ const productPage = {
       content: {
         heading: enFi("Material, care and delivery", "Materiaali, hoito ja toimitus"),
         body: enFi(
-          "Aurora Ring 585 is presented from catalogue data as 14K yellow gold with a round diamond and comfort profile. Keep jewellery clean with gentle care. Delivery and returns are demo placeholders only.",
-          "Aurora-sormus 585 esitetään tuotetietojen mukaisesti 14 karaatin keltakultaisena sormuksena, jossa on pyöreä timantti ja comfort-profiili. Puhdista koru hellävaraisesti. Toimitus ja palautukset ovat vain demosisältöä.",
+          "Aurora Ring 585 is presented from catalogue data as 14K yellow gold with a round diamond and comfort profile. Keep jewellery clean with gentle care. Delivery and returns are demo placeholders only. Draft placeholder — review before publishing.",
+          "Aurora-sormus 585 esitetään tuotetietojen mukaisesti 14 karaatin keltakultaisena sormuksena, jossa on pyöreä timantti ja comfort-profiili. Puhdista koru hellävaraisesti. Toimitus ja palautukset ovat vain demosisältöä. Luonnospaikkamerkki — tarkista ennen julkaisua.",
         ),
         media: {
           id: "asset_product_details",

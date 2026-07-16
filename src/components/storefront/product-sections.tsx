@@ -65,7 +65,20 @@ export function ProductGallery({
       aria-label={label("Product gallery", "Tuotekuvat", context)}
       className={styles.gallery}
     >
-      <ProductImage asset={selectedImage} className={styles.primaryImage} context={context} />
+      <div className={styles.primaryMedia}>
+        <ProductImage asset={selectedImage} className={styles.primaryImage} context={context} />
+        <button
+          aria-label={label(
+            "Zoom product image — placeholder",
+            "Suurenna tuotekuva — paikkamerkki",
+            context,
+          )}
+          className={styles.zoomPlaceholder}
+          type="button"
+        >
+          {label("Zoom · preview only", "Suurenna · vain esikatselu", context)}
+        </button>
+      </div>
       <div
         aria-label={label("Choose product image", "Valitse tuotekuva", context)}
         className={styles.thumbnails}
@@ -266,8 +279,8 @@ export function ImageText({
         <p>{text(body, context)}</p>
         <p className={styles.demoNote}>
           {label(
-            "Delivery and returns information is placeholder presentation for this demo.",
-            "Toimitus- ja palautustiedot ovat tämän demon paikkamerkkisisältöä.",
+            "Draft placeholder — review before publishing",
+            "Luonnospaikkamerkki — tarkista ennen julkaisua",
             context,
           )}
         </p>

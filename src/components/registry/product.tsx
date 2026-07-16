@@ -112,8 +112,8 @@ export const imageTextDefinition = defineComponent({
   defaultContent: {
     heading: { en: "Material, care and delivery", fi: "Materiaali, hoito ja toimitus" },
     body: {
-      en: "Product material and care information. Delivery and returns are demo placeholders only.",
-      fi: "Tuotteen materiaali- ja hoitotiedot. Toimitus ja palautukset ovat vain demosisältöä.",
+      en: "Product material and care information. Delivery and returns are demo placeholders only. Draft placeholder — review before publishing.",
+      fi: "Tuotteen materiaali- ja hoitotiedot. Toimitus ja palautukset ovat vain demosisältöä. Luonnospaikkamerkki — tarkista ennen julkaisua.",
     },
     media: {
       id: "asset_product_details_default",

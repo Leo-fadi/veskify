@@ -39,6 +39,10 @@ describe("Aurum Nordic product composition", () => {
     expect(screen.getByText("14K")).toBeInTheDocument();
     expect(screen.getByText("Maximum 20 characters")).toBeInTheDocument();
     expect(screen.getByText("Lumi Halo Ring")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Zoom product image — placeholder" })).toBeVisible();
+    expect(
+      screen.getAllByText("Draft placeholder — review before publishing").length,
+    ).toBeGreaterThan(0);
     expect(Array.from(container.children).map((node) => node.tagName)).toEqual([
       "HEADER",
       "MAIN",
@@ -55,6 +59,10 @@ describe("Aurum Nordic product composition", () => {
     expect(screen.getByText("Keltakulta")).toBeInTheDocument();
     expect(screen.getByText("Enintään 20 merkkiä")).toBeInTheDocument();
     expect(screen.getByText("Lumi Halo -sormus")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Suurenna tuotekuva — paikkamerkki" })).toBeVisible();
+    expect(
+      screen.getAllByText("Luonnospaikkamerkki — tarkista ennen julkaisua").length,
+    ).toBeGreaterThan(0);
   });
 
   it.each([
@@ -99,6 +107,7 @@ describe("Aurum Nordic product composition", () => {
     first.focus();
     await user.keyboard("{Enter}");
     expect(first).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Zoom product image — placeholder" })).toBeVisible();
   });
 
   it.each([
