@@ -7,11 +7,12 @@ import {
 } from "@/integrations/puck/config";
 
 describe("Veskify Puck adapter", () => {
-  it("exposes only the approved AurumHero component in the minimal proof config", () => {
+  it("derives all approved homepage components from the Veskify registry", () => {
     expect(Object.keys(veskifyPuckConfig.components)).toEqual(
       Object.keys(veskifyComponentRegistry),
     );
     expect(veskifyPuckConfig.components.hero?.label).toBe("Aurum hero");
+    expect(Object.keys(veskifyPuckConfig.components)).toHaveLength(10);
     expect(Object.keys(veskifyPuckConfig.components.hero?.fields ?? {})).toEqual(
       Object.keys(veskifyComponentRegistry.hero.editorFields),
     );

@@ -58,6 +58,43 @@ function clone<T>(value: T): T {
   return structuredClone(value);
 }
 
+function sameValue(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function phase0Snapshot(snapshot: StorefrontSnapshot): StorefrontSnapshot {
+  const legacy = clone(snapshot);
+  const homepage = legacy.pages.find((page) => page.type === "home");
+  if (!homepage) return legacy;
+  homepage.sections = [
+    {
+      id: "section_home_hero",
+      component: "hero",
+      variant: "editorial",
+      visible: true,
+      content: {
+        eyebrow: { en: "Aurum Nordic · Helsinki", fi: "Aurum Nordic · Helsinki" },
+        title: { en: "Made for northern light", fi: "Tehty pohjoiseen valoon" },
+        body: {
+          en: "Jewellery and watches shaped by Nordic clarity and warm materials.",
+          fi: "Pohjoismaisen selkeitä koruja ja kelloja lämpimistä materiaaleista.",
+        },
+      },
+      props: { activeLocale: "en", primaryLocale: "en" },
+    },
+  ];
+  return legacy;
+}
+
+export const aurumNordicPhase0SeedState = {
+  project: clone(aurumNordicSeed.project),
+  catalogue: clone(aurumNordicSeed.catalogue),
+  snapshots: [
+    phase0Snapshot(aurumNordicSeed.publishedSnapshot),
+    phase0Snapshot(aurumNordicSeed.draftSnapshot),
+  ],
+};
+
 function defaultSnapshotId({ reason, revision, sequence }: SnapshotIdentityInput): string {
   return `snapshot_${reason}_${revision}_${sequence}`;
 }
@@ -135,9 +172,9 @@ export class IndexedDbProjectRepository implements ProjectRepository {
   }
 
   async saveDraft(projectId: string, input: StorefrontSnapshot): Promise<void> {
-    const snapshot = validateRepositorySnapshot(clone(input));
-    if (snapshot.projectId !== projectId) {
-      throw new SnapshotProjectMismatchError(projectId, snapshot.projectId);
+    const parsedInput = clone(input);
+    if (parsedInput.projectId !== projectId) {
+      throw new SnapshotProjectMismatchError(projectId, parsedInput.projectId);
     }
 
     const database = await this.#database();
@@ -148,13 +185,14 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     if (!project) {
       throw new ProjectNotFoundError(projectId);
     }
-    const catalogue = await transaction.objectStore("catalogues").get(snapshot.catalogueRef);
+    const catalogue = await transaction.objectStore("catalogues").get(parsedInput.catalogueRef);
     if (!catalogue) {
       throw repositoryValidationError(
         "Draft snapshot references a catalogue outside the project aggregate.",
         new Error("Catalogue reference mismatch."),
       );
     }
+    const snapshot = validateRepositorySnapshot(parsedInput, catalogue);
     const snapshots = await snapshotsStore.index("by-project").getAll(projectId);
     const existing = snapshots.find((candidate) => candidate.id === snapshot.id);
     if (snapshot.id === project.publishedSnapshotId) {
@@ -213,16 +251,19 @@ export class IndexedDbProjectRepository implements ProjectRepository {
 
     const revision = project.revision + 1;
     const sequence = snapshots.length + 1;
-    const published = validateRepositorySnapshot({
-      ...clone(draft),
-      id: this.#createSnapshotId({ reason: "published", revision, sequence }),
-      revision,
-      createdAt: this.#createTimestamp({
-        latestTimestamp: latestTimestamp(project, snapshots),
-        sequence,
-      }),
-      createdBy: "user",
-    });
+    const published = validateRepositorySnapshot(
+      {
+        ...clone(draft),
+        id: this.#createSnapshotId({ reason: "published", revision, sequence }),
+        revision,
+        createdAt: this.#createTimestamp({
+          latestTimestamp: latestTimestamp(project, snapshots),
+          sequence,
+        }),
+        createdBy: "user",
+      },
+      catalogue,
+    );
     if (snapshots.some((snapshot) => snapshot.id === published.id)) {
       throw repositoryValidationError(
         "Generated published snapshot ID already exists.",
@@ -270,20 +311,23 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     }
 
     const sequence = snapshots.length + 1;
-    const restored = validateRepositorySnapshot({
-      ...clone(historical),
-      id: this.#createSnapshotId({
-        reason: "restored",
+    const restored = validateRepositorySnapshot(
+      {
+        ...clone(historical),
+        id: this.#createSnapshotId({
+          reason: "restored",
+          revision: project.revision,
+          sequence,
+        }),
         revision: project.revision,
-        sequence,
-      }),
-      revision: project.revision,
-      createdAt: this.#createTimestamp({
-        latestTimestamp: latestTimestamp(project, snapshots),
-        sequence,
-      }),
-      createdBy: "user",
-    });
+        createdAt: this.#createTimestamp({
+          latestTimestamp: latestTimestamp(project, snapshots),
+          sequence,
+        }),
+        createdBy: "user",
+      },
+      catalogue,
+    );
     if (snapshots.some((snapshot) => snapshot.id === restored.id)) {
       throw repositoryValidationError(
         "Generated restored snapshot ID already exists.",
@@ -336,6 +380,32 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readwrite");
     const projects = transaction.objectStore("projects");
     if ((await projects.count()) > 0) {
+      const legacyProject = await projects.get(aurumNordicSeed.project.id);
+      if (legacyProject) {
+        const legacyCatalogue = await transaction
+          .objectStore("catalogues")
+          .get(aurumNordicSeed.catalogue.id);
+        const legacySnapshots = await transaction
+          .objectStore("snapshots")
+          .index("by-project")
+          .getAll(aurumNordicSeed.project.id);
+        const expectedSnapshots = aurumNordicPhase0SeedState.snapshots;
+        const untouched =
+          sameValue(legacyProject, aurumNordicPhase0SeedState.project) &&
+          sameValue(legacyCatalogue, aurumNordicPhase0SeedState.catalogue) &&
+          expectedSnapshots.length === legacySnapshots.length &&
+          expectedSnapshots.every((expected) =>
+            legacySnapshots.some(
+              (stored) => stored.id === expected.id && sameValue(stored, expected),
+            ),
+          );
+        if (untouched) {
+          await transaction.objectStore("catalogues").put(clone(aurumNordicSeed.catalogue));
+          await transaction.objectStore("snapshots").put(clone(aurumNordicSeed.publishedSnapshot));
+          await transaction.objectStore("snapshots").put(clone(aurumNordicSeed.draftSnapshot));
+          await projects.put(clone(aurumNordicSeed.project));
+        }
+      }
       await transaction.done;
       return;
     }

@@ -111,10 +111,24 @@ describe("Aurum Nordic jewellery seed", () => {
     });
   });
 
-  it("keeps page templates minimal and valid through the current registry", () => {
-    const validated = validateRegisteredSnapshot(aurumNordicSeed.draftSnapshot);
+  it("provides the complete registered Appendix C homepage and keeps later page UI deferred", () => {
+    const validated = validateRegisteredSnapshot(
+      aurumNordicSeed.draftSnapshot,
+      aurumNordicSeed.catalogue,
+    );
     expect(validated.pages.map((page) => page.type)).toEqual(["home", "collection", "product"]);
-    expect(validated.pages[0]?.sections.map((section) => section.component)).toEqual(["hero"]);
+    expect(validated.pages[0]?.sections.map((section) => section.component)).toEqual([
+      "announcementBar",
+      "header",
+      "hero",
+      "featuredCategories",
+      "productGrid",
+      "campaignBanner",
+      "brandStory",
+      "benefitIcons",
+      "newsletter",
+      "footer",
+    ]);
     expect(validated.pages[1]?.sections).toEqual([]);
     expect(validated.pages[2]?.sections).toEqual([]);
   });

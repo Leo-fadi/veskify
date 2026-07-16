@@ -11,9 +11,12 @@ export function repositoryValidationError(
   return new RepositoryValidationError(message, { cause });
 }
 
-export function validateRepositorySnapshot(input: unknown): StorefrontSnapshot {
+export function validateRepositorySnapshot(
+  input: unknown,
+  catalogue?: ProjectAggregate["catalogue"],
+): StorefrontSnapshot {
   try {
-    return validateRegisteredSnapshot(storefrontSnapshotSchema.parse(input));
+    return validateRegisteredSnapshot(storefrontSnapshotSchema.parse(input), catalogue);
   } catch (cause) {
     throw repositoryValidationError(
       "Snapshot failed canonical or component-registry validation.",
@@ -26,7 +29,9 @@ export function validateProjectAggregate(input: ProjectAggregate): ProjectAggreg
   try {
     const project = projectSchema.parse(input.project);
     const catalogue = catalogueDisplayModelSchema.parse(input.catalogue);
-    const snapshots = input.snapshots.map(validateRepositorySnapshot);
+    const snapshots = input.snapshots.map((snapshot) =>
+      validateRepositorySnapshot(snapshot, catalogue),
+    );
     const snapshotIds = snapshots.map((snapshot) => snapshot.id);
 
     if (new Set(snapshotIds).size !== snapshotIds.length) {

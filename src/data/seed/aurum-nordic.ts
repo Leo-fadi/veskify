@@ -356,6 +356,25 @@ const homePage = {
   },
   sections: [
     {
+      id: "section_home_announcement",
+      component: "announcementBar",
+      variant: "singleLine",
+      visible: true,
+      content: {
+        message: enFi("Complimentary delivery in Finland", "Maksuton toimitus Suomessa"),
+        link: { label: enFi("Discover Aurum", "Tutustu Aurumiin"), href: "/collections/rings" },
+      },
+      props: { tone: "primary" },
+    },
+    {
+      id: "section_home_header",
+      component: "header",
+      variant: "centered",
+      visible: true,
+      content: { brandName: "Aurum Nordic" },
+      props: { showSearch: true, showCart: true },
+    },
+    {
       id: "section_home_hero",
       component: "hero",
       variant: "editorial",
@@ -367,8 +386,154 @@ const homePage = {
           "Jewellery and watches shaped by Nordic clarity and warm materials.",
           "Pohjoismaisen selkeitä koruja ja kelloja lämpimistä materiaaleista.",
         ),
+        cta: { label: enFi("Explore rings", "Tutustu sormuksiin"), href: "/collections/rings" },
+        media: {
+          id: "asset_home_hero",
+          url: "/seed-assets/aurora-ring.svg",
+          alt: enFi("Aurora gold ring in northern light", "Aurora-kultasormus pohjoisessa valossa"),
+          decorative: false,
+        },
       },
-      props: { activeLocale: "en", primaryLocale: "en" },
+      props: { mediaPosition: "right" },
+    },
+    {
+      id: "section_home_categories",
+      component: "featuredCategories",
+      variant: "editorialCards",
+      visible: true,
+      content: {
+        heading: enFi("Find your piece", "Löydä oma korusi"),
+        collectionIds: ["collection_rings", "collection_everyday"],
+      },
+      props: { cardAspect: "portrait" },
+    },
+    {
+      id: "section_home_products",
+      component: "productGrid",
+      variant: "editorial",
+      visible: true,
+      content: {
+        heading: enFi("Aurum favourites", "Aurumin suosikit"),
+        productIds: [
+          "product_aurora_ring_585",
+          "product_aava_necklace_925",
+          "product_sisu_automatic_watch",
+          "product_kajo_earrings_585",
+        ],
+      },
+      props: { columns: "four" },
+    },
+    {
+      id: "section_home_campaign",
+      component: "campaignBanner",
+      variant: "split",
+      visible: true,
+      content: {
+        heading: enFi("Light, held close", "Valo lähelläsi"),
+        body: enFi(
+          "Discover white gold and silver pieces inspired by winter light.",
+          "Löydä talven valosta inspiroituneet valkokulta- ja hopeakorut.",
+        ),
+        cta: { label: enFi("View the edit", "Katso valikoima"), href: "/collections/rings" },
+        media: {
+          id: "asset_home_campaign",
+          url: "/seed-assets/lumi-halo-ring.svg",
+          alt: enFi("Lumi white-gold halo ring", "Lumi-valkokultainen halosormus"),
+          decorative: false,
+        },
+      },
+      props: { mediaPosition: "left" },
+    },
+    {
+      id: "section_home_story",
+      component: "brandStory",
+      variant: "editorial",
+      visible: true,
+      content: {
+        heading: enFi("Quiet forms, lasting meaning", "Hiljaisia muotoja, kestävää merkitystä"),
+        body: enFi(
+          "Aurum Nordic is a fictional Helsinki jewellery house balancing clean lines, warm materials and pieces made to stay with you.",
+          "Aurum Nordic on kuvitteellinen helsinkiläinen korutalo, jossa selkeät linjat, lämpimät materiaalit ja pitkäikäiset korut kohtaavat.",
+        ),
+        media: {
+          id: "asset_home_story",
+          url: "/seed-assets/aava-necklace.svg",
+          alt: enFi("Aava silver necklace", "Aava-hopeakaulakoru"),
+          decorative: false,
+        },
+        facts: [
+          { value: "Helsinki", label: enFi("Designed in Finland", "Suunniteltu Suomessa") },
+          { value: "EN / FI", label: enFi("Bilingual service demo", "Kaksikielinen palveludemo") },
+        ],
+      },
+      props: { imagePosition: "right" },
+    },
+    {
+      id: "section_home_benefits",
+      component: "benefitIcons",
+      variant: "threeColumn",
+      visible: true,
+      content: {
+        benefits: [
+          {
+            icon: "craft",
+            title: enFi("Considered craft", "Harkittu käsityö"),
+            text: enFi(
+              "Materials and details selected to last.",
+              "Kestämään valitut materiaalit ja yksityiskohdat.",
+            ),
+          },
+          {
+            icon: "delivery",
+            title: enFi("Complimentary delivery", "Maksuton toimitus"),
+            text: enFi(
+              "Dummy delivery presentation across Finland.",
+              "Toimituksen demosisältö kaikkialle Suomeen.",
+            ),
+          },
+          {
+            icon: "care",
+            title: enFi("Personal care", "Henkilökohtainen palvelu"),
+            text: enFi(
+              "Demo guidance for sizing and jewellery care.",
+              "Demon neuvonta kokoon ja korujen hoitoon.",
+            ),
+          },
+        ],
+      },
+      props: { alignment: "center" },
+    },
+    {
+      id: "section_home_newsletter",
+      component: "newsletter",
+      variant: "inline",
+      visible: true,
+      content: {
+        heading: enFi("Notes from the north", "Terveisiä pohjoisesta"),
+        body: enFi(
+          "New pieces, material stories and quiet inspiration.",
+          "Uutuuksia, materiaalitarinoita ja rauhallista inspiraatiota.",
+        ),
+        emailLabel: enFi("Email address", "Sähköpostiosoite"),
+        buttonLabel: enFi("Join the journal", "Liity uutiskirjeeseen"),
+      },
+      props: { demoOnly: true },
+    },
+    {
+      id: "section_home_footer",
+      component: "footer",
+      variant: "columns",
+      visible: true,
+      content: {
+        brandName: "Aurum Nordic",
+        contact: enFi(
+          "Helsinki · hello@aurumnordic.example",
+          "Helsinki · hello@aurumnordic.example",
+        ),
+        policyLabel: enFi("Delivery · Returns · Privacy", "Toimitus · Palautukset · Tietosuoja"),
+        copyright: enFi("© 2026 Aurum Nordic demo", "© 2026 Aurum Nordic -demo"),
+      },
+      props: { showPolicies: true },
     },
   ],
 };
@@ -504,8 +669,8 @@ const parsedSeed = seedBundleSchema.parse({
   protectedProductPaths,
 });
 
-validateRegisteredSnapshot(parsedSeed.publishedSnapshot);
-validateRegisteredSnapshot(parsedSeed.draftSnapshot);
+validateRegisteredSnapshot(parsedSeed.publishedSnapshot, parsedSeed.catalogue, "en", "en");
+validateRegisteredSnapshot(parsedSeed.draftSnapshot, parsedSeed.catalogue, "en", "en");
 
 export type AurumNordicSeed = {
   project: Project;

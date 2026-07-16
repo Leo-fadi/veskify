@@ -39,6 +39,11 @@ export function runProjectRepositoryContract(
       ]);
       const aggregate = await repository.get(projectId);
       expect(aggregate.catalogue.products).toHaveLength(6);
+      expect(
+        aggregate.snapshots
+          .find((snapshot) => snapshot.id === aggregate.project.draftSnapshotId)
+          ?.pages.find((page) => page.type === "home")?.sections,
+      ).toHaveLength(10);
       expect(aggregate.snapshots.map(({ id }) => id).sort()).toEqual(
         [aurumNordicSeed.publishedSnapshot.id, aurumNordicSeed.draftSnapshot.id].sort(),
       );
@@ -90,6 +95,17 @@ export function runProjectRepositoryContract(
       invalid.id = "snapshot_invalid_component";
       invalid.pages[0].sections[0].component = "unknownComponent";
       await expect(repository.saveDraft(projectId, invalid)).rejects.toBeInstanceOf(
+        RepositoryValidationError,
+      );
+
+      const missingProduct = editableDraft();
+      missingProduct.id = "snapshot_missing_product";
+      const productGrid = missingProduct.pages[0].sections.find(
+        (section) => section.component === "productGrid",
+      );
+      if (!productGrid) throw new Error("The seeded homepage must include a product grid.");
+      productGrid.content.productIds = ["product_missing"];
+      await expect(repository.saveDraft(projectId, missingProduct)).rejects.toBeInstanceOf(
         RepositoryValidationError,
       );
 

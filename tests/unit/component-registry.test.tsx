@@ -2,12 +2,14 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import {
   getComponentDefinition,
+  createStorefrontRenderContext,
   renderRegisteredSection,
   validateRegisteredPage,
   validateRegisteredSection,
   validateRegisteredSnapshot,
   veskifyComponentRegistry,
 } from "@/components/registry";
+import { aurumNordicSeed } from "@/data/seed";
 import { aurumNordicBrandSystem } from "@/domain/design-system";
 
 const validHeroSection = {
@@ -15,13 +17,16 @@ const validHeroSection = {
   component: "hero",
   variant: "editorial",
   visible: true,
-  content: {
-    eyebrow: { en: "Aurum Nordic" },
-    title: { en: "Made to last" },
-    body: { en: "Jewellery with a Nordic point of view." },
-  },
-  props: { activeLocale: "en", primaryLocale: "en" },
+  content: getComponentDefinition("hero").defaultContent,
+  props: getComponentDefinition("hero").defaultProps,
 };
+
+const context = createStorefrontRenderContext({
+  activeLocale: "en",
+  primaryLocale: "en",
+  catalogue: aurumNordicSeed.catalogue,
+  snapshot: aurumNordicSeed.draftSnapshot,
+});
 
 const validPage = {
   id: "page_home",
@@ -77,16 +82,17 @@ describe("Veskify component registry", () => {
     );
     expect(() =>
       renderRegisteredSection(
-        { ...validHeroSection, props: { activeLocale: "sv", primaryLocale: "en" } },
+        { ...validHeroSection, props: { mediaPosition: "middle" } },
+        context,
         "home",
       ),
     ).toThrow();
   });
 
   it("renders AurumHero only after registry validation", () => {
-    render(<>{renderRegisteredSection(validHeroSection, "home")}</>);
+    render(<>{renderRegisteredSection(validHeroSection, context, "home")}</>);
 
-    expect(screen.getByRole("heading", { name: "Made to last" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Made for northern light" })).toBeInTheDocument();
   });
 
   it("rejects placement on a page type outside the registry contract", () => {

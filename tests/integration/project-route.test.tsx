@@ -77,7 +77,9 @@ describe("seed project route", () => {
   it("falls back to the primary locale when Finnish content is missing", async () => {
     const value = aggregate();
     const draft = value.snapshots.find((snapshot) => snapshot.id === value.project.draftSnapshotId);
-    const hero = draft?.pages.find((page) => page.type === "home")?.sections[0];
+    const hero = draft?.pages
+      .find((page) => page.type === "home")
+      ?.sections.find((section) => section.component === "hero");
     if (hero) hero.content.title = { en: "Primary locale title" };
     const { repository } = repositoryWithGet(() => Promise.resolve(value));
     renderRoute(repository);
