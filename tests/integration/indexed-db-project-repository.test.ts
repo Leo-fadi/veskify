@@ -32,7 +32,7 @@ function openRepository(
   return repository;
 }
 
-async function writePhase0Seed(databaseName: string, modified = false) {
+async function writePhase0Seed(databaseName: string, modified: false | "project" | "all" = false) {
   const database = await openDB(databaseName, 1, {
     upgrade(db) {
       db.createObjectStore("projects", { keyPath: "id" });
@@ -43,13 +43,21 @@ async function writePhase0Seed(databaseName: string, modified = false) {
   });
   const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readwrite");
   const project = structuredClone(aurumNordicPhase0SeedState.project);
+  const catalogue = structuredClone(aurumNordicPhase0SeedState.catalogue);
+  const snapshots = structuredClone(aurumNordicPhase0SeedState.snapshots);
   if (modified) project.name = "Merchant-modified Aurum";
+  if (modified === "all") {
+    catalogue.products[0].title.en = "Merchant-edited Aurora";
+    for (const snapshot of snapshots) {
+      const hero = snapshot.pages
+        .find((page) => page.type === "home")
+        ?.sections.find((section) => section.component === "hero");
+      if (hero) hero.content.title = { en: `${snapshot.createdBy} edited legacy hero` };
+    }
+  }
   await transaction.objectStore("projects").put(project);
-  await transaction
-    .objectStore("catalogues")
-    .put(structuredClone(aurumNordicPhase0SeedState.catalogue));
-  for (const snapshot of aurumNordicPhase0SeedState.snapshots)
-    await transaction.objectStore("snapshots").put(structuredClone(snapshot));
+  await transaction.objectStore("catalogues").put(catalogue);
+  for (const snapshot of snapshots) await transaction.objectStore("snapshots").put(snapshot);
   await transaction.done;
   database.close();
 }
@@ -136,7 +144,7 @@ describe("IndexedDbProjectRepository persistence", () => {
 
   it("does not overwrite a locally modified Phase 0 project", async () => {
     const databaseName = testDatabaseName("phase0-modified");
-    await writePhase0Seed(databaseName, true);
+    await writePhase0Seed(databaseName, "project");
     const repository = openRepository(databaseName);
     await expect(repository.list()).resolves.toEqual(
       expect.arrayContaining([expect.objectContaining({ name: "Merchant-modified Aurum" })]),
@@ -147,6 +155,38 @@ describe("IndexedDbProjectRepository persistence", () => {
     const stored: unknown = await database.get("projects", aurumNordicSeed.project.id);
     expect(projectSchema.parse(stored).name).toBe("Merchant-modified Aurum");
     database.close();
+  });
+
+  it("upgrades modified Phase 0 hero shapes without replacing user data", async () => {
+    const databaseName = testDatabaseName("phase0-edited-shape");
+    await writePhase0Seed(databaseName, "all");
+    const first = openRepository(databaseName);
+
+    const migrated = await first.get(aurumNordicSeed.project.id);
+    expect(migrated.project.name).toBe("Merchant-modified Aurum");
+    expect(migrated.catalogue.products[0].title.en).toBe("Merchant-edited Aurora");
+    const published = migrated.snapshots.find(
+      (snapshot) => snapshot.id === migrated.project.publishedSnapshotId,
+    );
+    const draft = migrated.snapshots.find(
+      (snapshot) => snapshot.id === migrated.project.draftSnapshotId,
+    );
+    const publishedHero = published?.pages[0]?.sections[0];
+    const draftHero = draft?.pages[0]?.sections[0];
+    expect(publishedHero?.content.title).toEqual({ en: "system edited legacy hero" });
+    expect(draftHero?.content.title).toEqual({ en: "user edited legacy hero" });
+    expect(publishedHero?.content).toHaveProperty("cta");
+    expect(publishedHero?.content).toHaveProperty("media");
+    expect(publishedHero?.props).toEqual({ mediaPosition: "right" });
+    expect(draftHero?.content).toHaveProperty("cta");
+    expect(draftHero?.content).toHaveProperty("media");
+    expect(draftHero?.props).toEqual({ mediaPosition: "right" });
+    expect(published?.pages.find((page) => page.type === "collection")?.sections).toEqual([]);
+    expect(draft?.pages.find((page) => page.type === "collection")?.sections).toEqual([]);
+
+    await first.close();
+    const reopened = openRepository(databaseName);
+    expect(await reopened.get(aurumNordicSeed.project.id)).toEqual(migrated);
   });
 
   it("atomically upgrades the exact untouched P1-01 seed to the collection composition", async () => {

@@ -118,7 +118,9 @@ export const featuredCategoriesDefinition = defineComponent({
       new Set(context.catalogue.collections.map((item) => item.id)),
       "collection",
     ),
-  renderer: ({ content, context }) => <FeaturedCategories {...content} context={context} />,
+  renderer: ({ content, props, context }) => (
+    <FeaturedCategories {...content} {...props} context={context} />
+  ),
 });
 
 export const productGridContentSchema = z
@@ -332,7 +334,9 @@ export const newsletterDefinition = defineComponent({
     body: { source: "content", control: "textarea", label: "Copy", localized: true },
   },
   protectedFields: { readOnlyPaths: ["demoOnly"] },
-  renderer: ({ content, context }) => <Newsletter {...content} context={context} />,
+  renderer: ({ sectionId, content, context }) => (
+    <Newsletter {...content} context={context} sectionId={sectionId} />
+  ),
 });
 
 export const footerContentSchema = z
