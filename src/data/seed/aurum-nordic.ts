@@ -40,6 +40,12 @@ const products = [
         alt: enFi("Aurora yellow-gold diamond ring", "Aurora-keltakultainen timanttisormus"),
         decorative: false,
       },
+      {
+        id: "asset_aurora_ring_detail",
+        url: "/seed-assets/aurora-ring.svg",
+        alt: enFi("Aurora ring side detail", "Aurora-sormuksen sivuyksityiskohta"),
+        decorative: false,
+      },
     ],
     productType: "ring",
     attributes: {
@@ -619,7 +625,126 @@ const productPage = {
       "Keltakultainen timanttisormus koossa 15–21.",
     ),
   },
-  sections: [],
+  sections: [
+    {
+      id: "section_product_header",
+      component: "header",
+      variant: "centered",
+      visible: true,
+      content: { brandName: "Aurum Nordic" },
+      props: { showSearch: true, showCart: true },
+    },
+    {
+      id: "section_product_gallery",
+      component: "productGallery",
+      variant: "thumbnails",
+      visible: true,
+      content: { productId: "product_aurora_ring_585" },
+      props: { thumbnailPosition: "bottom" },
+    },
+    {
+      id: "section_product_info",
+      component: "productInfo",
+      variant: "premium",
+      visible: true,
+      content: { productId: "product_aurora_ring_585" },
+      props: { showRating: true },
+    },
+    {
+      id: "section_product_options",
+      component: "productOptions",
+      variant: "buttons",
+      visible: true,
+      content: { productId: "product_aurora_ring_585" },
+      props: { demoOnly: true },
+    },
+    {
+      id: "section_product_benefits",
+      component: "benefitIcons",
+      variant: "threeColumn",
+      visible: true,
+      content: {
+        benefits: [
+          {
+            icon: "craft",
+            title: enFi("Jewellery care", "Korun hoito"),
+            text: enFi(
+              "Demo care guidance for gold and stone jewellery.",
+              "Demon hoito-ohje kultaisille kivikoruille.",
+            ),
+          },
+          {
+            icon: "delivery",
+            title: enFi("Delivery placeholder", "Toimituksen paikkamerkki"),
+            text: enFi(
+              "Draft placeholder — review before publishing. No delivery promise.",
+              "Luonnospaikkamerkki — tarkista ennen julkaisua. Ei toimituslupausta.",
+            ),
+          },
+          {
+            icon: "care",
+            title: enFi("Sizing help", "Kokoapu"),
+            text: enFi(
+              "Visual demo guidance for choosing a ring size.",
+              "Visuaalinen demoapu sormuskoon valintaan.",
+            ),
+          },
+        ],
+      },
+      props: { alignment: "center" },
+    },
+    {
+      id: "section_product_details",
+      component: "imageText",
+      variant: "imageRight",
+      visible: true,
+      content: {
+        heading: enFi("Material, care and delivery", "Materiaali, hoito ja toimitus"),
+        body: enFi(
+          "Aurora Ring 585 is presented from catalogue data as 14K yellow gold with a round diamond and comfort profile. Keep jewellery clean with gentle care. Delivery and returns are demo placeholders only. Draft placeholder — review before publishing.",
+          "Aurora-sormus 585 esitetään tuotetietojen mukaisesti 14 karaatin keltakultaisena sormuksena, jossa on pyöreä timantti ja comfort-profiili. Puhdista koru hellävaraisesti. Toimitus ja palautukset ovat vain demosisältöä. Luonnospaikkamerkki — tarkista ennen julkaisua.",
+        ),
+        media: {
+          id: "asset_product_details",
+          url: "/seed-assets/aurora-ring.svg",
+          alt: enFi("Aurora yellow-gold ring detail", "Aurora-keltakultasormuksen yksityiskohta"),
+          decorative: false,
+        },
+      },
+      props: { demoPlaceholder: true },
+    },
+    {
+      id: "section_product_related",
+      component: "relatedProducts",
+      variant: "grid",
+      visible: true,
+      content: {
+        heading: enFi("You may also like", "Saatat myös pitää"),
+        productIds: [
+          "product_lumi_halo_ring",
+          "product_kajo_earrings_585",
+          "product_aava_necklace_925",
+        ],
+      },
+      props: {},
+    },
+    {
+      id: "section_product_footer",
+      component: "footer",
+      variant: "columns",
+      visible: true,
+      content: {
+        brandName: "Aurum Nordic",
+        contact: enFi(
+          "Helsinki · hello@aurumnordic.example",
+          "Helsinki · hello@aurumnordic.example",
+        ),
+        policyLabel: enFi("Delivery · Returns · Privacy", "Toimitus · Palautukset · Tietosuoja"),
+        copyright: enFi("© 2026 Aurum Nordic demo", "© 2026 Aurum Nordic -demo"),
+      },
+      props: { showPolicies: true },
+    },
+  ],
 };
 
 const navigation = {

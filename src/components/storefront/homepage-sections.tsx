@@ -370,6 +370,17 @@ export function BenefitIcons({
           <span aria-hidden="true">{benefitIcon[benefit.icon]}</span>
           <h2>{text(benefit.title, context)}</h2>
           <p>{text(benefit.text, context)}</p>
+          {benefit.icon === "delivery" ? (
+            <p>
+              {text(
+                {
+                  en: "Draft placeholder — review before publishing",
+                  fi: "Luonnospaikkamerkki — tarkista ennen julkaisua",
+                },
+                context,
+              )}
+            </p>
+          ) : null}
         </article>
       ))}
     </section>
@@ -460,8 +471,8 @@ export function StoreFooter({
         <p className="store-footer__legal">
           {text(
             {
-              en: "Draft policy placeholder — review before publishing.",
-              fi: "Luonnos käytäntötekstistä — tarkista ennen julkaisua.",
+              en: "Draft placeholder — review before publishing",
+              fi: "Luonnospaikkamerkki — tarkista ennen julkaisua",
             },
             context,
           )}

@@ -72,7 +72,7 @@ export const headerPropsSchema = z
 export const headerDefinition = defineComponent({
   type: "header",
   label: "Store header",
-  allowedPageTypes: ["home", "collection"],
+  allowedPageTypes: ["home", "collection", "product"],
   variants: ["centered"] as const,
   defaultVariant: "centered",
   contentSchema: headerContentSchema,
@@ -351,7 +351,7 @@ export const footerPropsSchema = z.object({ showPolicies: z.boolean() }).strict(
 export const footerDefinition = defineComponent({
   type: "footer",
   label: "Store footer",
-  allowedPageTypes: ["home", "collection"],
+  allowedPageTypes: ["home", "collection", "product"],
   variants: ["columns"] as const,
   defaultVariant: "columns",
   contentSchema: footerContentSchema,

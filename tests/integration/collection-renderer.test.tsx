@@ -68,13 +68,24 @@ describe("Aurum Nordic collection renderer", () => {
     expect(() => rerender(<>{renderStorefrontPage(page, context)}</>)).toThrow();
   });
 
-  it("leaves the homepage and product placeholder unchanged", () => {
+  it("leaves the homepage and merged product composition unchanged", () => {
     expect(
       aurumNordicSeed.draftSnapshot.pages.find((page) => page.type === "home")?.sections,
     ).toHaveLength(10);
     expect(
-      aurumNordicSeed.draftSnapshot.pages.find((page) => page.type === "product")?.sections,
-    ).toEqual([]);
+      aurumNordicSeed.draftSnapshot.pages
+        .find((page) => page.type === "product")
+        ?.sections.map((section) => section.component),
+    ).toEqual([
+      "header",
+      "productGallery",
+      "productInfo",
+      "productOptions",
+      "benefitIcons",
+      "imageText",
+      "relatedProducts",
+      "footer",
+    ]);
   });
 
   it("renders reordered global sections exactly once", () => {

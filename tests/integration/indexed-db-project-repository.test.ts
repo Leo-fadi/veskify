@@ -6,6 +6,7 @@ import { projectSchema } from "@/domain/project";
 import {
   aurumNordicPhase0SeedState,
   aurumNordicP101SeedState,
+  aurumNordicP102SeedState,
   IndexedDbProjectRepository,
   RepositoryValidationError,
 } from "@/services/storage";
@@ -81,6 +82,37 @@ async function writeP101Seed(databaseName: string, modified = false) {
       const homepage = snapshot.pages.find((page) => page.type === "home");
       if (homepage) homepage.title.en = `${snapshot.createdBy} edited homepage`;
     }
+    await transaction.objectStore("snapshots").put(snapshot);
+  }
+  await transaction.done;
+  database.close();
+}
+
+async function writeP102Seed(
+  databaseName: string,
+  edit?: "project" | "catalogue" | "draft" | "published",
+) {
+  const database = await openDB(databaseName, 1, {
+    upgrade(db) {
+      db.createObjectStore("projects", { keyPath: "id" });
+      db.createObjectStore("catalogues", { keyPath: "id" });
+      const snapshots = db.createObjectStore("snapshots", { keyPath: "id" });
+      snapshots.createIndex("by-project", "projectId");
+    },
+  });
+  const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readwrite");
+  const project = structuredClone(aurumNordicP102SeedState.project);
+  const catalogue = structuredClone(aurumNordicP102SeedState.catalogue);
+  if (edit === "project") project.name = "Edited P1-02 project";
+  if (edit === "catalogue") catalogue.products[0].title.en = "Edited catalogue product";
+  await transaction.objectStore("projects").put(project);
+  await transaction.objectStore("catalogues").put(catalogue);
+  for (const source of aurumNordicP102SeedState.snapshots) {
+    const snapshot = structuredClone(source);
+    if (edit === "draft" && snapshot.id === project.draftSnapshotId)
+      snapshot.pages[0].title.en = "Edited draft";
+    if (edit === "published" && snapshot.id === project.publishedSnapshotId)
+      snapshot.pages[0].title.en = "Edited published";
     await transaction.objectStore("snapshots").put(snapshot);
   }
   await transaction.done;
@@ -200,6 +232,72 @@ describe("IndexedDbProjectRepository persistence", () => {
     );
     expect(published?.pages.find((page) => page.type === "collection")?.sections).toEqual([]);
     expect(draft?.pages.find((page) => page.type === "collection")?.sections).toEqual([]);
+  });
+
+  it("atomically upgrades the exact untouched P1-02 seed to the product composition", async () => {
+    const databaseName = testDatabaseName("p102-migration");
+    await writeP102Seed(databaseName);
+    const repository = openRepository(databaseName);
+
+    const aggregate = await repository.get(aurumNordicSeed.project.id);
+    for (const snapshotId of [
+      aggregate.project.publishedSnapshotId,
+      aggregate.project.draftSnapshotId,
+    ]) {
+      const product = aggregate.snapshots
+        .find((snapshot) => snapshot.id === snapshotId)
+        ?.pages.find((page) => page.type === "product");
+      expect(product?.sections.map((section) => section.component)).toEqual([
+        "header",
+        "productGallery",
+        "productInfo",
+        "productOptions",
+        "benefitIcons",
+        "imageText",
+        "relatedProducts",
+        "footer",
+      ]);
+    }
+    expect(aggregate.catalogue.products[0].images).toHaveLength(2);
+  });
+
+  it.each(["project", "catalogue", "draft", "published"] as const)(
+    "preserves edited P1-02 %s data",
+    async (edit) => {
+      const databaseName = testDatabaseName(`p102-edited-${edit}`);
+      await writeP102Seed(databaseName, edit);
+      const repository = openRepository(databaseName);
+      const aggregate = await repository.get(aurumNordicSeed.project.id);
+      expect(
+        aggregate.snapshots
+          .find((snapshot) => snapshot.id === aggregate.project.draftSnapshotId)
+          ?.pages.find((page) => page.type === "product")?.sections,
+      ).toEqual([]);
+      if (edit === "project") expect(aggregate.project.name).toBe("Edited P1-02 project");
+      if (edit === "catalogue")
+        expect(aggregate.catalogue.products[0].title.en).toBe("Edited catalogue product");
+      if (edit === "draft")
+        expect(
+          aggregate.snapshots.find((snapshot) => snapshot.id === aggregate.project.draftSnapshotId)
+            ?.pages[0].title.en,
+        ).toBe("Edited draft");
+      if (edit === "published")
+        expect(
+          aggregate.snapshots.find(
+            (snapshot) => snapshot.id === aggregate.project.publishedSnapshotId,
+          )?.pages[0].title.en,
+        ).toBe("Edited published");
+    },
+  );
+
+  it("keeps the P1-02 migration idempotent across repeated bootstrap", async () => {
+    const databaseName = testDatabaseName("p102-repeat");
+    await writeP102Seed(databaseName);
+    const first = openRepository(databaseName);
+    const migrated = await first.get(aurumNordicSeed.project.id);
+    await first.close();
+    const reopened = openRepository(databaseName);
+    expect(await reopened.get(aurumNordicSeed.project.id)).toEqual(migrated);
   });
   it("bootstraps the seed only on the first initialization", async () => {
     const databaseName = testDatabaseName("bootstrap");

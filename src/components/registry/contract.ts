@@ -17,8 +17,8 @@ export type EditorFieldMetadata = {
   control: "text" | "textarea" | "select";
   label: string;
   localized?: boolean;
-  options?: ReadonlyArray<{ label: string; value: string }>;
-  valueType?: "string" | "stringList";
+  options?: ReadonlyArray<{ label: string; value: string | number | boolean }>;
+  valueType?: "string" | "stringList" | "boolean";
 };
 
 export type ProtectedFieldMetadata = {

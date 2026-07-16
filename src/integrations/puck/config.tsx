@@ -10,9 +10,9 @@ import {
 } from "@/components/registry";
 import { aurumNordicSeed } from "@/data/seed";
 import { idSchema, localeSchema, type Locale } from "@/domain/shared";
-import type { SectionInstance } from "@/domain/storefront";
+import type { PageType, SectionInstance } from "@/domain/storefront";
 
-type PuckEditorProps = Record<string, string>;
+type PuckEditorProps = Record<string, unknown>;
 
 function toPuckField(metadata: EditorFieldMetadata): Field {
   if (metadata.control === "select") {
@@ -33,7 +33,7 @@ function getLocalizedDefault(value: unknown, locale: Locale): string {
   return Object.values(localized).find((item): item is string => typeof item === "string") ?? "";
 }
 
-function toPuckDefaults(definition: ComponentDefinition): PuckEditorProps {
+export function toPuckDefaults(definition: ComponentDefinition): PuckEditorProps {
   const defaultLocale = "en";
   return Object.fromEntries(
     Object.entries(definition.editorFields).map(([fieldName, metadata]) => {
@@ -42,15 +42,21 @@ function toPuckDefaults(definition: ComponentDefinition): PuckEditorProps {
       const value = source[fieldName];
       return [
         fieldName,
-        metadata.localized ? getLocalizedDefault(value, defaultLocale) : String(value),
+        metadata.localized
+          ? getLocalizedDefault(value, defaultLocale)
+          : metadata.valueType === "boolean"
+            ? value
+            : String(value),
       ];
     }),
   );
 }
 
-function editorPropsToSection(
+export function editorPropsToSection(
   definition: ComponentDefinition,
   editorProps: Record<string, unknown>,
+  pageType?: PageType,
+  context?: StorefrontRenderContext,
 ): SectionInstance {
   const activeLocale = localeSchema.parse(editorProps.activeLocale ?? "en");
   const content: Record<string, unknown> = structuredClone(definition.defaultContent);
@@ -72,7 +78,7 @@ function editorPropsToSection(
         : value;
   }
 
-  return {
+  const section = {
     id: idSchema.parse(editorProps.id ?? `${definition.type}_puck_item`),
     component: definition.type,
     variant: definition.defaultVariant,
@@ -80,11 +86,14 @@ function editorPropsToSection(
     content,
     props,
   };
+  if (pageType) definition.validate(section, pageType, context);
+  return section;
 }
 
 function componentToPuckConfig(
   definition: ComponentDefinition,
   context: StorefrontRenderContext,
+  pageType: PageType,
 ): ComponentConfig<PuckEditorProps> {
   return {
     label: definition.label,
@@ -96,7 +105,13 @@ function componentToPuckConfig(
     ),
     defaultProps: toPuckDefaults(definition),
     render: (editorProps) => (
-      <>{definition.render(editorPropsToSection(definition, editorProps), context)}</>
+      <>
+        {definition.render(
+          editorPropsToSection(definition, editorProps, pageType, context),
+          context,
+          pageType,
+        )}
+      </>
     ),
   };
 }
@@ -111,13 +126,16 @@ export const safePuckPreviewContext = createStorefrontRenderContext({
 
 export function generateVeskifyPuckConfig(
   context: StorefrontRenderContext = safePuckPreviewContext,
+  pageType: PageType = "home",
 ): Config {
   return {
     components: Object.fromEntries(
-      Object.values(veskifyComponentRegistry).map((definition) => [
-        definition.type,
-        componentToPuckConfig(definition, context),
-      ]),
+      Object.values(veskifyComponentRegistry)
+        .filter((definition) => definition.allowedPageTypes.includes(pageType))
+        .map((definition) => [
+          definition.type,
+          componentToPuckConfig(definition, context, pageType),
+        ]),
     ),
   } as Config;
 }
@@ -160,13 +178,14 @@ export type ValidatedPuckData = z.infer<typeof veskifyPuckDataSchema>;
 export function validatePuckDraftPayload(
   data: Data,
   context: StorefrontRenderContext = safePuckPreviewContext,
+  pageType: PageType = "home",
 ): ValidatedPuckData {
   const parsed = veskifyPuckDataSchema.parse(data);
   const items = [...parsed.content, ...Object.values(parsed.zones ?? {}).flat()];
 
   items.forEach((item) => {
     const definition = getComponentDefinition(item.type);
-    definition.validate(editorPropsToSection(definition, item.props), undefined, context);
+    editorPropsToSection(definition, item.props, pageType, context);
   });
 
   return parsed;
