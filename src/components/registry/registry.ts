@@ -24,10 +24,7 @@ export function getComponentDefinition(component: string): ComponentDefinition {
   return veskifyComponentRegistry[component as RegisteredComponentType];
 }
 
-export function validateRegisteredSection(
-  input: unknown,
-  pageType?: PageType,
-): SectionInstance {
+export function validateRegisteredSection(input: unknown, pageType?: PageType): SectionInstance {
   const section = sectionInstanceSchema.parse(input);
   return getComponentDefinition(section.component).validate(section, pageType);
 }

@@ -11,13 +11,7 @@ export type AurumHeroProps = {
   primaryLocale: Locale;
 };
 
-export function AurumHero({
-  eyebrow,
-  title,
-  body,
-  activeLocale,
-  primaryLocale,
-}: AurumHeroProps) {
+export function AurumHero({ eyebrow, title, body, activeLocale, primaryLocale }: AurumHeroProps) {
   return (
     <section className="rounded-[var(--brand-radius)] border border-[var(--brand-color-border)] bg-[var(--brand-color-surface)] p-6 shadow-sm sm:p-10">
       <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--brand-color-primary)]">

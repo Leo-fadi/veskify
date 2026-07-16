@@ -5,7 +5,10 @@ export const idSchema = z
   .trim()
   .min(3)
   .max(80)
-  .regex(/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/, "Use lowercase letters, numbers, hyphens or underscores.");
+  .regex(
+    /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/,
+    "Use lowercase letters, numbers, hyphens or underscores.",
+  );
 
 export const isoDateTimeSchema = z.string().datetime({ offset: true });
 export const localeSchema = z.enum(["en", "fi"]);
@@ -14,7 +17,10 @@ export type Locale = z.infer<typeof localeSchema>;
 export const localizedTextSchema = z
   .object({ en: z.string().trim().min(1).optional(), fi: z.string().trim().min(1).optional() })
   .strict()
-  .refine((value) => value.en !== undefined || value.fi !== undefined, "At least one locale is required.");
+  .refine(
+    (value) => value.en !== undefined || value.fi !== undefined,
+    "At least one locale is required.",
+  );
 
 export const localizedSeoSchema = z
   .object({

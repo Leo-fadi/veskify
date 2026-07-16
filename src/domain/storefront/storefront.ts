@@ -130,9 +130,7 @@ export const storefrontSnapshotSchema = z
       });
     }
 
-    const sectionIds = snapshot.pages.flatMap((page) =>
-      page.sections.map((section) => section.id),
-    );
+    const sectionIds = snapshot.pages.flatMap((page) => page.sections.map((section) => section.id));
     if (new Set(sectionIds).size !== sectionIds.length) {
       context.addIssue({
         code: "custom",

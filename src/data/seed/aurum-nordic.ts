@@ -11,8 +11,7 @@ import { storefrontSnapshotSchema, type StorefrontSnapshot } from "@/domain/stor
 import { AURUM_NORDIC_PROJECT_ID } from "./identifiers";
 
 const enFi = (en: string, fi: string) => ({ en, fi });
-const optionValues = (...values: Array<[string, string]>) =>
-  values.map(([en, fi]) => enFi(en, fi));
+const optionValues = (...values: Array<[string, string]>) => values.map(([en, fi]) => enFi(en, fi));
 
 export const aurumNordicBusinessProfile = {
   name: "Aurum Nordic",
@@ -66,7 +65,11 @@ const products = [
         type: "selection" as const,
         label: enFi("Ring size", "Sormuskoko"),
         required: true,
-        values: optionValues(...[15, 16, 17, 18, 19, 20, 21].map((size) => [String(size), String(size)] as [string, string])),
+        values: optionValues(
+          ...[15, 16, 17, 18, 19, 20, 21].map(
+            (size) => [String(size), String(size)] as [string, string],
+          ),
+        ),
       },
       {
         id: "option_aurora_engraving",
@@ -94,7 +97,14 @@ const products = [
     ),
     price: { amount: 1890, currency: "EUR" as const },
     stockStatus: "lowStock" as const,
-    images: [{ id: "asset_lumi_ring", url: "/seed-assets/lumi-halo-ring.svg", alt: enFi("Lumi white-gold halo ring", "Lumi-valkokultainen halosormus"), decorative: false }],
+    images: [
+      {
+        id: "asset_lumi_ring",
+        url: "/seed-assets/lumi-halo-ring.svg",
+        alt: enFi("Lumi white-gold halo ring", "Lumi-valkokultainen halosormus"),
+        decorative: false,
+      },
+    ],
     productType: "ring",
     attributes: {
       material: "gold",
@@ -112,67 +122,195 @@ const products = [
       styleTags: ["halo", "brilliant", "celebration"],
     },
     variants: [],
-    orderOptions: [{ id: "option_lumi_size", type: "selection" as const, label: enFi("Ring size", "Sormuskoko"), required: true, values: optionValues(...[15, 16, 17, 18, 19, 20].map((size) => [String(size), String(size)] as [string, string])) }],
-    seo: { title: enFi("Lumi Halo Ring | Aurum Nordic", "Lumi Halo -sormus | Aurum Nordic"), metaDescription: enFi("White-gold halo diamond ring.", "Valkokultainen halo-timanttisormus.") },
+    orderOptions: [
+      {
+        id: "option_lumi_size",
+        type: "selection" as const,
+        label: enFi("Ring size", "Sormuskoko"),
+        required: true,
+        values: optionValues(
+          ...[15, 16, 17, 18, 19, 20].map(
+            (size) => [String(size), String(size)] as [string, string],
+          ),
+        ),
+      },
+    ],
+    seo: {
+      title: enFi("Lumi Halo Ring | Aurum Nordic", "Lumi Halo -sormus | Aurum Nordic"),
+      metaDescription: enFi("White-gold halo diamond ring.", "Valkokultainen halo-timanttisormus."),
+    },
   },
   {
     id: "product_aava_necklace_925",
     sku: "NECK-AAVA-925",
     title: enFi("Aava Silver Necklace", "Aava-hopeakaulakoru"),
-    description: enFi("A calm sterling-silver pendant with two chain lengths.", "Rauhallinen sterlinghopeariipus kahdella ketjupituudella."),
+    description: enFi(
+      "A calm sterling-silver pendant with two chain lengths.",
+      "Rauhallinen sterlinghopeariipus kahdella ketjupituudella.",
+    ),
     price: { amount: 149, currency: "EUR" as const },
     stockStatus: "inStock" as const,
-    images: [{ id: "asset_aava_necklace", url: "/seed-assets/aava-necklace.svg", alt: enFi("Aava sterling-silver necklace", "Aava-sterlinghopeakaulakoru"), decorative: false }],
+    images: [
+      {
+        id: "asset_aava_necklace",
+        url: "/seed-assets/aava-necklace.svg",
+        alt: enFi("Aava sterling-silver necklace", "Aava-sterlinghopeakaulakoru"),
+        decorative: false,
+      },
+    ],
     productType: "necklace",
-    attributes: { material: "silver", fineness: "925", metalColour: "white", chainLengthsCm: ["45", "50"], audience: "unisex", styleTags: ["minimal", "everyday", "Nordic"] },
+    attributes: {
+      material: "silver",
+      fineness: "925",
+      metalColour: "white",
+      chainLengthsCm: ["45", "50"],
+      audience: "unisex",
+      styleTags: ["minimal", "everyday", "Nordic"],
+    },
     variants: [
       { id: "variant_aava_45", label: enFi("45 cm", "45 cm"), attributes: { chainLengthCm: 45 } },
       { id: "variant_aava_50", label: enFi("50 cm", "50 cm"), attributes: { chainLengthCm: 50 } },
     ],
-    seo: { title: enFi("Aava Silver Necklace | Aurum Nordic", "Aava-hopeakaulakoru | Aurum Nordic"), metaDescription: enFi("Sterling-silver necklace in 45 and 50 cm.", "Sterlinghopeakaulakoru 45 ja 50 cm pituisena.") },
+    seo: {
+      title: enFi("Aava Silver Necklace | Aurum Nordic", "Aava-hopeakaulakoru | Aurum Nordic"),
+      metaDescription: enFi(
+        "Sterling-silver necklace in 45 and 50 cm.",
+        "Sterlinghopeakaulakoru 45 ja 50 cm pituisena.",
+      ),
+    },
   },
   {
     id: "product_sisu_automatic_watch",
     sku: "WATCH-SISU-AUTO",
     title: enFi("Sisu Automatic Watch", "Sisu-automaattikello"),
-    description: enFi("A restrained steel automatic watch built for everyday resilience.", "Hillitty teräksinen automaattikello jokapäiväiseen käyttöön."),
+    description: enFi(
+      "A restrained steel automatic watch built for everyday resilience.",
+      "Hillitty teräksinen automaattikello jokapäiväiseen käyttöön.",
+    ),
     price: { amount: 690, currency: "EUR" as const },
     stockStatus: "inStock" as const,
-    images: [{ id: "asset_sisu_watch", url: "/seed-assets/sisu-watch.svg", alt: enFi("Sisu steel automatic watch", "Sisu-teräsautomaattikello"), decorative: false }],
+    images: [
+      {
+        id: "asset_sisu_watch",
+        url: "/seed-assets/sisu-watch.svg",
+        alt: enFi("Sisu steel automatic watch", "Sisu-teräsautomaattikello"),
+        decorative: false,
+      },
+    ],
     productType: "watch",
-    attributes: { material: "steel", metalColour: "silver", watchBrand: "Aurum Nordic", watchModel: "Sisu Automatic", caseSizeMm: 40, strapMaterial: "steel", movement: "automatic", waterResistance: "10 ATM", audience: "unisex", styleTags: ["sport", "minimal", "everyday"] },
+    attributes: {
+      material: "steel",
+      metalColour: "silver",
+      watchBrand: "Aurum Nordic",
+      watchModel: "Sisu Automatic",
+      caseSizeMm: 40,
+      strapMaterial: "steel",
+      movement: "automatic",
+      waterResistance: "10 ATM",
+      audience: "unisex",
+      styleTags: ["sport", "minimal", "everyday"],
+    },
     variants: [],
-    seo: { title: enFi("Sisu Automatic Watch | Aurum Nordic", "Sisu-automaattikello | Aurum Nordic"), metaDescription: enFi("40 mm steel automatic watch with 10 ATM resistance.", "40 mm teräksinen automaattikello 10 ATM vesitiiviydellä.") },
+    seo: {
+      title: enFi("Sisu Automatic Watch | Aurum Nordic", "Sisu-automaattikello | Aurum Nordic"),
+      metaDescription: enFi(
+        "40 mm steel automatic watch with 10 ATM resistance.",
+        "40 mm teräksinen automaattikello 10 ATM vesitiiviydellä.",
+      ),
+    },
   },
   {
     id: "product_kajo_earrings_585",
     sku: "EAR-KAJO-585",
     title: enFi("Kajo Rose Earrings", "Kajo-rosekultakorvakorut"),
-    description: enFi("Rose-gold earrings with bright zirconia details, sold as a pair.", "Rosekultaiset korvakorut kirkkailla zirkonioilla, myydään parina."),
+    description: enFi(
+      "Rose-gold earrings with bright zirconia details, sold as a pair.",
+      "Rosekultaiset korvakorut kirkkailla zirkonioilla, myydään parina.",
+    ),
     price: { amount: 490, currency: "EUR" as const },
     stockStatus: "lowStock" as const,
-    images: [{ id: "asset_kajo_earrings", url: "/seed-assets/kajo-earrings.svg", alt: enFi("Pair of Kajo rose-gold earrings", "Kajo-rosekultakorvakorupari"), decorative: false }],
+    images: [
+      {
+        id: "asset_kajo_earrings",
+        url: "/seed-assets/kajo-earrings.svg",
+        alt: enFi("Pair of Kajo rose-gold earrings", "Kajo-rosekultakorvakorupari"),
+        decorative: false,
+      },
+    ],
     productType: "earrings",
-    attributes: { material: "gold", fineness: "585", karat: "14K", metalColour: "rose", stoneType: "zirconia", stoneShape: "round", stoneColour: "colourless", stoneSetting: "bezel", soldAs: "pair", audience: "women", styleTags: ["warm", "gift", "evening"] },
+    attributes: {
+      material: "gold",
+      fineness: "585",
+      karat: "14K",
+      metalColour: "rose",
+      stoneType: "zirconia",
+      stoneShape: "round",
+      stoneColour: "colourless",
+      stoneSetting: "bezel",
+      soldAs: "pair",
+      audience: "women",
+      styleTags: ["warm", "gift", "evening"],
+    },
     variants: [],
-    seo: { title: enFi("Kajo Rose Earrings | Aurum Nordic", "Kajo-rosekultakorvakorut | Aurum Nordic"), metaDescription: enFi("Rose-gold 585 zirconia earrings.", "Rosekultaiset 585-zirkoniakorvakorut.") },
+    seo: {
+      title: enFi("Kajo Rose Earrings | Aurum Nordic", "Kajo-rosekultakorvakorut | Aurum Nordic"),
+      metaDescription: enFi(
+        "Rose-gold 585 zirconia earrings.",
+        "Rosekultaiset 585-zirkoniakorvakorut.",
+      ),
+    },
   },
   {
     id: "product_meri_bracelet_925",
     sku: "BRAC-MERI-925",
     title: enFi("Meri Bracelet", "Meri-rannekoru"),
-    description: enFi("A fluid sterling-silver bracelet in three considered lengths.", "Sulavalinjainen sterlinghopearannekoru kolmessa pituudessa."),
+    description: enFi(
+      "A fluid sterling-silver bracelet in three considered lengths.",
+      "Sulavalinjainen sterlinghopearannekoru kolmessa pituudessa.",
+    ),
     price: { amount: 179, currency: "EUR" as const },
     stockStatus: "inStock" as const,
-    images: [{ id: "asset_meri_bracelet", url: "/seed-assets/meri-bracelet.svg", alt: enFi("Meri sterling-silver bracelet", "Meri-sterlinghopearannekoru"), decorative: false }],
-    productType: "bracelet",
-    attributes: { material: "silver", fineness: "925", metalColour: "white", braceletLengthsCm: ["17", "19", "21"], audience: "unisex", styleTags: ["fluid", "minimal", "everyday"] },
-    variants: [
-      { id: "variant_meri_17", label: enFi("17 cm", "17 cm"), attributes: { braceletLengthCm: 17 } },
-      { id: "variant_meri_19", label: enFi("19 cm", "19 cm"), attributes: { braceletLengthCm: 19 } },
-      { id: "variant_meri_21", label: enFi("21 cm", "21 cm"), attributes: { braceletLengthCm: 21 } },
+    images: [
+      {
+        id: "asset_meri_bracelet",
+        url: "/seed-assets/meri-bracelet.svg",
+        alt: enFi("Meri sterling-silver bracelet", "Meri-sterlinghopearannekoru"),
+        decorative: false,
+      },
     ],
-    seo: { title: enFi("Meri Bracelet | Aurum Nordic", "Meri-rannekoru | Aurum Nordic"), metaDescription: enFi("Sterling-silver bracelet in 17, 19 and 21 cm.", "Sterlinghopearannekoru 17, 19 ja 21 cm pituisena.") },
+    productType: "bracelet",
+    attributes: {
+      material: "silver",
+      fineness: "925",
+      metalColour: "white",
+      braceletLengthsCm: ["17", "19", "21"],
+      audience: "unisex",
+      styleTags: ["fluid", "minimal", "everyday"],
+    },
+    variants: [
+      {
+        id: "variant_meri_17",
+        label: enFi("17 cm", "17 cm"),
+        attributes: { braceletLengthCm: 17 },
+      },
+      {
+        id: "variant_meri_19",
+        label: enFi("19 cm", "19 cm"),
+        attributes: { braceletLengthCm: 19 },
+      },
+      {
+        id: "variant_meri_21",
+        label: enFi("21 cm", "21 cm"),
+        attributes: { braceletLengthCm: 21 },
+      },
+    ],
+    seo: {
+      title: enFi("Meri Bracelet | Aurum Nordic", "Meri-rannekoru | Aurum Nordic"),
+      metaDescription: enFi(
+        "Sterling-silver bracelet in 17, 19 and 21 cm.",
+        "Sterlinghopearannekoru 17, 19 ja 21 cm pituisena.",
+      ),
+    },
   },
 ];
 
@@ -181,15 +319,26 @@ const collections = [
     id: "collection_rings",
     slug: "rings",
     title: enFi("Rings", "Sormukset"),
-    description: enFi("Gold rings for lasting moments.", "Kultasormuksia elämän tärkeisiin hetkiin."),
+    description: enFi(
+      "Gold rings for lasting moments.",
+      "Kultasormuksia elämän tärkeisiin hetkiin.",
+    ),
     productIds: ["product_aurora_ring_585", "product_lumi_halo_ring"],
   },
   {
     id: "collection_everyday",
     slug: "everyday-icons",
     title: enFi("Everyday icons", "Arjen ikonit"),
-    description: enFi("Quietly distinctive pieces for every day.", "Hillityn tunnistettavia koruja jokaiseen päivään."),
-    productIds: ["product_aava_necklace_925", "product_sisu_automatic_watch", "product_kajo_earrings_585", "product_meri_bracelet_925"],
+    description: enFi(
+      "Quietly distinctive pieces for every day.",
+      "Hillityn tunnistettavia koruja jokaiseen päivään.",
+    ),
+    productIds: [
+      "product_aava_necklace_925",
+      "product_sisu_automatic_watch",
+      "product_kajo_earrings_585",
+      "product_meri_bracelet_925",
+    ],
   },
 ];
 
@@ -198,7 +347,13 @@ const homePage = {
   type: "home" as const,
   slug: "/",
   title: enFi("Home", "Etusivu"),
-  seo: { title: enFi("Aurum Nordic jewellery", "Aurum Nordic -korut"), metaDescription: enFi("Nordic jewellery and watches with lasting character.", "Pohjoismaisia koruja ja kelloja, joissa on kestävää luonnetta.") },
+  seo: {
+    title: enFi("Aurum Nordic jewellery", "Aurum Nordic -korut"),
+    metaDescription: enFi(
+      "Nordic jewellery and watches with lasting character.",
+      "Pohjoismaisia koruja ja kelloja, joissa on kestävää luonnetta.",
+    ),
+  },
   sections: [
     {
       id: "section_home_hero",
@@ -208,7 +363,10 @@ const homePage = {
       content: {
         eyebrow: enFi("Aurum Nordic · Helsinki", "Aurum Nordic · Helsinki"),
         title: enFi("Made for northern light", "Tehty pohjoiseen valoon"),
-        body: enFi("Jewellery and watches shaped by Nordic clarity and warm materials.", "Pohjoismaisen selkeitä koruja ja kelloja lämpimistä materiaaleista."),
+        body: enFi(
+          "Jewellery and watches shaped by Nordic clarity and warm materials.",
+          "Pohjoismaisen selkeitä koruja ja kelloja lämpimistä materiaaleista.",
+        ),
       },
       props: { activeLocale: "en", primaryLocale: "en" },
     },
@@ -220,7 +378,13 @@ const collectionPage = {
   type: "collection" as const,
   slug: "/collections/rings",
   title: enFi("Rings", "Sormukset"),
-  seo: { title: enFi("Rings | Aurum Nordic", "Sormukset | Aurum Nordic"), metaDescription: enFi("Aurum Nordic gold and diamond rings.", "Aurum Nordicin kulta- ja timanttisormukset.") },
+  seo: {
+    title: enFi("Rings | Aurum Nordic", "Sormukset | Aurum Nordic"),
+    metaDescription: enFi(
+      "Aurum Nordic gold and diamond rings.",
+      "Aurum Nordicin kulta- ja timanttisormukset.",
+    ),
+  },
   sections: [],
 };
 
@@ -229,17 +393,35 @@ const productPage = {
   type: "product" as const,
   slug: "/products/aurora-ring-585",
   title: enFi("Aurora Ring 585", "Aurora-sormus 585"),
-  seo: { title: enFi("Aurora Ring 585 | Aurum Nordic", "Aurora-sormus 585 | Aurum Nordic"), metaDescription: enFi("Yellow-gold diamond ring in sizes 15–21.", "Keltakultainen timanttisormus koossa 15–21.") },
+  seo: {
+    title: enFi("Aurora Ring 585 | Aurum Nordic", "Aurora-sormus 585 | Aurum Nordic"),
+    metaDescription: enFi(
+      "Yellow-gold diamond ring in sizes 15–21.",
+      "Keltakultainen timanttisormus koossa 15–21.",
+    ),
+  },
   sections: [],
 };
 
 const navigation = {
   primary: [
-    { id: "nav_home", label: enFi("Home", "Etusivu"), target: { type: "page" as const, pageId: "page_home" } },
-    { id: "nav_rings", label: enFi("Rings", "Sormukset"), target: { type: "page" as const, pageId: "page_collection_rings" } },
+    {
+      id: "nav_home",
+      label: enFi("Home", "Etusivu"),
+      target: { type: "page" as const, pageId: "page_home" },
+    },
+    {
+      id: "nav_rings",
+      label: enFi("Rings", "Sormukset"),
+      target: { type: "page" as const, pageId: "page_collection_rings" },
+    },
   ],
   footer: [
-    { id: "nav_aurora", label: enFi("Aurora Ring", "Aurora-sormus"), target: { type: "page" as const, pageId: "page_product_aurora" } },
+    {
+      id: "nav_aurora",
+      label: enFi("Aurora Ring", "Aurora-sormus"),
+      target: { type: "page" as const, pageId: "page_product_aurora" },
+    },
   ],
 };
 
@@ -266,14 +448,29 @@ const seedBundleSchema = z
   .strict()
   .superRefine((seed, context) => {
     if (seed.project.publishedSnapshotId !== seed.publishedSnapshot.id) {
-      context.addIssue({ code: "custom", message: "Published snapshot reference must resolve.", path: ["project", "publishedSnapshotId"] });
+      context.addIssue({
+        code: "custom",
+        message: "Published snapshot reference must resolve.",
+        path: ["project", "publishedSnapshotId"],
+      });
     }
     if (seed.project.draftSnapshotId !== seed.draftSnapshot.id) {
-      context.addIssue({ code: "custom", message: "Draft snapshot reference must resolve.", path: ["project", "draftSnapshotId"] });
+      context.addIssue({
+        code: "custom",
+        message: "Draft snapshot reference must resolve.",
+        path: ["project", "draftSnapshotId"],
+      });
     }
-    for (const [name, snapshot] of [["publishedSnapshot", seed.publishedSnapshot], ["draftSnapshot", seed.draftSnapshot]] as const) {
+    for (const [name, snapshot] of [
+      ["publishedSnapshot", seed.publishedSnapshot],
+      ["draftSnapshot", seed.draftSnapshot],
+    ] as const) {
       if (snapshot.projectId !== seed.project.id || snapshot.catalogueRef !== seed.catalogue.id) {
-        context.addIssue({ code: "custom", message: "Snapshot project and catalogue references must resolve.", path: [name] });
+        context.addIssue({
+          code: "custom",
+          message: "Snapshot project and catalogue references must resolve.",
+          path: [name],
+        });
       }
     }
   });

@@ -52,7 +52,13 @@ type DefinitionInput<
   defaultProps: z.input<TPropsSchema> & Record<string, unknown>;
   editorFields: Readonly<Record<string, EditorFieldMetadata>>;
   protectedFields: ProtectedFieldMetadata;
-  renderer: (input: ComponentRenderInput<z.output<TContentSchema>, z.output<TPropsSchema>, TVariants[number]>) => ReactNode;
+  renderer: (
+    input: ComponentRenderInput<
+      z.output<TContentSchema>,
+      z.output<TPropsSchema>,
+      TVariants[number]
+    >,
+  ) => ReactNode;
 };
 
 export function defineComponent<

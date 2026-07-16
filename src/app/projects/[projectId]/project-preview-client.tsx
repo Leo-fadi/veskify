@@ -2,14 +2,14 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { renderStorefrontPage, validateStorefrontHomepage } from "@/components/storefront/storefront-page";
+import {
+  renderStorefrontPage,
+  validateStorefrontHomepage,
+} from "@/components/storefront/storefront-page";
 import { brandSystemToCssVariables } from "@/domain/design-system";
 import type { Locale } from "@/domain/shared";
 import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
-import {
-  createBrowserProjectRepository,
-  ProjectNotFoundError,
-} from "@/services/storage";
+import { createBrowserProjectRepository, ProjectNotFoundError } from "@/services/storage";
 
 type RepositoryFactory = () => ProjectRepository;
 
@@ -70,8 +70,8 @@ export function ProjectPreviewClient({
 
   useEffect(() => {
     let cancelled = false;
-    repository.current!
-      .get(projectId)
+    repository
+      .current!.get(projectId)
       .then((aggregate) => {
         if (cancelled) return;
         const draft = aggregate.snapshots.find(

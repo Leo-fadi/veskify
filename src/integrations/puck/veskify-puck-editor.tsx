@@ -31,7 +31,10 @@ export function VeskifyPuckEditorProof() {
         <Render config={veskifyPuckConfig} data={initialPuckData} />
       </section>
 
-      <section aria-label="Puck editor proof" className="min-h-[720px] overflow-hidden rounded-xl border border-[var(--brand-color-border)] bg-white">
+      <section
+        aria-label="Puck editor proof"
+        className="min-h-[720px] overflow-hidden rounded-xl border border-[var(--brand-color-border)] bg-white"
+      >
         <Puck config={veskifyPuckConfig} data={initialPuckData} onPublish={handlePublishAttempt} />
       </section>
     </div>

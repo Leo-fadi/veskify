@@ -1,8 +1,5 @@
 import { Fragment, type ReactNode } from "react";
-import {
-  renderRegisteredSection,
-  validateRegisteredPage,
-} from "@/components/registry";
+import { renderRegisteredSection, validateRegisteredPage } from "@/components/registry";
 import type { Locale } from "@/domain/shared";
 import type { PageModel, SectionInstance } from "@/domain/storefront";
 
@@ -30,14 +27,13 @@ export function renderStorefrontPage(
   primaryLocale: Locale,
 ): ReactNode {
   const page = validateRegisteredPage(input);
-  return page.sections.map((section) => (
-    <Fragment key={section.id}>
-      {renderRegisteredSection(
-        withLocaleProps(section, activeLocale, primaryLocale),
-        page.type,
-      )}
-    </Fragment>
-  ));
+  return page.sections
+    .filter((section) => section.visible)
+    .map((section) => (
+      <Fragment key={section.id}>
+        {renderRegisteredSection(withLocaleProps(section, activeLocale, primaryLocale), page.type)}
+      </Fragment>
+    ));
 }
 
 export function validateStorefrontHomepage(input: unknown): PageModel {
