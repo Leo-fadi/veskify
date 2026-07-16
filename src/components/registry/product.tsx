@@ -8,6 +8,13 @@ import {
   RelatedProducts,
 } from "@/components/storefront/product-sections";
 import { defineComponent } from "./contract";
+import {
+  sectionAlignmentSchema,
+  sectionAlignmentEditorField,
+  sectionStyleEditorFields,
+  sectionStyleSchema,
+  sectionVocabularyClass,
+} from "./design-vocabulary";
 
 const productReferenceSchema = z.object({ productId: z.string().min(3) }).strict();
 const emptyPropsSchema = z.object({}).strict();
@@ -100,12 +107,19 @@ export const productOptionsDefinition = defineComponent({
 export const imageTextContentSchema = z
   .object({ heading: localizedTextSchema, body: localizedTextSchema, media: localAssetSchema })
   .strict();
-export const imageTextPropsSchema = z.object({ demoPlaceholder: z.literal(true) }).strict();
+export const imageTextPropsSchema = z
+  .object({
+    demoPlaceholder: z.literal(true),
+    mediaPosition: z.enum(["left", "right"]).default("right"),
+    alignment: sectionAlignmentSchema.default("left"),
+    ...sectionStyleSchema,
+  })
+  .strict();
 export const imageTextDefinition = defineComponent({
   type: "imageText",
   label: "Image and text",
   allowedPageTypes: ["product", "content"],
-  variants: ["imageRight"] as const,
+  variants: ["imageRight", "imageLeft", "stacked"] as const,
   defaultVariant: "imageRight",
   contentSchema: imageTextContentSchema,
   propsSchema: imageTextPropsSchema,
@@ -126,9 +140,28 @@ export const imageTextDefinition = defineComponent({
   editorFields: {
     heading: { source: "content", control: "text", label: "Heading", localized: true },
     body: { source: "content", control: "textarea", label: "Body", localized: true },
+    mediaPosition: {
+      source: "props",
+      control: "select",
+      label: "Image position",
+      options: [
+        { label: "Left", value: "left" },
+        { label: "Right", value: "right" },
+      ],
+    },
+    alignment: sectionAlignmentEditorField,
+    ...sectionStyleEditorFields,
   },
   protectedFields: { readOnlyPaths: ["media.url", "demoPlaceholder"] },
-  renderer: ({ content, context }) => <ImageText {...content} context={context} />,
+  renderer: ({ variant, content, props, context }) => (
+    <ImageText
+      {...content}
+      className={sectionVocabularyClass(variant, props)}
+      context={context}
+      mediaPosition={props.mediaPosition}
+      stacked={variant === "stacked"}
+    />
+  ),
 });
 
 export const relatedProductsContentSchema = z
