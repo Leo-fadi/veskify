@@ -128,6 +128,26 @@ describe("Veskify Puck adapter", () => {
     expect(productConfig.components).not.toHaveProperty("announcementBar");
   });
 
+  it("enables optional editing while protecting required global components", () => {
+    const config = generateVeskifyPuckConfig();
+    expect(config.components.hero?.permissions).toMatchObject({
+      insert: true,
+      delete: true,
+      duplicate: false,
+    });
+    expect(config.components.header?.permissions).toMatchObject({
+      insert: false,
+      delete: false,
+      duplicate: false,
+    });
+    expect(config.components.footer?.permissions).toMatchObject({
+      insert: false,
+      delete: false,
+      duplicate: false,
+    });
+    expect(config.components.hero?.fields).toHaveProperty("variant");
+  });
+
   it("rejects cross-page Puck payloads and accepts canonical product placement", () => {
     const productGallery = getComponentDefinition("productGallery");
     const galleryItem = {

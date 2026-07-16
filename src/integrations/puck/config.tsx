@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { z } from "zod";
 import {
   getComponentDefinition,
+  validateRegisteredPage,
   veskifyComponentRegistry,
   type ComponentDefinition,
   type EditorFieldMetadata,
@@ -155,6 +156,11 @@ function componentToPuckConfig(
     label: definition.label,
     fields,
     defaultProps: toPuckDefaults(definition),
+    permissions: {
+      delete: !["header", "footer"].includes(definition.type),
+      duplicate: false,
+      insert: !["header", "footer"].includes(definition.type),
+    },
     render: (editorProps) => {
       const section = editorPropsToSection(definition, editorProps, pageType, context);
       return section.visible ? <>{definition.render(section, context, pageType)}</> : <></>;
@@ -227,6 +233,120 @@ export function pageToPuckData(page: PageModel, context: StorefrontRenderContext
       },
     },
   };
+}
+
+const sameValue = (left: unknown, right: unknown) => JSON.stringify(left) === JSON.stringify(right);
+
+const protectedPayloadKeys = [
+  "__veskifyContent",
+  "__veskifyProps",
+  "__veskifyVariant",
+  "__veskifyVisible",
+  "__veskifyStyleOverrides",
+] as const;
+
+function assertProtectedPayload(editorProps: Record<string, unknown>, original: SectionInstance) {
+  const expected: Record<(typeof protectedPayloadKeys)[number], unknown> = {
+    __veskifyContent: original.content,
+    __veskifyProps: original.props,
+    __veskifyVariant: original.variant,
+    __veskifyVisible: original.visible,
+    __veskifyStyleOverrides: original.styleOverrides,
+  };
+  for (const key of protectedPayloadKeys) {
+    if (!sameValue(editorProps[key], expected[key])) {
+      throw new Error("Protected storefront data cannot be changed in the visual editor.");
+    }
+  }
+}
+
+function assertAllowedEditorProps(
+  definition: ComponentDefinition,
+  editorProps: Record<string, unknown>,
+) {
+  const allowed = new Set([
+    "id",
+    "activeLocale",
+    "variant",
+    ...Object.keys(definition.editorFields),
+    ...protectedPayloadKeys,
+  ]);
+  if (Object.keys(editorProps).some((key) => !allowed.has(key))) {
+    throw new Error("That property is not editable in the visual editor.");
+  }
+}
+
+function assertRequiredComposition(originalPage: PageModel, proposedPage: PageModel) {
+  for (const component of ["header", "footer"] as const) {
+    const originalSections = originalPage.sections.filter(
+      (section) => section.component === component,
+    );
+    const proposedSections = proposedPage.sections.filter(
+      (section) => section.component === component,
+    );
+    if (originalSections.length !== 1 || proposedSections.length !== 1) {
+      throw new Error(`The required ${component} must remain on this page exactly once.`);
+    }
+    if (proposedSections[0].id !== originalSections[0].id) {
+      throw new Error(`The required ${component} cannot be replaced.`);
+    }
+    const proposedIndex = proposedPage.sections.findIndex(
+      (section) => section.id === proposedSections[0].id,
+    );
+    if (
+      (component === "header" &&
+        proposedPage.sections
+          .slice(0, proposedIndex)
+          .some((section) => section.component !== "announcementBar")) ||
+      (component === "footer" && proposedIndex !== proposedPage.sections.length - 1)
+    ) {
+      throw new Error(`The required ${component} must remain in its protected region.`);
+    }
+  }
+}
+
+export function puckDataToPage(
+  data: Data,
+  originalPage: PageModel,
+  context: StorefrontRenderContext,
+): PageModel {
+  const parsed = veskifyPuckDataSchema.parse(data);
+  if (Object.values(parsed.zones ?? {}).some((items) => items.length > 0)) {
+    throw new Error("Nested canvas zones are not supported for storefront pages.");
+  }
+  const originals = new Map(originalPage.sections.map((section) => [section.id, section]));
+  const sections = parsed.content.map((item) => {
+    const definition = getComponentDefinition(item.type);
+    const itemId = idSchema.parse(item.props.id);
+    const original = originals.get(itemId);
+    assertAllowedEditorProps(definition, item.props);
+    if (original) {
+      if (original.component !== item.type) {
+        throw new Error("A section type cannot be replaced through hidden editor data.");
+      }
+      assertProtectedPayload(item.props, original);
+    } else if (protectedPayloadKeys.some((key) => item.props[key] !== undefined)) {
+      throw new Error("Inserted sections cannot provide protected storefront data.");
+    }
+    const trustedProps = {
+      ...item.props,
+      activeLocale: context.activeLocale,
+      __veskifyContent: original?.content ?? definition.defaultContent,
+      __veskifyProps: original?.props ?? definition.defaultProps,
+      __veskifyVariant: item.props.variant ?? original?.variant ?? definition.defaultVariant,
+      __veskifyVisible: original?.visible ?? true,
+      ...(original?.styleOverrides
+        ? { __veskifyStyleOverrides: original.styleOverrides }
+        : { __veskifyStyleOverrides: undefined }),
+    };
+    return editorPropsToSection(definition, trustedProps, originalPage.type, context);
+  });
+  const proposed = {
+    ...structuredClone(originalPage),
+    sections,
+  };
+  assertRequiredComposition(originalPage, proposed);
+  return validateRegisteredPage(proposed, context);
 }
 
 const aurumHeroDefaults = toPuckDefaults(getComponentDefinition("hero"));

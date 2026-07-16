@@ -72,6 +72,8 @@ function snapshotDesign(snapshot: StorefrontSnapshot) {
 
 const draftDiffers = (draft: StorefrontSnapshot, published: StorefrontSnapshot) =>
   JSON.stringify(snapshotDesign(draft)) !== JSON.stringify(snapshotDesign(published));
+const samePage = (left: PageModel, right: PageModel) =>
+  JSON.stringify(left) === JSON.stringify(right);
 
 export function ProjectEditorClient({
   projectId,
@@ -86,6 +88,9 @@ export function ProjectEditorClient({
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [selectedPageId, setSelectedPageId] = useState<string>();
   const [activeLocale, setActiveLocale] = useState<Locale>();
+  const [sessionPages, setSessionPages] = useState<Record<string, PageModel>>({});
+  const [resetKeys, setResetKeys] = useState<Record<string, number>>({});
+  const [validationMessage, setValidationMessage] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -116,6 +121,9 @@ export function ProjectEditorClient({
           if (pages.length === 0) throw new Error("No supported draft pages are available.");
           setSelectedPageId(pages.find((page) => page.type === "home")?.id ?? pages[0].id);
           setActiveLocale(aggregate.project.primaryLocale);
+          setSessionPages({});
+          setResetKeys({});
+          setValidationMessage("");
           setState({ status: "ready", aggregate, draft, published, pages });
         } catch {
           setState({ status: "validationError" });
@@ -177,7 +185,9 @@ export function ProjectEditorClient({
     );
   }
 
-  const page = state.pages.find((item) => item.id === selectedPageId) ?? state.pages[0];
+  const originalPage = state.pages.find((item) => item.id === selectedPageId) ?? state.pages[0];
+  const page = sessionPages[originalPage.id] ?? originalPage;
+  const hasUnsavedChanges = !samePage(page, originalPage);
   const locale = activeLocale ?? state.aggregate.project.primaryLocale;
   const title = resolveLocalizedText(page.title, locale, state.aggregate.project.primaryLocale);
   const context = createStorefrontRenderContext({
@@ -189,6 +199,39 @@ export function ProjectEditorClient({
   });
   const previewHref = `/projects/${projectId}${page.slug === "/" ? "" : page.slug}`;
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
+
+  const changePage = (nextPage: PageModel) => {
+    setSessionPages((current) => ({ ...current, [nextPage.id]: nextPage }));
+    setValidationMessage("");
+  };
+
+  const selectPage = (nextPageId: string) => {
+    if (
+      hasUnsavedChanges &&
+      !window.confirm(
+        "Switch pages? Your unsaved changes will stay in this editor session until you return or discard them.",
+      )
+    ) {
+      return;
+    }
+    setSelectedPageId(nextPageId);
+    setValidationMessage("");
+  };
+
+  const discardChanges = () => {
+    if (!hasUnsavedChanges) return;
+    if (!window.confirm("Discard the unsaved changes on this page? This cannot be undone.")) return;
+    setSessionPages((current) => {
+      const next = { ...current };
+      delete next[originalPage.id];
+      return next;
+    });
+    setResetKeys((current) => ({
+      ...current,
+      [originalPage.id]: (current[originalPage.id] ?? 0) + 1,
+    }));
+    setValidationMessage("");
+  };
 
   return (
     <div className={styles.editor} lang={locale} style={style}>
@@ -203,12 +246,12 @@ export function ProjectEditorClient({
           <h1>{title}</h1>
         </div>
         <div aria-label="Draft status" className={styles.draftStatus} role="status">
-          <strong>
+          <strong>{hasUnsavedChanges ? "Unsaved changes" : "No unsaved changes"}</strong>
+          <span>
             {draftDiffers(state.draft, state.published)
-              ? "Unpublished changes"
-              : "Draft is up to date"}
-          </strong>
-          <span>Read-only editor milestone</span>
+              ? "The stored draft also differs from the published storefront."
+              : "Changes stay in this editor session."}
+          </span>
         </div>
       </header>
       <div className={styles.workspace}>
@@ -217,7 +260,7 @@ export function ProjectEditorClient({
             <label htmlFor="editor-page">Storefront page</label>
             <select
               id="editor-page"
-              onChange={(event) => setSelectedPageId(event.target.value)}
+              onChange={(event) => selectPage(event.target.value)}
               value={page.id}
             >
               {state.pages.map((item) => (
@@ -252,13 +295,33 @@ export function ProjectEditorClient({
           <Link className={styles.previewLink} href={previewHref}>
             View selected page
           </Link>
+          <button
+            className={styles.discardButton}
+            disabled={!hasUnsavedChanges}
+            onClick={discardChanges}
+            type="button"
+          >
+            Discard changes
+          </button>
           <p className={styles.boundaryNote}>
-            Editing, saving and publishing arrive in later milestones. Your stored draft is
-            unchanged.
+            These changes are not saved to your stored draft. Saving and publishing arrive in later
+            milestones.
           </p>
+          {validationMessage ? (
+            <p className={styles.validationMessage} role="alert">
+              {validationMessage}
+            </p>
+          ) : null}
         </aside>
         <main className={styles.canvas}>
-          <VeskifyPuckCanvas brandSystem={state.draft.brandSystem} context={context} page={page} />
+          <VeskifyPuckCanvas
+            brandSystem={state.draft.brandSystem}
+            context={context}
+            onPageChange={changePage}
+            onValidationError={setValidationMessage}
+            page={page}
+            resetKey={resetKeys[page.id] ?? 0}
+          />
         </main>
       </div>
     </div>

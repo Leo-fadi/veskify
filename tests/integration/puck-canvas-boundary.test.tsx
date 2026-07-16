@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { createStorefrontRenderContext } from "@/components/registry";
 import { aurumNordicSeed } from "@/data/seed";
@@ -8,15 +8,33 @@ import { VeskifyPuckCanvas } from "@/integrations/puck/veskify-puck-editor";
 vi.mock("@puckeditor/core", () => ({
   Puck: ({
     config,
+    data,
+    onChange,
   }: {
     config: {
       root: {
         render: (props: { children: React.ReactNode }) => React.ReactNode;
       };
     };
+    data: { content: Array<{ type: string; props: Record<string, unknown> }> };
+    onChange?: (data: unknown) => void;
   }) => (
     <div data-testid="puck-iframe-document">
       {config.root.render({ children: <div>Canonical storefront sections</div> })}
+      <button
+        onClick={() =>
+          onChange?.({
+            ...data,
+            content: [
+              ...data.content,
+              { type: "productInfo", props: { id: "section_cross_page_tamper" } },
+            ],
+          })
+        }
+        type="button"
+      >
+        Emit tampered Puck payload
+      </button>
     </div>
   ),
   Render: () => null,
@@ -44,7 +62,14 @@ const collection = aurumNordicSeed.draftSnapshot.pages.find((page) => page.type 
 describe("Puck iframe storefront boundary", () => {
   it("keeps draft brand variables and active language inside the canvas root", () => {
     const view = render(
-      <VeskifyPuckCanvas brandSystem={customBrand} context={context("en")} page={homepage} />,
+      <VeskifyPuckCanvas
+        brandSystem={customBrand}
+        context={context("en")}
+        onPageChange={() => undefined}
+        onValidationError={() => undefined}
+        page={homepage}
+        resetKey={0}
+      />,
     );
     const canvasRoot = () =>
       screen
@@ -59,21 +84,61 @@ describe("Puck iframe storefront boundary", () => {
     expect(canvasRoot().style.getPropertyValue("--brand-spacing-density")).toBe("0.85");
 
     view.rerender(
-      <VeskifyPuckCanvas brandSystem={customBrand} context={context("fi")} page={homepage} />,
+      <VeskifyPuckCanvas
+        brandSystem={customBrand}
+        context={context("fi")}
+        onPageChange={() => undefined}
+        onValidationError={() => undefined}
+        page={homepage}
+        resetKey={0}
+      />,
     );
     expect(canvasRoot()).toHaveAttribute("lang", "fi");
     expect(canvasRoot().style.getPropertyValue("--brand-color-primary")).toBe("#123456");
 
     view.rerender(
-      <VeskifyPuckCanvas brandSystem={customBrand} context={context("fi")} page={collection} />,
+      <VeskifyPuckCanvas
+        brandSystem={customBrand}
+        context={context("fi")}
+        onPageChange={() => undefined}
+        onValidationError={() => undefined}
+        page={collection}
+        resetKey={0}
+      />,
     );
     expect(canvasRoot()).toHaveAttribute("lang", "fi");
     expect(canvasRoot().style.getPropertyValue("--brand-color-primary")).toBe("#123456");
 
     view.rerender(
-      <VeskifyPuckCanvas brandSystem={customBrand} context={context("en")} page={collection} />,
+      <VeskifyPuckCanvas
+        brandSystem={customBrand}
+        context={context("en")}
+        onPageChange={() => undefined}
+        onValidationError={() => undefined}
+        page={collection}
+        resetKey={0}
+      />,
     );
     expect(canvasRoot()).toHaveAttribute("lang", "en");
     expect(canvasRoot().style.getPropertyValue("--brand-color-primary")).toBe("#123456");
+  });
+
+  it("rejects invalid onChange data and retains the last valid canvas", () => {
+    const onPageChange = vi.fn();
+    const onValidationError = vi.fn();
+    render(
+      <VeskifyPuckCanvas
+        brandSystem={customBrand}
+        context={context("en")}
+        onPageChange={onPageChange}
+        onValidationError={onValidationError}
+        page={homepage}
+        resetKey={0}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Emit tampered Puck payload" }));
+    expect(onPageChange).not.toHaveBeenCalled();
+    expect(onValidationError).toHaveBeenCalledWith(expect.stringContaining("last valid design"));
+    expect(screen.getByText("Canonical storefront sections")).toBeVisible();
   });
 });
