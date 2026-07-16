@@ -258,7 +258,7 @@ export function ProjectEditorClient({
           </p>
         </aside>
         <main className={styles.canvas}>
-          <VeskifyPuckCanvas context={context} page={page} />
+          <VeskifyPuckCanvas brandSystem={state.draft.brandSystem} context={context} page={page} />
         </main>
       </div>
     </div>

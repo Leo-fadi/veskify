@@ -14,11 +14,17 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
   VeskifyPuckCanvas: ({
     page,
     context,
+    brandSystem,
   }: {
     page: { type: string };
     context: { activeLocale: string };
+    brandSystem: { colors: { primary: string } };
   }) => (
-    <section aria-label="Visual editor canvas">
+    <section
+      aria-label="Visual editor canvas"
+      data-primary={brandSystem.colors.primary}
+      lang={context.activeLocale}
+    >
       Canvas: {page.type} / {context.activeLocale}
     </section>
   ),

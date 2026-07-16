@@ -1,4 +1,5 @@
 import type { ComponentConfig, Config, Data, Field } from "@puckeditor/core";
+import type { ReactNode } from "react";
 import { z } from "zod";
 import {
   getComponentDefinition,
@@ -9,6 +10,7 @@ import {
   type StorefrontRenderContext,
 } from "@/components/registry";
 import { aurumNordicSeed } from "@/data/seed";
+import { brandSystemToCssVariables, type BrandSystem } from "@/domain/design-system";
 import { idSchema, localeSchema, resolveLocalizedText, type Locale } from "@/domain/shared";
 import type { PageModel, PageType, SectionInstance } from "@/domain/storefront";
 
@@ -134,6 +136,7 @@ export const safePuckPreviewContext = createStorefrontRenderContext({
 export function generateVeskifyPuckConfig(
   context: StorefrontRenderContext = safePuckPreviewContext,
   pageType: PageType = "home",
+  brandSystem: BrandSystem = aurumNordicSeed.draftSnapshot.brandSystem,
 ): Config {
   return {
     components: Object.fromEntries(
@@ -144,6 +147,17 @@ export function generateVeskifyPuckConfig(
           componentToPuckConfig(definition, context, pageType),
         ]),
     ),
+    root: {
+      render: ({ children }: { children: ReactNode }) => (
+        <div
+          data-veskify-canvas-root="true"
+          lang={context.activeLocale}
+          style={brandSystemToCssVariables(brandSystem)}
+        >
+          {children}
+        </div>
+      ),
+    },
   } as Config;
 }
 

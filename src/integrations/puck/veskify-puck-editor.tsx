@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Puck, Render, type Data } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
 import type { StorefrontRenderContext } from "@/components/registry";
+import type { BrandSystem } from "@/domain/design-system";
 import type { PageModel } from "@/domain/storefront";
 import {
   generateVeskifyPuckConfig,
@@ -24,11 +25,13 @@ const readOnlyPermissions = {
 export function VeskifyPuckCanvas({
   page,
   context,
+  brandSystem,
 }: {
   page: PageModel;
   context: StorefrontRenderContext;
+  brandSystem: BrandSystem;
 }) {
-  const config = generateVeskifyPuckConfig(context, page.type);
+  const config = generateVeskifyPuckConfig(context, page.type, brandSystem);
   const data = pageToPuckData(page, context);
 
   return (
