@@ -550,7 +550,61 @@ const collectionPage = {
       "Aurum Nordicin kulta- ja timanttisormukset.",
     ),
   },
-  sections: [],
+  sections: [
+    {
+      id: "section_collection_rings_header",
+      component: "header",
+      variant: "centered",
+      visible: true,
+      content: { brandName: "Aurum Nordic" },
+      props: { showSearch: true, showCart: true },
+    },
+    {
+      id: "section_collection_rings_intro",
+      component: "collectionHeader",
+      variant: "editorial",
+      visible: true,
+      content: { collectionId: "collection_rings" },
+      props: { mediaPosition: "right" },
+    },
+    {
+      id: "section_collection_rings_filters",
+      component: "filterBar",
+      variant: "horizontal",
+      visible: true,
+      content: {
+        filters: ["material", "metalColour", "price", "availability", "stoneShape"],
+      },
+      props: { demoOnly: true },
+    },
+    {
+      id: "section_collection_rings_products",
+      component: "productGrid",
+      variant: "editorial",
+      visible: true,
+      content: {
+        heading: enFi("Rings in this collection", "Malliston sormukset"),
+        productIds: ["product_aurora_ring_585", "product_lumi_halo_ring"],
+      },
+      props: { columns: "two" },
+    },
+    {
+      id: "section_collection_rings_footer",
+      component: "footer",
+      variant: "columns",
+      visible: true,
+      content: {
+        brandName: "Aurum Nordic",
+        contact: enFi(
+          "Helsinki · hello@aurumnordic.example",
+          "Helsinki · hello@aurumnordic.example",
+        ),
+        policyLabel: enFi("Delivery · Returns · Privacy", "Toimitus · Palautukset · Tietosuoja"),
+        copyright: enFi("© 2026 Aurum Nordic demo", "© 2026 Aurum Nordic -demo"),
+      },
+      props: { showPolicies: true },
+    },
+  ],
 };
 
 const productPage = {

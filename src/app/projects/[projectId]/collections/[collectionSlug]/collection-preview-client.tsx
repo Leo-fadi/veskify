@@ -3,30 +3,28 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { createStorefrontRenderContext } from "@/components/registry";
-import {
-  renderStorefrontPage,
-  validateStorefrontHomepage,
-} from "@/components/storefront/storefront-page";
+import { renderStorefrontPage } from "@/components/storefront/storefront-page";
 import { brandSystemToCssVariables } from "@/domain/design-system";
 import type { Locale } from "@/domain/shared";
 import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
 import { createBrowserProjectRepository, ProjectNotFoundError } from "@/services/storage";
 
 type RepositoryFactory = () => ProjectRepository;
+type Snapshot = ProjectAggregate["snapshots"][number];
+type Page = Snapshot["pages"][number];
 
 type LoadState =
   | { status: "loading" }
-  | { status: "notFound" }
-  | { status: "missingDraft" }
-  | { status: "missingHomepage" }
-  | { status: "failure" }
-  | { status: "validationFailure" }
   | {
-      status: "success";
-      aggregate: ProjectAggregate;
-      draft: ProjectAggregate["snapshots"][number];
-      homepage: ProjectAggregate["snapshots"][number]["pages"][number];
-    };
+      status:
+        | "notFound"
+        | "missingDraft"
+        | "collectionNotFound"
+        | "missingPage"
+        | "failure"
+        | "validationFailure";
+    }
+  | { status: "success"; aggregate: ProjectAggregate; draft: Snapshot; page: Page };
 
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
 
@@ -40,7 +38,7 @@ function StatusPanel({
   retry?: () => void;
 }) {
   return (
-    <main className="project-state" role="main">
+    <main className="project-state">
       <section aria-live="polite" className="project-state__panel">
         <p className="project-state__eyebrow">Draft preview</p>
         <h1>{title}</h1>
@@ -56,18 +54,20 @@ function StatusPanel({
   );
 }
 
-export function ProjectPreviewClient({
+export function CollectionPreviewClient({
   projectId,
+  collectionSlug,
   repositoryFactory = defaultRepositoryFactory,
 }: {
   projectId: string;
+  collectionSlug: string;
   repositoryFactory?: RepositoryFactory;
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const [activeLocale, setActiveLocale] = useState<Locale | undefined>(undefined);
+  const [activeLocale, setActiveLocale] = useState<Locale>();
 
   useEffect(() => {
     let cancelled = false;
@@ -78,60 +78,53 @@ export function ProjectPreviewClient({
         const draft = aggregate.snapshots.find(
           (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
         );
-        if (!draft) {
-          setState({ status: "missingDraft" });
-          return;
-        }
-        const homepage = draft.pages.find((page) => page.type === "home");
-        if (!homepage) {
-          setState({ status: "missingHomepage" });
-          return;
-        }
+        if (!draft) return setState({ status: "missingDraft" });
+        const collection = aggregate.catalogue.collections.find(
+          (item) => item.slug === collectionSlug,
+        );
+        if (!collection) return setState({ status: "collectionNotFound" });
+        const page = draft.pages.find(
+          (item) => item.type === "collection" && item.slug === `/collections/${collection.slug}`,
+        );
+        if (!page) return setState({ status: "missingPage" });
         try {
-          validateStorefrontHomepage(homepage);
           const context = createStorefrontRenderContext({
             activeLocale: aggregate.project.primaryLocale,
             primaryLocale: aggregate.project.primaryLocale,
             catalogue: aggregate.catalogue,
             snapshot: draft,
           });
-          void renderStorefrontPage(homepage, context);
+          void renderStorefrontPage(page, context);
         } catch {
-          setState({ status: "validationFailure" });
-          return;
+          return setState({ status: "validationFailure" });
         }
         setActiveLocale(aggregate.project.primaryLocale);
-        setState({ status: "success", aggregate, draft, homepage });
+        setState({ status: "success", aggregate, draft, page });
       })
       .catch((error: unknown) => {
-        if (cancelled) return;
-        setState({
-          status: error instanceof ProjectNotFoundError ? "notFound" : "failure",
-        });
+        if (!cancelled)
+          setState({ status: error instanceof ProjectNotFoundError ? "notFound" : "failure" });
       });
-
     return () => {
       cancelled = true;
     };
-  }, [attempt, projectId]);
+  }, [attempt, collectionSlug, projectId]);
 
   const retry = () => {
     setState({ status: "loading" });
-    setAttempt((current) => current + 1);
+    setAttempt((value) => value + 1);
   };
 
-  if (state.status === "loading") {
-    return <StatusPanel title="Loading your storefront" message="Preparing the saved draft…" />;
-  }
-  if (state.status === "notFound") {
+  if (state.status === "loading")
+    return <StatusPanel title="Loading the collection" message="Preparing the saved draft…" />;
+  if (state.status === "notFound")
     return (
       <StatusPanel
         title="Project not found"
         message="We could not find this saved storefront on this device."
       />
     );
-  }
-  if (state.status === "missingDraft") {
+  if (state.status === "missingDraft")
     return (
       <StatusPanel
         title="Draft unavailable"
@@ -139,52 +132,56 @@ export function ProjectPreviewClient({
         retry={retry}
       />
     );
-  }
-  if (state.status === "missingHomepage") {
+  if (state.status === "collectionNotFound")
     return (
       <StatusPanel
-        title="Homepage unavailable"
-        message="The saved draft does not contain a homepage yet."
+        title="Collection not found"
+        message="This collection is not available in the saved catalogue."
+      />
+    );
+  if (state.status === "missingPage")
+    return (
+      <StatusPanel
+        title="Collection page unavailable"
+        message="The saved draft does not contain a page for this collection yet."
         retry={retry}
       />
     );
-  }
-  if (state.status === "validationFailure") {
+  if (state.status === "validationFailure")
     return (
       <StatusPanel
-        title="Storefront could not be displayed"
-        message="Some saved storefront content needs attention before it can be shown safely."
+        title="Collection could not be displayed"
+        message="Some saved collection content needs attention before it can be shown safely."
         retry={retry}
       />
     );
-  }
-  if (state.status === "failure") {
+  if (state.status === "failure")
     return (
       <StatusPanel
-        title="Storefront could not be loaded"
+        title="Collection could not be loaded"
         message="We could not open the saved project. Your draft has not been changed."
         retry={retry}
       />
     );
-  }
+  if (state.status !== "success") return null;
 
   const locale = activeLocale ?? state.aggregate.project.primaryLocale;
-  const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
-  const renderContext = createStorefrontRenderContext({
+  const context = createStorefrontRenderContext({
     activeLocale: locale,
     primaryLocale: state.aggregate.project.primaryLocale,
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
   });
+  const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
 
   return (
     <div className="project-preview" lang={locale} style={style}>
-      <header className="project-preview__header">
+      <div className="project-preview__header">
         <div>
-          <Link className="project-preview__back" href="/">
-            Veskify home
+          <Link className="project-preview__back" href={`/projects/${projectId}`}>
+            Storefront home
           </Link>
-          <h1>{state.aggregate.project.name}</h1>
+          <p className="project-preview__title">{state.aggregate.project.name}</p>
         </div>
         <div className="project-preview__status">
           <span>Draft preview</span>
@@ -196,7 +193,7 @@ export function ProjectPreviewClient({
             <label key={enabledLocale}>
               <input
                 checked={locale === enabledLocale}
-                name="storefront-locale"
+                name="collection-locale"
                 onChange={() => setActiveLocale(enabledLocale)}
                 type="radio"
                 value={enabledLocale}
@@ -205,9 +202,9 @@ export function ProjectPreviewClient({
             </label>
           ))}
         </fieldset>
-      </header>
-      <div aria-label="Draft storefront" className="project-preview__storefront">
-        {renderStorefrontPage(state.homepage, renderContext)}
+      </div>
+      <div aria-label="Draft collection storefront" className="project-preview__storefront">
+        {renderStorefrontPage(state.page, context)}
       </div>
     </div>
   );

@@ -98,15 +98,10 @@ describe("P1-01 homepage registry", () => {
     expect([...container.children].map((element) => element.tagName.toLowerCase())).toEqual([
       "aside",
       "header",
-      "section",
-      "section",
-      "section",
-      "section",
-      "section",
-      "section",
-      "section",
+      "main",
       "footer",
     ]);
+    expect(container.querySelector("main")?.children).toHaveLength(7);
     expect(screen.getByRole("heading", { name: "Made for northern light" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Aurora Ring 585" })).toBeVisible();
     expect(screen.getByText((value) => value.replace(/\s/g, "") === "1290€")).toBeVisible();
