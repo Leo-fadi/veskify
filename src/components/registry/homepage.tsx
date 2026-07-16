@@ -12,6 +12,17 @@ import {
   StoreHeader,
 } from "@/components/storefront/homepage-sections";
 import { defineComponent, type StorefrontRenderContext } from "./contract";
+import {
+  ctaPresentationSchema,
+  designVocabularyDefaults,
+  designVocabularyVariants,
+  ctaPresentationEditorField,
+  sectionAlignmentSchema,
+  sectionAlignmentEditorField,
+  sectionStyleEditorFields,
+  sectionStyleSchema,
+  sectionVocabularyClass,
+} from "./design-vocabulary";
 
 const localAssetSchema = assetRefSchema.refine((asset) => asset.url.startsWith("/seed-assets/"), {
   message: "Storefront media must use a controlled local seed asset.",
@@ -33,14 +44,14 @@ export const announcementBarContentSchema = z
   .object({ message: localizedTextSchema, link: linkSchema.optional() })
   .strict();
 export const announcementBarPropsSchema = z
-  .object({ tone: z.enum(["primary", "accent"]) })
+  .object({ tone: z.enum(["primary", "accent"]), ...sectionStyleSchema })
   .strict();
 export const announcementBarDefinition = defineComponent({
   type: "announcementBar",
   label: "Announcement bar",
   allowedPageTypes: ["home"],
-  variants: ["singleLine"] as const,
-  defaultVariant: "singleLine",
+  variants: designVocabularyVariants.announcementBar,
+  defaultVariant: designVocabularyDefaults.announcementBar,
   contentSchema: announcementBarContentSchema,
   propsSchema: announcementBarPropsSchema,
   defaultContent: {
@@ -58,31 +69,65 @@ export const announcementBarDefinition = defineComponent({
         { label: "Accent", value: "accent" },
       ],
     },
+    ...sectionStyleEditorFields,
   },
   protectedFields: { readOnlyPaths: [] },
-  renderer: ({ content, props, context }) => (
-    <AnnouncementBar {...content} {...props} context={context} />
+  renderer: ({ variant, content, props, context }) => (
+    <AnnouncementBar
+      {...content}
+      {...props}
+      className={sectionVocabularyClass(variant, props)}
+      context={context}
+    />
   ),
 });
 
 export const headerContentSchema = z.object({ brandName: z.string().min(1).max(80) }).strict();
 export const headerPropsSchema = z
-  .object({ showSearch: z.boolean(), showCart: z.boolean() })
+  .object({ showSearch: z.boolean(), showCart: z.boolean(), ...sectionStyleSchema })
   .strict();
 export const headerDefinition = defineComponent({
   type: "header",
   label: "Store header",
   allowedPageTypes: ["home", "collection", "product"],
-  variants: ["centered"] as const,
-  defaultVariant: "centered",
+  variants: designVocabularyVariants.header,
+  defaultVariant: designVocabularyDefaults.header,
   contentSchema: headerContentSchema,
   propsSchema: headerPropsSchema,
   defaultContent: { brandName: "Aurum Nordic" },
   defaultProps: { showSearch: true, showCart: true },
-  editorFields: { brandName: { source: "content", control: "text", label: "Brand name" } },
+  editorFields: {
+    brandName: { source: "content", control: "text", label: "Brand name" },
+    showSearch: {
+      source: "props",
+      control: "select",
+      label: "Search control",
+      valueType: "boolean",
+      options: [
+        { label: "Show", value: true },
+        { label: "Hide", value: false },
+      ],
+    },
+    showCart: {
+      source: "props",
+      control: "select",
+      label: "Cart demo control",
+      valueType: "boolean",
+      options: [
+        { label: "Show", value: true },
+        { label: "Hide", value: false },
+      ],
+    },
+    ...sectionStyleEditorFields,
+  },
   protectedFields: { readOnlyPaths: ["navigation"] },
-  renderer: ({ content, props, context }) => (
-    <StoreHeader {...content} {...props} context={context} />
+  renderer: ({ variant, content, props, context }) => (
+    <StoreHeader
+      {...content}
+      {...props}
+      className={sectionVocabularyClass(variant, props)}
+      context={context}
+    />
   ),
 });
 
@@ -93,14 +138,18 @@ export const featuredCategoriesContentSchema = z
   })
   .strict();
 export const featuredCategoriesPropsSchema = z
-  .object({ cardAspect: z.enum(["portrait", "square"]) })
+  .object({
+    cardAspect: z.enum(["portrait", "square"]),
+    alignment: sectionAlignmentSchema.default("left"),
+    ...sectionStyleSchema,
+  })
   .strict();
 export const featuredCategoriesDefinition = defineComponent({
   type: "featuredCategories",
   label: "Featured categories",
   allowedPageTypes: ["home"],
-  variants: ["editorialCards"] as const,
-  defaultVariant: "editorialCards",
+  variants: designVocabularyVariants.featuredCategories,
+  defaultVariant: designVocabularyDefaults.featuredCategories,
   contentSchema: featuredCategoriesContentSchema,
   propsSchema: featuredCategoriesPropsSchema,
   defaultContent: {
@@ -110,6 +159,17 @@ export const featuredCategoriesDefinition = defineComponent({
   defaultProps: { cardAspect: "portrait" },
   editorFields: {
     heading: { source: "content", control: "text", label: "Heading", localized: true },
+    cardAspect: {
+      source: "props",
+      control: "select",
+      label: "Card shape",
+      options: [
+        { label: "Portrait", value: "portrait" },
+        { label: "Square", value: "square" },
+      ],
+    },
+    alignment: sectionAlignmentEditorField,
+    ...sectionStyleEditorFields,
   },
   protectedFields: { readOnlyPaths: ["collectionIds"] },
   validateContext: ({ content, context }) =>
@@ -118,8 +178,13 @@ export const featuredCategoriesDefinition = defineComponent({
       new Set(context.catalogue.collections.map((item) => item.id)),
       "collection",
     ),
-  renderer: ({ content, props, context }) => (
-    <FeaturedCategories {...content} {...props} context={context} />
+  renderer: ({ variant, content, props, context }) => (
+    <FeaturedCategories
+      {...content}
+      {...props}
+      className={sectionVocabularyClass(variant, props)}
+      context={context}
+    />
   ),
 });
 
@@ -130,14 +195,18 @@ export const productGridContentSchema = z
   })
   .strict();
 export const productGridPropsSchema = z
-  .object({ columns: z.enum(["two", "three", "four"]) })
+  .object({
+    columns: z.enum(["two", "three", "four"]),
+    alignment: sectionAlignmentSchema.default("left"),
+    ...sectionStyleSchema,
+  })
   .strict();
 export const productGridDefinition = defineComponent({
   type: "productGrid",
   label: "Product grid",
   allowedPageTypes: ["home", "collection"],
-  variants: ["editorial"] as const,
-  defaultVariant: "editorial",
+  variants: designVocabularyVariants.productGrid,
+  defaultVariant: designVocabularyDefaults.productGrid,
   contentSchema: productGridContentSchema,
   propsSchema: productGridPropsSchema,
   defaultContent: {
@@ -157,9 +226,18 @@ export const productGridDefinition = defineComponent({
         { label: "Four", value: "four" },
       ],
     },
+    alignment: sectionAlignmentEditorField,
+    ...sectionStyleEditorFields,
   },
   protectedFields: {
-    readOnlyPaths: ["productIds", "catalogue.products.*.price", "catalogue.products.*.stockStatus"],
+    readOnlyPaths: [
+      "productIds",
+      "catalogue.products.*.id",
+      "catalogue.products.*.sku",
+      "catalogue.products.*.price",
+      "catalogue.products.*.stockStatus",
+      "catalogue.products.*.images",
+    ],
   },
   validateContext: ({ content, context }) =>
     requireReferences(
@@ -167,8 +245,13 @@ export const productGridDefinition = defineComponent({
       new Set(context.catalogue.products.map((item) => item.id)),
       "product",
     ),
-  renderer: ({ content, props, context }) => (
-    <ProductGrid {...content} {...props} context={context} />
+  renderer: ({ variant, content, props, context }) => (
+    <ProductGrid
+      {...content}
+      {...props}
+      className={sectionVocabularyClass(variant, props)}
+      context={context}
+    />
   ),
 });
 
@@ -179,14 +262,19 @@ export const campaignBannerContentSchema = editorialContentSchema
   .extend({ cta: linkSchema })
   .strict();
 export const campaignBannerPropsSchema = z
-  .object({ mediaPosition: z.enum(["left", "right"]) })
+  .object({
+    mediaPosition: z.enum(["left", "right"]),
+    alignment: sectionAlignmentSchema.default("left"),
+    ctaPresentation: ctaPresentationSchema.default("primary"),
+    ...sectionStyleSchema,
+  })
   .strict();
 export const campaignBannerDefinition = defineComponent({
   type: "campaignBanner",
   label: "Campaign banner",
   allowedPageTypes: ["home", "landing"],
-  variants: ["split"] as const,
-  defaultVariant: "split",
+  variants: designVocabularyVariants.campaignBanner,
+  defaultVariant: designVocabularyDefaults.campaignBanner,
   contentSchema: campaignBannerContentSchema,
   propsSchema: campaignBannerPropsSchema,
   defaultContent: {
@@ -207,10 +295,27 @@ export const campaignBannerDefinition = defineComponent({
   editorFields: {
     heading: { source: "content", control: "text", label: "Heading", localized: true },
     body: { source: "content", control: "textarea", label: "Copy", localized: true },
+    mediaPosition: {
+      source: "props",
+      control: "select",
+      label: "Image position",
+      options: [
+        { label: "Left", value: "left" },
+        { label: "Right", value: "right" },
+      ],
+    },
+    alignment: sectionAlignmentEditorField,
+    ctaPresentation: ctaPresentationEditorField,
+    ...sectionStyleEditorFields,
   },
   protectedFields: { readOnlyPaths: ["media.url"] },
-  renderer: ({ content, props, context }) => (
-    <CampaignBanner {...content} {...props} context={context} />
+  renderer: ({ variant, content, props, context }) => (
+    <CampaignBanner
+      {...content}
+      {...props}
+      className={sectionVocabularyClass(variant, props)}
+      context={context}
+    />
   ),
 });
 
@@ -223,14 +328,18 @@ export const brandStoryContentSchema = editorialContentSchema
   })
   .strict();
 export const brandStoryPropsSchema = z
-  .object({ imagePosition: z.enum(["left", "right"]) })
+  .object({
+    imagePosition: z.enum(["left", "right"]),
+    alignment: sectionAlignmentSchema.default("left"),
+    ...sectionStyleSchema,
+  })
   .strict();
 export const brandStoryDefinition = defineComponent({
   type: "brandStory",
   label: "Brand story",
   allowedPageTypes: ["home", "content"],
-  variants: ["editorial"] as const,
-  defaultVariant: "editorial",
+  variants: designVocabularyVariants.brandStory,
+  defaultVariant: designVocabularyDefaults.brandStory,
   contentSchema: brandStoryContentSchema,
   propsSchema: brandStoryPropsSchema,
   defaultContent: {
@@ -251,10 +360,26 @@ export const brandStoryDefinition = defineComponent({
   editorFields: {
     heading: { source: "content", control: "text", label: "Heading", localized: true },
     body: { source: "content", control: "textarea", label: "Story", localized: true },
+    imagePosition: {
+      source: "props",
+      control: "select",
+      label: "Image position",
+      options: [
+        { label: "Left", value: "left" },
+        { label: "Right", value: "right" },
+      ],
+    },
+    alignment: sectionAlignmentEditorField,
+    ...sectionStyleEditorFields,
   },
   protectedFields: { readOnlyPaths: ["media.url"] },
-  renderer: ({ content, props, context }) => (
-    <BrandStory {...content} {...props} context={context} />
+  renderer: ({ variant, content, props, context }) => (
+    <BrandStory
+      {...content}
+      {...props}
+      className={sectionVocabularyClass(variant, props)}
+      context={context}
+    />
   ),
 });
 
@@ -266,15 +391,17 @@ const benefitSchema = z
   })
   .strict();
 export const benefitIconsContentSchema = z
-  .object({ benefits: z.array(benefitSchema).length(3) })
+  .object({ benefits: z.array(benefitSchema).min(3).max(4) })
   .strict();
-export const benefitIconsPropsSchema = z.object({ alignment: z.literal("center") }).strict();
+export const benefitIconsPropsSchema = z
+  .object({ alignment: sectionAlignmentSchema.default("center"), ...sectionStyleSchema })
+  .strict();
 export const benefitIconsDefinition = defineComponent({
   type: "benefitIcons",
   label: "Benefits",
   allowedPageTypes: ["home", "product", "cart"],
-  variants: ["threeColumn"] as const,
-  defaultVariant: "threeColumn",
+  variants: designVocabularyVariants.benefitIcons,
+  defaultVariant: designVocabularyDefaults.benefitIcons,
   contentSchema: benefitIconsContentSchema,
   propsSchema: benefitIconsPropsSchema,
   defaultContent: {
@@ -297,9 +424,18 @@ export const benefitIconsDefinition = defineComponent({
     ],
   },
   defaultProps: { alignment: "center" },
-  editorFields: {},
+  editorFields: {
+    alignment: sectionAlignmentEditorField,
+    ...sectionStyleEditorFields,
+  },
   protectedFields: { readOnlyPaths: ["benefits.*.icon"] },
-  renderer: ({ content, context }) => <BenefitIcons {...content} context={context} />,
+  renderer: ({ variant, content, props, context }) => (
+    <BenefitIcons
+      {...content}
+      className={sectionVocabularyClass(variant, props)}
+      context={context}
+    />
+  ),
 });
 
 export const newsletterContentSchema = z
@@ -310,13 +446,19 @@ export const newsletterContentSchema = z
     buttonLabel: localizedTextSchema,
   })
   .strict();
-export const newsletterPropsSchema = z.object({ demoOnly: z.literal(true) }).strict();
+export const newsletterPropsSchema = z
+  .object({
+    demoOnly: z.literal(true),
+    alignment: sectionAlignmentSchema.default("left"),
+    ...sectionStyleSchema,
+  })
+  .strict();
 export const newsletterDefinition = defineComponent({
   type: "newsletter",
   label: "Newsletter",
   allowedPageTypes: ["home"],
-  variants: ["inline"] as const,
-  defaultVariant: "inline",
+  variants: designVocabularyVariants.newsletter,
+  defaultVariant: designVocabularyDefaults.newsletter,
   contentSchema: newsletterContentSchema,
   propsSchema: newsletterPropsSchema,
   defaultContent: {
@@ -332,10 +474,17 @@ export const newsletterDefinition = defineComponent({
   editorFields: {
     heading: { source: "content", control: "text", label: "Heading", localized: true },
     body: { source: "content", control: "textarea", label: "Copy", localized: true },
+    alignment: sectionAlignmentEditorField,
+    ...sectionStyleEditorFields,
   },
   protectedFields: { readOnlyPaths: ["demoOnly"] },
-  renderer: ({ sectionId, content, context }) => (
-    <Newsletter {...content} context={context} sectionId={sectionId} />
+  renderer: ({ sectionId, variant, content, props, context }) => (
+    <Newsletter
+      {...content}
+      className={sectionVocabularyClass(variant, props)}
+      context={context}
+      sectionId={sectionId}
+    />
   ),
 });
 
@@ -347,13 +496,15 @@ export const footerContentSchema = z
     copyright: localizedTextSchema,
   })
   .strict();
-export const footerPropsSchema = z.object({ showPolicies: z.boolean() }).strict();
+export const footerPropsSchema = z
+  .object({ showPolicies: z.boolean(), ...sectionStyleSchema })
+  .strict();
 export const footerDefinition = defineComponent({
   type: "footer",
   label: "Store footer",
   allowedPageTypes: ["home", "collection", "product"],
-  variants: ["columns"] as const,
-  defaultVariant: "columns",
+  variants: designVocabularyVariants.footer,
+  defaultVariant: designVocabularyDefaults.footer,
   contentSchema: footerContentSchema,
   propsSchema: footerPropsSchema,
   defaultContent: {
@@ -365,10 +516,16 @@ export const footerDefinition = defineComponent({
   defaultProps: { showPolicies: true },
   editorFields: {
     contact: { source: "content", control: "text", label: "Contact", localized: true },
+    ...sectionStyleEditorFields,
   },
   protectedFields: { readOnlyPaths: ["navigation", "policyLabel"] },
-  renderer: ({ content, props, context }) => (
-    <StoreFooter {...content} {...props} context={context} />
+  renderer: ({ variant, content, props, context }) => (
+    <StoreFooter
+      {...content}
+      {...props}
+      className={sectionVocabularyClass(variant, props)}
+      context={context}
+    />
   ),
 });
 

@@ -28,6 +28,14 @@ function toPuckField(metadata: EditorFieldMetadata): Field {
   return { type: metadata.control, label: metadata.label };
 }
 
+function variantPuckField(definition: ComponentDefinition): Field {
+  return {
+    type: "select",
+    label: "Layout variant",
+    options: definition.variants.map((variant) => ({ label: variant, value: variant })),
+  };
+}
+
 function getLocalizedDefault(value: unknown, locale: Locale): string {
   if (typeof value !== "object" || value === null) return "";
   const localized = value as Record<string, unknown>;
@@ -38,21 +46,51 @@ function getLocalizedDefault(value: unknown, locale: Locale): string {
 
 export function toPuckDefaults(definition: ComponentDefinition): PuckEditorProps {
   const defaultLocale = "en";
-  return Object.fromEntries(
-    Object.entries(definition.editorFields).map(([fieldName, metadata]) => {
-      const source =
-        metadata.source === "content" ? definition.defaultContent : definition.defaultProps;
-      const value = source[fieldName];
-      return [
-        fieldName,
-        metadata.localized
-          ? getLocalizedDefault(value, defaultLocale)
-          : metadata.valueType === "boolean"
-            ? value
-            : String(value),
-      ];
-    }),
-  );
+  return {
+    variant: definition.defaultVariant,
+    ...Object.fromEntries(
+      Object.entries(definition.editorFields).map(([fieldName, metadata]) => {
+        const source =
+          metadata.source === "content" ? definition.defaultContent : definition.defaultProps;
+        const value = source[fieldName];
+        return [
+          fieldName,
+          metadata.localized
+            ? getLocalizedDefault(value, defaultLocale)
+            : metadata.valueType === "boolean"
+              ? value
+              : String(value),
+        ];
+      }),
+    ),
+  };
+}
+
+export function sectionToPuckProps(
+  definition: ComponentDefinition,
+  section: SectionInstance,
+  activeLocale: Locale = "en",
+): PuckEditorProps {
+  definition.validate(section);
+  return {
+    id: section.id,
+    variant: section.variant,
+    activeLocale,
+    ...Object.fromEntries(
+      Object.entries(definition.editorFields).map(([fieldName, metadata]) => {
+        const source = metadata.source === "content" ? section.content : section.props;
+        const value = source[fieldName];
+        return [
+          fieldName,
+          metadata.localized
+            ? getLocalizedDefault(value, activeLocale)
+            : metadata.valueType === "stringList" && Array.isArray(value)
+              ? value.join(", ")
+              : value,
+        ];
+      }),
+    ),
+  };
 }
 
 export function editorPropsToSection(
@@ -71,6 +109,7 @@ export function editorPropsToSection(
 
   for (const [fieldName, metadata] of Object.entries(definition.editorFields)) {
     const value = editorProps[fieldName];
+    if (value === undefined) continue;
     const target = metadata.source === "content" ? content : props;
     target[fieldName] = metadata.localized
       ? {
@@ -88,10 +127,9 @@ export function editorPropsToSection(
   const section = {
     id: idSchema.parse(editorProps.id ?? `${definition.type}_puck_item`),
     component: definition.type,
-    variant:
-      typeof editorProps.__veskifyVariant === "string"
-        ? editorProps.__veskifyVariant
-        : definition.defaultVariant,
+    variant: z
+      .string()
+      .parse(editorProps.variant ?? editorProps.__veskifyVariant ?? definition.defaultVariant),
     visible:
       typeof editorProps.__veskifyVisible === "boolean" ? editorProps.__veskifyVisible : true,
     content,
@@ -110,22 +148,14 @@ function componentToPuckConfig(
   context: StorefrontRenderContext,
   pageType: PageType,
 ): ComponentConfig<PuckEditorProps> {
+  const fields: Record<string, Field> = { variant: variantPuckField(definition) };
+  for (const [name, metadata] of Object.entries(definition.editorFields)) {
+    fields[name] = toPuckField(metadata);
+  }
   return {
     label: definition.label,
-    fields: {
-      variant: {
-        type: "select",
-        label: "Layout variant",
-        options: definition.variants.map((variant) => ({ label: variant, value: variant })),
-      },
-      ...Object.fromEntries(
-        Object.entries(definition.editorFields).map(([name, metadata]) => [
-          name,
-          toPuckField(metadata),
-        ]),
-      ),
-    },
-    defaultProps: { variant: definition.defaultVariant, ...toPuckDefaults(definition) },
+    fields,
+    defaultProps: toPuckDefaults(definition),
     permissions: {
       delete: !["header", "footer"].includes(definition.type),
       duplicate: false,
@@ -182,24 +212,10 @@ export function pageToPuckData(page: PageModel, context: StorefrontRenderContext
     content: page.sections.map((section) => {
       const definition = getComponentDefinition(section.component);
       definition.validate(section, page.type, context);
-      const editableProps = Object.fromEntries(
-        Object.entries(definition.editorFields).map(([fieldName, metadata]) => {
-          const source = metadata.source === "content" ? section.content : section.props;
-          const value = source[fieldName];
-          return [
-            fieldName,
-            metadata.localized && typeof value === "object" && value !== null
-              ? resolveLocalizedText(value, activeLocale, context.primaryLocale)
-              : value,
-          ];
-        }),
-      );
+      const editableProps = sectionToPuckProps(definition, section, activeLocale);
       return {
         type: definition.type,
         props: {
-          id: section.id,
-          activeLocale,
-          variant: section.variant,
           ...editableProps,
           __veskifyContent: structuredClone(section.content),
           __veskifyProps: structuredClone(section.props),

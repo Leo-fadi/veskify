@@ -8,6 +8,15 @@ import {
   RelatedProducts,
 } from "@/components/storefront/product-sections";
 import { defineComponent } from "./contract";
+import {
+  designVocabularyDefaults,
+  designVocabularyVariants,
+  sectionAlignmentSchema,
+  sectionAlignmentEditorField,
+  sectionStyleEditorFields,
+  sectionStyleSchema,
+  sectionVocabularyClass,
+} from "./design-vocabulary";
 
 const productReferenceSchema = z.object({ productId: z.string().min(3) }).strict();
 const emptyPropsSchema = z.object({}).strict();
@@ -100,13 +109,20 @@ export const productOptionsDefinition = defineComponent({
 export const imageTextContentSchema = z
   .object({ heading: localizedTextSchema, body: localizedTextSchema, media: localAssetSchema })
   .strict();
-export const imageTextPropsSchema = z.object({ demoPlaceholder: z.literal(true) }).strict();
+export const imageTextPropsSchema = z
+  .object({
+    demoPlaceholder: z.literal(true),
+    mediaPosition: z.enum(["left", "right"]).optional(),
+    alignment: sectionAlignmentSchema.default("left"),
+    ...sectionStyleSchema,
+  })
+  .strict();
 export const imageTextDefinition = defineComponent({
   type: "imageText",
   label: "Image and text",
   allowedPageTypes: ["product", "content"],
-  variants: ["imageRight"] as const,
-  defaultVariant: "imageRight",
+  variants: designVocabularyVariants.imageText,
+  defaultVariant: designVocabularyDefaults.imageText,
   contentSchema: imageTextContentSchema,
   propsSchema: imageTextPropsSchema,
   defaultContent: {
@@ -126,9 +142,18 @@ export const imageTextDefinition = defineComponent({
   editorFields: {
     heading: { source: "content", control: "text", label: "Heading", localized: true },
     body: { source: "content", control: "textarea", label: "Body", localized: true },
+    alignment: sectionAlignmentEditorField,
+    ...sectionStyleEditorFields,
   },
   protectedFields: { readOnlyPaths: ["media.url", "demoPlaceholder"] },
-  renderer: ({ content, context }) => <ImageText {...content} context={context} />,
+  renderer: ({ variant, content, props, context }) => (
+    <ImageText
+      {...content}
+      className={sectionVocabularyClass(variant, props)}
+      context={context}
+      layout={variant === "imageLeft" ? "left" : variant === "stacked" ? "stacked" : "right"}
+    />
+  ),
 });
 
 export const relatedProductsContentSchema = z
