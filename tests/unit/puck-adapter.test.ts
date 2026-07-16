@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getComponentDefinition, veskifyComponentRegistry } from "@/components/registry";
 import {
   editorPropsToSection,
+  generateVeskifyPuckConfig,
   initialPuckData,
   toPuckDefaults,
   validatePuckDraftPayload,
@@ -9,12 +10,14 @@ import {
 } from "@/integrations/puck/config";
 
 describe("Veskify Puck adapter", () => {
-  it("derives all approved homepage components from the Veskify registry", () => {
-    expect(Object.keys(veskifyPuckConfig.components)).toEqual(
-      Object.keys(veskifyComponentRegistry),
-    );
+  it("derives a page-scoped homepage config from the registry", () => {
+    const expected = Object.values(veskifyComponentRegistry)
+      .filter((definition) => definition.allowedPageTypes.includes("home"))
+      .map((definition) => definition.type);
+    expect(Object.keys(veskifyPuckConfig.components)).toEqual(expected);
     expect(veskifyPuckConfig.components.hero?.label).toBe("Aurum hero");
-    expect(Object.keys(veskifyPuckConfig.components)).toHaveLength(17);
+    expect(veskifyPuckConfig.components).not.toHaveProperty("productGallery");
+    expect(veskifyPuckConfig.components).not.toHaveProperty("collectionHeader");
     expect(Object.keys(veskifyPuckConfig.components.hero?.fields ?? {})).toEqual(
       Object.keys(veskifyComponentRegistry.hero.editorFields),
     );
@@ -59,5 +62,68 @@ describe("Veskify Puck adapter", () => {
         }),
       ),
     ).toThrow();
+  });
+
+  it("scopes product components to product Puck surfaces", () => {
+    const productConfig = generateVeskifyPuckConfig(undefined, "product");
+    const collectionConfig = generateVeskifyPuckConfig(undefined, "collection");
+    expect(productConfig.components).toHaveProperty("productGallery");
+    expect(collectionConfig.components).not.toHaveProperty("productGallery");
+    expect(collectionConfig.components).toHaveProperty("collectionHeader");
+    expect(productConfig.components).not.toHaveProperty("collectionHeader");
+    expect(productConfig.components).not.toHaveProperty("announcementBar");
+  });
+
+  it("rejects cross-page Puck payloads and accepts canonical product placement", () => {
+    const productGallery = getComponentDefinition("productGallery");
+    const galleryItem = {
+      type: "productGallery",
+      props: { id: "section_puck_product_gallery", ...toPuckDefaults(productGallery) },
+    };
+    const galleryPayload = { content: [galleryItem], root: { props: {} } };
+    expect(() => validatePuckDraftPayload(galleryPayload, undefined, "home")).toThrow(
+      /not allowed on home/,
+    );
+    expect(() => validatePuckDraftPayload(galleryPayload, undefined, "collection")).toThrow(
+      /not allowed on collection/,
+    );
+    expect(validatePuckDraftPayload(galleryPayload, undefined, "product").content).toHaveLength(1);
+
+    const announcement = getComponentDefinition("announcementBar");
+    expect(() =>
+      validatePuckDraftPayload(
+        {
+          content: [
+            {
+              type: "announcementBar",
+              props: { id: "section_puck_announcement", ...toPuckDefaults(announcement) },
+            },
+          ],
+          root: { props: {} },
+        },
+        undefined,
+        "product",
+      ),
+    ).toThrow(/not allowed on product/);
+
+    const collectionHeader = getComponentDefinition("collectionHeader");
+    const collectionPayload = {
+      content: [
+        {
+          type: "collectionHeader",
+          props: { id: "section_puck_collection_header", ...toPuckDefaults(collectionHeader) },
+        },
+      ],
+      root: { props: {} },
+    };
+    expect(() => validatePuckDraftPayload(collectionPayload, undefined, "home")).toThrow(
+      /not allowed on home/,
+    );
+    expect(() => validatePuckDraftPayload(collectionPayload, undefined, "product")).toThrow(
+      /not allowed on product/,
+    );
+    expect(
+      validatePuckDraftPayload(collectionPayload, undefined, "collection").content,
+    ).toHaveLength(1);
   });
 });

@@ -149,7 +149,7 @@ describe("product preview route states", () => {
 
     view.rerender(
       <ProductPreviewClient
-        productId="project_aurum_nordic"
+        productId="project_next"
         productSlug="next-product"
         repositoryFactory={() => repo}
       />,
@@ -159,5 +159,18 @@ describe("product preview route states", () => {
     expect(
       screen.queryByRole("heading", { level: 1, name: "Aurora Ring 585" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows a controlled validation error for inconsistent canonical product references", async () => {
+    const value = aggregate();
+    const productPage = value.snapshots
+      .find((item) => item.id === value.project.draftSnapshotId)!
+      .pages.find((item) => item.type === "product")!;
+    productPage.sections.find((item) => item.component === "productGallery")!.content.productId =
+      "product_lumi_halo_ring";
+    route(repository(() => Promise.resolve(value)));
+    expect(
+      await screen.findByRole("heading", { name: "Product page could not be displayed" }),
+    ).toBeVisible();
   });
 });

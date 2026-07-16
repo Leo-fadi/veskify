@@ -95,7 +95,7 @@ describe("collection registry definitions", () => {
     expect(filterBarDefinition.protectedFields.readOnlyPaths).toContain(
       "catalogue.products.*.price",
     );
-    const config = generateVeskifyPuckConfig();
+    const config = generateVeskifyPuckConfig(undefined, "collection");
     expect(config.components).toHaveProperty("collectionHeader");
     expect(config.components).toHaveProperty("filterBar");
   });

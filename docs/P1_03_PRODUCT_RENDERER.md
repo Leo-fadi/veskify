@@ -26,6 +26,8 @@ Unit and integration coverage exercises strict schemas, variants/page types, con
 
 Review hardening adds an exact, idempotent P1-02 IndexedDB seed migration; typed boolean Puck fields; neutral missing-availability presentation; canonical product resolution from stored page slugs and registered product references; project-scoped preview navigation; and pointer/keyboard-operable multi-image gallery selection. Exact older Phase 0 and P1-01 migration fingerprints remain in the migration chain, while any edited project, catalogue, draft or published data is preserved.
 
+The final audit also routes every product image through the shared safe storefront image boundary: controlled local media uses `next/image`, while schema-validated and normalized HTTPS media uses a native image without unrestricted host configuration. Puck configuration, rendering, conversion and draft validation are page-scoped, so product-only components cannot appear on home or collection editor surfaces. Delivery and returns placeholders use the exact bilingual merchant-review warning, and gallery/details IDs and controls remain hydration-safe and keyboard accessible.
+
 ## Deliberately deferred and parallel ownership
 
 Real zoom, cart, checkout, inventory/availability mutation, order submission, editor/Puck chrome, draft mutation, onboarding, AI operations, publishing UI, real commerce APIs and additional variants remain deferred. This change owns product-page work only: the collection placeholder is preserved, no collection renderer or tests were implemented, and no P1-04 or later work was introduced.

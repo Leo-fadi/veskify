@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { resolveLocalizedText, type AssetRef, type LocalizedText } from "@/domain/shared";
 import type { ProductDisplayModel } from "@/domain/catalogue";
 import type { StorefrontRenderContext } from "@/components/registry/contract";
+import { StorefrontImage } from "./homepage-sections";
 import styles from "./product-sections.module.css";
 
 const text = (value: LocalizedText, context: StorefrontRenderContext) =>
@@ -29,26 +29,6 @@ const stockLabel = (stock: ProductDisplayModel["stockStatus"], context: Storefro
         ? label("Currently unavailable", "Ei juuri nyt saatavilla", context)
         : label("In stock", "Varastossa", context);
 
-function ProductImage({
-  asset,
-  context,
-  className,
-}: {
-  asset: AssetRef;
-  context: StorefrontRenderContext;
-  className?: string;
-}) {
-  return (
-    <Image
-      alt={asset.decorative || !asset.alt ? "" : text(asset.alt, context)}
-      className={className}
-      height={1000}
-      src={asset.url}
-      width={1000}
-    />
-  );
-}
-
 export function ProductGallery({
   productId,
   context,
@@ -66,7 +46,7 @@ export function ProductGallery({
       className={styles.gallery}
     >
       <div className={styles.primaryMedia}>
-        <ProductImage asset={selectedImage} className={styles.primaryImage} context={context} />
+        <StorefrontImage asset={selectedImage} className={styles.primaryImage} context={context} />
         <button
           aria-label={label(
             "Zoom product image — placeholder",
@@ -94,7 +74,7 @@ export function ProductGallery({
             onClick={() => setSelectedImageId(image.id)}
             type="button"
           >
-            <ProductImage asset={image} context={context} />
+            <StorefrontImage asset={image} context={context} />
           </button>
         ))}
       </div>
@@ -193,11 +173,10 @@ export function ProductOptions({
 }) {
   const product = productFor(productId, context);
   const options = product.orderOptions ?? [];
+  const headingId = useId();
   return (
-    <section aria-labelledby="product-options-heading" className={styles.options}>
-      <h2 id="product-options-heading">
-        {label("Choose your details", "Valitse yksityiskohdat", context)}
-      </h2>
+    <section aria-labelledby={headingId} className={styles.options}>
+      <h2 id={headingId}>{label("Choose your details", "Valitse yksityiskohdat", context)}</h2>
       {options.length === 0 && product.variants.length === 0 ? (
         <p>
           {label(
@@ -285,7 +264,7 @@ export function ImageText({
           )}
         </p>
       </div>
-      <ProductImage asset={media} context={context} />
+      <StorefrontImage asset={media} context={context} />
     </section>
   );
 }
@@ -300,14 +279,15 @@ export function RelatedProducts({
   context: StorefrontRenderContext;
 }) {
   const products = productIds.map((id) => productFor(id, context));
+  const headingId = useId();
   return (
-    <section aria-labelledby="related-products-heading" className={styles.related}>
-      <h2 id="related-products-heading">{text(heading, context)}</h2>
+    <section aria-labelledby={headingId} className={styles.related}>
+      <h2 id={headingId}>{text(heading, context)}</h2>
       {products.length ? (
         <div className={styles.relatedGrid}>
           {products.map((product) => (
             <article key={product.id}>
-              <ProductImage asset={product.images[0]} context={context} />
+              <StorefrontImage asset={product.images[0]} context={context} />
               <h3>{text(product.title, context)}</h3>
               <p>{formatPrice(product.price.amount)}</p>
               <p>

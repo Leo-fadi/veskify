@@ -33,11 +33,25 @@ export const productOrderOptionDisplaySchema = z
         path: ["values"],
       });
     }
+    if (option.type === "selection" && option.maxLength !== undefined) {
+      context.addIssue({
+        code: "custom",
+        message: "Selection options cannot define a character limit.",
+        path: ["maxLength"],
+      });
+    }
     if (option.type === "text" && option.maxLength === undefined) {
       context.addIssue({
         code: "custom",
         message: "Text options require a character limit.",
         path: ["maxLength"],
+      });
+    }
+    if (option.type === "text" && option.values !== undefined) {
+      context.addIssue({
+        code: "custom",
+        message: "Text options cannot define selection values.",
+        path: ["values"],
       });
     }
   });

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { createStorefrontRenderContext } from "@/components/registry";
@@ -164,5 +164,81 @@ describe("Aurum Nordic product composition", () => {
     expect(requiredInput).toBeRequired();
     expect(requiredInput).toHaveAttribute("maxlength", "20");
     expect(screen.queryByLabelText(/Engraving \(optional\)/)).not.toBeInTheDocument();
+  });
+
+  it("uses the shared safe image boundary for local and normalized HTTPS product media", () => {
+    const catalogue = structuredClone(aurumNordicSeed.catalogue);
+    catalogue.products[0].images = [
+      {
+        id: "asset_remote_product",
+        url: "  HTTPS://media.example.test/aurora.jpg  ",
+        alt: { en: "Remote Aurora ring", fi: "Aurora-sormus verkossa" },
+        decorative: false,
+      },
+    ];
+    const remotePage = structuredClone(page);
+    remotePage.sections[6].content.productIds = ["product_aurora_ring_585"];
+    render(
+      <>
+        {renderStorefrontPage(
+          remotePage,
+          createStorefrontRenderContext({
+            activeLocale: "en",
+            primaryLocale: "en",
+            catalogue,
+            snapshot: aurumNordicSeed.draftSnapshot,
+          }),
+        )}
+      </>,
+    );
+    const gallery = screen.getByRole("region", { name: "Product gallery" });
+    const remoteImages = within(gallery).getAllByAltText("Remote Aurora ring");
+    expect(remoteImages).toHaveLength(2);
+    expect(remoteImages[0]).toHaveAttribute("src", "https://media.example.test/aurora.jpg");
+    expect(remoteImages[0]).not.toHaveAttribute("data-nimg");
+    expect(screen.getAllByAltText("Remote Aurora ring")).toHaveLength(3);
+  });
+
+  it("renders one image safely and rejects zero or unsafe product images", () => {
+    const oneImage = structuredClone(aurumNordicSeed.catalogue);
+    oneImage.products[0].images = [oneImage.products[0].images[0]];
+    const view = render(
+      <>
+        {renderStorefrontPage(
+          page,
+          createStorefrontRenderContext({
+            activeLocale: "en",
+            primaryLocale: "en",
+            catalogue: oneImage,
+            snapshot: aurumNordicSeed.draftSnapshot,
+          }),
+        )}
+      </>,
+    );
+    expect(screen.getAllByRole("button", { name: /View image/ })).toHaveLength(1);
+    view.unmount();
+
+    for (const url of ["http://media.example.test/ring.jpg", "javascript:alert(1)", "not a url"]) {
+      const invalid = structuredClone(aurumNordicSeed.catalogue);
+      invalid.products[0].images[0].url = url;
+      expect(() =>
+        createStorefrontRenderContext({
+          activeLocale: "en",
+          primaryLocale: "en",
+          catalogue: invalid,
+          snapshot: aurumNordicSeed.draftSnapshot,
+        }),
+      ).toThrow();
+    }
+    const empty = structuredClone(aurumNordicSeed.catalogue);
+    empty.products[0].images = [];
+    expect(() =>
+      createStorefrontRenderContext({
+        activeLocale: "en",
+        primaryLocale: "en",
+        catalogue: empty,
+        snapshot: aurumNordicSeed.draftSnapshot,
+      }),
+    ).toThrow();
   });
 });

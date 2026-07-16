@@ -5,6 +5,7 @@ import {
   validateRegisteredPage,
 } from "@/components/registry";
 import { aurumNordicSeed } from "@/data/seed";
+import { productOrderOptionDisplaySchema } from "@/domain/catalogue";
 
 const page = aurumNordicSeed.draftSnapshot.pages.find((item) => item.type === "product")!;
 const context = createStorefrontRenderContext({
@@ -71,5 +72,48 @@ describe("P1-03 product registry", () => {
       "catalogue.products.*.orderOptions",
     );
     expect(validateRegisteredPage(page, context).sections).toHaveLength(8);
+  });
+
+  it("validates both option types and rejects malformed cross-type values", () => {
+    expect(
+      productOrderOptionDisplaySchema.parse({
+        id: "option_size",
+        type: "selection",
+        label: { en: "Size" },
+        required: true,
+        values: [{ en: "15" }],
+      }).type,
+    ).toBe("selection");
+    expect(
+      productOrderOptionDisplaySchema.parse({
+        id: "option_engraving",
+        type: "text",
+        label: { en: "Engraving" },
+        required: false,
+        maxLength: 20,
+      }).type,
+    ).toBe("text");
+    for (const malformed of [
+      { id: "option_empty", type: "selection", label: { en: "Size" }, required: true, values: [] },
+      {
+        id: "option_selection_limit",
+        type: "selection",
+        label: { en: "Size" },
+        required: true,
+        values: [{ en: "15" }],
+        maxLength: 2,
+      },
+      { id: "option_text_no_limit", type: "text", label: { en: "Text" }, required: false },
+      {
+        id: "option_text_values",
+        type: "text",
+        label: { en: "Text" },
+        required: false,
+        maxLength: 20,
+        values: [{ en: "Invalid" }],
+      },
+    ]) {
+      expect(() => productOrderOptionDisplaySchema.parse(malformed)).toThrow();
+    }
   });
 });
