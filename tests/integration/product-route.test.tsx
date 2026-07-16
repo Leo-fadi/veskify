@@ -128,4 +128,11 @@ describe("product preview route states", () => {
       "/projects/project_aurum_nordic/products/aurora-ring-585",
     );
   });
+
+  it("renders exactly one main landmark", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByRole("heading", { level: 1, name: "Aurora Ring 585" });
+    expect(screen.getAllByRole("main")).toHaveLength(1);
+    expect(screen.getByRole("main")).not.toHaveAttribute("aria-label", "Draft product storefront");
+  });
 });

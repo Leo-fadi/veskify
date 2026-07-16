@@ -100,4 +100,60 @@ describe("Aurum Nordic product composition", () => {
     await user.keyboard("{Enter}");
     expect(first).toHaveAttribute("aria-pressed", "true");
   });
+
+  it.each([
+    [1290, /1\s?290\s?€/],
+    [1290.5, /1\s?290,50\s?€/],
+  ])("preserves the catalogue price %s in product and related presentation", (amount, expected) => {
+    const catalogue = structuredClone(aurumNordicSeed.catalogue);
+    catalogue.products[0].price.amount = amount;
+    const pricePage = structuredClone(page);
+    pricePage.sections[6].content.productIds = ["product_aurora_ring_585"];
+    render(
+      <>
+        {renderStorefrontPage(
+          pricePage,
+          createStorefrontRenderContext({
+            activeLocale: "en",
+            primaryLocale: "en",
+            catalogue,
+            snapshot: aurumNordicSeed.draftSnapshot,
+          }),
+        )}
+      </>,
+    );
+    expect(screen.getAllByText(expected)).toHaveLength(2);
+  });
+
+  it("renders optional and required text options from canonical option metadata", () => {
+    const optional = renderPage("en");
+    const optionalInput = screen.getByLabelText(/Engraving \(optional\)/);
+    expect(optionalInput).not.toBeRequired();
+    expect(optionalInput).toHaveAttribute("maxlength", "20");
+    optional.unmount();
+
+    const catalogue = structuredClone(aurumNordicSeed.catalogue);
+    const engraving = catalogue.products[0].orderOptions?.find(
+      (option) => option.id === "option_aurora_engraving",
+    );
+    if (!engraving) throw new Error("Expected engraving option fixture.");
+    engraving.required = true;
+    render(
+      <>
+        {renderStorefrontPage(
+          page,
+          createStorefrontRenderContext({
+            activeLocale: "en",
+            primaryLocale: "en",
+            catalogue,
+            snapshot: aurumNordicSeed.draftSnapshot,
+          }),
+        )}
+      </>,
+    );
+    const requiredInput = screen.getByLabelText(/Engraving \(required\)/);
+    expect(requiredInput).toBeRequired();
+    expect(requiredInput).toHaveAttribute("maxlength", "20");
+    expect(screen.queryByLabelText(/Engraving \(optional\)/)).not.toBeInTheDocument();
+  });
 });

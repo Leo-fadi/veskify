@@ -11,11 +11,13 @@ const text = (value: LocalizedText, context: StorefrontRenderContext) =>
   resolveLocalizedText(value, context.activeLocale, context.primaryLocale);
 const productFor = (id: string, context: StorefrontRenderContext) =>
   context.catalogue.products.find((product) => product.id === id)!;
-const price = new Intl.NumberFormat("fi-FI", {
-  style: "currency",
-  currency: "EUR",
-  maximumFractionDigits: 0,
-});
+const formatPrice = (amount: number) =>
+  new Intl.NumberFormat("fi-FI", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 const label = (en: string, fi: string, context: StorefrontRenderContext) =>
   context.activeLocale === "fi" ? fi : en;
 const stockLabel = (stock: ProductDisplayModel["stockStatus"], context: StorefrontRenderContext) =>
@@ -140,7 +142,7 @@ export function ProductInfo({
           ★★★★★ <small>{label("Visual demo", "Visuaalinen demo", context)}</small>
         </p>
       ) : null}
-      <p className={styles.price}>{price.format(product.price.amount)}</p>
+      <p className={styles.price}>{formatPrice(product.price.amount)}</p>
       <p className={styles.stock}>
         {stockLabel(product.stockStatus, context)} · {label("Display only", "Vain esitys", context)}
       </p>
@@ -218,8 +220,12 @@ export function ProductOptions({
           </fieldset>
         ) : (
           <label className={styles.engraving} key={option.id}>
-            {text(option.label, context)} ({label("optional", "valinnainen", context)})
-            <input maxLength={option.maxLength} type="text" />
+            {text(option.label, context)} (
+            {option.required
+              ? label("required", "pakollinen", context)
+              : label("optional", "valinnainen", context)}
+            )
+            <input maxLength={option.maxLength} required={option.required} type="text" />
             <small>
               {label(
                 `Maximum ${option.maxLength} characters`,
@@ -290,7 +296,7 @@ export function RelatedProducts({
             <article key={product.id}>
               <ProductImage asset={product.images[0]} context={context} />
               <h3>{text(product.title, context)}</h3>
-              <p>{price.format(product.price.amount)}</p>
+              <p>{formatPrice(product.price.amount)}</p>
               <p>
                 {stockLabel(product.stockStatus, context)} ·{" "}
                 {label("Display only", "Vain esitys", context)}

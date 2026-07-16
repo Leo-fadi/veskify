@@ -220,9 +220,9 @@ export function ProductPreviewClient({
           ))}
         </fieldset>
       </div>
-      <main aria-label="Draft product storefront" className="project-preview__storefront">
+      <div aria-label="Draft product storefront" className="project-preview__storefront">
         {renderStorefrontPage(state.productPage, context)}
-      </main>
+      </div>
     </div>
   );
 }
