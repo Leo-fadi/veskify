@@ -3,7 +3,51 @@
 import { useState } from "react";
 import { Puck, Render, type Data } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
-import { initialPuckData, validatePuckDraftPayload, veskifyPuckConfig } from "./config";
+import type { StorefrontRenderContext } from "@/components/registry";
+import type { BrandSystem } from "@/domain/design-system";
+import type { PageModel } from "@/domain/storefront";
+import {
+  generateVeskifyPuckConfig,
+  initialPuckData,
+  pageToPuckData,
+  validatePuckDraftPayload,
+  veskifyPuckConfig,
+} from "./config";
+
+const readOnlyPermissions = {
+  drag: false,
+  duplicate: false,
+  delete: false,
+  edit: false,
+  insert: false,
+};
+
+export function VeskifyPuckCanvas({
+  page,
+  context,
+  brandSystem,
+}: {
+  page: PageModel;
+  context: StorefrontRenderContext;
+  brandSystem: BrandSystem;
+}) {
+  const config = generateVeskifyPuckConfig(context, page.type, brandSystem);
+  const data = pageToPuckData(page, context);
+
+  return (
+    <section aria-label="Visual editor canvas" className="min-h-[44rem] bg-white">
+      <Puck
+        config={config}
+        data={data}
+        headerTitle="Visual editor"
+        height="calc(100vh - 12rem)"
+        key={`${page.id}-${context.activeLocale}`}
+        overrides={{ headerActions: () => <></> }}
+        permissions={readOnlyPermissions}
+      />
+    </section>
+  );
+}
 
 export function VeskifyPuckEditorProof() {
   const [status, setStatus] = useState("No draft handoff has been validated yet.");

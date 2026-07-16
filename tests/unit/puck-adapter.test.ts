@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { getComponentDefinition, veskifyComponentRegistry } from "@/components/registry";
+import { aurumNordicSeed } from "@/data/seed";
 import {
   editorPropsToSection,
   generateVeskifyPuckConfig,
   initialPuckData,
+  pageToPuckData,
+  safePuckPreviewContext,
   toPuckDefaults,
   validatePuckDraftPayload,
   veskifyPuckConfig,
@@ -125,5 +128,24 @@ describe("Veskify Puck adapter", () => {
     expect(
       validatePuckDraftPayload(collectionPayload, undefined, "collection").content,
     ).toHaveLength(1);
+  });
+
+  it("maps canonical pages without exposing protected product fields", () => {
+    const page = aurumNordicSeed.draftSnapshot.pages.find((item) => item.type === "product")!;
+    const data = pageToPuckData(page, safePuckPreviewContext);
+    expect(data.content.map((item) => item.type)).toEqual(
+      page.sections.map((section) => section.component),
+    );
+    const productInfo = data.content.find((item) => item.type === "productInfo")!;
+    expect(productInfo.props).not.toHaveProperty("price");
+    expect(productInfo.props).not.toHaveProperty("sku");
+    expect(productInfo.props).not.toHaveProperty("stockStatus");
+    expect(productInfo.props).not.toHaveProperty("images");
+    expect(productInfo.props).toEqual(
+      expect.objectContaining({
+        __veskifyContent: page.sections.find((section) => section.component === "productInfo")!
+          .content,
+      }),
+    );
   });
 });
