@@ -1,0 +1,110 @@
+.collectionHeader {
+  display: grid;
+  width: min(100%, 90rem);
+  margin: 0 auto;
+  background: color-mix(in srgb, var(--brand-color-primary) 9%, var(--brand-color-background));
+}
+
+.collectionCopy {
+  display: flex;
+  max-width: 42rem;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(3rem, 8vw, 7rem) clamp(1.25rem, 6vw, 6rem);
+}
+
+.collectionCopy h1 {
+  max-width: 12ch;
+  margin: 0.6rem 0 1rem;
+  font-family: var(--brand-font-heading);
+  font-size: clamp(2.75rem, 8vw, 6.5rem);
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+}
+
+.collectionCopy > p:last-child {
+  max-width: 38rem;
+  margin: 0;
+  color: var(--brand-color-muted-text);
+  font-size: clamp(1rem, 1.8vw, 1.2rem);
+  line-height: 1.7;
+}
+
+.collectionMedia {
+  width: 100%;
+  height: 100%;
+  min-height: 22rem;
+  object-fit: cover;
+  background: var(--brand-color-surface);
+}
+
+.empty {
+  align-self: center;
+  margin: clamp(1.25rem, 6vw, 6rem);
+  border: 1px dashed var(--brand-color-border);
+  padding: 2rem;
+  color: var(--brand-color-muted-text);
+  line-height: 1.6;
+}
+
+.filterBar {
+  display: flex;
+  width: min(calc(100% - 2rem), 80rem);
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: end;
+  margin: 0 auto;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--brand-color-border);
+}
+
+.filterBar fieldset {
+  display: contents;
+}
+
+.filterBar legend {
+  width: 100%;
+  color: var(--brand-color-muted-text);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.filterBar button,
+.filterBar select {
+  min-height: 2.75rem;
+  border: 1px solid var(--brand-color-border);
+  border-radius: 999px;
+  background: var(--brand-color-surface);
+  color: var(--brand-color-text);
+  padding: 0.65rem 1rem;
+  font: inherit;
+  font-weight: 700;
+}
+
+.filterBar select {
+  margin-left: auto;
+}
+
+.demoNote {
+  width: 100%;
+  margin: 0;
+  color: var(--brand-color-muted-text);
+  font-size: 0.8rem;
+}
+
+@media (min-width: 768px) {
+  .collectionHeader {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .filterBar button {
+    flex: 1 1 calc(50% - 0.75rem);
+  }
+
+  .filterBar select {
+    width: 100%;
+    margin-left: 0;
+  }
+}
