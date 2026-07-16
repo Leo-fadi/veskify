@@ -43,7 +43,7 @@ describe("P1-01 homepage registry", () => {
       expect(() =>
         definition.contentSchema.parse({ ...definition.defaultContent, unsafe: true }),
       ).toThrow();
-      expect(definition.variants).toEqual([definition.defaultVariant]);
+      expect(definition.variants).toContain(definition.defaultVariant);
     }
   });
 

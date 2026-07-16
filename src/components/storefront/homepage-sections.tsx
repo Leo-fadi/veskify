@@ -55,16 +55,18 @@ export function AnnouncementBar({
   link,
   tone,
   context,
+  className,
 }: {
   message: LocalizedText;
   link?: SafeLink;
   tone: "primary" | "accent";
   context: StorefrontRenderContext;
+  className?: string;
 }) {
   return (
     <aside
       aria-label={text({ en: "Store announcement", fi: "Kaupan tiedote" }, context)}
-      className={`store-announcement store-announcement--${tone}`}
+      className={`store-announcement store-announcement--${tone} ${className ?? ""}`}
     >
       <span>{text(message, context)}</span>
       {link ? <a href={link.href}>{text(link.label, context)}</a> : null}
@@ -86,14 +88,16 @@ export function StoreHeader({
   showSearch,
   showCart,
   context,
+  className,
 }: {
   brandName: string;
   showSearch: boolean;
   showCart: boolean;
   context: StorefrontRenderContext;
+  className?: string;
 }) {
   return (
-    <header className="store-header">
+    <header className={`store-header ${className ?? ""}`}>
       <a className="store-brand" href={context.pagePaths.page_home ?? "/"}>
         {brandName}
       </a>
@@ -165,18 +169,23 @@ export function FeaturedCategories({
   collectionIds,
   cardAspect,
   context,
+  className,
 }: {
   heading: LocalizedText;
   collectionIds: string[];
   cardAspect: "portrait" | "square";
   context: StorefrontRenderContext;
+  className?: string;
 }) {
   const collections = collectionIds.flatMap((id) => {
     const collection = context.catalogue.collections.find((item) => item.id === id);
     return collection ? [collection] : [];
   });
   return (
-    <section className="store-section" aria-labelledby="featured-categories-heading">
+    <section
+      className={`store-section ${className ?? ""}`}
+      aria-labelledby="featured-categories-heading"
+    >
       <div className="store-section__heading">
         <p className="store-eyebrow">{text({ en: "Explore", fi: "Tutustu" }, context)}</p>
         <h2 id="featured-categories-heading">{text(heading, context)}</h2>
@@ -213,18 +222,22 @@ export function FeaturedCategories({
   );
 }
 
-const price = new Intl.NumberFormat("fi-FI", {
-  style: "currency",
-  currency: "EUR",
-  maximumFractionDigits: 0,
-});
+const formatPrice = (amount: number) =>
+  new Intl.NumberFormat("fi-FI", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 const stockLabel = (stock: string | undefined, context: StorefrontRenderContext) =>
   text(
-    stock === "lowStock"
-      ? { en: "Limited availability", fi: "Rajoitetusti saatavilla" }
-      : stock === "outOfStock"
-        ? { en: "Currently unavailable", fi: "Ei juuri nyt saatavilla" }
-        : { en: "In stock", fi: "Varastossa" },
+    stock === undefined
+      ? { en: "Availability information unavailable", fi: "Saatavuustietoa ei ole" }
+      : stock === "lowStock"
+        ? { en: "Limited availability", fi: "Rajoitetusti saatavilla" }
+        : stock === "outOfStock"
+          ? { en: "Currently unavailable", fi: "Ei juuri nyt saatavilla" }
+          : { en: "In stock", fi: "Varastossa" },
     context,
   );
 
@@ -233,11 +246,13 @@ export function ProductGrid({
   productIds,
   columns,
   context,
+  className,
 }: {
   heading: LocalizedText;
   productIds: string[];
   columns: "two" | "three" | "four";
   context: StorefrontRenderContext;
+  className?: string;
 }) {
   const products = productIds.flatMap((id) => {
     const product = context.catalogue.products.find((item) => item.id === id);
@@ -245,7 +260,7 @@ export function ProductGrid({
   });
   return (
     <section
-      className="store-section store-section--surface"
+      className={`store-section store-section--surface ${className ?? ""}`}
       aria-labelledby="product-grid-heading"
     >
       <div className="store-section__heading">
@@ -261,7 +276,7 @@ export function ProductGrid({
               <StorefrontImage asset={product.images[0]} context={context} />
               <div>
                 <h3>{text(product.title, context)}</h3>
-                <p>{price.format(product.price.amount)}</p>
+                <p>{formatPrice(product.price.amount)}</p>
                 <p className="product-card__stock">{stockLabel(product.stockStatus, context)}</p>
               </div>
             </article>
@@ -288,17 +303,21 @@ export function CampaignBanner({
   cta,
   media,
   mediaPosition,
+  ctaPresentation = "primary",
   context,
+  className,
 }: {
   heading: LocalizedText;
   body: LocalizedText;
   cta: SafeLink;
   media: AssetRef;
   mediaPosition: "left" | "right";
+  ctaPresentation?: "primary" | "secondary" | "text";
   context: StorefrontRenderContext;
+  className?: string;
 }) {
   return (
-    <section className={`campaign-banner store-split--media-${mediaPosition}`}>
+    <section className={`campaign-banner store-split--media-${mediaPosition} ${className ?? ""}`}>
       <StorefrontImage asset={media} context={context} />
       <div>
         <p className="store-eyebrow">
@@ -306,7 +325,10 @@ export function CampaignBanner({
         </p>
         <h2>{text(heading, context)}</h2>
         <p>{text(body, context)}</p>
-        <a className="store-button store-button--light" href={cta.href}>
+        <a
+          className={`store-button store-button--light store-button--${ctaPresentation}`}
+          href={cta.href}
+        >
           {text(cta.label, context)}
         </a>
       </div>
@@ -321,6 +343,7 @@ export function BrandStory({
   facts,
   imagePosition,
   context,
+  className,
 }: {
   heading: LocalizedText;
   body: LocalizedText;
@@ -328,9 +351,10 @@ export function BrandStory({
   facts: Array<{ value: string; label: LocalizedText }>;
   imagePosition: "left" | "right";
   context: StorefrontRenderContext;
+  className?: string;
 }) {
   return (
-    <section className={`brand-story store-split--media-${imagePosition}`}>
+    <section className={`brand-story store-split--media-${imagePosition} ${className ?? ""}`}>
       <div>
         <p className="store-eyebrow">Aurum Nordic</p>
         <h2>{text(heading, context)}</h2>
@@ -353,13 +377,15 @@ const benefitIcon: Record<string, string> = { craft: "✦", delivery: "◇", car
 export function BenefitIcons({
   benefits,
   context,
+  className,
 }: {
   benefits: Array<{ icon: string; title: LocalizedText; text: LocalizedText }>;
   context: StorefrontRenderContext;
+  className?: string;
 }) {
   return (
     <section
-      className="benefits"
+      className={`benefits ${className ?? ""}`}
       aria-label={text(
         { en: "Why shop with Aurum Nordic", fi: "Miksi valita Aurum Nordic" },
         context,
@@ -394,6 +420,7 @@ export function Newsletter({
   buttonLabel,
   sectionId,
   context,
+  className,
 }: {
   heading: LocalizedText;
   body: LocalizedText;
@@ -401,10 +428,11 @@ export function Newsletter({
   buttonLabel: LocalizedText;
   sectionId: string;
   context: StorefrontRenderContext;
+  className?: string;
 }) {
   const emailInputId = `${sectionId}-email`;
   return (
-    <section className="newsletter">
+    <section className={`newsletter ${className ?? ""}`}>
       <div>
         <p className="store-eyebrow">Aurum journal</p>
         <h2>{text(heading, context)}</h2>
@@ -437,6 +465,7 @@ export function StoreFooter({
   copyright,
   showPolicies,
   context,
+  className,
 }: {
   brandName: string;
   contact: LocalizedText;
@@ -444,9 +473,10 @@ export function StoreFooter({
   copyright: LocalizedText;
   showPolicies: boolean;
   context: StorefrontRenderContext;
+  className?: string;
 }) {
   return (
-    <footer className="store-footer">
+    <footer className={`store-footer ${className ?? ""}`}>
       {showPolicies ? (
         <div>
           <a className="store-brand" href={context.pagePaths.page_home ?? "/"}>

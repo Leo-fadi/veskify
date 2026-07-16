@@ -244,14 +244,20 @@ export function ImageText({
   body,
   media,
   context,
+  className,
+  layout,
 }: {
   heading: LocalizedText;
   body: LocalizedText;
   media: AssetRef;
   context: StorefrontRenderContext;
+  className?: string;
+  layout: "left" | "right" | "stacked";
 }) {
   return (
-    <section className={styles.imageText}>
+    <section
+      className={`${styles.imageText} store-image-text store-image-text--${layout} ${className ?? ""}`}
+    >
       <div>
         <p className={styles.eyebrow}>{label("Product guide", "Tuoteopas", context)}</p>
         <h2>{text(heading, context)}</h2>

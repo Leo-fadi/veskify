@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../components/storefront/design-vocabulary.css";
 
 :root {
   color-scheme: light;
