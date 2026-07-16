@@ -38,7 +38,12 @@ describe("Aurum Nordic product composition", () => {
     expect(screen.getByText("14K")).toBeInTheDocument();
     expect(screen.getByText("Maximum 20 characters")).toBeInTheDocument();
     expect(screen.getByText("Lumi Halo Ring")).toBeInTheDocument();
-    expect(container.children).toHaveLength(8);
+    expect(Array.from(container.children).map((node) => node.tagName)).toEqual([
+      "HEADER",
+      "MAIN",
+      "FOOTER",
+    ]);
+    expect(container.querySelector("main")?.children).toHaveLength(6);
   });
 
   it("renders Finnish product and option labels", () => {

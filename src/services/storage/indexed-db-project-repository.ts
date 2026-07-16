@@ -63,7 +63,7 @@ function sameValue(left: unknown, right: unknown): boolean {
 }
 
 function phase0Snapshot(snapshot: StorefrontSnapshot): StorefrontSnapshot {
-  const legacy = clone(snapshot);
+  const legacy = p1_01Snapshot(snapshot);
   const homepage = legacy.pages.find((page) => page.type === "home");
   if (!homepage) return legacy;
   homepage.sections = [
@@ -85,6 +85,22 @@ function phase0Snapshot(snapshot: StorefrontSnapshot): StorefrontSnapshot {
   ];
   return legacy;
 }
+
+function p1_01Snapshot(snapshot: StorefrontSnapshot): StorefrontSnapshot {
+  const legacy = clone(snapshot);
+  const collectionPage = legacy.pages.find((page) => page.type === "collection");
+  if (collectionPage) collectionPage.sections = [];
+  return legacy;
+}
+
+export const aurumNordicP101SeedState = {
+  project: clone(aurumNordicSeed.project),
+  catalogue: clone(aurumNordicSeed.catalogue),
+  snapshots: [
+    p1_01Snapshot(aurumNordicSeed.publishedSnapshot),
+    p1_01Snapshot(aurumNordicSeed.draftSnapshot),
+  ],
+};
 
 export const aurumNordicPhase0SeedState = {
   project: clone(aurumNordicSeed.project),
@@ -389,16 +405,17 @@ export class IndexedDbProjectRepository implements ProjectRepository {
           .objectStore("snapshots")
           .index("by-project")
           .getAll(aurumNordicSeed.project.id);
-        const expectedSnapshots = aurumNordicPhase0SeedState.snapshots;
-        const untouched =
-          sameValue(legacyProject, aurumNordicPhase0SeedState.project) &&
-          sameValue(legacyCatalogue, aurumNordicPhase0SeedState.catalogue) &&
-          expectedSnapshots.length === legacySnapshots.length &&
-          expectedSnapshots.every((expected) =>
-            legacySnapshots.some(
-              (stored) => stored.id === expected.id && sameValue(stored, expected),
+        const untouched = [aurumNordicPhase0SeedState, aurumNordicP101SeedState].some(
+          (expectedState) =>
+            sameValue(legacyProject, expectedState.project) &&
+            sameValue(legacyCatalogue, expectedState.catalogue) &&
+            expectedState.snapshots.length === legacySnapshots.length &&
+            expectedState.snapshots.every((expected) =>
+              legacySnapshots.some(
+                (stored) => stored.id === expected.id && sameValue(stored, expected),
+              ),
             ),
-          );
+        );
         if (untouched) {
           await transaction.objectStore("catalogues").put(clone(aurumNordicSeed.catalogue));
           await transaction.objectStore("snapshots").put(clone(aurumNordicSeed.publishedSnapshot));

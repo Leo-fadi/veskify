@@ -111,7 +111,7 @@ describe("Aurum Nordic jewellery seed", () => {
     });
   });
 
-  it("provides the complete registered Appendix C homepage and keeps later page UI deferred", () => {
+  it("provides the complete home and collection compositions while keeping product UI deferred", () => {
     const validated = validateRegisteredSnapshot(
       aurumNordicSeed.draftSnapshot,
       aurumNordicSeed.catalogue,
@@ -129,7 +129,13 @@ describe("Aurum Nordic jewellery seed", () => {
       "newsletter",
       "footer",
     ]);
-    expect(validated.pages[1]?.sections).toEqual([]);
+    expect(validated.pages[1]?.sections.map((section) => section.component)).toEqual([
+      "header",
+      "collectionHeader",
+      "filterBar",
+      "productGrid",
+      "footer",
+    ]);
     expect(validated.pages[2]?.sections.map((section) => section.component)).toEqual([
       "header",
       "productGallery",
