@@ -40,8 +40,7 @@ export function validateProjectAggregate(input: ProjectAggregate): ProjectAggreg
     }
     if (
       snapshots.some(
-        (snapshot) =>
-          snapshot.projectId !== project.id || snapshot.catalogueRef !== catalogue.id,
+        (snapshot) => snapshot.projectId !== project.id || snapshot.catalogueRef !== catalogue.id,
       )
     ) {
       throw new Error("Snapshot project and catalogue references must resolve.");

@@ -1,10 +1,5 @@
 import { z } from "zod";
-import {
-  assetRefSchema,
-  idSchema,
-  localizedSeoSchema,
-  localizedTextSchema,
-} from "@/domain/shared";
+import { assetRefSchema, idSchema, localizedSeoSchema, localizedTextSchema } from "@/domain/shared";
 
 const attributeValueSchema = z.union([
   z.string().trim().min(1),
@@ -67,10 +62,18 @@ export const productDisplayModelSchema = z
     const variantIds = product.variants.map((variant) => variant.id);
     const optionIds = product.orderOptions?.map((option) => option.id) ?? [];
     if (new Set(variantIds).size !== variantIds.length) {
-      context.addIssue({ code: "custom", message: "Variant IDs must be unique.", path: ["variants"] });
+      context.addIssue({
+        code: "custom",
+        message: "Variant IDs must be unique.",
+        path: ["variants"],
+      });
     }
     if (new Set(optionIds).size !== optionIds.length) {
-      context.addIssue({ code: "custom", message: "Order option IDs must be unique.", path: ["orderOptions"] });
+      context.addIssue({
+        code: "custom",
+        message: "Order option IDs must be unique.",
+        path: ["orderOptions"],
+      });
     }
   });
 

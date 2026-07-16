@@ -17,7 +17,10 @@ describe("shared schemas", () => {
       fi: "Korut",
     });
     expect(
-      localizedSeoSchema.parse({ title: { en: "Aurum Nordic" }, metaDescription: { fi: "Pohjoista tyyliä" } }),
+      localizedSeoSchema.parse({
+        title: { en: "Aurum Nordic" },
+        metaDescription: { fi: "Pohjoista tyyliä" },
+      }),
     ).toBeTruthy();
   });
 
@@ -32,7 +35,11 @@ describe("shared schemas", () => {
     expect(
       assetRefSchema.parse({ id: "asset_hero", url: "/assets/hero.jpg", alt: { en: "Gold ring" } }),
     ).toMatchObject({ decorative: false });
-    expect(assetRefSchema.parse({ id: "asset_bg", url: "/images/bg.png", decorative: true })).toBeTruthy();
-    expect(() => assetRefSchema.parse({ id: "asset_missing", url: "/assets/missing.jpg" })).toThrow();
+    expect(
+      assetRefSchema.parse({ id: "asset_bg", url: "/images/bg.png", decorative: true }),
+    ).toBeTruthy();
+    expect(() =>
+      assetRefSchema.parse({ id: "asset_missing", url: "/assets/missing.jpg" }),
+    ).toThrow();
   });
 });

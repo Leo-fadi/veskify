@@ -8,7 +8,10 @@ describe("application shell", () => {
 
     expect(screen.getByRole("main")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: /Aurum Nordic/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Review status/i })).toHaveAttribute("href", "#foundation-status");
+    expect(screen.getByRole("link", { name: /Review status/i })).toHaveAttribute(
+      "href",
+      "#foundation-status",
+    );
     expect(screen.getByText(/stops before onboarding/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Aurum Nordic draft preview/i })).toHaveAttribute(
       "href",

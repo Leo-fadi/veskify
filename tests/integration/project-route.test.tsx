@@ -19,9 +19,10 @@ function aggregate(): ProjectAggregate {
   };
 }
 
-function repositoryWithGet(
-  get: ProjectRepository["get"],
-): { repository: ProjectRepository; get: ReturnType<typeof vi.fn<ProjectRepository["get"]>> } {
+function repositoryWithGet(get: ProjectRepository["get"]): {
+  repository: ProjectRepository;
+  get: ReturnType<typeof vi.fn<ProjectRepository["get"]>>;
+} {
   const getMock = vi.fn(get);
   return {
     get: getMock,
@@ -46,9 +47,7 @@ function renderRoute(repository: ProjectRepository) {
 
 describe("seed project route", () => {
   it("shows a loading state while the repository is pending", () => {
-    const { repository } = repositoryWithGet(
-      () => new Promise<ProjectAggregate>(() => undefined),
-    );
+    const { repository } = repositoryWithGet(() => new Promise<ProjectAggregate>(() => undefined));
     renderRoute(repository);
     expect(screen.getByRole("heading", { name: "Loading your storefront" })).toBeVisible();
   });
@@ -77,9 +76,7 @@ describe("seed project route", () => {
 
   it("falls back to the primary locale when Finnish content is missing", async () => {
     const value = aggregate();
-    const draft = value.snapshots.find(
-      (snapshot) => snapshot.id === value.project.draftSnapshotId,
-    );
+    const draft = value.snapshots.find((snapshot) => snapshot.id === value.project.draftSnapshotId);
     const hero = draft?.pages.find((page) => page.type === "home")?.sections[0];
     if (hero) hero.content.title = { en: "Primary locale title" };
     const { repository } = repositoryWithGet(() => Promise.resolve(value));
@@ -113,9 +110,7 @@ describe("seed project route", () => {
 
   it("shows a missing homepage state", async () => {
     const value = aggregate();
-    const draft = value.snapshots.find(
-      (snapshot) => snapshot.id === value.project.draftSnapshotId,
-    );
+    const draft = value.snapshots.find((snapshot) => snapshot.id === value.project.draftSnapshotId);
     if (draft) draft.pages = draft.pages.filter((page) => page.type !== "home");
     const { repository } = repositoryWithGet(() => Promise.resolve(value));
     renderRoute(repository);
@@ -136,9 +131,7 @@ describe("seed project route", () => {
 
   it("rejects invalid composition before registry rendering", async () => {
     const value = aggregate();
-    const draft = value.snapshots.find(
-      (snapshot) => snapshot.id === value.project.draftSnapshotId,
-    );
+    const draft = value.snapshots.find((snapshot) => snapshot.id === value.project.draftSnapshotId);
     const hero = draft?.pages.find((page) => page.type === "home")?.sections[0];
     if (hero) hero.component = "unknownComponent";
     const { repository } = repositoryWithGet(() => Promise.resolve(value));
@@ -154,7 +147,9 @@ describe("seed project route", () => {
     await screen.findByRole("heading", { name: "Made for northern light" });
 
     expect(screen.queryByText(/puck/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /save|publish|delete|edit/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /save|publish|delete|edit/i }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/property panel|selection/i)).not.toBeInTheDocument();
   });
 });

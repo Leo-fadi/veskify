@@ -4,7 +4,15 @@ import prettier from "eslint-config-prettier";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: [".next/**", "node_modules/**", "playwright-report/**", "test-results/**", "coverage/**"] },
+  {
+    ignores: [
+      ".next/**",
+      "node_modules/**",
+      "playwright-report/**",
+      "test-results/**",
+      "coverage/**",
+    ],
+  },
   js.configs.recommended,
   ...next,
   ...tseslint.configs.recommendedTypeChecked,

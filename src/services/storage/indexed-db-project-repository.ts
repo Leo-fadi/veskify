@@ -58,11 +58,7 @@ function clone<T>(value: T): T {
   return structuredClone(value);
 }
 
-function defaultSnapshotId({
-  reason,
-  revision,
-  sequence,
-}: SnapshotIdentityInput): string {
+function defaultSnapshotId({ reason, revision, sequence }: SnapshotIdentityInput): string {
   return `snapshot_${reason}_${revision}_${sequence}`;
 }
 
@@ -94,12 +90,8 @@ function toSummary(project: Project): ProjectSummary {
 
 export class IndexedDbProjectRepository implements ProjectRepository {
   readonly #databaseName: string;
-  readonly #createSnapshotId: NonNullable<
-    IndexedDbProjectRepositoryOptions["createSnapshotId"]
-  >;
-  readonly #createTimestamp: NonNullable<
-    IndexedDbProjectRepositoryOptions["createTimestamp"]
-  >;
+  readonly #createSnapshotId: NonNullable<IndexedDbProjectRepositoryOptions["createSnapshotId"]>;
+  readonly #createTimestamp: NonNullable<IndexedDbProjectRepositoryOptions["createTimestamp"]>;
   #databasePromise?: Promise<IDBPDatabase<VeskifyDatabase>>;
 
   constructor(options: IndexedDbProjectRepositoryOptions = {}) {
@@ -119,10 +111,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
 
   async get(projectId: string): Promise<ProjectAggregate> {
     const database = await this.#database();
-    const transaction = database.transaction(
-      ["projects", "catalogues", "snapshots"],
-      "readonly",
-    );
+    const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readonly");
     const project = await transaction.objectStore("projects").get(projectId);
     if (!project) {
       throw new ProjectNotFoundError(projectId);
@@ -152,10 +141,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     }
 
     const database = await this.#database();
-    const transaction = database.transaction(
-      ["projects", "catalogues", "snapshots"],
-      "readwrite",
-    );
+    const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readwrite");
     const projects = transaction.objectStore("projects");
     const snapshotsStore = transaction.objectStore("snapshots");
     const project = await projects.get(projectId);
@@ -201,10 +187,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
 
   async publish(projectId: string, expectedRevision: number): Promise<ProjectAggregate> {
     const database = await this.#database();
-    const transaction = database.transaction(
-      ["projects", "catalogues", "snapshots"],
-      "readwrite",
-    );
+    const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readwrite");
     const projects = transaction.objectStore("projects");
     const snapshotsStore = transaction.objectStore("snapshots");
     const project = await projects.get(projectId);
@@ -266,10 +249,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
 
   async restore(projectId: string, snapshotId: string): Promise<StorefrontSnapshot> {
     const database = await this.#database();
-    const transaction = database.transaction(
-      ["projects", "catalogues", "snapshots"],
-      "readwrite",
-    );
+    const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readwrite");
     const projects = transaction.objectStore("projects");
     const snapshotsStore = transaction.objectStore("snapshots");
     const project = await projects.get(projectId);
@@ -353,10 +333,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
   }
 
   async #bootstrap(database: IDBPDatabase<VeskifyDatabase>): Promise<void> {
-    const transaction = database.transaction(
-      ["projects", "catalogues", "snapshots"],
-      "readwrite",
-    );
+    const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readwrite");
     const projects = transaction.objectStore("projects");
     if ((await projects.count()) > 0) {
       await transaction.done;
@@ -366,10 +343,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     const aggregate = validateProjectAggregate({
       project: clone(aurumNordicSeed.project),
       catalogue: clone(aurumNordicSeed.catalogue),
-      snapshots: [
-        clone(aurumNordicSeed.publishedSnapshot),
-        clone(aurumNordicSeed.draftSnapshot),
-      ],
+      snapshots: [clone(aurumNordicSeed.publishedSnapshot), clone(aurumNordicSeed.draftSnapshot)],
     });
     await transaction.objectStore("catalogues").put(aggregate.catalogue);
     for (const snapshot of aggregate.snapshots) {

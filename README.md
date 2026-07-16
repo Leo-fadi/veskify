@@ -6,15 +6,22 @@ Veskify is a standalone AI storefront **design** agent demo for retailers with v
 
 - Product and software specification: [`docs/VESKIFY_SDD.md`](docs/VESKIFY_SDD.md)
 - Codex repository instructions: [`AGENTS.md`](AGENTS.md)
-- Phase 0 Batch 1 notes: [`docs/PHASE_0_FOUNDATION.md`](docs/PHASE_0_FOUNDATION.md)
+- Phase 0 implementation history: [`docs/PHASE_0_FOUNDATION.md`](docs/PHASE_0_FOUNDATION.md)
+- Phase 0 completion matrix: [`docs/PHASE_0_COMPLETION.md`](docs/PHASE_0_COMPLETION.md)
 
 ## Current scope
 
-The completed Phase 0 foundation through P0-07 includes canonical domain schemas, the controlled component registry, the validated **Aurum Nordic** jewellery seed, repository-level draft/publish/restore semantics, browser persistence through an isolated IndexedDB adapter, and a first read-only persisted project route. Editor UI, onboarding, AI operations, and later work remain intentionally deferred.
+**Phase 0 is complete.** The reproducible foundation includes canonical domain schemas, the controlled component registry, isolated Puck infrastructure, the validated **Aurum Nordic** jewellery seed, repository-level draft/publish/restore semantics, browser persistence, and a first read-only persisted project route.
 
-After starting the development server, open the seeded draft project at:
+This does not mean the full Veskify product is complete. Phase 1 storefront rendering is next; editor UI, onboarding, AI operations, publishing workflows, and production integrations remain deferred.
 
-`http://localhost:3000/projects/project_aurum_nordic`
+## What can be tested
+
+After starting the development server, these local routes are available:
+
+- `http://localhost:3000/` — foundation status and route links
+- `http://localhost:3000/puck-proof` — isolated Puck compatibility proof
+- `http://localhost:3000/projects/project_aurum_nordic` — persisted read-only Aurum Nordic draft with English/Finnish switching
 
 ## Setup
 
@@ -28,9 +35,12 @@ pnpm install
 pnpm dev        # Start the Next.js development server
 pnpm typecheck  # Run strict TypeScript checks
 pnpm lint       # Run ESLint with: eslint .
+pnpm format:check # Verify repository formatting
 pnpm test       # Run Vitest unit and integration tests
 pnpm build      # Build the Next.js application
-pnpm test:e2e   # Run the Playwright smoke test
+pnpm test:e2e   # Run Chromium Playwright smoke tests
+pnpm validate   # Typecheck, lint, format, test, and production build
+pnpm validate:full # Run validate plus Playwright
 ```
 
 ## Implementation notes

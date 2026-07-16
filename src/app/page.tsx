@@ -65,7 +65,10 @@ export default function HomePage() {
           </Link>
         </p>
         <p className="mt-3">
-          <a className="font-semibold text-[var(--brand-color-primary)] underline" href="/puck-proof">
+          <a
+            className="font-semibold text-[var(--brand-color-primary)] underline"
+            href="/puck-proof"
+          >
             Open the isolated Puck adapter proof
           </a>
         </p>

@@ -34,9 +34,13 @@ function toPuckDefaults(definition: ComponentDefinition): PuckEditorProps {
   const defaultLocale = localeSchema.parse(definition.defaultProps.activeLocale);
   return Object.fromEntries(
     Object.entries(definition.editorFields).map(([fieldName, metadata]) => {
-      const source = metadata.source === "content" ? definition.defaultContent : definition.defaultProps;
+      const source =
+        metadata.source === "content" ? definition.defaultContent : definition.defaultProps;
       const value = source[fieldName];
-      return [fieldName, metadata.localized ? getLocalizedDefault(value, defaultLocale) : String(value)];
+      return [
+        fieldName,
+        metadata.localized ? getLocalizedDefault(value, defaultLocale) : String(value),
+      ];
     }),
   );
 }

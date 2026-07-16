@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { veskifyComponentRegistry } from "@/components/registry";
-import { initialPuckData, validatePuckDraftPayload, veskifyPuckConfig } from "@/integrations/puck/config";
+import {
+  initialPuckData,
+  validatePuckDraftPayload,
+  veskifyPuckConfig,
+} from "@/integrations/puck/config";
 
 describe("Veskify Puck adapter", () => {
   it("exposes only the approved AurumHero component in the minimal proof config", () => {

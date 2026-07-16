@@ -59,18 +59,14 @@ export function runProjectRepositoryContract(
       const stored = await repository.get(projectId);
       expect(stored.project.name).toBe("Aurum Nordic");
       expect(stored.catalogue.products[0].price.amount).toBe(1290);
-      expect(stored.snapshots.some((snapshot) => snapshot.pages[0].title.en === "Home")).toBe(
-        true,
-      );
+      expect(stored.snapshots.some((snapshot) => snapshot.pages[0].title.en === "Home")).toBe(true);
       expect(
         stored.snapshots.find((snapshot) => snapshot.id === draft.id)?.pages[0]?.title.en,
       ).toBe("Saved title");
     });
 
     it("returns a typed error for an unknown project", async () => {
-      await expect(repository.get("project_missing")).rejects.toBeInstanceOf(
-        ProjectNotFoundError,
-      );
+      await expect(repository.get("project_missing")).rejects.toBeInstanceOf(ProjectNotFoundError);
     });
 
     it("saves only a valid current draft", async () => {
@@ -83,9 +79,9 @@ export function runProjectRepositoryContract(
       const after = await repository.get(projectId);
       expect(after.project.draftSnapshotId).toBe(draft.id);
       expect(after.project.publishedSnapshotId).toBe(before.project.publishedSnapshotId);
-      expect(
-        after.snapshots.find((snapshot) => snapshot.id === draft.id)?.pages[0]?.title.en,
-      ).toBe("New draft home");
+      expect(after.snapshots.find((snapshot) => snapshot.id === draft.id)?.pages[0]?.title.en).toBe(
+        "New draft home",
+      );
     });
 
     it("rejects invalid, foreign and historical draft snapshots", async () => {
@@ -173,9 +169,11 @@ export function runProjectRepositoryContract(
       await repository.restore(projectId, aurumNordicSeed.publishedSnapshot.id);
 
       expect(
-        (await repository.get(projectId)).catalogue.products.map(
-          ({ id, price, stockStatus }) => ({ id, price, stockStatus }),
-        ),
+        (await repository.get(projectId)).catalogue.products.map(({ id, price, stockStatus }) => ({
+          id,
+          price,
+          stockStatus,
+        })),
       ).toEqual(before);
     });
   });

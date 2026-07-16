@@ -18,7 +18,9 @@
   --brand-spacing-density: 1;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
@@ -28,7 +30,9 @@ body {
   font-family: var(--brand-font-body);
 }
 
-a { color: inherit; }
+a {
+  color: inherit;
+}
 
 :focus-visible {
   outline: 3px solid var(--brand-color-accent);

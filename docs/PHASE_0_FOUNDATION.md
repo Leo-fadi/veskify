@@ -1,5 +1,7 @@
 # Phase 0 Foundation
 
+> **Completion status:** Phase 0 is complete through P0-08. This is the completed foundation baseline, not completion of the full Veskify product. See [Phase 0 Completion](PHASE_0_COMPLETION.md) for the delivery matrix, evidence, limitations, and next phase.
+
 ## SDD references
 
 - §1 Executive product definition and §2 Product principles define the standalone design-agent boundary and prohibit real commerce configuration.
@@ -109,6 +111,17 @@ P0-07 adds `/projects/[projectId]` as a read-only, browser-loaded proof of the p
 - Unit/integration tests cover repository-to-registry rendering and all route states. Playwright covers the seeded route at desktop/mobile widths and locale switching.
 - P0-08 and all editor, publishing, onboarding and AI workflows remain deferred.
 
+## P0-08 — Phase 0 completion and verification
+
+P0-08 audits and closes the Phase 0 foundation without adding Phase 1 product functionality.
+
+- Fixed the shared storefront renderer so validated hidden sections remain stored but are excluded only from rendered output.
+- Added deterministic formatting scripts, aggregate local validation commands, and full pull-request CI including Chromium smoke tests.
+- Added automated architecture assertions for Puck isolation, dependency ranges, seed validity and snapshot separation, and protected-commerce preservation.
+- Expanded Playwright coverage across the home route, Puck proof, persisted project, desktop/mobile widths, keyboard locale switching, read-only chrome boundaries, and horizontal overflow.
+- Recorded the full delivery matrix, verification evidence, limitations, deferred work, and recommended Phase 1 renderer task in [Phase 0 Completion](PHASE_0_COMPLETION.md).
+- Phase 0 is complete. The full Veskify product, Phase 1 storefront rendering, editor workflows, onboarding, AI, and publishing remain incomplete and explicitly deferred.
+
 ## Explicitly deferred
 
-Later Phase 0 and Phase 1 work remains out of scope for these batches. The implementation does not add the full editor route/chrome, editing commands, publishing UI, preview/published/history routes, chat, onboarding, AI providers, authentication, real payments, logistics, shipping, tax, inventory or orders.
+Phase 1 and later work remains out of scope. The implementation does not add the full editor route/chrome, editing commands, publishing UI, preview/published/history routes, chat, onboarding, AI providers, authentication, real payments, logistics, shipping, tax, inventory or orders.

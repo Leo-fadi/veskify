@@ -50,9 +50,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
       this.#projects.set(aggregate.project.id, {
         project: freeze(aggregate.project),
         catalogue: freeze(aggregate.catalogue),
-        snapshots: new Map(
-          aggregate.snapshots.map((snapshot) => [snapshot.id, freeze(snapshot)]),
-        ),
+        snapshots: new Map(aggregate.snapshots.map((snapshot) => [snapshot.id, freeze(snapshot)])),
         operationSequence: aggregate.snapshots.length,
       });
     }
@@ -102,10 +100,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
         new Error("Draft and published snapshots must remain separate."),
       );
     }
-    if (
-      stored.snapshots.has(snapshot.id) &&
-      snapshot.id !== stored.project.draftSnapshotId
-    ) {
+    if (stored.snapshots.has(snapshot.id) && snapshot.id !== stored.project.draftSnapshotId) {
       throw repositoryValidationError(
         "A draft snapshot cannot overwrite immutable history.",
         new Error("Historical snapshot IDs cannot be reused."),

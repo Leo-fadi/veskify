@@ -2,10 +2,7 @@ import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it } from "vitest";
 import { deleteDB } from "idb";
 import { aurumNordicSeed } from "@/data/seed";
-import {
-  IndexedDbProjectRepository,
-  RepositoryValidationError,
-} from "@/services/storage";
+import { IndexedDbProjectRepository, RepositoryValidationError } from "@/services/storage";
 import { runProjectRepositoryContract } from "./project-repository.contract";
 
 const openRepositories: IndexedDbProjectRepository[] = [];
