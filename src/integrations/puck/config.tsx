@@ -1,4 +1,5 @@
 import type { ComponentConfig, Config, Data, Field } from "@puckeditor/core";
+import type { ReactNode } from "react";
 import { z } from "zod";
 import {
   getComponentDefinition,
@@ -9,8 +10,9 @@ import {
   type StorefrontRenderContext,
 } from "@/components/registry";
 import { aurumNordicSeed } from "@/data/seed";
-import { idSchema, localeSchema, type Locale } from "@/domain/shared";
-import type { PageType, SectionInstance } from "@/domain/storefront";
+import { brandSystemToCssVariables, type BrandSystem } from "@/domain/design-system";
+import { idSchema, localeSchema, resolveLocalizedText, type Locale } from "@/domain/shared";
+import type { PageModel, PageType, SectionInstance } from "@/domain/storefront";
 
 type PuckEditorProps = Record<string, unknown>;
 
@@ -97,8 +99,12 @@ export function editorPropsToSection(
   context?: StorefrontRenderContext,
 ): SectionInstance {
   const activeLocale = localeSchema.parse(editorProps.activeLocale ?? "en");
-  const content: Record<string, unknown> = structuredClone(definition.defaultContent);
-  const props: Record<string, unknown> = structuredClone(definition.defaultProps);
+  const content: Record<string, unknown> = structuredClone(
+    editorProps.__veskifyContent ?? definition.defaultContent,
+  ) as Record<string, unknown>;
+  const props: Record<string, unknown> = structuredClone(
+    editorProps.__veskifyProps ?? definition.defaultProps,
+  ) as Record<string, unknown>;
 
   for (const [fieldName, metadata] of Object.entries(definition.editorFields)) {
     const value = editorProps[fieldName];
@@ -120,10 +126,17 @@ export function editorPropsToSection(
   const section = {
     id: idSchema.parse(editorProps.id ?? `${definition.type}_puck_item`),
     component: definition.type,
-    variant: z.string().parse(editorProps.variant ?? definition.defaultVariant),
-    visible: true,
+    variant: z
+      .string()
+      .parse(editorProps.variant ?? editorProps.__veskifyVariant ?? definition.defaultVariant),
+    visible:
+      typeof editorProps.__veskifyVisible === "boolean" ? editorProps.__veskifyVisible : true,
     content,
     props,
+    ...(typeof editorProps.__veskifyStyleOverrides === "object" &&
+    editorProps.__veskifyStyleOverrides !== null
+      ? { styleOverrides: structuredClone(editorProps.__veskifyStyleOverrides) }
+      : {}),
   };
   if (pageType) definition.validate(section, pageType, context);
   return section;
@@ -142,15 +155,10 @@ function componentToPuckConfig(
     label: definition.label,
     fields,
     defaultProps: toPuckDefaults(definition),
-    render: (editorProps) => (
-      <>
-        {definition.render(
-          editorPropsToSection(definition, editorProps, pageType, context),
-          context,
-          pageType,
-        )}
-      </>
-    ),
+    render: (editorProps) => {
+      const section = editorPropsToSection(definition, editorProps, pageType, context);
+      return section.visible ? <>{definition.render(section, context, pageType)}</> : <></>;
+    },
   };
 }
 
@@ -165,6 +173,7 @@ export const safePuckPreviewContext = createStorefrontRenderContext({
 export function generateVeskifyPuckConfig(
   context: StorefrontRenderContext = safePuckPreviewContext,
   pageType: PageType = "home",
+  brandSystem: BrandSystem = aurumNordicSeed.draftSnapshot.brandSystem,
 ): Config {
   return {
     components: Object.fromEntries(
@@ -175,10 +184,50 @@ export function generateVeskifyPuckConfig(
           componentToPuckConfig(definition, context, pageType),
         ]),
     ),
+    root: {
+      render: ({ children }: { children: ReactNode }) => (
+        <div
+          data-veskify-canvas-root="true"
+          lang={context.activeLocale}
+          style={brandSystemToCssVariables(brandSystem)}
+        >
+          {children}
+        </div>
+      ),
+    },
   } as Config;
 }
 
 export const veskifyPuckConfig = generateVeskifyPuckConfig();
+
+export function pageToPuckData(page: PageModel, context: StorefrontRenderContext): Data {
+  const activeLocale = context.activeLocale;
+  return {
+    content: page.sections.map((section) => {
+      const definition = getComponentDefinition(section.component);
+      definition.validate(section, page.type, context);
+      const editableProps = sectionToPuckProps(definition, section, activeLocale);
+      return {
+        type: definition.type,
+        props: {
+          ...editableProps,
+          __veskifyContent: structuredClone(section.content),
+          __veskifyProps: structuredClone(section.props),
+          __veskifyVariant: section.variant,
+          __veskifyVisible: section.visible,
+          ...(section.styleOverrides
+            ? { __veskifyStyleOverrides: structuredClone(section.styleOverrides) }
+            : {}),
+        },
+      };
+    }),
+    root: {
+      props: {
+        title: resolveLocalizedText(page.title, activeLocale, context.primaryLocale),
+      },
+    },
+  };
+}
 
 const aurumHeroDefaults = toPuckDefaults(getComponentDefinition("hero"));
 
