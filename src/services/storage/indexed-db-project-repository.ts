@@ -2,17 +2,25 @@ import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import { aurumNordicSeed } from "@/data/seed";
 import { projectSchema, type Project } from "@/domain/project";
-import type { StorefrontSnapshot } from "@/domain/storefront";
+import {
+  canonicalStorefrontContentEqual,
+  canonicalStorefrontContentFingerprint,
+  type StorefrontSnapshot,
+} from "@/domain/storefront";
 import {
   DraftConflictError,
   InvalidRestoreTargetError,
+  NoStorefrontChangesError,
   ProjectNotFoundError,
+  PublishedConflictError,
+  PublishContentConflictError,
   RevisionConflictError,
   SnapshotNotFoundError,
   SnapshotProjectMismatchError,
   type ProjectAggregate,
   type ProjectRepository,
   type ProjectSummary,
+  type PublishExpectation,
 } from "./project-repository";
 import {
   compactManagedDraftHistory,
@@ -54,7 +62,7 @@ function managedDraftProvenance(projectId: string, snapshotId: string) {
 }
 
 export type SnapshotIdentityInput = {
-  reason: "published" | "restored";
+  reason: "published" | "restored" | "synchronized";
   revision: number;
   sequence: number;
 };
@@ -366,69 +374,147 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     }
   }
 
-  async publish(projectId: string, expectedRevision: number): Promise<ProjectAggregate> {
+  async publish(projectId: string, expectation: PublishExpectation): Promise<ProjectAggregate> {
     const database = await this.#database();
-    const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readwrite");
+    const transaction = database.transaction(
+      ["projects", "catalogues", "snapshots", "snapshotProvenance"],
+      "readwrite",
+    );
     const projects = transaction.objectStore("projects");
     const snapshotsStore = transaction.objectStore("snapshots");
-    const project = await projects.get(projectId);
-    if (!project) {
-      throw new ProjectNotFoundError(projectId);
-    }
-    if (project.revision !== expectedRevision) {
-      throw new RevisionConflictError(projectId, expectedRevision, project.revision);
-    }
+    const provenanceStore = transaction.objectStore("snapshotProvenance");
 
-    const snapshots = await snapshotsStore.index("by-project").getAll(projectId);
-    const draft = snapshots.find((snapshot) => snapshot.id === project.draftSnapshotId);
-    if (!draft) {
-      throw new SnapshotNotFoundError(projectId, project.draftSnapshotId);
-    }
-    const catalogue = await transaction.objectStore("catalogues").get(draft.catalogueRef);
-    if (!catalogue) {
-      throw repositoryValidationError(
-        `Catalogue for project ${projectId} was not found.`,
-        new Error("Catalogue reference must resolve."),
+    try {
+      const project = await projects.get(projectId);
+      if (!project) {
+        throw new ProjectNotFoundError(projectId);
+      }
+      if (project.revision !== expectation.projectRevision) {
+        throw new RevisionConflictError(projectId, expectation.projectRevision, project.revision);
+      }
+
+      const snapshots = await snapshotsStore.index("by-project").getAll(projectId);
+      const draft = snapshots.find((snapshot) => snapshot.id === project.draftSnapshotId);
+      if (!draft) {
+        throw new SnapshotNotFoundError(projectId, project.draftSnapshotId);
+      }
+      const previousPublished = snapshots.find(
+        (snapshot) => snapshot.id === project.publishedSnapshotId,
       );
-    }
+      if (!previousPublished) {
+        throw new SnapshotNotFoundError(projectId, project.publishedSnapshotId);
+      }
+      const catalogue = await transaction.objectStore("catalogues").get(draft.catalogueRef);
+      if (!catalogue) {
+        throw repositoryValidationError(
+          `Catalogue for project ${projectId} was not found.`,
+          new Error("Catalogue reference must resolve."),
+        );
+      }
+      validateProjectAggregate({ project, catalogue, snapshots });
+      if (draft.id !== expectation.draft.id || draft.revision !== expectation.draft.revision) {
+        throw new DraftConflictError(projectId, expectation.draft, {
+          id: draft.id,
+          revision: draft.revision,
+        });
+      }
+      if (
+        previousPublished.id !== expectation.published.id ||
+        previousPublished.revision !== expectation.published.revision
+      ) {
+        throw new PublishedConflictError(projectId, expectation.published, {
+          id: previousPublished.id,
+          revision: previousPublished.revision,
+        });
+      }
+      if (canonicalStorefrontContentFingerprint(draft) !== expectation.draft.contentFingerprint) {
+        throw new PublishContentConflictError(projectId, "draft");
+      }
+      if (
+        canonicalStorefrontContentFingerprint(previousPublished) !==
+        expectation.published.contentFingerprint
+      ) {
+        throw new PublishContentConflictError(projectId, "published");
+      }
+      if (canonicalStorefrontContentEqual(draft, previousPublished)) {
+        throw new NoStorefrontChangesError(projectId);
+      }
 
-    const revision = project.revision + 1;
-    const sequence = nextSnapshotSequence(project, snapshots);
-    const published = validateRepositorySnapshot(
-      {
-        ...clone(draft),
-        id: this.#createSnapshotId({ reason: "published", revision, sequence }),
+      const revision = project.revision + 1;
+      const sequence = nextSnapshotSequence(project, snapshots);
+      const createdAt = this.#createTimestamp({
+        latestTimestamp: latestTimestamp(project, snapshots),
+        sequence,
+      });
+      const published = validateRepositorySnapshot(
+        {
+          ...clone(draft),
+          id: this.#createSnapshotId({ reason: "published", revision, sequence }),
+          revision,
+          createdAt,
+          createdBy: "user",
+        },
+        catalogue,
+      );
+      const synchronizedDraft = validateRepositorySnapshot(
+        {
+          ...clone(published),
+          id: this.#createSnapshotId({ reason: "synchronized", revision, sequence }),
+          createdBy: "system",
+        },
+        catalogue,
+      );
+      const existingIds = new Set(snapshots.map(({ id }) => id));
+      if (
+        published.id === synchronizedDraft.id ||
+        existingIds.has(published.id) ||
+        existingIds.has(synchronizedDraft.id)
+      ) {
+        throw repositoryValidationError(
+          "Publishing must create two unique snapshot identities.",
+          new Error("Generated snapshot IDs must remain unique."),
+        );
+      }
+      const nextProject = projectSchema.parse({
+        ...project,
+        publishedSnapshotId: published.id,
+        draftSnapshotId: synchronizedDraft.id,
         revision,
-        createdAt: this.#createTimestamp({
-          latestTimestamp: latestTimestamp(project, snapshots),
-          sequence,
-        }),
-        createdBy: "user",
-      },
-      catalogue,
-    );
-    if (snapshots.some((snapshot) => snapshot.id === published.id)) {
-      throw repositoryValidationError(
-        "Generated published snapshot ID already exists.",
-        new Error("Snapshot IDs must remain unique."),
+        updatedAt: createdAt,
+      });
+      const provenance = await provenanceStore.index("by-project").getAll(projectId);
+      const managedDraftSnapshotIds = new Set(provenance.map(({ snapshotId }) => snapshotId));
+      managedDraftSnapshotIds.add(synchronizedDraft.id);
+      const compacted = compactManagedDraftHistory(
+        [...snapshots, published, synchronizedDraft],
+        nextProject,
+        managedDraftSnapshotIds,
       );
-    }
-    const nextProject = projectSchema.parse({
-      ...project,
-      publishedSnapshotId: published.id,
-      revision,
-      updatedAt: published.createdAt,
-    });
-    const aggregate = validateProjectAggregate({
-      project: nextProject,
-      catalogue,
-      snapshots: [...snapshots, published],
-    });
+      const aggregate = validateProjectAggregate({
+        project: nextProject,
+        catalogue,
+        snapshots: compacted.snapshots,
+      });
 
-    await snapshotsStore.put(published);
-    await projects.put(nextProject);
-    await transaction.done;
-    return clone(aggregate);
+      await snapshotsStore.put(published);
+      await snapshotsStore.put(synchronizedDraft);
+      await projects.put(nextProject);
+      await provenanceStore.put(managedDraftProvenance(projectId, synchronizedDraft.id));
+      for (const removedSnapshotId of compacted.removedSnapshotIds) {
+        await snapshotsStore.delete(removedSnapshotId);
+        await provenanceStore.delete(removedSnapshotId);
+      }
+      await transaction.done;
+      return clone(aggregate);
+    } catch (cause) {
+      try {
+        transaction.abort();
+      } catch {
+        // The transaction may already have aborted.
+      }
+      await transaction.done.catch(() => undefined);
+      throw cause;
+    }
   }
 
   async restore(projectId: string, snapshotId: string): Promise<StorefrontSnapshot> {
