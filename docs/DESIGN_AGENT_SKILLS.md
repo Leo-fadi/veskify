@@ -180,13 +180,13 @@ Creates a hero using existing assets and an approved variant. It may generate co
 
 #### `improveHero`
 
-**Status:** Next milestone
+**Status:** Implemented
 
 Improves hierarchy, text length, CTA clarity, alignment, image treatment, variant, and responsive settings for one existing hero only.
 
 #### `addCampaignSection`
 
-**Status:** Next milestone
+**Status:** Implemented
 
 Adds a bounded campaign section using approved components. Requires campaign objective, products or collection, timing context, and available media. It may not create discounts, prices, or commercial terms that were not provided.
 
@@ -236,13 +236,13 @@ Improves structure and presentation of existing links, contact details, newslett
 
 #### `applyLuxuryStyle`
 
-**Status:** Next milestone
+**Status:** Implemented
 
 May adjust approved typography, spacing, colour usage, image treatment, section variants, border/radius tokens, and hierarchy. It must not equate luxury with arbitrary dark backgrounds or gold accents; decisions must use brand and industry context.
 
 #### `applyMinimalNordicStyle`
 
-**Status:** Planned
+**Status:** Implemented
 
 May simplify composition, increase whitespace, reduce decorative elements, standardize imagery, and use approved Nordic typography and colour presets.
 
@@ -425,9 +425,16 @@ Possible plan:
 - remove optional section;
 - reorder sections;
 - generate deterministic homepage proposal;
-- accept or reject an in-memory proposal.
+- accept or reject an in-memory proposal;
+- validate canonical skill definitions and register them without duplicate IDs;
+- classify the initial EN/FI luxury, campaign, minimal-layout, and hero request families;
+- create immutable deterministic design plans with explicit scope and ordered skills;
+- execute `applyLuxuryStyle`, `applyMinimalNordicStyle`, `addCampaignSection`, and `improveHero`
+  transactionally through the existing operation executor;
+- convert successful skill execution into the existing in-memory proposal lifecycle.
 
-These capabilities are operation and proposal foundations. They are not yet a complete skill planner.
+These capabilities now form the complete initial deterministic planner boundary. Merchant-facing
+chat, proposal UI, revision, and proposal-to-active-draft application remain separate work.
 
 ### Next milestone
 
@@ -436,7 +443,7 @@ These capabilities are operation and proposal foundations. They are not yet a co
 - proposal revision;
 - proposal UI integration;
 - applying accepted proposals to the active editor draft;
-- deterministic skill planner and initial skill orchestration.
+- merchant-facing integration of the deterministic planner and initial skill orchestration.
 
 ### Planned later
 

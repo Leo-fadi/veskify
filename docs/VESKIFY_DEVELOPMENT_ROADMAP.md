@@ -51,7 +51,11 @@ Puck is the permanent embedded visual-editor foundation. Veskify owns the canoni
 - controlled storefront design vocabulary;
 - multiple variants and brand-token controls;
 - deterministic structured design operations;
-- in-memory proposal create, inspect, accept, and reject lifecycle.
+- in-memory proposal create, inspect, accept, and reject lifecycle;
+- canonical controlled-skill contract and typed skill registry;
+- deterministic EN/FI intent classification and immutable design planning;
+- transactional orchestration for luxury, minimal Nordic, campaign-section, and hero skills;
+- deterministic provider facade and existing-proposal lifecycle conversion.
 
 ### Still pending from Week 1
 
@@ -65,7 +69,7 @@ Puck is the permanent embedded visual-editor foundation. Veskify owns the canoni
 
 - proposal UI inside the editor;
 - proposal revision workflow;
-- skills implementation and orchestration;
+- broader skills implementation and merchant-facing orchestration;
 - applying accepted proposals to the active editor draft;
 - broader page-composition operations.
 
@@ -123,7 +127,7 @@ Weeks 1 and 2 are therefore **partially completed**. Week 3 is the clear next mi
 - applying accepted proposals to the active editor draft;
 - duplicate and visibility operations;
 - broader page-composition operations;
-- formal skills implementation and orchestration.
+- broader skills implementation and merchant-facing orchestration.
 
 #### Exit criteria
 
@@ -133,7 +137,25 @@ Weeks 1 and 2 are therefore **partially completed**. Week 3 is the clear next mi
 
 ### Week 3 — Merchant chat, intent planning, and skills orchestration
 
-**Status: Next milestone**
+**Status: Partially completed**
+
+#### Completed
+
+- deterministic EN/FI classification for the initial supported request families;
+- scope-aware design plans with ordered approved skills and merchant-facing explanations;
+- initial `applyLuxuryStyle`, `applyMinimalNordicStyle`, `addCampaignSection`, and `improveHero`
+  implementations;
+- transactional execution, rollback, protected-commerce enforcement, and canonical page validation;
+- conversion into the existing proposal lifecycle without UI, persistence, or publishing coupling;
+- deterministic provider facade that runs without external credentials.
+
+#### Remaining
+
+- merchant-friendly chat beside the canvas;
+- proposal and confirmation UI integration;
+- proposal revision and applying accepted proposals to the active editor draft;
+- optional real provider adapter;
+- remaining initial workflows and broader skill catalogue.
 
 #### Goal
 
