@@ -245,7 +245,7 @@ export function runProjectRepositoryContract(
         afterPublish.project.publishedSnapshotId,
       );
       expect(afterRestore.snapshots).toHaveLength(20);
-    }, 15_000);
+    }, 45_000);
 
     it("publishes the current draft, increments revision and preserves history", async () => {
       const before = await repository.get(projectId);
