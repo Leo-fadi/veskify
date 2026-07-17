@@ -18,6 +18,8 @@ import {
   type ProjectRepository,
   type ProjectSummary,
   type PublishExpectation,
+  type RestoreExpectation,
+  RestoreContentConflictError,
 } from "./project-repository";
 import {
   compactManagedDraftHistory,
@@ -279,7 +281,11 @@ export class InMemoryProjectRepository implements ProjectRepository {
     return clone(aggregate);
   }
 
-  async restore(projectId: string, snapshotId: string): Promise<StorefrontSnapshot> {
+  async restore(
+    projectId: string,
+    snapshotId: string,
+    expectation?: RestoreExpectation,
+  ): Promise<StorefrontSnapshot> {
     await Promise.resolve();
     const stored = this.#requireProject(projectId);
     const historical = stored.snapshots.get(snapshotId);
@@ -293,6 +299,33 @@ export class InMemoryProjectRepository implements ProjectRepository {
     const currentDraft = stored.snapshots.get(stored.project.draftSnapshotId);
     if (!currentDraft) {
       throw new SnapshotNotFoundError(projectId, stored.project.draftSnapshotId);
+    }
+    if (expectation) {
+      if (stored.project.revision !== expectation.projectRevision) {
+        throw new RevisionConflictError(
+          projectId,
+          expectation.projectRevision,
+          stored.project.revision,
+        );
+      }
+      if (
+        currentDraft.id !== expectation.draft.id ||
+        currentDraft.revision !== expectation.draft.revision
+      ) {
+        throw new DraftConflictError(projectId, expectation.draft, currentDraft);
+      }
+      if (
+        canonicalStorefrontContentFingerprint(currentDraft) !== expectation.draft.contentFingerprint
+      ) {
+        throw new RestoreContentConflictError(projectId, "draft");
+      }
+      if (
+        historical.id !== expectation.target.id ||
+        historical.revision !== expectation.target.revision ||
+        canonicalStorefrontContentFingerprint(historical) !== expectation.target.contentFingerprint
+      ) {
+        throw new RestoreContentConflictError(projectId, "target");
+      }
     }
     const sequence = stored.operationSequence + 1;
     const restored = validateRepositorySnapshot(

@@ -21,6 +21,8 @@ import {
   type ProjectRepository,
   type ProjectSummary,
   type PublishExpectation,
+  type RestoreExpectation,
+  RestoreContentConflictError,
 } from "./project-repository";
 import {
   compactManagedDraftHistory,
@@ -517,7 +519,11 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     }
   }
 
-  async restore(projectId: string, snapshotId: string): Promise<StorefrontSnapshot> {
+  async restore(
+    projectId: string,
+    snapshotId: string,
+    expectation?: RestoreExpectation,
+  ): Promise<StorefrontSnapshot> {
     const database = await this.#database();
     const transaction = database.transaction(
       ["projects", "catalogues", "snapshots", "snapshotProvenance"],
@@ -549,6 +555,29 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     const currentDraft = snapshots.find((snapshot) => snapshot.id === project.draftSnapshotId);
     if (!currentDraft) {
       throw new SnapshotNotFoundError(projectId, project.draftSnapshotId);
+    }
+    if (expectation) {
+      if (project.revision !== expectation.projectRevision) {
+        throw new RevisionConflictError(projectId, expectation.projectRevision, project.revision);
+      }
+      if (
+        currentDraft.id !== expectation.draft.id ||
+        currentDraft.revision !== expectation.draft.revision
+      ) {
+        throw new DraftConflictError(projectId, expectation.draft, currentDraft);
+      }
+      if (
+        canonicalStorefrontContentFingerprint(currentDraft) !== expectation.draft.contentFingerprint
+      ) {
+        throw new RestoreContentConflictError(projectId, "draft");
+      }
+      if (
+        historical.id !== expectation.target.id ||
+        historical.revision !== expectation.target.revision ||
+        canonicalStorefrontContentFingerprint(historical) !== expectation.target.contentFingerprint
+      ) {
+        throw new RestoreContentConflictError(projectId, "target");
+      }
     }
     const sequence = nextSnapshotSequence(project, snapshots);
     const restored = validateRepositorySnapshot(
