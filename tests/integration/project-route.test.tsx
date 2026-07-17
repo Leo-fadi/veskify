@@ -36,11 +36,12 @@ function repositoryWithGet(get: ProjectRepository["get"]): {
   };
 }
 
-function renderRoute(repository: ProjectRepository) {
+function renderRoute(repository: ProjectRepository, snapshotKind: "draft" | "published" = "draft") {
   return render(
     <ProjectPreviewClient
       projectId={aurumNordicSeed.project.id}
       repositoryFactory={() => repository}
+      snapshotKind={snapshotKind}
     />,
   );
 }
@@ -74,6 +75,32 @@ describe("seed project route", () => {
     expect(screen.getByRole("link", { name: "Aurora Ring" })).toHaveAttribute(
       "href",
       "/projects/project_aurum_nordic/products/aurora-ring-585",
+    );
+  });
+
+  it("keeps published storefront navigation on the immutable published snapshot", async () => {
+    const value = aggregate();
+    value.snapshots = value.snapshots.filter(
+      (snapshot) => snapshot.id !== value.project.draftSnapshotId,
+    );
+    const { repository } = repositoryWithGet(() => Promise.resolve(value));
+    renderRoute(repository, "published");
+
+    expect(await screen.findByRole("heading", { name: "Made for northern light" })).toBeVisible();
+    expect(screen.getByText("Published storefront")).toBeVisible();
+    expect(screen.queryByText("Draft preview")).not.toBeInTheDocument();
+    const primaryNavigation = screen.getByRole("navigation", { name: "Primary navigation" });
+    expect(within(primaryNavigation).getByRole("link", { name: "Home" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/published",
+    );
+    expect(within(primaryNavigation).getByRole("link", { name: "Rings" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/published/collections/rings",
+    );
+    expect(screen.getByRole("link", { name: "Aurora Ring" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/published/products/aurora-ring-585",
     );
   });
 
