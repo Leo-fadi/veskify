@@ -12,6 +12,7 @@ import {
   campaignContextSchema,
   designPlanSchema,
   designSkillExecutionResultSchema,
+  hasMeaningfulCampaignContext,
   type DesignPlan,
   type DesignSkillExecutionContext,
   type DesignSkillExecutionResult,
@@ -78,7 +79,7 @@ function immutableSkillContext(
     brandSystem: brandSystemSchema.parse(structuredClone(input.brandSystem)),
     displayContext: structuredClone(input.displayContext),
     selectedSectionId,
-    campaign: input.campaign
+    campaign: hasMeaningfulCampaignContext(input.campaign)
       ? campaignContextSchema.parse(structuredClone(input.campaign))
       : undefined,
     requestedScope,

@@ -14,25 +14,41 @@ function campaignCopy({
   campaign,
 }: Parameters<DesignSkillDefinition["execute"]>[0]) {
   const collection = displayContext.catalogue.collections[0];
+  if (!collection && !campaign) {
+    throw new Error("Campaign direction or a usable collection is required.");
+  }
   const collectionTitle = collection
     ? resolveLocalizedText(collection.title, activeLocale, displayContext.primaryLocale)
     : null;
+  const objective = campaign?.objective
+    ? resolveLocalizedText(campaign.objective, activeLocale, displayContext.primaryLocale)
+    : null;
+  const campaignHeading = campaign?.heading
+    ? resolveLocalizedText(campaign.heading, activeLocale, displayContext.primaryLocale)
+    : null;
+  const campaignBody = campaign?.body
+    ? resolveLocalizedText(campaign.body, activeLocale, displayContext.primaryLocale)
+    : null;
   return {
     heading:
-      campaign?.heading?.[activeLocale] ??
-      campaign?.objective?.[activeLocale] ??
+      campaignHeading ??
+      objective ??
       (collectionTitle
         ? activeLocale === "fi"
           ? `Tutustu: ${collectionTitle}`
           : `Discover ${collectionTitle}`
         : activeLocale === "fi"
-          ? "Tutustu valikoimaan"
-          : "Discover the collection"),
+          ? "Kampanja"
+          : "Campaign"),
     body:
-      campaign?.body?.[activeLocale] ??
-      (activeLocale === "fi"
-        ? "Tutustu nykyisestä valikoimasta koottuun kokonaisuuteen."
-        : "Explore a curated presentation from the current collection."),
+      campaignBody ??
+      (collectionTitle
+        ? activeLocale === "fi"
+          ? "Tutustu nykyisestä valikoimasta koottuun kokonaisuuteen."
+          : "Explore a curated presentation from the current collection."
+        : activeLocale === "fi"
+          ? "Tutustu kampanjaan tarkemmin."
+          : "Learn more about this campaign."),
   };
 }
 

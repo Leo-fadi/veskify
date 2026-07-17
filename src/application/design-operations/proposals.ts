@@ -80,6 +80,9 @@ export class InMemoryDesignProposalStore {
       validation: { valid: true, errors: [] },
       status: "pending",
     });
+    if (this.#proposals.has(proposal.id)) {
+      throw new Error(`Duplicate design proposal ID: ${proposal.id}.`);
+    }
     this.#proposals.set(proposal.id, { proposal: structuredClone(proposal), context });
     return structuredClone(proposal);
   }

@@ -55,6 +55,7 @@ export const designAgentSessionSchema = z
       .string()
       .regex(/^proposal_[a-f0-9]{8}$/)
       .nullable(),
+    proposalAttemptSequence: z.number().int().nonnegative(),
     revisionCount: z.number().int().nonnegative(),
     assumptions: z.array(localizedTextSchema),
     clarificationQuestion: localizedTextSchema.nullable(),

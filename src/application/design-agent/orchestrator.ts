@@ -6,6 +6,7 @@ import {
   campaignContextSchema,
   createDeterministicDesignProvider,
   designRequestClassificationSchema,
+  hasMeaningfulCampaignContext,
   type CampaignContext,
   type DesignPlannerInput,
   type DeterministicDesignProvider,
@@ -50,6 +51,7 @@ export type DesignAgentActionOutcome =
   | "proposalReady"
   | "unsupported"
   | "failed"
+  | "regenerationFailed"
   | "revisionFailed"
   | "stale"
   | "unsupportedRevision"
@@ -120,6 +122,16 @@ const staleMessage: LocalizedText = {
 const unsupportedRevisionMessage: LocalizedText = {
   en: "That revision is not supported yet. The current proposal remains ready to review.",
   fi: "Tätä muutospyyntöä ei vielä tueta. Nykyinen ehdotus säilyy tarkistettavana.",
+};
+
+const regeneratingStatus: LocalizedText = {
+  en: "Regenerating the proposal from the original request.",
+  fi: "Luodaan ehdotus uudelleen alkuperäisestä pyynnöstä.",
+};
+
+const regeneratedReadyStatus: LocalizedText = {
+  en: "A regenerated proposal is ready to review.",
+  fi: "Uudelleen luotu ehdotus on valmis tarkistettavaksi.",
 };
 
 function stableHash(value: string) {
@@ -198,7 +210,7 @@ export class DeterministicDesignAgent {
       throw new Error("The session page and PageType must identify the same canonical page.");
     }
     validateRegisteredPage(page, displayContext);
-    const campaign = input.campaign
+    const campaign = hasMeaningfulCampaignContext(input.campaign)
       ? campaignContextSchema.parse(structuredClone(input.campaign))
       : undefined;
     this.#sessionSequence += 1;
@@ -219,6 +231,7 @@ export class DeterministicDesignAgent {
       classification: null,
       plan: null,
       activeProposalId: null,
+      proposalAttemptSequence: 0,
       revisionCount: 0,
       assumptions: [],
       clarificationQuestion: null,
@@ -316,8 +329,10 @@ export class DeterministicDesignAgent {
     const context = this.#context(sessionId);
     const previousProposalId = session.activeProposalId!;
     const nextRevisionCount = session.revisionCount + 1;
+    const nextProposalAttempt = session.proposalAttemptSequence + 1;
     this.#sessions.transition(sessionId, "revising", {
       currentMerchantRequest: instruction.trim(),
+      proposalAttemptSequence: nextProposalAttempt,
       revisionSummary: revisionSummary(kind),
       status: statuses.revising,
       failure: null,
@@ -344,7 +359,7 @@ export class DeterministicDesignAgent {
         execution,
         context.displayContext,
         undefined,
-        `${session.id}:revision:${nextRevisionCount}`,
+        this.#proposalIdentity(session.id, nextProposalAttempt),
       );
       if (proposal.id === previousProposalId) {
         throw new Error("A revision must create a new proposal identity.");
@@ -376,6 +391,81 @@ export class DeterministicDesignAgent {
         failure: failure("executionFailed", message, [detail]),
       });
       return { outcome: "revisionFailed", session: restored, message };
+    }
+  }
+
+  regenerateProposal(sessionId: string, currentPage: PageModel): DesignAgentActionResult {
+    const session = this.#sessions.inspect(sessionId);
+    if (session.state !== "proposalReady") {
+      throw new Error(
+        "Only a ready pending proposal can be regenerated; restart a closed session first.",
+      );
+    }
+    const previousProposal = this.#provider.inspect(session.activeProposalId!);
+    if (previousProposal.status !== "pending") {
+      throw new Error("Only an active pending proposal can be regenerated.");
+    }
+    if (this.#isStale(session, currentPage)) {
+      return { outcome: "stale", session, message: staleMessage };
+    }
+    const context = this.#context(sessionId);
+    const request = context.baseRequest ?? session.initialMerchantRequest;
+    if (!request) throw new Error("Regeneration requires the original merchant request.");
+    const nextProposalAttempt = session.proposalAttemptSequence + 1;
+    this.#sessions.transition(sessionId, "generating", {
+      proposalAttemptSequence: nextProposalAttempt,
+      status: regeneratingStatus,
+      failure: null,
+    });
+
+    try {
+      const plannerInput = this.#plannerInput(session, request);
+      const classification = this.#provider.classifyDesignRequest(request, session.locale);
+      if (
+        classification.requiresClarification ||
+        classification.unsupportedReason ||
+        !classification.normalizedIntent
+      ) {
+        throw new Error("The original request no longer classifies as an executable request.");
+      }
+      const plan = this.#provider.createDesignPlan(plannerInput);
+      if (!plan.validation.valid) throw new Error(plan.validation.errors.join(" "));
+      const execution = this.#provider.executeDesignPlan(plan, plannerInput);
+      if (!execution.validation.valid || execution.failureReason) {
+        throw new Error(execution.validation.errors.join(" "));
+      }
+      const proposal = this.#provider.createProposalFromDesignPlan(
+        execution,
+        context.displayContext,
+        undefined,
+        this.#proposalIdentity(session.id, nextProposalAttempt),
+      );
+      if (proposal.id === previousProposal.id) {
+        throw new Error("Regeneration must create a new proposal identity.");
+      }
+      this.#provider.reject(previousProposal.id);
+      const regenerated = this.#sessions.transition(sessionId, "proposalReady", {
+        normalizedIntent: classification.normalizedIntent,
+        classification,
+        plan,
+        activeProposalId: proposal.id,
+        assumptions: plan.assumptions,
+        status: regeneratedReadyStatus,
+        failure: null,
+      });
+      return { outcome: "proposalReady", session: regenerated, proposal };
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : "Unknown regeneration failure.";
+      const message: LocalizedText = {
+        en: "Regeneration could not be validated. The previous proposal remains ready to review.",
+        fi: "Uudelleen luontia ei voitu validoida. Edellinen ehdotus säilyy tarkistettavana.",
+      };
+      const restored = this.#sessions.transition(sessionId, "proposalReady", {
+        activeProposalId: previousProposal.id,
+        status: message,
+        failure: failure("executionFailed", message, [detail]),
+      });
+      return { outcome: "regenerationFailed", session: restored, message };
     }
   }
 
@@ -526,6 +616,7 @@ export class DeterministicDesignAgent {
 
     this.#sessions.transition(sessionId, "generating", {
       plan,
+      proposalAttemptSequence: planningSession.proposalAttemptSequence + 1,
       assumptions: plan.assumptions,
       status: statuses.generating,
       failure: null,
@@ -548,7 +639,7 @@ export class DeterministicDesignAgent {
       execution,
       context.displayContext,
       undefined,
-      `${session.id}:revision:0`,
+      this.#proposalIdentity(session.id, planningSession.proposalAttemptSequence + 1),
     );
     const ready = this.#sessions.transition(sessionId, "proposalReady", {
       activeProposalId: proposal.id,
@@ -587,6 +678,10 @@ export class DeterministicDesignAgent {
     const context = this.#contexts.get(sessionId);
     if (!context) throw new Error(`Unknown design-agent context: ${sessionId}.`);
     return context;
+  }
+
+  #proposalIdentity(sessionId: string, attempt: number) {
+    return `${sessionId}:attempt:${attempt}`;
   }
 }
 

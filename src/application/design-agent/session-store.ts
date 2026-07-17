@@ -10,7 +10,7 @@ const transitions: Readonly<Record<DesignAgentSessionState, readonly DesignAgent
   needsClarification: ["classifying", "idle", "cancelled"],
   planning: ["generating", "failed", "cancelled"],
   generating: ["proposalReady", "failed", "cancelled"],
-  proposalReady: ["revising", "accepted", "rejected", "cancelled", "idle"],
+  proposalReady: ["generating", "revising", "accepted", "rejected", "cancelled", "idle"],
   revising: ["proposalReady", "failed", "cancelled"],
   accepted: ["idle"],
   rejected: ["idle"],

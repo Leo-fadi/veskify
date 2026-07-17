@@ -161,20 +161,31 @@ describe("deterministic request orchestration", () => {
     expect(ready.session.normalizedIntent).toBe("minimalNordicStyle");
   });
 
-  it("asks for campaign direction only when catalogue context cannot safely provide it", () => {
-    const page = structuredClone(homepage);
-    page.sections = page.sections.filter((item) => item.component !== "featuredCategories");
-    const context = structuredClone(displayContext());
-    context.catalogue.collections = [];
-    const agent = createDeterministicDesignAgent();
-    const session = start(agent, { page, displayContext: context });
-    const clarification = agent.submitRequest(session.id, "Add a campaign section.");
-    expect(clarification.outcome).toBe("needsClarification");
-    expect(clarification.message?.en).toBe("What should this campaign highlight?");
-    const ready = agent.answerClarification(session.id, "Highlight our summer selection.");
-    expect(ready.outcome).toBe("proposalReady");
-    expect(ready.proposal?.summary.en).not.toMatch(/discount|delivery|price/i);
-  });
+  it.each([
+    ["undefined context", undefined],
+    ["empty context", {}],
+    ["whitespace-only context", { objective: { en: "   " } }],
+  ])(
+    "asks for campaign direction with %s when catalogue context cannot provide it",
+    (_label, campaign) => {
+      const page = structuredClone(homepage);
+      page.sections = page.sections.filter((item) => item.component !== "featuredCategories");
+      const context = structuredClone(displayContext());
+      context.catalogue.collections = [];
+      const agent = createDeterministicDesignAgent();
+      const session = start(agent, {
+        page,
+        displayContext: context,
+        campaign,
+      });
+      const clarification = agent.submitRequest(session.id, "Add a campaign section.");
+      expect(clarification.outcome).toBe("needsClarification");
+      expect(clarification.message?.en).toBe("What should this campaign highlight?");
+      const ready = agent.answerClarification(session.id, "Highlight our summer selection.");
+      expect(ready.outcome).toBe("proposalReady");
+      expect(ready.proposal?.summary.en).not.toMatch(/discount|delivery|price/i);
+    },
+  );
 
   it("returns unsupported requests as controlled failures without creating a proposal", () => {
     const proposalStore = new InMemoryDesignProposalStore();
@@ -200,6 +211,7 @@ describe("proposal revision", () => {
     expect(revised.proposal?.id).not.toBe(first.proposal.id);
     expect(section(revised.proposal!.proposedPage, "hero")).toEqual(section(homepage, "hero"));
     expect(revised.session.revisionCount).toBe(1);
+    expect(revised.session.proposalAttemptSequence).toBe(2);
     expect(proposalStore.inspect(first.proposal.id).status).toBe("rejected");
   });
 
@@ -294,6 +306,136 @@ describe("proposal revision", () => {
     expect(() =>
       rejectedAgent.reviseProposal(rejected.session.id, "Keep the hero unchanged.", homepage),
     ).toThrow(/restart a closed session/);
+  });
+});
+
+describe("proposal regeneration", () => {
+  it("regenerates a ready proposal from the original canonical page with a new identity", () => {
+    const proposalStore = new InMemoryDesignProposalStore();
+    const agent = createDeterministicDesignAgent({ proposalStore });
+    const inputPage = structuredClone(homepage);
+    const before = structuredClone(inputPage);
+    const first = submitReady(agent, "Make the homepage feel more luxurious.", {
+      page: inputPage,
+    });
+    const regenerated = agent.regenerateProposal(first.session.id, inputPage);
+    expect(regenerated.outcome).toBe("proposalReady");
+    expect(regenerated.session.state).toBe("proposalReady");
+    expect(regenerated.proposal?.id).not.toBe(first.proposal.id);
+    expect(regenerated.proposal?.proposedPage).toEqual(first.proposal.proposedPage);
+    expect(regenerated.session.initialMerchantRequest).toBe(
+      "Make the homepage feel more luxurious.",
+    );
+    expect(regenerated.session.plan?.requestedScope).toBe(first.session.plan?.requestedScope);
+    expect(regenerated.session.proposalAttemptSequence).toBe(2);
+    expect(regenerated.session.revisionCount).toBe(0);
+    expect(proposalStore.inspect(first.proposal.id).status).toBe("rejected");
+    expect(proposalStore.inspect(regenerated.proposal!.id).status).toBe("pending");
+    expect(inputPage).toEqual(before);
+  });
+
+  it("preserves clarification context when regenerating", () => {
+    const agent = createDeterministicDesignAgent();
+    const session = start(agent);
+    expect(agent.submitRequest(session.id, "Make it better.").outcome).toBe("needsClarification");
+    const first = agent.answerClarification(session.id, "Make the layout more minimal.");
+    const regenerated = agent.regenerateProposal(session.id, homepage);
+    expect(regenerated.outcome).toBe("proposalReady");
+    expect(regenerated.session.initialMerchantRequest).toBe("Make it better.");
+    expect(regenerated.session.clarificationAnswer).toBe("Make the layout more minimal.");
+    expect(regenerated.session.normalizedIntent).toBe("minimalNordicStyle");
+    expect(regenerated.proposal?.id).not.toBe(first.proposal?.id);
+  });
+
+  it("preserves clarified campaign direction during regeneration", () => {
+    const page = structuredClone(homepage);
+    page.sections = page.sections.filter((item) => item.component !== "featuredCategories");
+    const context = structuredClone(displayContext());
+    context.catalogue.collections = [];
+    const agent = createDeterministicDesignAgent();
+    const session = start(agent, { page, displayContext: context });
+    expect(agent.submitRequest(session.id, "Add a campaign section.").outcome).toBe(
+      "needsClarification",
+    );
+    const first = agent.answerClarification(session.id, "Highlight our summer selection.");
+    const regenerated = agent.regenerateProposal(session.id, page);
+    expect(regenerated.outcome).toBe("proposalReady");
+    expect(regenerated.session.clarificationAnswer).toBe("Highlight our summer selection.");
+    expect(JSON.stringify(regenerated.proposal?.proposedPage)).toContain(
+      "Highlight our summer selection.",
+    );
+    expect(regenerated.proposal?.proposedPage).toEqual(first.proposal?.proposedPage);
+  });
+
+  it("never collides across repeated regenerations", () => {
+    const proposalStore = new InMemoryDesignProposalStore();
+    const agent = createDeterministicDesignAgent({ proposalStore });
+    const first = submitReady(agent, "Make the layout more minimal.");
+    const second = agent.regenerateProposal(first.session.id, homepage);
+    const third = agent.regenerateProposal(first.session.id, homepage);
+    const fourth = agent.regenerateProposal(first.session.id, homepage);
+    const ids = [first.proposal.id, second.proposal!.id, third.proposal!.id, fourth.proposal!.id];
+    expect(new Set(ids).size).toBe(4);
+    expect(agent.inspectSession(first.session.id).proposalAttemptSequence).toBe(4);
+    expect(ids.slice(0, -1).map((id) => proposalStore.inspect(id).status)).toEqual([
+      "rejected",
+      "rejected",
+      "rejected",
+    ]);
+    expect(proposalStore.inspect(ids.at(-1)!).status).toBe("pending");
+  });
+
+  it("keeps a stale regeneration from consuming the pending proposal or input page", () => {
+    const proposalStore = new InMemoryDesignProposalStore();
+    const agent = createDeterministicDesignAgent({ proposalStore });
+    const ready = submitReady(agent, "Make the layout more minimal.");
+    const stalePage = structuredClone(homepage);
+    section(stalePage, "hero").content.heading = { en: "Changed", fi: "Muuttunut" };
+    const before = structuredClone(stalePage);
+    const result = agent.regenerateProposal(ready.session.id, stalePage);
+    expect(result.outcome).toBe("stale");
+    expect(result.session.proposalAttemptSequence).toBe(1);
+    expect(proposalStore.inspect(ready.proposal.id).status).toBe("pending");
+    expect(stalePage).toEqual(before);
+  });
+
+  it.each([
+    ["en" as const, "Make the layout more minimal.", /regenerated proposal/i],
+    ["fi" as const, "Tee asettelusta pelkistetympi.", /uudelleen luotu ehdotus/i],
+  ])("returns a merchant-facing %s regeneration status", (locale, request, status) => {
+    const agent = createDeterministicDesignAgent();
+    const ready = submitReady(agent, request, { activeLocale: locale });
+    const regenerated = agent.regenerateProposal(ready.session.id, homepage);
+    expect(regenerated.session.status[locale]).toMatch(status);
+  });
+
+  it("requires explicit restart after accepted, rejected or cancelled sessions", () => {
+    const actions = ["accepted", "rejected", "cancelled"] as const;
+    for (const action of actions) {
+      const agent = createDeterministicDesignAgent();
+      const ready = submitReady(agent, "Make the layout more minimal.");
+      if (action === "accepted") agent.acceptProposal(ready.session.id, homepage);
+      if (action === "rejected") agent.rejectProposal(ready.session.id);
+      if (action === "cancelled") agent.cancelSession(ready.session.id);
+      expect(() => agent.regenerateProposal(ready.session.id, homepage)).toThrow(
+        /restart a closed session/,
+      );
+    }
+  });
+
+  it("does not reuse proposal identity after restart and the same request", () => {
+    const proposalStore = new InMemoryDesignProposalStore();
+    const agent = createDeterministicDesignAgent({ proposalStore });
+    const first = submitReady(agent, "Make the layout more minimal.");
+    agent.acceptProposal(first.session.id, homepage);
+    const restarted = agent.restartSession(first.session.id);
+    expect(restarted.session.proposalAttemptSequence).toBe(1);
+    expect(restarted.session.revisionCount).toBe(0);
+    const second = agent.submitRequest(first.session.id, "Make the layout more minimal.");
+    expect(second.proposal?.id).not.toBe(first.proposal.id);
+    expect(second.session.proposalAttemptSequence).toBe(2);
+    expect(proposalStore.inspect(first.proposal.id).status).toBe("accepted");
+    expect(proposalStore.inspect(second.proposal!.id).status).toBe("pending");
   });
 });
 

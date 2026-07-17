@@ -37,6 +37,19 @@ describe("in-memory deterministic design proposal lifecycle", () => {
     expect(store.inspect(proposal.id).proposedPage.sections).not.toHaveLength(0);
   });
 
+  it("never overwrites an existing lifecycle record with the same deterministic ID", () => {
+    const store = new InMemoryDesignProposalStore();
+    const input = {
+      originalPage: homepage,
+      operations: [{ type: "CHANGE_BACKGROUND", sectionId: campaign.id, background: "accent" }],
+      context,
+      identity: "session_same:attempt:1",
+    } as const;
+    const first = store.create(input);
+    expect(() => store.create(input)).toThrow(/Duplicate design proposal ID/);
+    expect(store.inspect(first.id)).toEqual(first);
+  });
+
   it("accepts the validated proposed page", () => {
     const store = new InMemoryDesignProposalStore();
     const proposal = store.create({

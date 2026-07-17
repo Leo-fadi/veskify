@@ -75,7 +75,10 @@ export const campaignContextSchema = z
     heading: localizedTextSchema.optional(),
     body: localizedTextSchema.optional(),
   })
-  .strict();
+  .strict()
+  .refine((context) => context.objective || context.heading || context.body, {
+    message: "Campaign context requires an objective, heading or body.",
+  });
 
 export type DesignIntent = z.infer<typeof designIntentSchema>;
 export type DesignSkillScope = z.infer<typeof designSkillScopeSchema>;
@@ -84,6 +87,10 @@ export type SkillContextRequirement = z.infer<typeof skillContextRequirementSche
 export type SkillPrecondition = z.infer<typeof skillPreconditionSchema>;
 export type SkillValidationRule = z.infer<typeof skillValidationRuleSchema>;
 export type CampaignContext = z.infer<typeof campaignContextSchema>;
+
+export function hasMeaningfulCampaignContext(value: unknown): value is CampaignContext {
+  return campaignContextSchema.safeParse(value).success;
+}
 
 export type DesignSkillExecutionContext = {
   activeLocale: Locale;

@@ -11,6 +11,7 @@ import {
   campaignContextSchema,
   designPlanSchema,
   designRequestClassificationSchema,
+  hasMeaningfulCampaignContext,
   type CampaignContext,
   type DesignIntent,
   type DesignPlan,
@@ -256,7 +257,7 @@ export function createDesignPlan(
   const pageType = pageTypeSchema.parse(input.pageType);
   const brandSystem = brandSystemSchema.parse(structuredClone(input.brandSystem));
   const activeLocale = localeSchema.parse(input.activeLocale);
-  const campaign = input.campaign
+  const campaign = hasMeaningfulCampaignContext(input.campaign)
     ? campaignContextSchema.parse(structuredClone(input.campaign))
     : undefined;
   void brandSystem;

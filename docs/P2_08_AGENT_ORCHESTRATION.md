@@ -19,7 +19,7 @@ draft-save commands, publishing, or storefront renderers.
 - `DeterministicDesignAgent` and `createDeterministicDesignAgent`;
 - instance methods `startSession`, `submitRequest`, `answerClarification`, `inspectSession`,
   `inspectProposal`, `listActiveSessions`, `reviseProposal`, `acceptProposal`, `rejectProposal`,
-  `cancelSession`, and `restartSession`;
+  `regenerateProposal`, `cancelSession`, and `restartSession`;
 - `classifyRevisionInstruction`, `designAgentRevisionKindSchema`, and the bounded plan-constraint
   helpers used by revision.
 
@@ -37,6 +37,7 @@ idle
      -> failed
 
 proposalReady
+  -> generating -> proposalReady (regenerate)
   -> revising -> proposalReady
   -> accepted
   -> rejected
@@ -52,6 +53,12 @@ original page, current and initial requests, selection, classification, plan, pr
 revision count, assumptions, clarification, bilingual merchant status, failure information, and
 timestamps. Stored and returned values are cloned. Sessions only reference proposals; they do not
 duplicate proposal state.
+
+`proposalAttemptSequence` increases monotonically for every initial proposal, revision, and
+regeneration attempt. Restart resets merchant revision state but never resets this sequence. The
+attempt value forms part of proposal identity, so an accepted, rejected, or superseded lifecycle
+record can never be overwritten by a later request in the same session. The proposal store also
+rejects duplicate IDs before `Map.set` as a final lifecycle guard.
 
 ## Clarification rules
 
@@ -87,6 +94,17 @@ validation fails, the previous proposal remains pending and inspectable, and the
 `proposalReady` with controlled failure information. Accepted or rejected sessions require explicit
 restart before revision.
 
+## Regeneration rules
+
+`regenerateProposal(sessionId, currentPage)` is available only while the session references an
+active pending proposal. It verifies the current canonical page against the session base, preserves
+the original merchant request, clarification answer, selected scope, campaign direction, brand, and
+display context, then reruns classification, planning, skill execution, and proposal validation from
+the original canonical page. Deterministic content may be identical, but the next monotonic proposal
+attempt produces a new proposal ID. Only after the replacement validates is the old pending proposal
+rejected as superseded. A stale regeneration consumes neither the proposal nor the page. Accepted,
+rejected, and cancelled sessions require explicit restart before regeneration.
+
 ## Stale-base behaviour
 
 Accept and revision first parse and validate the supplied current canonical page, then compare it
@@ -103,6 +121,11 @@ fingerprint, so locale-only UI changes do not make a session stale.
 - Reject and cancel close only the referenced pending proposal and return the original page.
 - Restart closes a pending proposal when necessary and resets session workflow fields.
 - Invalid plans and executions create no proposal.
+
+Campaign context is meaningful only when a validated non-empty objective, heading, or body is
+present. Empty objects and whitespace-only values are treated as absent. Without meaningful
+campaign direction or a usable catalogue collection, direct planner/provider calls return the
+controlled campaign-context precondition failure and orchestration requests one clarification.
 
 The optional proposal identity added for orchestration is used only in deterministic ID generation.
 It does not add fields to `DesignProposal`, change operation schemas, or create a second lifecycle.
