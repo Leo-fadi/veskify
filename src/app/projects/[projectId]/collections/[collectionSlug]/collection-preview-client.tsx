@@ -12,6 +12,7 @@ import { createBrowserProjectRepository, ProjectNotFoundError } from "@/services
 type RepositoryFactory = () => ProjectRepository;
 type Snapshot = ProjectAggregate["snapshots"][number];
 type Page = Snapshot["pages"][number];
+type SnapshotKind = "draft" | "published";
 
 type LoadState =
   | { status: "loading" }
@@ -32,15 +33,19 @@ function StatusPanel({
   title,
   message,
   retry,
+  snapshotKind,
 }: {
   title: string;
   message: string;
   retry?: () => void;
+  snapshotKind: SnapshotKind;
 }) {
   return (
     <main className="project-state">
       <section aria-live="polite" className="project-state__panel">
-        <p className="project-state__eyebrow">Draft preview</p>
+        <p className="project-state__eyebrow">
+          {snapshotKind === "published" ? "Published storefront" : "Draft preview"}
+        </p>
         <h1>{title}</h1>
         <p>{message}</p>
         {retry ? (
@@ -58,10 +63,12 @@ export function CollectionPreviewClient({
   projectId,
   collectionSlug,
   repositoryFactory = defaultRepositoryFactory,
+  snapshotKind = "draft",
 }: {
   projectId: string;
   collectionSlug: string;
   repositoryFactory?: RepositoryFactory;
+  snapshotKind?: SnapshotKind;
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -76,7 +83,11 @@ export function CollectionPreviewClient({
       .then((aggregate) => {
         if (cancelled) return;
         const draft = aggregate.snapshots.find(
-          (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
+          (snapshot) =>
+            snapshot.id ===
+            (snapshotKind === "published"
+              ? aggregate.project.publishedSnapshotId
+              : aggregate.project.draftSnapshotId),
         );
         if (!draft) return setState({ status: "missingDraft" });
         const collection = aggregate.catalogue.collections.find(
@@ -93,7 +104,10 @@ export function CollectionPreviewClient({
             primaryLocale: aggregate.project.primaryLocale,
             catalogue: aggregate.catalogue,
             snapshot: draft,
-            pagePathPrefix: `/projects/${projectId}`,
+            pagePathPrefix:
+              snapshotKind === "published"
+                ? `/projects/${projectId}/published`
+                : `/projects/${projectId}`,
           });
           void renderStorefrontPage(page, context);
         } catch {
@@ -109,7 +123,7 @@ export function CollectionPreviewClient({
     return () => {
       cancelled = true;
     };
-  }, [attempt, collectionSlug, projectId]);
+  }, [attempt, collectionSlug, projectId, snapshotKind]);
 
   const retry = () => {
     setState({ status: "loading" });
@@ -117,12 +131,19 @@ export function CollectionPreviewClient({
   };
 
   if (state.status === "loading")
-    return <StatusPanel title="Loading the collection" message="Preparing the saved draft…" />;
+    return (
+      <StatusPanel
+        message="Preparing the saved storefront…"
+        snapshotKind={snapshotKind}
+        title="Loading the collection"
+      />
+    );
   if (state.status === "notFound")
     return (
       <StatusPanel
         title="Project not found"
         message="We could not find this saved storefront on this device."
+        snapshotKind={snapshotKind}
       />
     );
   if (state.status === "missingDraft")
@@ -131,6 +152,7 @@ export function CollectionPreviewClient({
         title="Draft unavailable"
         message="This project does not currently have a draft storefront to preview."
         retry={retry}
+        snapshotKind={snapshotKind}
       />
     );
   if (state.status === "collectionNotFound")
@@ -138,6 +160,7 @@ export function CollectionPreviewClient({
       <StatusPanel
         title="Collection not found"
         message="This collection is not available in the saved catalogue."
+        snapshotKind={snapshotKind}
       />
     );
   if (state.status === "missingPage")
@@ -146,6 +169,7 @@ export function CollectionPreviewClient({
         title="Collection page unavailable"
         message="The saved draft does not contain a page for this collection yet."
         retry={retry}
+        snapshotKind={snapshotKind}
       />
     );
   if (state.status === "validationFailure")
@@ -154,6 +178,7 @@ export function CollectionPreviewClient({
         title="Collection could not be displayed"
         message="Some saved collection content needs attention before it can be shown safely."
         retry={retry}
+        snapshotKind={snapshotKind}
       />
     );
   if (state.status === "failure")
@@ -162,6 +187,7 @@ export function CollectionPreviewClient({
         title="Collection could not be loaded"
         message="We could not open the saved project. Your draft has not been changed."
         retry={retry}
+        snapshotKind={snapshotKind}
       />
     );
   if (state.status !== "success") return null;
@@ -172,7 +198,8 @@ export function CollectionPreviewClient({
     primaryLocale: state.aggregate.project.primaryLocale,
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
-    pagePathPrefix: `/projects/${projectId}`,
+    pagePathPrefix:
+      snapshotKind === "published" ? `/projects/${projectId}/published` : `/projects/${projectId}`,
   });
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
 
@@ -180,13 +207,20 @@ export function CollectionPreviewClient({
     <div className="project-preview" lang={locale} style={style}>
       <div className="project-preview__header">
         <div>
-          <Link className="project-preview__back" href={`/projects/${projectId}`}>
+          <Link
+            className="project-preview__back"
+            href={
+              snapshotKind === "published"
+                ? `/projects/${projectId}/published`
+                : `/projects/${projectId}`
+            }
+          >
             Storefront home
           </Link>
           <p className="project-preview__title">{state.aggregate.project.name}</p>
         </div>
         <div className="project-preview__status">
-          <span>Draft preview</span>
+          <span>{snapshotKind === "published" ? "Published storefront" : "Draft preview"}</span>
           <span aria-live="polite">Current locale: {locale.toUpperCase()}</span>
         </div>
         <fieldset className="locale-control">
@@ -205,7 +239,14 @@ export function CollectionPreviewClient({
           ))}
         </fieldset>
       </div>
-      <div aria-label="Draft collection storefront" className="project-preview__storefront">
+      <div
+        aria-label={
+          snapshotKind === "published"
+            ? "Published collection storefront"
+            : "Draft collection storefront"
+        }
+        className="project-preview__storefront"
+      >
         {renderStorefrontPage(state.page, context)}
       </div>
     </div>

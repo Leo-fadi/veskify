@@ -23,12 +23,17 @@ function repository(get: ProjectRepository["get"]): ProjectRepository {
   return { list: vi.fn(), get: vi.fn(get), saveDraft: vi.fn(), publish: vi.fn(), restore: vi.fn() };
 }
 
-function route(repo: ProjectRepository, slug = "rings") {
+function route(
+  repo: ProjectRepository,
+  slug = "rings",
+  snapshotKind: "draft" | "published" = "draft",
+) {
   return render(
     <CollectionPreviewClient
       projectId={aurumNordicSeed.project.id}
       collectionSlug={slug}
       repositoryFactory={() => repo}
+      snapshotKind={snapshotKind}
     />,
   );
 }
@@ -57,6 +62,31 @@ describe("collection route", () => {
     );
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     expect(screen.getByRole("heading", { level: 1, name: "Sormukset" })).toBeVisible();
+  });
+
+  it("uses only the published snapshot and published routes in published mode", async () => {
+    const value = aggregate();
+    value.snapshots = value.snapshots.filter(
+      (snapshot) => snapshot.id !== value.project.draftSnapshotId,
+    );
+    route(
+      repository(() => Promise.resolve(value)),
+      "rings",
+      "published",
+    );
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Rings" })).toBeVisible();
+    expect(screen.getByText("Published storefront")).toBeVisible();
+    expect(screen.queryByText("Draft preview")).not.toBeInTheDocument();
+    const primaryNavigation = screen.getByRole("navigation", { name: "Primary navigation" });
+    expect(within(primaryNavigation).getByRole("link", { name: "Home" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/published",
+    );
+    expect(screen.getByRole("link", { name: "Aurora Ring" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/published/products/aurora-ring-585",
+    );
   });
 
   it.each([

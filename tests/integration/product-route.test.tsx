@@ -23,12 +23,17 @@ const repository = (get: ProjectRepository["get"]): ProjectRepository => ({
   publish: vi.fn(),
   restore: vi.fn(),
 });
-const route = (repo: ProjectRepository, slug = "aurora-ring-585") =>
+const route = (
+  repo: ProjectRepository,
+  slug = "aurora-ring-585",
+  snapshotKind: "draft" | "published" = "draft",
+) =>
   render(
     <ProductPreviewClient
       productId="project_aurum_nordic"
       productSlug={slug}
       repositoryFactory={() => repo}
+      snapshotKind={snapshotKind}
     />,
   );
 
@@ -39,6 +44,30 @@ describe("product preview route states", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "Aurora Ring 585" })).toBeVisible();
     expect(screen.getByText("Draft preview")).toBeVisible();
     expect(screen.queryByText(/Puck editor|property panel/i)).not.toBeInTheDocument();
+  });
+
+  it("uses only the published snapshot and published routes in published mode", async () => {
+    const value = aggregate();
+    value.snapshots = value.snapshots.filter(
+      (snapshot) => snapshot.id !== value.project.draftSnapshotId,
+    );
+    route(
+      repository(() => Promise.resolve(value)),
+      "aurora-ring-585",
+      "published",
+    );
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Aurora Ring 585" })).toBeVisible();
+    expect(screen.getByText("Published storefront")).toBeVisible();
+    expect(screen.queryByText("Draft preview")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Home" })[0]).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/published",
+    );
+    expect(screen.getByRole("link", { name: "Rings" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/published/collections/rings",
+    );
   });
 
   it.each([

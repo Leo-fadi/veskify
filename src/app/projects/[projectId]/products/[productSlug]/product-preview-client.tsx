@@ -11,6 +11,7 @@ import { createBrowserProjectRepository, ProjectNotFoundError } from "@/services
 
 type RepositoryFactory = () => ProjectRepository;
 type ProductPageModel = ProjectAggregate["snapshots"][number]["pages"][number];
+type SnapshotKind = "draft" | "published";
 type LoadState =
   | { status: "loading" }
   | {
@@ -34,15 +35,19 @@ function StatusPanel({
   title,
   message,
   retry,
+  snapshotKind,
 }: {
   title: string;
   message: string;
   retry?: () => void;
+  snapshotKind: SnapshotKind;
 }) {
   return (
     <main className="project-state">
       <section aria-live="polite" className="project-state__panel">
-        <p className="project-state__eyebrow">Draft preview</p>
+        <p className="project-state__eyebrow">
+          {snapshotKind === "published" ? "Published storefront" : "Draft preview"}
+        </p>
         <h1>{title}</h1>
         <p>{message}</p>
         {retry ? (
@@ -60,6 +65,7 @@ type ProductPreviewClientProps = {
   productId: string;
   productSlug: string;
   repositoryFactory?: RepositoryFactory;
+  snapshotKind?: SnapshotKind;
 };
 
 export function ProductPreviewClient(props: ProductPreviewClientProps) {
@@ -70,6 +76,7 @@ function ProductPreviewLoader({
   productId: projectId,
   productSlug,
   repositoryFactory = defaultRepositoryFactory,
+  snapshotKind = "draft",
 }: ProductPreviewClientProps) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -84,7 +91,11 @@ function ProductPreviewLoader({
       .then((aggregate) => {
         if (cancelled) return;
         const draft = aggregate.snapshots.find(
-          (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
+          (snapshot) =>
+            snapshot.id ===
+            (snapshotKind === "published"
+              ? aggregate.project.publishedSnapshotId
+              : aggregate.project.draftSnapshotId),
         );
         if (!draft) return setState({ status: "missingDraft" });
         const productPage = draft.pages.find(
@@ -102,7 +113,10 @@ function ProductPreviewLoader({
             primaryLocale: aggregate.project.primaryLocale,
             catalogue: aggregate.catalogue,
             snapshot: draft,
-            pagePathPrefix: `/projects/${projectId}`,
+            pagePathPrefix:
+              snapshotKind === "published"
+                ? `/projects/${projectId}/published`
+                : `/projects/${projectId}`,
           });
           validateRegisteredPage(productPage, context);
           const references = productPage.sections
@@ -126,7 +140,7 @@ function ProductPreviewLoader({
     return () => {
       cancelled = true;
     };
-  }, [attempt, productSlug, projectId]);
+  }, [attempt, productSlug, projectId, snapshotKind]);
 
   const retry = () => {
     setState({ status: "loading" });
@@ -134,13 +148,18 @@ function ProductPreviewLoader({
   };
   if (state.status === "loading")
     return (
-      <StatusPanel title="Loading product preview" message="Preparing the saved product page…" />
+      <StatusPanel
+        message="Preparing the saved storefront…"
+        snapshotKind={snapshotKind}
+        title="Loading product preview"
+      />
     );
   if (state.status === "notFound")
     return (
       <StatusPanel
         title="Project not found"
         message="We could not find this saved storefront on this device."
+        snapshotKind={snapshotKind}
       />
     );
   if (state.status === "missingDraft")
@@ -149,6 +168,7 @@ function ProductPreviewLoader({
         title="Draft unavailable"
         message="This project does not currently have a draft storefront to preview."
         retry={retry}
+        snapshotKind={snapshotKind}
       />
     );
   if (state.status === "productNotFound")
@@ -156,6 +176,7 @@ function ProductPreviewLoader({
       <StatusPanel
         title="Product not found"
         message="This product is not available in the saved demo catalogue."
+        snapshotKind={snapshotKind}
       />
     );
   if (state.status === "missingProductPage")
@@ -164,6 +185,7 @@ function ProductPreviewLoader({
         title="Product page unavailable"
         message="The saved draft does not contain a page for this product yet."
         retry={retry}
+        snapshotKind={snapshotKind}
       />
     );
   if (state.status === "validationFailure")
@@ -172,6 +194,7 @@ function ProductPreviewLoader({
         title="Product page could not be displayed"
         message="Some saved product-page content needs attention before it can be shown safely."
         retry={retry}
+        snapshotKind={snapshotKind}
       />
     );
   if (state.status === "failure")
@@ -180,6 +203,7 @@ function ProductPreviewLoader({
         title="Storefront could not be loaded"
         message="We could not open the saved project. Your draft has not been changed."
         retry={retry}
+        snapshotKind={snapshotKind}
       />
     );
   if (state.status !== "success") return null;
@@ -191,23 +215,31 @@ function ProductPreviewLoader({
     primaryLocale: state.aggregate.project.primaryLocale,
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
-    pagePathPrefix: `/projects/${projectId}`,
+    pagePathPrefix:
+      snapshotKind === "published" ? `/projects/${projectId}/published` : `/projects/${projectId}`,
   });
   return (
     <div className="project-preview" lang={locale} style={style}>
       <div
         className="project-preview__header"
         role="region"
-        aria-label="Veskify draft preview controls"
+        aria-label={`Veskify ${snapshotKind} preview controls`}
       >
         <div>
-          <Link className="project-preview__back" href={`/projects/${projectId}`}>
+          <Link
+            className="project-preview__back"
+            href={
+              snapshotKind === "published"
+                ? `/projects/${projectId}/published`
+                : `/projects/${projectId}`
+            }
+          >
             Storefront home
           </Link>
           <p className="project-preview__name">{state.aggregate.project.name}</p>
         </div>
         <div className="project-preview__status">
-          <span>Draft preview</span>
+          <span>{snapshotKind === "published" ? "Published storefront" : "Draft preview"}</span>
           <span aria-live="polite">Current locale: {locale.toUpperCase()}</span>
         </div>
         <fieldset className="locale-control">
@@ -226,7 +258,12 @@ function ProductPreviewLoader({
           ))}
         </fieldset>
       </div>
-      <div aria-label="Draft product storefront" className="project-preview__storefront">
+      <div
+        aria-label={
+          snapshotKind === "published" ? "Published product storefront" : "Draft product storefront"
+        }
+        className="project-preview__storefront"
+      >
         {renderStorefrontPage(state.productPage, context)}
       </div>
     </div>

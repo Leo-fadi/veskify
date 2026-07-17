@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { PublishPreparation } from "@/application/publishing";
 import type { Locale } from "@/domain/shared";
 import { PublishChangeSummary } from "./publish-change-summary";
@@ -9,14 +10,14 @@ export function PublishConfirmation({
   primaryLocale,
   confirming,
   onConfirm,
-  onCancel,
+  cancelHref,
 }: {
   preparation: PublishPreparation;
   locale: Locale;
   primaryLocale: Locale;
   confirming: boolean;
   onConfirm: () => void;
-  onCancel: () => void;
+  cancelHref: string;
 }) {
   const text = publishingCopy(locale);
   return (
@@ -35,9 +36,13 @@ export function PublishConfirmation({
         <button disabled={confirming} onClick={onConfirm} type="button">
           {confirming ? text.publishing : text.publishStorefront}
         </button>
-        <button disabled={confirming} onClick={onCancel} type="button">
-          {text.cancel}
-        </button>
+        {confirming ? (
+          <button disabled type="button">
+            {text.cancel}
+          </button>
+        ) : (
+          <Link href={cancelHref}>{text.cancel}</Link>
+        )}
       </div>
     </section>
   );

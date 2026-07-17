@@ -203,8 +203,8 @@ export function PublishClient({
     publishState.status === "ready" || publishState.status === "confirming" ? (
       <PublishConfirmation
         confirming={publishState.status === "confirming"}
+        cancelHref={`/projects/${projectId}/editor`}
         locale={activeLocale}
-        onCancel={() => setPublishState({ status: "idle" })}
         onConfirm={() => {
           void publish();
         }}

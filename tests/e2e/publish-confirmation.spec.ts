@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 const projectId = "project_aurum_nordic";
 const editorUrl = `/projects/${projectId}/editor`;
 const publishUrl = `/projects/${projectId}/publish`;
+const publishedUrl = `/projects/${projectId}/published`;
 
 async function saveHomepageHeading(
   page: Page,
@@ -38,16 +39,39 @@ test("reviews a saved draft, confirms publication, and opens the published store
   await expect(page.getByRole("heading", { name: "Published from the saved draft" })).toBeVisible();
 });
 
+test("keeps published navigation on the immutable published snapshot", async ({ page }) => {
+  await saveHomepageHeading(page, "Published storefront content");
+  await page.goto(publishUrl);
+  await page.getByRole("button", { name: "Review publish" }).click();
+  await page.getByRole("button", { name: "Publish storefront" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Storefront published successfully" }),
+  ).toBeVisible();
+
+  await saveHomepageHeading(page, "Unpublished draft content", "Published storefront content");
+  await page.goto(publishedUrl);
+  await expect(page.getByRole("heading", { name: "Published storefront content" })).toBeVisible();
+  await expect(page.getByText("Draft preview")).toHaveCount(0);
+  await page.getByRole("link", { name: "Rings", exact: true }).click();
+  await expect(page).toHaveURL(`/projects/${projectId}/published/collections/rings`);
+  await expect(page.getByText("Published storefront")).toBeVisible();
+  await expect(page.getByText("Draft preview")).toHaveCount(0);
+  await page.getByRole("link", { name: "Aurora Ring", exact: true }).first().click();
+  await expect(page).toHaveURL(`/projects/${projectId}/published/products/aurora-ring-585`);
+  await expect(page.getByText("Published storefront")).toBeVisible();
+  await expect(page.getByText("Draft preview")).toHaveCount(0);
+});
+
 test("cancels a review without publishing", async ({ page }) => {
   await saveHomepageHeading(page, "Review without publish");
   await page.goto(publishUrl);
   await page.getByRole("button", { name: "Review publish" }).click();
-  await page.getByRole("button", { name: "Cancel and return to editor" }).click();
-  await expect(page.getByRole("button", { name: "Review publish" })).toBeVisible();
+  await page.getByRole("link", { name: "Cancel and return to editor" }).click();
+  await expect(page).toHaveURL(editorUrl);
   await expect(
     page.getByRole("heading", { name: "Storefront published successfully" }),
   ).toHaveCount(0);
-  await page.goto(`/projects/${projectId}/published`);
+  await page.goto(publishedUrl);
   await expect(page.getByRole("heading", { name: "Made for northern light" })).toBeVisible();
 });
 

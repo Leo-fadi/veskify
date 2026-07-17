@@ -123,16 +123,18 @@ describe("P2-12 publish confirmation route", () => {
     );
   });
 
-  it("does not publish when confirmation is cancelled", async () => {
+  it("does not publish and links back to the editor when confirmation is cancelled", async () => {
     const value = repository();
     await saveDraftTitle(value, "Cancelled review");
     const publish = vi.spyOn(value, "publish");
     route(value);
     fireEvent.click(await screen.findByRole("button", { name: "Review publish" }));
     await screen.findByRole("heading", { name: "Confirm publication" });
-    fireEvent.click(screen.getByRole("button", { name: "Cancel and return to editor" }));
+    expect(screen.getByRole("link", { name: "Cancel and return to editor" })).toHaveAttribute(
+      "href",
+      `/projects/${projectId}/editor`,
+    );
 
-    expect(screen.getByRole("button", { name: "Review publish" })).toBeVisible();
     expect(publish).not.toHaveBeenCalled();
   });
 

@@ -42,6 +42,7 @@ It never shows snapshot IDs, fingerprints, schemas or operation names.
 ## Published storefront and deferred work
 
 The post-success link points to `/projects/[projectId]/published`, which renders the immutable
-published snapshot through the existing read-only preview route. Editor navigation is deliberately
-deferred until the parallel editor workflow PR is merged. History browsing and restore controls are
-also deferred; this milestone adds no history UI or restore action.
+published snapshot through read-only homepage, collection and product preview routes. Navigation
+within that published storefront remains on the same published snapshot; it never falls through to
+the current draft. History browsing and restore controls are deferred; this milestone adds no
+history UI or restore action.

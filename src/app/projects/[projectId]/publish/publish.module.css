@@ -225,21 +225,25 @@
   font-weight: 700;
 }
 
-.review :global(.publish-confirmation__actions) button {
+.review :global(.publish-confirmation__actions :is(button, a)) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 2.85rem;
   border-radius: 0.55rem;
   padding: 0.65rem 1rem;
   font: inherit;
   font-weight: 750;
+  text-decoration: none;
 }
 
-.review :global(.publish-confirmation__actions button:first-child) {
+.review :global(.publish-confirmation__actions :is(button, a):first-child) {
   border: 1px solid #164b3b;
   background: #164b3b;
   color: #fff;
 }
 
-.review :global(.publish-confirmation__actions button:last-child) {
+.review :global(.publish-confirmation__actions :is(button, a):last-child) {
   border: 1px solid #6f4141;
   background: #fff;
   color: #6f4141;
@@ -250,6 +254,11 @@
 .secondaryAction:disabled {
   cursor: wait;
   opacity: 0.6;
+}
+
+.review :global(.publish-confirmation__actions a:focus-visible) {
+  outline: 3px solid #d4a72c;
+  outline-offset: 3px;
 }
 
 .success {
