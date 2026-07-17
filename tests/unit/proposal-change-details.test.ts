@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { DesignProposal } from "@/application/design-operations";
+import { InMemoryDesignProposalStore, type DesignProposal } from "@/application/design-operations";
 import {
   createDeterministicDesignProvider,
   type DesignPlannerInput,
@@ -136,6 +136,69 @@ describe("merchant proposal change details", () => {
     expect(details.items[0].title).toBeTruthy();
     expect(details.items[0].title).toMatch(/[A-Za-z]/);
     expect(details.complete).toBe(true);
+  });
+
+  it("shows only sections that actually move in a partial reorder in English and Finnish", () => {
+    const sectionIds = homepage.sections.map((section) => section.id);
+    const reorderedIds = [...sectionIds];
+    [reorderedIds[2], reorderedIds[3]] = [reorderedIds[3], reorderedIds[2]];
+    const proposal = new InMemoryDesignProposalStore().create({
+      originalPage: homepage,
+      operations: [{ type: "REORDER_SECTIONS", sectionIds: reorderedIds }],
+      context: displayContext,
+    });
+
+    const english = proposalChangeDetails(proposal, "en", "en");
+    const finnish = proposalChangeDetails(proposal, "fi", "en");
+    const movedSectionIds = new Set([sectionIds[2], sectionIds[3]]);
+
+    expect(new Set(english.items.map((item) => item.sectionId))).toEqual(movedSectionIds);
+    expect(english.items).toHaveLength(2);
+    expect(english.items.map((item) => item.summary)).toEqual([
+      "New page position: 3.",
+      "New page position: 4.",
+    ]);
+    expect(finnish.items.map((item) => item.sectionId)).toEqual(
+      english.items.map((item) => item.sectionId),
+    );
+    expect(finnish.items.map((item) => item.summary)).toEqual([
+      "Uusi paikka sivulla: 3.",
+      "Uusi paikka sivulla: 4.",
+    ]);
+    expect(english.representedOperationIndexes).toEqual([0]);
+    expect(finnish.representedOperationIndexes).toEqual([0]);
+    expect(english.complete).toBe(true);
+    expect(finnish.complete).toBe(true);
+    expect(english.items.some((item) => item.sectionId === sectionIds[0])).toBe(false);
+    expect(english.items.some((item) => item.sectionId === sectionIds[1])).toBe(false);
+    expect(english.items.some((item) => item.sectionId === sectionIds.at(-1))).toBe(false);
+  });
+
+  it("keeps acceptance blocked when a reorder has no representable moved section", () => {
+    const proposal = new InMemoryDesignProposalStore().create({
+      originalPage: homepage,
+      operations: [
+        {
+          type: "REORDER_SECTIONS",
+          sectionIds: homepage.sections.map((section) => section.id),
+        },
+      ],
+      context: displayContext,
+    });
+    const details = proposalChangeDetails(proposal, "en", "en");
+
+    expect(details.items).toHaveLength(0);
+    expect(details.representedOperationIndexes).toHaveLength(0);
+    expect(details.complete).toBe(false);
+    render(
+      createElement(DesignAgentPanel, {
+        controller: panelController(proposal),
+        locale: "en",
+        primaryLocale: "en",
+        pageTitle: "Home",
+      }),
+    );
+    expect(screen.getByRole("button", { name: "Accept and apply" })).toBeDisabled();
   });
 
   it("blocks acceptance when an operation cannot be represented", () => {

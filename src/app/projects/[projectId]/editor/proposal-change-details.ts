@@ -132,14 +132,34 @@ function sentence(parts: string[], locale: Locale) {
   return `${joined.charAt(0).toLocaleUpperCase(locale)}${joined.slice(1)}.`;
 }
 
-function operationTargets(operation: DesignOperation): Array<string | null> {
+function operationTargets(
+  proposal: DesignProposal,
+  operation: DesignOperation,
+): Array<string | null> {
   if ("sectionId" in operation) return [operation.sectionId];
-  if (operation.type === "REORDER_SECTIONS") return operation.sectionIds;
+  if (operation.type === "REORDER_SECTIONS") {
+    const originalIndexes = new Map(
+      proposal.originalPage.sections.map((section, index) => [section.id, index]),
+    );
+    const proposedIndexes = new Map(
+      proposal.proposedPage.sections.map((section, index) => [section.id, index]),
+    );
+    return operation.sectionIds.filter((sectionId) => {
+      const originalIndex = originalIndexes.get(sectionId);
+      const proposedIndex = proposedIndexes.get(sectionId);
+      return (
+        originalIndex !== undefined &&
+        proposedIndex !== undefined &&
+        originalIndex !== proposedIndex
+      );
+    });
+  }
   if (operation.type === "APPLY_APPROVED_BRAND_COLOURS") return [null];
   return [];
 }
 
 function detailPart(
+  proposal: DesignProposal,
   operation: DesignOperation,
   sectionId: string | null,
   locale: Locale,
@@ -195,7 +215,8 @@ function detailPart(
       return locale === "fi" ? "poista tämä osio" : "remove this section";
     case "REORDER_SECTIONS": {
       if (sectionId === null) return undefined;
-      const position = operation.sectionIds.indexOf(sectionId) + 1;
+      const position =
+        proposal.proposedPage.sections.findIndex((section) => section.id === sectionId) + 1;
       if (position < 1) return undefined;
       return locale === "fi"
         ? `uusi paikka sivulla: ${position}`
@@ -215,8 +236,8 @@ export function proposalChangeDetails(
   >();
 
   proposal.operations.forEach((operation, operationIndex) => {
-    for (const sectionId of operationTargets(operation)) {
-      const part = detailPart(operation, sectionId, locale);
+    for (const sectionId of operationTargets(proposal, operation)) {
+      const part = detailPart(proposal, operation, sectionId, locale);
       if (!part) continue;
       const key = sectionId ?? `page:${proposal.originalPage.id}`;
       const group = groups.get(key) ?? { sectionId, parts: [], operationIndexes: [] };
