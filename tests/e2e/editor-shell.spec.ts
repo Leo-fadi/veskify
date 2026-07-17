@@ -44,9 +44,11 @@ test("loads the in-memory Puck editor and switches page and locale", async ({ pa
 test("selects and edits an approved field, then discards the session change", async ({ page }) => {
   await page.goto(url);
   const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
-  await canvas.getByText("Made for northern light", { exact: true }).click();
   const headingField = page.getByRole("textbox", { name: "Main heading", exact: true });
-  await expect(headingField).toBeVisible();
+  await expect(async () => {
+    await canvas.getByText("Made for northern light", { exact: true }).click();
+    await expect(headingField).toBeVisible({ timeout: 1_500 });
+  }).toPass({ timeout: 15_000 });
   await headingField.fill("A merchant-made homepage");
   await expect(
     canvas.getByRole("heading", { name: "A merchant-made homepage", exact: true }),
@@ -83,6 +85,31 @@ test("requests, previews, rejects and accepts deterministic proposals on mobile"
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+});
+
+test("discard closes a proposal so discarded edits cannot be accepted later", async ({ page }) => {
+  await page.goto(url);
+  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  const headingField = page.getByRole("textbox", { name: "Main heading", exact: true });
+  await expect(async () => {
+    await canvas.getByText("Made for northern light", { exact: true }).click();
+    await expect(headingField).toBeVisible({ timeout: 1_500 });
+  }).toPass({ timeout: 15_000 });
+  await headingField.fill("A proposal base that will be discarded");
+  await expect(page.getByLabel("Draft status")).toContainText("Unsaved changes");
+
+  await page.getByRole("button", { name: "Make the homepage feel more luxurious." }).click();
+  await page.getByRole("button", { name: "Show proposal" }).click();
+  await expect(page.getByLabel("Proposal preview canvas")).toBeVisible();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Discard changes" }).click();
+
+  await expect(page.getByLabel("Proposal preview canvas")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Accept proposal" })).toHaveCount(0);
+  await expect(page.getByLabel("Visual editor canvas")).toBeVisible();
+  await expect(page.getByText(/proposal was closed because the page changed/i)).toBeVisible();
+  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(canvas.getByText("Made for northern light", { exact: true })).toBeVisible();
 });
 
 for (const width of [375, 768, 1024, 1440]) {

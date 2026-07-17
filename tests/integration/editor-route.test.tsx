@@ -37,6 +37,19 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     >
       Canvas: {page.type} / {context.activeLocale}
       {readOnly ? <span>Locked proposal</span> : null}
+      {readOnly ? (
+        <button
+          onClick={() =>
+            onPageChange({
+              ...page,
+              title: { ...page.title, [context.activeLocale]: "Newer canonical edit" },
+            })
+          }
+          type="button"
+        >
+          Simulate newer canonical edit
+        </button>
+      ) : null}
       <button
         onClick={() =>
           onPageChange({
@@ -281,6 +294,92 @@ describe("P2-01 project editor route", () => {
     expect(repo.saveDraft).not.toHaveBeenCalled();
     expect(repo.publish).not.toHaveBeenCalled();
     expect(repo.restore).not.toHaveBeenCalled();
+  });
+
+  it("closes a proposal when its edited base is discarded and cannot restore discarded edits", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const repo = repository(() => Promise.resolve(aggregate()));
+    route(repo);
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Make the homepage feel more luxurious." }));
+    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    await screen.findByLabelText("Design proposal");
+
+    fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Proposal preview canvas")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Accept proposal" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Visual editor canvas")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(screen.getByText(/proposal was closed because the page changed/i)).toHaveAttribute(
+      "role",
+      "status",
+    );
+    expect(repo.saveDraft).not.toHaveBeenCalled();
+    expect(repo.publish).not.toHaveBeenCalled();
+    confirm.mockRestore();
+  });
+
+  it("invalidates a proposal after a newer canonical mutation and preserves that newer page", async () => {
+    const repo = repository(() => Promise.resolve(aggregate()));
+    route(repo);
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Make the layout more minimal." }));
+    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    await screen.findByLabelText("Design proposal");
+
+    fireEvent.click(screen.getByRole("button", { name: "Simulate newer canonical edit" }));
+
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Accept proposal" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Visual editor canvas")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Newer canonical edit" })).toBeVisible();
+    expect(screen.getByText(/create a new proposal to review the latest design/i)).toBeVisible();
+    expect(repo.saveDraft).not.toHaveBeenCalled();
+    expect(repo.publish).not.toHaveBeenCalled();
+  });
+
+  it("closes a homepage proposal on page switch and does not restore it on return", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Make the homepage feel more luxurious." }));
+    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    await screen.findByLabelText("Design proposal");
+
+    fireEvent.change(screen.getByLabelText("Storefront page"), {
+      target: { value: "page_collection_rings" },
+    });
+    expect(screen.getByText("Canvas: collection / en")).toBeVisible();
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Proposal preview canvas")).not.toBeInTheDocument();
+    expect(screen.getByText(/proposal was closed because you opened another page/i)).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("Storefront page"), {
+      target: { value: "page_home" },
+    });
+    expect(screen.getByText("Canvas: home / en")).toBeVisible();
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Accept proposal" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+  });
+
+  it("keeps a canonically valid proposal open when only the locale changes", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Add a campaign section." }));
+    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    await screen.findByLabelText("Design proposal");
+
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+
+    expect(screen.getByLabelText("Design proposal")).toBeVisible();
+    expect(screen.getByLabelText("Proposal preview canvas")).toHaveAttribute("lang", "fi");
+    expect(screen.getByRole("heading", { name: /uusi kampanjaosio/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Accept proposal" })).toBeVisible();
   });
 
   it("accepts a campaign proposal into only the in-memory homepage", async () => {

@@ -18,6 +18,8 @@ import {
 import styles from "./project-editor.module.css";
 import {
   deterministicProposalPrompts,
+  acceptCurrentDesignProposal,
+  canonicalPagesEqual,
   proposalChangeLabels,
   requestDeterministicHomepageProposal,
 } from "./deterministic-proposal-requests";
@@ -39,9 +41,9 @@ type LoadState =
   | ReadyState;
 type ProposalUiState =
   | { status: "idle" }
-  | { status: "generating" }
+  | { status: "generating"; basePage: PageModel }
   | { status: "ready"; proposal: DesignProposal }
-  | { status: "invalid" | "unsupported" | "error"; message: string }
+  | { status: "invalid" | "unsupported" | "error" | "stale"; message: string }
   | { status: "accepted" | "rejected"; proposal: DesignProposal };
 
 const editorPageTypes = new Set<PageType>(["home", "collection", "product"]);
@@ -84,8 +86,6 @@ function snapshotDesign(snapshot: StorefrontSnapshot) {
 
 const draftDiffers = (draft: StorefrontSnapshot, published: StorefrontSnapshot) =>
   JSON.stringify(snapshotDesign(draft)) !== JSON.stringify(snapshotDesign(published));
-const samePage = (left: PageModel, right: PageModel) =>
-  JSON.stringify(left) === JSON.stringify(right);
 
 export function ProjectEditorClient({
   projectId,
@@ -106,9 +106,14 @@ export function ProjectEditorClient({
   const [request, setRequest] = useState("");
   const [proposalState, setProposalState] = useState<ProposalUiState>({ status: "idle" });
   const proposalStore = useRef(new InMemoryDesignProposalStore());
+  const proposalGeneration = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
+    proposalGeneration.current += 1;
+    queueMicrotask(() => {
+      if (!cancelled) setProposalState({ status: "idle" });
+    });
     repository
       .current!.get(projectId)
       .then((aggregate) => {
@@ -141,6 +146,7 @@ export function ProjectEditorClient({
           setValidationMessage("");
           setRequest("");
           setProposalState({ status: "idle" });
+          proposalGeneration.current += 1;
           setState({ status: "ready", aggregate, draft, published, pages });
         } catch {
           setState({ status: "validationError" });
@@ -204,7 +210,7 @@ export function ProjectEditorClient({
 
   const originalPage = state.pages.find((item) => item.id === selectedPageId) ?? state.pages[0];
   const page = sessionPages[originalPage.id] ?? originalPage;
-  const hasUnsavedChanges = !samePage(page, originalPage);
+  const hasUnsavedChanges = !canonicalPagesEqual(page, originalPage);
   const locale = activeLocale ?? state.aggregate.project.primaryLocale;
   const title = resolveLocalizedText(page.title, locale, state.aggregate.project.primaryLocale);
   const context = createStorefrontRenderContext({
@@ -219,7 +225,21 @@ export function ProjectEditorClient({
   const showingProposal = proposalState.status === "ready";
   const canvasPage = showingProposal ? proposalState.proposal.proposedPage : page;
 
+  const closeProposalBecausePageChanged = (message: string) => {
+    proposalGeneration.current += 1;
+    setProposalState((current) =>
+      current.status === "ready" || current.status === "generating"
+        ? { status: "stale", message }
+        : { status: "idle" },
+    );
+  };
+
   const changePage = (nextPage: PageModel) => {
+    if (!canonicalPagesEqual(nextPage, page)) {
+      closeProposalBecausePageChanged(
+        "The proposal was closed because the page changed. Create a new proposal to review the latest design.",
+      );
+    }
     setSessionPages((current) => ({ ...current, [nextPage.id]: nextPage }));
     setValidationMessage("");
   };
@@ -235,13 +255,18 @@ export function ProjectEditorClient({
     }
     setSelectedPageId(nextPageId);
     setValidationMessage("");
-    setProposalState({ status: "idle" });
+    closeProposalBecausePageChanged(
+      "The proposal was closed because you opened another page. Create a new proposal when you are ready.",
+    );
   };
 
   const submitRequest = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setProposalState({ status: "generating" });
+    const generation = proposalGeneration.current + 1;
+    proposalGeneration.current = generation;
+    setProposalState({ status: "generating", basePage: structuredClone(page) });
     window.setTimeout(() => {
+      if (generation !== proposalGeneration.current) return;
       try {
         const result = requestDeterministicHomepageProposal({
           request,
@@ -266,8 +291,21 @@ export function ProjectEditorClient({
   const acceptProposal = () => {
     if (proposalState.status !== "ready") return;
     try {
-      const acceptedPage = proposalStore.current.accept(proposalState.proposal.id);
-      changePage(acceptedPage);
+      const result = acceptCurrentDesignProposal({
+        currentPage: page,
+        proposal: proposalState.proposal,
+        store: proposalStore.current,
+      });
+      if (result.status === "stale") {
+        closeProposalBecausePageChanged(
+          "This proposal is no longer based on your current page. Create a new proposal to review the latest design.",
+        );
+        return;
+      }
+      const acceptedPage = result.page;
+      proposalGeneration.current += 1;
+      setSessionPages((current) => ({ ...current, [acceptedPage.id]: acceptedPage }));
+      setValidationMessage("");
       setResetKeys((current) => ({
         ...current,
         [acceptedPage.id]: (current[acceptedPage.id] ?? 0) + 1,
@@ -285,6 +323,7 @@ export function ProjectEditorClient({
     if (proposalState.status !== "ready") return;
     try {
       proposalStore.current.reject(proposalState.proposal.id);
+      proposalGeneration.current += 1;
       setProposalState({ status: "rejected", proposal: proposalState.proposal });
     } catch {
       setProposalState({
@@ -307,6 +346,9 @@ export function ProjectEditorClient({
       [originalPage.id]: (current[originalPage.id] ?? 0) + 1,
     }));
     setValidationMessage("");
+    closeProposalBecausePageChanged(
+      "Your changes were discarded and the proposal was closed because the page changed.",
+    );
   };
 
   return (
@@ -440,8 +482,15 @@ export function ProjectEditorClient({
             ) : null}
             {proposalState.status === "invalid" ||
             proposalState.status === "unsupported" ||
-            proposalState.status === "error" ? (
-              <p role={proposalState.status === "unsupported" ? "status" : "alert"}>
+            proposalState.status === "error" ||
+            proposalState.status === "stale" ? (
+              <p
+                role={
+                  proposalState.status === "unsupported" || proposalState.status === "stale"
+                    ? "status"
+                    : "alert"
+                }
+              >
                 {proposalState.message}
               </p>
             ) : null}

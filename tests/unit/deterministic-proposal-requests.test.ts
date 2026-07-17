@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { InMemoryDesignProposalStore } from "@/application/design-operations";
 import {
+  acceptCurrentDesignProposal,
+  canonicalPagesEqual,
   proposalChangeLabels,
   requestDeterministicHomepageProposal,
 } from "@/app/projects/[projectId]/editor/deterministic-proposal-requests";
@@ -109,5 +111,39 @@ describe("P2-05 deterministic proposal requests", () => {
     expect(result.proposal.summary.fi).toContain("kampanjaosio");
     expect(proposalChangeLabels(result.proposal, "en")[0]).toBe("Add a campaign section");
     expect(proposalChangeLabels(result.proposal, "fi")[0]).toBe("Lisää kampanjaosio");
+  });
+
+  it("uses canonical value equality rather than object identity or property order", () => {
+    const clone = structuredClone(homepage);
+    const reorderedTitle = { fi: clone.title.fi, en: clone.title.en };
+    clone.title = reorderedTitle;
+    expect(clone).not.toBe(homepage);
+    expect(canonicalPagesEqual(clone, homepage)).toBe(true);
+    clone.title.en = "A newer canonical edit";
+    expect(canonicalPagesEqual(clone, homepage)).toBe(false);
+  });
+
+  it("defensively rejects stale acceptance without consuming or applying the proposal", () => {
+    const store = new InMemoryDesignProposalStore();
+    const result = requestDeterministicHomepageProposal({
+      request: "Make the homepage feel more luxurious.",
+      page: homepage,
+      context,
+      store,
+    });
+    if (result.status !== "ready") throw new Error("Expected a luxury proposal.");
+    const newerPage = structuredClone(homepage);
+    newerPage.title.en = "A newer canonical edit";
+    const before = structuredClone(newerPage);
+
+    expect(
+      acceptCurrentDesignProposal({
+        currentPage: newerPage,
+        proposal: result.proposal,
+        store,
+      }),
+    ).toEqual({ status: "stale" });
+    expect(newerPage).toEqual(before);
+    expect(store.inspect(result.proposal.id).status).toBe("pending");
   });
 });

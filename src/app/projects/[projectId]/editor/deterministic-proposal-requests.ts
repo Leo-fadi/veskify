@@ -20,6 +20,35 @@ export type ProposalRequestResult =
   | { status: "unsupported"; message: string }
   | { status: "invalid"; message: string };
 
+function canonicalize(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonicalize);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, canonicalize(entry)]),
+    );
+  }
+  return value;
+}
+
+export function canonicalPagesEqual(left: PageModel, right: PageModel) {
+  return JSON.stringify(canonicalize(left)) === JSON.stringify(canonicalize(right));
+}
+
+export function acceptCurrentDesignProposal({
+  currentPage,
+  proposal,
+  store,
+}: {
+  currentPage: PageModel;
+  proposal: DesignProposal;
+  store: InMemoryDesignProposalStore;
+}): { status: "accepted"; page: PageModel } | { status: "stale" } {
+  if (!canonicalPagesEqual(currentPage, proposal.originalPage)) return { status: "stale" };
+  return { status: "accepted", page: store.accept(proposal.id) };
+}
+
 const normalizedRequests = new Map<string, DeterministicRequestKind>([
   ["make the homepage feel more luxurious", "luxury"],
   ["add a campaign section", "campaign"],
