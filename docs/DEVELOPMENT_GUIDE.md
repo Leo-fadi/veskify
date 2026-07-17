@@ -67,6 +67,17 @@ does not persist or publish state, and converts successful execution through the
 lifecycle rather than defining a second proposal model or store. Provider-specific types must remain
 inside future provider adapters.
 
+### Deterministic design-agent orchestration
+
+Current location:
+
+- `src/application/design-agent/**`
+
+Owns the React-independent request session state machine, clarification flow, bounded proposal
+revision constraints, stale-base checks, and accept/reject/cancel/restart coordination. It composes
+the existing design-skills provider and proposal lifecycle rather than duplicating their contracts.
+It must not import editor, Puck, persistence, draft-save, publishing, or storefront-renderer modules.
+
 ## 3. Branch and pull-request strategy
 
 ### Rules

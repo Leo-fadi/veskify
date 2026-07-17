@@ -126,6 +126,23 @@ export function classifyDesignRequest(
 ): DesignRequestClassification {
   const fallbackLocale = localeSchema.parse(activeLocale);
   const normalized = normalizeRequest(merchantRequest);
+  if (normalized === "make it better" || normalized === "tee siitä parempi") {
+    return designRequestClassificationSchema.parse({
+      normalizedIntent: null,
+      locale: normalized === "tee siitä parempi" ? "fi" : fallbackLocale,
+      confidence: 0.25,
+      requestedScope: null,
+      selectedSkillIds: [],
+      requiresClarification: true,
+      clarifications: [
+        {
+          en: "What should feel better: a more luxurious look or a more minimal layout?",
+          fi: "Mitä haluat parantaa: ylellisempää ilmettä vai pelkistetympää asettelua?",
+        },
+      ],
+      unsupportedReason: null,
+    });
+  }
   const supported = supportedRequests.get(normalized);
   if (supported) {
     return designRequestClassificationSchema.parse({
@@ -292,7 +309,8 @@ export function createDesignPlan(
       }
       if (
         precondition.type === "campaignContextAvailableOrDerivable" &&
-        input.displayContext.catalogue.collections.length === 0
+        input.displayContext.catalogue.collections.length === 0 &&
+        !campaign
       ) {
         errors.push(`Skill ${skillId} requires campaign or catalogue context.`);
       }

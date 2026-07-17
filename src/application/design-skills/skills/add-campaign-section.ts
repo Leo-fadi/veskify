@@ -14,16 +14,20 @@ function campaignCopy({
   campaign,
 }: Parameters<DesignSkillDefinition["execute"]>[0]) {
   const collection = displayContext.catalogue.collections[0];
-  const collectionTitle = resolveLocalizedText(
-    collection.title,
-    activeLocale,
-    displayContext.primaryLocale,
-  );
+  const collectionTitle = collection
+    ? resolveLocalizedText(collection.title, activeLocale, displayContext.primaryLocale)
+    : null;
   return {
     heading:
       campaign?.heading?.[activeLocale] ??
       campaign?.objective?.[activeLocale] ??
-      (activeLocale === "fi" ? `Tutustu: ${collectionTitle}` : `Discover ${collectionTitle}`),
+      (collectionTitle
+        ? activeLocale === "fi"
+          ? `Tutustu: ${collectionTitle}`
+          : `Discover ${collectionTitle}`
+        : activeLocale === "fi"
+          ? "Tutustu valikoimaan"
+          : "Discover the collection"),
     body:
       campaign?.body?.[activeLocale] ??
       (activeLocale === "fi"
