@@ -54,9 +54,18 @@ Current location:
 
 Owns in-memory and IndexedDB persistence adapters, draft and published snapshot persistence, and repository interfaces. Product features depend on repository contracts rather than concrete adapters.
 
-### Future skill orchestration and providers
+### Controlled design skills and deterministic provider
 
-The first skills/orchestration PR must extend the existing application architecture rather than inventing parallel domain or service trees. Its approved location must be documented here in the same PR. Provider-specific types must remain inside provider adapters.
+Current location:
+
+- `src/application/design-skills/**`
+
+Owns the Veskify skill contract and registry, deterministic EN/FI intent classification, immutable
+design plans, initial bounded skill implementations, transactional orchestration over the existing
+design-operation executor, and the deterministic provider facade. This layer is React-independent,
+does not persist or publish state, and converts successful execution through the existing proposal
+lifecycle rather than defining a second proposal model or store. Provider-specific types must remain
+inside future provider adapters.
 
 ## 3. Branch and pull-request strategy
 
