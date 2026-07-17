@@ -1,15 +1,23 @@
 import { projectSchema, type Project } from "@/domain/project";
-import type { StorefrontSnapshot } from "@/domain/storefront";
+import {
+  canonicalStorefrontContentEqual,
+  canonicalStorefrontContentFingerprint,
+  type StorefrontSnapshot,
+} from "@/domain/storefront";
 import {
   DraftConflictError,
   InvalidRestoreTargetError,
+  NoStorefrontChangesError,
   ProjectNotFoundError,
+  PublishedConflictError,
+  PublishContentConflictError,
   RevisionConflictError,
   SnapshotNotFoundError,
   SnapshotProjectMismatchError,
   type ProjectAggregate,
   type ProjectRepository,
   type ProjectSummary,
+  type PublishExpectation,
 } from "./project-repository";
 import {
   compactManagedDraftHistory,
@@ -158,46 +166,114 @@ export class InMemoryProjectRepository implements ProjectRepository {
     );
   }
 
-  async publish(projectId: string, expectedRevision: number): Promise<ProjectAggregate> {
+  async publish(projectId: string, expectation: PublishExpectation): Promise<ProjectAggregate> {
     await Promise.resolve();
     const stored = this.#requireProject(projectId);
-    if (stored.project.revision !== expectedRevision) {
-      throw new RevisionConflictError(projectId, expectedRevision, stored.project.revision);
+    const current = this.#validatedAggregate(stored);
+    if (stored.project.revision !== expectation.projectRevision) {
+      throw new RevisionConflictError(
+        projectId,
+        expectation.projectRevision,
+        stored.project.revision,
+      );
     }
 
     const draft = stored.snapshots.get(stored.project.draftSnapshotId);
     if (!draft) {
       throw new SnapshotNotFoundError(projectId, stored.project.draftSnapshotId);
     }
+    const previousPublished = stored.snapshots.get(stored.project.publishedSnapshotId);
+    if (!previousPublished) {
+      throw new SnapshotNotFoundError(projectId, stored.project.publishedSnapshotId);
+    }
+    if (draft.id !== expectation.draft.id || draft.revision !== expectation.draft.revision) {
+      throw new DraftConflictError(projectId, expectation.draft, {
+        id: draft.id,
+        revision: draft.revision,
+      });
+    }
+    if (
+      previousPublished.id !== expectation.published.id ||
+      previousPublished.revision !== expectation.published.revision
+    ) {
+      throw new PublishedConflictError(projectId, expectation.published, {
+        id: previousPublished.id,
+        revision: previousPublished.revision,
+      });
+    }
+    if (canonicalStorefrontContentFingerprint(draft) !== expectation.draft.contentFingerprint) {
+      throw new PublishContentConflictError(projectId, "draft");
+    }
+    if (
+      canonicalStorefrontContentFingerprint(previousPublished) !==
+      expectation.published.contentFingerprint
+    ) {
+      throw new PublishContentConflictError(projectId, "published");
+    }
+    if (canonicalStorefrontContentEqual(draft, previousPublished)) {
+      throw new NoStorefrontChangesError(projectId);
+    }
 
     const revision = stored.project.revision + 1;
     const sequence = stored.operationSequence + 1;
+    const createdAt = this.#nextTimestamp(stored, sequence);
     const published = validateRepositorySnapshot(
       {
         ...clone(draft),
         id: this.#snapshotId("published", revision, sequence),
         revision,
-        createdAt: this.#nextTimestamp(stored, sequence),
+        createdAt,
         createdBy: "user",
       },
       stored.catalogue,
     );
+    const synchronizedDraft = validateRepositorySnapshot(
+      {
+        ...clone(published),
+        id: this.#snapshotId("synchronized", revision, sequence),
+        createdBy: "system",
+      },
+      stored.catalogue,
+    );
+    if (
+      published.id === synchronizedDraft.id ||
+      stored.snapshots.has(published.id) ||
+      stored.snapshots.has(synchronizedDraft.id)
+    ) {
+      throw repositoryValidationError(
+        "Publishing must create two unique snapshot identities.",
+        new Error("Generated snapshot IDs must remain unique."),
+      );
+    }
     const nextProject = projectSchema.parse({
       ...stored.project,
       publishedSnapshotId: published.id,
+      draftSnapshotId: synchronizedDraft.id,
       revision,
-      updatedAt: published.createdAt,
+      updatedAt: createdAt,
     });
-
+    const nextSnapshots = new Map(stored.snapshots);
+    nextSnapshots.set(published.id, published);
+    nextSnapshots.set(synchronizedDraft.id, synchronizedDraft);
+    const nextManagedDraftSnapshotIds = new Set(stored.managedDraftSnapshotIds);
+    nextManagedDraftSnapshotIds.add(synchronizedDraft.id);
+    const compacted = compactManagedDraftHistory(
+      [...nextSnapshots.values()],
+      nextProject,
+      nextManagedDraftSnapshotIds,
+    );
     const aggregate = validateProjectAggregate({
       project: nextProject,
-      catalogue: stored.catalogue,
-      snapshots: [...stored.snapshots.values(), published],
+      catalogue: current.catalogue,
+      snapshots: compacted.snapshots,
     });
 
     stored.project = freeze(aggregate.project);
     stored.snapshots = new Map(
       aggregate.snapshots.map((snapshot) => [snapshot.id, freeze(snapshot)]),
+    );
+    stored.managedDraftSnapshotIds = new Set(
+      [...nextManagedDraftSnapshotIds].filter((id) => stored.snapshots.has(id)),
     );
     stored.operationSequence = sequence;
     return clone(aggregate);
@@ -277,7 +353,11 @@ export class InMemoryProjectRepository implements ProjectRepository {
     });
   }
 
-  #snapshotId(reason: "published" | "restored", revision: number, sequence: number): string {
+  #snapshotId(
+    reason: "published" | "restored" | "synchronized",
+    revision: number,
+    sequence: number,
+  ): string {
     return `snapshot_${reason}_${revision}_${sequence}`;
   }
 

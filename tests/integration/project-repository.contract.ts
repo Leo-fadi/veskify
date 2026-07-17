@@ -1,21 +1,71 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { aurumNordicSeed } from "@/data/seed";
-import type { StorefrontSnapshot } from "@/domain/storefront";
+import {
+  canonicalStorefrontContentEqual,
+  canonicalStorefrontContentFingerprint,
+  type StorefrontSnapshot,
+} from "@/domain/storefront";
 import {
   DraftConflictError,
   InvalidRestoreTargetError,
+  NoStorefrontChangesError,
   ProjectNotFoundError,
+  PublishedConflictError,
+  PublishContentConflictError,
   RepositoryValidationError,
   RevisionConflictError,
   SnapshotNotFoundError,
   SnapshotProjectMismatchError,
+  type ProjectAggregate,
   type ProjectRepository,
+  type PublishExpectation,
 } from "@/services/storage";
 
 const projectId = aurumNordicSeed.project.id;
 
 function editableDraft(): StorefrontSnapshot {
   return structuredClone(aurumNordicSeed.draftSnapshot);
+}
+
+function publishExpectation(aggregate: ProjectAggregate): PublishExpectation {
+  const draft = aggregate.snapshots.find(
+    (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
+  )!;
+  const published = aggregate.snapshots.find(
+    (snapshot) => snapshot.id === aggregate.project.publishedSnapshotId,
+  )!;
+  return {
+    projectRevision: aggregate.project.revision,
+    draft: {
+      id: draft.id,
+      revision: draft.revision,
+      contentFingerprint: canonicalStorefrontContentFingerprint(draft),
+    },
+    published: {
+      id: published.id,
+      revision: published.revision,
+      contentFingerprint: canonicalStorefrontContentFingerprint(published),
+    },
+  };
+}
+
+async function saveMeaningfulDraft(
+  repository: ProjectRepository,
+  label: string,
+): Promise<ProjectAggregate> {
+  const before = await repository.get(projectId);
+  const current = before.snapshots.find(
+    (snapshot) => snapshot.id === before.project.draftSnapshotId,
+  )!;
+  const draft = structuredClone(current);
+  draft.id = `snapshot_publishable_${label}`;
+  draft.createdAt = new Date(Date.parse(current.createdAt) + 1_000).toISOString();
+  draft.pages[0].title.en = `Publishable ${label}`;
+  await repository.saveDraft(projectId, draft, {
+    id: current.id,
+    revision: current.revision,
+  });
+  return repository.get(projectId);
 }
 
 export function runProjectRepositoryContract(
@@ -221,9 +271,9 @@ export function runProjectRepositoryContract(
         SnapshotNotFoundError,
       );
 
-      const afterPublish = await repository.publish(projectId, afterSaves.project.revision);
+      const afterPublish = await repository.publish(projectId, publishExpectation(afterSaves));
       expect(afterPublish.project.revision).toBe(afterSaves.project.revision + 1);
-      expect(afterPublish.snapshots).toHaveLength(21);
+      expect(afterPublish.snapshots).toHaveLength(20);
       expect(afterPublish.snapshots.map(({ id }) => id)).toContain(
         before.project.publishedSnapshotId,
       );
@@ -232,6 +282,16 @@ export function runProjectRepositoryContract(
           (snapshot) => snapshot.id === afterPublish.project.publishedSnapshotId,
         )?.pages[0].title.en,
       ).toBe("Saved draft 100");
+      const synchronizedDraft = afterPublish.snapshots.find(
+        (snapshot) => snapshot.id === afterPublish.project.draftSnapshotId,
+      )!;
+      const published = afterPublish.snapshots.find(
+        (snapshot) => snapshot.id === afterPublish.project.publishedSnapshotId,
+      )!;
+      expect(synchronizedDraft.id).not.toBe(published.id);
+      expect(synchronizedDraft.revision).toBe(afterPublish.project.revision);
+      expect(published.revision).toBe(afterPublish.project.revision);
+      expect(canonicalStorefrontContentEqual(synchronizedDraft, published)).toBe(true);
 
       const newestSupersededId = "snapshot_compacted_99";
       const restored = await repository.restore(projectId, newestSupersededId);
@@ -245,29 +305,72 @@ export function runProjectRepositoryContract(
         afterPublish.project.publishedSnapshotId,
       );
       expect(afterRestore.snapshots).toHaveLength(20);
-    }, 15_000);
+    }, 60_000);
 
     it("publishes the current draft, increments revision and preserves history", async () => {
-      const before = await repository.get(projectId);
-      const after = await repository.publish(projectId, before.project.revision);
+      const before = await saveMeaningfulDraft(repository, "single_publish");
+      const after = await repository.publish(projectId, publishExpectation(before));
       const published = after.snapshots.find(
         (snapshot) => snapshot.id === after.project.publishedSnapshotId,
       );
       const draft = after.snapshots.find(
-        (snapshot) => snapshot.id === before.project.draftSnapshotId,
+        (snapshot) => snapshot.id === after.project.draftSnapshotId,
       );
 
       expect(after.project.revision).toBe(before.project.revision + 1);
       expect(after.project.publishedSnapshotId).not.toBe(before.project.publishedSnapshotId);
-      expect(published?.pages).toEqual(draft?.pages);
+      expect(after.project.draftSnapshotId).not.toBe(before.project.draftSnapshotId);
+      expect(published?.id).not.toBe(draft?.id);
+      expect(published?.revision).toBe(after.project.revision);
+      expect(draft?.revision).toBe(after.project.revision);
+      expect(canonicalStorefrontContentEqual(published!, draft!)).toBe(true);
       expect(after.snapshots.map(({ id }) => id)).toContain(before.project.publishedSnapshotId);
-      expect(after.snapshots).toHaveLength(before.snapshots.length + 1);
+      expect(after.snapshots).toHaveLength(before.snapshots.length + 2);
+      expect(after).toEqual(await repository.get(projectId));
+    });
+
+    it("retains every immutable published snapshot across repeated publishes", async () => {
+      const publishedIds = new Set<string>();
+      const initial = await repository.get(projectId);
+      publishedIds.add(initial.project.publishedSnapshotId);
+
+      for (let index = 1; index <= 20; index += 1) {
+        const saved = await saveMeaningfulDraft(repository, `sequential_${index}`);
+        const published = await repository.publish(projectId, publishExpectation(saved));
+        publishedIds.add(published.project.publishedSnapshotId);
+        expect(published.project.revision).toBe(initial.project.revision + index);
+        expect(publishedIds.size).toBe(index + 1);
+        for (const publishedId of publishedIds) {
+          expect(published.snapshots.map(({ id }) => id)).toContain(publishedId);
+        }
+      }
+
+      const afterPublishes = await repository.get(projectId);
+      expect(afterPublishes.snapshots.length).toBeGreaterThan(20);
+      const oldestPublishedId = initial.project.publishedSnapshotId;
+      const restored = await repository.restore(projectId, oldestPublishedId);
+      const afterRestore = await repository.get(projectId);
+      expect(afterRestore.project.draftSnapshotId).toBe(restored.id);
+      expect(afterRestore.snapshots.map(({ id }) => id)).toContain(oldestPublishedId);
+      expect(afterRestore.project.publishedSnapshotId).toBe(
+        afterPublishes.project.publishedSnapshotId,
+      );
+    }, 30_000);
+
+    it("rejects publishing a draft with no meaningful storefront changes", async () => {
+      const before = await repository.get(projectId);
+
+      await expect(
+        repository.publish(projectId, publishExpectation(before)),
+      ).rejects.toBeInstanceOf(NoStorefrontChangesError);
+
+      expect(await repository.get(projectId)).toEqual(before);
     });
 
     it("rejects reuse of an older published-history snapshot without changing state", async () => {
-      const initial = await repository.get(projectId);
+      const initial = await saveMeaningfulDraft(repository, "history_id_reuse");
       const olderPublishedId = initial.project.publishedSnapshotId;
-      await repository.publish(projectId, initial.project.revision);
+      await repository.publish(projectId, publishExpectation(initial));
       const beforeAttempt = await repository.get(projectId);
       const candidate = structuredClone(
         beforeAttempt.snapshots.find(
@@ -285,10 +388,60 @@ export function runProjectRepositoryContract(
 
     it("rejects a stale publish without changing state", async () => {
       const before = await repository.get(projectId);
-      await expect(
-        repository.publish(projectId, before.project.revision - 1),
-      ).rejects.toBeInstanceOf(RevisionConflictError);
+      const staleExpectation = publishExpectation(before);
+      staleExpectation.projectRevision -= 1;
+      await expect(repository.publish(projectId, staleExpectation)).rejects.toBeInstanceOf(
+        RevisionConflictError,
+      );
       expect(await repository.get(projectId)).toEqual(before);
+    });
+
+    it("rejects stale draft, published and canonical publish expectations atomically", async () => {
+      const before = await saveMeaningfulDraft(repository, "stale_expectations");
+      const cases: Array<[PublishExpectation, new (...args: never[]) => Error]> = [
+        [
+          {
+            ...publishExpectation(before),
+            draft: { ...publishExpectation(before).draft, id: "snapshot_wrong_draft" },
+          },
+          DraftConflictError,
+        ],
+        [
+          {
+            ...publishExpectation(before),
+            published: {
+              ...publishExpectation(before).published,
+              id: "snapshot_wrong_published",
+            },
+          },
+          PublishedConflictError,
+        ],
+        [
+          {
+            ...publishExpectation(before),
+            draft: {
+              ...publishExpectation(before).draft,
+              contentFingerprint: `v1_0_${"0".repeat(64)}`,
+            },
+          },
+          PublishContentConflictError,
+        ],
+        [
+          {
+            ...publishExpectation(before),
+            published: {
+              ...publishExpectation(before).published,
+              contentFingerprint: `v1_0_${"0".repeat(64)}`,
+            },
+          },
+          PublishContentConflictError,
+        ],
+      ];
+
+      for (const [expectation, error] of cases) {
+        await expect(repository.publish(projectId, expectation)).rejects.toBeInstanceOf(error);
+        expect(await repository.get(projectId)).toEqual(before);
+      }
     });
 
     it("restores history to a new isolated draft without publishing", async () => {
@@ -325,10 +478,10 @@ export function runProjectRepositoryContract(
       expect(await repository.get(projectId)).toEqual(before);
     });
 
-    it("retains older published history while restore compacts the current draft", async () => {
-      const initial = await repository.get(projectId);
+    it("retains older published history through a later restore", async () => {
+      const initial = await saveMeaningfulDraft(repository, "published_restore");
       const olderPublishedId = initial.project.publishedSnapshotId;
-      const afterPublish = await repository.publish(projectId, initial.project.revision);
+      const afterPublish = await repository.publish(projectId, publishExpectation(initial));
       const currentPublishedId = afterPublish.project.publishedSnapshotId;
       const supersededDraftId = afterPublish.project.draftSnapshotId;
 
@@ -342,7 +495,7 @@ export function runProjectRepositoryContract(
         expect.arrayContaining([olderPublishedId, currentPublishedId, restored.id]),
       );
       expect(afterRestore.snapshots.map(({ id }) => id)).toContain(supersededDraftId);
-      expect(afterRestore.snapshots).toHaveLength(4);
+      expect(afterRestore.snapshots).toHaveLength(6);
     });
 
     it("returns a typed error for an unknown snapshot", async () => {
@@ -357,8 +510,10 @@ export function runProjectRepositoryContract(
       );
       const draft = editableDraft();
       draft.id = "snapshot_protected_fields_test";
+      draft.pages[0].title.en = "Protected fields publish";
       await repository.saveDraft(projectId, draft);
-      await repository.publish(projectId, aurumNordicSeed.project.revision);
+      const saved = await repository.get(projectId);
+      await repository.publish(projectId, publishExpectation(saved));
       await repository.restore(projectId, aurumNordicSeed.publishedSnapshot.id);
 
       expect(

@@ -3,18 +3,65 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { deleteDB, openDB } from "idb";
 import { aurumNordicSeed } from "@/data/seed";
 import { projectSchema } from "@/domain/project";
+import { canonicalStorefrontContentFingerprint } from "@/domain/storefront";
 import {
   aurumNordicPhase0SeedState,
   aurumNordicP101SeedState,
   aurumNordicP102SeedState,
   IndexedDbProjectRepository,
   RepositoryValidationError,
+  type ProjectAggregate,
+  type PublishExpectation,
 } from "@/services/storage";
 import { runProjectRepositoryContract } from "./project-repository.contract";
 
 const openRepositories: IndexedDbProjectRepository[] = [];
 const databaseNames = new Set<string>();
 let databaseSequence = 0;
+
+type IndexedDbPut = (
+  this: IDBObjectStore,
+  value: unknown,
+  key?: IDBValidKey,
+) => IDBRequest<IDBValidKey>;
+
+function publishExpectation(aggregate: ProjectAggregate): PublishExpectation {
+  const draft = aggregate.snapshots.find(
+    (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
+  )!;
+  const published = aggregate.snapshots.find(
+    (snapshot) => snapshot.id === aggregate.project.publishedSnapshotId,
+  )!;
+  return {
+    projectRevision: aggregate.project.revision,
+    draft: {
+      id: draft.id,
+      revision: draft.revision,
+      contentFingerprint: canonicalStorefrontContentFingerprint(draft),
+    },
+    published: {
+      id: published.id,
+      revision: published.revision,
+      contentFingerprint: canonicalStorefrontContentFingerprint(published),
+    },
+  };
+}
+
+async function makePublishable(repository: IndexedDbProjectRepository, label: string) {
+  const aggregate = await repository.get(aurumNordicSeed.project.id);
+  const current = aggregate.snapshots.find(
+    (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
+  )!;
+  const draft = structuredClone(current);
+  draft.id = `snapshot_indexed_publishable_${label}`;
+  draft.createdAt = new Date(Date.parse(current.createdAt) + 1_000).toISOString();
+  draft.pages[0].title.en = `Indexed publishable ${label}`;
+  await repository.saveDraft(aggregate.project.id, draft, {
+    id: current.id,
+    revision: current.revision,
+  });
+  return repository.get(aggregate.project.id);
+}
 
 function testDatabaseName(label: string): string {
   databaseSequence += 1;
@@ -404,11 +451,13 @@ describe("IndexedDbProjectRepository persistence", () => {
       createTimestamp: () => "2026-07-16T10:00:00.000Z",
     });
 
+    const saved = await makePublishable(repository, "generators");
     const aggregate = await repository.publish(
       aurumNordicSeed.project.id,
-      aurumNordicSeed.project.revision,
+      publishExpectation(saved),
     );
     expect(aggregate.project.publishedSnapshotId).toBe("snapshot_test_published");
+    expect(aggregate.project.draftSnapshotId).toBe("snapshot_test_synchronized");
     expect(aggregate.project.updatedAt).toBe("2026-07-16T10:00:00.000Z");
   });
 
@@ -416,11 +465,64 @@ describe("IndexedDbProjectRepository persistence", () => {
     const repository = openRepository(testDatabaseName("rollback"), {
       createSnapshotId: () => aurumNordicSeed.publishedSnapshot.id,
     });
-    const before = await repository.get(aurumNordicSeed.project.id);
+    const before = await makePublishable(repository, "identity_rollback");
 
     await expect(
-      repository.publish(aurumNordicSeed.project.id, before.project.revision),
+      repository.publish(aurumNordicSeed.project.id, publishExpectation(before)),
     ).rejects.toBeInstanceOf(RepositoryValidationError);
+    expect(await repository.get(aurumNordicSeed.project.id)).toEqual(before);
+  });
+
+  it("leaves no partial writes when synchronized-draft construction fails validation", async () => {
+    const repository = openRepository(testDatabaseName("synchronized-validation-rollback"), {
+      createSnapshotId: ({ reason }) =>
+        reason === "synchronized" ? "INVALID SNAPSHOT ID" : `snapshot_valid_${reason}`,
+    });
+    const before = await makePublishable(repository, "synchronized_validation");
+
+    await expect(
+      repository.publish(aurumNordicSeed.project.id, publishExpectation(before)),
+    ).rejects.toBeInstanceOf(RepositoryValidationError);
+
+    expect(await repository.get(aurumNordicSeed.project.id)).toEqual(before);
+  });
+
+  it("rolls back both snapshots, project and provenance when publish transaction fails", async () => {
+    const repository = openRepository(testDatabaseName("publish-transaction-rollback"));
+    const before = await makePublishable(repository, "transaction_rollback");
+    let snapshotPutCount = 0;
+    const originalPutValue: unknown = Object.getOwnPropertyDescriptor(
+      IDBObjectStore.prototype,
+      "put",
+    )?.value;
+    if (typeof originalPutValue !== "function") {
+      throw new Error("IndexedDB put must be available.");
+    }
+    const originalPut = originalPutValue as IndexedDbPut;
+    const putSpy = vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(function (
+      this: IDBObjectStore,
+      value: unknown,
+      key?: IDBValidKey,
+    ) {
+      if (this.name === "snapshots") {
+        snapshotPutCount += 1;
+        if (snapshotPutCount === 2) {
+          throw new DOMException("Forced publish transaction failure", "AbortError");
+        }
+      }
+      return key === undefined
+        ? Reflect.apply(originalPut, this, [value])
+        : Reflect.apply(originalPut, this, [value, key]);
+    });
+
+    try {
+      await expect(
+        repository.publish(aurumNordicSeed.project.id, publishExpectation(before)),
+      ).rejects.toThrow("Forced publish transaction failure");
+    } finally {
+      putSpy.mockRestore();
+    }
+
     expect(await repository.get(aurumNordicSeed.project.id)).toEqual(before);
   });
 

@@ -23,6 +23,16 @@ export type ProjectSummary = Pick<
 
 export type DraftBaseIdentity = Pick<StorefrontSnapshot, "id" | "revision">;
 
+export type PublishSnapshotExpectation = DraftBaseIdentity & {
+  contentFingerprint: string;
+};
+
+export type PublishExpectation = {
+  projectRevision: number;
+  draft: PublishSnapshotExpectation;
+  published: PublishSnapshotExpectation;
+};
+
 export interface ProjectRepository {
   list(): Promise<ProjectSummary[]>;
   get(projectId: string): Promise<ProjectAggregate>;
@@ -31,7 +41,7 @@ export interface ProjectRepository {
     snapshot: StorefrontSnapshot,
     expectedBase?: DraftBaseIdentity,
   ): Promise<void>;
-  publish(projectId: string, expectedRevision: number): Promise<ProjectAggregate>;
+  publish(projectId: string, expectation: PublishExpectation): Promise<ProjectAggregate>;
   restore(projectId: string, snapshotId: string): Promise<StorefrontSnapshot>;
 }
 
@@ -95,6 +105,42 @@ export class DraftConflictError extends Error {
       `Project ${projectId} draft conflict: expected ${expectedBase.id}@${expectedBase.revision}, actual ${actualBase.id}@${actualBase.revision}.`,
     );
     this.name = "DraftConflictError";
+  }
+}
+
+export class PublishedConflictError extends Error {
+  readonly code = "PUBLISHED_CONFLICT";
+
+  constructor(
+    readonly projectId: string,
+    readonly expectedBase: DraftBaseIdentity,
+    readonly actualBase: DraftBaseIdentity,
+  ) {
+    super(
+      `Project ${projectId} published conflict: expected ${expectedBase.id}@${expectedBase.revision}, actual ${actualBase.id}@${actualBase.revision}.`,
+    );
+    this.name = "PublishedConflictError";
+  }
+}
+
+export class PublishContentConflictError extends Error {
+  readonly code = "PUBLISH_CONTENT_CONFLICT";
+
+  constructor(
+    readonly projectId: string,
+    readonly target: "draft" | "published",
+  ) {
+    super(`Project ${projectId} ${target} content changed after publish preparation.`);
+    this.name = "PublishContentConflictError";
+  }
+}
+
+export class NoStorefrontChangesError extends Error {
+  readonly code = "NO_STOREFRONT_CHANGES";
+
+  constructor(readonly projectId: string) {
+    super(`Project ${projectId} has no storefront changes to publish.`);
+    this.name = "NoStorefrontChangesError";
   }
 }
 
