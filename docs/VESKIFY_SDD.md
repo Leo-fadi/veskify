@@ -8,9 +8,9 @@ AI Storefront Design Agent · Standalone Demo Product
 
 | **DOCUMENT ID** | VESKIFY-SDD-001                            |
 |-----------------|--------------------------------------------|
-| **VERSION**     | 1.0                                        |
-| **STATUS**      | Implementation baseline                    |
-| **DATE**        | 15 July 2026                               |
+| **VERSION**     | 1.1                                        |
+| **STATUS**      | Implementation baseline — controlled design-agent architecture                    |
+| **DATE**        | 17 July 2026                               |
 | **PRIMARY USE** | Codex implementation and product alignment |
 | **REPOSITORY**  | New standalone repository                  |
 
@@ -40,6 +40,21 @@ Owner: Vesko Oy · Product: Veskify
 | Data policy for demo     | Dummy commerce data; local demo projects and draft/published snapshots                                      |
 | Implementation authority | This document takes priority over ad hoc implementation assumptions                                         |
 | Change policy            | Material changes must update this document, its requirement IDs, and affected acceptance criteria           |
+
+## Source of truth
+
+- `docs/VESKIFY_SDD.md` is the authoritative implementation baseline.
+- `docs/VESKIFY_SDD_v1.1.docx` is the synchronized human-readable export.
+- If the Markdown and DOCX differ, the Markdown specification takes precedence.
+- ADR-001 and ADR-002 are binding architectural decisions that clarify this SDD.
+- Update this Markdown specification first, then synchronize the DOCX export.
+
+## Revision history
+
+| **Version** | **Date**       | **Status**                                                     | **Summary** |
+|-------------|----------------|----------------------------------------------------------------|-------------|
+| 1.0         | 15 July 2026   | Initial implementation baseline                                | Established the standalone Veskify demo product, controlled component model, editor, draft/published state, and acceptance criteria. |
+| 1.1         | 17 July 2026   | Implementation baseline — controlled design-agent architecture | Introduced bounded skills, structured validated operations, reuse-before-generation, proposal-first behaviour, canonical composition ownership, and separate Save draft and Publish changes workflows. |
 
 ## How Codex must use this document
 
@@ -125,7 +140,7 @@ Veskify is a standalone AI storefront design agent for retailers. It allows a me
 <thead>
 <tr class="header">
 <th><p><strong>Core experience</strong></p>
-<p>Describe what you want, see the proposed result in a draft, adjust it visually, and explicitly save it — without writing code or understanding professional design tools.</p></th>
+<p>Describe what you want, review a proposed design, apply accepted changes to a draft, adjust it visually, save the draft, and explicitly publish when ready — without writing code or understanding professional design tools.</p></th>
 </tr>
 </thead>
 <tbody>
@@ -134,7 +149,7 @@ Veskify is a standalone AI storefront design agent for retailers. It allows a me
 
 ## 1.1 Product goal
 
-The goal is to demonstrate how Vesko can deliver an AI-guided storefront design environment that embeds and extends Puck through Veskify-controlled components, schemas, adapters and workflows rather than exposing a generic website builder. The demo must feel like a real product rather than a static prototype, while using dummy commerce data and local/mock integrations.
+The goal is to demonstrate how Vesko can replace a traditional drag-and-drop website builder with an AI-guided design environment. The demo must feel like a real product rather than a static prototype, while using dummy commerce data and local/mock integrations.
 
 ## 1.2 What Veskify designs
 
@@ -173,7 +188,7 @@ The first implementation is a standalone repository. It uses dummy product, coll
 | **Principle**               | **Required interpretation**                                                                                                                      |
 |-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
 | Canvas first, chat assisted | The storefront canvas is the primary product surface. Chat is the simplest control interface, not the product by itself.                         |
-| Safe by default             | AI changes are made to a draft and require explicit user approval before replacing the published demo snapshot.                                  |
+| Safe by default             | AI proposals do not alter the active draft before acceptance. Saving a draft never changes the published snapshot; publishing requires separate explicit confirmation. |
 | Controlled creativity       | The agent may compose and configure approved components and design primitives but must not generate unrestricted frontend code.                  |
 | Simple language             | Controls, questions and confirmations must use retailer-friendly language rather than developer or designer terminology.                         |
 | Progressive disclosure      | The default interface exposes only the minimum controls needed. More detailed options appear when the user asks or selects advanced editing.     |
@@ -183,12 +198,6 @@ The first implementation is a standalone repository. It uses dummy product, coll
 | Reversible actions          | Users can review, undo, reject, discard or restore changes without losing the last published version.                                            |
 
 ## 2.1 Fixed product boundaries
-
-### Embedded editor foundation
-
-Veskify MUST embed the open-source `@puckeditor/core` package for visual-editor mechanics. Puck owns the canvas interaction foundation: section insertion, selection, drag-and-drop placement and reordering, editor fields and viewport editing. Veskify MUST NOT build a parallel canvas, selection model, insertion system, drag-and-drop engine or basic property-field framework.
-
-This infrastructure choice does not transfer product or domain ownership to Puck. Veskify owns canonical project, page, section and snapshot schemas; component contracts; validation and protected-field rules; draft and published state; persistence; publishing confirmation; AI operations; and storefront rendering boundaries. Puck output is untrusted adapter input until it has passed Veskify validation.
 
 <table>
 <colgroup>
@@ -211,7 +220,7 @@ This infrastructure choice does not transfer product or domain ownership to Puck
 <thead>
 <tr class="header">
 <th><p><strong>No silent publication</strong></p>
-<p>A generated result may appear in the draft canvas immediately, but it may not alter the published demo snapshot until the user activates Save changes and confirms the action.</p></th>
+<p>An AI proposal may be previewed without mutating the active draft. Accepted operations may update the active draft. Saving the draft persists unpublished work only; the published snapshot changes only through a separate explicit Publish changes confirmation.</p></th>
 </tr>
 </thead>
 <tbody>
@@ -306,10 +315,11 @@ This infrastructure choice does not transfer product or domain ownership to Puck
 | Pages and languages | Confirm required pages and English/Finnish configuration.                                             |
 | Generation plan     | Veskify summarises what it will build and asks for confirmation.                                      |
 | Initial generation  | System creates global design tokens, navigation, pages and a populated homepage/product presentation. |
-| Editor tutorial     | Short overlay teaches section selection, chat editing, draft status and Save changes.                 |
+| Editor tutorial     | Short overlay teaches section selection, proposal review, draft status, Save draft, and Publish changes.       |
 | Editor              | User reviews and edits through canvas, chat and structured controls.                                  |
 | Full preview        | User opens the complete draft storefront in a dedicated preview route.                                |
-| Save                | User confirms Save changes; draft becomes the published demo snapshot.                                |
+| Save draft          | User persists editor changes without affecting the published snapshot.                                         |
+| Publish changes     | User separately confirms publication; the valid saved draft becomes the published snapshot and history is created. |
 
 ## 4.2 Path B — existing Vesko customer
 
@@ -320,10 +330,11 @@ This infrastructure choice does not transfer product or domain ownership to Puck
 | Selection        | User may select the target section/page before prompting; the selection is passed as context.                     |
 | Clarification    | Agent asks only for information that materially affects the result, such as campaign objective or required media. |
 | Proposal         | Agent presents a short plan and a structured confirmation card.                                                   |
-| Draft generation | Changes are applied only to the draft and highlighted in the canvas.                                              |
-| Review           | User compares, adjusts, accepts, rejects, regenerates or manually edits.                                          |
+| Proposal preview | Validated operations are previewed without mutating the active draft.                                             |
+| Review           | User compares, revises, accepts, rejects, or regenerates the proposal. Accepted operations are then applied to the active draft. |
 | Full preview     | User opens the full draft route in desktop or mobile preview.                                                     |
-| Save             | User explicitly saves changes to replace the published demo snapshot.                                             |
+| Save draft       | User persists the active draft without changing the published snapshot.                                          |
+| Publish changes  | User separately confirms publication when the saved draft is ready.                                               |
 
 ## 4.3 Vesko salesperson assisted mode
 
@@ -360,7 +371,7 @@ Assisted mode uses the same creation and editing flows but provides quick scenar
 
 | **Region**    | **Purpose**                                                               | **Default behaviour**                                                               |
 |---------------|---------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| Top bar       | Project, draft status, undo/redo, device mode, View in full, Save changes | Persistent; Save changes is visually primary only when unsaved draft changes exist. |
+| Top bar       | Project, draft status, undo/redo, device mode, View in full, Save draft, Publish changes | Persistent. Save draft is enabled for unsaved work; Publish changes is separate and requires confirmation. |
 | Left rail     | Pages, section tree, add page, site structure                             | Collapsible. Shows current page and selected section.                               |
 | Canvas        | Interactive storefront preview                                            | Primary workspace. Supports selection, hover labels and direct text editing.        |
 | Right panel   | Contextual manual controls                                                | Shows section settings, content, design, visibility and variants.                   |
@@ -449,16 +460,16 @@ Assisted mode uses the same creation and editing flows but provides quick scenar
 
 | **ID** | **Requirement**                                                                                                  |
 |--------|------------------------------------------------------------------------------------------------------------------|
-| FR-041 | Every project MUST maintain separate published and draft snapshots.                                              |
-| FR-042 | AI and manual edits MUST mutate only the draft snapshot.                                                         |
-| FR-043 | View in full MUST open the complete draft storefront without publishing it.                                      |
-| FR-044 | Save changes MUST require explicit confirmation and replace the published demo snapshot only after confirmation. |
-| FR-045 | Discard changes MUST restore the draft to the latest published snapshot.                                         |
-| FR-046 | The system MUST show a persistent unsaved-change indicator whenever draft and published snapshots differ.        |
-| FR-047 | The system MUST keep a bounded local history of snapshots and allow restoration.                                 |
-| FR-048 | Destructive section/page actions MUST require confirmation when they remove non-empty content.                   |
-| FR-049 | A failed save or generation MUST preserve the previous published snapshot and current usable draft.              |
-| FR-050 | The published demo route MUST be read-only.                                                                      |
+| FR-041 | Every project MUST maintain separate active draft, saved draft, and published snapshot state.                              |
+| FR-042 | Manual edits and accepted AI proposals MUST mutate only the active draft. AI proposals MUST NOT mutate it before acceptance. |
+| FR-043 | View in full MUST open the complete active or saved draft storefront without publishing it.                              |
+| FR-044 | Save draft MUST persist the current valid draft and MUST NOT alter the published snapshot or create a publish-history entry. |
+| FR-045 | Publish changes MUST require separate explicit confirmation, validate the saved/current draft, replace the published snapshot, and create history. |
+| FR-046 | Discard changes MUST restore the active draft to the latest saved draft, or to the published snapshot when no saved draft exists. |
+| FR-047 | The system MUST show persistent unsaved and unpublished indicators that distinguish active-draft changes from saved-but-unpublished changes. |
+| FR-048 | The system MUST keep a bounded local history of published snapshots and allow restoration into draft.                   |
+| FR-049 | Destructive section/page actions MUST require confirmation when they remove non-empty content.                          |
+| FR-050 | A failed save, publish, or generation MUST preserve the previous published snapshot and current usable draft; the published route MUST remain read-only. |
 
 # 7. Editor and interaction specification
 
@@ -488,15 +499,15 @@ Every rendered section must expose a stable section ID and editor metadata. Hove
 | Needs information | Agent asks one focused question or presents simple options.                         |
 | Plan ready        | Agent shows intended changes, affected scope and any assumptions.                   |
 | Generating        | Progress indicates meaningful work stages and allows cancellation when safe.        |
-| Proposal ready    | Draft canvas updates and a confirmation card summarises changes.                    |
+| Proposal ready    | A visual proposal preview and confirmation card are shown; the active draft remains unchanged. |
 | Revision          | User provides follow-up instruction against the proposal.                           |
-| Accepted in draft | Change remains in draft; published snapshot is unchanged.                           |
-| Rejected          | Draft target returns to its prior state.                                            |
+| Accepted in draft | Validated operations are applied to the active draft; saved and published snapshots remain unchanged. |
+| Rejected          | Proposal is discarded and the active draft remains unchanged.                                |
 | Error             | Current draft remains usable; retry and manual edit options appear.                 |
 
 ## 7.4 Structured confirmation card
 
-Every non-trivial AI proposal must include: requested outcome, affected page/section, changed content, changed design properties, generated assets, unresolved assumptions, and actions for Accept in draft, Revise, Regenerate and Reject. The card must not imply that acceptance publishes the change.
+Every non-trivial AI proposal must include: requested outcome, affected page/section, changed content, changed design properties, generated assets, unresolved assumptions, and actions for Accept and apply to draft, Revise, Regenerate, and Reject. The card must state that acceptance updates only the active draft and does not save or publish it.
 
 ## 7.5 Direct manipulation limits
 
@@ -522,7 +533,7 @@ Every non-trivial AI proposal must include: requested outcome, affected page/sec
 >
 > **4.** Use View in full to inspect the complete draft.
 >
-> **5.** Use Save changes only when ready to replace the published demo version.
+> **5.** Use Save draft to persist unpublished work. Use Publish changes separately only when the saved draft is ready to replace the published demo version.
 
 # 8. Storefront design system
 
@@ -580,28 +591,26 @@ When the merchant supplies no complete brand guideline, Veskify must generate a 
 
 Each component must be registered in a component registry with a stable type, supported variants, property schema, content schema, responsive rules, editable fields, allowed page types and industry tags. The renderer must reject unknown component types.
 
-The Veskify component registry is the single source of truth for both storefront rendering and the Puck Config exposed by the adapter. Puck fields, insertion controls and render bindings MUST be derived from approved registry contracts; a component added only to Puck is not a valid Veskify component. Puck may select and edit registered component instances, but it may not widen their variants, properties or content schemas.
-
 ## 9.2 Core component inventory
 
 | **Type**           | **Pages**         | **Variants**                              | **Editable content**                 |
 |--------------------|-------------------|-------------------------------------------|--------------------------------------|
-| announcementBar    | Home              | singleLine, rotating, minimal, bold       | Announcement text, link, visibility  |
-| header             | Home/Collection/Product | centered, split, compact, transparent | Logo, menu, search/cart controls  |
+| announcementBar    | Global            | singleLine, rotating                      | Announcement text, link, visibility  |
+| header             | Global            | centered, split, compact, transparent     | Logo, menu, search/cart controls     |
 | hero               | Home/Landing      | editorial, split, fullBleed, productFocus | Eyebrow, heading, copy, CTA, media   |
-| featuredCategories | Home              | grid, editorialCards, carousel, imageLed  | Category references, labels, media   |
+| featuredCategories | Home              | grid, editorialCards, carousel            | Category references, labels, media   |
 | productGrid        | Home/Collection   | standard, editorial, compact              | Product references, columns, heading |
 | productCarousel    | Home/Product      | standard, spotlight                       | Product references, heading          |
 | campaignBanner     | Home/Landing      | imageOverlay, split, minimal              | Heading, copy, CTA, media            |
-| imageText          | Product/Content   | imageLeft, imageRight, stacked            | Heading, copy, CTA, media            |
-| brandStory         | Home/Content      | editorial, timeline, founder, minimal, imageLed | Text blocks, media, facts    |
-| benefitIcons       | Home/Product/Cart | threeColumn, fourColumn, minimal, cards   | Icon, title, text                    |
+| imageText          | Any content page  | imageLeft, imageRight, stacked            | Heading, copy, CTA, media            |
+| brandStory         | Home/About        | editorial, timeline, founder              | Text blocks, media, facts            |
+| benefitIcons       | Home/Product/Cart | threeColumn, fourColumn                   | Icon, title, text                    |
 | testimonials       | Home/Product      | cards, quoteFocus                         | Quotes, people, ratings              |
 | gallery            | Home/About        | masonry, grid, strip                      | Media items, captions                |
-| newsletter         | Home              | inline, card, fullWidth                   | Heading, copy, form labels           |
+| newsletter         | Global/Home       | inline, card, fullWidth                   | Heading, copy, form labels           |
 | faq                | Any               | accordion, grouped                        | Question/answer entries              |
 | storeLocations     | Contact           | cards, mapPlaceholder                     | Locations, hours, contact            |
-| footer             | Home/Collection/Product | columns, editorial, compact          | Menus, contact, social, legal        |
+| footer             | Global            | columns, editorial, compact               | Menus, contact, social, legal        |
 | collectionHeader   | Collection        | editorial, compact, image                 | Title, copy, media                   |
 | filterBar          | Collection        | sidebar, horizontal, drawer               | Filter definitions, sort control     |
 | productGallery     | Product           | grid, thumbnails, editorial               | Images, video placeholders           |
@@ -628,8 +637,6 @@ The Veskify component registry is the single source of truth for both storefront
 </tbody>
 </table>
 
-Puck insertion and drag-and-drop operations are limited to these registered components and permitted compositions. Neither Puck nor AI output may introduce an unregistered component, executable field, script, embed or arbitrary markup path.
-
 <table>
 <colgroup>
 <col style="width: 100%" />
@@ -647,23 +654,6 @@ Puck insertion and drag-and-drop operations are limited to these registered comp
 ## 9.4 Component variant switching
 
 A variant switch must preserve compatible content fields. When fields do not map, the editor must show what will be dropped or moved before applying the change. Variant switching must not silently delete media or copy.
-
-For P2-02, the §9.2 vocabulary is authoritative for the affected storefront sections. The registered
-definition, page-scoped Puck selector, canonical `SectionInstance`, renderer, responsive CSS and any
-deterministic design operation MUST use the exact same variant value. Inserted sections start with the
-registered `defaultVariant`; existing sections expose their stored canonical variant; unsupported
-values fail validation. For `imageText`, `imageLeft`, `imageRight` and `stacked` directly determine
-media layout, and a legacy placement property cannot override the canonical variant.
-
-P2-02 acceptance criteria:
-
-- **P2-02-DV-01:** every §9.2 variant for the affected sections is selectable through the page-scoped
-  Puck configuration and round-trips to canonical section data;
-- **P2-02-DV-02:** background, foreground, typography, spacing and shape choices resolve only through
-  approved brand tokens and retain readable foreground pairing;
-- **P2-02-DV-03:** responsive renderer code produces a distinct outcome for each non-default variant;
-- **P2-02-DV-04:** product identity, SKU, price, stock and catalogue media remain protected and
-  PageType placement remains enforced.
 
 ## 9.5 Responsive contract
 
@@ -903,31 +893,13 @@ For page-level, design-system or whole-site operations, the agent must present a
 >
 > **6.** Run semantic guards for protected fields and unrelated-target mutations.
 >
-> **7.** Apply operations to an isolated draft transaction.
+> **7.** Apply operations to an isolated proposal transaction, not the active draft.
 >
-> **8.** Render and run basic layout validation.
+> **8.** Render the proposal preview and run basic layout validation.
 >
-> **9.** Show proposal summary and draft result.
+> **9.** Show the proposal summary and visual result while the active draft remains unchanged.
 >
-> **10.** Commit or roll back the draft transaction based on user action.
-
-### P2-04 deterministic proposal foundation
-
-P2-04 provides a local deterministic implementation of the structured-operation and proposal
-boundaries without an AI provider, UI, persistence or publishing integration.
-
-- **P2-04-OP-01:** operations accept and return canonical `PageModel` values, never mutate their input,
-  and validate the result through the canonical schemas and registered component rules;
-- **P2-04-OP-02:** supported operations cover localized section text, variants, approved section style
-  tokens, complete approved brand colours, compatible section addition, optional removal and ordering;
-- **P2-04-OP-03:** operations preserve required header/footer composition and cannot edit catalogue
-  identity, SKU, price, stock or media;
-- **P2-04-OP-04:** structured homepage redesign intent expands to a deterministic ordered operation
-  list using only approved variants, tokens and PageType-compatible sections;
-- **P2-04-PR-01:** an in-memory proposal contains original and proposed pages, ordered operations,
-  bilingual summary, validation result, deterministic proposal ID and lifecycle status;
-- **P2-04-PR-02:** accept returns the validated proposal page, while reject returns an unchanged clone
-  of the original page.
+> **10.** On acceptance, apply the validated operations to the active draft. On revision or rejection, preserve the active draft.
 
 ## 12.9 Agent guardrails
 
@@ -960,25 +932,37 @@ The demo must use an AIProvider interface. A deterministic MockAIProvider is the
 | Pending proposal   | Temporary operation set that can be accepted, revised or rejected.      |
 | History snapshot   | Timestamped copy created on publish, restore or selected major changes. |
 
-## 13.2 Save changes flow
+## 13.2 Save draft flow
 
-> **1.** User selects Save changes from the editor top bar.
+> **1.** User selects Save draft from the editor top bar.
 >
-> **2.** System shows a summary of changed pages, sections, design tokens and generated assets.
+> **2.** System validates the active draft and shows validation issues if saving cannot proceed.
 >
-> **3.** User confirms or cancels.
+> **3.** On success, the active draft is persisted as the latest saved draft.
+>
+> **4.** The published snapshot and publish history remain unchanged.
+>
+> **5.** The editor distinguishes a clean saved draft from a saved-but-unpublished draft.
+
+## 13.3 Publish changes flow
+
+> **1.** User selects Publish changes separately from Save draft.
+>
+> **2.** System validates the complete draft and shows a summary of changed pages, sections, design tokens, and generated assets.
+>
+> **3.** User explicitly confirms or cancels publication.
 >
 > **4.** On confirmation, the current published snapshot is added to history.
 >
-> **5.** The draft snapshot becomes the new published snapshot.
+> **5.** The validated draft becomes the new published snapshot.
 >
-> **6.** A fresh draft is created from the new published snapshot and marked clean.
+> **6.** The active and saved drafts are synchronized with the new published revision and marked clean.
 
-## 13.3 View in full
+## 13.4 View in full
 
 View in full opens the draft storefront in a dedicated route. It must support desktop, tablet and mobile widths, page navigation and interaction with visual controls. It must display a clear Draft preview badge and must not show editor outlines or property controls.
 
-## 13.4 History and restore
+## 13.5 History and restore
 
 - Keep at least 20 snapshots per project in the demo storage layer.
 
@@ -988,9 +972,9 @@ View in full opens the draft storefront in a dedicated route. It must support de
 
 - A restore action must be reversible before publishing.
 
-## 13.5 Conflict model
+## 13.6 Conflict model
 
-The standalone demo assumes one active editor per local project. The domain model should nevertheless include revision numbers. Future backend integration should reject save operations based on stale revisions and offer a merge or reload flow.
+The standalone demo assumes one active editor per local project. The domain model should nevertheless include revision numbers. Future backend integration should reject stale save-draft and publish operations based on expected revisions and offer a merge or reload flow.
 
 # 14. Localisation and content
 
@@ -1047,8 +1031,6 @@ The generated brand voice should be represented by structured attributes such as
 | Collection         | Read-only grouping and filter metadata.                                 |
 | Proposal           | AI operation envelope, status and before/after references.              |
 | HistoryEntry       | Snapshot, revision, timestamp, actor and summary.                       |
-
-These Veskify entities are canonical and editor-agnostic. Puck data is a transient editing representation produced and consumed only by the Puck adapter; it is not an additional domain entity or independently persisted page tree.
 
 ## 15.2 Project schema
 
@@ -1136,8 +1118,6 @@ styleOverrides?: AllowedSectionOverrides;<br />
 </tbody>
 </table>
 
-`PageModel` and `SectionInstance` are the only canonical stored page-composition representation. The Puck adapter may map them to and from Puck Data, but validated adapter output MUST be converted back to these schemas before draft state or persistence. Canonical domain modules MUST NOT import or expose Puck types.
-
 ## 15.5 Brand system schema
 
 <table>
@@ -1200,8 +1180,6 @@ seo?: LocalizedSEO;<br />
 
 The implementation should use a storage adapter. The default adapter may use IndexedDB for projects, snapshots and assets plus seeded JSON files for dummy catalogues. If a server-backed implementation is selected, SQLite is acceptable for the demo. Domain code must depend on repository interfaces so persistence can later move to Vesko SQL services.
 
-Persistence stores Veskify-owned projects and snapshots, never a second Puck-owned page tree. Puck editor state is disposable infrastructure state. A Puck publish callback MUST be treated as an editor handoff event: validate, map to the canonical draft model and enter Veskify's explicit publish-confirmation workflow; it MUST NOT write published state directly.
-
 # 16. Technical architecture
 
 ## 16.1 Recommended standalone stack
@@ -1210,11 +1188,9 @@ Persistence stores Veskify-owned projects and snapshots, never a second Puck-own
 |----------------------|------------------------------------------------------------------------------------------|
 | Application          | Next.js App Router with TypeScript and React.                                            |
 | Styling              | Tailwind CSS plus CSS variables generated from validated brand tokens.                   |
-| UI primitives        | Accessible controlled primitives owned by Veskify; editor chrome may wrap Puck rather than replace it. |
-| Embedded editor      | `@puckeditor/core` provides the visual editing canvas, drag-and-drop placement, selection, field controls, viewport editing and Puck Render infrastructure. |
-| Puck adapter         | Veskify owns an isolated adapter that derives Puck Config from the registered Veskify component system and validates Puck output before draft state or persistence. |
-| Forms and validation | React Hook Form with Zod schemas for Veskify-owned workflows and validation boundaries.                                                        |
-| Editor state         | Veskify owns draft, history, publish confirmation and domain mutation state. Puck editor state is infrastructure and must not become a second persisted page tree.                    |
+| UI primitives        | Accessible controlled primitives; shadcn/ui or equivalent may be used for editor chrome. |
+| Forms and validation | React Hook Form with Zod schemas.                                                        |
+| Editor state         | Zustand or equivalent predictable store with command-based undo/redo.                    |
 | Server/state queries | TanStack Query only where asynchronous adapters require it.                              |
 | Persistence          | Storage adapter; IndexedDB default, optional SQLite server adapter.                      |
 | File parsing         | Browser-safe CSV parser and Excel workbook parser.                                       |
@@ -1231,70 +1207,37 @@ Persistence stores Veskify-owned projects and snapshots, never a second Puck-own
 
 - Adapters: storage, AI, image generation, file import and future backend integration.
 
-- Component registry: storefront component definitions, schemas, variants and renderer mapping. It is the single source of truth for derived Puck Config.
+- Component registry: storefront component definitions, schemas, variants and renderer mapping.
 
-- Puck integration: an anti-corruption adapter under `src/integrations/puck` that owns all imports from `@puckeditor/core`, maps canonical Veskify composition to Puck Data and validates/maps Puck output back to Veskify draft operations.
+## 16.3 Current repository structure
 
-Dependencies point inward: the Puck integration may depend on Veskify component and domain contracts, but canonical domain, application and persistence modules MUST NOT depend on Puck types. Puck Cloud and Puck AI are not part of this architecture.
+The implementation baseline uses the repository paths that exist today:
 
-## 16.3 Suggested repository structure
+```text
+src/
+  app/
+    projects/
+      [projectId]/
+        editor/
+  components/
+    registry/
+    storefront/
+  application/
+    design-operations/
+  integrations/
+    puck/
+  services/
+    storage/
+  data/
+    seed/
+  tests/
+```
 
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>src/<br />
-app/<br />
-projects/<br />
-api/<br />
-features/<br />
-onboarding/<br />
-editor/<br />
-preview/<br />
-publishing/<br />
-catalogue-import/<br />
-domain/<br />
-project/<br />
-storefront/<br />
-design-system/<br />
-ai-operations/<br />
-components/<br />
-editor/<br />
-storefront/<br />
-primitives/<br />
-registry/<br />
-components/<br />
-integrations/<br />
-puck/<br />
-config.tsx<br />
-validation.ts<br />
-page-templates/<br />
-industry-presets/<br />
-services/<br />
-ai/<br />
-image/<br />
-storage/<br />
-import/<br />
-data/<br />
-seed/<br />
-dummy-catalogues/<br />
-tests/<br />
-unit/<br />
-integration/<br />
-e2e/</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
+New skill-orchestration or provider folders must extend this structure through an approved PR and be documented in `DEVELOPMENT_GUIDE.md`; they must not create parallel canonical models.
 
 ## 16.4 State mutation pattern
 
 All draft changes must be expressed as commands or structured operations. The editor store applies operations transactionally and records inverse operations for undo. UI components must not mutate nested snapshot objects directly.
-
-Puck interaction events do not bypass this rule. Selection may remain ephemeral editor state, while insertion, reordering and field edits that change the storefront MUST cross the adapter as validated Veskify draft commands or structured operations. Puck's publish action is renamed or intercepted as a draft handoff and cannot publish directly.
 
 ## 16.5 Storefront renderer
 
@@ -1308,24 +1251,9 @@ Puck interaction events do not bypass this rule. Selection may remain ephemeral 
 
 - Renders the same component implementation in editor, full preview and published routes to avoid visual divergence.
 
-- Accepts canonical validated Veskify models, not raw Puck Data. Puck Render may be used inside the editor integration, but it must resolve the same approved Veskify storefront implementations and may not become a separate published renderer.
-
 ## 16.6 Future Vesko integration
 
-After the demo, the design agent will operate inside Vesko Retail OS and embed and extend the current Puck-based editing foundation through Veskify-controlled components, schemas, adapters and workflows. Integration adapters will connect to Vesko authentication, Node.js monorepo services, SQL persistence, JSON-based industry product models, media services, backend page storage and publishing. Stripe and nShift remain operational integrations outside the design agent; Veskify only styles their customer-facing UI surfaces. Puck is infrastructure, not the product architecture or source of commerce truth. HugoBlox is explicitly excluded.
-
-The future integration retains the same ownership boundary: Puck continues to provide editor mechanics, while Vesko/Veskify services remain authoritative for identity, canonical content, validation, storage, history, publishing and protected commerce data. Replacing the standalone storage adapter or application shell MUST NOT require Puck types to enter domain contracts.
-
-
-## 16.7 Puck integration boundary
-
-Veskify MUST use the open-source `@puckeditor/core` package as the embedded visual-editor foundation. Puck provides the editor canvas, drag-and-drop section placement and reordering, section selection, component field controls, viewport editing, editor UI foundation and rendering through Puck Config and Render.
-
-Veskify remains the controlling product and domain architecture. Veskify owns project, page and storefront models; brand systems and design tokens; industry templates; controlled storefront components; AI operations and validation; onboarding and chat; product and catalogue data; localisation; draft, preview, history and publishing; storage adapters; and future Vesko backend integration.
-
-The registered Veskify component system is the single source of truth for Puck Config. Puck may expose only approved Veskify storefront components, variants and fields. Puck output MUST be validated through Veskify Zod schemas before entering draft state or persistence. The application MUST maintain one canonical stored page composition representation with an isolated Puck adapter and MUST NOT persist two independent page trees.
-
-The same Veskify storefront components MUST render in the editor, full preview and published storefront. Puck publish actions MUST NOT publish directly; they feed Veskify's draft and explicit publish-confirmation workflow. Product prices, payment, shipping, tax, inventory and operational checkout data remain protected and read-only. Puck Cloud and Puck AI are not Veskify AI providers. Unsupported Puck internal APIs MUST NOT be used unless documented and justified. HugoBlox MUST NOT be used.
+After the demo, the design agent will operate inside Vesko Retail OS and replace the current Puck-based website builder. Integration adapters will connect to Vesko authentication, Node.js monorepo services, SQL persistence, JSON-based industry product models, media services, backend page storage and publishing. Stripe and nShift remain operational integrations outside the design agent; Veskify only styles their customer-facing UI surfaces.
 
 # 17. API and service contracts
 
@@ -1337,10 +1265,11 @@ The same Veskify storefront components MUST render in the editor, full preview a
 | completeOnboarding(projectId, input)      | Validates onboarding and creates generation plan.                         |
 | generateInitialStorefront(projectId)      | Builds initial brand system and page snapshot.                            |
 | proposeDesignChange(context, prompt)      | Returns validated pending proposal.                                       |
-| applyProposal(projectId, proposalId)      | Applies operations to draft transaction.                                  |
+| applyProposal(projectId, proposalId)      | Applies accepted validated operations to the active draft only.             |
 | rejectProposal(projectId, proposalId)     | Discards pending proposal and preserves draft.                            |
-| publishDraft(projectId, expectedRevision) | Creates history and replaces published snapshot.                          |
-| discardDraft(projectId)                   | Replaces draft with published snapshot.                                   |
+| saveDraft(projectId, expectedRevision)    | Persists the active draft without changing published state.                 |
+| publishDraft(projectId, expectedRevision) | Separately validates, creates history, and replaces the published snapshot. |
+| discardDraft(projectId)                   | Restores the active draft to the latest saved draft, or published snapshot when no saved draft exists. |
 | restoreSnapshot(projectId, snapshotId)    | Creates a new draft from history.                                         |
 | importCatalogue(projectId, file)          | Parses and maps local data without changing protected operational fields. |
 
@@ -1544,10 +1473,10 @@ Website text, spreadsheet cells, product descriptions and uploaded files are dat
 | AC-005 | A user can manually change hero text, background, typography style, spacing preset and layout variant.                                                    |
 | AC-006 | Undo restores the immediately previous draft state and redo reapplies it.                                                                                 |
 | AC-007 | View in full displays the complete draft with a Draft preview indicator and no editor outlines.                                                           |
-| AC-008 | The published route remains unchanged until Save changes is confirmed.                                                                                    |
-| AC-009 | Cancelling Save changes leaves the published route unchanged.                                                                                             |
-| AC-010 | After confirmed Save changes, the published route matches the draft and a history entry exists.                                                           |
-| AC-011 | Restoring history creates a draft and does not immediately alter the published route.                                                                     |
+| AC-008 | Save draft persists the current valid draft, survives reload, and leaves the published route and publish history unchanged.                            |
+| AC-009 | Cancelling Publish changes leaves the published route, history, and saved draft unchanged.                                                                 |
+| AC-010 | After confirmed Publish changes, the published route matches the validated draft and a new immutable history entry exists.                                |
+| AC-011 | Restoring history creates an active draft that can be saved and reviewed; it does not immediately alter the published route.                               |
 | AC-012 | A whole-site font/colour restyle changes global presentation without changing dummy product prices or content ordering.                                   |
 | AC-013 | The user can switch between English and Finnish storefront content.                                                                                       |
 | AC-014 | The jewellery product page displays material, karat, stone, ring-size or watch-specific attributes appropriate to the seeded product.                     |
@@ -1556,7 +1485,7 @@ Website text, spreadsheet cells, product descriptions and uploaded files are dat
 | AC-017 | The application works without external AI or image API credentials.                                                                                       |
 | AC-018 | All primary flows are keyboard operable and pass automated accessibility checks.                                                                          |
 | AC-019 | Homepage and product page have no visible clipping or overlap at 375, 768, 1024 and 1440 pixel widths.                                                    |
-| AC-020 | A first-time user can understand section selection, draft preview and Save changes through the built-in tutorial without developer terminology.           |
+| AC-020 | A first-time user can understand section selection, proposal review, draft preview, Save draft, and Publish changes through the built-in tutorial without developer terminology. |
 
 ## 21.3 Definition of done for every Codex task
 
@@ -1580,21 +1509,19 @@ Website text, spreadsheet cells, product descriptions and uploaded files are dat
 
 | **Phase**                          | **Deliverables**                                                                                             |
 |------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| Phase 0 — Foundation               | Repository, linting, testing, application shell, canonical schemas, registry contracts, isolated Puck adapter proof, seed data and storage adapter. |
-| Phase 1 — Storefront renderer      | Brand tokens, core registered components, homepage/collection/product/cart/checkout templates and responsive rendering shared with the Puck adapter. |
-| Phase 2 — Editor shell             | Puck-based canvas, selection, insertion, drag-and-drop, approved fields and device modes integrated with Veskify draft commands and undo/redo. |
+| Phase 0 — Foundation               | Repository, linting, testing, application shell, schemas, component registry, seed data and storage adapter. |
+| Phase 1 — Storefront renderer      | Brand tokens, core components, homepage/collection/product/cart/checkout templates and responsive rendering. |
+| Phase 2 — Editor shell             | Page tree, canvas selection, property panel, section actions, undo/redo and device modes.                    |
 | Phase 3 — Onboarding               | Wizard, local persistence, brand inputs, dummy catalogue selection and initial generation plan.              |
 | Phase 4 — AI operations            | Mock provider, intent scopes, structured proposals, validation pipeline and confirmation cards.              |
-| Phase 5 — Draft publishing         | Draft/full preview/published routes, save confirmation, history and restore.                                 |
+| Phase 5 — Draft and publishing     | Save draft, draft/full preview, separate publish confirmation, history, and restore-to-draft.                  |
 | Phase 6 — Localisation and imports | English/Finnish content, CSV/Excel mapping, asset upload and missing-data recommendations.                   |
 | Phase 7 — Real provider adapters   | Optional text/image providers, secure server routes and AWS-ready provider interfaces.                       |
 | Phase 8 — Demo polish              | Sales presets, presenter mode, visual regression, accessibility and performance.                             |
 
 ## 22.1 Recommended first vertical slice
 
-The first demonstrable slice should be one seeded jewellery project with a responsive homepage and product page, editor selection, chat-driven mock hero redesign, manual controls, full draft preview and explicit Save changes. This validates the central product loop before building broad onboarding or import capability.
-
-The slice MUST extend the Phase 0 Puck adapter rather than introduce a custom editor foundation. It maintains one canonical Veskify page composition, uses Puck for editor mechanics, routes mutations through validated draft operations and renders the same registered storefront components in editor, preview and published modes.
+The first demonstrable slice should be one seeded jewellery project with a responsive homepage and product page, editor selection, chat-driven mock hero redesign, manual controls, full draft preview, Save draft, and separate explicit Publish changes. This validates the central product loop before building broad onboarding or import capability.
 
 ## 22.2 Deliberately deferred items
 
@@ -1607,8 +1534,6 @@ The slice MUST extend the Phase 0 Puck adapter rather than introduce a custom ed
 - Operational checkout, payments, logistics, taxes and orders.
 
 - Unrestricted custom code, plugins or third-party script embeds.
-
-- Puck Cloud, Puck AI and a custom drag-and-drop editor engine.
 
 - Real-time multi-user collaboration.
 
@@ -1682,12 +1607,6 @@ DELIVERABLES<br />
 
 ## 23.3 Mandatory implementation rules
 
-- Keep all `@puckeditor/core` imports and Puck-specific types under `src/integrations/puck`; canonical domain, application, storage and AI-operation modules must not depend on them.
-
-- Use Puck for canvas mechanics, selection, insertion, drag-and-drop and editor fields; do not build competing foundations for those capabilities.
-
-- Treat Puck output as untrusted adapter input. Validate and map it to the single canonical Veskify composition before draft state or persistence, and never wire a Puck publish callback directly to published state.
-
 - Do not create a second competing domain model for pages, sections or tokens.
 
 - Do not bypass the component registry in storefront rendering.
@@ -1701,8 +1620,6 @@ DELIVERABLES<br />
 - Do not introduce provider lock-in into domain or UI code.
 
 - Do not add production commerce functionality to the standalone demo.
-
-- Do not use Puck Cloud, Puck AI, HugoBlox, unsupported Puck internals or arbitrary generated code paths.
 
 - Prefer small vertical slices that end in a usable user flow over disconnected infrastructure.
 
@@ -1725,10 +1642,6 @@ DELIVERABLES<br />
 - [ ] Protected fields untouched
 
 - [ ] No arbitrary AI code path
-
-- [ ] Puck types remain isolated to `src/integrations/puck`
-
-- [ ] One canonical Veskify page composition is preserved
 
 - [ ] Documentation updated
 
@@ -1810,8 +1723,8 @@ DELIVERABLES<br />
 | Component     | Registered, tested storefront section implementation.                                      |
 | Composition   | Approved arrangement of primitives represented as a registered schema, not arbitrary code. |
 | Design tokens | Validated global values controlling colour, typography, shape, spacing and imagery.        |
-| Draft         | Editable snapshot containing changes not yet saved to the published demo.                  |
-| Published     | Read-only demo snapshot visible through the published route.                               |
+| Draft         | Editable working snapshot. It may be unsaved or saved, but remains unpublished until explicit publication. |
+| Published     | Read-only snapshot visible through the published route and changed only by explicit publication.       |
 | Proposal      | Validated set of AI operations awaiting user acceptance or rejection.                      |
 | Section       | One component instance placed on a page.                                                   |
 | Snapshot      | Immutable representation of the complete storefront at a revision.                         |
@@ -1841,9 +1754,113 @@ The following choices may be made by the implementing team without changing the 
 <thead>
 <tr class="header">
 <th><p><strong>Implementation baseline</strong></p>
-<p>The standalone Veskify demo is a design agent, not a commerce operations agent. Its defining loop is guided input → controlled storefront generation → draft editing → full preview → explicit save. Any implementation that bypasses controlled components, mutates operational commerce data, or publishes without confirmation is outside this specification.</p></th>
+<p>The standalone Veskify demo is a design agent, not a commerce operations agent. Its defining loop is guided input → controlled proposal → accepted draft editing → full preview → Save draft → explicit Publish changes. Any implementation that bypasses controlled components, mutates operational commerce data, or publishes without confirmation is outside this specification.</p></th>
 </tr>
 </thead>
 <tbody>
 </tbody>
 </table>
+
+
+# Addendum A — Controlled Design Skills Architecture
+
+**Version 1.1 — Normative override.** This addendum is authoritative where it clarifies or narrows earlier AI-generation language and overrides any conflicting terminology or workflow remaining from version 1.0.
+
+## A.1 Product direction
+
+Veskify is a controlled storefront design agent for everyday retailers with very low technical and design knowledge. It is not a free-form frontend generator and not a commerce operations engine.
+
+The system must reduce repeated invention, unnecessary generated assets, token consumption, and unpredictable visual output. It must reuse approved components, variants, presets, brand tokens, and merchant assets wherever possible.
+
+## A.2 Required execution pipeline
+
+```text
+Merchant request
+  -> intent classification
+  -> design plan
+  -> approved design skill selection
+  -> structured design operations
+  -> schema and semantic validation
+  -> proposal preview without active-draft mutation
+  -> merchant accept, revise, or reject
+  -> apply accepted operations to active draft
+  -> Save draft
+  -> explicit Publish changes
+```
+
+The AI proposes. Veskify owns the source of truth. AI output never becomes active draft state or published output directly.
+
+## A.3 Design skills model
+
+A design skill is a bounded capability with a clear user outcome, required context, allowed operation set, structured output schema, protected-field rules, validation, failure states, implementation status, and tests.
+
+Skills may compose other skills, but they may not bypass validation, mutate published state, or generate arbitrary React, HTML, CSS, JavaScript, scripts, embeds, or executable code.
+
+## A.4 Initial skills and workflows
+
+- **Composite workflow:** `generateStorefront` orchestrates bounded skills; it is not a primitive skill.
+- **Storefront assembly:** `generateBrandSystem`, `generateHomepage`, `generateCollectionPage`, `generateProductPage`.
+- **Section work:** `generateHero`, `improveHero`, `addCampaignSection`, `addFeaturedCategories`, `addProductGrid`, `addBrandStory`, `addBenefits`, `addNewsletter`, `improveHeader`, `improveFooter`.
+- **Visual direction:** `applyLuxuryStyle`, `applyMinimalNordicStyle`, `applyEditorialStyle`, `improveTypography`, `improveColourPalette`, `improveSpacing`, `increaseVisualHierarchy`, `fixMobileLayout`, `improveAccessibility`.
+- **Content and localisation:** `generateSectionCopy`, `shortenCopy`, `changeToneOfVoice`, `translateStorefront`, `generateSeoMetadata`, `detectMissingContent`.
+
+Implementation status is defined in `DESIGN_AGENT_SKILLS.md`; inclusion here does not mean that every skill is already implemented.
+
+## A.5 Reuse before generation
+
+Veskify must prefer merchant-provided brand assets and guidelines, existing store content and product imagery, approved industry presets, existing component variants, and validated brand tokens before generating new content.
+
+Image generation is optional and should be used only when suitable reusable assets are missing or the merchant explicitly requests new imagery.
+
+## A.6 Presentation enrichment
+
+Veskify may maintain a separate, reviewable presentation-enrichment layer for product titles, descriptions, attributes, categories, collections, filters, translations, and SEO metadata.
+
+Enrichment is non-destructive and exportable. It may not overwrite protected source price, SKU, stock, inventory, payment, shipping, tax, logistics, order, or operational checkout data.
+
+## A.7 Puck and Veskify ownership
+
+Puck remains the embedded visual-editor foundation and owns canvas mechanics, selection, insertion, drag-and-drop reordering, editor fields, and viewport controls.
+
+Veskify owns canonical schemas, controlled components, design operations, validation, active and saved draft state, proposals, publishing, AI behaviour, presentation enrichment, and protected commerce boundaries.
+
+## A.8 Merchant-facing experience
+
+The internal system may use skills, operations, schemas, planners, and adapters, but these engineering concepts must remain hidden from merchants.
+
+The merchant sees a short explanation, a visual proposal, and simple Accept and apply to draft, Revise, Regenerate, and Reject actions. Save draft and Publish changes remain separate editor actions.
+
+## A.9 Six-week product priority
+
+- Week 1: real Puck editor and 10–12 high-quality jewellery components.
+- Week 2: structured design operations and proposal acceptance.
+- Week 3: merchant chat, intent classification, planning, and skill orchestration.
+- Week 4: guided store creation and initial design generation.
+- Week 5: real catalogue/media ingestion and presentation enrichment.
+- Week 6: explicit publishing, Vesko adapter contracts, deployment, accessibility, performance, and demo polish.
+
+## A.10 Development rule
+
+After the foundation is stable, each pull request should create a visible merchant capability or directly unblock the next end-to-end product slice. Architecture-only work should be limited to concrete blockers. The first complete retailer journey is more valuable than a large but shallow feature inventory.
+
+## A.11 Responsibility boundary
+
+| **Puck owns** | **Veskify owns** |
+|---|---|
+| Canvas mechanics and viewport controls | Canonical project, page, section, snapshot, and brand schemas |
+| Selection, insertion, and drag-and-drop | Controlled component registry and variants |
+| Editor fields and basic property controls | Design skills, structured operations, and validation |
+| Embedded editor rendering infrastructure | Draft proposals, approval, active/saved drafts, publishing, and history |
+| Transient editor state | Presentation enrichment and protected commerce boundaries |
+
+## A.12 Supporting repository documents
+
+- `AGENTS.md`
+- `DESIGN_AGENT_SKILLS.md`
+- `DEVELOPMENT_GUIDE.md`
+- `VESKIFY_DEVELOPMENT_ROADMAP.md`
+- `ADR-002_CONTROLLED_DESIGN_AGENT.md` in the same ADR directory as ADR-001.
+
+## A.13 Current delivery status
+
+Weeks 1 and 2 are partially completed. Week 3 — merchant chat, intent planning, proposal UI, applying accepted proposals to the active editor draft, and initial skills orchestration — is the next milestone. Current implementation status is maintained in `VESKIFY_DEVELOPMENT_ROADMAP.md` and `DESIGN_AGENT_SKILLS.md`.
