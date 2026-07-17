@@ -69,23 +69,58 @@ test("requests, previews, rejects and accepts deterministic proposals on mobile"
   await page.setViewportSize({ width: 375, height: 900 });
   await page.goto(url);
   await page.getByRole("button", { name: "Make the homepage feel more luxurious." }).click();
-  await page.getByRole("button", { name: "Show proposal" }).click();
+  await page.getByRole("button", { name: "Create proposal" }).click();
   await expect(page.getByLabel("Design proposal")).toBeVisible();
   await expect(page.getByLabel("Proposal preview canvas")).toBeVisible();
   await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
-  await page.getByRole("button", { name: "Reject proposal" }).click();
-  await expect(page.getByText(/remains exactly as it was/i)).toBeVisible();
+  await page.getByRole("button", { name: "Reject" }).click();
+  await expect(page.getByText(/page remains unchanged/i)).toBeVisible();
   await expect(page.getByLabel("Visual editor canvas")).toBeVisible();
 
   await page.getByRole("button", { name: "Add a campaign section." }).click();
-  await page.getByRole("button", { name: "Show proposal" }).click();
-  await expect(page.getByRole("heading", { name: /new campaign section/i })).toBeVisible();
-  await page.getByRole("button", { name: "Accept proposal" }).click();
+  await page.getByRole("button", { name: "Create proposal" }).click();
+  await expect(page.getByRole("heading", { name: /campaign section/i })).toBeVisible();
+  await page.getByRole("button", { name: "Accept and apply" }).click();
   await expect(page.getByLabel("Draft status")).toContainText("Unsaved changes");
-  await expect(page.getByText(/does not save or publish/i)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Save draft" })).toBeEnabled();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+});
+
+test("uses the selected Puck section and shows localized concrete proposal details", async ({
+  page,
+}) => {
+  await page.goto(url);
+  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  const headingField = page.getByRole("textbox", { name: "Main heading", exact: true });
+  await expect(async () => {
+    await canvas.getByText("Made for northern light", { exact: true }).click();
+    await expect(headingField).toBeVisible({ timeout: 1_500 });
+  }).toPass({ timeout: 15_000 });
+  const requestPanel = page.getByLabel("Design request");
+  await expect(requestPanel.getByText("Aurum hero", { exact: true })).toBeVisible();
+
+  await page.getByLabel("Your request").fill("Improve the hero.");
+  await page.getByRole("button", { name: "Create proposal" }).click();
+  await expect(page.getByLabel("Design proposal")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Proposed changes" })).toContainText(
+    /Made for northern light|supporting text/i,
+  );
+  await expect(requestPanel.getByText("Aurum hero", { exact: true })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Reject" }).click();
+  await page.getByRole("button", { name: "Make the homepage feel more luxurious." }).click();
+  await page.getByRole("button", { name: "Create proposal" }).click();
+  const details = page.getByRole("list", { name: "Proposed changes" }).getByRole("listitem");
+  const detailCount = await details.count();
+  expect(detailCount).toBeGreaterThan(1);
+  await page.getByRole("radio", { name: "Suomi" }).click();
+  const finnishDetails = page
+    .getByRole("list", { name: "Ehdotetut muutokset" })
+    .getByRole("listitem");
+  expect(await finnishDetails.count()).toBe(detailCount);
+  await expect(finnishDetails.first()).toContainText(/Vaihda|Päivitä|Käytä/);
 });
 
 test("discard closes a proposal so discarded edits cannot be accepted later", async ({ page }) => {
@@ -100,15 +135,15 @@ test("discard closes a proposal so discarded edits cannot be accepted later", as
   await expect(page.getByLabel("Draft status")).toContainText("Unsaved changes");
 
   await page.getByRole("button", { name: "Make the homepage feel more luxurious." }).click();
-  await page.getByRole("button", { name: "Show proposal" }).click();
+  await page.getByRole("button", { name: "Create proposal" }).click();
   await expect(page.getByLabel("Proposal preview canvas")).toBeVisible();
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Discard changes" }).click();
 
   await expect(page.getByLabel("Proposal preview canvas")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Accept proposal" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Accept and apply" })).toHaveCount(0);
   await expect(page.getByLabel("Visual editor canvas")).toBeVisible();
-  await expect(page.getByText(/proposal was closed because the page changed/i)).toBeVisible();
+  await expect(page.getByText(/page changed after this request started/i)).toBeVisible();
   await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
   await expect(canvas.getByText("Made for northern light", { exact: true })).toBeVisible();
 });
@@ -132,18 +167,70 @@ test("saved manual and accepted proposal changes survive editor refresh", async 
   await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
 
   await page.getByRole("button", { name: "Add a campaign section." }).click();
-  await page.getByRole("button", { name: "Show proposal" }).click();
+  await page.getByRole("button", { name: "Create proposal" }).click();
   await expect(page.getByLabel("Design proposal")).toBeVisible();
-  await page.getByRole("button", { name: "Accept proposal" }).click();
+  await page.getByRole("button", { name: "Accept and apply" }).click();
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByText("Draft saved successfully.")).toBeVisible();
 
   await page.reload();
   canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
   await expect(canvas.getByRole("heading", { name: "A saved merchant homepage" })).toBeVisible();
-  await expect(canvas.getByRole("heading", { name: "A quiet kind of brilliance" })).toBeVisible();
+  await expect(canvas.getByRole("heading", { name: "Discover Rings" })).toBeVisible();
   await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
   await expect(page.getByRole("button", { name: /publish/i })).toHaveCount(0);
+});
+
+test("revises and regenerates before accepting without changing the active draft", async ({
+  page,
+}) => {
+  await page.goto(url);
+  await page.getByRole("button", { name: "Make the homepage feel more luxurious." }).click();
+  await page.getByRole("button", { name: "Create proposal" }).click();
+  const proposal = page.getByLabel("Design proposal");
+  await expect(proposal).toBeVisible();
+  const firstId = await proposal.getAttribute("data-proposal-id");
+
+  await page.getByLabel("How should this proposal change?").fill("Make it more minimal.");
+  await page.getByRole("button", { name: "Revise" }).click();
+  await expect(proposal).not.toHaveAttribute("data-proposal-id", firstId!);
+  const revisedId = await proposal.getAttribute("data-proposal-id");
+  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+
+  await page.getByRole("button", { name: "Regenerate" }).click();
+  await expect(proposal).not.toHaveAttribute("data-proposal-id", revisedId!);
+  await expect(page.getByText(/regenerated proposal is ready/i)).toBeVisible();
+  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByRole("button", { name: "Save draft" })).toBeDisabled();
+});
+
+test("clarifies a vague request before proposal creation", async ({ page }) => {
+  await page.goto(url);
+  await page.getByLabel("Your request").fill("Make it better.");
+  await page.getByRole("button", { name: "Create proposal" }).click();
+  const answer = page.getByLabel("Your answer");
+  await expect(answer).toBeFocused();
+  await expect(page.getByLabel("Design proposal")).toHaveCount(0);
+  await answer.fill("Make the layout more minimal.");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByLabel("Design proposal")).toBeVisible();
+  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+});
+
+test("reject and cancel preserve the current editor page", async ({ page }) => {
+  await page.goto(url);
+  await page.getByRole("button", { name: "Make the layout more minimal." }).click();
+  await page.getByRole("button", { name: "Create proposal" }).click();
+  await expect(page.getByLabel("Design proposal")).toBeVisible();
+  await page.getByRole("button", { name: "Reject" }).click();
+  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+
+  await page.getByRole("button", { name: "Make the layout more minimal." }).click();
+  await page.getByRole("button", { name: "Create proposal" }).click();
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByLabel("Design proposal")).toHaveCount(0);
+  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByLabel("Visual editor canvas")).toBeVisible();
 });
 
 for (const width of [375, 768, 1024, 1440]) {

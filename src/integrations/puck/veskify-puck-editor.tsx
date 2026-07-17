@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Puck, Render, type Data } from "@puckeditor/core";
+import { useEffect, useRef, useState } from "react";
+import { Puck, Render, type Data, type OnAction } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
 import type { StorefrontRenderContext } from "@/components/registry";
 import type { BrandSystem } from "@/domain/design-system";
@@ -30,6 +30,7 @@ export function VeskifyPuckCanvas({
   resetKey,
   onPageChange,
   onValidationError,
+  onSelectedSectionChange,
   readOnly = false,
   readOnlyLabel,
 }: {
@@ -39,6 +40,7 @@ export function VeskifyPuckCanvas({
   resetKey: number;
   onPageChange: (page: PageModel) => void;
   onValidationError: (message: string) => void;
+  onSelectedSectionChange?: (sectionId: string | undefined) => void;
   readOnly?: boolean;
   readOnlyLabel?: string;
 }) {
@@ -49,6 +51,7 @@ export function VeskifyPuckCanvas({
       context={context}
       key={boundaryKey}
       onPageChange={onPageChange}
+      onSelectedSectionChange={onSelectedSectionChange}
       onValidationError={onValidationError}
       page={page}
       readOnly={readOnly}
@@ -63,11 +66,13 @@ function VeskifyPuckCanvasSession({
   brandSystem,
   onPageChange,
   onValidationError,
+  onSelectedSectionChange,
   readOnly,
   readOnlyLabel,
 }: Omit<Parameters<typeof VeskifyPuckCanvas>[0], "resetKey">) {
   const [recoveryVersion, setRecoveryVersion] = useState(0);
   const trustedPage = useRef(page);
+  const reportedSectionId = useRef<string | undefined>(undefined);
   const config = generateVeskifyPuckConfig(context, page.type, brandSystem);
   const data = pageToPuckData(page, context);
 
@@ -83,6 +88,27 @@ function VeskifyPuckCanvasSession({
     }
   }
 
+  const handleAction: OnAction = (_action, appState) => {
+    if (readOnly || !onSelectedSectionChange) return;
+    const selector = appState.ui.itemSelector;
+    const selectedItem = selector ? appState.data.content[selector.index] : undefined;
+    const selectedProps = selectedItem
+      ? (selectedItem.props as Record<string, unknown>)
+      : undefined;
+    const selectedId = selectedProps?.id;
+    const nextSectionId =
+      typeof selectedId === "string" && page.sections.some((section) => section.id === selectedId)
+        ? selectedId
+        : undefined;
+    if (nextSectionId === reportedSectionId.current) return;
+    reportedSectionId.current = nextSectionId;
+    queueMicrotask(() => onSelectedSectionChange(nextSectionId));
+  };
+
+  useEffect(() => {
+    if (readOnly) reportedSectionId.current = undefined;
+  }, [readOnly]);
+
   return (
     <section
       aria-label={readOnly ? (readOnlyLabel ?? "Proposal preview canvas") : "Visual editor canvas"}
@@ -94,6 +120,7 @@ function VeskifyPuckCanvasSession({
         headerTitle="Visual editor"
         height="calc(100vh - 12rem)"
         key={recoveryVersion}
+        onAction={handleAction}
         onChange={readOnly ? undefined : handleChange}
         overrides={{ headerActions: () => <></> }}
         permissions={

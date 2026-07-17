@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
 import { aurumNordicSeed } from "@/data/seed";
@@ -18,6 +19,7 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     brandSystem,
     onPageChange,
     onValidationError,
+    onSelectedSectionChange,
     readOnly,
     readOnlyLabel,
   }: {
@@ -31,6 +33,7 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     brandSystem: { colors: { primary: string } };
     onPageChange: (page: unknown) => void;
     onValidationError: (message: string) => void;
+    onSelectedSectionChange?: (sectionId: string | undefined) => void;
     readOnly?: boolean;
     readOnlyLabel?: string;
   }) => (
@@ -41,6 +44,16 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     >
       Canvas: {page.type} / {context.activeLocale}
       {readOnlyLabel === "Proposal preview canvas" ? <span>Locked proposal</span> : null}
+      {page.sections.map((section) => (
+        <button
+          disabled={readOnly}
+          key={`select-${section.id}`}
+          onClick={() => onSelectedSectionChange?.(section.id)}
+          type="button"
+        >
+          Select {section.component} section
+        </button>
+      ))}
       {readOnlyLabel === "Proposal preview canvas" ? (
         <button
           onClick={() =>
@@ -320,14 +333,168 @@ describe("P2-01 project editor route", () => {
     route(repo);
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Make the homepage feel more luxurious." }));
-    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     expect(await screen.findByLabelText("Design proposal")).toBeVisible();
     expect(screen.getByLabelText("Proposal preview canvas")).toHaveTextContent("Locked proposal");
     expect(screen.getByText(/current page is unchanged/i)).toBeVisible();
+    const details = within(screen.getByLabelText("Proposed changes")).getAllByRole("listitem");
+    expect(details.length).toBeGreaterThan(1);
+    expect(
+      details.some((detail) =>
+        /background|typography|spacing|layout/i.test(detail.textContent ?? ""),
+      ),
+    ).toBe(true);
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
     expect(repo.saveDraft).not.toHaveBeenCalled();
     expect(repo.publish).not.toHaveBeenCalled();
     expect(repo.restore).not.toHaveBeenCalled();
+  });
+
+  it("passes the merchant's actual selected section into a section-scoped request", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    expect(screen.getByText("Aurum hero", { exact: true })).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Improve the hero." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(await screen.findByLabelText("Design proposal")).toBeVisible();
+    expect(screen.queryByText("Aurum hero", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByText("Home · 1 sections", { exact: true })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+    fireEvent.click(screen.getByRole("button", { name: "Select productGrid section" }));
+    expect(screen.getByText("Product grid", { exact: true })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/safe plan could not be created/i);
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+  });
+
+  it("previews a supported minimal proposal without mutating the active page", async () => {
+    const repo = repository(() => Promise.resolve(aggregate()));
+    route(repo);
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Make the layout more minimal." }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(await screen.findByLabelText("Design proposal")).toHaveTextContent(
+      /simplify the layout/i,
+    );
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+    expect(repo.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("asks one material clarification before creating a proposal and moves focus to the answer", async () => {
+    const repo = repository(() => Promise.resolve(aggregate()));
+    route(repo);
+    await screen.findByText("Canvas: home / en");
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Make it better." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    const answer = await screen.findByLabelText("Your answer");
+    expect(
+      screen.getByRole("heading", {
+        name: "What should feel better: a more luxurious look or a more minimal layout?",
+      }),
+    ).toBeVisible();
+    expect(answer).toHaveFocus();
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+    fireEvent.change(answer, { target: { value: "Make the layout more minimal." } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByLabelText("Design proposal")).toBeVisible();
+    expect(repo.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("supports a Finnish clarification and localized status", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+    fireEvent.change(screen.getByLabelText("Pyyntösi"), {
+      target: { value: "Tee siitä parempi." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Luo ehdotus" }));
+    const answer = await screen.findByLabelText("Vastauksesi");
+    expect(
+      screen.getByRole("heading", { name: /ylellisempää ilmettä vai pelkistetympää/i }),
+    ).toBeVisible();
+    fireEvent.change(answer, { target: { value: "Tee asettelusta pelkistetympi." } });
+    fireEvent.click(screen.getByRole("button", { name: "Jatka" }));
+    expect(await screen.findByText(/ehdotus on valmis tarkistettavaksi/i)).toHaveAttribute(
+      "role",
+      "status",
+    );
+    expect(screen.getByLabelText("Design proposal")).toBeVisible();
+  });
+
+  it("revises a proposal through the orchestrator without changing the active page", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Make the homepage feel more luxurious." }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    const first = await screen.findByLabelText("Design proposal");
+    const firstId = first.getAttribute("data-proposal-id");
+    fireEvent.change(screen.getByLabelText("How should this proposal change?"), {
+      target: { value: "Make it more minimal." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Revise" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Design proposal")).not.toHaveAttribute(
+        "data-proposal-id",
+        firstId,
+      ),
+    );
+    expect(screen.getByLabelText("Design proposal")).toHaveTextContent(/simplify the layout/i);
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+  });
+
+  it("regenerates with a new lifecycle identity and preserves the active page", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Make the layout more minimal." }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    const firstId = (await screen.findByLabelText("Design proposal")).getAttribute(
+      "data-proposal-id",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Regenerate" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Design proposal")).not.toHaveAttribute(
+        "data-proposal-id",
+        firstId,
+      ),
+    );
+    expect(screen.getByText(/regenerated proposal is ready/i)).toHaveAttribute("role", "status");
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+  });
+
+  it("cancels a proposal and start over returns the panel to a clean workflow", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Make the layout more minimal." }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await screen.findByLabelText("Design proposal");
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.getByText(/request was cancelled/i)).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    fireEvent.click(screen.getByRole("button", { name: "Start over" }));
+    expect(screen.getByLabelText("Your request")).toHaveValue("");
+    expect(screen.getByText("Ready for a design request.")).toBeVisible();
+  });
+
+  it("supports the request and proposal flow with keyboard controls and focus", async () => {
+    const user = userEvent.setup();
+    route(repository(() => Promise.resolve(aggregate())));
+    const request = await screen.findByLabelText("Your request");
+    await user.type(request, "Make the layout more minimal.");
+    await user.tab();
+    expect(screen.getByRole("button", { name: "Create proposal" })).toHaveFocus();
+    await user.keyboard("{Enter}");
+    const proposal = await screen.findByLabelText("Design proposal");
+    expect(proposal.querySelector("h3")).toHaveFocus();
+    expect(screen.getByText(/proposal is ready to review/i)).toHaveAttribute("role", "status");
   });
 
   it("closes a proposal when its edited base is discarded and cannot restore discarded edits", async () => {
@@ -338,18 +505,18 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
     expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Make the homepage feel more luxurious." }));
-    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     await screen.findByLabelText("Design proposal");
 
     fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
 
     expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Proposal preview canvas")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Accept proposal" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Accept and apply" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Visual editor canvas")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
-    expect(screen.getByText(/proposal was closed because the page changed/i)).toHaveAttribute(
+    expect(screen.getByText(/page changed after this request started/i)).toHaveAttribute(
       "role",
       "status",
     );
@@ -363,16 +530,16 @@ describe("P2-01 project editor route", () => {
     route(repo);
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Make the layout more minimal." }));
-    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     await screen.findByLabelText("Design proposal");
 
     fireEvent.click(screen.getByRole("button", { name: "Simulate newer canonical edit" }));
 
     expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Accept proposal" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Accept and apply" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Visual editor canvas")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Newer canonical edit" })).toBeVisible();
-    expect(screen.getByText(/create a new proposal to review the latest design/i)).toBeVisible();
+    expect(screen.getByText(/start a new request from the current page/i)).toBeVisible();
     expect(repo.saveDraft).not.toHaveBeenCalled();
     expect(repo.publish).not.toHaveBeenCalled();
   });
@@ -381,7 +548,7 @@ describe("P2-01 project editor route", () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Make the homepage feel more luxurious." }));
-    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     await screen.findByLabelText("Design proposal");
 
     fireEvent.change(screen.getByLabelText("Storefront page"), {
@@ -390,14 +557,16 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByText("Canvas: collection / en")).toBeVisible();
     expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Proposal preview canvas")).not.toBeInTheDocument();
-    expect(screen.getByText(/proposal was closed because you opened another page/i)).toBeVisible();
+    expect(
+      screen.getByText(/previous request was closed because you opened another page/i),
+    ).toBeVisible();
 
     fireEvent.change(screen.getByLabelText("Storefront page"), {
       target: { value: "page_home" },
     });
     expect(screen.getByText("Canvas: home / en")).toBeVisible();
     expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Accept proposal" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Accept and apply" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
   });
 
@@ -405,15 +574,15 @@ describe("P2-01 project editor route", () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Add a campaign section." }));
-    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     await screen.findByLabelText("Design proposal");
 
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
 
     expect(screen.getByLabelText("Design proposal")).toBeVisible();
     expect(screen.getByLabelText("Proposal preview canvas")).toHaveAttribute("lang", "fi");
-    expect(screen.getByRole("heading", { name: /uusi kampanjaosio/i })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Accept proposal" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /kampanjaosio/i })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Hyväksy ja käytä" })).toBeVisible();
   });
 
   it("accepts a campaign proposal into only the in-memory homepage", async () => {
@@ -422,10 +591,10 @@ describe("P2-01 project editor route", () => {
     route(repo);
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Add a campaign section." }));
-    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     await screen.findByLabelText("Design proposal");
-    fireEvent.click(screen.getByRole("button", { name: "Accept proposal" }));
-    expect(screen.getByText(/homepage now has unsaved changes/i)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+    expect(screen.getByText(/accepted for draft application/i)).toBeVisible();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
     expect(screen.getByLabelText("Visual editor canvas")).toBeVisible();
     expect(repo.saveDraft).not.toHaveBeenCalled();
@@ -441,10 +610,10 @@ describe("P2-01 project editor route", () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Make the layout more minimal." }));
-    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     await screen.findByLabelText("Design proposal");
-    fireEvent.click(screen.getByRole("button", { name: "Reject proposal" }));
-    expect(screen.getByText(/remains exactly as it was/i)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+    expect(screen.getByText(/page remains unchanged/i)).toBeVisible();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
     expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
   });
@@ -453,8 +622,10 @@ describe("P2-01 project editor route", () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
     fireEvent.change(screen.getByLabelText("Your request"), { target: { value: "Add fireworks" } });
-    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
-    expect(await screen.findByText(/not available in this demo/i)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(
+      await screen.findByText(/does not match a currently approved design capability/i),
+    ).toBeVisible();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
 
     fireEvent.change(screen.getByLabelText("Storefront page"), {
@@ -463,10 +634,8 @@ describe("P2-01 project editor route", () => {
     fireEvent.change(screen.getByLabelText("Your request"), {
       target: { value: "Make the homepage feel more luxurious." },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      /only be previewed on the homepage/i,
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/safe plan could not be created/i);
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
   });
 
@@ -474,12 +643,18 @@ describe("P2-01 project editor route", () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Add a campaign section." }));
-    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
-    expect(await screen.findByRole("heading", { name: /new campaign section/i })).toBeVisible();
-    expect(screen.getByText("Add a campaign section", { exact: true })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(await screen.findByRole("heading", { name: /campaign section/i })).toBeVisible();
+    expect(screen.getByText("Home · 1 sections", { exact: true })).toBeVisible();
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
-    expect(screen.getByRole("heading", { name: /uusi kampanjaosio/i })).toBeVisible();
-    expect(screen.getByText("Lisää kampanjaosio", { exact: true })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /kampanjaosio/i })).toBeVisible();
+    expect(screen.getByText("Etusivu · 1 osiota", { exact: true })).toBeVisible();
+    const localizedDetails = within(screen.getByLabelText("Ehdotetut muutokset")).getAllByRole(
+      "listitem",
+    );
+    expect(localizedDetails).toHaveLength(3);
+    expect(localizedDetails[0]).toHaveTextContent(/Lisää osio/);
+    expect(localizedDetails[1]).toHaveTextContent(/Päivitä osio/);
   });
 
   it("saves a valid manual edit, clears dirty state and preserves locale and published state", async () => {
@@ -542,10 +717,10 @@ describe("P2-01 project editor route", () => {
     route(value);
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Add a campaign section." }));
-    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     await screen.findByLabelText("Design proposal");
     expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Accept proposal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
     await screen.findByText("Draft saved successfully.");
 
@@ -673,7 +848,7 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByLabelText("Storefront page")).toBeDisabled();
     expect(screen.getByRole("button", { name: "Edit current page" })).toBeDisabled();
     expect(screen.getByLabelText("Your request")).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Show proposal" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Create proposal" })).toBeDisabled();
     expect(
       screen.getByRole("button", { name: "Make the homepage feel more luxurious." }),
     ).toBeDisabled();

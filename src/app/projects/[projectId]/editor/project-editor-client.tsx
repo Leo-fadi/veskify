@@ -1,15 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   assembleValidatedEditorDraft,
   EditorDraftValidationError,
   saveValidatedEditorDraft,
   StaleEditorDraftError,
 } from "@/application/draft-save";
-import { InMemoryDesignProposalStore, type DesignProposal } from "@/application/design-operations";
-import { createStorefrontRenderContext, validateRegisteredPage } from "@/components/registry";
+import {
+  createStorefrontRenderContext,
+  getComponentDefinition,
+  validateRegisteredPage,
+} from "@/components/registry";
 import { brandSystemToCssVariables } from "@/domain/design-system";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
 import type { PageModel, PageType, StorefrontSnapshot } from "@/domain/storefront";
@@ -22,13 +25,8 @@ import {
   type ProjectRepository,
 } from "@/services/storage";
 import styles from "./project-editor.module.css";
-import {
-  deterministicProposalPrompts,
-  acceptCurrentDesignProposal,
-  canonicalPagesEqual,
-  proposalChangeLabels,
-  requestDeterministicHomepageProposal,
-} from "./deterministic-proposal-requests";
+import { DesignAgentPanel } from "./design-agent-panel";
+import { useDesignAgentSession } from "./use-design-agent-session";
 
 type RepositoryFactory = () => ProjectRepository;
 type ReadyState = {
@@ -45,12 +43,6 @@ type LoadState =
   | { status: "validationError" }
   | { status: "storageError" }
   | ReadyState;
-type ProposalUiState =
-  | { status: "idle" }
-  | { status: "generating"; basePage: PageModel }
-  | { status: "ready"; proposal: DesignProposal }
-  | { status: "invalid" | "unsupported" | "error" | "stale"; message: string }
-  | { status: "accepted" | "rejected"; proposal: DesignProposal };
 type SaveUiState =
   | { status: "idle" }
   | { status: "saving" }
@@ -98,6 +90,9 @@ function snapshotDesign(snapshot: StorefrontSnapshot) {
 const draftDiffers = (draft: StorefrontSnapshot, published: StorefrontSnapshot) =>
   JSON.stringify(snapshotDesign(draft)) !== JSON.stringify(snapshotDesign(published));
 
+const canonicalPagesEqual = (left: PageModel, right: PageModel) =>
+  JSON.stringify(left) === JSON.stringify(right);
+
 export function ProjectEditorClient({
   projectId,
   repositoryFactory = defaultRepositoryFactory,
@@ -110,23 +105,16 @@ export function ProjectEditorClient({
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [selectedPageId, setSelectedPageId] = useState<string>();
+  const [selectedSectionId, setSelectedSectionId] = useState<string>();
   const [activeLocale, setActiveLocale] = useState<Locale>();
   const [sessionPages, setSessionPages] = useState<Record<string, PageModel>>({});
   const [resetKeys, setResetKeys] = useState<Record<string, number>>({});
   const [validationMessage, setValidationMessage] = useState("");
-  const [request, setRequest] = useState("");
-  const [proposalState, setProposalState] = useState<ProposalUiState>({ status: "idle" });
-  const proposalStore = useRef(new InMemoryDesignProposalStore());
-  const proposalGeneration = useRef(0);
   const [saveState, setSaveState] = useState<SaveUiState>({ status: "idle" });
   const savePending = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
-    proposalGeneration.current += 1;
-    queueMicrotask(() => {
-      if (!cancelled) setProposalState({ status: "idle" });
-    });
     repository
       .current!.get(projectId)
       .then((aggregate) => {
@@ -153,14 +141,12 @@ export function ProjectEditorClient({
           pages.forEach((page) => validateRegisteredPage(page, context));
           if (pages.length === 0) throw new Error("No supported draft pages are available.");
           setSelectedPageId(pages.find((page) => page.type === "home")?.id ?? pages[0].id);
+          setSelectedSectionId(undefined);
           setActiveLocale(aggregate.project.primaryLocale);
           setSessionPages({});
           setResetKeys({});
           setValidationMessage("");
-          setRequest("");
-          setProposalState({ status: "idle" });
           setSaveState({ status: "idle" });
-          proposalGeneration.current += 1;
           setState({ status: "ready", aggregate, draft, published, pages });
         } catch {
           setState({ status: "validationError" });
@@ -181,6 +167,45 @@ export function ProjectEditorClient({
       cancelled = true;
     };
   }, [attempt, projectId]);
+
+  const readyState = state.status === "ready" ? state : undefined;
+  const readyOriginalPage =
+    readyState?.pages.find((item) => item.id === selectedPageId) ?? readyState?.pages[0];
+  const readyPage = readyOriginalPage
+    ? (sessionPages[readyOriginalPage.id] ?? readyOriginalPage)
+    : undefined;
+  const readyLocale = activeLocale ?? readyState?.aggregate.project.primaryLocale;
+  const readyContext =
+    readyState && readyLocale
+      ? createStorefrontRenderContext({
+          activeLocale: readyLocale,
+          primaryLocale: readyState.aggregate.project.primaryLocale,
+          catalogue: readyState.aggregate.catalogue,
+          snapshot: readyState.draft,
+          pagePathPrefix: `/projects/${projectId}`,
+        })
+      : undefined;
+  const agent = useDesignAgentSession({
+    lifecycleKey: `${projectId}:${attempt}`,
+    projectId,
+    page: readyPage,
+    activeLocale: readyLocale,
+    primaryLocale: readyState?.aggregate.project.primaryLocale,
+    brandSystem: readyState?.draft.brandSystem,
+    displayContext: readyContext,
+    selectedSectionId,
+    disabled: saveState.status === "saving",
+    onProposalReady: () => setSelectedSectionId(undefined),
+    onAcceptedPage: (acceptedPage) => {
+      setSessionPages((current) => ({ ...current, [acceptedPage.id]: acceptedPage }));
+      setValidationMessage("");
+      setSaveState({ status: "idle" });
+      setResetKeys((current) => ({
+        ...current,
+        [acceptedPage.id]: (current[acceptedPage.id] ?? 0) + 1,
+      }));
+    },
+  });
 
   const retry = () => setAttempt((current) => current + 1);
   if (state.status === "loading") {
@@ -222,27 +247,24 @@ export function ProjectEditorClient({
     );
   }
 
-  const originalPage = state.pages.find((item) => item.id === selectedPageId) ?? state.pages[0];
-  const page = sessionPages[originalPage.id] ?? originalPage;
+  const originalPage = readyOriginalPage!;
+  const page = readyPage!;
   const currentPageHasUnsavedChanges = !canonicalPagesEqual(page, originalPage);
   const changedPages = state.pages.flatMap((baselinePage) => {
     const sessionPage = sessionPages[baselinePage.id];
     return sessionPage && !canonicalPagesEqual(sessionPage, baselinePage) ? [sessionPage] : [];
   });
   const hasUnsavedChanges = changedPages.length > 0;
-  const locale = activeLocale ?? state.aggregate.project.primaryLocale;
+  const locale = readyLocale!;
   const title = resolveLocalizedText(page.title, locale, state.aggregate.project.primaryLocale);
-  const context = createStorefrontRenderContext({
-    activeLocale: locale,
-    primaryLocale: state.aggregate.project.primaryLocale,
-    catalogue: state.aggregate.catalogue,
-    snapshot: state.draft,
-    pagePathPrefix: `/projects/${projectId}`,
-  });
+  const context = readyContext!;
   const previewHref = `/projects/${projectId}${page.slug === "/" ? "" : page.slug}`;
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
-  const showingProposal = proposalState.status === "ready";
-  const canvasPage = showingProposal ? proposalState.proposal.proposedPage : page;
+  const showingProposal = agent.previewActive;
+  const canvasPage = agent.proposal?.proposedPage ?? page;
+  const selectedSection = selectedSectionId
+    ? page.sections.find((section) => section.id === selectedSectionId)
+    : undefined;
   let completeDraftIsValid = false;
   if (hasUnsavedChanges) {
     try {
@@ -257,8 +279,7 @@ export function ProjectEditorClient({
       completeDraftIsValid = false;
     }
   }
-  const proposalBlocksSave =
-    proposalState.status === "generating" || proposalState.status === "ready";
+  const proposalBlocksSave = agent.blocksSave;
   const saving = saveState.status === "saving";
   const saveDisabled =
     !hasUnsavedChanges ||
@@ -266,15 +287,6 @@ export function ProjectEditorClient({
     Boolean(validationMessage) ||
     proposalBlocksSave ||
     saveState.status === "saving";
-
-  const closeProposalBecausePageChanged = (message: string) => {
-    proposalGeneration.current += 1;
-    setProposalState((current) =>
-      current.status === "ready" || current.status === "generating"
-        ? { status: "stale", message }
-        : { status: "idle" },
-    );
-  };
 
   const changePage = (nextPage: PageModel) => {
     if (savePending.current) return;
@@ -291,9 +303,13 @@ export function ProjectEditorClient({
       return;
     }
     if (!canonicalPagesEqual(nextPage, page)) {
-      closeProposalBecausePageChanged(
-        "The proposal was closed because the page changed. Create a new proposal to review the latest design.",
-      );
+      agent.closeForPageMutation(nextPage);
+    }
+    if (
+      selectedSectionId &&
+      !nextPage.sections.some((section) => section.id === selectedSectionId)
+    ) {
+      setSelectedSectionId(undefined);
     }
     setSessionPages((current) => ({ ...current, [nextPage.id]: nextPage }));
     setValidationMessage("");
@@ -311,87 +327,9 @@ export function ProjectEditorClient({
       return;
     }
     setSelectedPageId(nextPageId);
+    setSelectedSectionId(undefined);
     setValidationMessage("");
-    closeProposalBecausePageChanged(
-      "The proposal was closed because you opened another page. Create a new proposal when you are ready.",
-    );
-  };
-
-  const submitRequest = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (savePending.current) return;
-    const generation = proposalGeneration.current + 1;
-    proposalGeneration.current = generation;
-    setProposalState({ status: "generating", basePage: structuredClone(page) });
-    window.setTimeout(() => {
-      if (generation !== proposalGeneration.current) return;
-      try {
-        const result = requestDeterministicHomepageProposal({
-          request,
-          page,
-          context,
-          store: proposalStore.current,
-        });
-        setProposalState(
-          result.status === "ready"
-            ? { status: "ready", proposal: result.proposal }
-            : { status: result.status, message: result.message },
-        );
-      } catch {
-        setProposalState({
-          status: "error",
-          message: "Something went wrong while preparing the proposal. Your page was not changed.",
-        });
-      }
-    }, 0);
-  };
-
-  const acceptProposal = () => {
-    if (savePending.current) return;
-    if (proposalState.status !== "ready") return;
-    try {
-      const result = acceptCurrentDesignProposal({
-        currentPage: page,
-        proposal: proposalState.proposal,
-        store: proposalStore.current,
-      });
-      if (result.status === "stale") {
-        closeProposalBecausePageChanged(
-          "This proposal is no longer based on your current page. Create a new proposal to review the latest design.",
-        );
-        return;
-      }
-      const acceptedPage = result.page;
-      proposalGeneration.current += 1;
-      setSessionPages((current) => ({ ...current, [acceptedPage.id]: acceptedPage }));
-      setValidationMessage("");
-      setSaveState({ status: "idle" });
-      setResetKeys((current) => ({
-        ...current,
-        [acceptedPage.id]: (current[acceptedPage.id] ?? 0) + 1,
-      }));
-      setProposalState({ status: "accepted", proposal: proposalState.proposal });
-    } catch {
-      setProposalState({
-        status: "error",
-        message: "The proposal could not be applied safely. Your current page was not changed.",
-      });
-    }
-  };
-
-  const rejectProposal = () => {
-    if (savePending.current) return;
-    if (proposalState.status !== "ready") return;
-    try {
-      proposalStore.current.reject(proposalState.proposal.id);
-      proposalGeneration.current += 1;
-      setProposalState({ status: "rejected", proposal: proposalState.proposal });
-    } catch {
-      setProposalState({
-        status: "error",
-        message: "The proposal could not be closed. Your current page was not changed.",
-      });
-    }
+    agent.closeForPageSwitch();
   };
 
   const discardChanges = () => {
@@ -409,9 +347,7 @@ export function ProjectEditorClient({
     }));
     setValidationMessage("");
     setSaveState({ status: "idle" });
-    closeProposalBecausePageChanged(
-      "Your changes were discarded and the proposal was closed because the page changed.",
-    );
+    agent.closeForPageMutation(originalPage);
   };
 
   const saveDraft = async () => {
@@ -452,8 +388,6 @@ export function ProjectEditorClient({
         Object.fromEntries(pages.map((item) => [item.id, (current[item.id] ?? 0) + 1])),
       );
       setValidationMessage("");
-      setProposalState({ status: "idle" });
-      proposalGeneration.current += 1;
       setSaveState({ status: "success", message: "Draft saved successfully." });
     } catch (error) {
       if (error instanceof StaleEditorDraftError) {
@@ -482,7 +416,12 @@ export function ProjectEditorClient({
   };
 
   return (
-    <div aria-busy={saving} className={styles.editor} lang={locale} style={style}>
+    <div
+      aria-busy={saving || agent.controlsDisabled}
+      className={styles.editor}
+      lang={locale}
+      style={style}
+    >
       <header className={styles.topbar}>
         <nav aria-label="Editor navigation" className={styles.navigation}>
           <Link href="/">Veskify home</Link>
@@ -595,108 +534,31 @@ export function ProjectEditorClient({
             brandSystem={state.draft.brandSystem}
             context={context}
             onPageChange={changePage}
+            onSelectedSectionChange={(sectionId) => {
+              setSelectedSectionId(
+                sectionId && page.sections.some((section) => section.id === sectionId)
+                  ? sectionId
+                  : undefined,
+              );
+            }}
             onValidationError={(message) => {
               if (!savePending.current) setValidationMessage(message);
             }}
             page={canvasPage}
-            readOnly={showingProposal || saving}
+            readOnly={agent.blocksSave || saving}
             readOnlyLabel={showingProposal ? "Proposal preview canvas" : "Visual editor canvas"}
             resetKey={resetKeys[canvasPage.id] ?? 0}
           />
         </main>
-        <aside aria-label="Design request" className={styles.requestPanel}>
-          <form className={styles.requestForm} onSubmit={submitRequest}>
-            <div>
-              <p className={styles.eyebrow}>Design assistant</p>
-              <h2>What would you like to change?</h2>
-              <p>Choose an example or describe the same supported result in your own typing.</p>
-            </div>
-            <label htmlFor="design-request">Your request</label>
-            <textarea
-              disabled={saving}
-              id="design-request"
-              onChange={(event) => setRequest(event.target.value)}
-              placeholder="Make the homepage feel more luxurious."
-              required
-              rows={4}
-              value={request}
-            />
-            <button disabled={proposalState.status === "generating" || saving} type="submit">
-              {proposalState.status === "generating" ? "Preparing proposal…" : "Show proposal"}
-            </button>
-            <div className={styles.examples}>
-              <span>Try an example</span>
-              {deterministicProposalPrompts.map((prompt) => (
-                <button
-                  disabled={saving}
-                  key={prompt}
-                  onClick={() => setRequest(prompt)}
-                  type="button"
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
-          </form>
-
-          <div aria-live="polite" aria-atomic="true" className={styles.proposalStatus}>
-            {proposalState.status === "generating" ? (
-              <p>Preparing a safe visual proposal…</p>
-            ) : null}
-            {proposalState.status === "invalid" ||
-            proposalState.status === "unsupported" ||
-            proposalState.status === "error" ||
-            proposalState.status === "stale" ? (
-              <p
-                role={
-                  proposalState.status === "unsupported" || proposalState.status === "stale"
-                    ? "status"
-                    : "alert"
-                }
-              >
-                {proposalState.message}
-              </p>
-            ) : null}
-            {proposalState.status === "accepted" ? (
-              <p>Proposal accepted. The homepage now has unsaved changes.</p>
-            ) : null}
-            {proposalState.status === "rejected" ? (
-              <p>Proposal rejected. Your page remains exactly as it was.</p>
-            ) : null}
-          </div>
-
-          {proposalState.status === "ready" ? (
-            <section className={styles.proposalCard} aria-label="Design proposal">
-              <p className={styles.eyebrow}>Ready to review</p>
-              <h2>
-                {resolveLocalizedText(
-                  proposalState.proposal.summary,
-                  locale,
-                  state.aggregate.project.primaryLocale,
-                )}
-              </h2>
-              <p>
-                <strong>Affected page:</strong> {title}
-              </p>
-              <ol>
-                {proposalChangeLabels(proposalState.proposal, locale).map((label, index) => (
-                  <li key={`${proposalState.proposal.operations[index].type}-${index}`}>{label}</li>
-                ))}
-              </ol>
-              <p className={styles.boundaryNote}>
-                Accepting updates only this in-memory draft page. It does not save or publish.
-              </p>
-              <div className={styles.proposalActions}>
-                <button disabled={saving} onClick={acceptProposal} type="button">
-                  Accept proposal
-                </button>
-                <button disabled={saving} onClick={rejectProposal} type="button">
-                  Reject proposal
-                </button>
-              </div>
-            </section>
-          ) : null}
-        </aside>
+        <DesignAgentPanel
+          controller={agent}
+          locale={locale}
+          pageTitle={title}
+          primaryLocale={state.aggregate.project.primaryLocale}
+          selectedSectionLabel={
+            selectedSection ? getComponentDefinition(selectedSection.component).label : undefined
+          }
+        />
       </div>
     </div>
   );

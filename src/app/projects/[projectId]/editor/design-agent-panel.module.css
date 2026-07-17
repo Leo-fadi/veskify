@@ -1,0 +1,185 @@
+.panel {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  padding: 1.25rem;
+  border-top: 1px solid #d6dae0;
+  background: white;
+}
+
+.introduction,
+.form,
+.card {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.introduction h2,
+.introduction p,
+.card h3,
+.card p {
+  margin: 0;
+}
+
+.introduction h2,
+.card h3 {
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.introduction > p:last-child,
+.context dd,
+.card p,
+.card li {
+  color: #4f5863;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.eyebrow {
+  color: #59616d;
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.context {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0.8rem;
+  border-radius: 0.6rem;
+  background: #f1f7f4;
+}
+
+.context div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.context dt,
+.form label,
+.examples > span,
+.card strong {
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.context dd {
+  margin: 0;
+}
+
+.form textarea,
+.card textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 0.7rem;
+  border: 1px solid #8d96a1;
+  border-radius: 0.5rem;
+  background: white;
+  font: inherit;
+  line-height: 1.45;
+}
+
+.form > button,
+.actions button:first-child {
+  min-height: 2.75rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid #164b3b;
+  border-radius: 0.45rem;
+  background: #164b3b;
+  color: white;
+  font: inherit;
+  font-weight: 750;
+}
+
+.examples,
+.actions {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.examples button,
+.actions button:not(:first-child),
+.startOver {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #aab1ba;
+  border-radius: 0.45rem;
+  background: #f7f8f9;
+  color: #26313c;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.examples button {
+  text-align: left;
+}
+
+.status {
+  padding: 0.75rem;
+  border-left: 0.25rem solid #8a5a2b;
+  background: #fff8e8;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.card {
+  padding: 1rem;
+  border: 1px solid #c6ccd3;
+  border-radius: 0.75rem;
+  background: #f8faf9;
+}
+
+.card ul,
+.changeDetails {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.4rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.changeDetails li {
+  color: #26313c;
+}
+
+.previewNotice,
+.boundary {
+  padding: 0.7rem;
+  border-radius: 0.45rem;
+  background: #fff8e8;
+  color: #633d18 !important;
+}
+
+.panel button:disabled,
+.panel textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.panel button:focus-visible,
+.panel textarea:focus-visible,
+.card h3:focus-visible {
+  outline: 3px solid #d4a72c;
+  outline-offset: 2px;
+}
+
+@media (min-width: 48rem) {
+  .panel {
+    grid-column: 1 / -1;
+  }
+
+  .actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 90rem) {
+  .panel {
+    grid-column: auto;
+    min-height: calc(100vh - 5.5rem);
+    border-top: 0;
+    border-left: 1px solid #d6dae0;
+  }
+}
