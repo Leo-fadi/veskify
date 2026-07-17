@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { InMemoryDesignProposalStore, type DesignProposal } from "@/application/design-operations";
 import { createStorefrontRenderContext, validateRegisteredPage } from "@/components/registry";
 import { brandSystemToCssVariables } from "@/domain/design-system";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
@@ -15,6 +16,11 @@ import {
   type ProjectRepository,
 } from "@/services/storage";
 import styles from "./project-editor.module.css";
+import {
+  deterministicProposalPrompts,
+  proposalChangeLabels,
+  requestDeterministicHomepageProposal,
+} from "./deterministic-proposal-requests";
 
 type RepositoryFactory = () => ProjectRepository;
 type ReadyState = {
@@ -31,6 +37,12 @@ type LoadState =
   | { status: "validationError" }
   | { status: "storageError" }
   | ReadyState;
+type ProposalUiState =
+  | { status: "idle" }
+  | { status: "generating" }
+  | { status: "ready"; proposal: DesignProposal }
+  | { status: "invalid" | "unsupported" | "error"; message: string }
+  | { status: "accepted" | "rejected"; proposal: DesignProposal };
 
 const editorPageTypes = new Set<PageType>(["home", "collection", "product"]);
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
@@ -91,6 +103,9 @@ export function ProjectEditorClient({
   const [sessionPages, setSessionPages] = useState<Record<string, PageModel>>({});
   const [resetKeys, setResetKeys] = useState<Record<string, number>>({});
   const [validationMessage, setValidationMessage] = useState("");
+  const [request, setRequest] = useState("");
+  const [proposalState, setProposalState] = useState<ProposalUiState>({ status: "idle" });
+  const proposalStore = useRef(new InMemoryDesignProposalStore());
 
   useEffect(() => {
     let cancelled = false;
@@ -124,6 +139,8 @@ export function ProjectEditorClient({
           setSessionPages({});
           setResetKeys({});
           setValidationMessage("");
+          setRequest("");
+          setProposalState({ status: "idle" });
           setState({ status: "ready", aggregate, draft, published, pages });
         } catch {
           setState({ status: "validationError" });
@@ -199,6 +216,8 @@ export function ProjectEditorClient({
   });
   const previewHref = `/projects/${projectId}${page.slug === "/" ? "" : page.slug}`;
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
+  const showingProposal = proposalState.status === "ready";
+  const canvasPage = showingProposal ? proposalState.proposal.proposedPage : page;
 
   const changePage = (nextPage: PageModel) => {
     setSessionPages((current) => ({ ...current, [nextPage.id]: nextPage }));
@@ -216,6 +235,63 @@ export function ProjectEditorClient({
     }
     setSelectedPageId(nextPageId);
     setValidationMessage("");
+    setProposalState({ status: "idle" });
+  };
+
+  const submitRequest = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setProposalState({ status: "generating" });
+    window.setTimeout(() => {
+      try {
+        const result = requestDeterministicHomepageProposal({
+          request,
+          page,
+          context,
+          store: proposalStore.current,
+        });
+        setProposalState(
+          result.status === "ready"
+            ? { status: "ready", proposal: result.proposal }
+            : { status: result.status, message: result.message },
+        );
+      } catch {
+        setProposalState({
+          status: "error",
+          message: "Something went wrong while preparing the proposal. Your page was not changed.",
+        });
+      }
+    }, 0);
+  };
+
+  const acceptProposal = () => {
+    if (proposalState.status !== "ready") return;
+    try {
+      const acceptedPage = proposalStore.current.accept(proposalState.proposal.id);
+      changePage(acceptedPage);
+      setResetKeys((current) => ({
+        ...current,
+        [acceptedPage.id]: (current[acceptedPage.id] ?? 0) + 1,
+      }));
+      setProposalState({ status: "accepted", proposal: proposalState.proposal });
+    } catch {
+      setProposalState({
+        status: "error",
+        message: "The proposal could not be applied safely. Your current page was not changed.",
+      });
+    }
+  };
+
+  const rejectProposal = () => {
+    if (proposalState.status !== "ready") return;
+    try {
+      proposalStore.current.reject(proposalState.proposal.id);
+      setProposalState({ status: "rejected", proposal: proposalState.proposal });
+    } catch {
+      setProposalState({
+        status: "error",
+        message: "The proposal could not be closed. Your current page was not changed.",
+      });
+    }
   };
 
   const discardChanges = () => {
@@ -314,15 +390,101 @@ export function ProjectEditorClient({
           ) : null}
         </aside>
         <main className={styles.canvas}>
+          {showingProposal ? (
+            <div className={styles.proposalPreviewLabel} role="status">
+              Proposal preview — your current page is unchanged
+            </div>
+          ) : null}
           <VeskifyPuckCanvas
             brandSystem={state.draft.brandSystem}
             context={context}
             onPageChange={changePage}
             onValidationError={setValidationMessage}
-            page={page}
-            resetKey={resetKeys[page.id] ?? 0}
+            page={canvasPage}
+            readOnly={showingProposal}
+            resetKey={resetKeys[canvasPage.id] ?? 0}
           />
         </main>
+        <aside aria-label="Design request" className={styles.requestPanel}>
+          <form className={styles.requestForm} onSubmit={submitRequest}>
+            <div>
+              <p className={styles.eyebrow}>Design assistant</p>
+              <h2>What would you like to change?</h2>
+              <p>Choose an example or describe the same supported result in your own typing.</p>
+            </div>
+            <label htmlFor="design-request">Your request</label>
+            <textarea
+              id="design-request"
+              onChange={(event) => setRequest(event.target.value)}
+              placeholder="Make the homepage feel more luxurious."
+              required
+              rows={4}
+              value={request}
+            />
+            <button disabled={proposalState.status === "generating"} type="submit">
+              {proposalState.status === "generating" ? "Preparing proposal…" : "Show proposal"}
+            </button>
+            <div className={styles.examples}>
+              <span>Try an example</span>
+              {deterministicProposalPrompts.map((prompt) => (
+                <button key={prompt} onClick={() => setRequest(prompt)} type="button">
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </form>
+
+          <div aria-live="polite" aria-atomic="true" className={styles.proposalStatus}>
+            {proposalState.status === "generating" ? (
+              <p>Preparing a safe visual proposal…</p>
+            ) : null}
+            {proposalState.status === "invalid" ||
+            proposalState.status === "unsupported" ||
+            proposalState.status === "error" ? (
+              <p role={proposalState.status === "unsupported" ? "status" : "alert"}>
+                {proposalState.message}
+              </p>
+            ) : null}
+            {proposalState.status === "accepted" ? (
+              <p>Proposal accepted. The homepage now has unsaved changes.</p>
+            ) : null}
+            {proposalState.status === "rejected" ? (
+              <p>Proposal rejected. Your page remains exactly as it was.</p>
+            ) : null}
+          </div>
+
+          {proposalState.status === "ready" ? (
+            <section className={styles.proposalCard} aria-label="Design proposal">
+              <p className={styles.eyebrow}>Ready to review</p>
+              <h2>
+                {resolveLocalizedText(
+                  proposalState.proposal.summary,
+                  locale,
+                  state.aggregate.project.primaryLocale,
+                )}
+              </h2>
+              <p>
+                <strong>Affected page:</strong> {title}
+              </p>
+              <ol>
+                {proposalChangeLabels(proposalState.proposal, locale).map((label, index) => (
+                  <li key={`${proposalState.proposal.operations[index].type}-${index}`}>{label}</li>
+                ))}
+              </ol>
+              <p className={styles.boundaryNote}>
+                Accepting updates only this in-memory draft page. It does not save or publish.
+              </p>
+              <div className={styles.proposalActions}>
+                <button onClick={acceptProposal} type="button">
+                  Accept proposal
+                </button>
+                <button onClick={rejectProposal} type="button">
+                  Reject proposal
+                </button>
+              </div>
+            </section>
+          ) : null}
+        </aside>
       </div>
     </div>
   );

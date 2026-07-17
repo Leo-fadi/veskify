@@ -60,6 +60,31 @@ test("selects and edits an approved field, then discards the session change", as
   await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
 });
 
+test("requests, previews, rejects and accepts deterministic proposals on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto(url);
+  await page.getByRole("button", { name: "Make the homepage feel more luxurious." }).click();
+  await page.getByRole("button", { name: "Show proposal" }).click();
+  await expect(page.getByLabel("Design proposal")).toBeVisible();
+  await expect(page.getByLabel("Proposal preview canvas")).toBeVisible();
+  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await page.getByRole("button", { name: "Reject proposal" }).click();
+  await expect(page.getByText(/remains exactly as it was/i)).toBeVisible();
+  await expect(page.getByLabel("Visual editor canvas")).toBeVisible();
+
+  await page.getByRole("button", { name: "Add a campaign section." }).click();
+  await page.getByRole("button", { name: "Show proposal" }).click();
+  await expect(page.getByRole("heading", { name: /new campaign section/i })).toBeVisible();
+  await page.getByRole("button", { name: "Accept proposal" }).click();
+  await expect(page.getByLabel("Draft status")).toContainText("Unsaved changes");
+  await expect(page.getByText(/does not save or publish/i)).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+});
+
 for (const width of [375, 768, 1024, 1440]) {
   test(`editor shell has no horizontal overflow at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });

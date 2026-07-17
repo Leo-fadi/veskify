@@ -141,6 +141,147 @@
   padding: clamp(0.5rem, 2vw, 1.25rem);
 }
 
+.proposalPreviewLabel {
+  padding: 0.7rem 1rem;
+  border: 1px solid #8a5a2b;
+  border-bottom: 0;
+  border-radius: 0.7rem 0.7rem 0 0;
+  background: #fff8e8;
+  color: #633d18;
+  font-size: 0.85rem;
+  font-weight: 750;
+  text-align: center;
+}
+
+.requestPanel {
+  display: grid;
+  gap: 1rem;
+  align-content: start;
+  padding: 1.25rem;
+  border-top: 1px solid #d6dae0;
+  background: white;
+}
+
+.requestForm,
+.proposalCard {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.requestForm h2,
+.requestForm p,
+.proposalCard h2,
+.proposalCard p {
+  margin: 0;
+}
+
+.requestForm h2,
+.proposalCard h2 {
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+.requestForm > label,
+.examples > span {
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.requestForm textarea {
+  width: 100%;
+  min-height: 7rem;
+  resize: vertical;
+  padding: 0.7rem;
+  border: 1px solid #8d96a1;
+  border-radius: 0.5rem;
+  font: inherit;
+  line-height: 1.45;
+}
+
+.requestForm > button,
+.proposalActions button:first-child {
+  min-height: 2.75rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid #164b3b;
+  border-radius: 0.45rem;
+  background: #164b3b;
+  color: white;
+  font: inherit;
+  font-weight: 750;
+}
+
+.requestForm > button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.examples {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.examples button {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #aab1ba;
+  border-radius: 0.45rem;
+  background: #f7f8f9;
+  color: #26313c;
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.proposalStatus:empty {
+  display: none;
+}
+
+.proposalStatus p {
+  margin: 0;
+  padding: 0.75rem;
+  border-left: 0.25rem solid #8a5a2b;
+  background: #fff8e8;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.proposalCard {
+  padding: 1rem;
+  border: 1px solid #c6ccd3;
+  border-radius: 0.75rem;
+  background: #f8faf9;
+}
+
+.proposalCard ol {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding-left: 1.4rem;
+  font-size: 0.82rem;
+}
+
+.proposalActions {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.proposalActions button:last-child {
+  min-height: 2.75rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid #6d3434;
+  border-radius: 0.45rem;
+  background: white;
+  color: #6d3434;
+  font: inherit;
+  font-weight: 750;
+}
+
+.requestPanel button:focus-visible,
+.requestPanel textarea:focus-visible {
+  outline: 3px solid #d4a72c;
+  outline-offset: 2px;
+}
+
 .state {
   display: grid;
   min-height: 100vh;
@@ -197,5 +338,22 @@
     min-height: calc(100vh - 5.5rem);
     border-right: 1px solid #d6dae0;
     border-bottom: 0;
+  }
+
+  .requestPanel {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 90rem) {
+  .workspace {
+    grid-template-columns: 16rem minmax(0, 1fr) minmax(17rem, 21rem);
+  }
+
+  .requestPanel {
+    grid-column: auto;
+    min-height: calc(100vh - 5.5rem);
+    border-top: 0;
+    border-left: 1px solid #d6dae0;
   }
 }
