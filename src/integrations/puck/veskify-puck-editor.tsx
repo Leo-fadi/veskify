@@ -30,6 +30,7 @@ export function VeskifyPuckCanvas({
   resetKey,
   onPageChange,
   onValidationError,
+  readOnly = false,
 }: {
   page: PageModel;
   context: StorefrontRenderContext;
@@ -37,6 +38,7 @@ export function VeskifyPuckCanvas({
   resetKey: number;
   onPageChange: (page: PageModel) => void;
   onValidationError: (message: string) => void;
+  readOnly?: boolean;
 }) {
   const boundaryKey = `${page.id}-${context.activeLocale}-${resetKey}`;
   return (
@@ -47,6 +49,7 @@ export function VeskifyPuckCanvas({
       onPageChange={onPageChange}
       onValidationError={onValidationError}
       page={page}
+      readOnly={readOnly}
     />
   );
 }
@@ -57,6 +60,7 @@ function VeskifyPuckCanvasSession({
   brandSystem,
   onPageChange,
   onValidationError,
+  readOnly,
 }: Omit<Parameters<typeof VeskifyPuckCanvas>[0], "resetKey">) {
   const [recoveryVersion, setRecoveryVersion] = useState(0);
   const trustedPage = useRef(page);
@@ -76,22 +80,23 @@ function VeskifyPuckCanvasSession({
   }
 
   return (
-    <section aria-label="Visual editor canvas" className="min-h-[44rem] bg-white">
+    <section
+      aria-label={readOnly ? "Proposal preview canvas" : "Visual editor canvas"}
+      className="min-h-[44rem] bg-white"
+    >
       <Puck
         config={config}
         data={data}
         headerTitle="Visual editor"
         height="calc(100vh - 12rem)"
         key={recoveryVersion}
-        onChange={handleChange}
+        onChange={readOnly ? undefined : handleChange}
         overrides={{ headerActions: () => <></> }}
-        permissions={{
-          ...editingPermissions,
-          delete: true,
-          drag: true,
-          edit: true,
-          insert: true,
-        }}
+        permissions={
+          readOnly
+            ? editingPermissions
+            : { ...editingPermissions, delete: true, drag: true, edit: true, insert: true }
+        }
       />
     </section>
   );
