@@ -78,6 +78,36 @@
   align-items: center;
 }
 
+.historyActions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.historyActions button,
+.sectionActions button {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid #56616d;
+  border-radius: 0.45rem;
+  background: white;
+  color: #26313c;
+  font: inherit;
+  font-weight: 700;
+}
+
+.historyActions button:disabled,
+.sectionActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.historyActions button:focus-visible,
+.sectionActions button:focus-visible {
+  outline: 3px solid #d4a72c;
+  outline-offset: 2px;
+}
+
 .saveDraftButton {
   min-height: 2.75rem;
   padding: 0.6rem 1rem;
@@ -107,6 +137,15 @@
   max-width: 24rem;
   margin: 0;
   color: #4f5863;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.historyStatus {
+  min-height: 1.1rem;
+  max-width: 26rem;
+  margin: 0;
+  color: #315447;
   font-size: 0.78rem;
   line-height: 1.4;
 }
@@ -161,6 +200,34 @@
   color: #59616d;
   font-size: 0.78rem;
   line-height: 1.5;
+}
+
+.sectionActions {
+  padding: 0.85rem !important;
+  border: 1px solid #d6dae0 !important;
+  border-radius: 0.6rem;
+  background: #f8faf9;
+}
+
+.sectionActions h2 {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.sectionActions p {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.sectionActions p span {
+  color: #59616d;
+  font-size: 0.75rem;
+}
+
+.sectionActions div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
 }
 
 .previewLink {
@@ -242,6 +309,10 @@
 
   .draftActions {
     justify-items: end;
+  }
+
+  .historyActions {
+    justify-content: flex-end;
   }
 
   .workspace {

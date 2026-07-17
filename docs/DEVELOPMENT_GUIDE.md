@@ -21,6 +21,16 @@ Current location:
 
 Owns route composition, editor shell integration, page and locale switching, dirty-state presentation, proposal UI integration, and merchant-facing controls. Canonical logic must remain outside route components.
 
+### Canonical editor history and section actions
+
+Current location:
+
+- `src/application/editor-history/**`
+
+Owns bounded, immutable, per-page `PageModel` undo/redo history and canonical duplicate and
+visibility commands. This layer is React- and Puck-independent, validates every committed page,
+and does not persist, publish or define a second composition model.
+
 ### Component registry and storefront
 
 Current locations:

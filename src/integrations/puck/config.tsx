@@ -163,7 +163,25 @@ function componentToPuckConfig(
     },
     render: (editorProps) => {
       const section = editorPropsToSection(definition, editorProps, pageType, context);
-      return section.visible ? <>{definition.render(section, context, pageType)}</> : <></>;
+      return section.visible ? (
+        <>{definition.render(section, context, pageType)}</>
+      ) : (
+        <div
+          data-hidden-section={section.id}
+          style={{
+            padding: "1rem",
+            border: "2px dashed #8b949e",
+            background: "#f6f8fa",
+            color: "#3f4852",
+            textAlign: "center",
+          }}
+        >
+          <strong>{definition.label}</strong>
+          <span style={{ display: "block", marginTop: "0.25rem", fontSize: "0.875rem" }}>
+            Hidden section — select it to show it again
+          </span>
+        </div>
+      );
     },
   };
 }

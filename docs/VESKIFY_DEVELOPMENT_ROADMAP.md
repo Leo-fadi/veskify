@@ -47,6 +47,8 @@ Puck is the permanent embedded visual-editor foundation. Veskify owns the canoni
 - add, select, edit, reorder, and remove approved sections;
 - validated in-memory editing;
 - unsaved state and discard;
+- bounded canonical per-page undo/redo for manual edits and accepted proposals;
+- safe selected-section duplicate and hide/show actions;
 - protected commerce-field enforcement;
 - controlled storefront design vocabulary;
 - multiple variants and brand-token controls;
@@ -59,11 +61,8 @@ Puck is the permanent embedded visual-editor foundation. Veskify owns the canoni
 
 ### Still pending from Week 1
 
-- duplicate section;
-- hide/show section;
 - cart and checkout editor surfaces;
 - persisting edits after refresh;
-- canonical undo/redo.
 
 ### Still pending from Week 2
 
@@ -90,16 +89,15 @@ Weeks 1 and 2 are therefore **partially completed**. Week 3 is the clear next mi
 - add, select, edit, reorder, and remove approved sections;
 - validated in-memory editing;
 - unsaved state and discard;
+- bounded canonical per-page undo/redo;
+- selected-section duplicate and hide/show actions;
 - protected commerce-field enforcement;
 - controlled storefront design vocabulary with multiple variants and brand-token controls.
 
 #### Remaining
 
-- duplicate section;
-- hide/show section;
 - cart and checkout editor surfaces;
 - persistence after refresh;
-- canonical undo/redo;
 - final responsive preview and remaining component polish.
 
 #### Exit criteria
