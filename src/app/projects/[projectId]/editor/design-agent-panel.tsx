@@ -118,8 +118,9 @@ export function DesignAgentPanel({
 
   const proposal = controller.proposal;
   const session = controller.session;
-  const changeDetails = proposal ? proposalChangeDetails(proposal, locale, primaryLocale) : [];
-  const detailsComplete = proposal !== null && changeDetails.length === proposal.operations.length;
+  const changeDetails = proposal
+    ? proposalChangeDetails(proposal, locale, primaryLocale)
+    : { items: [], representedOperationIndexes: [], complete: false };
   const scope = session?.plan
     ? session.plan.affectedSectionIds.length > 0
       ? `${pageTitle} · ${session.plan.affectedSectionIds.length} ${
@@ -249,8 +250,11 @@ export function DesignAgentPanel({
           <div>
             <strong>{proposalDetailsHeading[locale]}</strong>
             <ol aria-label={proposalDetailsHeading[locale]} className={styles.changeDetails}>
-              {changeDetails.map((detail, index) => (
-                <li key={`${proposal.operations[index].type}-${index}`}>{detail}</li>
+              {changeDetails.items.map((detail) => (
+                <li key={detail.sectionId ?? `page-${proposal.originalPage.id}`}>
+                  <strong>{detail.title}</strong>
+                  <span>{detail.summary}</span>
+                </li>
               ))}
             </ol>
           </div>
@@ -269,7 +273,7 @@ export function DesignAgentPanel({
           <p className={styles.boundary}>{text.unsaved}</p>
           <div className={styles.actions}>
             <button
-              disabled={controller.controlsDisabled || !detailsComplete}
+              disabled={controller.controlsDisabled || !changeDetails.complete}
               onClick={controller.acceptProposal}
               type="button"
             >

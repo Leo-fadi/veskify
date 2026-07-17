@@ -3,6 +3,19 @@ import { getComponentDefinition } from "@/components/registry";
 import type { Locale } from "@/domain/shared";
 import type { PageModel, SectionInstance } from "@/domain/storefront";
 
+export type ProposalChangeDetail = {
+  sectionId: string | null;
+  title: string;
+  summary: string;
+  operationIndexes: number[];
+};
+
+export type ProposalChangeDetails = {
+  items: ProposalChangeDetail[];
+  representedOperationIndexes: number[];
+  complete: boolean;
+};
+
 const fieldNames: Record<string, Record<Locale, string>> = {
   body: { en: "supporting text", fi: "leipäteksti" },
   eyebrow: { en: "small heading", fi: "pieni otsikko" },
@@ -17,16 +30,16 @@ const optionNames: Record<string, Record<Locale, string>> = {
   primary: { en: "primary brand colour", fi: "brändin pääväri" },
   secondary: { en: "secondary brand colour", fi: "brändin toissijainen väri" },
   accent: { en: "accent colour", fi: "korostusväri" },
-  serif: { en: "serif", fi: "antiikva" },
-  sans: { en: "sans serif", fi: "groteski" },
+  serif: { en: "premium serif", fi: "ylellinen antiikva" },
+  sans: { en: "clean sans serif", fi: "selkeä groteski" },
   strong: { en: "strong", fi: "vahva" },
   compact: { en: "compact", fi: "tiivis" },
-  standard: { en: "standard", fi: "tavallinen" },
-  spacious: { en: "spacious", fi: "väljä" },
+  standard: { en: "balanced", fi: "tasapainoinen" },
+  spacious: { en: "more spacious", fi: "väljempi" },
   square: { en: "square", fi: "kulmikas" },
   soft: { en: "soft", fi: "pehmeä" },
   rounded: { en: "rounded", fi: "pyöristetty" },
-  left: { en: "left", fi: "vasen" },
+  left: { en: "left-aligned", fi: "vasemmalle tasattu" },
   center: { en: "centred", fi: "keskitetty" },
   text: { en: "text link", fi: "tekstilinkki" },
   editorial: { en: "editorial", fi: "toimituksellinen" },
@@ -35,12 +48,12 @@ const optionNames: Record<string, Record<Locale, string>> = {
   imageOverlay: { en: "image overlay", fi: "kuvan päälle aseteltu" },
   split: { en: "split", fi: "jaettu" },
   minimal: { en: "minimal", fi: "pelkistetty" },
-  singleLine: { en: "single line", fi: "yksi rivi" },
+  singleLine: { en: "single-line", fi: "yksirivinen" },
   centered: { en: "centred", fi: "keskitetty" },
-  columns: { en: "columns", fi: "palstat" },
+  columns: { en: "column", fi: "palsta" },
   inline: { en: "inline", fi: "samalla rivillä" },
   card: { en: "card", fi: "kortti" },
-  fullWidth: { en: "full width", fi: "täysleveä" },
+  fullWidth: { en: "full-width", fi: "täysleveä" },
 };
 
 const colourNames: Record<string, Record<Locale, string>> = {
@@ -69,7 +82,7 @@ function localizedValue(value: unknown, locale: Locale, primaryLocale: Locale) {
   if (!value || typeof value !== "object") return undefined;
   const localized = value as Partial<Record<Locale, unknown>>;
   const preferred = localized[locale] ?? localized[primaryLocale] ?? localized.en ?? localized.fi;
-  return typeof preferred === "string" ? preferred : undefined;
+  return typeof preferred === "string" && preferred.trim() ? preferred : undefined;
 }
 
 function sectionFor(page: PageModel, sectionId: string) {
@@ -77,7 +90,7 @@ function sectionFor(page: PageModel, sectionId: string) {
 }
 
 function sectionName(section: SectionInstance | undefined, locale: Locale, primaryLocale: Locale) {
-  if (!section) return locale === "fi" ? "valittu osio" : "selected section";
+  if (!section) return locale === "fi" ? "Valittu osio" : "Selected section";
   for (const field of ["title", "heading", "eyebrow"]) {
     const value = localizedValue(section.content[field], locale, primaryLocale);
     if (value) return value;
@@ -85,16 +98,22 @@ function sectionName(section: SectionInstance | undefined, locale: Locale, prima
   return getComponentDefinition(section.component).label;
 }
 
-function sectionReference(
+function detailTitle(
   proposal: DesignProposal,
-  sectionId: string,
+  sectionId: string | null,
   locale: Locale,
   primaryLocale: Locale,
 ) {
+  if (sectionId === null) {
+    return (
+      localizedValue(proposal.proposedPage.title, locale, primaryLocale) ??
+      localizedValue(proposal.originalPage.title, locale, primaryLocale) ??
+      (locale === "fi" ? "Nykyinen sivu" : "Current page")
+    );
+  }
   const section =
     sectionFor(proposal.proposedPage, sectionId) ?? sectionFor(proposal.originalPage, sectionId);
-  const name = sectionName(section, locale, primaryLocale);
-  return locale === "fi" ? `osio ”${name}”` : `“${name}” section`;
+  return sectionName(section, locale, primaryLocale);
 }
 
 function languageName(language: Locale, locale: Locale) {
@@ -102,77 +121,85 @@ function languageName(language: Locale, locale: Locale) {
   return language === "fi" ? "Finnish" : "English";
 }
 
-function detailForOperation(
-  proposal: DesignProposal,
-  operation: DesignOperation,
-  locale: Locale,
-  primaryLocale: Locale,
-): string {
-  const section =
-    "sectionId" in operation
-      ? sectionReference(proposal, operation.sectionId, locale, primaryLocale)
-      : "";
+function sentence(parts: string[], locale: Locale) {
+  const uniqueParts = [...new Set(parts)];
+  const last = uniqueParts.pop();
+  if (!last) return "";
+  const joined =
+    uniqueParts.length === 0
+      ? last
+      : `${uniqueParts.join(", ")} ${locale === "fi" ? "ja" : "and"} ${last}`;
+  return `${joined.charAt(0).toLocaleUpperCase(locale)}${joined.slice(1)}.`;
+}
 
+function operationTargets(operation: DesignOperation): Array<string | null> {
+  if ("sectionId" in operation) return [operation.sectionId];
+  if (operation.type === "REORDER_SECTIONS") return operation.sectionIds;
+  if (operation.type === "APPLY_APPROVED_BRAND_COLOURS") return [null];
+  return [];
+}
+
+function detailPart(
+  operation: DesignOperation,
+  sectionId: string | null,
+  locale: Locale,
+): string | undefined {
   switch (operation.type) {
     case "CHANGE_LOCALIZED_SECTION_TEXT": {
-      const field =
-        fieldNames[operation.field]?.[locale] ??
-        (locale === "fi" ? "teksti" : humanize(operation.field));
+      const field = fieldNames[operation.field]?.[locale] ?? (locale === "fi" ? "teksti" : "text");
       return locale === "fi"
-        ? `Päivitä ${section}: ${languageName(operation.locale, locale)} ${field} muotoon ”${operation.value}”.`
-        : `Update the ${languageName(operation.locale, locale)} ${field} in the ${section} to “${operation.value}”.`;
+        ? `${languageName(operation.locale, locale)} ${field} muotoon ”${operation.value}”`
+        : `${languageName(operation.locale, locale)} ${field} changed to “${operation.value}”`;
     }
     case "CHANGE_SECTION_VARIANT":
       return locale === "fi"
-        ? `Vaihda ${section}: asettelu ”${option(operation.variant, locale)}”.`
-        : `Use the ${option(operation.variant, locale)} layout for the ${section}.`;
+        ? `${option(operation.variant, locale)} asettelu`
+        : `${option(operation.variant, locale)} layout`;
     case "CHANGE_BACKGROUND":
       return locale === "fi"
-        ? `Vaihda ${section}: taustaksi ${option(operation.background, locale)}.`
-        : `Change the ${section} background to ${option(operation.background, locale)}.`;
+        ? `${option(operation.background, locale)} tausta`
+        : `${option(operation.background, locale)} background`;
     case "CHANGE_TYPOGRAPHY":
       return locale === "fi"
-        ? `Vaihda ${section}: typografiaksi ${option(operation.typography, locale)}.`
-        : `Change the ${section} typography to ${option(operation.typography, locale)}.`;
+        ? `${option(operation.typography, locale)} typografia`
+        : `${option(operation.typography, locale)} typography`;
     case "CHANGE_DENSITY":
       return locale === "fi"
-        ? `Vaihda ${section}: väljyydeksi ${option(operation.density, locale)}.`
-        : `Change the ${section} spacing to ${option(operation.density, locale)}.`;
+        ? `${option(operation.density, locale)} väljyys`
+        : `${option(operation.density, locale)} spacing`;
     case "CHANGE_SHAPE":
       return locale === "fi"
-        ? `Vaihda ${section}: muotokieleksi ${option(operation.shape, locale)}.`
-        : `Change the ${section} shape treatment to ${option(operation.shape, locale)}.`;
+        ? `${option(operation.shape, locale)} muotokieli`
+        : `${option(operation.shape, locale)} shapes`;
     case "CHANGE_ALIGNMENT":
       return locale === "fi"
-        ? `Vaihda ${section}: sisällön tasaus ”${option(operation.alignment, locale)}”.`
-        : `Align the ${section} content to the ${option(operation.alignment, locale)}.`;
+        ? `${option(operation.alignment, locale)} sisältö`
+        : `${option(operation.alignment, locale)} content`;
     case "CHANGE_CTA_STYLE":
       return locale === "fi"
-        ? `Vaihda ${section}: toimintopainikkeeksi ${option(operation.ctaPresentation, locale)}.`
-        : `Use the ${option(operation.ctaPresentation, locale)} call-to-action style in the ${section}.`;
+        ? `${option(operation.ctaPresentation, locale)} toimintopainike`
+        : `${option(operation.ctaPresentation, locale)} call to action`;
     case "APPLY_APPROVED_BRAND_COLOURS": {
       const colours = Object.entries(operation.colors)
         .map(([name, value]) => `${colourNames[name]?.[locale] ?? humanize(name)} ${value}`)
         .join(", ");
       return locale === "fi"
-        ? `Käytä hyväksyttyä brändipalettia: ${colours}.`
-        : `Apply the approved brand palette: ${colours}.`;
+        ? `hyväksytyt brändivärit: ${colours}`
+        : `approved brand colours: ${colours}`;
     }
-    case "ADD_APPROVED_SECTION": {
-      const added = sectionReference(proposal, operation.sectionId, locale, primaryLocale);
+    case "ADD_APPROVED_SECTION":
       return locale === "fi"
-        ? `Lisää ${added} ennen alatunnistetta.`
-        : `Add the ${added} before the footer.`;
-    }
+        ? `lisää tämä ${operation.variant ? `${option(operation.variant, locale)} ` : ""}osio`
+        : `add this ${operation.variant ? `${option(operation.variant, locale)} ` : ""}section`;
     case "REMOVE_OPTIONAL_SECTION":
-      return locale === "fi" ? `Poista ${section}.` : `Remove the ${section}.`;
+      return locale === "fi" ? "poista tämä osio" : "remove this section";
     case "REORDER_SECTIONS": {
-      const order = operation.sectionIds
-        .map((sectionId) => sectionReference(proposal, sectionId, locale, primaryLocale))
-        .join(", ");
+      if (sectionId === null) return undefined;
+      const position = operation.sectionIds.indexOf(sectionId) + 1;
+      if (position < 1) return undefined;
       return locale === "fi"
-        ? `Järjestä sivun osiot tähän järjestykseen: ${order}.`
-        : `Reorder the page sections to: ${order}.`;
+        ? `uusi paikka sivulla: ${position}`
+        : `new page position: ${position}`;
     }
   }
 }
@@ -181,10 +208,41 @@ export function proposalChangeDetails(
   proposal: DesignProposal,
   locale: Locale,
   primaryLocale: Locale,
-) {
-  return proposal.operations.map((operation) =>
-    detailForOperation(proposal, operation, locale, primaryLocale),
-  );
+): ProposalChangeDetails {
+  const groups = new Map<
+    string,
+    { sectionId: string | null; parts: string[]; operationIndexes: number[] }
+  >();
+
+  proposal.operations.forEach((operation, operationIndex) => {
+    for (const sectionId of operationTargets(operation)) {
+      const part = detailPart(operation, sectionId, locale);
+      if (!part) continue;
+      const key = sectionId ?? `page:${proposal.originalPage.id}`;
+      const group = groups.get(key) ?? { sectionId, parts: [], operationIndexes: [] };
+      group.parts.push(part);
+      group.operationIndexes.push(operationIndex);
+      groups.set(key, group);
+    }
+  });
+
+  const items = [...groups.values()].map((group) => ({
+    sectionId: group.sectionId,
+    title: detailTitle(proposal, group.sectionId, locale, primaryLocale),
+    summary: sentence(group.parts, locale),
+    operationIndexes: [...new Set(group.operationIndexes)],
+  }));
+  const representedOperationIndexes = [
+    ...new Set(items.flatMap((item) => item.operationIndexes)),
+  ].sort((left, right) => left - right);
+
+  return {
+    items,
+    representedOperationIndexes,
+    complete:
+      representedOperationIndexes.length === proposal.operations.length &&
+      representedOperationIndexes.every((operationIndex, index) => operationIndex === index),
+  };
 }
 
 export const proposalDetailsHeading: Record<Locale, string> = {
