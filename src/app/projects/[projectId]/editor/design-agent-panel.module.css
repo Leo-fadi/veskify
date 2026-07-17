@@ -132,11 +132,16 @@
   background: #f8faf9;
 }
 
-.card ul {
+.card ul,
+.changeDetails {
   display: grid;
   gap: 0.35rem;
   margin: 0.4rem 0 0;
   padding-left: 1.25rem;
+}
+
+.changeDetails li {
+  color: #26313c;
 }
 
 .previewNotice,

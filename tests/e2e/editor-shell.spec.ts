@@ -88,6 +88,41 @@ test("requests, previews, rejects and accepts deterministic proposals on mobile"
   );
 });
 
+test("uses the selected Puck section and shows localized concrete proposal details", async ({
+  page,
+}) => {
+  await page.goto(url);
+  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  const headingField = page.getByRole("textbox", { name: "Main heading", exact: true });
+  await expect(async () => {
+    await canvas.getByText("Made for northern light", { exact: true }).click();
+    await expect(headingField).toBeVisible({ timeout: 1_500 });
+  }).toPass({ timeout: 15_000 });
+  const requestPanel = page.getByLabel("Design request");
+  await expect(requestPanel.getByText("Aurum hero", { exact: true })).toBeVisible();
+
+  await page.getByLabel("Your request").fill("Improve the hero.");
+  await page.getByRole("button", { name: "Create proposal" }).click();
+  await expect(page.getByLabel("Design proposal")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Proposed changes" })).toContainText(
+    /Made for northern light|supporting text/i,
+  );
+  await expect(requestPanel.getByText("Aurum hero", { exact: true })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Reject" }).click();
+  await page.getByRole("button", { name: "Make the homepage feel more luxurious." }).click();
+  await page.getByRole("button", { name: "Create proposal" }).click();
+  const details = page.getByRole("list", { name: "Proposed changes" }).getByRole("listitem");
+  const detailCount = await details.count();
+  expect(detailCount).toBeGreaterThan(1);
+  await page.getByRole("radio", { name: "Suomi" }).click();
+  const finnishDetails = page
+    .getByRole("list", { name: "Ehdotetut muutokset" })
+    .getByRole("listitem");
+  expect(await finnishDetails.count()).toBe(detailCount);
+  await expect(finnishDetails.first()).toContainText(/Vaihda|Päivitä|Käytä/);
+});
+
 test("discard closes a proposal so discarded edits cannot be accepted later", async ({ page }) => {
   await page.goto(url);
   const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");

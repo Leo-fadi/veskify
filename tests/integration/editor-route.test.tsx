@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
@@ -19,6 +19,7 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     brandSystem,
     onPageChange,
     onValidationError,
+    onSelectedSectionChange,
     readOnly,
     readOnlyLabel,
   }: {
@@ -32,6 +33,7 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     brandSystem: { colors: { primary: string } };
     onPageChange: (page: unknown) => void;
     onValidationError: (message: string) => void;
+    onSelectedSectionChange?: (sectionId: string | undefined) => void;
     readOnly?: boolean;
     readOnlyLabel?: string;
   }) => (
@@ -42,6 +44,16 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     >
       Canvas: {page.type} / {context.activeLocale}
       {readOnlyLabel === "Proposal preview canvas" ? <span>Locked proposal</span> : null}
+      {page.sections.map((section) => (
+        <button
+          disabled={readOnly}
+          key={`select-${section.id}`}
+          onClick={() => onSelectedSectionChange?.(section.id)}
+          type="button"
+        >
+          Select {section.component} section
+        </button>
+      ))}
       {readOnlyLabel === "Proposal preview canvas" ? (
         <button
           onClick={() =>
@@ -325,10 +337,38 @@ describe("P2-01 project editor route", () => {
     expect(await screen.findByLabelText("Design proposal")).toBeVisible();
     expect(screen.getByLabelText("Proposal preview canvas")).toHaveTextContent("Locked proposal");
     expect(screen.getByText(/current page is unchanged/i)).toBeVisible();
+    const details = within(screen.getByLabelText("Proposed changes")).getAllByRole("listitem");
+    expect(details.length).toBeGreaterThan(1);
+    expect(
+      details.some((detail) =>
+        /background|typography|spacing|layout/i.test(detail.textContent ?? ""),
+      ),
+    ).toBe(true);
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
     expect(repo.saveDraft).not.toHaveBeenCalled();
     expect(repo.publish).not.toHaveBeenCalled();
     expect(repo.restore).not.toHaveBeenCalled();
+  });
+
+  it("passes the merchant's actual selected section into a section-scoped request", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    expect(screen.getByText("Aurum hero", { exact: true })).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Improve the hero." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(await screen.findByLabelText("Design proposal")).toBeVisible();
+    expect(screen.queryByText("Aurum hero", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByText("Home · 1 sections", { exact: true })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+    fireEvent.click(screen.getByRole("button", { name: "Select productGrid section" }));
+    expect(screen.getByText("Product grid", { exact: true })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/safe plan could not be created/i);
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
   });
 
   it("previews a supported minimal proposal without mutating the active page", async () => {
@@ -609,6 +649,12 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     expect(screen.getByRole("heading", { name: /kampanjaosio/i })).toBeVisible();
     expect(screen.getByText("Etusivu · 1 osiota", { exact: true })).toBeVisible();
+    const localizedDetails = within(screen.getByLabelText("Ehdotetut muutokset")).getAllByRole(
+      "listitem",
+    );
+    expect(localizedDetails).toHaveLength(3);
+    expect(localizedDetails[0]).toHaveTextContent(/Lisää osio/);
+    expect(localizedDetails[1]).toHaveTextContent(/Päivitä osio/);
   });
 
   it("saves a valid manual edit, clears dirty state and preserves locale and published state", async () => {

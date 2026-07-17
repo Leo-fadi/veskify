@@ -8,7 +8,11 @@ import {
   saveValidatedEditorDraft,
   StaleEditorDraftError,
 } from "@/application/draft-save";
-import { createStorefrontRenderContext, validateRegisteredPage } from "@/components/registry";
+import {
+  createStorefrontRenderContext,
+  getComponentDefinition,
+  validateRegisteredPage,
+} from "@/components/registry";
 import { brandSystemToCssVariables } from "@/domain/design-system";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
 import type { PageModel, PageType, StorefrontSnapshot } from "@/domain/storefront";
@@ -101,6 +105,7 @@ export function ProjectEditorClient({
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [selectedPageId, setSelectedPageId] = useState<string>();
+  const [selectedSectionId, setSelectedSectionId] = useState<string>();
   const [activeLocale, setActiveLocale] = useState<Locale>();
   const [sessionPages, setSessionPages] = useState<Record<string, PageModel>>({});
   const [resetKeys, setResetKeys] = useState<Record<string, number>>({});
@@ -136,6 +141,7 @@ export function ProjectEditorClient({
           pages.forEach((page) => validateRegisteredPage(page, context));
           if (pages.length === 0) throw new Error("No supported draft pages are available.");
           setSelectedPageId(pages.find((page) => page.type === "home")?.id ?? pages[0].id);
+          setSelectedSectionId(undefined);
           setActiveLocale(aggregate.project.primaryLocale);
           setSessionPages({});
           setResetKeys({});
@@ -187,7 +193,9 @@ export function ProjectEditorClient({
     primaryLocale: readyState?.aggregate.project.primaryLocale,
     brandSystem: readyState?.draft.brandSystem,
     displayContext: readyContext,
+    selectedSectionId,
     disabled: saveState.status === "saving",
+    onProposalReady: () => setSelectedSectionId(undefined),
     onAcceptedPage: (acceptedPage) => {
       setSessionPages((current) => ({ ...current, [acceptedPage.id]: acceptedPage }));
       setValidationMessage("");
@@ -254,6 +262,9 @@ export function ProjectEditorClient({
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
   const showingProposal = agent.previewActive;
   const canvasPage = agent.proposal?.proposedPage ?? page;
+  const selectedSection = selectedSectionId
+    ? page.sections.find((section) => section.id === selectedSectionId)
+    : undefined;
   let completeDraftIsValid = false;
   if (hasUnsavedChanges) {
     try {
@@ -294,6 +305,12 @@ export function ProjectEditorClient({
     if (!canonicalPagesEqual(nextPage, page)) {
       agent.closeForPageMutation(nextPage);
     }
+    if (
+      selectedSectionId &&
+      !nextPage.sections.some((section) => section.id === selectedSectionId)
+    ) {
+      setSelectedSectionId(undefined);
+    }
     setSessionPages((current) => ({ ...current, [nextPage.id]: nextPage }));
     setValidationMessage("");
     setSaveState({ status: "idle" });
@@ -310,6 +327,7 @@ export function ProjectEditorClient({
       return;
     }
     setSelectedPageId(nextPageId);
+    setSelectedSectionId(undefined);
     setValidationMessage("");
     agent.closeForPageSwitch();
   };
@@ -516,6 +534,13 @@ export function ProjectEditorClient({
             brandSystem={state.draft.brandSystem}
             context={context}
             onPageChange={changePage}
+            onSelectedSectionChange={(sectionId) => {
+              setSelectedSectionId(
+                sectionId && page.sections.some((section) => section.id === sectionId)
+                  ? sectionId
+                  : undefined,
+              );
+            }}
             onValidationError={(message) => {
               if (!savePending.current) setValidationMessage(message);
             }}
@@ -530,6 +555,9 @@ export function ProjectEditorClient({
           locale={locale}
           pageTitle={title}
           primaryLocale={state.aggregate.project.primaryLocale}
+          selectedSectionLabel={
+            selectedSection ? getComponentDefinition(selectedSection.component).label : undefined
+          }
         />
       </div>
     </div>

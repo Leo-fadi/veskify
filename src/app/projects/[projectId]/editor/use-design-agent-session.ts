@@ -52,6 +52,7 @@ type UseDesignAgentSessionInput = {
   displayContext?: StorefrontRenderContext;
   selectedSectionId?: string;
   disabled: boolean;
+  onProposalReady?: () => void;
   onAcceptedPage: (page: PageModel) => void;
 };
 
@@ -104,6 +105,7 @@ export function useDesignAgentSession({
   displayContext,
   selectedSectionId,
   disabled,
+  onProposalReady,
   onAcceptedPage,
 }: UseDesignAgentSessionInput): DesignAgentSessionController {
   const agentRef = useRef(createDeterministicDesignAgent());
@@ -171,6 +173,7 @@ export function useDesignAgentSession({
     if (result.outcome === "proposalReady") {
       setProposal(result.proposal ?? previous ?? null);
       setRevision("");
+      onProposalReady?.();
       return;
     }
     if (result.outcome === "revisionFailed" || result.outcome === "regenerationFailed") {

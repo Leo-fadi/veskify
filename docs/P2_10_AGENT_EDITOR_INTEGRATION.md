@@ -15,6 +15,11 @@ proposals, compares stale bases, or implements a second proposal lifecycle.
 The integration imports no Puck types. The existing Puck adapter continues to own canvas mechanics;
 the route supplies a validated canonical proposal page to that adapter in read-only mode.
 
+The adapter reports Puck's actual selected item through its public action callback. Only a selected
+component whose canonical section ID exists on the current page is passed into the agent session.
+Selection is cleared when the page changes, the section disappears, or proposal preview locks the
+canvas; no fallback or inferred first-section selection is maintained in React.
+
 ## Orchestrator ownership
 
 One retained `createDeterministicDesignAgent()` instance belongs to each loaded editor-project
@@ -52,6 +57,11 @@ A ready proposal replaces only the canvas input with the proposal's validated ca
 active editor page in `sessionPages` remains unchanged, normal Puck editing is locked, and the card
 shows the localized summary, affected page/section count, and assumptions without raw operations,
 schemas, skill IDs, or JSON.
+
+The proposal card converts every validated operation into one concrete EN/FI merchant-facing change
+detail. Each item names the affected section or page property and the resulting content, layout,
+colour, typography, spacing, shape, alignment, or call-to-action value. Accept remains disabled unless
+the detail list covers every operation in the proposal.
 
 Revision and regeneration call the orchestrator against the current canonical active page. The old
 preview remains visible until a replacement validates. Regeneration retains the original request and
@@ -104,7 +114,5 @@ card. Disabled controls are guarded in both markup and handlers.
 - A real provider remains behind the existing P2-08 provider boundary.
 - Process-local conversations are not persisted.
 - Persistent multi-page conversation history is deferred; only one current-page workflow is visible.
-- Direct selected-section context will be passed when the existing Puck integration exposes a stable
-  public selection callback; this milestone does not add a competing selection model.
 - Save, IndexedDB behavior, explicit publishing, history, and storefront renderers remain separate
   application milestones.

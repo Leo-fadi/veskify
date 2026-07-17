@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type FormEvent } from "react";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
+import { proposalChangeDetails, proposalDetailsHeading } from "./proposal-change-details";
 import type { DesignAgentSessionController } from "./use-design-agent-session";
 import styles from "./design-agent-panel.module.css";
 
@@ -117,6 +118,8 @@ export function DesignAgentPanel({
 
   const proposal = controller.proposal;
   const session = controller.session;
+  const changeDetails = proposal ? proposalChangeDetails(proposal, locale, primaryLocale) : [];
+  const detailsComplete = proposal !== null && changeDetails.length === proposal.operations.length;
   const scope = session?.plan
     ? session.plan.affectedSectionIds.length > 0
       ? `${pageTitle} · ${session.plan.affectedSectionIds.length} ${
@@ -244,6 +247,14 @@ export function DesignAgentPanel({
             <p>{scope}</p>
           </div>
           <div>
+            <strong>{proposalDetailsHeading[locale]}</strong>
+            <ol aria-label={proposalDetailsHeading[locale]} className={styles.changeDetails}>
+              {changeDetails.map((detail, index) => (
+                <li key={`${proposal.operations[index].type}-${index}`}>{detail}</li>
+              ))}
+            </ol>
+          </div>
+          <div>
             <strong>{text.assumptions}</strong>
             {session.assumptions.length > 0 ? (
               <ul>
@@ -258,7 +269,7 @@ export function DesignAgentPanel({
           <p className={styles.boundary}>{text.unsaved}</p>
           <div className={styles.actions}>
             <button
-              disabled={controller.controlsDisabled}
+              disabled={controller.controlsDisabled || !detailsComplete}
               onClick={controller.acceptProposal}
               type="button"
             >
