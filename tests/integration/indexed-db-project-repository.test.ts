@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { deleteDB, openDB } from "idb";
 import { aurumNordicSeed } from "@/data/seed";
 import { projectSchema } from "@/domain/project";
@@ -151,7 +151,7 @@ describe("IndexedDbProjectRepository persistence", () => {
     );
     await repository.close();
 
-    const database = await openDB(databaseName, 1);
+    const database = await openDB(databaseName);
     const stored: unknown = await database.get("projects", aurumNordicSeed.project.id);
     expect(projectSchema.parse(stored).name).toBe("Merchant-modified Aurum");
     database.close();
@@ -315,6 +315,87 @@ describe("IndexedDbProjectRepository persistence", () => {
       aggregate.snapshots.find((snapshot) => snapshot.id === draft.id)?.pages[0]?.title.en,
     ).toBe("Persisted browser draft");
     expect(aggregate.snapshots).toHaveLength(3);
+    expect(
+      aggregate.snapshots.some((snapshot) => snapshot.id === aurumNordicSeed.draftSnapshot.id),
+    ).toBe(true);
+  });
+
+  it("preserves unknown stored snapshots while pruning only provenance-managed drafts", async () => {
+    const databaseName = testDatabaseName("unknown-legacy-retention");
+    const first = openRepository(databaseName);
+    const seeded = await first.get(aurumNordicSeed.project.id);
+    const unknownLegacy = structuredClone(
+      seeded.snapshots.find((snapshot) => snapshot.id === seeded.project.draftSnapshotId)!,
+    );
+    unknownLegacy.id = "snapshot_unknown_stored_legacy";
+    unknownLegacy.createdAt = "2025-01-01T00:00:00.000Z";
+    await first.close();
+
+    const database = await openDB(databaseName);
+    await database.put("snapshots", unknownLegacy);
+    database.close();
+
+    const repository = openRepository(databaseName);
+    for (let index = 1; index <= 25; index += 1) {
+      const current = await repository.get(aurumNordicSeed.project.id);
+      const currentDraft = current.snapshots.find(
+        (snapshot) => snapshot.id === current.project.draftSnapshotId,
+      )!;
+      const candidate = structuredClone(currentDraft);
+      candidate.id = `snapshot_indexed_managed_with_legacy_${index}`;
+      candidate.createdAt = new Date(Date.parse(currentDraft.createdAt) + 1_000).toISOString();
+      await repository.saveDraft(aurumNordicSeed.project.id, candidate, {
+        id: currentDraft.id,
+        revision: currentDraft.revision,
+      });
+    }
+
+    const after = await repository.get(aurumNordicSeed.project.id);
+    expect(after.snapshots).toHaveLength(20);
+    expect(after.snapshots.map(({ id }) => id)).toContain(unknownLegacy.id);
+    expect(after.snapshots.map(({ id }) => id)).toContain(aurumNordicSeed.publishedSnapshot.id);
+  });
+
+  it("rolls back candidate, pointer and compaction when the draft transaction fails", async () => {
+    const repository = openRepository(testDatabaseName("draft-transaction-failure"));
+    for (let index = 1; index <= 18; index += 1) {
+      const current = await repository.get(aurumNordicSeed.project.id);
+      const currentDraft = current.snapshots.find(
+        (snapshot) => snapshot.id === current.project.draftSnapshotId,
+      )!;
+      const saved = structuredClone(currentDraft);
+      saved.id = `snapshot_before_transaction_failure_${index}`;
+      saved.createdAt = new Date(Date.parse(currentDraft.createdAt) + 1_000).toISOString();
+      await repository.saveDraft(aurumNordicSeed.project.id, saved, {
+        id: currentDraft.id,
+        revision: currentDraft.revision,
+      });
+    }
+    const before = await repository.get(aurumNordicSeed.project.id);
+    expect(before.snapshots).toHaveLength(20);
+    const currentDraft = before.snapshots.find(
+      (snapshot) => snapshot.id === before.project.draftSnapshotId,
+    )!;
+    const candidate = structuredClone(currentDraft);
+    candidate.id = "snapshot_transaction_failure";
+    candidate.createdAt = new Date(Date.parse(currentDraft.createdAt) + 1_000).toISOString();
+    candidate.pages[0].title.en = "Must not persist";
+    const deleteSpy = vi.spyOn(IDBObjectStore.prototype, "delete").mockImplementationOnce(() => {
+      throw new DOMException("Forced transaction failure", "AbortError");
+    });
+
+    try {
+      await expect(
+        repository.saveDraft(aurumNordicSeed.project.id, candidate, {
+          id: currentDraft.id,
+          revision: currentDraft.revision,
+        }),
+      ).rejects.toThrow("Forced transaction failure");
+    } finally {
+      deleteSpy.mockRestore();
+    }
+
+    expect(await repository.get(aurumNordicSeed.project.id)).toEqual(before);
   });
 
   it("uses injected deterministic identity and time generation", async () => {

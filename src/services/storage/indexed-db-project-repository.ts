@@ -5,6 +5,7 @@ import { projectSchema, type Project } from "@/domain/project";
 import type { StorefrontSnapshot } from "@/domain/storefront";
 import {
   DraftConflictError,
+  InvalidRestoreTargetError,
   ProjectNotFoundError,
   RevisionConflictError,
   SnapshotNotFoundError,
@@ -14,12 +15,13 @@ import {
   type ProjectSummary,
 } from "./project-repository";
 import {
+  compactManagedDraftHistory,
   repositoryValidationError,
   validateProjectAggregate,
   validateRepositorySnapshot,
 } from "./repository-validation";
 
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 export const VESKIFY_DATABASE_NAME = "veskify";
 
 interface VeskifyDatabase extends DBSchema {
@@ -36,6 +38,19 @@ interface VeskifyDatabase extends DBSchema {
     value: StorefrontSnapshot;
     indexes: { "by-project": string };
   };
+  snapshotProvenance: {
+    key: string;
+    value: {
+      snapshotId: string;
+      projectId: string;
+      kind: "managedDraft";
+    };
+    indexes: { "by-project": string };
+  };
+}
+
+function managedDraftProvenance(projectId: string, snapshotId: string) {
+  return { snapshotId, projectId, kind: "managedDraft" as const };
 }
 
 export type SnapshotIdentityInput = {
@@ -173,8 +188,8 @@ function defaultSnapshotId({ reason, revision, sequence }: SnapshotIdentityInput
   return `snapshot_${reason}_${revision}_${sequence}`;
 }
 
-function defaultTimestamp({ latestTimestamp, sequence }: SnapshotTimeInput): string {
-  return new Date(Date.parse(latestTimestamp) + sequence * 1_000).toISOString();
+function defaultTimestamp({ latestTimestamp }: SnapshotTimeInput): string {
+  return new Date(Date.parse(latestTimestamp) + 1_000).toISOString();
 }
 
 function latestTimestamp(project: Project, snapshots: StorefrontSnapshot[]): string {
@@ -183,6 +198,10 @@ function latestTimestamp(project: Project, snapshots: StorefrontSnapshot[]): str
     ...snapshots.map((snapshot) => Date.parse(snapshot.createdAt)),
   );
   return new Date(time).toISOString();
+}
+
+function nextSnapshotSequence(project: Project, snapshots: StorefrontSnapshot[]): number {
+  return Date.parse(latestTimestamp(project, snapshots)) + 1;
 }
 
 function toSummary(project: Project): ProjectSummary {
@@ -256,21 +275,17 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     }
 
     const database = await this.#database();
-    const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readwrite");
+    const transaction = database.transaction(
+      ["projects", "catalogues", "snapshots", "snapshotProvenance"],
+      "readwrite",
+    );
     const projects = transaction.objectStore("projects");
     const snapshotsStore = transaction.objectStore("snapshots");
+    const provenanceStore = transaction.objectStore("snapshotProvenance");
     const project = await projects.get(projectId);
     if (!project) {
       throw new ProjectNotFoundError(projectId);
     }
-    const catalogue = await transaction.objectStore("catalogues").get(parsedInput.catalogueRef);
-    if (!catalogue) {
-      throw repositoryValidationError(
-        "Draft snapshot references a catalogue outside the project aggregate.",
-        new Error("Catalogue reference mismatch."),
-      );
-    }
-    const snapshot = validateRepositorySnapshot(parsedInput, catalogue);
     const snapshots = await snapshotsStore.index("by-project").getAll(projectId);
     const currentDraft = snapshots.find((candidate) => candidate.id === project.draftSnapshotId);
     if (!currentDraft) {
@@ -284,6 +299,20 @@ export class IndexedDbProjectRepository implements ProjectRepository {
         id: currentDraft.id,
         revision: currentDraft.revision,
       });
+    }
+    const catalogue = await transaction.objectStore("catalogues").get(currentDraft.catalogueRef);
+    if (!catalogue) {
+      throw repositoryValidationError(
+        `Catalogue for project ${projectId} was not found.`,
+        new Error("Catalogue reference must resolve."),
+      );
+    }
+    const snapshot = validateRepositorySnapshot(parsedInput, catalogue);
+    if (snapshot.catalogueRef !== currentDraft.catalogueRef) {
+      throw repositoryValidationError(
+        "Draft snapshot references a catalogue outside the project aggregate.",
+        new Error("Catalogue reference mismatch."),
+      );
     }
     const existing = snapshots.find((candidate) => candidate.id === snapshot.id);
     if (snapshot.id === project.publishedSnapshotId) {
@@ -304,14 +333,37 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       draftSnapshotId: snapshot.id,
       updatedAt: snapshot.createdAt,
     });
-    const nextSnapshots = existing
+    const stagedSnapshots = existing
       ? snapshots.map((candidate) => (candidate.id === snapshot.id ? snapshot : candidate))
       : [...snapshots, snapshot];
-    validateProjectAggregate({ project: nextProject, catalogue, snapshots: nextSnapshots });
+    const provenance = await provenanceStore.index("by-project").getAll(projectId);
+    const managedDraftSnapshotIds = new Set(provenance.map(({ snapshotId }) => snapshotId));
+    managedDraftSnapshotIds.add(snapshot.id);
+    const compacted = compactManagedDraftHistory(
+      stagedSnapshots,
+      nextProject,
+      managedDraftSnapshotIds,
+    );
+    validateProjectAggregate({ project: nextProject, catalogue, snapshots: compacted.snapshots });
 
-    await snapshotsStore.put(snapshot);
-    await projects.put(nextProject);
-    await transaction.done;
+    try {
+      await snapshotsStore.put(snapshot);
+      await projects.put(nextProject);
+      await provenanceStore.put(managedDraftProvenance(projectId, snapshot.id));
+      for (const removedSnapshotId of compacted.removedSnapshotIds) {
+        await snapshotsStore.delete(removedSnapshotId);
+        await provenanceStore.delete(removedSnapshotId);
+      }
+      await transaction.done;
+    } catch (cause) {
+      try {
+        transaction.abort();
+      } catch {
+        // The transaction may already have aborted.
+      }
+      await transaction.done.catch(() => undefined);
+      throw cause;
+    }
   }
 
   async publish(projectId: string, expectedRevision: number): Promise<ProjectAggregate> {
@@ -341,7 +393,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     }
 
     const revision = project.revision + 1;
-    const sequence = snapshots.length + 1;
+    const sequence = nextSnapshotSequence(project, snapshots);
     const published = validateRepositorySnapshot(
       {
         ...clone(draft),
@@ -381,12 +433,19 @@ export class IndexedDbProjectRepository implements ProjectRepository {
 
   async restore(projectId: string, snapshotId: string): Promise<StorefrontSnapshot> {
     const database = await this.#database();
-    const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readwrite");
+    const transaction = database.transaction(
+      ["projects", "catalogues", "snapshots", "snapshotProvenance"],
+      "readwrite",
+    );
     const projects = transaction.objectStore("projects");
     const snapshotsStore = transaction.objectStore("snapshots");
+    const provenanceStore = transaction.objectStore("snapshotProvenance");
     const project = await projects.get(projectId);
     if (!project) {
       throw new ProjectNotFoundError(projectId);
+    }
+    if (snapshotId === project.draftSnapshotId) {
+      throw new InvalidRestoreTargetError(projectId, snapshotId);
     }
     const historical = await snapshotsStore.get(snapshotId);
     if (!historical || historical.projectId !== projectId) {
@@ -401,7 +460,11 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       );
     }
 
-    const sequence = snapshots.length + 1;
+    const currentDraft = snapshots.find((snapshot) => snapshot.id === project.draftSnapshotId);
+    if (!currentDraft) {
+      throw new SnapshotNotFoundError(projectId, project.draftSnapshotId);
+    }
+    const sequence = nextSnapshotSequence(project, snapshots);
     const restored = validateRepositorySnapshot(
       {
         ...clone(historical),
@@ -430,15 +493,39 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       draftSnapshotId: restored.id,
       updatedAt: restored.createdAt,
     });
+    const provenance = await provenanceStore.index("by-project").getAll(projectId);
+    const managedDraftSnapshotIds = new Set(provenance.map(({ snapshotId }) => snapshotId));
+    managedDraftSnapshotIds.add(restored.id);
+    const compacted = compactManagedDraftHistory(
+      [...snapshots, restored],
+      nextProject,
+      managedDraftSnapshotIds,
+      [historical.id],
+    );
     validateProjectAggregate({
       project: nextProject,
       catalogue,
-      snapshots: [...snapshots, restored],
+      snapshots: compacted.snapshots,
     });
 
-    await snapshotsStore.put(restored);
-    await projects.put(nextProject);
-    await transaction.done;
+    try {
+      await snapshotsStore.put(restored);
+      await projects.put(nextProject);
+      await provenanceStore.put(managedDraftProvenance(projectId, restored.id));
+      for (const removedSnapshotId of compacted.removedSnapshotIds) {
+        await snapshotsStore.delete(removedSnapshotId);
+        await provenanceStore.delete(removedSnapshotId);
+      }
+      await transaction.done;
+    } catch (cause) {
+      try {
+        transaction.abort();
+      } catch {
+        // The transaction may already have aborted.
+      }
+      await transaction.done.catch(() => undefined);
+      throw cause;
+    }
     return clone(restored);
   }
 
@@ -456,11 +543,19 @@ export class IndexedDbProjectRepository implements ProjectRepository {
 
   async #openAndBootstrap(): Promise<IDBPDatabase<VeskifyDatabase>> {
     const database = await openDB<VeskifyDatabase>(this.#databaseName, DATABASE_VERSION, {
-      upgrade(database) {
-        database.createObjectStore("projects", { keyPath: "id" });
-        database.createObjectStore("catalogues", { keyPath: "id" });
-        const snapshots = database.createObjectStore("snapshots", { keyPath: "id" });
-        snapshots.createIndex("by-project", "projectId");
+      upgrade(database, oldVersion) {
+        if (oldVersion < 1) {
+          database.createObjectStore("projects", { keyPath: "id" });
+          database.createObjectStore("catalogues", { keyPath: "id" });
+          const snapshots = database.createObjectStore("snapshots", { keyPath: "id" });
+          snapshots.createIndex("by-project", "projectId");
+        }
+        if (oldVersion < 2) {
+          const provenance = database.createObjectStore("snapshotProvenance", {
+            keyPath: "snapshotId",
+          });
+          provenance.createIndex("by-project", "projectId");
+        }
       },
     });
     await this.#bootstrap(database);
@@ -468,7 +563,10 @@ export class IndexedDbProjectRepository implements ProjectRepository {
   }
 
   async #bootstrap(database: IDBPDatabase<VeskifyDatabase>): Promise<void> {
-    const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readwrite");
+    const transaction = database.transaction(
+      ["projects", "catalogues", "snapshots", "snapshotProvenance"],
+      "readwrite",
+    );
     const projects = transaction.objectStore("projects");
     if ((await projects.count()) > 0) {
       const legacyProject = await projects.get(aurumNordicSeed.project.id);
@@ -524,6 +622,9 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     for (const snapshot of aggregate.snapshots) {
       await transaction.objectStore("snapshots").put(snapshot);
     }
+    await transaction
+      .objectStore("snapshotProvenance")
+      .put(managedDraftProvenance(aggregate.project.id, aggregate.project.draftSnapshotId));
     await projects.put(aggregate.project);
     await transaction.done;
   }
