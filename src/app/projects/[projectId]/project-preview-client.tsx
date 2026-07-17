@@ -59,9 +59,11 @@ function StatusPanel({
 export function ProjectPreviewClient({
   projectId,
   repositoryFactory = defaultRepositoryFactory,
+  snapshotKind = "draft",
 }: {
   projectId: string;
   repositoryFactory?: RepositoryFactory;
+  snapshotKind?: "draft" | "published";
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -76,7 +78,11 @@ export function ProjectPreviewClient({
       .then((aggregate) => {
         if (cancelled) return;
         const draft = aggregate.snapshots.find(
-          (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
+          (snapshot) =>
+            snapshot.id ===
+            (snapshotKind === "published"
+              ? aggregate.project.publishedSnapshotId
+              : aggregate.project.draftSnapshotId),
         );
         if (!draft) {
           setState({ status: "missingDraft" });
@@ -114,7 +120,7 @@ export function ProjectPreviewClient({
     return () => {
       cancelled = true;
     };
-  }, [attempt, projectId]);
+  }, [attempt, projectId, snapshotKind]);
 
   const retry = () => {
     setState({ status: "loading" });
@@ -189,7 +195,7 @@ export function ProjectPreviewClient({
           <h1>{state.aggregate.project.name}</h1>
         </div>
         <div className="project-preview__status">
-          <span>Draft preview</span>
+          <span>{snapshotKind === "published" ? "Published storefront" : "Draft preview"}</span>
           <span aria-live="polite">Current locale: {locale.toUpperCase()}</span>
         </div>
         <fieldset className="locale-control">
