@@ -1268,7 +1268,7 @@ After the demo, the design agent will operate inside Vesko Retail OS and replace
 | applyProposal(projectId, proposalId)      | Applies accepted validated operations to the active draft only.             |
 | rejectProposal(projectId, proposalId)     | Discards pending proposal and preserves draft.                            |
 | saveDraft(projectId, expectedRevision)    | Persists the active draft without changing published state.                 |
-| publishDraft(projectId, expectedRevision) | Separately validates, creates history, and replaces the published snapshot. |
+| publishDraft(projectId, expectation: PublishExpectation) | Separately validates the expected saved draft and published base, creates history, and atomically replaces the published snapshot with a synchronized saved draft. |
 | discardDraft(projectId)                   | Restores the active draft to the latest saved draft, or published snapshot when no saved draft exists. |
 | restoreSnapshot(projectId, snapshotId)    | Creates a new draft from history.                                         |
 | importCatalogue(projectId, file)          | Parses and maps local data without changing protected operational fields. |
@@ -1323,11 +1323,21 @@ safetyContext: string;<br />
 </colgroup>
 <thead>
 <tr class="header">
-<th>interface ProjectRepository {<br />
+<th>type PublishSnapshotExpectation = {<br />
+id: string;<br />
+revision: number;<br />
+contentFingerprint: string;<br />
+};<br />
+type PublishExpectation = {<br />
+projectRevision: number;<br />
+draft: PublishSnapshotExpectation;<br />
+published: PublishSnapshotExpectation;<br />
+};<br />
+interface ProjectRepository {<br />
 list(): Promise&lt;ProjectSummary[]&gt;;<br />
 get(projectId: string): Promise&lt;ProjectAggregate&gt;;<br />
 saveDraft(projectId: string, snapshot: StorefrontSnapshot): Promise&lt;void&gt;;<br />
-publish(projectId: string, expectedRevision: number): Promise&lt;ProjectAggregate&gt;;<br />
+publish(projectId: string, expectation: PublishExpectation): Promise&lt;ProjectAggregate&gt;;<br />
 restore(projectId: string, snapshotId: string): Promise&lt;StorefrontSnapshot&gt;;<br />
 }</th>
 </tr>

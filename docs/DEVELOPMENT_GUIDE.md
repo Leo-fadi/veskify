@@ -54,6 +54,16 @@ Current location:
 
 Owns in-memory and IndexedDB persistence adapters, draft and published snapshot persistence, and repository interfaces. Product features depend on repository contracts rather than concrete adapters.
 
+### Publishing application boundary
+
+Current location:
+
+- `src/application/publishing/**`
+
+Owns React-independent publish preparation, canonical storefront comparison, deterministic change
+summaries, explicit confirmation and stale-preparation handling. It coordinates the atomic repository
+publish contract but does not own editor UI, published routes or history presentation.
+
 ### Controlled design skills and deterministic provider
 
 Current location:

@@ -5,7 +5,10 @@ import { validateRegisteredSnapshot } from "@/components/registry";
 import { catalogueDisplayModelSchema } from "@/domain/catalogue";
 import { aurumNordicSeed } from "@/data/seed";
 import { projectSchema } from "@/domain/project";
-import { storefrontSnapshotSchema } from "@/domain/storefront";
+import {
+  canonicalStorefrontContentFingerprint,
+  storefrontSnapshotSchema,
+} from "@/domain/storefront";
 import { createAurumNordicProjectRepository } from "@/services/storage";
 
 const root = process.cwd();
@@ -93,8 +96,34 @@ describe("Phase 0 architecture boundaries", () => {
       stockStatus,
     }));
     const project = await repository.get(aurumNordicSeed.project.id);
+    const currentDraft = project.snapshots.find(
+      (snapshot) => snapshot.id === project.project.draftSnapshotId,
+    )!;
+    const changedDraft = structuredClone(currentDraft);
+    changedDraft.id = "snapshot_architecture_publishable";
+    changedDraft.pages[0].title.en = "Architecture publish check";
+    await repository.saveDraft(project.project.id, changedDraft);
+    const saved = await repository.get(project.project.id);
+    const draft = saved.snapshots.find(
+      (snapshot) => snapshot.id === saved.project.draftSnapshotId,
+    )!;
+    const published = saved.snapshots.find(
+      (snapshot) => snapshot.id === saved.project.publishedSnapshotId,
+    )!;
 
-    await repository.publish(project.project.id, project.project.revision);
+    await repository.publish(project.project.id, {
+      projectRevision: saved.project.revision,
+      draft: {
+        id: draft.id,
+        revision: draft.revision,
+        contentFingerprint: canonicalStorefrontContentFingerprint(draft),
+      },
+      published: {
+        id: published.id,
+        revision: published.revision,
+        contentFingerprint: canonicalStorefrontContentFingerprint(published),
+      },
+    });
     await repository.restore(project.project.id, project.project.publishedSnapshotId);
 
     const after = (await repository.get(project.project.id)).catalogue.products.map(
