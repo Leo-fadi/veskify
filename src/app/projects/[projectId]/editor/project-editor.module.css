@@ -72,6 +72,45 @@
   font-size: 0.8rem;
 }
 
+.draftActions {
+  display: grid;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.saveDraftButton {
+  min-height: 2.75rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid #164b3b;
+  border-radius: 0.45rem;
+  background: #164b3b;
+  color: white;
+  font: inherit;
+  font-weight: 750;
+}
+
+.saveDraftButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.saveDraftButton:focus-visible {
+  outline: 3px solid #d4a72c;
+  outline-offset: 2px;
+}
+
+.saveStatus:empty {
+  display: none;
+}
+
+.saveStatus p {
+  max-width: 24rem;
+  margin: 0;
+  color: #4f5863;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 .workspace {
   display: grid;
   min-width: 0;
@@ -328,6 +367,10 @@
 
   .draftStatus {
     justify-self: end;
+  }
+
+  .draftActions {
+    justify-items: end;
   }
 
   .workspace {

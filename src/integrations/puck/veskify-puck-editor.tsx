@@ -31,6 +31,7 @@ export function VeskifyPuckCanvas({
   onPageChange,
   onValidationError,
   readOnly = false,
+  readOnlyLabel,
 }: {
   page: PageModel;
   context: StorefrontRenderContext;
@@ -39,6 +40,7 @@ export function VeskifyPuckCanvas({
   onPageChange: (page: PageModel) => void;
   onValidationError: (message: string) => void;
   readOnly?: boolean;
+  readOnlyLabel?: string;
 }) {
   const boundaryKey = `${page.id}-${context.activeLocale}-${resetKey}`;
   return (
@@ -50,6 +52,7 @@ export function VeskifyPuckCanvas({
       onValidationError={onValidationError}
       page={page}
       readOnly={readOnly}
+      readOnlyLabel={readOnlyLabel}
     />
   );
 }
@@ -61,6 +64,7 @@ function VeskifyPuckCanvasSession({
   onPageChange,
   onValidationError,
   readOnly,
+  readOnlyLabel,
 }: Omit<Parameters<typeof VeskifyPuckCanvas>[0], "resetKey">) {
   const [recoveryVersion, setRecoveryVersion] = useState(0);
   const trustedPage = useRef(page);
@@ -81,7 +85,7 @@ function VeskifyPuckCanvasSession({
 
   return (
     <section
-      aria-label={readOnly ? "Proposal preview canvas" : "Visual editor canvas"}
+      aria-label={readOnly ? (readOnlyLabel ?? "Proposal preview canvas") : "Visual editor canvas"}
       className="min-h-[44rem] bg-white"
     >
       <Puck

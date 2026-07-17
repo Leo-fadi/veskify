@@ -1,6 +1,7 @@
 import { projectSchema, type Project } from "@/domain/project";
 import type { StorefrontSnapshot } from "@/domain/storefront";
 import {
+  DraftConflictError,
   ProjectNotFoundError,
   RevisionConflictError,
   SnapshotNotFoundError,
@@ -80,9 +81,26 @@ export class InMemoryProjectRepository implements ProjectRepository {
     return clone(this.#validatedAggregate(this.#requireProject(projectId)));
   }
 
-  async saveDraft(projectId: string, input: StorefrontSnapshot): Promise<void> {
+  async saveDraft(
+    projectId: string,
+    input: StorefrontSnapshot,
+    expectedBase?: { id: string; revision: number },
+  ): Promise<void> {
     await Promise.resolve();
     const stored = this.#requireProject(projectId);
+    const currentDraft = stored.snapshots.get(stored.project.draftSnapshotId);
+    if (!currentDraft) {
+      throw new SnapshotNotFoundError(projectId, stored.project.draftSnapshotId);
+    }
+    if (
+      expectedBase &&
+      (currentDraft.id !== expectedBase.id || currentDraft.revision !== expectedBase.revision)
+    ) {
+      throw new DraftConflictError(projectId, expectedBase, {
+        id: currentDraft.id,
+        revision: currentDraft.revision,
+      });
+    }
     const snapshot = validateRepositorySnapshot(clone(input), stored.catalogue);
 
     if (snapshot.projectId !== projectId) {
