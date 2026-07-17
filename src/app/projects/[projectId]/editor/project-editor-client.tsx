@@ -2,6 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import {
+  assembleValidatedEditorDraft,
+  EditorDraftValidationError,
+  saveValidatedEditorDraft,
+  StaleEditorDraftError,
+} from "@/application/draft-save";
 import { InMemoryDesignProposalStore, type DesignProposal } from "@/application/design-operations";
 import { createStorefrontRenderContext, validateRegisteredPage } from "@/components/registry";
 import { brandSystemToCssVariables } from "@/domain/design-system";
@@ -45,6 +51,11 @@ type ProposalUiState =
   | { status: "ready"; proposal: DesignProposal }
   | { status: "invalid" | "unsupported" | "error" | "stale"; message: string }
   | { status: "accepted" | "rejected"; proposal: DesignProposal };
+type SaveUiState =
+  | { status: "idle" }
+  | { status: "saving" }
+  | { status: "success"; message: string }
+  | { status: "validation" | "storage" | "stale"; message: string };
 
 const editorPageTypes = new Set<PageType>(["home", "collection", "product"]);
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
@@ -107,6 +118,7 @@ export function ProjectEditorClient({
   const [proposalState, setProposalState] = useState<ProposalUiState>({ status: "idle" });
   const proposalStore = useRef(new InMemoryDesignProposalStore());
   const proposalGeneration = useRef(0);
+  const [saveState, setSaveState] = useState<SaveUiState>({ status: "idle" });
 
   useEffect(() => {
     let cancelled = false;
@@ -146,6 +158,7 @@ export function ProjectEditorClient({
           setValidationMessage("");
           setRequest("");
           setProposalState({ status: "idle" });
+          setSaveState({ status: "idle" });
           proposalGeneration.current += 1;
           setState({ status: "ready", aggregate, draft, published, pages });
         } catch {
@@ -210,7 +223,12 @@ export function ProjectEditorClient({
 
   const originalPage = state.pages.find((item) => item.id === selectedPageId) ?? state.pages[0];
   const page = sessionPages[originalPage.id] ?? originalPage;
-  const hasUnsavedChanges = !canonicalPagesEqual(page, originalPage);
+  const currentPageHasUnsavedChanges = !canonicalPagesEqual(page, originalPage);
+  const changedPages = state.pages.flatMap((baselinePage) => {
+    const sessionPage = sessionPages[baselinePage.id];
+    return sessionPage && !canonicalPagesEqual(sessionPage, baselinePage) ? [sessionPage] : [];
+  });
+  const hasUnsavedChanges = changedPages.length > 0;
   const locale = activeLocale ?? state.aggregate.project.primaryLocale;
   const title = resolveLocalizedText(page.title, locale, state.aggregate.project.primaryLocale);
   const context = createStorefrontRenderContext({
@@ -224,6 +242,28 @@ export function ProjectEditorClient({
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
   const showingProposal = proposalState.status === "ready";
   const canvasPage = showingProposal ? proposalState.proposal.proposedPage : page;
+  let completeDraftIsValid = false;
+  if (hasUnsavedChanges) {
+    try {
+      assembleValidatedEditorDraft({
+        baseDraft: state.draft,
+        changedPages,
+        aggregate: state.aggregate,
+        primaryLocale: state.aggregate.project.primaryLocale,
+      });
+      completeDraftIsValid = true;
+    } catch {
+      completeDraftIsValid = false;
+    }
+  }
+  const proposalBlocksSave =
+    proposalState.status === "generating" || proposalState.status === "ready";
+  const saveDisabled =
+    !hasUnsavedChanges ||
+    !completeDraftIsValid ||
+    Boolean(validationMessage) ||
+    proposalBlocksSave ||
+    saveState.status === "saving";
 
   const closeProposalBecausePageChanged = (message: string) => {
     proposalGeneration.current += 1;
@@ -235,6 +275,18 @@ export function ProjectEditorClient({
   };
 
   const changePage = (nextPage: PageModel) => {
+    try {
+      validateRegisteredPage(nextPage, context);
+    } catch {
+      setValidationMessage(
+        "That page change is not valid yet, so it cannot be saved. Your last valid design is still shown.",
+      );
+      setSaveState({
+        status: "validation",
+        message: "Fix the page issue before saving your draft.",
+      });
+      return;
+    }
     if (!canonicalPagesEqual(nextPage, page)) {
       closeProposalBecausePageChanged(
         "The proposal was closed because the page changed. Create a new proposal to review the latest design.",
@@ -242,11 +294,12 @@ export function ProjectEditorClient({
     }
     setSessionPages((current) => ({ ...current, [nextPage.id]: nextPage }));
     setValidationMessage("");
+    setSaveState({ status: "idle" });
   };
 
   const selectPage = (nextPageId: string) => {
     if (
-      hasUnsavedChanges &&
+      currentPageHasUnsavedChanges &&
       !window.confirm(
         "Switch pages? Your unsaved changes will stay in this editor session until you return or discard them.",
       )
@@ -306,6 +359,7 @@ export function ProjectEditorClient({
       proposalGeneration.current += 1;
       setSessionPages((current) => ({ ...current, [acceptedPage.id]: acceptedPage }));
       setValidationMessage("");
+      setSaveState({ status: "idle" });
       setResetKeys((current) => ({
         ...current,
         [acceptedPage.id]: (current[acceptedPage.id] ?? 0) + 1,
@@ -334,7 +388,7 @@ export function ProjectEditorClient({
   };
 
   const discardChanges = () => {
-    if (!hasUnsavedChanges) return;
+    if (!currentPageHasUnsavedChanges) return;
     if (!window.confirm("Discard the unsaved changes on this page? This cannot be undone.")) return;
     setSessionPages((current) => {
       const next = { ...current };
@@ -346,9 +400,72 @@ export function ProjectEditorClient({
       [originalPage.id]: (current[originalPage.id] ?? 0) + 1,
     }));
     setValidationMessage("");
+    setSaveState({ status: "idle" });
     closeProposalBecausePageChanged(
       "Your changes were discarded and the proposal was closed because the page changed.",
     );
+  };
+
+  const saveDraft = async () => {
+    if (saveDisabled) return;
+    setSaveState({ status: "saving" });
+    try {
+      const result = await saveValidatedEditorDraft({
+        repository: repository.current!,
+        projectId,
+        loadedDraft: state.draft,
+        changedPages,
+        primaryLocale: state.aggregate.project.primaryLocale,
+      });
+      const published = result.aggregate.snapshots.find(
+        (snapshot) => snapshot.id === result.aggregate.project.publishedSnapshotId,
+      );
+      if (!published) throw new EditorDraftValidationError();
+      const pages = result.draft.pages.filter((item) => editorPageTypes.has(item.type));
+      setState({
+        status: "ready",
+        aggregate: result.aggregate,
+        draft: result.draft,
+        published,
+        pages,
+      });
+      setSessionPages((current) =>
+        Object.fromEntries(
+          Object.entries(current).filter(([pageId, sessionPage]) => {
+            const savedPage = result.draft.pages.find((item) => item.id === pageId);
+            return !savedPage || !canonicalPagesEqual(sessionPage, savedPage);
+          }),
+        ),
+      );
+      setResetKeys((current) =>
+        Object.fromEntries(pages.map((item) => [item.id, (current[item.id] ?? 0) + 1])),
+      );
+      setValidationMessage("");
+      setProposalState({ status: "idle" });
+      proposalGeneration.current += 1;
+      setSaveState({ status: "success", message: "Draft saved successfully." });
+    } catch (error) {
+      if (error instanceof StaleEditorDraftError) {
+        setSaveState({
+          status: "stale",
+          message:
+            "A newer draft was saved elsewhere. Reload before saving; your current changes are still here.",
+        });
+      } else if (
+        error instanceof EditorDraftValidationError ||
+        error instanceof RepositoryValidationError
+      ) {
+        setSaveState({
+          status: "validation",
+          message: "This draft could not be validated. Your changes are still here for review.",
+        });
+      } else {
+        setSaveState({
+          status: "storage",
+          message: "The draft could not be saved. Check your browser storage and try again.",
+        });
+      }
+    }
   };
 
   return (
@@ -363,13 +480,35 @@ export function ProjectEditorClient({
           <span>Current page</span>
           <h1>{title}</h1>
         </div>
-        <div aria-label="Draft status" className={styles.draftStatus} role="status">
-          <strong>{hasUnsavedChanges ? "Unsaved changes" : "No unsaved changes"}</strong>
-          <span>
-            {draftDiffers(state.draft, state.published)
-              ? "The stored draft also differs from the published storefront."
-              : "Changes stay in this editor session."}
-          </span>
+        <div className={styles.draftActions}>
+          <div aria-label="Draft status" className={styles.draftStatus} role="status">
+            <strong>{hasUnsavedChanges ? "Unsaved changes" : "No unsaved changes"}</strong>
+            <span>
+              {draftDiffers(state.draft, state.published)
+                ? "The stored draft differs from the published storefront."
+                : "Changes stay in this editor session until saved."}
+            </span>
+          </div>
+          <button
+            className={styles.saveDraftButton}
+            disabled={saveDisabled}
+            onClick={() => void saveDraft()}
+            type="button"
+          >
+            {saveState.status === "saving" ? "Saving draft…" : "Save draft"}
+          </button>
+          <div aria-live="polite" aria-atomic="true" className={styles.saveStatus}>
+            {saveState.status === "saving" ? <p role="status">Saving your draft…</p> : null}
+            {saveState.status === "success" ? <p role="status">{saveState.message}</p> : null}
+            {saveState.status === "validation" ||
+            saveState.status === "storage" ||
+            saveState.status === "stale" ? (
+              <p role="alert">{saveState.message}</p>
+            ) : null}
+            {hasUnsavedChanges && !completeDraftIsValid ? (
+              <p role="alert">Some changes need attention before this draft can be saved.</p>
+            ) : null}
+          </div>
         </div>
       </header>
       <div className={styles.workspace}>
@@ -415,15 +554,14 @@ export function ProjectEditorClient({
           </Link>
           <button
             className={styles.discardButton}
-            disabled={!hasUnsavedChanges}
+            disabled={!currentPageHasUnsavedChanges}
             onClick={discardChanges}
             type="button"
           >
             Discard changes
           </button>
           <p className={styles.boundaryNote}>
-            These changes are not saved to your stored draft. Saving and publishing arrive in later
-            milestones.
+            Save draft keeps this work unpublished. Publishing remains a separate future action.
           </p>
           {validationMessage ? (
             <p className={styles.validationMessage} role="alert">

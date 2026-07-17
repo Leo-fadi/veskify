@@ -13,7 +13,8 @@ test("loads the in-memory Puck editor and switches page and locale", async ({ pa
   await expect(canvasFrame).toHaveAttribute("lang", "en");
   await expect(canvasFrame).toHaveCSS("--brand-color-primary", "#8A5A2B");
   await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
-  await expect(page.getByRole("button", { name: /save|publish/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Save draft" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /publish/i })).toHaveCount(0);
 
   const switcher = page.getByLabel("Storefront page");
   await switcher.selectOption("page_collection_rings");
@@ -110,6 +111,39 @@ test("discard closes a proposal so discarded edits cannot be accepted later", as
   await expect(page.getByText(/proposal was closed because the page changed/i)).toBeVisible();
   await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
   await expect(canvas.getByText("Made for northern light", { exact: true })).toBeVisible();
+});
+
+test("saved manual and accepted proposal changes survive editor refresh", async ({ page }) => {
+  await page.goto(url);
+  let canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  const headingField = page.getByRole("textbox", { name: "Main heading", exact: true });
+  await expect(async () => {
+    await canvas.getByText("Made for northern light", { exact: true }).click();
+    await expect(headingField).toBeVisible({ timeout: 1_500 });
+  }).toPass({ timeout: 15_000 });
+  await headingField.fill("A saved merchant homepage");
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect(page.getByText("Draft saved successfully.")).toBeVisible();
+  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+
+  await page.reload();
+  canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  await expect(canvas.getByRole("heading", { name: "A saved merchant homepage" })).toBeVisible();
+  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+
+  await page.getByRole("button", { name: "Add a campaign section." }).click();
+  await page.getByRole("button", { name: "Show proposal" }).click();
+  await expect(page.getByLabel("Design proposal")).toBeVisible();
+  await page.getByRole("button", { name: "Accept proposal" }).click();
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect(page.getByText("Draft saved successfully.")).toBeVisible();
+
+  await page.reload();
+  canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  await expect(canvas.getByRole("heading", { name: "A saved merchant homepage" })).toBeVisible();
+  await expect(canvas.getByRole("heading", { name: "A quiet kind of brilliance" })).toBeVisible();
+  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByRole("button", { name: /publish/i })).toHaveCount(0);
 });
 
 for (const width of [375, 768, 1024, 1440]) {

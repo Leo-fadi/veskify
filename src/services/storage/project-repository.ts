@@ -21,10 +21,16 @@ export type ProjectSummary = Pick<
   | "updatedAt"
 >;
 
+export type DraftBaseIdentity = Pick<StorefrontSnapshot, "id" | "revision">;
+
 export interface ProjectRepository {
   list(): Promise<ProjectSummary[]>;
   get(projectId: string): Promise<ProjectAggregate>;
-  saveDraft(projectId: string, snapshot: StorefrontSnapshot): Promise<void>;
+  saveDraft(
+    projectId: string,
+    snapshot: StorefrontSnapshot,
+    expectedBase?: DraftBaseIdentity,
+  ): Promise<void>;
   publish(projectId: string, expectedRevision: number): Promise<ProjectAggregate>;
   restore(projectId: string, snapshotId: string): Promise<StorefrontSnapshot>;
 }
@@ -62,6 +68,21 @@ export class RevisionConflictError extends Error {
       `Project ${projectId} revision conflict: expected ${expectedRevision}, actual ${actualRevision}.`,
     );
     this.name = "RevisionConflictError";
+  }
+}
+
+export class DraftConflictError extends Error {
+  readonly code = "DRAFT_CONFLICT";
+
+  constructor(
+    readonly projectId: string,
+    readonly expectedBase: DraftBaseIdentity,
+    readonly actualBase: DraftBaseIdentity,
+  ) {
+    super(
+      `Project ${projectId} draft conflict: expected ${expectedBase.id}@${expectedBase.revision}, actual ${actualBase.id}@${actualBase.revision}.`,
+    );
+    this.name = "DraftConflictError";
   }
 }
 

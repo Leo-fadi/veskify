@@ -4,6 +4,7 @@ import { aurumNordicSeed } from "@/data/seed";
 import { projectSchema, type Project } from "@/domain/project";
 import type { StorefrontSnapshot } from "@/domain/storefront";
 import {
+  DraftConflictError,
   ProjectNotFoundError,
   RevisionConflictError,
   SnapshotNotFoundError,
@@ -244,7 +245,11 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     return clone(validateProjectAggregate({ project, catalogue, snapshots }));
   }
 
-  async saveDraft(projectId: string, input: StorefrontSnapshot): Promise<void> {
+  async saveDraft(
+    projectId: string,
+    input: StorefrontSnapshot,
+    expectedBase?: { id: string; revision: number },
+  ): Promise<void> {
     const parsedInput = clone(input);
     if (parsedInput.projectId !== projectId) {
       throw new SnapshotProjectMismatchError(projectId, parsedInput.projectId);
@@ -267,6 +272,19 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     }
     const snapshot = validateRepositorySnapshot(parsedInput, catalogue);
     const snapshots = await snapshotsStore.index("by-project").getAll(projectId);
+    const currentDraft = snapshots.find((candidate) => candidate.id === project.draftSnapshotId);
+    if (!currentDraft) {
+      throw new SnapshotNotFoundError(projectId, project.draftSnapshotId);
+    }
+    if (
+      expectedBase &&
+      (currentDraft.id !== expectedBase.id || currentDraft.revision !== expectedBase.revision)
+    ) {
+      throw new DraftConflictError(projectId, expectedBase, {
+        id: currentDraft.id,
+        revision: currentDraft.revision,
+      });
+    }
     const existing = snapshots.find((candidate) => candidate.id === snapshot.id);
     if (snapshot.id === project.publishedSnapshotId) {
       throw repositoryValidationError(

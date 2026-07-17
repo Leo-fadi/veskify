@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
 import { aurumNordicSeed } from "@/data/seed";
 import {
+  InMemoryProjectRepository,
   ProjectNotFoundError,
   RepositoryValidationError,
   type ProjectAggregate,
@@ -23,6 +24,7 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
       id: string;
       type: string;
       title: Record<string, string | undefined>;
+      sections: Array<{ id: string; component: string }>;
     };
     context: { activeLocale: string };
     brandSystem: { colors: { primary: string } };
@@ -54,12 +56,34 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
         onClick={() =>
           onPageChange({
             ...page,
-            title: { ...page.title, [context.activeLocale]: `Edited ${page.type}` },
+            title: {
+              ...page.title,
+              [context.activeLocale]:
+                page.title[context.activeLocale] === `Edited ${page.type}`
+                  ? `Edited again ${page.type}`
+                  : `Edited ${page.type}`,
+            },
           })
         }
         type="button"
       >
         Edit current page
+      </button>
+      <button onClick={() => onPageChange({ ...page, id: "!" })} type="button">
+        Emit invalid canonical page
+      </button>
+      <button
+        onClick={() =>
+          onPageChange({
+            ...page,
+            sections: page.sections.map((section, index) =>
+              index === 0 ? { ...section, id: "section_home_announcement" } : section,
+            ),
+          })
+        }
+        type="button"
+      >
+        Create cross-page duplicate
       </button>
       <button
         onClick={() => onValidationError("That change could not be applied safely.")}
@@ -90,6 +114,8 @@ function repository(get: ProjectRepository["get"]): ProjectRepository {
   };
 }
 
+const statefulRepository = () => new InMemoryProjectRepository([aggregate()]);
+
 const route = (value: ProjectRepository) =>
   render(<ProjectEditorClient projectId="project_aurum_nordic" repositoryFactory={() => value} />);
 
@@ -103,7 +129,8 @@ describe("P2-01 project editor route", () => {
     expect(value.saveDraft).not.toHaveBeenCalled();
     expect(value.publish).not.toHaveBeenCalled();
     expect(value.restore).not.toHaveBeenCalled();
-    expect(screen.queryByRole("button", { name: /save|publish/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /publish/i })).not.toBeInTheDocument();
   });
 
   it("shows navigation, draft status and the selected preview link", async () => {
@@ -205,7 +232,9 @@ describe("P2-01 project editor route", () => {
     draft.pages.find((item) => item.type === "home")!.title.en = "Edited homepage";
     route(repository(() => Promise.resolve(value)));
     expect(await screen.findByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
-    expect(screen.getByLabelText("Draft status")).toHaveTextContent("stored draft also differs");
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent(
+      "stored draft differs from the published storefront",
+    );
     expect(value.snapshots[0]).toEqual(publishedBefore);
   });
 
@@ -252,7 +281,7 @@ describe("P2-01 project editor route", () => {
       target: { value: "page_collection_rings" },
     });
     expect(screen.getByText("Canvas: collection / en")).toBeVisible();
-    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
     fireEvent.change(screen.getByLabelText("Storefront page"), {
       target: { value: "page_home" },
     });
@@ -399,7 +428,7 @@ describe("P2-01 project editor route", () => {
       target: { value: "page_collection_rings" },
     });
     expect(screen.getByText("Canvas: collection / en")).toBeVisible();
-    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
     confirm.mockRestore();
   });
 
@@ -446,5 +475,192 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     expect(screen.getByRole("heading", { name: /uusi kampanjaosio/i })).toBeVisible();
     expect(screen.getByText("Lisää kampanjaosio", { exact: true })).toBeVisible();
+  });
+
+  it("saves a valid manual edit, clears dirty state and preserves locale and published state", async () => {
+    const value = statefulRepository();
+    const before = await value.get(aurumNordicSeed.project.id);
+    route(value);
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    const save = screen.getByRole("button", { name: "Save draft" });
+    expect(save).toBeEnabled();
+    fireEvent.click(save);
+
+    expect(await screen.findByText("Draft saved successfully.")).toHaveAttribute("role", "status");
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(screen.getByRole("radio", { name: "Suomi" })).toBeChecked();
+    expect(screen.getByText("Canvas: home / fi")).toBeVisible();
+    const after = await value.get(aurumNordicSeed.project.id);
+    expect(after.project.publishedSnapshotId).toBe(before.project.publishedSnapshotId);
+    expect(
+      after.snapshots.find((snapshot) => snapshot.id === before.project.publishedSnapshotId),
+    ).toEqual(
+      before.snapshots.find((snapshot) => snapshot.id === before.project.publishedSnapshotId),
+    );
+  });
+
+  it("saves multiple session pages and preserves the untouched product page", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const value = statefulRepository();
+    const before = await value.get(aurumNordicSeed.project.id);
+    const untouchedProduct = structuredClone(
+      before.snapshots
+        .find((snapshot) => snapshot.id === before.project.draftSnapshotId)!
+        .pages.find((page) => page.type === "product"),
+    );
+    route(value);
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    fireEvent.change(screen.getByLabelText("Storefront page"), {
+      target: { value: "page_collection_rings" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await screen.findByText("Draft saved successfully.");
+
+    const after = await value.get(aurumNordicSeed.project.id);
+    const saved = after.snapshots.find(
+      (snapshot) => snapshot.id === after.project.draftSnapshotId,
+    )!;
+    expect(saved.pages.find((page) => page.type === "home")?.title.en).toBe("Edited home");
+    expect(saved.pages.find((page) => page.type === "collection")?.title.en).toBe(
+      "Edited collection",
+    );
+    expect(saved.pages.find((page) => page.type === "product")).toEqual(untouchedProduct);
+    confirm.mockRestore();
+  });
+
+  it("persists an accepted proposal through the same canonical save path", async () => {
+    const value = statefulRepository();
+    route(value);
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Add a campaign section." }));
+    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    await screen.findByLabelText("Design proposal");
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Accept proposal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await screen.findByText("Draft saved successfully.");
+
+    const after = await value.get(aurumNordicSeed.project.id);
+    const saved = after.snapshots.find(
+      (snapshot) => snapshot.id === after.project.draftSnapshotId,
+    )!;
+    expect(saved.pages.find((page) => page.type === "home")?.sections).toHaveLength(11);
+  });
+
+  it("treats edits after save as new work and discards to the latest saved baseline", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const value = statefulRepository();
+    route(value);
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await screen.findByText("Draft saved successfully.");
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    expect(screen.getByRole("heading", { name: "Edited again home" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    confirm.mockRestore();
+  });
+
+  it("blocks saving invalid page and complete-snapshot states", async () => {
+    route(statefulRepository());
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Emit invalid canonical page" }));
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+    expect(screen.getByText(/page change is not valid yet/i)).toHaveAttribute("role", "alert");
+
+    fireEvent.change(screen.getByLabelText("Storefront page"), {
+      target: { value: "page_collection_rings" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create cross-page duplicate" }));
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+    expect(
+      screen.getByText(/changes need attention before this draft can be saved/i),
+    ).toHaveAttribute("role", "alert");
+  });
+
+  it("keeps dirty work after storage and stale failures and allows a successful retry", async () => {
+    const inner = statefulRepository();
+    let failSave = true;
+    const value: ProjectRepository = {
+      list: () => inner.list(),
+      get: (id) => inner.get(id),
+      saveDraft: (id, snapshot, expected) =>
+        failSave
+          ? Promise.reject(new Error("storage unavailable"))
+          : inner.saveDraft(id, snapshot, expected),
+      publish: (id, revision) => inner.publish(id, revision),
+      restore: (id, snapshotId) => inner.restore(id, snapshotId),
+    };
+    route(value);
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not be saved/i);
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    failSave = false;
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await screen.findByText("Draft saved successfully.");
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+  });
+
+  it("refuses a stale save while keeping the editor work dirty", async () => {
+    const value = statefulRepository();
+    route(value);
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    const newer = structuredClone(aurumNordicSeed.draftSnapshot);
+    newer.id = "snapshot_external_newer";
+    newer.pages[0].title.en = "External newer home";
+    await value.saveDraft(aurumNordicSeed.project.id, newer);
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/newer draft was saved elsewhere/i);
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    const after = await value.get(aurumNordicSeed.project.id);
+    expect(after.project.draftSnapshotId).toBe(newer.id);
+  });
+
+  it("announces saving and disables save during generation and persistence", async () => {
+    const inner = statefulRepository();
+    let releaseSave!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      releaseSave = resolve;
+    });
+    const value: ProjectRepository = {
+      list: () => inner.list(),
+      get: (id) => inner.get(id),
+      saveDraft: async (id, snapshot, expected) => {
+        await gate;
+        return inner.saveDraft(id, snapshot, expected);
+      },
+      publish: (id, revision) => inner.publish(id, revision),
+      restore: (id, snapshotId) => inner.restore(id, snapshotId),
+    };
+    route(value);
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Make the homepage feel more luxurious." }));
+    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
+    expect(screen.getByRole("button", { name: /save draft/i })).toBeDisabled();
+    await screen.findByLabelText("Design proposal");
+    fireEvent.click(screen.getByRole("button", { name: "Reject proposal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    expect(await screen.findByText("Saving your draft…")).toHaveAttribute("role", "status");
+    expect(screen.getByRole("button", { name: "Saving draft…" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    releaseSave();
+    await screen.findByText("Draft saved successfully.");
+    expect(screen.getByRole("heading", { name: "Edited again home" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
   });
 });
