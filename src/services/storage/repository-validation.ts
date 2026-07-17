@@ -60,15 +60,34 @@ export function validateProjectAggregate(input: ProjectAggregate): ProjectAggreg
   }
 }
 
-export function canRemoveSupersededDraft(
-  supersededDraftId: string,
+export const MINIMUM_RETAINED_SNAPSHOTS = 20;
+
+export function compactManagedDraftHistory(
+  snapshots: readonly StorefrontSnapshot[],
   nextProject: Project,
+  managedDraftSnapshotIds: ReadonlySet<string>,
   retainedSnapshotIds: readonly string[] = [],
-): boolean {
+): { snapshots: StorefrontSnapshot[]; removedSnapshotIds: string[] } {
   const requiredSnapshotIds = new Set([
     nextProject.draftSnapshotId,
     nextProject.publishedSnapshotId,
     ...retainedSnapshotIds,
   ]);
-  return !requiredSnapshotIds.has(supersededDraftId);
+  const removalCount = Math.max(0, snapshots.length - MINIMUM_RETAINED_SNAPSHOTS);
+  const removable = snapshots
+    .filter(
+      (snapshot) =>
+        managedDraftSnapshotIds.has(snapshot.id) && !requiredSnapshotIds.has(snapshot.id),
+    )
+    .sort(
+      (left, right) =>
+        Date.parse(left.createdAt) - Date.parse(right.createdAt) || left.id.localeCompare(right.id),
+    )
+    .slice(0, removalCount);
+  const removedSnapshotIds = removable.map(({ id }) => id);
+  const removed = new Set(removedSnapshotIds);
+  return {
+    snapshots: snapshots.filter((snapshot) => !removed.has(snapshot.id)),
+    removedSnapshotIds,
+  };
 }

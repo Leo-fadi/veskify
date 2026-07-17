@@ -88,10 +88,10 @@ describe("P2-07 validated editor draft save", () => {
     );
     expect(result.aggregate.catalogue).toEqual(before.catalogue);
     expect(result.aggregate).toEqual(await value.get(projectId));
-    expect(result.aggregate.snapshots).toHaveLength(before.snapshots.length);
+    expect(result.aggregate.snapshots).toHaveLength(before.snapshots.length + 1);
     expect(
       result.aggregate.snapshots.some((snapshot) => snapshot.id === before.project.draftSnapshotId),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("returns the canonical compacted repository state after every save", async () => {
@@ -119,7 +119,7 @@ describe("P2-07 validated editor draft save", () => {
       expect(result.draft.pages.find((candidate) => candidate.type === "home")?.title.en).toBe(
         `Application save ${index}`,
       );
-      expect(result.aggregate.snapshots).toHaveLength(2);
+      expect(result.aggregate.snapshots).toHaveLength(2 + index);
       loadedDraft = result.draft;
     }
   });
@@ -219,6 +219,92 @@ describe("P2-07 validated editor draft save", () => {
     ).rejects.toBeInstanceOf(StaleEditorDraftError);
     const after = await inner.get(projectId);
     expect(after.project.draftSnapshotId).toBe("snapshot_draft_concurrent");
+  });
+
+  it("rejects a concurrent draft that becomes current before the post-write reread", async () => {
+    const inner = repository();
+    let getCount = 0;
+    const racing: ProjectRepository = {
+      list: () => inner.list(),
+      get: async (id) => {
+        getCount += 1;
+        if (getCount === 2) {
+          const aggregate = await inner.get(id);
+          const current = aggregate.snapshots.find(
+            (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
+          )!;
+          const concurrent = structuredClone(current);
+          concurrent.id = "snapshot_concurrent_after_write";
+          concurrent.pages[0].title.en = "Concurrent post-write draft";
+          await inner.saveDraft(id, concurrent, {
+            id: current.id,
+            revision: current.revision,
+          });
+        }
+        return inner.get(id);
+      },
+      saveDraft: (id, snapshot, expected) => inner.saveDraft(id, snapshot, expected),
+      publish: (id, revision) => inner.publish(id, revision),
+      restore: (id, snapshotId) => inner.restore(id, snapshotId),
+    };
+
+    await expect(
+      saveValidatedEditorDraft({
+        repository: racing,
+        projectId,
+        loadedDraft: aurumNordicSeed.draftSnapshot,
+        changedPages: [changedPage("home", "Candidate that briefly saved")],
+        primaryLocale: "en",
+        now: () => fixedDate,
+        createSnapshotId: () => "snapshot_candidate_before_reread",
+      }),
+    ).rejects.toBeInstanceOf(StaleEditorDraftError);
+
+    const after = await inner.get(projectId);
+    expect(after.project.draftSnapshotId).toBe("snapshot_concurrent_after_write");
+    expect(
+      after.snapshots.find((snapshot) => snapshot.id === after.project.draftSnapshotId)?.pages[0]
+        .title.en,
+    ).toBe("Concurrent post-write draft");
+  });
+
+  it("rejects canonical post-write drift even when the candidate ID is reused", async () => {
+    const inner = repository();
+    let getCount = 0;
+    const racing: ProjectRepository = {
+      list: () => inner.list(),
+      get: async (id) => {
+        getCount += 1;
+        if (getCount === 2) {
+          const aggregate = await inner.get(id);
+          const current = aggregate.snapshots.find(
+            (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
+          )!;
+          const rewritten = structuredClone(current);
+          rewritten.pages[0].title.en = "Same identity, different canonical draft";
+          await inner.saveDraft(id, rewritten, {
+            id: current.id,
+            revision: current.revision,
+          });
+        }
+        return inner.get(id);
+      },
+      saveDraft: (id, snapshot, expected) => inner.saveDraft(id, snapshot, expected),
+      publish: (id, revision) => inner.publish(id, revision),
+      restore: (id, snapshotId) => inner.restore(id, snapshotId),
+    };
+
+    await expect(
+      saveValidatedEditorDraft({
+        repository: racing,
+        projectId,
+        loadedDraft: aurumNordicSeed.draftSnapshot,
+        changedPages: [changedPage("home", "Expected canonical candidate")],
+        primaryLocale: "en",
+        now: () => fixedDate,
+        createSnapshotId: () => "snapshot_same_id_race",
+      }),
+    ).rejects.toBeInstanceOf(StaleEditorDraftError);
   });
 
   it("keeps inputs and stored state intact after a storage failure", async () => {

@@ -159,5 +159,9 @@ export async function saveValidatedEditorDraft({
   }
 
   const aggregate = await repository.get(projectId);
-  return { aggregate, draft: structuredClone(currentDraft(aggregate)) };
+  const persistedDraft = currentDraft(aggregate);
+  if (persistedDraft.id !== draft.id || !canonicalSnapshotsEqual(persistedDraft, draft)) {
+    throw new StaleEditorDraftError();
+  }
+  return { aggregate, draft: structuredClone(persistedDraft) };
 }

@@ -3,6 +3,7 @@ import { aurumNordicSeed } from "@/data/seed";
 import type { StorefrontSnapshot } from "@/domain/storefront";
 import {
   DraftConflictError,
+  InvalidRestoreTargetError,
   ProjectNotFoundError,
   RepositoryValidationError,
   RevisionConflictError,
@@ -89,8 +90,8 @@ export function runProjectRepositoryContract(
       expect(after.snapshots.find((snapshot) => snapshot.id === draft.id)?.pages[0]?.title.en).toBe(
         "New draft home",
       );
-      expect(after.snapshots.some((snapshot) => snapshot.id === supersededDraftId)).toBe(false);
-      expect(after.snapshots).toHaveLength(before.snapshots.length);
+      expect(after.snapshots.some((snapshot) => snapshot.id === supersededDraftId)).toBe(true);
+      expect(after.snapshots).toHaveLength(before.snapshots.length + 1);
     });
 
     it("atomically rejects saving over a different draft base", async () => {
@@ -188,7 +189,7 @@ export function runProjectRepositoryContract(
         expect(
           saved.snapshots.find((snapshot) => snapshot.id === candidate.id)?.pages[0].title.en,
         ).toBe(`Saved draft ${index}`);
-        expect(saved.snapshots).toHaveLength(2);
+        expect(saved.snapshots.length).toBeLessThanOrEqual(20);
       }
 
       const afterSaves = await repository.get(projectId);
@@ -200,12 +201,21 @@ export function runProjectRepositoryContract(
           (snapshot) => snapshot.id === afterSaves.project.publishedSnapshotId,
         ),
       ).toEqual(publishedBefore);
-      expect(afterSaves.snapshots).toHaveLength(2);
+      expect(afterSaves.snapshots).toHaveLength(20);
       expect(
         afterSaves.snapshots.filter(
           (snapshot) => snapshot.id === afterSaves.project.draftSnapshotId,
         ),
       ).toHaveLength(1);
+      const retainedSupersededDrafts = afterSaves.snapshots.filter(
+        (snapshot) =>
+          snapshot.id !== afterSaves.project.draftSnapshotId &&
+          snapshot.id !== afterSaves.project.publishedSnapshotId,
+      );
+      expect(retainedSupersededDrafts).toHaveLength(18);
+      expect(retainedSupersededDrafts.map(({ id }) => id)).toEqual(
+        Array.from({ length: 18 }, (_, index) => `snapshot_compacted_${index + 82}`),
+      );
 
       await expect(repository.restore(projectId, supersededDraftIds[0])).rejects.toBeInstanceOf(
         SnapshotNotFoundError,
@@ -213,7 +223,7 @@ export function runProjectRepositoryContract(
 
       const afterPublish = await repository.publish(projectId, afterSaves.project.revision);
       expect(afterPublish.project.revision).toBe(afterSaves.project.revision + 1);
-      expect(afterPublish.snapshots).toHaveLength(3);
+      expect(afterPublish.snapshots).toHaveLength(21);
       expect(afterPublish.snapshots.map(({ id }) => id)).toContain(
         before.project.publishedSnapshotId,
       );
@@ -222,7 +232,20 @@ export function runProjectRepositoryContract(
           (snapshot) => snapshot.id === afterPublish.project.publishedSnapshotId,
         )?.pages[0].title.en,
       ).toBe("Saved draft 100");
-    });
+
+      const newestSupersededId = "snapshot_compacted_99";
+      const restored = await repository.restore(projectId, newestSupersededId);
+      const afterRestore = await repository.get(projectId);
+      expect(afterRestore.project.draftSnapshotId).toBe(restored.id);
+      expect(afterRestore.snapshots.map(({ id }) => id)).toContain(newestSupersededId);
+      expect(afterRestore.snapshots.map(({ id }) => id)).toContain(
+        before.project.publishedSnapshotId,
+      );
+      expect(afterRestore.snapshots.map(({ id }) => id)).toContain(
+        afterPublish.project.publishedSnapshotId,
+      );
+      expect(afterRestore.snapshots).toHaveLength(20);
+    }, 15_000);
 
     it("publishes the current draft, increments revision and preserves history", async () => {
       const before = await repository.get(projectId);
@@ -280,14 +303,26 @@ export function runProjectRepositoryContract(
       expect(after.project.publishedSnapshotId).toBe(before.project.publishedSnapshotId);
       expect(after.project.revision).toBe(before.project.revision);
       expect(after.snapshots.map(({ id }) => id)).toContain(historicalId);
-      expect(after.snapshots.map(({ id }) => id)).not.toContain(supersededDraftId);
-      expect(after.snapshots).toHaveLength(before.snapshots.length);
+      expect(after.snapshots.map(({ id }) => id)).toContain(supersededDraftId);
+      expect(after.snapshots).toHaveLength(before.snapshots.length + 1);
       restored.pages[0].title.en = "Mutated restored output";
       expect(
         (await repository.get(projectId)).snapshots.find(
           (snapshot) => snapshot.id === after.project.draftSnapshotId,
         )?.pages[0]?.title.en,
       ).toBe("Home");
+    });
+
+    it("rejects repeated restore attempts against the current draft without mutation", async () => {
+      const before = await repository.get(projectId);
+
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        await expect(
+          repository.restore(projectId, before.project.draftSnapshotId),
+        ).rejects.toBeInstanceOf(InvalidRestoreTargetError);
+      }
+
+      expect(await repository.get(projectId)).toEqual(before);
     });
 
     it("retains older published history while restore compacts the current draft", async () => {
@@ -306,8 +341,8 @@ export function runProjectRepositoryContract(
       expect(afterRestore.snapshots.map(({ id }) => id)).toEqual(
         expect.arrayContaining([olderPublishedId, currentPublishedId, restored.id]),
       );
-      expect(afterRestore.snapshots.map(({ id }) => id)).not.toContain(supersededDraftId);
-      expect(afterRestore.snapshots).toHaveLength(3);
+      expect(afterRestore.snapshots.map(({ id }) => id)).toContain(supersededDraftId);
+      expect(afterRestore.snapshots).toHaveLength(4);
     });
 
     it("returns a typed error for an unknown snapshot", async () => {

@@ -56,6 +56,18 @@ export class SnapshotNotFoundError extends Error {
   }
 }
 
+export class InvalidRestoreTargetError extends Error {
+  readonly code = "INVALID_RESTORE_TARGET";
+
+  constructor(
+    readonly projectId: string,
+    readonly snapshotId: string,
+  ) {
+    super(`Snapshot ${snapshotId} is already the current draft for project ${projectId}.`);
+    this.name = "InvalidRestoreTargetError";
+  }
+}
+
 export class RevisionConflictError extends Error {
   readonly code = "REVISION_CONFLICT";
 

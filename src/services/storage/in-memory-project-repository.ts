@@ -2,6 +2,7 @@ import { projectSchema, type Project } from "@/domain/project";
 import type { StorefrontSnapshot } from "@/domain/storefront";
 import {
   DraftConflictError,
+  InvalidRestoreTargetError,
   ProjectNotFoundError,
   RevisionConflictError,
   SnapshotNotFoundError,
@@ -11,7 +12,7 @@ import {
   type ProjectSummary,
 } from "./project-repository";
 import {
-  canRemoveSupersededDraft,
+  compactManagedDraftHistory,
   repositoryValidationError,
   validateProjectAggregate,
   validateRepositorySnapshot,
@@ -21,6 +22,7 @@ type StoredProject = {
   project: Project;
   catalogue: ProjectAggregate["catalogue"];
   snapshots: Map<string, StorefrontSnapshot>;
+  managedDraftSnapshotIds: Set<string>;
   operationSequence: number;
 };
 
@@ -53,6 +55,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
         project: freeze(aggregate.project),
         catalogue: freeze(aggregate.catalogue),
         snapshots: new Map(aggregate.snapshots.map((snapshot) => [snapshot.id, freeze(snapshot)])),
+        managedDraftSnapshotIds: new Set([aggregate.project.draftSnapshotId]),
         operationSequence: aggregate.snapshots.length,
       });
     }
@@ -133,18 +136,25 @@ export class InMemoryProjectRepository implements ProjectRepository {
     });
     const nextSnapshots = new Map(stored.snapshots);
     nextSnapshots.set(snapshot.id, snapshot);
-    if (canRemoveSupersededDraft(currentDraft.id, nextProject)) {
-      nextSnapshots.delete(currentDraft.id);
-    }
+    const nextManagedDraftSnapshotIds = new Set(stored.managedDraftSnapshotIds);
+    nextManagedDraftSnapshotIds.add(snapshot.id);
+    const compacted = compactManagedDraftHistory(
+      [...nextSnapshots.values()],
+      nextProject,
+      nextManagedDraftSnapshotIds,
+    );
     const aggregate = validateProjectAggregate({
       project: nextProject,
       catalogue: stored.catalogue,
-      snapshots: [...nextSnapshots.values()],
+      snapshots: compacted.snapshots,
     });
 
     stored.project = freeze(aggregate.project);
     stored.snapshots = new Map(
       aggregate.snapshots.map((candidate) => [candidate.id, freeze(candidate)]),
+    );
+    stored.managedDraftSnapshotIds = new Set(
+      [...nextManagedDraftSnapshotIds].filter((id) => stored.snapshots.has(id)),
     );
   }
 
@@ -200,6 +210,9 @@ export class InMemoryProjectRepository implements ProjectRepository {
     if (!historical) {
       throw new SnapshotNotFoundError(projectId, snapshotId);
     }
+    if (snapshotId === stored.project.draftSnapshotId) {
+      throw new InvalidRestoreTargetError(projectId, snapshotId);
+    }
 
     const currentDraft = stored.snapshots.get(stored.project.draftSnapshotId);
     if (!currentDraft) {
@@ -223,18 +236,26 @@ export class InMemoryProjectRepository implements ProjectRepository {
 
     const nextSnapshots = new Map(stored.snapshots);
     nextSnapshots.set(restored.id, restored);
-    if (canRemoveSupersededDraft(currentDraft.id, nextProject, [historical.id])) {
-      nextSnapshots.delete(currentDraft.id);
-    }
+    const nextManagedDraftSnapshotIds = new Set(stored.managedDraftSnapshotIds);
+    nextManagedDraftSnapshotIds.add(restored.id);
+    const compacted = compactManagedDraftHistory(
+      [...nextSnapshots.values()],
+      nextProject,
+      nextManagedDraftSnapshotIds,
+      [historical.id],
+    );
     const aggregate = validateProjectAggregate({
       project: nextProject,
       catalogue: stored.catalogue,
-      snapshots: [...nextSnapshots.values()],
+      snapshots: compacted.snapshots,
     });
 
     stored.project = freeze(aggregate.project);
     stored.snapshots = new Map(
       aggregate.snapshots.map((snapshot) => [snapshot.id, freeze(snapshot)]),
+    );
+    stored.managedDraftSnapshotIds = new Set(
+      [...nextManagedDraftSnapshotIds].filter((id) => stored.snapshots.has(id)),
     );
     stored.operationSequence = sequence;
     return clone(restored);
