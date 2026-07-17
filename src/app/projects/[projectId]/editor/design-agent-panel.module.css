@@ -141,7 +141,13 @@
 }
 
 .changeDetails li {
+  display: grid;
+  gap: 0.1rem;
   color: #26313c;
+}
+
+.changeDetails strong {
+  color: #15212c;
 }
 
 .previewNotice,

@@ -639,7 +639,7 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
   });
 
-  it("switches proposal summary and ordered changes between English and Finnish", async () => {
+  it("switches grouped proposal details between English and Finnish", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Add a campaign section." }));
@@ -652,9 +652,10 @@ describe("P2-01 project editor route", () => {
     const localizedDetails = within(screen.getByLabelText("Ehdotetut muutokset")).getAllByRole(
       "listitem",
     );
-    expect(localizedDetails).toHaveLength(3);
-    expect(localizedDetails[0]).toHaveTextContent(/Lisää osio/);
-    expect(localizedDetails[1]).toHaveTextContent(/Päivitä osio/);
+    expect(localizedDetails).toHaveLength(1);
+    expect(localizedDetails[0]).toHaveTextContent(/lisää tämä/i);
+    expect(localizedDetails[0]).toHaveTextContent(/englanninkielinen otsikko/i);
+    expect(screen.getByRole("button", { name: "Hyväksy ja käytä" })).toBeEnabled();
   });
 
   it("saves a valid manual edit, clears dirty state and preserves locale and published state", async () => {

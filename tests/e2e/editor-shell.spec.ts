@@ -88,7 +88,7 @@ test("requests, previews, rejects and accepts deterministic proposals on mobile"
   );
 });
 
-test("uses the selected Puck section and shows localized concrete proposal details", async ({
+test("uses the selected Puck section and shows localized grouped proposal details", async ({
   page,
 }) => {
   await page.goto(url);
@@ -114,13 +114,16 @@ test("uses the selected Puck section and shows localized concrete proposal detai
   await page.getByRole("button", { name: "Create proposal" }).click();
   const details = page.getByRole("list", { name: "Proposed changes" }).getByRole("listitem");
   const detailCount = await details.count();
-  expect(detailCount).toBeGreaterThan(1);
+  expect(detailCount).toBe(10);
+  await expect(details.first()).toContainText(/layout|background|typography|spacing|shapes/i);
   await page.getByRole("radio", { name: "Suomi" }).click();
   const finnishDetails = page
     .getByRole("list", { name: "Ehdotetut muutokset" })
     .getByRole("listitem");
   expect(await finnishDetails.count()).toBe(detailCount);
-  await expect(finnishDetails.first()).toContainText(/Vaihda|Päivitä|Käytä/);
+  await expect(finnishDetails.first()).toContainText(
+    /asettelu|tausta|typografia|väljyys|muotokieli/i,
+  );
 });
 
 test("discard closes a proposal so discarded edits cannot be accepted later", async ({ page }) => {

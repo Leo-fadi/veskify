@@ -58,10 +58,12 @@ active editor page in `sessionPages` remains unchanged, normal Puck editing is l
 shows the localized summary, affected page/section count, and assumptions without raw operations,
 schemas, skill IDs, or JSON.
 
-The proposal card converts every validated operation into one concrete EN/FI merchant-facing change
-detail. Each item names the affected section or page property and the resulting content, layout,
-colour, typography, spacing, shape, alignment, or call-to-action value. Accept remains disabled unless
-the detail list covers every operation in the proposal.
+The proposal card groups validated operations by affected section and renders one concise EN/FI
+merchant-facing item per section. Each grouped item names the section and summarizes all resulting
+content, layout, colour, typography, spacing, shape, alignment, or call-to-action values without
+repeating low-level changes. Page-wide changes receive one page-level item when they do not target a
+section. Coverage retains the source operation indexes, and Accept remains disabled unless the
+grouped list represents every operation in the proposal.
 
 Revision and regeneration call the orchestrator against the current canonical active page. The old
 preview remains visible until a replacement validates. Regeneration retains the original request and
