@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { aurumNordicSeed } from "@/data/seed";
 import type { StorefrontSnapshot } from "@/domain/storefront";
 import {
+  DraftConflictError,
   ProjectNotFoundError,
   RepositoryValidationError,
   RevisionConflictError,
@@ -87,6 +88,30 @@ export function runProjectRepositoryContract(
       expect(after.snapshots.find((snapshot) => snapshot.id === draft.id)?.pages[0]?.title.en).toBe(
         "New draft home",
       );
+    });
+
+    it("atomically rejects saving over a different draft base", async () => {
+      const before = await repository.get(projectId);
+      const originalDraft = before.snapshots.find(
+        (snapshot) => snapshot.id === before.project.draftSnapshotId,
+      )!;
+      const newer = editableDraft();
+      newer.id = "snapshot_newer_draft_base";
+      newer.pages[0].title.en = "Newer stored draft";
+      await repository.saveDraft(projectId, newer);
+      const stale = editableDraft();
+      stale.id = "snapshot_stale_draft_attempt";
+      stale.pages[0].title.en = "Stale overwrite";
+
+      await expect(
+        repository.saveDraft(projectId, stale, {
+          id: originalDraft.id,
+          revision: originalDraft.revision,
+        }),
+      ).rejects.toBeInstanceOf(DraftConflictError);
+      const after = await repository.get(projectId);
+      expect(after.project.draftSnapshotId).toBe(newer.id);
+      expect(after.snapshots.some((snapshot) => snapshot.id === stale.id)).toBe(false);
     });
 
     it("rejects invalid, foreign and historical draft snapshots", async () => {
