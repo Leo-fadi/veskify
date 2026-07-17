@@ -11,6 +11,7 @@ import {
   type ProjectSummary,
 } from "./project-repository";
 import {
+  canRemoveSupersededDraft,
   repositoryValidationError,
   validateProjectAggregate,
   validateRepositorySnapshot,
@@ -130,9 +131,21 @@ export class InMemoryProjectRepository implements ProjectRepository {
       draftSnapshotId: snapshot.id,
       updatedAt: snapshot.createdAt,
     });
-    stored.snapshots.set(snapshot.id, freeze(snapshot));
-    stored.project = freeze(nextProject);
-    this.#validatedAggregate(stored);
+    const nextSnapshots = new Map(stored.snapshots);
+    nextSnapshots.set(snapshot.id, snapshot);
+    if (canRemoveSupersededDraft(currentDraft.id, nextProject)) {
+      nextSnapshots.delete(currentDraft.id);
+    }
+    const aggregate = validateProjectAggregate({
+      project: nextProject,
+      catalogue: stored.catalogue,
+      snapshots: [...nextSnapshots.values()],
+    });
+
+    stored.project = freeze(aggregate.project);
+    stored.snapshots = new Map(
+      aggregate.snapshots.map((candidate) => [candidate.id, freeze(candidate)]),
+    );
   }
 
   async publish(projectId: string, expectedRevision: number): Promise<ProjectAggregate> {
@@ -148,12 +161,13 @@ export class InMemoryProjectRepository implements ProjectRepository {
     }
 
     const revision = stored.project.revision + 1;
+    const sequence = stored.operationSequence + 1;
     const published = validateRepositorySnapshot(
       {
         ...clone(draft),
-        id: this.#nextSnapshotId(stored, "published", revision),
+        id: this.#snapshotId("published", revision, sequence),
         revision,
-        createdAt: this.#nextTimestamp(stored),
+        createdAt: this.#nextTimestamp(stored, sequence),
         createdBy: "user",
       },
       stored.catalogue,
@@ -165,9 +179,18 @@ export class InMemoryProjectRepository implements ProjectRepository {
       updatedAt: published.createdAt,
     });
 
-    stored.snapshots.set(published.id, freeze(published));
-    stored.project = freeze(nextProject);
-    return clone(this.#validatedAggregate(stored));
+    const aggregate = validateProjectAggregate({
+      project: nextProject,
+      catalogue: stored.catalogue,
+      snapshots: [...stored.snapshots.values(), published],
+    });
+
+    stored.project = freeze(aggregate.project);
+    stored.snapshots = new Map(
+      aggregate.snapshots.map((snapshot) => [snapshot.id, freeze(snapshot)]),
+    );
+    stored.operationSequence = sequence;
+    return clone(aggregate);
   }
 
   async restore(projectId: string, snapshotId: string): Promise<StorefrontSnapshot> {
@@ -178,11 +201,16 @@ export class InMemoryProjectRepository implements ProjectRepository {
       throw new SnapshotNotFoundError(projectId, snapshotId);
     }
 
+    const currentDraft = stored.snapshots.get(stored.project.draftSnapshotId);
+    if (!currentDraft) {
+      throw new SnapshotNotFoundError(projectId, stored.project.draftSnapshotId);
+    }
+    const sequence = stored.operationSequence + 1;
     const restored = validateRepositorySnapshot(
       {
         ...clone(historical),
-        id: this.#nextSnapshotId(stored, "restored", stored.project.revision),
-        createdAt: this.#nextTimestamp(stored),
+        id: this.#snapshotId("restored", stored.project.revision, sequence),
+        createdAt: this.#nextTimestamp(stored, sequence),
         createdBy: "user",
       },
       stored.catalogue,
@@ -193,9 +221,22 @@ export class InMemoryProjectRepository implements ProjectRepository {
       updatedAt: restored.createdAt,
     });
 
-    stored.snapshots.set(restored.id, freeze(restored));
-    stored.project = freeze(nextProject);
-    this.#validatedAggregate(stored);
+    const nextSnapshots = new Map(stored.snapshots);
+    nextSnapshots.set(restored.id, restored);
+    if (canRemoveSupersededDraft(currentDraft.id, nextProject, [historical.id])) {
+      nextSnapshots.delete(currentDraft.id);
+    }
+    const aggregate = validateProjectAggregate({
+      project: nextProject,
+      catalogue: stored.catalogue,
+      snapshots: [...nextSnapshots.values()],
+    });
+
+    stored.project = freeze(aggregate.project);
+    stored.snapshots = new Map(
+      aggregate.snapshots.map((snapshot) => [snapshot.id, freeze(snapshot)]),
+    );
+    stored.operationSequence = sequence;
     return clone(restored);
   }
 
@@ -215,20 +256,15 @@ export class InMemoryProjectRepository implements ProjectRepository {
     });
   }
 
-  #nextSnapshotId(
-    stored: StoredProject,
-    reason: "published" | "restored",
-    revision: number,
-  ): string {
-    stored.operationSequence += 1;
-    return `snapshot_${reason}_${revision}_${stored.operationSequence}`;
+  #snapshotId(reason: "published" | "restored", revision: number, sequence: number): string {
+    return `snapshot_${reason}_${revision}_${sequence}`;
   }
 
-  #nextTimestamp(stored: StoredProject): string {
+  #nextTimestamp(stored: StoredProject, sequence: number): string {
     const latestTime = Math.max(
       Date.parse(stored.project.updatedAt),
       ...[...stored.snapshots.values()].map((snapshot) => Date.parse(snapshot.createdAt)),
     );
-    return new Date(latestTime + stored.operationSequence * 1_000).toISOString();
+    return new Date(latestTime + sequence * 1_000).toISOString();
   }
 }

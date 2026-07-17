@@ -1,5 +1,5 @@
 import "fake-indexeddb/auto";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { deleteDB, openDB } from "idb";
 import { aurumNordicSeed } from "@/data/seed";
 import { projectSchema } from "@/domain/project";
@@ -314,7 +314,34 @@ describe("IndexedDbProjectRepository persistence", () => {
     expect(
       aggregate.snapshots.find((snapshot) => snapshot.id === draft.id)?.pages[0]?.title.en,
     ).toBe("Persisted browser draft");
-    expect(aggregate.snapshots).toHaveLength(3);
+    expect(aggregate.snapshots).toHaveLength(2);
+    expect(
+      aggregate.snapshots.some((snapshot) => snapshot.id === aurumNordicSeed.draftSnapshot.id),
+    ).toBe(false);
+  });
+
+  it("rolls back candidate, pointer and compaction when the draft transaction fails", async () => {
+    const repository = openRepository(testDatabaseName("draft-transaction-failure"));
+    const before = await repository.get(aurumNordicSeed.project.id);
+    const currentDraft = before.snapshots.find(
+      (snapshot) => snapshot.id === before.project.draftSnapshotId,
+    )!;
+    const candidate = structuredClone(currentDraft);
+    candidate.id = "snapshot_transaction_failure";
+    candidate.pages[0].title.en = "Must not persist";
+    const deleteSpy = vi.spyOn(IDBObjectStore.prototype, "delete").mockImplementationOnce(() => {
+      throw new DOMException("Forced transaction failure", "AbortError");
+    });
+
+    await expect(
+      repository.saveDraft(aurumNordicSeed.project.id, candidate, {
+        id: currentDraft.id,
+        revision: currentDraft.revision,
+      }),
+    ).rejects.toThrow("Forced transaction failure");
+    deleteSpy.mockRestore();
+
+    expect(await repository.get(aurumNordicSeed.project.id)).toEqual(before);
   });
 
   it("uses injected deterministic identity and time generation", async () => {

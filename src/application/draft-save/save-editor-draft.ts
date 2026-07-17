@@ -158,14 +158,6 @@ export async function saveValidatedEditorDraft({
     throw cause;
   }
 
-  const aggregate: ProjectAggregate = {
-    project: {
-      ...structuredClone(latest.project),
-      draftSnapshotId: draft.id,
-      updatedAt: draft.createdAt,
-    },
-    catalogue: structuredClone(latest.catalogue),
-    snapshots: [...structuredClone(latest.snapshots), structuredClone(draft)],
-  };
-  return { aggregate, draft: structuredClone(draft) };
+  const aggregate = await repository.get(projectId);
+  return { aggregate, draft: structuredClone(currentDraft(aggregate)) };
 }

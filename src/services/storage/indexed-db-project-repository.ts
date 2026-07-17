@@ -14,6 +14,7 @@ import {
   type ProjectSummary,
 } from "./project-repository";
 import {
+  canRemoveSupersededDraft,
   repositoryValidationError,
   validateProjectAggregate,
   validateRepositorySnapshot,
@@ -173,8 +174,8 @@ function defaultSnapshotId({ reason, revision, sequence }: SnapshotIdentityInput
   return `snapshot_${reason}_${revision}_${sequence}`;
 }
 
-function defaultTimestamp({ latestTimestamp, sequence }: SnapshotTimeInput): string {
-  return new Date(Date.parse(latestTimestamp) + sequence * 1_000).toISOString();
+function defaultTimestamp({ latestTimestamp }: SnapshotTimeInput): string {
+  return new Date(Date.parse(latestTimestamp) + 1_000).toISOString();
 }
 
 function latestTimestamp(project: Project, snapshots: StorefrontSnapshot[]): string {
@@ -183,6 +184,10 @@ function latestTimestamp(project: Project, snapshots: StorefrontSnapshot[]): str
     ...snapshots.map((snapshot) => Date.parse(snapshot.createdAt)),
   );
   return new Date(time).toISOString();
+}
+
+function nextSnapshotSequence(project: Project, snapshots: StorefrontSnapshot[]): number {
+  return Date.parse(latestTimestamp(project, snapshots)) + 1;
 }
 
 function toSummary(project: Project): ProjectSummary {
@@ -263,14 +268,6 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     if (!project) {
       throw new ProjectNotFoundError(projectId);
     }
-    const catalogue = await transaction.objectStore("catalogues").get(parsedInput.catalogueRef);
-    if (!catalogue) {
-      throw repositoryValidationError(
-        "Draft snapshot references a catalogue outside the project aggregate.",
-        new Error("Catalogue reference mismatch."),
-      );
-    }
-    const snapshot = validateRepositorySnapshot(parsedInput, catalogue);
     const snapshots = await snapshotsStore.index("by-project").getAll(projectId);
     const currentDraft = snapshots.find((candidate) => candidate.id === project.draftSnapshotId);
     if (!currentDraft) {
@@ -284,6 +281,20 @@ export class IndexedDbProjectRepository implements ProjectRepository {
         id: currentDraft.id,
         revision: currentDraft.revision,
       });
+    }
+    const catalogue = await transaction.objectStore("catalogues").get(currentDraft.catalogueRef);
+    if (!catalogue) {
+      throw repositoryValidationError(
+        `Catalogue for project ${projectId} was not found.`,
+        new Error("Catalogue reference must resolve."),
+      );
+    }
+    const snapshot = validateRepositorySnapshot(parsedInput, catalogue);
+    if (snapshot.catalogueRef !== currentDraft.catalogueRef) {
+      throw repositoryValidationError(
+        "Draft snapshot references a catalogue outside the project aggregate.",
+        new Error("Catalogue reference mismatch."),
+      );
     }
     const existing = snapshots.find((candidate) => candidate.id === snapshot.id);
     if (snapshot.id === project.publishedSnapshotId) {
@@ -304,14 +315,29 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       draftSnapshotId: snapshot.id,
       updatedAt: snapshot.createdAt,
     });
+    const removeSupersededDraft = canRemoveSupersededDraft(currentDraft.id, nextProject);
+    const retainedSnapshots = snapshots.filter(
+      (candidate) => !removeSupersededDraft || candidate.id !== currentDraft.id,
+    );
     const nextSnapshots = existing
-      ? snapshots.map((candidate) => (candidate.id === snapshot.id ? snapshot : candidate))
-      : [...snapshots, snapshot];
+      ? retainedSnapshots.map((candidate) => (candidate.id === snapshot.id ? snapshot : candidate))
+      : [...retainedSnapshots, snapshot];
     validateProjectAggregate({ project: nextProject, catalogue, snapshots: nextSnapshots });
 
-    await snapshotsStore.put(snapshot);
-    await projects.put(nextProject);
-    await transaction.done;
+    try {
+      await snapshotsStore.put(snapshot);
+      await projects.put(nextProject);
+      if (removeSupersededDraft) await snapshotsStore.delete(currentDraft.id);
+      await transaction.done;
+    } catch (cause) {
+      try {
+        transaction.abort();
+      } catch {
+        // The transaction may already have aborted.
+      }
+      await transaction.done.catch(() => undefined);
+      throw cause;
+    }
   }
 
   async publish(projectId: string, expectedRevision: number): Promise<ProjectAggregate> {
@@ -341,7 +367,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     }
 
     const revision = project.revision + 1;
-    const sequence = snapshots.length + 1;
+    const sequence = nextSnapshotSequence(project, snapshots);
     const published = validateRepositorySnapshot(
       {
         ...clone(draft),
@@ -401,7 +427,11 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       );
     }
 
-    const sequence = snapshots.length + 1;
+    const currentDraft = snapshots.find((snapshot) => snapshot.id === project.draftSnapshotId);
+    if (!currentDraft) {
+      throw new SnapshotNotFoundError(projectId, project.draftSnapshotId);
+    }
+    const sequence = nextSnapshotSequence(project, snapshots);
     const restored = validateRepositorySnapshot(
       {
         ...clone(historical),
@@ -430,15 +460,33 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       draftSnapshotId: restored.id,
       updatedAt: restored.createdAt,
     });
+    const removeSupersededDraft = canRemoveSupersededDraft(currentDraft.id, nextProject, [
+      historical.id,
+    ]);
+    const nextSnapshots = [
+      ...snapshots.filter((snapshot) => !removeSupersededDraft || snapshot.id !== currentDraft.id),
+      restored,
+    ];
     validateProjectAggregate({
       project: nextProject,
       catalogue,
-      snapshots: [...snapshots, restored],
+      snapshots: nextSnapshots,
     });
 
-    await snapshotsStore.put(restored);
-    await projects.put(nextProject);
-    await transaction.done;
+    try {
+      await snapshotsStore.put(restored);
+      await projects.put(nextProject);
+      if (removeSupersededDraft) await snapshotsStore.delete(currentDraft.id);
+      await transaction.done;
+    } catch (cause) {
+      try {
+        transaction.abort();
+      } catch {
+        // The transaction may already have aborted.
+      }
+      await transaction.done.catch(() => undefined);
+      throw cause;
+    }
     return clone(restored);
   }
 

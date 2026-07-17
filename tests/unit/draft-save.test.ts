@@ -87,6 +87,41 @@ describe("P2-07 validated editor draft save", () => {
       before.snapshots.find((snapshot) => snapshot.id === before.project.publishedSnapshotId),
     );
     expect(result.aggregate.catalogue).toEqual(before.catalogue);
+    expect(result.aggregate).toEqual(await value.get(projectId));
+    expect(result.aggregate.snapshots).toHaveLength(before.snapshots.length);
+    expect(
+      result.aggregate.snapshots.some((snapshot) => snapshot.id === before.project.draftSnapshotId),
+    ).toBe(false);
+  });
+
+  it("returns the canonical compacted repository state after every save", async () => {
+    const value = repository();
+    let loadedDraft = structuredClone(aurumNordicSeed.draftSnapshot);
+
+    for (let index = 1; index <= 5; index += 1) {
+      const page = structuredClone(
+        loadedDraft.pages.find((candidate) => candidate.type === "home")!,
+      );
+      page.title.en = `Application save ${index}`;
+      const result = await saveValidatedEditorDraft({
+        repository: value,
+        projectId,
+        loadedDraft,
+        changedPages: [page],
+        primaryLocale: "en",
+        now: () => new Date(fixedDate.getTime() + index * 1_000),
+        createSnapshotId: () => `snapshot_application_compacted_${index}`,
+      });
+
+      expect(result.aggregate).toEqual(await value.get(projectId));
+      expect(result.aggregate.project.draftSnapshotId).toBe(result.draft.id);
+      expect(result.draft.id).toBe(`snapshot_application_compacted_${index}`);
+      expect(result.draft.pages.find((candidate) => candidate.type === "home")?.title.en).toBe(
+        `Application save ${index}`,
+      );
+      expect(result.aggregate.snapshots).toHaveLength(2);
+      loadedDraft = result.draft;
+    }
   });
 
   it("rejects invalid changed pages and invalid complete snapshots before writing", () => {
@@ -111,6 +146,27 @@ describe("P2-07 validated editor draft save", () => {
         primaryLocale: "en",
       }),
     ).toThrow(EditorDraftValidationError);
+  });
+
+  it("does not call storage when candidate assembly validation fails", async () => {
+    const value = repository();
+    const before = await value.get(projectId);
+    const saveDraft = vi.spyOn(value, "saveDraft");
+    const invalidPage = changedPage("home", "Invalid service candidate");
+    invalidPage.sections[0].component = "unknownComponent";
+
+    await expect(
+      saveValidatedEditorDraft({
+        repository: value,
+        projectId,
+        loadedDraft: aurumNordicSeed.draftSnapshot,
+        changedPages: [invalidPage],
+        primaryLocale: "en",
+        now: () => fixedDate,
+      }),
+    ).rejects.toBeInstanceOf(EditorDraftValidationError);
+    expect(saveDraft).not.toHaveBeenCalled();
+    expect(await value.get(projectId)).toEqual(before);
   });
 
   it("refuses a stale loaded draft and preserves the newer stored draft", async () => {

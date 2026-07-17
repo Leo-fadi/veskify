@@ -1,6 +1,6 @@
 import { validateRegisteredSnapshot } from "@/components/registry";
 import { catalogueDisplayModelSchema } from "@/domain/catalogue";
-import { projectSchema } from "@/domain/project";
+import { projectSchema, type Project } from "@/domain/project";
 import { storefrontSnapshotSchema, type StorefrontSnapshot } from "@/domain/storefront";
 import { RepositoryValidationError, type ProjectAggregate } from "./project-repository";
 
@@ -58,4 +58,17 @@ export function validateProjectAggregate(input: ProjectAggregate): ProjectAggreg
     }
     throw repositoryValidationError("Project aggregate failed repository validation.", cause);
   }
+}
+
+export function canRemoveSupersededDraft(
+  supersededDraftId: string,
+  nextProject: Project,
+  retainedSnapshotIds: readonly string[] = [],
+): boolean {
+  const requiredSnapshotIds = new Set([
+    nextProject.draftSnapshotId,
+    nextProject.publishedSnapshotId,
+    ...retainedSnapshotIds,
+  ]);
+  return !requiredSnapshotIds.has(supersededDraftId);
 }
