@@ -119,6 +119,7 @@ export function ProjectEditorClient({
   const proposalStore = useRef(new InMemoryDesignProposalStore());
   const proposalGeneration = useRef(0);
   const [saveState, setSaveState] = useState<SaveUiState>({ status: "idle" });
+  const savePending = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -258,6 +259,7 @@ export function ProjectEditorClient({
   }
   const proposalBlocksSave =
     proposalState.status === "generating" || proposalState.status === "ready";
+  const saving = saveState.status === "saving";
   const saveDisabled =
     !hasUnsavedChanges ||
     !completeDraftIsValid ||
@@ -275,6 +277,7 @@ export function ProjectEditorClient({
   };
 
   const changePage = (nextPage: PageModel) => {
+    if (savePending.current) return;
     try {
       validateRegisteredPage(nextPage, context);
     } catch {
@@ -298,6 +301,7 @@ export function ProjectEditorClient({
   };
 
   const selectPage = (nextPageId: string) => {
+    if (savePending.current) return;
     if (
       currentPageHasUnsavedChanges &&
       !window.confirm(
@@ -315,6 +319,7 @@ export function ProjectEditorClient({
 
   const submitRequest = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (savePending.current) return;
     const generation = proposalGeneration.current + 1;
     proposalGeneration.current = generation;
     setProposalState({ status: "generating", basePage: structuredClone(page) });
@@ -342,6 +347,7 @@ export function ProjectEditorClient({
   };
 
   const acceptProposal = () => {
+    if (savePending.current) return;
     if (proposalState.status !== "ready") return;
     try {
       const result = acceptCurrentDesignProposal({
@@ -374,6 +380,7 @@ export function ProjectEditorClient({
   };
 
   const rejectProposal = () => {
+    if (savePending.current) return;
     if (proposalState.status !== "ready") return;
     try {
       proposalStore.current.reject(proposalState.proposal.id);
@@ -388,6 +395,7 @@ export function ProjectEditorClient({
   };
 
   const discardChanges = () => {
+    if (savePending.current) return;
     if (!currentPageHasUnsavedChanges) return;
     if (!window.confirm("Discard the unsaved changes on this page? This cannot be undone.")) return;
     setSessionPages((current) => {
@@ -407,14 +415,17 @@ export function ProjectEditorClient({
   };
 
   const saveDraft = async () => {
-    if (saveDisabled) return;
+    if (saveDisabled || savePending.current) return;
+    const capturedDraft = structuredClone(state.draft);
+    const capturedChangedPages = structuredClone(changedPages);
+    savePending.current = true;
     setSaveState({ status: "saving" });
     try {
       const result = await saveValidatedEditorDraft({
         repository: repository.current!,
         projectId,
-        loadedDraft: state.draft,
-        changedPages,
+        loadedDraft: capturedDraft,
+        changedPages: capturedChangedPages,
         primaryLocale: state.aggregate.project.primaryLocale,
       });
       const published = result.aggregate.snapshots.find(
@@ -465,11 +476,13 @@ export function ProjectEditorClient({
           message: "The draft could not be saved. Check your browser storage and try again.",
         });
       }
+    } finally {
+      savePending.current = false;
     }
   };
 
   return (
-    <div className={styles.editor} lang={locale} style={style}>
+    <div aria-busy={saving} className={styles.editor} lang={locale} style={style}>
       <header className={styles.topbar}>
         <nav aria-label="Editor navigation" className={styles.navigation}>
           <Link href="/">Veskify home</Link>
@@ -498,7 +511,9 @@ export function ProjectEditorClient({
             {saveState.status === "saving" ? "Saving draft…" : "Save draft"}
           </button>
           <div aria-live="polite" aria-atomic="true" className={styles.saveStatus}>
-            {saveState.status === "saving" ? <p role="status">Saving your draft…</p> : null}
+            {saveState.status === "saving" ? (
+              <p role="status">Saving your draft… Please wait before making more changes.</p>
+            ) : null}
             {saveState.status === "success" ? <p role="status">{saveState.message}</p> : null}
             {saveState.status === "validation" ||
             saveState.status === "storage" ||
@@ -516,6 +531,7 @@ export function ProjectEditorClient({
           <section>
             <label htmlFor="editor-page">Storefront page</label>
             <select
+              disabled={saving}
               id="editor-page"
               onChange={(event) => selectPage(event.target.value)}
               value={page.id}
@@ -554,7 +570,7 @@ export function ProjectEditorClient({
           </Link>
           <button
             className={styles.discardButton}
-            disabled={!currentPageHasUnsavedChanges}
+            disabled={!currentPageHasUnsavedChanges || saving}
             onClick={discardChanges}
             type="button"
           >
@@ -579,9 +595,12 @@ export function ProjectEditorClient({
             brandSystem={state.draft.brandSystem}
             context={context}
             onPageChange={changePage}
-            onValidationError={setValidationMessage}
+            onValidationError={(message) => {
+              if (!savePending.current) setValidationMessage(message);
+            }}
             page={canvasPage}
-            readOnly={showingProposal}
+            readOnly={showingProposal || saving}
+            readOnlyLabel={showingProposal ? "Proposal preview canvas" : "Visual editor canvas"}
             resetKey={resetKeys[canvasPage.id] ?? 0}
           />
         </main>
@@ -594,6 +613,7 @@ export function ProjectEditorClient({
             </div>
             <label htmlFor="design-request">Your request</label>
             <textarea
+              disabled={saving}
               id="design-request"
               onChange={(event) => setRequest(event.target.value)}
               placeholder="Make the homepage feel more luxurious."
@@ -601,13 +621,18 @@ export function ProjectEditorClient({
               rows={4}
               value={request}
             />
-            <button disabled={proposalState.status === "generating"} type="submit">
+            <button disabled={proposalState.status === "generating" || saving} type="submit">
               {proposalState.status === "generating" ? "Preparing proposal…" : "Show proposal"}
             </button>
             <div className={styles.examples}>
               <span>Try an example</span>
               {deterministicProposalPrompts.map((prompt) => (
-                <button key={prompt} onClick={() => setRequest(prompt)} type="button">
+                <button
+                  disabled={saving}
+                  key={prompt}
+                  onClick={() => setRequest(prompt)}
+                  type="button"
+                >
                   {prompt}
                 </button>
               ))}
@@ -662,10 +687,10 @@ export function ProjectEditorClient({
                 Accepting updates only this in-memory draft page. It does not save or publish.
               </p>
               <div className={styles.proposalActions}>
-                <button onClick={acceptProposal} type="button">
+                <button disabled={saving} onClick={acceptProposal} type="button">
                   Accept proposal
                 </button>
-                <button onClick={rejectProposal} type="button">
+                <button disabled={saving} onClick={rejectProposal} type="button">
                   Reject proposal
                 </button>
               </div>

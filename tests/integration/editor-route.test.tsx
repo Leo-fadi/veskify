@@ -19,6 +19,7 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     onPageChange,
     onValidationError,
     readOnly,
+    readOnlyLabel,
   }: {
     page: {
       id: string;
@@ -31,15 +32,16 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     onPageChange: (page: unknown) => void;
     onValidationError: (message: string) => void;
     readOnly?: boolean;
+    readOnlyLabel?: string;
   }) => (
     <section
-      aria-label={readOnly ? "Proposal preview canvas" : "Visual editor canvas"}
+      aria-label={readOnly ? (readOnlyLabel ?? "Proposal preview canvas") : "Visual editor canvas"}
       data-primary={brandSystem.colors.primary}
       lang={context.activeLocale}
     >
       Canvas: {page.type} / {context.activeLocale}
-      {readOnly ? <span>Locked proposal</span> : null}
-      {readOnly ? (
+      {readOnlyLabel === "Proposal preview canvas" ? <span>Locked proposal</span> : null}
+      {readOnlyLabel === "Proposal preview canvas" ? (
         <button
           onClick={() =>
             onPageChange({
@@ -53,6 +55,7 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
         </button>
       ) : null}
       <button
+        disabled={readOnly}
         onClick={() =>
           onPageChange({
             ...page,
@@ -69,10 +72,11 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
       >
         Edit current page
       </button>
-      <button onClick={() => onPageChange({ ...page, id: "!" })} type="button">
+      <button disabled={readOnly} onClick={() => onPageChange({ ...page, id: "!" })} type="button">
         Emit invalid canonical page
       </button>
       <button
+        disabled={readOnly}
         onClick={() =>
           onPageChange({
             ...page,
@@ -86,6 +90,7 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
         Create cross-page duplicate
       </button>
       <button
+        disabled={readOnly}
         onClick={() => onValidationError("That change could not be applied safely.")}
         type="button"
       >
@@ -630,9 +635,14 @@ describe("P2-01 project editor route", () => {
     expect(after.project.draftSnapshotId).toBe(newer.id);
   });
 
-  it("announces saving and disables save during generation and persistence", async () => {
+  it("locks draft mutations and saves exactly the captured canonical session", async () => {
     const inner = statefulRepository();
+    const before = await inner.get(aurumNordicSeed.project.id);
+    const publishedBefore = structuredClone(
+      before.snapshots.find((snapshot) => snapshot.id === before.project.publishedSnapshotId),
+    );
     let releaseSave!: () => void;
+    let capturedHomeTitle: string | undefined;
     const gate = new Promise<void>((resolve) => {
       releaseSave = resolve;
     });
@@ -640,6 +650,7 @@ describe("P2-01 project editor route", () => {
       list: () => inner.list(),
       get: (id) => inner.get(id),
       saveDraft: async (id, snapshot, expected) => {
+        capturedHomeTitle = snapshot.pages.find((page) => page.type === "home")?.title.en;
         await gate;
         return inner.saveDraft(id, snapshot, expected);
       },
@@ -649,18 +660,92 @@ describe("P2-01 project editor route", () => {
     route(value);
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
-    fireEvent.click(screen.getByRole("button", { name: "Make the homepage feel more luxurious." }));
-    fireEvent.click(screen.getByRole("button", { name: "Show proposal" }));
-    expect(screen.getByRole("button", { name: /save draft/i })).toBeDisabled();
-    await screen.findByLabelText("Design proposal");
-    fireEvent.click(screen.getByRole("button", { name: "Reject proposal" }));
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
-    expect(await screen.findByText("Saving your draft…")).toHaveAttribute("role", "status");
+    expect(await screen.findByText(/Saving your draft… Please wait/i)).toHaveAttribute(
+      "role",
+      "status",
+    );
+    expect(
+      screen.getByText(/Saving your draft… Please wait/i).closest('[aria-busy="true"]'),
+    ).not.toBeNull();
     expect(screen.getByRole("button", { name: "Saving draft…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Discard changes" })).toBeDisabled();
+    expect(screen.getByLabelText("Storefront page")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Edit current page" })).toBeDisabled();
+    expect(screen.getByLabelText("Your request")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Show proposal" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Make the homepage feel more luxurious." }),
+    ).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+    fireEvent.change(screen.getByLabelText("Storefront page"), {
+      target: { value: "page_collection_rings" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    expect(screen.getByText("Canvas: home / en")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    await waitFor(() => expect(capturedHomeTitle).toBe("Edited home"));
+
     releaseSave();
     await screen.findByText("Draft saved successfully.");
-    expect(screen.getByRole("heading", { name: "Edited again home" })).toBeVisible();
+    expect(
+      screen.getByText("Draft saved successfully.").closest('[aria-busy="false"]'),
+    ).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+
+    const after = await inner.get(aurumNordicSeed.project.id);
+    const saved = after.snapshots.find(
+      (snapshot) => snapshot.id === after.project.draftSnapshotId,
+    )!;
+    expect(saved.pages.find((page) => page.type === "home")?.title.en).toBe("Edited home");
+    expect(
+      after.snapshots.find((snapshot) => snapshot.id === after.project.publishedSnapshotId),
+    ).toEqual(publishedBefore);
+  });
+
+  it("restores controls and retains dirty work after a delayed save failure", async () => {
+    const inner = statefulRepository();
+    const before = await inner.get(aurumNordicSeed.project.id);
+    const publishedBefore = structuredClone(
+      before.snapshots.find((snapshot) => snapshot.id === before.project.publishedSnapshotId),
+    );
+    let releaseSave!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      releaseSave = resolve;
+    });
+    const value: ProjectRepository = {
+      list: () => inner.list(),
+      get: (id) => inner.get(id),
+      saveDraft: async () => {
+        await gate;
+        throw new Error("delayed storage failure");
+      },
+      publish: (id, revision) => inner.publish(id, revision),
+      restore: (id, snapshotId) => inner.restore(id, snapshotId),
+    };
+    route(value);
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    expect(await screen.findByRole("button", { name: "Saving draft…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Discard changes" })).toBeDisabled();
+
+    releaseSave();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not be saved/i);
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Discard changes" })).toBeEnabled();
+    expect(screen.getByLabelText("Storefront page")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Edit current page" })).toBeEnabled();
+    expect(screen.getByLabelText("Your request")).toBeEnabled();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+
+    const after = await inner.get(aurumNordicSeed.project.id);
+    expect(after.project.draftSnapshotId).toBe(before.project.draftSnapshotId);
+    expect(
+      after.snapshots.find((snapshot) => snapshot.id === after.project.publishedSnapshotId),
+    ).toEqual(publishedBefore);
   });
 });

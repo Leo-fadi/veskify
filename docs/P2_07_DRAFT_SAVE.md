@@ -77,3 +77,6 @@ SKU, price, stock and catalogue media.
 Explicit Publish changes confirmation, published routes and publish history UI remain deferred.
 Draft save does not add autosave, undo/redo, proposal revision, W3 skill planning, a real AI provider,
 or cart/checkout operations.
+
+TODO: draft-snapshot retention and compaction will be designed in a separate storage-focused
+milestone; P2-07 does not change snapshot history policy.
