@@ -37,8 +37,8 @@ function stableHash(value: string) {
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
 
-function proposalId(page: PageModel, operations: readonly DesignOperation[]) {
-  return `proposal_${stableHash(JSON.stringify({ page, operations }))}`;
+function proposalId(page: PageModel, operations: readonly DesignOperation[], identity?: string) {
+  return `proposal_${stableHash(JSON.stringify({ page, operations, identity }))}`;
 }
 
 function defaultSummary(operationCount: number) {
@@ -58,11 +58,13 @@ export class InMemoryDesignProposalStore {
     operations: operationInputs,
     context,
     summary,
+    identity,
   }: {
     originalPage: PageModel;
     operations: readonly unknown[];
     context: DesignOperationContext;
     summary?: z.input<typeof localizedTextSchema>;
+    identity?: string;
   }): DesignProposal {
     const original = pageModelSchema.parse(structuredClone(originalPage));
     validateRegisteredPage(original, context);
@@ -70,7 +72,7 @@ export class InMemoryDesignProposalStore {
     const proposed = applyDesignOperations(original, operations, context);
     validateRegisteredPage(proposed, context);
     const proposal = designProposalSchema.parse({
-      id: proposalId(original, operations),
+      id: proposalId(original, operations, identity),
       originalPage: original,
       proposedPage: proposed,
       operations,
@@ -78,6 +80,9 @@ export class InMemoryDesignProposalStore {
       validation: { valid: true, errors: [] },
       status: "pending",
     });
+    if (this.#proposals.has(proposal.id)) {
+      throw new Error(`Duplicate design proposal ID: ${proposal.id}.`);
+    }
     this.#proposals.set(proposal.id, { proposal: structuredClone(proposal), context });
     return structuredClone(proposal);
   }

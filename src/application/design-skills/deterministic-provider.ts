@@ -1,6 +1,7 @@
 import { InMemoryDesignProposalStore } from "@/application/design-operations";
 import { createProposalFromDesignPlan, executeDesignPlan } from "./executor";
 import { classifyDesignRequest, createDesignPlan, type DesignPlannerInput } from "./planner";
+import type { DesignSkillExecutionResult } from "./contract";
 
 export class DeterministicDesignProvider {
   readonly #store: InMemoryDesignProposalStore;
@@ -12,14 +13,25 @@ export class DeterministicDesignProvider {
   readonly classifyDesignRequest = classifyDesignRequest;
   readonly createDesignPlan = createDesignPlan;
   readonly executeDesignPlan = executeDesignPlan;
-  readonly createProposalFromDesignPlan = createProposalFromDesignPlan;
+  createProposalFromDesignPlan(
+    execution: DesignSkillExecutionResult,
+    context: DesignPlannerInput["displayContext"],
+    store: InMemoryDesignProposalStore = this.#store,
+    identity?: string,
+  ) {
+    return createProposalFromDesignPlan(execution, context, store, identity);
+  }
 
-  propose(input: DesignPlannerInput, store: InMemoryDesignProposalStore = this.#store) {
+  propose(
+    input: DesignPlannerInput,
+    store: InMemoryDesignProposalStore = this.#store,
+    identity?: string,
+  ) {
     const classification = classifyDesignRequest(input.merchantRequest, input.activeLocale);
     const plan = createDesignPlan(input);
     const execution = executeDesignPlan(plan, input);
     const proposal = execution.validation.valid
-      ? createProposalFromDesignPlan(execution, input.displayContext, store)
+      ? createProposalFromDesignPlan(execution, input.displayContext, store, identity)
       : null;
     return { classification, plan, execution, proposal };
   }

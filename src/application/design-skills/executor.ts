@@ -12,6 +12,7 @@ import {
   campaignContextSchema,
   designPlanSchema,
   designSkillExecutionResultSchema,
+  hasMeaningfulCampaignContext,
   type DesignPlan,
   type DesignSkillExecutionContext,
   type DesignSkillExecutionResult,
@@ -78,7 +79,7 @@ function immutableSkillContext(
     brandSystem: brandSystemSchema.parse(structuredClone(input.brandSystem)),
     displayContext: structuredClone(input.displayContext),
     selectedSectionId,
-    campaign: input.campaign
+    campaign: hasMeaningfulCampaignContext(input.campaign)
       ? campaignContextSchema.parse(structuredClone(input.campaign))
       : undefined,
     requestedScope,
@@ -173,15 +174,22 @@ export function executeDesignPlan(
     if (JSON.stringify(input.displayContext) !== originalContextJson) {
       throw new Error("Skill execution mutated protected catalogue or display context.");
     }
+    const summary =
+      summaries.length > 0
+        ? {
+            en: summaries.map((item) => item.en ?? item.fi).join(" "),
+            fi: summaries.map((item) => item.fi ?? item.en).join(" "),
+          }
+        : {
+            en: "No design changes are proposed; the original page remains unchanged.",
+            fi: "Muutoksia ei ehdoteta, joten alkuperäinen sivu säilyy ennallaan.",
+          };
     return designSkillExecutionResultSchema.parse({
       originalPage: structuredClone(original),
       proposedPage: structuredClone(validated),
       selectedSkills: plan.selectedSkills,
       operations,
-      summary: {
-        en: summaries.map((summary) => summary.en ?? summary.fi).join(" "),
-        fi: summaries.map((summary) => summary.fi ?? summary.en).join(" "),
-      },
+      summary,
       validation: { valid: true, errors: [] },
       failureReason: null,
     });
@@ -194,6 +202,7 @@ export function createProposalFromDesignPlan(
   executionInput: DesignSkillExecutionResult,
   context: DesignPlannerInput["displayContext"],
   store: InMemoryDesignProposalStore,
+  identity?: string,
 ): DesignProposal {
   const execution = designSkillExecutionResultSchema.parse(structuredClone(executionInput));
   if (!execution.validation.valid || execution.failureReason) {
@@ -204,5 +213,6 @@ export function createProposalFromDesignPlan(
     operations: execution.operations,
     context,
     summary: execution.summary,
+    identity,
   });
 }

@@ -226,6 +226,59 @@ describe("deterministic design plans", () => {
   });
 });
 
+describe("campaign context preconditions", () => {
+  function campaignInputWithoutCollections(campaign: unknown): DesignPlannerInput {
+    const page = structuredClone(homepage);
+    page.sections = page.sections.filter((item) => item.component !== "featuredCategories");
+    const context = structuredClone(displayContext);
+    context.catalogue.collections = [];
+    return input("Add a campaign section.", {
+      page,
+      displayContext: context,
+      campaign: campaign as DesignPlannerInput["campaign"],
+    });
+  }
+
+  it.each([
+    ["undefined", undefined],
+    ["an empty object", {}],
+    ["whitespace-only content", { objective: { en: "   " } }],
+  ])("returns the controlled precondition failure for %s", (_label, campaign) => {
+    const plannerInput = campaignInputWithoutCollections(campaign);
+    const provider = createDeterministicDesignProvider();
+    const result = provider.propose(plannerInput);
+    expect(result.plan.validation.valid).toBe(false);
+    expect(result.plan.validation.errors).toContain(
+      "Skill addCampaignSection requires campaign or catalogue context.",
+    );
+    expect(result.execution.validation.valid).toBe(false);
+    expect(result.proposal).toBeNull();
+  });
+
+  it.each([
+    ["objective", { objective: { en: "Highlight summer jewellery." } }],
+    ["heading", { heading: { en: "Summer jewellery" } }],
+    ["body", { body: { en: "Pieces selected for the summer season." } }],
+  ])("accepts a meaningful campaign %s without catalogue collections", (_label, campaign) => {
+    const plannerInput = campaignInputWithoutCollections(campaign);
+    const provider = createDeterministicDesignProvider();
+    const result = provider.propose(plannerInput);
+    expect(result.plan.validation).toEqual({ valid: true, errors: [] });
+    expect(result.execution.validation).toEqual({ valid: true, errors: [] });
+    expect(result.proposal?.status).toBe("pending");
+    expect(JSON.stringify(result.proposal?.proposedPage)).not.toContain(
+      "curated presentation from the current collection",
+    );
+  });
+
+  it("derives campaign direction from a usable catalogue collection", () => {
+    const provider = createDeterministicDesignProvider();
+    const result = provider.propose(input("Add a campaign section.", { campaign: undefined }));
+    expect(result.plan.validation).toEqual({ valid: true, errors: [] });
+    expect(result.proposal?.status).toBe("pending");
+  });
+});
+
 describe("initial deterministic skill execution", () => {
   it("applies luxury through approved variants and semantic existing-brand tokens", () => {
     const plannerInput = input("Make the homepage feel more luxurious.");
