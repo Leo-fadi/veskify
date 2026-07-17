@@ -191,13 +191,18 @@ export function designPlanIdFor(identity: PlanIdentity) {
   return `plan_${stableHash(JSON.stringify(identity))}`;
 }
 
-function explanation(intent: DesignIntent | null) {
+function explanation(intent: DesignIntent | null, includesHeroImprovement = true) {
   switch (intent) {
     case "luxuryStyle":
-      return {
-        en: "Refine the homepage using the existing brand palette, approved luxury styling and a focused hero improvement.",
-        fi: "Viimeistele etusivu nykyisellä väripaletilla, hyväksytyllä ylellisellä tyylillä ja kohdennetulla hero-parannuksella.",
-      };
+      return includesHeroImprovement
+        ? {
+            en: "Refine the homepage using the existing brand palette, approved luxury styling and a focused hero improvement.",
+            fi: "Viimeistele etusivu nykyisellä väripaletilla, hyväksytyllä ylellisellä tyylillä ja kohdennetulla hero-parannuksella.",
+          }
+        : {
+            en: "Refine the homepage using the existing brand palette and approved luxury styling.",
+            fi: "Viimeistele etusivu nykyisellä väripaletilla ja hyväksytyllä ylellisellä tyylillä.",
+          };
     case "minimalNordicStyle":
       return {
         en: "Simplify the layout, reduce decoration and add controlled whitespace.",
@@ -252,23 +257,28 @@ export function createDesignPlan(
     );
   if (classification.requiresClarification)
     errors.push("The merchant request requires clarification.");
+  const isSectionScopedRequest = classification.requestedScope === "section";
   if (
+    isSectionScopedRequest &&
     input.selectedSectionId &&
     !page.sections.some((section) => section.id === input.selectedSectionId)
   ) {
     errors.push(`Unknown selected section: ${input.selectedSectionId}.`);
   }
 
-  const hero = input.selectedSectionId
+  const pageHero = page.sections.find((section) => section.component === "hero");
+  const selectedSection = input.selectedSectionId
     ? page.sections.find((section) => section.id === input.selectedSectionId)
-    : page.sections.find((section) => section.component === "hero");
-  if (classification.normalizedIntent === "heroImprovement" && hero?.component !== "hero") {
+    : undefined;
+  const heroTarget = isSectionScopedRequest ? (selectedSection ?? pageHero) : pageHero;
+  if (classification.normalizedIntent === "heroImprovement" && heroTarget?.component !== "hero") {
     errors.push("Hero improvement requires an existing hero selection.");
   }
 
   const selectedSkills: SelectedDesignSkill[] = [];
   for (const skillId of classification.selectedSkillIds) {
     const definition = registry.get(skillId);
+    if (skillId === "improveHero" && !isSectionScopedRequest && !pageHero) continue;
     if (!definition.supportedPageTypes.includes(pageType)) {
       errors.push(`Skill ${skillId} does not support ${pageType} pages.`);
       continue;
@@ -291,8 +301,8 @@ export function createDesignPlan(
       skillId === "addCampaignSection"
         ? [nextSectionId(page, "section_campaign_generated")]
         : skillId === "improveHero"
-          ? hero?.component === "hero"
-            ? [hero.id]
+          ? heroTarget?.component === "hero"
+            ? [heroTarget.id]
             : []
           : page.sections
               .filter((section) =>
@@ -315,6 +325,12 @@ export function createDesignPlan(
       en: "The existing merchant palette remains the colour source of truth.",
       fi: "Nykyinen kauppiaan väripaletti säilyy värien lähteenä.",
     });
+    if (!pageHero) {
+      assumptions.push({
+        en: "No hero section is present, so the optional hero improvement is omitted.",
+        fi: "Sivulla ei ole hero-osiota, joten valinnainen hero-parannus jätetään pois.",
+      });
+    }
   }
   if (classification.normalizedIntent === "campaignSection" && !input.campaign) {
     assumptions.push({
@@ -333,7 +349,10 @@ export function createDesignPlan(
     plannedOperationCategories: unique(
       selectedSkills.flatMap((skill) => registry.get(skill.id).allowedOperationTypes),
     ),
-    explanation: explanation(classification.normalizedIntent),
+    explanation: explanation(
+      classification.normalizedIntent,
+      selectedSkills.some((skill) => skill.id === "improveHero"),
+    ),
     assumptions,
     requiredClarifications: classification.clarifications,
   };

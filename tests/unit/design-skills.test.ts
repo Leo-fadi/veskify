@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   designOperationSchema,
   InMemoryDesignProposalStore,
@@ -10,6 +10,7 @@ import {
   applyMinimalNordicStyleSkill,
   classifyDesignRequest,
   createDesignPlan,
+  createDeterministicDesignProvider,
   createProposalFromDesignPlan,
   designSkillDefinitionSchema,
   designSkillRegistry,
@@ -131,8 +132,14 @@ describe("deterministic EN/FI intent classification", () => {
 });
 
 describe("deterministic design plans", () => {
-  it("creates a full luxury homepage plan in stable skill order", () => {
-    const plan = createDesignPlan(input("Make the homepage feel more luxurious."));
+  it.each([
+    ["without a selection", undefined],
+    ["with the hero selected", section(homepage, "hero").id],
+    ["with a non-hero selected", section(homepage, "productGrid").id],
+  ])("creates a full luxury homepage plan %s", (_label, selectedSectionId) => {
+    const plan = createDesignPlan(
+      input("Make the homepage feel more luxurious.", { selectedSectionId }),
+    );
     expect(plan.validation).toEqual({ valid: true, errors: [] });
     expect(plan.selectedSkills.map((skill) => skill.id)).toEqual([
       "applyLuxuryStyle",
@@ -140,6 +147,9 @@ describe("deterministic design plans", () => {
     ]);
     expect(plan.affectedPageIds).toEqual([homepage.id]);
     expect(plan.affectedSectionIds).toContain(section(homepage, "hero").id);
+    expect(
+      plan.selectedSkills.find((skill) => skill.id === "improveHero")?.targetSectionIds,
+    ).toEqual([section(homepage, "hero").id]);
   });
 
   it("creates campaign, minimal-layout and hero-only plans", () => {
@@ -166,6 +176,34 @@ describe("deterministic design plans", () => {
     expect(invalid.validation.errors).toContain(
       "Hero improvement requires an existing hero selection.",
     );
+  });
+
+  it("ignores a non-hero selection for a page-wide minimal plan", () => {
+    const plan = createDesignPlan(
+      input("Make the layout more minimal.", {
+        selectedSectionId: section(homepage, "productGrid").id,
+      }),
+    );
+    expect(plan.validation).toEqual({ valid: true, errors: [] });
+    expect(plan.requestedScope).toBe("page");
+    expect(plan.selectedSkills.map((skill) => skill.id)).toEqual(["applyMinimalNordicStyle"]);
+    expect(plan.selectedSkills[0].targetSectionIds).toContain(section(homepage, "hero").id);
+  });
+
+  it("omits optional hero improvement from a luxury page without a hero", () => {
+    const pageWithoutHero = structuredClone(homepage);
+    pageWithoutHero.sections = pageWithoutHero.sections.filter((item) => item.component !== "hero");
+    const plannerInput = input("Make the homepage feel more luxurious.", {
+      page: pageWithoutHero,
+      selectedSectionId: section(pageWithoutHero, "productGrid").id,
+    });
+    const plan = createDesignPlan(plannerInput);
+    expect(plan.validation).toEqual({ valid: true, errors: [] });
+    expect(plan.selectedSkills.map((skill) => skill.id)).toEqual(["applyLuxuryStyle"]);
+    expect(plan.assumptions.map((assumption) => assumption.en)).toContain(
+      "No hero section is present, so the optional hero improvement is omitted.",
+    );
+    expect(executeDesignPlan(plan, plannerInput).validation).toEqual({ valid: true, errors: [] });
   });
 
   it("rejects skills on an unsupported PageType", () => {
@@ -201,6 +239,19 @@ describe("initial deterministic skill execution", () => {
     });
     expect(JSON.stringify(result.operations).toLowerCase()).not.toContain("#000000");
     expect(JSON.stringify(result.operations).toLowerCase()).not.toContain("gold");
+  });
+
+  it("does not roll back a page-wide luxury plan because a non-hero is selected", () => {
+    const plannerInput = input("Make the homepage feel more luxurious.", {
+      selectedSectionId: section(homepage, "productGrid").id,
+    });
+    const result = executeDesignPlan(createDesignPlan(plannerInput), plannerInput);
+    expect(result.validation).toEqual({ valid: true, errors: [] });
+    expect(result.failureReason).toBeNull();
+    expect(section(result.proposedPage, "header").variant).toBe("transparent");
+    expect(section(result.proposedPage, "hero").content.body).not.toEqual(
+      section(homepage, "hero").content.body,
+    );
   });
 
   it("applies a simplified minimal Nordic layout with controlled whitespace", () => {
@@ -443,11 +494,65 @@ describe("existing proposal lifecycle boundary", () => {
     expect(store.reject(proposal.id)).toEqual(homepage);
   });
 
-  it("offers the same end-to-end boundary through the deterministic provider", () => {
+  it("retains default proposals for inspection without an external store", () => {
     const result = deterministicDesignProvider.propose(input("Improve the hero."));
-    expect(result.classification.normalizedIntent).toBe("heroImprovement");
-    expect(result.plan.validation.valid).toBe(true);
-    expect(result.execution.validation.valid).toBe(true);
-    expect(result.proposal?.status).toBe("pending");
+    if (!result.proposal) throw new Error("Expected a pending hero proposal.");
+    expect(deterministicDesignProvider.inspect(result.proposal.id)).toEqual(result.proposal);
+  });
+
+  it("accepts a default-provider proposal through the retained lifecycle", () => {
+    const result = deterministicDesignProvider.propose(input("Make the layout more minimal."));
+    if (!result.proposal) throw new Error("Expected a pending minimal proposal.");
+    const proposal = result.proposal;
+    expect(deterministicDesignProvider.accept(proposal.id)).toEqual(proposal.proposedPage);
+    expect(deterministicDesignProvider.inspect(proposal.id).status).toBe("accepted");
+    expect(() => deterministicDesignProvider.accept(proposal.id)).toThrow(/already accepted/);
+  });
+
+  it("rejects a default-provider proposal through the retained lifecycle", () => {
+    const result = deterministicDesignProvider.propose(input("Add a campaign section."));
+    if (!result.proposal) throw new Error("Expected a pending campaign proposal.");
+    const proposal = result.proposal;
+    expect(deterministicDesignProvider.reject(proposal.id)).toEqual(proposal.originalPage);
+    expect(deterministicDesignProvider.inspect(proposal.id).status).toBe("rejected");
+    expect(() => deterministicDesignProvider.reject(proposal.id)).toThrow(/already rejected/);
+  });
+
+  it("keeps multiple proposals addressable by ID", () => {
+    const provider = createDeterministicDesignProvider();
+    const hero = provider.propose(input("Improve the hero.")).proposal;
+    const campaign = provider.propose(input("Add a campaign section.")).proposal;
+    if (!hero || !campaign) throw new Error("Expected two pending proposals.");
+    expect(hero.id).not.toBe(campaign.id);
+    expect(provider.inspect(hero.id)).toEqual(hero);
+    expect(provider.inspect(campaign.id)).toEqual(campaign);
+  });
+
+  it("preserves per-call injected proposal stores", () => {
+    const provider = createDeterministicDesignProvider();
+    const store = new InMemoryDesignProposalStore();
+    const result = provider.propose(input("Improve the hero."), store);
+    if (!result.proposal) throw new Error("Expected an injected-store proposal.");
+    expect(provider.inspect(result.proposal.id, store)).toEqual(result.proposal);
+    expect(provider.reject(result.proposal.id, store)).toEqual(result.proposal.originalPage);
+  });
+
+  it("isolates retained lifecycle state between provider instances", () => {
+    const first = createDeterministicDesignProvider();
+    const second = createDeterministicDesignProvider();
+    const proposal = first.propose(input("Improve the hero.")).proposal;
+    if (!proposal) throw new Error("Expected an isolated proposal.");
+    expect(first.inspect(proposal.id)).toEqual(proposal);
+    expect(() => second.inspect(proposal.id)).toThrow(/Unknown design proposal/);
+  });
+
+  it("does not create a proposal for invalid execution", () => {
+    const store = new InMemoryDesignProposalStore();
+    const create = vi.spyOn(store, "create");
+    const provider = createDeterministicDesignProvider(store);
+    const result = provider.propose(input("Create arbitrary checkout code."));
+    expect(result.execution.validation.valid).toBe(false);
+    expect(result.proposal).toBeNull();
+    expect(create).not.toHaveBeenCalled();
   });
 });

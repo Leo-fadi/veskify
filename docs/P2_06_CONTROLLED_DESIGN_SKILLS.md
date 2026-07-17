@@ -18,7 +18,8 @@ Puck integration, persistence, publishing, proposal store, or operation-schema r
 - `createDesignPlan` for immutable, deterministic, scope-aware plans;
 - `executeDesignPlan` for transactional execution through the existing design-operation executor;
 - `createProposalFromDesignPlan` for the existing `InMemoryDesignProposalStore` lifecycle;
-- `deterministicDesignProvider` as the no-credentials provider facade;
+- `DeterministicDesignProvider`, `createDeterministicDesignProvider`, and
+  `deterministicDesignProvider` as retained no-credentials proposal lifecycle facades;
 - the initial `applyLuxuryStyle`, `applyMinimalNordicStyle`, `addCampaignSection`, and `improveHero`
   definitions.
 
@@ -37,6 +38,11 @@ for skill execution and checked for mutation. Existing operation schemas and reg
 prevent unregistered components, unsupported variants, protected content fields, and invalid
 header/footer composition. Executable React, HTML, CSS, JavaScript, scripts, and embeds are rejected
 before canonical execution.
+
+Each deterministic provider instance owns one stable `InMemoryDesignProposalStore` and exposes
+`propose`, `inspect`, `accept`, and `reject`. Callers may bind or pass their own store, while the
+default provider remains able to complete the pending-proposal lifecycle without external state.
+Provider instances do not share proposal state.
 
 ## Deterministic request families
 

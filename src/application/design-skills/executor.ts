@@ -1,8 +1,8 @@
 import {
-  InMemoryDesignProposalStore,
   applyDesignOperation,
   type DesignOperation,
   type DesignProposal,
+  type InMemoryDesignProposalStore,
 } from "@/application/design-operations";
 import { validateRegisteredPage } from "@/components/registry";
 import { brandSystemSchema } from "@/domain/design-system";
@@ -138,7 +138,7 @@ export function executeDesignPlan(
         throw new Error(`Skill contract changed after planning: ${selected.id}.`);
       }
       const selectedSectionId =
-        definition.scope === "section" ? selected.targetSectionIds[0] : input.selectedSectionId;
+        definition.scope === "section" ? selected.targetSectionIds[0] : undefined;
       const context = immutableSkillContext(
         input,
         proposed,
@@ -193,7 +193,7 @@ export function executeDesignPlan(
 export function createProposalFromDesignPlan(
   executionInput: DesignSkillExecutionResult,
   context: DesignPlannerInput["displayContext"],
-  store = new InMemoryDesignProposalStore(),
+  store: InMemoryDesignProposalStore,
 ): DesignProposal {
   const execution = designSkillExecutionResultSchema.parse(structuredClone(executionInput));
   if (!execution.validation.valid || execution.failureReason) {
