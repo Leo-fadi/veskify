@@ -121,6 +121,8 @@ export async function confirmPublish(
       synchronizedDraftSnapshot.revision !== aggregate.project.revision ||
       canonicalStorefrontContentFingerprint(priorPublished) !==
         preparation.expectedPublished.contentFingerprint ||
+      canonicalStorefrontContentFingerprint(publishedSnapshot) !==
+        preparation.expectedDraft.contentFingerprint ||
       !canonicalStorefrontContentEqual(publishedSnapshot, synchronizedDraftSnapshot)
     ) {
       throw new PublishConfirmationError();

@@ -5,6 +5,7 @@ import {
   createPublishChangeSummary,
   InvalidPublishPreparationError,
   NoPublishableChangesError,
+  PublishConfirmationError,
   preparePublish,
   publishChangeSummarySchema,
   publishPreparationSchema,
@@ -269,6 +270,33 @@ describe("P2-11 explicit publish confirmation", () => {
     );
     expect(result.aggregate.catalogue).toEqual(catalogueBefore);
     expect(result.aggregate.snapshots).toHaveLength(before.snapshots.length + 2);
+  });
+
+  it("rejects a defective adapter result whose matching committed snapshots differ from the prepared draft", async () => {
+    const value = repository();
+    const preparation = await meaningfulPreparation(value, "defective_adapter_content");
+    const defective: ProjectRepository = {
+      list: () => value.list(),
+      get: (id) => value.get(id),
+      saveDraft: (id, snapshot, expected) => value.saveDraft(id, snapshot, expected),
+      publish: async (id, expectation) => {
+        const aggregate = await value.publish(id, expectation);
+        const published = aggregate.snapshots.find(
+          (snapshot) => snapshot.id === aggregate.project.publishedSnapshotId,
+        )!;
+        const synchronizedDraft = aggregate.snapshots.find(
+          (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
+        )!;
+        published.pages[0].title.en = "Defective adapter content";
+        synchronizedDraft.pages[0].title.en = "Defective adapter content";
+        return aggregate;
+      },
+      restore: (id, snapshotId) => value.restore(id, snapshotId),
+    };
+
+    await expect(confirmPublish(preparation, defective)).rejects.toBeInstanceOf(
+      PublishConfirmationError,
+    );
   });
 
   it("cancelling by dropping a preparation performs no write", async () => {
