@@ -171,4 +171,64 @@ describe("guided storefront generation orchestrator", () => {
       } as never),
     ).toThrow(GuidedStorefrontGenerationError);
   });
+
+  it("rejects corrupted cross-stage metadata and nested plan relationships", () => {
+    const valid = generateGuidedStorefront(input());
+    const corruptions: Array<(plan: typeof valid) => void> = [
+      (plan) => {
+        plan.generatedSnapshot!.projectId = "project_other";
+      },
+      (plan) => {
+        plan.generatedSnapshot!.catalogueRef = "catalogue_other";
+      },
+      (plan) => {
+        plan.generatedSnapshot!.createdAt = "2026-07-19T13:00:00.000Z";
+      },
+      (plan) => {
+        plan.generatedSnapshot!.brandSystem.colors.primary = "#123456";
+      },
+      (plan) => {
+        plan.initialStorefrontGenerationPlan!.projectId = "project_other";
+      },
+      (plan) => {
+        plan.initialStorefrontGenerationPlan!.snapshotId = "snapshot_other";
+      },
+      (plan) => {
+        plan.initialStorefrontGenerationPlan!.catalogueRef = "catalogue_other";
+      },
+      (plan) => {
+        plan.initialStorefrontGenerationPlan!.generatedSnapshot!.pages[0].title.en = "Other";
+      },
+      (plan) => {
+        plan.initialStorefrontGenerationPlan!.templateSelectionPlanId = "selection_other";
+      },
+      (plan) => {
+        plan.initialStorefrontGenerationPlan!.selectedTemplateId = "template_brand_led_editorial";
+      },
+      (plan) => {
+        plan.templateSelectionPlan!.briefId = "brief_other";
+      },
+      (plan) => {
+        plan.initialStorefrontGenerationPlan!.briefId = "brief_other";
+      },
+    ];
+    corruptions.forEach((corrupt) => {
+      const candidate = structuredClone(valid);
+      corrupt(candidate);
+      expect(() => validateGuidedStorefrontGenerationPlan(candidate)).toThrow();
+      expect(() => cloneGuidedStorefrontGenerationPlan(candidate)).toThrow();
+    });
+    expect(validateGuidedStorefrontGenerationPlan(valid)).toEqual(valid);
+  });
+
+  it("continues to validate a legitimate blocked plan with no later-stage output", () => {
+    const blocked = generateGuidedStorefront(input({ preferredTemplateId: "template_unknown" }));
+    expect(blocked.status).toBe("blocked");
+    expect(blocked.generatedSnapshot).toBeNull();
+    expect(blocked.initialStorefrontGenerationPlan).toBeNull();
+    expect(validateGuidedStorefrontGenerationPlan(blocked)).toEqual(blocked);
+    expect(() => {
+      (blocked as { status: string }).status = "ready";
+    }).toThrow();
+  });
 });

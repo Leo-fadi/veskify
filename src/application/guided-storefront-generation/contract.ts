@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { storefrontDesignBriefSchema } from "@/domain/design-brief";
 import { idSchema, isoDateTimeSchema } from "@/domain/shared";
-import { storefrontSnapshotSchema } from "@/domain/storefront";
+import { canonicalValueString, storefrontSnapshotSchema } from "@/domain/storefront";
 import { brandFoundationPlanSchema } from "@/application/brand-foundation/contract";
 import { initialStorefrontGenerationPlanSchema } from "@/application/storefront-templates/materializer-contract";
 import { storefrontTemplateSelectionPlanSchema } from "@/application/storefront-templates/selection-contract";
@@ -119,6 +119,110 @@ export const guidedStorefrontGenerationPlanSchema = z
         path: ["generatedSnapshot", "id"],
         message: "Generated snapshot ID must match snapshotId.",
       });
+    }
+    if (plan.templateSelectionPlan && plan.templateSelectionPlan.briefId !== plan.briefId) {
+      context.addIssue({
+        code: "custom",
+        path: ["templateSelectionPlan", "briefId"],
+        message: "Template selection brief ID must match.",
+      });
+    }
+    if (plan.generatedSnapshot) {
+      if (plan.generatedSnapshot.projectId !== plan.projectId) {
+        context.addIssue({
+          code: "custom",
+          path: ["generatedSnapshot", "projectId"],
+          message: "Generated snapshot project ID must match projectId.",
+        });
+      }
+      if (plan.generatedSnapshot.catalogueRef !== plan.catalogueRef) {
+        context.addIssue({
+          code: "custom",
+          path: ["generatedSnapshot", "catalogueRef"],
+          message: "Generated snapshot catalogue reference must match catalogueRef.",
+        });
+      }
+      if (plan.generatedSnapshot.createdAt !== plan.createdAt) {
+        context.addIssue({
+          code: "custom",
+          path: ["generatedSnapshot", "createdAt"],
+          message: "Generated snapshot createdAt must match createdAt.",
+        });
+      }
+      if (
+        canonicalValueString(plan.generatedSnapshot.brandSystem) !==
+        canonicalValueString(plan.brandFoundationPlan.brandSystem)
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["generatedSnapshot", "brandSystem"],
+          message: "Generated snapshot BrandSystem must match the brand foundation plan.",
+        });
+      }
+    }
+    const materialization = plan.initialStorefrontGenerationPlan;
+    if (materialization) {
+      if (materialization.briefId !== plan.briefId) {
+        context.addIssue({
+          code: "custom",
+          path: ["initialStorefrontGenerationPlan", "briefId"],
+          message: "Materialization brief ID must match.",
+        });
+      }
+      if (materialization.projectId !== plan.projectId) {
+        context.addIssue({
+          code: "custom",
+          path: ["initialStorefrontGenerationPlan", "projectId"],
+          message: "Materialization project ID must match projectId.",
+        });
+      }
+      if (materialization.snapshotId !== plan.snapshotId) {
+        context.addIssue({
+          code: "custom",
+          path: ["initialStorefrontGenerationPlan", "snapshotId"],
+          message: "Materialization snapshot ID must match snapshotId.",
+        });
+      }
+      if (materialization.catalogueRef !== plan.catalogueRef) {
+        context.addIssue({
+          code: "custom",
+          path: ["initialStorefrontGenerationPlan", "catalogueRef"],
+          message: "Materialization catalogue reference must match catalogueRef.",
+        });
+      }
+      if (plan.templateSelectionPlan) {
+        if (materialization.templateSelectionPlanId !== plan.templateSelectionPlan.id) {
+          context.addIssue({
+            code: "custom",
+            path: ["initialStorefrontGenerationPlan", "templateSelectionPlanId"],
+            message: "Materialization selection plan ID must match.",
+          });
+        }
+        if (materialization.selectedTemplateId !== plan.templateSelectionPlan.selectedTemplateId) {
+          context.addIssue({
+            code: "custom",
+            path: ["initialStorefrontGenerationPlan", "selectedTemplateId"],
+            message: "Materialization selected template must match.",
+          });
+        }
+      } else {
+        context.addIssue({
+          code: "custom",
+          path: ["templateSelectionPlan"],
+          message: "Materialization requires its template selection plan.",
+        });
+      }
+      const topSnapshot = plan.generatedSnapshot;
+      if (
+        canonicalValueString(materialization.generatedSnapshot) !==
+        canonicalValueString(topSnapshot)
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["initialStorefrontGenerationPlan", "generatedSnapshot"],
+          message: "Materialization snapshot must equal the top-level generated snapshot.",
+        });
+      }
     }
   });
 
