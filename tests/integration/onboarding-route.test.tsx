@@ -2,12 +2,134 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OnboardingWizard } from "@/app/projects/new/onboarding-wizard";
+import { OnboardingService } from "@/application/onboarding";
 import { onboardingSessionSchema } from "@/domain/onboarding";
-import { ONBOARDING_SESSION_STORAGE_KEY } from "@/services/onboarding";
+import { ONBOARDING_SESSION_STORAGE_KEY, OnboardingStorageError } from "@/services/onboarding";
+
+const { routerPush } = vi.hoisted(() => ({ routerPush: vi.fn() }));
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: routerPush }) }));
 
 describe("guided onboarding route", () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    routerPush.mockReset();
+  });
   afterEach(() => vi.restoreAllMocks());
+
+  it("renders the Vesko setup shell with localized save state", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    expect(await screen.findByRole("img", { name: "Vesko" })).toBeVisible();
+    expect(screen.getByText("Storefront setup")).toBeVisible();
+    expect(await screen.findByRole("status", { name: "Save status" })).toHaveTextContent("Saved");
+    expect(screen.getByRole("link", { name: "Back to dashboard" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("button", { name: "Save & exit" })).toBeEnabled();
+    await user.click(screen.getByRole("radio", { name: "Suomi" }));
+    expect(screen.getByText("Verkkokaupan aloitus")).toBeVisible();
+    expect(screen.getByRole("status", { name: "Tallennuksen tila" })).toHaveTextContent(
+      "Tallennettu",
+    );
+    expect(screen.getByRole("button", { name: "Tallenna ja poistu" })).toBeEnabled();
+  });
+
+  it("queues Save & exit behind pending mutations and persists before navigation", async () => {
+    const user = userEvent.setup();
+    let releaseMutation: () => void = () => undefined;
+    const pendingMutation = new Promise<void>((resolve) => {
+      releaseMutation = resolve;
+    });
+    vi.spyOn(OnboardingService.prototype, "selectCreationPath").mockImplementation(
+      async (session) => {
+        await pendingMutation;
+        return session;
+      },
+    );
+    const persist = vi.spyOn(OnboardingService.prototype, "persistSession");
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: /Create a new storefront/i }));
+    await user.click(screen.getByRole("button", { name: "Save & exit" }));
+    expect(routerPush).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Saving…" })).toBeDisabled();
+    expect(persist).not.toHaveBeenCalled();
+    releaseMutation();
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith("/"));
+    expect(persist).toHaveBeenCalledOnce();
+  });
+
+  it("prevents repeated Save & exit activation while persistence is pending", async () => {
+    const user = userEvent.setup();
+    let releaseSave: () => void = () => undefined;
+    const persist = vi.spyOn(OnboardingService.prototype, "persistSession").mockImplementation(
+      (session) =>
+        new Promise((resolve) => {
+          releaseSave = () => resolve(session);
+        }),
+    );
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("button", { name: "Save & exit" }));
+    await user.click(screen.getByRole("button", { name: "Saving…" }));
+    expect(persist).toHaveBeenCalledTimes(1);
+    expect(routerPush).not.toHaveBeenCalled();
+    releaseSave();
+    await waitFor(() => expect(routerPush).toHaveBeenCalledOnce());
+  });
+
+  it("keeps the merchant on onboarding and announces a Save & exit failure", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(OnboardingService.prototype, "persistSession").mockRejectedValue(
+      new OnboardingStorageError(),
+    );
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("button", { name: "Save & exit" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not save/i);
+    expect(screen.getByText("Save failed")).toBeVisible();
+    expect(routerPush).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Save & exit" })).toBeEnabled();
+  });
+
+  it("persists before keyboard navigation back to the dashboard", async () => {
+    const user = userEvent.setup();
+    let releaseSave: () => void = () => undefined;
+    const persist = vi.spyOn(OnboardingService.prototype, "persistSession").mockImplementation(
+      (session) =>
+        new Promise((resolve) => {
+          releaseSave = () => resolve(session);
+        }),
+    );
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    const dashboard = screen.getByRole("link", { name: "Back to dashboard" });
+    dashboard.focus();
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(persist).toHaveBeenCalledOnce());
+    expect(routerPush).not.toHaveBeenCalled();
+    releaseSave();
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith("/"));
+  });
+
+  it("announces the Finnish pending save state", async () => {
+    const user = userEvent.setup();
+    let releaseSave: () => void = () => undefined;
+    vi.spyOn(OnboardingService.prototype, "persistSession").mockImplementation(
+      (session) =>
+        new Promise((resolve) => {
+          releaseSave = () => resolve(session);
+        }),
+    );
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: "Suomi" }));
+    await user.click(screen.getByRole("button", { name: "Tallenna ja poistu" }));
+    expect(screen.getByRole("status", { name: "Tallennuksen tila" })).toHaveTextContent(
+      "Tallennetaan…",
+    );
+    releaseSave();
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith("/"));
+  });
 
   it("exits loading when the first save fails and can retry after storage recovers", async () => {
     const user = userEvent.setup();

@@ -142,6 +142,13 @@ export class OnboardingService {
     return this.#repository.load();
   }
 
+  /** Persists the latest validated session for navigation boundaries such as Save & exit. */
+  async persistSession(input: OnboardingSession): Promise<OnboardingSession> {
+    const session = onboardingSessionSchema.parse(input);
+    await this.#repository.save(session);
+    return cloneOnboardingSession(session);
+  }
+
   async resume(): Promise<OnboardingResumeResult> {
     const result = await this.loadSession();
     if (result.status === "missing") {

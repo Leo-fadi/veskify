@@ -2,6 +2,43 @@ import { expect, test } from "@playwright/test";
 
 const storageKey = "veskify:onboarding-session";
 
+test("saves and exits onboarding, then resumes the latest valid session", async ({ page }) => {
+  await page.goto("/projects/new");
+  await page.getByRole("radio", { name: /Create a new storefront/i }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("textbox", { name: "Business name" }).fill("North Star Studio");
+  await page.getByRole("button", { name: "Save & exit" }).click();
+  await expect(page).toHaveURL("/");
+  await page.goto("/projects/new");
+  await expect(page.getByRole("heading", { name: "Business basics" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Business name" })).toHaveValue(
+    "North Star Studio",
+  );
+  await expect(page.getByText("Your saved onboarding draft has been resumed.")).toBeVisible();
+});
+
+test("supports keyboard Save & exit and resume at 375px", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/projects/new");
+  const path = page.getByRole("radio", { name: /Create a new storefront/i });
+  await path.focus();
+  await page.keyboard.press("Space");
+  const continueButton = page.getByRole("button", { name: "Continue" });
+  await continueButton.focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("textbox", { name: "Business name" }).fill("Keyboard Studio");
+  const saveExit = page.getByRole("button", { name: "Save & exit" });
+  await saveExit.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL("/");
+  await page.goto("/projects/new");
+  await expect(page.getByRole("textbox", { name: "Business name" })).toHaveValue("Keyboard Studio");
+  const horizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  );
+  expect(horizontalOverflow).toBe(false);
+});
+
 for (const option of [
   "Create a new storefront",
   "Redesign an existing storefront",

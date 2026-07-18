@@ -1,5 +1,8 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   OnboardingBusinessBasicsValidationError,
@@ -39,11 +42,22 @@ type ViewState =
   | { kind: "recovery"; reason: "corrupt" | "incompatible" }
   | { kind: "ready"; session: OnboardingSession; origin: "new" | "resumed" };
 
+type SaveState = "saved" | "saving" | "failed";
+
 const copy = {
   en: {
     eyebrow: "Guided storefront setup",
     heading: "Create your storefront with Veskify",
     draft: "Draft · onboarding",
+    context: "Storefront setup",
+    dashboard: "Back to dashboard",
+    leaving: "Leaving…",
+    saveExit: "Save & exit",
+    saveStatus: "Save status",
+    saved: "Saved",
+    saving: "Saving…",
+    saveFailed: "Save failed",
+    saveError: "We could not save your latest changes. Stay on this page and try again.",
     languageLabel: "Interface language",
     english: "English",
     finnish: "Suomi",
@@ -83,6 +97,15 @@ const copy = {
     eyebrow: "Ohjattu verkkokaupan aloitus",
     heading: "Luo verkkokauppasi Veskifylla",
     draft: "Luonnos · aloitus",
+    context: "Verkkokaupan aloitus",
+    dashboard: "Takaisin hallintapaneeliin",
+    leaving: "Poistutaan…",
+    saveExit: "Tallenna ja poistu",
+    saveStatus: "Tallennuksen tila",
+    saved: "Tallennettu",
+    saving: "Tallennetaan…",
+    saveFailed: "Tallennus epäonnistui",
+    saveError: "Uusimpia muutoksia ei voitu tallentaa. Pysy tällä sivulla ja yritä uudelleen.",
     languageLabel: "Käyttöliittymän kieli",
     english: "English",
     finnish: "Suomi",
@@ -463,6 +486,7 @@ function visualDirectionDraftFromSession(session: OnboardingSession): VisualDire
 }
 
 export function OnboardingWizard() {
+  const router = useRouter();
   const [locale, setLocale] = useState<Locale>("en");
   const [view, setView] = useState<ViewState>({ kind: "loading" });
   const [message, setMessage] = useState("");
@@ -479,11 +503,16 @@ export function OnboardingWizard() {
   );
   const [visualDirectionErrors, setVisualDirectionErrors] = useState<VisualDirectionErrors>({});
   const [restartOpen, setRestartOpen] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("saving");
+  const [exitError, setExitError] = useState("");
+  const [pendingExit, setPendingExit] = useState<"save" | "dashboard" | null>(null);
   const sessionRef = useRef<OnboardingSession | null>(null);
+  const exitPendingRef = useRef(false);
   const mutationQueue = useMemo(() => new OnboardingMutationQueue(), []);
   const repository = useMemo(() => new BrowserOnboardingSessionRepository(), []);
   const service = useMemo(() => new OnboardingService(repository), [repository]);
   const text = copy[locale];
+  const exitUnavailable = pendingExit !== null || view.kind !== "ready";
 
   const applyResumeResult = useCallback(
     (result: Awaited<ReturnType<OnboardingService["resume"]>>) => {
@@ -501,12 +530,15 @@ export function OnboardingWizard() {
         setBusinessErrors({});
         setExistingSourceErrors({});
         setVisualDirectionErrors({});
+        setSaveState("saved");
+        setExitError("");
         return;
       }
       if (result.status === "corrupt" || result.status === "incompatible") {
         setView({ kind: "recovery", reason: result.status });
         return;
       }
+      setSaveState("failed");
       setView({ kind: "storage-error" });
     },
     [],
@@ -532,10 +564,15 @@ export function OnboardingWizard() {
 
   const updateSession = (
     action: (session: OnboardingSession) => Promise<OnboardingSession>,
-  ): Promise<OnboardingSession | null> =>
-    mutationQueue.enqueue(async () => {
+  ): Promise<OnboardingSession | null> => {
+    setSaveState("saving");
+    setExitError("");
+    return mutationQueue.enqueue(async () => {
       const currentSession = sessionRef.current;
-      if (!currentSession) return null;
+      if (!currentSession) {
+        setSaveState("saved");
+        return null;
+      }
       try {
         const session = await action(currentSession);
         sessionRef.current = session;
@@ -547,10 +584,12 @@ export function OnboardingWizard() {
         setExistingSourceErrors({});
         setVisualDirectionErrors({});
         setMessage("");
+        setSaveState("saved");
         return session;
       } catch (error) {
         if (error instanceof OnboardingStorageError) {
           mutationQueue.pause();
+          setSaveState("failed");
           setView({ kind: "storage-error" });
           return null;
         }
@@ -560,6 +599,7 @@ export function OnboardingWizard() {
           ) as Partial<Record<BusinessBasicsField, string>>;
           setBusinessErrors(nextErrors);
           setMessage(businessBasicsText[locale].summary);
+          setSaveState("saved");
           return null;
         }
         if (error instanceof OnboardingExistingSourcesValidationError) {
@@ -573,6 +613,7 @@ export function OnboardingWizard() {
                   : existingSourcesText[locale].url.invalid;
           setExistingSourceErrors({ existingStorefrontUrl: errorMessage });
           setMessage(existingSourcesText[locale].summary);
+          setSaveState("saved");
           return null;
         }
         if (error instanceof OnboardingVisualDirectionValidationError) {
@@ -589,6 +630,7 @@ export function OnboardingWizard() {
             toneKeywords: error.code === "VISUAL_STYLE_REQUIRED" ? undefined : visualError,
           });
           setMessage(visualError);
+          setSaveState("saved");
           return null;
         }
         if (error instanceof OnboardingTransitionError) {
@@ -599,13 +641,50 @@ export function OnboardingWizard() {
                 ? text.notAvailable
                 : text.transitionError,
           );
+          setSaveState("saved");
           return null;
         }
         throw error;
       }
     });
+  };
+
+  const exitToDashboard = async (intent: "save" | "dashboard") => {
+    if (exitPendingRef.current) return;
+    exitPendingRef.current = true;
+    setPendingExit(intent);
+    setSaveState("saving");
+    setExitError("");
+    try {
+      const session = await mutationQueue.enqueue(async () => {
+        const currentSession = sessionRef.current;
+        if (!currentSession) return null;
+        const persisted = await service.persistSession(currentSession);
+        sessionRef.current = persisted;
+        return persisted;
+      });
+      if (!session) {
+        setSaveState("failed");
+        setExitError(text.saveError);
+        return;
+      }
+      setSaveState("saved");
+      router.push("/");
+    } catch (error) {
+      if (error instanceof OnboardingStorageError) {
+        setSaveState("failed");
+        setExitError(text.saveError);
+        return;
+      }
+      throw error;
+    } finally {
+      exitPendingRef.current = false;
+      setPendingExit(null);
+    }
+  };
 
   const restart = async () => {
+    setSaveState("saving");
     const session = await mutationQueue.enqueue(async () => {
       try {
         const nextSession = await service.reset();
@@ -617,10 +696,12 @@ export function OnboardingWizard() {
         setExistingSourceErrors({});
         setVisualDirectionErrors({});
         setView({ kind: "ready", session: nextSession, origin: "new" });
+        setSaveState("saved");
         return nextSession;
       } catch (error) {
         if (error instanceof OnboardingStorageError) {
           mutationQueue.pause();
+          setSaveState("failed");
           setView({ kind: "storage-error" });
           return null;
         }
@@ -635,110 +716,172 @@ export function OnboardingWizard() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>{text.eyebrow}</p>
-          <h1>{text.heading}</h1>
-          <span className={styles.context}>{text.draft}</span>
-        </div>
-        <fieldset className={styles.localeControl}>
-          <legend>{text.languageLabel}</legend>
-          {(["en", "fi"] as const).map((value) => (
-            <label key={value}>
-              <input
-                checked={locale === value}
-                name="interface-locale"
-                onChange={() => setLocale(value)}
-                type="radio"
-                value={value}
+      <header className={styles.appBar}>
+        <div className={styles.appBarInner}>
+          <div className={styles.brandContext}>
+            <span className={styles.logoFrame}>
+              <Image
+                alt="Vesko"
+                className={styles.logo}
+                height={240}
+                priority
+                src="/vesko-logo.png"
+                width={240}
               />
-              <span>{value === "en" ? text.english : text.finnish}</span>
-            </label>
-          ))}
-        </fieldset>
+            </span>
+            <span className={styles.appContext}>{text.context}</span>
+          </div>
+          <div className={styles.shellActions}>
+            <p
+              aria-live="polite"
+              aria-label={text.saveStatus}
+              className={`${styles.saveState} ${saveState === "failed" ? styles.saveStateFailed : ""}`}
+              role="status"
+            >
+              <span aria-hidden="true" className={styles.saveStateDot} />
+              {saveState === "saving"
+                ? text.saving
+                : saveState === "failed"
+                  ? text.saveFailed
+                  : text.saved}
+            </p>
+            <Link
+              aria-disabled={exitUnavailable}
+              className={styles.dashboardLink}
+              href="/"
+              onClick={(event) => {
+                event.preventDefault();
+                if (exitUnavailable) return;
+                void exitToDashboard("dashboard");
+              }}
+            >
+              {pendingExit === "dashboard" ? text.leaving : text.dashboard}
+            </Link>
+            <button
+              className={styles.saveExitButton}
+              disabled={exitUnavailable}
+              onClick={() => void exitToDashboard("save")}
+              type="button"
+            >
+              {pendingExit === "save" ? text.saving : text.saveExit}
+            </button>
+          </div>
+        </div>
+        {exitError ? (
+          <p className={styles.exitError} role="alert">
+            {exitError}
+          </p>
+        ) : null}
       </header>
 
-      <section aria-label={text.heading} className={styles.card}>
-        {view.kind === "loading" && (
-          <div aria-live="polite" className={styles.centerState} role="status">
-            <span aria-hidden="true" className={styles.spinner} />
-            <p>{text.loading}</p>
+      <div className={styles.shellBody}>
+        <header className={styles.header}>
+          <div>
+            <p className={styles.eyebrow}>{text.eyebrow}</p>
+            <h1>{text.heading}</h1>
+            <span className={styles.context}>{text.draft}</span>
           </div>
-        )}
+          <fieldset className={styles.localeControl}>
+            <legend>{text.languageLabel}</legend>
+            {(["en", "fi"] as const).map((value) => (
+              <label key={value}>
+                <input
+                  checked={locale === value}
+                  name="interface-locale"
+                  onChange={() => setLocale(value)}
+                  type="radio"
+                  value={value}
+                />
+                <span>{value === "en" ? text.english : text.finnish}</span>
+              </label>
+            ))}
+          </fieldset>
+        </header>
 
-        {view.kind === "storage-error" && (
-          <RecoveryState
-            body={text.storageBody}
-            heading={text.storageHeading}
-            onAction={() => void resume()}
-            action={text.retry}
-          />
-        )}
+        <section aria-label={text.heading} className={styles.card}>
+          {view.kind === "loading" && (
+            <div aria-live="polite" className={styles.centerState} role="status">
+              <span aria-hidden="true" className={styles.spinner} />
+              <p>{text.loading}</p>
+            </div>
+          )}
 
-        {view.kind === "recovery" && (
-          <RecoveryState
-            body={view.reason === "corrupt" ? text.corruptBody : text.incompatibleBody}
-            heading={view.reason === "corrupt" ? text.corruptHeading : text.incompatibleHeading}
-            onAction={() => setRestartOpen(true)}
-            action={text.discardRestart}
-          />
-        )}
+          {view.kind === "storage-error" && (
+            <RecoveryState
+              body={text.storageBody}
+              heading={text.storageHeading}
+              onAction={() => void resume()}
+              action={text.retry}
+            />
+          )}
 
-        {view.kind === "ready" && (
-          <ActiveStep
-            locale={locale}
-            businessDraft={businessDraft ?? view.session.designBrief.businessIdentity}
-            businessErrors={businessErrors}
-            existingSourceDraft={
-              existingSourceDraft ??
-              view.session.designBrief.creationContext.existingStorefrontUrl ??
-              ""
-            }
-            existingSourceErrors={existingSourceErrors}
-            visualDirectionDraft={
-              visualDirectionDraft ?? visualDirectionDraftFromSession(view.session)
-            }
-            visualDirectionErrors={visualDirectionErrors}
-            message={message || (view.origin === "new" ? text.newStatus : text.resumedStatus)}
-            onBusinessDraftChange={setBusinessDraft}
-            onBusinessField={(field, value) =>
-              updateSession((session) => service.updateBusinessIdentityField(session, field, value))
-            }
-            onBusinessComplete={(draft) =>
-              updateSession((session) => service.completeBusinessBasics(session, draft))
-            }
-            onExistingSourceDraftChange={setExistingSourceDraft}
-            onExistingSourceField={(value) =>
-              updateSession((session) => service.updateExistingStorefrontUrl(session, value))
-            }
-            onExistingSourcesComplete={(value) =>
-              updateSession((session) => service.completeExistingSources(session, value))
-            }
-            onExistingSourcesSkip={() =>
-              void updateSession((session) => service.skipExistingSources(session))
-            }
-            onVisualDirectionDraftChange={setVisualDirectionDraft}
-            onVisualDirectionFieldSave={(draft) =>
-              updateSession((session) => service.updateVisualDirection(session, draft))
-            }
-            onVisualDirectionComplete={(draft) =>
-              updateSession((session) => service.completeVisualDirection(session, draft))
-            }
-            onVisualDirectionSkip={() =>
-              void updateSession((session) => service.skipVisualDirection(session))
-            }
-            onBack={() => void updateSession((session) => service.goBack(session))}
-            onContinue={() => void updateSession((session) => service.advance(session))}
-            onPath={(path) =>
-              void updateSession((session) => service.selectCreationPath(session, path))
-            }
-            onRestart={() => setRestartOpen(true)}
-            onSkip={() => void updateSession((session) => service.skip(session))}
-            service={service}
-            session={view.session}
-          />
-        )}
-      </section>
+          {view.kind === "recovery" && (
+            <RecoveryState
+              body={view.reason === "corrupt" ? text.corruptBody : text.incompatibleBody}
+              heading={view.reason === "corrupt" ? text.corruptHeading : text.incompatibleHeading}
+              onAction={() => setRestartOpen(true)}
+              action={text.discardRestart}
+            />
+          )}
+
+          {view.kind === "ready" && (
+            <ActiveStep
+              locale={locale}
+              businessDraft={businessDraft ?? view.session.designBrief.businessIdentity}
+              businessErrors={businessErrors}
+              existingSourceDraft={
+                existingSourceDraft ??
+                view.session.designBrief.creationContext.existingStorefrontUrl ??
+                ""
+              }
+              existingSourceErrors={existingSourceErrors}
+              visualDirectionDraft={
+                visualDirectionDraft ?? visualDirectionDraftFromSession(view.session)
+              }
+              visualDirectionErrors={visualDirectionErrors}
+              message={message || (view.origin === "new" ? text.newStatus : text.resumedStatus)}
+              onBusinessDraftChange={setBusinessDraft}
+              onBusinessField={(field, value) =>
+                updateSession((session) =>
+                  service.updateBusinessIdentityField(session, field, value),
+                )
+              }
+              onBusinessComplete={(draft) =>
+                updateSession((session) => service.completeBusinessBasics(session, draft))
+              }
+              onExistingSourceDraftChange={setExistingSourceDraft}
+              onExistingSourceField={(value) =>
+                updateSession((session) => service.updateExistingStorefrontUrl(session, value))
+              }
+              onExistingSourcesComplete={(value) =>
+                updateSession((session) => service.completeExistingSources(session, value))
+              }
+              onExistingSourcesSkip={() =>
+                void updateSession((session) => service.skipExistingSources(session))
+              }
+              onVisualDirectionDraftChange={setVisualDirectionDraft}
+              onVisualDirectionFieldSave={(draft) =>
+                updateSession((session) => service.updateVisualDirection(session, draft))
+              }
+              onVisualDirectionComplete={(draft) =>
+                updateSession((session) => service.completeVisualDirection(session, draft))
+              }
+              onVisualDirectionSkip={() =>
+                void updateSession((session) => service.skipVisualDirection(session))
+              }
+              onBack={() => void updateSession((session) => service.goBack(session))}
+              onContinue={() => void updateSession((session) => service.advance(session))}
+              onPath={(path) =>
+                void updateSession((session) => service.selectCreationPath(session, path))
+              }
+              onRestart={() => setRestartOpen(true)}
+              onSkip={() => void updateSession((session) => service.skip(session))}
+              service={service}
+              session={view.session}
+            />
+          )}
+        </section>
+      </div>
 
       {restartOpen && (
         <div className={styles.dialogBackdrop}>
