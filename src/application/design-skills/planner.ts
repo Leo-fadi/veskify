@@ -78,6 +78,10 @@ const supportedRequests = new Map<string, SupportedRequest>([
     { intent: "heroImprovement", locale: "en", scope: "section", skillIds: ["improveHero"] },
   ],
   [
+    "improve the selected hero",
+    { intent: "heroImprovement", locale: "en", scope: "section", skillIds: ["improveHero"] },
+  ],
+  [
     "tee etusivusta ylellisempi",
     {
       intent: "luxuryStyle",
@@ -101,6 +105,10 @@ const supportedRequests = new Map<string, SupportedRequest>([
   ],
   [
     "paranna hero-osiota",
+    { intent: "heroImprovement", locale: "fi", scope: "section", skillIds: ["improveHero"] },
+  ],
+  [
+    "paranna valittua hero-osiota",
     { intent: "heroImprovement", locale: "fi", scope: "section", skillIds: ["improveHero"] },
   ],
 ]);

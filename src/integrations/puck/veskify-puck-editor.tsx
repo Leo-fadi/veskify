@@ -28,6 +28,7 @@ export function VeskifyPuckCanvas({
   context,
   brandSystem,
   resetKey,
+  sessionKey = "active",
   onPageChange,
   onValidationError,
   onSelectedSectionChange,
@@ -38,13 +39,14 @@ export function VeskifyPuckCanvas({
   context: StorefrontRenderContext;
   brandSystem: BrandSystem;
   resetKey: number;
+  sessionKey?: string;
   onPageChange: (page: PageModel) => void;
   onValidationError: (message: string) => void;
   onSelectedSectionChange?: (sectionId: string | undefined) => void;
   readOnly?: boolean;
   readOnlyLabel?: string;
 }) {
-  const boundaryKey = `${page.id}-${context.activeLocale}-${resetKey}`;
+  const boundaryKey = `${page.id}-${context.activeLocale}-${resetKey}-${sessionKey}`;
   return (
     <VeskifyPuckCanvasSession
       brandSystem={brandSystem}
@@ -69,7 +71,7 @@ function VeskifyPuckCanvasSession({
   onSelectedSectionChange,
   readOnly,
   readOnlyLabel,
-}: Omit<Parameters<typeof VeskifyPuckCanvas>[0], "resetKey">) {
+}: Omit<Parameters<typeof VeskifyPuckCanvas>[0], "resetKey" | "sessionKey">) {
   const [recoveryVersion, setRecoveryVersion] = useState(0);
   const trustedPage = useRef(page);
   const reportedSectionId = useRef<string | undefined>(undefined);

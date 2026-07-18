@@ -601,10 +601,18 @@ export class DeterministicDesignAgent {
     const plannerInput = this.#plannerInput(planningSession, request);
     const plan = this.#provider.createDesignPlan(plannerInput);
     if (!plan.validation.valid) {
-      const message: LocalizedText = {
-        en: "A safe plan could not be created for this page.",
-        fi: "Tälle sivulle ei voitu luoda turvallista suunnitelmaa.",
-      };
+      const selectedHeroScopeError = plan.validation.errors.some((error) =>
+        error.includes("Hero improvement requires an existing hero selection"),
+      );
+      const message: LocalizedText = selectedHeroScopeError
+        ? {
+            en: "This request only works with a selected hero section. Select the hero and create a new proposal.",
+            fi: "Tämä pyyntö toimii vain valitulle hero-osiolle. Valitse hero-osio ja luo uusi ehdotus.",
+          }
+        : {
+            en: "A safe plan could not be created for this page.",
+            fi: "Tälle sivulle ei voitu luoda turvallista suunnitelmaa.",
+          };
       const failed = this.#sessions.transition(sessionId, "failed", {
         plan,
         assumptions: plan.assumptions,

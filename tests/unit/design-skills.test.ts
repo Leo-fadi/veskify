@@ -98,10 +98,12 @@ describe("deterministic EN/FI intent classification", () => {
     ["Add a campaign section.", "campaignSection", "en"],
     ["Make the layout more minimal.", "minimalNordicStyle", "en"],
     ["Improve the hero.", "heroImprovement", "en"],
+    ["Improve the selected hero.", "heroImprovement", "en"],
     ["Tee etusivusta ylellisempi.", "luxuryStyle", "fi"],
     ["Lisää kampanjaosio.", "campaignSection", "fi"],
     ["Tee asettelusta pelkistetympi.", "minimalNordicStyle", "fi"],
     ["Paranna hero-osiota.", "heroImprovement", "fi"],
+    ["Paranna valittua hero-osiota.", "heroImprovement", "fi"],
   ])("classifies %s", (request, intent, locale) => {
     const result = classifyDesignRequest(request);
     expect(result).toMatchObject({
@@ -176,6 +178,21 @@ describe("deterministic design plans", () => {
     expect(invalid.validation.errors).toContain(
       "Hero improvement requires an existing hero selection.",
     );
+  });
+
+  it.each([
+    ["Improve the selected hero.", "en"],
+    ["Paranna valittua hero-osiota.", "fi"],
+  ])("targets only the selected hero for %s", (request, activeLocale) => {
+    const heroId = section(homepage, "hero").id;
+    const plan = createDesignPlan(
+      input(request, { activeLocale: activeLocale as "en" | "fi", selectedSectionId: heroId }),
+    );
+    expect(plan.validation).toEqual({ valid: true, errors: [] });
+    expect(plan.affectedSectionIds).toEqual([heroId]);
+    expect(plan.selectedSkills).toEqual([
+      expect.objectContaining({ id: "improveHero", targetSectionIds: [heroId] }),
+    ]);
   });
 
   it("ignores a non-hero selection for a page-wide minimal plan", () => {

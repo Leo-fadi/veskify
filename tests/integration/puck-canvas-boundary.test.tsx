@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { createStorefrontRenderContext } from "@/components/registry";
@@ -18,25 +19,31 @@ vi.mock("@puckeditor/core", () => ({
     };
     data: { content: Array<{ type: string; props: Record<string, unknown> }> };
     onChange?: (data: unknown) => void;
-  }) => (
-    <div data-testid="puck-iframe-document">
-      {config.root.render({ children: <div>Canonical storefront sections</div> })}
-      <button
-        onClick={() =>
-          onChange?.({
-            ...data,
-            content: [
-              ...data.content,
-              { type: "productInfo", props: { id: "section_cross_page_tamper" } },
-            ],
-          })
-        }
-        type="button"
+  }) => {
+    const [initialData] = useState(data);
+    return (
+      <div
+        data-content-ids={initialData.content.map((item) => item.props.id).join(",")}
+        data-testid="puck-iframe-document"
       >
-        Emit tampered Puck payload
-      </button>
-    </div>
-  ),
+        {config.root.render({ children: <div>Canonical storefront sections</div> })}
+        <button
+          onClick={() =>
+            onChange?.({
+              ...initialData,
+              content: [
+                ...initialData.content,
+                { type: "productInfo", props: { id: "section_cross_page_tamper" } },
+              ],
+            })
+          }
+          type="button"
+        >
+          Emit tampered Puck payload
+        </button>
+      </div>
+    );
+  },
   Render: () => null,
 }));
 
@@ -140,5 +147,48 @@ describe("Puck iframe storefront boundary", () => {
     expect(onPageChange).not.toHaveBeenCalled();
     expect(onValidationError).toHaveBeenCalledWith(expect.stringContaining("last valid design"));
     expect(screen.getByText("Canonical storefront sections")).toBeVisible();
+  });
+
+  it("remounts Puck for the latest proposal identity and renders its complete canonical page", () => {
+    const firstProposal = structuredClone(homepage);
+    firstProposal.sections = firstProposal.sections.filter(
+      (section) => section.component !== "newsletter",
+    );
+    const latestProposal = structuredClone(firstProposal);
+    const campaign = structuredClone(
+      homepage.sections.find((section) => section.component === "campaignBanner")!,
+    );
+    campaign.id = "section_latest_proposal_campaign";
+    latestProposal.sections.splice(-1, 0, campaign);
+
+    const view = render(
+      <VeskifyPuckCanvas
+        brandSystem={customBrand}
+        context={context("en")}
+        onPageChange={() => undefined}
+        onValidationError={() => undefined}
+        page={firstProposal}
+        readOnly
+        resetKey={0}
+        sessionKey="proposal_first"
+      />,
+    );
+    const canvas = () => screen.getByTestId("puck-iframe-document");
+    expect(canvas()).not.toHaveAttribute("data-content-ids", expect.stringContaining(campaign.id));
+
+    view.rerender(
+      <VeskifyPuckCanvas
+        brandSystem={customBrand}
+        context={context("en")}
+        onPageChange={() => undefined}
+        onValidationError={() => undefined}
+        page={latestProposal}
+        readOnly
+        resetKey={0}
+        sessionKey="proposal_latest"
+      />,
+    );
+
+    expect(canvas()).toHaveAttribute("data-content-ids", expect.stringContaining(campaign.id));
   });
 });

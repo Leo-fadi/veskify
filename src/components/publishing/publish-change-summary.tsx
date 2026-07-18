@@ -1,5 +1,6 @@
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
 import type { PublishChangeSummary } from "@/application/publishing";
+import { merchantSectionTypeLabel } from "@/components/registry";
 import { publishingCopy } from "./publish-status";
 
 type PageReference = PublishChangeSummary["changedPages"][number];
@@ -12,14 +13,18 @@ function pageNames(pages: readonly PageReference[], locale: Locale, primaryLocal
     .join(", ");
 }
 
-function sectionPageNames(
+function sectionNames(
   sections: readonly SectionReference[],
   locale: Locale,
   primaryLocale: Locale,
 ): string {
   return [
     ...new Set(
-      sections.map((section) => resolveLocalizedText(section.pageTitle, locale, primaryLocale)),
+      sections.map((section) => {
+        const sectionName = merchantSectionTypeLabel(section.component, locale);
+        const pageName = resolveLocalizedText(section.pageTitle, locale, primaryLocale);
+        return pageName ? `${sectionName} (${pageName})` : sectionName;
+      }),
     ),
   ]
     .filter(Boolean)
@@ -35,36 +40,21 @@ export function merchantPublishChanges(
   const changes: string[] = [];
   const addedPages = pageNames(summary.pagesAdded, locale, primaryLocale);
   const removedPages = pageNames(summary.pagesRemoved, locale, primaryLocale);
-  const addedSections = sectionPageNames(summary.sectionsAdded, locale, primaryLocale);
-  const removedSections = sectionPageNames(summary.sectionsRemoved, locale, primaryLocale);
-  const contentPages = pageNames(
-    summary.sectionContentChanges.map(({ pageId, pageTitle }) => ({ pageId, title: pageTitle })),
-    locale,
-    primaryLocale,
-  );
-  const stylePages = pageNames(
+  const addedSections = sectionNames(summary.sectionsAdded, locale, primaryLocale);
+  const removedSections = sectionNames(summary.sectionsRemoved, locale, primaryLocale);
+  const contentSections = sectionNames(summary.sectionContentChanges, locale, primaryLocale);
+  const styledSections = sectionNames(
     [
-      ...summary.pageThemeOverrideChanges,
-      ...summary.sectionPropertyChanges.map(({ pageId, pageTitle }) => ({
-        pageId,
-        title: pageTitle,
-      })),
-      ...summary.sectionVariantChanges.map(({ pageId, pageTitle }) => ({
-        pageId,
-        title: pageTitle,
-      })),
-      ...summary.sectionVisibilityChanges.map(({ pageId, pageTitle }) => ({
-        pageId,
-        title: pageTitle,
-      })),
-      ...summary.sectionComponentChanges.map(({ pageId, pageTitle }) => ({
-        pageId,
-        title: pageTitle,
-      })),
+      ...summary.sectionPropertyChanges,
+      ...summary.sectionVariantChanges,
+      ...summary.sectionVisibilityChanges,
+      ...summary.sectionComponentChanges,
     ],
     locale,
     primaryLocale,
   );
+  const themedPages = pageNames(summary.pageThemeOverrideChanges, locale, primaryLocale);
+  const reorderedPages = pageNames(summary.sectionOrderChanges, locale, primaryLocale);
 
   if (addedPages)
     changes.push(fi ? `Lisätyt sivut: ${addedPages}.` : `Added pages: ${addedPages}.`);
@@ -78,15 +68,29 @@ export function merchantPublishChanges(
     changes.push(
       fi ? `Poistetut osiot: ${removedSections}.` : `Removed sections: ${removedSections}.`,
     );
-  if (summary.sectionOrderChanges.length > 0)
-    changes.push(fi ? "Osioiden järjestystä muutettiin." : "Section order was updated.");
-  if (contentPages)
+  if (reorderedPages)
     changes.push(
-      fi ? `Sisältöä päivitettiin: ${contentPages}.` : `Content was updated: ${contentPages}.`,
+      fi
+        ? `Osioiden järjestystä muutettiin: ${reorderedPages}.`
+        : `Section order was updated: ${reorderedPages}.`,
     );
-  if (stylePages)
+  if (contentSections)
     changes.push(
-      fi ? `Ulkoasua päivitettiin: ${stylePages}.` : `Visual styling was updated: ${stylePages}.`,
+      fi
+        ? `Sisältöä päivitettiin osioissa: ${contentSections}.`
+        : `Content was updated in: ${contentSections}.`,
+    );
+  if (styledSections)
+    changes.push(
+      fi
+        ? `Ulkoasua päivitettiin osioissa: ${styledSections}.`
+        : `Visual styling was updated in: ${styledSections}.`,
+    );
+  if (themedPages)
+    changes.push(
+      fi
+        ? `Sivun yleisilmettä päivitettiin: ${themedPages}.`
+        : `Page styling was updated: ${themedPages}.`,
     );
   if (summary.brandSystemChanges.length > 0)
     changes.push(
