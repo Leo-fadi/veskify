@@ -1,11 +1,13 @@
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { Project } from "@/domain/project";
 import type { StorefrontSnapshot } from "@/domain/storefront";
+import type { SnapshotHistoryMetadata } from "./snapshot-history-metadata";
 
 export type ProjectAggregate = {
   project: Project;
   catalogue: CatalogueDisplayModel;
   snapshots: StorefrontSnapshot[];
+  snapshotHistoryMetadata?: SnapshotHistoryMetadata[];
 };
 
 export type ProjectSummary = Pick<

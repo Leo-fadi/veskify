@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { idSchema, isoDateTimeSchema } from "@/domain/shared";
+import { idSchema, isoDateTimeSchema, localizedTextSchema } from "@/domain/shared";
+import { snapshotHistoryReasonSchema } from "@/services/storage/snapshot-history-metadata";
 
 const snapshotExpectationSchema = z
   .object({
@@ -16,6 +17,8 @@ export const historyEntrySchema = z
     authorRole: z.enum(["user", "agent", "system"]).optional(),
     kind: z.enum(["currentPublished", "currentDraft", "previousVersion"]),
     pageCount: z.number().int().nonnegative(),
+    reason: snapshotHistoryReasonSchema.optional(),
+    summary: localizedTextSchema.optional(),
   })
   .strict();
 

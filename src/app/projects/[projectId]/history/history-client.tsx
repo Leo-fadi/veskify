@@ -18,6 +18,10 @@ const copy = (locale: Locale) =>
         currentPublished: "Nykyinen julkaistu versio",
         currentDraft: "Nykyinen tallennettu luonnos",
         previousVersion: "Aiempi versio",
+        legacyDetails: "Tämän vanhemman version tiedot eivät ole saatavilla.",
+        published: "Verkkokauppa julkaistu",
+        publishedDraftSynchronized: "Luonnos synkronoitu julkaisun jälkeen",
+        restored: "Palautettu tallennetuksi luonnokseksi",
         preview: "Esikatsele",
         restore: "Palauta luonnokseksi",
         pages: "sivua",
@@ -37,6 +41,10 @@ const copy = (locale: Locale) =>
         currentPublished: "Current published version",
         currentDraft: "Current saved draft",
         previousVersion: "Previous version",
+        legacyDetails: "Details unavailable for this older version.",
+        published: "Storefront published",
+        publishedDraftSynchronized: "Draft synchronized after publishing",
+        restored: "Restored as a saved draft",
         preview: "Preview",
         restore: "Restore as draft",
         pages: "pages",
@@ -119,6 +127,8 @@ export function HistoryClient({
       <section aria-label={text.title} className={styles.list}>
         {entries!.map((entry) => {
           const title = text[entry.kind] ?? text.unknown;
+          const reason = entry.reason ? text[entry.reason] : text.previousVersion;
+          const summary = entry.summary?.[locale] ?? entry.summary?.en ?? text.legacyDetails;
           const date = new Intl.DateTimeFormat(locale === "fi" ? "fi-FI" : "en-GB", {
             dateStyle: "medium",
             timeStyle: "short",
@@ -127,10 +137,12 @@ export function HistoryClient({
             <article className={styles.card} key={entry.snapshotId}>
               <div>
                 <h2>{title}</h2>
+                <p className={styles.reason}>{reason}</p>
+                <p>{summary}</p>
                 <p>
                   {date} · {entry.pageCount} {text.pages}
                 </p>
-                <p>{text[entry.authorRole ?? "system"]}</p>
+                <p>{entry.authorRole ? text[entry.authorRole] : text.unknown}</p>
               </div>
               <div className={styles.actions}>
                 <Link href={`/projects/${projectId}/history/${entry.snapshotId}`}>

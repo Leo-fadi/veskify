@@ -68,9 +68,13 @@ export async function listProjectHistory(
 ): Promise<HistoryEntry[]> {
   try {
     const aggregate = validateProjectAggregate(await repository.get(projectId));
+    const metadataBySnapshotId = new Map(
+      aggregate.snapshotHistoryMetadata?.map((metadata) => [metadata.snapshotId, metadata]),
+    );
     return aggregate.snapshots
-      .map((snapshot) =>
-        historyEntrySchema.parse({
+      .map((snapshot) => {
+        const metadata = metadataBySnapshotId.get(snapshot.id);
+        return historyEntrySchema.parse({
           snapshotId: snapshot.id,
           createdAt: snapshot.createdAt,
           authorRole: snapshot.createdBy,
@@ -81,8 +85,10 @@ export async function listProjectHistory(
                 ? "currentDraft"
                 : "previousVersion",
           pageCount: snapshot.pages.length,
-        }),
-      )
+          reason: metadata?.reason,
+          summary: metadata?.summary,
+        });
+      })
       .sort(
         (left, right) =>
           Date.parse(right.createdAt) - Date.parse(left.createdAt) ||

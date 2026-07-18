@@ -324,6 +324,15 @@ export function runProjectRepositoryContract(
       expect(published?.revision).toBe(after.project.revision);
       expect(draft?.revision).toBe(after.project.revision);
       expect(canonicalStorefrontContentEqual(published!, draft!)).toBe(true);
+      expect(after.snapshotHistoryMetadata).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ snapshotId: published!.id, reason: "published" }),
+          expect.objectContaining({
+            snapshotId: draft!.id,
+            reason: "publishedDraftSynchronized",
+          }),
+        ]),
+      );
       expect(after.snapshots.map(({ id }) => id)).toContain(before.project.publishedSnapshotId);
       expect(after.snapshots).toHaveLength(before.snapshots.length + 2);
       expect(after).toEqual(await repository.get(projectId));
@@ -348,11 +357,26 @@ export function runProjectRepositoryContract(
       const afterPublishes = await repository.get(projectId);
       expect(afterPublishes.snapshots.length).toBeGreaterThan(20);
       const oldestPublishedId = initial.project.publishedSnapshotId;
+      const preRestoreDraftId = afterPublishes.project.draftSnapshotId;
+      const preRestoreDraft = structuredClone(
+        afterPublishes.snapshots.find(({ id }) => id === preRestoreDraftId)!,
+      );
       const restored = await repository.restore(projectId, oldestPublishedId);
       const afterRestore = await repository.get(projectId);
       expect(afterRestore.project.draftSnapshotId).toBe(restored.id);
       expect(afterRestore.snapshots.map(({ id }) => id)).toContain(oldestPublishedId);
+      expect(afterRestore.snapshots.map(({ id }) => id)).toContain(preRestoreDraftId);
       expect(afterRestore.project.publishedSnapshotId).toBe(
+        afterPublishes.project.publishedSnapshotId,
+      );
+
+      const reversed = await repository.restore(projectId, preRestoreDraftId);
+      const afterReverse = await repository.get(projectId);
+      expect(canonicalStorefrontContentEqual(reversed, preRestoreDraft)).toBe(true);
+      expect(afterReverse.snapshots.map(({ id }) => id)).toEqual(
+        expect.arrayContaining([oldestPublishedId, preRestoreDraftId, restored.id, reversed.id]),
+      );
+      expect(afterReverse.project.publishedSnapshotId).toBe(
         afterPublishes.project.publishedSnapshotId,
       );
     }, 30_000);
@@ -458,6 +482,11 @@ export function runProjectRepositoryContract(
       expect(after.snapshots.map(({ id }) => id)).toContain(historicalId);
       expect(after.snapshots.map(({ id }) => id)).toContain(supersededDraftId);
       expect(after.snapshots).toHaveLength(before.snapshots.length + 1);
+      expect(after.snapshotHistoryMetadata).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ snapshotId: restored.id, reason: "restored" }),
+        ]),
+      );
       restored.pages[0].title.en = "Mutated restored output";
       expect(
         (await repository.get(projectId)).snapshots.find(

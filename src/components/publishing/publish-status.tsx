@@ -12,6 +12,7 @@ export type PublishingCopy = {
   publishing: string;
   cancel: string;
   editor: string;
+  versionHistory: string;
   publishedStorefront: string;
   affectedPages: string;
   draftRevision: string;
@@ -39,6 +40,7 @@ const copy: Record<Locale, PublishingCopy> = {
     publishing: "Publishing storefront…",
     cancel: "Cancel and return to editor",
     editor: "Back to editor",
+    versionHistory: "Version history",
     publishedStorefront: "View published storefront",
     affectedPages: "Affected pages",
     draftRevision: "Saved draft revision",
@@ -65,6 +67,7 @@ const copy: Record<Locale, PublishingCopy> = {
     publishing: "Julkaistaan verkkokauppaa…",
     cancel: "Peruuta ja palaa editoriin",
     editor: "Palaa editoriin",
+    versionHistory: "Versiohistoria",
     publishedStorefront: "Näytä julkaistu verkkokauppa",
     affectedPages: "Sivut, joihin muutos vaikuttaa",
     draftRevision: "Tallennetun luonnoksen versio",

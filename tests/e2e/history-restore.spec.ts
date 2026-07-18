@@ -2,11 +2,14 @@ import { expect, test } from "@playwright/test";
 
 const projectId = "project_aurum_nordic";
 const historyUrl = `/projects/${projectId}/history`;
+const publishUrl = `/projects/${projectId}/publish`;
 
 test("browses and navigates a previous version without falling through to the draft", async ({
   page,
 }) => {
-  await page.goto(historyUrl);
+  await page.goto(publishUrl);
+  await page.getByRole("link", { name: "Version history" }).click();
+  await expect(page).toHaveURL(historyUrl);
   await expect(page.getByRole("heading", { name: "Previous storefront versions" })).toBeVisible();
   const publishedCard = page
     .getByRole("heading", { name: "Current published version" })

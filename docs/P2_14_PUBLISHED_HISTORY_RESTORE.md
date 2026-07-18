@@ -8,10 +8,12 @@ preparation and P2-12 explicit publish confirmation.
 
 ## History and preview
 
-`/projects/[projectId]/history` lists every retained canonical snapshot newest first. It labels only
-facts proven by the project pointers: the current published storefront, current saved draft, or a
-safe **Previous version** fallback. Dates, page counts and the stored author role are shown without
-exposing snapshot IDs, revisions, storage provenance or schemas.
+`/projects/[projectId]/history` lists every retained canonical snapshot newest first. The publish
+page and its success state provide a normal in-product **Version history** entry point. History
+labels only facts proven by project pointers and repository-managed metadata: the current published
+storefront, current saved draft, published content, a publish-synchronized draft, a restored draft,
+or a safe **Previous version** fallback. Dates, page counts and the stored author role are shown
+without exposing snapshot IDs, revisions, storage provenance or schemas.
 
 Historical homepage, collection and product routes are pinned to the selected snapshot ID. Their
 links remain under `/projects/[projectId]/history/[snapshotId]`, so a previous-version preview can
@@ -26,11 +28,17 @@ expectations. `confirmRestore` rechecks them, uses the repository's atomic resto
 then verifies the committed new draft.
 
 Restore clones the selected snapshot into a new draft identity. It preserves the published pointer,
-published snapshot, project revision and catalogue. It never autosaves or publishes. A stale or
+published snapshot, project revision and catalogue. Snapshot compaction also protects both the
+selected historical source and the saved draft that was current immediately before restore, even
+when published history already exceeds the retention threshold. The merchant can therefore reverse
+the restore by restoring that prior saved draft. Restore never autosaves or publishes. A stale or
 duplicate confirmation performs no additional restore.
 
-## Legacy metadata
+## History metadata and legacy compatibility
 
-Existing snapshots remain readable. Where durable reason metadata is not available, the UI uses the
-safe **Previous version** label rather than inventing a merchant action. P2-09's unknown legacy
-snapshot retention rules remain unchanged.
+New publish and restore transactions atomically persist typed, localized reason and concise summary
+metadata beside their snapshots. IndexedDB schema version 3 adds this metadata as a separate,
+project-indexed store; upgrading an existing database leaves older snapshots untouched and readable.
+Where durable reason metadata is unavailable, the UI uses **Previous version** and **Details
+unavailable for this older version.** (with equivalent Finnish copy) rather than inventing a
+merchant action. P2-09's unknown legacy snapshot retention rules remain unchanged.

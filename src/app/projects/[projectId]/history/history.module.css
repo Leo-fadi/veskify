@@ -45,6 +45,10 @@
 .card p {
   margin: 0;
 }
+.card .reason {
+  color: #1d2925;
+  font-weight: 700;
+}
 .card p {
   margin-top: 0.45rem;
   color: #52615b;

@@ -46,9 +46,11 @@ mutation.
 
 Restore clones the selected historical snapshot into a new uniquely identified current draft. The
 historical source, all published snapshots and the current `publishedSnapshotId` remain unchanged.
-The previous current draft becomes eligible for the same oldest-first managed-draft retention. A
-request to restore the already-current draft is rejected before any write so repeated calls cannot
-grow storage. Project revision is preserved because restore does not publish.
+The saved draft that was current immediately before restore is protected from that restore's
+compaction, which keeps the restore reversible even when published history already exceeds the
+retention threshold. It becomes eligible for oldest-first managed-draft retention only on later
+operations. A request to restore the already-current draft is rejected before any write so repeated
+calls cannot grow storage. Project revision is preserved because restore does not publish.
 
 ## Stale and failure behaviour
 

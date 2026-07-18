@@ -64,6 +64,9 @@ describe("published history and restore boundary", () => {
     const entries = await listProjectHistory(projectId, value);
     expect(entries.map((entry) => entry.kind)).toEqual(["currentPublished", "currentDraft"]);
     expect(entries[0]).toMatchObject({ authorRole: "system", pageCount: 3 });
+    expect(
+      entries.every((entry) => entry.reason === undefined && entry.summary === undefined),
+    ).toBe(true);
   });
 
   it("reads an exact immutable historical snapshot and restores it as a new draft", async () => {
@@ -81,6 +84,16 @@ describe("published history and restore boundary", () => {
     expect(result.aggregate.project.revision).toBe(before.project.revision);
     expect(result.aggregate.snapshots.some((snapshot) => snapshot.id === historicalId)).toBe(true);
     expect(result.aggregate.catalogue).toEqual(before.catalogue);
+    const restoredMetadata = result.aggregate.snapshotHistoryMetadata?.find(
+      ({ snapshotId }) => snapshotId === result.restoredDraftSnapshot.id,
+    );
+    expect(restoredMetadata).toMatchObject({
+      reason: "restored",
+      summary: {
+        en: "A previous storefront version was restored as a new saved draft.",
+        fi: "Verkkokaupan aiempi versio palautettiin uudeksi tallennetuksi luonnokseksi.",
+      },
+    });
   });
 
   it("rejects stale draft preparation without restoring or publishing", async () => {

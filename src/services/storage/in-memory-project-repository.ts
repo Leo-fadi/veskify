@@ -27,11 +27,17 @@ import {
   validateProjectAggregate,
   validateRepositorySnapshot,
 } from "./repository-validation";
+import {
+  publishHistoryMetadata,
+  restoreHistoryMetadata,
+  type SnapshotHistoryMetadata,
+} from "./snapshot-history-metadata";
 
 type StoredProject = {
   project: Project;
   catalogue: ProjectAggregate["catalogue"];
   snapshots: Map<string, StorefrontSnapshot>;
+  snapshotHistoryMetadata: Map<string, SnapshotHistoryMetadata>;
   managedDraftSnapshotIds: Set<string>;
   operationSequence: number;
 };
@@ -65,6 +71,12 @@ export class InMemoryProjectRepository implements ProjectRepository {
         project: freeze(aggregate.project),
         catalogue: freeze(aggregate.catalogue),
         snapshots: new Map(aggregate.snapshots.map((snapshot) => [snapshot.id, freeze(snapshot)])),
+        snapshotHistoryMetadata: new Map(
+          aggregate.snapshotHistoryMetadata?.map((metadata) => [
+            metadata.snapshotId,
+            freeze(metadata),
+          ]),
+        ),
         managedDraftSnapshotIds: new Set([aggregate.project.draftSnapshotId]),
         operationSequence: aggregate.snapshots.length,
       });
@@ -153,10 +165,18 @@ export class InMemoryProjectRepository implements ProjectRepository {
       nextProject,
       nextManagedDraftSnapshotIds,
     );
+    const nextSnapshotHistoryMetadata = new Map(stored.snapshotHistoryMetadata);
+    nextSnapshotHistoryMetadata.delete(snapshot.id);
+    for (const removedSnapshotId of compacted.removedSnapshotIds) {
+      nextSnapshotHistoryMetadata.delete(removedSnapshotId);
+    }
     const aggregate = validateProjectAggregate({
       project: nextProject,
       catalogue: stored.catalogue,
       snapshots: compacted.snapshots,
+      ...(nextSnapshotHistoryMetadata.size > 0
+        ? { snapshotHistoryMetadata: [...nextSnapshotHistoryMetadata.values()] }
+        : {}),
     });
 
     stored.project = freeze(aggregate.project);
@@ -165,6 +185,9 @@ export class InMemoryProjectRepository implements ProjectRepository {
     );
     stored.managedDraftSnapshotIds = new Set(
       [...nextManagedDraftSnapshotIds].filter((id) => stored.snapshots.has(id)),
+    );
+    stored.snapshotHistoryMetadata = new Map(
+      aggregate.snapshotHistoryMetadata?.map((metadata) => [metadata.snapshotId, freeze(metadata)]),
     );
   }
 
@@ -264,10 +287,18 @@ export class InMemoryProjectRepository implements ProjectRepository {
       nextProject,
       nextManagedDraftSnapshotIds,
     );
+    const nextSnapshotHistoryMetadata = new Map(stored.snapshotHistoryMetadata);
+    for (const metadata of publishHistoryMetadata(projectId, published.id, synchronizedDraft.id)) {
+      nextSnapshotHistoryMetadata.set(metadata.snapshotId, metadata);
+    }
+    for (const removedSnapshotId of compacted.removedSnapshotIds) {
+      nextSnapshotHistoryMetadata.delete(removedSnapshotId);
+    }
     const aggregate = validateProjectAggregate({
       project: nextProject,
       catalogue: current.catalogue,
       snapshots: compacted.snapshots,
+      snapshotHistoryMetadata: [...nextSnapshotHistoryMetadata.values()],
     });
 
     stored.project = freeze(aggregate.project);
@@ -276,6 +307,9 @@ export class InMemoryProjectRepository implements ProjectRepository {
     );
     stored.managedDraftSnapshotIds = new Set(
       [...nextManagedDraftSnapshotIds].filter((id) => stored.snapshots.has(id)),
+    );
+    stored.snapshotHistoryMetadata = new Map(
+      aggregate.snapshotHistoryMetadata?.map((metadata) => [metadata.snapshotId, freeze(metadata)]),
     );
     stored.operationSequence = sequence;
     return clone(aggregate);
@@ -351,12 +385,19 @@ export class InMemoryProjectRepository implements ProjectRepository {
       [...nextSnapshots.values()],
       nextProject,
       nextManagedDraftSnapshotIds,
-      [historical.id],
+      [historical.id, currentDraft.id],
     );
+    const nextSnapshotHistoryMetadata = new Map(stored.snapshotHistoryMetadata);
+    const restoredMetadata = restoreHistoryMetadata(projectId, restored.id);
+    nextSnapshotHistoryMetadata.set(restoredMetadata.snapshotId, restoredMetadata);
+    for (const removedSnapshotId of compacted.removedSnapshotIds) {
+      nextSnapshotHistoryMetadata.delete(removedSnapshotId);
+    }
     const aggregate = validateProjectAggregate({
       project: nextProject,
       catalogue: stored.catalogue,
       snapshots: compacted.snapshots,
+      snapshotHistoryMetadata: [...nextSnapshotHistoryMetadata.values()],
     });
 
     stored.project = freeze(aggregate.project);
@@ -365,6 +406,9 @@ export class InMemoryProjectRepository implements ProjectRepository {
     );
     stored.managedDraftSnapshotIds = new Set(
       [...nextManagedDraftSnapshotIds].filter((id) => stored.snapshots.has(id)),
+    );
+    stored.snapshotHistoryMetadata = new Map(
+      aggregate.snapshotHistoryMetadata?.map((metadata) => [metadata.snapshotId, freeze(metadata)]),
     );
     stored.operationSequence = sequence;
     return clone(restored);
@@ -383,6 +427,9 @@ export class InMemoryProjectRepository implements ProjectRepository {
       project: stored.project,
       catalogue: stored.catalogue,
       snapshots: [...stored.snapshots.values()],
+      ...(stored.snapshotHistoryMetadata.size > 0
+        ? { snapshotHistoryMetadata: [...stored.snapshotHistoryMetadata.values()] }
+        : {}),
     });
   }
 

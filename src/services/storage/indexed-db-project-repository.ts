@@ -30,8 +30,13 @@ import {
   validateProjectAggregate,
   validateRepositorySnapshot,
 } from "./repository-validation";
+import {
+  publishHistoryMetadata,
+  restoreHistoryMetadata,
+  type SnapshotHistoryMetadata,
+} from "./snapshot-history-metadata";
 
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 export const VESKIFY_DATABASE_NAME = "veskify";
 
 interface VeskifyDatabase extends DBSchema {
@@ -55,6 +60,11 @@ interface VeskifyDatabase extends DBSchema {
       projectId: string;
       kind: "managedDraft";
     };
+    indexes: { "by-project": string };
+  };
+  snapshotHistoryMetadata: {
+    key: string;
+    value: SnapshotHistoryMetadata;
     indexes: { "by-project": string };
   };
 }
@@ -251,7 +261,10 @@ export class IndexedDbProjectRepository implements ProjectRepository {
 
   async get(projectId: string): Promise<ProjectAggregate> {
     const database = await this.#database();
-    const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readonly");
+    const transaction = database.transaction(
+      ["projects", "catalogues", "snapshots", "snapshotHistoryMetadata"],
+      "readonly",
+    );
     const project = await transaction.objectStore("projects").get(projectId);
     if (!project) {
       throw new ProjectNotFoundError(projectId);
@@ -263,6 +276,10 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     const catalogue = snapshots[0]
       ? await transaction.objectStore("catalogues").get(snapshots[0].catalogueRef)
       : undefined;
+    const snapshotHistoryMetadata = await transaction
+      .objectStore("snapshotHistoryMetadata")
+      .index("by-project")
+      .getAll(projectId);
     await transaction.done;
 
     if (!catalogue) {
@@ -271,7 +288,14 @@ export class IndexedDbProjectRepository implements ProjectRepository {
         new Error("Catalogue reference must resolve."),
       );
     }
-    return clone(validateProjectAggregate({ project, catalogue, snapshots }));
+    return clone(
+      validateProjectAggregate({
+        project,
+        catalogue,
+        snapshots,
+        ...(snapshotHistoryMetadata.length > 0 ? { snapshotHistoryMetadata } : {}),
+      }),
+    );
   }
 
   async saveDraft(
@@ -286,12 +310,13 @@ export class IndexedDbProjectRepository implements ProjectRepository {
 
     const database = await this.#database();
     const transaction = database.transaction(
-      ["projects", "catalogues", "snapshots", "snapshotProvenance"],
+      ["projects", "catalogues", "snapshots", "snapshotProvenance", "snapshotHistoryMetadata"],
       "readwrite",
     );
     const projects = transaction.objectStore("projects");
     const snapshotsStore = transaction.objectStore("snapshots");
     const provenanceStore = transaction.objectStore("snapshotProvenance");
+    const historyMetadataStore = transaction.objectStore("snapshotHistoryMetadata");
     const project = await projects.get(projectId);
     if (!project) {
       throw new ProjectNotFoundError(projectId);
@@ -360,9 +385,11 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       await snapshotsStore.put(snapshot);
       await projects.put(nextProject);
       await provenanceStore.put(managedDraftProvenance(projectId, snapshot.id));
+      await historyMetadataStore.delete(snapshot.id);
       for (const removedSnapshotId of compacted.removedSnapshotIds) {
         await snapshotsStore.delete(removedSnapshotId);
         await provenanceStore.delete(removedSnapshotId);
+        await historyMetadataStore.delete(removedSnapshotId);
       }
       await transaction.done;
     } catch (cause) {
@@ -379,12 +406,13 @@ export class IndexedDbProjectRepository implements ProjectRepository {
   async publish(projectId: string, expectation: PublishExpectation): Promise<ProjectAggregate> {
     const database = await this.#database();
     const transaction = database.transaction(
-      ["projects", "catalogues", "snapshots", "snapshotProvenance"],
+      ["projects", "catalogues", "snapshots", "snapshotProvenance", "snapshotHistoryMetadata"],
       "readwrite",
     );
     const projects = transaction.objectStore("projects");
     const snapshotsStore = transaction.objectStore("snapshots");
     const provenanceStore = transaction.objectStore("snapshotProvenance");
+    const historyMetadataStore = transaction.objectStore("snapshotHistoryMetadata");
 
     try {
       const project = await projects.get(projectId);
@@ -496,15 +524,29 @@ export class IndexedDbProjectRepository implements ProjectRepository {
         project: nextProject,
         catalogue,
         snapshots: compacted.snapshots,
+        snapshotHistoryMetadata: [
+          ...(await historyMetadataStore.index("by-project").getAll(projectId)).filter(
+            ({ snapshotId }) => !compacted.removedSnapshotIds.includes(snapshotId),
+          ),
+          ...publishHistoryMetadata(projectId, published.id, synchronizedDraft.id),
+        ],
       });
 
       await snapshotsStore.put(published);
       await snapshotsStore.put(synchronizedDraft);
       await projects.put(nextProject);
       await provenanceStore.put(managedDraftProvenance(projectId, synchronizedDraft.id));
+      for (const metadata of publishHistoryMetadata(
+        projectId,
+        published.id,
+        synchronizedDraft.id,
+      )) {
+        await historyMetadataStore.put(metadata);
+      }
       for (const removedSnapshotId of compacted.removedSnapshotIds) {
         await snapshotsStore.delete(removedSnapshotId);
         await provenanceStore.delete(removedSnapshotId);
+        await historyMetadataStore.delete(removedSnapshotId);
       }
       await transaction.done;
       return clone(aggregate);
@@ -526,12 +568,13 @@ export class IndexedDbProjectRepository implements ProjectRepository {
   ): Promise<StorefrontSnapshot> {
     const database = await this.#database();
     const transaction = database.transaction(
-      ["projects", "catalogues", "snapshots", "snapshotProvenance"],
+      ["projects", "catalogues", "snapshots", "snapshotProvenance", "snapshotHistoryMetadata"],
       "readwrite",
     );
     const projects = transaction.objectStore("projects");
     const snapshotsStore = transaction.objectStore("snapshots");
     const provenanceStore = transaction.objectStore("snapshotProvenance");
+    const historyMetadataStore = transaction.objectStore("snapshotHistoryMetadata");
     const project = await projects.get(projectId);
     if (!project) {
       throw new ProjectNotFoundError(projectId);
@@ -615,21 +658,29 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       [...snapshots, restored],
       nextProject,
       managedDraftSnapshotIds,
-      [historical.id],
+      [historical.id, currentDraft.id],
     );
     validateProjectAggregate({
       project: nextProject,
       catalogue,
       snapshots: compacted.snapshots,
+      snapshotHistoryMetadata: [
+        ...(await historyMetadataStore.index("by-project").getAll(projectId)).filter(
+          ({ snapshotId }) => !compacted.removedSnapshotIds.includes(snapshotId),
+        ),
+        restoreHistoryMetadata(projectId, restored.id),
+      ],
     });
 
     try {
       await snapshotsStore.put(restored);
       await projects.put(nextProject);
       await provenanceStore.put(managedDraftProvenance(projectId, restored.id));
+      await historyMetadataStore.put(restoreHistoryMetadata(projectId, restored.id));
       for (const removedSnapshotId of compacted.removedSnapshotIds) {
         await snapshotsStore.delete(removedSnapshotId);
         await provenanceStore.delete(removedSnapshotId);
+        await historyMetadataStore.delete(removedSnapshotId);
       }
       await transaction.done;
     } catch (cause) {
@@ -671,6 +722,12 @@ export class IndexedDbProjectRepository implements ProjectRepository {
           });
           provenance.createIndex("by-project", "projectId");
         }
+        if (oldVersion < 3) {
+          const historyMetadata = database.createObjectStore("snapshotHistoryMetadata", {
+            keyPath: "snapshotId",
+          });
+          historyMetadata.createIndex("by-project", "projectId");
+        }
       },
     });
     await this.#bootstrap(database);
@@ -679,7 +736,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
 
   async #bootstrap(database: IDBPDatabase<VeskifyDatabase>): Promise<void> {
     const transaction = database.transaction(
-      ["projects", "catalogues", "snapshots", "snapshotProvenance"],
+      ["projects", "catalogues", "snapshots", "snapshotProvenance", "snapshotHistoryMetadata"],
       "readwrite",
     );
     const projects = transaction.objectStore("projects");

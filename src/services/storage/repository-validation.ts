@@ -3,6 +3,7 @@ import { catalogueDisplayModelSchema } from "@/domain/catalogue";
 import { projectSchema, type Project } from "@/domain/project";
 import { storefrontSnapshotSchema, type StorefrontSnapshot } from "@/domain/storefront";
 import { RepositoryValidationError, type ProjectAggregate } from "./project-repository";
+import { snapshotHistoryMetadataSchema } from "./snapshot-history-metadata";
 
 export function repositoryValidationError(
   message: string,
@@ -32,6 +33,9 @@ export function validateProjectAggregate(input: ProjectAggregate): ProjectAggreg
     const snapshots = input.snapshots.map((snapshot) =>
       validateRepositorySnapshot(snapshot, catalogue),
     );
+    const snapshotHistoryMetadata = input.snapshotHistoryMetadata?.map((metadata) =>
+      snapshotHistoryMetadataSchema.parse(metadata),
+    );
     const snapshotIds = snapshots.map((snapshot) => snapshot.id);
 
     if (new Set(snapshotIds).size !== snapshotIds.length) {
@@ -51,7 +55,24 @@ export function validateProjectAggregate(input: ProjectAggregate): ProjectAggreg
       throw new Error("Snapshot project and catalogue references must resolve.");
     }
 
-    return { project, catalogue, snapshots };
+    if (snapshotHistoryMetadata) {
+      const metadataSnapshotIds = snapshotHistoryMetadata.map(({ snapshotId }) => snapshotId);
+      if (new Set(metadataSnapshotIds).size !== metadataSnapshotIds.length) {
+        throw new Error("Snapshot history metadata must be unique by snapshot ID.");
+      }
+      if (
+        snapshotHistoryMetadata.some(
+          (metadata) =>
+            metadata.projectId !== project.id || !snapshotIds.includes(metadata.snapshotId),
+        )
+      ) {
+        throw new Error("Snapshot history metadata references must resolve within the project.");
+      }
+    }
+
+    return snapshotHistoryMetadata
+      ? { project, catalogue, snapshots, snapshotHistoryMetadata }
+      : { project, catalogue, snapshots };
   } catch (cause) {
     if (cause instanceof RepositoryValidationError) {
       throw cause;
