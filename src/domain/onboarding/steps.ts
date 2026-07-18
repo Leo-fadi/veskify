@@ -110,7 +110,7 @@ const definitions = [
       fi: "Myöhempi vaihe vahvistaa pakolliset ja valinnaiset sivut. Tässä perustassa ei vielä luoda sivuja.",
     },
     optional: false,
-    completableNow: false,
+    completableNow: true,
   },
   {
     id: "languages",

@@ -1,6 +1,8 @@
 import { z } from "zod";
 import {
   createEmptyStorefrontDesignBrief,
+  canonicalizeStorefrontBriefPageTypes,
+  requiredStorefrontPageTypes,
   storefrontDesignBriefSchema,
   updateStorefrontDesignBriefArea,
   type StorefrontCreationContextType,
@@ -324,6 +326,22 @@ export const onboardingSessionSchema = z
         path: ["designBrief", "catalogueContext"],
         message: "A skipped catalogue step must use the empty-catalogue context.",
       });
+    }
+
+    if (session.completedStepIds.includes("pages")) {
+      const pageTypes = session.designBrief.storefrontStructure.pageTypes;
+      const canonicalPageTypes = canonicalizeStorefrontBriefPageTypes(pageTypes);
+      if (
+        canonicalPageTypes.length !== pageTypes.length ||
+        canonicalPageTypes.some((pageType, index) => pageType !== pageTypes[index]) ||
+        requiredStorefrontPageTypes.some((pageType) => !pageTypes.includes(pageType))
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["completedStepIds"],
+          message: "A completed pages step requires the canonical required page selection.",
+        });
+      }
     }
   });
 
