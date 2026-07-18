@@ -9,9 +9,9 @@ const panelSource = readFileSync(
 
 describe("storefront generation review panel boundary", () => {
   it("consumes only the canonical review contract and stays presentation-only", () => {
-    expect(panelSource).toContain("@/application/storefront-generation-review");
+    expect(panelSource).toContain("@/application/storefront-generation-review/contract");
     expect(panelSource).not.toMatch(
-      /guided-storefront-generation|brand-foundation|storefront-templates|materialization|ProjectRepository|IndexedDB|@puckeditor|integrations\/puck/,
+      /from ["']@\/application\/storefront-generation-review["']|from ["']@\/application\/storefront-generation-review\/projection["']|guided-storefront-generation|brand-foundation|storefront-templates|materialization|ProjectRepository|IndexedDB|@puckeditor|integrations\/puck/,
     );
   });
 });
