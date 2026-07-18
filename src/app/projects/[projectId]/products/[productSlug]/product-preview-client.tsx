@@ -14,6 +14,7 @@ import {
   selectedSnapshotId,
   type SnapshotKind,
 } from "../../preview-mode";
+import { HistoricalPreviewActions } from "../../historical-preview-actions";
 
 type RepositoryFactory = () => ProjectRepository;
 type ProductPageModel = ProjectAggregate["snapshots"][number]["pages"][number];
@@ -253,6 +254,12 @@ function ProductPreviewLoader({
           ))}
         </fieldset>
       </div>
+      <HistoricalPreviewActions
+        locale={locale}
+        projectId={projectId}
+        snapshotId={historicalSnapshotId}
+        snapshotKind={snapshotKind}
+      />
       <div
         aria-label={
           snapshotKind === "history"

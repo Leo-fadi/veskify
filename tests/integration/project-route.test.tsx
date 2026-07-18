@@ -130,6 +130,15 @@ describe("seed project route", () => {
 
     expect(await screen.findByRole("heading", { name: "Made for northern light" })).toBeVisible();
     expect(screen.getByText("Previous version")).toBeVisible();
+    expect(screen.getByRole("link", { name: "Back to version history" })).toHaveAttribute(
+      "href",
+      `/projects/project_aurum_nordic/history`,
+    );
+    expect(screen.getByRole("link", { name: "Restore this version" })).toHaveAttribute(
+      "href",
+      `/projects/project_aurum_nordic/history/${historical.id}/restore`,
+    );
+    expect(screen.getByText(/creates a new unpublished draft/i)).toBeVisible();
     const primaryNavigation = screen.getByRole("navigation", { name: "Primary navigation" });
     expect(within(primaryNavigation).getByRole("link", { name: "Rings" })).toHaveAttribute(
       "href",
@@ -139,6 +148,10 @@ describe("seed project route", () => {
       "href",
       `/projects/project_aurum_nordic/history/${historical.id}/products/aurora-ring-585`,
     );
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+    expect(screen.getByRole("link", { name: "Takaisin versiohistoriaan" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Palauta tämä versio" })).toBeVisible();
+    expect(screen.getByText(/uuden julkaisemattoman luonnoksen/i)).toBeVisible();
   });
 
   it("switches the registered composition to Finnish", async () => {
