@@ -10,6 +10,7 @@ import {
   aurumNordicP102SeedState,
   IndexedDbProjectRepository,
   RepositoryValidationError,
+  SnapshotAlreadyExistsError,
   type ProjectAggregate,
   type PublishExpectation,
 } from "@/services/storage";
@@ -529,8 +530,12 @@ describe("IndexedDbProjectRepository persistence", () => {
   });
 
   it("uses injected deterministic identity and time generation", async () => {
+    let generatedProjectId: string | undefined;
     const repository = openRepository(testDatabaseName("generators"), {
-      createSnapshotId: ({ reason }) => `snapshot_test_${reason}`,
+      createSnapshotId: ({ projectId, reason }) => {
+        generatedProjectId = projectId;
+        return `snapshot_test_${reason}`;
+      },
       createTimestamp: () => "2026-07-16T10:00:00.000Z",
     });
 
@@ -542,6 +547,7 @@ describe("IndexedDbProjectRepository persistence", () => {
     expect(aggregate.project.publishedSnapshotId).toBe("snapshot_test_published");
     expect(aggregate.project.draftSnapshotId).toBe("snapshot_test_synchronized");
     expect(aggregate.project.updatedAt).toBe("2026-07-16T10:00:00.000Z");
+    expect(generatedProjectId).toBe(aurumNordicSeed.project.id);
   });
 
   it("leaves no partial writes when a publish cannot create a unique snapshot", async () => {
@@ -552,8 +558,28 @@ describe("IndexedDbProjectRepository persistence", () => {
 
     await expect(
       repository.publish(aurumNordicSeed.project.id, publishExpectation(before)),
-    ).rejects.toBeInstanceOf(RepositoryValidationError);
+    ).rejects.toBeInstanceOf(SnapshotAlreadyExistsError);
     expect(await repository.get(aurumNordicSeed.project.id)).toEqual(before);
+  });
+
+  it("rejects a generated restore ID owned by another project without mutation", async () => {
+    let collisionId = "snapshot_restore_collision_pending";
+    const repository = openRepository(testDatabaseName("restore-cross-project-collision"), {
+      createSnapshotId: () => collisionId,
+    });
+    const first = createdAggregate("restore_collision_first");
+    const second = createdAggregate("restore_collision_second");
+    await repository.create(first);
+    await repository.create(second);
+    const secondStored = await repository.get(second.project.id);
+    collisionId = secondStored.project.draftSnapshotId;
+    const before = await repository.get(first.project.id);
+
+    await expect(
+      repository.restore(first.project.id, first.project.publishedSnapshotId),
+    ).rejects.toBeInstanceOf(SnapshotAlreadyExistsError);
+    expect(await repository.get(first.project.id)).toEqual(before);
+    expect(await repository.get(second.project.id)).toEqual(secondStored);
   });
 
   it("leaves no partial writes when synchronized-draft construction fails validation", async () => {
@@ -573,29 +599,29 @@ describe("IndexedDbProjectRepository persistence", () => {
   it("rolls back both snapshots, project and provenance when publish transaction fails", async () => {
     const repository = openRepository(testDatabaseName("publish-transaction-rollback"));
     const before = await makePublishable(repository, "transaction_rollback");
-    let snapshotPutCount = 0;
-    const originalPutValue: unknown = Object.getOwnPropertyDescriptor(
+    let snapshotAddCount = 0;
+    const originalAddValue: unknown = Object.getOwnPropertyDescriptor(
       IDBObjectStore.prototype,
-      "put",
+      "add",
     )?.value;
-    if (typeof originalPutValue !== "function") {
-      throw new Error("IndexedDB put must be available.");
+    if (typeof originalAddValue !== "function") {
+      throw new Error("IndexedDB add must be available.");
     }
-    const originalPut = originalPutValue as IndexedDbPut;
-    const putSpy = vi.spyOn(IDBObjectStore.prototype, "put").mockImplementation(function (
+    const originalAdd = originalAddValue as IndexedDbPut;
+    const addSpy = vi.spyOn(IDBObjectStore.prototype, "add").mockImplementation(function (
       this: IDBObjectStore,
       value: unknown,
       key?: IDBValidKey,
     ) {
       if (this.name === "snapshots") {
-        snapshotPutCount += 1;
-        if (snapshotPutCount === 2) {
+        snapshotAddCount += 1;
+        if (snapshotAddCount === 2) {
           throw new DOMException("Forced publish transaction failure", "AbortError");
         }
       }
       return key === undefined
-        ? Reflect.apply(originalPut, this, [value])
-        : Reflect.apply(originalPut, this, [value, key]);
+        ? Reflect.apply(originalAdd, this, [value])
+        : Reflect.apply(originalAdd, this, [value, key]);
     });
 
     try {
@@ -603,7 +629,7 @@ describe("IndexedDbProjectRepository persistence", () => {
         repository.publish(aurumNordicSeed.project.id, publishExpectation(before)),
       ).rejects.toThrow("Forced publish transaction failure");
     } finally {
-      putSpy.mockRestore();
+      addSpy.mockRestore();
     }
 
     expect(await repository.get(aurumNordicSeed.project.id)).toEqual(before);

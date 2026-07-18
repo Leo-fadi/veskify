@@ -25,6 +25,7 @@ import {
   type ProjectSummary,
   type PublishExpectation,
   type RestoreExpectation,
+  projectScopedSnapshotId,
   RestoreContentConflictError,
 } from "./project-repository";
 import {
@@ -77,6 +78,7 @@ function managedDraftProvenance(projectId: string, snapshotId: string) {
 }
 
 export type SnapshotIdentityInput = {
+  projectId: string;
   reason: "published" | "restored" | "synchronized";
   revision: number;
   sequence: number;
@@ -207,8 +209,13 @@ export const aurumNordicPhase0SeedState = {
   ],
 };
 
-function defaultSnapshotId({ reason, revision, sequence }: SnapshotIdentityInput): string {
-  return `snapshot_${reason}_${revision}_${sequence}`;
+function defaultSnapshotId({
+  projectId,
+  reason,
+  revision,
+  sequence,
+}: SnapshotIdentityInput): string {
+  return projectScopedSnapshotId(projectId, reason, revision, sequence);
 }
 
 function defaultTimestamp({ latestTimestamp }: SnapshotTimeInput): string {
@@ -225,6 +232,13 @@ function latestTimestamp(project: Project, snapshots: StorefrontSnapshot[]): str
 
 function nextSnapshotSequence(project: Project, snapshots: StorefrontSnapshot[]): number {
   return Date.parse(latestTimestamp(project, snapshots)) + 1;
+}
+
+function sortSnapshots(snapshots: StorefrontSnapshot[]): StorefrontSnapshot[] {
+  return [...snapshots].sort(
+    (left, right) =>
+      Date.parse(left.createdAt) - Date.parse(right.createdAt) || left.id.localeCompare(right.id),
+  );
 }
 
 function toSummary(project: Project): ProjectSummary {
@@ -272,10 +286,9 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     if (!project) {
       throw new ProjectNotFoundError(projectId);
     }
-    const snapshots = await transaction
-      .objectStore("snapshots")
-      .index("by-project")
-      .getAll(projectId);
+    const snapshots = sortSnapshots(
+      await transaction.objectStore("snapshots").index("by-project").getAll(projectId),
+    );
     const catalogue = snapshots[0]
       ? await transaction.objectStore("catalogues").get(snapshots[0].catalogueRef)
       : undefined;
@@ -327,16 +340,16 @@ export class IndexedDbProjectRepository implements ProjectRepository {
         }
       }
 
-      await catalogues.put(aggregate.catalogue);
+      await catalogues.add(aggregate.catalogue);
       for (const snapshot of aggregate.snapshots) {
-        await snapshots.put(snapshot);
+        await snapshots.add(snapshot);
       }
-      await projects.put(aggregate.project);
-      await provenance.put(
+      await projects.add(aggregate.project);
+      await provenance.add(
         managedDraftProvenance(aggregate.project.id, aggregate.project.draftSnapshotId),
       );
       for (const metadata of aggregate.snapshotHistoryMetadata ?? []) {
-        await historyMetadata.put(metadata);
+        await historyMetadata.add(metadata);
       }
       await transaction.done;
       return clone(aggregate);
@@ -396,6 +409,10 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       );
     }
     const snapshot = validateRepositorySnapshot(parsedInput, catalogue);
+    const globallyExisting = await snapshotsStore.get(snapshot.id);
+    if (globallyExisting && globallyExisting.projectId !== projectId) {
+      throw new SnapshotAlreadyExistsError(snapshot.id);
+    }
     if (snapshot.catalogueRef !== currentDraft.catalogueRef) {
       throw repositoryValidationError(
         "Draft snapshot references a catalogue outside the project aggregate.",
@@ -435,7 +452,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     validateProjectAggregate({ project: nextProject, catalogue, snapshots: compacted.snapshots });
 
     try {
-      await snapshotsStore.put(snapshot);
+      await (existing ? snapshotsStore.put(snapshot) : snapshotsStore.add(snapshot));
       await projects.put(nextProject);
       await provenanceStore.put(managedDraftProvenance(projectId, snapshot.id));
       await historyMetadataStore.delete(snapshot.id);
@@ -532,7 +549,12 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       const published = validateRepositorySnapshot(
         {
           ...clone(draft),
-          id: this.#createSnapshotId({ reason: "published", revision, sequence }),
+          id: this.#createSnapshotId({
+            projectId,
+            reason: "published",
+            revision,
+            sequence,
+          }),
           revision,
           createdAt,
           createdBy: "user",
@@ -542,7 +564,12 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       const synchronizedDraft = validateRepositorySnapshot(
         {
           ...clone(published),
-          id: this.#createSnapshotId({ reason: "synchronized", revision, sequence }),
+          id: this.#createSnapshotId({
+            projectId,
+            reason: "synchronized",
+            revision,
+            sequence,
+          }),
           createdBy: "system",
         },
         catalogue,
@@ -551,11 +578,13 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       if (
         published.id === synchronizedDraft.id ||
         existingIds.has(published.id) ||
-        existingIds.has(synchronizedDraft.id)
+        existingIds.has(synchronizedDraft.id) ||
+        (await snapshotsStore.get(published.id)) ||
+        (await snapshotsStore.get(synchronizedDraft.id))
       ) {
-        throw repositoryValidationError(
-          "Publishing must create two unique snapshot identities.",
-          new Error("Generated snapshot IDs must remain unique."),
+        const publishedExists = await snapshotsStore.get(published.id);
+        throw new SnapshotAlreadyExistsError(
+          publishedExists || existingIds.has(published.id) ? published.id : synchronizedDraft.id,
         );
       }
       const nextProject = projectSchema.parse({
@@ -576,7 +605,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       const aggregate = validateProjectAggregate({
         project: nextProject,
         catalogue,
-        snapshots: compacted.snapshots,
+        snapshots: sortSnapshots(compacted.snapshots),
         snapshotHistoryMetadata: [
           ...(await historyMetadataStore.index("by-project").getAll(projectId)).filter(
             ({ snapshotId }) => !compacted.removedSnapshotIds.includes(snapshotId),
@@ -585,16 +614,16 @@ export class IndexedDbProjectRepository implements ProjectRepository {
         ],
       });
 
-      await snapshotsStore.put(published);
-      await snapshotsStore.put(synchronizedDraft);
+      await snapshotsStore.add(published);
+      await snapshotsStore.add(synchronizedDraft);
       await projects.put(nextProject);
-      await provenanceStore.put(managedDraftProvenance(projectId, synchronizedDraft.id));
+      await provenanceStore.add(managedDraftProvenance(projectId, synchronizedDraft.id));
       for (const metadata of publishHistoryMetadata(
         projectId,
         published.id,
         synchronizedDraft.id,
       )) {
-        await historyMetadataStore.put(metadata);
+        await historyMetadataStore.add(metadata);
       }
       for (const removedSnapshotId of compacted.removedSnapshotIds) {
         await snapshotsStore.delete(removedSnapshotId);
@@ -680,6 +709,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       {
         ...clone(historical),
         id: this.#createSnapshotId({
+          projectId,
           reason: "restored",
           revision: project.revision,
           sequence,
@@ -693,11 +723,11 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       },
       catalogue,
     );
-    if (snapshots.some((snapshot) => snapshot.id === restored.id)) {
-      throw repositoryValidationError(
-        "Generated restored snapshot ID already exists.",
-        new Error("Snapshot IDs must remain unique."),
-      );
+    if (
+      (await snapshotsStore.get(restored.id)) ||
+      snapshots.some((snapshot) => snapshot.id === restored.id)
+    ) {
+      throw new SnapshotAlreadyExistsError(restored.id);
     }
     const nextProject = projectSchema.parse({
       ...project,
@@ -726,10 +756,10 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     });
 
     try {
-      await snapshotsStore.put(restored);
+      await snapshotsStore.add(restored);
       await projects.put(nextProject);
-      await provenanceStore.put(managedDraftProvenance(projectId, restored.id));
-      await historyMetadataStore.put(restoreHistoryMetadata(projectId, restored.id));
+      await provenanceStore.add(managedDraftProvenance(projectId, restored.id));
+      await historyMetadataStore.add(restoreHistoryMetadata(projectId, restored.id));
       for (const removedSnapshotId of compacted.removedSnapshotIds) {
         await snapshotsStore.delete(removedSnapshotId);
         await provenanceStore.delete(removedSnapshotId);

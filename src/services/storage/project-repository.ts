@@ -23,6 +23,34 @@ export type ProjectSummary = Pick<
   | "updatedAt"
 >;
 
+export type SnapshotIdentityReason = "published" | "restored" | "synchronized";
+
+function stableIdentityHash(value: string): string {
+  let hash = 2_166_136_261;
+  for (const character of value) {
+    hash ^= character.charCodeAt(0);
+    hash = Math.imul(hash, 16_777_619);
+  }
+  return (hash >>> 0).toString(36).padStart(7, "0");
+}
+
+export function projectScopedSnapshotId(
+  projectId: string,
+  reason: SnapshotIdentityReason,
+  revision: number,
+  sequence: number,
+): string {
+  const suffix = `_${reason}_${revision}_${sequence}`;
+  const full = `snapshot_${projectId}${suffix}`;
+  if (full.length <= 80) return full;
+
+  const digest = stableIdentityHash(projectId);
+  const compactPrefix = `snapshot_${digest}`;
+  const availableProjectCharacters = Math.max(0, 80 - compactPrefix.length - suffix.length - 1);
+  const compactProject = projectId.slice(0, availableProjectCharacters);
+  return `${compactPrefix}${compactProject ? `_${compactProject}` : ""}${suffix}`.slice(0, 80);
+}
+
 export type DraftBaseIdentity = Pick<StorefrontSnapshot, "id" | "revision">;
 
 export type PublishSnapshotExpectation = DraftBaseIdentity & {

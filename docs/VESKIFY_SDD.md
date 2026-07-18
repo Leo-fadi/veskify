@@ -337,13 +337,14 @@ The first implementation is a standalone repository. It uses dummy product, coll
 | Publish changes  | User separately confirms publication when the saved draft is ready.                                               |
 
 Initial generation is a deterministic application boundary. The guided brief is validated first,
-P3-06 selects a controlled template foundation, and a canonical BrandSystem is supplied to the
-materializer. P3-08 then creates an in-memory initial StorefrontSnapshot containing canonical
-PageModel and SectionInstance records from the resolved template plan. Sections start from registered
-component defaults and may receive only safe, validated merchant-presentation mappings. The final
-snapshot must pass canonical and component-registry validation. Project creation, draft persistence,
-editor handoff, Save draft and Publish changes remain later boundaries; materialization does not
-persist anything.
+P3-05 plans the canonical BrandSystem, P3-06 selects a controlled template foundation, and P3-08
+materializes the initial snapshot. The deterministic guided-generation orchestrator owns this fixed
+composition order and returns the three stage plans, stage-labelled diagnostics, assumptions and
+warnings as one immutable reviewable in-memory result. It does not duplicate preset, scoring,
+resolver or page-materialization policy. If a stage is blocked, later stages are explicitly not run,
+the top-level status is blocked, and no snapshot is returned. Project creation, draft persistence,
+editor handoff, Save draft and Publish changes remain later boundaries; orchestration does not persist
+anything.
 
 A template selection is bound to a deterministic fingerprint of the current selection-relevant brief
 state. If the brief changes after selection, P3-08 blocks generation until P3-06 is run again. IDs and
@@ -485,6 +486,8 @@ Assisted mode uses the same creation and editing flows but provides quick scenar
 | FR-050 | A failed save, publish, or generation MUST preserve the previous published snapshot and current usable draft; the published route MUST remain read-only. |
 | FR-051 | Initial storefront generation MUST deterministically materialize a validated in-memory StorefrontSnapshot from the current brief, approved controlled template selection and canonical BrandSystem without persisting a Project or snapshot. |
 | FR-052 | A template selection MUST be bound to the current selection-relevant brief state; stale selections MUST block initial generation until the controlled selection planner runs again. |
+| FR-053 | Guided storefront generation MUST execute the deterministic P3-05 brand-foundation, P3-06 template-selection and P3-08 materialization stages in that order, returning one immutable reviewable in-memory result with stage-labelled diagnostics. |
+| FR-054 | A blocked guided-generation stage MUST prevent later stages from running and MUST return no generated snapshot; explicit identifiers, catalogue reference and createdAt MUST be supplied inputs, with no persistence or runtime randomness. |
 
 # 7. Editor and interaction specification
 
@@ -930,6 +933,13 @@ stale or incompatible selection returns a blocked result with no generated snaps
 materialization validates the complete snapshot through the canonical snapshot schema and registered
 component boundary; it remains in memory until a later project-creation service persists it.
 
+The guided-generation application service composes P3-05, P3-06 and P3-08 in that fixed order. Each
+diagnostic retains its source stage and original stable code; aggregation is deterministic and does
+not erase equal codes from different stages. A blocked brand or selection stage marks later stages
+not-run. A blocked materializer returns no top-level snapshot. The result is validated, detached and
+deeply immutable, and cross-stage IDs, BrandSystem, snapshot metadata and selection fingerprint are
+checked before the result is exposed to a later onboarding review or project-creation handoff.
+
 ## 12.9 Agent guardrails
 
 - Must not patch price, stock, payment, shipping, tax or order fields.
@@ -1005,7 +1015,7 @@ Project creation is a separate, pre-editor persistence boundary. Once a later ap
 workflow has produced a complete validated `ProjectAggregate`, it may submit that aggregate to
 `ProjectRepository.create`; creation does not publish, overwrite an existing project, or invent
 publish/restore history (FR-001, FR-009, FR-041, FR-044, FR-045, NFR-006, AC-001, AC-008, AC-010,
-AC-011, AC-023).
+AC-011, AC-025).
 
 ## 13.6 Conflict model
 
@@ -1229,7 +1239,10 @@ existing project, catalogue or snapshot identity leaves all adapters unchanged. 
 detached validated aggregate, marks only the current draft as managed for later bounded retention,
 and preserves supplied metadata without fabricating publish or restore events. Project construction
 and onboarding remain application boundaries separate from this persistence operation (FR-001,
-FR-009, FR-041, FR-044, FR-045, FR-050, NFR-006, AC-001, AC-008, AC-010, AC-011, AC-023).
+FR-009, FR-041, FR-044, FR-045, FR-050, NFR-006, AC-001, AC-008, AC-010, AC-011, AC-025).
+Snapshot IDs remain globally unique after creation: repository-generated IDs are project-scoped,
+and save, publish, restore and synchronized-draft writes reject injected or corrupted cross-project
+collisions without renaming existing persisted snapshots or committing partial state.
 
 # 16. Technical architecture
 
@@ -1322,6 +1335,7 @@ After the demo, the design agent will operate inside Vesko Retail OS and replace
 | createProject(input)                      | Creates project, seed profile and empty snapshots.                        |
 | completeOnboarding(projectId, input)      | Validates onboarding and creates generation plan.                         |
 | materializeInitialStorefront(input)       | Deterministically creates and validates the initial in-memory snapshot; does not persist. |
+| generateGuidedStorefront(input)            | Composes P3-05, P3-06 and P3-08 in order and returns one immutable reviewable in-memory generation result; does not create or persist a Project. |
 | generateInitialStorefront(projectId)      | Builds initial brand system and page snapshot.                            |
 | proposeDesignChange(context, prompt)      | Returns validated pending proposal.                                       |
 | applyProposal(projectId, proposalId)      | Applies accepted validated operations to the active draft only.             |
@@ -1564,7 +1578,9 @@ Website text, spreadsheet cells, product descriptions and uploaded files are dat
 | AC-020 | A first-time user can understand section selection, proposal review, draft preview, Save draft, and Publish changes through the built-in tutorial without developer terminology. |
 | AC-021 | After guided creation confirmation, the system can produce a validated in-memory snapshot with homepage, collection page, product page, navigation and registered sections without persisting a Project. |
 | AC-022 | If the selection-relevant brief changes after template selection, initial generation is blocked until the template selection is regenerated; no snapshot is produced from stale selection data. |
-| AC-023 | A complete validated project aggregate can be created atomically through the repository; identity conflicts or validation failures leave existing projects, catalogues, snapshots and history unchanged. |
+| AC-023 | Guided creation composes brand foundation, template selection and initial materialization in order, exposes stage-labelled diagnostics and a validated immutable snapshot for review without creating or persisting a Project. |
+| AC-024 | If guided selection is blocked, materialization is not run and the review result contains no generated snapshot; changing only explicit generation identifiers changes only the predictable relevant IDs. |
+| AC-025 | A complete validated project aggregate can be created atomically through the repository; identity conflicts or validation failures leave existing projects, catalogues, snapshots and history unchanged. |
 
 ## 21.3 Definition of done for every Codex task
 

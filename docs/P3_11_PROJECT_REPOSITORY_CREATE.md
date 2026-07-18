@@ -25,6 +25,14 @@ Existing identities cannot be overwritten, even when the content is identical. E
 validation failure leaves the existing project count, catalogue records, snapshots and metadata
 unchanged.
 
+Snapshot identity is repository-global for the complete lifecycle, not only during creation. All
+later draft-save, publish, restore and synchronized-draft writes enforce the same namespace. The
+repository-generated IDs for new snapshots are project-scoped (`snapshot_<projectId>_<reason>_<revision>_<sequence>`;
+a deterministic hashed compact form is used only when the 80-character ID limit requires it), while
+existing persisted IDs are read as-is and are never migrated or renamed. Injected generators are
+still checked globally and a collision fails with `SnapshotAlreadyExistsError`; the repository never
+silently overwrites, retries or invents a replacement identity.
+
 ## Adapter atomicity
 
 The in-memory adapter performs all validation and global identity checks before installing frozen
@@ -48,7 +56,7 @@ never overwritten by creation.
 ## Specification traceability
 
 This boundary implements SDD §13.5, §15.7, §16.2, §17.1 and §17.4. It supports FR-001, FR-009,
-FR-041, FR-044, FR-045 and FR-050; NFR-006; and AC-001, AC-008, AC-010, AC-011 and AC-023. The
+FR-041, FR-044, FR-045 and FR-050; NFR-006; and AC-001, AC-008, AC-010, AC-011 and AC-025. The
 operation persists an already complete aggregate only; onboarding, project factories, P3-08
 materialization, P3-10 orchestration, editor routes, publishing UI and live Vesko integration are
 deferred to their respective milestones.
