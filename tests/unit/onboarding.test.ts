@@ -7,14 +7,15 @@ import {
   onboardingStepRegistry,
   type OnboardingSession,
 } from "@/domain/onboarding";
-import type {
-  OnboardingSessionLoadResult,
-  OnboardingSessionRepository,
+import {
+  OnboardingStorageError,
+  type OnboardingSessionLoadResult,
+  type OnboardingSessionRepository,
 } from "@/services/onboarding";
 
 class MemoryOnboardingRepository implements OnboardingSessionRepository {
   session?: OnboardingSession;
-  failSave = false;
+  saveError?: Error;
 
   load(): Promise<OnboardingSessionLoadResult> {
     return Promise.resolve(
@@ -25,7 +26,7 @@ class MemoryOnboardingRepository implements OnboardingSessionRepository {
   }
 
   save(session: OnboardingSession): Promise<void> {
-    if (this.failSave) return Promise.reject(new Error("save failed"));
+    if (this.saveError) return Promise.reject(this.saveError);
     this.session = structuredClone(onboardingSessionSchema.parse(session));
     return Promise.resolve();
   }
@@ -191,11 +192,37 @@ describe("onboarding application service", () => {
     });
   });
 
+  it("creates and returns a new session when resume finds no saved session", async () => {
+    const { repository, service } = createService();
+
+    await expect(service.resume()).resolves.toMatchObject({
+      status: "new",
+      session: { activeStepId: "creation-path" },
+    });
+    expect(repository.session).toMatchObject({ activeStepId: "creation-path" });
+  });
+
+  it("returns controlled unavailable storage when the first session save fails", async () => {
+    const { repository, service } = createService();
+    repository.saveError = new OnboardingStorageError();
+
+    await expect(service.resume()).resolves.toEqual({ status: "unavailable" });
+    expect(repository.session).toBeUndefined();
+  });
+
+  it("does not hide non-storage programming errors during initial creation", async () => {
+    const { repository, service } = createService();
+    const programmingError = new Error("unexpected invariant failure");
+    repository.saveError = programmingError;
+
+    await expect(service.resume()).rejects.toBe(programmingError);
+  });
+
   it("keeps the prior session intact when a transition cannot be persisted", async () => {
     const { repository, service } = createService();
     const initial = await service.createSession();
     const before = structuredClone(repository.session);
-    repository.failSave = true;
+    repository.saveError = new Error("save failed");
 
     await expect(service.selectCreationPath(initial, "demo-preset")).rejects.toThrow("save failed");
     expect(repository.session).toEqual(before);

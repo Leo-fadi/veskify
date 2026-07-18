@@ -1,11 +1,35 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OnboardingWizard } from "@/app/projects/new/onboarding-wizard";
 import { ONBOARDING_SESSION_STORAGE_KEY } from "@/services/onboarding";
 
 describe("guided onboarding route", () => {
   beforeEach(() => localStorage.clear());
+  afterEach(() => vi.restoreAllMocks());
+
+  it("exits loading when the first save fails and can retry after storage recovers", async () => {
+    const user = userEvent.setup();
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("Write blocked", "SecurityError");
+    });
+
+    render(<OnboardingWizard />);
+
+    expect(
+      await screen.findByRole("heading", {
+        name: "We cannot access saved onboarding progress",
+      }),
+    ).toBeVisible();
+    const retry = screen.getByRole("button", { name: "Try again" });
+    expect(retry).toBeEnabled();
+
+    setItem.mockRestore();
+    await user.click(retry);
+    expect(
+      await screen.findByRole("heading", { name: "How would you like to begin?" }),
+    ).toBeVisible();
+  });
 
   it("selects and persists the real creation path, then continues and goes back", async () => {
     const user = userEvent.setup();

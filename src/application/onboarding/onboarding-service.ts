@@ -6,9 +6,10 @@ import {
   type OnboardingCreationPath,
   type OnboardingSession,
 } from "@/domain/onboarding";
-import type {
-  OnboardingSessionLoadResult,
-  OnboardingSessionRepository,
+import {
+  OnboardingStorageError,
+  type OnboardingSessionLoadResult,
+  type OnboardingSessionRepository,
 } from "@/services/onboarding";
 
 export type OnboardingTransitionErrorCode =
@@ -85,7 +86,12 @@ export class OnboardingService {
   async resume(): Promise<OnboardingResumeResult> {
     const result = await this.loadSession();
     if (result.status === "missing") {
-      return { status: "new", session: await this.createSession() };
+      try {
+        return { status: "new", session: await this.createSession() };
+      } catch (error) {
+        if (error instanceof OnboardingStorageError) return { status: "unavailable" };
+        throw error;
+      }
     }
     if (result.status === "found") {
       return { status: "resumed", session: cloneOnboardingSession(result.session) };
