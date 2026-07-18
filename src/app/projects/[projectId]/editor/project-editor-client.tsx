@@ -9,6 +9,15 @@ import {
   StaleEditorDraftError,
 } from "@/application/draft-save";
 import {
+  canDuplicateSection,
+  canToggleSectionVisibility,
+  CanonicalEditorHistory,
+  createDuplicateSectionTransaction,
+  createSectionVisibilityTransaction,
+  duplicateCanonicalSection,
+  setCanonicalSectionVisibility,
+} from "@/application/editor-history";
+import {
   createStorefrontRenderContext,
   getComponentDefinition,
   validateRegisteredPage,
@@ -93,6 +102,13 @@ const draftDiffers = (draft: StorefrontSnapshot, published: StorefrontSnapshot) 
 const canonicalPagesEqual = (left: PageModel, right: PageModel) =>
   JSON.stringify(left) === JSON.stringify(right);
 
+function isTypingTarget(target: EventTarget | null) {
+  return (
+    target instanceof HTMLElement &&
+    Boolean(target.closest("input, textarea, select, [contenteditable='true']"))
+  );
+}
+
 export function ProjectEditorClient({
   projectId,
   repositoryFactory = defaultRepositoryFactory,
@@ -110,8 +126,31 @@ export function ProjectEditorClient({
   const [sessionPages, setSessionPages] = useState<Record<string, PageModel>>({});
   const [resetKeys, setResetKeys] = useState<Record<string, number>>({});
   const [validationMessage, setValidationMessage] = useState("");
+  const [historyStatus, setHistoryStatus] = useState("");
+  const [editorHistory, setEditorHistory] = useState<CanonicalEditorHistory>();
   const [saveState, setSaveState] = useState<SaveUiState>({ status: "idle" });
   const savePending = useRef(false);
+
+  useEffect(() => {
+    const handleHistoryShortcut = (event: KeyboardEvent) => {
+      if (event.altKey || isTypingTarget(event.target)) return;
+      const modifier = event.metaKey || event.ctrlKey;
+      const undo = modifier && event.key.toLocaleLowerCase() === "z" && !event.shiftKey;
+      const redo =
+        (modifier && event.key.toLocaleLowerCase() === "z" && event.shiftKey) ||
+        (event.ctrlKey && !event.metaKey && event.key.toLocaleLowerCase() === "y");
+      const action = undo ? "undo" : redo ? "redo" : undefined;
+      if (!action) return;
+      const button = document.querySelector<HTMLButtonElement>(
+        `[data-editor-history-action='${action}']`,
+      );
+      if (!button || button.disabled) return;
+      button.click();
+      event.preventDefault();
+    };
+    window.addEventListener("keydown", handleHistoryShortcut);
+    return () => window.removeEventListener("keydown", handleHistoryShortcut);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -140,12 +179,18 @@ export function ProjectEditorClient({
           const pages = draft.pages.filter((page) => editorPageTypes.has(page.type));
           pages.forEach((page) => validateRegisteredPage(page, context));
           if (pages.length === 0) throw new Error("No supported draft pages are available.");
+          const nextHistory = new CanonicalEditorHistory({
+            validatePage: (page) => validateRegisteredPage(page, context),
+          });
+          pages.forEach((page) => nextHistory.initialize(page));
+          setEditorHistory(nextHistory);
           setSelectedPageId(pages.find((page) => page.type === "home")?.id ?? pages[0].id);
           setSelectedSectionId(undefined);
           setActiveLocale(aggregate.project.primaryLocale);
           setSessionPages({});
           setResetKeys({});
           setValidationMessage("");
+          setHistoryStatus("");
           setSaveState({ status: "idle" });
           setState({ status: "ready", aggregate, draft, published, pages });
         } catch {
@@ -197,8 +242,12 @@ export function ProjectEditorClient({
     disabled: saveState.status === "saving",
     onProposalReady: () => setSelectedSectionId(undefined),
     onAcceptedPage: (acceptedPage) => {
-      setSessionPages((current) => ({ ...current, [acceptedPage.id]: acceptedPage }));
+      const committedPage =
+        editorHistory?.commit(acceptedPage, "Apply design proposal") ??
+        structuredClone(acceptedPage);
+      setSessionPages((current) => ({ ...current, [acceptedPage.id]: committedPage }));
       setValidationMessage("");
+      setHistoryStatus("Proposal applied. You can undo this change.");
       setSaveState({ status: "idle" });
       setResetKeys((current) => ({
         ...current,
@@ -281,12 +330,35 @@ export function ProjectEditorClient({
   }
   const proposalBlocksSave = agent.blocksSave;
   const saving = saveState.status === "saving";
+  const mutationsBlocked = saving || proposalBlocksSave;
   const saveDisabled =
     !hasUnsavedChanges ||
     !completeDraftIsValid ||
     Boolean(validationMessage) ||
     proposalBlocksSave ||
     saveState.status === "saving";
+  const canUndo = editorHistory?.canUndo(page.id) ?? false;
+  const canRedo = editorHistory?.canRedo(page.id) ?? false;
+
+  const remountPage = (pageId: string) => {
+    setResetKeys((current) => ({
+      ...current,
+      [pageId]: (current[pageId] ?? 0) + 1,
+    }));
+  };
+
+  const showHistoryPage = (nextPage: PageModel) => {
+    setSessionPages((current) => ({ ...current, [nextPage.id]: structuredClone(nextPage) }));
+    if (
+      selectedSectionId &&
+      !nextPage.sections.some((section) => section.id === selectedSectionId)
+    ) {
+      setSelectedSectionId(undefined);
+    }
+    remountPage(nextPage.id);
+    setValidationMessage("");
+    setSaveState({ status: "idle" });
+  };
 
   const changePage = (nextPage: PageModel) => {
     if (savePending.current) return;
@@ -311,9 +383,31 @@ export function ProjectEditorClient({
     ) {
       setSelectedSectionId(undefined);
     }
-    setSessionPages((current) => ({ ...current, [nextPage.id]: nextPage }));
+    const committedPage = editorHistory?.commit(nextPage, "Edit page") ?? structuredClone(nextPage);
+    setSessionPages((current) => ({ ...current, [nextPage.id]: committedPage }));
     setValidationMessage("");
+    setHistoryStatus("Change added. You can undo it from the editor toolbar.");
     setSaveState({ status: "idle" });
+  };
+
+  const undoCurrentPage = () => {
+    if (mutationsBlocked || !editorHistory) return false;
+    const previousPage = editorHistory.undo(page.id);
+    if (!previousPage) return false;
+    agent.closeForPageMutation(previousPage);
+    showHistoryPage(previousPage);
+    setHistoryStatus("Undid the last change on this page.");
+    return true;
+  };
+
+  const redoCurrentPage = () => {
+    if (mutationsBlocked || !editorHistory) return false;
+    const nextPage = editorHistory.redo(page.id);
+    if (!nextPage) return false;
+    agent.closeForPageMutation(nextPage);
+    showHistoryPage(nextPage);
+    setHistoryStatus("Redid the last change on this page.");
+    return true;
   };
 
   const selectPage = (nextPageId: string) => {
@@ -329,6 +423,7 @@ export function ProjectEditorClient({
     setSelectedPageId(nextPageId);
     setSelectedSectionId(undefined);
     setValidationMessage("");
+    setHistoryStatus("");
     agent.closeForPageSwitch();
   };
 
@@ -336,18 +431,83 @@ export function ProjectEditorClient({
     if (savePending.current) return;
     if (!currentPageHasUnsavedChanges) return;
     if (!window.confirm("Discard the unsaved changes on this page? This cannot be undone.")) return;
+    const resetPage = editorHistory?.reset(originalPage) ?? structuredClone(originalPage);
     setSessionPages((current) => {
       const next = { ...current };
       delete next[originalPage.id];
       return next;
     });
-    setResetKeys((current) => ({
-      ...current,
-      [originalPage.id]: (current[originalPage.id] ?? 0) + 1,
-    }));
+    if (
+      selectedSectionId &&
+      !resetPage.sections.some((section) => section.id === selectedSectionId)
+    ) {
+      setSelectedSectionId(undefined);
+    }
+    remountPage(originalPage.id);
     setValidationMessage("");
+    setHistoryStatus("Discarded this page's changes and cleared its undo history.");
     setSaveState({ status: "idle" });
-    agent.closeForPageMutation(originalPage);
+    agent.closeForPageMutation(resetPage);
+  };
+
+  const duplicateSelectedSection = () => {
+    if (mutationsBlocked || !selectedSection) return;
+    try {
+      const allSectionIds = new Set(
+        state.draft.pages.flatMap((baselinePage) =>
+          (sessionPages[baselinePage.id] ?? baselinePage).sections.map((section) => section.id),
+        ),
+      );
+      const componentLabel = getComponentDefinition(selectedSection.component).label;
+      const transaction = createDuplicateSectionTransaction({
+        page,
+        sectionId: selectedSection.id,
+        existingSectionIds: allSectionIds,
+        label: `Duplicate ${componentLabel}`,
+      });
+      const nextPage = editorHistory
+        ? editorHistory.commitTransaction(transaction)
+        : duplicateCanonicalSection({
+            page,
+            sectionId: selectedSection.id,
+            existingSectionIds: allSectionIds,
+            context,
+          });
+      agent.closeForPageMutation(nextPage);
+      showHistoryPage(nextPage);
+      setHistoryStatus(`Duplicated ${componentLabel}.`);
+    } catch {
+      setValidationMessage("That section cannot be duplicated safely.");
+    }
+  };
+
+  const toggleSelectedSection = () => {
+    if (mutationsBlocked || !selectedSection) return;
+    try {
+      const componentLabel = getComponentDefinition(selectedSection.component).label;
+      const nextVisible = !selectedSection.visible;
+      const transaction = createSectionVisibilityTransaction({
+        page,
+        sectionId: selectedSection.id,
+        visible: nextVisible,
+        label: `${nextVisible ? "Show" : "Hide"} ${componentLabel}`,
+      });
+      const nextPage = editorHistory
+        ? editorHistory.commitTransaction(transaction)
+        : setCanonicalSectionVisibility({
+            page,
+            sectionId: selectedSection.id,
+            visible: nextVisible,
+            context,
+          });
+      agent.closeForPageMutation(nextPage);
+      showHistoryPage(nextPage);
+      setHistoryStatus(
+        `${selectedSection.visible ? "Hid" : "Showed"} ${getComponentDefinition(selectedSection.component).label}.`,
+      );
+    } catch {
+      setValidationMessage("That section must remain visible on this page.");
+    }
   };
 
   const saveDraft = async () => {
@@ -369,6 +529,7 @@ export function ProjectEditorClient({
       );
       if (!published) throw new EditorDraftValidationError();
       const pages = result.draft.pages.filter((item) => editorPageTypes.has(item.type));
+      pages.forEach((savedPage) => editorHistory?.rebase(savedPage));
       setState({
         status: "ready",
         aggregate: result.aggregate,
@@ -388,6 +549,7 @@ export function ProjectEditorClient({
         Object.fromEntries(pages.map((item) => [item.id, (current[item.id] ?? 0) + 1])),
       );
       setValidationMessage("");
+      setHistoryStatus("Draft saved. Undo remains available and will create new unsaved work.");
       setSaveState({ status: "success", message: "Draft saved successfully." });
     } catch (error) {
       if (error instanceof StaleEditorDraftError) {
@@ -441,6 +603,26 @@ export function ProjectEditorClient({
                 : "Changes stay in this editor session until saved."}
             </span>
           </div>
+          <div aria-label="Edit history" className={styles.historyActions}>
+            <button
+              data-editor-history-action="undo"
+              disabled={!canUndo || mutationsBlocked}
+              onClick={undoCurrentPage}
+              title="Undo (Ctrl or Command + Z)"
+              type="button"
+            >
+              Undo
+            </button>
+            <button
+              data-editor-history-action="redo"
+              disabled={!canRedo || mutationsBlocked}
+              onClick={redoCurrentPage}
+              title="Redo (Ctrl or Command + Shift + Z)"
+              type="button"
+            >
+              Redo
+            </button>
+          </div>
           <button
             className={styles.saveDraftButton}
             disabled={saveDisabled}
@@ -463,6 +645,9 @@ export function ProjectEditorClient({
               <p role="alert">Some changes need attention before this draft can be saved.</p>
             ) : null}
           </div>
+          <p aria-live="polite" aria-atomic="true" className={styles.historyStatus} role="status">
+            {historyStatus}
+          </p>
         </div>
       </header>
       <div className={styles.workspace}>
@@ -504,6 +689,39 @@ export function ProjectEditorClient({
               </label>
             ))}
           </fieldset>
+          <section aria-label="Selected section actions" className={styles.sectionActions}>
+            <h2>Selected section</h2>
+            {selectedSection ? (
+              <>
+                <p>
+                  <strong>{getComponentDefinition(selectedSection.component).label}</strong>
+                  <span>{selectedSection.visible ? "Visible" : "Hidden"}</span>
+                </p>
+                <div>
+                  <button
+                    disabled={!canDuplicateSection(selectedSection) || mutationsBlocked}
+                    onClick={duplicateSelectedSection}
+                    type="button"
+                  >
+                    Duplicate
+                  </button>
+                  <button
+                    disabled={!canToggleSectionVisibility(selectedSection) || mutationsBlocked}
+                    onClick={toggleSelectedSection}
+                    type="button"
+                  >
+                    {selectedSection.visible ? "Hide" : "Show"}
+                  </button>
+                </div>
+                {!canDuplicateSection(selectedSection) ||
+                !canToggleSectionVisibility(selectedSection) ? (
+                  <p>This required section must remain visible and can only appear once.</p>
+                ) : null}
+              </>
+            ) : (
+              <p>Select a section on the canvas to duplicate, hide or show it.</p>
+            )}
+          </section>
           <Link className={styles.previewLink} href={previewHref}>
             View selected page
           </Link>

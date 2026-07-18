@@ -63,6 +63,48 @@ test("selects and edits an approved field, then discards the session change", as
   await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
 });
 
+test("uses canonical keyboard undo and redo outside typing controls", async ({ page }) => {
+  await page.goto(url);
+  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  await canvas.getByText("Made for northern light", { exact: true }).click();
+  await page
+    .getByLabel("Selected section actions")
+    .getByRole("button", { name: "Duplicate" })
+    .click();
+  await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(2);
+  await page.getByRole("button", { name: "Undo", exact: true }).focus();
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(1);
+  await page.keyboard.press("ControlOrMeta+Shift+z");
+  await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(2);
+});
+
+test("duplicates and hides the actual selected section with undo and redo on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto(url);
+  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  await canvas.getByText("Made for northern light", { exact: true }).click();
+  const sectionActions = page.getByLabel("Selected section actions");
+  await expect(sectionActions.getByText("Aurum hero", { exact: true })).toBeVisible();
+
+  await sectionActions.getByRole("button", { name: "Duplicate" }).click();
+  await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(2);
+  await sectionActions.getByRole("button", { name: "Hide" }).click();
+  await expect(canvas.getByText("Hidden section — select it to show it again")).toBeVisible();
+  await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(2);
+  await page.getByRole("button", { name: "Redo" }).click();
+  await expect(canvas.getByText("Hidden section — select it to show it again")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save draft" })).toBeEnabled();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+});
+
 test("requests, previews, rejects and accepts deterministic proposals on mobile", async ({
   page,
 }) => {
@@ -83,6 +125,12 @@ test("requests, previews, rejects and accepts deterministic proposals on mobile"
   await page.getByRole("button", { name: "Accept and apply" }).click();
   await expect(page.getByLabel("Draft status")).toContainText("Unsaved changes");
   await expect(page.getByRole("button", { name: "Save draft" })).toBeEnabled();
+  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  await expect(canvas.getByRole("heading", { name: "Discover Rings" })).toBeVisible();
+  await page.getByRole("button", { name: "Undo" }).click();
+  await expect(canvas.getByRole("heading", { name: "Discover Rings" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Redo" }).click();
+  await expect(canvas.getByRole("heading", { name: "Discover Rings" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );

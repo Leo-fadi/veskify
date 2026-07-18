@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
 import { aurumNordicSeed } from "@/data/seed";
+import type { PageModel } from "@/domain/storefront";
 import {
   InMemoryProjectRepository,
   ProjectNotFoundError,
@@ -27,7 +28,7 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
       id: string;
       type: string;
       title: Record<string, string | undefined>;
-      sections: Array<{ id: string; component: string }>;
+      sections: Array<{ id: string; component: string; visible: boolean }>;
     };
     context: { activeLocale: string };
     brandSystem: { colors: { primary: string } };
@@ -39,20 +40,37 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
   }) => (
     <section
       aria-label={readOnly ? (readOnlyLabel ?? "Proposal preview canvas") : "Visual editor canvas"}
+      data-page={JSON.stringify(page)}
       data-primary={brandSystem.colors.primary}
       lang={context.activeLocale}
     >
       Canvas: {page.type} / {context.activeLocale}
       {readOnlyLabel === "Proposal preview canvas" ? <span>Locked proposal</span> : null}
       {page.sections.map((section) => (
-        <button
-          disabled={readOnly}
-          key={`select-${section.id}`}
-          onClick={() => onSelectedSectionChange?.(section.id)}
-          type="button"
-        >
-          Select {section.component} section
-        </button>
+        <div key={`section-${section.id}`}>
+          {section.visible ? null : <span>Hidden {section.component} section</span>}
+          <button
+            disabled={readOnly}
+            onClick={() => onSelectedSectionChange?.(section.id)}
+            type="button"
+          >
+            Select {section.component} section
+          </button>
+          {!["header", "footer"].includes(section.component) ? (
+            <button
+              disabled={readOnly}
+              onClick={() =>
+                onPageChange({
+                  ...page,
+                  sections: page.sections.filter((candidate) => candidate.id !== section.id),
+                })
+              }
+              type="button"
+            >
+              Remove {section.component} section
+            </button>
+          ) : null}
+        </div>
       ))}
       {readOnlyLabel === "Proposal preview canvas" ? (
         <button
@@ -136,6 +154,9 @@ const statefulRepository = () => new InMemoryProjectRepository([aggregate()]);
 
 const route = (value: ProjectRepository) =>
   render(<ProjectEditorClient projectId="project_aurum_nordic" repositoryFactory={() => value} />);
+
+const visibleCanvasPage = () =>
+  JSON.parse(screen.getByLabelText("Visual editor canvas").getAttribute("data-page")!) as PageModel;
 
 describe("P2-01 project editor route", () => {
   it("loads the canonical draft without writing storage", async () => {
@@ -268,6 +289,137 @@ describe("P2-01 project editor route", () => {
     expect(repo.publish).not.toHaveBeenCalled();
   });
 
+  it("undoes and redoes a manual Puck mutation without repository writes", async () => {
+    const repo = repository(() => Promise.resolve(aggregate()));
+    route(repo);
+    await screen.findByText("Canvas: home / en");
+    const undo = screen.getByRole("button", { name: "Undo" });
+    const redo = screen.getByRole("button", { name: "Redo" });
+    expect(undo).toBeDisabled();
+    expect(redo).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    expect(undo).toBeEnabled();
+    fireEvent.click(undo);
+    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(screen.getByText("Undid the last change on this page.")).toBeVisible();
+    expect(redo).toBeEnabled();
+
+    fireEvent.click(redo);
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    expect(repo.saveDraft).not.toHaveBeenCalled();
+    expect(repo.publish).not.toHaveBeenCalled();
+  });
+
+  it("does not intercept history shortcuts while the merchant is typing", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    const request = screen.getByLabelText("Your request");
+    request.focus();
+    fireEvent.keyDown(request, { key: "z", ctrlKey: true });
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    fireEvent.keyDown(window, { key: "y", ctrlKey: true });
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+  });
+
+  it("duplicates a selected section as one undoable and redoable action", async () => {
+    const repo = repository(() => Promise.resolve(aggregate()));
+    route(repo);
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    const before = visibleCanvasPage();
+    const sourceIndex = before.sections.findIndex((section) => section.component === "hero");
+
+    fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
+    const duplicated = visibleCanvasPage();
+    expect(duplicated.sections).toHaveLength(before.sections.length + 1);
+    expect(duplicated.sections[sourceIndex + 1]).toEqual({
+      ...duplicated.sections[sourceIndex],
+      id: `${duplicated.sections[sourceIndex].id}_copy`,
+    });
+    expect(repo.saveDraft).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(visibleCanvasPage()).toEqual(before);
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(visibleCanvasPage()).toEqual(duplicated);
+  });
+
+  it("hides and shows the selected section with undo and redo", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    const original = visibleCanvasPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Hide" }));
+    expect(screen.getByText("Hidden hero section")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Show" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Show" }));
+    expect(screen.queryByText("Hidden hero section")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByText("Hidden hero section")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(visibleCanvasPage()).toEqual(original);
+  });
+
+  it("keeps required header and footer section actions disabled", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    for (const component of ["header", "footer"]) {
+      fireEvent.click(screen.getByRole("button", { name: `Select ${component} section` }));
+      expect(screen.getByRole("button", { name: "Duplicate" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Hide" })).toBeDisabled();
+      expect(screen.getByText(/must remain visible and can only appear once/i)).toBeVisible();
+    }
+  });
+
+  it("allows a legacy-hidden required section to be shown, undone and redone", async () => {
+    const value = aggregate();
+    const draft = value.snapshots.find(
+      (snapshot) => snapshot.id === value.project.draftSnapshotId,
+    )!;
+    const homepage = draft.pages.find((page) => page.type === "home")!;
+    homepage.sections.find((section) => section.component === "header")!.visible = false;
+    route(repository(() => Promise.resolve(value)));
+    await screen.findByText("Canvas: home / en");
+    expect(screen.getByText("Hidden header section")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Select header section" }));
+    expect(screen.getByRole("button", { name: "Duplicate" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Show" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show" }));
+    expect(screen.queryByText("Hidden header section")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByText("Hidden header section")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(screen.queryByText("Hidden header section")).not.toBeInTheDocument();
+    expect(
+      visibleCanvasPage().sections.find((section) => section.component === "header")?.visible,
+    ).toBe(true);
+  });
+
+  it("clears selection when a selected section disappears and preserves it when it remains", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByRole("button", { name: "Duplicate" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove hero section" }));
+    expect(screen.getByText(/select a section on the canvas/i)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByRole("button", { name: "Select hero section" })).toBeVisible();
+    expect(screen.getByText(/select a section on the canvas/i)).toBeVisible();
+  });
+
   it("confirms discard and restores the originally loaded page", async () => {
     const confirm = vi.spyOn(window, "confirm");
     route(repository(() => Promise.resolve(aggregate())));
@@ -280,6 +432,8 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
     expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Redo" })).toBeDisabled();
     expect(confirm).toHaveBeenCalledTimes(2);
     confirm.mockRestore();
   });
@@ -305,6 +459,29 @@ describe("P2-01 project editor route", () => {
     });
     expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    confirm.mockRestore();
+  });
+
+  it("keeps undo and redo histories isolated per page", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    fireEvent.change(screen.getByLabelText("Storefront page"), {
+      target: { value: "page_collection_rings" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByRole("heading", { name: "Rings" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
+
+    fireEvent.change(screen.getByLabelText("Storefront page"), {
+      target: { value: "page_home" },
+    });
+    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Undo" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
     confirm.mockRestore();
   });
 
@@ -354,7 +531,11 @@ describe("P2-01 project editor route", () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
-    expect(screen.getByText("Aurum hero", { exact: true })).toBeVisible();
+    expect(
+      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero", {
+        exact: true,
+      }),
+    ).toBeVisible();
     fireEvent.change(screen.getByLabelText("Your request"), {
       target: { value: "Improve the hero." },
     });
@@ -365,7 +546,11 @@ describe("P2-01 project editor route", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Reject" }));
     fireEvent.click(screen.getByRole("button", { name: "Select productGrid section" }));
-    expect(screen.getByText("Product grid", { exact: true })).toBeVisible();
+    expect(
+      within(screen.getByLabelText("Selected section actions")).getByText("Product grid", {
+        exact: true,
+      }),
+    ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/safe plan could not be created/i);
     expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
@@ -606,6 +791,39 @@ describe("P2-01 project editor route", () => {
     confirm.mockRestore();
   });
 
+  it("records an accepted multi-operation proposal as one atomic history entry", async () => {
+    const repo = repository(() => Promise.resolve(aggregate()));
+    route(repo);
+    await screen.findByText("Canvas: home / en");
+    const original = visibleCanvasPage();
+    fireEvent.click(screen.getByRole("button", { name: "Make the homepage feel more luxurious." }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    const previewCanvas = await screen.findByLabelText("Proposal preview canvas");
+    const preview = JSON.parse(previewCanvas.getAttribute("data-page")!) as PageModel;
+    expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+    expect(visibleCanvasPage()).toEqual(preview);
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(visibleCanvasPage()).toEqual(original);
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(visibleCanvasPage()).toEqual(preview);
+    expect(repo.saveDraft).not.toHaveBeenCalled();
+    expect(repo.publish).not.toHaveBeenCalled();
+  });
+
+  it("does not add proposal preview or rejection to editor history", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Make the layout more minimal." }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await screen.findByLabelText("Design proposal");
+    expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+    expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Redo" })).toBeDisabled();
+  });
+
   it("rejects a proposal and preserves the exact current page", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
@@ -680,6 +898,13 @@ describe("P2-01 project editor route", () => {
     ).toEqual(
       before.snapshots.find((snapshot) => snapshot.id === before.project.publishedSnapshotId),
     );
+
+    expect(screen.getByRole("button", { name: "Undo" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    expect(visibleCanvasPage().title).toEqual({ en: "Home", fi: "Etusivu" });
+    const afterUndo = await value.get(aurumNordicSeed.project.id);
+    expect(afterUndo).toEqual(after);
   });
 
   it("saves multiple session pages and preserves the untouched product page", async () => {
