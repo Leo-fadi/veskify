@@ -1,15 +1,28 @@
 import { expect, test } from "@playwright/test";
 
-test("loads the Veskify foundation shell", async ({ page }) => {
+test("loads the Veskify launchpad and exposes the working journeys", async ({ page }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: /Aurum Nordic storefront design demo/i }),
+    page.getByRole("heading", { name: /Veskify storefront design demo/i }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: /Review status/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: /isolated Puck adapter proof/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Aurum Nordic draft preview/i })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Start storefront setup" })).toHaveAttribute(
+    "href",
+    "/projects/new",
+  );
+  await expect(page.getByRole("link", { name: "Open visual editor" })).toHaveAttribute(
+    "href",
+    "/projects/project_aurum_nordic/editor",
+  );
+  await expect(page.getByRole("link", { name: "View storefront preview" })).toHaveAttribute(
     "href",
     "/projects/project_aurum_nordic",
+  );
+  await expect(page.getByRole("link", { name: "Open isolated Puck proof" })).toHaveAttribute(
+    "href",
+    "/puck-proof",
+  );
+  await expect(page.getByText(/Batch 1|stops before onboarding|editor is deferred/i)).toHaveCount(
+    0,
   );
 });
 
