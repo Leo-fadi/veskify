@@ -39,7 +39,27 @@ type SupportedRequest = {
   locale: Locale;
   scope: DesignSkillScope;
   skillIds: string[];
+  selectionRequirement?: "hero";
 };
+
+export const designPlanValidationCodes = {
+  selectionRequired: "selectedHeroSelectionRequired",
+  incompatibleSelection: "selectedSectionIsNotHero",
+  missingHero: "heroSectionMissing",
+} as const;
+
+export type DesignPlanValidationCode =
+  (typeof designPlanValidationCodes)[keyof typeof designPlanValidationCodes];
+
+const plannerError = (code: DesignPlanValidationCode, message: string) => `${code}: ${message}`;
+
+export function designPlanValidationCode(
+  errors: readonly string[],
+): DesignPlanValidationCode | undefined {
+  return (Object.values(designPlanValidationCodes) as DesignPlanValidationCode[]).find((code) =>
+    errors.some((error) => error.startsWith(`${code}:`)),
+  );
+}
 
 const supportedRequests = new Map<string, SupportedRequest>([
   [
@@ -79,7 +99,13 @@ const supportedRequests = new Map<string, SupportedRequest>([
   ],
   [
     "improve the selected hero",
-    { intent: "heroImprovement", locale: "en", scope: "section", skillIds: ["improveHero"] },
+    {
+      intent: "heroImprovement",
+      locale: "en",
+      scope: "section",
+      skillIds: ["improveHero"],
+      selectionRequirement: "hero",
+    },
   ],
   [
     "tee etusivusta ylellisempi",
@@ -109,7 +135,13 @@ const supportedRequests = new Map<string, SupportedRequest>([
   ],
   [
     "paranna valittua hero-osiota",
-    { intent: "heroImprovement", locale: "fi", scope: "section", skillIds: ["improveHero"] },
+    {
+      intent: "heroImprovement",
+      locale: "fi",
+      scope: "section",
+      skillIds: ["improveHero"],
+      selectionRequirement: "hero",
+    },
   ],
 ]);
 
@@ -272,6 +304,8 @@ export function createDesignPlan(
   void campaign;
 
   const classification = classifyDesignRequest(input.merchantRequest, activeLocale);
+  const request = supportedRequests.get(normalizeRequest(input.merchantRequest));
+  const requiresSelectedHero = request?.selectionRequirement === "hero";
   const errors: string[] = [];
   if (page.type !== pageType)
     errors.push("The supplied PageType does not match the canonical page.");
@@ -296,9 +330,34 @@ export function createDesignPlan(
   const selectedSection = input.selectedSectionId
     ? page.sections.find((section) => section.id === input.selectedSectionId)
     : undefined;
-  const heroTarget = isSectionScopedRequest ? (selectedSection ?? pageHero) : pageHero;
-  if (classification.normalizedIntent === "heroImprovement" && heroTarget?.component !== "hero") {
-    errors.push("Hero improvement requires an existing hero selection.");
+  const heroTarget = requiresSelectedHero
+    ? selectedSection
+    : isSectionScopedRequest
+      ? (selectedSection ?? pageHero)
+      : pageHero;
+  if (classification.normalizedIntent === "heroImprovement") {
+    if (!pageHero) {
+      errors.push(
+        plannerError(
+          designPlanValidationCodes.missingHero,
+          "Hero improvement requires an existing hero section.",
+        ),
+      );
+    } else if (requiresSelectedHero && !selectedSection) {
+      errors.push(
+        plannerError(
+          designPlanValidationCodes.selectionRequired,
+          "Select the hero section before requesting this change.",
+        ),
+      );
+    } else if (selectedSection && selectedSection.component !== "hero") {
+      errors.push(
+        plannerError(
+          designPlanValidationCodes.incompatibleSelection,
+          "The selected section is not a hero section.",
+        ),
+      );
+    }
   }
 
   const selectedSkills: SelectedDesignSkill[] = [];

@@ -24,7 +24,10 @@ test("browses and navigates a previous version without falling through to the dr
     .locator("xpath=../..")
     .getByRole("link", { name: "Preview" })
     .click();
-  await page.getByRole("link", { name: "Restore this version" }).click();
+  await expect(page).toHaveURL(/\/history\/[^/]+$/);
+  const restoreLink = page.getByRole("link", { name: "Restore this version" });
+  await expect(restoreLink).toHaveAttribute("href", /\/history\/[^/]+\/restore$/);
+  await restoreLink.click();
   await expect(page).toHaveURL(/\/history\/[^/]+\/restore$/);
   await expect(page.getByText(/will become a new saved draft/i)).toBeVisible();
   await page.getByRole("link", { name: "Return to previous versions" }).click();

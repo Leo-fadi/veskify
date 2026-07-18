@@ -11,6 +11,8 @@ import {
   classifyDesignRequest,
   createDesignPlan,
   createDeterministicDesignProvider,
+  designPlanValidationCode,
+  designPlanValidationCodes,
   createProposalFromDesignPlan,
   designSkillDefinitionSchema,
   designSkillRegistry,
@@ -175,8 +177,8 @@ describe("deterministic design plans", () => {
       input("Improve the hero.", { selectedSectionId: section(homepage, "productGrid").id }),
     );
     expect(invalid.validation.valid).toBe(false);
-    expect(invalid.validation.errors).toContain(
-      "Hero improvement requires an existing hero selection.",
+    expect(designPlanValidationCode(invalid.validation.errors)).toBe(
+      designPlanValidationCodes.incompatibleSelection,
     );
   });
 
@@ -193,6 +195,45 @@ describe("deterministic design plans", () => {
     expect(plan.selectedSkills).toEqual([
       expect.objectContaining({ id: "improveHero", targetSectionIds: [heroId] }),
     ]);
+  });
+
+  it.each([
+    ["Improve the selected hero.", "en"],
+    ["Paranna valittua hero-osiota.", "fi"],
+  ])("requires an actual hero selection for %s", (request, activeLocale) => {
+    const plan = createDesignPlan(input(request, { activeLocale: activeLocale as "en" | "fi" }));
+    expect(plan.validation.valid).toBe(false);
+    expect(designPlanValidationCode(plan.validation.errors)).toBe(
+      designPlanValidationCodes.selectionRequired,
+    );
+    expect(
+      plan.selectedSkills.find((skill) => skill.id === "improveHero")?.targetSectionIds,
+    ).toEqual([]);
+  });
+
+  it("distinguishes a selected-hero request from a missing hero", () => {
+    const pageWithoutHero = structuredClone(homepage);
+    pageWithoutHero.sections = pageWithoutHero.sections.filter((item) => item.component !== "hero");
+    const plan = createDesignPlan(input("Improve the selected hero.", { page: pageWithoutHero }));
+    expect(plan.validation.valid).toBe(false);
+    expect(designPlanValidationCode(plan.validation.errors)).toBe(
+      designPlanValidationCodes.missingHero,
+    );
+  });
+
+  it("preserves generic hero targeting and missing-hero behavior", () => {
+    const generic = createDesignPlan(input("Improve the hero."));
+    const heroId = section(homepage, "hero").id;
+    expect(generic.validation).toEqual({ valid: true, errors: [] });
+    expect(generic.affectedSectionIds).toEqual([heroId]);
+
+    const pageWithoutHero = structuredClone(homepage);
+    pageWithoutHero.sections = pageWithoutHero.sections.filter((item) => item.component !== "hero");
+    const missing = createDesignPlan(input("Improve the hero.", { page: pageWithoutHero }));
+    expect(missing.validation.valid).toBe(false);
+    expect(designPlanValidationCode(missing.validation.errors)).toBe(
+      designPlanValidationCodes.missingHero,
+    );
   });
 
   it("ignores a non-hero selection for a page-wide minimal plan", () => {

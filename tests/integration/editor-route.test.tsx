@@ -589,9 +589,7 @@ describe("P2-01 project editor route", () => {
       }),
     ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      /only works with a selected hero section/i,
-    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(/selected section is not a hero/i);
     expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
   });
 
