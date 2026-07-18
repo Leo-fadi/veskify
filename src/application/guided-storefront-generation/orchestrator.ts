@@ -6,7 +6,10 @@ import {
   type InitialStorefrontGenerationPlan,
   type StorefrontTemplateSelectionPlan,
 } from "@/application/storefront-templates";
-import { storefrontDesignBriefSchema } from "@/domain/design-brief";
+import {
+  createStorefrontDesignBriefFingerprint,
+  storefrontDesignBriefSchema,
+} from "@/domain/design-brief";
 import {
   canonicalValueString,
   storefrontSnapshotSchema,
@@ -14,6 +17,7 @@ import {
 } from "@/domain/storefront";
 import {
   cloneGuidedStorefrontGenerationPlan,
+  GUIDED_STOREFRONT_GENERATION_SCHEMA_VERSION,
   guidedStorefrontGenerationInputSchema,
   guidedStorefrontGenerationPlanSchema,
   type GuidedStorefrontGenerationDiagnostic,
@@ -42,6 +46,7 @@ export function createGuidedStorefrontGenerationPlanId(
 ): string {
   return `guided-generation-${stableHash(
     canonicalValueString({
+      schemaVersion: GUIDED_STOREFRONT_GENERATION_SCHEMA_VERSION,
       brief: input.brief,
       projectId: input.projectId,
       snapshotId: input.snapshotId,
@@ -132,6 +137,7 @@ function finalize(
   stageDiagnosticsList: ReturnType<typeof stageDiagnostics>[],
   diagnostics: GuidedStorefrontGenerationDiagnostic[],
   assumptions: string[],
+  briefFingerprint: string,
 ): GuidedStorefrontGenerationPlan {
   const orderedDiagnostics = uniqueDiagnostics(diagnostics);
   const warnings = orderedDiagnostics.filter((item) => item.severity === "warning");
@@ -145,13 +151,14 @@ function finalize(
           ? "ready-with-warnings"
           : "ready";
   const plan = {
-    schemaVersion: 1,
+    schemaVersion: GUIDED_STOREFRONT_GENERATION_SCHEMA_VERSION,
     id: createGuidedStorefrontGenerationPlanId(input, {
       brandFoundation: brandPlan.id,
       templateSelection: selection?.id ?? null,
       materialization: materialization?.id ?? null,
     }),
     briefId: input.brief.id,
+    briefFingerprint,
     status,
     projectId: input.projectId,
     snapshotId: input.snapshotId,
@@ -197,6 +204,7 @@ export function generateGuidedStorefront(
     );
   }
   const brief = storefrontDesignBriefSchema.parse(parsed.brief);
+  const briefFingerprint = createStorefrontDesignBriefFingerprint(brief);
   const brandPlan = planBrandFoundation(brief);
   const brandDiagnostics = planFromStageMessages(
     "brand-foundation",
@@ -220,6 +228,7 @@ export function generateGuidedStorefront(
       ],
       brandDiagnostics,
       [...brandPlan.assumptions.en],
+      briefFingerprint,
     );
   }
 
@@ -245,6 +254,7 @@ export function generateGuidedStorefront(
       [brandStage, selectionStage, stageDiagnostics("storefront-materialization", "not-run", [])],
       [...brandDiagnostics, ...selectionDiagnostics],
       assumptions,
+      briefFingerprint,
     );
   }
 
@@ -280,6 +290,7 @@ export function generateGuidedStorefront(
       ],
       [...brandDiagnostics, ...selectionDiagnostics, item],
       assumptions,
+      briefFingerprint,
     );
   }
   const materializationDiagnostics = planFromStageMessages(
@@ -303,6 +314,7 @@ export function generateGuidedStorefront(
       [brandStage, selectionStage, materializationStage],
       [...brandDiagnostics, ...selectionDiagnostics, ...materializationDiagnostics],
       assumptions,
+      briefFingerprint,
     );
   }
   const snapshot = storefrontSnapshotSchema.parse(materialization.generatedSnapshot);
@@ -316,5 +328,6 @@ export function generateGuidedStorefront(
     [brandStage, selectionStage, materializationStage],
     [...brandDiagnostics, ...selectionDiagnostics, ...materializationDiagnostics],
     assumptions,
+    briefFingerprint,
   );
 }

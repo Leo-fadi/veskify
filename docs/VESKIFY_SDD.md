@@ -350,6 +350,14 @@ A template selection is bound to a deterministic fingerprint of the current sele
 state. If the brief changes after selection, P3-08 blocks generation until P3-06 is run again. IDs and
 `createdAt` are explicit inputs; runtime time and randomness are prohibited.
 
+The P3-10 result is projected by a deterministic P3-13 review application service into a localized
+EN/FI merchant-readable review. The review preserves original stage diagnostics and does not rerun
+planning or materialization. Its fixed sections cover business understanding, brand direction,
+template, pages, languages, catalogue, assumptions, warnings and blockers. The review remains in
+memory and is a later O-09 consumer; it does not create or persist a Project. Project creation may
+continue only when the validated result is non-blocked, has the required generated pages and has no
+blocker diagnostics.
+
 ## 4.3 Vesko salesperson assisted mode
 
 Assisted mode uses the same creation and editing flows but provides quick scenario switching, sample business presets, reset-to-demo controls and an optional presenter mode. Presenter mode must not expose developer tools, raw JSON or internal prompt content.
@@ -488,6 +496,8 @@ Assisted mode uses the same creation and editing flows but provides quick scenar
 | FR-052 | A template selection MUST be bound to the current selection-relevant brief state; stale selections MUST block initial generation until the controlled selection planner runs again. |
 | FR-053 | Guided storefront generation MUST execute the deterministic P3-05 brand-foundation, P3-06 template-selection and P3-08 materialization stages in that order, returning one immutable reviewable in-memory result with stage-labelled diagnostics. |
 | FR-054 | A blocked guided-generation stage MUST prevent later stages from running and MUST return no generated snapshot; explicit identifiers, catalogue reference and createdAt MUST be supplied inputs, with no persistence or runtime randomness. |
+| FR-055 | The guided-generation result MUST be projectable into a deterministic localized EN/FI merchant review that preserves stage ownership, diagnostics, assumptions, warnings and blockers without rerunning generation or persisting a Project. |
+| FR-056 | Project creation MUST be allowed from the review only when the validated guided result is non-blocked, contains a generated snapshot with the required home, collection and product pages, and has no blocker diagnostics. |
 
 # 7. Editor and interaction specification
 
@@ -1336,6 +1346,7 @@ After the demo, the design agent will operate inside Vesko Retail OS and replace
 | completeOnboarding(projectId, input)      | Validates onboarding and creates generation plan.                         |
 | materializeInitialStorefront(input)       | Deterministically creates and validates the initial in-memory snapshot; does not persist. |
 | generateGuidedStorefront(input)            | Composes P3-05, P3-06 and P3-08 in order and returns one immutable reviewable in-memory generation result; does not create or persist a Project. |
+| createStorefrontGenerationReview(input)    | Projects a validated guided-generation result into an immutable localized merchant review; does not rerun generation or create/persist a Project. |
 | generateInitialStorefront(projectId)      | Builds initial brand system and page snapshot.                            |
 | proposeDesignChange(context, prompt)      | Returns validated pending proposal.                                       |
 | applyProposal(projectId, proposalId)      | Applies accepted validated operations to the active draft only.             |
@@ -1581,6 +1592,8 @@ Website text, spreadsheet cells, product descriptions and uploaded files are dat
 | AC-023 | Guided creation composes brand foundation, template selection and initial materialization in order, exposes stage-labelled diagnostics and a validated immutable snapshot for review without creating or persisting a Project. |
 | AC-024 | If guided selection is blocked, materialization is not run and the review result contains no generated snapshot; changing only explicit generation identifiers changes only the predictable relevant IDs. |
 | AC-025 | A complete validated project aggregate can be created atomically through the repository; identity conflicts or validation failures leave existing projects, catalogues, snapshots and history unchanged. |
+| AC-026 | A later review projection shows the business, brand, template, pages, languages and catalogue plan in EN/FI with preserved diagnostics, and does not create or persist a Project. |
+| AC-027 | Project creation is disabled for a blocked or incomplete generation review and enabled only for a valid non-blocked review with required pages and no blocker diagnostics. |
 
 ## 21.3 Definition of done for every Codex task
 
