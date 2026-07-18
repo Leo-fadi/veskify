@@ -66,6 +66,21 @@ Current location:
 
 Owns in-memory and IndexedDB persistence adapters, draft and published snapshot persistence, and repository interfaces. Product features depend on repository contracts rather than concrete adapters.
 
+### Guided onboarding foundation
+
+Current locations:
+
+- `src/domain/onboarding/**`
+- `src/application/onboarding/**`
+- `src/services/onboarding/**`
+- `src/app/projects/new/**`
+
+The domain owns the versioned onboarding-session schema and the single ordered O-01–O-09 step
+registry. The React-independent application service owns validated navigation and progress. Browser
+persistence is isolated behind `OnboardingSessionRepository`; the route never reads or writes raw
+storage values. This foundation does not create projects, generate storefronts, import catalogues,
+or call design-agent providers.
+
 ### Publishing application boundary
 
 Current location:
