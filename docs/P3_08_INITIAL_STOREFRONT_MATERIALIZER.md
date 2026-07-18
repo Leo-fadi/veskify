@@ -70,6 +70,10 @@ IndexedDB/storage, onboarding, Puck/editor integration, publishing, history, pro
 catalogue ingestion, product enrichment, cart, checkout, and PageModel generation beyond this
 in-memory initial snapshot.
 
+P3-10 composes this materializer after P3-05 brand foundation and P3-06 template selection, passing
+the same-call canonical BrandSystem and fresh selection plan without changing this boundary's
+ownership or persistence exclusions.
+
 ## Current-brief safety and public boundary
 
 The public `materializeInitialStorefront` action compares the selection plan's P3-06-owned
