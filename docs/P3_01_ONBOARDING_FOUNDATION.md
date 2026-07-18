@@ -59,10 +59,11 @@ The lifecycle is:
 8. Reset validates and saves a new clean session in one replacement write, so a failed write cannot
    first delete the prior recoverable value.
 
-O-01 and O-02 are now completable through the P3-04 business-basics slice. O-03–O-09 remain controlled
-placeholders that describe later input and state explicitly what is deferred. Continue is disabled on
-those placeholders. The service still implements and tests the canonical required/optional navigation
-rules needed as later forms land.
+O-01 through O-03 are now completable through the P3-04 business-basics and P3-07 existing-source
+slices. O-04–O-09 remain controlled placeholders that describe later input and state explicitly what
+is deferred. O-03 only captures a redesign HTTPS URL or the explicit absence of an existing storefront;
+it does not fetch, crawl or import any source. The service still implements and tests the canonical
+required/optional navigation rules needed as later forms land.
 
 ## Persistence and recovery
 
@@ -89,16 +90,19 @@ and responsive layouts verified at 375, 768, 1024, and 1440 pixels without horiz
 ## Implemented tests
 
 - Unit: schema invariants and v1 migration, one collecting brief, path/context synchronization,
-  business-basics completion, immutable updates, transitions, persistence failure rollback, and progress.
-- Integration: browser migration and persistence, partial/complete O-02 resume, corrupt/incompatible
-  classification, SSR safety, O-01/O-02 UI flow, validation, EN/FI state preservation, and recovery.
-- Playwright: all three paths, O-02 completion, back/forward, partial refresh/resume, keyboard form
+  business-basics and existing-source completion, immutable updates, URL safety, transitions,
+  persistence failure rollback, and progress.
+- Integration: browser migration and persistence, partial/complete O-02 and O-03 resume,
+  corrupt/incompatible classification, SSR safety, O-01/O-02/O-03 UI flow, validation, EN/FI state
+  preservation, path-aware URL clearing, and recovery.
+- Playwright: all three paths, O-02/O-03 completion, back/forward, refresh/resume, keyboard form
   navigation, EN/FI labels, corrupt/incompatible recovery, and responsive widths.
 
 ## Deferred P3-03 through P3-06 scope
 
-- P3-03: existing-source and brand-asset intake, including safe upload boundaries.
+- P3-03: brand-asset intake, including safe upload boundaries.
 - P3-04 follow-on work: guided visual direction and catalogue-source selection or import mapping.
+- P3-07 follow-on work: social sources, file uploads, website fetching and source analysis.
 - P3-05: page and storefront-language configuration plus the plain-language review plan.
 - P3-06: confirmed project/storefront generation, generation progress, and editor handoff through
   approved presets, components, skills, operations, and project services.

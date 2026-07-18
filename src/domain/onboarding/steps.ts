@@ -46,15 +46,15 @@ const definitions = [
     id: "existing-sources",
     title: { en: "Existing sources", fi: "Nykyiset lähteet" },
     description: {
-      en: "Choose useful website, social or file sources to bring forward.",
-      fi: "Valitse hyödynnettävät verkkosivu-, some- tai tiedostolähteet.",
+      en: "Tell us about the storefront you want to redesign, or continue without one.",
+      fi: "Kerro uudistettavasta verkkokaupasta tai jatka ilman olemassa olevaa kauppaa.",
     },
     placeholder: {
-      en: "A later step will collect optional website, social and uploaded source material. No source is imported yet.",
-      fi: "Myöhempi vaihe kerää valinnaiset verkkosivu-, some- ja tiedostolähteet. Mitään ei vielä tuoda palveluun.",
+      en: "You can provide a secure website address for a redesign. No website is fetched yet.",
+      fi: "Voit antaa uudistettavan verkkokaupan turvallisen verkko-osoitteen. Sivustoa ei vielä haeta.",
     },
     optional: true,
-    completableNow: false,
+    completableNow: true,
   },
   {
     id: "brand-assets",
