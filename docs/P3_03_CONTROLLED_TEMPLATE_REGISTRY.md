@@ -65,7 +65,13 @@ Registry validation rejects:
 - footers that are not last;
 - homepages without a required hero or with a hero after merchandising;
 - collections without collection introduction or product grid;
-- products without product media or product information, or with product options before information.
+- products without product media, product information, the controlled trust/service block, or
+  descriptive/specification details, or with product options before information.
+
+Every controlled product foundation includes product media, a product summary, trust/service
+presentation, descriptive/specification details, and related-product discovery where the plan
+supports it. The details block remains present even when merchant imagery is unavailable; later
+planning fills it with supported descriptive, specification, delivery, or returns presentation.
 
 No slot carries product price, SKU, stock, inventory, payment, shipping, tax, order, or catalogue
 persistence data. The plans describe composition only.

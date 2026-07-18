@@ -40,6 +40,54 @@ describe("controlled storefront template registry", () => {
     });
   });
 
+  it("requires the complete controlled product foundation in every built-in template", () => {
+    const requiredProductSections = ["productGallery", "productInfo", "benefitIcons", "imageText"];
+    listTemplates().forEach((template) => {
+      const product = template.pagePlans.find((plan) => plan.pageType === "product");
+      expect(product).toBeDefined();
+      if (!product) return;
+      const sections = product.slots.map((slot) => slot.sectionType);
+      requiredProductSections.forEach((section) => expect(sections).toContain(section));
+      expect(sections).toContain("relatedProducts");
+      requiredProductSections.forEach((section) => {
+        const slot = product.slots.find((candidate) => candidate.sectionType === section);
+        expect(slot?.required).toBe(true);
+        expect(slot?.omitWhen).toBe("never");
+      });
+    });
+  });
+
+  it("keeps trust and details between product information and related products", () => {
+    for (const templateId of [
+      "template_balanced_commerce",
+      "template_catalogue_forward_commerce",
+    ]) {
+      const plan = getTemplatePagePlan(templateId, "product");
+      expect(plan?.slots.map((slot) => slot.sectionType)).toEqual([
+        "header",
+        "productGallery",
+        "productInfo",
+        "productOptions",
+        "benefitIcons",
+        "imageText",
+        "relatedProducts",
+        "footer",
+      ]);
+    }
+  });
+
+  it.each([
+    ["benefitIcons", "benefitIcons"],
+    ["imageText", "imageText"],
+  ] as const)("rejects a product plan missing %s", (_label, sectionType) => {
+    const changed = structuredClone(getTemplateById("template_balanced_commerce")!);
+    const product = changed.pagePlans.find((plan) => plan.pageType === "product")!;
+    product.slots = product.slots.filter((slot) => slot.sectionType !== sectionType);
+    expect(() => validateTemplateRegistry([changed])).toThrow(
+      `template_balanced_commerce/product requires ${sectionType}`,
+    );
+  });
+
   it("rejects duplicate template IDs and duplicate slot IDs", () => {
     const first = structuredClone(storefrontTemplateDefinitions[0]);
     expect(() => validateTemplateRegistry([first, first])).toThrow(/Template IDs/);

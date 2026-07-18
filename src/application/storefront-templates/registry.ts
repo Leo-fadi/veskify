@@ -186,16 +186,23 @@ const productSlots = {
     purpose: "product-options",
     omitWhen: "when-not-requested",
   }),
-  values: homeSlots.values,
+  values: slot({
+    id: "product-benefits",
+    required: true,
+    sectionType: "benefitIcons",
+    allowedVariants: ["fourColumn", "minimal"],
+    defaultVariant: "fourColumn",
+    label: { en: "Trust and service", fi: "Luottamus ja palvelu" },
+    purpose: "brand-values",
+  }),
   details: slot({
     id: "product-details",
-    required: false,
+    required: true,
     sectionType: "imageText",
     allowedVariants: ["imageRight", "imageLeft", "stacked"],
     defaultVariant: "imageRight",
     label: { en: "Product details", fi: "Tuotteen lisätiedot" },
     purpose: "editorial-story",
-    omitWhen: "when-imagery-is-unavailable",
   }),
   related: slot({
     id: "related-products",
@@ -283,6 +290,8 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
         productSlots.gallery,
         productSlots.information,
         productSlots.options,
+        productSlots.values,
+        productSlots.details,
         productSlots.related,
         productSlots.footer,
       ]),
@@ -326,6 +335,8 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
         productSlots.gallery,
         productSlots.information,
         productSlots.options,
+        productSlots.values,
+        productSlots.details,
         productSlots.related,
         productSlots.footer,
       ]),
@@ -410,6 +421,8 @@ function validatePagePlan(
   if (plan.pageType === "product") {
     requireSection("productGallery");
     requireSection("productInfo");
+    requireSection("benefitIcons");
+    requireSection("imageText");
     const galleryIndex = indices.get("productGallery");
     const informationIndex = indices.get("productInfo");
     const optionsIndex = indices.get("productOptions");
