@@ -397,7 +397,7 @@ describe("StorefrontDesignBrief", () => {
     );
   });
 
-  it("normalizes merchant text, duplicate languages and supported catalogue aliases", () => {
+  it("normalizes merchant text and duplicate languages without catalogue aliases", () => {
     const brief = normalizeStorefrontDesignBriefInput({
       ...readyBrief(),
       businessIdentity: {
@@ -406,13 +406,15 @@ describe("StorefrontDesignBrief", () => {
         secondaryMarkets: [" Sweden ", "sweden", " Denmark "],
       },
       languagePlan: { selectedLanguages: ["en", "en", "fi"], primaryLanguage: "en" },
-      catalogueContext: "empty" as never,
     });
 
     expect(brief.businessIdentity.businessName).toBe("Aurum Nordic");
     expect(brief.businessIdentity.secondaryMarkets).toEqual(["Sweden", "Denmark"]);
     expect(brief.languagePlan.selectedLanguages).toEqual(["en", "fi"]);
-    expect(brief.catalogueContext).toBe("empty-catalogue");
+    expect(brief.catalogueContext).toBe("controlled-demo-catalogue");
+    expect(() =>
+      normalizeStorefrontDesignBriefInput({ ...readyBrief(), catalogueContext: "empty" as never }),
+    ).toThrow(StorefrontDesignBriefValidationError);
   });
 
   it("maps unsupported values to typed validation issues rather than exposing Zod errors", () => {
