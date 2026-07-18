@@ -330,6 +330,37 @@ export const onboardingSessionSchema = z
 export type OnboardingSession = z.infer<typeof onboardingSessionSchema>;
 export type LegacyOnboardingSession = z.infer<typeof legacyOnboardingSessionSchema>;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/**
+ * Backfills the one valid schema-v2 shape that predates the O-06 skip contract.
+ * All other persisted values proceed unchanged to strict schema validation.
+ */
+export function normalizePersistedOnboardingSession(input: unknown): unknown {
+  if (!isRecord(input) || input.schemaVersion !== ONBOARDING_SCHEMA_VERSION) return input;
+
+  const skippedStepIds = input.skippedStepIds;
+  const designBrief = input.designBrief;
+  if (
+    !Array.isArray(skippedStepIds) ||
+    !skippedStepIds.includes("catalogue") ||
+    !isRecord(designBrief) ||
+    designBrief.catalogueContext !== null
+  ) {
+    return input;
+  }
+
+  return {
+    ...input,
+    designBrief: {
+      ...designBrief,
+      catalogueContext: "empty-catalogue",
+    },
+  };
+}
+
 export function onboardingBriefIdForSession(sessionId: string): string {
   return `${sessionId}_brief`.slice(0, 80);
 }
@@ -370,7 +401,7 @@ export function migrateOnboardingSession(input: unknown): OnboardingSession {
     "schemaVersion" in input &&
     input.schemaVersion === ONBOARDING_SCHEMA_VERSION
   ) {
-    return onboardingSessionSchema.parse(input);
+    return onboardingSessionSchema.parse(normalizePersistedOnboardingSession(input));
   }
 
   const legacy = legacyOnboardingSessionSchema.parse(input);

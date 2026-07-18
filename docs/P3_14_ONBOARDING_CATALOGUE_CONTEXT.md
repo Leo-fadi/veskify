@@ -22,6 +22,13 @@ Skip is an explicit O-06 transition. It writes `empty-catalogue`, marks `catalog
 
 Going back leaves a partial collecting value available for editing. Refresh/resume restores the persisted canonical value. A queued field mutation that arrives after Continue or Skip is rejected by the active-step guard and cannot overwrite the transition.
 
+The persisted-session loading boundary also contains a narrow same-version compatibility backfill for
+the pre-P3-14 schema-v2 shape: only a session whose skipped steps include `catalogue` and whose
+catalogue context is exactly `null` receives `empty-catalogue` before strict validation. All other
+schema-v2 values, including completed-with-null and skipped-with-a-non-empty context, remain subject
+to the strict invariant and enter the existing corrupt-session recovery path when invalid. Canonical
+sessions are not rewritten.
+
 ## Session invariants
 
 The existing schema version remains unchanged. In addition to the shared lifecycle rules, the session validator requires:
