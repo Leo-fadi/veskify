@@ -55,6 +55,11 @@ export type RequiredStorefrontPageType = (typeof requiredStorefrontPageTypes)[nu
 /** Pages currently materialized by the deterministic storefront/template system. */
 export const generatedStorefrontPageTypes = requiredStorefrontPageTypes;
 
+/** Optional page choices supported by the canonical brief vocabulary. */
+export const optionalStorefrontPageTypes = briefPageTypeValues.filter(
+  (pageType) => !requiredStorefrontPageTypes.some((required) => required === pageType),
+);
+
 export function canonicalizeStorefrontBriefPageTypes(
   pageTypes: readonly StorefrontBriefPageType[],
 ): StorefrontBriefPageType[] {

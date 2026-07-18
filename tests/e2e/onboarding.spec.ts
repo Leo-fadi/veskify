@@ -322,7 +322,11 @@ test("completes O-07 with keyboard-accessible required pages and no horizontal o
   await expect(group.getByRole("checkbox", { name: /Homepage/i })).toBeChecked();
   await expect(group.getByRole("checkbox", { name: /Collection \/ listing/i })).toBeChecked();
   await expect(group.getByRole("checkbox", { name: /Product detail/i })).toBeChecked();
-  await expect(group.getByRole("checkbox")).toHaveCount(3);
+  await expect(group.getByRole("checkbox")).toHaveCount(8);
+  await expect(group.getByRole("checkbox", { name: /Homepage/i })).toBeDisabled();
+  await expect(group.getByRole("checkbox", { name: /About/i })).toBeEnabled();
+  await group.getByRole("checkbox", { name: /About/i }).check();
+  await expect(group.getByRole("checkbox", { name: /About/i })).toBeChecked();
   await expect(page.getByRole("button", { name: "Skip for now" })).not.toBeVisible();
 
   const continueButton = page.getByRole("button", { name: "Continue" });
@@ -336,11 +340,13 @@ test("refreshes O-07 and preserves its Finnish labels and selection", async ({ p
   await page.getByRole("radio", { name: "Suomi" }).check();
   await expect(page.getByRole("heading", { name: "Kaupan sivut" })).toBeVisible();
   await expect(page.getByRole("checkbox", { name: /Etusivu/i })).toBeChecked();
+  await page.getByRole("checkbox", { name: /Tietoa meistä/i }).check();
   await page.reload();
   await page.getByRole("radio", { name: "Suomi" }).check();
   await expect(page.getByRole("heading", { name: "Kaupan sivut" })).toBeVisible();
   await expect(page.getByRole("checkbox", { name: /Kokoelma \/ listaus/i })).toBeChecked();
   await expect(page.getByRole("checkbox", { name: /Tuotesivu/i })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: /Tietoa meistä/i })).toBeChecked();
 });
 
 test("supports Finnish labels and keyboard navigation through Business basics", async ({

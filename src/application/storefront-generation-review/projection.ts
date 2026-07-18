@@ -156,7 +156,10 @@ function projectBrand(plan: GuidedStorefrontGenerationPlan): StorefrontGeneratio
   );
 }
 
-function projectTemplate(plan: GuidedStorefrontGenerationPlan): StorefrontGenerationReviewSection {
+function projectTemplate(
+  plan: GuidedStorefrontGenerationPlan,
+  brief: StorefrontDesignBrief | null,
+): StorefrontGenerationReviewSection {
   const selection = plan.templateSelectionPlan;
   if (!selection) {
     return section(
@@ -189,6 +192,11 @@ function projectTemplate(plan: GuidedStorefrontGenerationPlan): StorefrontGenera
       "required-pages",
       copy("Required pages", "Vaaditut sivut"),
       selection.resolvedPagePlans.map((page) => page.pageType).join(", ") || "Not available",
+    ),
+    fact(
+      "requested-pages",
+      copy("Requested pages", "Pyydetyt sivut"),
+      brief?.storefrontStructure.pageTypes.join(", ") || "Not available",
     ),
   ];
   return section(
@@ -433,7 +441,7 @@ export function createStorefrontGenerationReview(
     sections: [
       projectBusiness(brief, plan.briefId),
       projectBrand(plan),
-      projectTemplate(plan),
+      projectTemplate(plan, brief),
       pages.section,
       languages.section,
       catalogue,

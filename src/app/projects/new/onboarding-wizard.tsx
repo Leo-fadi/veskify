@@ -24,7 +24,9 @@ import {
 import {
   imageryDirectionValues,
   catalogueContextValues,
+  briefPageTypeValues,
   generatedStorefrontPageTypes,
+  requiredStorefrontPageTypes,
   storefrontIndustryValues,
   toneKeywordValues,
   typographyDirectionValues,
@@ -187,22 +189,32 @@ const catalogueContextText = {
 const pagesText = {
   en: {
     legend: "Pages to generate",
-    help: "These core pages are required by the current deterministic storefront foundation.",
+    help: "Choose the pages your storefront needs. Core pages are required; other pages are optional.",
     required: "Required",
     pages: {
       home: ["Homepage", "Introduce your business and guide customers into the store."],
       collection: ["Collection / listing", "Help customers browse categories and products."],
       product: ["Product detail", "Show product information, options and the main action."],
+      about: ["About", "Tell customers about your business and its story."],
+      contact: ["Contact", "Give customers a clear way to reach your business."],
+      faq: ["Frequently asked questions", "Answer common questions before customers buy."],
+      policy: ["Policies", "Keep delivery, returns and other policy information together."],
+      content: ["Content page", "Add another informative page for your storefront."],
     },
   },
   fi: {
     legend: "Luotavat sivut",
-    help: "Nykyinen hallittu verkkokaupan perusta tarvitsee nämä ydinsivut.",
+    help: "Valitse verkkokauppasi tarvitsemat sivut. Ydinsivut ovat pakollisia, muut valinnaisia.",
     required: "Pakollinen",
     pages: {
       home: ["Etusivu", "Esittele yrityksesi ja ohjaa asiakkaat kauppaan."],
       collection: ["Kokoelma / listaus", "Auta asiakkaita selaamaan kategorioita ja tuotteita."],
       product: ["Tuotesivu", "Näytä tuotetiedot, vaihtoehdot ja päätoiminto."],
+      about: ["Tietoa meistä", "Kerro asiakkaille yrityksestäsi ja sen tarinasta."],
+      contact: ["Yhteystiedot", "Anna asiakkaille selkeä tapa ottaa yhteyttä."],
+      faq: ["Usein kysytyt kysymykset", "Vastaa tavallisiin kysymyksiin ennen ostamista."],
+      policy: ["Käytännöt", "Kokoa toimitus-, palautus- ja muut käytännöt yhteen."],
+      content: ["Sisältösivu", "Lisää verkkokauppaan muu informatiivinen sivu."],
     },
   },
 } satisfies Record<
@@ -211,7 +223,7 @@ const pagesText = {
     legend: string;
     help: string;
     required: string;
-    pages: Record<"home" | "collection" | "product", readonly [string, string]>;
+    pages: Record<StorefrontBriefPageType, readonly [string, string]>;
   }
 >;
 
@@ -1266,22 +1278,31 @@ function PagesForm({
       >
         <legend>{text.legend}</legend>
         <p className={styles.selectionHint}>{text.help}</p>
-        {generatedStorefrontPageTypes.map((pageType) => {
+        {briefPageTypeValues.map((pageType) => {
           const [label, description] = text.pages[pageType];
+          const required = requiredStorefrontPageTypes.includes(
+            pageType as (typeof requiredStorefrontPageTypes)[number],
+          );
           return (
             <label key={pageType}>
               <input
                 checked={draft.includes(pageType)}
-                disabled
+                disabled={required}
                 name="storefront-pages"
-                onChange={() => onChange([...draft])}
+                onChange={() =>
+                  onChange(
+                    draft.includes(pageType)
+                      ? draft.filter((current) => current !== pageType)
+                      : [...draft, pageType],
+                  )
+                }
                 type="checkbox"
                 value={pageType}
               />
               <span>
                 <strong>{label}</strong>
                 <small>{description}</small>
-                <em>{text.required}</em>
+                {required && <em>{text.required}</em>}
               </span>
             </label>
           );

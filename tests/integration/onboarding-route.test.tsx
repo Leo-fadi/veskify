@@ -745,12 +745,14 @@ describe("guided onboarding route", () => {
     expect(within(group).getByRole("checkbox", { name: /Homepage/i })).toBeChecked();
     expect(within(group).getByRole("checkbox", { name: /Collection \/ listing/i })).toBeChecked();
     expect(within(group).getByRole("checkbox", { name: /Product detail/i })).toBeChecked();
-    expect(within(group).getAllByRole("checkbox")).toHaveLength(3);
-    expect(
-      within(group)
-        .getAllByRole("checkbox")
-        .every((input) => input.hasAttribute("disabled")),
-    ).toBe(true);
+    expect(within(group).getAllByRole("checkbox")).toHaveLength(8);
+    expect(within(group).getByRole("checkbox", { name: /Homepage/i })).toBeDisabled();
+    expect(within(group).getByRole("checkbox", { name: /About/i })).toBeEnabled();
+    await user.click(within(group).getByRole("checkbox", { name: /About/i }));
+    expect(within(group).getByRole("checkbox", { name: /About/i })).toBeChecked();
+    await user.click(within(group).getByRole("checkbox", { name: /About/i }));
+    expect(within(group).getByRole("checkbox", { name: /About/i })).not.toBeChecked();
+    await user.click(within(group).getByRole("checkbox", { name: /Content page/i }));
     expect(screen.queryByRole("button", { name: "Skip for now" })).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Continue" }));
@@ -758,9 +760,16 @@ describe("guided onboarding route", () => {
     const persisted = JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}") as {
       activeStepId?: string;
       completedStepIds?: string[];
+      designBrief?: { storefrontStructure?: { pageTypes?: string[] } };
     };
     expect(persisted.activeStepId).toBe("languages");
     expect(persisted.completedStepIds).toEqual(expect.arrayContaining(["pages"]));
+    expect(persisted.designBrief?.storefrontStructure?.pageTypes).toEqual([
+      "home",
+      "collection",
+      "product",
+      "content",
+    ]);
   });
 
   it("keeps O-07 choices through refresh, Back and Finnish labels", async () => {
@@ -774,6 +783,8 @@ describe("guided onboarding route", () => {
     expect(screen.getByRole("checkbox", { name: /Etusivu/i })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Kokoelma \/ listaus/i })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Tuotesivu/i })).toBeChecked();
+    await user.click(screen.getByRole("checkbox", { name: /Yhteystiedot/i }));
+    expect(screen.getByRole("checkbox", { name: /Yhteystiedot/i })).toBeChecked();
     await user.click(screen.getByRole("button", { name: "Jatka" }));
     expect(await screen.findByRole("heading", { name: "Kaupan kielet" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Takaisin" }));
@@ -785,5 +796,6 @@ describe("guided onboarding route", () => {
     await user.click(screen.getByRole("radio", { name: "Suomi" }));
     await screen.findByRole("heading", { name: "Kaupan sivut" });
     expect(screen.getByRole("checkbox", { name: /Tuotesivu/i })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /Yhteystiedot/i })).toBeChecked();
   });
 });
