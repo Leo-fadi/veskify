@@ -117,21 +117,22 @@ function scoreBrief(
       add(6, "story-led-visual-direction");
     if (preferences.contentEmphasis === "storytelling") add(5, "storytelling-content");
     if (preferences.visualDensity === "airy") add(3, "airy-presentation");
-    if (preferences.merchandisingEmphasis === "low") add(3, "low-merchandising-emphasis");
-    if (hasKeyword(keywords, ["story", "craft", "heritage", "artisan", "identity"])) {
-      add(3, "brand-story-tone");
+    if (preferences.merchandisingEmphasis === "subtle") add(3, "subtle-promotion-prominence");
+    if (hasKeyword(keywords, ["elegant", "warm"])) {
+      add(3, "brand-led-tone");
     }
   }
 
   if (templateId === "template_catalogue_forward_commerce") {
-    if (preferences.merchandisingEmphasis === "high") add(6, "high-merchandising-emphasis");
+    if (preferences.merchandisingEmphasis === "campaign-led")
+      add(6, "campaign-led-promotion-prominence");
     if (preferences.sectionRichness === "rich") add(4, "rich-section-preference");
     if (preferences.visualDensity === "compact") add(3, "compact-discovery-density");
     if (context === "existing-vesko-catalogue" || context === "controlled-demo-catalogue") {
       add(2, "catalogue-discovery-context");
     }
-    if (hasKeyword(keywords, ["discovery", "comparison", "browse", "catalogue"])) {
-      add(3, "discovery-focused-tone");
+    if (hasKeyword(keywords, ["bold", "technical"])) {
+      add(3, "product-forward-tone");
     }
   }
 

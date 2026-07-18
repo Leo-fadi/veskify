@@ -105,14 +105,26 @@ describe("planBrandFoundation", () => {
   });
 
   it.each([
-    ["serif", "georgia", "system-serif"],
-    ["sans", "inter", "inter"],
+    ["serif-led", "georgia", "system-serif"],
+    ["sans-led", "inter", "inter"],
     ["mixed", "georgia", "inter"],
-    ["system", "system-sans", "system-sans"],
   ] as const)("maps %s typography to approved font tokens", (direction, headingFont, bodyFont) => {
     const plan = planBrandFoundation(brief({ brandDirection: { typographyDirection: direction } }));
     expect(plan.brandSystem.typography).toMatchObject({ headingFont, bodyFont });
   });
+
+  it.each([
+    ["strong", 700, 500],
+    ["soft", 400, 400],
+  ] as const)(
+    "maps %s typography to deterministic weights",
+    (direction, headingWeight, bodyWeight) => {
+      const plan = planBrandFoundation(
+        brief({ brandDirection: { typographyDirection: direction } }),
+      );
+      expect(plan.brandSystem.typography).toMatchObject({ headingWeight, bodyWeight });
+    },
+  );
 
   it("maps density, imagery, content emphasis and tone without new enum values", () => {
     const plan = planBrandFoundation(
@@ -120,7 +132,7 @@ describe("planBrandFoundation", () => {
         brandDirection: {
           visualStyleDirection: "natural",
           imageryDirection: "editorial",
-          toneKeywords: ["formal", "premium", "warm"],
+          toneKeywords: ["elegant", "warm"],
         },
         generationPreferences: { visualDensity: "compact", contentEmphasis: "storytelling" },
       }),

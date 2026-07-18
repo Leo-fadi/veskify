@@ -6,8 +6,11 @@ import {
   cloneStorefrontDesignBrief,
   createEmptyStorefrontDesignBrief,
   evaluateStorefrontDesignBriefReadiness,
+  imageryDirectionValues,
   normalizeStorefrontDesignBriefInput,
   storefrontDesignBriefSchema,
+  toneKeywordValues,
+  typographyDirectionValues,
   updateStorefrontDesignBriefArea,
   validateStorefrontDesignBrief,
 } from "@/domain/design-brief";
@@ -34,7 +37,7 @@ function readyBrief() {
       typographyDirection: "mixed",
       visualStyleDirection: "editorial",
       imageryDirection: "studio",
-      toneKeywords: ["warm", "considered"],
+      toneKeywords: ["warm", "elegant"],
     },
     storefrontStructure: { pageTypes: ["home", "collection", "product"] },
     languagePlan: { selectedLanguages: ["en", "fi"], primaryLanguage: "en" },
@@ -68,6 +71,80 @@ describe("StorefrontDesignBrief", () => {
       StorefrontDesignBriefValidationError,
     );
   });
+
+  it("uses the exact SDD 8.3 guided-choice values", () => {
+    expect(toneKeywordValues).toEqual([
+      "elegant",
+      "modern",
+      "warm",
+      "bold",
+      "minimal",
+      "playful",
+      "technical",
+    ]);
+    expect(imageryDirectionValues).toEqual([
+      "studio",
+      "lifestyle",
+      "editorial",
+      "product-focused",
+      "mixed",
+    ]);
+    expect(typographyDirectionValues).toEqual(["serif-led", "sans-led", "mixed", "strong", "soft"]);
+    for (const toneKeyword of toneKeywordValues) {
+      expect(
+        normalizeStorefrontDesignBriefInput({ brandDirection: { toneKeywords: [toneKeyword] } })
+          .brandDirection.toneKeywords,
+      ).toEqual([toneKeyword]);
+    }
+    for (const imageryDirection of imageryDirectionValues) {
+      expect(
+        normalizeStorefrontDesignBriefInput({ brandDirection: { imageryDirection } }).brandDirection
+          .imageryDirection,
+      ).toBe(imageryDirection);
+    }
+    for (const typographyDirection of typographyDirectionValues) {
+      expect(
+        normalizeStorefrontDesignBriefInput({ brandDirection: { typographyDirection } })
+          .brandDirection.typographyDirection,
+      ).toBe(typographyDirection);
+    }
+    for (const merchandisingEmphasis of ["subtle", "balanced", "campaign-led"] as const) {
+      expect(
+        normalizeStorefrontDesignBriefInput({
+          generationPreferences: { merchandisingEmphasis },
+        }).generationPreferences.merchandisingEmphasis,
+      ).toBe(merchandisingEmphasis);
+    }
+  });
+
+  const obsoleteGuidedChoiceValues: ReadonlyArray<readonly [string, unknown]> = [
+    ["typography", { brandDirection: { typographyDirection: "system" } }],
+    ["typography", { brandDirection: { typographyDirection: "serif" } }],
+    ["typography", { brandDirection: { typographyDirection: "sans" } }],
+    ["promotion", { generationPreferences: { merchandisingEmphasis: "low" } }],
+    ["promotion", { generationPreferences: { merchandisingEmphasis: "high" } }],
+    ...[
+      "calm",
+      "friendly",
+      "formal",
+      "premium",
+      "accessible",
+      "direct",
+      "inspiring",
+      "concise",
+      "storytelling",
+      "natural",
+    ].map((toneKeyword) => ["tone", { brandDirection: { toneKeywords: [toneKeyword] } }] as const),
+  ];
+
+  it.each(obsoleteGuidedChoiceValues)(
+    "rejects obsolete %s values instead of retaining hidden aliases",
+    (_kind, input) => {
+      expect(() => normalizeStorefrontDesignBriefInput(input as never)).toThrow(
+        StorefrontDesignBriefValidationError,
+      );
+    },
+  );
 
   it("validates new-storefront and redesign contexts without crawling the URL", () => {
     expect(readyBrief().creationContext).toEqual({

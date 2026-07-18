@@ -46,12 +46,12 @@ describe("deterministic storefront template selection", () => {
       brief: brief({
         brandDirection: {
           visualStyleDirection: "luxury",
-          toneKeywords: ["craft", "story"],
+          toneKeywords: ["elegant", "warm"],
         },
         generationPreferences: {
           visualDensity: "airy",
           contentEmphasis: "storytelling",
-          merchandisingEmphasis: "low",
+          merchandisingEmphasis: "subtle",
         },
       }),
     });
@@ -63,10 +63,10 @@ describe("deterministic storefront template selection", () => {
     const result = planStorefrontTemplateSelection({
       brief: brief({
         catalogueContext: "existing-vesko-catalogue",
-        brandDirection: { toneKeywords: ["discovery", "comparison"] },
+        brandDirection: { toneKeywords: ["bold", "technical"] },
         generationPreferences: {
           visualDensity: "compact",
-          merchandisingEmphasis: "high",
+          merchandisingEmphasis: "campaign-led",
           sectionRichness: "rich",
         },
       }),
@@ -83,9 +83,9 @@ describe("deterministic storefront template selection", () => {
 
   it.each([
     ["storytelling", { contentEmphasis: "storytelling", visualDensity: "airy" }],
-    ["merchandising", { merchandisingEmphasis: "high", sectionRichness: "rich" }],
-    ["density", { visualDensity: "compact", merchandisingEmphasis: "high" }],
-    ["richness", { sectionRichness: "rich", merchandisingEmphasis: "high" }],
+    ["promotion", { merchandisingEmphasis: "campaign-led", sectionRichness: "rich" }],
+    ["density", { visualDensity: "compact", merchandisingEmphasis: "campaign-led" }],
+    ["richness", { sectionRichness: "rich", merchandisingEmphasis: "campaign-led" }],
     ["visual style", { visualDensity: "airy", contentEmphasis: "storytelling" }],
   ])("applies the %s signal deterministically", (_name, generationPreferences) => {
     const result = planStorefrontTemplateSelection({
@@ -109,11 +109,11 @@ describe("deterministic storefront template selection", () => {
 
   it("binds plans to a deterministic, order-normalized selection fingerprint", () => {
     const first = brief({
-      brandDirection: { toneKeywords: ["Craft", "story"] },
+      brandDirection: { toneKeywords: ["warm", "elegant"] },
       storefrontStructure: { pageTypes: ["product", "home", "collection"] },
     });
     const second = brief({
-      brandDirection: { toneKeywords: ["story", "craft"] },
+      brandDirection: { toneKeywords: ["elegant", "warm"] },
       storefrontStructure: { pageTypes: ["collection", "product", "home"] },
     });
     expect(createStorefrontTemplateSelectionBriefFingerprint(first)).toBe(
@@ -147,7 +147,10 @@ describe("deterministic storefront template selection", () => {
     const balanced = planStorefrontTemplateSelection({ brief: brief() });
     const catalogue = planStorefrontTemplateSelection({
       brief: brief({
-        generationPreferences: { merchandisingEmphasis: "high", sectionRichness: "rich" },
+        generationPreferences: {
+          merchandisingEmphasis: "campaign-led",
+          sectionRichness: "rich",
+        },
         catalogueContext: "existing-vesko-catalogue",
       }),
     });
@@ -195,7 +198,10 @@ describe("deterministic storefront template selection", () => {
   it("supports a valid merchant override and does not silently fall back for an unknown one", () => {
     const override = planStorefrontTemplateSelection({
       brief: brief({
-        generationPreferences: { merchandisingEmphasis: "high", sectionRichness: "rich" },
+        generationPreferences: {
+          merchandisingEmphasis: "campaign-led",
+          sectionRichness: "rich",
+        },
       }),
       preferredTemplateId: "template_brand_led_editorial",
     });

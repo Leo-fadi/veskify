@@ -174,6 +174,47 @@ test("supports Finnish Existing sources completion", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Brändiaineistot" })).toBeVisible();
 });
 
+test("completes visual direction with keyboard-accessible controlled choices and resumes it", async ({
+  page,
+}) => {
+  await page.goto("/projects/new");
+  await page.getByRole("radio", { name: /Create a new storefront/i }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("textbox", { name: "Business name" }).fill("Aurum Nordic");
+  await page
+    .getByRole("textbox", { name: "Short business description" })
+    .fill("A Helsinki jewellery studio.");
+  await page.getByRole("combobox", { name: "Industry" }).selectOption("jewellery");
+  await page
+    .getByRole("textbox", { name: "Target customer" })
+    .fill("Customers looking for Nordic jewellery.");
+  await page.getByRole("textbox", { name: "Primary market" }).fill("Finland");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Existing sources" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Brand assets" })).toBeVisible();
+  await page.getByRole("button", { name: "Skip for now" }).click();
+  await expect(page.getByRole("heading", { name: "Visual direction" })).toBeVisible();
+
+  const editorial = page.getByRole("radio", { name: /Editorial/i });
+  await editorial.focus();
+  await page.keyboard.press("Space");
+  await expect(editorial).toBeChecked();
+  const tone = page.getByRole("button", { name: "Warm", exact: true });
+  await tone.focus();
+  await page.keyboard.press("Enter");
+  await expect(tone).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("combobox", { name: "Accessibility" }).selectOption("high-contrast");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Catalogue" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Catalogue" })).toBeVisible();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("heading", { name: "Visual direction" })).toBeVisible();
+  await expect(page.getByRole("radio", { name: /Editorial/i })).toBeChecked();
+  await expect(page.getByRole("button", { name: "Remove Warm" })).toBeVisible();
+});
+
 test("supports Finnish labels and keyboard navigation through Business basics", async ({
   page,
 }) => {

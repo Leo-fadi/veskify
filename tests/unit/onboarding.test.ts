@@ -4,6 +4,7 @@ import {
   OnboardingMutationQueue,
   OnboardingService,
   OnboardingTransitionError,
+  type VisualDirectionDraft,
   validateExistingStorefrontSource,
 } from "@/application/onboarding";
 import {
@@ -179,6 +180,33 @@ function resolvedExistingSourcesSession(
   });
 }
 
+function visualDirectionSession(overrides: Partial<OnboardingSession> = {}): OnboardingSession {
+  const base = resolvedExistingSourcesSession("new-storefront");
+  const designBrief = overrides.designBrief ?? base.designBrief;
+  return onboardingSessionSchema.parse({
+    ...base,
+    activeStepId: "visual-direction",
+    skippedStepIds: ["brand-assets"],
+    designBrief,
+    updatedAt: overrides.updatedAt ?? designBrief.updatedAt,
+    ...overrides,
+  });
+}
+
+const completeVisualDirectionDraft: VisualDirectionDraft = {
+  visualStyleDirection: "editorial",
+  typographyDirection: "mixed",
+  imageryDirection: "lifestyle",
+  toneKeywords: ["elegant", "warm"],
+  generationPreferences: {
+    visualDensity: "airy",
+    contentEmphasis: "storytelling",
+    merchandisingEmphasis: "campaign-led",
+    sectionRichness: "rich",
+    accessibilityPreference: "high-contrast",
+  },
+};
+
 describe("onboarding session schema", () => {
   it("accepts the canonical initial state", () => {
     expect(validSession()).toMatchObject({
@@ -259,6 +287,80 @@ describe("onboarding session schema", () => {
       }).skippedStepIds,
     ).toEqual(["existing-sources"]);
   });
+
+  it("enforces visual-direction completion and skip invariants", () => {
+    expect(() =>
+      onboardingSessionSchema.parse({
+        ...visualDirectionSession(),
+        activeStepId: "catalogue",
+        completedStepIds: [
+          "creation-path",
+          "business-basics",
+          "existing-sources",
+          "visual-direction",
+        ],
+      }),
+    ).toThrow();
+
+    const completedBrief = updateStorefrontDesignBriefArea(
+      updateStorefrontDesignBriefArea(
+        visualDirectionSession().designBrief,
+        "brandDirection",
+        {
+          visualStyleDirection: completeVisualDirectionDraft.visualStyleDirection,
+          typographyDirection: completeVisualDirectionDraft.typographyDirection,
+          imageryDirection: completeVisualDirectionDraft.imageryDirection,
+          toneKeywords: [...completeVisualDirectionDraft.toneKeywords],
+        },
+        timestamp,
+      ),
+      "generationPreferences",
+      completeVisualDirectionDraft.generationPreferences,
+      timestamp,
+    );
+    const completed = onboardingSessionSchema.parse({
+      ...visualDirectionSession({ designBrief: completedBrief }),
+      activeStepId: "catalogue",
+      completedStepIds: [
+        "creation-path",
+        "business-basics",
+        "existing-sources",
+        "visual-direction",
+      ],
+      skippedStepIds: ["brand-assets"],
+      designBrief: completedBrief,
+      updatedAt: completedBrief.updatedAt,
+    });
+    expect(completed.completedStepIds).toContain("visual-direction");
+
+    const skippedWithValues = updateStorefrontDesignBriefArea(
+      visualDirectionSession().designBrief,
+      "brandDirection",
+      { visualStyleDirection: "minimal", toneKeywords: ["warm"] },
+      timestamp,
+    );
+    expect(() =>
+      onboardingSessionSchema.parse({
+        ...visualDirectionSession({ designBrief: skippedWithValues }),
+        activeStepId: "catalogue",
+        skippedStepIds: ["brand-assets", "visual-direction"],
+      }),
+    ).toThrow();
+
+    const skippedWithPreferences = updateStorefrontDesignBriefArea(
+      visualDirectionSession().designBrief,
+      "generationPreferences",
+      { visualDensity: "airy" },
+      timestamp,
+    );
+    expect(() =>
+      onboardingSessionSchema.parse({
+        ...visualDirectionSession({ designBrief: skippedWithPreferences }),
+        activeStepId: "catalogue",
+        skippedStepIds: ["brand-assets", "visual-direction"],
+      }),
+    ).toThrow();
+  });
 });
 
 describe("onboarding step registry", () => {
@@ -274,6 +376,7 @@ describe("onboarding step registry", () => {
       completableNow: true,
     });
     expect(onboardingStepRegistry[2]).toMatchObject({ optional: true });
+    expect(onboardingStepRegistry[4]).toMatchObject({ optional: true, completableNow: true });
     expect(onboardingStepRegistry.at(-1)).toMatchObject({ nextStepId: null });
     expect(onboardingStepRegistry.every((step) => step.title.en && step.title.fi)).toBe(true);
   });
@@ -338,6 +441,137 @@ describe("onboarding application service", () => {
     expect(skipped.skippedStepIds).toEqual(["existing-sources"]);
     expect(skipped.designBrief.creationContext.existingStorefrontUrl).toBeNull();
     expect(repository.session?.designBrief.creationContext.existingStorefrontUrl).toBeNull();
+  });
+
+  it("saves visual direction fields atomically and completes O-05", async () => {
+    const { repository, service } = createService();
+    const session = visualDirectionSession();
+    await repository.save(session);
+
+    const completed = await service.completeVisualDirection(session, completeVisualDirectionDraft);
+
+    expect(completed.activeStepId).toBe("catalogue");
+    expect(completed.completedStepIds).toContain("visual-direction");
+    expect(completed.skippedStepIds).toEqual(["brand-assets"]);
+    expect(completed.designBrief.brandDirection).toMatchObject({
+      visualStyleDirection: completeVisualDirectionDraft.visualStyleDirection,
+      typographyDirection: completeVisualDirectionDraft.typographyDirection,
+      imageryDirection: completeVisualDirectionDraft.imageryDirection,
+      toneKeywords: completeVisualDirectionDraft.toneKeywords,
+    });
+    expect(completed.designBrief.generationPreferences).toEqual(
+      completeVisualDirectionDraft.generationPreferences,
+    );
+    expect(repository.session).toEqual(completed);
+  });
+
+  it("persists the same canonical O-05 contract through field-save and Continue paths", async () => {
+    const session = visualDirectionSession();
+    const fieldService = createService().service;
+    const continueService = createService().service;
+
+    const fieldSaved = await fieldService.updateVisualDirection(
+      session,
+      completeVisualDirectionDraft,
+    );
+    const completed = await continueService.completeVisualDirection(
+      session,
+      completeVisualDirectionDraft,
+    );
+
+    expect(fieldSaved.designBrief.brandDirection).toEqual(completed.designBrief.brandDirection);
+    expect(fieldSaved.designBrief.generationPreferences).toEqual(
+      completed.designBrief.generationPreferences,
+    );
+  });
+
+  it("requires a style, keeps partial collecting drafts valid, and supports all style choices", async () => {
+    const { service } = createService();
+    const session = visualDirectionSession();
+    await expect(service.completeVisualDirection(session)).rejects.toMatchObject({
+      code: "VISUAL_STYLE_REQUIRED",
+    });
+    await expect(
+      service.updateVisualDirection(session, {
+        ...completeVisualDirectionDraft,
+        visualStyleDirection: null,
+      }),
+    ).resolves.toMatchObject({ activeStepId: "visual-direction" });
+
+    for (const style of ["minimal", "editorial", "luxury", "playful", "bold", "natural"] as const) {
+      await expect(
+        service.completeVisualDirection(session, {
+          ...completeVisualDirectionDraft,
+          visualStyleDirection: style,
+        }),
+      ).resolves.toMatchObject({ activeStepId: "catalogue" });
+    }
+  });
+
+  it("clears only O-05 fields on the dedicated skip transition", async () => {
+    const { service } = createService();
+    const designBrief = updateStorefrontDesignBriefArea(
+      updateStorefrontDesignBriefArea(
+        visualDirectionSession().designBrief,
+        "brandDirection",
+        {
+          logoAssetRef: { id: "asset_logo" },
+          visualStyleDirection: "bold",
+          typographyDirection: "strong",
+          imageryDirection: "product-focused",
+          toneKeywords: ["elegant", "technical"],
+        },
+        timestamp,
+      ),
+      "generationPreferences",
+      completeVisualDirectionDraft.generationPreferences,
+      timestamp,
+    );
+    const session = visualDirectionSession({ designBrief });
+    const skipped = await service.skipVisualDirection(session);
+
+    expect(skipped.activeStepId).toBe("catalogue");
+    expect(skipped.completedStepIds).not.toContain("visual-direction");
+    expect(skipped.skippedStepIds).toContain("visual-direction");
+    expect(skipped.designBrief.brandDirection).toMatchObject({
+      logoAssetRef: { id: "asset_logo" },
+      visualStyleDirection: null,
+      typographyDirection: null,
+      imageryDirection: null,
+      toneKeywords: [],
+    });
+    expect(skipped.designBrief.generationPreferences).toEqual({
+      visualDensity: "balanced",
+      contentEmphasis: "balanced",
+      merchandisingEmphasis: "balanced",
+      sectionRichness: "balanced",
+      accessibilityPreference: "standard",
+    });
+  });
+
+  it("rejects unsupported or over-limit tone choices", async () => {
+    const { service } = createService();
+    const session = visualDirectionSession();
+    await expect(
+      service.updateVisualDirection(session, {
+        ...completeVisualDirectionDraft,
+        toneKeywords: ["warm", "elegant"],
+      }),
+    ).resolves.toMatchObject({
+      designBrief: { brandDirection: { toneKeywords: ["elegant", "warm"] } },
+    });
+    await expect(
+      service.updateVisualDirection(session, {
+        ...completeVisualDirectionDraft,
+        toneKeywords: ["unknown"] as never,
+      }),
+    ).rejects.toMatchObject({ code: "VISUAL_TONE_KEYWORD_UNSUPPORTED" });
+    await expect(
+      service.updateVisualDirection(session, {
+        ...completeVisualDirectionDraft,
+        toneKeywords: ["elegant", "modern", "warm", "bold", "minimal", "playful", "technical"],
+      }),
+    ).rejects.toMatchObject({ code: "VISUAL_TONE_KEYWORDS_LIMIT" });
   });
 
   it("does not advance from incomplete Business basics", async () => {

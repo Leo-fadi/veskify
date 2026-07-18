@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OnboardingWizard } from "@/app/projects/new/onboarding-wizard";
+import { onboardingSessionSchema } from "@/domain/onboarding";
 import { ONBOARDING_SESSION_STORAGE_KEY } from "@/services/onboarding";
 
 describe("guided onboarding route", () => {
@@ -414,6 +415,171 @@ describe("guided onboarding route", () => {
       creationPath: "demo-preset",
     });
   });
+
+  it("completes O-05 in English, persists controlled choices, and renders Finnish labels", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: /Create a new storefront/i }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.type(screen.getByRole("textbox", { name: "Business name" }), "Aurum Nordic");
+    await user.type(
+      screen.getByRole("textbox", { name: "Short business description" }),
+      "A Helsinki jewellery studio.",
+    );
+    await user.selectOptions(screen.getByRole("combobox", { name: "Industry" }), "jewellery");
+    await user.type(
+      screen.getByRole("textbox", { name: "Target customer" }),
+      "Customers looking for Nordic jewellery.",
+    );
+    await user.type(screen.getByRole("textbox", { name: "Primary market" }), "Finland");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByRole("heading", { name: "Existing sources" });
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByRole("heading", { name: "Brand assets" });
+    await user.click(screen.getByRole("button", { name: "Skip for now" }));
+
+    expect(await screen.findByRole("heading", { name: "Visual direction" })).toBeVisible();
+    const editorial = screen.getByRole("radio", { name: /Editorial/i });
+    await user.click(editorial);
+    expect(editorial).toBeChecked();
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Typography direction" }),
+      "serif-led",
+    );
+    await user.click(screen.getByRole("button", { name: "Elegant" }));
+    await user.selectOptions(screen.getByRole("combobox", { name: "Visual density" }), "airy");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Accessibility" }),
+      "high-contrast",
+    );
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("heading", { name: "Catalogue" })).toBeVisible();
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      activeStepId: "catalogue",
+      completedStepIds: [
+        "creation-path",
+        "business-basics",
+        "existing-sources",
+        "visual-direction",
+      ],
+      designBrief: {
+        brandDirection: {
+          visualStyleDirection: "editorial",
+          typographyDirection: "serif-led",
+          toneKeywords: ["elegant"],
+        },
+        generationPreferences: {
+          visualDensity: "airy",
+          accessibilityPreference: "high-contrast",
+        },
+      },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    await screen.findByRole("heading", { name: "Visual direction" });
+    await user.click(screen.getByRole("radio", { name: "Suomi" }));
+    expect(await screen.findByRole("heading", { name: "Visuaalinen suunta" })).toBeVisible();
+    expect(screen.getByRole("radio", { name: /Kerronnallinen/i })).toBeVisible();
+  });
+
+  it("renders, accepts and field-saves every SDD 8.3 visual-direction choice", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: /Create a new storefront/i }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.type(screen.getByRole("textbox", { name: "Business name" }), "Aurum Nordic");
+    await user.type(
+      screen.getByRole("textbox", { name: "Short business description" }),
+      "A Helsinki jewellery studio.",
+    );
+    await user.selectOptions(screen.getByRole("combobox", { name: "Industry" }), "jewellery");
+    await user.type(
+      screen.getByRole("textbox", { name: "Target customer" }),
+      "Customers looking for Nordic jewellery.",
+    );
+    await user.type(screen.getByRole("textbox", { name: "Primary market" }), "Finland");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByRole("heading", { name: "Existing sources" });
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByRole("heading", { name: "Brand assets" });
+    await user.click(screen.getByRole("button", { name: "Skip for now" }));
+    await screen.findByRole("heading", { name: "Visual direction" });
+
+    const persistedBrief = () =>
+      onboardingSessionSchema.parse(
+        JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}"),
+      ).designBrief;
+    const tones = [
+      ["Elegant", "elegant"],
+      ["Modern", "modern"],
+      ["Warm", "warm"],
+      ["Bold", "bold"],
+      ["Minimal", "minimal"],
+      ["Playful", "playful"],
+      ["Technical", "technical"],
+    ] as const;
+    for (const [label, value] of tones) {
+      const choice = screen.getByRole("button", { name: new RegExp(`^${label}$`) });
+      expect(choice).toBeVisible();
+      await user.click(choice);
+      await waitFor(() => expect(persistedBrief().brandDirection.toneKeywords).toEqual([value]));
+      await user.click(choice);
+      await waitFor(() => expect(persistedBrief().brandDirection.toneKeywords).toEqual([]));
+    }
+
+    const typography = screen.getByRole("combobox", { name: "Typography direction" });
+    for (const [label, value] of [
+      ["Serif-led", "serif-led"],
+      ["Sans-led", "sans-led"],
+      ["Mixed", "mixed"],
+      ["Strong", "strong"],
+      ["Soft", "soft"],
+    ] as const) {
+      expect(within(typography).getByRole("option", { name: label })).toBeVisible();
+      await user.selectOptions(typography, value);
+      await waitFor(() => expect(persistedBrief().brandDirection.typographyDirection).toBe(value));
+    }
+
+    const imagery = screen.getByRole("combobox", { name: "Imagery direction" });
+    for (const [label, value] of [
+      ["Studio", "studio"],
+      ["Lifestyle", "lifestyle"],
+      ["Editorial", "editorial"],
+      ["Product-focused", "product-focused"],
+      ["Mixed", "mixed"],
+    ] as const) {
+      expect(within(imagery).getByRole("option", { name: label })).toBeVisible();
+      await user.selectOptions(imagery, value);
+      await waitFor(() => expect(persistedBrief().brandDirection.imageryDirection).toBe(value));
+    }
+
+    const density = screen.getByRole("combobox", { name: "Visual density" });
+    for (const [label, value] of [
+      ["Airy", "airy"],
+      ["Balanced", "balanced"],
+      ["Compact", "compact"],
+    ] as const) {
+      expect(within(density).getByRole("option", { name: label })).toBeVisible();
+      await user.selectOptions(density, value);
+      await waitFor(() => expect(persistedBrief().generationPreferences.visualDensity).toBe(value));
+    }
+
+    const promotion = screen.getByRole("combobox", { name: "Promotion prominence" });
+    for (const [label, value] of [
+      ["Subtle", "subtle"],
+      ["Balanced", "balanced"],
+      ["Campaign-led", "campaign-led"],
+    ] as const) {
+      expect(within(promotion).getByRole("option", { name: label })).toBeVisible();
+      await user.selectOptions(promotion, value);
+      await waitFor(() =>
+        expect(persistedBrief().generationPreferences.merchandisingEmphasis).toBe(value),
+      );
+    }
+  }, 15_000);
 
   it("offers safe recovery for corrupt storage and reset confirmation", async () => {
     const user = userEvent.setup();

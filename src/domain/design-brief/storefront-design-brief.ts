@@ -68,7 +68,14 @@ export const catalogueContextValues = [
 export const catalogueContextSchema = z.enum(catalogueContextValues);
 export type CatalogueContext = z.infer<typeof catalogueContextSchema>;
 
-export const typographyDirectionSchema = z.enum(["serif", "sans", "mixed", "system"]);
+export const typographyDirectionValues = [
+  "serif-led",
+  "sans-led",
+  "mixed",
+  "strong",
+  "soft",
+] as const;
+export const typographyDirectionSchema = z.enum(typographyDirectionValues);
 export const visualStyleDirectionSchema = z.enum([
   "minimal",
   "editorial",
@@ -77,10 +84,27 @@ export const visualStyleDirectionSchema = z.enum([
   "bold",
   "natural",
 ]);
-export const imageryDirectionSchema = z.enum(["studio", "lifestyle", "editorial", "mixed"]);
-export const visualDensitySchema = z.enum(["compact", "balanced", "airy"]);
+export const imageryDirectionValues = [
+  "studio",
+  "lifestyle",
+  "editorial",
+  "product-focused",
+  "mixed",
+] as const;
+export const imageryDirectionSchema = z.enum(imageryDirectionValues);
+export const toneKeywordValues = [
+  "elegant",
+  "modern",
+  "warm",
+  "bold",
+  "minimal",
+  "playful",
+  "technical",
+] as const;
+export const toneKeywordSchema = z.enum(toneKeywordValues);
+export const visualDensitySchema = z.enum(["airy", "balanced", "compact"]);
 export const contentEmphasisSchema = z.enum(["concise", "balanced", "storytelling"]);
-export const merchandisingEmphasisSchema = z.enum(["low", "balanced", "high"]);
+export const merchandisingEmphasisSchema = z.enum(["subtle", "balanced", "campaign-led"]);
 export const sectionRichnessSchema = z.enum(["minimal", "balanced", "rich"]);
 export const accessibilityPreferenceSchema = z.enum(["standard", "high-contrast"]);
 
@@ -145,7 +169,7 @@ export const brandDirectionSchema = z
     typographyDirection: typographyDirectionSchema.nullable().default(null),
     visualStyleDirection: visualStyleDirectionSchema.nullable().default(null),
     imageryDirection: imageryDirectionSchema.nullable().default(null),
-    toneKeywords: z.array(z.string().trim().min(2).max(40)).max(12).default([]),
+    toneKeywords: z.array(toneKeywordSchema).max(toneKeywordValues.length).default([]),
   })
   .strict()
   .superRefine((brand, context) => {
@@ -543,7 +567,7 @@ export function normalizeStorefrontDesignBriefInput(
   candidate.businessIdentity.secondaryMarkets = uniqueNormalized(
     candidate.businessIdentity.secondaryMarkets,
   );
-  candidate.brandDirection.toneKeywords = uniqueNormalized(candidate.brandDirection.toneKeywords);
+  candidate.brandDirection.toneKeywords = [...new Set(candidate.brandDirection.toneKeywords)];
   candidate.languagePlan.selectedLanguages = [...new Set(candidate.languagePlan.selectedLanguages)];
   candidate.brandDirection.preferredBrandColours =
     candidate.brandDirection.preferredBrandColours.map(trimText);

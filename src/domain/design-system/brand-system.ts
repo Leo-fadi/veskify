@@ -41,7 +41,11 @@ export const brandSystemSchema = z
       .strict(),
     shape: z.object({ radius: z.enum(["square", "subtle", "rounded", "pill"]) }).strict(),
     spacing: z.object({ density: z.enum(["airy", "balanced", "compact"]) }).strict(),
-    imagery: z.object({ style: z.enum(["studio", "lifestyle", "editorial", "mixed"]) }).strict(),
+    imagery: z
+      .object({
+        style: z.enum(["studio", "lifestyle", "editorial", "product-focused", "mixed"]),
+      })
+      .strict(),
     voice: brandVoiceSchema,
   })
   .strict();
