@@ -1,20 +1,11 @@
-import type { BrandDirection, GenerationPreferences } from "@/domain/design-brief";
+import {
+  toneKeywordValues,
+  type BrandDirection,
+  type GenerationPreferences,
+} from "@/domain/design-brief";
 
 /** Controlled O-05 choices. These are input options, not a second persisted model. */
-export const visualDirectionToneKeywords = [
-  "warm",
-  "calm",
-  "friendly",
-  "formal",
-  "premium",
-  "accessible",
-  "direct",
-  "inspiring",
-  "concise",
-  "storytelling",
-  "playful",
-  "natural",
-] as const;
+export const visualDirectionToneKeywords = toneKeywordValues;
 
 export type VisualDirectionToneKeyword = (typeof visualDirectionToneKeywords)[number];
 
@@ -22,7 +13,7 @@ export type VisualDirectionDraft = Readonly<{
   visualStyleDirection: BrandDirection["visualStyleDirection"];
   typographyDirection: BrandDirection["typographyDirection"];
   imageryDirection: BrandDirection["imageryDirection"];
-  toneKeywords: readonly string[];
+  toneKeywords: readonly VisualDirectionToneKeyword[];
   generationPreferences: GenerationPreferences;
 }>;
 

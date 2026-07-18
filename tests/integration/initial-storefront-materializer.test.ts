@@ -23,7 +23,7 @@ describe("initial storefront generation boundary", () => {
       languagePlan: { selectedLanguages: ["en", "fi"], primaryLanguage: "en" },
       catalogueContext: "controlled-demo-catalogue",
       generationPreferences: {
-        merchandisingEmphasis: "high",
+        merchandisingEmphasis: "campaign-led",
         sectionRichness: "rich",
       },
     });

@@ -45,9 +45,7 @@ function normalizedPlanningBrief(brief: StorefrontDesignBrief): StorefrontDesign
   const clone = structuredClone(brief);
   clone.brandDirection.preferredBrandColours =
     clone.brandDirection.preferredBrandColours.map(normalizeHex);
-  clone.brandDirection.toneKeywords = clone.brandDirection.toneKeywords.map((keyword) =>
-    keyword.trim().toLocaleLowerCase(),
-  );
+  clone.brandDirection.toneKeywords = [...clone.brandDirection.toneKeywords];
   return clone;
 }
 
@@ -81,11 +79,12 @@ function typographyFor(
   direction: StorefrontDesignBrief["brandDirection"]["typographyDirection"],
   base: BrandSystem["typography"],
 ): BrandSystem["typography"] {
-  if (direction === "serif") return { ...base, headingFont: "georgia", bodyFont: "system-serif" };
-  if (direction === "sans") return { ...base, headingFont: "inter", bodyFont: "inter" };
+  if (direction === "serif-led")
+    return { ...base, headingFont: "georgia", bodyFont: "system-serif" };
+  if (direction === "sans-led") return { ...base, headingFont: "inter", bodyFont: "inter" };
   if (direction === "mixed") return { ...base, headingFont: "georgia", bodyFont: "inter" };
-  if (direction === "system")
-    return { ...base, headingFont: "system-sans", bodyFont: "system-sans" };
+  if (direction === "strong") return { ...base, headingWeight: 700, bodyWeight: 500 };
+  if (direction === "soft") return { ...base, headingWeight: 400, bodyWeight: 400 };
   return base;
 }
 
@@ -100,17 +99,23 @@ function voiceFor(brief: StorefrontDesignBrief, base: BrandSystem["voice"]): Bra
 
   for (const keyword of brief.brandDirection.toneKeywords) {
     const normalized = keyword.toLocaleLowerCase();
-    if (["formal", "polished"].includes(normalized)) voice.formality = "formal";
-    if (["casual", "friendly"].includes(normalized)) voice.formality = "casual";
-    if (["premium", "luxury", "elegant"].includes(normalized)) voice.positioning = "premium";
-    if (["accessible", "approachable"].includes(normalized)) voice.positioning = "accessible";
-    if (["warm", "welcoming", "natural"].includes(normalized)) voice.warmth = "warm";
-    if (["neutral", "calm"].includes(normalized)) voice.warmth = "neutral";
-    if (["direct", "bold"].includes(normalized)) voice.energy = "direct";
-    if (["inspiring", "inspirational", "playful"].includes(normalized))
+    if (normalized === "elegant") {
+      voice.formality = "formal";
+      voice.positioning = "premium";
+    }
+    if (normalized === "modern" || normalized === "bold") voice.energy = "direct";
+    if (normalized === "warm") voice.warmth = "warm";
+    if (normalized === "minimal") voice.detail = "concise";
+    if (normalized === "playful") {
+      voice.formality = "casual";
+      voice.positioning = "accessible";
       voice.energy = "inspirational";
-    if (["concise", "short"].includes(normalized)) voice.detail = "concise";
-    if (["descriptive", "storytelling", "story"].includes(normalized)) voice.detail = "descriptive";
+    }
+    if (normalized === "technical") {
+      voice.formality = "formal";
+      voice.detail = "concise";
+      voice.energy = "direct";
+    }
   }
   const emphasis = brief.generationPreferences.contentEmphasis;
   if (emphasis === "concise") voice.detail = "concise";

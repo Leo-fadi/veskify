@@ -106,7 +106,7 @@ describe("guided storefront generation orchestrator", () => {
     [
       "editorial",
       {
-        brandDirection: { visualStyleDirection: "editorial", toneKeywords: ["story"] },
+        brandDirection: { visualStyleDirection: "editorial", toneKeywords: ["elegant"] },
         generationPreferences: { contentEmphasis: "storytelling", visualDensity: "airy" },
       },
       "template_brand_led_editorial",
@@ -115,7 +115,10 @@ describe("guided storefront generation orchestrator", () => {
       "catalogue-forward",
       {
         catalogueContext: "existing-vesko-catalogue",
-        generationPreferences: { merchandisingEmphasis: "high", sectionRichness: "rich" },
+        generationPreferences: {
+          merchandisingEmphasis: "campaign-led",
+          sectionRichness: "rich",
+        },
       },
       "template_catalogue_forward_commerce",
     ],

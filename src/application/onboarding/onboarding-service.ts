@@ -537,9 +537,7 @@ export class OnboardingService {
     if (draft.toneKeywords.length > 6) {
       throw new OnboardingVisualDirectionValidationError("VISUAL_TONE_KEYWORDS_LIMIT");
     }
-    const normalizedKeywords = draft.toneKeywords.map((keyword) =>
-      keyword.trim().toLocaleLowerCase(),
-    );
+    const normalizedKeywords = [...draft.toneKeywords];
     if (normalizedKeywords.some((keyword) => !isVisualDirectionToneKeyword(keyword))) {
       throw new OnboardingVisualDirectionValidationError("VISUAL_TONE_KEYWORD_UNSUPPORTED");
     }
@@ -548,15 +546,14 @@ export class OnboardingService {
     }
     normalizedKeywords.sort(
       (left, right) =>
-        visualDirectionToneKeywords.indexOf(left as (typeof visualDirectionToneKeywords)[number]) -
-        visualDirectionToneKeywords.indexOf(right as (typeof visualDirectionToneKeywords)[number]),
+        visualDirectionToneKeywords.indexOf(left) - visualDirectionToneKeywords.indexOf(right),
     );
     const preferences = defaultVisualDirectionPreferences;
     const preferenceValues = draft.generationPreferences;
     if (
       !["compact", "balanced", "airy"].includes(preferenceValues.visualDensity) ||
       !["concise", "balanced", "storytelling"].includes(preferenceValues.contentEmphasis) ||
-      !["low", "balanced", "high"].includes(preferenceValues.merchandisingEmphasis) ||
+      !["subtle", "balanced", "campaign-led"].includes(preferenceValues.merchandisingEmphasis) ||
       !["minimal", "balanced", "rich"].includes(preferenceValues.sectionRichness) ||
       !["standard", "high-contrast"].includes(preferenceValues.accessibilityPreference)
     ) {

@@ -9,6 +9,7 @@ import {
   OnboardingTransitionError,
   OnboardingVisualDirectionValidationError,
   type VisualDirectionDraft,
+  type VisualDirectionToneKeyword,
 } from "@/application/onboarding";
 import {
   businessBasicsFieldIds,
@@ -19,7 +20,10 @@ import {
   type OnboardingSession,
 } from "@/domain/onboarding";
 import {
+  imageryDirectionValues,
   storefrontIndustryValues,
+  toneKeywordValues,
+  typographyDirectionValues,
   type BrandDirection,
   type BusinessIdentity,
   type GenerationPreferences,
@@ -289,9 +293,11 @@ const visualDirectionText = {
     styleLegend: "Visual style",
     styleHelp: "This sets the overall feeling of your storefront.",
     typographyLegend: "Typography direction",
-    typographyHelp: "Leave this as Recommended if you want the planner to choose.",
+    typographyHelp:
+      "Choose a serif-led, sans-led, mixed, strong or soft direction, or leave Recommended selected.",
     imageryLegend: "Imagery direction",
-    imageryHelp: "Leave this as Recommended if you want the planner to choose.",
+    imageryHelp:
+      "Choose studio, lifestyle, editorial, product-focused or mixed imagery, or leave Recommended selected.",
     toneLegend: "Tone of voice",
     toneHelp: "Choose up to six words. You can remove a word with the keyboard.",
     toneLimit: "Choose no more than six tone words.",
@@ -300,7 +306,8 @@ const visualDirectionText = {
     preferencesLegend: "Generation preferences",
     density: "Visual density",
     content: "Content emphasis",
-    merchandising: "Merchandising emphasis",
+    merchandising: "Promotion prominence",
+    promotionHelp: "Choose how visibly campaigns and promotions should lead the storefront.",
     richness: "Section richness",
     accessibility: "Accessibility",
     accessibilityHelp: "High contrast may adjust unsafe colours later so text remains readable.",
@@ -315,30 +322,27 @@ const visualDirectionText = {
       natural: ["Natural", "Warm, grounded materials and an easy rhythm."],
     },
     typography: {
-      serif: "Serif",
-      sans: "Sans serif",
+      "serif-led": "Serif-led",
+      "sans-led": "Sans-led",
       mixed: "Mixed",
-      system: "System",
+      strong: "Strong",
+      soft: "Soft",
     },
     imagery: {
       studio: "Studio",
       lifestyle: "Lifestyle",
       editorial: "Editorial",
+      "product-focused": "Product-focused",
       mixed: "Mixed",
     },
     tone: {
+      elegant: "Elegant",
+      modern: "Modern",
       warm: "Warm",
-      calm: "Calm",
-      friendly: "Friendly",
-      formal: "Formal",
-      premium: "Premium",
-      accessible: "Accessible",
-      direct: "Direct",
-      inspiring: "Inspiring",
-      concise: "Concise",
-      storytelling: "Storytelling",
+      bold: "Bold",
+      minimal: "Minimal",
       playful: "Playful",
-      natural: "Natural",
+      technical: "Technical",
     },
     options: {
       compact: "Compact",
@@ -346,8 +350,8 @@ const visualDirectionText = {
       airy: "Airy",
       concise: "Concise",
       storytelling: "Storytelling",
-      low: "Low",
-      high: "High",
+      subtle: "Subtle",
+      "campaign-led": "Campaign-led",
       minimal: "Minimal",
       rich: "Rich",
       standard: "Standard",
@@ -359,9 +363,11 @@ const visualDirectionText = {
     styleLegend: "Visuaalinen tyyli",
     styleHelp: "Tämä määrittää verkkokaupan yleisen tunnelman.",
     typographyLegend: "Typografian suunta",
-    typographyHelp: "Jätä Suositeltu-valinta voimaan, jos haluat suunnittelijan päättävän.",
+    typographyHelp:
+      "Valitse serif- tai sans serif -painotteinen, sekoitettu, vahva tai pehmeä suunta tai jätä Suositeltu valituksi.",
     imageryLegend: "Kuvien suunta",
-    imageryHelp: "Jätä Suositeltu-valinta voimaan, jos haluat suunnittelijan päättävän.",
+    imageryHelp:
+      "Valitse studio-, lifestyle-, kerronnallinen, tuotekeskeinen tai sekoitettu kuvamaailma tai jätä Suositeltu valituksi.",
     toneLegend: "Äänensävy",
     toneHelp: "Valitse enintään kuusi sanaa. Voit poistaa sanan näppäimistöllä.",
     toneLimit: "Valitse enintään kuusi äänensävyn sanaa.",
@@ -370,7 +376,8 @@ const visualDirectionText = {
     preferencesLegend: "Luonnin asetukset",
     density: "Visuaalinen tiheys",
     content: "Sisällön painotus",
-    merchandising: "Tuotteiden painotus",
+    merchandising: "Kampanjoiden näkyvyys",
+    promotionHelp: "Valitse, kuinka näkyvästi kampanjat ja tarjoukset ohjaavat verkkokauppaa.",
     richness: "Osioiden runsaus",
     accessibility: "Saavutettavuus",
     accessibilityHelp:
@@ -386,30 +393,27 @@ const visualDirectionText = {
       natural: ["Luonnollinen", "Lämmin, maanläheinen materiaalisuus ja helppo rytmi."],
     },
     typography: {
-      serif: "Serif",
-      sans: "Sans serif",
+      "serif-led": "Serif-painotteinen",
+      "sans-led": "Sans serif -painotteinen",
       mixed: "Sekoitettu",
-      system: "Järjestelmä",
+      strong: "Vahva",
+      soft: "Pehmeä",
     },
     imagery: {
       studio: "Studio",
       lifestyle: "Lifestyle",
       editorial: "Kerronnallinen",
+      "product-focused": "Tuotekeskeinen",
       mixed: "Sekoitettu",
     },
     tone: {
+      elegant: "Tyylikäs",
+      modern: "Moderni",
       warm: "Lämmin",
-      calm: "Rauhallinen",
-      friendly: "Ystävällinen",
-      formal: "Muodollinen",
-      premium: "Premium",
-      accessible: "Helposti lähestyttävä",
-      direct: "Suora",
-      inspiring: "Innostava",
-      concise: "Tiivis",
-      storytelling: "Kerronnallinen",
+      bold: "Rohkea",
+      minimal: "Pelkistetty",
       playful: "Leikkisä",
-      natural: "Luonnollinen",
+      technical: "Tekninen",
     },
     options: {
       compact: "Tiivis",
@@ -417,8 +421,8 @@ const visualDirectionText = {
       airy: "Ilmava",
       concise: "Tiivis",
       storytelling: "Kerronnallinen",
-      low: "Matala",
-      high: "Korkea",
+      subtle: "Hillitty",
+      "campaign-led": "Kampanjapainotteinen",
       minimal: "Minimalistinen",
       rich: "Runsas",
       standard: "Vakio",
@@ -428,27 +432,13 @@ const visualDirectionText = {
 } as const;
 
 const visualStyleValues = ["minimal", "editorial", "luxury", "playful", "bold", "natural"] as const;
-const typographyValues = ["serif", "sans", "mixed", "system"] as const;
-const imageryValues = ["studio", "lifestyle", "editorial", "mixed"] as const;
-const toneKeywordValues = [
-  "warm",
-  "calm",
-  "friendly",
-  "formal",
-  "premium",
-  "accessible",
-  "direct",
-  "inspiring",
-  "concise",
-  "storytelling",
-  "playful",
-  "natural",
-] as const;
+const typographyValues = typographyDirectionValues;
+const imageryValues = imageryDirectionValues;
 
 const visualPreferenceValues = {
-  visualDensity: ["compact", "balanced", "airy"] as const,
+  visualDensity: ["airy", "balanced", "compact"] as const,
   contentEmphasis: ["concise", "balanced", "storytelling"] as const,
-  merchandisingEmphasis: ["low", "balanced", "high"] as const,
+  merchandisingEmphasis: ["subtle", "balanced", "campaign-led"] as const,
   sectionRichness: ["minimal", "balanced", "rich"] as const,
   accessibilityPreference: ["standard", "high-contrast"] as const,
 } satisfies {
@@ -1408,7 +1398,7 @@ function VisualDirectionForm({
     );
   };
 
-  const toggleTone = (keyword: string) => {
+  const toggleTone = (keyword: VisualDirectionToneKeyword) => {
     const toneKeywords = localDraft.toneKeywords.includes(keyword)
       ? localDraft.toneKeywords.filter((tone) => tone !== keyword)
       : [...localDraft.toneKeywords, keyword];
@@ -1530,6 +1520,9 @@ function VisualDirectionForm({
             <button
               aria-pressed={localDraft.toneKeywords.includes(keyword)}
               className={styles.keywordOption}
+              disabled={
+                !localDraft.toneKeywords.includes(keyword) && localDraft.toneKeywords.length >= 6
+              }
               key={keyword}
               onClick={(event) => {
                 event.preventDefault();
@@ -1545,9 +1538,9 @@ function VisualDirectionForm({
           <div className={styles.selectedKeywords}>
             {localDraft.toneKeywords.map((keyword) => (
               <span key={keyword}>
-                {text.tone[keyword as keyof typeof text.tone]}
+                {text.tone[keyword]}
                 <button
-                  aria-label={`${text.remove} ${text.tone[keyword as keyof typeof text.tone]}`}
+                  aria-label={`${text.remove} ${text.tone[keyword]}`}
                   onClick={() => toggleTone(keyword)}
                   type="button"
                 >
@@ -1593,6 +1586,7 @@ function VisualDirectionForm({
                   </option>
                 ))}
               </select>
+              {key === "merchandisingEmphasis" && <small>{text.promotionHelp}</small>}
               {key === "accessibilityPreference" && <small>{text.accessibilityHelp}</small>}
             </label>
           ))}

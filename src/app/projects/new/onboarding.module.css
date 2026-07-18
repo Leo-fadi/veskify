@@ -401,6 +401,11 @@
   color: white;
 }
 
+.keywordOption:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .keywordOption:focus-visible,
 .selectedKeywords button:focus-visible {
   outline: 3px solid var(--brand-color-accent);

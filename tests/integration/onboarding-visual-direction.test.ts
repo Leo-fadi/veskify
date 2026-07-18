@@ -33,7 +33,7 @@ describe("O-05 visual direction planner integration", () => {
 
   it("lets editorial direction reach both deterministic planners", () => {
     const input = brief({
-      brandDirection: { visualStyleDirection: "editorial", toneKeywords: ["storytelling"] },
+      brandDirection: { visualStyleDirection: "editorial", toneKeywords: ["elegant"] },
       generationPreferences: { visualDensity: "airy", contentEmphasis: "storytelling" },
     });
     const brandPlan = planBrandFoundation(input);
@@ -46,26 +46,26 @@ describe("O-05 visual direction planner integration", () => {
     ).toContain("story-led-visual-direction");
   });
 
-  it("uses high merchandising emphasis in template candidate scoring", () => {
+  it("uses campaign-led promotion prominence in template candidate scoring", () => {
     const plan = planStorefrontTemplateSelection({
-      brief: brief({ generationPreferences: { merchandisingEmphasis: "high" } }),
+      brief: brief({ generationPreferences: { merchandisingEmphasis: "campaign-led" } }),
     });
     expect(
       plan.candidates.find(
         (candidate) => candidate.templateId === "template_catalogue_forward_commerce",
       )?.reasonCodes,
-    ).toContain("high-merchandising-emphasis");
+    ).toContain("campaign-led-promotion-prominence");
   });
 
   it("passes high contrast and canonical tone keywords to brand planning", () => {
     const plan = planBrandFoundation(
       brief({
-        brandDirection: { toneKeywords: ["warm", "storytelling"] },
+        brandDirection: { toneKeywords: ["warm", "technical"] },
         generationPreferences: { accessibilityPreference: "high-contrast" },
       }),
     );
     expect(plan.brandSystem.voice.warmth).toBe("warm");
-    expect(plan.brandSystem.voice.detail).toBe("descriptive");
+    expect(plan.brandSystem.voice.detail).toBe("concise");
     expect(plan.assumptions.en).toContain(
       "High contrast takes priority over visual styling where readability requires it.",
     );
@@ -77,5 +77,38 @@ describe("O-05 visual direction planner integration", () => {
     );
     expect(plan.provenance.typography.source).toBe("visual-style-preset");
     expect(plan.provenance.imagery.source).toBe("visual-style-preset");
+  });
+
+  it("passes product-focused imagery and strong or soft typography through P3-05", () => {
+    const productFocused = planBrandFoundation(
+      brief({ brandDirection: { imageryDirection: "product-focused" } }),
+    );
+    const strong = planBrandFoundation(
+      brief({ brandDirection: { typographyDirection: "strong" } }),
+    );
+    const soft = planBrandFoundation(brief({ brandDirection: { typographyDirection: "soft" } }));
+
+    expect(productFocused.brandSystem.imagery.style).toBe("product-focused");
+    expect(strong.brandSystem.typography).toMatchObject({ headingWeight: 700, bodyWeight: 500 });
+    expect(soft.brandSystem.typography).toMatchObject({ headingWeight: 400, bodyWeight: 400 });
+  });
+
+  it("keeps P3-05 and P3-06 deterministic for the corrected SDD choices", () => {
+    const input = brief({
+      brandDirection: {
+        visualStyleDirection: "editorial",
+        typographyDirection: "strong",
+        imageryDirection: "product-focused",
+        toneKeywords: ["elegant", "technical"],
+      },
+      generationPreferences: {
+        visualDensity: "airy",
+        merchandisingEmphasis: "campaign-led",
+      },
+    });
+    expect(planBrandFoundation(input)).toEqual(planBrandFoundation(input));
+    expect(planStorefrontTemplateSelection({ brief: input })).toEqual(
+      planStorefrontTemplateSelection({ brief: input }),
+    );
   });
 });

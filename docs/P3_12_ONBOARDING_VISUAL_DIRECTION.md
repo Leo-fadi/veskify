@@ -16,7 +16,15 @@ The step writes only these existing `StorefrontDesignBrief` fields:
 - `generationPreferences.sectionRichness`
 - `generationPreferences.accessibilityPreference`
 
-Visual style is required to complete O-05. The controlled styles are minimal, editorial, luxury, playful, bold, and natural. Typography and imagery have a `Recommended` choice represented by `null`, so the deterministic planners retain ownership of those recommendations. Tone keywords come from the canonical English vocabulary, are localized in the form, limited to six selections, normalized, deduplicated, and persisted in canonical vocabulary order. There is no free-text tone field.
+Visual style is required to complete O-05. The controlled styles are minimal, editorial, luxury, playful, bold, and natural. The §8.3 guided choices persist these exact canonical values:
+
+- tone: elegant, modern, warm, bold, minimal, playful, technical;
+- imagery: studio, lifestyle, editorial, product-focused, mixed;
+- typography: serif-led, sans-led, mixed, strong, soft;
+- visual density: airy, balanced, compact;
+- promotion prominence: subtle, balanced, campaign-led, stored in the existing `generationPreferences.merchandisingEmphasis` field.
+
+Typography and imagery have a `Recommended` choice represented by `null`, so the deterministic planners retain ownership of those recommendations. Tone keywords are localized in the form, limited to six selections, normalized, deduplicated, and persisted in canonical vocabulary order. There is no free-text tone field and no compatibility alias for the superseded local/demo values.
 
 Generation preferences use the existing brief enums and balanced/standard defaults. High contrast is a preference for the later brand planner; it may adjust unsafe colours to preserve readable text.
 

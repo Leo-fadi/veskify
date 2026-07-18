@@ -197,11 +197,11 @@ const completeVisualDirectionDraft: VisualDirectionDraft = {
   visualStyleDirection: "editorial",
   typographyDirection: "mixed",
   imageryDirection: "lifestyle",
-  toneKeywords: ["warm", "storytelling"],
+  toneKeywords: ["elegant", "warm"],
   generationPreferences: {
     visualDensity: "airy",
     contentEmphasis: "storytelling",
-    merchandisingEmphasis: "high",
+    merchandisingEmphasis: "campaign-led",
     sectionRichness: "rich",
     accessibilityPreference: "high-contrast",
   },
@@ -465,6 +465,26 @@ describe("onboarding application service", () => {
     expect(repository.session).toEqual(completed);
   });
 
+  it("persists the same canonical O-05 contract through field-save and Continue paths", async () => {
+    const session = visualDirectionSession();
+    const fieldService = createService().service;
+    const continueService = createService().service;
+
+    const fieldSaved = await fieldService.updateVisualDirection(
+      session,
+      completeVisualDirectionDraft,
+    );
+    const completed = await continueService.completeVisualDirection(
+      session,
+      completeVisualDirectionDraft,
+    );
+
+    expect(fieldSaved.designBrief.brandDirection).toEqual(completed.designBrief.brandDirection);
+    expect(fieldSaved.designBrief.generationPreferences).toEqual(
+      completed.designBrief.generationPreferences,
+    );
+  });
+
   it("requires a style, keeps partial collecting drafts valid, and supports all style choices", async () => {
     const { service } = createService();
     const session = visualDirectionSession();
@@ -497,9 +517,9 @@ describe("onboarding application service", () => {
         {
           logoAssetRef: { id: "asset_logo" },
           visualStyleDirection: "bold",
-          typographyDirection: "serif",
-          imageryDirection: "studio",
-          toneKeywords: ["warm"],
+          typographyDirection: "strong",
+          imageryDirection: "product-focused",
+          toneKeywords: ["elegant", "technical"],
         },
         timestamp,
       ),
@@ -535,21 +555,21 @@ describe("onboarding application service", () => {
     await expect(
       service.updateVisualDirection(session, {
         ...completeVisualDirectionDraft,
-        toneKeywords: ["storytelling", "warm"],
+        toneKeywords: ["warm", "elegant"],
       }),
     ).resolves.toMatchObject({
-      designBrief: { brandDirection: { toneKeywords: ["warm", "storytelling"] } },
+      designBrief: { brandDirection: { toneKeywords: ["elegant", "warm"] } },
     });
     await expect(
       service.updateVisualDirection(session, {
         ...completeVisualDirectionDraft,
-        toneKeywords: ["unknown"],
+        toneKeywords: ["unknown"] as never,
       }),
     ).rejects.toMatchObject({ code: "VISUAL_TONE_KEYWORD_UNSUPPORTED" });
     await expect(
       service.updateVisualDirection(session, {
         ...completeVisualDirectionDraft,
-        toneKeywords: ["warm", "calm", "friendly", "formal", "premium", "direct", "natural"],
+        toneKeywords: ["elegant", "modern", "warm", "bold", "minimal", "playful", "technical"],
       }),
     ).rejects.toMatchObject({ code: "VISUAL_TONE_KEYWORDS_LIMIT" });
   });
