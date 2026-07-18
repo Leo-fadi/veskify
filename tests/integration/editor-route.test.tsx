@@ -380,6 +380,31 @@ describe("P2-01 project editor route", () => {
     }
   });
 
+  it("allows a legacy-hidden required section to be shown, undone and redone", async () => {
+    const value = aggregate();
+    const draft = value.snapshots.find(
+      (snapshot) => snapshot.id === value.project.draftSnapshotId,
+    )!;
+    const homepage = draft.pages.find((page) => page.type === "home")!;
+    homepage.sections.find((section) => section.component === "header")!.visible = false;
+    route(repository(() => Promise.resolve(value)));
+    await screen.findByText("Canvas: home / en");
+    expect(screen.getByText("Hidden header section")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Select header section" }));
+    expect(screen.getByRole("button", { name: "Duplicate" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Show" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show" }));
+    expect(screen.queryByText("Hidden header section")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByText("Hidden header section")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(screen.queryByText("Hidden header section")).not.toBeInTheDocument();
+    expect(
+      visibleCanvasPage().sections.find((section) => section.component === "header")?.visible,
+    ).toBe(true);
+  });
+
   it("clears selection when a selected section disappears and preserves it when it remains", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");

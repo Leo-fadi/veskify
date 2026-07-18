@@ -27,9 +27,11 @@ Current location:
 
 - `src/application/editor-history/**`
 
-Owns bounded, immutable, per-page `PageModel` undo/redo history and canonical duplicate and
-visibility commands. This layer is React- and Puck-independent, validates every committed page,
-and does not persist, publish or define a second composition model.
+Owns bounded, immutable, per-page command-transaction undo/redo history and canonical duplicate and
+visibility commands. Past and future entries contain explicit forward/inverse commands rather than
+page snapshots; only the current `PageModel` is retained as editor state. This layer is React- and
+Puck-independent, validates every complete command result, and does not persist, publish or define a
+second composition model.
 
 ### Component registry and storefront
 

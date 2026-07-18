@@ -12,6 +12,8 @@ import {
   canDuplicateSection,
   canToggleSectionVisibility,
   CanonicalEditorHistory,
+  createDuplicateSectionTransaction,
+  createSectionVisibilityTransaction,
   duplicateCanonicalSection,
   setCanonicalSectionVisibility,
 } from "@/application/editor-history";
@@ -240,7 +242,9 @@ export function ProjectEditorClient({
     disabled: saveState.status === "saving",
     onProposalReady: () => setSelectedSectionId(undefined),
     onAcceptedPage: (acceptedPage) => {
-      const committedPage = editorHistory?.commit(acceptedPage) ?? structuredClone(acceptedPage);
+      const committedPage =
+        editorHistory?.commit(acceptedPage, "Apply design proposal") ??
+        structuredClone(acceptedPage);
       setSessionPages((current) => ({ ...current, [acceptedPage.id]: committedPage }));
       setValidationMessage("");
       setHistoryStatus("Proposal applied. You can undo this change.");
@@ -379,7 +383,7 @@ export function ProjectEditorClient({
     ) {
       setSelectedSectionId(undefined);
     }
-    const committedPage = editorHistory?.commit(nextPage) ?? structuredClone(nextPage);
+    const committedPage = editorHistory?.commit(nextPage, "Edit page") ?? structuredClone(nextPage);
     setSessionPages((current) => ({ ...current, [nextPage.id]: committedPage }));
     setValidationMessage("");
     setHistoryStatus("Change added. You can undo it from the editor toolbar.");
@@ -427,7 +431,7 @@ export function ProjectEditorClient({
     if (savePending.current) return;
     if (!currentPageHasUnsavedChanges) return;
     if (!window.confirm("Discard the unsaved changes on this page? This cannot be undone.")) return;
-    const resetPage = editorHistory?.reset(originalPage.id) ?? structuredClone(originalPage);
+    const resetPage = editorHistory?.reset(originalPage) ?? structuredClone(originalPage);
     setSessionPages((current) => {
       const next = { ...current };
       delete next[originalPage.id];
@@ -454,16 +458,24 @@ export function ProjectEditorClient({
           (sessionPages[baselinePage.id] ?? baselinePage).sections.map((section) => section.id),
         ),
       );
-      const nextPage = duplicateCanonicalSection({
+      const componentLabel = getComponentDefinition(selectedSection.component).label;
+      const transaction = createDuplicateSectionTransaction({
         page,
         sectionId: selectedSection.id,
         existingSectionIds: allSectionIds,
-        context,
+        label: `Duplicate ${componentLabel}`,
       });
+      const nextPage = editorHistory
+        ? editorHistory.commitTransaction(transaction)
+        : duplicateCanonicalSection({
+            page,
+            sectionId: selectedSection.id,
+            existingSectionIds: allSectionIds,
+            context,
+          });
       agent.closeForPageMutation(nextPage);
-      const committedPage = editorHistory?.commit(nextPage) ?? nextPage;
-      showHistoryPage(committedPage);
-      setHistoryStatus(`Duplicated ${getComponentDefinition(selectedSection.component).label}.`);
+      showHistoryPage(nextPage);
+      setHistoryStatus(`Duplicated ${componentLabel}.`);
     } catch {
       setValidationMessage("That section cannot be duplicated safely.");
     }
@@ -472,15 +484,24 @@ export function ProjectEditorClient({
   const toggleSelectedSection = () => {
     if (mutationsBlocked || !selectedSection) return;
     try {
-      const nextPage = setCanonicalSectionVisibility({
+      const componentLabel = getComponentDefinition(selectedSection.component).label;
+      const nextVisible = !selectedSection.visible;
+      const transaction = createSectionVisibilityTransaction({
         page,
         sectionId: selectedSection.id,
-        visible: !selectedSection.visible,
-        context,
+        visible: nextVisible,
+        label: `${nextVisible ? "Show" : "Hide"} ${componentLabel}`,
       });
+      const nextPage = editorHistory
+        ? editorHistory.commitTransaction(transaction)
+        : setCanonicalSectionVisibility({
+            page,
+            sectionId: selectedSection.id,
+            visible: nextVisible,
+            context,
+          });
       agent.closeForPageMutation(nextPage);
-      const committedPage = editorHistory?.commit(nextPage) ?? nextPage;
-      showHistoryPage(committedPage);
+      showHistoryPage(nextPage);
       setHistoryStatus(
         `${selectedSection.visible ? "Hid" : "Showed"} ${getComponentDefinition(selectedSection.component).label}.`,
       );
