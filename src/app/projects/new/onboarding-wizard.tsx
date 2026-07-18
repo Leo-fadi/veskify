@@ -501,6 +501,9 @@ export function OnboardingWizard() {
             onExistingSourcesComplete={(value) =>
               updateSession((session) => service.completeExistingSources(session, value))
             }
+            onExistingSourcesSkip={() =>
+              void updateSession((session) => service.skipExistingSources(session))
+            }
             onBack={() => void updateSession((session) => service.goBack(session))}
             onContinue={() => void updateSession((session) => service.advance(session))}
             onPath={(path) =>
@@ -574,6 +577,7 @@ function ActiveStep({
   onExistingSourceDraftChange,
   onExistingSourceField,
   onExistingSourcesComplete,
+  onExistingSourcesSkip,
   onBack,
   onContinue,
   onPath,
@@ -599,6 +603,7 @@ function ActiveStep({
   onExistingSourceDraftChange: (value: string) => void;
   onExistingSourceField: (value: string) => Promise<OnboardingSession | null>;
   onExistingSourcesComplete: (value: string) => Promise<OnboardingSession | null>;
+  onExistingSourcesSkip: () => void;
   onBack: () => void;
   onContinue: () => void;
   onPath: (path: OnboardingCreationPath) => void;
@@ -705,7 +710,10 @@ function ActiveStep({
         </button>
         <div className={styles.forwardActions}>
           {step.optional && (
-            <button className={styles.secondaryButton} onClick={onSkip}>
+            <button
+              className={styles.secondaryButton}
+              onClick={step.id === "existing-sources" ? onExistingSourcesSkip : onSkip}
+            >
               {text.skip}
             </button>
           )}

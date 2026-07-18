@@ -8,6 +8,7 @@ import {
 } from "@/domain/design-brief";
 import { idSchema, isoDateTimeSchema, localeSchema } from "@/domain/shared";
 import { evaluateBusinessBasics } from "./business-basics";
+import { validateExistingStorefrontSource } from "./existing-sources";
 import { getOnboardingStep } from "./steps";
 
 export const ONBOARDING_SCHEMA_VERSION = 2 as const;
@@ -205,6 +206,40 @@ export const onboardingSessionSchema = z
           message: "A completed business-basics step requires all required business information.",
         });
       }
+    }
+
+    const existingSourcesCompleted = session.completedStepIds.includes("existing-sources");
+    const existingSourcesSkipped = session.skippedStepIds.includes("existing-sources");
+    const existingStorefrontUrl = session.designBrief.creationContext.existingStorefrontUrl;
+    const isRedesign = session.designBrief.creationContext.type === "redesign-existing-storefront";
+
+    if (!isRedesign && existingStorefrontUrl !== null) {
+      context.addIssue({
+        code: "custom",
+        path: ["designBrief", "creationContext", "existingStorefrontUrl"],
+        message: "An existing storefront URL is only valid for a redesign path.",
+      });
+    }
+
+    if (existingSourcesCompleted && isRedesign) {
+      const validation = existingStorefrontUrl
+        ? validateExistingStorefrontSource(existingStorefrontUrl)
+        : null;
+      if (!validation?.valid || validation.normalizedUrl !== existingStorefrontUrl) {
+        context.addIssue({
+          code: "custom",
+          path: ["completedStepIds"],
+          message: "A completed redesign existing-sources step requires a normalized HTTPS URL.",
+        });
+      }
+    }
+
+    if (existingSourcesSkipped && isRedesign && existingStorefrontUrl !== null) {
+      context.addIssue({
+        code: "custom",
+        path: ["designBrief", "creationContext", "existingStorefrontUrl"],
+        message: "A skipped redesign existing-sources step must not retain a URL.",
+      });
     }
   });
 

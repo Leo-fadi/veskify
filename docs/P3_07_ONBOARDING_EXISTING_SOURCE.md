@@ -25,6 +25,12 @@ The URL is never fetched, crawled, inspected, screenshot, analysed or sent to a 
 away from redesign clears it through the existing immutable creation-context update. Switching back
 does not invent or restore the previous value.
 
+Skip is a dedicated O-03 transition. It runs in the existing wizard mutation queue after any focused
+field save, clears a redesign URL before marking the step skipped, and advances to O-04 with a null
+URL. A skipped step is never also completed. Canonical session validation rejects stale redesign
+completion without a normalized HTTPS URL, redesign skips that retain a URL, non-redesign URLs, and
+completed/skipped overlap; corrupt stored sessions use the normal recovery state.
+
 ## Persistence, queue and recovery
 
 URL blur saves, O-03 completion, Back, Continue, Skip, path changes and reset all use the existing

@@ -167,6 +167,18 @@ function existingSourcesSession(
   return onboardingSessionSchema.parse({ ...base, designBrief, updatedAt: designBrief.updatedAt });
 }
 
+function resolvedExistingSourcesSession(
+  creationPath: "new-storefront" | "redesign-existing-storefront" | "demo-preset",
+  existingStorefrontUrl: string | null = null,
+): OnboardingSession {
+  const session = existingSourcesSession(creationPath, existingStorefrontUrl);
+  return onboardingSessionSchema.parse({
+    ...session,
+    activeStepId: "brand-assets",
+    completedStepIds: [...session.completedStepIds, "existing-sources"],
+  });
+}
+
 describe("onboarding session schema", () => {
   it("accepts the canonical initial state", () => {
     expect(validSession()).toMatchObject({
@@ -192,6 +204,60 @@ describe("onboarding session schema", () => {
     ["jumped active step", { activeStepId: "brand-assets" }],
   ])("rejects %s", (_name, overrides) => {
     expect(() => onboardingSessionSchema.parse({ ...validSession(), ...overrides })).toThrow();
+  });
+
+  it("enforces the path-aware existing-sources completion invariants", () => {
+    const redesignWithoutUrl = existingSourcesSession("redesign-existing-storefront");
+    expect(() =>
+      onboardingSessionSchema.parse({
+        ...redesignWithoutUrl,
+        activeStepId: "brand-assets",
+        completedStepIds: [...redesignWithoutUrl.completedStepIds, "existing-sources"],
+      }),
+    ).toThrow();
+
+    const completedRedesign = resolvedExistingSourcesSession(
+      "redesign-existing-storefront",
+      "https://merchant.example.test/store",
+    );
+    expect(completedRedesign.designBrief.creationContext.existingStorefrontUrl).toBe(
+      "https://merchant.example.test/store",
+    );
+
+    const skippedRedesignWithUrl = existingSourcesSession(
+      "redesign-existing-storefront",
+      "https://merchant.example.test/store",
+    );
+    expect(() =>
+      onboardingSessionSchema.parse({
+        ...skippedRedesignWithUrl,
+        activeStepId: "brand-assets",
+        skippedStepIds: ["existing-sources"],
+      }),
+    ).toThrow();
+
+    expect(() =>
+      onboardingSessionSchema.parse({
+        ...completedRedesign,
+        skippedStepIds: ["existing-sources"],
+      }),
+    ).toThrow();
+
+    expect(
+      resolvedExistingSourcesSession("new-storefront").designBrief.creationContext
+        .existingStorefrontUrl,
+    ).toBeNull();
+    expect(
+      resolvedExistingSourcesSession("demo-preset").designBrief.creationContext
+        .existingStorefrontUrl,
+    ).toBeNull();
+    expect(
+      onboardingSessionSchema.parse({
+        ...existingSourcesSession("new-storefront"),
+        activeStepId: "brand-assets",
+        skippedStepIds: ["existing-sources"],
+      }).skippedStepIds,
+    ).toEqual(["existing-sources"]);
   });
 });
 
@@ -255,6 +321,23 @@ describe("onboarding application service", () => {
     const skipped = await service.skip(optional);
     expect(skipped.activeStepId).toBe("brand-assets");
     expect(skipped.skippedStepIds).toEqual(["existing-sources"]);
+  });
+
+  it("clears a redesign URL when the dedicated existing-sources skip runs", async () => {
+    const { repository, service } = createService();
+    const session = existingSourcesSession(
+      "redesign-existing-storefront",
+      "https://merchant.example.test/store",
+    );
+    await repository.save(session);
+
+    const skipped = await service.skipExistingSources(session);
+
+    expect(skipped.activeStepId).toBe("brand-assets");
+    expect(skipped.completedStepIds).not.toContain("existing-sources");
+    expect(skipped.skippedStepIds).toEqual(["existing-sources"]);
+    expect(skipped.designBrief.creationContext.existingStorefrontUrl).toBeNull();
+    expect(repository.session?.designBrief.creationContext.existingStorefrontUrl).toBeNull();
   });
 
   it("does not advance from incomplete Business basics", async () => {
@@ -627,6 +710,26 @@ describe("onboarding application service", () => {
     await expect(
       service.updateExistingStorefrontUrl(session, "https://merchant.example.test"),
     ).rejects.toBe(programmingError);
+  });
+
+  it("retries an existing-sources skip after storage recovers", async () => {
+    const repository = new MemoryOnboardingRepository();
+    const { service } = createService(repository);
+    const session = existingSourcesSession(
+      "redesign-existing-storefront",
+      "https://merchant.example.test",
+    );
+    await repository.save(session);
+    repository.saveError = new OnboardingStorageError();
+
+    await expect(service.skipExistingSources(session)).rejects.toBeInstanceOf(
+      OnboardingStorageError,
+    );
+    repository.saveError = undefined;
+
+    const skipped = await service.skipExistingSources(session);
+    expect(skipped.activeStepId).toBe("brand-assets");
+    expect(skipped.designBrief.creationContext.existingStorefrontUrl).toBeNull();
   });
 
   it("migrates a valid P3-01 session into one collecting brief", () => {

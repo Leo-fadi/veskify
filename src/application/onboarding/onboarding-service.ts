@@ -315,6 +315,7 @@ export class OnboardingService {
   async skip(input: OnboardingSession): Promise<OnboardingSession> {
     const session = this.#validateActive(input);
     const step = getOnboardingStep(session.activeStepId);
+    if (step.id === "existing-sources") return this.skipExistingSources(session);
     if (!step.optional) throw new OnboardingTransitionError("REQUIRED_STEP_CANNOT_BE_SKIPPED");
     if (!step.nextStepId) throw new OnboardingTransitionError("NO_NEXT_STEP");
     const skippedStepIds = session.skippedStepIds.includes(step.id)
@@ -326,6 +327,41 @@ export class OnboardingService {
       completedStepIds: session.completedStepIds.filter((stepId) => stepId !== step.id),
       skippedStepIds,
     });
+  }
+
+  async skipExistingSources(input: OnboardingSession): Promise<OnboardingSession> {
+    const session = this.#validateExistingSourcesStep(input);
+    const step = getOnboardingStep("existing-sources");
+    if (!step.optional) throw new OnboardingTransitionError("REQUIRED_STEP_CANNOT_BE_SKIPPED");
+    if (!step.nextStepId) throw new OnboardingTransitionError("NO_NEXT_STEP");
+
+    const timestamp = this.#now();
+    const designBrief =
+      session.designBrief.creationContext.existingStorefrontUrl === null
+        ? session.designBrief
+        : updateStorefrontDesignBriefArea(
+            session.designBrief,
+            "creationContext",
+            { existingStorefrontUrl: null },
+            timestamp,
+          );
+    const skippedStepIds: OnboardingSession["skippedStepIds"] = session.skippedStepIds.includes(
+      "existing-sources",
+    )
+      ? session.skippedStepIds
+      : [...session.skippedStepIds, "existing-sources"];
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        activeStepId: step.nextStepId,
+        completedStepIds: session.completedStepIds.filter(
+          (stepId) => stepId !== "existing-sources",
+        ),
+        skippedStepIds,
+      },
+      timestamp,
+    );
   }
 
   async reset(): Promise<OnboardingSession> {

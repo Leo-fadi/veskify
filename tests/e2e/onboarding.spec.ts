@@ -103,6 +103,54 @@ test("completes redesign Existing sources, goes back, and resumes the URL", asyn
   );
 });
 
+test("skips redesign Existing sources after typing and persists no URL", async ({ page }) => {
+  await page.goto("/projects/new");
+  await page.getByRole("radio", { name: /Redesign an existing storefront/i }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("textbox", { name: "Business name" }).fill("Aurum Nordic");
+  await page
+    .getByRole("textbox", { name: "Short business description" })
+    .fill("A Helsinki jewellery studio.");
+  await page.getByRole("combobox", { name: "Industry" }).selectOption("jewellery");
+  await page
+    .getByRole("textbox", { name: "Target customer" })
+    .fill("Customers looking for Nordic jewellery.");
+  await page.getByRole("textbox", { name: "Primary market" }).fill("Finland");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Existing sources" })).toBeVisible();
+  await page
+    .getByRole("textbox", { name: "Current storefront address" })
+    .fill("merchant.example/store");
+  await page.getByRole("button", { name: "Skip for now" }).click();
+  await expect(page.getByRole("heading", { name: "Brand assets" })).toBeVisible();
+  expect(
+    await page.evaluate((key) => {
+      type StoredSession = {
+        activeStepId?: string;
+        completedStepIds?: string[];
+        skippedStepIds?: string[];
+        designBrief?: { creationContext?: { existingStorefrontUrl?: string | null } };
+      };
+      const session = JSON.parse(
+        window.localStorage.getItem(key) ?? "{}",
+      ) as unknown as StoredSession;
+      return {
+        activeStepId: session.activeStepId,
+        completedStepIds: session.completedStepIds,
+        skippedStepIds: session.skippedStepIds,
+        url: session.designBrief?.creationContext?.existingStorefrontUrl,
+      };
+    }, storageKey),
+  ).toEqual({
+    activeStepId: "brand-assets",
+    completedStepIds: ["creation-path", "business-basics"],
+    skippedStepIds: ["existing-sources"],
+    url: null,
+  });
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Brand assets" })).toBeVisible();
+});
+
 test("supports Finnish Existing sources completion", async ({ page }) => {
   await page.goto("/projects/new");
   await page.getByRole("radio", { name: "Suomi" }).check();

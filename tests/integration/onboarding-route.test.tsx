@@ -167,6 +167,69 @@ describe("guided onboarding route", () => {
     );
   });
 
+  it("clears a URL when Skip follows its blur save and keeps the skip queue handled", async () => {
+    const user = userEvent.setup();
+    const unhandledRejection = vi.fn();
+    const persistedUrls: Array<string | null | undefined> = [];
+    const originalSetItem = Storage.prototype.setItem.bind(localStorage);
+    const setItem = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(function (key, value) {
+        if (key === ONBOARDING_SESSION_STORAGE_KEY) {
+          type StoredSession = {
+            designBrief?: { creationContext?: { existingStorefrontUrl?: string | null } };
+          };
+          const session = JSON.parse(value) as unknown as StoredSession;
+          persistedUrls.push(session.designBrief?.creationContext?.existingStorefrontUrl);
+        }
+        originalSetItem(key, value);
+      });
+    window.addEventListener("unhandledrejection", unhandledRejection);
+    const mounted = render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: /Redesign an existing storefront/i }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.type(screen.getByRole("textbox", { name: "Business name" }), "Aurum Nordic");
+    await user.type(
+      screen.getByRole("textbox", { name: "Short business description" }),
+      "A Helsinki jewellery studio.",
+    );
+    await user.selectOptions(screen.getByRole("combobox", { name: "Industry" }), "jewellery");
+    await user.type(
+      screen.getByRole("textbox", { name: "Target customer" }),
+      "Customers looking for Nordic jewellery.",
+    );
+    await user.type(screen.getByRole("textbox", { name: "Primary market" }), "Finland");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    const url = screen.getByRole("textbox", { name: "Current storefront address" });
+    await user.type(url, "merchant.example/store");
+    await user.click(screen.getByRole("button", { name: "Skip for now" }));
+    expect(await screen.findByRole("heading", { name: "Brand assets" })).toBeVisible();
+    await waitFor(() => {
+      expect(
+        JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}"),
+      ).toMatchObject({
+        activeStepId: "brand-assets",
+        completedStepIds: ["creation-path", "business-basics"],
+        skippedStepIds: ["existing-sources"],
+        designBrief: { creationContext: { existingStorefrontUrl: null } },
+      });
+    });
+    expect(persistedUrls).toContain("https://merchant.example/store");
+    expect(persistedUrls.at(-1)).toBeNull();
+    expect(unhandledRejection).not.toHaveBeenCalled();
+    setItem.mockRestore();
+    window.removeEventListener("unhandledrejection", unhandledRejection);
+
+    mounted.unmount();
+    render(<OnboardingWizard />);
+    expect(await screen.findByRole("heading", { name: "Brand assets" })).toBeVisible();
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      designBrief: { creationContext: { existingStorefrontUrl: null } },
+    });
+  });
+
   it("shows the Finnish redesign URL form and localized validation", async () => {
     const user = userEvent.setup();
     render(<OnboardingWizard />);
