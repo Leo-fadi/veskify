@@ -16,9 +16,11 @@ import {
   type ExistingStorefrontSourceValidationCode,
 } from "./existing-sources";
 import {
+  catalogueContextSchema,
   createEmptyStorefrontDesignBrief,
   updateStorefrontDesignBriefArea,
   type BusinessIdentity,
+  type CatalogueContext,
 } from "@/domain/design-brief";
 import {
   OnboardingStorageError,
@@ -78,6 +80,16 @@ export class OnboardingVisualDirectionValidationError extends Error {
   constructor(readonly code: OnboardingVisualDirectionValidationCode) {
     super(code);
     this.name = "OnboardingVisualDirectionValidationError";
+  }
+}
+
+export type OnboardingCatalogueContextValidationCode =
+  "CATALOGUE_CONTEXT_REQUIRED" | "CATALOGUE_CONTEXT_UNSUPPORTED";
+
+export class OnboardingCatalogueContextValidationError extends Error {
+  constructor(readonly code: OnboardingCatalogueContextValidationCode) {
+    super(code);
+    this.name = "OnboardingCatalogueContextValidationError";
   }
 }
 
@@ -196,6 +208,7 @@ export class OnboardingService {
     if (step.id === "business-basics") return this.completeBusinessBasics(session);
     if (step.id === "existing-sources") return this.completeExistingSources(session);
     if (step.id === "visual-direction") return this.completeVisualDirection(session);
+    if (step.id === "catalogue") return this.completeCatalogueContext(session);
     if (!step.completableNow) throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
     if (step.id === "creation-path" && session.creationPath === null) {
       throw new OnboardingTransitionError("CREATION_PATH_REQUIRED");
@@ -420,6 +433,87 @@ export class OnboardingService {
     );
   }
 
+  async updateCatalogueContext(
+    input: OnboardingSession,
+    catalogueContext: CatalogueContext,
+  ): Promise<OnboardingSession> {
+    const session = this.#validateCatalogueStep(input);
+    const validatedContext = this.#validateCatalogueContext(catalogueContext);
+    const timestamp = this.#now();
+    const designBrief = updateStorefrontDesignBriefArea(
+      session.designBrief,
+      "catalogueContext",
+      validatedContext,
+      timestamp,
+    );
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        completedStepIds: session.completedStepIds.filter((stepId) => stepId !== "catalogue"),
+        skippedStepIds: session.skippedStepIds.filter((stepId) => stepId !== "catalogue"),
+      },
+      timestamp,
+    );
+  }
+
+  async completeCatalogueContext(
+    input: OnboardingSession,
+    catalogueContext?: CatalogueContext | null,
+  ): Promise<OnboardingSession> {
+    const session = this.#validateCatalogueStep(input);
+    const candidate = catalogueContext ?? session.designBrief.catalogueContext;
+    if (candidate === null) {
+      throw new OnboardingCatalogueContextValidationError("CATALOGUE_CONTEXT_REQUIRED");
+    }
+    const validatedContext = this.#validateCatalogueContext(candidate);
+    const timestamp = this.#now();
+    const designBrief = updateStorefrontDesignBriefArea(
+      session.designBrief,
+      "catalogueContext",
+      validatedContext,
+      timestamp,
+    );
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        activeStepId: "pages",
+        completedStepIds: session.completedStepIds.includes("catalogue")
+          ? session.completedStepIds
+          : [...session.completedStepIds, "catalogue"],
+        skippedStepIds: session.skippedStepIds.filter((stepId) => stepId !== "catalogue"),
+      },
+      timestamp,
+    );
+  }
+
+  async skipCatalogueContext(input: OnboardingSession): Promise<OnboardingSession> {
+    const session = this.#validateCatalogueStep(input);
+    const step = getOnboardingStep("catalogue");
+    if (!step.optional) throw new OnboardingTransitionError("REQUIRED_STEP_CANNOT_BE_SKIPPED");
+    if (!step.nextStepId) throw new OnboardingTransitionError("NO_NEXT_STEP");
+    const timestamp = this.#now();
+    const designBrief = updateStorefrontDesignBriefArea(
+      session.designBrief,
+      "catalogueContext",
+      "empty-catalogue",
+      timestamp,
+    );
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        activeStepId: step.nextStepId,
+        completedStepIds: session.completedStepIds.filter((stepId) => stepId !== "catalogue"),
+        skippedStepIds: session.skippedStepIds.includes("catalogue")
+          ? session.skippedStepIds
+          : [...session.skippedStepIds, "catalogue"],
+      },
+      timestamp,
+    );
+  }
+
   async goBack(input: OnboardingSession): Promise<OnboardingSession> {
     const session = onboardingSessionSchema.parse(input);
     const previousStepId = getOnboardingStep(session.activeStepId).previousStepId;
@@ -432,6 +526,7 @@ export class OnboardingService {
     const step = getOnboardingStep(session.activeStepId);
     if (step.id === "existing-sources") return this.skipExistingSources(session);
     if (step.id === "visual-direction") return this.skipVisualDirection(session);
+    if (step.id === "catalogue") return this.skipCatalogueContext(session);
     if (!step.optional) throw new OnboardingTransitionError("REQUIRED_STEP_CANNOT_BE_SKIPPED");
     if (!step.nextStepId) throw new OnboardingTransitionError("NO_NEXT_STEP");
     const skippedStepIds = session.skippedStepIds.includes(step.id)
@@ -528,6 +623,22 @@ export class OnboardingService {
       throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
     }
     return session;
+  }
+
+  #validateCatalogueStep(input: OnboardingSession): OnboardingSession {
+    const session = this.#validateActive(input);
+    if (session.activeStepId !== "catalogue") {
+      throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
+    }
+    return session;
+  }
+
+  #validateCatalogueContext(value: CatalogueContext): CatalogueContext {
+    const result = catalogueContextSchema.safeParse(value);
+    if (!result.success) {
+      throw new OnboardingCatalogueContextValidationError("CATALOGUE_CONTEXT_UNSUPPORTED");
+    }
+    return result.data;
   }
 
   #visualDirectionDraftFromSession(session: OnboardingSession): VisualDirectionDraft {

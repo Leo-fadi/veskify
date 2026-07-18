@@ -2,6 +2,7 @@ import {
   ONBOARDING_SCHEMA_VERSION,
   cloneOnboardingSession,
   migrateOnboardingSession,
+  normalizePersistedOnboardingSession,
   onboardingSessionSchema,
   type OnboardingSession,
 } from "@/domain/onboarding";
@@ -47,20 +48,21 @@ export class BrowserOnboardingSessionRepository implements OnboardingSessionRepo
         if (value.schemaVersion !== ONBOARDING_SCHEMA_VERSION && value.schemaVersion !== 1) {
           return Promise.resolve({ status: "incompatible" });
         }
-        if (value.schemaVersion === 1) {
-          let migrated: OnboardingSession;
-          try {
-            migrated = migrateOnboardingSession(value);
-          } catch {
-            return Promise.resolve({ status: "corrupt" });
-          }
+        const normalized = normalizePersistedOnboardingSession(value);
+        let migrated: OnboardingSession;
+        try {
+          migrated = migrateOnboardingSession(normalized);
+        } catch {
+          return Promise.resolve({ status: "corrupt" });
+        }
+        if (value.schemaVersion === 1 || normalized !== value) {
           try {
             storage.setItem(ONBOARDING_SESSION_STORAGE_KEY, JSON.stringify(migrated));
           } catch {
             return Promise.resolve({ status: "unavailable" });
           }
-          return Promise.resolve({ status: "found", session: cloneOnboardingSession(migrated) });
         }
+        return Promise.resolve({ status: "found", session: cloneOnboardingSession(migrated) });
       }
 
       const parsed = onboardingSessionSchema.safeParse(value);
