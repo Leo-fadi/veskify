@@ -41,7 +41,9 @@ The deterministic storefront planner will consume a validated brief and choose a
 templates, components, skills, assets, and catalogue presentation context. `evaluateGenerationReadiness`
 returns blocking issues, non-blocking warnings, completed areas, and missing areas before planning
 starts. A missing logo or other optional brand direction produces a warning; it does not block a
-generation plan. An empty catalogue is a valid design context and does not add commerce records.
+generation plan. An empty catalogue is a valid completed design context and does not add commerce
+records, but it produces a `sample-catalogue-required` warning so the later planner supplies
+controlled industry-specific sample products before project creation or generation.
 
 ## Relationship to later AI providers
 

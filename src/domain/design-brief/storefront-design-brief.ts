@@ -47,6 +47,18 @@ export const briefPageTypeValues = [
 export const storefrontBriefPageTypeSchema = z.enum(briefPageTypeValues);
 export type StorefrontBriefPageType = z.infer<typeof storefrontBriefPageTypeSchema>;
 
+/** The minimum page slice required before the deterministic planner can generate a storefront. */
+export const requiredStorefrontPageTypes = ["home", "collection", "product"] as const;
+
+const requiredStorefrontPageIssues = {
+  home: { code: "missing-homepage", message: "Select the required homepage." },
+  collection: {
+    code: "missing-collection-page",
+    message: "Select a collection or category page.",
+  },
+  product: { code: "missing-product-page", message: "Select a product page." },
+} as const;
+
 export const catalogueContextValues = [
   "existing-vesko-catalogue",
   "controlled-demo-catalogue",
@@ -310,13 +322,16 @@ export const storefrontDesignBriefSchema = z
           message: "A creation context is required.",
         });
       }
-      if (brief.storefrontStructure.pageTypes.length === 0) {
-        context.addIssue({
-          code: "custom",
-          path: ["storefrontStructure", "pageTypes"],
-          message: "At least the homepage must be selected.",
-        });
-      }
+      requiredStorefrontPageTypes.forEach((pageType) => {
+        if (!brief.storefrontStructure.pageTypes.includes(pageType)) {
+          context.addIssue({
+            code: "custom",
+            path: ["storefrontStructure", "pageTypes"],
+            message: requiredStorefrontPageIssues[pageType].message,
+            params: { issueCode: requiredStorefrontPageIssues[pageType].code },
+          });
+        }
+      });
       if (brief.languagePlan.selectedLanguages.length === 0) {
         context.addIssue({
           code: "custom",
@@ -389,13 +404,16 @@ export class StorefrontDesignBriefLifecycleError extends StorefrontDesignBriefEr
 
 function mapZodError(error: ZodError): StorefrontDesignBriefValidationError {
   return new StorefrontDesignBriefValidationError(
-    error.issues.map((issue) => ({
-      code: issue.code,
-      path: issue.path.filter(
-        (part): part is string | number => typeof part === "string" || typeof part === "number",
-      ),
-      message: issue.message,
-    })),
+    error.issues.map((issue) => {
+      const issueCode = (issue as { params?: { issueCode?: unknown } }).params?.issueCode;
+      return {
+        path: issue.path.filter(
+          (part): part is string | number => typeof part === "string" || typeof part === "number",
+        ),
+        code: typeof issueCode === "string" ? issueCode : issue.code,
+        message: issue.message,
+      };
+    }),
   );
 }
 
@@ -711,13 +729,17 @@ function readinessForBrief(brief: StorefrontDesignBrief): GenerationReadiness {
     );
   }
 
-  const structureReady = brief.storefrontStructure.pageTypes.includes("home");
+  const missingRequiredPages = requiredStorefrontPageTypes.filter(
+    (pageType) => !brief.storefrontStructure.pageTypes.includes(pageType),
+  );
+  const structureReady = missingRequiredPages.length === 0;
   if (structureReady) completedAreas.push("storefrontStructure");
   else {
     missingAreas.push("storefrontStructure");
-    blockingIssues.push(
-      issue("missing-homepage", "storefrontStructure", "Select the required homepage."),
-    );
+    missingRequiredPages.forEach((pageType) => {
+      const pageIssue = requiredStorefrontPageIssues[pageType];
+      blockingIssues.push(issue(pageIssue.code, "storefrontStructure", pageIssue.message));
+    });
   }
 
   const languages = brief.languagePlan;
@@ -757,6 +779,15 @@ function readinessForBrief(brief: StorefrontDesignBrief): GenerationReadiness {
     missingAreas.push("catalogueContext");
     blockingIssues.push(
       issue("missing-catalogue-context", "catalogueContext", "Choose a catalogue context."),
+    );
+  }
+  if (brief.catalogueContext === "empty-catalogue") {
+    warnings.push(
+      issue(
+        "sample-catalogue-required",
+        "catalogueContext",
+        "The later planner must supply controlled sample catalogue data for the selected industry before project creation.",
+      ),
     );
   }
 

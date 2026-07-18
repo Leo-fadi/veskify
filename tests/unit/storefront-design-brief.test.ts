@@ -141,6 +141,72 @@ describe("StorefrontDesignBrief", () => {
     ).toThrow(/unique/i);
   });
 
+  it.each([
+    ["home only", ["home"]],
+    ["home plus collection", ["home", "collection"]],
+    ["home plus product", ["home", "product"]],
+  ] as const)("keeps %s collecting and blocks its missing core page", (_label, pageTypes) => {
+    const brief = updateStorefrontDesignBriefArea(readyBrief(), "storefrontStructure", {
+      pageTypes: [...pageTypes],
+    });
+    const result = evaluateStorefrontDesignBriefReadiness(brief);
+
+    expect(brief.status).toBe("collecting");
+    expect(result.ready).toBe(false);
+    expect(result.blockingIssues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ area: "storefrontStructure" })]),
+    );
+  });
+
+  it("requires stable blockers for every missing core page", () => {
+    const result = evaluateStorefrontDesignBriefReadiness(
+      updateStorefrontDesignBriefArea(readyBrief(), "storefrontStructure", { pageTypes: [] }),
+    );
+
+    expect(result.blockingIssues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "missing-homepage",
+          area: "storefrontStructure",
+        }),
+        expect.objectContaining({
+          code: "missing-collection-page",
+          area: "storefrontStructure",
+        }),
+        expect.objectContaining({ code: "missing-product-page", area: "storefrontStructure" }),
+      ]),
+    );
+  });
+
+  it("is structurally ready only with the homepage, collection and product pages", () => {
+    const result = evaluateStorefrontDesignBriefReadiness(readyBrief());
+
+    expect(result.ready).toBe(true);
+    expect(result.blockingIssues).toHaveLength(0);
+    expect(result.completedAreas).toContain("storefrontStructure");
+  });
+
+  it("does not allow ready or consumed briefs to omit a core page", () => {
+    const partial = updateStorefrontDesignBriefArea(readyBrief(), "storefrontStructure", {
+      pageTypes: ["home"],
+    });
+
+    for (const status of ["ready", "consumed"] as const) {
+      try {
+        validateStorefrontDesignBrief({ ...partial, status });
+        throw new Error("Expected the lifecycle validation to fail.");
+      } catch (error) {
+        expect(error).toBeInstanceOf(StorefrontDesignBriefValidationError);
+        expect((error as StorefrontDesignBriefValidationError).issues).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({ code: "missing-collection-page" }),
+            expect.objectContaining({ code: "missing-product-page" }),
+          ]),
+        );
+      }
+    }
+  });
+
   it("supports EN, FI and EN/FI plans while rejecting an invalid primary language", () => {
     const brief = readyBrief();
     expect(
@@ -179,16 +245,32 @@ describe("StorefrontDesignBrief", () => {
     );
   });
 
-  it("supports all three catalogue contexts without storing catalogue records", () => {
+  it("keeps catalogue context design-only and warns only for an empty catalogue", () => {
     const brief = readyBrief();
     for (const context of [
       "existing-vesko-catalogue",
       "controlled-demo-catalogue",
       "empty-catalogue",
     ] as const) {
-      expect(
-        updateStorefrontDesignBriefArea(brief, "catalogueContext", context).catalogueContext,
-      ).toBe(context);
+      const updated = updateStorefrontDesignBriefArea(brief, "catalogueContext", context);
+      const result = evaluateStorefrontDesignBriefReadiness(updated);
+
+      expect(updated.catalogueContext).toBe(context);
+      expect(Object.keys(updated)).not.toContain("products");
+      expect(Object.keys(updated)).not.toContain("catalogue");
+      if (context === "empty-catalogue") {
+        expect(result.ready).toBe(true);
+        expect(result.warnings).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              code: "sample-catalogue-required",
+              area: "catalogueContext",
+            }),
+          ]),
+        );
+      } else {
+        expect(result.warnings.map(({ code }) => code)).not.toContain("sample-catalogue-required");
+      }
     }
   });
 
