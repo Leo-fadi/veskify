@@ -181,6 +181,10 @@ describe("P2-01 project editor route", () => {
       "href",
       "/projects/project_aurum_nordic",
     );
+    expect(screen.getByRole("link", { name: "Publish changes" })).toHaveAttribute(
+      "href",
+      "/projects/project_aurum_nordic/publish",
+    );
     expect(screen.getByText("Canvas: home / en")).toBeVisible();
   });
 
@@ -285,6 +289,9 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
     expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    expect(screen.queryByRole("link", { name: "Publish changes" })).not.toBeInTheDocument();
+    expect(screen.getByText("Publish changes")).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByText(/save these changes to the draft before publishing/i)).toBeVisible();
     expect(repo.saveDraft).not.toHaveBeenCalled();
     expect(repo.publish).not.toHaveBeenCalled();
   });
@@ -344,11 +351,41 @@ describe("P2-01 project editor route", () => {
       id: `${duplicated.sections[sourceIndex].id}_copy`,
     });
     expect(repo.saveDraft).not.toHaveBeenCalled();
+    expect(
+      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero — Copy 2"),
+    ).toBeVisible();
+    expect(screen.getByText(/Aurum hero — Copy 2 was created and selected/i)).toHaveAttribute(
+      "role",
+      "status",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
     expect(visibleCanvasPage()).toEqual(before);
+    expect(
+      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero", {
+        exact: true,
+      }),
+    ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Redo" }));
     expect(visibleCanvasPage()).toEqual(duplicated);
+    expect(
+      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero — Copy 2"),
+    ).toBeVisible();
+  });
+
+  it("labels and selects several duplicated instances deterministically in English and Finnish", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
+    fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
+    expect(
+      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero — Copy 3"),
+    ).toBeVisible();
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+    expect(
+      within(screen.getByLabelText("Selected section actions")).getByText("Aurum-hero — kopio 3"),
+    ).toBeVisible();
   });
 
   it("hides and shows the selected section with undo and redo", async () => {
@@ -537,7 +574,7 @@ describe("P2-01 project editor route", () => {
       }),
     ).toBeVisible();
     fireEvent.change(screen.getByLabelText("Your request"), {
-      target: { value: "Improve the hero." },
+      target: { value: "Improve the selected hero." },
     });
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     expect(await screen.findByLabelText("Design proposal")).toBeVisible();
@@ -552,7 +589,7 @@ describe("P2-01 project editor route", () => {
       }),
     ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/safe plan could not be created/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/selected section is not a hero/i);
     expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
   });
 
@@ -614,6 +651,19 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByLabelText("Design proposal")).toBeVisible();
   });
 
+  it("supports the exact Finnish selected-hero request", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    fireEvent.change(screen.getByLabelText("Pyyntösi"), {
+      target: { value: "Paranna valittua hero-osiota." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Luo ehdotus" }));
+    expect(await screen.findByLabelText("Design proposal")).toBeVisible();
+    expect(screen.getByText("Etusivu · 1 osiota", { exact: true })).toBeVisible();
+  });
+
   it("revises a proposal through the orchestrator without changing the active page", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
@@ -621,6 +671,9 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     const first = await screen.findByLabelText("Design proposal");
     const firstId = first.getAttribute("data-proposal-id");
+    const firstPreview = JSON.parse(
+      screen.getByLabelText("Proposal preview canvas").getAttribute("data-page")!,
+    ) as PageModel;
     fireEvent.change(screen.getByLabelText("How should this proposal change?"), {
       target: { value: "Make it more minimal." },
     });
@@ -633,6 +686,12 @@ describe("P2-01 project editor route", () => {
     );
     expect(screen.getByLabelText("Design proposal")).toHaveTextContent(/simplify the layout/i);
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    const latestPreview = JSON.parse(
+      screen.getByLabelText("Proposal preview canvas").getAttribute("data-page")!,
+    ) as PageModel;
+    expect(latestPreview).not.toEqual(firstPreview);
+    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+    expect(visibleCanvasPage()).toEqual(latestPreview);
   });
 
   it("regenerates with a new lifecycle identity and preserves the active page", async () => {

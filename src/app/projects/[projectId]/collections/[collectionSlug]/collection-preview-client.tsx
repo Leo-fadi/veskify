@@ -14,6 +14,7 @@ import {
   selectedSnapshotId,
   type SnapshotKind,
 } from "../../preview-mode";
+import { HistoricalPreviewActions } from "../../historical-preview-actions";
 
 type RepositoryFactory = () => ProjectRepository;
 type Snapshot = ProjectAggregate["snapshots"][number];
@@ -234,6 +235,12 @@ export function CollectionPreviewClient({
           ))}
         </fieldset>
       </div>
+      <HistoricalPreviewActions
+        locale={locale}
+        projectId={projectId}
+        snapshotId={historicalSnapshotId}
+        snapshotKind={snapshotKind}
+      />
       <div
         aria-label={
           snapshotKind === "history"

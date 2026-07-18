@@ -96,6 +96,43 @@ a {
   font-weight: 700;
 }
 
+.historical-preview-actions {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.8rem clamp(1rem, 4vw, 3rem);
+  border-bottom: 1px solid var(--brand-color-border);
+  background: #fff8e8;
+  color: #633d18;
+}
+
+.historical-preview-actions div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.historical-preview-actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid currentColor;
+  border-radius: 0.45rem;
+  color: inherit;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.historical-preview-actions a:focus-visible {
+  outline: 3px solid #d4a72c;
+  outline-offset: 2px;
+}
+
+.historical-preview-actions p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
 .locale-control {
   display: flex;
   flex-wrap: wrap;

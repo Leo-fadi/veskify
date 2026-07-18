@@ -12,6 +12,7 @@ import {
   canDuplicateSection,
   canToggleSectionVisibility,
   CanonicalEditorHistory,
+  type CanonicalCommandTransaction,
   createDuplicateSectionTransaction,
   createSectionVisibilityTransaction,
   duplicateCanonicalSection,
@@ -20,6 +21,7 @@ import {
 import {
   createStorefrontRenderContext,
   getComponentDefinition,
+  merchantEditorSectionLabel,
   validateRegisteredPage,
 } from "@/components/registry";
 import { brandSystemToCssVariables } from "@/domain/design-system";
@@ -101,6 +103,19 @@ const draftDiffers = (draft: StorefrontSnapshot, published: StorefrontSnapshot) 
 
 const canonicalPagesEqual = (left: PageModel, right: PageModel) =>
   JSON.stringify(left) === JSON.stringify(right);
+
+function duplicatedSectionFrom(transaction: CanonicalCommandTransaction | undefined) {
+  if (
+    transaction?.forward.length !== 1 ||
+    transaction.inverse.length !== 1 ||
+    transaction.forward[0].type !== "insertSection" ||
+    transaction.inverse[0].type !== "removeSection" ||
+    transaction.forward[0].section.id !== transaction.inverse[0].sectionId
+  ) {
+    return undefined;
+  }
+  return transaction.forward[0].section;
+}
 
 function isTypingTarget(target: EventTarget | null) {
   return (
@@ -392,20 +407,31 @@ export function ProjectEditorClient({
 
   const undoCurrentPage = () => {
     if (mutationsBlocked || !editorHistory) return false;
+    const transaction = editorHistory.inspectTransactions(page.id).past.at(-1);
+    const duplicatedSection = duplicatedSectionFrom(transaction);
+    const duplicateIndex = duplicatedSection
+      ? page.sections.findIndex((section) => section.id === duplicatedSection.id)
+      : -1;
     const previousPage = editorHistory.undo(page.id);
     if (!previousPage) return false;
     agent.closeForPageMutation(previousPage);
     showHistoryPage(previousPage);
+    if (duplicatedSection && selectedSectionId === duplicatedSection.id) {
+      setSelectedSectionId(previousPage.sections[Math.max(0, duplicateIndex - 1)]?.id);
+    }
     setHistoryStatus("Undid the last change on this page.");
     return true;
   };
 
   const redoCurrentPage = () => {
     if (mutationsBlocked || !editorHistory) return false;
+    const transaction = editorHistory.inspectTransactions(page.id).future[0];
+    const duplicatedSection = duplicatedSectionFrom(transaction);
     const nextPage = editorHistory.redo(page.id);
     if (!nextPage) return false;
     agent.closeForPageMutation(nextPage);
     showHistoryPage(nextPage);
+    if (duplicatedSection) setSelectedSectionId(duplicatedSection.id);
     setHistoryStatus("Redid the last change on this page.");
     return true;
   };
@@ -458,7 +484,7 @@ export function ProjectEditorClient({
           (sessionPages[baselinePage.id] ?? baselinePage).sections.map((section) => section.id),
         ),
       );
-      const componentLabel = getComponentDefinition(selectedSection.component).label;
+      const componentLabel = merchantEditorSectionLabel(page, selectedSection, locale);
       const transaction = createDuplicateSectionTransaction({
         page,
         sectionId: selectedSection.id,
@@ -475,7 +501,16 @@ export function ProjectEditorClient({
           });
       agent.closeForPageMutation(nextPage);
       showHistoryPage(nextPage);
-      setHistoryStatus(`Duplicated ${componentLabel}.`);
+      const duplicatedSection = duplicatedSectionFrom(transaction);
+      if (duplicatedSection) setSelectedSectionId(duplicatedSection.id);
+      const duplicatedLabel = duplicatedSection
+        ? merchantEditorSectionLabel(nextPage, duplicatedSection, locale)
+        : componentLabel;
+      setHistoryStatus(
+        locale === "fi"
+          ? `${duplicatedLabel} luotiin ja valittiin.`
+          : `${duplicatedLabel} was created and selected.`,
+      );
     } catch {
       setValidationMessage("That section cannot be duplicated safely.");
     }
@@ -631,6 +666,15 @@ export function ProjectEditorClient({
           >
             {saveState.status === "saving" ? "Saving draft…" : "Save draft"}
           </button>
+          {hasUnsavedChanges ? (
+            <span aria-disabled="true" className={styles.publishAction}>
+              {locale === "fi" ? "Julkaise muutokset" : "Publish changes"}
+            </span>
+          ) : (
+            <Link className={styles.publishAction} href={`/projects/${projectId}/publish`}>
+              {locale === "fi" ? "Julkaise muutokset" : "Publish changes"}
+            </Link>
+          )}
           <div aria-live="polite" aria-atomic="true" className={styles.saveStatus}>
             {saveState.status === "saving" ? (
               <p role="status">Saving your draft… Please wait before making more changes.</p>
@@ -694,7 +738,7 @@ export function ProjectEditorClient({
             {selectedSection ? (
               <>
                 <p>
-                  <strong>{getComponentDefinition(selectedSection.component).label}</strong>
+                  <strong>{merchantEditorSectionLabel(page, selectedSection, locale)}</strong>
                   <span>{selectedSection.visible ? "Visible" : "Hidden"}</span>
                 </p>
                 <div>
@@ -734,7 +778,13 @@ export function ProjectEditorClient({
             Discard changes
           </button>
           <p className={styles.boundaryNote}>
-            Save draft keeps this work unpublished. Publishing remains a separate future action.
+            {hasUnsavedChanges
+              ? locale === "fi"
+                ? "Tallenna muutokset luonnokseen ennen julkaisemista. Julkaisun tarkistus käyttää vain viimeksi tallennettua luonnosta."
+                : "Save these changes to the draft before publishing. Publish review uses only the last saved draft."
+              : locale === "fi"
+                ? "Luonnoksen tallentaminen ei julkaise muutoksia. Tarkista ja vahvista julkaisu erikseen."
+                : "Saving a draft does not publish it. Review and confirm publishing separately."}
           </p>
           {validationMessage ? (
             <p className={styles.validationMessage} role="alert">
@@ -766,6 +816,7 @@ export function ProjectEditorClient({
             readOnly={agent.blocksSave || saving}
             readOnlyLabel={showingProposal ? "Proposal preview canvas" : "Visual editor canvas"}
             resetKey={resetKeys[canvasPage.id] ?? 0}
+            sessionKey={agent.proposal?.id ?? "active"}
           />
         </main>
         <DesignAgentPanel
@@ -774,7 +825,7 @@ export function ProjectEditorClient({
           pageTitle={title}
           primaryLocale={state.aggregate.project.primaryLocale}
           selectedSectionLabel={
-            selectedSection ? getComponentDefinition(selectedSection.component).label : undefined
+            selectedSection ? merchantEditorSectionLabel(page, selectedSection, locale) : undefined
           }
         />
       </div>

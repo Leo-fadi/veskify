@@ -19,6 +19,7 @@ import {
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import { InMemoryProjectRepository, type ProjectRepository } from "@/services/storage";
+import { merchantPublishChanges } from "@/components/publishing/publish-change-summary";
 
 const projectId = aurumNordicSeed.project.id;
 const preparedAt = new Date("2026-07-17T18:00:00.000Z");
@@ -239,6 +240,32 @@ describe("P2-11 publishing preparation", () => {
         { pageId: added.id, title: added.title },
       ]),
     );
+  });
+
+  it("names every changed section type in deterministic English and Finnish merchant copy", () => {
+    const published = structuredClone(aurumNordicSeed.publishedSnapshot);
+    const draft = structuredClone(published);
+    const home = draft.pages.find((page) => page.type === "home")!;
+    const removed = home.sections.find((section) => section.component === "newsletter")!;
+    home.sections = home.sections.filter((section) => section.id !== removed.id);
+    const hero = home.sections.find((section) => section.component === "hero")!;
+    hero.content = { ...hero.content, title: { en: "Updated hero", fi: "Päivitetty hero" } };
+    const campaign = structuredClone(
+      home.sections.find((section) => section.component === "campaignBanner")!,
+    );
+    campaign.id = "section_publish_named_campaign";
+    home.sections.push(campaign);
+    const summary = createPublishChangeSummary(published, draft);
+
+    const english = merchantPublishChanges(summary, "en", "en").join(" ");
+    const finnish = merchantPublishChanges(summary, "fi", "en").join(" ");
+    expect(english).toContain("Added sections: Campaign banner (Home)");
+    expect(english).toContain("Removed sections: Newsletter (Home)");
+    expect(english).toContain("Content was updated in: Aurum hero (Home)");
+    expect(finnish).toContain("Lisätyt osiot: Kampanjabanneri (Etusivu)");
+    expect(finnish).toContain("Poistetut osiot: Uutiskirje (Etusivu)");
+    expect(finnish).toContain("Sisältöä päivitettiin osioissa: Aurum-hero (Etusivu)");
+    expect(`${english} ${finnish}`).not.toMatch(/section_publish|section_home/);
   });
 });
 

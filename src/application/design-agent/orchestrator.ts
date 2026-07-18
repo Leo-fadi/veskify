@@ -5,6 +5,8 @@ import {
 import {
   campaignContextSchema,
   createDeterministicDesignProvider,
+  designPlanValidationCode,
+  designPlanValidationCodes,
   designRequestClassificationSchema,
   hasMeaningfulCampaignContext,
   type CampaignContext,
@@ -601,10 +603,22 @@ export class DeterministicDesignAgent {
     const plannerInput = this.#plannerInput(planningSession, request);
     const plan = this.#provider.createDesignPlan(plannerInput);
     if (!plan.validation.valid) {
-      const message: LocalizedText = {
-        en: "A safe plan could not be created for this page.",
-        fi: "Tälle sivulle ei voitu luoda turvallista suunnitelmaa.",
-      };
+      const validationCode = designPlanValidationCode(plan.validation.errors);
+      const message: LocalizedText =
+        validationCode === designPlanValidationCodes.selectionRequired
+          ? {
+              en: "Select the hero section before requesting this change, then create a new proposal.",
+              fi: "Valitse hero-osio ennen tätä pyyntöä ja luo sitten uusi ehdotus.",
+            }
+          : validationCode === designPlanValidationCodes.incompatibleSelection
+            ? {
+                en: "The selected section is not a hero. Select the hero section or choose a general hero request.",
+                fi: "Valittu osio ei ole hero. Valitse hero-osio tai käytä yleistä hero-pyyntöä.",
+              }
+            : {
+                en: "A safe plan could not be created for this page.",
+                fi: "Tälle sivulle ei voitu luoda turvallista suunnitelmaa.",
+              };
       const failed = this.#sessions.transition(sessionId, "failed", {
         plan,
         assumptions: plan.assumptions,

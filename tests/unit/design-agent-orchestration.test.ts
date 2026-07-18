@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { InMemoryDesignProposalStore } from "@/application/design-operations";
 import {
   createDeterministicDesignProvider,
+  designPlanValidationCodes,
   type DesignSkillExecutionResult,
 } from "@/application/design-skills";
 import {
@@ -114,6 +115,78 @@ describe("design-agent session contract and store", () => {
 });
 
 describe("deterministic request orchestration", () => {
+  it("does not execute or create a proposal after selected-hero planning fails", () => {
+    const provider = createDeterministicDesignProvider();
+    const execute = vi.spyOn(provider, "executeDesignPlan");
+    const agent = createDeterministicDesignAgent({ proposalProvider: provider });
+    const session = start(agent);
+    const result = agent.submitRequest(session.id, "Improve the selected hero.");
+    expect(result.outcome).toBe("failed");
+    expect(result.proposal).toBeUndefined();
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      "en" as const,
+      "Improve the selected hero.",
+      undefined,
+      /select the hero section/i,
+      designPlanValidationCodes.selectionRequired,
+    ],
+    [
+      "fi" as const,
+      "Paranna valittua hero-osiota.",
+      undefined,
+      /valitse hero-osio/i,
+      designPlanValidationCodes.selectionRequired,
+    ],
+    [
+      "en" as const,
+      "Improve the selected hero.",
+      section(homepage, "productGrid").id,
+      /selected section is not a hero/i,
+      designPlanValidationCodes.incompatibleSelection,
+    ],
+    [
+      "fi" as const,
+      "Paranna valittua hero-osiota.",
+      section(homepage, "productGrid").id,
+      /valittu osio ei ole hero/i,
+      designPlanValidationCodes.incompatibleSelection,
+    ],
+  ])(
+    "returns a localized stable failure for selected-hero scope errors (%s)",
+    (locale, request, selectedSectionId, messagePattern, expectedCode) => {
+      const agent = createDeterministicDesignAgent();
+      const session = start(agent, { activeLocale: locale, selectedSectionId });
+      const result = agent.submitRequest(session.id, request);
+      expect(result.outcome).toBe("failed");
+      expect(result.proposal).toBeUndefined();
+      expect(result.message?.[locale]).toMatch(messagePattern);
+      expect(result.session.failure?.details[0]).toMatch(new RegExp(`^${expectedCode}:`));
+    },
+  );
+
+  it.each([
+    ["en" as const, "Improve the hero.", /safe plan could not be created/i],
+    ["fi" as const, "Paranna hero-osiota.", /turvallista suunnitelmaa/i],
+  ])(
+    "uses generic localized missing-hero guidance on a page without a hero (%s)",
+    (locale, request, messagePattern) => {
+      const pageWithoutHero = structuredClone(homepage);
+      pageWithoutHero.sections = pageWithoutHero.sections.filter(
+        (item) => item.component !== "hero",
+      );
+      const agent = createDeterministicDesignAgent();
+      const session = start(agent, { activeLocale: locale, page: pageWithoutHero });
+      const result = agent.submitRequest(session.id, request);
+      expect(result.outcome).toBe("failed");
+      expect(result.message?.[locale]).toMatch(messagePattern);
+      expect(result.message?.en).not.toMatch(/select the hero section/i);
+    },
+  );
+
   it.each([
     ["luxury", "Make the homepage feel more luxurious.", "luxuryStyle"],
     ["minimal", "Make the layout more minimal.", "minimalNordicStyle"],

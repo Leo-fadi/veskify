@@ -17,12 +17,33 @@ test("browses and navigates a previous version without falling through to the dr
   await publishedCard.getByRole("link", { name: "Preview" }).click();
   await expect(page).toHaveURL(/\/history\/[^/]+$/, { timeout: 15_000 });
   await expect(page.getByText("Previous version")).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("link", { name: "Back to version history" }).click();
+  await expect(page).toHaveURL(historyUrl);
+  await page
+    .getByRole("heading", { name: "Current published version" })
+    .locator("xpath=../..")
+    .getByRole("link", { name: "Preview" })
+    .click();
+  await expect(page).toHaveURL(/\/history\/[^/]+$/);
+  const restoreLink = page.getByRole("link", { name: "Restore this version" });
+  await expect(restoreLink).toHaveAttribute("href", /\/history\/[^/]+\/restore$/);
+  await restoreLink.click();
+  await expect(page).toHaveURL(/\/history\/[^/]+\/restore$/);
+  await expect(page.getByText(/will become a new saved draft/i)).toBeVisible();
+  await page.getByRole("link", { name: "Return to previous versions" }).click();
+  await page
+    .getByRole("heading", { name: "Current published version" })
+    .locator("xpath=../..")
+    .getByRole("link", { name: "Preview" })
+    .click();
   await page.getByRole("link", { name: "Rings", exact: true }).click();
   await expect(page).toHaveURL(/\/history\/[^/]+\/collections\/rings$/);
   await expect(page.getByText("Previous version")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("link", { name: "Restore this version" })).toBeVisible();
   await page.getByRole("link", { name: "Aurora Ring", exact: true }).first().click();
   await expect(page).toHaveURL(/\/history\/[^/]+\/products\/aurora-ring-585$/);
   await expect(page.getByText("Previous version")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("link", { name: "Back to version history" })).toBeVisible();
 });
 
 test("cancels and confirms a restore without changing the published storefront", async ({

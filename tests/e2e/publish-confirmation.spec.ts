@@ -29,7 +29,7 @@ test("reviews a saved draft, confirms publication, and opens the published store
   await page.goto(publishUrl);
   await page.getByRole("button", { name: "Review publish" }).click();
   await expect(page.getByRole("heading", { name: "Confirm publication" })).toBeVisible();
-  await expect(page.getByText("Content was updated: Home.")).toBeVisible();
+  await expect(page.getByText("Content was updated in: Aurum hero (Home).")).toBeVisible();
   await page.getByRole("button", { name: "Publish storefront" }).click();
   await expect(
     page.getByRole("heading", { name: "Storefront published successfully" }),
@@ -95,7 +95,7 @@ test("recovers from a stale preparation only after the merchant reviews the late
   ).toHaveCount(0);
   await page.getByRole("button", { name: "Review latest draft" }).click();
   await expect(page.getByRole("heading", { name: "Confirm publication" })).toBeVisible();
-  await expect(page.getByText("Content was updated: Home.")).toBeVisible();
+  await expect(page.getByText("Content was updated in: Aurum hero (Home).")).toBeVisible();
 });
 
 test("supports keyboard publication controls", async ({ page }) => {
