@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { normalizeBrief } from "@/domain/design-brief";
 import {
   cloneStorefrontTemplateSelectionPlan,
+  createStorefrontTemplateSelectionBriefFingerprint,
   evaluateStorefrontTemplateCandidates,
   getTemplatePagePlan,
   listTemplates,
@@ -104,6 +105,42 @@ describe("deterministic storefront template selection", () => {
     expect(first.selectedTemplateId).toBe("template_balanced_commerce");
     expect(first.id).toBe(second.id);
     expect(first).toEqual(second);
+  });
+
+  it("binds plans to a deterministic, order-normalized selection fingerprint", () => {
+    const first = brief({
+      brandDirection: { toneKeywords: ["Craft", "story"] },
+      storefrontStructure: { pageTypes: ["product", "home", "collection"] },
+    });
+    const second = brief({
+      brandDirection: { toneKeywords: ["story", "craft"] },
+      storefrontStructure: { pageTypes: ["collection", "product", "home"] },
+    });
+    expect(createStorefrontTemplateSelectionBriefFingerprint(first)).toBe(
+      createStorefrontTemplateSelectionBriefFingerprint(second),
+    );
+    expect(planStorefrontTemplateSelection({ brief: first }).briefFingerprint).toMatch(
+      /^brief-selection-v1_[0-9a-f]{8}$/,
+    );
+  });
+
+  it("changes the fingerprint for selection-relevant inputs but not merchant copy", () => {
+    const base = brief();
+    const copy = brief({
+      businessIdentity: { businessName: "A new name", industry: "other" },
+    });
+    const changed = brief({ catalogueContext: "existing-vesko-catalogue" });
+    expect(createStorefrontTemplateSelectionBriefFingerprint(base)).toBe(
+      createStorefrontTemplateSelectionBriefFingerprint(copy),
+    );
+    expect(createStorefrontTemplateSelectionBriefFingerprint(base)).not.toBe(
+      createStorefrontTemplateSelectionBriefFingerprint(changed),
+    );
+  });
+
+  it("rejects the previous persisted selection schema version", () => {
+    const plan = planStorefrontTemplateSelection({ brief: brief() });
+    expect(() => validateStorefrontTemplateSelectionPlan({ ...plan, schemaVersion: 1 })).toThrow();
   });
 
   it("changes selection when a meaningful preference crosses the policy threshold", () => {

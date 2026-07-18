@@ -30,6 +30,15 @@ The resolver's warnings are retained. In particular, an empty catalogue remains 
 warning that later generation must provide a controlled empty-state or sample merchandising
 presentation.
 
+Each selection plan also stores `briefFingerprint`, owned by the P3-06 selection boundary. It is a
+stable hash of the validated selection projection: creation context type, industry, visual,
+typography and imagery directions, normalized tone keywords, logo/supporting-imagery availability,
+requested page types, catalogue context, and all generation preferences. Presentation-only copy such
+as business name, short description, target customer and market is deliberately excluded. Page types,
+keywords and capability-style inputs are normalized before hashing, so equivalent array ordering
+produces the same fingerprint. P3-08 compares this value with the current brief and blocks stale
+selection plans instead of silently reselecting a template.
+
 ## Deterministic policy
 
 Each built-in candidate starts with a small baseline: balanced commerce `10`, brand-led editorial
@@ -65,8 +74,11 @@ The application export provides:
 - `cloneStorefrontTemplateSelectionPlan`
 
 Selection IDs are derived from a stable hash of the brief ID, override, candidate diagnostics,
-selected template, and status. Identical inputs therefore produce identical plans without timestamps
-or randomness. Returned plans, candidate arrays, and resolved page plans are detached and frozen.
+selected template, brief fingerprint, candidate diagnostics, and status. Identical inputs therefore
+produce identical plans without timestamps or randomness. The selection contract schema version is
+now `2`; plans created with the previous version are rejected by validation rather than silently
+interpreted as current. Returned plans, candidate arrays, and resolved page plans are detached and
+frozen.
 
 ## Later handoff and exclusions
 

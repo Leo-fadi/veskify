@@ -336,6 +336,19 @@ The first implementation is a standalone repository. It uses dummy product, coll
 | Save draft       | User persists the active draft without changing the published snapshot.                                          |
 | Publish changes  | User separately confirms publication when the saved draft is ready.                                               |
 
+Initial generation is a deterministic application boundary. The guided brief is validated first,
+P3-06 selects a controlled template foundation, and a canonical BrandSystem is supplied to the
+materializer. P3-08 then creates an in-memory initial StorefrontSnapshot containing canonical
+PageModel and SectionInstance records from the resolved template plan. Sections start from registered
+component defaults and may receive only safe, validated merchant-presentation mappings. The final
+snapshot must pass canonical and component-registry validation. Project creation, draft persistence,
+editor handoff, Save draft and Publish changes remain later boundaries; materialization does not
+persist anything.
+
+A template selection is bound to a deterministic fingerprint of the current selection-relevant brief
+state. If the brief changes after selection, P3-08 blocks generation until P3-06 is run again. IDs and
+`createdAt` are explicit inputs; runtime time and randomness are prohibited.
+
 ## 4.3 Vesko salesperson assisted mode
 
 Assisted mode uses the same creation and editing flows but provides quick scenario switching, sample business presets, reset-to-demo controls and an optional presenter mode. Presenter mode must not expose developer tools, raw JSON or internal prompt content.
@@ -470,6 +483,8 @@ Assisted mode uses the same creation and editing flows but provides quick scenar
 | FR-048 | The system MUST keep a bounded local history of published snapshots and allow restoration into draft.                   |
 | FR-049 | Destructive section/page actions MUST require confirmation when they remove non-empty content.                          |
 | FR-050 | A failed save, publish, or generation MUST preserve the previous published snapshot and current usable draft; the published route MUST remain read-only. |
+| FR-051 | Initial storefront generation MUST deterministically materialize a validated in-memory StorefrontSnapshot from the current brief, approved controlled template selection and canonical BrandSystem without persisting a Project or snapshot. |
+| FR-052 | A template selection MUST be bound to the current selection-relevant brief state; stale selections MUST block initial generation until the controlled selection planner runs again. |
 
 # 7. Editor and interaction specification
 
@@ -590,6 +605,11 @@ When the merchant supplies no complete brand guideline, Veskify must generate a 
 ## 9.1 Component contract
 
 Each component must be registered in a component registry with a stable type, supported variants, property schema, content schema, responsive rules, editable fields, allowed page types and industry tags. The renderer must reject unknown component types.
+
+Initial storefront materialization must clone registered component defaults, preserve protected
+commerce fields, validate the selected variant and target page type, and reject required slots that
+cannot be represented by a registered valid default. Template plans remain the sole source of page
+and section composition.
 
 ## 9.2 Core component inventory
 
@@ -901,6 +921,15 @@ For page-level, design-system or whole-site operations, the agent must present a
 >
 > **10.** On acceptance, apply the validated operations to the active draft. On revision or rejection, preserve the active draft.
 
+For guided initial creation, the validated brief is evaluated by the deterministic P3-06 selection
+planner before P3-08 materialization. The selection plan records a canonical fingerprint of every
+brief value that can affect readiness, capabilities, compatibility, warnings or scoring. The
+materializer compares that fingerprint with the current brief and rechecks current P3-06 readiness
+and selected-template compatibility before creating any page, section, navigation or snapshot. A
+stale or incompatible selection returns a blocked result with no generated snapshot. Successful
+materialization validates the complete snapshot through the canonical snapshot schema and registered
+component boundary; it remains in memory until a later project-creation service persists it.
+
 ## 12.9 Agent guardrails
 
 - Must not patch price, stock, payment, shipping, tax or order fields.
@@ -1085,6 +1114,12 @@ createdBy: "user" | "agent" | "system";<br />
 </tbody>
 </table>
 
+The initial storefront materializer creates revision `0` with `createdBy: "agent"`, the supplied
+`projectId`, `snapshotId`, `catalogueRef` and explicit `createdAt`. It generates only the required
+homepage, collection page and product page slice, deterministic navigation and registered sections.
+The output is validated and immutable in application memory; it is not a Project aggregate or a
+published snapshot.
+
 ## 15.4 Page and section schema
 
 <table>
@@ -1205,6 +1240,10 @@ The implementation should use a storage adapter. The default adapter may use Ind
 
 - Application services: create project, generate storefront, apply proposal, publish, restore and import catalogue.
 
+- The deterministic initial storefront materializer is an application service that consumes the
+  approved brief, P3-06 selection plan and canonical BrandSystem, then returns a validated in-memory
+  snapshot without persistence.
+
 - Adapters: storage, AI, image generation, file import and future backend integration.
 
 - Component registry: storefront component definitions, schemas, variants and renderer mapping.
@@ -1263,6 +1302,7 @@ After the demo, the design agent will operate inside Vesko Retail OS and replace
 |-------------------------------------------|---------------------------------------------------------------------------|
 | createProject(input)                      | Creates project, seed profile and empty snapshots.                        |
 | completeOnboarding(projectId, input)      | Validates onboarding and creates generation plan.                         |
+| materializeInitialStorefront(input)       | Deterministically creates and validates the initial in-memory snapshot; does not persist. |
 | generateInitialStorefront(projectId)      | Builds initial brand system and page snapshot.                            |
 | proposeDesignChange(context, prompt)      | Returns validated pending proposal.                                       |
 | applyProposal(projectId, proposalId)      | Applies accepted validated operations to the active draft only.             |
@@ -1496,6 +1536,8 @@ Website text, spreadsheet cells, product descriptions and uploaded files are dat
 | AC-018 | All primary flows are keyboard operable and pass automated accessibility checks.                                                                          |
 | AC-019 | Homepage and product page have no visible clipping or overlap at 375, 768, 1024 and 1440 pixel widths.                                                    |
 | AC-020 | A first-time user can understand section selection, proposal review, draft preview, Save draft, and Publish changes through the built-in tutorial without developer terminology. |
+| AC-021 | After guided creation confirmation, the system can produce a validated in-memory snapshot with homepage, collection page, product page, navigation and registered sections without persisting a Project. |
+| AC-022 | If the selection-relevant brief changes after template selection, initial generation is blocked until the template selection is regenerated; no snapshot is produced from stale selection data. |
 
 ## 21.3 Definition of done for every Codex task
 

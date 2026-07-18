@@ -2,7 +2,7 @@ import { z } from "zod";
 import { idSchema } from "@/domain/shared";
 import { storefrontTemplatePagePlanSchema } from "./contract";
 
-export const STOREFRONT_TEMPLATE_SELECTION_SCHEMA_VERSION = 1 as const;
+export const STOREFRONT_TEMPLATE_SELECTION_SCHEMA_VERSION = 2 as const;
 
 export const storefrontTemplateSelectionSourceSchema = z.enum(["recommended", "merchant-override"]);
 export const storefrontTemplateSelectionStatusSchema = z.enum([
@@ -35,6 +35,7 @@ export const storefrontTemplateSelectionPlanSchema = z
     schemaVersion: z.literal(STOREFRONT_TEMPLATE_SELECTION_SCHEMA_VERSION),
     id: idSchema,
     briefId: idSchema,
+    briefFingerprint: z.string().trim().min(1),
     selectedTemplateId: idSchema.nullable(),
     selectionSource: storefrontTemplateSelectionSourceSchema,
     status: storefrontTemplateSelectionStatusSchema,
