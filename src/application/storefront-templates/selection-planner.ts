@@ -5,6 +5,7 @@ import {
   validateStorefrontDesignBrief,
 } from "@/domain/design-brief";
 import type { PageType } from "@/domain/storefront";
+import { canonicalValueString } from "@/domain/storefront";
 import {
   cloneStorefrontTemplateSelectionPlan,
   STOREFRONT_TEMPLATE_SELECTION_SCHEMA_VERSION,
@@ -59,6 +60,33 @@ function stableHash(value: string): string {
     hash = Math.imul(hash, 0x01000193);
   }
   return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+/**
+ * Fingerprint of the canonical brief inputs that can change template readiness,
+ * compatibility, or deterministic candidate ranking. Merchant copy is deliberately
+ * excluded so editing copy does not invalidate an otherwise usable selection.
+ */
+export function createStorefrontTemplateSelectionBriefFingerprint(
+  briefInput: StorefrontDesignBrief,
+): string {
+  const brief = storefrontDesignBriefSchema.parse(briefInput);
+  const projection = {
+    creationContextType: brief.creationContext.type,
+    industry: brief.businessIdentity.industry,
+    visualStyleDirection: brief.brandDirection.visualStyleDirection,
+    typographyDirection: brief.brandDirection.typographyDirection,
+    imageryDirection: brief.brandDirection.imageryDirection,
+    toneKeywords: [...brief.brandDirection.toneKeywords]
+      .map((keyword) => keyword.trim().toLocaleLowerCase())
+      .sort(),
+    hasLogo: brief.brandDirection.logoAssetRef !== null,
+    hasSupportingImagery: brief.brandDirection.supportingImageAssetRefs.length > 0,
+    pageTypes: [...brief.storefrontStructure.pageTypes].sort(),
+    catalogueContext: brief.catalogueContext,
+    generationPreferences: brief.generationPreferences,
+  };
+  return `brief-selection-v1_${stableHash(canonicalValueString(projection))}`;
 }
 
 function hasKeyword(keywords: readonly string[], values: readonly string[]): boolean {
@@ -304,18 +332,21 @@ export function planStorefrontTemplateSelection(
   const resolvedPagePlans =
     selectedResolution?.status === "resolved" ? selectedResolution.plan.pagePlans : [];
   const planId = `selection_${stableHash(
-    JSON.stringify({
+    canonicalValueString({
       briefId: brief.id,
+      briefFingerprint: createStorefrontTemplateSelectionBriefFingerprint(brief),
       preferredTemplateId: preferred ?? null,
       selectedTemplateId,
       status,
       candidates: evaluation.candidates,
     }),
   )}`;
+  const briefFingerprint = createStorefrontTemplateSelectionBriefFingerprint(brief);
   const plan = {
     schemaVersion: STOREFRONT_TEMPLATE_SELECTION_SCHEMA_VERSION,
     id: planId,
     briefId: brief.id,
+    briefFingerprint,
     selectedTemplateId,
     selectionSource: source,
     status,
