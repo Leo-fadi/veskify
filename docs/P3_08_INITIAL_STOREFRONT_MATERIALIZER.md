@@ -69,3 +69,21 @@ Project aggregate. This PR deliberately excludes ProjectModel creation, ProjectR
 IndexedDB/storage, onboarding, Puck/editor integration, publishing, history, proposals, AI providers,
 catalogue ingestion, product enrichment, cart, checkout, and PageModel generation beyond this
 in-memory initial snapshot.
+
+## Current-brief safety and public boundary
+
+The public `materializeInitialStorefront` action compares the selection plan's P3-06-owned
+`briefFingerprint` with the current validated brief. It also re-evaluates current P3-06 readiness and
+selected-template compatibility through `evaluateStorefrontTemplateCandidates`. A stale, incomplete,
+or incompatible selection returns an immutable blocked plan with no snapshot and the stable
+`stale-template-selection` blocker where applicable; it never mutates a draft, project, storage, or
+published state. Copy-only brief changes remain usable because presentation copy is excluded from the
+selection fingerprint.
+
+## Specification traceability
+
+This implementation fulfils the authoritative SDD §4.1 guided-creation initial-generation boundary;
+§6.2 FR-009, FR-011, FR-013, FR-014, FR-015, FR-016, FR-040, FR-051, and FR-052; §9.1 registered
+component contracts; §12.8 validation and application pipeline; §15.3–§15.5 snapshot, page/section,
+and BrandSystem schemas; §16.2 and §16.5 application/renderer boundaries; §17.1 application services;
+and §21.2 AC-001, AC-002, AC-013, AC-016, AC-021, and AC-022.

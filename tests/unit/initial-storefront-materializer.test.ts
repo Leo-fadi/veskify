@@ -139,6 +139,54 @@ describe("deterministic initial storefront materializer", () => {
     expect(mismatch.blockers.map((blocker) => blocker.code)).toContain("brief-id-mismatch");
   });
 
+  it.each([
+    ["industry", { businessIdentity: { industry: "fashion" } }],
+    ["pages", { storefrontStructure: { pageTypes: ["home", "collection", "product", "about"] } }],
+    ["catalogue", { catalogueContext: "existing-vesko-catalogue" }],
+    ["preferences", { generationPreferences: { visualDensity: "airy" } }],
+    ["assets", { brandDirection: { supportingImageAssetRefs: [{ id: "asset_supporting" }] } }],
+  ])("blocks a stale selection when %s changes", (_label, overrides) => {
+    const original = brief();
+    const selection = planStorefrontTemplateSelection({
+      brief: original,
+      preferredTemplateId: "template_balanced_commerce",
+    });
+    const current = brief(overrides);
+    const result = materializeInitialStorefront({
+      ...input("template_balanced_commerce", original),
+      brief: current,
+      templateSelectionPlan: selection,
+    });
+    expect(result.status).toBe("blocked");
+    expect(result.generatedSnapshot).toBeNull();
+    expect(result.blockers.map((blocker) => blocker.code)).toContain("stale-template-selection");
+  });
+
+  it("allows copy-only brief changes and uses the current copy", () => {
+    const original = brief();
+    const selection = planStorefrontTemplateSelection({
+      brief: original,
+      preferredTemplateId: "template_balanced_commerce",
+    });
+    const current = brief({
+      businessIdentity: {
+        businessName: "Updated Studio",
+        shortDescription: "A refreshed description.",
+        industry: "jewellery",
+      },
+    });
+    const result = materializeInitialStorefront({
+      ...input("template_balanced_commerce", original),
+      brief: current,
+      templateSelectionPlan: selection,
+    });
+    expect(result.status).toBe("ready-with-warnings");
+    expect(result.generatedSnapshot).not.toBeNull();
+    expect(result.generatedSnapshot?.pages[0].sections[1]?.content.title).toEqual({
+      en: "Updated Studio",
+    });
+  });
+
   it("blocks missing resolved page plans and forged plan composition", () => {
     const base = input("template_balanced_commerce");
     const missingHome = structuredClone(base.templateSelectionPlan);

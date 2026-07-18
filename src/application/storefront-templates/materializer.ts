@@ -14,6 +14,10 @@ import { type Locale } from "@/domain/shared";
 import { getComponentDefinition, validateRegisteredSnapshot } from "@/components/registry";
 import { getTemplateById, getTemplatePagePlan } from "./registry";
 import {
+  createStorefrontTemplateSelectionBriefFingerprint,
+  evaluateStorefrontTemplateCandidates,
+} from "./selection-planner";
+import {
   type StorefrontTemplateSelectionPlan,
   validateStorefrontTemplateSelectionPlan,
 } from "./selection-contract";
@@ -261,6 +265,7 @@ function materializeSection(
 function validateSelectionPreconditions(
   brief: StorefrontDesignBrief,
   selection: StorefrontTemplateSelectionPlan,
+  currentEvaluation: ReturnType<typeof evaluateStorefrontTemplateCandidates>,
 ): GenerationMessage[] {
   const blockers: GenerationMessage[] = [];
   if (selection.status === "blocked") {
@@ -274,6 +279,18 @@ function validateSelectionPreconditions(
   if (brief.id !== selection.briefId) {
     blockers.push(message("brief-id-mismatch", "The brief does not match the template selection."));
   }
+  const currentFingerprint = createStorefrontTemplateSelectionBriefFingerprint(brief);
+  if (selection.briefFingerprint !== currentFingerprint) {
+    blockers.push(
+      message(
+        "stale-template-selection",
+        "The template selection no longer matches the current design brief. Run template selection again.",
+      ),
+    );
+  }
+  for (const blocker of currentEvaluation.blockers) {
+    blockers.push(message(blocker.code, blocker.message));
+  }
   const template = selection.selectedTemplateId
     ? getTemplateById(selection.selectedTemplateId)
     : undefined;
@@ -286,6 +303,18 @@ function validateSelectionPreconditions(
     );
   }
   if (!template || !selection.selectedTemplateId) return blockers;
+
+  const currentCandidate = currentEvaluation.candidates.find(
+    (candidate) => candidate.templateId === selection.selectedTemplateId,
+  );
+  if (!currentCandidate?.compatible) {
+    blockers.push(
+      message(
+        "incompatible-selected-template",
+        `Template ${selection.selectedTemplateId} is not compatible with the current design brief.`,
+      ),
+    );
+  }
 
   for (const pageType of requiredPageTypes) {
     const resolved = selection.resolvedPagePlans.find((plan) => plan.pageType === pageType);
@@ -412,7 +441,8 @@ export function materializeInitialStorefront(
     brandSystemSource: "supplied-canonical-brand-system",
     omissions: [],
   };
-  const blockers = validateSelectionPreconditions(brief, selection);
+  const currentEvaluation = evaluateStorefrontTemplateCandidates(brief);
+  const blockers = validateSelectionPreconditions(brief, selection, currentEvaluation);
   if (blockers.length > 0)
     return createBlockedPlan(
       { ...parsed, brief, templateSelectionPlan: selection, brandSystem },
