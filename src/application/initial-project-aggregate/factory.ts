@@ -4,6 +4,7 @@ import {
   type GuidedStorefrontGenerationPlan,
 } from "@/application/guided-storefront-generation";
 import {
+  createStorefrontGenerationReview,
   validateStorefrontGenerationReview,
   type StorefrontGenerationReview,
 } from "@/application/storefront-generation-review";
@@ -37,8 +38,8 @@ function creationNotAllowed(message: string): never {
   throw new InitialProjectAggregateError("project-creation-not-allowed", message);
 }
 
-function inconsistentSource(message: string): never {
-  throw new InitialProjectAggregateError("inconsistent-generation-source", message);
+function inconsistentSource(message: string, cause?: unknown): never {
+  throw new InitialProjectAggregateError("inconsistent-generation-source", message, cause);
 }
 
 function invalidAggregate(message: string, cause?: unknown): never {
@@ -125,71 +126,41 @@ function assertCreationAllowed(
   }
 }
 
-function projectedPageSummaries(snapshot: StorefrontSnapshot) {
-  return snapshot.pages.map((page, position) => ({
-    id: page.id,
-    type: page.type,
-    path: page.slug,
-    position,
-    totalSectionCount: page.sections.length,
-    visibleSectionCount: page.sections.filter((section) => section.visible).length,
-    hiddenSectionCount: page.sections.filter((section) => !section.visible).length,
-    componentIds: page.sections.map((section) => section.component),
-  }));
-}
-
-function sourceDiagnostic(diagnostic: StorefrontGenerationReview["sourceDiagnostics"][number]) {
-  return {
-    stage: diagnostic.stage,
-    code: diagnostic.code,
-    severity: diagnostic.severity,
-    message: diagnostic.message,
-    planId: diagnostic.planId,
-  };
-}
-
-function sourceDiagnostics(review: StorefrontGenerationReview) {
-  return review.sourceDiagnostics.map(sourceDiagnostic);
+function assertExactReviewProjection(
+  plan: GuidedStorefrontGenerationPlan,
+  review: StorefrontGenerationReview,
+  brief: StorefrontDesignBrief,
+): void {
+  let canonicalReview: StorefrontGenerationReview;
+  try {
+    canonicalReview = createStorefrontGenerationReview(plan, brief);
+  } catch (cause) {
+    inconsistentSource(
+      "The generation plan and brief cannot produce the canonical storefront review.",
+      cause,
+    );
+  }
+  if (canonicalValueString(review) !== canonicalValueString(canonicalReview)) {
+    inconsistentSource(
+      "The submitted storefront review is not the exact review for this generation result.",
+    );
+  }
 }
 
 function assertSourceConsistency(
   plan: GuidedStorefrontGenerationPlan & { generatedSnapshot: StorefrontSnapshot },
-  review: StorefrontGenerationReview,
   brief: StorefrontDesignBrief,
   catalogue: CatalogueDisplayModel,
 ): void {
   const snapshot = plan.generatedSnapshot;
   const fullBriefFingerprint = createStorefrontDesignBriefFingerprint(brief);
   const materialization = plan.initialStorefrontGenerationPlan;
-  const expectedStageStatuses = plan.stageDiagnostics.map(({ stage, status }) => ({
-    stage,
-    status,
-  }));
-  const expectedReviewDiagnostics = plan.diagnostics;
-  const expectedWarnings = expectedReviewDiagnostics.filter(
-    ({ severity }) => severity === "warning",
-  );
-  const expectedBlockers = expectedReviewDiagnostics.filter(
-    ({ severity }) => severity === "blocker",
-  );
-  const reviewedWarnings = review.warnings.map(sourceDiagnostic);
-  const reviewedBlockers = review.blockers.map(sourceDiagnostic);
 
-  if (
-    review.guidedGenerationPlanId !== plan.id ||
-    review.status !== plan.status ||
-    review.briefId !== plan.briefId ||
-    review.briefFingerprint !== plan.briefFingerprint ||
-    brief.id !== plan.briefId ||
-    fullBriefFingerprint !== plan.briefFingerprint
-  ) {
-    inconsistentSource("The brief, generation plan and review do not share the same source.");
+  if (brief.id !== plan.briefId || fullBriefFingerprint !== plan.briefFingerprint) {
+    inconsistentSource("The brief and generation plan do not share the same source.");
   }
   if (
-    review.generatedSnapshotId !== snapshot.id ||
-    review.generatedSnapshotId !== plan.snapshotId ||
     snapshot.id !== plan.snapshotId ||
-    review.catalogueRef !== plan.catalogueRef ||
     catalogue.id !== plan.catalogueRef ||
     snapshot.projectId !== plan.projectId ||
     snapshot.catalogueRef !== catalogue.id ||
@@ -207,38 +178,10 @@ function assertSourceConsistency(
   }
   if (
     materialization === null ||
-    review.brandFoundationPlanId !== plan.brandFoundationPlan.id ||
-    review.templateSelectionPlanId !== plan.templateSelectionPlan?.id ||
-    review.materializationPlanId !== materialization.id ||
-    review.selectedPresetId !== plan.brandFoundationPlan.selectedPresetId ||
-    review.selectedTemplateId !== plan.templateSelectionPlan?.selectedTemplateId ||
     materialization.templateSelectionPlanId !== plan.templateSelectionPlan?.id ||
     materialization.snapshotId !== snapshot.id
   ) {
-    inconsistentSource("The review does not reference the exact approved stage plans.");
-  }
-  if (
-    canonicalValueString(review.stageStatuses) !== canonicalValueString(expectedStageStatuses) ||
-    canonicalValueString(sourceDiagnostics(review)) !==
-      canonicalValueString(expectedReviewDiagnostics) ||
-    canonicalValueString(reviewedWarnings) !== canonicalValueString(expectedWarnings) ||
-    canonicalValueString(reviewedBlockers) !== canonicalValueString(expectedBlockers)
-  ) {
-    inconsistentSource("The review diagnostics do not match the guided generation result.");
-  }
-  if (
-    canonicalValueString(review.pageSummaries) !==
-    canonicalValueString(projectedPageSummaries(snapshot))
-  ) {
-    inconsistentSource("The review page summary does not match the generated storefront.");
-  }
-  if (
-    canonicalValueString(review.languagePlan) !== canonicalValueString(brief.languagePlan) ||
-    review.catalogueContext !== brief.catalogueContext ||
-    canonicalValueString(review.assumptions) !==
-      canonicalValueString(plan.assumptions.map((value) => ({ en: value, fi: value })))
-  ) {
-    inconsistentSource("The review does not match the supplied brief and generation assumptions.");
+    inconsistentSource("The generation result does not preserve the exact approved stage plans.");
   }
 }
 
@@ -313,8 +256,9 @@ export function createInitialProjectAggregate(
   const catalogue = validateCatalogue(input.catalogue);
   const mode = validateScalarInputs(input.mode, input.publishedSnapshotId);
 
+  assertExactReviewProjection(plan, review, brief);
   assertCreationAllowed(plan, review);
-  assertSourceConsistency(plan, review, brief, catalogue);
+  assertSourceConsistency(plan, brief, catalogue);
   if (input.publishedSnapshotId === plan.snapshotId) {
     inconsistentSource("The initial published baseline and active draft need distinct IDs.");
   }

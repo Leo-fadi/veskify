@@ -3,7 +3,11 @@ import {
   createInitialProjectAggregate,
   InitialProjectAggregateError,
 } from "@/application/initial-project-aggregate";
-import { createStorefrontGenerationReview } from "@/application/storefront-generation-review";
+import {
+  createStorefrontGenerationReview,
+  validateStorefrontGenerationReview,
+  type StorefrontGenerationReview,
+} from "@/application/storefront-generation-review";
 import { catalogueDisplayModelSchema } from "@/domain/catalogue";
 import { canonicalStorefrontContentEqual, canonicalValueString } from "@/domain/storefront";
 import { validateProjectAggregate } from "@/services/storage/repository-validation";
@@ -28,6 +32,72 @@ function expectDeeplyFrozen(value: unknown): void {
   expect(Object.isFrozen(value)).toBe(true);
   Object.values(value).forEach(expectDeeplyFrozen);
 }
+
+type SchemaValidReviewMutation = Readonly<{
+  name: string;
+  mutate: (review: StorefrontGenerationReview) => void;
+}>;
+
+const schemaValidReviewMutations: SchemaValidReviewMutation[] = [
+  {
+    name: "review ID",
+    mutate: (review) => {
+      review.id = "storefront-review-tampered";
+    },
+  },
+  {
+    name: "localized title",
+    mutate: (review) => {
+      review.title.fi = "Muokattu tarkistusotsikko";
+    },
+  },
+  {
+    name: "localized summary",
+    mutate: (review) => {
+      review.summary.en = "A different merchant-facing summary.";
+    },
+  },
+  {
+    name: "section summary",
+    mutate: (review) => {
+      review.sections[0].summary.en = "A different section summary.";
+    },
+  },
+  {
+    name: "fact value",
+    mutate: (review) => {
+      review.sections[0].facts[0].value = "brief_tampered";
+    },
+  },
+  {
+    name: "diagnostic context",
+    mutate: (review) => {
+      const diagnostic = review.sourceDiagnostics[0];
+      diagnostic.context.en = "Changed diagnostic context";
+      const warning = review.warnings.find(({ code }) => code === diagnostic.code);
+      if (warning) warning.context.en = diagnostic.context.en;
+    },
+  },
+  {
+    name: "provenance",
+    mutate: (review) => {
+      review.provenance.storefrontMaterialization = "Unverified materialization source";
+    },
+  },
+  {
+    name: "schema-valid project-creation readiness",
+    mutate: (review) => {
+      review.pageSummaries = review.pageSummaries.filter(({ type }) => type !== "product");
+      review.canCreateProject = false;
+    },
+  },
+  {
+    name: "reordered canonical facts",
+    mutate: (review) => {
+      review.sections[0].facts.reverse();
+    },
+  },
+];
 
 describe("createInitialProjectAggregate", () => {
   it("creates the deterministic synchronized ProjectAggregate without history", () => {
@@ -126,12 +196,19 @@ describe("createInitialProjectAggregate", () => {
 
   it("returns detached, deeply frozen and canonically deterministic aggregates", () => {
     const original = initialAggregateFixture({ suffix: "immutable" });
+    const originalBefore = structuredClone(original);
     const detached = structuredClone(original);
     const first = createInitialProjectAggregate(detached);
     const second = createInitialProjectAggregate(structuredClone(original));
+    const independentlyClonedReview = structuredClone(original.review);
+    const third = createInitialProjectAggregate({ ...original, review: independentlyClonedReview });
     expect(first).toEqual(second);
+    expect(third).toEqual(first);
     expect(canonicalValueString(first)).toBe(canonicalValueString(second));
     expectDeeplyFrozen(first);
+    expect(original).toEqual(originalBefore);
+    expect(detached).toEqual(originalBefore);
+    expect(independentlyClonedReview).toEqual(original.review);
 
     detached.catalogue.products[0].price.amount = 1;
     detached.brief.businessIdentity.businessName = "Changed after construction";
@@ -155,13 +232,21 @@ describe("createInitialProjectAggregate", () => {
     expectFactoryError(blocked, "project-creation-not-allowed");
   });
 
-  it("rejects a valid review with canCreateProject false and a missing required page", () => {
-    const input = initialAggregateFixture({ suffix: "missing-page" });
-    const review = structuredClone(input.review);
-    review.pageSummaries = review.pageSummaries.filter(({ type }) => type !== "product");
-    review.canCreateProject = false;
-    expectFactoryError({ ...input, review }, "project-creation-not-allowed");
-  });
+  it.each(schemaValidReviewMutations)(
+    "rejects a schema-valid review with changed $name",
+    ({ mutate }) => {
+      const input = initialAggregateFixture({
+        suffix: "tampered-review",
+        catalogueContext: "controlled-demo-catalogue",
+      });
+      const inputBefore = structuredClone(input);
+      const review = structuredClone(input.review);
+      mutate(review);
+      expect(validateStorefrontGenerationReview(review)).toEqual(review);
+      expectFactoryError({ ...input, review }, "inconsistent-generation-source");
+      expect(input).toEqual(inputBefore);
+    },
+  );
 
   it("rejects same-ID changed briefs and full fingerprint mismatches", () => {
     const input = initialAggregateFixture({ suffix: "changed-brief" });

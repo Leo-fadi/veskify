@@ -19,8 +19,8 @@ createInitialProjectAggregate({
 The inputs are the P3-10 `GuidedStorefrontGenerationPlan`, its exact P3-13
 `StorefrontGenerationReview`, the canonical `StorefrontDesignBrief` used for that run, a complete
 caller-supplied `CatalogueDisplayModel`, the explicit `merchant` or `salesDemo` mode, and an explicit
-ID for the synchronized initial published baseline. The factory does not run generation or review
-projection and does not persist the result. Its output is ready for `ProjectRepository.create`.
+ID for the synchronized initial published baseline. The factory does not run generation and does not
+persist the result. Its output is ready for `ProjectRepository.create`.
 
 ## Approval and source consistency
 
@@ -29,13 +29,13 @@ allowed only for `ready` or `ready-with-warnings` generation and review states w
 snapshot exists, the review permits project creation, blocker diagnostics are absent, materialization
 was executed, and home, collection and product summaries are present.
 
-The factory then verifies the complete handoff correlation: plan/review IDs and status, brief IDs and
-full `createStorefrontDesignBriefFingerprint` values, generated snapshot identity, project identity,
-catalogue reference, explicit `createdAt`, P3-05 BrandSystem, P3-05/P3-06/P3-08 stage-plan IDs,
-selected preset/template IDs, stage statuses, source diagnostics, assumptions, language and catalogue
-context provenance, and page summaries computed from the generated snapshot. These checks compare
-existing results; they do not rerun brand planning, template selection, materialization or the P3-13
-projection.
+The factory obtains the canonical deterministic review through the existing P3-13 public projection
+boundary and requires canonical deep structural equality with the submitted review before approval.
+This protects every review field and preserves canonical ordering without duplicating projection
+logic. It separately verifies the complete generation handoff correlation: brief IDs and full
+`createStorefrontDesignBriefFingerprint` values, generated snapshot identity, project identity,
+catalogue reference, explicit `createdAt`, P3-05 BrandSystem and P3-05/P3-06/P3-08 stage-plan
+relationships. These checks do not rerun brand planning, template selection or materialization.
 
 Failures use `InitialProjectAggregateError` with stable codes:
 
