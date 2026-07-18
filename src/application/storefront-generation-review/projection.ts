@@ -1,4 +1,8 @@
-import { storefrontDesignBriefSchema, type StorefrontDesignBrief } from "@/domain/design-brief";
+import {
+  createStorefrontDesignBriefFingerprint,
+  storefrontDesignBriefSchema,
+  type StorefrontDesignBrief,
+} from "@/domain/design-brief";
 import { getTemplateById } from "@/application/storefront-templates";
 import {
   validateGuidedStorefrontGenerationPlan,
@@ -37,6 +41,7 @@ export function createStorefrontGenerationReviewId(plan: GuidedStorefrontGenerat
       brandFoundationPlanId: plan.brandFoundationPlan.id,
       templateSelectionPlanId: plan.templateSelectionPlan?.id ?? null,
       materializationPlanId: plan.initialStorefrontGenerationPlan?.id ?? null,
+      briefFingerprint: plan.briefFingerprint,
     }),
   )}`;
 }
@@ -206,6 +211,40 @@ function projectPages(plan: GuidedStorefrontGenerationPlan): {
   section: StorefrontGenerationReviewSection;
   pages: StorefrontGenerationReview["pageSummaries"];
 } {
+  const materializationStages = plan.stageDiagnostics.filter(
+    (entry) => entry.stage === "storefront-materialization",
+  );
+  if (materializationStages.length !== 1) {
+    throw new StorefrontGenerationReviewError(
+      "inconsistent-review-source",
+      "The materialization stage status is inconsistent.",
+    );
+  }
+  const materializationStage = materializationStages[0];
+  if (materializationStage.status === "not-run") {
+    if (plan.generatedSnapshot !== null || plan.initialStorefrontGenerationPlan !== null) {
+      throw new StorefrontGenerationReviewError(
+        "inconsistent-review-source",
+        "Materialization cannot be not-run when its output exists.",
+      );
+    }
+    return {
+      section: section(
+        "storefront-pages",
+        copy("Storefront pages", "Kaupan sivut"),
+        copy(
+          "Page materialization was not run because an earlier stage was blocked.",
+          "Sivujen muodostusta ei suoritettu, koska aiempi vaihe estyi.",
+        ),
+        "not-applicable",
+        "P3-08 storefront materialization",
+        "storefront-materialization",
+        [],
+        materializationStage.diagnostics.map((item) => item.code),
+      ),
+      pages: [],
+    };
+  }
   const snapshot = plan.generatedSnapshot;
   if (!snapshot) {
     return {
@@ -247,6 +286,7 @@ function projectPages(plan: GuidedStorefrontGenerationPlan): {
       pages.map((page) =>
         fact(page.type, copy(page.type, page.type), `${page.totalSectionCount} sections`),
       ),
+      materializationStage.diagnostics.map((item) => item.code),
     ),
     pages,
   };
@@ -345,6 +385,11 @@ export function createStorefrontGenerationReview(
         "inconsistent-review-source",
         "The review brief does not match the guided generation plan.",
       );
+    if (createStorefrontDesignBriefFingerprint(brief) !== plan.briefFingerprint)
+      throw new StorefrontGenerationReviewError(
+        "inconsistent-review-source",
+        "The review brief does not match the guided generation source version.",
+      );
   }
   const diagnostics = projectDiagnostics(plan);
   const warnings = diagnostics.filter((item) => item.severity === "warning");
@@ -372,6 +417,7 @@ export function createStorefrontGenerationReview(
     id: createStorefrontGenerationReviewId(plan),
     guidedGenerationPlanId: plan.id,
     briefId: plan.briefId,
+    briefFingerprint: plan.briefFingerprint,
     status: plan.status,
     canCreateProject,
     title: copy("Review your storefront plan", "Tarkista kaupan suunnitelma"),
@@ -434,6 +480,10 @@ export function createStorefrontGenerationReview(
     warnings,
     blockers,
     sourceDiagnostics: diagnostics,
+    stageStatuses: plan.stageDiagnostics.map((stage) => ({
+      stage: stage.stage,
+      status: stage.status,
+    })),
     pageSummaries: pages.pages,
     languagePlan: languages.languagePlan,
     catalogueContext: brief?.catalogueContext ?? null,

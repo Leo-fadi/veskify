@@ -19,6 +19,7 @@ const aggregate = (): ProjectAggregate => ({
 const repository = (get: ProjectRepository["get"]): ProjectRepository => ({
   list: vi.fn(),
   get: vi.fn(get),
+  create: vi.fn(),
   saveDraft: vi.fn(),
   publish: vi.fn(),
   restore: vi.fn(),

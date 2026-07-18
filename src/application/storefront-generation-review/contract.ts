@@ -24,6 +24,7 @@ const reviewStageSchema = z.enum([
   "template-selection",
   "storefront-materialization",
 ]);
+const stageExecutionStatusSchema = z.enum(["executed", "not-run"]);
 
 export const storefrontGenerationReviewFactSchema = z
   .object({
@@ -108,12 +109,17 @@ export const storefrontGenerationReviewProvenanceSchema = z
   })
   .strict();
 
+export const storefrontGenerationReviewStageStatusSchema = z
+  .object({ stage: reviewStageSchema, status: stageExecutionStatusSchema })
+  .strict();
+
 export const storefrontGenerationReviewSchema = z
   .object({
     schemaVersion: z.literal(STOREFRONT_GENERATION_REVIEW_SCHEMA_VERSION),
     id: z.string().trim().min(1),
     guidedGenerationPlanId: z.string().trim().min(1),
     briefId: z.string().trim().min(1),
+    briefFingerprint: z.string().trim().min(1),
     status: reviewStatusSchema,
     canCreateProject: z.boolean(),
     title: localizedCopySchema,
@@ -123,6 +129,7 @@ export const storefrontGenerationReviewSchema = z
     warnings: z.array(storefrontGenerationReviewDiagnosticSchema),
     blockers: z.array(storefrontGenerationReviewDiagnosticSchema),
     sourceDiagnostics: z.array(storefrontGenerationReviewDiagnosticSchema),
+    stageStatuses: z.array(storefrontGenerationReviewStageStatusSchema),
     pageSummaries: z.array(storefrontGenerationReviewPageSchema),
     languagePlan: storefrontGenerationReviewLanguageSchema,
     catalogueContext: storefrontGenerationReviewCatalogueContextSchema.nullable(),
@@ -148,6 +155,38 @@ export const storefrontGenerationReviewSchema = z
       "warnings",
       "blockers",
     ];
+    const expectedStages = ["brand-foundation", "template-selection", "storefront-materialization"];
+    if (
+      canonicalValueString(review.stageStatuses.map((stage) => stage.stage)) !==
+      canonicalValueString(expectedStages)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["stageStatuses"],
+        message: "Stage statuses must use the canonical order.",
+      });
+    }
+    const brandStage = review.stageStatuses.find((stage) => stage.stage === "brand-foundation");
+    const templateStage = review.stageStatuses.find(
+      (stage) => stage.stage === "template-selection",
+    );
+    const materializationStage = review.stageStatuses.find(
+      (stage) => stage.stage === "storefront-materialization",
+    );
+    if (brandStage?.status !== "executed") {
+      context.addIssue({
+        code: "custom",
+        path: ["stageStatuses"],
+        message: "Brand foundation must be executed.",
+      });
+    }
+    if (templateStage?.status === "not-run" && review.templateSelectionPlanId !== null) {
+      context.addIssue({
+        code: "custom",
+        path: ["templateSelectionPlanId"],
+        message: "A not-run template stage cannot have a plan ID.",
+      });
+    }
     if (
       canonicalValueString(review.sections.map((section) => section.id)) !==
       canonicalValueString(expectedSections)
@@ -201,11 +240,68 @@ export const storefrontGenerationReviewSchema = z
         message: "Blocked reviews cannot allow project creation.",
       });
     }
+    if (
+      review.status === "blocked" &&
+      (review.generatedSnapshotId !== null || review.pageSummaries.length > 0)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["status"],
+        message: "Blocked reviews cannot contain a generated snapshot or page summaries.",
+      });
+    }
     if (review.generatedSnapshotId === null && review.pageSummaries.length > 0) {
       context.addIssue({
         code: "custom",
         path: ["pageSummaries"],
         message: "A review without a snapshot cannot contain pages.",
+      });
+    }
+    const pagesSection = review.sections.find((section) => section.id === "storefront-pages");
+    if (materializationStage?.status === "not-run") {
+      if (
+        review.materializationPlanId !== null ||
+        review.generatedSnapshotId !== null ||
+        review.pageSummaries.length > 0 ||
+        pagesSection?.status !== "not-applicable"
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["stageStatuses"],
+          message: "A not-run materialization must not expose materialized pages or IDs.",
+        });
+      }
+      if (review.sourceDiagnostics.some((item) => item.stage === "storefront-materialization")) {
+        context.addIssue({
+          code: "custom",
+          path: ["sourceDiagnostics"],
+          message: "A not-run materialization cannot have diagnostics.",
+        });
+      }
+    }
+    if (
+      materializationStage?.status === "executed" &&
+      review.generatedSnapshotId === null &&
+      pagesSection?.status !== "blocked"
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["sections"],
+        message: "An executed materialization without a snapshot must block pages.",
+      });
+    }
+    if (review.generatedSnapshotId !== null && materializationStage?.status !== "executed") {
+      context.addIssue({
+        code: "custom",
+        path: ["generatedSnapshotId"],
+        message: "A snapshot requires executed materialization.",
+      });
+    }
+    if (review.pageSummaries.length > 0 && materializationStage?.status !== "executed") {
+      context.addIssue({
+        code: "custom",
+        path: ["pageSummaries"],
+        message: "Page summaries require executed materialization.",
       });
     }
     if (review.templateSelectionPlanId === null && review.selectedTemplateId !== null) {

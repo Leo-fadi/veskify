@@ -16,6 +16,10 @@ values remain exact. The review contains a versioned deterministic ID, localized
 summary, fixed review sections, page summaries, language and catalogue facts, source diagnostics,
 assumptions, warnings, blockers and provenance.
 
+The review carries the P3-10 full `briefFingerprint` as focused provenance. When a canonical brief is
+supplied to the factory, its full validated fingerprint must match; same-ID edited briefs are rejected
+instead of being projected over an older generation.
+
 ## Fixed sections and localization
 
 Sections are always ordered: business, brand-foundation, storefront-template, storefront-pages,
@@ -36,6 +40,10 @@ Blocked plans remain reviewable: completed stage sections remain visible, not-ru
 not applicable, page summaries stay empty when no snapshot exists, and project creation remains
 disabled. No placeholder page or commerce data is invented.
 
+The materialization stage status is projected explicitly. A not-run materialization produces a
+not-applicable pages section without diagnostics or fabricated facts. An executed materialization
+without a snapshot produces a blocked pages section tied only to its own diagnostics.
+
 ## Consistency and immutability
 
 The contract independently validates fixed section order, diagnostic counts, page count reconciliation,
@@ -52,6 +60,6 @@ this projection.
 ## Specification traceability
 
 This boundary fulfils SDD §4.1 guided creation and review handoff; §6.2 FR-009, FR-010, FR-011,
-FR-013–FR-016, FR-040, FR-053 and FR-054; §12.8 validation/application pipeline; §15.3–§15.5
+FR-013–FR-016, FR-040, FR-053–FR-056; §12.8 validation/application pipeline; §15.3–§15.5
 snapshot, page/section and BrandSystem contracts; §16.2/§16.5 architecture and renderer boundaries;
-§17.1 application services; and §21.2 AC-001, AC-002, AC-013, AC-016, AC-023 and AC-024.
+§17.1 application services; and §21.2 AC-001, AC-002, AC-013, AC-016, AC-023–AC-026.

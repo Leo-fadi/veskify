@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { normalizeStorefrontDesignBriefInput } from "@/domain/design-brief";
+import { createStorefrontDesignBriefFingerprint } from "@/domain/design-brief";
 import { canonicalValueString, storefrontSnapshotSchema } from "@/domain/storefront";
 import { validateRegisteredSnapshot } from "@/components/registry";
 import {
@@ -49,6 +50,7 @@ describe("guided storefront generation orchestrator", () => {
     const result = generateGuidedStorefront(input());
     expect(result.status).toBe("ready-with-warnings");
     expect(result.brandFoundationPlan.briefId).toBe(result.briefId);
+    expect(result.briefFingerprint).toBe(createStorefrontDesignBriefFingerprint(input().brief));
     expect(result.templateSelectionPlan?.briefFingerprint).toMatch(/^brief-selection-v1_/);
     expect(result.initialStorefrontGenerationPlan?.templateSelectionPlanId).toBe(
       result.templateSelectionPlan?.id,
@@ -63,6 +65,21 @@ describe("guided storefront generation orchestrator", () => {
     ]);
     expect(() => storefrontSnapshotSchema.parse(result.generatedSnapshot)).not.toThrow();
     expect(() => validateRegisteredSnapshot(result.generatedSnapshot!)).not.toThrow();
+  });
+
+  it("carries the full brief fingerprint through blocked outcomes", () => {
+    const currentBrief = brief({ catalogueContext: null });
+    const result = generateGuidedStorefront({
+      brief: currentBrief,
+      projectId: "project_blocked_fingerprint",
+      snapshotId: "snapshot_blocked_fingerprint",
+      catalogueRef: "catalogue_blocked_fingerprint",
+      createdAt,
+    });
+    expect(result.status).toBe("blocked");
+    expect(result.briefFingerprint).toBe(createStorefrontDesignBriefFingerprint(currentBrief));
+    expect(result.templateSelectionPlan?.status).toBe("blocked");
+    expect(result.initialStorefrontGenerationPlan).toBeNull();
   });
 
   it("preserves empty-catalogue warnings and high-contrast brand warnings", () => {

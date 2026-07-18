@@ -50,6 +50,7 @@ function forward(
   return {
     list: () => inner.list(),
     get: (id) => inner.get(id),
+    create: (aggregate) => inner.create(aggregate),
     saveDraft: (id, snapshot, expected) => inner.saveDraft(id, snapshot, expected),
     publish: (id, expectation) => inner.publish(id, expectation),
     restore: (id, snapshotId) => inner.restore(id, snapshotId),

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { normalizeStorefrontDesignBriefInput } from "@/domain/design-brief";
+import { createStorefrontDesignBriefFingerprint } from "@/domain/design-brief";
 import { generateGuidedStorefront } from "@/application/guided-storefront-generation";
 import {
   cloneStorefrontGenerationReview,
@@ -50,6 +51,7 @@ describe("storefront generation review projection", () => {
   it("projects a ready generation into fixed merchant-readable sections", () => {
     const { plan, currentBrief } = generation();
     const review = createStorefrontGenerationReview(plan, currentBrief);
+    expect(review.briefFingerprint).toBe(plan.briefFingerprint);
     expect(review.status).toBe("ready-with-warnings");
     expect(review.canCreateProject).toBe(true);
     expect(review.sections.map((section) => section.id)).toEqual([
@@ -123,6 +125,28 @@ describe("storefront generation review projection", () => {
     expect(review.sections.find((section) => section.id === "catalogue")?.status).toBe("warning");
   });
 
+  it("rejects every same-ID canonical brief mutation while accepting detached equivalents", () => {
+    const { plan, currentBrief } = generation();
+    const detached = structuredClone(currentBrief);
+    expect(createStorefrontGenerationReview(plan, detached).briefFingerprint).toBe(
+      createStorefrontDesignBriefFingerprint(detached),
+    );
+    const mutations = [
+      { businessIdentity: { businessName: "Changed" } },
+      { businessIdentity: { shortDescription: "Changed description" } },
+      { creationContext: { type: "demo-storefront" } },
+      { languagePlan: { selectedLanguages: ["fi"], primaryLanguage: "fi" } },
+      { catalogueContext: "empty-catalogue" },
+      { brandDirection: { visualStyleDirection: "editorial" } },
+    ];
+    mutations.forEach((mutation) => {
+      const changed = brief(mutation);
+      expect(() => createStorefrontGenerationReview(plan, changed)).toThrow(
+        expect.objectContaining({ code: "inconsistent-review-source" }),
+      );
+    });
+  });
+
   it("projects blocked plans without fabricated pages and disables creation", () => {
     const currentBrief = brief();
     const plan = generateGuidedStorefront({
@@ -138,7 +162,7 @@ describe("storefront generation review projection", () => {
     expect(review.canCreateProject).toBe(false);
     expect(review.pageSummaries).toEqual([]);
     expect(review.sections.find((section) => section.id === "storefront-pages")?.status).toBe(
-      "blocked",
+      "not-applicable",
     );
     expect(review.sections.find((section) => section.id === "blockers")?.status).toBe("blocked");
   });
@@ -172,5 +196,56 @@ describe("storefront generation review projection", () => {
     const invalidCounts = structuredClone(review);
     invalidCounts.pageSummaries[0].visibleSectionCount += 1;
     expect(() => validateStorefrontGenerationReview(invalidCounts)).toThrow();
+  });
+
+  it("rejects corrupted stage-status combinations and preserves not-run semantics", () => {
+    const currentBrief = brief();
+    const blockedPlan = generateGuidedStorefront({
+      brief: currentBrief,
+      projectId: "project_stage_status",
+      snapshotId: "snapshot_stage_status",
+      catalogueRef: "catalogue_stage_status",
+      createdAt,
+      preferredTemplateId: "template_unknown",
+    });
+    const review = createStorefrontGenerationReview(blockedPlan, currentBrief);
+    expect(review.stageStatuses).toEqual([
+      { stage: "brand-foundation", status: "executed" },
+      { stage: "template-selection", status: "executed" },
+      { stage: "storefront-materialization", status: "not-run" },
+    ]);
+    expect(review.sections.find((section) => section.id === "storefront-pages")?.status).toBe(
+      "not-applicable",
+    );
+    expect(
+      review.sourceDiagnostics.some((item) => item.stage === "storefront-materialization"),
+    ).toBe(false);
+
+    const invalid = structuredClone(blockedPlan);
+    invalid.stageDiagnostics = invalid.stageDiagnostics.filter(
+      (entry) => entry.stage !== "storefront-materialization",
+    );
+    expect(() => createStorefrontGenerationReview(invalid, currentBrief)).toThrow(
+      expect.objectContaining({ code: "inconsistent-review-source" }),
+    );
+
+    const snapshotWithNotRun = structuredClone(blockedPlan);
+    snapshotWithNotRun.status = "ready";
+    snapshotWithNotRun.blockers = [];
+    snapshotWithNotRun.stageDiagnostics = snapshotWithNotRun.stageDiagnostics.map((entry) =>
+      entry.stage === "storefront-materialization"
+        ? { ...entry, status: "not-run" as const }
+        : entry,
+    );
+    snapshotWithNotRun.generatedSnapshot = {
+      ...generation().plan.generatedSnapshot!,
+      id: snapshotWithNotRun.snapshotId,
+      projectId: snapshotWithNotRun.projectId,
+      catalogueRef: snapshotWithNotRun.catalogueRef,
+      createdAt: snapshotWithNotRun.createdAt,
+    };
+    expect(() => createStorefrontGenerationReview(snapshotWithNotRun, currentBrief)).toThrow(
+      expect.objectContaining({ code: "inconsistent-review-source" }),
+    );
   });
 });

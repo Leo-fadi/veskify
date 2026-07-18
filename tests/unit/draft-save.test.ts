@@ -197,6 +197,7 @@ describe("P2-07 validated editor draft save", () => {
     const racing: ProjectRepository = {
       list: () => inner.list(),
       get: (id) => inner.get(id),
+      create: (aggregate) => inner.create(aggregate),
       saveDraft: async (id, snapshot, expected) => {
         const concurrent = structuredClone(aurumNordicSeed.draftSnapshot);
         concurrent.id = "snapshot_draft_concurrent";
@@ -243,6 +244,7 @@ describe("P2-07 validated editor draft save", () => {
         }
         return inner.get(id);
       },
+      create: (aggregate) => inner.create(aggregate),
       saveDraft: (id, snapshot, expected) => inner.saveDraft(id, snapshot, expected),
       publish: (id, revision) => inner.publish(id, revision),
       restore: (id, snapshotId) => inner.restore(id, snapshotId),
@@ -289,6 +291,7 @@ describe("P2-07 validated editor draft save", () => {
         }
         return inner.get(id);
       },
+      create: (aggregate) => inner.create(aggregate),
       saveDraft: (id, snapshot, expected) => inner.saveDraft(id, snapshot, expected),
       publish: (id, revision) => inner.publish(id, revision),
       restore: (id, snapshotId) => inner.restore(id, snapshotId),
@@ -314,6 +317,7 @@ describe("P2-07 validated editor draft save", () => {
     const failing: ProjectRepository = {
       list: () => inner.list(),
       get: (id) => inner.get(id),
+      create: (aggregate) => inner.create(aggregate),
       saveDraft: vi.fn(() => Promise.reject(new Error("storage unavailable"))),
       publish: (id, revision) => inner.publish(id, revision),
       restore: (id, snapshotId) => inner.restore(id, snapshotId),

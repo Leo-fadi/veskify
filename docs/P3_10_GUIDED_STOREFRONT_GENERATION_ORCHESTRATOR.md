@@ -18,6 +18,14 @@ plan, P3-06 selection plan when executed, P3-08 generation plan when executed, t
 stage diagnostics, aggregated diagnostics, assumptions, warnings, blockers and provenance. Plans are
 serializable, detached and deeply immutable.
 
+Each plan also carries `briefFingerprint`, a full canonical fingerprint of the validated
+`StorefrontDesignBrief`. It binds review and later handoff to the exact brief version used for the
+run. This is distinct from P3-06's selection fingerprint, which intentionally covers only
+selection-relevant fields for stale-template detection.
+
+Adding this persisted-contract field bumped the guided-generation plan schema to version `2`; older
+in-memory serialized shapes are rejected rather than silently migrated.
+
 ## Fixed stage order and failure policy
 
 The orchestrator calls the existing public APIs in one fixed sequence:

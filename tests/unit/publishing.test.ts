@@ -305,6 +305,7 @@ describe("P2-11 explicit publish confirmation", () => {
     const defective: ProjectRepository = {
       list: () => value.list(),
       get: (id) => value.get(id),
+      create: (aggregate) => value.create(aggregate),
       saveDraft: (id, snapshot, expected) => value.saveDraft(id, snapshot, expected),
       publish: async (id, expectation) => {
         const aggregate = await value.publish(id, expectation);
@@ -385,6 +386,7 @@ describe("P2-11 explicit publish confirmation", () => {
         published.pages[0].title.en = "Concurrent published content";
         return aggregate;
       },
+      create: (aggregate) => value.create(aggregate),
       saveDraft: (id, snapshot, expected) => value.saveDraft(id, snapshot, expected),
       publish: (id, expectation) => value.publish(id, expectation),
       restore: (id, snapshotId) => value.restore(id, snapshotId),
@@ -403,6 +405,7 @@ describe("P2-11 explicit publish confirmation", () => {
     const racing: ProjectRepository = {
       list: () => value.list(),
       get: (id) => value.get(id),
+      create: (aggregate) => value.create(aggregate),
       saveDraft: (id, snapshot, expected) => value.saveDraft(id, snapshot, expected),
       publish: async (id, expectation) => {
         const aggregate = await value.get(id);
