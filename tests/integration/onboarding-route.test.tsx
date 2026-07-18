@@ -415,6 +415,74 @@ describe("guided onboarding route", () => {
     });
   });
 
+  it("completes O-05 in English, persists controlled choices, and renders Finnish labels", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: /Create a new storefront/i }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.type(screen.getByRole("textbox", { name: "Business name" }), "Aurum Nordic");
+    await user.type(
+      screen.getByRole("textbox", { name: "Short business description" }),
+      "A Helsinki jewellery studio.",
+    );
+    await user.selectOptions(screen.getByRole("combobox", { name: "Industry" }), "jewellery");
+    await user.type(
+      screen.getByRole("textbox", { name: "Target customer" }),
+      "Customers looking for Nordic jewellery.",
+    );
+    await user.type(screen.getByRole("textbox", { name: "Primary market" }), "Finland");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByRole("heading", { name: "Existing sources" });
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByRole("heading", { name: "Brand assets" });
+    await user.click(screen.getByRole("button", { name: "Skip for now" }));
+
+    expect(await screen.findByRole("heading", { name: "Visual direction" })).toBeVisible();
+    const editorial = screen.getByRole("radio", { name: /Editorial/i });
+    await user.click(editorial);
+    expect(editorial).toBeChecked();
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Typography direction" }),
+      "serif",
+    );
+    await user.click(screen.getByRole("button", { name: "Storytelling" }));
+    await user.selectOptions(screen.getByRole("combobox", { name: "Visual density" }), "airy");
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Accessibility" }),
+      "high-contrast",
+    );
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("heading", { name: "Catalogue" })).toBeVisible();
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      activeStepId: "catalogue",
+      completedStepIds: [
+        "creation-path",
+        "business-basics",
+        "existing-sources",
+        "visual-direction",
+      ],
+      designBrief: {
+        brandDirection: {
+          visualStyleDirection: "editorial",
+          typographyDirection: "serif",
+          toneKeywords: ["storytelling"],
+        },
+        generationPreferences: {
+          visualDensity: "airy",
+          accessibilityPreference: "high-contrast",
+        },
+      },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    await screen.findByRole("heading", { name: "Visual direction" });
+    await user.click(screen.getByRole("radio", { name: "Suomi" }));
+    expect(await screen.findByRole("heading", { name: "Visuaalinen suunta" })).toBeVisible();
+    expect(screen.getByRole("radio", { name: /Kerronnallinen/i })).toBeVisible();
+  });
+
   it("offers safe recovery for corrupt storage and reset confirmation", async () => {
     const user = userEvent.setup();
     localStorage.setItem(ONBOARDING_SESSION_STORAGE_KEY, "broken");

@@ -25,6 +25,12 @@ import {
   type OnboardingSessionLoadResult,
   type OnboardingSessionRepository,
 } from "@/services/onboarding";
+import {
+  defaultVisualDirectionPreferences,
+  isVisualDirectionToneKeyword,
+  visualDirectionToneKeywords,
+  type VisualDirectionDraft,
+} from "./visual-direction";
 
 export type OnboardingTransitionErrorCode =
   | "CREATION_PATH_REQUIRED"
@@ -58,6 +64,20 @@ export class OnboardingExistingSourcesValidationError extends Error {
     super(code);
     this.name = "OnboardingExistingSourcesValidationError";
     this.code = code;
+  }
+}
+
+export type OnboardingVisualDirectionValidationCode =
+  | "VISUAL_STYLE_REQUIRED"
+  | "VISUAL_TONE_KEYWORD_UNSUPPORTED"
+  | "VISUAL_TONE_KEYWORDS_DUPLICATE"
+  | "VISUAL_TONE_KEYWORDS_LIMIT"
+  | "VISUAL_DIRECTION_PREFERENCE_INVALID";
+
+export class OnboardingVisualDirectionValidationError extends Error {
+  constructor(readonly code: OnboardingVisualDirectionValidationCode) {
+    super(code);
+    this.name = "OnboardingVisualDirectionValidationError";
   }
 }
 
@@ -168,6 +188,7 @@ export class OnboardingService {
     const step = getOnboardingStep(session.activeStepId);
     if (step.id === "business-basics") return this.completeBusinessBasics(session);
     if (step.id === "existing-sources") return this.completeExistingSources(session);
+    if (step.id === "visual-direction") return this.completeVisualDirection(session);
     if (!step.completableNow) throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
     if (step.id === "creation-path" && session.creationPath === null) {
       throw new OnboardingTransitionError("CREATION_PATH_REQUIRED");
@@ -305,6 +326,93 @@ export class OnboardingService {
     });
   }
 
+  async updateVisualDirection(
+    input: OnboardingSession,
+    draft: VisualDirectionDraft,
+  ): Promise<OnboardingSession> {
+    const session = this.#validateVisualDirectionStep(input);
+    const timestamp = this.#now();
+    const validated = this.#validateVisualDirectionDraft(draft);
+    const designBrief = this.#applyVisualDirection(session, validated, timestamp);
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        completedStepIds: session.completedStepIds.filter(
+          (stepId) => stepId !== "visual-direction",
+        ),
+        skippedStepIds: session.skippedStepIds.filter((stepId) => stepId !== "visual-direction"),
+      },
+      timestamp,
+    );
+  }
+
+  async completeVisualDirection(
+    input: OnboardingSession,
+    draft?: VisualDirectionDraft,
+  ): Promise<OnboardingSession> {
+    const session = this.#validateVisualDirectionStep(input);
+    const validated = this.#validateVisualDirectionDraft(
+      draft ?? this.#visualDirectionDraftFromSession(session),
+    );
+    if (validated.visualStyleDirection === null) {
+      throw new OnboardingVisualDirectionValidationError("VISUAL_STYLE_REQUIRED");
+    }
+    const timestamp = this.#now();
+    const designBrief = this.#applyVisualDirection(session, validated, timestamp);
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        activeStepId: "catalogue",
+        completedStepIds: session.completedStepIds.includes("visual-direction")
+          ? session.completedStepIds
+          : [...session.completedStepIds, "visual-direction"],
+        skippedStepIds: session.skippedStepIds.filter((stepId) => stepId !== "visual-direction"),
+      },
+      timestamp,
+    );
+  }
+
+  async skipVisualDirection(input: OnboardingSession): Promise<OnboardingSession> {
+    const session = this.#validateVisualDirectionStep(input);
+    const step = getOnboardingStep("visual-direction");
+    if (!step.optional) throw new OnboardingTransitionError("REQUIRED_STEP_CANNOT_BE_SKIPPED");
+    if (!step.nextStepId) throw new OnboardingTransitionError("NO_NEXT_STEP");
+    const timestamp = this.#now();
+    let designBrief = updateStorefrontDesignBriefArea(
+      session.designBrief,
+      "brandDirection",
+      {
+        visualStyleDirection: null,
+        typographyDirection: null,
+        imageryDirection: null,
+        toneKeywords: [],
+      },
+      timestamp,
+    );
+    designBrief = updateStorefrontDesignBriefArea(
+      designBrief,
+      "generationPreferences",
+      defaultVisualDirectionPreferences,
+      timestamp,
+    );
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        activeStepId: step.nextStepId,
+        completedStepIds: session.completedStepIds.filter(
+          (stepId) => stepId !== "visual-direction",
+        ),
+        skippedStepIds: session.skippedStepIds.includes("visual-direction")
+          ? session.skippedStepIds
+          : [...session.skippedStepIds, "visual-direction"],
+      },
+      timestamp,
+    );
+  }
+
   async goBack(input: OnboardingSession): Promise<OnboardingSession> {
     const session = onboardingSessionSchema.parse(input);
     const previousStepId = getOnboardingStep(session.activeStepId).previousStepId;
@@ -316,6 +424,7 @@ export class OnboardingService {
     const session = this.#validateActive(input);
     const step = getOnboardingStep(session.activeStepId);
     if (step.id === "existing-sources") return this.skipExistingSources(session);
+    if (step.id === "visual-direction") return this.skipVisualDirection(session);
     if (!step.optional) throw new OnboardingTransitionError("REQUIRED_STEP_CANNOT_BE_SKIPPED");
     if (!step.nextStepId) throw new OnboardingTransitionError("NO_NEXT_STEP");
     const skippedStepIds = session.skippedStepIds.includes(step.id)
@@ -404,6 +513,85 @@ export class OnboardingService {
       throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
     }
     return session;
+  }
+
+  #validateVisualDirectionStep(input: OnboardingSession): OnboardingSession {
+    const session = this.#validateActive(input);
+    if (session.activeStepId !== "visual-direction") {
+      throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
+    }
+    return session;
+  }
+
+  #visualDirectionDraftFromSession(session: OnboardingSession): VisualDirectionDraft {
+    return {
+      visualStyleDirection: session.designBrief.brandDirection.visualStyleDirection,
+      typographyDirection: session.designBrief.brandDirection.typographyDirection,
+      imageryDirection: session.designBrief.brandDirection.imageryDirection,
+      toneKeywords: session.designBrief.brandDirection.toneKeywords,
+      generationPreferences: session.designBrief.generationPreferences,
+    };
+  }
+
+  #validateVisualDirectionDraft(draft: VisualDirectionDraft): VisualDirectionDraft {
+    if (draft.toneKeywords.length > 6) {
+      throw new OnboardingVisualDirectionValidationError("VISUAL_TONE_KEYWORDS_LIMIT");
+    }
+    const normalizedKeywords = draft.toneKeywords.map((keyword) =>
+      keyword.trim().toLocaleLowerCase(),
+    );
+    if (normalizedKeywords.some((keyword) => !isVisualDirectionToneKeyword(keyword))) {
+      throw new OnboardingVisualDirectionValidationError("VISUAL_TONE_KEYWORD_UNSUPPORTED");
+    }
+    if (new Set(normalizedKeywords).size !== normalizedKeywords.length) {
+      throw new OnboardingVisualDirectionValidationError("VISUAL_TONE_KEYWORDS_DUPLICATE");
+    }
+    normalizedKeywords.sort(
+      (left, right) =>
+        visualDirectionToneKeywords.indexOf(left as (typeof visualDirectionToneKeywords)[number]) -
+        visualDirectionToneKeywords.indexOf(right as (typeof visualDirectionToneKeywords)[number]),
+    );
+    const preferences = defaultVisualDirectionPreferences;
+    const preferenceValues = draft.generationPreferences;
+    if (
+      !["compact", "balanced", "airy"].includes(preferenceValues.visualDensity) ||
+      !["concise", "balanced", "storytelling"].includes(preferenceValues.contentEmphasis) ||
+      !["low", "balanced", "high"].includes(preferenceValues.merchandisingEmphasis) ||
+      !["minimal", "balanced", "rich"].includes(preferenceValues.sectionRichness) ||
+      !["standard", "high-contrast"].includes(preferenceValues.accessibilityPreference)
+    ) {
+      throw new OnboardingVisualDirectionValidationError("VISUAL_DIRECTION_PREFERENCE_INVALID");
+    }
+    return {
+      ...draft,
+      toneKeywords: normalizedKeywords,
+      generationPreferences: { ...preferences, ...preferenceValues },
+    };
+  }
+
+  #applyVisualDirection(
+    session: OnboardingSession,
+    draft: VisualDirectionDraft,
+    timestamp: string,
+  ) {
+    let designBrief = updateStorefrontDesignBriefArea(
+      session.designBrief,
+      "brandDirection",
+      {
+        visualStyleDirection: draft.visualStyleDirection,
+        typographyDirection: draft.typographyDirection,
+        imageryDirection: draft.imageryDirection,
+        toneKeywords: [...draft.toneKeywords],
+      },
+      timestamp,
+    );
+    designBrief = updateStorefrontDesignBriefArea(
+      designBrief,
+      "generationPreferences",
+      draft.generationPreferences,
+      timestamp,
+    );
+    return designBrief;
   }
 
   async #commit(input: OnboardingSession, timestamp = this.#now()): Promise<OnboardingSession> {

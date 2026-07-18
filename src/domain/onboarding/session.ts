@@ -75,6 +75,14 @@ type RefinementContext = {
   addIssue(issue: { code: "custom"; path: (string | number)[]; message: string }): void;
 };
 
+const defaultVisualDirectionPreferences = {
+  visualDensity: "balanced",
+  contentEmphasis: "balanced",
+  merchandisingEmphasis: "balanced",
+  sectionRichness: "balanced",
+  accessibilityPreference: "standard",
+} as const;
+
 function validateWorkflowInvariants(
   session: SessionWorkflowFields,
   context: RefinementContext,
@@ -240,6 +248,65 @@ export const onboardingSessionSchema = z
         path: ["designBrief", "creationContext", "existingStorefrontUrl"],
         message: "A skipped redesign existing-sources step must not retain a URL.",
       });
+    }
+
+    const visualDirectionCompleted = session.completedStepIds.includes("visual-direction");
+    const visualDirectionSkipped = session.skippedStepIds.includes("visual-direction");
+    const visualDirection = session.designBrief.brandDirection;
+    const preferences = session.designBrief.generationPreferences;
+
+    if (visualDirectionCompleted && visualDirection.visualStyleDirection === null) {
+      context.addIssue({
+        code: "custom",
+        path: ["completedStepIds"],
+        message: "A completed visual-direction step requires a visual style.",
+      });
+    }
+
+    if (visualDirectionSkipped) {
+      if (visualDirection.visualStyleDirection !== null) {
+        context.addIssue({
+          code: "custom",
+          path: ["designBrief", "brandDirection", "visualStyleDirection"],
+          message: "A skipped visual-direction step must clear the visual style.",
+        });
+      }
+      if (visualDirection.typographyDirection !== null) {
+        context.addIssue({
+          code: "custom",
+          path: ["designBrief", "brandDirection", "typographyDirection"],
+          message: "A skipped visual-direction step must clear typography direction.",
+        });
+      }
+      if (visualDirection.imageryDirection !== null) {
+        context.addIssue({
+          code: "custom",
+          path: ["designBrief", "brandDirection", "imageryDirection"],
+          message: "A skipped visual-direction step must clear imagery direction.",
+        });
+      }
+      if (visualDirection.toneKeywords.length > 0) {
+        context.addIssue({
+          code: "custom",
+          path: ["designBrief", "brandDirection", "toneKeywords"],
+          message: "A skipped visual-direction step must clear tone keywords.",
+        });
+      }
+      if (
+        preferences.visualDensity !== defaultVisualDirectionPreferences.visualDensity ||
+        preferences.contentEmphasis !== defaultVisualDirectionPreferences.contentEmphasis ||
+        preferences.merchandisingEmphasis !==
+          defaultVisualDirectionPreferences.merchandisingEmphasis ||
+        preferences.sectionRichness !== defaultVisualDirectionPreferences.sectionRichness ||
+        preferences.accessibilityPreference !==
+          defaultVisualDirectionPreferences.accessibilityPreference
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["designBrief", "generationPreferences"],
+          message: "A skipped visual-direction step must use balanced standard preferences.",
+        });
+      }
     }
   });
 

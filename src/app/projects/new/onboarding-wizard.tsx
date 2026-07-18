@@ -7,6 +7,8 @@ import {
   OnboardingMutationQueue,
   OnboardingService,
   OnboardingTransitionError,
+  OnboardingVisualDirectionValidationError,
+  type VisualDirectionDraft,
 } from "@/application/onboarding";
 import {
   businessBasicsFieldIds,
@@ -18,7 +20,9 @@ import {
 } from "@/domain/onboarding";
 import {
   storefrontIndustryValues,
+  type BrandDirection,
   type BusinessIdentity,
+  type GenerationPreferences,
   type StorefrontIndustry,
 } from "@/domain/design-brief";
 import type { Locale } from "@/domain/shared";
@@ -279,7 +283,194 @@ const existingSourcesText = {
   },
 } as const;
 
+const visualDirectionText = {
+  en: {
+    summary: "Choose a visual style before continuing.",
+    styleLegend: "Visual style",
+    styleHelp: "This sets the overall feeling of your storefront.",
+    typographyLegend: "Typography direction",
+    typographyHelp: "Leave this as Recommended if you want the planner to choose.",
+    imageryLegend: "Imagery direction",
+    imageryHelp: "Leave this as Recommended if you want the planner to choose.",
+    toneLegend: "Tone of voice",
+    toneHelp: "Choose up to six words. You can remove a word with the keyboard.",
+    toneLimit: "Choose no more than six tone words.",
+    toneInvalid: "Choose tone words from the available options.",
+    toneDuplicate: "Each tone word can be selected only once.",
+    preferencesLegend: "Generation preferences",
+    density: "Visual density",
+    content: "Content emphasis",
+    merchandising: "Merchandising emphasis",
+    richness: "Section richness",
+    accessibility: "Accessibility",
+    accessibilityHelp: "High contrast may adjust unsafe colours later so text remains readable.",
+    recommended: "Recommended",
+    remove: "Remove",
+    styles: {
+      minimal: ["Minimal", "Calm, clear layouts with generous space."],
+      editorial: ["Editorial", "Magazine-like composition with considered storytelling."],
+      luxury: ["Luxury", "Refined details and a premium, composed feel."],
+      playful: ["Playful", "Friendly energy, colour and approachable movement."],
+      bold: ["Bold", "Confident contrast and strong visual statements."],
+      natural: ["Natural", "Warm, grounded materials and an easy rhythm."],
+    },
+    typography: {
+      serif: "Serif",
+      sans: "Sans serif",
+      mixed: "Mixed",
+      system: "System",
+    },
+    imagery: {
+      studio: "Studio",
+      lifestyle: "Lifestyle",
+      editorial: "Editorial",
+      mixed: "Mixed",
+    },
+    tone: {
+      warm: "Warm",
+      calm: "Calm",
+      friendly: "Friendly",
+      formal: "Formal",
+      premium: "Premium",
+      accessible: "Accessible",
+      direct: "Direct",
+      inspiring: "Inspiring",
+      concise: "Concise",
+      storytelling: "Storytelling",
+      playful: "Playful",
+      natural: "Natural",
+    },
+    options: {
+      compact: "Compact",
+      balanced: "Balanced",
+      airy: "Airy",
+      concise: "Concise",
+      storytelling: "Storytelling",
+      low: "Low",
+      high: "High",
+      minimal: "Minimal",
+      rich: "Rich",
+      standard: "Standard",
+      "high-contrast": "High contrast",
+    },
+  },
+  fi: {
+    summary: "Valitse visuaalinen tyyli ennen jatkamista.",
+    styleLegend: "Visuaalinen tyyli",
+    styleHelp: "Tämä määrittää verkkokaupan yleisen tunnelman.",
+    typographyLegend: "Typografian suunta",
+    typographyHelp: "Jätä Suositeltu-valinta voimaan, jos haluat suunnittelijan päättävän.",
+    imageryLegend: "Kuvien suunta",
+    imageryHelp: "Jätä Suositeltu-valinta voimaan, jos haluat suunnittelijan päättävän.",
+    toneLegend: "Äänensävy",
+    toneHelp: "Valitse enintään kuusi sanaa. Voit poistaa sanan näppäimistöllä.",
+    toneLimit: "Valitse enintään kuusi äänensävyn sanaa.",
+    toneInvalid: "Valitse äänensävyn sanat annetuista vaihtoehdoista.",
+    toneDuplicate: "Jokaisen äänensävyn sanan voi valita vain kerran.",
+    preferencesLegend: "Luonnin asetukset",
+    density: "Visuaalinen tiheys",
+    content: "Sisällön painotus",
+    merchandising: "Tuotteiden painotus",
+    richness: "Osioiden runsaus",
+    accessibility: "Saavutettavuus",
+    accessibilityHelp:
+      "Suuri kontrasti voi myöhemmin muuttaa turvattomia värejä, jotta teksti säilyy luettavana.",
+    recommended: "Suositeltu",
+    remove: "Poista",
+    styles: {
+      minimal: ["Minimalistinen", "Rauhalliset ja selkeät asettelut sekä runsaasti tilaa."],
+      editorial: ["Kerronnallinen", "Lehtimäinen sommittelu ja harkittu tarinankerronta."],
+      luxury: ["Ylellinen", "Hienostuneet yksityiskohdat ja premium-tunnelma."],
+      playful: ["Leikkisä", "Ystävällinen energia, värit ja helposti lähestyttävä liike."],
+      bold: ["Rohkea", "Vahva kontrasti ja itsevarmat visuaaliset valinnat."],
+      natural: ["Luonnollinen", "Lämmin, maanläheinen materiaalisuus ja helppo rytmi."],
+    },
+    typography: {
+      serif: "Serif",
+      sans: "Sans serif",
+      mixed: "Sekoitettu",
+      system: "Järjestelmä",
+    },
+    imagery: {
+      studio: "Studio",
+      lifestyle: "Lifestyle",
+      editorial: "Kerronnallinen",
+      mixed: "Sekoitettu",
+    },
+    tone: {
+      warm: "Lämmin",
+      calm: "Rauhallinen",
+      friendly: "Ystävällinen",
+      formal: "Muodollinen",
+      premium: "Premium",
+      accessible: "Helposti lähestyttävä",
+      direct: "Suora",
+      inspiring: "Innostava",
+      concise: "Tiivis",
+      storytelling: "Kerronnallinen",
+      playful: "Leikkisä",
+      natural: "Luonnollinen",
+    },
+    options: {
+      compact: "Tiivis",
+      balanced: "Tasapainoinen",
+      airy: "Ilmava",
+      concise: "Tiivis",
+      storytelling: "Kerronnallinen",
+      low: "Matala",
+      high: "Korkea",
+      minimal: "Minimalistinen",
+      rich: "Runsas",
+      standard: "Vakio",
+      "high-contrast": "Suuri kontrasti",
+    },
+  },
+} as const;
+
+const visualStyleValues = ["minimal", "editorial", "luxury", "playful", "bold", "natural"] as const;
+const typographyValues = ["serif", "sans", "mixed", "system"] as const;
+const imageryValues = ["studio", "lifestyle", "editorial", "mixed"] as const;
+const toneKeywordValues = [
+  "warm",
+  "calm",
+  "friendly",
+  "formal",
+  "premium",
+  "accessible",
+  "direct",
+  "inspiring",
+  "concise",
+  "storytelling",
+  "playful",
+  "natural",
+] as const;
+
+const visualPreferenceValues = {
+  visualDensity: ["compact", "balanced", "airy"] as const,
+  contentEmphasis: ["concise", "balanced", "storytelling"] as const,
+  merchandisingEmphasis: ["low", "balanced", "high"] as const,
+  sectionRichness: ["minimal", "balanced", "rich"] as const,
+  accessibilityPreference: ["standard", "high-contrast"] as const,
+} satisfies {
+  [Key in keyof GenerationPreferences]: readonly GenerationPreferences[Key][];
+};
+
 type ExistingSourcesField = "existingStorefrontUrl";
+
+type VisualDirectionErrors = {
+  visualStyleDirection?: string;
+  toneKeywords?: string;
+};
+
+function visualDirectionDraftFromSession(session: OnboardingSession): VisualDirectionDraft {
+  return {
+    visualStyleDirection: session.designBrief.brandDirection.visualStyleDirection,
+    typographyDirection: session.designBrief.brandDirection.typographyDirection,
+    imageryDirection: session.designBrief.brandDirection.imageryDirection,
+    toneKeywords: session.designBrief.brandDirection.toneKeywords,
+    generationPreferences: session.designBrief.generationPreferences,
+  };
+}
 
 export function OnboardingWizard() {
   const [locale, setLocale] = useState<Locale>("en");
@@ -293,6 +484,10 @@ export function OnboardingWizard() {
   const [existingSourceErrors, setExistingSourceErrors] = useState<
     Partial<Record<ExistingSourcesField, string>>
   >({});
+  const [visualDirectionDraft, setVisualDirectionDraft] = useState<VisualDirectionDraft | null>(
+    null,
+  );
+  const [visualDirectionErrors, setVisualDirectionErrors] = useState<VisualDirectionErrors>({});
   const [restartOpen, setRestartOpen] = useState(false);
   const sessionRef = useRef<OnboardingSession | null>(null);
   const mutationQueue = useMemo(() => new OnboardingMutationQueue(), []);
@@ -308,10 +503,14 @@ export function OnboardingWizard() {
         setExistingSourceDraft(
           (current) => current ?? result.session.designBrief.creationContext.existingStorefrontUrl,
         );
+        setVisualDirectionDraft(
+          (current) => current ?? visualDirectionDraftFromSession(result.session),
+        );
         setView({ kind: "ready", session: result.session, origin: result.status });
         setMessage("");
         setBusinessErrors({});
         setExistingSourceErrors({});
+        setVisualDirectionErrors({});
         return;
       }
       if (result.status === "corrupt" || result.status === "incompatible") {
@@ -353,8 +552,10 @@ export function OnboardingWizard() {
         setView((current) => (current.kind === "ready" ? { ...current, session } : current));
         setBusinessDraft(session.designBrief.businessIdentity);
         setExistingSourceDraft(session.designBrief.creationContext.existingStorefrontUrl);
+        setVisualDirectionDraft(visualDirectionDraftFromSession(session));
         setBusinessErrors({});
         setExistingSourceErrors({});
+        setVisualDirectionErrors({});
         setMessage("");
         return session;
       } catch (error) {
@@ -384,6 +585,22 @@ export function OnboardingWizard() {
           setMessage(existingSourcesText[locale].summary);
           return null;
         }
+        if (error instanceof OnboardingVisualDirectionValidationError) {
+          const visualError =
+            error.code === "VISUAL_STYLE_REQUIRED"
+              ? visualDirectionText[locale].summary
+              : error.code === "VISUAL_TONE_KEYWORDS_LIMIT"
+                ? visualDirectionText[locale].toneLimit
+                : error.code === "VISUAL_TONE_KEYWORDS_DUPLICATE"
+                  ? visualDirectionText[locale].toneDuplicate
+                  : visualDirectionText[locale].toneInvalid;
+          setVisualDirectionErrors({
+            visualStyleDirection: error.code === "VISUAL_STYLE_REQUIRED" ? visualError : undefined,
+            toneKeywords: error.code === "VISUAL_STYLE_REQUIRED" ? undefined : visualError,
+          });
+          setMessage(visualError);
+          return null;
+        }
         if (error instanceof OnboardingTransitionError) {
           setMessage(
             error.code === "CREATION_PATH_REQUIRED"
@@ -405,8 +622,10 @@ export function OnboardingWizard() {
         sessionRef.current = nextSession;
         setBusinessDraft(nextSession.designBrief.businessIdentity);
         setExistingSourceDraft(nextSession.designBrief.creationContext.existingStorefrontUrl);
+        setVisualDirectionDraft(visualDirectionDraftFromSession(nextSession));
         setBusinessErrors({});
         setExistingSourceErrors({});
+        setVisualDirectionErrors({});
         setView({ kind: "ready", session: nextSession, origin: "new" });
         return nextSession;
       } catch (error) {
@@ -486,6 +705,10 @@ export function OnboardingWizard() {
               ""
             }
             existingSourceErrors={existingSourceErrors}
+            visualDirectionDraft={
+              visualDirectionDraft ?? visualDirectionDraftFromSession(view.session)
+            }
+            visualDirectionErrors={visualDirectionErrors}
             message={message || (view.origin === "new" ? text.newStatus : text.resumedStatus)}
             onBusinessDraftChange={setBusinessDraft}
             onBusinessField={(field, value) =>
@@ -503,6 +726,16 @@ export function OnboardingWizard() {
             }
             onExistingSourcesSkip={() =>
               void updateSession((session) => service.skipExistingSources(session))
+            }
+            onVisualDirectionDraftChange={setVisualDirectionDraft}
+            onVisualDirectionFieldSave={(draft) =>
+              updateSession((session) => service.updateVisualDirection(session, draft))
+            }
+            onVisualDirectionComplete={(draft) =>
+              updateSession((session) => service.completeVisualDirection(session, draft))
+            }
+            onVisualDirectionSkip={() =>
+              void updateSession((session) => service.skipVisualDirection(session))
             }
             onBack={() => void updateSession((session) => service.goBack(session))}
             onContinue={() => void updateSession((session) => service.advance(session))}
@@ -569,6 +802,8 @@ function ActiveStep({
   businessErrors,
   existingSourceDraft,
   existingSourceErrors,
+  visualDirectionDraft,
+  visualDirectionErrors,
   locale,
   message,
   onBusinessDraftChange,
@@ -578,6 +813,10 @@ function ActiveStep({
   onExistingSourceField,
   onExistingSourcesComplete,
   onExistingSourcesSkip,
+  onVisualDirectionDraftChange,
+  onVisualDirectionFieldSave,
+  onVisualDirectionComplete,
+  onVisualDirectionSkip,
   onBack,
   onContinue,
   onPath,
@@ -590,6 +829,8 @@ function ActiveStep({
   businessErrors: Partial<Record<BusinessBasicsField, string>>;
   existingSourceDraft: string;
   existingSourceErrors: Partial<Record<ExistingSourcesField, string>>;
+  visualDirectionDraft: VisualDirectionDraft;
+  visualDirectionErrors: VisualDirectionErrors;
   locale: Locale;
   message: string;
   onBusinessDraftChange: (draft: BusinessIdentity) => void;
@@ -604,6 +845,10 @@ function ActiveStep({
   onExistingSourceField: (value: string) => Promise<OnboardingSession | null>;
   onExistingSourcesComplete: (value: string) => Promise<OnboardingSession | null>;
   onExistingSourcesSkip: () => void;
+  onVisualDirectionDraftChange: (draft: VisualDirectionDraft) => void;
+  onVisualDirectionFieldSave: (draft: VisualDirectionDraft) => Promise<OnboardingSession | null>;
+  onVisualDirectionComplete: (draft: VisualDirectionDraft) => Promise<OnboardingSession | null>;
+  onVisualDirectionSkip: () => void;
   onBack: () => void;
   onContinue: () => void;
   onPath: (path: OnboardingCreationPath) => void;
@@ -696,6 +941,15 @@ function ActiveStep({
             onField={onExistingSourceField}
             sourceType={session.designBrief.creationContext.type}
           />
+        ) : step.id === "visual-direction" ? (
+          <VisualDirectionForm
+            draft={visualDirectionDraft}
+            errors={visualDirectionErrors}
+            locale={locale}
+            onComplete={onVisualDirectionComplete}
+            onDraftChange={onVisualDirectionDraftChange}
+            onField={onVisualDirectionFieldSave}
+          />
         ) : (
           <div className={styles.placeholder}>
             <strong>{text.futureLabel}</strong>
@@ -712,7 +966,13 @@ function ActiveStep({
           {step.optional && (
             <button
               className={styles.secondaryButton}
-              onClick={step.id === "existing-sources" ? onExistingSourcesSkip : onSkip}
+              onClick={
+                step.id === "existing-sources"
+                  ? onExistingSourcesSkip
+                  : step.id === "visual-direction"
+                    ? onVisualDirectionSkip
+                    : onSkip
+              }
             >
               {text.skip}
             </button>
@@ -726,19 +986,23 @@ function ActiveStep({
                 : step.id === "existing-sources" &&
                     session.designBrief.creationContext.type === "redesign-existing-storefront"
                   ? "existing-sources-form"
-                  : undefined
+                  : step.id === "visual-direction"
+                    ? "visual-direction-form"
+                    : undefined
             }
             onClick={
               step.id === "business-basics" ||
               (step.id === "existing-sources" &&
-                session.designBrief.creationContext.type === "redesign-existing-storefront")
+                session.designBrief.creationContext.type === "redesign-existing-storefront") ||
+              step.id === "visual-direction"
                 ? undefined
                 : onContinue
             }
             type={
               step.id === "business-basics" ||
               (step.id === "existing-sources" &&
-                session.designBrief.creationContext.type === "redesign-existing-storefront")
+                session.designBrief.creationContext.type === "redesign-existing-storefront") ||
+              step.id === "visual-direction"
                 ? "submit"
                 : "button"
             }
@@ -1089,6 +1353,251 @@ function ExistingSourcesForm({
           </span>
         )}
       </div>
+    </form>
+  );
+}
+
+function VisualDirectionForm({
+  draft,
+  errors,
+  locale,
+  onComplete,
+  onDraftChange,
+  onField,
+}: {
+  draft: VisualDirectionDraft;
+  errors: VisualDirectionErrors;
+  locale: Locale;
+  onComplete: (draft: VisualDirectionDraft) => Promise<OnboardingSession | null>;
+  onDraftChange: (draft: VisualDirectionDraft) => void;
+  onField: (draft: VisualDirectionDraft) => Promise<OnboardingSession | null>;
+}) {
+  const text = visualDirectionText[locale];
+  const [localDraft, setLocalDraft] = useState<VisualDirectionDraft>(draft);
+  const styleRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (errors.visualStyleDirection) styleRef.current?.focus();
+  }, [errors.visualStyleDirection]);
+
+  const updateDraft = (nextDraft: VisualDirectionDraft, persist = false) => {
+    setLocalDraft(nextDraft);
+    onDraftChange(nextDraft);
+    if (persist) void onField(nextDraft);
+  };
+
+  const setBrandField = <
+    Key extends "visualStyleDirection" | "typographyDirection" | "imageryDirection",
+  >(
+    key: Key,
+    value: BrandDirection[Key],
+  ) => {
+    updateDraft({ ...localDraft, [key]: value }, true);
+  };
+
+  const setPreference = <Key extends keyof GenerationPreferences>(
+    key: Key,
+    value: GenerationPreferences[Key],
+  ) => {
+    updateDraft(
+      {
+        ...localDraft,
+        generationPreferences: { ...localDraft.generationPreferences, [key]: value },
+      },
+      true,
+    );
+  };
+
+  const toggleTone = (keyword: string) => {
+    const toneKeywords = localDraft.toneKeywords.includes(keyword)
+      ? localDraft.toneKeywords.filter((tone) => tone !== keyword)
+      : [...localDraft.toneKeywords, keyword];
+    updateDraft({ ...localDraft, toneKeywords }, true);
+  };
+
+  return (
+    <form
+      className={styles.visualDirectionForm}
+      id="visual-direction-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void onComplete(localDraft);
+      }}
+    >
+      {(errors.visualStyleDirection || errors.toneKeywords) && (
+        <div aria-live="assertive" className={styles.validationSummary} role="alert">
+          <strong>{text.summary}</strong>
+          <ul>
+            {errors.visualStyleDirection && <li>{errors.visualStyleDirection}</li>}
+            {errors.toneKeywords && <li>{errors.toneKeywords}</li>}
+          </ul>
+        </div>
+      )}
+
+      <fieldset className={styles.visualFieldset}>
+        <legend>{text.styleLegend}</legend>
+        <p className={styles.selectionHint}>{text.styleHelp}</p>
+        <div className={styles.visualChoiceGrid}>
+          {visualStyleValues.map((value, index) => (
+            <label className={styles.visualChoice} key={value}>
+              <input
+                aria-describedby={errors.visualStyleDirection ? "visual-style-error" : undefined}
+                checked={localDraft.visualStyleDirection === value}
+                name="visual-style-direction"
+                onChange={() => setBrandField("visualStyleDirection", value)}
+                ref={index === 0 ? styleRef : undefined}
+                type="radio"
+                value={value}
+              />
+              <span>
+                <strong>{text.styles[value][0]}</strong>
+                <small>{text.styles[value][1]}</small>
+              </span>
+            </label>
+          ))}
+        </div>
+        {errors.visualStyleDirection && (
+          <span className={styles.fieldError} id="visual-style-error">
+            {errors.visualStyleDirection}
+          </span>
+        )}
+      </fieldset>
+
+      <fieldset className={styles.visualFieldset}>
+        <legend>{text.typographyLegend}</legend>
+        <p className={styles.selectionHint}>{text.typographyHelp}</p>
+        <label className={styles.formField} htmlFor="visual-typography">
+          <span className={styles.visuallyHidden}>{text.typographyLegend}</span>
+          <select
+            id="visual-typography"
+            onBlur={() => void onField(localDraft)}
+            onChange={(event) =>
+              setBrandField(
+                "typographyDirection",
+                event.target.value === ""
+                  ? null
+                  : (event.target.value as BrandDirection["typographyDirection"]),
+              )
+            }
+            value={localDraft.typographyDirection ?? ""}
+          >
+            <option value="">{text.recommended}</option>
+            {typographyValues.map((value) => (
+              <option key={value} value={value}>
+                {text.typography[value]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </fieldset>
+
+      <fieldset className={styles.visualFieldset}>
+        <legend>{text.imageryLegend}</legend>
+        <p className={styles.selectionHint}>{text.imageryHelp}</p>
+        <label className={styles.formField} htmlFor="visual-imagery">
+          <span className={styles.visuallyHidden}>{text.imageryLegend}</span>
+          <select
+            id="visual-imagery"
+            onBlur={() => void onField(localDraft)}
+            onChange={(event) =>
+              setBrandField(
+                "imageryDirection",
+                event.target.value === ""
+                  ? null
+                  : (event.target.value as BrandDirection["imageryDirection"]),
+              )
+            }
+            value={localDraft.imageryDirection ?? ""}
+          >
+            <option value="">{text.recommended}</option>
+            {imageryValues.map((value) => (
+              <option key={value} value={value}>
+                {text.imagery[value]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </fieldset>
+
+      <fieldset className={styles.visualFieldset}>
+        <legend>{text.toneLegend}</legend>
+        <p className={styles.selectionHint}>{text.toneHelp}</p>
+        <div
+          aria-describedby={errors.toneKeywords ? "tone-keywords-error" : undefined}
+          className={styles.keywordOptions}
+        >
+          {toneKeywordValues.map((keyword) => (
+            <button
+              aria-pressed={localDraft.toneKeywords.includes(keyword)}
+              className={styles.keywordOption}
+              key={keyword}
+              onClick={(event) => {
+                event.preventDefault();
+                toggleTone(keyword);
+              }}
+              type="button"
+            >
+              {text.tone[keyword]}
+            </button>
+          ))}
+        </div>
+        {localDraft.toneKeywords.length > 0 && (
+          <div className={styles.selectedKeywords}>
+            {localDraft.toneKeywords.map((keyword) => (
+              <span key={keyword}>
+                {text.tone[keyword as keyof typeof text.tone]}
+                <button
+                  aria-label={`${text.remove} ${text.tone[keyword as keyof typeof text.tone]}`}
+                  onClick={() => toggleTone(keyword)}
+                  type="button"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        {errors.toneKeywords && (
+          <span className={styles.fieldError} id="tone-keywords-error">
+            {errors.toneKeywords}
+          </span>
+        )}
+      </fieldset>
+
+      <fieldset className={styles.visualFieldset}>
+        <legend>{text.preferencesLegend}</legend>
+        <div className={styles.preferenceGrid}>
+          {(
+            [
+              ["visualDensity", text.density],
+              ["contentEmphasis", text.content],
+              ["merchandisingEmphasis", text.merchandising],
+              ["sectionRichness", text.richness],
+              ["accessibilityPreference", text.accessibility],
+            ] as const
+          ).map(([key, label]) => (
+            <label className={styles.preferenceGroup} htmlFor={`visual-${key}`} key={key}>
+              <span>{label}</span>
+              <select
+                aria-label={label}
+                id={`visual-${key}`}
+                onBlur={() => void onField(localDraft)}
+                onChange={(event) =>
+                  setPreference(key, event.target.value as GenerationPreferences[typeof key])
+                }
+                value={localDraft.generationPreferences[key]}
+              >
+                {visualPreferenceValues[key].map((value) => (
+                  <option key={value} value={value}>
+                    {text.options[value]}
+                  </option>
+                ))}
+              </select>
+              {key === "accessibilityPreference" && <small>{text.accessibilityHelp}</small>}
+            </label>
+          ))}
+        </div>
+      </fieldset>
     </form>
   );
 }

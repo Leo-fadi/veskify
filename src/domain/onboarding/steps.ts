@@ -78,11 +78,11 @@ const definitions = [
       fi: "Valitse kaupallesi tunnelma, kuvatyyli ja asettelun suunta.",
     },
     placeholder: {
-      en: "A later step will offer guided style examples and sensible defaults. No design choices are saved yet.",
-      fi: "Myöhempi vaihe tarjoaa ohjattuja tyyliesimerkkejä ja suositeltuja oletuksia. Valintoja ei vielä tallenneta.",
+      en: "Choose a visual style, typography, imagery and content preferences for the storefront.",
+      fi: "Valitse verkkokaupan visuaalinen tyyli, typografia, kuvat ja sisältöasetukset.",
     },
     optional: true,
-    completableNow: false,
+    completableNow: true,
   },
   {
     id: "catalogue",
