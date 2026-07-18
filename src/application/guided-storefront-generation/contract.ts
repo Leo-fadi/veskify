@@ -6,7 +6,7 @@ import { brandFoundationPlanSchema } from "@/application/brand-foundation/contra
 import { initialStorefrontGenerationPlanSchema } from "@/application/storefront-templates/materializer-contract";
 import { storefrontTemplateSelectionPlanSchema } from "@/application/storefront-templates/selection-contract";
 
-export const GUIDED_STOREFRONT_GENERATION_SCHEMA_VERSION = 1 as const;
+export const GUIDED_STOREFRONT_GENERATION_SCHEMA_VERSION = 2 as const;
 
 export const guidedStorefrontGenerationInputSchema = z
   .object({
@@ -67,6 +67,7 @@ export const guidedStorefrontGenerationPlanSchema = z
     schemaVersion: z.literal(GUIDED_STOREFRONT_GENERATION_SCHEMA_VERSION),
     id: idSchema,
     briefId: idSchema,
+    briefFingerprint: z.string().trim().min(1),
     status: guidedStorefrontGenerationStatusSchema,
     projectId: idSchema,
     snapshotId: idSchema,
@@ -90,6 +91,13 @@ export const guidedStorefrontGenerationPlanSchema = z
         code: "custom",
         path: ["brandFoundationPlan", "briefId"],
         message: "Brand foundation brief ID must match.",
+      });
+    }
+    if (plan.templateSelectionPlan && plan.templateSelectionPlan.briefId !== plan.briefId) {
+      context.addIssue({
+        code: "custom",
+        path: ["templateSelectionPlan", "briefId"],
+        message: "Template selection brief ID must match.",
       });
     }
     if (plan.status === "blocked" && plan.generatedSnapshot !== null) {
@@ -118,13 +126,6 @@ export const guidedStorefrontGenerationPlanSchema = z
         code: "custom",
         path: ["generatedSnapshot", "id"],
         message: "Generated snapshot ID must match snapshotId.",
-      });
-    }
-    if (plan.templateSelectionPlan && plan.templateSelectionPlan.briefId !== plan.briefId) {
-      context.addIssue({
-        code: "custom",
-        path: ["templateSelectionPlan", "briefId"],
-        message: "Template selection brief ID must match.",
       });
     }
     if (plan.generatedSnapshot) {
