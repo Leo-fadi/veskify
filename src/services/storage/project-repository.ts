@@ -47,7 +47,7 @@ export function projectScopedSnapshotId(
   const digest = stableIdentityHash(projectId);
   const compactPrefix = `snapshot_${digest}`;
   const availableProjectCharacters = Math.max(0, 80 - compactPrefix.length - suffix.length - 1);
-  const compactProject = projectId.slice(0, availableProjectCharacters);
+  const compactProject = projectId.slice(0, availableProjectCharacters).replace(/[-_]+$/, "");
   return `${compactPrefix}${compactProject ? `_${compactProject}` : ""}${suffix}`.slice(0, 80);
 }
 

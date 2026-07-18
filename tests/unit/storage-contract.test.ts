@@ -6,6 +6,7 @@ import {
   RevisionConflictError,
   SnapshotNotFoundError,
   SnapshotProjectMismatchError,
+  projectScopedSnapshotId,
 } from "@/services/storage";
 
 describe("storage repository errors", () => {
@@ -27,5 +28,16 @@ describe("storage repository errors", () => {
     expect(
       () => new IndexedDbProjectRepository({ databaseName: "lazy-browser-adapter-test" }),
     ).not.toThrow();
+  });
+
+  it("keeps compact project-scoped snapshot IDs valid at separator boundaries", () => {
+    const snapshotId = projectScopedSnapshotId(
+      "project_initial_aggregate_indexed-db-publish",
+      "synchronized",
+      1,
+      1_784_386_801_001,
+    );
+    expect(snapshotId.length).toBeLessThanOrEqual(80);
+    expect(snapshotId).toMatch(/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/);
   });
 });
