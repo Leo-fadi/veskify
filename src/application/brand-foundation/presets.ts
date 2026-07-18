@@ -4,8 +4,6 @@ import {
   type LocalizedPlanCopy,
 } from "./contract";
 
-const styles = ["minimal", "editorial", "luxury", "playful", "bold", "natural"] as const;
-
 const copy = (en: string, fi: string): LocalizedPlanCopy => ({ en, fi });
 
 const presetDefinitions: readonly BrandFoundationPreset[] = [
@@ -306,4 +304,8 @@ export function validateBrandFoundationRegistry(): true {
   return true;
 }
 
-export const brandFoundationPresetIds = Object.freeze(styles.map((style) => `${style}-v1`));
+validateBrandFoundationRegistry();
+
+export const brandFoundationPresetIds = Object.freeze(
+  brandFoundationPresetRegistry.map((preset) => preset.id),
+);

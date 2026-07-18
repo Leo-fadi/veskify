@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   BrandFoundationPlannerError,
+  brandFoundationPresetIds,
   cloneBrandFoundationPlan,
   getBrandFoundationPreset,
   listBrandFoundationPresets,
@@ -59,6 +60,30 @@ describe("brand foundation preset registry", () => {
     expect(Object.isFrozen(first)).toBe(true);
     expect(Object.isFrozen(first.brandSystem)).toBe(true);
     expect(getBrandFoundationPreset(first.id)).not.toBe(first);
+  });
+
+  it("round-trips immutable canonical preset IDs in registry order", () => {
+    const listedIds = listBrandFoundationPresets().map((preset) => preset.id);
+
+    expect(brandFoundationPresetIds).toEqual(listedIds);
+    expect(brandFoundationPresetIds).toEqual([
+      "clean-minimal-v1",
+      "editorial-v1",
+      "premium-luxury-v1",
+      "playful-v1",
+      "bold-v1",
+      "natural-v1",
+    ]);
+    expect(brandFoundationPresetIds).not.toEqual(
+      expect.arrayContaining(["minimal-v1", "luxury-v1"]),
+    );
+    expect(brandFoundationPresetIds.every((id) => getBrandFoundationPreset(id))).toBe(true);
+    expect(Object.isFrozen(brandFoundationPresetIds)).toBe(true);
+
+    const before = listBrandFoundationPresets();
+    expect(() => (brandFoundationPresetIds as string[]).push("unexpected-v1")).toThrow();
+    expect(brandFoundationPresetIds).toEqual(listedIds);
+    expect(listBrandFoundationPresets()).toEqual(before);
   });
 });
 
