@@ -524,17 +524,6 @@ function uniqueNormalized(values: readonly string[]): string[] {
   }, []);
 }
 
-function normalizeCatalogueContext(value: unknown): unknown {
-  if (value === "existing-vesko" || value === "existingVeskoCatalogue") {
-    return "existing-vesko-catalogue";
-  }
-  if (value === "controlled-demo" || value === "controlledDemoCatalogue") {
-    return "controlled-demo-catalogue";
-  }
-  if (value === "empty" || value === "emptyCatalogue") return "empty-catalogue";
-  return value;
-}
-
 export function normalizeStorefrontDesignBriefInput(
   input: StorefrontDesignBriefInput = {},
 ): StorefrontDesignBrief {
@@ -551,7 +540,7 @@ export function normalizeStorefrontDesignBriefInput(
       ...empty.generationPreferences,
       ...input.generationPreferences,
     },
-    catalogueContext: normalizeCatalogueContext(input.catalogueContext ?? empty.catalogueContext),
+    catalogueContext: input.catalogueContext ?? empty.catalogueContext,
   } as StorefrontDesignBrief;
 
   if (typeof candidate.creationContext.existingStorefrontUrl === "string") {

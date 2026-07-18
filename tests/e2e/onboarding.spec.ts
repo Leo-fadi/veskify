@@ -1,6 +1,37 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 const storageKey = "veskify:onboarding-session";
+
+type StoredOnboardingSession = {
+  activeStepId?: string;
+  skippedStepIds?: string[];
+  designBrief?: { catalogueContext?: string | null; products?: unknown };
+  products?: unknown;
+};
+
+async function reachCatalogue(page: Page) {
+  await page.goto("/projects/new");
+  await page.getByRole("radio", { name: /Create a new storefront/i }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await page.getByRole("textbox", { name: "Business name" }).fill("Aurum Nordic");
+  await page
+    .getByRole("textbox", { name: "Short business description" })
+    .fill("A Helsinki jewellery studio.");
+  await page.getByRole("combobox", { name: "Industry" }).selectOption("jewellery");
+  await page
+    .getByRole("textbox", { name: "Target customer" })
+    .fill("Customers looking for Nordic jewellery.");
+  await page.getByRole("textbox", { name: "Primary market" }).fill("Finland");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Existing sources" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Brand assets" })).toBeVisible();
+  await page.getByRole("button", { name: "Skip for now" }).click();
+  await expect(page.getByRole("heading", { name: "Visual direction" })).toBeVisible();
+  await page.getByRole("radio", { name: /Editorial/i }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Catalogue" })).toBeVisible();
+}
 
 for (const option of [
   "Create a new storefront",
@@ -213,6 +244,63 @@ test("completes visual direction with keyboard-accessible controlled choices and
   await expect(page.getByRole("heading", { name: "Visual direction" })).toBeVisible();
   await expect(page.getByRole("radio", { name: /Editorial/i })).toBeChecked();
   await expect(page.getByRole("button", { name: "Remove Warm" })).toBeVisible();
+});
+
+test("completes O-06 with the demo context from the keyboard and resumes it", async ({ page }) => {
+  await reachCatalogue(page);
+
+  const demo = page.getByRole("radio", { name: /Demo catalogue/i });
+  await demo.focus();
+  await page.keyboard.press("Space");
+  await expect(demo).toBeChecked();
+  await expect
+    .poll(() =>
+      page.evaluate((key) => {
+        const parsed: unknown = JSON.parse(window.localStorage.getItem(key) ?? "{}");
+        const session = (
+          parsed !== null && typeof parsed === "object" ? parsed : {}
+        ) as StoredOnboardingSession;
+        return session.designBrief?.catalogueContext;
+      }, storageKey),
+    )
+    .toBe("controlled-demo-catalogue");
+
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Store pages" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Store pages" })).toBeVisible();
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("radio", { name: /Demo catalogue/i })).toBeChecked();
+});
+
+test("skips O-06 with the empty context without product data on mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  await reachCatalogue(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+
+  await page.getByRole("button", { name: "Skip for now" }).click();
+  await expect(page.getByRole("heading", { name: "Store pages" })).toBeVisible();
+  expect(
+    await page.evaluate((key) => {
+      const parsed: unknown = JSON.parse(window.localStorage.getItem(key) ?? "{}");
+      const session = (
+        parsed !== null && typeof parsed === "object" ? parsed : {}
+      ) as StoredOnboardingSession;
+      return {
+        activeStepId: session.activeStepId,
+        catalogueContext: session.designBrief?.catalogueContext,
+        skipped: session.skippedStepIds?.includes("catalogue"),
+        productData: session.designBrief?.products ?? session.products ?? null,
+      };
+    }, storageKey),
+  ).toEqual({
+    activeStepId: "pages",
+    catalogueContext: "empty-catalogue",
+    skipped: true,
+    productData: null,
+  });
 });
 
 test("supports Finnish labels and keyboard navigation through Business basics", async ({

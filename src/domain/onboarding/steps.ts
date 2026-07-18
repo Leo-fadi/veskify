@@ -88,15 +88,15 @@ const definitions = [
     id: "catalogue",
     title: { en: "Catalogue", fi: "Tuoteluettelo" },
     description: {
-      en: "Choose how product information will be provided.",
-      fi: "Valitse, miten tuotetiedot tuodaan mukaan.",
+      en: "Choose how the storefront should use catalogue information.",
+      fi: "Valitse, miten verkkokauppa käyttää tuoteluettelon tietoja.",
     },
     placeholder: {
-      en: "A later step will support a file or an industry sample catalogue. No product data is read or changed yet.",
-      fi: "Myöhempi vaihe tukee tiedostoa tai toimialan esimerkkituoteluetteloa. Tuotetietoja ei vielä lueta tai muuteta.",
+      en: "Choose an existing, demo or empty catalogue context. No product data is read or changed yet.",
+      fi: "Valitse olemassa oleva, demo- tai tyhjä tuoteluettelon konteksti. Tuotetietoja ei vielä lueta tai muuteta.",
     },
     optional: true,
-    completableNow: false,
+    completableNow: true,
   },
   {
     id: "pages",

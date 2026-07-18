@@ -5,6 +5,32 @@ import { OnboardingWizard } from "@/app/projects/new/onboarding-wizard";
 import { onboardingSessionSchema } from "@/domain/onboarding";
 import { ONBOARDING_SESSION_STORAGE_KEY } from "@/services/onboarding";
 
+async function reachCatalogue(user: ReturnType<typeof userEvent.setup>) {
+  await screen.findByRole("heading", { name: "How would you like to begin?" });
+  await user.click(screen.getByRole("radio", { name: /Create a new storefront/i }));
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  await user.type(screen.getByRole("textbox", { name: "Business name" }), "Aurum Nordic");
+  await user.type(
+    screen.getByRole("textbox", { name: "Short business description" }),
+    "A Helsinki jewellery studio.",
+  );
+  await user.selectOptions(screen.getByRole("combobox", { name: "Industry" }), "jewellery");
+  await user.type(
+    screen.getByRole("textbox", { name: "Target customer" }),
+    "Customers looking for Nordic jewellery.",
+  );
+  await user.type(screen.getByRole("textbox", { name: "Primary market" }), "Finland");
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  await screen.findByRole("heading", { name: "Existing sources" });
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  await screen.findByRole("heading", { name: "Brand assets" });
+  await user.click(screen.getByRole("button", { name: "Skip for now" }));
+  await screen.findByRole("heading", { name: "Visual direction" });
+  await user.click(screen.getByRole("radio", { name: /Editorial/i }));
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  await screen.findByRole("heading", { name: "Catalogue" });
+}
+
 describe("guided onboarding route", () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => vi.restoreAllMocks());
@@ -579,6 +605,118 @@ describe("guided onboarding route", () => {
         expect(persistedBrief().generationPreferences.merchandisingEmphasis).toBe(value),
       );
     }
+  }, 15_000);
+
+  it("renders and keyboard-persists all canonical O-06 choices, then reaches Pages", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await reachCatalogue(user);
+
+    const choices = [
+      ["Existing Vesko catalogue", "existing-vesko-catalogue"],
+      ["Demo catalogue", "controlled-demo-catalogue"],
+      ["Empty catalogue", "empty-catalogue"],
+    ] as const;
+    for (const [label, value] of choices) {
+      const option = screen.getByRole("radio", { name: new RegExp(label) });
+      option.focus();
+      fireEvent.keyDown(option, { key: " ", code: "Space" });
+      fireEvent.keyUp(option, { key: " ", code: "Space" });
+      await waitFor(() =>
+        expect(screen.getByRole("radio", { name: new RegExp(label) })).toBeChecked(),
+      );
+      await waitFor(() =>
+        expect(
+          onboardingSessionSchema.parse(
+            JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}"),
+          ).designBrief.catalogueContext,
+        ).toBe(value),
+      );
+    }
+
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: "Store pages" })).toBeVisible();
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      activeStepId: "pages",
+      completedStepIds: [
+        "creation-path",
+        "business-basics",
+        "existing-sources",
+        "visual-direction",
+        "catalogue",
+      ],
+      skippedStepIds: ["brand-assets"],
+      designBrief: { catalogueContext: "empty-catalogue" },
+    });
+  }, 15_000);
+
+  it("shows an accessible validation error when O-06 continues without a choice", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await reachCatalogue(user);
+
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/catalogue option/i);
+    const group = screen.getByRole("group", { name: "Catalogue context" });
+    expect(group).toHaveAttribute("aria-invalid", "true");
+    expect(group).toHaveAttribute("aria-describedby", "catalogue-context-error");
+    expect(screen.getByRole("alert")).toBeVisible();
+  }, 15_000);
+
+  it("preserves the selected context through Continue, Back and refresh", async () => {
+    const user = userEvent.setup();
+    const mounted = render(<OnboardingWizard />);
+    await reachCatalogue(user);
+    await user.click(screen.getByRole("radio", { name: /Demo catalogue/i }));
+    await waitFor(() => {
+      const selectedStored: unknown = JSON.parse(
+        localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}",
+      );
+      expect(selectedStored).toMatchObject({
+        designBrief: { catalogueContext: "controlled-demo-catalogue" },
+      });
+    });
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await screen.findByRole("heading", { name: "Store pages" });
+    mounted.unmount();
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "Store pages" });
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("heading", { name: "Catalogue" })).toBeVisible();
+    expect(screen.getByRole("radio", { name: /Demo catalogue/i })).toBeChecked();
+    const resumedStored: unknown = JSON.parse(
+      localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}",
+    );
+    expect(resumedStored).toMatchObject({
+      designBrief: { catalogueContext: "controlled-demo-catalogue" },
+    });
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("heading", { name: "Visual direction" })).toBeVisible();
+  }, 15_000);
+
+  it("skips O-06 with the empty-catalogue fallback and supports Finnish copy", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await reachCatalogue(user);
+    await user.click(screen.getByRole("radio", { name: "Suomi" }));
+    expect(await screen.findByRole("heading", { name: "Tuoteluettelo" })).toBeVisible();
+    expect(screen.getByRole("radio", { name: /Nykyinen Vesko-tuoteluettelo/i })).toBeVisible();
+    expect(screen.getByRole("radio", { name: /Demotuoteluettelo/i })).toBeVisible();
+    expect(screen.getByRole("radio", { name: /Tyhjä tuoteluettelo/i })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Ohita nyt" }));
+    expect(await screen.findByRole("heading", { name: "Kaupan sivut" })).toBeVisible();
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      activeStepId: "pages",
+      completedStepIds: [
+        "creation-path",
+        "business-basics",
+        "existing-sources",
+        "visual-direction",
+      ],
+      skippedStepIds: ["brand-assets", "catalogue"],
+      designBrief: { catalogueContext: "empty-catalogue" },
+    });
   }, 15_000);
 
   it("offers safe recovery for corrupt storage and reset confirmation", async () => {

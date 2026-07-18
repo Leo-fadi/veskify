@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   OnboardingBusinessBasicsValidationError,
+  OnboardingCatalogueContextValidationError,
   OnboardingExistingSourcesValidationError,
   OnboardingMutationQueue,
   OnboardingService,
@@ -21,11 +22,13 @@ import {
 } from "@/domain/onboarding";
 import {
   imageryDirectionValues,
+  catalogueContextValues,
   storefrontIndustryValues,
   toneKeywordValues,
   typographyDirectionValues,
   type BrandDirection,
   type BusinessIdentity,
+  type CatalogueContext,
   type GenerationPreferences,
   type StorefrontIndustry,
 } from "@/domain/design-brief";
@@ -60,6 +63,8 @@ const copy = {
     futureLabel: "Coming in the next onboarding milestone",
     pathLegend: "Choose one starting path",
     pathRequired: "Choose a starting path before continuing.",
+    catalogueContextRequired: "Choose a catalogue option before continuing.",
+    catalogueContextUnsupported: "Choose one of the available catalogue options.",
     notAvailable: "This step is a preview and cannot be completed in this foundation yet.",
     transitionError: "That step cannot be changed right now. Your progress is safe.",
     storageHeading: "We cannot access saved onboarding progress",
@@ -99,6 +104,9 @@ const copy = {
     futureLabel: "Tulossa seuraavassa aloituksen vaiheessa",
     pathLegend: "Valitse yksi tapa aloittaa",
     pathRequired: "Valitse tapa aloittaa ennen jatkamista.",
+    catalogueContextRequired: "Valitse tuoteluettelon vaihtoehto ennen jatkamista.",
+    catalogueContextUnsupported:
+      "Valitse jokin käytettävissä olevista tuoteluettelon vaihtoehdoista.",
     notAvailable: "Tämä vaihe on esikatselu eikä sitä voi vielä suorittaa tässä perustassa.",
     transitionError: "Tätä vaihetta ei voi muuttaa juuri nyt. Edistymisesi on turvassa.",
     storageHeading: "Tallennettua aloitusta ei voida käyttää",
@@ -119,6 +127,52 @@ const copy = {
     cancel: "Säilytä edistyminen",
   },
 } as const;
+
+const catalogueContextText = {
+  en: {
+    legend: "Catalogue context",
+    help: "Choose how the generated storefront should treat catalogue information. No product data is connected or changed in this step.",
+    options: {
+      "existing-vesko-catalogue": {
+        label: "Existing Vesko catalogue",
+        description: "The later design plan will use your existing Vesko catalogue context.",
+      },
+      "controlled-demo-catalogue": {
+        label: "Demo catalogue",
+        description: "Use Veskify's controlled built-in sample catalogue for the demonstration.",
+      },
+      "empty-catalogue": {
+        label: "Empty catalogue",
+        description: "Design the storefront structure now and add products later.",
+      },
+    },
+  },
+  fi: {
+    legend: "Tuoteluettelon konteksti",
+    help: "Valitse, miten luotavan verkkokaupan tulee käsitellä tuoteluettelon tietoja. Tässä vaiheessa tuotteita ei yhdistetä eikä muuteta.",
+    options: {
+      "existing-vesko-catalogue": {
+        label: "Nykyinen Vesko-tuoteluettelo",
+        description: "Myöhempi suunnitelma käyttää nykyisen Vesko-tuoteluettelosi kontekstia.",
+      },
+      "controlled-demo-catalogue": {
+        label: "Demotuoteluettelo",
+        description: "Käytä Veskifyn hallittua sisäänrakennettua esimerkkiluetteloa demossa.",
+      },
+      "empty-catalogue": {
+        label: "Tyhjä tuoteluettelo",
+        description: "Suunnittele verkkokaupan rakenne nyt ja lisää tuotteet myöhemmin.",
+      },
+    },
+  },
+} satisfies Record<
+  Locale,
+  {
+    legend: string;
+    help: string;
+    options: Record<CatalogueContext, { label: string; description: string }>;
+  }
+>;
 
 const pathOptions: ReadonlyArray<{
   value: OnboardingCreationPath;
@@ -478,6 +532,8 @@ export function OnboardingWizard() {
     null,
   );
   const [visualDirectionErrors, setVisualDirectionErrors] = useState<VisualDirectionErrors>({});
+  const [catalogueContextDraft, setCatalogueContextDraft] = useState<CatalogueContext | null>(null);
+  const [catalogueContextErrors, setCatalogueContextErrors] = useState<string | null>(null);
   const [restartOpen, setRestartOpen] = useState(false);
   const sessionRef = useRef<OnboardingSession | null>(null);
   const mutationQueue = useMemo(() => new OnboardingMutationQueue(), []);
@@ -496,11 +552,15 @@ export function OnboardingWizard() {
         setVisualDirectionDraft(
           (current) => current ?? visualDirectionDraftFromSession(result.session),
         );
+        setCatalogueContextDraft(
+          (current) => current ?? result.session.designBrief.catalogueContext,
+        );
         setView({ kind: "ready", session: result.session, origin: result.status });
         setMessage("");
         setBusinessErrors({});
         setExistingSourceErrors({});
         setVisualDirectionErrors({});
+        setCatalogueContextErrors(null);
         return;
       }
       if (result.status === "corrupt" || result.status === "incompatible") {
@@ -543,9 +603,11 @@ export function OnboardingWizard() {
         setBusinessDraft(session.designBrief.businessIdentity);
         setExistingSourceDraft(session.designBrief.creationContext.existingStorefrontUrl);
         setVisualDirectionDraft(visualDirectionDraftFromSession(session));
+        setCatalogueContextDraft(session.designBrief.catalogueContext);
         setBusinessErrors({});
         setExistingSourceErrors({});
         setVisualDirectionErrors({});
+        setCatalogueContextErrors(null);
         setMessage("");
         return session;
       } catch (error) {
@@ -591,6 +653,15 @@ export function OnboardingWizard() {
           setMessage(visualError);
           return null;
         }
+        if (error instanceof OnboardingCatalogueContextValidationError) {
+          const catalogueError =
+            error.code === "CATALOGUE_CONTEXT_REQUIRED"
+              ? text.catalogueContextRequired
+              : text.catalogueContextUnsupported;
+          setCatalogueContextErrors(catalogueError);
+          setMessage(catalogueError);
+          return null;
+        }
         if (error instanceof OnboardingTransitionError) {
           setMessage(
             error.code === "CREATION_PATH_REQUIRED"
@@ -613,9 +684,11 @@ export function OnboardingWizard() {
         setBusinessDraft(nextSession.designBrief.businessIdentity);
         setExistingSourceDraft(nextSession.designBrief.creationContext.existingStorefrontUrl);
         setVisualDirectionDraft(visualDirectionDraftFromSession(nextSession));
+        setCatalogueContextDraft(nextSession.designBrief.catalogueContext);
         setBusinessErrors({});
         setExistingSourceErrors({});
         setVisualDirectionErrors({});
+        setCatalogueContextErrors(null);
         setView({ kind: "ready", session: nextSession, origin: "new" });
         return nextSession;
       } catch (error) {
@@ -699,6 +772,10 @@ export function OnboardingWizard() {
               visualDirectionDraft ?? visualDirectionDraftFromSession(view.session)
             }
             visualDirectionErrors={visualDirectionErrors}
+            catalogueContextDraft={
+              catalogueContextDraft ?? view.session.designBrief.catalogueContext
+            }
+            catalogueContextError={catalogueContextErrors}
             message={message || (view.origin === "new" ? text.newStatus : text.resumedStatus)}
             onBusinessDraftChange={setBusinessDraft}
             onBusinessField={(field, value) =>
@@ -726,6 +803,16 @@ export function OnboardingWizard() {
             }
             onVisualDirectionSkip={() =>
               void updateSession((session) => service.skipVisualDirection(session))
+            }
+            onCatalogueContextChange={(value) => {
+              setCatalogueContextDraft(value);
+              void updateSession((session) => service.updateCatalogueContext(session, value));
+            }}
+            onCatalogueContextComplete={(value) =>
+              updateSession((session) => service.completeCatalogueContext(session, value))
+            }
+            onCatalogueContextSkip={() =>
+              void updateSession((session) => service.skipCatalogueContext(session))
             }
             onBack={() => void updateSession((session) => service.goBack(session))}
             onContinue={() => void updateSession((session) => service.advance(session))}
@@ -794,6 +881,8 @@ function ActiveStep({
   existingSourceErrors,
   visualDirectionDraft,
   visualDirectionErrors,
+  catalogueContextDraft,
+  catalogueContextError,
   locale,
   message,
   onBusinessDraftChange,
@@ -807,6 +896,9 @@ function ActiveStep({
   onVisualDirectionFieldSave,
   onVisualDirectionComplete,
   onVisualDirectionSkip,
+  onCatalogueContextChange,
+  onCatalogueContextComplete,
+  onCatalogueContextSkip,
   onBack,
   onContinue,
   onPath,
@@ -821,6 +913,8 @@ function ActiveStep({
   existingSourceErrors: Partial<Record<ExistingSourcesField, string>>;
   visualDirectionDraft: VisualDirectionDraft;
   visualDirectionErrors: VisualDirectionErrors;
+  catalogueContextDraft: CatalogueContext | null;
+  catalogueContextError: string | null;
   locale: Locale;
   message: string;
   onBusinessDraftChange: (draft: BusinessIdentity) => void;
@@ -839,6 +933,9 @@ function ActiveStep({
   onVisualDirectionFieldSave: (draft: VisualDirectionDraft) => Promise<OnboardingSession | null>;
   onVisualDirectionComplete: (draft: VisualDirectionDraft) => Promise<OnboardingSession | null>;
   onVisualDirectionSkip: () => void;
+  onCatalogueContextChange: (value: CatalogueContext) => void;
+  onCatalogueContextComplete: (value: CatalogueContext | null) => Promise<OnboardingSession | null>;
+  onCatalogueContextSkip: () => void;
   onBack: () => void;
   onContinue: () => void;
   onPath: (path: OnboardingCreationPath) => void;
@@ -940,6 +1037,14 @@ function ActiveStep({
             onDraftChange={onVisualDirectionDraftChange}
             onField={onVisualDirectionFieldSave}
           />
+        ) : step.id === "catalogue" ? (
+          <CatalogueContextForm
+            draft={catalogueContextDraft}
+            error={catalogueContextError}
+            locale={locale}
+            onChange={onCatalogueContextChange}
+            onComplete={onCatalogueContextComplete}
+          />
         ) : (
           <div className={styles.placeholder}>
             <strong>{text.futureLabel}</strong>
@@ -961,7 +1066,9 @@ function ActiveStep({
                   ? onExistingSourcesSkip
                   : step.id === "visual-direction"
                     ? onVisualDirectionSkip
-                    : onSkip
+                    : step.id === "catalogue"
+                      ? onCatalogueContextSkip
+                      : onSkip
               }
             >
               {text.skip}
@@ -978,7 +1085,9 @@ function ActiveStep({
                   ? "existing-sources-form"
                   : step.id === "visual-direction"
                     ? "visual-direction-form"
-                    : undefined
+                    : step.id === "catalogue"
+                      ? "catalogue-context-form"
+                      : undefined
             }
             onClick={
               step.id === "business-basics" ||
@@ -986,7 +1095,9 @@ function ActiveStep({
                 session.designBrief.creationContext.type === "redesign-existing-storefront") ||
               step.id === "visual-direction"
                 ? undefined
-                : onContinue
+                : step.id === "catalogue"
+                  ? undefined
+                  : onContinue
             }
             type={
               step.id === "business-basics" ||
@@ -994,7 +1105,9 @@ function ActiveStep({
                 session.designBrief.creationContext.type === "redesign-existing-storefront") ||
               step.id === "visual-direction"
                 ? "submit"
-                : "button"
+                : step.id === "catalogue"
+                  ? "submit"
+                  : "button"
             }
           >
             {text.continue}
@@ -1005,6 +1118,65 @@ function ActiveStep({
         </button>
       </footer>
     </>
+  );
+}
+
+function CatalogueContextForm({
+  draft,
+  error,
+  locale,
+  onChange,
+  onComplete,
+}: {
+  draft: CatalogueContext | null;
+  error: string | null;
+  locale: Locale;
+  onChange: (value: CatalogueContext) => void;
+  onComplete: (value: CatalogueContext | null) => Promise<OnboardingSession | null>;
+}) {
+  const text = catalogueContextText[locale];
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void onComplete(draft);
+  };
+
+  return (
+    <form id="catalogue-context-form" onSubmit={submit}>
+      <fieldset
+        aria-describedby={error ? "catalogue-context-error" : undefined}
+        aria-invalid={Boolean(error)}
+        className={styles.pathOptions}
+      >
+        <legend>{text.legend}</legend>
+        <p className={styles.selectionHint}>{text.help}</p>
+        {catalogueContextValues.map((value) => (
+          <label key={value}>
+            <input
+              checked={draft === value}
+              name="catalogue-context"
+              onChange={() => onChange(value)}
+              onKeyDown={(event) => {
+                if (event.key === " " || event.key === "Space" || event.key === "Enter") {
+                  event.preventDefault();
+                  onChange(value);
+                }
+              }}
+              type="radio"
+              value={value}
+            />
+            <span>
+              <strong>{text.options[value].label}</strong>
+              <small>{text.options[value].description}</small>
+            </span>
+          </label>
+        ))}
+        {error && (
+          <span className={styles.fieldError} id="catalogue-context-error" role="alert">
+            {error}
+          </span>
+        )}
+      </fieldset>
+    </form>
   );
 }
 

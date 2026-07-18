@@ -22,13 +22,16 @@ import {
   type OnboardingSessionRepository,
 } from "@/services/onboarding";
 import {
+  catalogueContextValues,
   createEmptyStorefrontDesignBrief,
   updateStorefrontDesignBriefArea,
+  type CatalogueContext,
 } from "@/domain/design-brief";
 
 class MemoryOnboardingRepository implements OnboardingSessionRepository {
   session?: OnboardingSession;
   saveError?: Error;
+  saveCount = 0;
 
   load(): Promise<OnboardingSessionLoadResult> {
     return Promise.resolve(
@@ -40,6 +43,7 @@ class MemoryOnboardingRepository implements OnboardingSessionRepository {
 
   save(session: OnboardingSession): Promise<void> {
     if (this.saveError) return Promise.reject(this.saveError);
+    this.saveCount += 1;
     this.session = structuredClone(onboardingSessionSchema.parse(session));
     return Promise.resolve();
   }
@@ -190,6 +194,29 @@ function visualDirectionSession(overrides: Partial<OnboardingSession> = {}): Onb
     designBrief,
     updatedAt: overrides.updatedAt ?? designBrief.updatedAt,
     ...overrides,
+  });
+}
+
+function catalogueSession(catalogueContext: CatalogueContext | null = null): OnboardingSession {
+  const base = visualDirectionSession();
+  const visualBrief = updateStorefrontDesignBriefArea(
+    base.designBrief,
+    "brandDirection",
+    { visualStyleDirection: "editorial" },
+    timestamp,
+  );
+  const designBrief = updateStorefrontDesignBriefArea(
+    visualBrief,
+    "catalogueContext",
+    catalogueContext,
+    timestamp,
+  );
+  return onboardingSessionSchema.parse({
+    ...base,
+    activeStepId: "catalogue",
+    completedStepIds: [...base.completedStepIds, "visual-direction"],
+    designBrief,
+    updatedAt: designBrief.updatedAt,
   });
 }
 
@@ -361,6 +388,50 @@ describe("onboarding session schema", () => {
       }),
     ).toThrow();
   });
+
+  it("enforces catalogue completion and skip invariants", () => {
+    const collecting = catalogueSession();
+    expect(collecting.designBrief.catalogueContext).toBeNull();
+
+    expect(() =>
+      onboardingSessionSchema.parse({
+        ...collecting,
+        activeStepId: "pages",
+        completedStepIds: [...collecting.completedStepIds, "catalogue"],
+      }),
+    ).toThrow();
+
+    const completedEmptyBase = catalogueSession("empty-catalogue");
+    const completedEmpty = onboardingSessionSchema.parse({
+      ...completedEmptyBase,
+      activeStepId: "pages",
+      completedStepIds: [...completedEmptyBase.completedStepIds, "catalogue"],
+    });
+    expect(completedEmpty.completedStepIds).toContain("catalogue");
+
+    const wrongSkippedBrief = updateStorefrontDesignBriefArea(
+      collecting.designBrief,
+      "catalogueContext",
+      "controlled-demo-catalogue",
+      timestamp,
+    );
+    expect(() =>
+      onboardingSessionSchema.parse({
+        ...collecting,
+        activeStepId: "pages",
+        skippedStepIds: ["brand-assets", "catalogue"],
+        designBrief: wrongSkippedBrief,
+        updatedAt: wrongSkippedBrief.updatedAt,
+      }),
+    ).toThrow();
+
+    expect(() =>
+      onboardingSessionSchema.parse({
+        ...completedEmpty,
+        skippedStepIds: ["brand-assets", "catalogue"],
+      }),
+    ).toThrow();
+  });
 });
 
 describe("onboarding step registry", () => {
@@ -377,6 +448,12 @@ describe("onboarding step registry", () => {
     });
     expect(onboardingStepRegistry[2]).toMatchObject({ optional: true });
     expect(onboardingStepRegistry[4]).toMatchObject({ optional: true, completableNow: true });
+    expect(onboardingStepRegistry[5]).toMatchObject({
+      optional: true,
+      completableNow: true,
+      nextStepId: "pages",
+    });
+    expect(onboardingStepRegistry[6]).toMatchObject({ completableNow: false });
     expect(onboardingStepRegistry.at(-1)).toMatchObject({ nextStepId: null });
     expect(onboardingStepRegistry.every((step) => step.title.en && step.title.fi)).toBe(true);
   });
@@ -546,6 +623,91 @@ describe("onboarding application service", () => {
       merchandisingEmphasis: "balanced",
       sectionRichness: "balanced",
       accessibilityPreference: "standard",
+    });
+  });
+
+  it("accepts and persists every canonical O-06 catalogue context", async () => {
+    for (const catalogueContext of catalogueContextValues) {
+      const { repository, service } = createService();
+      const session = catalogueSession();
+      await repository.save(session);
+
+      const updated = await service.updateCatalogueContext(session, catalogueContext);
+
+      expect(updated.designBrief.catalogueContext).toBe(catalogueContext);
+      expect(updated.activeStepId).toBe("catalogue");
+      expect(updated.completedStepIds).not.toContain("catalogue");
+      expect(updated.skippedStepIds).not.toContain("catalogue");
+      expect(repository.session).toEqual(updated);
+      expect(updated).not.toBe(repository.session);
+    }
+  });
+
+  it("requires a selection to Continue and advances atomically", async () => {
+    const { repository, service } = createService();
+    const session = catalogueSession();
+    await repository.save(session);
+
+    await expect(service.completeCatalogueContext(session)).rejects.toMatchObject({
+      code: "CATALOGUE_CONTEXT_REQUIRED",
+    });
+    expect(repository.session).toEqual(session);
+    expect(repository.saveCount).toBe(1);
+
+    const completed = await service.completeCatalogueContext(session, "empty-catalogue");
+    expect(completed.activeStepId).toBe("pages");
+    expect(completed.designBrief.catalogueContext).toBe("empty-catalogue");
+    expect(completed.completedStepIds).toContain("catalogue");
+    expect(completed.skippedStepIds).not.toContain("catalogue");
+    expect(repository.session).toEqual(completed);
+    expect(repository.saveCount).toBe(2);
+  });
+
+  it("keeps explicit empty-catalogue Continue completed and uses empty-catalogue for Skip", async () => {
+    const { service } = createService();
+    const session = catalogueSession("empty-catalogue");
+
+    const completed = await service.completeCatalogueContext(session);
+    expect(completed.completedStepIds).toContain("catalogue");
+    expect(completed.skippedStepIds).not.toContain("catalogue");
+
+    const skipped = await service.skipCatalogueContext(session);
+    expect(skipped.activeStepId).toBe("pages");
+    expect(skipped.designBrief.catalogueContext).toBe("empty-catalogue");
+    expect(skipped.skippedStepIds).toContain("catalogue");
+    expect(skipped.completedStepIds).not.toContain("catalogue");
+  });
+
+  it("routes generic advance and skip through the O-06 transitions", async () => {
+    const advanceService = createService().service;
+    const advanced = await advanceService.advance(catalogueSession("controlled-demo-catalogue"));
+    expect(advanced.activeStepId).toBe("pages");
+    expect(advanced.completedStepIds).toContain("catalogue");
+
+    const skipService = createService().service;
+    const skipped = await skipService.skip(catalogueSession());
+    expect(skipped.activeStepId).toBe("pages");
+    expect(skipped.skippedStepIds).toContain("catalogue");
+    expect(skipped.designBrief.catalogueContext).toBe("empty-catalogue");
+  });
+
+  it("rejects unsupported contexts and calls O-06 methods only from the catalogue step", async () => {
+    const { service } = createService();
+    const session = catalogueSession();
+    await expect(
+      service.updateCatalogueContext(session, "unsupported" as never),
+    ).rejects.toMatchObject({
+      code: "CATALOGUE_CONTEXT_UNSUPPORTED",
+    });
+
+    const wrongStep = visualDirectionSession();
+    await expect(
+      service.completeCatalogueContext(wrongStep, "empty-catalogue"),
+    ).rejects.toMatchObject({
+      code: "STEP_NOT_AVAILABLE",
+    });
+    await expect(service.skipCatalogueContext(wrongStep)).rejects.toMatchObject({
+      code: "STEP_NOT_AVAILABLE",
     });
   });
 
@@ -1092,6 +1254,84 @@ describe("onboarding mutation queue", () => {
       { step: "business-basics", businessName: "Aurum Nordic", primaryMarket: "" },
       { step: "business-basics", businessName: "Aurum Nordic", primaryMarket: "Finland" },
     ]);
+  });
+
+  it("serializes rapid O-06 selections and preserves Continue after a queued field save", async () => {
+    const queue = new OnboardingMutationQueue();
+    const { service } = createService();
+    let latest = catalogueSession();
+
+    const first = queue.enqueue(async () => {
+      latest = await service.updateCatalogueContext(latest, "existing-vesko-catalogue");
+      return latest;
+    });
+    const second = queue.enqueue(async () => {
+      latest = await service.updateCatalogueContext(latest, "controlled-demo-catalogue");
+      return latest;
+    });
+    const complete = queue.enqueue(async () => {
+      latest = await service.completeCatalogueContext(latest);
+      return latest;
+    });
+
+    await expect(first).resolves.toMatchObject({
+      designBrief: { catalogueContext: "existing-vesko-catalogue" },
+    });
+    await expect(second).resolves.toMatchObject({
+      designBrief: { catalogueContext: "controlled-demo-catalogue" },
+    });
+    const completed = await complete;
+    expect(completed).toMatchObject({
+      activeStepId: "pages",
+      designBrief: { catalogueContext: "controlled-demo-catalogue" },
+    });
+    expect(completed?.completedStepIds).toContain("catalogue");
+  });
+
+  it("rejects a stale O-06 field save after navigation without overwriting the transition", async () => {
+    const queue = new OnboardingMutationQueue();
+    const { service } = createService();
+    let latest = catalogueSession("controlled-demo-catalogue");
+
+    const complete = queue.enqueue(async () => {
+      latest = await service.completeCatalogueContext(latest);
+      return latest;
+    });
+    const staleSave = queue.enqueue(() =>
+      service.updateCatalogueContext(latest, "existing-vesko-catalogue"),
+    );
+
+    await expect(complete).resolves.toMatchObject({ activeStepId: "pages" });
+    await expect(staleSave).rejects.toMatchObject({ code: "STEP_NOT_AVAILABLE" });
+    expect(latest).toMatchObject({
+      activeStepId: "pages",
+      designBrief: { catalogueContext: "controlled-demo-catalogue" },
+    });
+  });
+
+  it("preserves Skip after a queued O-06 field save", async () => {
+    const queue = new OnboardingMutationQueue();
+    const { service } = createService();
+    let latest = catalogueSession();
+    const fieldSave = queue.enqueue(async () => {
+      latest = await service.updateCatalogueContext(latest, "existing-vesko-catalogue");
+      return latest;
+    });
+    const skip = queue.enqueue(async () => {
+      latest = await service.skipCatalogueContext(latest);
+      return latest;
+    });
+
+    await expect(fieldSave).resolves.toMatchObject({
+      designBrief: { catalogueContext: "existing-vesko-catalogue" },
+    });
+    const skipped = await skip;
+    expect(skipped).toMatchObject({
+      activeStepId: "pages",
+      designBrief: { catalogueContext: "empty-catalogue" },
+    });
+    expect(skipped?.skippedStepIds).toContain("catalogue");
+    expect(skipped?.completedStepIds).not.toContain("catalogue");
   });
 
   it("pauses stale work after a storage failure and accepts work after recovery", async () => {
