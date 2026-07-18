@@ -3,7 +3,7 @@
 import {
   validateStorefrontGenerationReview,
   type StorefrontGenerationReview,
-} from "@/application/storefront-generation-review";
+} from "@/application/storefront-generation-review/contract";
 import styles from "./storefront-generation-review-panel.module.css";
 
 type Locale = "en" | "fi";
