@@ -6,15 +6,18 @@ import {
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import {
+  CatalogueAlreadyExistsError,
   DraftConflictError,
   InvalidRestoreTargetError,
   NoStorefrontChangesError,
   ProjectNotFoundError,
+  ProjectAlreadyExistsError,
   PublishedConflictError,
   PublishContentConflictError,
   RepositoryValidationError,
   RevisionConflictError,
   SnapshotNotFoundError,
+  SnapshotAlreadyExistsError,
   SnapshotProjectMismatchError,
   type ProjectAggregate,
   type ProjectRepository,
@@ -25,6 +28,42 @@ const projectId = aurumNordicSeed.project.id;
 
 function editableDraft(): StorefrontSnapshot {
   return structuredClone(aurumNordicSeed.draftSnapshot);
+}
+
+export function createdAggregate(label: string): ProjectAggregate {
+  const project = structuredClone(aurumNordicSeed.project);
+  const catalogue = structuredClone(aurumNordicSeed.catalogue);
+  const published = structuredClone(aurumNordicSeed.publishedSnapshot);
+  const draft = structuredClone(aurumNordicSeed.draftSnapshot);
+  project.id = `project_created_${label}`;
+  project.name = `Created ${label}`;
+  catalogue.id = `catalogue_created_${label}`;
+  published.id = `snapshot_created_published_${label}`;
+  draft.id = `snapshot_created_draft_${label}`;
+  for (const snapshot of [published, draft]) {
+    snapshot.projectId = project.id;
+    snapshot.catalogueRef = catalogue.id;
+  }
+  return {
+    project: {
+      ...project,
+      publishedSnapshotId: published.id,
+      draftSnapshotId: draft.id,
+    },
+    catalogue,
+    snapshots: [published, draft],
+    snapshotHistoryMetadata: [
+      {
+        snapshotId: published.id,
+        projectId: project.id,
+        reason: "published",
+        summary: {
+          en: "Created storefront history.",
+          fi: "Luodun verkkokaupan historia.",
+        },
+      },
+    ],
+  };
 }
 
 function publishExpectation(aggregate: ProjectAggregate): PublishExpectation {
@@ -68,6 +107,26 @@ async function saveMeaningfulDraft(
   return repository.get(projectId);
 }
 
+async function saveCreatedDraft(
+  repository: ProjectRepository,
+  aggregate: ProjectAggregate,
+  label: string,
+): Promise<ProjectAggregate> {
+  const current = await repository.get(aggregate.project.id);
+  const draft = structuredClone(
+    current.snapshots.find((snapshot) => snapshot.id === current.project.draftSnapshotId)!,
+  );
+  draft.id = `snapshot_created_publishable_${label}`;
+  draft.createdAt = new Date(Date.parse(draft.createdAt) + 1_000).toISOString();
+  draft.pages[0].title.en = `Created publishable ${label}`;
+  await repository.saveDraft(current.project.id, draft, {
+    id: current.project.draftSnapshotId,
+    revision: current.snapshots.find((snapshot) => snapshot.id === current.project.draftSnapshotId)!
+      .revision,
+  });
+  return repository.get(current.project.id);
+}
+
 export function runProjectRepositoryContract(
   name: string,
   createRepository: () => ProjectRepository | Promise<ProjectRepository>,
@@ -99,6 +158,201 @@ export function runProjectRepositoryContract(
       expect(aggregate.snapshots.map(({ id }) => id).sort()).toEqual(
         [aurumNordicSeed.publishedSnapshot.id, aurumNordicSeed.draftSnapshot.id].sort(),
       );
+    });
+
+    it("atomically creates a complete detached aggregate and preserves its metadata", async () => {
+      const input = createdAggregate("complete");
+      const original = structuredClone(input);
+      const created = await repository.create(input);
+
+      expect(input).toEqual(original);
+      const loaded = await repository.get(input.project.id);
+      expect(loaded.project).toEqual(created.project);
+      expect(loaded.catalogue).toEqual(created.catalogue);
+      expect(loaded.snapshots.map(({ id }) => id).sort()).toEqual(
+        created.snapshots.map(({ id }) => id).sort(),
+      );
+      expect(loaded.snapshotHistoryMetadata).toEqual(created.snapshotHistoryMetadata);
+      expect(await repository.list()).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: input.project.id })]),
+      );
+      expect(created.project).toEqual(input.project);
+      expect(created.catalogue).toEqual(input.catalogue);
+      expect(created.snapshots).toEqual(input.snapshots);
+      expect(created.snapshotHistoryMetadata).toEqual(input.snapshotHistoryMetadata);
+
+      created.project.name = "Mutated result";
+      created.catalogue.products[0].price.amount = 1;
+      created.snapshots[0].pages[0].title.en = "Mutated result";
+      const isolated = await repository.get(input.project.id);
+      expect(isolated.project).toEqual(input.project);
+      expect(isolated.catalogue).toEqual(input.catalogue);
+      expect(isolated.snapshots.map(({ id }) => id).sort()).toEqual(
+        input.snapshots.map(({ id }) => id).sort(),
+      );
+
+      input.project.name = "Mutated input";
+      input.snapshots[0].pages[0].title.en = "Mutated input";
+      expect((await repository.get(original.project.id)).project.name).toBe("Created complete");
+      expect((await repository.get(original.project.id)).snapshots[0].pages[0].title.en).toBe(
+        original.snapshots[0].pages[0].title.en,
+      );
+    });
+
+    it("rejects identity conflicts and leaves existing aggregates unchanged", async () => {
+      const first = createdAggregate("identity_first");
+      await repository.create(first);
+      const before = await repository.get(first.project.id);
+
+      const duplicateProject = createdAggregate("identity_project");
+      duplicateProject.project.id = first.project.id;
+      duplicateProject.snapshots.forEach((snapshot) => (snapshot.projectId = first.project.id));
+      duplicateProject.snapshotHistoryMetadata?.forEach(
+        (metadata) => (metadata.projectId = first.project.id),
+      );
+      await expect(repository.create(duplicateProject)).rejects.toBeInstanceOf(
+        ProjectAlreadyExistsError,
+      );
+
+      const duplicateCatalogue = createdAggregate("identity_catalogue");
+      duplicateCatalogue.catalogue.id = first.catalogue.id;
+      duplicateCatalogue.snapshots.forEach(
+        (snapshot) => (snapshot.catalogueRef = first.catalogue.id),
+      );
+      await expect(repository.create(duplicateCatalogue)).rejects.toBeInstanceOf(
+        CatalogueAlreadyExistsError,
+      );
+
+      const duplicateSnapshot = createdAggregate("identity_snapshot");
+      duplicateSnapshot.snapshots[0].id = first.snapshots[0].id;
+      duplicateSnapshot.project.publishedSnapshotId = duplicateSnapshot.snapshots[0].id;
+      duplicateSnapshot.snapshotHistoryMetadata![0].snapshotId = duplicateSnapshot.snapshots[0].id;
+      await expect(repository.create(duplicateSnapshot)).rejects.toBeInstanceOf(
+        SnapshotAlreadyExistsError,
+      );
+
+      expect(await repository.get(first.project.id)).toEqual(before);
+      expect(await repository.list()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: first.project.id }),
+          expect.objectContaining({ id: aurumNordicSeed.project.id }),
+        ]),
+      );
+    });
+
+    it("rejects invalid aggregates before writing and permits another valid project", async () => {
+      const cases: Array<(aggregate: ProjectAggregate) => void> = [
+        (aggregate) => (aggregate.snapshots[0].pages[0].sections[0].component = "unknownComponent"),
+        (aggregate) => (aggregate.project.draftSnapshotId = "snapshot_missing_draft"),
+        (aggregate) => (aggregate.project.publishedSnapshotId = "snapshot_missing_published"),
+        (aggregate) => (aggregate.snapshots[0].projectId = "project_other"),
+        (aggregate) => (aggregate.snapshots[0].catalogueRef = "catalogue_other"),
+        (aggregate) =>
+          aggregate.snapshotHistoryMetadata!.push({
+            snapshotId: "snapshot_missing_history",
+            projectId: aggregate.project.id,
+            reason: "published",
+            summary: { en: "Invalid", fi: "Virheellinen" },
+          }),
+        (aggregate) => (aggregate.snapshots[1].id = aggregate.snapshots[0].id),
+      ];
+      const before = await repository.list();
+      for (const [index, mutate] of cases.entries()) {
+        const invalid = createdAggregate(`invalid_${index}`);
+        mutate(invalid);
+        await expect(repository.create(invalid)).rejects.toBeInstanceOf(RepositoryValidationError);
+        expect(await repository.list()).toEqual(before);
+      }
+
+      const second = await repository.create(createdAggregate("second_valid"));
+      expect(second.project.id).toBe("project_created_second_valid");
+    });
+
+    it("allows only one concurrent creation for the same project identity", async () => {
+      const left = createdAggregate("concurrent");
+      const right = structuredClone(left);
+      const results = await Promise.allSettled([repository.create(left), repository.create(right)]);
+      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      const rejected = results.find((result) => result.status === "rejected");
+      expect(rejected && rejected.reason).toBeInstanceOf(ProjectAlreadyExistsError);
+      expect((await repository.list()).filter(({ id }) => id === left.project.id)).toHaveLength(1);
+    });
+
+    it("keeps generated snapshot identities project-scoped across normal publishing", async () => {
+      await repository.create(createdAggregate("identity_publish_a"));
+      await repository.create(createdAggregate("identity_publish_b"));
+      const first = await saveCreatedDraft(
+        repository,
+        createdAggregate("identity_publish_a"),
+        "identity_publish_a",
+      );
+      const second = await saveCreatedDraft(
+        repository,
+        createdAggregate("identity_publish_b"),
+        "identity_publish_b",
+      );
+      const publishedLeft = await repository.publish(first.project.id, publishExpectation(first));
+      const publishedRight = await repository.publish(
+        second.project.id,
+        publishExpectation(second),
+      );
+      expect(publishedLeft.project.publishedSnapshotId).not.toBe(
+        publishedRight.project.publishedSnapshotId,
+      );
+      expect(await repository.get(publishedLeft.project.id)).toEqual(publishedLeft);
+      expect(await repository.get(publishedRight.project.id)).toEqual(publishedRight);
+    });
+
+    it("rejects a cross-project saveDraft snapshot collision without changing either project", async () => {
+      const first = createdAggregate("save_collision_a");
+      const second = createdAggregate("save_collision_b");
+      await repository.create(first);
+      await repository.create(second);
+      const beforeFirst = await repository.get(first.project.id);
+      const beforeSecond = await repository.get(second.project.id);
+      const candidate = structuredClone(
+        beforeSecond.snapshots.find(
+          (snapshot) => snapshot.id === beforeSecond.project.draftSnapshotId,
+        )!,
+      );
+      candidate.id = beforeFirst.project.draftSnapshotId;
+      candidate.pages[0].title.en = "Must not overwrite another project";
+      await expect(repository.saveDraft(second.project.id, candidate)).rejects.toBeInstanceOf(
+        SnapshotAlreadyExistsError,
+      );
+      expect(await repository.get(first.project.id)).toEqual(beforeFirst);
+      expect(await repository.get(second.project.id)).toEqual(beforeSecond);
+    });
+
+    it("allows only one project to introduce the same new snapshot ID", async () => {
+      const first = createdAggregate("concurrent_snapshot_a");
+      const second = createdAggregate("concurrent_snapshot_b");
+      await repository.create(first);
+      await repository.create(second);
+      const firstCurrent = await repository.get(first.project.id);
+      const secondCurrent = await repository.get(second.project.id);
+      const firstCandidate = structuredClone(
+        firstCurrent.snapshots.find(
+          (snapshot) => snapshot.id === firstCurrent.project.draftSnapshotId,
+        )!,
+      );
+      const secondCandidate = structuredClone(
+        secondCurrent.snapshots.find(
+          (snapshot) => snapshot.id === secondCurrent.project.draftSnapshotId,
+        )!,
+      );
+      firstCandidate.id = "snapshot_shared_concurrent";
+      secondCandidate.id = firstCandidate.id;
+      const results = await Promise.allSettled([
+        repository.saveDraft(first.project.id, firstCandidate),
+        repository.saveDraft(second.project.id, secondCandidate),
+      ]);
+      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      expect(results.find((result) => result.status === "rejected")?.reason).toBeInstanceOf(
+        SnapshotAlreadyExistsError,
+      );
+      expect((await repository.get(first.project.id)).snapshots.length).toBeGreaterThanOrEqual(2);
+      expect((await repository.get(second.project.id)).snapshots.length).toBeGreaterThanOrEqual(2);
     });
 
     it("defensively isolates returned data and saved inputs", async () => {

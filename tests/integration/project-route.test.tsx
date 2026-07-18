@@ -29,6 +29,7 @@ function repositoryWithGet(get: ProjectRepository["get"]): {
     repository: {
       list: vi.fn(),
       get: getMock,
+      create: vi.fn(),
       saveDraft: vi.fn(),
       publish: vi.fn(),
       restore: vi.fn(),

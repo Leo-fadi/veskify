@@ -144,6 +144,7 @@ function repository(get: ProjectRepository["get"]): ProjectRepository {
   return {
     list: vi.fn(),
     get: vi.fn(get),
+    create: vi.fn(),
     saveDraft: vi.fn(),
     publish: vi.fn(),
     restore: vi.fn(),
@@ -1057,6 +1058,7 @@ describe("P2-01 project editor route", () => {
     const value: ProjectRepository = {
       list: () => inner.list(),
       get: (id) => inner.get(id),
+      create: (aggregate) => inner.create(aggregate),
       saveDraft: (id, snapshot, expected) =>
         failSave
           ? Promise.reject(new Error("storage unavailable"))
@@ -1109,6 +1111,7 @@ describe("P2-01 project editor route", () => {
     const value: ProjectRepository = {
       list: () => inner.list(),
       get: (id) => inner.get(id),
+      create: (aggregate) => inner.create(aggregate),
       saveDraft: async (id, snapshot, expected) => {
         capturedHomeTitle = snapshot.pages.find((page) => page.type === "home")?.title.en;
         await gate;
@@ -1178,6 +1181,7 @@ describe("P2-01 project editor route", () => {
     const value: ProjectRepository = {
       list: () => inner.list(),
       get: (id) => inner.get(id),
+      create: (aggregate) => inner.create(aggregate),
       saveDraft: async () => {
         await gate;
         throw new Error("delayed storage failure");

@@ -6,19 +6,23 @@ import {
 } from "@/domain/storefront";
 import {
   DraftConflictError,
+  CatalogueAlreadyExistsError,
   InvalidRestoreTargetError,
   NoStorefrontChangesError,
+  ProjectAlreadyExistsError,
   ProjectNotFoundError,
   PublishedConflictError,
   PublishContentConflictError,
   RevisionConflictError,
   SnapshotNotFoundError,
+  SnapshotAlreadyExistsError,
   SnapshotProjectMismatchError,
   type ProjectAggregate,
   type ProjectRepository,
   type ProjectSummary,
   type PublishExpectation,
   type RestoreExpectation,
+  projectScopedSnapshotId,
   RestoreContentConflictError,
 } from "./project-repository";
 import {
@@ -107,6 +111,42 @@ export class InMemoryProjectRepository implements ProjectRepository {
     return clone(this.#validatedAggregate(this.#requireProject(projectId)));
   }
 
+  async create(input: ProjectAggregate): Promise<ProjectAggregate> {
+    await Promise.resolve();
+    const aggregate = validateProjectAggregate(clone(input));
+
+    if (this.#projects.has(aggregate.project.id)) {
+      throw new ProjectAlreadyExistsError(aggregate.project.id);
+    }
+    for (const stored of this.#projects.values()) {
+      if (stored.catalogue.id === aggregate.catalogue.id) {
+        throw new CatalogueAlreadyExistsError(aggregate.catalogue.id);
+      }
+      const existingSnapshot = aggregate.snapshots.find((snapshot) =>
+        stored.snapshots.has(snapshot.id),
+      );
+      if (existingSnapshot) {
+        throw new SnapshotAlreadyExistsError(existingSnapshot.id);
+      }
+    }
+
+    this.#projects.set(aggregate.project.id, {
+      project: freeze(aggregate.project),
+      catalogue: freeze(aggregate.catalogue),
+      snapshots: new Map(aggregate.snapshots.map((snapshot) => [snapshot.id, freeze(snapshot)])),
+      snapshotHistoryMetadata: new Map(
+        aggregate.snapshotHistoryMetadata?.map((metadata) => [
+          metadata.snapshotId,
+          freeze(metadata),
+        ]),
+      ),
+      managedDraftSnapshotIds: new Set([aggregate.project.draftSnapshotId]),
+      operationSequence: aggregate.snapshots.length,
+    });
+
+    return clone(aggregate);
+  }
+
   async saveDraft(
     projectId: string,
     input: StorefrontSnapshot,
@@ -128,6 +168,11 @@ export class InMemoryProjectRepository implements ProjectRepository {
       });
     }
     const snapshot = validateRepositorySnapshot(clone(input), stored.catalogue);
+
+    const snapshotOwner = this.#snapshotOwner(snapshot.id);
+    if (snapshotOwner && snapshotOwner !== projectId) {
+      throw new SnapshotAlreadyExistsError(snapshot.id);
+    }
 
     if (snapshot.projectId !== projectId) {
       throw new SnapshotProjectMismatchError(projectId, snapshot.projectId);
@@ -245,7 +290,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
     const published = validateRepositorySnapshot(
       {
         ...clone(draft),
-        id: this.#snapshotId("published", revision, sequence),
+        id: this.#snapshotId(projectId, "published", revision, sequence),
         revision,
         createdAt,
         createdBy: "user",
@@ -255,20 +300,18 @@ export class InMemoryProjectRepository implements ProjectRepository {
     const synchronizedDraft = validateRepositorySnapshot(
       {
         ...clone(published),
-        id: this.#snapshotId("synchronized", revision, sequence),
+        id: this.#snapshotId(projectId, "synchronized", revision, sequence),
         createdBy: "system",
       },
       stored.catalogue,
     );
     if (
       published.id === synchronizedDraft.id ||
-      stored.snapshots.has(published.id) ||
-      stored.snapshots.has(synchronizedDraft.id)
+      this.#snapshotOwner(published.id) ||
+      this.#snapshotOwner(synchronizedDraft.id)
     ) {
-      throw repositoryValidationError(
-        "Publishing must create two unique snapshot identities.",
-        new Error("Generated snapshot IDs must remain unique."),
-      );
+      const conflictingId = this.#snapshotOwner(published.id) ? published.id : synchronizedDraft.id;
+      throw new SnapshotAlreadyExistsError(conflictingId);
     }
     const nextProject = projectSchema.parse({
       ...stored.project,
@@ -365,12 +408,15 @@ export class InMemoryProjectRepository implements ProjectRepository {
     const restored = validateRepositorySnapshot(
       {
         ...clone(historical),
-        id: this.#snapshotId("restored", stored.project.revision, sequence),
+        id: this.#snapshotId(projectId, "restored", stored.project.revision, sequence),
         createdAt: this.#nextTimestamp(stored, sequence),
         createdBy: "user",
       },
       stored.catalogue,
     );
+    if (this.#snapshotOwner(restored.id)) {
+      throw new SnapshotAlreadyExistsError(restored.id);
+    }
     const nextProject = projectSchema.parse({
       ...stored.project,
       draftSnapshotId: restored.id,
@@ -422,6 +468,13 @@ export class InMemoryProjectRepository implements ProjectRepository {
     return project;
   }
 
+  #snapshotOwner(snapshotId: string): string | undefined {
+    for (const [projectId, stored] of this.#projects) {
+      if (stored.snapshots.has(snapshotId)) return projectId;
+    }
+    return undefined;
+  }
+
   #validatedAggregate(stored: StoredProject): ProjectAggregate {
     return validateProjectAggregate({
       project: stored.project,
@@ -434,11 +487,12 @@ export class InMemoryProjectRepository implements ProjectRepository {
   }
 
   #snapshotId(
+    projectId: string,
     reason: "published" | "restored" | "synchronized",
     revision: number,
     sequence: number,
   ): string {
-    return `snapshot_${reason}_${revision}_${sequence}`;
+    return projectScopedSnapshotId(projectId, reason, revision, sequence);
   }
 
   #nextTimestamp(stored: StoredProject, sequence: number): string {

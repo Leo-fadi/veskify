@@ -20,7 +20,14 @@ function aggregate(): ProjectAggregate {
 }
 
 function repository(get: ProjectRepository["get"]): ProjectRepository {
-  return { list: vi.fn(), get: vi.fn(get), saveDraft: vi.fn(), publish: vi.fn(), restore: vi.fn() };
+  return {
+    list: vi.fn(),
+    get: vi.fn(get),
+    create: vi.fn(),
+    saveDraft: vi.fn(),
+    publish: vi.fn(),
+    restore: vi.fn(),
+  };
 }
 
 function route(
