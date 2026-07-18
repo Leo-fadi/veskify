@@ -1,11 +1,20 @@
 import {
   cloneOnboardingSession,
+  creationPathToBriefContext,
   getOnboardingStep,
+  onboardingBriefIdForSession,
   onboardingSessionSchema,
   onboardingStepRegistry,
+  evaluateBusinessBasics as evaluateBusinessBasicsForBrief,
+  type BusinessBasicsField,
   type OnboardingCreationPath,
   type OnboardingSession,
 } from "@/domain/onboarding";
+import {
+  createEmptyStorefrontDesignBrief,
+  updateStorefrontDesignBriefArea,
+  type BusinessIdentity,
+} from "@/domain/design-brief";
 import {
   OnboardingStorageError,
   type OnboardingSessionLoadResult,
@@ -14,6 +23,7 @@ import {
 
 export type OnboardingTransitionErrorCode =
   | "CREATION_PATH_REQUIRED"
+  | "BUSINESS_BASICS_INCOMPLETE"
   | "REQUIRED_STEP_CANNOT_BE_SKIPPED"
   | "STEP_NOT_AVAILABLE"
   | "NO_PREVIOUS_STEP"
@@ -24,6 +34,15 @@ export class OnboardingTransitionError extends Error {
   constructor(readonly code: OnboardingTransitionErrorCode) {
     super(code);
     this.name = "OnboardingTransitionError";
+  }
+}
+
+export class OnboardingBusinessBasicsValidationError extends Error {
+  readonly code = "BUSINESS_BASICS_INCOMPLETE" as const;
+
+  constructor(readonly missingFields: readonly BusinessBasicsField[]) {
+    super("Business basics are incomplete.");
+    this.name = "OnboardingBusinessBasicsValidationError";
   }
 }
 
@@ -62,9 +81,10 @@ export class OnboardingService {
 
   async createSession(): Promise<OnboardingSession> {
     const timestamp = this.#now();
+    const id = this.#createId();
     const session = onboardingSessionSchema.parse({
-      id: this.#createId(),
-      schemaVersion: 1,
+      id,
+      schemaVersion: 2,
       creationPath: null,
       activeStepId: "creation-path",
       completedStepIds: [],
@@ -74,6 +94,10 @@ export class OnboardingService {
       status: "active",
       createdAt: timestamp,
       updatedAt: timestamp,
+      designBrief: createEmptyStorefrontDesignBrief({
+        id: onboardingBriefIdForSession(id),
+        now: timestamp,
+      }),
     });
     await this.#repository.save(session);
     return cloneOnboardingSession(session);
@@ -107,12 +131,27 @@ export class OnboardingService {
     if (session.activeStepId !== "creation-path") {
       throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
     }
-    return this.#commit({ ...session, creationPath });
+    const timestamp = this.#now();
+    const context = creationPathToBriefContext(creationPath);
+    const designBrief = updateStorefrontDesignBriefArea(
+      session.designBrief,
+      "creationContext",
+      {
+        type: context,
+        existingStorefrontUrl:
+          context === "redesign-existing-storefront"
+            ? session.designBrief.creationContext.existingStorefrontUrl
+            : null,
+      },
+      timestamp,
+    );
+    return this.#commit({ ...session, creationPath, designBrief }, timestamp);
   }
 
   async advance(input: OnboardingSession): Promise<OnboardingSession> {
     const session = this.#validateActive(input);
     const step = getOnboardingStep(session.activeStepId);
+    if (step.id === "business-basics") return this.completeBusinessBasics(session);
     if (!step.completableNow) throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
     if (step.id === "creation-path" && session.creationPath === null) {
       throw new OnboardingTransitionError("CREATION_PATH_REQUIRED");
@@ -128,6 +167,68 @@ export class OnboardingService {
       completedStepIds,
       skippedStepIds: session.skippedStepIds.filter((stepId) => stepId !== step.id),
     });
+  }
+
+  evaluateBusinessBasics(input: OnboardingSession) {
+    const session = onboardingSessionSchema.parse(input);
+    return evaluateBusinessBasicsForBrief(session.designBrief);
+  }
+
+  async updateBusinessIdentity(
+    input: OnboardingSession,
+    patch: Partial<Pick<BusinessIdentity, BusinessBasicsField>>,
+  ): Promise<OnboardingSession> {
+    const session = this.#validateBusinessBasicsStep(input);
+    const timestamp = this.#now();
+    const designBrief = updateStorefrontDesignBriefArea(
+      session.designBrief,
+      "businessIdentity",
+      patch,
+      timestamp,
+    );
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        completedStepIds: session.completedStepIds.filter((stepId) => stepId !== "business-basics"),
+      },
+      timestamp,
+    );
+  }
+
+  async updateBusinessIdentityField<Field extends BusinessBasicsField>(
+    input: OnboardingSession,
+    field: Field,
+    value: BusinessIdentity[Field],
+  ): Promise<OnboardingSession> {
+    return this.updateBusinessIdentity(input, { [field]: value });
+  }
+
+  async completeBusinessBasics(
+    input: OnboardingSession,
+    patch?: Partial<Pick<BusinessIdentity, BusinessBasicsField>>,
+  ): Promise<OnboardingSession> {
+    const session = this.#validateBusinessBasicsStep(input);
+    const timestamp = this.#now();
+    const designBrief = patch
+      ? updateStorefrontDesignBriefArea(session.designBrief, "businessIdentity", patch, timestamp)
+      : session.designBrief;
+    const evaluation = evaluateBusinessBasicsForBrief(designBrief);
+    if (!evaluation.complete) {
+      throw new OnboardingBusinessBasicsValidationError(evaluation.missingFields);
+    }
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        activeStepId: "existing-sources",
+        completedStepIds: session.completedStepIds.includes("business-basics")
+          ? session.completedStepIds
+          : [...session.completedStepIds, "business-basics"],
+        skippedStepIds: session.skippedStepIds.filter((stepId) => stepId !== "business-basics"),
+      },
+      timestamp,
+    );
   }
 
   async goBack(input: OnboardingSession): Promise<OnboardingSession> {
@@ -179,8 +280,24 @@ export class OnboardingService {
     return session;
   }
 
-  async #commit(input: OnboardingSession): Promise<OnboardingSession> {
-    const next = onboardingSessionSchema.parse({ ...input, updatedAt: this.#now() });
+  #validateBusinessBasicsStep(input: OnboardingSession): OnboardingSession {
+    const session = this.#validateActive(input);
+    if (session.activeStepId !== "business-basics") {
+      throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
+    }
+    return session;
+  }
+
+  async #commit(input: OnboardingSession, timestamp = this.#now()): Promise<OnboardingSession> {
+    const updatedAt = new Date(
+      Math.max(
+        Date.parse(input.createdAt),
+        Date.parse(input.updatedAt),
+        Date.parse(input.designBrief.updatedAt),
+        Date.parse(timestamp),
+      ),
+    ).toISOString();
+    const next = onboardingSessionSchema.parse({ ...input, updatedAt });
     await this.#repository.save(next);
     return cloneOnboardingSession(next);
   }

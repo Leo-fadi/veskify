@@ -19,7 +19,7 @@ export const storefrontCreationContextTypeSchema = z.enum([
 ]);
 export type StorefrontCreationContextType = z.infer<typeof storefrontCreationContextTypeSchema>;
 
-export const storefrontIndustrySchema = z.enum([
+export const storefrontIndustryValues = [
   "jewellery",
   "watches",
   "fashion",
@@ -31,7 +31,8 @@ export const storefrontIndustrySchema = z.enum([
   "sports",
   "health",
   "other",
-]);
+] as const;
+export const storefrontIndustrySchema = z.enum(storefrontIndustryValues);
 export type StorefrontIndustry = z.infer<typeof storefrontIndustrySchema>;
 
 export const briefPageTypeValues = [

@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { OnboardingService, OnboardingTransitionError } from "@/application/onboarding";
+import {
+  OnboardingMutationQueue,
+  OnboardingService,
+  OnboardingTransitionError,
+} from "@/application/onboarding";
 import {
   ONBOARDING_SCHEMA_VERSION,
+  PREVIOUS_ONBOARDING_SCHEMA_VERSION,
+  migrateOnboardingSession,
   onboardingSessionSchema,
   onboardingStepIds,
   onboardingStepRegistry,
@@ -12,6 +18,10 @@ import {
   type OnboardingSessionLoadResult,
   type OnboardingSessionRepository,
 } from "@/services/onboarding";
+import {
+  createEmptyStorefrontDesignBrief,
+  updateStorefrontDesignBriefArea,
+} from "@/domain/design-brief";
 
 class MemoryOnboardingRepository implements OnboardingSessionRepository {
   session?: OnboardingSession;
@@ -39,11 +49,57 @@ class MemoryOnboardingRepository implements OnboardingSessionRepository {
 
 const timestamp = "2026-07-18T08:00:00.000Z";
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
 function validSession(overrides: Partial<OnboardingSession> = {}): OnboardingSession {
+  const creationPath = overrides.creationPath ?? null;
+  let designBrief =
+    overrides.designBrief ??
+    createEmptyStorefrontDesignBrief({ id: "onboarding_test_brief", now: timestamp });
+  if (!overrides.designBrief && creationPath) {
+    designBrief = updateStorefrontDesignBriefArea(
+      designBrief,
+      "creationContext",
+      {
+        type:
+          creationPath === "new-storefront"
+            ? "new-storefront"
+            : creationPath === "redesign-existing-storefront"
+              ? "redesign-existing-storefront"
+              : "demo-storefront",
+      },
+      timestamp,
+    );
+  }
+  if (!overrides.designBrief && overrides.completedStepIds?.includes("business-basics")) {
+    designBrief = updateStorefrontDesignBriefArea(
+      designBrief,
+      "businessIdentity",
+      {
+        businessName: "Aurum Nordic",
+        shortDescription: "A Helsinki jewellery studio.",
+        industry: "jewellery",
+        targetCustomer: "Customers looking for Nordic jewellery.",
+        primaryMarket: "Finland",
+      },
+      timestamp,
+    );
+  }
+  const updatedAt =
+    overrides.updatedAt ??
+    new Date(Math.max(Date.parse(timestamp), Date.parse(designBrief.updatedAt))).toISOString();
   return onboardingSessionSchema.parse({
     id: "onboarding_test",
     schemaVersion: ONBOARDING_SCHEMA_VERSION,
-    creationPath: null,
+    creationPath,
     activeStepId: "creation-path",
     completedStepIds: [],
     skippedStepIds: [],
@@ -51,7 +107,8 @@ function validSession(overrides: Partial<OnboardingSession> = {}): OnboardingSes
     primaryLanguage: "en",
     status: "active",
     createdAt: timestamp,
-    updatedAt: timestamp,
+    updatedAt,
+    designBrief,
     ...overrides,
   });
 }
@@ -67,10 +124,33 @@ function createService(repository = new MemoryOnboardingRepository()) {
   };
 }
 
+const completeBusinessIdentity = {
+  businessName: "Aurum Nordic",
+  shortDescription: "A Helsinki jewellery studio.",
+  industry: "jewellery" as const,
+  targetCustomer: "Customers looking for Nordic jewellery.",
+  primaryMarket: "Finland",
+};
+
+function businessBasicsSession(): OnboardingSession {
+  const base = validSession({
+    creationPath: "new-storefront",
+    activeStepId: "business-basics",
+    completedStepIds: ["creation-path"],
+  });
+  const designBrief = updateStorefrontDesignBriefArea(
+    base.designBrief,
+    "businessIdentity",
+    completeBusinessIdentity,
+    timestamp,
+  );
+  return onboardingSessionSchema.parse({ ...base, designBrief, updatedAt: designBrief.updatedAt });
+}
+
 describe("onboarding session schema", () => {
   it("accepts the canonical initial state", () => {
     expect(validSession()).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: 2,
       activeStepId: "creation-path",
       selectedLanguages: ["en"],
     });
@@ -87,7 +167,7 @@ describe("onboarding session schema", () => {
     ["unsupported step", { activeStepId: "unknown-step" }],
     ["unsupported language", { selectedLanguages: ["sv"] }],
     ["primary language outside selection", { selectedLanguages: ["en"], primaryLanguage: "fi" }],
-    ["unsupported schema version", { schemaVersion: 2 }],
+    ["unsupported schema version", { schemaVersion: 99 }],
     ["updated before created", { updatedAt: "2026-07-17T08:00:00.000Z" }],
     ["jumped active step", { activeStepId: "brand-assets" }],
   ])("rejects %s", (_name, overrides) => {
@@ -165,7 +245,7 @@ describe("onboarding application service", () => {
       completedStepIds: ["creation-path"],
     });
     await expect(service.advance(placeholder)).rejects.toMatchObject({
-      code: "STEP_NOT_AVAILABLE",
+      code: "BUSINESS_BASICS_INCOMPLETE",
     });
   });
 
@@ -229,6 +309,238 @@ describe("onboarding application service", () => {
     expect(initial.creationPath).toBeNull();
   });
 
+  it("creates one collecting brief with a stable identity and preserved timestamp", async () => {
+    const { service } = createService();
+    const session = await service.createSession();
+
+    expect(session.designBrief).toMatchObject({
+      id: "onboarding_test_brief",
+      status: "collecting",
+      createdAt: timestamp,
+      creationContext: { type: null },
+    });
+    expect(session.designBrief.createdAt).toBe(session.createdAt);
+    expect(session.designBrief).not.toHaveProperty("products");
+  });
+
+  it.each([
+    ["new-storefront", "new-storefront"],
+    ["redesign-existing-storefront", "redesign-existing-storefront"],
+    ["demo-preset", "demo-storefront"],
+  ] as const)("maps %s to the canonical brief context", async (path, context) => {
+    const { service } = createService();
+    const initial = await service.createSession();
+    const selected = await service.selectCreationPath(initial, path);
+
+    expect(selected.creationPath).toBe(path);
+    expect(selected.designBrief.creationContext.type).toBe(context);
+  });
+
+  it("clears a redesign URL when changing to another creation path", async () => {
+    const { service } = createService();
+    const initial = await service.createSession();
+    const redesign = await service.selectCreationPath(initial, "redesign-existing-storefront");
+    const withUrlBrief = updateStorefrontDesignBriefArea(
+      redesign.designBrief,
+      "creationContext",
+      { existingStorefrontUrl: "https://merchant.example.test" },
+      timestamp,
+    );
+    const withUrl = onboardingSessionSchema.parse({
+      ...redesign,
+      designBrief: withUrlBrief,
+      updatedAt: withUrlBrief.updatedAt,
+    });
+    const selected = await service.selectCreationPath(withUrl, "new-storefront");
+
+    expect(selected.designBrief.creationContext).toEqual({
+      type: "new-storefront",
+      existingStorefrontUrl: null,
+    });
+  });
+
+  it("rejects a session whose creation path and brief context drift apart", () => {
+    const session = validSession({ creationPath: "new-storefront" });
+    const driftedBrief = updateStorefrontDesignBriefArea(
+      session.designBrief,
+      "creationContext",
+      { type: "demo-storefront" },
+      timestamp,
+    );
+
+    expect(() =>
+      onboardingSessionSchema.parse({
+        ...session,
+        designBrief: driftedBrief,
+        updatedAt: driftedBrief.updatedAt,
+      }),
+    ).toThrow(/must agree/i);
+  });
+
+  it("updates business identity through immutable canonical brief helpers", async () => {
+    const { service } = createService();
+    const session = businessBasicsSession();
+    const updated = await service.updateBusinessIdentityField(
+      session,
+      "businessName",
+      "  Updated Nordic  ",
+    );
+
+    expect(session.designBrief.businessIdentity.businessName).toBe("Aurum Nordic");
+    expect(updated.designBrief.businessIdentity.businessName).toBe("Updated Nordic");
+    expect(updated.designBrief.businessIdentity.shortDescription).toBe(
+      completeBusinessIdentity.shortDescription,
+    );
+    expect(updated.completedStepIds).not.toContain("business-basics");
+  });
+
+  it("classifies storage failures during field updates and preserves the prior session", async () => {
+    const repository = new MemoryOnboardingRepository();
+    const { service } = createService(repository);
+    const session = businessBasicsSession();
+    await repository.save(session);
+    repository.saveError = new OnboardingStorageError();
+
+    await expect(
+      service.updateBusinessIdentityField(session, "businessName", "Unsaved change"),
+    ).rejects.toBeInstanceOf(OnboardingStorageError);
+    expect(repository.session).toEqual(session);
+  });
+
+  it("classifies storage failures during O-02 completion and does not hide programming errors", async () => {
+    const repository = new MemoryOnboardingRepository();
+    const { service } = createService(repository);
+    const session = validSession({
+      creationPath: "new-storefront",
+      activeStepId: "business-basics",
+      completedStepIds: ["creation-path"],
+    });
+    await repository.save(session);
+    repository.saveError = new OnboardingStorageError();
+    await expect(
+      service.completeBusinessBasics(session, completeBusinessIdentity),
+    ).rejects.toBeInstanceOf(OnboardingStorageError);
+
+    const programmingError = new Error("unexpected save implementation error");
+    repository.saveError = programmingError;
+    await expect(service.completeBusinessBasics(session, completeBusinessIdentity)).rejects.toBe(
+      programmingError,
+    );
+  });
+
+  it("evaluates required O-02 fields without requiring later onboarding areas", () => {
+    const { service } = createService();
+    const session = validSession({
+      creationPath: "new-storefront",
+      activeStepId: "business-basics",
+      completedStepIds: ["creation-path"],
+    });
+    const incomplete = service.evaluateBusinessBasics(session);
+    expect(incomplete).toEqual({
+      complete: false,
+      missingFields: [
+        "businessName",
+        "shortDescription",
+        "industry",
+        "targetCustomer",
+        "primaryMarket",
+      ],
+    });
+
+    const complete = service.evaluateBusinessBasics(businessBasicsSession());
+    expect(complete).toEqual({ complete: true, missingFields: [] });
+  });
+
+  it("completes O-02 only with valid fields and advances to deferred O-03", async () => {
+    const { service } = createService();
+    const incomplete = validSession({
+      creationPath: "new-storefront",
+      activeStepId: "business-basics",
+      completedStepIds: ["creation-path"],
+    });
+    await expect(service.completeBusinessBasics(incomplete)).rejects.toEqual(
+      expect.objectContaining({
+        code: "BUSINESS_BASICS_INCOMPLETE",
+      }),
+    );
+
+    const complete = await service.completeBusinessBasics(incomplete, completeBusinessIdentity);
+    expect(complete).toMatchObject({
+      activeStepId: "existing-sources",
+      completedStepIds: ["creation-path", "business-basics"],
+      designBrief: { status: "collecting" },
+    });
+    expect(complete.designBrief.businessIdentity).toMatchObject(completeBusinessIdentity);
+  });
+
+  it("goes back from O-03 without losing completed O-02 values", async () => {
+    const { service } = createService();
+    const complete = await service.completeBusinessBasics(
+      validSession({
+        creationPath: "new-storefront",
+        activeStepId: "business-basics",
+        completedStepIds: ["creation-path"],
+      }),
+      completeBusinessIdentity,
+    );
+    const back = await service.goBack(complete);
+
+    expect(back.activeStepId).toBe("business-basics");
+    expect(back.designBrief.businessIdentity).toMatchObject(completeBusinessIdentity);
+    expect(back.completedStepIds).toContain("business-basics");
+  });
+
+  it("migrates a valid P3-01 session into one collecting brief", () => {
+    const legacy = {
+      id: "onboarding_legacy",
+      schemaVersion: PREVIOUS_ONBOARDING_SCHEMA_VERSION,
+      creationPath: "redesign-existing-storefront",
+      activeStepId: "business-basics",
+      completedStepIds: ["creation-path"],
+      skippedStepIds: [],
+      selectedLanguages: ["en"],
+      primaryLanguage: "en",
+      status: "active",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    } as const;
+    const migrated = migrateOnboardingSession(legacy);
+
+    expect(migrated).toMatchObject({
+      id: legacy.id,
+      schemaVersion: ONBOARDING_SCHEMA_VERSION,
+      creationPath: legacy.creationPath,
+      activeStepId: "business-basics",
+      completedStepIds: ["creation-path"],
+      designBrief: {
+        status: "collecting",
+        creationContext: { type: "redesign-existing-storefront" },
+      },
+    });
+    expect(migrated.designBrief.createdAt).toBe(legacy.createdAt);
+  });
+
+  it("downgrades an invalid legacy O-02 completion instead of inventing business data", () => {
+    const legacy = {
+      id: "onboarding_legacy_complete",
+      schemaVersion: PREVIOUS_ONBOARDING_SCHEMA_VERSION,
+      creationPath: "demo-preset",
+      activeStepId: "existing-sources",
+      completedStepIds: ["creation-path", "business-basics"],
+      skippedStepIds: [],
+      selectedLanguages: ["en"],
+      primaryLanguage: "en",
+      status: "active",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    } as const;
+    const migrated = migrateOnboardingSession(legacy);
+
+    expect(migrated.activeStepId).toBe("business-basics");
+    expect(migrated.completedStepIds).toEqual(["creation-path"]);
+    expect(migrated.designBrief.businessIdentity.businessName).toBe("");
+  });
+
   it("reports progress without exposing mutable state", () => {
     const { service } = createService();
     const session = validSession({
@@ -243,5 +555,98 @@ describe("onboarding application service", () => {
       skipped: 0,
       percent: 22,
     });
+  });
+});
+
+describe("onboarding mutation queue", () => {
+  it("runs queued mutations against the latest session after earlier writes settle", async () => {
+    const queue = new OnboardingMutationQueue();
+    const firstWrite = deferred<void>();
+    let latestSession = "initial";
+    const seen: string[] = [];
+
+    const autosave = queue.enqueue(async () => {
+      seen.push(latestSession);
+      await firstWrite.promise;
+      latestSession = "business-value";
+      return latestSession;
+    });
+    const back = queue.enqueue(() => {
+      seen.push(latestSession);
+      return Promise.resolve("creation-path");
+    });
+
+    await Promise.resolve();
+    expect(seen).toEqual(["initial"]);
+    firstWrite.resolve();
+    await expect(autosave).resolves.toBe("business-value");
+    await expect(back).resolves.toBe("creation-path");
+    expect(seen).toEqual(["initial", "business-value"]);
+  });
+
+  it("preserves rapid field writes before Back and creation-path transitions", async () => {
+    const queue = new OnboardingMutationQueue();
+    const firstWrite = deferred<void>();
+    let latestSession = { step: "business-basics", businessName: "", primaryMarket: "" };
+    const seen: Array<typeof latestSession> = [];
+
+    const firstField = queue.enqueue(async () => {
+      seen.push({ ...latestSession });
+      await firstWrite.promise;
+      latestSession = { ...latestSession, businessName: "Aurum Nordic" };
+      return latestSession;
+    });
+    const secondField = queue.enqueue(() => {
+      seen.push({ ...latestSession });
+      latestSession = { ...latestSession, primaryMarket: "Finland" };
+      return Promise.resolve(latestSession);
+    });
+    const back = queue.enqueue(() => {
+      seen.push({ ...latestSession });
+      latestSession = { ...latestSession, step: "creation-path" };
+      return Promise.resolve(latestSession);
+    });
+
+    firstWrite.resolve();
+    await expect(firstField).resolves.toMatchObject({ businessName: "Aurum Nordic" });
+    await expect(secondField).resolves.toMatchObject({ primaryMarket: "Finland" });
+    await expect(back).resolves.toMatchObject({ step: "creation-path" });
+    expect(seen).toEqual([
+      { step: "business-basics", businessName: "", primaryMarket: "" },
+      { step: "business-basics", businessName: "Aurum Nordic", primaryMarket: "" },
+      { step: "business-basics", businessName: "Aurum Nordic", primaryMarket: "Finland" },
+    ]);
+  });
+
+  it("pauses stale work after a storage failure and accepts work after recovery", async () => {
+    const queue = new OnboardingMutationQueue();
+    const storageError = new Error("storage unavailable");
+    const failed = queue.enqueue(() => {
+      try {
+        throw storageError;
+      } catch {
+        queue.pause();
+        return Promise.reject(storageError);
+      }
+    });
+    const staleBack = queue.enqueue(() => Promise.resolve("stale-back"));
+
+    await expect(failed).rejects.toBe(storageError);
+    await expect(staleBack).resolves.toBeNull();
+
+    queue.resume();
+    await expect(queue.enqueue(() => Promise.resolve("retry"))).resolves.toBe("retry");
+  });
+
+  it("does not swallow programming errors and keeps later mutations usable", async () => {
+    const queue = new OnboardingMutationQueue();
+    const programmingError = new Error("unexpected bug");
+
+    await expect(queue.enqueue(() => Promise.reject(programmingError))).rejects.toBe(
+      programmingError,
+    );
+    await expect(queue.enqueue(() => Promise.resolve("next mutation"))).resolves.toBe(
+      "next mutation",
+    );
   });
 });

@@ -27,6 +27,77 @@ test("continues, goes back, refreshes and resumes the same choice", async ({ pag
   await expect(page.getByRole("radio", { name: /Redesign an existing storefront/i })).toBeChecked();
 });
 
+test("completes Business basics, resumes partial values, and reaches deferred O-03", async ({
+  page,
+}) => {
+  await page.goto("/projects/new");
+  await page.getByRole("radio", { name: /Create a new storefront/i }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Business basics" })).toBeVisible();
+
+  await page.getByRole("textbox", { name: "Business name" }).fill("Aurum Nordic");
+  await page.getByRole("textbox", { name: "Business name" }).press("Tab");
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Business basics" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Business name" })).toHaveValue("Aurum Nordic");
+
+  await page
+    .getByRole("textbox", { name: "Short business description" })
+    .fill("A Helsinki jewellery studio.");
+  await page.getByRole("combobox", { name: "Industry" }).selectOption("jewellery");
+  await page
+    .getByRole("textbox", { name: "Target customer" })
+    .fill("Customers looking for Nordic jewellery.");
+  await page.getByRole("textbox", { name: "Primary market" }).fill("Finland");
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Existing sources" })).toBeVisible();
+  await expect(page.getByText(/later step will collect optional website/i)).toBeVisible();
+
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("heading", { name: "Business basics" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Existing sources" })).toBeVisible();
+});
+
+test("saves a focused edit before Back and restores it on O-02", async ({ page }) => {
+  await page.goto("/projects/new");
+  await page.getByRole("radio", { name: /Create a new storefront/i }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  const name = page.getByRole("textbox", { name: "Business name" });
+  await name.fill("Aurum Nordic");
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("heading", { name: "How would you like to begin?" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Business basics" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Business name" })).toHaveValue("Aurum Nordic");
+});
+
+test("supports Finnish labels and keyboard navigation through Business basics", async ({
+  page,
+}) => {
+  await page.goto("/projects/new");
+  const finnish = page.getByRole("radio", { name: "Suomi" });
+  await finnish.focus();
+  await page.keyboard.press("Space");
+  const newStorefront = page.getByRole("radio", { name: /Luo uusi verkkokauppa/i });
+  await newStorefront.focus();
+  await page.keyboard.press("Space");
+  await page.getByRole("button", { name: "Jatka" }).click();
+  await expect(page.getByRole("heading", { name: "Yrityksen perustiedot" })).toBeVisible();
+
+  await page.getByRole("textbox", { name: "Yrityksen nimi" }).fill("Aurum Nordic");
+  await page
+    .getByRole("textbox", { name: "Lyhyt kuvaus yrityksestä" })
+    .fill("Helsinkiläinen studio.");
+  await page.getByRole("combobox", { name: "Toimiala" }).selectOption("jewellery");
+  await page
+    .getByRole("textbox", { name: "Kohdeasiakas" })
+    .fill("Pohjoismaisista koruista kiinnostuneet.");
+  await page.getByRole("textbox", { name: "Päämarkkina" }).fill("Suomi");
+  await page.getByRole("button", { name: "Jatka" }).click();
+  await expect(page.getByRole("heading", { name: "Nykyiset lähteet" })).toBeVisible();
+});
+
 test("supports Finnish and keyboard-only creation-path selection", async ({ page }) => {
   await page.goto("/projects/new");
   const finnish = page.getByRole("radio", { name: "Suomi" });

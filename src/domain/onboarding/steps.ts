@@ -36,11 +36,11 @@ const definitions = [
       fi: "Kerro, mitä yrityksesi tarjoaa ja keitä se palvelee.",
     },
     placeholder: {
-      en: "A later step will collect your business name, description, industry, audience and main market. Nothing is saved for this step yet.",
-      fi: "Myöhempi vaihe kerää yrityksen nimen, kuvauksen, toimialan, kohderyhmän ja päämarkkinan. Tästä vaiheesta ei vielä tallenneta tietoja.",
+      en: "Share the business details that will guide your storefront plan.",
+      fi: "Kerro yrityksesi tiedot verkkokaupan suunnitelmaa varten.",
     },
     optional: false,
-    completableNow: false,
+    completableNow: true,
   },
   {
     id: "existing-sources",

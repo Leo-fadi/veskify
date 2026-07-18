@@ -42,13 +42,14 @@ modified or invoked.
 ## Canonical session and lifecycle
 
 The schema records a stable session ID, schema version, selected creation path, active step, completed
-and skipped steps, storefront language defaults, status, and creation/update timestamps. Validation
-rejects unsupported or duplicate values, completed/skipped overlap, an invalid primary language,
-timestamp reversal, incompatible schema versions, and active steps that jump over unresolved work.
+and skipped steps, storefront language defaults, one collecting `StorefrontDesignBrief`, status, and
+creation/update timestamps. Validation rejects unsupported or duplicate values, completed/skipped
+overlap, an invalid primary language, timestamp reversal, incompatible schema versions, path/brief
+context drift, and active steps that jump over unresolved work.
 
 The lifecycle is:
 
-1. `resume()` loads and validates saved progress.
+1. `resume()` loads, migrates when necessary, and validates saved progress.
 2. Missing progress creates and persists a clean O-01 session.
 3. Choosing an O-01 path persists that choice without marking O-01 complete.
 4. Continue validates the step, records O-01 as completed, persists once, and activates O-02.
@@ -58,9 +59,10 @@ The lifecycle is:
 8. Reset validates and saves a new clean session in one replacement write, so a failed write cannot
    first delete the prior recoverable value.
 
-Only O-01 is completable in P3-01. O-02–O-09 are controlled placeholders that describe later input and
-state explicitly that it has not been saved. Continue is disabled on those placeholders. The service
-still implements and tests the canonical required/optional navigation rules needed as later forms land.
+O-01 and O-02 are now completable through the P3-04 business-basics slice. O-03–O-09 remain controlled
+placeholders that describe later input and state explicitly what is deferred. Continue is disabled on
+those placeholders. The service still implements and tests the canonical required/optional navigation
+rules needed as later forms land.
 
 ## Persistence and recovery
 
@@ -86,18 +88,17 @@ and responsive layouts verified at 375, 768, 1024, and 1440 pixels without horiz
 
 ## Implemented tests
 
-- Unit: schema invariants, registry ordering/navigation, transitions, required/optional skip rules,
-  placeholder guard, reset, progress, persistence failure rollback, and immutable results.
-- Integration: browser persistence, refresh/resume, corrupt/incompatible classification, SSR safety,
-  unrelated storage isolation, O-01 UI flow, back navigation, EN/FI state preservation, and recovery.
-- Playwright: all three paths, continue/back, refresh/resume, keyboard selection, EN/FI switching,
-  corrupt/incompatible recovery, and required responsive widths.
+- Unit: schema invariants and v1 migration, one collecting brief, path/context synchronization,
+  business-basics completion, immutable updates, transitions, persistence failure rollback, and progress.
+- Integration: browser migration and persistence, partial/complete O-02 resume, corrupt/incompatible
+  classification, SSR safety, O-01/O-02 UI flow, validation, EN/FI state preservation, and recovery.
+- Playwright: all three paths, O-02 completion, back/forward, partial refresh/resume, keyboard form
+  navigation, EN/FI labels, corrupt/incompatible recovery, and responsive widths.
 
-## Deferred P3-02 through P3-06 scope
+## Deferred P3-03 through P3-06 scope
 
-- P3-02: business basics form and validated business-profile input.
 - P3-03: existing-source and brand-asset intake, including safe upload boundaries.
-- P3-04: guided visual direction and catalogue-source selection or import mapping.
+- P3-04 follow-on work: guided visual direction and catalogue-source selection or import mapping.
 - P3-05: page and storefront-language configuration plus the plain-language review plan.
 - P3-06: confirmed project/storefront generation, generation progress, and editor handoff through
   approved presets, components, skills, operations, and project services.
