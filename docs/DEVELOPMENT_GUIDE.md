@@ -104,6 +104,19 @@ does not persist or publish state, and converts successful execution through the
 lifecycle rather than defining a second proposal model or store. Provider-specific types must remain
 inside future provider adapters.
 
+### Controlled storefront template registry
+
+Current locations:
+
+- `src/application/storefront-templates/**`
+- `src/components/registry/supported-vocabulary.ts`
+
+The template layer owns versioned, deterministic page-plan definitions and compatibility resolution
+for approved storefront foundations. It is React-, Next.js-, Puck-, browser-, provider-, storage-,
+and ProjectRepository-independent. The pure supported-vocabulary manifest is checked against the
+executable renderer registry by tests; templates never invent component types or variants and do not
+consume the StorefrontDesignBrief contract.
+
 ### Deterministic design-agent orchestration
 
 Current location:
