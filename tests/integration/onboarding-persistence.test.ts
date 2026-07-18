@@ -108,6 +108,75 @@ describe("browser onboarding persistence", () => {
     });
   });
 
+  it("persists and resumes a redesign URL through O-03 and O-04", async () => {
+    const service = new OnboardingService(new BrowserOnboardingSessionRepository(), {
+      createId: () => "onboarding_sources",
+      now: () => "2026-07-18T08:00:00.000Z",
+    });
+    let session = await service.createSession();
+    session = await service.selectCreationPath(session, "redesign-existing-storefront");
+    session = await service.advance(session);
+    session = await service.completeBusinessBasics(session, {
+      businessName: "Aurum Nordic",
+      shortDescription: "A Helsinki jewellery studio.",
+      industry: "jewellery",
+      targetCustomer: "Customers looking for Nordic jewellery.",
+      primaryMarket: "Finland",
+    });
+    await service.updateExistingStorefrontUrl(session, "  merchant.example.test/store  ");
+
+    const resumed = await new OnboardingService(new BrowserOnboardingSessionRepository()).resume();
+    expect(resumed).toMatchObject({
+      status: "resumed",
+      session: {
+        activeStepId: "existing-sources",
+        designBrief: {
+          creationContext: {
+            type: "redesign-existing-storefront",
+            existingStorefrontUrl: "https://merchant.example.test/store",
+          },
+        },
+      },
+    });
+
+    if (resumed.status !== "resumed") throw new Error("Expected a resumed session.");
+    const complete = await service.completeExistingSources(resumed.session);
+    expect(complete.activeStepId).toBe("brand-assets");
+    expect(complete.completedStepIds).toContain("existing-sources");
+  });
+
+  it("treats a redesign session completed without a URL as corrupt on resume", async () => {
+    const service = new OnboardingService(new BrowserOnboardingSessionRepository(), {
+      createId: () => "onboarding_corrupt_sources",
+      now: () => "2026-07-18T08:00:00.000Z",
+    });
+    let session = await service.createSession();
+    session = await service.selectCreationPath(session, "redesign-existing-storefront");
+    session = await service.advance(session);
+    session = await service.completeBusinessBasics(session, {
+      businessName: "Aurum Nordic",
+      shortDescription: "A Helsinki jewellery studio.",
+      industry: "jewellery",
+      targetCustomer: "Customers looking for Nordic jewellery.",
+      primaryMarket: "Finland",
+    });
+
+    localStorage.setItem(
+      ONBOARDING_SESSION_STORAGE_KEY,
+      JSON.stringify({
+        ...session,
+        activeStepId: "brand-assets",
+        completedStepIds: [...session.completedStepIds, "existing-sources"],
+      }),
+    );
+
+    await expect(
+      new OnboardingService(new BrowserOnboardingSessionRepository()).resume(),
+    ).resolves.toEqual({
+      status: "corrupt",
+    });
+  });
+
   it("classifies corrupt and incompatible data as recoverable", async () => {
     const repository = new BrowserOnboardingSessionRepository();
     localStorage.setItem(ONBOARDING_SESSION_STORAGE_KEY, "not json");

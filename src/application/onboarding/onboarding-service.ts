@@ -11,6 +11,11 @@ import {
   type OnboardingSession,
 } from "@/domain/onboarding";
 import {
+  evaluateExistingSourcesCompletion,
+  validateExistingStorefrontSource,
+  type ExistingStorefrontSourceValidationCode,
+} from "./existing-sources";
+import {
   createEmptyStorefrontDesignBrief,
   updateStorefrontDesignBriefArea,
   type BusinessIdentity,
@@ -43,6 +48,16 @@ export class OnboardingBusinessBasicsValidationError extends Error {
   constructor(readonly missingFields: readonly BusinessBasicsField[]) {
     super("Business basics are incomplete.");
     this.name = "OnboardingBusinessBasicsValidationError";
+  }
+}
+
+export class OnboardingExistingSourcesValidationError extends Error {
+  readonly code: ExistingStorefrontSourceValidationCode;
+
+  constructor(code: ExistingStorefrontSourceValidationCode) {
+    super(code);
+    this.name = "OnboardingExistingSourcesValidationError";
+    this.code = code;
   }
 }
 
@@ -152,6 +167,7 @@ export class OnboardingService {
     const session = this.#validateActive(input);
     const step = getOnboardingStep(session.activeStepId);
     if (step.id === "business-basics") return this.completeBusinessBasics(session);
+    if (step.id === "existing-sources") return this.completeExistingSources(session);
     if (!step.completableNow) throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
     if (step.id === "creation-path" && session.creationPath === null) {
       throw new OnboardingTransitionError("CREATION_PATH_REQUIRED");
@@ -231,6 +247,64 @@ export class OnboardingService {
     );
   }
 
+  evaluateExistingSourcesCompletion(input: OnboardingSession) {
+    const session = onboardingSessionSchema.parse(input);
+    return evaluateExistingSourcesCompletion(session.designBrief);
+  }
+
+  async updateExistingStorefrontUrl(
+    input: OnboardingSession,
+    value: string,
+  ): Promise<OnboardingSession> {
+    const session = this.#validateExistingSourcesStep(input);
+    if (session.designBrief.creationContext.type !== "redesign-existing-storefront") {
+      return cloneOnboardingSession(session);
+    }
+    const validation = validateExistingStorefrontSource(value);
+    if (!validation.valid) throw new OnboardingExistingSourcesValidationError(validation.code);
+    const designBrief = updateStorefrontDesignBriefArea(
+      session.designBrief,
+      "creationContext",
+      { existingStorefrontUrl: validation.normalizedUrl },
+      this.#now(),
+    );
+    return this.#commit({ ...session, designBrief });
+  }
+
+  async completeExistingSources(
+    input: OnboardingSession,
+    value?: string,
+  ): Promise<OnboardingSession> {
+    const session = this.#validateExistingSourcesStep(input);
+    let designBrief = session.designBrief;
+    if (session.designBrief.creationContext.type === "redesign-existing-storefront") {
+      const candidate = value ?? session.designBrief.creationContext.existingStorefrontUrl ?? "";
+      const validation = validateExistingStorefrontSource(candidate);
+      if (!validation.valid) throw new OnboardingExistingSourcesValidationError(validation.code);
+      designBrief = updateStorefrontDesignBriefArea(
+        session.designBrief,
+        "creationContext",
+        { existingStorefrontUrl: validation.normalizedUrl },
+        this.#now(),
+      );
+    }
+    const evaluation = evaluateExistingSourcesCompletion(designBrief);
+    if (!evaluation.complete) {
+      throw new OnboardingExistingSourcesValidationError("EXISTING_STOREFRONT_URL_REQUIRED");
+    }
+    const completedStepIds: OnboardingSession["completedStepIds"] =
+      session.completedStepIds.includes("existing-sources")
+        ? session.completedStepIds
+        : [...session.completedStepIds, "existing-sources"];
+    return this.#commit({
+      ...session,
+      designBrief,
+      activeStepId: "brand-assets",
+      completedStepIds,
+      skippedStepIds: session.skippedStepIds.filter((stepId) => stepId !== "existing-sources"),
+    });
+  }
+
   async goBack(input: OnboardingSession): Promise<OnboardingSession> {
     const session = onboardingSessionSchema.parse(input);
     const previousStepId = getOnboardingStep(session.activeStepId).previousStepId;
@@ -241,6 +315,7 @@ export class OnboardingService {
   async skip(input: OnboardingSession): Promise<OnboardingSession> {
     const session = this.#validateActive(input);
     const step = getOnboardingStep(session.activeStepId);
+    if (step.id === "existing-sources") return this.skipExistingSources(session);
     if (!step.optional) throw new OnboardingTransitionError("REQUIRED_STEP_CANNOT_BE_SKIPPED");
     if (!step.nextStepId) throw new OnboardingTransitionError("NO_NEXT_STEP");
     const skippedStepIds = session.skippedStepIds.includes(step.id)
@@ -252,6 +327,41 @@ export class OnboardingService {
       completedStepIds: session.completedStepIds.filter((stepId) => stepId !== step.id),
       skippedStepIds,
     });
+  }
+
+  async skipExistingSources(input: OnboardingSession): Promise<OnboardingSession> {
+    const session = this.#validateExistingSourcesStep(input);
+    const step = getOnboardingStep("existing-sources");
+    if (!step.optional) throw new OnboardingTransitionError("REQUIRED_STEP_CANNOT_BE_SKIPPED");
+    if (!step.nextStepId) throw new OnboardingTransitionError("NO_NEXT_STEP");
+
+    const timestamp = this.#now();
+    const designBrief =
+      session.designBrief.creationContext.existingStorefrontUrl === null
+        ? session.designBrief
+        : updateStorefrontDesignBriefArea(
+            session.designBrief,
+            "creationContext",
+            { existingStorefrontUrl: null },
+            timestamp,
+          );
+    const skippedStepIds: OnboardingSession["skippedStepIds"] = session.skippedStepIds.includes(
+      "existing-sources",
+    )
+      ? session.skippedStepIds
+      : [...session.skippedStepIds, "existing-sources"];
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        activeStepId: step.nextStepId,
+        completedStepIds: session.completedStepIds.filter(
+          (stepId) => stepId !== "existing-sources",
+        ),
+        skippedStepIds,
+      },
+      timestamp,
+    );
   }
 
   async reset(): Promise<OnboardingSession> {
@@ -283,6 +393,14 @@ export class OnboardingService {
   #validateBusinessBasicsStep(input: OnboardingSession): OnboardingSession {
     const session = this.#validateActive(input);
     if (session.activeStepId !== "business-basics") {
+      throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
+    }
+    return session;
+  }
+
+  #validateExistingSourcesStep(input: OnboardingSession): OnboardingSession {
+    const session = this.#validateActive(input);
+    if (session.activeStepId !== "existing-sources") {
       throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
     }
     return session;
