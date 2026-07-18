@@ -1,6 +1,7 @@
 import {
   ONBOARDING_SCHEMA_VERSION,
   cloneOnboardingSession,
+  migrateOnboardingSession,
   onboardingSessionSchema,
   type OnboardingSession,
 } from "@/domain/onboarding";
@@ -42,13 +43,24 @@ export class BrowserOnboardingSessionRepository implements OnboardingSessionRepo
         return Promise.resolve({ status: "corrupt" });
       }
 
-      if (
-        typeof value === "object" &&
-        value !== null &&
-        "schemaVersion" in value &&
-        value.schemaVersion !== ONBOARDING_SCHEMA_VERSION
-      ) {
-        return Promise.resolve({ status: "incompatible" });
+      if (typeof value === "object" && value !== null && "schemaVersion" in value) {
+        if (value.schemaVersion !== ONBOARDING_SCHEMA_VERSION && value.schemaVersion !== 1) {
+          return Promise.resolve({ status: "incompatible" });
+        }
+        if (value.schemaVersion === 1) {
+          let migrated: OnboardingSession;
+          try {
+            migrated = migrateOnboardingSession(value);
+          } catch {
+            return Promise.resolve({ status: "corrupt" });
+          }
+          try {
+            storage.setItem(ONBOARDING_SESSION_STORAGE_KEY, JSON.stringify(migrated));
+          } catch {
+            return Promise.resolve({ status: "unavailable" });
+          }
+          return Promise.resolve({ status: "found", session: cloneOnboardingSession(migrated) });
+        }
       }
 
       const parsed = onboardingSessionSchema.safeParse(value);
@@ -65,16 +77,19 @@ export class BrowserOnboardingSessionRepository implements OnboardingSessionRepo
   save(session: OnboardingSession): Promise<void> {
     const storage = this.#getStorage();
     if (!storage) return Promise.reject(new OnboardingStorageError());
+    let valid: OnboardingSession;
     try {
-      const valid = cloneOnboardingSession(session);
+      valid = cloneOnboardingSession(session);
+    } catch (error) {
+      return Promise.reject(
+        error instanceof Error ? error : new Error("Invalid onboarding session."),
+      );
+    }
+    try {
       storage.setItem(ONBOARDING_SESSION_STORAGE_KEY, JSON.stringify(valid));
       return Promise.resolve();
     } catch (error) {
-      return Promise.reject(
-        error instanceof OnboardingStorageError
-          ? error
-          : new OnboardingStorageError({ cause: error }),
-      );
+      return Promise.reject(new OnboardingStorageError({ cause: error }));
     }
   }
 
