@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   OnboardingBusinessBasicsValidationError,
+  OnboardingMutationQueue,
   OnboardingService,
   OnboardingTransitionError,
 } from "@/application/onboarding";
@@ -250,6 +251,7 @@ export function OnboardingWizard() {
   >({});
   const [restartOpen, setRestartOpen] = useState(false);
   const sessionRef = useRef<OnboardingSession | null>(null);
+  const mutationQueue = useMemo(() => new OnboardingMutationQueue(), []);
   const repository = useMemo(() => new BrowserOnboardingSessionRepository(), []);
   const service = useMemo(() => new OnboardingService(repository), [repository]);
   const text = copy[locale];
@@ -274,10 +276,12 @@ export function OnboardingWizard() {
   );
 
   const resume = useCallback(async () => {
+    await mutationQueue.whenIdle();
+    mutationQueue.resume();
     setView({ kind: "loading" });
     const result = await service.resume();
     applyResumeResult(result);
-  }, [applyResumeResult, service]);
+  }, [applyResumeResult, mutationQueue, service]);
 
   useEffect(() => {
     let active = true;
@@ -289,58 +293,69 @@ export function OnboardingWizard() {
     };
   }, [applyResumeResult, service]);
 
-  const updateSession = async (
+  const updateSession = (
     action: (session: OnboardingSession) => Promise<OnboardingSession>,
-  ): Promise<OnboardingSession | null> => {
-    const currentSession = sessionRef.current;
-    if (!currentSession) return null;
-    try {
-      const session = await action(currentSession);
-      sessionRef.current = session;
-      setView((current) => (current.kind === "ready" ? { ...current, session } : current));
-      setBusinessDraft(session.designBrief.businessIdentity);
-      setBusinessErrors({});
-      setMessage("");
-      return session;
-    } catch (error) {
-      if (error instanceof OnboardingStorageError) {
-        setView({ kind: "storage-error" });
-        return null;
+  ): Promise<OnboardingSession | null> =>
+    mutationQueue.enqueue(async () => {
+      const currentSession = sessionRef.current;
+      if (!currentSession) return null;
+      try {
+        const session = await action(currentSession);
+        sessionRef.current = session;
+        setView((current) => (current.kind === "ready" ? { ...current, session } : current));
+        setBusinessDraft(session.designBrief.businessIdentity);
+        setBusinessErrors({});
+        setMessage("");
+        return session;
+      } catch (error) {
+        if (error instanceof OnboardingStorageError) {
+          mutationQueue.pause();
+          setView({ kind: "storage-error" });
+          return null;
+        }
+        if (error instanceof OnboardingBusinessBasicsValidationError) {
+          const nextErrors = Object.fromEntries(
+            error.missingFields.map((field) => [field, businessBasicsText[locale][field].required]),
+          ) as Partial<Record<BusinessBasicsField, string>>;
+          setBusinessErrors(nextErrors);
+          setMessage(businessBasicsText[locale].summary);
+          return null;
+        }
+        if (error instanceof OnboardingTransitionError) {
+          setMessage(
+            error.code === "CREATION_PATH_REQUIRED"
+              ? text.pathRequired
+              : error.code === "STEP_NOT_AVAILABLE"
+                ? text.notAvailable
+                : text.transitionError,
+          );
+          return null;
+        }
+        throw error;
       }
-      if (error instanceof OnboardingBusinessBasicsValidationError) {
-        const nextErrors = Object.fromEntries(
-          error.missingFields.map((field) => [field, businessBasicsText[locale][field].required]),
-        ) as Partial<Record<BusinessBasicsField, string>>;
-        setBusinessErrors(nextErrors);
-        setMessage(businessBasicsText[locale].summary);
-        return null;
-      }
-      if (error instanceof OnboardingTransitionError) {
-        setMessage(
-          error.code === "CREATION_PATH_REQUIRED"
-            ? text.pathRequired
-            : error.code === "STEP_NOT_AVAILABLE"
-              ? text.notAvailable
-              : text.transitionError,
-        );
-        return null;
-      }
-      throw error;
-    }
-  };
+    });
 
   const restart = async () => {
-    try {
-      const session = await service.reset();
-      sessionRef.current = session;
-      setBusinessDraft(session.designBrief.businessIdentity);
-      setBusinessErrors({});
-      setView({ kind: "ready", session, origin: "new" });
+    const session = await mutationQueue.enqueue(async () => {
+      try {
+        const nextSession = await service.reset();
+        sessionRef.current = nextSession;
+        setBusinessDraft(nextSession.designBrief.businessIdentity);
+        setBusinessErrors({});
+        setView({ kind: "ready", session: nextSession, origin: "new" });
+        return nextSession;
+      } catch (error) {
+        if (error instanceof OnboardingStorageError) {
+          mutationQueue.pause();
+          setView({ kind: "storage-error" });
+          return null;
+        }
+        throw error;
+      }
+    });
+    if (session !== null) {
       setRestartOpen(false);
       setMessage(text.newStatus);
-    } catch {
-      setRestartOpen(false);
-      setView({ kind: "storage-error" });
     }
   };
 
@@ -636,7 +651,6 @@ function BusinessBasicsForm({
 }) {
   const text = businessBasicsText[locale];
   const [localDraft, setLocalDraft] = useState(draft);
-  const pendingUpdates = useRef(Promise.resolve());
   const fieldRefs = useRef<
     Partial<
       Record<BusinessBasicsField, HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null>
@@ -661,16 +675,12 @@ function BusinessBasicsForm({
     field: Field,
     value: BusinessIdentity[Field],
   ) => {
-    pendingUpdates.current = pendingUpdates.current
-      .then(() => onField(field, value))
-      .then(() => undefined)
-      .catch(() => undefined);
+    void onField(field, value);
   };
 
-  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await pendingUpdates.current;
-    await onComplete({
+    void onComplete({
       businessName: localDraft.businessName,
       shortDescription: localDraft.shortDescription,
       industry: localDraft.industry,
@@ -687,7 +697,7 @@ function BusinessBasicsForm({
       className={styles.businessForm}
       id="business-basics-form"
       onSubmit={(event) => {
-        void submit(event);
+        submit(event);
       }}
     >
       {Object.keys(errors).length > 0 && (

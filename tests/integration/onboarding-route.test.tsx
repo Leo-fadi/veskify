@@ -115,6 +115,31 @@ describe("guided onboarding route", () => {
     expect(screen.getByRole("textbox", { name: "Business name" })).toHaveValue("Aurum Nordic");
   });
 
+  it("saves a focused O-02 edit before Back and restores it without a second click", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: /Create a new storefront/i }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    const name = screen.getByRole("textbox", { name: "Business name" });
+    await user.type(name, "Aurum Nordic");
+    await user.click(screen.getByRole("button", { name: "Back" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "How would you like to begin?" }),
+    ).toBeVisible();
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      activeStepId: "creation-path",
+      designBrief: { businessIdentity: { businessName: "Aurum Nordic" } },
+      completedStepIds: ["creation-path"],
+    });
+
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: "Business basics" })).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Business name" })).toHaveValue("Aurum Nordic");
+  });
+
   it("keeps the in-memory form usable when a field save temporarily fails", async () => {
     const user = userEvent.setup();
     render(<OnboardingWizard />);

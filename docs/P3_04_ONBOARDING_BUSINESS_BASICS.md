@@ -47,8 +47,11 @@ retry returns to the persisted workflow without exposing technical errors.
 ## Persistence and recovery
 
 All writes continue through `OnboardingSessionRepository`; routes never write localStorage directly.
-Field and completion writes are atomic at the repository boundary. Storage errors enter the existing
-controlled retry state, while non-storage programming errors are not converted into storage errors.
+Field, completion, navigation, path, skip, and reset writes are serialized by one onboarding-boundary
+mutation queue. Each queued task reads the latest session immediately before calling the service, so a
+blur save cannot overwrite Back or another workflow transition. Storage errors pause later queued work
+and enter the existing controlled retry state; retry reopens the queue. Non-storage programming errors
+are not converted into storage errors.
 Partial O-02 data, completed O-02 data, migrations, corrupt values, incompatible versions, and
 unavailable storage are covered by focused unit, integration, route, and Playwright tests.
 

@@ -59,6 +59,19 @@ test("completes Business basics, resumes partial values, and reaches deferred O-
   await expect(page.getByRole("heading", { name: "Existing sources" })).toBeVisible();
 });
 
+test("saves a focused edit before Back and restores it on O-02", async ({ page }) => {
+  await page.goto("/projects/new");
+  await page.getByRole("radio", { name: /Create a new storefront/i }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  const name = page.getByRole("textbox", { name: "Business name" });
+  await name.fill("Aurum Nordic");
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByRole("heading", { name: "How would you like to begin?" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Business basics" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Business name" })).toHaveValue("Aurum Nordic");
+});
+
 test("supports Finnish labels and keyboard navigation through Business basics", async ({
   page,
 }) => {

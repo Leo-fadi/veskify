@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { OnboardingService, OnboardingTransitionError } from "@/application/onboarding";
+import {
+  OnboardingMutationQueue,
+  OnboardingService,
+  OnboardingTransitionError,
+} from "@/application/onboarding";
 import {
   ONBOARDING_SCHEMA_VERSION,
   PREVIOUS_ONBOARDING_SCHEMA_VERSION,
@@ -44,6 +48,16 @@ class MemoryOnboardingRepository implements OnboardingSessionRepository {
 }
 
 const timestamp = "2026-07-18T08:00:00.000Z";
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
 
 function validSession(overrides: Partial<OnboardingSession> = {}): OnboardingSession {
   const creationPath = overrides.creationPath ?? null;
@@ -541,5 +555,98 @@ describe("onboarding application service", () => {
       skipped: 0,
       percent: 22,
     });
+  });
+});
+
+describe("onboarding mutation queue", () => {
+  it("runs queued mutations against the latest session after earlier writes settle", async () => {
+    const queue = new OnboardingMutationQueue();
+    const firstWrite = deferred<void>();
+    let latestSession = "initial";
+    const seen: string[] = [];
+
+    const autosave = queue.enqueue(async () => {
+      seen.push(latestSession);
+      await firstWrite.promise;
+      latestSession = "business-value";
+      return latestSession;
+    });
+    const back = queue.enqueue(() => {
+      seen.push(latestSession);
+      return Promise.resolve("creation-path");
+    });
+
+    await Promise.resolve();
+    expect(seen).toEqual(["initial"]);
+    firstWrite.resolve();
+    await expect(autosave).resolves.toBe("business-value");
+    await expect(back).resolves.toBe("creation-path");
+    expect(seen).toEqual(["initial", "business-value"]);
+  });
+
+  it("preserves rapid field writes before Back and creation-path transitions", async () => {
+    const queue = new OnboardingMutationQueue();
+    const firstWrite = deferred<void>();
+    let latestSession = { step: "business-basics", businessName: "", primaryMarket: "" };
+    const seen: Array<typeof latestSession> = [];
+
+    const firstField = queue.enqueue(async () => {
+      seen.push({ ...latestSession });
+      await firstWrite.promise;
+      latestSession = { ...latestSession, businessName: "Aurum Nordic" };
+      return latestSession;
+    });
+    const secondField = queue.enqueue(() => {
+      seen.push({ ...latestSession });
+      latestSession = { ...latestSession, primaryMarket: "Finland" };
+      return Promise.resolve(latestSession);
+    });
+    const back = queue.enqueue(() => {
+      seen.push({ ...latestSession });
+      latestSession = { ...latestSession, step: "creation-path" };
+      return Promise.resolve(latestSession);
+    });
+
+    firstWrite.resolve();
+    await expect(firstField).resolves.toMatchObject({ businessName: "Aurum Nordic" });
+    await expect(secondField).resolves.toMatchObject({ primaryMarket: "Finland" });
+    await expect(back).resolves.toMatchObject({ step: "creation-path" });
+    expect(seen).toEqual([
+      { step: "business-basics", businessName: "", primaryMarket: "" },
+      { step: "business-basics", businessName: "Aurum Nordic", primaryMarket: "" },
+      { step: "business-basics", businessName: "Aurum Nordic", primaryMarket: "Finland" },
+    ]);
+  });
+
+  it("pauses stale work after a storage failure and accepts work after recovery", async () => {
+    const queue = new OnboardingMutationQueue();
+    const storageError = new Error("storage unavailable");
+    const failed = queue.enqueue(() => {
+      try {
+        throw storageError;
+      } catch {
+        queue.pause();
+        return Promise.reject(storageError);
+      }
+    });
+    const staleBack = queue.enqueue(() => Promise.resolve("stale-back"));
+
+    await expect(failed).rejects.toBe(storageError);
+    await expect(staleBack).resolves.toBeNull();
+
+    queue.resume();
+    await expect(queue.enqueue(() => Promise.resolve("retry"))).resolves.toBe("retry");
+  });
+
+  it("does not swallow programming errors and keeps later mutations usable", async () => {
+    const queue = new OnboardingMutationQueue();
+    const programmingError = new Error("unexpected bug");
+
+    await expect(queue.enqueue(() => Promise.reject(programmingError))).rejects.toBe(
+      programmingError,
+    );
+    await expect(queue.enqueue(() => Promise.resolve("next mutation"))).resolves.toBe(
+      "next mutation",
+    );
   });
 });
