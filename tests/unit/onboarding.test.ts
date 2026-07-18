@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  normalizeExistingStorefrontUrl,
   OnboardingMutationQueue,
   OnboardingService,
   OnboardingTransitionError,
+  validateExistingStorefrontSource,
 } from "@/application/onboarding";
 import {
   ONBOARDING_SCHEMA_VERSION,
@@ -147,6 +149,24 @@ function businessBasicsSession(): OnboardingSession {
   return onboardingSessionSchema.parse({ ...base, designBrief, updatedAt: designBrief.updatedAt });
 }
 
+function existingSourcesSession(
+  creationPath: "new-storefront" | "redesign-existing-storefront" | "demo-preset",
+  existingStorefrontUrl: string | null = null,
+): OnboardingSession {
+  const base = validSession({
+    creationPath,
+    activeStepId: "existing-sources",
+    completedStepIds: ["creation-path", "business-basics"],
+  });
+  const designBrief = updateStorefrontDesignBriefArea(
+    base.designBrief,
+    "creationContext",
+    { existingStorefrontUrl },
+    timestamp,
+  );
+  return onboardingSessionSchema.parse({ ...base, designBrief, updatedAt: designBrief.updatedAt });
+}
+
 describe("onboarding session schema", () => {
   it("accepts the canonical initial state", () => {
     expect(validSession()).toMatchObject({
@@ -237,7 +257,7 @@ describe("onboarding application service", () => {
     expect(skipped.skippedStepIds).toEqual(["existing-sources"]);
   });
 
-  it("does not pretend foundation placeholders are completable", async () => {
+  it("does not advance from incomplete Business basics", async () => {
     const { service } = createService();
     const placeholder = validSession({
       creationPath: "new-storefront",
@@ -488,6 +508,125 @@ describe("onboarding application service", () => {
     expect(back.activeStepId).toBe("business-basics");
     expect(back.designBrief.businessIdentity).toMatchObject(completeBusinessIdentity);
     expect(back.completedStepIds).toContain("business-basics");
+  });
+
+  it("normalizes bare domains and rejects unsafe existing storefront URLs", () => {
+    expect(normalizeExistingStorefrontUrl("  example.com/shop  ")).toBe("https://example.com/shop");
+    expect(validateExistingStorefrontSource("https://example.com")).toEqual({
+      valid: true,
+      normalizedUrl: "https://example.com",
+    });
+    expect(validateExistingStorefrontSource("http://example.com")).toMatchObject({
+      valid: false,
+      code: "EXISTING_STOREFRONT_URL_INSECURE",
+    });
+    expect(validateExistingStorefrontSource("javascript:alert(1)")).toMatchObject({
+      valid: false,
+      code: "EXISTING_STOREFRONT_URL_UNSUPPORTED_PROTOCOL",
+    });
+    expect(validateExistingStorefrontSource("not a URL")).toMatchObject({
+      valid: false,
+      code: "EXISTING_STOREFRONT_URL_INVALID",
+    });
+  });
+
+  it("requires a redesign URL but completes new and demo paths without one", async () => {
+    const { service } = createService();
+    const redesign = existingSourcesSession("redesign-existing-storefront");
+    expect(service.evaluateExistingSourcesCompletion(redesign)).toEqual({
+      complete: false,
+      required: true,
+      missingFields: ["existingStorefrontUrl"],
+    });
+    await expect(service.advance(redesign)).rejects.toMatchObject({
+      code: "EXISTING_STOREFRONT_URL_REQUIRED",
+    });
+
+    await expect(service.advance(existingSourcesSession("new-storefront"))).resolves.toMatchObject({
+      activeStepId: "brand-assets",
+      completedStepIds: ["creation-path", "business-basics", "existing-sources"],
+      designBrief: { creationContext: { existingStorefrontUrl: null } },
+    });
+    await expect(service.advance(existingSourcesSession("demo-preset"))).resolves.toMatchObject({
+      activeStepId: "brand-assets",
+      completedStepIds: ["creation-path", "business-basics", "existing-sources"],
+      designBrief: { creationContext: { existingStorefrontUrl: null } },
+    });
+  });
+
+  it("updates an existing storefront URL immutably and advances to Brand assets", async () => {
+    const { service } = createService();
+    const session = existingSourcesSession("redesign-existing-storefront");
+    const updated = await service.updateExistingStorefrontUrl(session, "  example.com  ");
+
+    expect(session.designBrief.creationContext.existingStorefrontUrl).toBeNull();
+    expect(updated.designBrief.creationContext.existingStorefrontUrl).toBe("https://example.com");
+    expect(updated.designBrief.businessIdentity).toEqual(session.designBrief.businessIdentity);
+    expect(updated.designBrief.id).toBe(session.designBrief.id);
+    expect(Date.parse(updated.designBrief.updatedAt)).toBeGreaterThanOrEqual(
+      Date.parse(session.designBrief.updatedAt),
+    );
+
+    const complete = await service.completeExistingSources(updated);
+    expect(complete.activeStepId).toBe("brand-assets");
+    expect(complete.completedStepIds).toContain("existing-sources");
+    expect(complete.designBrief.creationContext.existingStorefrontUrl).toBe("https://example.com");
+  });
+
+  it("preserves a valid URL when going back and returning to O-03", async () => {
+    const { service } = createService();
+    const saved = await service.updateExistingStorefrontUrl(
+      existingSourcesSession("redesign-existing-storefront"),
+      "https://merchant.example.test/store",
+    );
+    const completed = await service.completeExistingSources(saved);
+    const back = await service.goBack(completed);
+
+    expect(back.activeStepId).toBe("existing-sources");
+    expect(back.designBrief.creationContext.existingStorefrontUrl).toBe(
+      "https://merchant.example.test/store",
+    );
+  });
+
+  it("does not let a redesign URL survive switching away and back", async () => {
+    const { service } = createService();
+    const initial = await service.selectCreationPath(
+      await service.createSession(),
+      "redesign-existing-storefront",
+    );
+    const withUrlBrief = updateStorefrontDesignBriefArea(
+      initial.designBrief,
+      "creationContext",
+      { existingStorefrontUrl: "https://merchant.example.test" },
+      timestamp,
+    );
+    const withUrl = onboardingSessionSchema.parse({
+      ...initial,
+      activeStepId: "creation-path",
+      designBrief: withUrlBrief,
+      updatedAt: withUrlBrief.updatedAt,
+    });
+    const newPath = await service.selectCreationPath(withUrl, "new-storefront");
+    expect(newPath.designBrief.creationContext.existingStorefrontUrl).toBeNull();
+    const redesignAgain = await service.selectCreationPath(newPath, "redesign-existing-storefront");
+    expect(redesignAgain.designBrief.creationContext.existingStorefrontUrl).toBeNull();
+  });
+
+  it("classifies existing-source storage failures and programming errors", async () => {
+    const repository = new MemoryOnboardingRepository();
+    const { service } = createService(repository);
+    const session = existingSourcesSession("redesign-existing-storefront");
+    await repository.save(session);
+    repository.saveError = new OnboardingStorageError();
+    await expect(
+      service.updateExistingStorefrontUrl(session, "https://merchant.example.test"),
+    ).rejects.toBeInstanceOf(OnboardingStorageError);
+
+    const programmingError = new Error("unexpected source save failure");
+    repository.saveError = programmingError;
+    await expect(
+      service.updateExistingStorefrontUrl(session, "https://merchant.example.test"),
+    ).rejects.toBe(programmingError);
   });
 
   it("migrates a valid P3-01 session into one collecting brief", () => {

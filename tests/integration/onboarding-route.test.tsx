@@ -79,6 +79,183 @@ describe("guided onboarding route", () => {
     });
   });
 
+  it("validates a redesign URL, completes O-03, returns, and resumes it", async () => {
+    const user = userEvent.setup();
+    const mounted = render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: /Redesign an existing storefront/i }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.type(screen.getByRole("textbox", { name: "Business name" }), "Aurum Nordic");
+    await user.type(
+      screen.getByRole("textbox", { name: "Short business description" }),
+      "A Helsinki jewellery studio.",
+    );
+    await user.selectOptions(screen.getByRole("combobox", { name: "Industry" }), "jewellery");
+    await user.type(
+      screen.getByRole("textbox", { name: "Target customer" }),
+      "Customers looking for Nordic jewellery.",
+    );
+    await user.type(screen.getByRole("textbox", { name: "Primary market" }), "Finland");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("heading", { name: "Existing sources" })).toBeVisible();
+    const url = screen.getByRole("textbox", { name: "Current storefront address" });
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(url).toHaveFocus();
+    expect(screen.getByRole("alert")).toHaveTextContent(/current storefront address/i);
+
+    await user.type(url, "http://merchant.example");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: "Existing sources" })).toBeVisible();
+    expect(screen.getByRole("alert")).toHaveTextContent(/HTTPS/i);
+
+    await user.clear(url);
+    await user.type(url, "merchant.example/store");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: "Brand assets" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(await screen.findByRole("heading", { name: "Existing sources" })).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Current storefront address" })).toHaveValue(
+      "https://merchant.example/store",
+    );
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      activeStepId: "existing-sources",
+      completedStepIds: ["creation-path", "business-basics", "existing-sources"],
+    });
+
+    mounted.unmount();
+    render(<OnboardingWizard />);
+    expect(await screen.findByRole("heading", { name: "Existing sources" })).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Current storefront address" })).toHaveValue(
+      "https://merchant.example/store",
+    );
+  });
+
+  it("persists a focused URL before Back without requiring a second click", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: /Redesign an existing storefront/i }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.type(screen.getByRole("textbox", { name: "Business name" }), "Aurum Nordic");
+    await user.type(
+      screen.getByRole("textbox", { name: "Short business description" }),
+      "A Helsinki jewellery studio.",
+    );
+    await user.selectOptions(screen.getByRole("combobox", { name: "Industry" }), "jewellery");
+    await user.type(
+      screen.getByRole("textbox", { name: "Target customer" }),
+      "Customers looking for Nordic jewellery.",
+    );
+    await user.type(screen.getByRole("textbox", { name: "Primary market" }), "Finland");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    const url = screen.getByRole("textbox", { name: "Current storefront address" });
+    await user.type(url, "merchant.example");
+    await user.click(screen.getByRole("button", { name: "Back" }));
+
+    expect(await screen.findByRole("heading", { name: "Business basics" })).toBeVisible();
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      activeStepId: "business-basics",
+      designBrief: {
+        creationContext: { existingStorefrontUrl: "https://merchant.example" },
+      },
+    });
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: "Existing sources" })).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Current storefront address" })).toHaveValue(
+      "https://merchant.example",
+    );
+  });
+
+  it("shows the Finnish redesign URL form and localized validation", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: /Redesign an existing storefront/i }));
+    await user.click(screen.getByRole("radio", { name: "Suomi" }));
+    await user.click(screen.getByRole("button", { name: "Jatka" }));
+    await user.type(screen.getByRole("textbox", { name: "Yrityksen nimi" }), "Aurum Nordic");
+    await user.type(
+      screen.getByRole("textbox", { name: "Lyhyt kuvaus yrityksestä" }),
+      "Helsinkiläinen korustudio.",
+    );
+    await user.selectOptions(screen.getByRole("combobox", { name: "Toimiala" }), "jewellery");
+    await user.type(
+      screen.getByRole("textbox", { name: "Kohdeasiakas" }),
+      "Pohjoismaisista koruista kiinnostuneet.",
+    );
+    await user.type(screen.getByRole("textbox", { name: "Päämarkkina" }), "Suomi");
+    await user.click(screen.getByRole("button", { name: "Jatka" }));
+    expect(await screen.findByRole("heading", { name: "Nykyiset lähteet" })).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Nykyisen verkkokaupan osoite" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Jatka" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(/nykyisen verkkokauppasi osoite/i);
+  });
+
+  it.each([
+    ["Create a new storefront", /No existing storefront is needed/i],
+    ["Use a demo preset", /demo uses controlled sample content/i],
+  ])("allows %s to continue without a URL", async (path, information) => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: new RegExp(path, "i") }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.type(screen.getByRole("textbox", { name: "Business name" }), "Aurum Nordic");
+    await user.type(
+      screen.getByRole("textbox", { name: "Short business description" }),
+      "A Helsinki jewellery studio.",
+    );
+    await user.selectOptions(screen.getByRole("combobox", { name: "Industry" }), "jewellery");
+    await user.type(
+      screen.getByRole("textbox", { name: "Target customer" }),
+      "Customers looking for Nordic jewellery.",
+    );
+    await user.type(screen.getByRole("textbox", { name: "Primary market" }), "Finland");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: "Existing sources" })).toBeVisible();
+    expect(screen.getByText(information)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: "Brand assets" })).toBeVisible();
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      designBrief: { creationContext: { existingStorefrontUrl: null } },
+    });
+  });
+
+  it("clears a saved redesign URL when the merchant changes to a new-store path", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: /Redesign an existing storefront/i }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.type(screen.getByRole("textbox", { name: "Business name" }), "Aurum Nordic");
+    await user.type(
+      screen.getByRole("textbox", { name: "Short business description" }),
+      "A Helsinki jewellery studio.",
+    );
+    await user.selectOptions(screen.getByRole("combobox", { name: "Industry" }), "jewellery");
+    await user.type(
+      screen.getByRole("textbox", { name: "Target customer" }),
+      "Customers looking for Nordic jewellery.",
+    );
+    await user.type(screen.getByRole("textbox", { name: "Primary market" }), "Finland");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.type(
+      screen.getByRole("textbox", { name: "Current storefront address" }),
+      "merchant.example",
+    );
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    await user.click(screen.getByRole("radio", { name: /Create a new storefront/i }));
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      designBrief: { creationContext: { type: "new-storefront", existingStorefrontUrl: null } },
+    });
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: "Existing sources" })).toBeVisible();
+    expect(screen.getByText(/No existing storefront is needed/i)).toBeVisible();
+  });
+
   it("validates the Finnish Business basics form and keeps the first invalid field focused", async () => {
     const user = userEvent.setup();
     render(<OnboardingWizard />);

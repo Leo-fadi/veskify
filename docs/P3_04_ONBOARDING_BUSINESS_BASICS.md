@@ -35,9 +35,8 @@ the flow does not invent one.
 
 O-02 uses the canonical business identity fields: name, short description, bounded industry, target
 customer and primary market. The React-independent onboarding service normalizes and persists field
-edits, evaluates only these required fields, and advances to the deferred `existing-sources` O-03
-placeholder only when all five are valid. Optional secondary markets and later brief areas remain
-untouched.
+edits, evaluates only these required fields, and advances to the O-03 existing-sources step only when
+all five are valid. Optional secondary markets and later brief areas remain untouched.
 
 The form uses native labelled controls, localized EN/FI copy and industry labels, length limits,
 field-level errors, an accessible summary, first-invalid focus, keyboard navigation, and a
@@ -59,5 +58,6 @@ unavailable storage are covered by focused unit, integration, route, and Playwri
 
 This milestone does not consume or modify P3-03 template-registry work and does not create projects,
 pages, templates, catalogue records, assets, uploads, imports, provider prompts, AI output, Puck
-data, proposals, drafts, publishing state, history, or restore state. O-03–O-09 remain controlled
-placeholders; only navigation and progress consistency are supported.
+data, proposals, drafts, publishing state, history, or restore state. O-03 remains limited to a
+merchant-entered HTTPS URL for redesigns or an informational no-source state; O-04–O-09 remain
+controlled placeholders.

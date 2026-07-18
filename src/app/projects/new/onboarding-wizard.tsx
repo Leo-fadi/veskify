@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   OnboardingBusinessBasicsValidationError,
+  OnboardingExistingSourcesValidationError,
   OnboardingMutationQueue,
   OnboardingService,
   OnboardingTransitionError,
@@ -241,6 +242,45 @@ const businessBasicsText = {
   },
 } as const;
 
+const existingSourcesText = {
+  en: {
+    url: {
+      label: "Current storefront address",
+      description:
+        "Add the secure website address you want us to use as a reference for this redesign. We will not fetch it yet.",
+      placeholder: "For example, aurum.example",
+      required: "Enter your current storefront address.",
+      invalid: "Enter a complete secure website address, such as https://aurum.example.",
+      insecure: "Use a secure HTTPS address.",
+      unsupported: "Use a website address, not a file, data or other unsupported link.",
+    },
+    summary: "Check the storefront address before continuing.",
+    newStorefront: "No existing storefront is needed for a new store. Continue when you are ready.",
+    demoStorefront:
+      "The demo uses controlled sample content, so you do not need to provide an existing storefront.",
+  },
+  fi: {
+    url: {
+      label: "Nykyisen verkkokaupan osoite",
+      description:
+        "Lisää uudistettavan verkkokaupan turvallinen verkko-osoite. Emme vielä hae sivustoa.",
+      placeholder: "Esimerkiksi aurum.example",
+      required: "Anna nykyisen verkkokauppasi osoite.",
+      invalid: "Anna täydellinen turvallinen verkko-osoite, kuten https://aurum.example.",
+      insecure: "Käytä turvallista HTTPS-osoitetta.",
+      unsupported:
+        "Käytä verkkosivun osoitetta, älä tiedosto-, data- tai muuta tukematonta linkkiä.",
+    },
+    summary: "Tarkista verkkokaupan osoite ennen jatkamista.",
+    newStorefront:
+      "Uudelle kaupalle ei tarvita olemassa olevaa verkkokauppaa. Jatka, kun olet valmis.",
+    demoStorefront:
+      "Demo käyttää hallittua esimerkkisisältöä, joten olemassa olevaa verkkokauppaa ei tarvita.",
+  },
+} as const;
+
+type ExistingSourcesField = "existingStorefrontUrl";
+
 export function OnboardingWizard() {
   const [locale, setLocale] = useState<Locale>("en");
   const [view, setView] = useState<ViewState>({ kind: "loading" });
@@ -248,6 +288,10 @@ export function OnboardingWizard() {
   const [businessDraft, setBusinessDraft] = useState<BusinessIdentity | null>(null);
   const [businessErrors, setBusinessErrors] = useState<
     Partial<Record<BusinessBasicsField, string>>
+  >({});
+  const [existingSourceDraft, setExistingSourceDraft] = useState<string | null>(null);
+  const [existingSourceErrors, setExistingSourceErrors] = useState<
+    Partial<Record<ExistingSourcesField, string>>
   >({});
   const [restartOpen, setRestartOpen] = useState(false);
   const sessionRef = useRef<OnboardingSession | null>(null);
@@ -261,9 +305,13 @@ export function OnboardingWizard() {
       if (result.status === "new" || result.status === "resumed") {
         sessionRef.current = result.session;
         setBusinessDraft((current) => current ?? result.session.designBrief.businessIdentity);
+        setExistingSourceDraft(
+          (current) => current ?? result.session.designBrief.creationContext.existingStorefrontUrl,
+        );
         setView({ kind: "ready", session: result.session, origin: result.status });
         setMessage("");
         setBusinessErrors({});
+        setExistingSourceErrors({});
         return;
       }
       if (result.status === "corrupt" || result.status === "incompatible") {
@@ -304,7 +352,9 @@ export function OnboardingWizard() {
         sessionRef.current = session;
         setView((current) => (current.kind === "ready" ? { ...current, session } : current));
         setBusinessDraft(session.designBrief.businessIdentity);
+        setExistingSourceDraft(session.designBrief.creationContext.existingStorefrontUrl);
         setBusinessErrors({});
+        setExistingSourceErrors({});
         setMessage("");
         return session;
       } catch (error) {
@@ -319,6 +369,19 @@ export function OnboardingWizard() {
           ) as Partial<Record<BusinessBasicsField, string>>;
           setBusinessErrors(nextErrors);
           setMessage(businessBasicsText[locale].summary);
+          return null;
+        }
+        if (error instanceof OnboardingExistingSourcesValidationError) {
+          const errorMessage =
+            error.code === "EXISTING_STOREFRONT_URL_REQUIRED"
+              ? existingSourcesText[locale].url.required
+              : error.code === "EXISTING_STOREFRONT_URL_INSECURE"
+                ? existingSourcesText[locale].url.insecure
+                : error.code === "EXISTING_STOREFRONT_URL_UNSUPPORTED_PROTOCOL"
+                  ? existingSourcesText[locale].url.unsupported
+                  : existingSourcesText[locale].url.invalid;
+          setExistingSourceErrors({ existingStorefrontUrl: errorMessage });
+          setMessage(existingSourcesText[locale].summary);
           return null;
         }
         if (error instanceof OnboardingTransitionError) {
@@ -341,7 +404,9 @@ export function OnboardingWizard() {
         const nextSession = await service.reset();
         sessionRef.current = nextSession;
         setBusinessDraft(nextSession.designBrief.businessIdentity);
+        setExistingSourceDraft(nextSession.designBrief.creationContext.existingStorefrontUrl);
         setBusinessErrors({});
+        setExistingSourceErrors({});
         setView({ kind: "ready", session: nextSession, origin: "new" });
         return nextSession;
       } catch (error) {
@@ -415,6 +480,12 @@ export function OnboardingWizard() {
             locale={locale}
             businessDraft={businessDraft ?? view.session.designBrief.businessIdentity}
             businessErrors={businessErrors}
+            existingSourceDraft={
+              existingSourceDraft ??
+              view.session.designBrief.creationContext.existingStorefrontUrl ??
+              ""
+            }
+            existingSourceErrors={existingSourceErrors}
             message={message || (view.origin === "new" ? text.newStatus : text.resumedStatus)}
             onBusinessDraftChange={setBusinessDraft}
             onBusinessField={(field, value) =>
@@ -422,6 +493,13 @@ export function OnboardingWizard() {
             }
             onBusinessComplete={(draft) =>
               updateSession((session) => service.completeBusinessBasics(session, draft))
+            }
+            onExistingSourceDraftChange={setExistingSourceDraft}
+            onExistingSourceField={(value) =>
+              updateSession((session) => service.updateExistingStorefrontUrl(session, value))
+            }
+            onExistingSourcesComplete={(value) =>
+              updateSession((session) => service.completeExistingSources(session, value))
             }
             onBack={() => void updateSession((session) => service.goBack(session))}
             onContinue={() => void updateSession((session) => service.advance(session))}
@@ -486,11 +564,16 @@ function RecoveryState({
 function ActiveStep({
   businessDraft,
   businessErrors,
+  existingSourceDraft,
+  existingSourceErrors,
   locale,
   message,
   onBusinessDraftChange,
   onBusinessComplete,
   onBusinessField,
+  onExistingSourceDraftChange,
+  onExistingSourceField,
+  onExistingSourcesComplete,
   onBack,
   onContinue,
   onPath,
@@ -501,6 +584,8 @@ function ActiveStep({
 }: {
   businessDraft: BusinessIdentity;
   businessErrors: Partial<Record<BusinessBasicsField, string>>;
+  existingSourceDraft: string;
+  existingSourceErrors: Partial<Record<ExistingSourcesField, string>>;
   locale: Locale;
   message: string;
   onBusinessDraftChange: (draft: BusinessIdentity) => void;
@@ -511,6 +596,9 @@ function ActiveStep({
     field: Field,
     value: BusinessIdentity[Field],
   ) => Promise<OnboardingSession | null>;
+  onExistingSourceDraftChange: (value: string) => void;
+  onExistingSourceField: (value: string) => Promise<OnboardingSession | null>;
+  onExistingSourcesComplete: (value: string) => Promise<OnboardingSession | null>;
   onBack: () => void;
   onContinue: () => void;
   onPath: (path: OnboardingCreationPath) => void;
@@ -593,6 +681,16 @@ function ActiveStep({
             onDraftChange={onBusinessDraftChange}
             onField={onBusinessField}
           />
+        ) : step.id === "existing-sources" ? (
+          <ExistingSourcesStep
+            draft={existingSourceDraft}
+            errors={existingSourceErrors}
+            locale={locale}
+            onComplete={onExistingSourcesComplete}
+            onDraftChange={onExistingSourceDraftChange}
+            onField={onExistingSourceField}
+            sourceType={session.designBrief.creationContext.type}
+          />
         ) : (
           <div className={styles.placeholder}>
             <strong>{text.futureLabel}</strong>
@@ -614,9 +712,28 @@ function ActiveStep({
           <button
             className={styles.primaryButton}
             disabled={continueDisabled}
-            form={step.id === "business-basics" ? "business-basics-form" : undefined}
-            onClick={step.id === "business-basics" ? undefined : onContinue}
-            type={step.id === "business-basics" ? "submit" : "button"}
+            form={
+              step.id === "business-basics"
+                ? "business-basics-form"
+                : step.id === "existing-sources" &&
+                    session.designBrief.creationContext.type === "redesign-existing-storefront"
+                  ? "existing-sources-form"
+                  : undefined
+            }
+            onClick={
+              step.id === "business-basics" ||
+              (step.id === "existing-sources" &&
+                session.designBrief.creationContext.type === "redesign-existing-storefront")
+                ? undefined
+                : onContinue
+            }
+            type={
+              step.id === "business-basics" ||
+              (step.id === "existing-sources" &&
+                session.designBrief.creationContext.type === "redesign-existing-storefront")
+                ? "submit"
+                : "button"
+            }
           >
             {text.continue}
           </button>
@@ -846,6 +963,121 @@ function BusinessBasicsForm({
         {errors.primaryMarket && (
           <span className={styles.fieldError} id="primaryMarket-error">
             {errors.primaryMarket}
+          </span>
+        )}
+      </div>
+    </form>
+  );
+}
+
+function ExistingSourcesStep({
+  draft,
+  errors,
+  locale,
+  onComplete,
+  onDraftChange,
+  onField,
+  sourceType,
+}: {
+  draft: string;
+  errors: Partial<Record<ExistingSourcesField, string>>;
+  locale: Locale;
+  onComplete: (value: string) => Promise<OnboardingSession | null>;
+  onDraftChange: (value: string) => void;
+  onField: (value: string) => Promise<OnboardingSession | null>;
+  sourceType: OnboardingSession["designBrief"]["creationContext"]["type"];
+}) {
+  if (sourceType !== "redesign-existing-storefront") {
+    return (
+      <div className={styles.placeholder}>
+        <strong>
+          {sourceType === "demo-storefront"
+            ? existingSourcesText[locale].demoStorefront
+            : existingSourcesText[locale].newStorefront}
+        </strong>
+      </div>
+    );
+  }
+
+  return (
+    <ExistingSourcesForm
+      draft={draft}
+      errors={errors}
+      locale={locale}
+      onComplete={onComplete}
+      onDraftChange={onDraftChange}
+      onField={onField}
+    />
+  );
+}
+
+function ExistingSourcesForm({
+  draft,
+  errors,
+  locale,
+  onComplete,
+  onDraftChange,
+  onField,
+}: {
+  draft: string;
+  errors: Partial<Record<ExistingSourcesField, string>>;
+  locale: Locale;
+  onComplete: (value: string) => Promise<OnboardingSession | null>;
+  onDraftChange: (value: string) => void;
+  onField: (value: string) => Promise<OnboardingSession | null>;
+}) {
+  const text = existingSourcesText[locale];
+  const fieldRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const firstInvalidField = errors.existingStorefrontUrl;
+    if (firstInvalidField) fieldRef.current?.focus();
+  }, [errors]);
+
+  const updateDraft = (value: string) => {
+    onDraftChange(value);
+  };
+
+  return (
+    <form
+      className={styles.businessForm}
+      id="existing-sources-form"
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        void onComplete(draft);
+      }}
+    >
+      {errors.existingStorefrontUrl && (
+        <div aria-live="assertive" className={styles.validationSummary} role="alert">
+          <strong>{text.summary}</strong>
+          <ul>
+            <li>{errors.existingStorefrontUrl}</li>
+          </ul>
+        </div>
+      )}
+
+      <div className={styles.formField}>
+        <label htmlFor="existing-storefront-url">{text.url.label}</label>
+        <p id="existingStorefrontUrl-description">{text.url.description}</p>
+        <input
+          aria-describedby={`existingStorefrontUrl-description${errors.existingStorefrontUrl ? " existingStorefrontUrl-error" : ""}`}
+          aria-invalid={Boolean(errors.existingStorefrontUrl)}
+          autoComplete="url"
+          id="existing-storefront-url"
+          inputMode="url"
+          onBlur={(event) => {
+            void onField(event.currentTarget.value);
+          }}
+          onChange={(event) => updateDraft(event.target.value)}
+          placeholder={text.url.placeholder}
+          ref={fieldRef}
+          type="url"
+          value={draft}
+        />
+        {errors.existingStorefrontUrl && (
+          <span className={styles.fieldError} id="existingStorefrontUrl-error">
+            {errors.existingStorefrontUrl}
           </span>
         )}
       </div>
