@@ -62,6 +62,9 @@ history, proposals, provider adapters and catalogue ingestion remain later bound
 onboarding review may inspect this result and explicitly hand the validated snapshot to project
 creation.
 
+P3-13 projects this result into a localized merchant-readable `StorefrontGenerationReview` without
+rerunning any generation stage.
+
 ## Specification traceability
 
 This boundary fulfils SDD §4.1 guided new-store generation, §6.2 FR-009, FR-010, FR-011, FR-013–
