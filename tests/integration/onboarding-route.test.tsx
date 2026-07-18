@@ -732,4 +732,58 @@ describe("guided onboarding route", () => {
       expect(screen.getByRole("heading", { name: "How would you like to begin?" })).toBeVisible(),
     );
   });
+
+  it("renders canonical required O-07 pages, persists them and advances to O-08", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await reachCatalogue(user);
+    await user.click(screen.getByRole("radio", { name: /Demo catalogue/i }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("heading", { name: "Store pages" })).toBeVisible();
+    const group = screen.getByRole("group", { name: "Pages to generate" });
+    expect(within(group).getByRole("checkbox", { name: /Homepage/i })).toBeChecked();
+    expect(within(group).getByRole("checkbox", { name: /Collection \/ listing/i })).toBeChecked();
+    expect(within(group).getByRole("checkbox", { name: /Product detail/i })).toBeChecked();
+    expect(within(group).getAllByRole("checkbox")).toHaveLength(3);
+    expect(
+      within(group)
+        .getAllByRole("checkbox")
+        .every((input) => input.hasAttribute("disabled")),
+    ).toBe(true);
+    expect(screen.queryByRole("button", { name: "Skip for now" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: "Storefront languages" })).toBeVisible();
+    const persisted = JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}") as {
+      activeStepId?: string;
+      completedStepIds?: string[];
+    };
+    expect(persisted.activeStepId).toBe("languages");
+    expect(persisted.completedStepIds).toEqual(expect.arrayContaining(["pages"]));
+  });
+
+  it("keeps O-07 choices through refresh, Back and Finnish labels", async () => {
+    const user = userEvent.setup();
+    const mounted = render(<OnboardingWizard />);
+    await reachCatalogue(user);
+    await user.click(screen.getByRole("button", { name: "Skip for now" }));
+    expect(await screen.findByRole("heading", { name: "Store pages" })).toBeVisible();
+    await user.click(screen.getByRole("radio", { name: "Suomi" }));
+    expect(await screen.findByRole("heading", { name: "Kaupan sivut" })).toBeVisible();
+    expect(screen.getByRole("checkbox", { name: /Etusivu/i })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /Kokoelma \/ listaus/i })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /Tuotesivu/i })).toBeChecked();
+    await user.click(screen.getByRole("button", { name: "Jatka" }));
+    expect(await screen.findByRole("heading", { name: "Kaupan kielet" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Takaisin" }));
+    expect(await screen.findByRole("heading", { name: "Kaupan sivut" })).toBeVisible();
+    expect(screen.getByRole("checkbox", { name: /Etusivu/i })).toBeChecked();
+    mounted.unmount();
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "Store pages" });
+    await user.click(screen.getByRole("radio", { name: "Suomi" }));
+    await screen.findByRole("heading", { name: "Kaupan sivut" });
+    expect(screen.getByRole("checkbox", { name: /Tuotesivu/i })).toBeChecked();
+  });
 });

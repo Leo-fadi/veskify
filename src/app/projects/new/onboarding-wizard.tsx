@@ -6,6 +6,7 @@ import {
   OnboardingCatalogueContextValidationError,
   OnboardingExistingSourcesValidationError,
   OnboardingMutationQueue,
+  OnboardingPagesValidationError,
   OnboardingService,
   OnboardingTransitionError,
   OnboardingVisualDirectionValidationError,
@@ -23,12 +24,14 @@ import {
 import {
   imageryDirectionValues,
   catalogueContextValues,
+  generatedStorefrontPageTypes,
   storefrontIndustryValues,
   toneKeywordValues,
   typographyDirectionValues,
   type BrandDirection,
   type BusinessIdentity,
   type CatalogueContext,
+  type StorefrontBriefPageType,
   type GenerationPreferences,
   type StorefrontIndustry,
 } from "@/domain/design-brief";
@@ -65,6 +68,10 @@ const copy = {
     pathRequired: "Choose a starting path before continuing.",
     catalogueContextRequired: "Choose a catalogue option before continuing.",
     catalogueContextUnsupported: "Choose one of the available catalogue options.",
+    pagesRequired:
+      "Keep the homepage, collection page and product page selected before continuing.",
+    pagesUnsupported: "Choose only the supported storefront pages.",
+    pagesDuplicate: "Each storefront page can be selected only once.",
     notAvailable: "This step is a preview and cannot be completed in this foundation yet.",
     transitionError: "That step cannot be changed right now. Your progress is safe.",
     storageHeading: "We cannot access saved onboarding progress",
@@ -107,6 +114,9 @@ const copy = {
     catalogueContextRequired: "Valitse tuoteluettelon vaihtoehto ennen jatkamista.",
     catalogueContextUnsupported:
       "Valitse jokin käytettävissä olevista tuoteluettelon vaihtoehdoista.",
+    pagesRequired: "Pidä etusivu, kokoelmasivu ja tuotesivu valittuina ennen jatkamista.",
+    pagesUnsupported: "Valitse vain tuetut verkkokaupan sivut.",
+    pagesDuplicate: "Jokaisen verkkokaupan sivun voi valita vain kerran.",
     notAvailable: "Tämä vaihe on esikatselu eikä sitä voi vielä suorittaa tässä perustassa.",
     transitionError: "Tätä vaihetta ei voi muuttaa juuri nyt. Edistymisesi on turvassa.",
     storageHeading: "Tallennettua aloitusta ei voida käyttää",
@@ -171,6 +181,37 @@ const catalogueContextText = {
     legend: string;
     help: string;
     options: Record<CatalogueContext, { label: string; description: string }>;
+  }
+>;
+
+const pagesText = {
+  en: {
+    legend: "Pages to generate",
+    help: "These core pages are required by the current deterministic storefront foundation.",
+    required: "Required",
+    pages: {
+      home: ["Homepage", "Introduce your business and guide customers into the store."],
+      collection: ["Collection / listing", "Help customers browse categories and products."],
+      product: ["Product detail", "Show product information, options and the main action."],
+    },
+  },
+  fi: {
+    legend: "Luotavat sivut",
+    help: "Nykyinen hallittu verkkokaupan perusta tarvitsee nämä ydinsivut.",
+    required: "Pakollinen",
+    pages: {
+      home: ["Etusivu", "Esittele yrityksesi ja ohjaa asiakkaat kauppaan."],
+      collection: ["Kokoelma / listaus", "Auta asiakkaita selaamaan kategorioita ja tuotteita."],
+      product: ["Tuotesivu", "Näytä tuotetiedot, vaihtoehdot ja päätoiminto."],
+    },
+  },
+} satisfies Record<
+  Locale,
+  {
+    legend: string;
+    help: string;
+    required: string;
+    pages: Record<"home" | "collection" | "product", readonly [string, string]>;
   }
 >;
 
@@ -516,6 +557,11 @@ function visualDirectionDraftFromSession(session: OnboardingSession): VisualDire
   };
 }
 
+function pagesDraftFromSession(session: OnboardingSession): StorefrontBriefPageType[] {
+  const pageTypes = session.designBrief.storefrontStructure.pageTypes;
+  return pageTypes.length ? [...pageTypes] : [...generatedStorefrontPageTypes];
+}
+
 export function OnboardingWizard() {
   const [locale, setLocale] = useState<Locale>("en");
   const [view, setView] = useState<ViewState>({ kind: "loading" });
@@ -534,6 +580,8 @@ export function OnboardingWizard() {
   const [visualDirectionErrors, setVisualDirectionErrors] = useState<VisualDirectionErrors>({});
   const [catalogueContextDraft, setCatalogueContextDraft] = useState<CatalogueContext | null>(null);
   const [catalogueContextErrors, setCatalogueContextErrors] = useState<string | null>(null);
+  const [pagesDraft, setPagesDraft] = useState<StorefrontBriefPageType[] | null>(null);
+  const [pagesError, setPagesError] = useState<string | null>(null);
   const [restartOpen, setRestartOpen] = useState(false);
   const sessionRef = useRef<OnboardingSession | null>(null);
   const mutationQueue = useMemo(() => new OnboardingMutationQueue(), []);
@@ -544,7 +592,8 @@ export function OnboardingWizard() {
   const applyResumeResult = useCallback(
     (result: Awaited<ReturnType<OnboardingService["resume"]>>) => {
       if (result.status === "new" || result.status === "resumed") {
-        sessionRef.current = result.session;
+        const initialSession = result.session;
+        sessionRef.current = initialSession;
         setBusinessDraft((current) => current ?? result.session.designBrief.businessIdentity);
         setExistingSourceDraft(
           (current) => current ?? result.session.designBrief.creationContext.existingStorefrontUrl,
@@ -555,12 +604,31 @@ export function OnboardingWizard() {
         setCatalogueContextDraft(
           (current) => current ?? result.session.designBrief.catalogueContext,
         );
-        setView({ kind: "ready", session: result.session, origin: result.status });
+        setPagesDraft((current) => current ?? pagesDraftFromSession(result.session));
+        setView({ kind: "ready", session: initialSession, origin: result.status });
         setMessage("");
         setBusinessErrors({});
         setExistingSourceErrors({});
         setVisualDirectionErrors({});
         setCatalogueContextErrors(null);
+        setPagesError(null);
+        if (
+          initialSession.activeStepId === "pages" &&
+          initialSession.designBrief.storefrontStructure.pageTypes.length === 0
+        ) {
+          void mutationQueue.enqueue(async () => {
+            const currentSession = sessionRef.current;
+            if (!currentSession || currentSession !== initialSession) return null;
+            const session = await service.updateStorefrontPages(
+              currentSession,
+              generatedStorefrontPageTypes,
+            );
+            sessionRef.current = session;
+            setView({ kind: "ready", session, origin: result.status });
+            setPagesDraft(pagesDraftFromSession(session));
+            return session;
+          });
+        }
         return;
       }
       if (result.status === "corrupt" || result.status === "incompatible") {
@@ -569,7 +637,7 @@ export function OnboardingWizard() {
       }
       setView({ kind: "storage-error" });
     },
-    [],
+    [mutationQueue, service],
   );
 
   const resume = useCallback(async () => {
@@ -604,10 +672,12 @@ export function OnboardingWizard() {
         setExistingSourceDraft(session.designBrief.creationContext.existingStorefrontUrl);
         setVisualDirectionDraft(visualDirectionDraftFromSession(session));
         setCatalogueContextDraft(session.designBrief.catalogueContext);
+        setPagesDraft(pagesDraftFromSession(session));
         setBusinessErrors({});
         setExistingSourceErrors({});
         setVisualDirectionErrors({});
         setCatalogueContextErrors(null);
+        setPagesError(null);
         setMessage("");
         return session;
       } catch (error) {
@@ -662,6 +732,17 @@ export function OnboardingWizard() {
           setMessage(catalogueError);
           return null;
         }
+        if (error instanceof OnboardingPagesValidationError) {
+          const pagesMessage =
+            error.code === "PAGES_REQUIRED"
+              ? text.pagesRequired
+              : error.code === "PAGES_DUPLICATE"
+                ? text.pagesDuplicate
+                : text.pagesUnsupported;
+          setPagesError(pagesMessage);
+          setMessage(pagesMessage);
+          return null;
+        }
         if (error instanceof OnboardingTransitionError) {
           setMessage(
             error.code === "CREATION_PATH_REQUIRED"
@@ -685,10 +766,12 @@ export function OnboardingWizard() {
         setExistingSourceDraft(nextSession.designBrief.creationContext.existingStorefrontUrl);
         setVisualDirectionDraft(visualDirectionDraftFromSession(nextSession));
         setCatalogueContextDraft(nextSession.designBrief.catalogueContext);
+        setPagesDraft(pagesDraftFromSession(nextSession));
         setBusinessErrors({});
         setExistingSourceErrors({});
         setVisualDirectionErrors({});
         setCatalogueContextErrors(null);
+        setPagesError(null);
         setView({ kind: "ready", session: nextSession, origin: "new" });
         return nextSession;
       } catch (error) {
@@ -776,6 +859,8 @@ export function OnboardingWizard() {
               catalogueContextDraft ?? view.session.designBrief.catalogueContext
             }
             catalogueContextError={catalogueContextErrors}
+            pagesDraft={pagesDraft ?? pagesDraftFromSession(view.session)}
+            pagesError={pagesError}
             message={message || (view.origin === "new" ? text.newStatus : text.resumedStatus)}
             onBusinessDraftChange={setBusinessDraft}
             onBusinessField={(field, value) =>
@@ -813,6 +898,13 @@ export function OnboardingWizard() {
             }
             onCatalogueContextSkip={() =>
               void updateSession((session) => service.skipCatalogueContext(session))
+            }
+            onPagesChange={(value) => {
+              setPagesDraft(value);
+              void updateSession((session) => service.updateStorefrontPages(session, value));
+            }}
+            onPagesComplete={(value) =>
+              updateSession((session) => service.completeStorefrontPages(session, value))
             }
             onBack={() => void updateSession((session) => service.goBack(session))}
             onContinue={() => void updateSession((session) => service.advance(session))}
@@ -883,6 +975,8 @@ function ActiveStep({
   visualDirectionErrors,
   catalogueContextDraft,
   catalogueContextError,
+  pagesDraft,
+  pagesError,
   locale,
   message,
   onBusinessDraftChange,
@@ -899,6 +993,8 @@ function ActiveStep({
   onCatalogueContextChange,
   onCatalogueContextComplete,
   onCatalogueContextSkip,
+  onPagesChange,
+  onPagesComplete,
   onBack,
   onContinue,
   onPath,
@@ -915,6 +1011,8 @@ function ActiveStep({
   visualDirectionErrors: VisualDirectionErrors;
   catalogueContextDraft: CatalogueContext | null;
   catalogueContextError: string | null;
+  pagesDraft: StorefrontBriefPageType[];
+  pagesError: string | null;
   locale: Locale;
   message: string;
   onBusinessDraftChange: (draft: BusinessIdentity) => void;
@@ -936,6 +1034,8 @@ function ActiveStep({
   onCatalogueContextChange: (value: CatalogueContext) => void;
   onCatalogueContextComplete: (value: CatalogueContext | null) => Promise<OnboardingSession | null>;
   onCatalogueContextSkip: () => void;
+  onPagesChange: (value: StorefrontBriefPageType[]) => void;
+  onPagesComplete: (value: StorefrontBriefPageType[]) => Promise<OnboardingSession | null>;
   onBack: () => void;
   onContinue: () => void;
   onPath: (path: OnboardingCreationPath) => void;
@@ -948,7 +1048,10 @@ function ActiveStep({
   const step = getOnboardingStep(session.activeStepId);
   const progress = service.inspectProgress(session);
   const continueDisabled =
-    !step.completableNow || (step.id === "creation-path" && !session.creationPath);
+    !step.completableNow ||
+    (step.id === "creation-path" && !session.creationPath) ||
+    (step.id === "pages" &&
+      !generatedStorefrontPageTypes.every((pageType) => pagesDraft.includes(pageType)));
 
   return (
     <>
@@ -1045,6 +1148,14 @@ function ActiveStep({
             onChange={onCatalogueContextChange}
             onComplete={onCatalogueContextComplete}
           />
+        ) : step.id === "pages" ? (
+          <PagesForm
+            draft={pagesDraft}
+            error={pagesError}
+            locale={locale}
+            onChange={onPagesChange}
+            onComplete={onPagesComplete}
+          />
         ) : (
           <div className={styles.placeholder}>
             <strong>{text.futureLabel}</strong>
@@ -1087,7 +1198,9 @@ function ActiveStep({
                     ? "visual-direction-form"
                     : step.id === "catalogue"
                       ? "catalogue-context-form"
-                      : undefined
+                      : step.id === "pages"
+                        ? "pages-form"
+                        : undefined
             }
             onClick={
               step.id === "business-basics" ||
@@ -1097,7 +1210,9 @@ function ActiveStep({
                 ? undefined
                 : step.id === "catalogue"
                   ? undefined
-                  : onContinue
+                  : step.id === "pages"
+                    ? undefined
+                    : onContinue
             }
             type={
               step.id === "business-basics" ||
@@ -1107,7 +1222,9 @@ function ActiveStep({
                 ? "submit"
                 : step.id === "catalogue"
                   ? "submit"
-                  : "button"
+                  : step.id === "pages"
+                    ? "submit"
+                    : "button"
             }
           >
             {text.continue}
@@ -1118,6 +1235,64 @@ function ActiveStep({
         </button>
       </footer>
     </>
+  );
+}
+
+function PagesForm({
+  draft,
+  error,
+  locale,
+  onChange,
+  onComplete,
+}: {
+  draft: StorefrontBriefPageType[];
+  error: string | null;
+  locale: Locale;
+  onChange: (value: StorefrontBriefPageType[]) => void;
+  onComplete: (value: StorefrontBriefPageType[]) => Promise<OnboardingSession | null>;
+}) {
+  const text = pagesText[locale];
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void onComplete(draft);
+  };
+
+  return (
+    <form id="pages-form" onSubmit={submit}>
+      <fieldset
+        aria-describedby={error ? "pages-error" : undefined}
+        aria-invalid={Boolean(error)}
+        className={styles.pathOptions}
+      >
+        <legend>{text.legend}</legend>
+        <p className={styles.selectionHint}>{text.help}</p>
+        {generatedStorefrontPageTypes.map((pageType) => {
+          const [label, description] = text.pages[pageType];
+          return (
+            <label key={pageType}>
+              <input
+                checked={draft.includes(pageType)}
+                disabled
+                name="storefront-pages"
+                onChange={() => onChange([...draft])}
+                type="checkbox"
+                value={pageType}
+              />
+              <span>
+                <strong>{label}</strong>
+                <small>{description}</small>
+                <em>{text.required}</em>
+              </span>
+            </label>
+          );
+        })}
+        {error && (
+          <span className={styles.fieldError} id="pages-error" role="alert">
+            {error}
+          </span>
+        )}
+      </fieldset>
+    </form>
   );
 }
 

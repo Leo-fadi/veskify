@@ -33,6 +33,13 @@ async function reachCatalogue(page: Page) {
   await expect(page.getByRole("heading", { name: "Catalogue" })).toBeVisible();
 }
 
+async function reachPages(page: Page) {
+  await reachCatalogue(page);
+  await page.getByRole("radio", { name: /Demo catalogue/i }).check();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Store pages" })).toBeVisible();
+}
+
 for (const option of [
   "Create a new storefront",
   "Redesign an existing storefront",
@@ -301,6 +308,39 @@ test("skips O-06 with the empty context without product data on mobile", async (
     skipped: true,
     productData: null,
   });
+});
+
+test("completes O-07 with keyboard-accessible required pages and no horizontal overflow", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  await reachPages(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+  const group = page.getByRole("group", { name: "Pages to generate" });
+  await expect(group.getByRole("checkbox", { name: /Homepage/i })).toBeChecked();
+  await expect(group.getByRole("checkbox", { name: /Collection \/ listing/i })).toBeChecked();
+  await expect(group.getByRole("checkbox", { name: /Product detail/i })).toBeChecked();
+  await expect(group.getByRole("checkbox")).toHaveCount(3);
+  await expect(page.getByRole("button", { name: "Skip for now" })).not.toBeVisible();
+
+  const continueButton = page.getByRole("button", { name: "Continue" });
+  await continueButton.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Storefront languages" })).toBeVisible();
+});
+
+test("refreshes O-07 and preserves its Finnish labels and selection", async ({ page }) => {
+  await reachPages(page);
+  await page.getByRole("radio", { name: "Suomi" }).check();
+  await expect(page.getByRole("heading", { name: "Kaupan sivut" })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: /Etusivu/i })).toBeChecked();
+  await page.reload();
+  await page.getByRole("radio", { name: "Suomi" }).check();
+  await expect(page.getByRole("heading", { name: "Kaupan sivut" })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: /Kokoelma \/ listaus/i })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: /Tuotesivu/i })).toBeChecked();
 });
 
 test("supports Finnish labels and keyboard navigation through Business basics", async ({

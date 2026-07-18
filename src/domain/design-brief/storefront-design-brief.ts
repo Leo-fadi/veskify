@@ -50,6 +50,16 @@ export type StorefrontBriefPageType = z.infer<typeof storefrontBriefPageTypeSche
 
 /** The minimum page slice required before the deterministic planner can generate a storefront. */
 export const requiredStorefrontPageTypes = ["home", "collection", "product"] as const;
+export type RequiredStorefrontPageType = (typeof requiredStorefrontPageTypes)[number];
+
+/** Pages currently materialized by the deterministic storefront/template system. */
+export const generatedStorefrontPageTypes = requiredStorefrontPageTypes;
+
+export function canonicalizeStorefrontBriefPageTypes(
+  pageTypes: readonly StorefrontBriefPageType[],
+): StorefrontBriefPageType[] {
+  return briefPageTypeValues.filter((pageType) => pageTypes.includes(pageType));
+}
 
 const requiredStorefrontPageIssues = {
   home: { code: "missing-homepage", message: "Select the required homepage." },
