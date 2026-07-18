@@ -8,11 +8,16 @@ import { brandSystemToCssVariables } from "@/domain/design-system";
 import type { Locale } from "@/domain/shared";
 import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
 import { createBrowserProjectRepository, ProjectNotFoundError } from "@/services/storage";
+import {
+  previewLabel,
+  previewPathPrefix,
+  selectedSnapshotId,
+  type SnapshotKind,
+} from "../../preview-mode";
 
 type RepositoryFactory = () => ProjectRepository;
 type Snapshot = ProjectAggregate["snapshots"][number];
 type Page = Snapshot["pages"][number];
-type SnapshotKind = "draft" | "published";
 
 type LoadState =
   | { status: "loading" }
@@ -43,9 +48,7 @@ function StatusPanel({
   return (
     <main className="project-state">
       <section aria-live="polite" className="project-state__panel">
-        <p className="project-state__eyebrow">
-          {snapshotKind === "published" ? "Published storefront" : "Draft preview"}
-        </p>
+        <p className="project-state__eyebrow">{previewLabel(snapshotKind)}</p>
         <h1>{title}</h1>
         <p>{message}</p>
         {retry ? (
@@ -64,11 +67,13 @@ export function CollectionPreviewClient({
   collectionSlug,
   repositoryFactory = defaultRepositoryFactory,
   snapshotKind = "draft",
+  historicalSnapshotId,
 }: {
   projectId: string;
   collectionSlug: string;
   repositoryFactory?: RepositoryFactory;
   snapshotKind?: SnapshotKind;
+  historicalSnapshotId?: string;
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -85,9 +90,7 @@ export function CollectionPreviewClient({
         const draft = aggregate.snapshots.find(
           (snapshot) =>
             snapshot.id ===
-            (snapshotKind === "published"
-              ? aggregate.project.publishedSnapshotId
-              : aggregate.project.draftSnapshotId),
+            selectedSnapshotId(aggregate.project, snapshotKind, historicalSnapshotId),
         );
         if (!draft) return setState({ status: "missingDraft" });
         const collection = aggregate.catalogue.collections.find(
@@ -104,10 +107,7 @@ export function CollectionPreviewClient({
             primaryLocale: aggregate.project.primaryLocale,
             catalogue: aggregate.catalogue,
             snapshot: draft,
-            pagePathPrefix:
-              snapshotKind === "published"
-                ? `/projects/${projectId}/published`
-                : `/projects/${projectId}`,
+            pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
           });
           void renderStorefrontPage(page, context);
         } catch {
@@ -123,7 +123,7 @@ export function CollectionPreviewClient({
     return () => {
       cancelled = true;
     };
-  }, [attempt, collectionSlug, projectId, snapshotKind]);
+  }, [attempt, collectionSlug, historicalSnapshotId, projectId, snapshotKind]);
 
   const retry = () => {
     setState({ status: "loading" });
@@ -198,8 +198,7 @@ export function CollectionPreviewClient({
     primaryLocale: state.aggregate.project.primaryLocale,
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
-    pagePathPrefix:
-      snapshotKind === "published" ? `/projects/${projectId}/published` : `/projects/${projectId}`,
+    pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
   });
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
 
@@ -209,18 +208,14 @@ export function CollectionPreviewClient({
         <div>
           <Link
             className="project-preview__back"
-            href={
-              snapshotKind === "published"
-                ? `/projects/${projectId}/published`
-                : `/projects/${projectId}`
-            }
+            href={previewPathPrefix(projectId, snapshotKind, historicalSnapshotId)}
           >
             Storefront home
           </Link>
           <p className="project-preview__title">{state.aggregate.project.name}</p>
         </div>
         <div className="project-preview__status">
-          <span>{snapshotKind === "published" ? "Published storefront" : "Draft preview"}</span>
+          <span>{previewLabel(snapshotKind)}</span>
           <span aria-live="polite">Current locale: {locale.toUpperCase()}</span>
         </div>
         <fieldset className="locale-control">
@@ -241,9 +236,9 @@ export function CollectionPreviewClient({
       </div>
       <div
         aria-label={
-          snapshotKind === "published"
-            ? "Published collection storefront"
-            : "Draft collection storefront"
+          snapshotKind === "history"
+            ? "Previous version collection storefront"
+            : `${previewLabel(snapshotKind)} collection storefront`
         }
         className="project-preview__storefront"
       >

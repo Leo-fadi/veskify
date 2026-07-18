@@ -65,6 +65,10 @@ describe("P2-12 publish confirmation route", () => {
 
     expect(screen.getByRole("heading", { name: "Loading publishing review" })).toBeVisible();
     expect(await screen.findByRole("heading", { name: "Publish storefront" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Version history" })).toHaveAttribute(
+      "href",
+      `/projects/${projectId}/history`,
+    );
     expect(publish).not.toHaveBeenCalled();
   });
 
@@ -120,6 +124,10 @@ describe("P2-12 publish confirmation route", () => {
     expect(screen.getByRole("link", { name: "View published storefront" })).toHaveAttribute(
       "href",
       `/projects/${projectId}/published`,
+    );
+    expect(screen.getByRole("link", { name: "Version history" })).toHaveAttribute(
+      "href",
+      `/projects/${projectId}/history`,
     );
   });
 

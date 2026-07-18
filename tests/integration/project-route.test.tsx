@@ -104,6 +104,43 @@ describe("seed project route", () => {
     );
   });
 
+  it("pins a previous-version preview and its navigation to the selected snapshot", async () => {
+    const value = aggregate();
+    const historical = value.snapshots.find(
+      (snapshot) => snapshot.id === value.project.publishedSnapshotId,
+    )!;
+    value.snapshots = [
+      historical,
+      value.snapshots.find((snapshot) => snapshot.id === value.project.draftSnapshotId)!,
+    ];
+    value.snapshots[1].pages[0].sections.find(
+      (section) => section.component === "hero",
+    )!.content.title = {
+      en: "Unpublished draft title",
+    };
+    const { repository } = repositoryWithGet(() => Promise.resolve(value));
+    render(
+      <ProjectPreviewClient
+        historicalSnapshotId={historical.id}
+        projectId={aurumNordicSeed.project.id}
+        repositoryFactory={() => repository}
+        snapshotKind="history"
+      />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Made for northern light" })).toBeVisible();
+    expect(screen.getByText("Previous version")).toBeVisible();
+    const primaryNavigation = screen.getByRole("navigation", { name: "Primary navigation" });
+    expect(within(primaryNavigation).getByRole("link", { name: "Rings" })).toHaveAttribute(
+      "href",
+      `/projects/project_aurum_nordic/history/${historical.id}/collections/rings`,
+    );
+    expect(screen.getByRole("link", { name: "Aurora Ring" })).toHaveAttribute(
+      "href",
+      `/projects/project_aurum_nordic/history/${historical.id}/products/aurora-ring-585`,
+    );
+  });
+
   it("switches the registered composition to Finnish", async () => {
     const { repository } = repositoryWithGet(() => Promise.resolve(aggregate()));
     renderRoute(repository);

@@ -1,11 +1,13 @@
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { Project } from "@/domain/project";
 import type { StorefrontSnapshot } from "@/domain/storefront";
+import type { SnapshotHistoryMetadata } from "./snapshot-history-metadata";
 
 export type ProjectAggregate = {
   project: Project;
   catalogue: CatalogueDisplayModel;
   snapshots: StorefrontSnapshot[];
+  snapshotHistoryMetadata?: SnapshotHistoryMetadata[];
 };
 
 export type ProjectSummary = Pick<
@@ -33,6 +35,12 @@ export type PublishExpectation = {
   published: PublishSnapshotExpectation;
 };
 
+export type RestoreExpectation = {
+  projectRevision: number;
+  draft: PublishSnapshotExpectation;
+  target: PublishSnapshotExpectation;
+};
+
 export interface ProjectRepository {
   list(): Promise<ProjectSummary[]>;
   get(projectId: string): Promise<ProjectAggregate>;
@@ -42,7 +50,11 @@ export interface ProjectRepository {
     expectedBase?: DraftBaseIdentity,
   ): Promise<void>;
   publish(projectId: string, expectation: PublishExpectation): Promise<ProjectAggregate>;
-  restore(projectId: string, snapshotId: string): Promise<StorefrontSnapshot>;
+  restore(
+    projectId: string,
+    snapshotId: string,
+    expectation?: RestoreExpectation,
+  ): Promise<StorefrontSnapshot>;
 }
 
 export class ProjectNotFoundError extends Error {
@@ -75,6 +87,18 @@ export class InvalidRestoreTargetError extends Error {
   ) {
     super(`Snapshot ${snapshotId} is already the current draft for project ${projectId}.`);
     this.name = "InvalidRestoreTargetError";
+  }
+}
+
+export class RestoreContentConflictError extends Error {
+  readonly code = "RESTORE_CONTENT_CONFLICT";
+
+  constructor(
+    readonly projectId: string,
+    readonly target: "draft" | "target",
+  ) {
+    super(`Project ${projectId} ${target} content changed after restore preparation.`);
+    this.name = "RestoreContentConflictError";
   }
 }
 

@@ -1,0 +1,99 @@
+.history,
+.state {
+  min-height: 100vh;
+  background: #f2f4f3;
+  color: #1d2925;
+  padding: clamp(1rem, 4vw, 3rem);
+}
+.header,
+.list,
+.state > * {
+  width: min(100%, 58rem);
+  margin: 0 auto;
+  border: 1px solid #d1d8d4;
+  border-radius: 1rem;
+  background: #fff;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+}
+.header h1,
+.header p {
+  margin: 0;
+}
+.header h1 {
+  margin-top: 0.7rem;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+}
+.header p {
+  margin-top: 0.8rem;
+  line-height: 1.55;
+  color: #52615b;
+}
+.list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #d1d8d4;
+  border-radius: 0.75rem;
+}
+.card h2,
+.card p {
+  margin: 0;
+}
+.card .reason {
+  color: #1d2925;
+  font-weight: 700;
+}
+.card p {
+  margin-top: 0.45rem;
+  color: #52615b;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: start;
+  gap: 0.6rem;
+}
+.actions a,
+.state a,
+.state button {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #164b3b;
+  border-radius: 0.55rem;
+  padding: 0.5rem 0.85rem;
+  color: #164b3b;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  background: #fff;
+}
+.actions a:last-child,
+.state button {
+  background: #164b3b;
+  color: #fff;
+}
+.actions a:focus-visible,
+.state a:focus-visible,
+.state button:focus-visible {
+  outline: 3px solid #d4a72c;
+  outline-offset: 3px;
+}
+@media (max-width: 600px) {
+  .card {
+    display: grid;
+  }
+  .actions {
+    align-content: normal;
+  }
+  .actions a {
+    flex: 1;
+  }
+}

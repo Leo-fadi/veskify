@@ -11,9 +11,14 @@ import { brandSystemToCssVariables } from "@/domain/design-system";
 import type { Locale } from "@/domain/shared";
 import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
 import { createBrowserProjectRepository, ProjectNotFoundError } from "@/services/storage";
+import {
+  previewLabel,
+  previewPathPrefix,
+  selectedSnapshotId,
+  type SnapshotKind,
+} from "./preview-mode";
 
 type RepositoryFactory = () => ProjectRepository;
-type SnapshotKind = "draft" | "published";
 
 type LoadState =
   | { status: "loading" }
@@ -45,9 +50,7 @@ function StatusPanel({
   return (
     <main className="project-state" role="main">
       <section aria-live="polite" className="project-state__panel">
-        <p className="project-state__eyebrow">
-          {snapshotKind === "published" ? "Published storefront" : "Draft preview"}
-        </p>
+        <p className="project-state__eyebrow">{previewLabel(snapshotKind)}</p>
         <h1>{title}</h1>
         <p>{message}</p>
         {retry ? (
@@ -65,10 +68,12 @@ export function ProjectPreviewClient({
   projectId,
   repositoryFactory = defaultRepositoryFactory,
   snapshotKind = "draft",
+  historicalSnapshotId,
 }: {
   projectId: string;
   repositoryFactory?: RepositoryFactory;
   snapshotKind?: SnapshotKind;
+  historicalSnapshotId?: string;
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -85,9 +90,7 @@ export function ProjectPreviewClient({
         const draft = aggregate.snapshots.find(
           (snapshot) =>
             snapshot.id ===
-            (snapshotKind === "published"
-              ? aggregate.project.publishedSnapshotId
-              : aggregate.project.draftSnapshotId),
+            selectedSnapshotId(aggregate.project, snapshotKind, historicalSnapshotId),
         );
         if (!draft) {
           setState({ status: "missingDraft" });
@@ -105,10 +108,7 @@ export function ProjectPreviewClient({
             primaryLocale: aggregate.project.primaryLocale,
             catalogue: aggregate.catalogue,
             snapshot: draft,
-            pagePathPrefix:
-              snapshotKind === "published"
-                ? `/projects/${projectId}/published`
-                : `/projects/${projectId}`,
+            pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
           });
           void renderStorefrontPage(homepage, context);
         } catch {
@@ -128,7 +128,7 @@ export function ProjectPreviewClient({
     return () => {
       cancelled = true;
     };
-  }, [attempt, projectId, snapshotKind]);
+  }, [attempt, historicalSnapshotId, projectId, snapshotKind]);
 
   const retry = () => {
     setState({ status: "loading" });
@@ -201,8 +201,7 @@ export function ProjectPreviewClient({
     primaryLocale: state.aggregate.project.primaryLocale,
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
-    pagePathPrefix:
-      snapshotKind === "published" ? `/projects/${projectId}/published` : `/projects/${projectId}`,
+    pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
   });
 
   return (
@@ -215,7 +214,7 @@ export function ProjectPreviewClient({
           <h1>{state.aggregate.project.name}</h1>
         </div>
         <div className="project-preview__status">
-          <span>{snapshotKind === "published" ? "Published storefront" : "Draft preview"}</span>
+          <span>{previewLabel(snapshotKind)}</span>
           <span aria-live="polite">Current locale: {locale.toUpperCase()}</span>
         </div>
         <fieldset className="locale-control">
@@ -235,7 +234,13 @@ export function ProjectPreviewClient({
         </fieldset>
       </header>
       <div
-        aria-label={snapshotKind === "published" ? "Published storefront" : "Draft storefront"}
+        aria-label={
+          snapshotKind === "history"
+            ? "Previous version storefront"
+            : snapshotKind === "published"
+              ? "Published storefront"
+              : "Draft storefront"
+        }
         className="project-preview__storefront"
       >
         {renderStorefrontPage(state.homepage, renderContext)}
