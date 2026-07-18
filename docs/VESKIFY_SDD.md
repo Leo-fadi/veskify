@@ -1001,6 +1001,12 @@ View in full opens the draft storefront in a dedicated route. It must support de
 
 - A restore action must be reversible before publishing.
 
+Project creation is a separate, pre-editor persistence boundary. Once a later application
+workflow has produced a complete validated `ProjectAggregate`, it may submit that aggregate to
+`ProjectRepository.create`; creation does not publish, overwrite an existing project, or invent
+publish/restore history (FR-001, FR-009, FR-041, FR-044, FR-045, NFR-006, AC-001, AC-008, AC-010,
+AC-011, AC-023).
+
 ## 13.6 Conflict model
 
 The standalone demo assumes one active editor per local project. The domain model should nevertheless include revision numbers. Future backend integration should reject stale save-draft and publish operations based on expected revisions and offer a merge or reload flow.
@@ -1215,6 +1221,16 @@ seo?: LocalizedSEO;<br />
 
 The implementation should use a storage adapter. The default adapter may use IndexedDB for projects, snapshots and assets plus seeded JSON files for dummy catalogues. If a server-backed implementation is selected, SQLite is acceptable for the demo. Domain code must depend on repository interfaces so persistence can later move to Vesko SQL services.
 
+The canonical repository boundary accepts atomic creation of a complete validated `ProjectAggregate`
+through `ProjectRepository.create(aggregate)`. The repository validates the project, catalogue,
+registered snapshot composition, snapshot references and optional history metadata before writing.
+Project, catalogue, snapshots and metadata are inserted as one operation; an invalid aggregate or
+existing project, catalogue or snapshot identity leaves all adapters unchanged. Creation returns a
+detached validated aggregate, marks only the current draft as managed for later bounded retention,
+and preserves supplied metadata without fabricating publish or restore events. Project construction
+and onboarding remain application boundaries separate from this persistence operation (FR-001,
+FR-009, FR-041, FR-044, FR-045, FR-050, NFR-006, AC-001, AC-008, AC-010, AC-011, AC-023).
+
 # 16. Technical architecture
 
 ## 16.1 Recommended standalone stack
@@ -1239,6 +1255,9 @@ The implementation should use a storage adapter. The default adapter may use Ind
 - Domain: projects, snapshots, pages, sections, design tokens, operations and guardrails.
 
 - Application services: create project, generate storefront, apply proposal, publish, restore and import catalogue.
+
+- Project construction remains an application concern; the storage adapter owns only atomic
+  persistence of a complete validated aggregate through `ProjectRepository.create`.
 
 - The deterministic initial storefront materializer is an application service that consumes the
   approved brief, P3-06 selection plan and canonical BrandSystem, then returns a validated in-memory
@@ -1373,9 +1392,16 @@ projectRevision: number;<br />
 draft: PublishSnapshotExpectation;<br />
 published: PublishSnapshotExpectation;<br />
 };<br />
+type ProjectAggregate = {<br />
+project: Project;<br />
+catalogue: CatalogueDisplayModel;<br />
+snapshots: StorefrontSnapshot[];<br />
+snapshotHistoryMetadata?: SnapshotHistoryMetadata[];<br />
+};<br />
 interface ProjectRepository {<br />
 list(): Promise&lt;ProjectSummary[]&gt;;<br />
 get(projectId: string): Promise&lt;ProjectAggregate&gt;;<br />
+create(aggregate: ProjectAggregate): Promise&lt;ProjectAggregate&gt;;<br />
 saveDraft(projectId: string, snapshot: StorefrontSnapshot): Promise&lt;void&gt;;<br />
 publish(projectId: string, expectation: PublishExpectation): Promise&lt;ProjectAggregate&gt;;<br />
 restore(projectId: string, snapshotId: string): Promise&lt;StorefrontSnapshot&gt;;<br />
@@ -1405,7 +1431,7 @@ restore(projectId: string, snapshotId: string): Promise&lt;StorefrontSnapshot&gt
 | NFR-003 | The editor MUST preserve user work across refreshes once a draft mutation is committed locally.                        |
 | NFR-004 | All merchant-facing controls MUST meet WCAG 2.2 AA contrast and keyboard-operation expectations.                       |
 | NFR-005 | The storefront renderer MUST support current desktop and mobile evergreen browsers.                                    |
-| NFR-006 | The application MUST use strict TypeScript and schema validation at all AI and persistence boundaries.                 |
+| NFR-006 | The application MUST use strict TypeScript and schema validation at all AI and persistence boundaries, including atomic aggregate creation.                 |
 | NFR-007 | The editor MUST remain usable when the AI provider is unavailable.                                                     |
 | NFR-008 | The demo MUST run without external API keys using seeded data and mock providers.                                      |
 | NFR-009 | No AI response may be rendered as executable markup or code.                                                           |
@@ -1538,6 +1564,7 @@ Website text, spreadsheet cells, product descriptions and uploaded files are dat
 | AC-020 | A first-time user can understand section selection, proposal review, draft preview, Save draft, and Publish changes through the built-in tutorial without developer terminology. |
 | AC-021 | After guided creation confirmation, the system can produce a validated in-memory snapshot with homepage, collection page, product page, navigation and registered sections without persisting a Project. |
 | AC-022 | If the selection-relevant brief changes after template selection, initial generation is blocked until the template selection is regenerated; no snapshot is produced from stale selection data. |
+| AC-023 | A complete validated project aggregate can be created atomically through the repository; identity conflicts or validation failures leave existing projects, catalogues, snapshots and history unchanged. |
 
 ## 21.3 Definition of done for every Codex task
 

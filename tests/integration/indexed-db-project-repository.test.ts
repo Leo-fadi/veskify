@@ -13,7 +13,7 @@ import {
   type ProjectAggregate,
   type PublishExpectation,
 } from "@/services/storage";
-import { runProjectRepositoryContract } from "./project-repository.contract";
+import { createdAggregate, runProjectRepositoryContract } from "./project-repository.contract";
 
 const openRepositories: IndexedDbProjectRepository[] = [];
 const databaseNames = new Set<string>();
@@ -177,6 +177,89 @@ runProjectRepositoryContract("IndexedDbProjectRepository", () =>
 );
 
 describe("IndexedDbProjectRepository persistence", () => {
+  it("creates a complete aggregate atomically, preserves provenance, and survives reopen", async () => {
+    const databaseName = testDatabaseName("create-reopen");
+    const repository = openRepository(databaseName);
+    const input = createdAggregate("indexed_reopen");
+    const created = await repository.create(input);
+    await repository.close();
+
+    const reopened = openRepository(databaseName);
+    const loaded = await reopened.get(input.project.id);
+    expect(loaded.project).toEqual(created.project);
+    expect(loaded.catalogue).toEqual(created.catalogue);
+    expect(loaded.snapshots.map(({ id }) => id).sort()).toEqual(
+      created.snapshots.map(({ id }) => id).sort(),
+    );
+    expect(loaded.snapshotHistoryMetadata).toEqual(created.snapshotHistoryMetadata);
+    const database = await openDB(databaseName);
+    expect(database.version).toBe(3);
+    const transaction = database.transaction(
+      ["projects", "catalogues", "snapshots", "snapshotProvenance", "snapshotHistoryMetadata"],
+      "readonly",
+    );
+    expect(await transaction.objectStore("projects").get(input.project.id)).toBeTruthy();
+    expect(await transaction.objectStore("catalogues").get(input.catalogue.id)).toBeTruthy();
+    expect(
+      await transaction.objectStore("snapshots").index("by-project").getAll(input.project.id),
+    ).toHaveLength(2);
+    expect(
+      await transaction
+        .objectStore("snapshotProvenance")
+        .index("by-project")
+        .getAll(input.project.id),
+    ).toEqual([
+      expect.objectContaining({
+        projectId: input.project.id,
+        snapshotId: input.project.draftSnapshotId,
+        kind: "managedDraft",
+      }),
+    ]);
+    expect(
+      await transaction
+        .objectStore("snapshotHistoryMetadata")
+        .index("by-project")
+        .getAll(input.project.id),
+    ).toEqual(input.snapshotHistoryMetadata);
+    await transaction.done;
+    database.close();
+  });
+
+  it("aborts invalid creation without leaving partial IndexedDB rows or disturbing bootstrap", async () => {
+    const databaseName = testDatabaseName("create-abort");
+    const repository = openRepository(databaseName);
+    const invalid = createdAggregate("indexed_invalid");
+    invalid.snapshots[0].pages[0].sections[0].component = "unknownComponent";
+    await expect(repository.create(invalid)).rejects.toBeInstanceOf(RepositoryValidationError);
+    expect(await repository.list()).toEqual([
+      expect.objectContaining({ id: aurumNordicSeed.project.id }),
+    ]);
+    const database = await openDB(databaseName);
+    const transaction = database.transaction(
+      ["projects", "catalogues", "snapshots", "snapshotProvenance", "snapshotHistoryMetadata"],
+      "readonly",
+    );
+    expect(await transaction.objectStore("projects").get(invalid.project.id)).toBeUndefined();
+    expect(await transaction.objectStore("catalogues").get(invalid.catalogue.id)).toBeUndefined();
+    expect(
+      await transaction.objectStore("snapshots").index("by-project").getAll(invalid.project.id),
+    ).toEqual([]);
+    expect(
+      await transaction
+        .objectStore("snapshotProvenance")
+        .index("by-project")
+        .getAll(invalid.project.id),
+    ).toEqual([]);
+    expect(
+      await transaction
+        .objectStore("snapshotHistoryMetadata")
+        .index("by-project")
+        .getAll(invalid.project.id),
+    ).toEqual([]);
+    await transaction.done;
+    database.close();
+  });
+
   it("atomically upgrades the exact untouched Phase 0 Aurum seed", async () => {
     const databaseName = testDatabaseName("phase0-migration");
     await writePhase0Seed(databaseName);

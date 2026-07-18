@@ -6,15 +6,18 @@ import {
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import {
+  CatalogueAlreadyExistsError,
   DraftConflictError,
   InvalidRestoreTargetError,
   NoStorefrontChangesError,
   ProjectNotFoundError,
+  ProjectAlreadyExistsError,
   PublishedConflictError,
   PublishContentConflictError,
   RepositoryValidationError,
   RevisionConflictError,
   SnapshotNotFoundError,
+  SnapshotAlreadyExistsError,
   SnapshotProjectMismatchError,
   type ProjectAggregate,
   type ProjectRepository,
@@ -25,6 +28,42 @@ const projectId = aurumNordicSeed.project.id;
 
 function editableDraft(): StorefrontSnapshot {
   return structuredClone(aurumNordicSeed.draftSnapshot);
+}
+
+export function createdAggregate(label: string): ProjectAggregate {
+  const project = structuredClone(aurumNordicSeed.project);
+  const catalogue = structuredClone(aurumNordicSeed.catalogue);
+  const published = structuredClone(aurumNordicSeed.publishedSnapshot);
+  const draft = structuredClone(aurumNordicSeed.draftSnapshot);
+  project.id = `project_created_${label}`;
+  project.name = `Created ${label}`;
+  catalogue.id = `catalogue_created_${label}`;
+  published.id = `snapshot_created_published_${label}`;
+  draft.id = `snapshot_created_draft_${label}`;
+  for (const snapshot of [published, draft]) {
+    snapshot.projectId = project.id;
+    snapshot.catalogueRef = catalogue.id;
+  }
+  return {
+    project: {
+      ...project,
+      publishedSnapshotId: published.id,
+      draftSnapshotId: draft.id,
+    },
+    catalogue,
+    snapshots: [published, draft],
+    snapshotHistoryMetadata: [
+      {
+        snapshotId: published.id,
+        projectId: project.id,
+        reason: "published",
+        summary: {
+          en: "Created storefront history.",
+          fi: "Luodun verkkokaupan historia.",
+        },
+      },
+    ],
+  };
 }
 
 function publishExpectation(aggregate: ProjectAggregate): PublishExpectation {
@@ -99,6 +138,124 @@ export function runProjectRepositoryContract(
       expect(aggregate.snapshots.map(({ id }) => id).sort()).toEqual(
         [aurumNordicSeed.publishedSnapshot.id, aurumNordicSeed.draftSnapshot.id].sort(),
       );
+    });
+
+    it("atomically creates a complete detached aggregate and preserves its metadata", async () => {
+      const input = createdAggregate("complete");
+      const original = structuredClone(input);
+      const created = await repository.create(input);
+
+      expect(input).toEqual(original);
+      const loaded = await repository.get(input.project.id);
+      expect(loaded.project).toEqual(created.project);
+      expect(loaded.catalogue).toEqual(created.catalogue);
+      expect(loaded.snapshots.map(({ id }) => id).sort()).toEqual(
+        created.snapshots.map(({ id }) => id).sort(),
+      );
+      expect(loaded.snapshotHistoryMetadata).toEqual(created.snapshotHistoryMetadata);
+      expect(await repository.list()).toEqual(
+        expect.arrayContaining([expect.objectContaining({ id: input.project.id })]),
+      );
+      expect(created.project).toEqual(input.project);
+      expect(created.catalogue).toEqual(input.catalogue);
+      expect(created.snapshots).toEqual(input.snapshots);
+      expect(created.snapshotHistoryMetadata).toEqual(input.snapshotHistoryMetadata);
+
+      created.project.name = "Mutated result";
+      created.catalogue.products[0].price.amount = 1;
+      created.snapshots[0].pages[0].title.en = "Mutated result";
+      const isolated = await repository.get(input.project.id);
+      expect(isolated.project).toEqual(input.project);
+      expect(isolated.catalogue).toEqual(input.catalogue);
+      expect(isolated.snapshots.map(({ id }) => id).sort()).toEqual(
+        input.snapshots.map(({ id }) => id).sort(),
+      );
+
+      input.project.name = "Mutated input";
+      input.snapshots[0].pages[0].title.en = "Mutated input";
+      expect((await repository.get(original.project.id)).project.name).toBe("Created complete");
+      expect((await repository.get(original.project.id)).snapshots[0].pages[0].title.en).toBe(
+        original.snapshots[0].pages[0].title.en,
+      );
+    });
+
+    it("rejects identity conflicts and leaves existing aggregates unchanged", async () => {
+      const first = createdAggregate("identity_first");
+      await repository.create(first);
+      const before = await repository.get(first.project.id);
+
+      const duplicateProject = createdAggregate("identity_project");
+      duplicateProject.project.id = first.project.id;
+      duplicateProject.snapshots.forEach((snapshot) => (snapshot.projectId = first.project.id));
+      duplicateProject.snapshotHistoryMetadata?.forEach(
+        (metadata) => (metadata.projectId = first.project.id),
+      );
+      await expect(repository.create(duplicateProject)).rejects.toBeInstanceOf(
+        ProjectAlreadyExistsError,
+      );
+
+      const duplicateCatalogue = createdAggregate("identity_catalogue");
+      duplicateCatalogue.catalogue.id = first.catalogue.id;
+      duplicateCatalogue.snapshots.forEach(
+        (snapshot) => (snapshot.catalogueRef = first.catalogue.id),
+      );
+      await expect(repository.create(duplicateCatalogue)).rejects.toBeInstanceOf(
+        CatalogueAlreadyExistsError,
+      );
+
+      const duplicateSnapshot = createdAggregate("identity_snapshot");
+      duplicateSnapshot.snapshots[0].id = first.snapshots[0].id;
+      duplicateSnapshot.project.publishedSnapshotId = duplicateSnapshot.snapshots[0].id;
+      duplicateSnapshot.snapshotHistoryMetadata![0].snapshotId = duplicateSnapshot.snapshots[0].id;
+      await expect(repository.create(duplicateSnapshot)).rejects.toBeInstanceOf(
+        SnapshotAlreadyExistsError,
+      );
+
+      expect(await repository.get(first.project.id)).toEqual(before);
+      expect(await repository.list()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: first.project.id }),
+          expect.objectContaining({ id: aurumNordicSeed.project.id }),
+        ]),
+      );
+    });
+
+    it("rejects invalid aggregates before writing and permits another valid project", async () => {
+      const cases: Array<(aggregate: ProjectAggregate) => void> = [
+        (aggregate) => (aggregate.snapshots[0].pages[0].sections[0].component = "unknownComponent"),
+        (aggregate) => (aggregate.project.draftSnapshotId = "snapshot_missing_draft"),
+        (aggregate) => (aggregate.project.publishedSnapshotId = "snapshot_missing_published"),
+        (aggregate) => (aggregate.snapshots[0].projectId = "project_other"),
+        (aggregate) => (aggregate.snapshots[0].catalogueRef = "catalogue_other"),
+        (aggregate) =>
+          aggregate.snapshotHistoryMetadata!.push({
+            snapshotId: "snapshot_missing_history",
+            projectId: aggregate.project.id,
+            reason: "published",
+            summary: { en: "Invalid", fi: "Virheellinen" },
+          }),
+        (aggregate) => (aggregate.snapshots[1].id = aggregate.snapshots[0].id),
+      ];
+      const before = await repository.list();
+      for (const [index, mutate] of cases.entries()) {
+        const invalid = createdAggregate(`invalid_${index}`);
+        mutate(invalid);
+        await expect(repository.create(invalid)).rejects.toBeInstanceOf(RepositoryValidationError);
+        expect(await repository.list()).toEqual(before);
+      }
+
+      const second = await repository.create(createdAggregate("second_valid"));
+      expect(second.project.id).toBe("project_created_second_valid");
+    });
+
+    it("allows only one concurrent creation for the same project identity", async () => {
+      const left = createdAggregate("concurrent");
+      const right = structuredClone(left);
+      const results = await Promise.allSettled([repository.create(left), repository.create(right)]);
+      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      const rejected = results.find((result) => result.status === "rejected");
+      expect(rejected && rejected.reason).toBeInstanceOf(ProjectAlreadyExistsError);
+      expect((await repository.list()).filter(({ id }) => id === left.project.id)).toHaveLength(1);
     });
 
     it("defensively isolates returned data and saved inputs", async () => {

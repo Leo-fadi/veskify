@@ -8,14 +8,17 @@ import {
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import {
+  CatalogueAlreadyExistsError,
   DraftConflictError,
   InvalidRestoreTargetError,
   NoStorefrontChangesError,
+  ProjectAlreadyExistsError,
   ProjectNotFoundError,
   PublishedConflictError,
   PublishContentConflictError,
   RevisionConflictError,
   SnapshotNotFoundError,
+  SnapshotAlreadyExistsError,
   SnapshotProjectMismatchError,
   type ProjectAggregate,
   type ProjectRepository,
@@ -296,6 +299,56 @@ export class IndexedDbProjectRepository implements ProjectRepository {
         ...(snapshotHistoryMetadata.length > 0 ? { snapshotHistoryMetadata } : {}),
       }),
     );
+  }
+
+  async create(input: ProjectAggregate): Promise<ProjectAggregate> {
+    const aggregate = validateProjectAggregate(clone(input));
+    const database = await this.#database();
+    const transaction = database.transaction(
+      ["projects", "catalogues", "snapshots", "snapshotProvenance", "snapshotHistoryMetadata"],
+      "readwrite",
+    );
+    const projects = transaction.objectStore("projects");
+    const catalogues = transaction.objectStore("catalogues");
+    const snapshots = transaction.objectStore("snapshots");
+    const provenance = transaction.objectStore("snapshotProvenance");
+    const historyMetadata = transaction.objectStore("snapshotHistoryMetadata");
+
+    try {
+      if (await projects.get(aggregate.project.id)) {
+        throw new ProjectAlreadyExistsError(aggregate.project.id);
+      }
+      if (await catalogues.get(aggregate.catalogue.id)) {
+        throw new CatalogueAlreadyExistsError(aggregate.catalogue.id);
+      }
+      for (const snapshot of aggregate.snapshots) {
+        if (await snapshots.get(snapshot.id)) {
+          throw new SnapshotAlreadyExistsError(snapshot.id);
+        }
+      }
+
+      await catalogues.put(aggregate.catalogue);
+      for (const snapshot of aggregate.snapshots) {
+        await snapshots.put(snapshot);
+      }
+      await projects.put(aggregate.project);
+      await provenance.put(
+        managedDraftProvenance(aggregate.project.id, aggregate.project.draftSnapshotId),
+      );
+      for (const metadata of aggregate.snapshotHistoryMetadata ?? []) {
+        await historyMetadata.put(metadata);
+      }
+      await transaction.done;
+      return clone(aggregate);
+    } catch (cause) {
+      try {
+        transaction.abort();
+      } catch {
+        // The transaction may already have aborted.
+      }
+      await transaction.done.catch(() => undefined);
+      throw cause;
+    }
   }
 
   async saveDraft(

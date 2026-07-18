@@ -6,13 +6,16 @@ import {
 } from "@/domain/storefront";
 import {
   DraftConflictError,
+  CatalogueAlreadyExistsError,
   InvalidRestoreTargetError,
   NoStorefrontChangesError,
+  ProjectAlreadyExistsError,
   ProjectNotFoundError,
   PublishedConflictError,
   PublishContentConflictError,
   RevisionConflictError,
   SnapshotNotFoundError,
+  SnapshotAlreadyExistsError,
   SnapshotProjectMismatchError,
   type ProjectAggregate,
   type ProjectRepository,
@@ -105,6 +108,42 @@ export class InMemoryProjectRepository implements ProjectRepository {
   async get(projectId: string): Promise<ProjectAggregate> {
     await Promise.resolve();
     return clone(this.#validatedAggregate(this.#requireProject(projectId)));
+  }
+
+  async create(input: ProjectAggregate): Promise<ProjectAggregate> {
+    await Promise.resolve();
+    const aggregate = validateProjectAggregate(clone(input));
+
+    if (this.#projects.has(aggregate.project.id)) {
+      throw new ProjectAlreadyExistsError(aggregate.project.id);
+    }
+    for (const stored of this.#projects.values()) {
+      if (stored.catalogue.id === aggregate.catalogue.id) {
+        throw new CatalogueAlreadyExistsError(aggregate.catalogue.id);
+      }
+      const existingSnapshot = aggregate.snapshots.find((snapshot) =>
+        stored.snapshots.has(snapshot.id),
+      );
+      if (existingSnapshot) {
+        throw new SnapshotAlreadyExistsError(existingSnapshot.id);
+      }
+    }
+
+    this.#projects.set(aggregate.project.id, {
+      project: freeze(aggregate.project),
+      catalogue: freeze(aggregate.catalogue),
+      snapshots: new Map(aggregate.snapshots.map((snapshot) => [snapshot.id, freeze(snapshot)])),
+      snapshotHistoryMetadata: new Map(
+        aggregate.snapshotHistoryMetadata?.map((metadata) => [
+          metadata.snapshotId,
+          freeze(metadata),
+        ]),
+      ),
+      managedDraftSnapshotIds: new Set([aggregate.project.draftSnapshotId]),
+      operationSequence: aggregate.snapshots.length,
+    });
+
+    return clone(aggregate);
   }
 
   async saveDraft(

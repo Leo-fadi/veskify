@@ -44,6 +44,7 @@ export type RestoreExpectation = {
 export interface ProjectRepository {
   list(): Promise<ProjectSummary[]>;
   get(projectId: string): Promise<ProjectAggregate>;
+  create(aggregate: ProjectAggregate): Promise<ProjectAggregate>;
   saveDraft(
     projectId: string,
     snapshot: StorefrontSnapshot,
@@ -55,6 +56,33 @@ export interface ProjectRepository {
     snapshotId: string,
     expectation?: RestoreExpectation,
   ): Promise<StorefrontSnapshot>;
+}
+
+export class ProjectAlreadyExistsError extends Error {
+  readonly code = "PROJECT_ALREADY_EXISTS";
+
+  constructor(readonly projectId: string) {
+    super(`Project already exists: ${projectId}.`);
+    this.name = "ProjectAlreadyExistsError";
+  }
+}
+
+export class CatalogueAlreadyExistsError extends Error {
+  readonly code = "CATALOGUE_ALREADY_EXISTS";
+
+  constructor(readonly catalogueId: string) {
+    super(`Catalogue already exists: ${catalogueId}.`);
+    this.name = "CatalogueAlreadyExistsError";
+  }
+}
+
+export class SnapshotAlreadyExistsError extends Error {
+  readonly code = "SNAPSHOT_ALREADY_EXISTS";
+
+  constructor(readonly snapshotId: string) {
+    super(`Snapshot already exists: ${snapshotId}.`);
+    this.name = "SnapshotAlreadyExistsError";
+  }
 }
 
 export class ProjectNotFoundError extends Error {
