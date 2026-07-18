@@ -1,13 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { OnboardingService, OnboardingTransitionError } from "@/application/onboarding";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  OnboardingBusinessBasicsValidationError,
+  OnboardingMutationQueue,
+  OnboardingService,
+  OnboardingTransitionError,
+} from "@/application/onboarding";
+import {
+  businessBasicsFieldIds,
+  type BusinessBasicsField,
   getOnboardingStep,
   onboardingStepRegistry,
   type OnboardingCreationPath,
   type OnboardingSession,
 } from "@/domain/onboarding";
+import {
+  storefrontIndustryValues,
+  type BusinessIdentity,
+  type StorefrontIndustry,
+} from "@/domain/design-brief";
 import type { Locale } from "@/domain/shared";
 import { BrowserOnboardingSessionRepository, OnboardingStorageError } from "@/services/onboarding";
 import styles from "./onboarding.module.css";
@@ -130,11 +142,116 @@ const pathOptions: ReadonlyArray<{
   },
 ];
 
+const businessBasicsText = {
+  en: {
+    summary: "Check the highlighted fields before continuing.",
+    businessName: {
+      label: "Business name",
+      description: "The name customers should see for your business.",
+      placeholder: "For example, Aurum Nordic",
+      required: "Enter your business name.",
+    },
+    shortDescription: {
+      label: "Short business description",
+      description: "A few sentences about what you offer and what makes your business useful.",
+      placeholder:
+        "For example, a Helsinki studio creating considered jewellery for everyday wear.",
+      required: "Add a short description of your business.",
+      length: (count: number) => `${count}/2000 characters`,
+    },
+    industry: {
+      label: "Industry",
+      description: "Choose the closest match so we can use the right storefront examples.",
+      placeholder: "Choose an industry",
+      required: "Choose an industry.",
+    },
+    targetCustomer: {
+      label: "Target customer",
+      description: "Describe the people you most want to reach.",
+      placeholder: "For example, customers looking for lasting Nordic jewellery.",
+      required: "Describe your target customer.",
+    },
+    primaryMarket: {
+      label: "Primary market",
+      description: "Where do you mainly sell or serve customers?",
+      placeholder: "For example, Finland",
+      required: "Add your primary market.",
+    },
+    industryLabels: {
+      jewellery: "Jewellery",
+      watches: "Watches",
+      fashion: "Fashion",
+      beauty: "Beauty",
+      home: "Home and living",
+      food: "Food and drink",
+      services: "Services",
+      electronics: "Electronics",
+      sports: "Sports and wellbeing",
+      health: "Health",
+      other: "Other",
+    } satisfies Record<StorefrontIndustry, string>,
+  },
+  fi: {
+    summary: "Tarkista korostetut kentät ennen jatkamista.",
+    businessName: {
+      label: "Yrityksen nimi",
+      description: "Nimi, jonka asiakkaat näkevät yrityksestäsi.",
+      placeholder: "Esimerkiksi Aurum Nordic",
+      required: "Anna yrityksesi nimi.",
+    },
+    shortDescription: {
+      label: "Lyhyt kuvaus yrityksestä",
+      description: "Muutama lause siitä, mitä tarjoat ja mikä tekee yrityksestäsi hyödyllisen.",
+      placeholder: "Esimerkiksi helsinkiläinen studio, joka valmistaa harkittuja koruja arkeen.",
+      required: "Lisää lyhyt kuvaus yrityksestäsi.",
+      length: (count: number) => `${count}/2000 merkkiä`,
+    },
+    industry: {
+      label: "Toimiala",
+      description:
+        "Valitse lähin vaihtoehto, jotta voimme käyttää sopivia verkkokauppaesimerkkejä.",
+      placeholder: "Valitse toimiala",
+      required: "Valitse toimiala.",
+    },
+    targetCustomer: {
+      label: "Kohdeasiakas",
+      description: "Kuvaile ihmiset, jotka haluat erityisesti tavoittaa.",
+      placeholder: "Esimerkiksi kestävistä pohjoismaisista koruista kiinnostuneet asiakkaat.",
+      required: "Kuvaile kohdeasiakkaasi.",
+    },
+    primaryMarket: {
+      label: "Päämarkkina",
+      description: "Missä myyt tai palvelet asiakkaita pääasiassa?",
+      placeholder: "Esimerkiksi Suomi",
+      required: "Anna päämarkkinasi.",
+    },
+    industryLabels: {
+      jewellery: "Korut",
+      watches: "Kellot",
+      fashion: "Muoti",
+      beauty: "Kauneus",
+      home: "Koti ja asuminen",
+      food: "Ruoka ja juoma",
+      services: "Palvelut",
+      electronics: "Elektroniikka",
+      sports: "Urheilu ja hyvinvointi",
+      health: "Terveys",
+      other: "Muu",
+    } satisfies Record<StorefrontIndustry, string>,
+  },
+} as const;
+
 export function OnboardingWizard() {
   const [locale, setLocale] = useState<Locale>("en");
   const [view, setView] = useState<ViewState>({ kind: "loading" });
   const [message, setMessage] = useState("");
+  const [businessDraft, setBusinessDraft] = useState<BusinessIdentity | null>(null);
+  const [businessErrors, setBusinessErrors] = useState<
+    Partial<Record<BusinessBasicsField, string>>
+  >({});
   const [restartOpen, setRestartOpen] = useState(false);
+  const sessionRef = useRef<OnboardingSession | null>(null);
+  const mutationQueue = useMemo(() => new OnboardingMutationQueue(), []);
   const repository = useMemo(() => new BrowserOnboardingSessionRepository(), []);
   const service = useMemo(() => new OnboardingService(repository), [repository]);
   const text = copy[locale];
@@ -142,8 +259,11 @@ export function OnboardingWizard() {
   const applyResumeResult = useCallback(
     (result: Awaited<ReturnType<OnboardingService["resume"]>>) => {
       if (result.status === "new" || result.status === "resumed") {
+        sessionRef.current = result.session;
+        setBusinessDraft((current) => current ?? result.session.designBrief.businessIdentity);
         setView({ kind: "ready", session: result.session, origin: result.status });
         setMessage("");
+        setBusinessErrors({});
         return;
       }
       if (result.status === "corrupt" || result.status === "incompatible") {
@@ -156,10 +276,12 @@ export function OnboardingWizard() {
   );
 
   const resume = useCallback(async () => {
+    await mutationQueue.whenIdle();
+    mutationQueue.resume();
     setView({ kind: "loading" });
     const result = await service.resume();
     applyResumeResult(result);
-  }, [applyResumeResult, service]);
+  }, [applyResumeResult, mutationQueue, service]);
 
   useEffect(() => {
     let active = true;
@@ -171,39 +293,69 @@ export function OnboardingWizard() {
     };
   }, [applyResumeResult, service]);
 
-  const updateSession = async (action: () => Promise<OnboardingSession>) => {
-    try {
-      const session = await action();
-      setView((current) => (current.kind === "ready" ? { ...current, session } : current));
-      setMessage("");
-    } catch (error) {
-      if (error instanceof OnboardingStorageError) {
-        setView({ kind: "storage-error" });
-        return;
+  const updateSession = (
+    action: (session: OnboardingSession) => Promise<OnboardingSession>,
+  ): Promise<OnboardingSession | null> =>
+    mutationQueue.enqueue(async () => {
+      const currentSession = sessionRef.current;
+      if (!currentSession) return null;
+      try {
+        const session = await action(currentSession);
+        sessionRef.current = session;
+        setView((current) => (current.kind === "ready" ? { ...current, session } : current));
+        setBusinessDraft(session.designBrief.businessIdentity);
+        setBusinessErrors({});
+        setMessage("");
+        return session;
+      } catch (error) {
+        if (error instanceof OnboardingStorageError) {
+          mutationQueue.pause();
+          setView({ kind: "storage-error" });
+          return null;
+        }
+        if (error instanceof OnboardingBusinessBasicsValidationError) {
+          const nextErrors = Object.fromEntries(
+            error.missingFields.map((field) => [field, businessBasicsText[locale][field].required]),
+          ) as Partial<Record<BusinessBasicsField, string>>;
+          setBusinessErrors(nextErrors);
+          setMessage(businessBasicsText[locale].summary);
+          return null;
+        }
+        if (error instanceof OnboardingTransitionError) {
+          setMessage(
+            error.code === "CREATION_PATH_REQUIRED"
+              ? text.pathRequired
+              : error.code === "STEP_NOT_AVAILABLE"
+                ? text.notAvailable
+                : text.transitionError,
+          );
+          return null;
+        }
+        throw error;
       }
-      if (error instanceof OnboardingTransitionError) {
-        setMessage(
-          error.code === "CREATION_PATH_REQUIRED"
-            ? text.pathRequired
-            : error.code === "STEP_NOT_AVAILABLE"
-              ? text.notAvailable
-              : text.transitionError,
-        );
-        return;
-      }
-      setView({ kind: "storage-error" });
-    }
-  };
+    });
 
   const restart = async () => {
-    try {
-      const session = await service.reset();
-      setView({ kind: "ready", session, origin: "new" });
+    const session = await mutationQueue.enqueue(async () => {
+      try {
+        const nextSession = await service.reset();
+        sessionRef.current = nextSession;
+        setBusinessDraft(nextSession.designBrief.businessIdentity);
+        setBusinessErrors({});
+        setView({ kind: "ready", session: nextSession, origin: "new" });
+        return nextSession;
+      } catch (error) {
+        if (error instanceof OnboardingStorageError) {
+          mutationQueue.pause();
+          setView({ kind: "storage-error" });
+          return null;
+        }
+        throw error;
+      }
+    });
+    if (session !== null) {
       setRestartOpen(false);
       setMessage(text.newStatus);
-    } catch {
-      setRestartOpen(false);
-      setView({ kind: "storage-error" });
     }
   };
 
@@ -261,14 +413,23 @@ export function OnboardingWizard() {
         {view.kind === "ready" && (
           <ActiveStep
             locale={locale}
+            businessDraft={businessDraft ?? view.session.designBrief.businessIdentity}
+            businessErrors={businessErrors}
             message={message || (view.origin === "new" ? text.newStatus : text.resumedStatus)}
-            onBack={() => void updateSession(() => service.goBack(view.session))}
-            onContinue={() => void updateSession(() => service.advance(view.session))}
+            onBusinessDraftChange={setBusinessDraft}
+            onBusinessField={(field, value) =>
+              updateSession((session) => service.updateBusinessIdentityField(session, field, value))
+            }
+            onBusinessComplete={(draft) =>
+              updateSession((session) => service.completeBusinessBasics(session, draft))
+            }
+            onBack={() => void updateSession((session) => service.goBack(session))}
+            onContinue={() => void updateSession((session) => service.advance(session))}
             onPath={(path) =>
-              void updateSession(() => service.selectCreationPath(view.session, path))
+              void updateSession((session) => service.selectCreationPath(session, path))
             }
             onRestart={() => setRestartOpen(true)}
-            onSkip={() => void updateSession(() => service.skip(view.session))}
+            onSkip={() => void updateSession((session) => service.skip(session))}
             service={service}
             session={view.session}
           />
@@ -323,8 +484,13 @@ function RecoveryState({
 }
 
 function ActiveStep({
+  businessDraft,
+  businessErrors,
   locale,
   message,
+  onBusinessDraftChange,
+  onBusinessComplete,
+  onBusinessField,
   onBack,
   onContinue,
   onPath,
@@ -333,8 +499,18 @@ function ActiveStep({
   service,
   session,
 }: {
+  businessDraft: BusinessIdentity;
+  businessErrors: Partial<Record<BusinessBasicsField, string>>;
   locale: Locale;
   message: string;
+  onBusinessDraftChange: (draft: BusinessIdentity) => void;
+  onBusinessComplete: (
+    draft: Partial<Pick<BusinessIdentity, BusinessBasicsField>>,
+  ) => Promise<OnboardingSession | null>;
+  onBusinessField: <Field extends BusinessBasicsField>(
+    field: Field,
+    value: BusinessIdentity[Field],
+  ) => Promise<OnboardingSession | null>;
   onBack: () => void;
   onContinue: () => void;
   onPath: (path: OnboardingCreationPath) => void;
@@ -408,6 +584,15 @@ function ActiveStep({
               </label>
             ))}
           </fieldset>
+        ) : step.id === "business-basics" ? (
+          <BusinessBasicsForm
+            draft={businessDraft}
+            errors={businessErrors}
+            locale={locale}
+            onComplete={onBusinessComplete}
+            onDraftChange={onBusinessDraftChange}
+            onField={onBusinessField}
+          />
         ) : (
           <div className={styles.placeholder}>
             <strong>{text.futureLabel}</strong>
@@ -426,7 +611,13 @@ function ActiveStep({
               {text.skip}
             </button>
           )}
-          <button className={styles.primaryButton} disabled={continueDisabled} onClick={onContinue}>
+          <button
+            className={styles.primaryButton}
+            disabled={continueDisabled}
+            form={step.id === "business-basics" ? "business-basics-form" : undefined}
+            onClick={step.id === "business-basics" ? undefined : onContinue}
+            type={step.id === "business-basics" ? "submit" : "button"}
+          >
             {text.continue}
           </button>
         </div>
@@ -435,5 +626,229 @@ function ActiveStep({
         </button>
       </footer>
     </>
+  );
+}
+
+function BusinessBasicsForm({
+  draft,
+  errors,
+  locale,
+  onComplete,
+  onDraftChange,
+  onField,
+}: {
+  draft: BusinessIdentity;
+  errors: Partial<Record<BusinessBasicsField, string>>;
+  locale: Locale;
+  onComplete: (
+    draft: Partial<Pick<BusinessIdentity, BusinessBasicsField>>,
+  ) => Promise<OnboardingSession | null>;
+  onDraftChange: (draft: BusinessIdentity) => void;
+  onField: <Field extends BusinessBasicsField>(
+    field: Field,
+    value: BusinessIdentity[Field],
+  ) => Promise<OnboardingSession | null>;
+}) {
+  const text = businessBasicsText[locale];
+  const [localDraft, setLocalDraft] = useState(draft);
+  const fieldRefs = useRef<
+    Partial<
+      Record<BusinessBasicsField, HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null>
+    >
+  >({});
+
+  useEffect(() => {
+    const firstInvalidField = businessBasicsFieldIds.find((field) => errors[field]);
+    if (firstInvalidField) fieldRefs.current[firstInvalidField]?.focus();
+  }, [errors]);
+
+  const updateField = <Field extends BusinessBasicsField>(
+    field: Field,
+    value: BusinessIdentity[Field],
+  ) => {
+    const nextDraft = { ...localDraft, [field]: value };
+    setLocalDraft(nextDraft);
+    onDraftChange(nextDraft);
+  };
+
+  const persistField = <Field extends BusinessBasicsField>(
+    field: Field,
+    value: BusinessIdentity[Field],
+  ) => {
+    void onField(field, value);
+  };
+
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void onComplete({
+      businessName: localDraft.businessName,
+      shortDescription: localDraft.shortDescription,
+      industry: localDraft.industry,
+      targetCustomer: localDraft.targetCustomer,
+      primaryMarket: localDraft.primaryMarket,
+    });
+  };
+
+  const inputDescription = (field: BusinessBasicsField) =>
+    `${field}-description${errors[field] ? ` ${field}-error` : ""}`;
+
+  return (
+    <form
+      className={styles.businessForm}
+      id="business-basics-form"
+      onSubmit={(event) => {
+        submit(event);
+      }}
+    >
+      {Object.keys(errors).length > 0 && (
+        <div aria-live="assertive" className={styles.validationSummary} role="alert">
+          <strong>{text.summary}</strong>
+          <ul>
+            {businessBasicsFieldIds
+              .filter((field) => errors[field])
+              .map((field) => (
+                <li key={field}>{errors[field]}</li>
+              ))}
+          </ul>
+        </div>
+      )}
+
+      <div className={styles.formField}>
+        <label htmlFor="business-name">{text.businessName.label}</label>
+        <p id="businessName-description">{text.businessName.description}</p>
+        <input
+          aria-describedby={inputDescription("businessName")}
+          aria-invalid={Boolean(errors.businessName)}
+          id="business-name"
+          maxLength={120}
+          onChange={(event) => updateField("businessName", event.target.value)}
+          onBlur={(event) => persistField("businessName", event.target.value)}
+          placeholder={text.businessName.placeholder}
+          ref={(element) => {
+            fieldRefs.current.businessName = element;
+          }}
+          type="text"
+          value={localDraft.businessName}
+        />
+        {errors.businessName && (
+          <span className={styles.fieldError} id="businessName-error">
+            {errors.businessName}
+          </span>
+        )}
+      </div>
+
+      <div className={styles.formField}>
+        <label htmlFor="business-description">{text.shortDescription.label}</label>
+        <p id="shortDescription-description">{text.shortDescription.description}</p>
+        <textarea
+          aria-describedby={inputDescription("shortDescription")}
+          aria-invalid={Boolean(errors.shortDescription)}
+          id="business-description"
+          maxLength={2_000}
+          onChange={(event) => updateField("shortDescription", event.target.value)}
+          onBlur={(event) => persistField("shortDescription", event.target.value)}
+          placeholder={text.shortDescription.placeholder}
+          ref={(element) => {
+            fieldRefs.current.shortDescription = element;
+          }}
+          rows={5}
+          value={localDraft.shortDescription}
+        />
+        <span className={styles.lengthHint}>
+          {text.shortDescription.length(localDraft.shortDescription.length)}
+        </span>
+        {errors.shortDescription && (
+          <span className={styles.fieldError} id="shortDescription-error">
+            {errors.shortDescription}
+          </span>
+        )}
+      </div>
+
+      <div className={styles.formField}>
+        <label htmlFor="business-industry">{text.industry.label}</label>
+        <p id="industry-description">{text.industry.description}</p>
+        <select
+          aria-describedby={inputDescription("industry")}
+          aria-invalid={Boolean(errors.industry)}
+          id="business-industry"
+          onChange={(event) =>
+            updateField(
+              "industry",
+              event.target.value === "" ? null : (event.target.value as StorefrontIndustry),
+            )
+          }
+          onBlur={(event) =>
+            persistField(
+              "industry",
+              event.target.value === "" ? null : (event.target.value as StorefrontIndustry),
+            )
+          }
+          ref={(element) => {
+            fieldRefs.current.industry = element;
+          }}
+          value={localDraft.industry ?? ""}
+        >
+          <option value="">{text.industry.placeholder}</option>
+          {storefrontIndustryValues.map((industry) => (
+            <option key={industry} value={industry}>
+              {text.industryLabels[industry]}
+            </option>
+          ))}
+        </select>
+        {errors.industry && (
+          <span className={styles.fieldError} id="industry-error">
+            {errors.industry}
+          </span>
+        )}
+      </div>
+
+      <div className={styles.formField}>
+        <label htmlFor="target-customer">{text.targetCustomer.label}</label>
+        <p id="targetCustomer-description">{text.targetCustomer.description}</p>
+        <textarea
+          aria-describedby={inputDescription("targetCustomer")}
+          aria-invalid={Boolean(errors.targetCustomer)}
+          id="target-customer"
+          maxLength={500}
+          onChange={(event) => updateField("targetCustomer", event.target.value)}
+          onBlur={(event) => persistField("targetCustomer", event.target.value)}
+          placeholder={text.targetCustomer.placeholder}
+          ref={(element) => {
+            fieldRefs.current.targetCustomer = element;
+          }}
+          rows={3}
+          value={localDraft.targetCustomer}
+        />
+        {errors.targetCustomer && (
+          <span className={styles.fieldError} id="targetCustomer-error">
+            {errors.targetCustomer}
+          </span>
+        )}
+      </div>
+
+      <div className={styles.formField}>
+        <label htmlFor="primary-market">{text.primaryMarket.label}</label>
+        <p id="primaryMarket-description">{text.primaryMarket.description}</p>
+        <input
+          aria-describedby={inputDescription("primaryMarket")}
+          aria-invalid={Boolean(errors.primaryMarket)}
+          id="primary-market"
+          maxLength={120}
+          onChange={(event) => updateField("primaryMarket", event.target.value)}
+          onBlur={(event) => persistField("primaryMarket", event.target.value)}
+          placeholder={text.primaryMarket.placeholder}
+          ref={(element) => {
+            fieldRefs.current.primaryMarket = element;
+          }}
+          type="text"
+          value={localDraft.primaryMarket}
+        />
+        {errors.primaryMarket && (
+          <span className={styles.fieldError} id="primaryMarket-error">
+            {errors.primaryMarket}
+          </span>
+        )}
+      </div>
+    </form>
   );
 }

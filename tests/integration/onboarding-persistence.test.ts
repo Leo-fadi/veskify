@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { OnboardingService } from "@/application/onboarding";
+import { ONBOARDING_SCHEMA_VERSION, PREVIOUS_ONBOARDING_SCHEMA_VERSION } from "@/domain/onboarding";
 import {
   BrowserOnboardingSessionRepository,
   ONBOARDING_SESSION_STORAGE_KEY,
@@ -30,6 +31,80 @@ describe("browser onboarding persistence", () => {
     expect(reloaded).toMatchObject({
       status: "found",
       session: { completedStepIds: ["creation-path"] },
+    });
+  });
+
+  it("persists partial and completed Business basics through the same session aggregate", async () => {
+    const service = new OnboardingService(new BrowserOnboardingSessionRepository(), {
+      createId: () => "onboarding_business",
+      now: () => "2026-07-18T08:00:00.000Z",
+    });
+    let session = await service.createSession();
+    session = await service.selectCreationPath(session, "new-storefront");
+    session = await service.advance(session);
+    session = await service.updateBusinessIdentityField(session, "businessName", "Aurum Nordic");
+
+    const partialResume = await new OnboardingService(
+      new BrowserOnboardingSessionRepository(),
+    ).resume();
+    expect(partialResume).toMatchObject({
+      status: "resumed",
+      session: {
+        activeStepId: "business-basics",
+        designBrief: { businessIdentity: { businessName: "Aurum Nordic" } },
+      },
+    });
+
+    if (partialResume.status !== "resumed") throw new Error("Expected a resumed session.");
+    await service.completeBusinessBasics(session, {
+      shortDescription: "A Helsinki jewellery studio.",
+      industry: "jewellery",
+      targetCustomer: "Customers looking for Nordic jewellery.",
+      primaryMarket: "Finland",
+    });
+    const completeResume = await new OnboardingService(
+      new BrowserOnboardingSessionRepository(),
+    ).resume();
+    expect(completeResume).toMatchObject({
+      status: "resumed",
+      session: {
+        activeStepId: "existing-sources",
+        completedStepIds: ["creation-path", "business-basics"],
+      },
+    });
+  });
+
+  it("migrates a persisted P3-01 session and writes the v2 aggregate back", async () => {
+    localStorage.setItem(
+      ONBOARDING_SESSION_STORAGE_KEY,
+      JSON.stringify({
+        id: "onboarding_migrate",
+        schemaVersion: PREVIOUS_ONBOARDING_SCHEMA_VERSION,
+        creationPath: "demo-preset",
+        activeStepId: "business-basics",
+        completedStepIds: ["creation-path"],
+        skippedStepIds: [],
+        selectedLanguages: ["en"],
+        primaryLanguage: "en",
+        status: "active",
+        createdAt: "2026-07-18T08:00:00.000Z",
+        updatedAt: "2026-07-18T08:00:00.000Z",
+      }),
+    );
+
+    const result = await new OnboardingService(new BrowserOnboardingSessionRepository()).resume();
+
+    expect(result).toMatchObject({
+      status: "resumed",
+      session: {
+        schemaVersion: ONBOARDING_SCHEMA_VERSION,
+        creationPath: "demo-preset",
+        designBrief: { creationContext: { type: "demo-storefront" } },
+      },
+    });
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      schemaVersion: ONBOARDING_SCHEMA_VERSION,
+      designBrief: { status: "collecting" },
     });
   });
 
