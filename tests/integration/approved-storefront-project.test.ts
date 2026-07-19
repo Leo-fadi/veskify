@@ -40,11 +40,14 @@ describe.each(["in-memory", "indexed-db"] as const)(
 
       expect(result).toEqual({
         projectId: loaded.project.id,
+        editorRoute: `/projects/${loaded.project.id}/editor`,
         draftSnapshotId: loaded.project.draftSnapshotId,
         publishedSnapshotId: loaded.project.publishedSnapshotId,
       });
       expect(loaded.project.revision).toBe(0);
       expect(loaded.project.draftSnapshotId).toBe(input.guidedGenerationPlan.snapshotId);
+      expect(loaded.snapshots).toHaveLength(2);
+      expect(new Set(loaded.snapshots.map((snapshot) => snapshot.id)).size).toBe(2);
       expect(loaded.snapshotHistoryMetadata).toBeUndefined();
     });
   },
