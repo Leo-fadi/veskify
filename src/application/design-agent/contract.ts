@@ -14,6 +14,7 @@ export const designAgentSessionStateSchema = z.enum([
   "planning",
   "generating",
   "proposalReady",
+  "accepting",
   "revising",
   "accepted",
   "rejected",
@@ -91,7 +92,7 @@ export const designAgentSessionSchema = z
       });
     }
     if (
-      ["proposalReady", "revising", "accepted", "rejected"].includes(session.state) &&
+      ["proposalReady", "accepting", "revising", "accepted", "rejected"].includes(session.state) &&
       !session.activeProposalId
     ) {
       context.addIssue({

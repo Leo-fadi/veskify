@@ -47,7 +47,10 @@ function affectedSectionIds(proposal: DesignProposal) {
   );
 }
 
-function panelController(proposal: DesignProposal): DesignAgentSessionController {
+function panelController(
+  proposal: DesignProposal,
+  state: "proposalReady" | "accepting" | "failed" = "proposalReady",
+): DesignAgentSessionController {
   const noop = vi.fn();
   return {
     request: "Make the homepage feel more luxurious.",
@@ -57,16 +60,29 @@ function panelController(proposal: DesignProposal): DesignAgentSessionController
     revision: "",
     setRevision: noop,
     session: {
-      state: "proposalReady",
+      state,
+      activeProposalId: proposal.id,
       plan: { affectedSectionIds: [...affectedSectionIds(proposal)] },
       assumptions: [],
+      failure:
+        state === "failed"
+          ? {
+              code: "executionFailed",
+              message: {
+                en: "The proposal could not be applied safely.",
+                fi: "Ehdotusta ei voitu soveltaa turvallisesti.",
+              },
+              details: ["Internal detail that must not render."],
+            }
+          : null,
     },
     proposal,
-    visibleState: "proposalReady",
-    statusMessage: "Proposal ready.",
+    visibleState: state,
+    statusMessage:
+      state === "failed" ? "The proposal could not be applied safely." : "Proposal ready.",
     previewActive: true,
     blocksSave: true,
-    controlsDisabled: false,
+    controlsDisabled: state === "accepting",
     submitRequest: noop,
     answerClarification: noop,
     reviseProposal: noop,
@@ -81,6 +97,55 @@ function panelController(proposal: DesignProposal): DesignAgentSessionController
 }
 
 describe("merchant proposal change details", () => {
+  it("renders the requested outcome, target, operation count and safe diagnostics", () => {
+    const proposal = proposalFor("Add a campaign section.");
+    render(
+      createElement(DesignAgentPanel, {
+        controller: panelController(proposal),
+        locale: "en",
+        primaryLocale: "en",
+        pageTitle: "Home",
+      }),
+    );
+
+    const card = screen.getByLabelText("Design proposal");
+    expect(card).toHaveTextContent(proposal.summary.en!);
+    expect(card).toHaveTextContent("Affected page");
+    expect(card).toHaveTextContent("Home");
+    expect(card).toHaveTextContent("Planned changes");
+    expect(card).toHaveTextContent(String(proposal.operations.length));
+    expect(card).toHaveTextContent("No warnings for this validated proposal.");
+    expect(card).not.toHaveTextContent("ADD_APPROVED_SECTION");
+  });
+
+  it("announces accepting and localized retryable failure states without internal details", () => {
+    const proposal = proposalFor("Make the layout more minimal.");
+    const view = render(
+      createElement(DesignAgentPanel, {
+        controller: panelController(proposal, "accepting"),
+        locale: "en",
+        primaryLocale: "en",
+        pageTitle: "Home",
+      }),
+    );
+    expect(screen.getByRole("button", { name: "Applying proposal…" })).toBeDisabled();
+
+    const failedController = panelController(proposal, "failed");
+    failedController.statusMessage = "Ehdotusta ei voitu soveltaa turvallisesti.";
+    view.rerender(
+      createElement(DesignAgentPanel, {
+        controller: failedController,
+        locale: "fi",
+        primaryLocale: "en",
+        pageTitle: "Etusivu",
+      }),
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(/turvallisesti/i);
+    expect(screen.getByRole("button", { name: "Yritä soveltamista uudelleen" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Hylkää" })).toBeEnabled();
+    expect(screen.queryByText(/Internal detail/)).not.toBeInTheDocument();
+  });
+
   it("groups a multi-section luxury proposal into one complete item per section", () => {
     const proposal = proposalFor("Make the homepage feel more luxurious.");
     const details = proposalChangeDetails(proposal, "en", "en");

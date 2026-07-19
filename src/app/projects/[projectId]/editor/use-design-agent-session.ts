@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  noopProposalAnalyticsSink,
+  type ProposalAnalyticsEvent,
+  type ProposalAnalyticsSink,
+} from "@/application/analytics";
+import {
   createDeterministicDesignAgent,
   type DesignAgentActionResult,
   type DesignAgentSession,
@@ -52,6 +57,8 @@ type UseDesignAgentSessionInput = {
   displayContext?: StorefrontRenderContext;
   selectedSectionId?: string;
   disabled: boolean;
+  analytics?: ProposalAnalyticsSink;
+  analyticsRoute?: string;
   onProposalReady?: () => void;
   onAcceptedPage: (page: PageModel) => void;
 };
@@ -105,12 +112,16 @@ export function useDesignAgentSession({
   displayContext,
   selectedSectionId,
   disabled,
+  analytics = noopProposalAnalyticsSink,
+  analyticsRoute = `/projects/${projectId}/editor`,
   onProposalReady,
   onAcceptedPage,
 }: UseDesignAgentSessionInput): DesignAgentSessionController {
   const agentRef = useRef(createDeterministicDesignAgent());
   const sessionRef = useRef<DesignAgentSession | null>(null);
   const pendingAction = useRef(0);
+  const acceptancePending = useRef(false);
+  const trackedProposalIds = useRef(new Set<string>());
   const initialLifecycle = useRef(true);
   const [request, setRequest] = useState("");
   const [clarificationAnswer, setClarificationAnswer] = useState("");
@@ -124,6 +135,24 @@ export function useDesignAgentSession({
   const fallbackLocale = primaryLocale ?? locale;
   const localize = (value: { en?: string; fi?: string }) =>
     resolveLocalizedText(value, locale, fallbackLocale);
+
+  const trackProposalEvent = (
+    name: ProposalAnalyticsEvent["name"],
+    targetId = selectedSectionId ?? page?.id,
+  ) => {
+    if (!targetId) return;
+    try {
+      analytics.track({
+        name,
+        projectId,
+        timestamp: new Date().toISOString(),
+        route: analyticsRoute,
+        targetId,
+      });
+    } catch {
+      // Observability must never block or alter the proposal lifecycle.
+    }
+  };
 
   const rememberSession = (nextSession: DesignAgentSession | null) => {
     const inspected = nextSession ? agentRef.current.inspectSession(nextSession.id) : null;
@@ -149,6 +178,7 @@ export function useDesignAgentSession({
     agentRef.current = createDeterministicDesignAgent();
     sessionRef.current = null;
     pendingAction.current += 1;
+    acceptancePending.current = false;
     setSessionState(null);
     setProposal(null);
     setActivity(null);
@@ -171,9 +201,18 @@ export function useDesignAgentSession({
     setActivity(null);
     setNotice(result.message ? localize(result.message) : null);
     if (result.outcome === "proposalReady") {
-      setProposal(result.proposal ?? previous ?? null);
+      const nextProposal = result.proposal ?? previous ?? null;
+      setProposal(nextProposal);
       setRevision("");
+      if (nextProposal && !trackedProposalIds.current.has(nextProposal.id)) {
+        trackedProposalIds.current.add(nextProposal.id);
+        trackProposalEvent("ai_proposal_generated", result.session.selectedSectionId ?? undefined);
+      }
       onProposalReady?.();
+      return;
+    }
+    if (result.outcome === "accepting" || result.outcome === "applicationFailed") {
+      setProposal(result.proposal ?? previous ?? null);
       return;
     }
     if (result.outcome === "revisionFailed" || result.outcome === "regenerationFailed") {
@@ -254,20 +293,59 @@ export function useDesignAgentSession({
   };
 
   const acceptProposal = () => {
-    if (disabled || activity || !session || !page || session.state !== "proposalReady") return;
+    const canAccept =
+      session?.state === "proposalReady" ||
+      (session?.state === "failed" && session.activeProposalId !== null && proposal !== null);
+    if (disabled || activity || acceptancePending.current || !session || !page || !canAccept) {
+      return;
+    }
+    acceptancePending.current = true;
     try {
-      const result = agentRef.current.acceptProposal(session.id, page);
-      applyResult(result, proposal);
-      if (result.outcome === "accepted" && result.page) onAcceptedPage(result.page);
+      const beginning = agentRef.current.beginProposalAcceptance(session.id, page);
+      applyResult(beginning, proposal);
+      if (beginning.outcome !== "accepting") {
+        acceptancePending.current = false;
+        return;
+      }
+      const actionId = pendingAction.current + 1;
+      pendingAction.current = actionId;
+      window.setTimeout(() => {
+        if (pendingAction.current !== actionId) {
+          acceptancePending.current = false;
+          return;
+        }
+        try {
+          const result = agentRef.current.completeProposalAcceptance(session.id, onAcceptedPage);
+          applyResult(result, proposal);
+          if (result.outcome === "accepted") {
+            trackProposalEvent(
+              "ai_proposal_accepted",
+              result.session.selectedSectionId ?? undefined,
+            );
+          }
+        } catch {
+          setNotice(localize(friendlyError));
+        } finally {
+          acceptancePending.current = false;
+        }
+      }, 0);
     } catch {
+      acceptancePending.current = false;
       setNotice(localize(friendlyError));
     }
   };
 
   const rejectProposal = () => {
-    if (disabled || activity || !session || session.state !== "proposalReady") return;
+    const canReject =
+      session?.state === "proposalReady" ||
+      (session?.state === "failed" && session.activeProposalId !== null && proposal !== null);
+    if (disabled || activity || acceptancePending.current || !session || !canReject) return;
     try {
-      applyResult(agentRef.current.rejectProposal(session.id), proposal);
+      const result = agentRef.current.rejectProposal(session.id);
+      applyResult(result, proposal);
+      if (result.outcome === "rejected") {
+        trackProposalEvent("ai_proposal_rejected", result.session.selectedSectionId ?? undefined);
+      }
     } catch {
       setNotice(localize(friendlyError));
     }
@@ -331,7 +409,11 @@ export function useDesignAgentSession({
   const visibleState = activity ?? session?.state ?? "idle";
   const statusMessage =
     notice ?? localize(activity ? activityStatus[activity] : (session?.status ?? fallbackStatus));
-  const previewActive = proposal !== null && session?.state === "proposalReady";
+  const previewActive =
+    proposal !== null &&
+    (session?.state === "proposalReady" ||
+      session?.state === "accepting" ||
+      session?.state === "failed");
   const blocksSave = activity !== null || session?.state === "needsClarification" || previewActive;
 
   return {
@@ -347,7 +429,7 @@ export function useDesignAgentSession({
     statusMessage,
     previewActive,
     blocksSave,
-    controlsDisabled: disabled || activity !== null,
+    controlsDisabled: disabled || activity !== null || session?.state === "accepting",
     submitRequest,
     answerClarification,
     reviseProposal,

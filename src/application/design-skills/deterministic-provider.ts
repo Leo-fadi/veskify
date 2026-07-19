@@ -40,6 +40,10 @@ export class DeterministicDesignProvider {
     return store.inspect(id);
   }
 
+  prepareAcceptance(id: string, store: InMemoryDesignProposalStore = this.#store) {
+    return store.prepareAcceptance(id);
+  }
+
   accept(id: string, store: InMemoryDesignProposalStore = this.#store) {
     return store.accept(id);
   }

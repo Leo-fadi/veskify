@@ -10,12 +10,13 @@ const transitions: Readonly<Record<DesignAgentSessionState, readonly DesignAgent
   needsClarification: ["classifying", "idle", "cancelled"],
   planning: ["generating", "failed", "cancelled"],
   generating: ["proposalReady", "failed", "cancelled"],
-  proposalReady: ["generating", "revising", "accepted", "rejected", "cancelled", "idle"],
+  proposalReady: ["generating", "revising", "accepting", "failed", "rejected", "cancelled", "idle"],
+  accepting: ["accepted", "failed", "cancelled"],
   revising: ["proposalReady", "failed", "cancelled"],
   accepted: ["idle"],
   rejected: ["idle"],
   cancelled: ["idle"],
-  failed: ["idle", "cancelled"],
+  failed: ["idle", "accepting", "rejected", "cancelled"],
 };
 
 const activeStates = new Set<DesignAgentSessionState>([
@@ -25,6 +26,7 @@ const activeStates = new Set<DesignAgentSessionState>([
   "planning",
   "generating",
   "proposalReady",
+  "accepting",
   "revising",
 ]);
 
