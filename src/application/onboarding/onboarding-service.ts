@@ -17,7 +17,10 @@ import {
 } from "./existing-sources";
 import {
   catalogueContextSchema,
+  canonicalizeStorefrontBriefPageTypes,
   createEmptyStorefrontDesignBrief,
+  requiredStorefrontPageTypes,
+  type StorefrontBriefPageType,
   updateStorefrontDesignBriefArea,
   type BusinessIdentity,
   type CatalogueContext,
@@ -90,6 +93,16 @@ export class OnboardingCatalogueContextValidationError extends Error {
   constructor(readonly code: OnboardingCatalogueContextValidationCode) {
     super(code);
     this.name = "OnboardingCatalogueContextValidationError";
+  }
+}
+
+export type OnboardingPagesValidationCode =
+  "PAGES_REQUIRED" | "PAGES_UNSUPPORTED" | "PAGES_DUPLICATE";
+
+export class OnboardingPagesValidationError extends Error {
+  constructor(readonly code: OnboardingPagesValidationCode) {
+    super(code);
+    this.name = "OnboardingPagesValidationError";
   }
 }
 
@@ -209,6 +222,7 @@ export class OnboardingService {
     if (step.id === "existing-sources") return this.completeExistingSources(session);
     if (step.id === "visual-direction") return this.completeVisualDirection(session);
     if (step.id === "catalogue") return this.completeCatalogueContext(session);
+    if (step.id === "pages") return this.completeStorefrontPages(session);
     if (!step.completableNow) throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
     if (step.id === "creation-path" && session.creationPath === null) {
       throw new OnboardingTransitionError("CREATION_PATH_REQUIRED");
@@ -514,6 +528,62 @@ export class OnboardingService {
     );
   }
 
+  async updateStorefrontPages(
+    input: OnboardingSession,
+    pageTypes: readonly StorefrontBriefPageType[],
+  ): Promise<OnboardingSession> {
+    const session = this.#validatePagesStep(input);
+    const canonicalPageTypes = this.#validatePageTypes(pageTypes);
+    const timestamp = this.#now();
+    const designBrief = updateStorefrontDesignBriefArea(
+      session.designBrief,
+      "storefrontStructure",
+      { pageTypes: canonicalPageTypes },
+      timestamp,
+    );
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        completedStepIds: session.completedStepIds.filter((stepId) => stepId !== "pages"),
+        skippedStepIds: session.skippedStepIds.filter((stepId) => stepId !== "pages"),
+      },
+      timestamp,
+    );
+  }
+
+  async completeStorefrontPages(
+    input: OnboardingSession,
+    pageTypes?: readonly StorefrontBriefPageType[],
+  ): Promise<OnboardingSession> {
+    const session = this.#validatePagesStep(input);
+    const canonicalPageTypes = this.#validatePageTypes(
+      pageTypes ??
+        (session.designBrief.storefrontStructure.pageTypes.length
+          ? session.designBrief.storefrontStructure.pageTypes
+          : requiredStorefrontPageTypes),
+    );
+    const timestamp = this.#now();
+    const designBrief = updateStorefrontDesignBriefArea(
+      session.designBrief,
+      "storefrontStructure",
+      { pageTypes: canonicalPageTypes },
+      timestamp,
+    );
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        activeStepId: "languages",
+        completedStepIds: session.completedStepIds.includes("pages")
+          ? session.completedStepIds
+          : [...session.completedStepIds, "pages"],
+        skippedStepIds: session.skippedStepIds.filter((stepId) => stepId !== "pages"),
+      },
+      timestamp,
+    );
+  }
+
   async goBack(input: OnboardingSession): Promise<OnboardingSession> {
     const session = onboardingSessionSchema.parse(input);
     const previousStepId = getOnboardingStep(session.activeStepId).previousStepId;
@@ -633,12 +703,37 @@ export class OnboardingService {
     return session;
   }
 
+  #validatePagesStep(input: OnboardingSession): OnboardingSession {
+    const session = this.#validateActive(input);
+    if (session.activeStepId !== "pages") {
+      throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
+    }
+    return session;
+  }
+
   #validateCatalogueContext(value: CatalogueContext): CatalogueContext {
     const result = catalogueContextSchema.safeParse(value);
     if (!result.success) {
       throw new OnboardingCatalogueContextValidationError("CATALOGUE_CONTEXT_UNSUPPORTED");
     }
     return result.data;
+  }
+
+  #validatePageTypes(pageTypes: readonly StorefrontBriefPageType[]): StorefrontBriefPageType[] {
+    if (!Array.isArray(pageTypes)) {
+      throw new OnboardingPagesValidationError("PAGES_UNSUPPORTED");
+    }
+    if (new Set(pageTypes).size !== pageTypes.length) {
+      throw new OnboardingPagesValidationError("PAGES_DUPLICATE");
+    }
+    const canonicalPageTypes = canonicalizeStorefrontBriefPageTypes(pageTypes);
+    if (canonicalPageTypes.length !== pageTypes.length) {
+      throw new OnboardingPagesValidationError("PAGES_UNSUPPORTED");
+    }
+    if (requiredStorefrontPageTypes.some((pageType) => !pageTypes.includes(pageType))) {
+      throw new OnboardingPagesValidationError("PAGES_REQUIRED");
+    }
+    return canonicalPageTypes;
   }
 
   #visualDirectionDraftFromSession(session: OnboardingSession): VisualDirectionDraft {

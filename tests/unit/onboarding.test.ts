@@ -24,8 +24,10 @@ import {
 import {
   catalogueContextValues,
   createEmptyStorefrontDesignBrief,
+  requiredStorefrontPageTypes,
   updateStorefrontDesignBriefArea,
   type CatalogueContext,
+  type StorefrontBriefPageType,
 } from "@/domain/design-brief";
 
 class MemoryOnboardingRepository implements OnboardingSessionRepository {
@@ -215,6 +217,25 @@ function catalogueSession(catalogueContext: CatalogueContext | null = null): Onb
     ...base,
     activeStepId: "catalogue",
     completedStepIds: [...base.completedStepIds, "visual-direction"],
+    designBrief,
+    updatedAt: designBrief.updatedAt,
+  });
+}
+
+function pagesSession(
+  pageTypes: StorefrontBriefPageType[] = [...requiredStorefrontPageTypes],
+): OnboardingSession {
+  const base = catalogueSession("empty-catalogue");
+  const designBrief = updateStorefrontDesignBriefArea(
+    base.designBrief,
+    "storefrontStructure",
+    { pageTypes },
+    timestamp,
+  );
+  return onboardingSessionSchema.parse({
+    ...base,
+    activeStepId: "pages",
+    completedStepIds: [...base.completedStepIds, "catalogue"],
     designBrief,
     updatedAt: designBrief.updatedAt,
   });
@@ -453,7 +474,7 @@ describe("onboarding step registry", () => {
       completableNow: true,
       nextStepId: "pages",
     });
-    expect(onboardingStepRegistry[6]).toMatchObject({ completableNow: false });
+    expect(onboardingStepRegistry[6]).toMatchObject({ completableNow: true, optional: false });
     expect(onboardingStepRegistry.at(-1)).toMatchObject({ nextStepId: null });
     expect(onboardingStepRegistry.every((step) => step.title.en && step.title.fi)).toBe(true);
   });
@@ -709,6 +730,71 @@ describe("onboarding application service", () => {
     await expect(service.skipCatalogueContext(wrongStep)).rejects.toMatchObject({
       code: "STEP_NOT_AVAILABLE",
     });
+  });
+
+  it("normalizes O-07 page selection to canonical order and completes to O-08", async () => {
+    const { service } = createService();
+    const session = pagesSession();
+    const updated = await service.updateStorefrontPages(session, ["product", "home", "collection"]);
+    expect(updated.designBrief.storefrontStructure.pageTypes).toEqual([
+      "home",
+      "collection",
+      "product",
+    ]);
+    expect(updated.completedStepIds).not.toContain("pages");
+
+    const completed = await service.completeStorefrontPages(updated);
+    expect(completed.activeStepId).toBe("languages");
+    expect(completed.completedStepIds).toContain("pages");
+    expect(completed.skippedStepIds).not.toContain("pages");
+  });
+
+  it("preserves valid optional brief page values without exposing unsupported renderer pages", async () => {
+    const { service } = createService();
+    const session = pagesSession(["home", "collection", "product", "content"]);
+    const updated = await service.updateStorefrontPages(session, [
+      "content",
+      "product",
+      "home",
+      "collection",
+    ]);
+    expect(updated.designBrief.storefrontStructure.pageTypes).toEqual([
+      "home",
+      "collection",
+      "product",
+      "content",
+    ]);
+  });
+
+  it.each([
+    ["missing required page", ["home", "collection"]],
+    ["duplicate page", ["home", "collection", "product", "product"]],
+    ["unsupported page", ["home", "collection", "product", "landing"]],
+  ] as const)("rejects O-07 %s", async (_label, pageTypes) => {
+    const { service } = createService();
+    await expect(
+      service.completeStorefrontPages(pagesSession(), pageTypes as never),
+    ).rejects.toMatchObject({
+      code:
+        _label === "missing required page"
+          ? "PAGES_REQUIRED"
+          : _label === "duplicate page"
+            ? "PAGES_DUPLICATE"
+            : "PAGES_UNSUPPORTED",
+    });
+  });
+
+  it("does not allow O-07 Skip and rejects malformed completed page sessions", async () => {
+    const { service } = createService();
+    await expect(service.skip(pagesSession())).rejects.toMatchObject({
+      code: "REQUIRED_STEP_CANNOT_BE_SKIPPED",
+    });
+    expect(() =>
+      onboardingSessionSchema.parse({
+        ...pagesSession(["home", "collection"]),
+        completedStepIds: [...pagesSession(["home", "collection"]).completedStepIds, "pages"],
+      }),
+    ).toThrow();
   });
 
   it("rejects unsupported or over-limit tone choices", async () => {

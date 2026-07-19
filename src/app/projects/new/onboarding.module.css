@@ -430,6 +430,15 @@
   line-height: 1.5;
 }
 
+.pathOptions em {
+  margin-top: auto;
+  color: var(--brand-color-primary);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .placeholder {
   max-width: 46rem;
   margin-top: 2rem;
