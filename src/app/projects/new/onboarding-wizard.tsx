@@ -1,5 +1,8 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   OnboardingBusinessBasicsValidationError,
@@ -47,11 +50,23 @@ type ViewState =
   | { kind: "recovery"; reason: "corrupt" | "incompatible" }
   | { kind: "ready"; session: OnboardingSession; origin: "new" | "resumed" };
 
+type SaveState = "saved" | "unsaved" | "saving" | "failed";
+
 const copy = {
   en: {
     eyebrow: "Guided storefront setup",
     heading: "Create your storefront with Veskify",
     draft: "Draft · onboarding",
+    context: "Storefront setup",
+    dashboard: "Back to dashboard",
+    leaving: "Leaving…",
+    saveExit: "Save & exit",
+    saveStatus: "Save status",
+    saved: "Saved",
+    unsaved: "Unsaved changes",
+    saving: "Saving…",
+    saveFailed: "Save failed",
+    saveError: "We could not save your latest changes. Stay on this page and try again.",
     languageLabel: "Interface language",
     english: "English",
     finnish: "Suomi",
@@ -97,6 +112,16 @@ const copy = {
     eyebrow: "Ohjattu verkkokaupan aloitus",
     heading: "Luo verkkokauppasi Veskifylla",
     draft: "Luonnos · aloitus",
+    context: "Verkkokaupan aloitus",
+    dashboard: "Takaisin hallintapaneeliin",
+    leaving: "Poistutaan…",
+    saveExit: "Tallenna ja poistu",
+    saveStatus: "Tallennuksen tila",
+    saved: "Tallennettu",
+    unsaved: "Tallentamattomia muutoksia",
+    saving: "Tallennetaan…",
+    saveFailed: "Tallennus epäonnistui",
+    saveError: "Uusimpia muutoksia ei voitu tallentaa. Pysy tällä sivulla ja yritä uudelleen.",
     languageLabel: "Käyttöliittymän kieli",
     english: "English",
     finnish: "Suomi",
@@ -575,6 +600,7 @@ function pagesDraftFromSession(session: OnboardingSession): StorefrontBriefPageT
 }
 
 export function OnboardingWizard() {
+  const router = useRouter();
   const [locale, setLocale] = useState<Locale>("en");
   const [view, setView] = useState<ViewState>({ kind: "loading" });
   const [message, setMessage] = useState("");
@@ -595,21 +621,97 @@ export function OnboardingWizard() {
   const [pagesDraft, setPagesDraft] = useState<StorefrontBriefPageType[] | null>(null);
   const [pagesError, setPagesError] = useState<string | null>(null);
   const [restartOpen, setRestartOpen] = useState(false);
+  const [saveState, setSaveState] = useState<SaveState>("saving");
+  const [exitError, setExitError] = useState("");
+  const [pendingExit, setPendingExit] = useState<"save" | "dashboard" | null>(null);
   const sessionRef = useRef<OnboardingSession | null>(null);
+  const businessDraftRef = useRef<BusinessIdentity | null>(null);
+  const existingSourceDraftRef = useRef<string | null>(null);
+  const localTextRevisionRef = useRef(0);
+  const pendingMutationCountRef = useRef(0);
+  const saveFailedRef = useRef(false);
+  const exitPendingRef = useRef(false);
   const mutationQueue = useMemo(() => new OnboardingMutationQueue(), []);
   const repository = useMemo(() => new BrowserOnboardingSessionRepository(), []);
   const service = useMemo(() => new OnboardingService(repository), [repository]);
   const text = copy[locale];
+  const exitUnavailable = pendingExit !== null || view.kind !== "ready";
+
+  const localTextDiffersFromSession = (session = sessionRef.current): boolean => {
+    if (!session) return false;
+    const business = businessDraftRef.current;
+    const businessDiffers =
+      business !== null &&
+      businessBasicsFieldIds.some(
+        (field) => business[field] !== session.designBrief.businessIdentity[field],
+      );
+    const source = existingSourceDraftRef.current;
+    const sourceDiffers =
+      source !== null &&
+      source !== (session.designBrief.creationContext.existingStorefrontUrl ?? "");
+    return businessDiffers || sourceDiffers;
+  };
+
+  const refreshSaveState = () => {
+    if (exitPendingRef.current) {
+      setSaveState("saving");
+    } else if (saveFailedRef.current) {
+      setSaveState("failed");
+    } else if (localTextDiffersFromSession()) {
+      setSaveState("unsaved");
+    } else if (pendingMutationCountRef.current > 0) {
+      setSaveState("saving");
+    } else {
+      setSaveState("saved");
+    }
+  };
+
+  const markBusinessDraftChanged = (draft: BusinessIdentity) => {
+    businessDraftRef.current = draft;
+    localTextRevisionRef.current += 1;
+    saveFailedRef.current = false;
+    setBusinessDraft(draft);
+    setExitError("");
+    setSaveState(
+      localTextDiffersFromSession()
+        ? "unsaved"
+        : pendingMutationCountRef.current > 0
+          ? "saving"
+          : "saved",
+    );
+  };
+
+  const markExistingSourceDraftChanged = (value: string) => {
+    existingSourceDraftRef.current = value;
+    localTextRevisionRef.current += 1;
+    saveFailedRef.current = false;
+    setExistingSourceDraft(value);
+    setExitError("");
+    setSaveState(
+      localTextDiffersFromSession()
+        ? "unsaved"
+        : pendingMutationCountRef.current > 0
+          ? "saving"
+          : "saved",
+    );
+  };
 
   const applyResumeResult = useCallback(
     (result: Awaited<ReturnType<OnboardingService["resume"]>>) => {
       if (result.status === "new" || result.status === "resumed") {
         const initialSession = result.session;
         sessionRef.current = initialSession;
-        setBusinessDraft((current) => current ?? result.session.designBrief.businessIdentity);
-        setExistingSourceDraft(
-          (current) => current ?? result.session.designBrief.creationContext.existingStorefrontUrl,
-        );
+        const business = businessDraftRef.current ?? initialSession.designBrief.businessIdentity;
+        const existingSource =
+          existingSourceDraftRef.current ??
+          initialSession.designBrief.creationContext.existingStorefrontUrl ??
+          "";
+        businessDraftRef.current = business;
+        existingSourceDraftRef.current = existingSource;
+        pendingMutationCountRef.current = 0;
+        saveFailedRef.current = false;
+        setBusinessDraft(business);
+        setExistingSourceDraft(existingSource);
         setVisualDirectionDraft(
           (current) => current ?? visualDirectionDraftFromSession(result.session),
         );
@@ -622,6 +724,14 @@ export function OnboardingWizard() {
         setBusinessErrors({});
         setExistingSourceErrors({});
         setVisualDirectionErrors({});
+        const businessDiffers = businessBasicsFieldIds.some(
+          (field) => business[field] !== result.session.designBrief.businessIdentity[field],
+        );
+        const sourceDiffers =
+          existingSource !==
+          (result.session.designBrief.creationContext.existingStorefrontUrl ?? "");
+        setSaveState(businessDiffers || sourceDiffers ? "unsaved" : "saved");
+        setExitError("");
         setCatalogueContextErrors(null);
         setPagesError(null);
         if (
@@ -647,6 +757,8 @@ export function OnboardingWizard() {
         setView({ kind: "recovery", reason: result.status });
         return;
       }
+      saveFailedRef.current = true;
+      setSaveState("failed");
       setView({ kind: "storage-error" });
     },
     [mutationQueue, service],
@@ -672,16 +784,26 @@ export function OnboardingWizard() {
 
   const updateSession = (
     action: (session: OnboardingSession) => Promise<OnboardingSession>,
-  ): Promise<OnboardingSession | null> =>
-    mutationQueue.enqueue(async () => {
+  ): Promise<OnboardingSession | null> => {
+    const localTextRevision = localTextRevisionRef.current;
+    pendingMutationCountRef.current += 1;
+    saveFailedRef.current = false;
+    setSaveState("saving");
+    setExitError("");
+    const queued = mutationQueue.enqueue(async () => {
       const currentSession = sessionRef.current;
       if (!currentSession) return null;
       try {
         const session = await action(currentSession);
         sessionRef.current = session;
         setView((current) => (current.kind === "ready" ? { ...current, session } : current));
-        setBusinessDraft(session.designBrief.businessIdentity);
-        setExistingSourceDraft(session.designBrief.creationContext.existingStorefrontUrl);
+        if (localTextRevisionRef.current === localTextRevision) {
+          businessDraftRef.current = session.designBrief.businessIdentity;
+          existingSourceDraftRef.current =
+            session.designBrief.creationContext.existingStorefrontUrl ?? "";
+          setBusinessDraft(session.designBrief.businessIdentity);
+          setExistingSourceDraft(session.designBrief.creationContext.existingStorefrontUrl ?? "");
+        }
         setVisualDirectionDraft(visualDirectionDraftFromSession(session));
         setCatalogueContextDraft(session.designBrief.catalogueContext);
         setPagesDraft(pagesDraftFromSession(session));
@@ -695,6 +817,8 @@ export function OnboardingWizard() {
       } catch (error) {
         if (error instanceof OnboardingStorageError) {
           mutationQueue.pause();
+          saveFailedRef.current = true;
+          setSaveState("failed");
           setView({ kind: "storage-error" });
           return null;
         }
@@ -768,14 +892,110 @@ export function OnboardingWizard() {
         throw error;
       }
     });
+    const settle = () => {
+      pendingMutationCountRef.current = Math.max(0, pendingMutationCountRef.current - 1);
+      refreshSaveState();
+    };
+    void queued.then(settle, settle);
+    return queued;
+  };
+
+  const exitToDashboard = async (intent: "save" | "dashboard") => {
+    if (exitPendingRef.current) return;
+    exitPendingRef.current = true;
+    setPendingExit(intent);
+    setSaveState("saving");
+    setExitError("");
+    try {
+      const session = await mutationQueue.enqueue(async () => {
+        let currentSession = sessionRef.current;
+        if (!currentSession) return null;
+
+        while (true) {
+          const localTextRevision = localTextRevisionRef.current;
+          const business = businessDraftRef.current;
+          const source = existingSourceDraftRef.current;
+          const sessionForComparison = currentSession;
+
+          if (
+            currentSession.activeStepId === "business-basics" &&
+            business &&
+            businessBasicsFieldIds.some(
+              (field) =>
+                business[field] !== sessionForComparison.designBrief.businessIdentity[field],
+            )
+          ) {
+            currentSession = await service.updateBusinessIdentity(currentSession, business);
+          } else if (
+            currentSession.activeStepId === "existing-sources" &&
+            currentSession.designBrief.creationContext.type === "redesign-existing-storefront" &&
+            source !== null &&
+            source !== (currentSession.designBrief.creationContext.existingStorefrontUrl ?? "")
+          ) {
+            currentSession = await service.updateExistingStorefrontUrl(currentSession, source);
+          }
+
+          currentSession = await service.persistSession(currentSession);
+          sessionRef.current = currentSession;
+          if (localTextRevisionRef.current === localTextRevision) return currentSession;
+        }
+      });
+      if (!session) {
+        setSaveState("failed");
+        setExitError(text.saveError);
+        return;
+      }
+      businessDraftRef.current = session.designBrief.businessIdentity;
+      existingSourceDraftRef.current =
+        session.designBrief.creationContext.existingStorefrontUrl ?? "";
+      setBusinessDraft(session.designBrief.businessIdentity);
+      setExistingSourceDraft(session.designBrief.creationContext.existingStorefrontUrl ?? "");
+      setView((current) => (current.kind === "ready" ? { ...current, session } : current));
+      saveFailedRef.current = false;
+      setSaveState("saved");
+      router.push("/");
+    } catch (error) {
+      if (error instanceof OnboardingStorageError) {
+        saveFailedRef.current = true;
+        setSaveState("failed");
+        setExitError(text.saveError);
+        return;
+      }
+      if (error instanceof OnboardingExistingSourcesValidationError) {
+        const errorMessage =
+          error.code === "EXISTING_STOREFRONT_URL_REQUIRED"
+            ? existingSourcesText[locale].url.required
+            : error.code === "EXISTING_STOREFRONT_URL_INSECURE"
+              ? existingSourcesText[locale].url.insecure
+              : error.code === "EXISTING_STOREFRONT_URL_UNSUPPORTED_PROTOCOL"
+                ? existingSourcesText[locale].url.unsupported
+                : existingSourcesText[locale].url.invalid;
+        setExistingSourceErrors({ existingStorefrontUrl: errorMessage });
+        setSaveState("unsaved");
+        setExitError(errorMessage);
+        return;
+      }
+      throw error;
+    } finally {
+      exitPendingRef.current = false;
+      setPendingExit(null);
+    }
+  };
 
   const restart = async () => {
+    setSaveState("saving");
     const session = await mutationQueue.enqueue(async () => {
       try {
         const nextSession = await service.reset();
         sessionRef.current = nextSession;
+        businessDraftRef.current = nextSession.designBrief.businessIdentity;
+        existingSourceDraftRef.current =
+          nextSession.designBrief.creationContext.existingStorefrontUrl ?? "";
+        localTextRevisionRef.current = 0;
+        pendingMutationCountRef.current = 0;
+        saveFailedRef.current = false;
         setBusinessDraft(nextSession.designBrief.businessIdentity);
-        setExistingSourceDraft(nextSession.designBrief.creationContext.existingStorefrontUrl);
+        setExistingSourceDraft(nextSession.designBrief.creationContext.existingStorefrontUrl ?? "");
         setVisualDirectionDraft(visualDirectionDraftFromSession(nextSession));
         setCatalogueContextDraft(nextSession.designBrief.catalogueContext);
         setPagesDraft(pagesDraftFromSession(nextSession));
@@ -785,10 +1005,13 @@ export function OnboardingWizard() {
         setCatalogueContextErrors(null);
         setPagesError(null);
         setView({ kind: "ready", session: nextSession, origin: "new" });
+        setSaveState("saved");
         return nextSession;
       } catch (error) {
         if (error instanceof OnboardingStorageError) {
           mutationQueue.pause();
+          saveFailedRef.current = true;
+          setSaveState("failed");
           setView({ kind: "storage-error" });
           return null;
         }
@@ -803,134 +1026,197 @@ export function OnboardingWizard() {
 
   return (
     <main className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>{text.eyebrow}</p>
-          <h1>{text.heading}</h1>
-          <span className={styles.context}>{text.draft}</span>
-        </div>
-        <fieldset className={styles.localeControl}>
-          <legend>{text.languageLabel}</legend>
-          {(["en", "fi"] as const).map((value) => (
-            <label key={value}>
-              <input
-                checked={locale === value}
-                name="interface-locale"
-                onChange={() => setLocale(value)}
-                type="radio"
-                value={value}
+      <header className={styles.appBar}>
+        <div className={styles.appBarInner}>
+          <div className={styles.brandContext}>
+            <span className={styles.logoFrame}>
+              <Image
+                alt="Vesko"
+                className={styles.logo}
+                height={240}
+                priority
+                src="/vesko-logo.png"
+                width={240}
               />
-              <span>{value === "en" ? text.english : text.finnish}</span>
-            </label>
-          ))}
-        </fieldset>
+            </span>
+            <span className={styles.appContext}>{text.context}</span>
+          </div>
+          <div className={styles.shellActions}>
+            <p
+              aria-live="polite"
+              aria-label={text.saveStatus}
+              className={`${styles.saveState} ${saveState === "failed" ? styles.saveStateFailed : ""}`}
+              role="status"
+            >
+              <span aria-hidden="true" className={styles.saveStateDot} />
+              {saveState === "saving"
+                ? text.saving
+                : saveState === "failed"
+                  ? text.saveFailed
+                  : saveState === "unsaved"
+                    ? text.unsaved
+                    : text.saved}
+            </p>
+            <Link
+              aria-disabled={exitUnavailable}
+              className={styles.dashboardLink}
+              href="/"
+              onClick={(event) => {
+                event.preventDefault();
+                if (exitUnavailable) return;
+                void exitToDashboard("dashboard");
+              }}
+            >
+              {pendingExit === "dashboard" ? text.leaving : text.dashboard}
+            </Link>
+            <button
+              className={styles.saveExitButton}
+              disabled={exitUnavailable}
+              onClick={() => void exitToDashboard("save")}
+              type="button"
+            >
+              {pendingExit === "save" ? text.saving : text.saveExit}
+            </button>
+          </div>
+        </div>
+        {exitError ? (
+          <p className={styles.exitError} role="alert">
+            {exitError}
+          </p>
+        ) : null}
       </header>
 
-      <section aria-label={text.heading} className={styles.card}>
-        {view.kind === "loading" && (
-          <div aria-live="polite" className={styles.centerState} role="status">
-            <span aria-hidden="true" className={styles.spinner} />
-            <p>{text.loading}</p>
+      <div className={styles.shellBody}>
+        <header className={styles.header}>
+          <div>
+            <p className={styles.eyebrow}>{text.eyebrow}</p>
+            <h1>{text.heading}</h1>
+            <span className={styles.context}>{text.draft}</span>
           </div>
-        )}
+          <fieldset className={styles.localeControl}>
+            <legend>{text.languageLabel}</legend>
+            {(["en", "fi"] as const).map((value) => (
+              <label key={value}>
+                <input
+                  checked={locale === value}
+                  name="interface-locale"
+                  onChange={() => setLocale(value)}
+                  type="radio"
+                  value={value}
+                />
+                <span>{value === "en" ? text.english : text.finnish}</span>
+              </label>
+            ))}
+          </fieldset>
+        </header>
 
-        {view.kind === "storage-error" && (
-          <RecoveryState
-            body={text.storageBody}
-            heading={text.storageHeading}
-            onAction={() => void resume()}
-            action={text.retry}
-          />
-        )}
+        <section aria-label={text.heading} className={styles.card}>
+          {view.kind === "loading" && (
+            <div aria-live="polite" className={styles.centerState} role="status">
+              <span aria-hidden="true" className={styles.spinner} />
+              <p>{text.loading}</p>
+            </div>
+          )}
 
-        {view.kind === "recovery" && (
-          <RecoveryState
-            body={view.reason === "corrupt" ? text.corruptBody : text.incompatibleBody}
-            heading={view.reason === "corrupt" ? text.corruptHeading : text.incompatibleHeading}
-            onAction={() => setRestartOpen(true)}
-            action={text.discardRestart}
-          />
-        )}
+          {view.kind === "storage-error" && (
+            <RecoveryState
+              body={text.storageBody}
+              heading={text.storageHeading}
+              onAction={() => void resume()}
+              action={text.retry}
+            />
+          )}
 
-        {view.kind === "ready" && (
-          <ActiveStep
-            locale={locale}
-            businessDraft={businessDraft ?? view.session.designBrief.businessIdentity}
-            businessErrors={businessErrors}
-            existingSourceDraft={
-              existingSourceDraft ??
-              view.session.designBrief.creationContext.existingStorefrontUrl ??
-              ""
-            }
-            existingSourceErrors={existingSourceErrors}
-            visualDirectionDraft={
-              visualDirectionDraft ?? visualDirectionDraftFromSession(view.session)
-            }
-            visualDirectionErrors={visualDirectionErrors}
-            catalogueContextDraft={
-              catalogueContextDraft ?? view.session.designBrief.catalogueContext
-            }
-            catalogueContextError={catalogueContextErrors}
-            pagesDraft={pagesDraft ?? pagesDraftFromSession(view.session)}
-            pagesError={pagesError}
-            message={message || (view.origin === "new" ? text.newStatus : text.resumedStatus)}
-            onBusinessDraftChange={setBusinessDraft}
-            onBusinessField={(field, value) =>
-              updateSession((session) => service.updateBusinessIdentityField(session, field, value))
-            }
-            onBusinessComplete={(draft) =>
-              updateSession((session) => service.completeBusinessBasics(session, draft))
-            }
-            onExistingSourceDraftChange={setExistingSourceDraft}
-            onExistingSourceField={(value) =>
-              updateSession((session) => service.updateExistingStorefrontUrl(session, value))
-            }
-            onExistingSourcesComplete={(value) =>
-              updateSession((session) => service.completeExistingSources(session, value))
-            }
-            onExistingSourcesSkip={() =>
-              void updateSession((session) => service.skipExistingSources(session))
-            }
-            onVisualDirectionDraftChange={setVisualDirectionDraft}
-            onVisualDirectionFieldSave={(draft) =>
-              updateSession((session) => service.updateVisualDirection(session, draft))
-            }
-            onVisualDirectionComplete={(draft) =>
-              updateSession((session) => service.completeVisualDirection(session, draft))
-            }
-            onVisualDirectionSkip={() =>
-              void updateSession((session) => service.skipVisualDirection(session))
-            }
-            onCatalogueContextChange={(value) => {
-              setCatalogueContextDraft(value);
-              void updateSession((session) => service.updateCatalogueContext(session, value));
-            }}
-            onCatalogueContextComplete={(value) =>
-              updateSession((session) => service.completeCatalogueContext(session, value))
-            }
-            onCatalogueContextSkip={() =>
-              void updateSession((session) => service.skipCatalogueContext(session))
-            }
-            onPagesChange={(value) => {
-              setPagesDraft(value);
-              void updateSession((session) => service.updateStorefrontPages(session, value));
-            }}
-            onPagesComplete={(value) =>
-              updateSession((session) => service.completeStorefrontPages(session, value))
-            }
-            onBack={() => void updateSession((session) => service.goBack(session))}
-            onContinue={() => void updateSession((session) => service.advance(session))}
-            onPath={(path) =>
-              void updateSession((session) => service.selectCreationPath(session, path))
-            }
-            onRestart={() => setRestartOpen(true)}
-            onSkip={() => void updateSession((session) => service.skip(session))}
-            service={service}
-            session={view.session}
-          />
-        )}
-      </section>
+          {view.kind === "recovery" && (
+            <RecoveryState
+              body={view.reason === "corrupt" ? text.corruptBody : text.incompatibleBody}
+              heading={view.reason === "corrupt" ? text.corruptHeading : text.incompatibleHeading}
+              onAction={() => setRestartOpen(true)}
+              action={text.discardRestart}
+            />
+          )}
 
+          {view.kind === "ready" && (
+            <ActiveStep
+              locale={locale}
+              businessDraft={businessDraft ?? view.session.designBrief.businessIdentity}
+              businessErrors={businessErrors}
+              existingSourceDraft={
+                existingSourceDraft ??
+                view.session.designBrief.creationContext.existingStorefrontUrl ??
+                ""
+              }
+              existingSourceErrors={existingSourceErrors}
+              visualDirectionDraft={
+                visualDirectionDraft ?? visualDirectionDraftFromSession(view.session)
+              }
+              visualDirectionErrors={visualDirectionErrors}
+              catalogueContextDraft={
+                catalogueContextDraft ?? view.session.designBrief.catalogueContext
+              }
+              catalogueContextError={catalogueContextErrors}
+              pagesDraft={pagesDraft ?? pagesDraftFromSession(view.session)}
+              pagesError={pagesError}
+              message={message || (view.origin === "new" ? text.newStatus : text.resumedStatus)}
+              onBusinessDraftChange={markBusinessDraftChanged}
+              onBusinessField={(field, value) =>
+                updateSession((session) =>
+                  service.updateBusinessIdentityField(session, field, value),
+                )
+              }
+              onBusinessComplete={(draft) =>
+                updateSession((session) => service.completeBusinessBasics(session, draft))
+              }
+              onExistingSourceDraftChange={markExistingSourceDraftChanged}
+              onExistingSourceField={(value) =>
+                updateSession((session) => service.updateExistingStorefrontUrl(session, value))
+              }
+              onExistingSourcesComplete={(value) =>
+                updateSession((session) => service.completeExistingSources(session, value))
+              }
+              onExistingSourcesSkip={() =>
+                void updateSession((session) => service.skipExistingSources(session))
+              }
+              onVisualDirectionDraftChange={setVisualDirectionDraft}
+              onVisualDirectionFieldSave={(draft) =>
+                updateSession((session) => service.updateVisualDirection(session, draft))
+              }
+              onVisualDirectionComplete={(draft) =>
+                updateSession((session) => service.completeVisualDirection(session, draft))
+              }
+              onVisualDirectionSkip={() =>
+                void updateSession((session) => service.skipVisualDirection(session))
+              }
+              onCatalogueContextChange={(value) => {
+                setCatalogueContextDraft(value);
+                void updateSession((session) => service.updateCatalogueContext(session, value));
+              }}
+              onCatalogueContextComplete={(value) =>
+                updateSession((session) => service.completeCatalogueContext(session, value))
+              }
+              onCatalogueContextSkip={() =>
+                void updateSession((session) => service.skipCatalogueContext(session))
+              }
+              onPagesChange={(value) => {
+                setPagesDraft(value);
+                void updateSession((session) => service.updateStorefrontPages(session, value));
+              }}
+              onPagesComplete={(value) =>
+                updateSession((session) => service.completeStorefrontPages(session, value))
+              }
+              onBack={() => void updateSession((session) => service.goBack(session))}
+              onContinue={() => void updateSession((session) => service.advance(session))}
+              onPath={(path) =>
+                void updateSession((session) => service.selectCreationPath(session, path))
+              }
+              onRestart={() => setRestartOpen(true)}
+              onSkip={() => void updateSession((session) => service.skip(session))}
+              service={service}
+              session={view.session}
+            />
+          )}
+        </section>
+      </div>
       {restartOpen && (
         <div className={styles.dialogBackdrop}>
           <div
