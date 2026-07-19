@@ -303,6 +303,10 @@ function projectPages(plan: GuidedStorefrontGenerationPlan): {
 function projectLanguages(brief: StorefrontDesignBrief | null) {
   const selectedLanguages = brief?.languagePlan.selectedLanguages ?? [];
   const primaryLanguage = brief?.languagePlan.primaryLanguage ?? null;
+  const complete =
+    selectedLanguages.length > 0 &&
+    primaryLanguage !== null &&
+    selectedLanguages.includes(primaryLanguage);
   return {
     section: section(
       "languages",
@@ -311,7 +315,7 @@ function projectLanguages(brief: StorefrontDesignBrief | null) {
         "These are the languages selected for the storefront.",
         "Nämä kielet on valittu kauppaa varten.",
       ),
-      brief ? "complete" : "not-applicable",
+      brief ? (complete ? "complete" : "blocked") : "not-applicable",
       "canonical design brief",
       null,
       selectedLanguages.map((language) => fact(language, copy(language, language), language)),
@@ -409,6 +413,10 @@ export function createStorefrontGenerationReview(
   const hasRequiredPages = requiredPages.every((type) =>
     pages.pages.some((page) => page.type === type),
   );
+  const hasRequiredLanguages =
+    languages.languagePlan.selectedLanguages.length > 0 &&
+    languages.languagePlan.primaryLanguage !== null &&
+    languages.languagePlan.selectedLanguages.includes(languages.languagePlan.primaryLanguage);
   if (plan.status !== "blocked" && (!plan.generatedSnapshot || !hasRequiredPages))
     throw new StorefrontGenerationReviewError(
       "inconsistent-review-source",
@@ -418,7 +426,8 @@ export function createStorefrontGenerationReview(
     plan.status !== "blocked" &&
     plan.generatedSnapshot !== null &&
     blockers.length === 0 &&
-    hasRequiredPages;
+    hasRequiredPages &&
+    hasRequiredLanguages;
   const assumptions = plan.assumptions.map((value) => copy(value, value));
   const review = {
     schemaVersion: STOREFRONT_GENERATION_REVIEW_SCHEMA_VERSION,

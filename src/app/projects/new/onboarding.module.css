@@ -439,6 +439,45 @@
   text-transform: uppercase;
 }
 
+.languageForm {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.primaryLanguageOptions {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0;
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--vesko-radius-md);
+  padding: 1rem;
+  background: white;
+}
+
+.primaryLanguageOptions legend {
+  padding-inline: 0.25rem;
+  font-weight: 800;
+}
+
+.primaryLanguageOptions label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.65rem;
+  cursor: pointer;
+}
+
+.primaryLanguageOptions input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--brand-color-primary);
+}
+
+.primaryLanguageOptions input:focus-visible {
+  outline: 3px solid var(--brand-color-accent);
+  outline-offset: 3px;
+}
+
 .placeholder {
   max-width: 46rem;
   margin-top: 2rem;

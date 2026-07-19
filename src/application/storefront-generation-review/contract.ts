@@ -234,10 +234,15 @@ export const storefrontGenerationReviewSchema = z
     const hasRequiredPages = requiredPages.every((type) =>
       review.pageSummaries.some((page) => page.type === type),
     );
+    const hasRequiredLanguages =
+      review.languagePlan.selectedLanguages.length > 0 &&
+      review.languagePlan.primaryLanguage !== null &&
+      review.languagePlan.selectedLanguages.includes(review.languagePlan.primaryLanguage);
     const expectedCanCreate =
       review.status !== "blocked" &&
       review.generatedSnapshotId !== null &&
       hasRequiredPages &&
+      hasRequiredLanguages &&
       review.blockers.length === 0;
     if (review.canCreateProject !== expectedCanCreate) {
       context.addIssue({
