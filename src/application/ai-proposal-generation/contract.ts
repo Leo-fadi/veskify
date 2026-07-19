@@ -1,9 +1,5 @@
 import { z } from "zod";
-import {
-  type AIProvider,
-  aiProviderTargetSchema,
-  untrustedImportedContentSchema,
-} from "@/application/ai-provider";
+import { type AIProvider, untrustedImportedContentSchema } from "@/application/ai-provider";
 import { designProposalSchema } from "@/application/design-operations";
 import type { StorefrontRenderContext } from "@/components/registry";
 import { brandSystemSchema } from "@/domain/design-system";

@@ -279,10 +279,11 @@ describe("P4-03 AI proposal generation orchestration", () => {
     expect(serialized).not.toContain("Improve the hero");
     expect(serialized).not.toContain("change product prices");
     expect(serialized).not.toContain("importedContent");
-    expect(events[1]).toMatchObject({
+    const generatedEvent: AiProposalGenerationEvent | undefined = events[1];
+    expect(generatedEvent).toMatchObject({
       providerId: "deterministic-mock",
-      operationCount: expect.any(Number),
       validation: "valid",
     });
+    expect(typeof generatedEvent?.operationCount).toBe("number");
   });
 });
