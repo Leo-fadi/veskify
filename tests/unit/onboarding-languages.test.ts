@@ -9,7 +9,11 @@ import {
   onboardingSessionSchema,
   type OnboardingSession,
 } from "@/domain/onboarding";
-import { createEmptyStorefrontDesignBrief, languagePlanSchema } from "@/domain/design-brief";
+import {
+  createEmptyStorefrontDesignBrief,
+  languagePlanSchema,
+  requiredStorefrontPageTypes,
+} from "@/domain/design-brief";
 import type {
   OnboardingSessionRepository,
   OnboardingSessionLoadResult,
@@ -62,6 +66,13 @@ async function languagesSession(repository: MemoryOnboardingRepository) {
     ...session,
     activeStepId: "languages",
     completedStepIds: [...session.completedStepIds, "pages"],
+    designBrief: {
+      ...session.designBrief,
+      storefrontStructure: {
+        ...session.designBrief.storefrontStructure,
+        pageTypes: [...requiredStorefrontPageTypes],
+      },
+    },
   });
   await repository.save(session);
   return { service, session };

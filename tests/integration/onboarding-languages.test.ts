@@ -11,6 +11,7 @@ import {
 } from "@/services/onboarding";
 import { OnboardingService } from "@/application/onboarding";
 import { onboardingSessionSchema } from "@/domain/onboarding";
+import { requiredStorefrontPageTypes } from "@/domain/design-brief";
 
 beforeEach(() => localStorage.clear());
 
@@ -39,6 +40,13 @@ describe("O-08 language persistence and propagation", () => {
       ...session,
       activeStepId: "languages",
       completedStepIds: [...session.completedStepIds, "pages"],
+      designBrief: {
+        ...session.designBrief,
+        storefrontStructure: {
+          ...session.designBrief.storefrontStructure,
+          pageTypes: [...requiredStorefrontPageTypes],
+        },
+      },
     });
     await repository.save(session);
 
