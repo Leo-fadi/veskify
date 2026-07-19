@@ -80,6 +80,14 @@ function assertScope(request: AiOperationRequest, response: AiProviderResponse) 
 }
 
 function assertOperationPermissions(request: AiOperationRequest, response: AiProviderResponse) {
+  const existingComponents = new Map(
+    request.page.sections.map((section) => [section.id, section.component]),
+  );
+  const introducedComponents = new Map(
+    response.operations
+      .filter((operation) => operation.type === "ADD_APPROVED_SECTION")
+      .map((operation) => [operation.sectionId, operation.component]),
+  );
   for (const operation of response.operations) {
     if (!request.allowedOperationTypes.includes(operation.type)) {
       throw new AiProviderValidationError(
@@ -102,6 +110,49 @@ function assertOperationPermissions(request: AiOperationRequest, response: AiPro
           "The proposal introduces an unknown storefront component.",
         );
       }
+    }
+    const target =
+      operation.type === "ADD_APPROVED_SECTION"
+        ? {
+            kind: "introducedSection" as const,
+            pageId: request.page.id,
+            sectionId: operation.sectionId,
+            componentType: operation.component,
+          }
+        : "sectionId" in operation
+          ? existingComponents.has(operation.sectionId)
+            ? {
+                kind: "existingSection" as const,
+                pageId: request.page.id,
+                sectionId: operation.sectionId,
+                componentType: existingComponents.get(operation.sectionId)!,
+              }
+            : introducedComponents.has(operation.sectionId)
+              ? {
+                  kind: "introducedSection" as const,
+                  pageId: request.page.id,
+                  sectionId: operation.sectionId,
+                  componentType: introducedComponents.get(operation.sectionId)!,
+                }
+              : null
+          : { kind: "page" as const, pageId: request.page.id };
+    const granted =
+      target !== null &&
+      request.permissionGrants.some(
+        (grant) =>
+          grant.operationTypes.includes(operation.type) &&
+          grant.target.kind === target.kind &&
+          grant.target.pageId === target.pageId &&
+          (grant.target.kind === "page" ||
+            (target.kind !== "page" &&
+              grant.target.sectionId === target.sectionId &&
+              grant.target.componentType === target.componentType)),
+      );
+    if (!granted) {
+      throw new AiProviderValidationError(
+        "permission-grant-mismatch",
+        "The proposal contains a change outside the approved skill target.",
+      );
     }
   }
 }

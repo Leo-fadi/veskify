@@ -15,6 +15,7 @@ import {
   type AiProposalGenerationResult,
   type GeneratedAiProposal,
 } from "./contract";
+import { createAiProposalTargetFingerprint } from "./fingerprint";
 import {
   AiProposalRequestBuildError,
   buildAiOperationRequest,
@@ -65,6 +66,7 @@ function identityFrom(command: AiProposalGenerationCommand): AiProposalEditorIde
     draftSnapshotId: command.draftSnapshotId,
     draftRevision: command.draftRevision,
     target: command.target,
+    page: command.page,
   };
 }
 
@@ -118,17 +120,52 @@ export class AiProposalGenerationOrchestrator {
     try {
       command = parseAiProposalGenerationCommand(commandInput);
     } catch {
+      this.#sequence += 1;
+      this.#active = null;
       return Promise.resolve(this.#fail(null, "invalidCommand"));
     }
+    let request;
+    try {
+      request = buildAiOperationRequest(command);
+    } catch (error) {
+      this.#sequence += 1;
+      this.#active = null;
+      const code =
+        error instanceof AiProposalRequestBuildError && error.code === "unsupported-request"
+          ? "unsupportedRequest"
+          : "invalidCommand";
+      return Promise.resolve(this.#fail(command, code));
+    }
+    const pageFingerprint = createAiProposalTargetFingerprint(command.page, request.target);
     const key = canonicalValueString({
-      ...identityFrom(command),
-      instruction: command.merchantInstruction.normalize("NFC").trim().replace(/\s+/g, " "),
+      projectId: request.projectId,
+      draftSnapshotId: request.draftSnapshotId,
+      draftRevision: request.draftRevision,
+      target: request.target,
+      instruction: request.instruction
+        .normalize("NFC")
+        .trim()
+        .toLocaleLowerCase()
+        .replace(/[.!?]+$/g, "")
+        .replace(/\s+/g, " "),
+      activeLocale: request.locale,
+      enabledLocales: [...request.locales].sort(),
+      scope: request.scope,
+      allowedComponentTypes: [...request.allowedComponentTypes].sort(),
+      allowedOperationTypes: [...request.allowedOperationTypes].sort(),
+      permissionGrants: [...request.permissionGrants].sort((left, right) =>
+        canonicalValueString(left).localeCompare(canonicalValueString(right)),
+      ),
+      pageFingerprint,
+      brandSystem: request.brandSystem,
+      importedContent: request.importedContent,
+      displayContext: request.displayContext,
     });
     if (this.#active?.key === key) return this.#active.promise;
 
     this.#sequence += 1;
     const sequence = this.#sequence;
-    const promise = this.#run(command, sequence).finally(() => {
+    const promise = this.#run(command, request, pageFingerprint, sequence).finally(() => {
       if (this.#active?.sequence === sequence) this.#active = null;
     });
     this.#active = { key, sequence, promise };
@@ -137,27 +174,18 @@ export class AiProposalGenerationOrchestrator {
 
   async #run(
     command: AiProposalGenerationCommand,
+    request: ReturnType<typeof buildAiOperationRequest>,
+    pageFingerprint: string,
     sequence: number,
   ): Promise<AiProposalGenerationResult> {
-    let request;
-    try {
-      request = buildAiOperationRequest(command);
-    } catch (error) {
-      const code =
-        error instanceof AiProposalRequestBuildError && error.code === "unsupported-request"
-          ? "unsupportedRequest"
-          : "invalidCommand";
-      return this.#fail(command, code);
-    }
-
     this.#state = "generating";
     this.#proposal = null;
     this.#lastFailure = null;
-    this.#analytics?.record({
+    this.#recordAnalytics({
       name: "ai_prompt_submitted",
       projectId: command.projectId,
-      pageId: command.target.pageId,
-      ...(command.target.type === "section" ? { sectionId: command.target.sectionId } : {}),
+      pageId: request.target.pageId,
+      ...(request.target.sectionId ? { sectionId: request.target.sectionId } : {}),
     });
 
     try {
@@ -187,6 +215,20 @@ export class AiProposalGenerationOrchestrator {
           result.proposal.providerRequestId,
         );
       }
+      let currentPageFingerprint: string;
+      try {
+        currentPageFingerprint = createAiProposalTargetFingerprint(current.page, request.target);
+      } catch {
+        currentPageFingerprint = "invalid-current-page";
+      }
+      if (currentPageFingerprint !== pageFingerprint) {
+        return this.#fail(
+          command,
+          "staleDraft",
+          result.proposal.providerId,
+          result.proposal.providerRequestId,
+        );
+      }
 
       const proposal = this.#proposalStore.create({
         originalPage: command.page,
@@ -197,8 +239,8 @@ export class AiProposalGenerationOrchestrator {
       });
       const generated = generatedAiProposalSchema.parse({
         projectId: command.projectId,
-        pageId: command.target.pageId,
-        sectionId: command.target.type === "section" ? command.target.sectionId : null,
+        pageId: request.target.pageId,
+        sectionId: request.target.sectionId ?? null,
         draftSnapshotId: command.draftSnapshotId,
         draftRevision: command.draftRevision,
         providerRequestId: result.proposal.providerRequestId,
@@ -208,11 +250,11 @@ export class AiProposalGenerationOrchestrator {
       });
       this.#state = "proposalReady";
       this.#proposal = structuredClone(generated);
-      this.#analytics?.record({
+      this.#recordAnalytics({
         name: "ai_proposal_generated",
         projectId: command.projectId,
-        pageId: command.target.pageId,
-        ...(command.target.type === "section" ? { sectionId: command.target.sectionId } : {}),
+        pageId: request.target.pageId,
+        ...(request.target.sectionId ? { sectionId: request.target.sectionId } : {}),
         providerId: generated.providerId,
         providerRequestId: generated.providerRequestId,
         operationCount: generated.observability.operationCount,
@@ -237,6 +279,14 @@ export class AiProposalGenerationOrchestrator {
     return { state, proposal: null, failure: failure(state) };
   }
 
+  #recordAnalytics(event: Parameters<AiProposalGenerationAnalytics["record"]>[0]): void {
+    try {
+      this.#analytics?.record(event);
+    } catch {
+      // Analytics is intentionally best-effort and cannot control proposal state.
+    }
+  }
+
   #fail(
     command: AiProposalGenerationCommand | null,
     code: AiProposalGenerationFailure["code"],
@@ -249,7 +299,7 @@ export class AiProposalGenerationOrchestrator {
     this.#proposal = null;
     this.#lastFailure = failed;
     if (command) {
-      this.#analytics?.record({
+      this.#recordAnalytics({
         name: "generation_failed",
         projectId: command.projectId,
         pageId: command.target.pageId,

@@ -18,6 +18,7 @@ describe("P4-03 proposal generation integration", () => {
       draftSnapshotId: aurumNordicSeed.draftSnapshot.id,
       draftRevision: aurumNordicSeed.draftSnapshot.revision,
       target: { type: "section", pageId: page.id, sectionId },
+      page: structuredClone(page),
     };
     const original = structuredClone(page);
     const orchestrator = new AiProposalGenerationOrchestrator({

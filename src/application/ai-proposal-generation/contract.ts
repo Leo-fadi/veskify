@@ -109,6 +109,7 @@ export type AiProposalEditorIdentity = Readonly<{
   draftSnapshotId: string;
   draftRevision: number;
   target: EditorProposalTarget;
+  page: z.infer<typeof pageModelSchema>;
 }>;
 
 export type AiProposalGenerationEvent = Readonly<{

@@ -1,10 +1,16 @@
-import { aiOperationRequestSchema, type AiOperationRequest } from "@/application/ai-provider";
+import {
+  aiOperationRequestSchema,
+  type AiOperationPermissionGrant,
+  type AiOperationRequest,
+} from "@/application/ai-provider";
 import {
   createDesignPlan,
   designSkillRegistry,
+  type DesignPlan,
   type DesignPlannerInput,
 } from "@/application/design-skills";
 import { getComponentDefinition } from "@/components/registry";
+import type { PageModel } from "@/domain/storefront";
 import { aiProposalGenerationCommandSchema, type AiProposalGenerationCommand } from "./contract";
 
 export class AiProposalRequestBuildError extends Error {
@@ -26,6 +32,97 @@ export function parseAiProposalGenerationCommand(input: unknown): AiProposalGene
     );
   }
   return result.data;
+}
+
+export function resolvePlannerSectionTarget(
+  plan: DesignPlan,
+  page: PageModel,
+  explicitSectionId?: string,
+): string | undefined {
+  if (plan.requestedScope !== "section") return undefined;
+  const plannerTargets = [
+    ...new Set(plan.selectedSkills.flatMap((skill) => skill.targetSectionIds)),
+  ];
+  if (explicitSectionId !== undefined && !plannerTargets.includes(explicitSectionId)) {
+    throw new AiProposalRequestBuildError(
+      "target-mismatch",
+      "The selected section is outside the planner-authorized target.",
+    );
+  }
+  const resolved =
+    explicitSectionId ?? (plannerTargets.length === 1 ? plannerTargets[0] : undefined);
+  if (resolved === undefined) {
+    throw new AiProposalRequestBuildError(
+      "unsupported-request",
+      plannerTargets.length > 1
+        ? "The storefront request has multiple possible section targets. Select one section."
+        : "Select the storefront section you want to change.",
+    );
+  }
+  if (!page.sections.some((section) => section.id === resolved)) {
+    throw new AiProposalRequestBuildError(
+      "target-mismatch",
+      "The planner-authorized section no longer exists on the current page.",
+    );
+  }
+  return resolved;
+}
+
+function permissionGrants(
+  plan: DesignPlan,
+  page: PageModel,
+  resolvedSectionId?: string,
+): AiOperationPermissionGrant[] {
+  return plan.selectedSkills.flatMap((selected) => {
+    const definition = designSkillRegistry.get(selected.id);
+    const targetSectionIds =
+      plan.requestedScope === "section"
+        ? selected.targetSectionIds.filter((sectionId) => sectionId === resolvedSectionId)
+        : selected.targetSectionIds;
+    return targetSectionIds.map((sectionId) => {
+      const existing = page.sections.find((section) => section.id === sectionId);
+      if (existing) {
+        if (
+          !definition.allowedComponentTypes.some((component) => component === existing.component)
+        ) {
+          throw new AiProposalRequestBuildError(
+            "unsupported-request",
+            "The planner target is incompatible with the selected design skill.",
+          );
+        }
+        return {
+          skillId: definition.id,
+          skillVersion: definition.version,
+          skillScope: definition.scope,
+          operationTypes: [...definition.allowedOperationTypes],
+          target: {
+            kind: "existingSection" as const,
+            pageId: page.id,
+            sectionId,
+            componentType: existing.component,
+          },
+        };
+      }
+      if (definition.allowedComponentTypes.length !== 1) {
+        throw new AiProposalRequestBuildError(
+          "unsupported-request",
+          "The planner did not resolve one approved component for the new section target.",
+        );
+      }
+      return {
+        skillId: definition.id,
+        skillVersion: definition.version,
+        skillScope: definition.scope,
+        operationTypes: [...definition.allowedOperationTypes],
+        target: {
+          kind: "introducedSection" as const,
+          pageId: page.id,
+          sectionId,
+          componentType: definition.allowedComponentTypes[0],
+        },
+      };
+    });
+  });
 }
 
 export function buildAiOperationRequest(commandInput: unknown): AiOperationRequest {
@@ -80,13 +177,8 @@ export function buildAiOperationRequest(commandInput: unknown): AiOperationReque
   ];
   allowedComponentTypes.forEach((component) => getComponentDefinition(component));
 
-  const sectionId = plan.requestedScope === "section" ? selectedSectionId : undefined;
-  if (plan.requestedScope === "section" && sectionId === undefined) {
-    throw new AiProposalRequestBuildError(
-      "unsupported-request",
-      "Select the storefront section you want to change.",
-    );
-  }
+  const sectionId = resolvePlannerSectionTarget(plan, command.page, selectedSectionId);
+  const grants = permissionGrants(plan, command.page, sectionId);
 
   return aiOperationRequestSchema.parse({
     projectId: command.projectId,
@@ -96,6 +188,7 @@ export function buildAiOperationRequest(commandInput: unknown): AiOperationReque
     instruction: command.merchantInstruction,
     allowedComponentTypes,
     allowedOperationTypes,
+    permissionGrants: grants,
     locale: command.activeLocale,
     locales: command.enabledLocales,
     page: command.page,
