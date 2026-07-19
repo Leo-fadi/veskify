@@ -2,8 +2,13 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { OnboardingWizard } from "@/app/projects/new/onboarding-wizard";
+import { OnboardingService } from "@/application/onboarding";
 import { onboardingSessionSchema } from "@/domain/onboarding";
-import { ONBOARDING_SESSION_STORAGE_KEY } from "@/services/onboarding";
+import { ONBOARDING_SESSION_STORAGE_KEY, OnboardingStorageError } from "@/services/onboarding";
+
+const { routerPush } = vi.hoisted(() => ({ routerPush: vi.fn() }));
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: routerPush }) }));
 
 async function reachCatalogue(user: ReturnType<typeof userEvent.setup>) {
   await screen.findByRole("heading", { name: "How would you like to begin?" });
@@ -31,9 +36,274 @@ async function reachCatalogue(user: ReturnType<typeof userEvent.setup>) {
   await screen.findByRole("heading", { name: "Catalogue" });
 }
 
+async function reachBusinessBasics(user: ReturnType<typeof userEvent.setup>) {
+  await screen.findByRole("heading", { name: "How would you like to begin?" });
+  await user.click(screen.getByRole("radio", { name: /Create a new storefront/i }));
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  await screen.findByRole("heading", { name: "Business basics" });
+}
+
+async function reachRedesignSources(user: ReturnType<typeof userEvent.setup>) {
+  await screen.findByRole("heading", { name: "How would you like to begin?" });
+  await user.click(screen.getByRole("radio", { name: /Redesign an existing storefront/i }));
+  await user.click(screen.getByRole("button", { name: "Continue" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Business name" }), {
+    target: { value: "Aurum Nordic" },
+  });
+  fireEvent.change(screen.getByRole("textbox", { name: "Short business description" }), {
+    target: { value: "A Helsinki jewellery studio." },
+  });
+  fireEvent.change(screen.getByRole("combobox", { name: "Industry" }), {
+    target: { value: "jewellery" },
+  });
+  fireEvent.change(screen.getByRole("textbox", { name: "Target customer" }), {
+    target: { value: "Customers looking for Nordic jewellery." },
+  });
+  fireEvent.change(screen.getByRole("textbox", { name: "Primary market" }), {
+    target: { value: "Finland" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+  await screen.findByRole("heading", { name: "Existing sources" });
+}
+
 describe("guided onboarding route", () => {
-  beforeEach(() => localStorage.clear());
+  beforeEach(() => {
+    localStorage.clear();
+    routerPush.mockReset();
+  });
   afterEach(() => vi.restoreAllMocks());
+
+  it("renders the Vesko setup shell with localized save state", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    expect(await screen.findByRole("img", { name: "Vesko" })).toBeVisible();
+    expect(screen.getByText("Storefront setup")).toBeVisible();
+    expect(await screen.findByRole("status", { name: "Save status" })).toHaveTextContent("Saved");
+    expect(screen.getByRole("link", { name: "Back to dashboard" })).toHaveAttribute("href", "/");
+    expect(screen.getByRole("button", { name: "Save & exit" })).toBeEnabled();
+    await user.click(screen.getByRole("radio", { name: "Suomi" }));
+    expect(screen.getByText("Verkkokaupan aloitus")).toBeVisible();
+    expect(screen.getByRole("status", { name: "Tallennuksen tila" })).toHaveTextContent(
+      "Tallennettu",
+    );
+    expect(screen.getByRole("button", { name: "Tallenna ja poistu" })).toBeEnabled();
+  });
+
+  it("announces a focused local edit as unsaved before blur, then returns to Saved", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await reachBusinessBasics(user);
+
+    const name = screen.getByRole("textbox", { name: "Business name" });
+    name.focus();
+    fireEvent.change(name, { target: { value: "North Star Studio" } });
+
+    expect(name).toHaveFocus();
+    expect(screen.getByRole("status", { name: "Save status" })).toHaveTextContent(
+      "Unsaved changes",
+    );
+
+    fireEvent.blur(name);
+    await waitFor(() =>
+      expect(screen.getByRole("status", { name: "Save status" })).toHaveTextContent("Saved"),
+    );
+  });
+
+  it("flushes a focused business field through the queue before Save & exit", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await reachBusinessBasics(user);
+
+    const name = screen.getByRole("textbox", { name: "Business name" });
+    name.focus();
+    fireEvent.change(name, { target: { value: "Focused Studio" } });
+    expect(name).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Save & exit" }));
+
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith("/"));
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      designBrief: { businessIdentity: { businessName: "Focused Studio" } },
+    });
+  });
+
+  it("flushes a focused existing-source field before Back to dashboard", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await reachRedesignSources(user);
+
+    const source = screen.getByRole("textbox", { name: "Current storefront address" });
+    source.focus();
+    fireEvent.change(source, { target: { value: "merchant.example/store" } });
+    expect(source).toHaveFocus();
+    fireEvent.click(screen.getByRole("link", { name: "Back to dashboard" }));
+
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith("/"));
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      designBrief: {
+        creationContext: { existingStorefrontUrl: "https://merchant.example/store" },
+      },
+    });
+  });
+
+  it("keeps the latest rapid edit when an older blur save finishes later", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await reachBusinessBasics(user);
+
+    let releaseOlderSave: () => void = () => undefined;
+    const olderSave = new Promise<void>((resolve) => {
+      releaseOlderSave = resolve;
+    });
+    vi.spyOn(OnboardingService.prototype, "updateBusinessIdentityField").mockImplementation(
+      async (session, field, value) => {
+        await olderSave;
+        return onboardingSessionSchema.parse({
+          ...session,
+          designBrief: {
+            ...session.designBrief,
+            businessIdentity: { ...session.designBrief.businessIdentity, [field]: value },
+          },
+        });
+      },
+    );
+
+    const name = screen.getByRole("textbox", { name: "Business name" });
+    fireEvent.change(name, { target: { value: "Older value" } });
+    fireEvent.blur(name);
+    name.focus();
+    fireEvent.change(name, { target: { value: "Latest value" } });
+    releaseOlderSave();
+
+    await waitFor(() => expect(name).toHaveValue("Latest value"));
+    expect(screen.getByRole("status", { name: "Save status" })).toHaveTextContent(
+      "Unsaved changes",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save & exit" }));
+
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith("/"));
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      designBrief: { businessIdentity: { businessName: "Latest value" } },
+    });
+  });
+
+  it("prevents exit and exposes a Finnish error when focused-field persistence fails", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await reachBusinessBasics(user);
+    await user.click(screen.getByRole("radio", { name: "Suomi" }));
+    vi.spyOn(OnboardingService.prototype, "persistSession").mockRejectedValue(
+      new OnboardingStorageError(),
+    );
+
+    const name = screen.getByRole("textbox", { name: "Yrityksen nimi" });
+    name.focus();
+    fireEvent.change(name, { target: { value: "Kesken Studio" } });
+    fireEvent.click(screen.getByRole("button", { name: "Tallenna ja poistu" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/ei voitu tallentaa/i);
+    expect(screen.getByRole("status", { name: "Tallennuksen tila" })).toHaveTextContent(
+      "Tallennus epäonnistui",
+    );
+    expect(routerPush).not.toHaveBeenCalled();
+  });
+
+  it("queues Save & exit behind pending mutations and persists before navigation", async () => {
+    const user = userEvent.setup();
+    let releaseMutation: () => void = () => undefined;
+    const pendingMutation = new Promise<void>((resolve) => {
+      releaseMutation = resolve;
+    });
+    vi.spyOn(OnboardingService.prototype, "selectCreationPath").mockImplementation(
+      async (session) => {
+        await pendingMutation;
+        return session;
+      },
+    );
+    const persist = vi.spyOn(OnboardingService.prototype, "persistSession");
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: /Create a new storefront/i }));
+    await user.click(screen.getByRole("button", { name: "Save & exit" }));
+    expect(routerPush).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Saving…" })).toBeDisabled();
+    expect(persist).not.toHaveBeenCalled();
+    releaseMutation();
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith("/"));
+    expect(persist).toHaveBeenCalledOnce();
+  });
+
+  it("prevents repeated Save & exit activation while persistence is pending", async () => {
+    const user = userEvent.setup();
+    let releaseSave: () => void = () => undefined;
+    const persist = vi.spyOn(OnboardingService.prototype, "persistSession").mockImplementation(
+      (session) =>
+        new Promise((resolve) => {
+          releaseSave = () => resolve(session);
+        }),
+    );
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("button", { name: "Save & exit" }));
+    await user.click(screen.getByRole("button", { name: "Saving…" }));
+    expect(persist).toHaveBeenCalledTimes(1);
+    expect(routerPush).not.toHaveBeenCalled();
+    releaseSave();
+    await waitFor(() => expect(routerPush).toHaveBeenCalledOnce());
+  });
+
+  it("keeps the merchant on onboarding and announces a Save & exit failure", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(OnboardingService.prototype, "persistSession").mockRejectedValue(
+      new OnboardingStorageError(),
+    );
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("button", { name: "Save & exit" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not save/i);
+    expect(screen.getByText("Save failed")).toBeVisible();
+    expect(routerPush).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Save & exit" })).toBeEnabled();
+  });
+
+  it("persists before keyboard navigation back to the dashboard", async () => {
+    const user = userEvent.setup();
+    let releaseSave: () => void = () => undefined;
+    const persist = vi.spyOn(OnboardingService.prototype, "persistSession").mockImplementation(
+      (session) =>
+        new Promise((resolve) => {
+          releaseSave = () => resolve(session);
+        }),
+    );
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    const dashboard = screen.getByRole("link", { name: "Back to dashboard" });
+    dashboard.focus();
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(persist).toHaveBeenCalledOnce());
+    expect(routerPush).not.toHaveBeenCalled();
+    releaseSave();
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith("/"));
+  });
+
+  it("announces the Finnish pending save state", async () => {
+    const user = userEvent.setup();
+    let releaseSave: () => void = () => undefined;
+    vi.spyOn(OnboardingService.prototype, "persistSession").mockImplementation(
+      (session) =>
+        new Promise((resolve) => {
+          releaseSave = () => resolve(session);
+        }),
+    );
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: "Suomi" }));
+    await user.click(screen.getByRole("button", { name: "Tallenna ja poistu" }));
+    expect(screen.getByRole("status", { name: "Tallennuksen tila" })).toHaveTextContent(
+      "Tallennetaan…",
+    );
+    releaseSave();
+    await waitFor(() => expect(routerPush).toHaveBeenCalledWith("/"));
+  });
 
   it("exits loading when the first save fails and can retry after storage recovers", async () => {
     const user = userEvent.setup();
