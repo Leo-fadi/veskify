@@ -312,7 +312,7 @@ The first implementation is a standalone repository. It uses dummy product, coll
 | Brand setup         | Upload logo/brand guide or use guided brand creation.                                                 |
 | Visual direction    | Choose visual references, tone, density and preferences using example cards.                          |
 | Catalogue source    | Upload CSV/Excel or choose an industry dummy catalogue.                                               |
-| Pages and languages | Confirm required pages and English/Finnish configuration.                                             |
+| Pages and languages | Confirm required pages and the canonical English (en)/Finnish (fi) storefront configuration, including one primary language. |
 | Generation plan     | Veskify summarises what it will build and asks for confirmation.                                      |
 | Initial generation  | System creates global design tokens, navigation, pages and a populated homepage/product presentation. |
 | Editor tutorial     | Short overlay teaches section selection, proposal review, draft status, Save draft, and Publish changes.       |
@@ -356,7 +356,9 @@ planning or materialization. Its fixed sections cover business understanding, br
 template, pages, languages, catalogue, assumptions, warnings and blockers. The review remains in
 memory and is a later O-09 consumer; it does not create or persist a Project. Project creation may
 continue only when the validated result is non-blocked, has the required generated pages and has no
-blocker diagnostics.
+blocker diagnostics. The language section carries the canonical selected storefront locales and
+primary locale from the validated brief; unsupported or malformed locale input is rejected before
+review or project-creation propagation.
 
 ## 4.3 Vesko salesperson assisted mode
 
@@ -367,6 +369,8 @@ Assisted mode uses the same creation and editing flows but provides quick scenar
 - A user must always be able to skip optional onboarding inputs and continue with recommended defaults.
 
 - The system must save onboarding progress locally so an accidental refresh does not restart the flow.
+
+- O-08 language selections must resume from the saved onboarding session. A partial selection remains on O-08; completion requires at least one supported storefront language and a primary language selected from that set, then advances atomically to O-09.
 
 - The user must see whether they are editing Draft or Published at all times.
 
@@ -411,7 +415,7 @@ Assisted mode uses the same creation and editing flows but provides quick scenar
 | O-05   | Visual direction          | Guided style cards, tone, image style and layout density.                 |
 | O-06   | Catalogue                 | CSV/Excel upload or industry sample catalogue.                            |
 | O-07   | Pages                     | Required page set and optional pages.                                     |
-| O-08   | Languages                 | English, Finnish or both; primary language selection.                     |
+| O-08   | Languages                 | English (en), Finnish (fi), or both in canonical order; one selected primary language. Unsupported runtime locales are rejected rather than filtered. |
 | O-09   | Review plan               | Summary of inputs, assumptions, missing optional data and planned output. |
 | O-10   | Generating                | Progressive status with meaningful stages.                                |
 | O-11   | Editor tutorial           | Three to five short, dismissible guided steps.                            |
@@ -425,10 +429,10 @@ Assisted mode uses the same creation and editing flows but provides quick scenar
 | FR-001 | The system MUST create a standalone project from a guided onboarding flow.                                 |
 | FR-002 | The system MUST support new-store, existing-store redesign and demo-preset entry paths.                    |
 | FR-003 | The onboarding flow MUST allow optional inputs to be skipped and replaced with documented defaults.        |
-| FR-004 | The onboarding flow MUST persist progress locally after every completed step.                              |
+| FR-004 | The onboarding flow MUST persist progress locally after every completed step, including resumable O-08 language selections and completion. |
 | FR-005 | The user MUST be able to provide a business name, description, industry and target customer.               |
 | FR-006 | The user MUST be able to upload logo, brand materials, product images, CSV and Excel files through the UI. |
-| FR-007 | The demo MUST support English and Finnish as storefront languages.                                         |
+| FR-007 | The demo MUST support only English (en) and Finnish (fi) as storefront locales; the primary language MUST be one of the selected locales, and unsupported runtime locale values MUST be rejected. |
 | FR-008 | Before generation, Veskify MUST show a plain-language build plan and request confirmation.                 |
 | FR-009 | The system MUST create an initial design system and storefront draft after confirmation.                   |
 | FR-010 | The system MUST provide sample industry data when no usable catalogue data is supplied.                    |
@@ -1035,7 +1039,16 @@ The standalone demo assumes one active editor per local project. The domain mode
 
 ## 14.1 Supported languages
 
-V1 supports English (en) and Finnish (fi). Every user-editable storefront content field uses a locale map. The project has one primary language and may enable the second language.
+V1 supports only English (en) and Finnish (fi). Every user-editable storefront content field uses a
+locale map. The project has one primary language and may enable the second language. Onboarding O-08
+stores the selected storefront locales in canonical `en`, then `fi` order and requires the primary
+language to be one of those selected locales before completion.
+
+The domain and onboarding application boundaries validate every runtime selected-language and
+primary-language value through the canonical locale schema before deduplication or ordering. An
+unsupported locale, including one mixed with supported values, is rejected with a typed validation
+error. Supported duplicate selections retain the existing normalization behaviour; malformed locale
+input is never silently filtered, repaired or replaced with a fallback.
 
 ## 14.2 Translation rules
 
@@ -1288,6 +1301,11 @@ collisions without renaming existing persisted snapshots or committing partial s
 
 - Adapters: storage, AI, image generation, file import and future backend integration.
 
+- Onboarding language selection is owned by the canonical domain brief and the React-independent
+  onboarding application service. The session repository persists the validated O-08 state; review,
+  generation and project-construction boundaries consume that state without defining another locale
+  model.
+
 - Component registry: storefront component definitions, schemas, variants and renderer mapping.
 
 ## 16.3 Current repository structure
@@ -1456,7 +1474,7 @@ restore(projectId: string, snapshotId: string): Promise&lt;StorefrontSnapshot&gt
 | NFR-003 | The editor MUST preserve user work across refreshes once a draft mutation is committed locally.                        |
 | NFR-004 | All merchant-facing controls MUST meet WCAG 2.2 AA contrast and keyboard-operation expectations.                       |
 | NFR-005 | The storefront renderer MUST support current desktop and mobile evergreen browsers.                                    |
-| NFR-006 | The application MUST use strict TypeScript and schema validation at all AI and persistence boundaries, including atomic aggregate creation.                 |
+| NFR-006 | The application MUST use strict TypeScript and schema validation at all AI, onboarding and persistence boundaries, including atomic aggregate creation; unsupported runtime locale values MUST NOT be filtered or silently repaired. |
 | NFR-007 | The editor MUST remain usable when the AI provider is unavailable.                                                     |
 | NFR-008 | The demo MUST run without external API keys using seeded data and mock providers.                                      |
 | NFR-009 | No AI response may be rendered as executable markup or code.                                                           |
@@ -1556,9 +1574,9 @@ Website text, spreadsheet cells, product descriptions and uploaded files are dat
 
 | **Layer**         | **Coverage**                                                                                |
 |-------------------|---------------------------------------------------------------------------------------------|
-| Unit              | Schemas, operation guards, token validation, reducers, undo/redo and import mapping.        |
+| Unit              | Schemas, locale normalization, operation guards, token validation, reducers, undo/redo and import mapping. |
 | Component         | Editor controls, selection states, responsive storefront components and confirmation cards. |
-| Integration       | Onboarding-to-generation, AI proposal validation, draft mutation, publish and restore.      |
+| Integration       | Onboarding-to-generation language propagation, AI proposal validation, draft mutation, publish and restore. |
 | End-to-end        | Complete new-store and existing-customer journeys at desktop and mobile widths.             |
 | Visual regression | Homepage, collection, product, cart and checkout at required viewports.                     |
 | Accessibility     | Automated axe checks plus keyboard-path verification.                                       |
@@ -1579,7 +1597,7 @@ Website text, spreadsheet cells, product descriptions and uploaded files are dat
 | AC-010 | After confirmed Publish changes, the published route matches the validated draft and a new immutable history entry exists.                                |
 | AC-011 | Restoring history creates an active draft that can be saved and reviewed; it does not immediately alter the published route.                               |
 | AC-012 | A whole-site font/colour restyle changes global presentation without changing dummy product prices or content ordering.                                   |
-| AC-013 | The user can switch between English and Finnish storefront content.                                                                                       |
+| AC-013 | The user can switch between English and Finnish storefront content; the project retains one primary locale and may enable the second locale.                 |
 | AC-014 | The jewellery product page displays material, karat, stone, ring-size or watch-specific attributes appropriate to the seeded product.                     |
 | AC-015 | Cart and checkout visually inherit the design system and expose no editable payment or shipping configuration.                                            |
 | AC-016 | Unknown AI component types or protected-field patches are rejected before draft application.                                                              |
@@ -1592,7 +1610,7 @@ Website text, spreadsheet cells, product descriptions and uploaded files are dat
 | AC-023 | Guided creation composes brand foundation, template selection and initial materialization in order, exposes stage-labelled diagnostics and a validated immutable snapshot for review without creating or persisting a Project. |
 | AC-024 | If guided selection is blocked, materialization is not run and the review result contains no generated snapshot; changing only explicit generation identifiers changes only the predictable relevant IDs. |
 | AC-025 | A complete validated project aggregate can be created atomically through the repository; identity conflicts or validation failures leave existing projects, catalogues, snapshots and history unchanged. |
-| AC-026 | A later review projection shows the business, brand, template, pages, languages and catalogue plan in EN/FI with preserved diagnostics, and does not create or persist a Project. |
+| AC-026 | A later review projection shows the business, brand, template, canonical selected languages and primary language, and catalogue plan in EN/FI with preserved diagnostics, and does not create or persist a Project. |
 | AC-027 | Project creation is disabled for a blocked or incomplete generation review and enabled only for a valid non-blocked review with required pages and no blocker diagnostics. |
 
 ## 21.3 Definition of done for every Codex task

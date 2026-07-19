@@ -2,6 +2,7 @@ import { ZodError, z } from "zod";
 import {
   idSchema,
   isoDateTimeSchema,
+  canonicalLocaleOrder,
   localeSchema,
   safeExternalUrlSchema,
   type Locale,
@@ -243,20 +244,27 @@ export const storefrontStructureSchema = z
     }
   });
 
+const selectedLanguageListSchema = z
+  .array(localeSchema)
+  .max(2)
+  .default([])
+  .superRefine((selectedLanguages, context) => {
+    if (new Set(selectedLanguages).size !== selectedLanguages.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Selected storefront languages must be unique.",
+      });
+    }
+  })
+  .transform(canonicalLocaleOrder);
+
 export const languagePlanSchema = z
   .object({
-    selectedLanguages: z.array(localeSchema).max(2).default([]),
+    selectedLanguages: selectedLanguageListSchema,
     primaryLanguage: localeSchema.nullable().default(null),
   })
   .strict()
   .superRefine((languagePlan, context) => {
-    if (new Set(languagePlan.selectedLanguages).size !== languagePlan.selectedLanguages.length) {
-      context.addIssue({
-        code: "custom",
-        path: ["selectedLanguages"],
-        message: "Selected storefront languages must be unique.",
-      });
-    }
     if (
       languagePlan.primaryLanguage !== null &&
       !languagePlan.selectedLanguages.includes(languagePlan.primaryLanguage)
@@ -457,6 +465,42 @@ function mapZodError(error: ZodError): StorefrontDesignBriefValidationError {
   );
 }
 
+function parseLocaleBoundary(value: unknown, path: BriefIssuePath): Locale {
+  const result = localeSchema.safeParse(value);
+  if (!result.success) {
+    throw new StorefrontDesignBriefValidationError(
+      result.error.issues.map((issue) => ({
+        path: [...path, ...issue.path].filter(
+          (part): part is string | number => typeof part === "string" || typeof part === "number",
+        ),
+        code: issue.code,
+        message: issue.message,
+      })),
+    );
+  }
+  return result.data;
+}
+
+function parseNullableLocaleBoundary(value: unknown, path: BriefIssuePath): Locale | null {
+  return value === null ? null : parseLocaleBoundary(value, path);
+}
+
+function parseLocaleListBoundary(value: unknown, path: BriefIssuePath): Locale[] {
+  const result = z.array(localeSchema).safeParse(value);
+  if (!result.success) {
+    throw new StorefrontDesignBriefValidationError(
+      result.error.issues.map((issue) => ({
+        path: [...path, ...issue.path].filter(
+          (part): part is string | number => typeof part === "string" || typeof part === "number",
+        ),
+        code: issue.code,
+        message: issue.message,
+      })),
+    );
+  }
+  return result.data;
+}
+
 function parseBrief(input: unknown): StorefrontDesignBrief {
   try {
     return storefrontDesignBriefSchema.parse(input);
@@ -572,7 +616,20 @@ export function normalizeStorefrontDesignBriefInput(
     candidate.businessIdentity.secondaryMarkets,
   );
   candidate.brandDirection.toneKeywords = [...new Set(candidate.brandDirection.toneKeywords)];
-  candidate.languagePlan.selectedLanguages = [...new Set(candidate.languagePlan.selectedLanguages)];
+  const selectedLanguages = parseLocaleListBoundary(
+    candidate.languagePlan.selectedLanguages === undefined
+      ? []
+      : candidate.languagePlan.selectedLanguages,
+    ["languagePlan", "selectedLanguages"],
+  );
+  const primaryLanguage = parseNullableLocaleBoundary(
+    candidate.languagePlan.primaryLanguage === undefined
+      ? null
+      : candidate.languagePlan.primaryLanguage,
+    ["languagePlan", "primaryLanguage"],
+  );
+  candidate.languagePlan.selectedLanguages = canonicalLocaleOrder([...new Set(selectedLanguages)]);
+  candidate.languagePlan.primaryLanguage = primaryLanguage;
   candidate.brandDirection.preferredBrandColours =
     candidate.brandDirection.preferredBrandColours.map(trimText);
 
