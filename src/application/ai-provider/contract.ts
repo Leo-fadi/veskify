@@ -37,7 +37,23 @@ export const aiOperationRequestSchema = z
     ] satisfies DesignSkillScope[]),
     importedContent: z.array(untrustedImportedContentSchema).default([]),
   })
-  .strict();
+  .strict()
+  .superRefine((request, context) => {
+    if (!request.locales.includes(request.locale)) {
+      context.addIssue({
+        code: "custom",
+        path: ["locale"],
+        message: "The active locale must be one of the enabled storefront locales.",
+      });
+    }
+    if (request.scope === "section" && request.target.sectionId === undefined) {
+      context.addIssue({
+        code: "custom",
+        path: ["target", "sectionId"],
+        message: "Section-scoped requests require a selected section.",
+      });
+    }
+  });
 
 export const aiProviderDiagnosticSchema = z
   .object({
