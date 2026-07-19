@@ -155,7 +155,7 @@ test("uses the selected Puck section and shows localized grouped proposal detail
   await expect(page.getByRole("list", { name: "Proposed changes" })).toContainText(
     /Made for northern light|supporting text/i,
   );
-  await expect(requestPanel.getByText("Aurum hero", { exact: true })).toHaveCount(0);
+  await expect(requestPanel.getByText("Aurum hero", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Reject" }).click();
   await page.getByRole("button", { name: "Make the homepage feel more luxurious." }).click();
