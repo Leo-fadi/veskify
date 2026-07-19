@@ -36,6 +36,7 @@ import {
   visualDirectionToneKeywords,
   type VisualDirectionDraft,
 } from "./visual-direction";
+import { validateOnboardingLanguageSelection, type OnboardingLanguageSelection } from "./languages";
 
 export type OnboardingTransitionErrorCode =
   | "CREATION_PATH_REQUIRED"
@@ -502,6 +503,76 @@ export class OnboardingService {
     );
   }
 
+  async updateLanguages(
+    input: OnboardingSession,
+    selection: OnboardingLanguageSelection,
+  ): Promise<OnboardingSession> {
+    const session = this.#validateLanguagesStep(input);
+    const validated = validateOnboardingLanguageSelection(selection);
+    const timestamp = this.#now();
+    const designBrief = updateStorefrontDesignBriefArea(
+      session.designBrief,
+      "languagePlan",
+      {
+        selectedLanguages: [...validated.selectedLanguages],
+        primaryLanguage: validated.primaryLanguage,
+      },
+      timestamp,
+    );
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        selectedLanguages: [...validated.selectedLanguages],
+        primaryLanguage: validated.primaryLanguage,
+        completedStepIds: session.completedStepIds.filter((stepId) => stepId !== "languages"),
+        skippedStepIds: session.skippedStepIds.filter((stepId) => stepId !== "languages"),
+      },
+      timestamp,
+    );
+  }
+
+  async completeLanguages(
+    input: OnboardingSession,
+    selection?: OnboardingLanguageSelection,
+  ): Promise<OnboardingSession> {
+    const session = this.#validateLanguagesStep(input);
+    const candidate =
+      selection === undefined
+        ? {
+            selectedLanguages: session.selectedLanguages,
+            primaryLanguage: session.primaryLanguage,
+          }
+        : selection;
+    const validated = validateOnboardingLanguageSelection(candidate);
+    const timestamp = this.#now();
+    const designBrief = updateStorefrontDesignBriefArea(
+      session.designBrief,
+      "languagePlan",
+      {
+        selectedLanguages: [...validated.selectedLanguages],
+        primaryLanguage: validated.primaryLanguage,
+      },
+      timestamp,
+    );
+    const nextStep = getOnboardingStep("languages").nextStepId;
+    if (!nextStep) throw new OnboardingTransitionError("NO_NEXT_STEP");
+    return this.#commit(
+      {
+        ...session,
+        designBrief,
+        selectedLanguages: [...validated.selectedLanguages],
+        primaryLanguage: validated.primaryLanguage,
+        activeStepId: nextStep,
+        completedStepIds: session.completedStepIds.includes("languages")
+          ? session.completedStepIds
+          : [...session.completedStepIds, "languages"],
+        skippedStepIds: session.skippedStepIds.filter((stepId) => stepId !== "languages"),
+      },
+      timestamp,
+    );
+  }
+
   async skipCatalogueContext(input: OnboardingSession): Promise<OnboardingSession> {
     const session = this.#validateCatalogueStep(input);
     const step = getOnboardingStep("catalogue");
@@ -698,6 +769,14 @@ export class OnboardingService {
   #validateCatalogueStep(input: OnboardingSession): OnboardingSession {
     const session = this.#validateActive(input);
     if (session.activeStepId !== "catalogue") {
+      throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
+    }
+    return session;
+  }
+
+  #validateLanguagesStep(input: OnboardingSession): OnboardingSession {
+    const session = this.#validateActive(input);
+    if (session.activeStepId !== "languages") {
       throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
     }
     return session;

@@ -11,8 +11,14 @@ export const idSchema = z
   );
 
 export const isoDateTimeSchema = z.string().datetime({ offset: true });
-export const localeSchema = z.enum(["en", "fi"]);
+export const localeValues = ["en", "fi"] as const;
+export const localeSchema = z.enum(localeValues);
 export type Locale = z.infer<typeof localeSchema>;
+
+/** The canonical storefront locale order used by onboarding and generation. */
+export function canonicalLocaleOrder(values: readonly Locale[]): Locale[] {
+  return localeValues.filter((locale) => values.includes(locale));
+}
 
 export const localizedTextSchema = z
   .object({ en: z.string().trim().min(1).optional(), fi: z.string().trim().min(1).optional() })

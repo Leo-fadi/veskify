@@ -8,7 +8,14 @@ import {
   type StorefrontCreationContextType,
   type StorefrontDesignBrief,
 } from "@/domain/design-brief";
-import { idSchema, isoDateTimeSchema, localeSchema } from "@/domain/shared";
+import {
+  canonicalLocaleOrder,
+  idSchema,
+  isoDateTimeSchema,
+  localeSchema,
+  localeValues,
+  type Locale,
+} from "@/domain/shared";
 import { evaluateBusinessBasics } from "./business-basics";
 import { validateExistingStorefrontSource } from "./existing-sources";
 import { getOnboardingStep } from "./steps";
@@ -50,13 +57,27 @@ export function creationPathToBriefContext(
 
 const uniqueStepIds = (values: readonly string[]) => new Set(values).size === values.length;
 
+const selectedSessionLanguagesSchema = z
+  .array(localeSchema)
+  .min(1)
+  .max(2)
+  .superRefine((selectedLanguages, context) => {
+    if (new Set(selectedLanguages).size !== selectedLanguages.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Selected languages must be unique.",
+      });
+    }
+  })
+  .transform(canonicalLocaleOrder);
+
 const sessionWorkflowShape = {
   id: idSchema,
   creationPath: onboardingCreationPathSchema.nullable(),
   activeStepId: onboardingStepIdSchema,
   completedStepIds: z.array(onboardingStepIdSchema),
   skippedStepIds: z.array(onboardingStepIdSchema),
-  selectedLanguages: z.array(localeSchema).min(1).max(2),
+  selectedLanguages: selectedSessionLanguagesSchema,
   primaryLanguage: localeSchema,
   status: onboardingSessionStatusSchema,
   createdAt: isoDateTimeSchema,
@@ -328,6 +349,41 @@ export const onboardingSessionSchema = z
       });
     }
 
+    const languagesCompleted = session.completedStepIds.includes("languages");
+    if (languagesCompleted) {
+      if (session.designBrief.languagePlan.selectedLanguages.length === 0) {
+        context.addIssue({
+          code: "custom",
+          path: ["designBrief", "languagePlan", "selectedLanguages"],
+          message: "A completed languages step requires at least one storefront language.",
+        });
+      }
+      if (session.designBrief.languagePlan.primaryLanguage === null) {
+        context.addIssue({
+          code: "custom",
+          path: ["designBrief", "languagePlan", "primaryLanguage"],
+          message: "A completed languages step requires a primary storefront language.",
+        });
+      }
+      if (
+        session.selectedLanguages.join(",") !==
+        session.designBrief.languagePlan.selectedLanguages.join(",")
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["selectedLanguages"],
+          message: "Session and design-brief language selections must agree.",
+        });
+      }
+      if (session.primaryLanguage !== session.designBrief.languagePlan.primaryLanguage) {
+        context.addIssue({
+          code: "custom",
+          path: ["primaryLanguage"],
+          message: "Session and design-brief primary languages must agree.",
+        });
+      }
+    }
+
     if (session.completedStepIds.includes("pages")) {
       const pageTypes = session.designBrief.storefrontStructure.pageTypes;
       const canonicalPageTypes = canonicalizeStorefrontBriefPageTypes(pageTypes);
@@ -359,21 +415,60 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function normalizePersistedOnboardingSession(input: unknown): unknown {
   if (!isRecord(input) || input.schemaVersion !== ONBOARDING_SCHEMA_VERSION) return input;
 
+  let normalized: Record<string, unknown> = input;
+  const selectedLanguages = input.selectedLanguages;
+  if (
+    Array.isArray(selectedLanguages) &&
+    selectedLanguages.every((value): value is Locale =>
+      (localeValues as readonly string[]).includes(value as string),
+    ) &&
+    new Set(selectedLanguages).size === selectedLanguages.length
+  ) {
+    const orderedLanguages = canonicalLocaleOrder(selectedLanguages);
+    if (orderedLanguages.join(",") !== selectedLanguages.join(",")) {
+      normalized = { ...normalized, selectedLanguages: orderedLanguages };
+    }
+  }
+
   const skippedStepIds = input.skippedStepIds;
-  const designBrief = input.designBrief;
+  const originalDesignBrief = normalized.designBrief;
+  const designBrief = originalDesignBrief;
+  let normalizedDesignBrief = designBrief;
+  if (isRecord(designBrief) && isRecord(designBrief.languagePlan)) {
+    const briefLanguages = designBrief.languagePlan.selectedLanguages;
+    if (
+      Array.isArray(briefLanguages) &&
+      briefLanguages.every((value): value is Locale =>
+        (localeValues as readonly string[]).includes(value as string),
+      ) &&
+      new Set(briefLanguages).size === briefLanguages.length
+    ) {
+      const orderedLanguages = canonicalLocaleOrder(briefLanguages);
+      if (orderedLanguages.join(",") !== briefLanguages.join(",")) {
+        normalizedDesignBrief = {
+          ...designBrief,
+          languagePlan: { ...designBrief.languagePlan, selectedLanguages: orderedLanguages },
+        };
+      }
+    }
+  }
   if (
     !Array.isArray(skippedStepIds) ||
     !skippedStepIds.includes("catalogue") ||
     !isRecord(designBrief) ||
     designBrief.catalogueContext !== null
   ) {
-    return input;
+    return normalizedDesignBrief === originalDesignBrief
+      ? normalized
+      : { ...normalized, designBrief: normalizedDesignBrief };
   }
 
+  if (!isRecord(normalizedDesignBrief)) return normalized;
+
   return {
-    ...input,
+    ...normalized,
     designBrief: {
-      ...designBrief,
+      ...normalizedDesignBrief,
       catalogueContext: "empty-catalogue",
     },
   };

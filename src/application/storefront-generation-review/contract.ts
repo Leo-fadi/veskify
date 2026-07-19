@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { canonicalValueString } from "@/domain/storefront";
+import { canonicalLocaleOrder, localeSchema } from "@/domain/shared";
 
 export const STOREFRONT_GENERATION_REVIEW_SCHEMA_VERSION = 1 as const;
 
@@ -87,10 +88,22 @@ export const storefrontGenerationReviewPageSchema = z
     }
   });
 
+const reviewSelectedLanguageListSchema = z
+  .array(localeSchema)
+  .superRefine((selectedLanguages, context) => {
+    if (new Set(selectedLanguages).size !== selectedLanguages.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Selected storefront languages must be unique.",
+      });
+    }
+  })
+  .transform(canonicalLocaleOrder);
+
 export const storefrontGenerationReviewLanguageSchema = z
   .object({
-    selectedLanguages: z.array(z.enum(["en", "fi"])),
-    primaryLanguage: z.enum(["en", "fi"]).nullable(),
+    selectedLanguages: reviewSelectedLanguageListSchema,
+    primaryLanguage: localeSchema.nullable(),
   })
   .strict();
 
