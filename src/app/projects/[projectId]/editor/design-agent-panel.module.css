@@ -1,5 +1,6 @@
 .panel {
   display: grid;
+  min-width: 0;
   gap: 1rem;
   align-content: start;
   padding: 1.25rem;
@@ -11,6 +12,7 @@
 .form,
 .card {
   display: grid;
+  min-width: 0;
   gap: 0.8rem;
 }
 
@@ -68,6 +70,31 @@
 
 .context dd {
   margin: 0;
+}
+
+.reviewFacts {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.reviewFacts div {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.reviewFacts dt {
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.reviewFacts dd {
+  min-width: 0;
+  margin: 0;
+  color: #4f5863;
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
 }
 
 .form textarea,
@@ -142,12 +169,21 @@
 
 .changeDetails li {
   display: grid;
+  min-width: 0;
   gap: 0.1rem;
   color: #26313c;
 }
 
 .changeDetails strong {
   color: #15212c;
+}
+
+.changeDetails span,
+.card p,
+.card li,
+.actions button {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .previewNotice,

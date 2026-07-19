@@ -35,6 +35,7 @@ import {
   type ProjectAggregate,
   type ProjectRepository,
 } from "@/services/storage";
+import { createBrowserProposalAnalyticsSink } from "@/services/analytics";
 import styles from "./project-editor.module.css";
 import { DesignAgentPanel } from "./design-agent-panel";
 import { useDesignAgentSession } from "./use-design-agent-session";
@@ -133,6 +134,7 @@ export function ProjectEditorClient({
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
+  const [proposalAnalytics] = useState(createBrowserProposalAnalyticsSink);
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [selectedPageId, setSelectedPageId] = useState<string>();
@@ -248,14 +250,18 @@ export function ProjectEditorClient({
   const agent = useDesignAgentSession({
     lifecycleKey: `${projectId}:${attempt}`,
     projectId,
+    draftSnapshotId: readyState?.draft.id,
+    draftRevision: readyState?.draft.revision,
     page: readyPage,
     activeLocale: readyLocale,
     primaryLocale: readyState?.aggregate.project.primaryLocale,
+    enabledLocales: readyState?.aggregate.project.enabledLocales,
     brandSystem: readyState?.draft.brandSystem,
     displayContext: readyContext,
     selectedSectionId,
     disabled: saveState.status === "saving",
-    onProposalReady: () => setSelectedSectionId(undefined),
+    analytics: proposalAnalytics,
+    analyticsRoute: `/projects/${projectId}/editor`,
     onAcceptedPage: (acceptedPage) => {
       const committedPage =
         editorHistory?.commit(acceptedPage, "Apply design proposal") ??

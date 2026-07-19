@@ -65,6 +65,25 @@ describe("in-memory deterministic design proposal lifecycle", () => {
     expect(() => store.accept(proposal.id)).toThrow(/already accepted/);
   });
 
+  it("revalidates every operation at acceptance and leaves a failing multi-operation proposal pending", () => {
+    const store = new InMemoryDesignProposalStore();
+    const acceptanceContext = structuredClone(context);
+    const before = structuredClone(homepage);
+    const proposal = store.create({
+      originalPage: homepage,
+      operations: [
+        { type: "CHANGE_BACKGROUND", sectionId: campaign.id, background: "accent" },
+        { type: "CHANGE_DENSITY", sectionId: campaign.id, density: "compact" },
+      ],
+      context: acceptanceContext,
+    });
+    acceptanceContext.catalogue.products = [];
+
+    expect(() => store.accept(proposal.id)).toThrow();
+    expect(store.inspect(proposal.id).status).toBe("pending");
+    expect(homepage).toEqual(before);
+  });
+
   it("rejects to an unchanged clone of the original page", () => {
     const store = new InMemoryDesignProposalStore();
     const before = structuredClone(homepage);

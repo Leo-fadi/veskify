@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { type AIProvider, untrustedImportedContentSchema } from "@/application/ai-provider";
+import {
+  aiOperationPermissionGrantSchema,
+  type AIProvider,
+  untrustedImportedContentSchema,
+} from "@/application/ai-provider";
 import { designProposalSchema } from "@/application/design-operations";
 import type { StorefrontRenderContext } from "@/components/registry";
 import { brandSystemSchema } from "@/domain/design-system";
@@ -79,6 +83,10 @@ export const generatedAiProposalSchema = z
     draftRevision: z.number().int().nonnegative(),
     providerRequestId: z.string().min(1),
     providerId: z.string().min(1),
+    editorTarget: editorProposalTargetSchema,
+    targetFingerprint: z.string().startsWith("proposal-page-"),
+    permissionGrants: z.array(aiOperationPermissionGrantSchema).min(1),
+    permissionFingerprint: z.string().startsWith("proposal-permissions-"),
     proposal: designProposalSchema,
     observability: z
       .object({

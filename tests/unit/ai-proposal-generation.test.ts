@@ -275,6 +275,10 @@ describe("P4-03 AI proposal generation orchestration", () => {
       providerId: "deterministic-mock",
     });
     expect(result.proposal.providerRequestId).toMatch(/^mock_/);
+    expect(result.proposal.editorTarget).toEqual(current.target);
+    expect(result.proposal.permissionGrants).toEqual(provider.calls[0].permissionGrants);
+    expect(result.proposal.targetFingerprint).toMatch(/^proposal-page-/);
+    expect(result.proposal.permissionFingerprint).toMatch(/^proposal-permissions-/);
     expect(designProposalSchema.parse(result.proposal.proposal).status).toBe("pending");
     expect(orchestrator.inspect().state).toBe("proposalReady");
   });

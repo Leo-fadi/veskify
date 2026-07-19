@@ -2,9 +2,11 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import type { ProposalAnalyticsEvent } from "@/application/analytics";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
 import { aurumNordicSeed } from "@/data/seed";
 import type { PageModel } from "@/domain/storefront";
+import { browserProposalAnalyticsEventType } from "@/services/analytics";
 import {
   InMemoryProjectRepository,
   ProjectNotFoundError,
@@ -552,6 +554,7 @@ describe("P2-01 project editor route", () => {
     expect(await screen.findByLabelText("Design proposal")).toBeVisible();
     expect(screen.getByLabelText("Proposal preview canvas")).toHaveTextContent("Locked proposal");
     expect(screen.getByText(/current page is unchanged/i)).toBeVisible();
+    expect(screen.getByLabelText("Design proposal")).toHaveTextContent("Planned changes");
     const details = within(screen.getByLabelText("Proposed changes")).getAllByRole("listitem");
     expect(details.length).toBeGreaterThan(1);
     expect(
@@ -579,7 +582,11 @@ describe("P2-01 project editor route", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     expect(await screen.findByLabelText("Design proposal")).toBeVisible();
-    expect(screen.queryByText("Aurum hero", { exact: true })).not.toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero", {
+        exact: true,
+      }),
+    ).toBeVisible();
     expect(screen.getByText("Home · 1 sections", { exact: true })).toBeVisible();
 
     fireEvent.click(screen.getByRole("button", { name: "Reject" }));
@@ -590,8 +597,27 @@ describe("P2-01 project editor route", () => {
       }),
     ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/selected section is not a hero/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/not supported yet/i);
     expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+  });
+
+  it("keeps the affected selected section after acceptance", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Improve the selected hero." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await screen.findByLabelText("Design proposal");
+    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+    await screen.findByText(/accepted for draft application/i);
+
+    expect(
+      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero", {
+        exact: true,
+      }),
+    ).toBeVisible();
   });
 
   it("previews a supported minimal proposal without mutating the active page", async () => {
@@ -692,7 +718,7 @@ describe("P2-01 project editor route", () => {
     ) as PageModel;
     expect(latestPreview).not.toEqual(firstPreview);
     fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
-    expect(visibleCanvasPage()).toEqual(latestPreview);
+    await waitFor(() => expect(visibleCanvasPage()).toEqual(latestPreview));
   });
 
   it("regenerates with a new lifecycle identity and preserves the active page", async () => {
@@ -742,6 +768,27 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByText(/proposal is ready to review/i)).toHaveAttribute("role", "status");
   });
 
+  it("accepts and rejects proposals with keyboard activation", async () => {
+    const user = userEvent.setup();
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Make the layout more minimal." }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await screen.findByLabelText("Design proposal");
+
+    screen.getByRole("button", { name: "Reject" }).focus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByText(/page remains unchanged/i)).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Start over" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add a campaign section." }));
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await screen.findByLabelText("Design proposal");
+    screen.getByRole("button", { name: "Accept and apply" }).focus();
+    await user.keyboard(" ");
+    expect(await screen.findByText(/accepted for draft application/i)).toBeVisible();
+  });
+
   it("closes a proposal when its edited base is discarded and cannot restore discarded edits", async () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
     const repo = repository(() => Promise.resolve(aggregate()));
@@ -761,10 +808,7 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByLabelText("Visual editor canvas")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
-    expect(screen.getByText(/page changed after this request started/i)).toHaveAttribute(
-      "role",
-      "status",
-    );
+    expect(screen.getByRole("alert")).toHaveTextContent(/page changed after this request started/i);
     expect(repo.saveDraft).not.toHaveBeenCalled();
     expect(repo.publish).not.toHaveBeenCalled();
     confirm.mockRestore();
@@ -839,7 +883,7 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     await screen.findByLabelText("Design proposal");
     fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
-    expect(screen.getByText(/accepted for draft application/i)).toBeVisible();
+    expect(await screen.findByText(/accepted for draft application/i)).toBeVisible();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
     expect(screen.getByLabelText("Visual editor canvas")).toBeVisible();
     expect(repo.saveDraft).not.toHaveBeenCalled();
@@ -851,7 +895,7 @@ describe("P2-01 project editor route", () => {
     confirm.mockRestore();
   });
 
-  it("records an accepted multi-operation proposal as one atomic history entry", async () => {
+  it("records repeated acceptance of a multi-operation proposal exactly once", async () => {
     const repo = repository(() => Promise.resolve(aggregate()));
     route(repo);
     await screen.findByText("Canvas: home / en");
@@ -862,10 +906,13 @@ describe("P2-01 project editor route", () => {
     const preview = JSON.parse(previewCanvas.getAttribute("data-page")!) as PageModel;
     expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
 
-    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
-    expect(visibleCanvasPage()).toEqual(preview);
+    const accept = screen.getByRole("button", { name: "Accept and apply" });
+    fireEvent.click(accept);
+    fireEvent.click(accept);
+    await waitFor(() => expect(visibleCanvasPage()).toEqual(preview));
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
     expect(visibleCanvasPage()).toEqual(original);
+    expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Redo" }));
     expect(visibleCanvasPage()).toEqual(preview);
     expect(repo.saveDraft).not.toHaveBeenCalled();
@@ -896,14 +943,48 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
   });
 
+  it("emits proposal analytics without merchant or provider content", async () => {
+    const events: ProposalAnalyticsEvent[] = [];
+    const listener = (event: Event) => {
+      events.push((event as CustomEvent<ProposalAnalyticsEvent>).detail);
+    };
+    window.addEventListener(browserProposalAnalyticsEventType, listener);
+    try {
+      route(repository(() => Promise.resolve(aggregate())));
+      await screen.findByText("Canvas: home / en");
+      fireEvent.click(screen.getByRole("button", { name: "Add a campaign section." }));
+      fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+      await screen.findByLabelText("Design proposal");
+      expect(events.map((event) => event.name)).toContain("ai_proposal_generated");
+
+      fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+      await screen.findByText(/accepted for draft application/i);
+      expect(events.map((event) => event.name)).toContain("ai_proposal_accepted");
+
+      fireEvent.click(screen.getByRole("button", { name: "Start over" }));
+      fireEvent.click(screen.getByRole("button", { name: "Make the layout more minimal." }));
+      fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+      await screen.findByLabelText("Design proposal");
+      fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+      expect(events.map((event) => event.name)).toContain("ai_proposal_rejected");
+      expect(JSON.stringify(events)).not.toMatch(
+        /campaign section|merchantPrompt|importedContent/i,
+      );
+      expect(events.every((event) => event.projectId === "project_aurum_nordic")).toBe(true);
+    } finally {
+      window.removeEventListener(browserProposalAnalyticsEventType, listener);
+    }
+  });
+
   it("shows unsupported and invalid requests without changing the page", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
     fireEvent.change(screen.getByLabelText("Your request"), { target: { value: "Add fireworks" } });
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
-    expect(
-      await screen.findByText(/does not match a currently approved design capability/i),
-    ).toBeVisible();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/not supported yet/i);
+    expect(screen.getByLabelText("Proposal unavailable")).toHaveTextContent(
+      /try the request again or continue editing manually/i,
+    );
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
 
     fireEvent.change(screen.getByLabelText("Storefront page"), {
@@ -913,7 +994,7 @@ describe("P2-01 project editor route", () => {
       target: { value: "Make the homepage feel more luxurious." },
     });
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/safe plan could not be created/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/not supported yet/i);
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
   });
 
@@ -1007,6 +1088,7 @@ describe("P2-01 project editor route", () => {
     await screen.findByLabelText("Design proposal");
     expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+    await screen.findByText(/accepted for draft application/i);
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
     await screen.findByText("Draft saved successfully.");
 

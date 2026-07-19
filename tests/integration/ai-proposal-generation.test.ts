@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   AiProposalGenerationOrchestrator,
+  createAiProposalTargetFingerprint,
   type AiProposalEditorIdentity,
 } from "@/application/ai-proposal-generation";
+import { buildAiOperationRequest } from "@/application/ai-proposal-generation";
 import { createDeterministicMockAIProvider } from "@/application/ai-provider";
 import { createStorefrontRenderContext } from "@/components/registry";
 import { aurumNordicSeed } from "@/data/seed";
@@ -46,6 +48,27 @@ describe("P4-03 proposal generation integration", () => {
     expect(result.proposal.proposal.status).toBe("pending");
     expect(result.proposal.proposal.originalPage).toEqual(original);
     expect(result.proposal.proposal.proposedPage).not.toEqual(original);
+    const request = buildAiOperationRequest({
+      ...current,
+      page,
+      merchantInstruction: "Improve the hero.",
+      activeLocale: "en",
+      enabledLocales: ["en", "fi"],
+      brandSystem: aurumNordicSeed.draftSnapshot.brandSystem,
+      displayContext: createStorefrontRenderContext({
+        activeLocale: "en",
+        primaryLocale: "en",
+        catalogue: aurumNordicSeed.catalogue,
+        snapshot: aurumNordicSeed.draftSnapshot,
+      }),
+      importedContent: [],
+      provider: createDeterministicMockAIProvider(),
+    });
+    expect(result.proposal.editorTarget).toEqual(current.target);
+    expect(result.proposal.permissionGrants).toEqual(request.permissionGrants);
+    expect(result.proposal.targetFingerprint).toBe(
+      createAiProposalTargetFingerprint(page, request.target),
+    );
     expect(page).toEqual(original);
   });
 });

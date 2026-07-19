@@ -50,6 +50,10 @@ function defaultSummary(operationCount: number) {
 
 type StoredProposal = { proposal: DesignProposal; context: DesignOperationContext };
 
+function pagesEqual(left: PageModel, right: PageModel) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
 export class InMemoryDesignProposalStore {
   readonly #proposals = new Map<string, StoredProposal>();
 
@@ -93,15 +97,33 @@ export class InMemoryDesignProposalStore {
     return structuredClone(stored.proposal);
   }
 
-  accept(id: string): PageModel {
+  prepareAcceptance(id: string): PageModel {
     const stored = this.#proposals.get(id);
     if (!stored) throw new Error(`Unknown design proposal: ${id}.`);
     if (stored.proposal.status !== "pending") {
       throw new Error(`Proposal ${id} is already ${stored.proposal.status}.`);
     }
-    validateRegisteredPage(stored.proposal.proposedPage, stored.context);
+    const operations = stored.proposal.operations.map((operation) =>
+      designOperationSchema.parse(structuredClone(operation)),
+    );
+    const reappliedPage = applyDesignOperations(
+      stored.proposal.originalPage,
+      operations,
+      stored.context,
+    );
+    validateRegisteredPage(reappliedPage, stored.context);
+    if (!pagesEqual(reappliedPage, stored.proposal.proposedPage)) {
+      throw new Error("The proposal preview no longer matches its validated operations.");
+    }
+    return pageModelSchema.parse(structuredClone(reappliedPage));
+  }
+
+  accept(id: string): PageModel {
+    const stored = this.#proposals.get(id);
+    if (!stored) throw new Error(`Unknown design proposal: ${id}.`);
+    const acceptedPage = this.prepareAcceptance(id);
     stored.proposal.status = "accepted";
-    return pageModelSchema.parse(structuredClone(stored.proposal.proposedPage));
+    return acceptedPage;
   }
 
   reject(id: string): PageModel {
