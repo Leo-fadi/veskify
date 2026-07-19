@@ -597,7 +597,7 @@ describe("P2-01 project editor route", () => {
       }),
     ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/selected section is not a hero/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/not supported yet/i);
     expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
   });
 
@@ -808,10 +808,7 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByLabelText("Visual editor canvas")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
-    expect(screen.getByText(/page changed after this request started/i)).toHaveAttribute(
-      "role",
-      "status",
-    );
+    expect(screen.getByRole("alert")).toHaveTextContent(/page changed after this request started/i);
     expect(repo.saveDraft).not.toHaveBeenCalled();
     expect(repo.publish).not.toHaveBeenCalled();
     confirm.mockRestore();
@@ -984,9 +981,7 @@ describe("P2-01 project editor route", () => {
     await screen.findByText("Canvas: home / en");
     fireEvent.change(screen.getByLabelText("Your request"), { target: { value: "Add fireworks" } });
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      /does not match a currently approved design capability/i,
-    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(/not supported yet/i);
     expect(screen.getByLabelText("Proposal unavailable")).toHaveTextContent(
       /try the request again or continue editing manually/i,
     );
@@ -999,7 +994,7 @@ describe("P2-01 project editor route", () => {
       target: { value: "Make the homepage feel more luxurious." },
     });
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent(/safe plan could not be created/i);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/not supported yet/i);
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
   });
 

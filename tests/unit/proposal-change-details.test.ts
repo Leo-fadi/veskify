@@ -61,18 +61,19 @@ function panelController(
     setRevision: noop,
     session: {
       state,
-      activeProposalId: proposal.id,
-      plan: { affectedSectionIds: [...affectedSectionIds(proposal)] },
+      status: { en: "Proposal ready.", fi: "Ehdotus valmis." },
+      selectedSectionId: null,
+      affectedSectionIds: [...affectedSectionIds(proposal)],
       assumptions: [],
+      clarificationQuestion: null,
       failure:
         state === "failed"
           ? {
-              code: "executionFailed",
               message: {
                 en: "The proposal could not be applied safely.",
                 fi: "Ehdotusta ei voitu soveltaa turvallisesti.",
               },
-              details: ["Internal detail that must not render."],
+              retryable: true,
             }
           : null,
     },
@@ -93,7 +94,7 @@ function panelController(
     restartSession: noop,
     closeForPageSwitch: noop,
     closeForPageMutation: noop,
-  } as unknown as DesignAgentSessionController;
+  };
 }
 
 describe("merchant proposal change details", () => {

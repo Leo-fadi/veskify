@@ -4,7 +4,7 @@ import {
   requestAiProposal,
 } from "@/application/ai-provider";
 import { InMemoryDesignProposalStore } from "@/application/design-operations";
-import { canonicalValueString } from "@/domain/storefront";
+import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 import {
   aiProposalGenerationFailureSchema,
   generatedAiProposalSchema,
@@ -245,6 +245,12 @@ export class AiProposalGenerationOrchestrator {
         draftRevision: command.draftRevision,
         providerRequestId: result.proposal.providerRequestId,
         providerId: result.proposal.providerId,
+        editorTarget: command.target,
+        targetFingerprint: pageFingerprint,
+        permissionGrants: request.permissionGrants,
+        permissionFingerprint: `proposal-permissions-${canonicalValueFingerprint(
+          request.permissionGrants,
+        )}`,
         proposal,
         observability: result.proposal.metadata,
       });

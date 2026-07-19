@@ -10,8 +10,10 @@ enabled locale context, and labels imported content as untrusted data.
 `AiProposalGenerationOrchestrator` coordinates exactly one provider invocation for an
 identical pending request, validates output through P4-01, and creates the existing
 pending `DesignProposal` shape for merchant review. Generated proposal identity retains
-the project, page, optional section, draft snapshot/revision, provider, and provider
-request ID. The active draft and published storefront are never mutated.
+the project, page, optional section, editor target, canonical target fingerprint, draft
+snapshot/revision, provider, provider request ID, and unchanged target-bound permission grants.
+The grants carry a canonical permission fingerprint for confirmation-handoff integrity. The
+active draft and published storefront are never mutated.
 
 The React-independent lifecycle exposes idle, generating, proposal-ready, failed,
 stale, and superseded states. In-flight results are discarded when the draft identity,

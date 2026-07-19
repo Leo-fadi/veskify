@@ -250,9 +250,12 @@ export function ProjectEditorClient({
   const agent = useDesignAgentSession({
     lifecycleKey: `${projectId}:${attempt}`,
     projectId,
+    draftSnapshotId: readyState?.draft.id,
+    draftRevision: readyState?.draft.revision,
     page: readyPage,
     activeLocale: readyLocale,
     primaryLocale: readyState?.aggregate.project.primaryLocale,
+    enabledLocales: readyState?.aggregate.project.enabledLocales,
     brandSystem: readyState?.draft.brandSystem,
     displayContext: readyContext,
     selectedSectionId,

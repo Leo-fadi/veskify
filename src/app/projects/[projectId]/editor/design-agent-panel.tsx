@@ -48,6 +48,9 @@ const copy = {
       "Review the current storefront, then try again or reject this proposal. No changes were applied.",
     unavailableGuidance:
       "Try the request again or continue editing manually. Your current storefront is unchanged.",
+    staleGuidance:
+      "The storefront changed after this proposal was prepared. Start over to create a current proposal.",
+    supersededGuidance: "A newer request replaced this proposal. Start over when you are ready.",
     revision: "How should this proposal change?",
     revise: "Revise",
     regenerate: "Regenerate",
@@ -87,6 +90,9 @@ const copy = {
       "Tarkista nykyinen kauppa ja yritä uudelleen tai hylkää ehdotus. Muutoksia ei tehty.",
     unavailableGuidance:
       "Yritä pyyntöä uudelleen tai jatka muokkaamista käsin. Nykyinen kauppa säilyi ennallaan.",
+    staleGuidance:
+      "Kauppa muuttui ehdotuksen valmistelun jälkeen. Aloita alusta ja luo ajantasainen ehdotus.",
+    supersededGuidance: "Uudempi pyyntö korvasi tämän ehdotuksen. Aloita alusta, kun olet valmis.",
     revision: "Miten ehdotusta pitäisi muuttaa?",
     revise: "Muokkaa ehdotusta",
     regenerate: "Luo uudelleen",
@@ -112,9 +118,7 @@ export function DesignAgentPanel({
   const text = copy[locale];
   const clarificationRef = useRef<HTMLTextAreaElement>(null);
   const proposalHeadingRef = useRef<HTMLHeadingElement>(null);
-  const busy = ["classifying", "planning", "generating", "revising", "accepting"].includes(
-    controller.visibleState,
-  );
+  const busy = ["generating", "revising", "accepting"].includes(controller.visibleState);
   const needsClarification = controller.session?.state === "needsClarification";
 
   useEffect(() => {
@@ -147,9 +151,9 @@ export function DesignAgentPanel({
   const changeDetails = proposal
     ? proposalChangeDetails(proposal, locale, primaryLocale)
     : { items: [], representedOperationIndexes: [], complete: false };
-  const scope = session?.plan
-    ? session.plan.affectedSectionIds.length > 0
-      ? `${pageTitle} · ${session.plan.affectedSectionIds.length} ${
+  const scope = session
+    ? session.affectedSectionIds.length > 0
+      ? `${pageTitle} · ${session.affectedSectionIds.length} ${
           locale === "fi" ? "osiota" : "sections"
         }`
       : pageTitle
@@ -220,9 +224,15 @@ export function DesignAgentPanel({
 
       <div
         aria-atomic="true"
-        aria-live={controller.visibleState === "failed" ? "assertive" : "polite"}
+        aria-live={
+          ["failed", "stale", "superseded"].includes(controller.visibleState)
+            ? "assertive"
+            : "polite"
+        }
         className={styles.status}
-        role={controller.visibleState === "failed" ? "alert" : "status"}
+        role={
+          ["failed", "stale", "superseded"].includes(controller.visibleState) ? "alert" : "status"
+        }
       >
         {controller.statusMessage}
       </div>
@@ -373,14 +383,23 @@ export function DesignAgentPanel({
         </section>
       ) : null}
 
-      {session?.state === "failed" && !proposal ? (
+      {session && ["failed", "stale", "superseded"].includes(session.state) && !proposal ? (
         <section aria-label={text.unavailable} className={styles.card}>
           <h3>{text.unavailable}</h3>
-          <p>{text.unavailableGuidance}</p>
+          <p>
+            {session.state === "stale"
+              ? text.staleGuidance
+              : session.state === "superseded"
+                ? text.supersededGuidance
+                : text.unavailableGuidance}
+          </p>
         </section>
       ) : null}
 
-      {session && ["accepted", "rejected", "cancelled", "failed"].includes(session.state) ? (
+      {session &&
+      ["accepted", "rejected", "closed", "failed", "stale", "superseded"].includes(
+        session.state,
+      ) ? (
         <button
           className={styles.startOver}
           disabled={controller.controlsDisabled}

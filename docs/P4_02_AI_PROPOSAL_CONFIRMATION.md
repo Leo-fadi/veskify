@@ -1,8 +1,10 @@
 # P4-02 — AI proposal confirmation, acceptance and rejection
 
-P4-02 extends the existing canonical design-agent session and deterministic proposal
-lifecycle. It does not introduce another provider, planner, operation model, page model
-or React-only proposal state.
+P4-02 consumes the ready-for-review envelope produced by the canonical P4-03
+`AiProposalGenerationOrchestrator` and the existing `DesignProposal` lifecycle. P4-03 and
+P4-02 share one `InMemoryDesignProposalStore`; this layer does not introduce another
+provider, planner, operation model, permission model, page model or React-only proposal
+store.
 
 ## Merchant flow
 
@@ -12,16 +14,22 @@ affected page and scope, operation count, grouped merchant-readable changes,
 assumptions, warnings and diagnostics. It never renders raw operations, provider
 prompts, schemas, stack traces or protected commerce content.
 
-The canonical session lifecycle includes `proposalReady`, `accepting`, `accepted`,
-`rejected` and retryable `failed` states. Selecting Accept replays every structured
-operation through the existing design-operation and registry guards before one
-canonical editor-history transaction is committed. Repeated activation cannot apply
-the proposal twice. Rejection leaves the active draft and published snapshot unchanged.
+The P4-03 handoff preserves project, draft snapshot/revision, page, section, editor target,
+provider request, canonical target fingerprint and target-bound permission grants without
+flattening or reconstructing them in React. A canonical permission fingerprint rejects any
+changed handoff grant set before review. The confirmation lifecycle includes `ready`,
+`accepting`, `accepted`, `rejected`, retryable `failed`, `stale` and `closed`. Selecting
+Accept checks the P4-03 identity and fingerprint again, then replays every structured
+operation through the existing design-operation and registry guards before one canonical
+editor-history transaction is committed. Repeated activation cannot apply the proposal
+twice. Rejection leaves the active draft and published snapshot unchanged.
 
 If validation or draft application fails, the pending proposal remains available for a
 safe retry or explicit rejection. No accepted state is recorded and no partial editor
-history is created. A proposal whose original page no longer matches the active page is
-closed as stale and must be regenerated from the current storefront.
+history is created. A proposal whose P4-03 project, draft revision, editor target or
+canonical target fingerprint no longer matches the active editor is closed as stale and
+must be regenerated from the current storefront. Superseded, failed or unavailable
+generation results contain no acceptable proposal and are never rendered as ready.
 
 ## Boundaries and traceability
 

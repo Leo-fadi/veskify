@@ -57,8 +57,6 @@ export type DesignAgentActionOutcome =
   | "revisionFailed"
   | "stale"
   | "unsupportedRevision"
-  | "accepting"
-  | "applicationFailed"
   | "accepted"
   | "rejected"
   | "cancelled"
@@ -96,10 +94,6 @@ const statuses: Record<DesignAgentSessionState, LocalizedText> = {
     en: "The proposal is ready to review.",
     fi: "Ehdotus on valmis tarkistettavaksi.",
   },
-  accepting: {
-    en: "Applying the validated proposal to your draft.",
-    fi: "Validoitua ehdotusta sovelletaan luonnokseen.",
-  },
   revising: {
     en: "Rebuilding the proposal from the original page.",
     fi: "Ehdotus rakennetaan uudelleen alkuperäisestä sivusta.",
@@ -125,16 +119,6 @@ const statuses: Record<DesignAgentSessionState, LocalizedText> = {
 const staleMessage: LocalizedText = {
   en: "The page changed after this request started. Start a new request from the current page.",
   fi: "Sivu muuttui pyynnön aloittamisen jälkeen. Aloita uusi pyyntö nykyiseltä sivulta.",
-};
-
-const applicationFailedMessage: LocalizedText = {
-  en: "The proposal could not be applied safely. Your current draft is unchanged. Try again or reject this proposal.",
-  fi: "Ehdotusta ei voitu soveltaa turvallisesti. Nykyinen luonnos säilyi ennallaan. Yritä uudelleen tai hylkää ehdotus.",
-};
-
-const providerFailedMessage: LocalizedText = {
-  en: "The design proposal is unavailable. Try again or continue editing manually.",
-  fi: "Suunnitteluehdotus ei ole saatavilla. Yritä uudelleen tai jatka muokkaamista käsin.",
 };
 
 const unsupportedRevisionMessage: LocalizedText = {
@@ -296,11 +280,7 @@ export class DeterministicDesignAgent {
       status: statuses.classifying,
       failure: null,
     });
-    try {
-      return this.#processRequest(sessionId, request, false);
-    } catch (error) {
-      return this.#requestFailure(sessionId, error);
-    }
+    return this.#processRequest(sessionId, request, false);
   }
 
   answerClarification(sessionId: string, answerInput: string): DesignAgentActionResult {
@@ -323,15 +303,11 @@ export class DeterministicDesignAgent {
       status: statuses.classifying,
       failure: null,
     });
-    try {
-      return this.#processRequest(
-        sessionId,
-        campaignClarification ? session.initialMerchantRequest! : answer,
-        campaignClarification,
-      );
-    } catch (error) {
-      return this.#requestFailure(sessionId, error);
-    }
+    return this.#processRequest(
+      sessionId,
+      campaignClarification ? session.initialMerchantRequest! : answer,
+      campaignClarification,
+    );
   }
 
   reviseProposal(
@@ -344,7 +320,7 @@ export class DeterministicDesignAgent {
       throw new Error("Only a ready proposal can be revised; restart a closed session first.");
     }
     if (this.#isStale(session, currentPage)) {
-      return this.#closeStaleProposal(sessionId);
+      return { outcome: "stale", session, message: staleMessage };
     }
     const kind = classifyRevisionInstruction(instruction);
     if (!kind) {
@@ -432,7 +408,7 @@ export class DeterministicDesignAgent {
       throw new Error("Only an active pending proposal can be regenerated.");
     }
     if (this.#isStale(session, currentPage)) {
-      return this.#closeStaleProposal(sessionId);
+      return { outcome: "stale", session, message: staleMessage };
     }
     const context = this.#context(sessionId);
     const request = context.baseRequest ?? session.initialMerchantRequest;
@@ -495,77 +471,26 @@ export class DeterministicDesignAgent {
     }
   }
 
-  beginProposalAcceptance(sessionId: string, currentPage: PageModel): DesignAgentActionResult {
+  acceptProposal(sessionId: string, currentPage: PageModel): DesignAgentActionResult {
     const session = this.#sessions.inspect(sessionId);
-    const retryingFailedApplication =
-      session.state === "failed" &&
-      session.activeProposalId !== null &&
-      this.#provider.inspect(session.activeProposalId).status === "pending";
-    if (session.state !== "proposalReady" && !retryingFailedApplication) {
-      throw new Error(
-        "Only a ready or retryable failed proposal can be accepted; restart a closed session first.",
-      );
+    if (session.state !== "proposalReady") {
+      throw new Error("Only a ready proposal can be accepted; restart a closed session first.");
     }
     if (this.#isStale(session, currentPage)) {
-      return this.#closeStaleProposal(sessionId);
+      return { outcome: "stale", session, message: staleMessage };
     }
-    const accepting = this.#sessions.transition(sessionId, "accepting", {
-      status: statuses.accepting,
+    const page = this.#provider.accept(session.activeProposalId!);
+    const accepted = this.#sessions.transition(sessionId, "accepted", {
+      status: statuses.accepted,
       failure: null,
     });
-    try {
-      const page = this.#provider.prepareAcceptance(accepting.activeProposalId!);
-      return {
-        outcome: "accepting",
-        session: accepting,
-        proposal: this.#provider.inspect(accepting.activeProposalId!),
-        page,
-      };
-    } catch (error) {
-      return this.#applicationFailure(sessionId, error);
-    }
-  }
-
-  completeProposalAcceptance(
-    sessionId: string,
-    applyToDraft?: (page: PageModel) => void,
-  ): DesignAgentActionResult {
-    const session = this.#sessions.inspect(sessionId);
-    if (session.state !== "accepting") {
-      throw new Error("Only an accepting proposal can complete draft application.");
-    }
-    try {
-      const preparedPage = this.#provider.prepareAcceptance(session.activeProposalId!);
-      applyToDraft?.(structuredClone(preparedPage));
-      const page = this.#provider.accept(session.activeProposalId!);
-      const accepted = this.#sessions.transition(sessionId, "accepted", {
-        status: statuses.accepted,
-        failure: null,
-      });
-      return { outcome: "accepted", session: accepted, page };
-    } catch (error) {
-      return this.#applicationFailure(sessionId, error);
-    }
-  }
-
-  acceptProposal(
-    sessionId: string,
-    currentPage: PageModel,
-    applyToDraft?: (page: PageModel) => void,
-  ): DesignAgentActionResult {
-    const beginning = this.beginProposalAcceptance(sessionId, currentPage);
-    if (beginning.outcome !== "accepting") return beginning;
-    return this.completeProposalAcceptance(sessionId, applyToDraft);
+    return { outcome: "accepted", session: accepted, page };
   }
 
   rejectProposal(sessionId: string): DesignAgentActionResult {
     const session = this.#sessions.inspect(sessionId);
-    const retryableFailure =
-      session.state === "failed" &&
-      session.activeProposalId !== null &&
-      this.#provider.inspect(session.activeProposalId).status === "pending";
-    if (session.state !== "proposalReady" && !retryableFailure) {
-      throw new Error("Only a ready or retryable failed proposal can be rejected.");
+    if (session.state !== "proposalReady") {
+      throw new Error("Only a ready proposal can be rejected.");
     }
     const page = this.#provider.reject(session.activeProposalId!);
     const rejected = this.#sessions.transition(sessionId, "rejected", {
@@ -767,42 +692,6 @@ export class DeterministicDesignAgent {
     const context = this.#contexts.get(sessionId);
     if (!context) throw new Error(`Unknown design-agent context: ${sessionId}.`);
     return context;
-  }
-
-  #applicationFailure(sessionId: string, error: unknown): DesignAgentActionResult {
-    const detail = error instanceof Error ? error.message : "Unknown proposal application failure.";
-    const failed = this.#sessions.transition(sessionId, "failed", {
-      status: applicationFailedMessage,
-      failure: failure("executionFailed", applicationFailedMessage, [detail]),
-    });
-    return {
-      outcome: "applicationFailed",
-      session: failed,
-      proposal: failed.activeProposalId
-        ? this.#provider.inspect(failed.activeProposalId)
-        : undefined,
-      message: applicationFailedMessage,
-    };
-  }
-
-  #requestFailure(sessionId: string, error: unknown): DesignAgentActionResult {
-    const detail = error instanceof Error ? error.message : "Unknown proposal provider failure.";
-    const failed = this.#sessions.transition(sessionId, "failed", {
-      activeProposalId: null,
-      status: providerFailedMessage,
-      failure: failure("executionFailed", providerFailedMessage, [detail]),
-    });
-    return { outcome: "failed", session: failed, message: providerFailedMessage };
-  }
-
-  #closeStaleProposal(sessionId: string): DesignAgentActionResult {
-    const cancelled = this.cancelSession(sessionId);
-    return {
-      outcome: "stale",
-      session: cancelled.session,
-      page: cancelled.page,
-      message: staleMessage,
-    };
   }
 
   #proposalIdentity(sessionId: string, attempt: number) {

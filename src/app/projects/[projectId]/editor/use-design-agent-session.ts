@@ -1,25 +1,57 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  AiProposalConfirmationOrchestrator,
+  type AiProposalConfirmationResult,
+} from "@/application/ai-proposal-confirmation";
+import {
+  AiProposalGenerationOrchestrator,
+  type AiProposalEditorIdentity,
+  type AiProposalGenerationEvent,
+  type AiProposalGenerationResult,
+  type GeneratedAiProposal,
+} from "@/application/ai-proposal-generation";
+import { createDeterministicMockAIProvider } from "@/application/ai-provider";
 import {
   noopProposalAnalyticsSink,
   type ProposalAnalyticsEvent,
   type ProposalAnalyticsSink,
 } from "@/application/analytics";
+import { InMemoryDesignProposalStore, type DesignProposal } from "@/application/design-operations";
 import {
-  createDeterministicDesignAgent,
-  type DesignAgentActionResult,
-  type DesignAgentSession,
-  type DesignAgentSessionState,
-  type DeterministicDesignAgent,
-} from "@/application/design-agent";
-import type { DesignProposal } from "@/application/design-operations";
+  classifyRevisionInstruction,
+  minimalRevisionRequest,
+} from "@/application/design-agent/revisions";
+import { createDeterministicDesignProvider } from "@/application/design-skills";
 import type { StorefrontRenderContext } from "@/components/registry";
 import type { BrandSystem } from "@/domain/design-system";
-import { resolveLocalizedText, type Locale } from "@/domain/shared";
+import { resolveLocalizedText, type Locale, type LocalizedText } from "@/domain/shared";
 import type { PageModel } from "@/domain/storefront";
 
-type AgentActivity = Extract<DesignAgentSessionState, "classifying" | "generating" | "revising">;
+export type ProposalReviewUiState =
+  | "idle"
+  | "needsClarification"
+  | "generating"
+  | "proposalReady"
+  | "revising"
+  | "accepting"
+  | "accepted"
+  | "rejected"
+  | "closed"
+  | "failed"
+  | "stale"
+  | "superseded";
+
+export type ProposalReviewUiSession = {
+  state: ProposalReviewUiState;
+  status: LocalizedText;
+  selectedSectionId: string | null;
+  affectedSectionIds: string[];
+  assumptions: LocalizedText[];
+  clarificationQuestion: LocalizedText | null;
+  failure: { message: LocalizedText; retryable: boolean } | null;
+};
 
 export type DesignAgentSessionController = {
   request: string;
@@ -28,9 +60,9 @@ export type DesignAgentSessionController = {
   setClarificationAnswer: (answer: string) => void;
   revision: string;
   setRevision: (revision: string) => void;
-  session: DesignAgentSession | null;
+  session: ProposalReviewUiSession | null;
   proposal: DesignProposal | null;
-  visibleState: DesignAgentSessionState;
+  visibleState: ProposalReviewUiState;
   statusMessage: string;
   previewActive: boolean;
   blocksSave: boolean;
@@ -50,9 +82,12 @@ export type DesignAgentSessionController = {
 type UseDesignAgentSessionInput = {
   lifecycleKey: string;
   projectId: string;
+  draftSnapshotId?: string;
+  draftRevision?: number;
   page?: PageModel;
   activeLocale?: Locale;
   primaryLocale?: Locale;
+  enabledLocales?: Locale[];
   brandSystem?: BrandSystem;
   displayContext?: StorefrontRenderContext;
   selectedSectionId?: string;
@@ -63,26 +98,8 @@ type UseDesignAgentSessionInput = {
   onAcceptedPage: (page: PageModel) => void;
 };
 
-const fallbackStatus = {
-  en: "Ready for a design request.",
-  fi: "Valmis uuteen suunnittelupyyntöön.",
-} as const;
-
-const friendlyError = {
-  en: "That request could not be completed safely. Your current page has not changed.",
-  fi: "Pyyntöä ei voitu toteuttaa turvallisesti. Nykyinen sivu säilyi ennallaan.",
-} as const;
-
-const pageSwitchStatus = {
-  en: "The previous request was closed because you opened another page.",
-  fi: "Edellinen pyyntö suljettiin, koska avasit toisen sivun.",
-} as const;
-
-const activityStatus: Record<AgentActivity, { en: string; fi: string }> = {
-  classifying: {
-    en: "Understanding your request.",
-    fi: "Tulkitaan pyyntöäsi.",
-  },
+const statuses = {
+  idle: { en: "Ready for a design request.", fi: "Valmis uuteen suunnittelupyyntöön." },
   generating: {
     en: "Preparing the design proposal.",
     fi: "Valmistellaan suunnitteluehdotusta.",
@@ -91,23 +108,138 @@ const activityStatus: Record<AgentActivity, { en: string; fi: string }> = {
     en: "Preparing the revised proposal.",
     fi: "Valmistellaan muokattua ehdotusta.",
   },
-};
+  ready: {
+    en: "The proposal is ready to review.",
+    fi: "Ehdotus on valmis tarkistettavaksi.",
+  },
+  regenerated: {
+    en: "A regenerated proposal is ready to review.",
+    fi: "Uudelleen luotu ehdotus on valmis tarkistettavaksi.",
+  },
+  accepting: {
+    en: "Applying the validated proposal to your draft.",
+    fi: "Validoitua ehdotusta sovelletaan luonnokseen.",
+  },
+  accepted: {
+    en: "The proposal was accepted for draft application.",
+    fi: "Ehdotus hyväksyttiin luonnokseen sovellettavaksi.",
+  },
+  rejected: {
+    en: "The proposal was rejected; the page remains unchanged.",
+    fi: "Ehdotus hylättiin ja sivu säilyy ennallaan.",
+  },
+  closed: {
+    en: "The request was cancelled; the page remains unchanged.",
+    fi: "Pyyntö peruttiin ja sivu säilyy ennallaan.",
+  },
+  pageSwitch: {
+    en: "The previous request was closed because you opened another page.",
+    fi: "Edellinen pyyntö suljettiin, koska avasit toisen sivun.",
+  },
+  stale: {
+    en: "The page changed after this request started. Start a new request from the current page.",
+    fi: "Sivu muuttui pyynnön aloittamisen jälkeen. Aloita uusi pyyntö nykyiseltä sivulta.",
+  },
+} satisfies Record<string, LocalizedText>;
 
-function cancelIfOpen(agent: DeterministicDesignAgent, session: DesignAgentSession | null) {
-  if (!session || ["accepted", "rejected", "cancelled"].includes(session.state)) return;
-  try {
-    agent.cancelSession(session.id);
-  } catch {
-    // Cleanup is best-effort; the process-local agent becomes unreachable after reset.
-  }
+type Runtime = ReturnType<typeof createRuntime>;
+
+function createRuntimeBridge(
+  initialAnalytics: ProposalAnalyticsSink,
+  initialAnalyticsRoute: string,
+) {
+  let identity: AiProposalEditorIdentity | null = null;
+  let analytics = initialAnalytics;
+  let analyticsRoute = initialAnalyticsRoute;
+  return {
+    currentIdentity: () => {
+      if (!identity) throw new Error("The current editor identity is unavailable.");
+      return structuredClone(identity);
+    },
+    recordGenerationEvent: (event: AiProposalGenerationEvent) => {
+      if (event.name !== "ai_proposal_generated") return;
+      try {
+        analytics.track({
+          name: "ai_proposal_generated",
+          projectId: event.projectId,
+          timestamp: new Date().toISOString(),
+          route: analyticsRoute,
+          targetId: event.sectionId ?? event.pageId,
+          ...(event.durationMs === undefined ? {} : { durationMs: event.durationMs }),
+        });
+      } catch {
+        // Observability cannot control proposal state.
+      }
+    },
+    updateAnalytics(next: ProposalAnalyticsSink, nextRoute: string) {
+      analytics = next;
+      analyticsRoute = nextRoute;
+    },
+    updateIdentity(next: AiProposalEditorIdentity | null) {
+      identity = next ? structuredClone(next) : null;
+    },
+  };
+}
+
+function createRuntime(
+  currentIdentity: () => AiProposalEditorIdentity,
+  recordGenerationEvent: (event: AiProposalGenerationEvent) => void,
+) {
+  const proposalStore = new InMemoryDesignProposalStore();
+  return {
+    proposalStore,
+    provider: createDeterministicMockAIProvider(),
+    clarificationProvider: createDeterministicDesignProvider(),
+    generation: new AiProposalGenerationOrchestrator({
+      currentIdentity,
+      proposalStore,
+      analytics: { record: recordGenerationEvent },
+    }),
+    confirmation: new AiProposalConfirmationOrchestrator({ proposalStore, currentIdentity }),
+  };
+}
+
+function affectedSectionIds(proposal: DesignProposal) {
+  return [
+    ...new Set(
+      proposal.operations.flatMap((operation) =>
+        "sectionId" in operation ? [operation.sectionId] : [],
+      ),
+    ),
+  ];
+}
+
+function uiSession(
+  state: ProposalReviewUiState,
+  status: LocalizedText,
+  options: Partial<Omit<ProposalReviewUiSession, "state" | "status">> = {},
+): ProposalReviewUiSession {
+  return {
+    state,
+    status,
+    selectedSectionId: options.selectedSectionId ?? null,
+    affectedSectionIds: options.affectedSectionIds ?? [],
+    assumptions: options.assumptions ?? [],
+    clarificationQuestion: options.clarificationQuestion ?? null,
+    failure: options.failure ?? null,
+  };
+}
+
+function proposalFrom(result: AiProposalConfirmationResult) {
+  return result.generatedProposal?.proposal.status === "pending"
+    ? result.generatedProposal.proposal
+    : null;
 }
 
 export function useDesignAgentSession({
   lifecycleKey,
   projectId,
+  draftSnapshotId,
+  draftRevision,
   page,
   activeLocale,
   primaryLocale,
+  enabledLocales,
   brandSystem,
   displayContext,
   selectedSectionId,
@@ -117,304 +249,416 @@ export function useDesignAgentSession({
   onProposalReady,
   onAcceptedPage,
 }: UseDesignAgentSessionInput): DesignAgentSessionController {
-  const agentRef = useRef(createDeterministicDesignAgent());
-  const sessionRef = useRef<DesignAgentSession | null>(null);
-  const pendingAction = useRef(0);
+  const actionSequence = useRef(0);
   const acceptancePending = useRef(false);
-  const trackedProposalIds = useRef(new Set<string>());
+  const clarificationRequest = useRef<{ instruction: string; useOriginal: boolean } | null>(null);
+  const lastGenerationInstruction = useRef("");
   const initialLifecycle = useRef(true);
+  const [runtimeBridge] = useState(() => createRuntimeBridge(analytics, analyticsRoute));
+  const [runtime] = useState<Runtime>(() =>
+    createRuntime(runtimeBridge.currentIdentity, runtimeBridge.recordGenerationEvent),
+  );
   const [request, setRequest] = useState("");
   const [clarificationAnswer, setClarificationAnswer] = useState("");
   const [revision, setRevision] = useState("");
-  const [session, setSessionState] = useState<DesignAgentSession | null>(null);
+  const [session, setSession] = useState<ProposalReviewUiSession | null>(null);
   const [proposal, setProposal] = useState<DesignProposal | null>(null);
-  const [activity, setActivity] = useState<AgentActivity | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   const locale = activeLocale ?? primaryLocale ?? "en";
   const fallbackLocale = primaryLocale ?? locale;
-  const localize = (value: { en?: string; fi?: string }) =>
-    resolveLocalizedText(value, locale, fallbackLocale);
+  const localize = (value: LocalizedText) => resolveLocalizedText(value, locale, fallbackLocale);
 
-  const trackProposalEvent = (
-    name: ProposalAnalyticsEvent["name"],
-    targetId = selectedSectionId ?? page?.id,
+  useEffect(() => {
+    runtimeBridge.updateAnalytics(analytics, analyticsRoute);
+  }, [analytics, analyticsRoute, runtimeBridge]);
+
+  useEffect(() => {
+    runtimeBridge.updateIdentity(
+      page && draftSnapshotId && draftRevision !== undefined
+        ? {
+            projectId,
+            draftSnapshotId,
+            draftRevision,
+            target: selectedSectionId
+              ? { type: "section", pageId: page.id, sectionId: selectedSectionId }
+              : { type: "page", pageId: page.id },
+            page: structuredClone(page),
+          }
+        : null,
+    );
+  }, [draftRevision, draftSnapshotId, page, projectId, runtimeBridge, selectedSectionId]);
+
+  const trackConfirmationEvent = (
+    name: Extract<ProposalAnalyticsEvent["name"], "ai_proposal_accepted" | "ai_proposal_rejected">,
+    generated: GeneratedAiProposal,
   ) => {
-    if (!targetId) return;
     try {
       analytics.track({
         name,
-        projectId,
+        projectId: generated.projectId,
         timestamp: new Date().toISOString(),
         route: analyticsRoute,
-        targetId,
+        targetId: generated.sectionId ?? generated.pageId,
       });
     } catch {
-      // Observability must never block or alter the proposal lifecycle.
+      // Observability cannot control proposal state.
     }
   };
 
-  const rememberSession = (nextSession: DesignAgentSession | null) => {
-    const inspected = nextSession ? agentRef.current.inspectSession(nextSession.id) : null;
-    sessionRef.current = inspected;
-    setSessionState(inspected);
-  };
+  const closePending = useCallback(() => {
+    const current = runtime.confirmation.inspect();
+    if (["ready", "accepting", "failed"].includes(current.state)) runtime.confirmation.close();
+  }, [runtime]);
 
-  const clearVisibleWorkflow = (message?: string) => {
-    pendingAction.current += 1;
-    setActivity(null);
+  const clearWorkflow = useCallback((status?: LocalizedText) => {
+    actionSequence.current += 1;
+    acceptancePending.current = false;
+    clarificationRequest.current = null;
     setProposal(null);
     setClarificationAnswer("");
     setRevision("");
-    if (message !== undefined) setNotice(message);
-  };
+    setSession(status ? uiSession("closed", status) : null);
+  }, []);
 
   useEffect(() => {
     if (initialLifecycle.current) {
       initialLifecycle.current = false;
       return;
     }
-    cancelIfOpen(agentRef.current, sessionRef.current);
-    agentRef.current = createDeterministicDesignAgent();
-    sessionRef.current = null;
-    pendingAction.current += 1;
-    acceptancePending.current = false;
-    setSessionState(null);
-    setProposal(null);
-    setActivity(null);
-    setNotice(null);
+    closePending();
+    runtime.confirmation.reset();
+    clearWorkflow();
     setRequest("");
-    setClarificationAnswer("");
-    setRevision("");
-  }, [lifecycleKey]);
+  }, [clearWorkflow, closePending, lifecycleKey, runtime]);
 
   useEffect(
     () => () => {
-      pendingAction.current += 1;
-      cancelIfOpen(agentRef.current, sessionRef.current);
+      actionSequence.current += 1;
+      closePending();
     },
-    [],
+    [closePending],
   );
 
-  const applyResult = (result: DesignAgentActionResult, previous?: DesignProposal | null) => {
-    rememberSession(result.session);
-    setActivity(null);
-    setNotice(result.message ? localize(result.message) : null);
-    if (result.outcome === "proposalReady") {
-      const nextProposal = result.proposal ?? previous ?? null;
-      setProposal(nextProposal);
-      setRevision("");
-      if (nextProposal && !trackedProposalIds.current.has(nextProposal.id)) {
-        trackedProposalIds.current.add(nextProposal.id);
-        trackProposalEvent("ai_proposal_generated", result.session.selectedSectionId ?? undefined);
+  const commandFor = (instruction: string) => {
+    if (
+      !page ||
+      !activeLocale ||
+      !brandSystem ||
+      !displayContext ||
+      !draftSnapshotId ||
+      draftRevision === undefined ||
+      !enabledLocales
+    ) {
+      throw new Error("The current editor page is not ready for a design request.");
+    }
+    return {
+      projectId,
+      draftSnapshotId,
+      draftRevision,
+      page,
+      target: selectedSectionId
+        ? ({ type: "section", pageId: page.id, sectionId: selectedSectionId } as const)
+        : ({ type: "page", pageId: page.id } as const),
+      merchantInstruction: instruction,
+      activeLocale,
+      enabledLocales,
+      brandSystem,
+      displayContext,
+      importedContent: [],
+      provider: runtime.provider,
+    };
+  };
+
+  const applyGenerationResult = (
+    result: AiProposalGenerationResult,
+    readyStatus: LocalizedText,
+  ) => {
+    if (result.state === "proposalReady") {
+      const opened = runtime.confirmation.open(result.proposal);
+      if (opened.state !== "ready" || !opened.generatedProposal) {
+        const message = opened.failure?.message ?? {
+          en: "The proposal is no longer available for safe review.",
+          fi: "Ehdotusta ei voi enää tarkistaa turvallisesti.",
+        };
+        setSession(uiSession("failed", message, { failure: { message, retryable: false } }));
+        setProposal(null);
+        return;
       }
+      const canonicalProposal = opened.generatedProposal.proposal;
+      setProposal(canonicalProposal);
+      setRevision("");
+      setSession(
+        uiSession("proposalReady", readyStatus, {
+          selectedSectionId:
+            opened.generatedProposal.editorTarget.type === "section"
+              ? opened.generatedProposal.editorTarget.sectionId
+              : null,
+          affectedSectionIds: affectedSectionIds(canonicalProposal),
+        }),
+      );
       onProposalReady?.();
       return;
     }
-    if (result.outcome === "accepting" || result.outcome === "applicationFailed") {
-      setProposal(result.proposal ?? previous ?? null);
-      return;
-    }
-    if (result.outcome === "revisionFailed" || result.outcome === "regenerationFailed") {
-      setProposal(previous ?? null);
-      return;
-    }
-    if (result.outcome === "stale") {
-      try {
-        const cancelled = agentRef.current.cancelSession(result.session.id);
-        rememberSession(cancelled.session);
-      } catch {
-        // The stale result already guarantees that the pending proposal was not applied.
-      }
-      setProposal(null);
-      return;
-    }
-    if (result.outcome !== "needsClarification") setProposal(null);
+    setProposal(null);
+    setSession(
+      uiSession(result.state, result.failure.message, {
+        failure: { message: result.failure.message, retryable: result.failure.retryable },
+      }),
+    );
   };
 
-  const defer = (nextActivity: AgentActivity, action: () => DesignAgentActionResult) => {
-    if (disabled || activity) return;
-    const actionId = pendingAction.current + 1;
-    pendingAction.current = actionId;
-    setActivity(nextActivity);
-    setNotice(null);
+  const generate = async (
+    instruction: string,
+    mode: "initial" | "revision" | "regeneration" = "initial",
+  ) => {
+    if (disabled) return;
+    closePending();
+    const actionId = actionSequence.current + 1;
+    actionSequence.current = actionId;
+    lastGenerationInstruction.current = instruction;
+    setProposal(null);
+    setSession(
+      uiSession(
+        mode === "revision" ? "revising" : "generating",
+        statuses[mode === "revision" ? "revising" : "generating"],
+      ),
+    );
+    try {
+      const result = await runtime.generation.generate(commandFor(instruction));
+      if (actionSequence.current !== actionId) {
+        if (result.state === "proposalReady") {
+          runtime.proposalStore.reject(result.proposal.proposal.id);
+        }
+        return;
+      }
+      applyGenerationResult(
+        result,
+        mode === "regeneration" ? statuses.regenerated : statuses.ready,
+      );
+    } catch {
+      const message = {
+        en: "That request could not be completed safely. Your current page has not changed.",
+        fi: "Pyyntöä ei voitu toteuttaa turvallisesti. Nykyinen sivu säilyi ennallaan.",
+      };
+      setSession(uiSession("failed", message, { failure: { message, retryable: true } }));
+      setProposal(null);
+    }
+  };
+
+  const submitRequest = () => {
+    const instruction = request.trim();
+    if (!instruction || disabled) return;
+    const classification = runtime.clarificationProvider.classifyDesignRequest(instruction, locale);
+    if (classification.requiresClarification && classification.clarifications[0]) {
+      clarificationRequest.current = {
+        instruction,
+        useOriginal: classification.normalizedIntent === "campaignSection",
+      };
+      const status = {
+        en: "One answer is needed before the proposal can be prepared.",
+        fi: "Tarvitaan yksi vastaus ennen ehdotuksen valmistelua.",
+      };
+      setSession(
+        uiSession("needsClarification", status, {
+          clarificationQuestion: classification.clarifications[0],
+        }),
+      );
+      return;
+    }
+    void generate(instruction);
+  };
+
+  const answerClarification = () => {
+    const pending = clarificationRequest.current;
+    const answer = clarificationAnswer.trim();
+    if (!pending || !answer || disabled) return;
+    clarificationRequest.current = null;
+    void generate(pending.useOriginal ? pending.instruction : answer);
+  };
+
+  const reviseProposal = () => {
+    if (session?.state !== "proposalReady" || !revision.trim()) return;
+    const kind = classifyRevisionInstruction(revision);
+    if (kind === "startOver") {
+      restartSession();
+      return;
+    }
+    if (kind !== "makeMinimal") {
+      const message = {
+        en: "That revision is not supported yet. The current proposal remains ready to review.",
+        fi: "Tätä muutospyyntöä ei vielä tueta. Nykyinen ehdotus säilyy tarkistettavana.",
+      };
+      setSession((current) => (current ? { ...current, status: message } : current));
+      return;
+    }
+    void generate(minimalRevisionRequest(locale), "revision");
+  };
+
+  const regenerateProposal = () => {
+    if (session?.state !== "proposalReady" || !lastGenerationInstruction.current) return;
+    void generate(lastGenerationInstruction.current, "regeneration");
+  };
+
+  const applyConfirmationResult = (result: AiProposalConfirmationResult) => {
+    const generated = result.generatedProposal;
+    if (result.state === "accepting" && generated) {
+      setProposal(generated.proposal);
+      setSession(
+        uiSession("accepting", statuses.accepting, {
+          selectedSectionId:
+            generated.editorTarget.type === "section" ? generated.editorTarget.sectionId : null,
+          affectedSectionIds: affectedSectionIds(generated.proposal),
+        }),
+      );
+      return;
+    }
+    if (result.state === "failed" && generated && result.failure) {
+      setProposal(proposalFrom(result));
+      setSession(
+        uiSession("failed", result.failure.message, {
+          selectedSectionId:
+            generated.editorTarget.type === "section" ? generated.editorTarget.sectionId : null,
+          affectedSectionIds: affectedSectionIds(generated.proposal),
+          failure: { message: result.failure.message, retryable: result.failure.retryable },
+        }),
+      );
+      return;
+    }
+    if (result.state === "stale" && result.failure) {
+      setProposal(null);
+      setSession(
+        uiSession("stale", result.failure.message, {
+          failure: { message: result.failure.message, retryable: false },
+        }),
+      );
+      return;
+    }
+    setProposal(null);
+    const terminalState: ProposalReviewUiState =
+      result.state === "accepted"
+        ? "accepted"
+        : result.state === "rejected"
+          ? "rejected"
+          : "closed";
+    setSession(
+      uiSession(
+        terminalState,
+        result.state === "accepted"
+          ? statuses.accepted
+          : result.state === "rejected"
+            ? statuses.rejected
+            : statuses.closed,
+      ),
+    );
+  };
+
+  const acceptProposal = () => {
+    if (
+      disabled ||
+      acceptancePending.current ||
+      (session?.state !== "proposalReady" && session?.state !== "failed")
+    ) {
+      return;
+    }
+    acceptancePending.current = true;
+    const beginning = runtime.confirmation.beginAcceptance();
+    applyConfirmationResult(beginning);
+    if (beginning.state !== "accepting") {
+      acceptancePending.current = false;
+      return;
+    }
+    const actionId = actionSequence.current + 1;
+    actionSequence.current = actionId;
     window.setTimeout(() => {
-      if (pendingAction.current !== actionId) return;
+      if (actionSequence.current !== actionId) {
+        acceptancePending.current = false;
+        return;
+      }
       try {
-        applyResult(action(), proposal);
-      } catch {
-        setActivity(null);
-        setNotice(localize(friendlyError));
+        const result = runtime.confirmation.completeAcceptance(onAcceptedPage);
+        applyConfirmationResult(result);
+        if (result.state === "accepted" && result.generatedProposal) {
+          trackConfirmationEvent("ai_proposal_accepted", result.generatedProposal);
+        }
+      } finally {
+        acceptancePending.current = false;
       }
     }, 0);
   };
 
-  const startCurrentSession = () => {
-    if (!page || !activeLocale || !brandSystem || !displayContext) {
-      throw new Error("The current editor page is not ready for a design request.");
-    }
-    cancelIfOpen(agentRef.current, sessionRef.current);
-    const started = agentRef.current.startSession({
-      projectId,
-      page,
-      pageType: page.type,
-      activeLocale,
-      brandSystem,
-      displayContext,
-      selectedSectionId,
-    });
-    rememberSession(started.session);
-    return started.session;
-  };
-
-  const submitRequest = () => {
-    if (!request.trim()) return;
-    defer("classifying", () => {
-      const started = startCurrentSession();
-      return agentRef.current.submitRequest(started.id, request);
-    });
-  };
-
-  const answerClarification = () => {
-    if (!session || session.state !== "needsClarification" || !clarificationAnswer.trim()) return;
-    defer("classifying", () =>
-      agentRef.current.answerClarification(session.id, clarificationAnswer),
-    );
-  };
-
-  const reviseProposal = () => {
-    if (!session || !page || session.state !== "proposalReady" || !revision.trim()) return;
-    defer("revising", () => agentRef.current.reviseProposal(session.id, revision, page));
-  };
-
-  const regenerateProposal = () => {
-    if (!session || !page || session.state !== "proposalReady") return;
-    defer("generating", () => agentRef.current.regenerateProposal(session.id, page));
-  };
-
-  const acceptProposal = () => {
-    const canAccept =
-      session?.state === "proposalReady" ||
-      (session?.state === "failed" && session.activeProposalId !== null && proposal !== null);
-    if (disabled || activity || acceptancePending.current || !session || !page || !canAccept) {
+  const rejectProposal = () => {
+    if (
+      disabled ||
+      acceptancePending.current ||
+      (session?.state !== "proposalReady" && session?.state !== "failed")
+    ) {
       return;
     }
-    acceptancePending.current = true;
-    try {
-      const beginning = agentRef.current.beginProposalAcceptance(session.id, page);
-      applyResult(beginning, proposal);
-      if (beginning.outcome !== "accepting") {
-        acceptancePending.current = false;
-        return;
-      }
-      const actionId = pendingAction.current + 1;
-      pendingAction.current = actionId;
-      window.setTimeout(() => {
-        if (pendingAction.current !== actionId) {
-          acceptancePending.current = false;
-          return;
-        }
-        try {
-          const result = agentRef.current.completeProposalAcceptance(session.id, onAcceptedPage);
-          applyResult(result, proposal);
-          if (result.outcome === "accepted") {
-            trackProposalEvent(
-              "ai_proposal_accepted",
-              result.session.selectedSectionId ?? undefined,
-            );
-          }
-        } catch {
-          setNotice(localize(friendlyError));
-        } finally {
-          acceptancePending.current = false;
-        }
-      }, 0);
-    } catch {
-      acceptancePending.current = false;
-      setNotice(localize(friendlyError));
-    }
-  };
-
-  const rejectProposal = () => {
-    const canReject =
-      session?.state === "proposalReady" ||
-      (session?.state === "failed" && session.activeProposalId !== null && proposal !== null);
-    if (disabled || activity || acceptancePending.current || !session || !canReject) return;
-    try {
-      const result = agentRef.current.rejectProposal(session.id);
-      applyResult(result, proposal);
-      if (result.outcome === "rejected") {
-        trackProposalEvent("ai_proposal_rejected", result.session.selectedSectionId ?? undefined);
-      }
-    } catch {
-      setNotice(localize(friendlyError));
+    const result = runtime.confirmation.reject();
+    applyConfirmationResult(result);
+    if (result.generatedProposal) {
+      trackConfirmationEvent("ai_proposal_rejected", result.generatedProposal);
     }
   };
 
   const cancelSession = () => {
-    if (disabled || !session) return;
-    try {
-      applyResult(agentRef.current.cancelSession(session.id), proposal);
-    } catch {
-      setNotice(localize(friendlyError));
-    }
+    if (disabled) return;
+    actionSequence.current += 1;
+    closePending();
+    applyConfirmationResult(
+      runtime.confirmation.inspect().state === "closed"
+        ? runtime.confirmation.inspect()
+        : runtime.confirmation.close(),
+    );
   };
 
   const restartSession = () => {
-    if (disabled || !session) return;
-    try {
-      const result = agentRef.current.restartSession(session.id);
-      applyResult(result, proposal);
-      setRequest("");
-      setNotice(null);
-    } catch {
-      setNotice(localize(friendlyError));
-    }
+    if (disabled) return;
+    closePending();
+    runtime.confirmation.reset();
+    actionSequence.current += 1;
+    clarificationRequest.current = null;
+    setRequest("");
+    setClarificationAnswer("");
+    setRevision("");
+    setProposal(null);
+    setSession(uiSession("idle", statuses.idle));
   };
 
   const closeForPageSwitch = () => {
-    cancelIfOpen(agentRef.current, sessionRef.current);
-    rememberSession(null);
-    clearVisibleWorkflow(localize(pageSwitchStatus));
+    closePending();
+    clearWorkflow(statuses.pageSwitch);
     setRequest("");
   };
 
-  const closeForPageMutation = (nextPage: PageModel) => {
-    const currentSession = sessionRef.current;
-    if (
-      !currentSession ||
-      ["accepted", "rejected", "cancelled", "failed", "idle"].includes(currentSession.state)
-    ) {
+  const closeForPageMutation = () => {
+    actionSequence.current += 1;
+    const current = runtime.confirmation.inspect();
+    if (["ready", "accepting", "failed"].includes(current.state)) {
+      applyConfirmationResult(runtime.confirmation.markStale());
       return;
     }
-    pendingAction.current += 1;
-    try {
-      if (currentSession.state === "proposalReady") {
-        const result = agentRef.current.regenerateProposal(currentSession.id, nextPage);
-        if (result.outcome === "stale") {
-          applyResult(result, proposal);
-          return;
-        }
-      }
-      const cancelled = agentRef.current.cancelSession(currentSession.id);
-      rememberSession(cancelled.session);
-      setNotice(localize(cancelled.session.status));
-    } catch {
-      setNotice(localize(friendlyError));
+    if (session?.state === "generating" || session?.state === "revising") {
+      setProposal(null);
+      setSession(
+        uiSession("stale", statuses.stale, {
+          failure: { message: statuses.stale, retryable: false },
+        }),
+      );
     }
-    setActivity(null);
-    setProposal(null);
   };
 
-  const visibleState = activity ?? session?.state ?? "idle";
-  const statusMessage =
-    notice ?? localize(activity ? activityStatus[activity] : (session?.status ?? fallbackStatus));
+  const visibleState = session?.state ?? "idle";
+  const statusMessage = localize(session?.status ?? statuses.idle);
   const previewActive =
     proposal !== null &&
     (session?.state === "proposalReady" ||
       session?.state === "accepting" ||
       session?.state === "failed");
-  const blocksSave = activity !== null || session?.state === "needsClarification" || previewActive;
+  const blocksSave =
+    previewActive || session?.state === "generating" || session?.state === "needsClarification";
+  const controlsDisabled =
+    disabled || ["generating", "revising", "accepting"].includes(visibleState);
 
   return {
     request,
@@ -429,7 +673,7 @@ export function useDesignAgentSession({
     statusMessage,
     previewActive,
     blocksSave,
-    controlsDisabled: disabled || activity !== null || session?.state === "accepting",
+    controlsDisabled,
     submitRequest,
     answerClarification,
     reviseProposal,

@@ -80,7 +80,6 @@ describe("design-agent session contract and store", () => {
       "planning",
       "generating",
       "proposalReady",
-      "accepting",
       "revising",
       "accepted",
       "rejected",
@@ -459,7 +458,7 @@ describe("proposal regeneration", () => {
     expect(proposalStore.inspect(ids.at(-1)!).status).toBe("pending");
   });
 
-  it("closes a stale regeneration proposal without changing the input page", () => {
+  it("keeps a stale regeneration from consuming the pending proposal or input page", () => {
     const proposalStore = new InMemoryDesignProposalStore();
     const agent = createDeterministicDesignAgent({ proposalStore });
     const ready = submitReady(agent, "Make the layout more minimal.");
@@ -468,11 +467,9 @@ describe("proposal regeneration", () => {
     const before = structuredClone(stalePage);
     const result = agent.regenerateProposal(ready.session.id, stalePage);
     expect(result.outcome).toBe("stale");
-    expect(result.session.state).toBe("cancelled");
     expect(result.session.proposalAttemptSequence).toBe(1);
-    expect(proposalStore.inspect(ready.proposal.id).status).toBe("rejected");
+    expect(proposalStore.inspect(ready.proposal.id).status).toBe("pending");
     expect(stalePage).toEqual(before);
-    expect(() => agent.acceptProposal(ready.session.id, stalePage)).toThrow(/ready or retryable/);
   });
 
   it.each([
@@ -516,72 +513,6 @@ describe("proposal regeneration", () => {
 });
 
 describe("accept, reject, cancel and stale-base safety", () => {
-  it("exposes accepting before one atomic draft application and prevents completion twice", () => {
-    const agent = createDeterministicDesignAgent();
-    const ready = submitReady(agent, "Make the homepage feel more luxurious.");
-    const draftBefore = structuredClone(homepage);
-    let draft = structuredClone(draftBefore);
-    let applicationCount = 0;
-
-    const accepting = agent.beginProposalAcceptance(ready.session.id, draft);
-    expect(accepting.outcome).toBe("accepting");
-    expect(accepting.session.state).toBe("accepting");
-    expect(draft).toEqual(draftBefore);
-    expect(agent.inspectProposal(ready.session.id).status).toBe("pending");
-
-    const accepted = agent.completeProposalAcceptance(ready.session.id, (page) => {
-      applicationCount += 1;
-      draft = structuredClone(page);
-    });
-    expect(accepted.outcome).toBe("accepted");
-    expect(accepted.session.state).toBe("accepted");
-    expect(draft).toEqual(ready.proposal.proposedPage);
-    expect(applicationCount).toBe(1);
-    expect(() => agent.completeProposalAcceptance(ready.session.id)).toThrow(
-      /Only an accepting proposal/,
-    );
-  });
-
-  it("keeps a failed application pending and retries successfully without partial mutation", () => {
-    const proposalStore = new InMemoryDesignProposalStore();
-    const agent = createDeterministicDesignAgent({ proposalStore });
-    const ready = submitReady(agent, "Make the homepage feel more luxurious.");
-    const originalDraft = structuredClone(homepage);
-    let draft = structuredClone(originalDraft);
-
-    const failed = agent.acceptProposal(ready.session.id, draft, () => {
-      throw new Error("Injected editor history failure.");
-    });
-    expect(failed.outcome).toBe("applicationFailed");
-    expect(failed.session.state).toBe("failed");
-    expect(failed.message?.en).toMatch(/try again or reject/i);
-    expect(draft).toEqual(originalDraft);
-    expect(proposalStore.inspect(ready.proposal.id).status).toBe("pending");
-
-    const retried = agent.acceptProposal(ready.session.id, draft, (page) => {
-      draft = structuredClone(page);
-    });
-    expect(retried.outcome).toBe("accepted");
-    expect(draft).toEqual(ready.proposal.proposedPage);
-    expect(proposalStore.inspect(ready.proposal.id).status).toBe("accepted");
-  });
-
-  it("allows a failed proposal application to be explicitly rejected", () => {
-    const proposalStore = new InMemoryDesignProposalStore();
-    const agent = createDeterministicDesignAgent({ proposalStore });
-    const ready = submitReady(agent, "Make the layout more minimal.");
-    const failed = agent.acceptProposal(ready.session.id, homepage, () => {
-      throw new Error("Injected draft application failure.");
-    });
-    expect(failed.session.state).toBe("failed");
-
-    const rejected = agent.rejectProposal(ready.session.id);
-    expect(rejected.outcome).toBe("rejected");
-    expect(rejected.session.state).toBe("rejected");
-    expect(rejected.page).toEqual(homepage);
-    expect(proposalStore.inspect(ready.proposal.id).status).toBe("rejected");
-  });
-
   it("accepts through the existing lifecycle and returns the canonical proposed page", () => {
     const agent = createDeterministicDesignAgent();
     const ready = submitReady(agent, "Make the layout more minimal.");
@@ -616,7 +547,7 @@ describe("accept, reject, cancel and stale-base safety", () => {
     expect(proposalStore.inspect(second.proposal!.id).status).toBe("pending");
   });
 
-  it("closes a proposal when accept detects a stale page", () => {
+  it("does not consume a proposal when accept detects a stale page", () => {
     const proposalStore = new InMemoryDesignProposalStore();
     const agent = createDeterministicDesignAgent({ proposalStore });
     const ready = submitReady(agent, "Make the layout more minimal.");
@@ -625,13 +556,12 @@ describe("accept, reject, cancel and stale-base safety", () => {
     hero.content.heading = { en: "A newer draft heading", fi: "Uudempi otsikko" };
     const result = agent.acceptProposal(ready.session.id, stalePage);
     expect(result.outcome).toBe("stale");
-    expect(result.session.state).toBe("cancelled");
+    expect(result.session.state).toBe("proposalReady");
     expect(result.message?.en).toMatch(/Start a new request/);
-    expect(proposalStore.inspect(ready.proposal.id).status).toBe("rejected");
-    expect(() => agent.acceptProposal(ready.session.id, homepage)).toThrow(/ready or retryable/);
+    expect(proposalStore.inspect(ready.proposal.id).status).toBe("pending");
   });
 
-  it("closes a proposal when revision detects a stale page", () => {
+  it("does not consume a proposal when revision detects a stale page", () => {
     const proposalStore = new InMemoryDesignProposalStore();
     const agent = createDeterministicDesignAgent({ proposalStore });
     const ready = submitReady(agent, "Make the homepage feel more luxurious.");
@@ -639,9 +569,7 @@ describe("accept, reject, cancel and stale-base safety", () => {
     section(stalePage, "hero").content.heading = { en: "Changed", fi: "Muuttunut" };
     const result = agent.reviseProposal(ready.session.id, "Keep the hero unchanged.", stalePage);
     expect(result.outcome).toBe("stale");
-    expect(result.session.state).toBe("cancelled");
-    expect(proposalStore.inspect(ready.proposal.id).status).toBe("rejected");
-    expect(() => agent.acceptProposal(ready.session.id, homepage)).toThrow(/ready or retryable/);
+    expect(proposalStore.inspect(ready.proposal.id).status).toBe("pending");
   });
 
   it("treats locale switching as context, not a stale canonical-page change", () => {
@@ -708,27 +636,6 @@ describe("session concurrency, determinism and safety boundaries", () => {
     expect(result.outcome).toBe("failed");
     expect(result.session.failure?.code).toBe("invalidPlan");
     expect(result.session.activeProposalId).toBeNull();
-    expect(inputPage).toEqual(before);
-  });
-
-  it("contains provider failures without exposing details or changing the page", () => {
-    const provider = createDeterministicDesignProvider();
-    vi.spyOn(provider, "createDesignPlan").mockImplementation(() => {
-      throw new Error("provider-secret-stack-detail");
-    });
-    const agent = createDeterministicDesignAgent({ proposalProvider: provider });
-    const inputPage = structuredClone(homepage);
-    const before = structuredClone(inputPage);
-    const session = start(agent, { page: inputPage });
-
-    const result = agent.submitRequest(session.id, "Make the homepage feel more luxurious.");
-
-    expect(result.outcome).toBe("failed");
-    expect(result.session.state).toBe("failed");
-    expect(result.session.activeProposalId).toBeNull();
-    expect(result.message?.en).toMatch(/unavailable/i);
-    expect(result.message?.en).not.toContain("provider-secret-stack-detail");
-    expect(result.session.failure?.details).toContain("provider-secret-stack-detail");
     expect(inputPage).toEqual(before);
   });
 
