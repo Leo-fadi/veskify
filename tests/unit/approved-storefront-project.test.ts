@@ -49,6 +49,7 @@ describe("createApprovedStorefrontProject", () => {
     expect(persisted.project.revision).toBe(0);
     expect(result).toEqual({
       projectId: expected.project.id,
+      editorRoute: `/projects/${expected.project.id}/editor`,
       draftSnapshotId: expected.project.draftSnapshotId,
       publishedSnapshotId: expected.project.publishedSnapshotId,
     });
@@ -140,6 +141,11 @@ describe("createApprovedStorefrontProject", () => {
 
     expect(input).toEqual(before);
     expect(result).not.toBe(repository.lastAggregate);
-    expect(Object.keys(result)).toEqual(["projectId", "draftSnapshotId", "publishedSnapshotId"]);
+    expect(Object.keys(result)).toEqual([
+      "projectId",
+      "editorRoute",
+      "draftSnapshotId",
+      "publishedSnapshotId",
+    ]);
   });
 });

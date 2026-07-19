@@ -192,6 +192,7 @@ export async function createApprovedStorefrontProject(
 
   return Object.freeze({
     projectId: created.project.id,
+    editorRoute: `/projects/${created.project.id}/editor`,
     draftSnapshotId: created.project.draftSnapshotId,
     publishedSnapshotId: created.project.publishedSnapshotId,
   });

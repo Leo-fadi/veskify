@@ -9,6 +9,7 @@ export type ApprovedStorefrontProjectInput = Readonly<
 
 export type ApprovedStorefrontProjectResult = Readonly<{
   projectId: string;
+  editorRoute: string;
   draftSnapshotId: string;
   publishedSnapshotId: string;
 }>;
