@@ -71,11 +71,24 @@ function diagnosticContext(stage: StorefrontGenerationReviewDiagnostic["stage"])
 
 function projectDiagnostics(
   plan: GuidedStorefrontGenerationPlan,
+  brief: StorefrontDesignBrief | null,
 ): StorefrontGenerationReviewDiagnostic[] {
-  return plan.diagnostics.map((item) => ({
+  const diagnostics = plan.diagnostics.map((item) => ({
     ...item,
     context: diagnosticContext(item.stage),
   }));
+  if (brief?.catalogueContext === "existing-vesko-catalogue") {
+    diagnostics.push({
+      stage: "template-selection",
+      code: "EXISTING_CATALOGUE_REFERENCE_UNRESOLVED",
+      severity: "blocker",
+      message:
+        "The selected Vesko catalogue cannot be resolved safely in this standalone storefront flow.",
+      planId: plan.templateSelectionPlan?.id ?? null,
+      context: copy("Catalogue readiness", "Kuvaston valmius"),
+    });
+  }
+  return diagnostics;
 }
 
 function projectBusiness(brief: StorefrontDesignBrief | null, briefId: string) {
@@ -303,6 +316,10 @@ function projectPages(plan: GuidedStorefrontGenerationPlan): {
 function projectLanguages(brief: StorefrontDesignBrief | null) {
   const selectedLanguages = brief?.languagePlan.selectedLanguages ?? [];
   const primaryLanguage = brief?.languagePlan.primaryLanguage ?? null;
+  const complete =
+    selectedLanguages.length > 0 &&
+    primaryLanguage !== null &&
+    selectedLanguages.includes(primaryLanguage);
   return {
     section: section(
       "languages",
@@ -311,7 +328,7 @@ function projectLanguages(brief: StorefrontDesignBrief | null) {
         "These are the languages selected for the storefront.",
         "Nämä kielet on valittu kauppaa varten.",
       ),
-      brief ? "complete" : "not-applicable",
+      brief ? (complete ? "complete" : "blocked") : "not-applicable",
       "canonical design brief",
       null,
       selectedLanguages.map((language) => fact(language, copy(language, language), language)),
@@ -323,6 +340,7 @@ function projectLanguages(brief: StorefrontDesignBrief | null) {
 function projectCatalogue(
   plan: GuidedStorefrontGenerationPlan,
   brief: StorefrontDesignBrief | null,
+  diagnostics: readonly StorefrontGenerationReviewDiagnostic[],
 ) {
   const context = brief?.catalogueContext ?? null;
   const label =
@@ -337,21 +355,24 @@ function projectCatalogue(
     "catalogue",
     copy("Catalogue readiness", "Kuvaston valmius"),
     label,
-    context
-      ? plan.diagnostics.some(
-          (item) =>
-            item.code === "EMPTY_CATALOGUE_MERCHANDISING" || item.code === "DEMO_CATALOGUE_CONTENT",
-        )
-        ? "warning"
-        : "complete"
-      : "not-applicable",
+    context === "existing-vesko-catalogue"
+      ? "blocked"
+      : context
+        ? plan.diagnostics.some(
+            (item) =>
+              item.code === "EMPTY_CATALOGUE_MERCHANDISING" ||
+              item.code === "DEMO_CATALOGUE_CONTENT",
+          )
+          ? "warning"
+          : "complete"
+        : "not-applicable",
     "canonical design brief and P3-06/P3-08 diagnostics",
     null,
     [
       fact("catalogue-ref", copy("Catalogue reference", "Kuvaston viite"), plan.catalogueRef),
       ...(context ? [fact("context", copy("Context", "Konteksti"), context)] : []),
     ],
-    plan.diagnostics
+    diagnostics
       .filter((item) => item.code.includes("CATALOGUE") || item.code.includes("catalogue"))
       .map((item) => item.code),
   );
@@ -399,16 +420,20 @@ export function createStorefrontGenerationReview(
         "The review brief does not match the guided generation source version.",
       );
   }
-  const diagnostics = projectDiagnostics(plan);
+  const diagnostics = projectDiagnostics(plan, brief);
   const warnings = diagnostics.filter((item) => item.severity === "warning");
   const blockers = diagnostics.filter((item) => item.severity === "blocker");
   const pages = projectPages(plan);
   const languages = projectLanguages(brief);
-  const catalogue = projectCatalogue(plan, brief);
+  const catalogue = projectCatalogue(plan, brief, diagnostics);
   const requiredPages = ["home", "collection", "product"];
   const hasRequiredPages = requiredPages.every((type) =>
     pages.pages.some((page) => page.type === type),
   );
+  const hasRequiredLanguages =
+    languages.languagePlan.selectedLanguages.length > 0 &&
+    languages.languagePlan.primaryLanguage !== null &&
+    languages.languagePlan.selectedLanguages.includes(languages.languagePlan.primaryLanguage);
   if (plan.status !== "blocked" && (!plan.generatedSnapshot || !hasRequiredPages))
     throw new StorefrontGenerationReviewError(
       "inconsistent-review-source",
@@ -418,7 +443,8 @@ export function createStorefrontGenerationReview(
     plan.status !== "blocked" &&
     plan.generatedSnapshot !== null &&
     blockers.length === 0 &&
-    hasRequiredPages;
+    hasRequiredPages &&
+    hasRequiredLanguages;
   const assumptions = plan.assumptions.map((value) => copy(value, value));
   const review = {
     schemaVersion: STOREFRONT_GENERATION_REVIEW_SCHEMA_VERSION,

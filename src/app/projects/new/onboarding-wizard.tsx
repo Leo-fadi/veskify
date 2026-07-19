@@ -5,9 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  createApprovedStorefrontProject,
+  type ApprovedStorefrontProjectResult,
+} from "@/application/approved-storefront-project";
+import {
   OnboardingBusinessBasicsValidationError,
   OnboardingCatalogueContextValidationError,
   OnboardingExistingSourcesValidationError,
+  OnboardingLanguageValidationError,
   OnboardingMutationQueue,
   OnboardingPagesValidationError,
   OnboardingService,
@@ -15,7 +20,9 @@ import {
   OnboardingVisualDirectionValidationError,
   type VisualDirectionDraft,
   type VisualDirectionToneKeyword,
+  type OnboardingLanguageSelection,
 } from "@/application/onboarding";
+import { StorefrontGenerationReviewPanel } from "@/components/onboarding";
 import {
   businessBasicsFieldIds,
   type BusinessBasicsField,
@@ -40,8 +47,13 @@ import {
   type GenerationPreferences,
   type StorefrontIndustry,
 } from "@/domain/design-brief";
-import type { Locale } from "@/domain/shared";
+import { localeValues, type Locale } from "@/domain/shared";
 import { BrowserOnboardingSessionRepository, OnboardingStorageError } from "@/services/onboarding";
+import { createBrowserProjectRepository, type ProjectRepository } from "@/services/storage";
+import {
+  prepareOnboardingProject,
+  type PreparedOnboardingProject,
+} from "./onboarding-project-creation";
 import styles from "./onboarding.module.css";
 
 type ViewState =
@@ -51,6 +63,12 @@ type ViewState =
   | { kind: "ready"; session: OnboardingSession; origin: "new" | "resumed" };
 
 type SaveState = "saved" | "unsaved" | "saving" | "failed";
+
+export type OnboardingWizardProps = {
+  prepareProject?: (session: OnboardingSession) => PreparedOnboardingProject;
+  createProject?: typeof createApprovedStorefrontProject;
+  projectRepositoryFactory?: () => ProjectRepository;
+};
 
 const copy = {
   en: {
@@ -89,6 +107,9 @@ const copy = {
       "Keep the homepage, collection page and product page selected before continuing.",
     pagesUnsupported: "Choose only the supported storefront pages.",
     pagesDuplicate: "Each storefront page can be selected only once.",
+    languageSelectionError: "Choose at least one storefront language and its primary language.",
+    creationFailure:
+      "We could not create your storefront project. Your plan is safe—please try again.",
     notAvailable: "This step is a preview and cannot be completed in this foundation yet.",
     transitionError: "That step cannot be changed right now. Your progress is safe.",
     storageHeading: "We cannot access saved onboarding progress",
@@ -144,6 +165,9 @@ const copy = {
     pagesRequired: "Pidä etusivu, kokoelmasivu ja tuotesivu valittuina ennen jatkamista.",
     pagesUnsupported: "Valitse vain tuetut verkkokaupan sivut.",
     pagesDuplicate: "Jokaisen verkkokaupan sivun voi valita vain kerran.",
+    languageSelectionError: "Valitse vähintään yksi kaupan kieli ja sen ensisijainen kieli.",
+    creationFailure:
+      "Verkkokauppaprojektia ei voitu luoda. Suunnitelmasi on tallessa—yritä uudelleen.",
     notAvailable: "Tämä vaihe on esikatselu eikä sitä voi vielä suorittaa tässä perustassa.",
     transitionError: "Tätä vaihetta ei voi muuttaa juuri nyt. Edistymisesi on turvassa.",
     storageHeading: "Tallennettua aloitusta ei voida käyttää",
@@ -382,6 +406,23 @@ const businessBasicsText = {
   },
 } as const;
 
+const storefrontLanguageText = {
+  en: {
+    languagesLegend: "Storefront languages",
+    languagesHelp: "Choose the languages customers can use in your storefront.",
+    primaryLegend: "Primary storefront language",
+    primaryHelp: "This language is shown first in the generated storefront.",
+    languageLabels: { en: "English", fi: "Finnish" },
+  },
+  fi: {
+    languagesLegend: "Kaupan kielet",
+    languagesHelp: "Valitse kielet, joita asiakkaat voivat käyttää verkkokaupassa.",
+    primaryLegend: "Kaupan ensisijainen kieli",
+    primaryHelp: "Tämä kieli näytetään luodussa verkkokaupassa ensimmäisenä.",
+    languageLabels: { en: "Englanti", fi: "Suomi" },
+  },
+} as const;
+
 const existingSourcesText = {
   en: {
     url: {
@@ -599,7 +640,11 @@ function pagesDraftFromSession(session: OnboardingSession): StorefrontBriefPageT
   return pageTypes.length ? [...pageTypes] : [...generatedStorefrontPageTypes];
 }
 
-export function OnboardingWizard() {
+export function OnboardingWizard({
+  prepareProject = prepareOnboardingProject,
+  createProject = createApprovedStorefrontProject,
+  projectRepositoryFactory = createBrowserProjectRepository,
+}: OnboardingWizardProps = {}) {
   const router = useRouter();
   const [locale, setLocale] = useState<Locale>("en");
   const [view, setView] = useState<ViewState>({ kind: "loading" });
@@ -620,6 +665,9 @@ export function OnboardingWizard() {
   const [catalogueContextErrors, setCatalogueContextErrors] = useState<string | null>(null);
   const [pagesDraft, setPagesDraft] = useState<StorefrontBriefPageType[] | null>(null);
   const [pagesError, setPagesError] = useState<string | null>(null);
+  const [languageError, setLanguageError] = useState<string | null>(null);
+  const [creationPending, setCreationPending] = useState(false);
+  const [creationFailed, setCreationFailed] = useState(false);
   const [restartOpen, setRestartOpen] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saving");
   const [exitError, setExitError] = useState("");
@@ -631,11 +679,21 @@ export function OnboardingWizard() {
   const pendingMutationCountRef = useRef(0);
   const saveFailedRef = useRef(false);
   const exitPendingRef = useRef(false);
+  const creationPendingRef = useRef(false);
+  const createdProjectRef = useRef<ApprovedStorefrontProjectResult | null>(null);
   const mutationQueue = useMemo(() => new OnboardingMutationQueue(), []);
   const repository = useMemo(() => new BrowserOnboardingSessionRepository(), []);
   const service = useMemo(() => new OnboardingService(repository), [repository]);
+  const projectRepository = useMemo(() => projectRepositoryFactory(), [projectRepositoryFactory]);
   const text = copy[locale];
-  const exitUnavailable = pendingExit !== null || view.kind !== "ready";
+  const exitUnavailable = pendingExit !== null || creationPending || view.kind !== "ready";
+  const preparedProject = useMemo(
+    () =>
+      view.kind === "ready" && view.session.activeStepId === "review-plan"
+        ? prepareProject(view.session)
+        : null,
+    [prepareProject, view],
+  );
 
   const localTextDiffersFromSession = (session = sessionRef.current): boolean => {
     if (!session) return false;
@@ -734,6 +792,7 @@ export function OnboardingWizard() {
         setExitError("");
         setCatalogueContextErrors(null);
         setPagesError(null);
+        setLanguageError(null);
         if (
           initialSession.activeStepId === "pages" &&
           initialSession.designBrief.storefrontStructure.pageTypes.length === 0
@@ -812,6 +871,8 @@ export function OnboardingWizard() {
         setVisualDirectionErrors({});
         setCatalogueContextErrors(null);
         setPagesError(null);
+        setLanguageError(null);
+        setCreationFailed(false);
         setMessage("");
         return session;
       } catch (error) {
@@ -879,6 +940,11 @@ export function OnboardingWizard() {
           setMessage(pagesMessage);
           return null;
         }
+        if (error instanceof OnboardingLanguageValidationError) {
+          setLanguageError(text.languageSelectionError);
+          setMessage(text.languageSelectionError);
+          return null;
+        }
         if (error instanceof OnboardingTransitionError) {
           setMessage(
             error.code === "CREATION_PATH_REQUIRED"
@@ -901,7 +967,7 @@ export function OnboardingWizard() {
   };
 
   const exitToDashboard = async (intent: "save" | "dashboard") => {
-    if (exitPendingRef.current) return;
+    if (exitPendingRef.current || creationPendingRef.current) return;
     exitPendingRef.current = true;
     setPendingExit(intent);
     setSaveState("saving");
@@ -1004,6 +1070,8 @@ export function OnboardingWizard() {
         setVisualDirectionErrors({});
         setCatalogueContextErrors(null);
         setPagesError(null);
+        setLanguageError(null);
+        setCreationFailed(false);
         setView({ kind: "ready", session: nextSession, origin: "new" });
         setSaveState("saved");
         return nextSession;
@@ -1021,6 +1089,31 @@ export function OnboardingWizard() {
     if (session !== null) {
       setRestartOpen(false);
       setMessage(text.newStatus);
+    }
+  };
+
+  const confirmProjectCreation = async () => {
+    if (!preparedProject?.creationInput || creationPendingRef.current) return;
+    creationPendingRef.current = true;
+    setCreationPending(true);
+    setCreationFailed(false);
+    setExitError("");
+    try {
+      await mutationQueue.whenIdle();
+      const result =
+        createdProjectRef.current ??
+        (await createProject({ ...preparedProject.creationInput, repository: projectRepository }));
+      createdProjectRef.current = result;
+      const currentSession = sessionRef.current;
+      if (!currentSession) throw new Error("The onboarding session is unavailable.");
+      await service.completeSession(currentSession);
+      sessionRef.current = null;
+      router.push(result.editorRoute);
+    } catch {
+      setCreationFailed(true);
+    } finally {
+      creationPendingRef.current = false;
+      setCreationPending(false);
     }
   };
 
@@ -1063,7 +1156,7 @@ export function OnboardingWizard() {
               href="/"
               onClick={(event) => {
                 event.preventDefault();
-                if (exitUnavailable) return;
+                if (exitUnavailable || creationPendingRef.current) return;
                 void exitToDashboard("dashboard");
               }}
             >
@@ -1136,7 +1229,19 @@ export function OnboardingWizard() {
             />
           )}
 
-          {view.kind === "ready" && (
+          {view.kind === "ready" && preparedProject ? (
+            <StorefrontGenerationReviewPanel
+              busy={creationPending}
+              errorMessage={creationFailed ? text.creationFailure : null}
+              locale={locale}
+              onBack={() => {
+                setCreationFailed(false);
+                void updateSession((session) => service.goBack(session));
+              }}
+              onConfirmCreate={() => void confirmProjectCreation()}
+              review={preparedProject.review}
+            />
+          ) : view.kind === "ready" ? (
             <ActiveStep
               locale={locale}
               businessDraft={businessDraft ?? view.session.designBrief.businessIdentity}
@@ -1157,6 +1262,7 @@ export function OnboardingWizard() {
               catalogueContextError={catalogueContextErrors}
               pagesDraft={pagesDraft ?? pagesDraftFromSession(view.session)}
               pagesError={pagesError}
+              languageError={languageError}
               message={message || (view.origin === "new" ? text.newStatus : text.resumedStatus)}
               onBusinessDraftChange={markBusinessDraftChanged}
               onBusinessField={(field, value) =>
@@ -1204,6 +1310,12 @@ export function OnboardingWizard() {
               onPagesComplete={(value) =>
                 updateSession((session) => service.completeStorefrontPages(session, value))
               }
+              onLanguagesChange={(selection) =>
+                updateSession((session) => service.updateLanguages(session, selection))
+              }
+              onLanguagesComplete={(selection) =>
+                updateSession((session) => service.completeLanguages(session, selection))
+              }
               onBack={() => void updateSession((session) => service.goBack(session))}
               onContinue={() => void updateSession((session) => service.advance(session))}
               onPath={(path) =>
@@ -1214,7 +1326,7 @@ export function OnboardingWizard() {
               service={service}
               session={view.session}
             />
-          )}
+          ) : null}
         </section>
       </div>
       {restartOpen && (
@@ -1275,6 +1387,7 @@ function ActiveStep({
   catalogueContextError,
   pagesDraft,
   pagesError,
+  languageError,
   locale,
   message,
   onBusinessDraftChange,
@@ -1293,6 +1406,8 @@ function ActiveStep({
   onCatalogueContextSkip,
   onPagesChange,
   onPagesComplete,
+  onLanguagesChange,
+  onLanguagesComplete,
   onBack,
   onContinue,
   onPath,
@@ -1311,6 +1426,7 @@ function ActiveStep({
   catalogueContextError: string | null;
   pagesDraft: StorefrontBriefPageType[];
   pagesError: string | null;
+  languageError: string | null;
   locale: Locale;
   message: string;
   onBusinessDraftChange: (draft: BusinessIdentity) => void;
@@ -1334,6 +1450,10 @@ function ActiveStep({
   onCatalogueContextSkip: () => void;
   onPagesChange: (value: StorefrontBriefPageType[]) => void;
   onPagesComplete: (value: StorefrontBriefPageType[]) => Promise<OnboardingSession | null>;
+  onLanguagesChange: (selection: OnboardingLanguageSelection) => Promise<OnboardingSession | null>;
+  onLanguagesComplete: (
+    selection: OnboardingLanguageSelection,
+  ) => Promise<OnboardingSession | null>;
   onBack: () => void;
   onContinue: () => void;
   onPath: (path: OnboardingCreationPath) => void;
@@ -1454,6 +1574,17 @@ function ActiveStep({
             onChange={onPagesChange}
             onComplete={onPagesComplete}
           />
+        ) : step.id === "languages" ? (
+          <StorefrontLanguagesForm
+            error={languageError}
+            locale={locale}
+            onChange={onLanguagesChange}
+            onComplete={onLanguagesComplete}
+            selection={{
+              selectedLanguages: session.selectedLanguages,
+              primaryLanguage: session.primaryLanguage,
+            }}
+          />
         ) : (
           <div className={styles.placeholder}>
             <strong>{text.futureLabel}</strong>
@@ -1498,7 +1629,9 @@ function ActiveStep({
                       ? "catalogue-context-form"
                       : step.id === "pages"
                         ? "pages-form"
-                        : undefined
+                        : step.id === "languages"
+                          ? "storefront-languages-form"
+                          : undefined
             }
             onClick={
               step.id === "business-basics" ||
@@ -1510,7 +1643,9 @@ function ActiveStep({
                   ? undefined
                   : step.id === "pages"
                     ? undefined
-                    : onContinue
+                    : step.id === "languages"
+                      ? undefined
+                      : onContinue
             }
             type={
               step.id === "business-basics" ||
@@ -1522,7 +1657,9 @@ function ActiveStep({
                   ? "submit"
                   : step.id === "pages"
                     ? "submit"
-                    : "button"
+                    : step.id === "languages"
+                      ? "submit"
+                      : "button"
             }
           >
             {text.continue}
@@ -1599,6 +1736,100 @@ function PagesForm({
           </span>
         )}
       </fieldset>
+    </form>
+  );
+}
+
+function StorefrontLanguagesForm({
+  error,
+  locale,
+  onChange,
+  onComplete,
+  selection,
+}: {
+  error: string | null;
+  locale: Locale;
+  onChange: (selection: OnboardingLanguageSelection) => Promise<OnboardingSession | null>;
+  onComplete: (selection: OnboardingLanguageSelection) => Promise<OnboardingSession | null>;
+  selection: OnboardingLanguageSelection;
+}) {
+  const text = storefrontLanguageText[locale];
+  const [draft, setDraft] = useState(selection);
+  const draftRef = useRef(selection);
+  const pendingPersistenceRef = useRef<Promise<unknown>>(Promise.resolve());
+
+  const persist = (next: OnboardingLanguageSelection) => {
+    draftRef.current = next;
+    setDraft(next);
+    pendingPersistenceRef.current = pendingPersistenceRef.current.then(() => onChange(next));
+  };
+
+  return (
+    <form
+      className={styles.languageForm}
+      id="storefront-languages-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void pendingPersistenceRef.current.then(() => onComplete(draftRef.current));
+      }}
+    >
+      <fieldset aria-describedby="storefront-languages-help" className={styles.pathOptions}>
+        <legend>{text.languagesLegend}</legend>
+        <p className={styles.selectionHint} id="storefront-languages-help">
+          {text.languagesHelp}
+        </p>
+        {localeValues.map((language) => {
+          const checked = draft.selectedLanguages.includes(language);
+          return (
+            <label key={language}>
+              <input
+                checked={checked}
+                disabled={checked && draft.selectedLanguages.length === 1}
+                name="storefront-languages"
+                onChange={() => {
+                  const selectedLanguages = checked
+                    ? draft.selectedLanguages.filter((current) => current !== language)
+                    : [...draft.selectedLanguages, language];
+                  const primaryLanguage = selectedLanguages.includes(draft.primaryLanguage)
+                    ? draft.primaryLanguage
+                    : selectedLanguages[0];
+                  if (primaryLanguage) persist({ selectedLanguages, primaryLanguage });
+                }}
+                type="checkbox"
+                value={language}
+              />
+              <span>
+                <strong>{text.languageLabels[language]}</strong>
+              </span>
+            </label>
+          );
+        })}
+      </fieldset>
+
+      <fieldset aria-describedby="primary-language-help" className={styles.primaryLanguageOptions}>
+        <legend>{text.primaryLegend}</legend>
+        <p className={styles.selectionHint} id="primary-language-help">
+          {text.primaryHelp}
+        </p>
+        {draft.selectedLanguages.map((language) => (
+          <label key={language}>
+            <input
+              checked={draft.primaryLanguage === language}
+              name="primary-storefront-language"
+              onChange={() => persist({ ...draft, primaryLanguage: language })}
+              type="radio"
+              value={language}
+            />
+            <span>{text.languageLabels[language]}</span>
+          </label>
+        ))}
+      </fieldset>
+
+      {error ? (
+        <p className={styles.fieldError} role="alert">
+          {error}
+        </p>
+      ) : null}
     </form>
   );
 }

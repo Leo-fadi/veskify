@@ -182,6 +182,55 @@ describe("canonical O-08 language selection", () => {
     expect(repository.session).toEqual(completed);
   });
 
+  it("routes generic O-08 advancement through canonical language completion", async () => {
+    const repository = new MemoryOnboardingRepository();
+    const { service, session } = await languagesSession(repository);
+
+    const completed = await service.advance(session);
+
+    expect(completed).toMatchObject({
+      activeStepId: "review-plan",
+      selectedLanguages: ["en"],
+      primaryLanguage: "en",
+      designBrief: { languagePlan: { selectedLanguages: ["en"], primaryLanguage: "en" } },
+    });
+    expect(completed.completedStepIds).toContain("languages");
+    expect(repository.session).toEqual(completed);
+  });
+
+  it.each([
+    ["no selected language", { selectedLanguages: [], primaryLanguage: "en" }, "LANGUAGE_REQUIRED"],
+    [
+      "a primary language outside the selection",
+      { selectedLanguages: ["en"], primaryLanguage: "fi" },
+      "PRIMARY_LANGUAGE_NOT_SELECTED",
+    ],
+  ] as const)(
+    "rejects generic advancement with %s through the canonical error",
+    async (_label, patch, code) => {
+      const repository = new MemoryOnboardingRepository();
+      const { service, session } = await languagesSession(repository);
+      const before = structuredClone(repository.session);
+      const malformed = { ...session, ...patch } as unknown as OnboardingSession;
+
+      await expect(service.advance(malformed)).rejects.toMatchObject({
+        name: "OnboardingLanguageValidationError",
+        code,
+      });
+      expect(repository.session).toEqual(before);
+    },
+  );
+
+  it("completes and clears a reviewed onboarding session through the service lifecycle", async () => {
+    const repository = new MemoryOnboardingRepository();
+    const { service, session } = await languagesSession(repository);
+    const reviewed = await service.completeLanguages(session);
+
+    await service.completeSession(reviewed);
+
+    expect(repository.session).toBeUndefined();
+  });
+
   it("updates O-08 without completing it and rejects a primary-language drift", async () => {
     const repository = new MemoryOnboardingRepository();
     const { service, session } = await languagesSession(repository);

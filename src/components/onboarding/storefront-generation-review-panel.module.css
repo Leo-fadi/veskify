@@ -5,6 +5,14 @@
   color: var(--brand-color-text, #1d1a16);
   background: var(--brand-color-background, #fffcf7);
 }
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .header {
   margin-bottom: 1.5rem;
 }
@@ -16,7 +24,7 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
-.header h1 {
+.header h2 {
   margin: 0.35rem 0 0.5rem;
   font-family: var(--brand-font-heading, Georgia, serif);
   font-size: clamp(1.8rem, 4vw, 3rem);
@@ -85,7 +93,7 @@
   justify-content: space-between;
   gap: 1rem;
 }
-.sectionHeader h2 {
+.sectionHeader h3 {
   margin: 0;
   font-size: 1.2rem;
 }
@@ -140,7 +148,7 @@
   border-radius: 0.75rem;
   padding: 0.85rem;
 }
-.pageCard h3 {
+.pageCard h4 {
   margin: 0;
   font-size: 1rem;
 }
@@ -223,9 +231,10 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  .panel,
+  .panel *,
+  .panel *::before,
+  .panel *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;

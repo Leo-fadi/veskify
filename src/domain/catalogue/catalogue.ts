@@ -113,8 +113,8 @@ export const collectionDisplayModelSchema = z
 export const catalogueDisplayModelSchema = z
   .object({
     id: idSchema,
-    products: z.array(productDisplayModelSchema).min(1),
-    collections: z.array(collectionDisplayModelSchema).min(1),
+    products: z.array(productDisplayModelSchema),
+    collections: z.array(collectionDisplayModelSchema),
   })
   .strict()
   .superRefine((catalogue, context) => {
@@ -151,6 +151,10 @@ export const catalogueDisplayModelSchema = z
   });
 
 export const protectedProductPaths = ["price", "stockStatus"] as const;
+
+export function createEmptyCatalogue(id: string): CatalogueDisplayModel {
+  return catalogueDisplayModelSchema.parse({ id, products: [], collections: [] });
+}
 
 export type ProductVariantDisplay = z.infer<typeof productVariantDisplaySchema>;
 export type ProductOrderOptionDisplay = z.infer<typeof productOrderOptionDisplaySchema>;

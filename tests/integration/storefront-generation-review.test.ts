@@ -43,11 +43,12 @@ function runReview(
 }
 
 describe("storefront generation review application boundary", () => {
-  it("projects complete EN/FI and empty-catalogue generation without persistence dependencies", () => {
+  it("projects EN/FI and retains empty-catalogue readiness warnings", () => {
     const { plan, review } = runReview("en", "empty-catalogue", "template_balanced_commerce");
     expect(review.briefId).toBe(plan.briefId);
     expect(review.languagePlan).toEqual({ selectedLanguages: ["en", "fi"], primaryLanguage: "en" });
     expect(review.catalogueContext).toBe("empty-catalogue");
+    expect(review.canCreateProject).toBe(true);
     expect(review.sections.map((section) => section.id)).toHaveLength(9);
     expect(validateStorefrontGenerationReview(review)).toEqual(review);
   });

@@ -120,11 +120,11 @@ const definitions = [
       fi: "Valitse englanti, suomi tai molemmat sekä kaupan ensisijainen kieli.",
     },
     placeholder: {
-      en: "A later step will save storefront language choices. The language buttons above change this onboarding interface only.",
-      fi: "Myöhempi vaihe tallentaa kaupan kielivalinnat. Yllä olevat kielipainikkeet vaihtavat vain tämän ohjauksen kieltä.",
+      en: "Choose the storefront languages and the language customers see first.",
+      fi: "Valitse kaupan kielet ja kieli, jonka asiakkaat näkevät ensimmäisenä.",
     },
     optional: false,
-    completableNow: false,
+    completableNow: true,
   },
   {
     id: "review-plan",
@@ -134,8 +134,8 @@ const definitions = [
       fi: "Tarkista tiedot, oletukset ja suunniteltu kauppa ennen luontia.",
     },
     placeholder: {
-      en: "A later step will show a plain-language build plan for confirmation. This foundation does not generate a store or create a project.",
-      fi: "Myöhempi vaihe näyttää selkokielisen toteutussuunnitelman vahvistettavaksi. Tämä perusta ei luo kauppaa tai projektia.",
+      en: "Review the generated storefront plan before explicitly creating the project.",
+      fi: "Tarkista luotu verkkokauppasuunnitelma ennen projektin vahvistettua luomista.",
     },
     optional: false,
     completableNow: false,

@@ -84,6 +84,7 @@ const copy = {
     back: "Back",
     create: "Create storefront project",
     creating: "Creating project…",
+    retry: "Try creating again",
     resolve: "Resolve the items requiring attention before creating the project.",
     assumptionsEmpty: "No additional assumptions are required.",
     warningsEmpty: "No warnings were reported.",
@@ -101,6 +102,7 @@ const copy = {
     back: "Takaisin",
     create: "Luo verkkokauppaprojekti",
     creating: "Luodaan projektia…",
+    retry: "Yritä luomista uudelleen",
     resolve: "Ratkaise huomiota vaativat kohdat ennen projektin luomista.",
     assumptionsEmpty: "Muita oletuksia ei tarvita.",
     warningsEmpty: "Huomautuksia ei ilmoitettu.",
@@ -131,18 +133,19 @@ export function StorefrontGenerationReviewPanel({
   const canonicalReview = validateStorefrontGenerationReview(review);
   const text = copy[locale];
   const confirmDisabled = busy || !canonicalReview.canCreateProject;
+  const displayedStatus = canonicalReview.canCreateProject ? canonicalReview.status : "blocked";
 
   return (
-    <main className={styles.panel} aria-busy={busy} aria-labelledby="generation-review-title">
+    <section className={styles.panel} aria-busy={busy} aria-labelledby="generation-review-title">
       <header className={styles.header}>
         <p className={styles.eyebrow}>Veskify</p>
-        <h1 id="generation-review-title">{canonicalReview.title[locale]}</h1>
+        <h2 id="generation-review-title">{canonicalReview.title[locale]}</h2>
         <p className={styles.summary}>{canonicalReview.summary[locale]}</p>
         <p
-          className={`${styles.overallStatus} ${styles[`status-${canonicalReview.status}`]}`}
+          className={`${styles.overallStatus} ${styles[`status-${displayedStatus}`]}`}
           role="status"
         >
-          {statusLabels[locale][canonicalReview.status]}
+          {statusLabels[locale][displayedStatus]}
         </p>
       </header>
 
@@ -150,6 +153,11 @@ export function StorefrontGenerationReviewPanel({
         <div className={styles.error} role="alert">
           {errorMessage}
         </div>
+      ) : null}
+      {busy ? (
+        <p aria-live="polite" className={styles.visuallyHidden} role="status">
+          {text.creating}
+        </p>
       ) : null}
 
       <div className={styles.sections}>
@@ -161,7 +169,7 @@ export function StorefrontGenerationReviewPanel({
           >
             <div className={styles.sectionHeader}>
               <div>
-                <h2 id={`review-section-${reviewSection.id}`}>{reviewSection.heading[locale]}</h2>
+                <h3 id={`review-section-${reviewSection.id}`}>{reviewSection.heading[locale]}</h3>
                 <p>{reviewSection.summary[locale]}</p>
               </div>
               <span
@@ -176,7 +184,7 @@ export function StorefrontGenerationReviewPanel({
                 <div className={styles.pageList}>
                   {canonicalReview.pageSummaries.map((page) => (
                     <article className={styles.pageCard} key={page.id}>
-                      <h3>{pageTypeLabels[locale][page.type] ?? humanize(page.type)}</h3>
+                      <h4>{pageTypeLabels[locale][page.type] ?? humanize(page.type)}</h4>
                       <p>{page.path}</p>
                       <p>
                         {page.totalSectionCount} {text.sections} · {page.visibleSectionCount}{" "}
@@ -275,10 +283,10 @@ export function StorefrontGenerationReviewPanel({
           disabled={confirmDisabled}
           aria-disabled={confirmDisabled}
         >
-          {busy ? text.creating : text.create}
+          {busy ? text.creating : errorMessage ? text.retry : text.create}
         </button>
       </footer>
-    </main>
+    </section>
   );
 }
 

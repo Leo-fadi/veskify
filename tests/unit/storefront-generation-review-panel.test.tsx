@@ -124,6 +124,29 @@ describe("StorefrontGenerationReviewPanel", () => {
     unmount();
   });
 
+  it.each([
+    [
+      "an incomplete business brief and generated snapshot are missing",
+      { businessIdentity: {} },
+      true,
+      true,
+    ],
+    ["required pages are missing", { storefrontStructure: { pageTypes: ["home"] } }, true, true],
+    ["required languages are missing", { languagePlan: {} }, false, false],
+  ])("disables creation when %s", (_label, overrides, hasBlockers, snapshotMissing) => {
+    const currentReview = review(overrides);
+    renderPanel(currentReview);
+
+    expect(currentReview.canCreateProject).toBe(false);
+    expect(screen.getByRole("button", { name: "Create storefront project" })).toBeDisabled();
+    expect(screen.getByRole("heading", { name: "Blockers" })).toBeVisible();
+    expect(
+      screen.getByText("Resolve the items requiring attention before creating the project."),
+    ).toBeVisible();
+    if (hasBlockers) expect(currentReview.blockers.length).toBeGreaterThan(0);
+    if (snapshotMissing) expect(currentReview.generatedSnapshotId).toBeNull();
+  });
+
   it("rejects malformed reviews at the canonical boundary", () => {
     expect(() => renderPanel({ ...review(), sections: [] })).toThrow();
   });
