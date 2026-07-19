@@ -54,10 +54,16 @@ function reviewSession() {
 
 test.beforeEach(async ({ page }) => {
   const session = reviewSession();
-  await page.addInitScript(({ key, value }) => window.localStorage.setItem(key, value), {
-    key: storageKey,
-    value: JSON.stringify(session),
-  });
+  await page.addInitScript(
+    ({ key, value }) => {
+      const seededKey = `${key}:e2e-seeded`;
+      if (!window.sessionStorage.getItem(seededKey)) {
+        window.localStorage.setItem(key, value);
+        window.sessionStorage.setItem(seededKey, "true");
+      }
+    },
+    { key: storageKey, value: JSON.stringify(session) },
+  );
 });
 
 test("restores O-09 without project persistence and renders its canonical review", async ({
@@ -101,6 +107,32 @@ test("confirms O-09 from the keyboard and enters the returned editor route", asy
 
   await expect(page).toHaveURL(/\/projects\/project_onboarding_[a-f0-9]{8}\/editor$/);
   await expect(page.getByText("Northern Light Studio", { exact: true }).first()).toBeVisible();
+  expect(await page.evaluate((key) => localStorage.getItem(key), storageKey)).toBeNull();
+  expect(
+    await page.evaluate(
+      () =>
+        new Promise<number>((resolve, reject) => {
+          const open = indexedDB.open("veskify");
+          open.onerror = () => reject(new Error("Could not open the project database."));
+          open.onsuccess = () => {
+            const database = open.result;
+            const projects = database.transaction("projects").objectStore("projects").getAll();
+            projects.onerror = () => reject(new Error("Could not count persisted projects."));
+            projects.onsuccess = () => {
+              database.close();
+              const persistedProjects = projects.result as unknown as Array<{ id: string }>;
+              resolve(
+                persistedProjects.filter(({ id }) => id.startsWith("project_onboarding_")).length,
+              );
+            };
+          };
+        }),
+    ),
+  ).toBe(1);
+
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "How would you like to begin?" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Create storefront project" })).toHaveCount(0);
 });
 
 for (const width of [375, 768, 1024, 1440]) {

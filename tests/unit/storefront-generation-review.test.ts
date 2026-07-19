@@ -122,7 +122,21 @@ describe("storefront generation review projection", () => {
     expect(review.warnings.map((warning) => warning.code)).toContain(
       "EMPTY_CATALOGUE_MERCHANDISING",
     );
+    expect(review.canCreateProject).toBe(true);
     expect(review.sections.find((section) => section.id === "catalogue")?.status).toBe("warning");
+  });
+
+  it("blocks an unresolved existing catalogue without substituting demo data", () => {
+    const { plan, currentBrief } = generation({
+      catalogueContext: "existing-vesko-catalogue",
+    });
+    const review = createStorefrontGenerationReview(plan, currentBrief);
+
+    expect(review.canCreateProject).toBe(false);
+    expect(review.blockers.map((blocker) => blocker.code)).toContain(
+      "EXISTING_CATALOGUE_REFERENCE_UNRESOLVED",
+    );
+    expect(review.sections.find((section) => section.id === "catalogue")?.status).toBe("blocked");
   });
 
   it("rejects every same-ID canonical brief mutation while accepting detached equivalents", () => {

@@ -29,7 +29,7 @@ export function initialAggregateFixture(options: InitialAggregateFixtureOptions 
   const createdAt = options.createdAt ?? initialAggregateCreatedAt;
   const creationContext = options.creationContext ?? "new-storefront";
   const catalogueContext =
-    options.catalogueContext === undefined ? "existing-vesko-catalogue" : options.catalogueContext;
+    options.catalogueContext === undefined ? "controlled-demo-catalogue" : options.catalogueContext;
   const brief = normalizeStorefrontDesignBriefInput({
     id: `brief_initial_aggregate_${suffix}`,
     createdAt,

@@ -13,7 +13,14 @@ The merchant must explicitly activate **Create storefront project**. The canonic
 required-page, language or snapshot rules. Confirmation is guarded against repeated activation,
 shows a localized pending state, waits for `ProjectRepository.create` through the existing P3-20
 approved-project orchestration, and navigates with the returned `editorRoute`. A failed creation
-keeps the session and review in place, hides internal errors and permits retry.
+keeps the session and review in place, hides internal errors and permits retry. A successful
+creation completes and clears the resumable onboarding session before navigation; if cleanup fails,
+retry reuses the already-created result without creating a second Project.
+
+The catalogue aggregate follows the selected plan: explicit demo selection uses the controlled Aurum
+seed, empty selection uses a canonical zero-product catalogue and omits catalogue-dependent sections
+from the initial materialization, and an existing Vesko catalogue is blocked until its reference can
+be resolved by a canonical catalogue boundary.
 
 This slice implements SDD §5.3 O-08/O-09, §6.1 FR-001/FR-004/FR-007–FR-010, §13.5, §14.1,
 §15.7 and AC-001, AC-018, AC-021, AC-023, AC-025–AC-027. It preserves ADR-002's controlled

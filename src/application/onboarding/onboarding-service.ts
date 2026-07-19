@@ -186,6 +186,15 @@ export class OnboardingService {
       }
     }
     if (result.status === "found") {
+      if (result.session.status === "completed") {
+        try {
+          await this.#repository.clear();
+          return { status: "new", session: await this.createSession() };
+        } catch (error) {
+          if (error instanceof OnboardingStorageError) return { status: "unavailable" };
+          throw error;
+        }
+      }
       return { status: "resumed", session: cloneOnboardingSession(result.session) };
     }
     return result;
@@ -217,6 +226,7 @@ export class OnboardingService {
   }
 
   async advance(input: OnboardingSession): Promise<OnboardingSession> {
+    if (input?.activeStepId === "languages") return this.completeLanguages(input);
     const session = this.#validateActive(input);
     const step = getOnboardingStep(session.activeStepId);
     if (step.id === "business-basics") return this.completeBusinessBasics(session);
@@ -536,15 +546,15 @@ export class OnboardingService {
     input: OnboardingSession,
     selection?: OnboardingLanguageSelection,
   ): Promise<OnboardingSession> {
-    const session = this.#validateLanguagesStep(input);
     const candidate =
       selection === undefined
         ? {
-            selectedLanguages: session.selectedLanguages,
-            primaryLanguage: session.primaryLanguage,
+            selectedLanguages: input.selectedLanguages,
+            primaryLanguage: input.primaryLanguage,
           }
         : selection;
     const validated = validateOnboardingLanguageSelection(candidate);
+    const session = this.#validateLanguagesStep(input);
     const timestamp = this.#now();
     const designBrief = updateStorefrontDesignBriefArea(
       session.designBrief,
@@ -718,6 +728,30 @@ export class OnboardingService {
 
   async reset(): Promise<OnboardingSession> {
     return this.createSession();
+  }
+
+  /** Marks a reviewed journey complete and removes it from resumable onboarding storage. */
+  async completeSession(input: OnboardingSession): Promise<void> {
+    const session = this.#validateActive(input);
+    if (session.activeStepId !== "review-plan") {
+      throw new OnboardingTransitionError("STEP_NOT_AVAILABLE");
+    }
+    const timestamp = this.#now();
+    const updatedAt =
+      Date.parse(timestamp) >= Date.parse(session.designBrief.updatedAt)
+        ? timestamp
+        : session.designBrief.updatedAt;
+    const completed = onboardingSessionSchema.parse({
+      ...session,
+      completedStepIds: session.completedStepIds.includes("review-plan")
+        ? session.completedStepIds
+        : [...session.completedStepIds, "review-plan"],
+      skippedStepIds: session.skippedStepIds.filter((stepId) => stepId !== "review-plan"),
+      status: "completed",
+      updatedAt,
+    });
+    await this.#repository.save(completed);
+    await this.#repository.clear();
   }
 
   inspectProgress(input: OnboardingSession): OnboardingProgress {

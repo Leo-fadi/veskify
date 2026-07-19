@@ -1,9 +1,9 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OnboardingWizard } from "@/app/projects/new/onboarding-wizard";
 import type { ApprovedStorefrontProjectResult } from "@/application/approved-storefront-project";
-import { normalizeStorefrontDesignBriefInput } from "@/domain/design-brief";
+import { normalizeStorefrontDesignBriefInput, type CatalogueContext } from "@/domain/design-brief";
 import {
   onboardingBriefIdForSession,
   onboardingSessionSchema,
@@ -18,7 +18,9 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: routerPush }) }));
 
 const createdAt = "2026-07-19T10:00:00.000Z";
 
-function reviewSession(): OnboardingSession {
+function reviewSession(
+  catalogueContext: CatalogueContext = "controlled-demo-catalogue",
+): OnboardingSession {
   const id = "onboarding_review_route";
   return onboardingSessionSchema.parse({
     schemaVersion: 2,
@@ -58,7 +60,7 @@ function reviewSession(): OnboardingSession {
         imageryDirection: "product-focused",
         toneKeywords: ["elegant"],
       },
-      catalogueContext: "controlled-demo-catalogue",
+      catalogueContext,
       storefrontStructure: { pageTypes: ["home", "collection", "product"] },
       languagePlan: { selectedLanguages: ["en", "fi"], primaryLanguage: "en" },
     }),
@@ -141,7 +143,6 @@ describe("O-09 onboarding review and project creation route", () => {
   });
 
   it("uses the canonical P3-19 language service to reach O-09", async () => {
-    const user = userEvent.setup();
     localStorage.setItem(ONBOARDING_SESSION_STORAGE_KEY, JSON.stringify(languageSession()));
     render(<OnboardingWizard projectRepositoryFactory={repositoryFactory} />);
 
@@ -149,14 +150,46 @@ describe("O-09 onboarding review and project creation route", () => {
     const english = screen.getByRole("checkbox", { name: "English" });
     expect(english).toBeChecked();
     expect(english).toBeDisabled();
-    await user.click(screen.getByRole("checkbox", { name: "Finnish" }));
-    await user.click(screen.getByRole("radio", { name: "Finnish" }));
-    await user.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Finnish" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Finnish" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(
       await screen.findByRole("heading", { name: "Review your storefront plan" }),
     ).toBeVisible();
     expect(screen.getByText("Finnish — Primary language")).toBeVisible();
+  });
+
+  it("serializes rapid O-08 edits and completes with the latest local language draft", async () => {
+    localStorage.setItem(ONBOARDING_SESSION_STORAGE_KEY, JSON.stringify(languageSession()));
+    render(<OnboardingWizard projectRepositoryFactory={repositoryFactory} />);
+
+    await screen.findByRole("heading", { name: "Storefront languages" });
+    act(() => {
+      fireEvent.click(screen.getByRole("checkbox", { name: "Finnish" }));
+      fireEvent.click(screen.getByRole("radio", { name: "Finnish" }));
+      fireEvent.click(screen.getByRole("checkbox", { name: "English" }));
+      fireEvent.click(screen.getByRole("checkbox", { name: "English" }));
+      fireEvent.click(
+        screen
+          .getAllByRole("radio", { name: "English" })
+          .find((element) => element.getAttribute("name") === "primary-storefront-language")!,
+      );
+      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    });
+
+    expect(
+      await screen.findByRole("heading", { name: "Review your storefront plan" }),
+    ).toBeVisible();
+    expect(screen.getByText("English — Primary language")).toBeVisible();
+    expect(screen.getByText("Finnish")).toBeVisible();
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      selectedLanguages: ["en", "fi"],
+      primaryLanguage: "en",
+      designBrief: {
+        languagePlan: { selectedLanguages: ["en", "fi"], primaryLanguage: "en" },
+      },
+    });
   });
 
   it("creates once after explicit confirmation, announces pending and uses editorRoute", async () => {
@@ -167,7 +200,7 @@ describe("O-09 onboarding review and project creation route", () => {
           resolveCreation = resolve;
         }),
     );
-    render(
+    const mounted = render(
       <OnboardingWizard
         createProject={createProject}
         projectRepositoryFactory={repositoryFactory}
@@ -182,7 +215,92 @@ describe("O-09 onboarding review and project creation route", () => {
     expect(routerPush).not.toHaveBeenCalled();
 
     resolveCreation(result);
+    await waitFor(() => expect(routerPush).toHaveBeenCalledTimes(1));
+    expect(routerPush).toHaveBeenCalledWith(result.editorRoute);
+    expect(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY)).toBeNull();
+
+    mounted.unmount();
+    render(
+      <OnboardingWizard
+        createProject={createProject}
+        projectRepositoryFactory={repositoryFactory}
+      />,
+    );
+    expect(
+      await screen.findByRole("heading", { name: "How would you like to begin?" }),
+    ).toBeVisible();
+    expect(createProject).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks shell exits while creation is pending and restores them after failure", async () => {
+    const user = userEvent.setup();
+    let rejectCreation!: (reason?: unknown) => void;
+    const createProject = vi.fn(
+      () =>
+        new Promise<ApprovedStorefrontProjectResult>((_resolve, reject) => {
+          rejectCreation = reject;
+        }),
+    );
+    render(
+      <OnboardingWizard
+        createProject={createProject}
+        projectRepositoryFactory={repositoryFactory}
+      />,
+    );
+
+    const confirm = await screen.findByRole("button", { name: "Create storefront project" });
+    const saveExit = screen.getByRole("button", { name: "Save & exit" });
+    const dashboard = screen.getByRole("link", { name: "Back to dashboard" });
+    fireEvent.click(confirm);
+    fireEvent.click(saveExit);
+    dashboard.focus();
+    await user.keyboard("{Enter}");
+
+    expect(saveExit).toBeDisabled();
+    expect(dashboard).toHaveAttribute("aria-disabled", "true");
+    expect(routerPush).not.toHaveBeenCalled();
+
+    rejectCreation(new Error("creation failed"));
+    expect(await screen.findByRole("alert")).toBeVisible();
+    expect(saveExit).toBeEnabled();
+    expect(dashboard).toHaveAttribute("aria-disabled", "false");
+    expect(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY)).not.toBeNull();
+
+    await user.click(dashboard);
+    expect(routerPush).toHaveBeenCalledTimes(1);
+    expect(routerPush).toHaveBeenCalledWith("/");
+  });
+
+  it("retries failed session cleanup without creating a second Project", async () => {
+    const user = userEvent.setup();
+    const createProject = vi.fn().mockResolvedValue(result);
+    const originalRemoveItem = Storage.prototype.removeItem.bind(localStorage);
+    const removeItem = vi
+      .spyOn(Storage.prototype, "removeItem")
+      .mockImplementationOnce(() => {
+        throw new Error("storage unavailable");
+      })
+      .mockImplementation((key) => originalRemoveItem(key));
+    render(
+      <OnboardingWizard
+        createProject={createProject}
+        projectRepositoryFactory={repositoryFactory}
+      />,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Create storefront project" }));
+    expect(await screen.findByRole("alert")).toBeVisible();
+    expect(createProject).toHaveBeenCalledTimes(1);
+    expect(routerPush).not.toHaveBeenCalled();
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      status: "completed",
+    });
+
+    await user.click(screen.getByRole("button", { name: "Try creating again" }));
     await waitFor(() => expect(routerPush).toHaveBeenCalledWith(result.editorRoute));
+    expect(createProject).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY)).toBeNull();
+    removeItem.mockRestore();
   });
 
   it("preserves the review after failure and permits a localized retry", async () => {
@@ -226,5 +344,51 @@ describe("O-09 onboarding review and project creation route", () => {
     confirm.focus();
     await user.keyboard("{Enter}");
     await waitFor(() => expect(createProject).toHaveBeenCalledTimes(1));
+  });
+
+  it("allows empty-catalogue creation without demo persistence", async () => {
+    localStorage.setItem(
+      ONBOARDING_SESSION_STORAGE_KEY,
+      JSON.stringify(reviewSession("empty-catalogue")),
+    );
+    const createProject = vi.fn().mockResolvedValue(result);
+    render(
+      <OnboardingWizard
+        createProject={createProject}
+        projectRepositoryFactory={repositoryFactory}
+      />,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Review your storefront plan" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Create storefront project" })).toBeEnabled();
+    expect(screen.getByText("Empty catalogue")).toBeVisible();
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "Create storefront project" }));
+    await waitFor(() => expect(createProject).toHaveBeenCalledTimes(1));
+  });
+
+  it("blocks unresolved existing-catalogue creation without preparing demo persistence", async () => {
+    const catalogueContext = "existing-vesko-catalogue" as const;
+    localStorage.setItem(
+      ONBOARDING_SESSION_STORAGE_KEY,
+      JSON.stringify(reviewSession(catalogueContext)),
+    );
+    const createProject = vi.fn();
+    render(
+      <OnboardingWizard
+        createProject={createProject}
+        projectRepositoryFactory={repositoryFactory}
+      />,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Review your storefront plan" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Create storefront project" })).toBeDisabled();
+    expect(screen.getByRole("heading", { name: "Blockers" })).toBeVisible();
+    expect(createProject).not.toHaveBeenCalled();
   });
 });

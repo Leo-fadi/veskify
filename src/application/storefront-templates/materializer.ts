@@ -152,6 +152,25 @@ function shouldOmitSlot(slot: StorefrontTemplateSlot, brief: StorefrontDesignBri
   return false;
 }
 
+function shouldOmitEmptyCatalogueSection(
+  sectionType: string,
+  brief: StorefrontDesignBrief,
+): boolean {
+  return (
+    brief.catalogueContext === "empty-catalogue" &&
+    [
+      "featuredCategories",
+      "productGrid",
+      "collectionHeader",
+      "filterBar",
+      "productGallery",
+      "productInfo",
+      "productOptions",
+      "relatedProducts",
+    ].includes(sectionType)
+  );
+}
+
 function applyInitialContentPolicy(
   section: SectionInstance,
   brief: StorefrontDesignBrief,
@@ -197,8 +216,9 @@ function materializeSection(
   collectionSlug: string,
   omissions: InitialStorefrontOmission[],
 ): SectionInstance | null {
-  if (shouldOmitSlot(slot, brief)) {
-    if (slot.required) {
+  const omitForEmptyCatalogue = shouldOmitEmptyCatalogueSection(slot.sectionType, brief);
+  if (shouldOmitSlot(slot, brief) || omitForEmptyCatalogue) {
+    if (slot.required && !omitForEmptyCatalogue) {
       throw new InitialStorefrontMaterializationError(
         "invalid-generated-storefront",
         `Required slot ${slot.id} (${slot.sectionType}) cannot be omitted on ${pageType}.`,
@@ -208,7 +228,7 @@ function materializeSection(
       pageType,
       slotId: slot.id,
       sectionType: slot.sectionType,
-      condition: slot.omitWhen,
+      condition: omitForEmptyCatalogue ? "when-catalogue-is-empty" : slot.omitWhen,
     });
     return null;
   }

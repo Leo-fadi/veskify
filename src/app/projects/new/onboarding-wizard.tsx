@@ -4,7 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createApprovedStorefrontProject } from "@/application/approved-storefront-project";
+import {
+  createApprovedStorefrontProject,
+  type ApprovedStorefrontProjectResult,
+} from "@/application/approved-storefront-project";
 import {
   OnboardingBusinessBasicsValidationError,
   OnboardingCatalogueContextValidationError,
@@ -677,12 +680,13 @@ export function OnboardingWizard({
   const saveFailedRef = useRef(false);
   const exitPendingRef = useRef(false);
   const creationPendingRef = useRef(false);
+  const createdProjectRef = useRef<ApprovedStorefrontProjectResult | null>(null);
   const mutationQueue = useMemo(() => new OnboardingMutationQueue(), []);
   const repository = useMemo(() => new BrowserOnboardingSessionRepository(), []);
   const service = useMemo(() => new OnboardingService(repository), [repository]);
   const projectRepository = useMemo(() => projectRepositoryFactory(), [projectRepositoryFactory]);
   const text = copy[locale];
-  const exitUnavailable = pendingExit !== null || view.kind !== "ready";
+  const exitUnavailable = pendingExit !== null || creationPending || view.kind !== "ready";
   const preparedProject = useMemo(
     () =>
       view.kind === "ready" && view.session.activeStepId === "review-plan"
@@ -963,7 +967,7 @@ export function OnboardingWizard({
   };
 
   const exitToDashboard = async (intent: "save" | "dashboard") => {
-    if (exitPendingRef.current) return;
+    if (exitPendingRef.current || creationPendingRef.current) return;
     exitPendingRef.current = true;
     setPendingExit(intent);
     setSaveState("saving");
@@ -1089,14 +1093,21 @@ export function OnboardingWizard({
   };
 
   const confirmProjectCreation = async () => {
-    if (!preparedProject || creationPendingRef.current) return;
+    if (!preparedProject?.creationInput || creationPendingRef.current) return;
     creationPendingRef.current = true;
     setCreationPending(true);
     setCreationFailed(false);
     setExitError("");
     try {
       await mutationQueue.whenIdle();
-      const result = await createProject({ ...preparedProject, repository: projectRepository });
+      const result =
+        createdProjectRef.current ??
+        (await createProject({ ...preparedProject.creationInput, repository: projectRepository }));
+      createdProjectRef.current = result;
+      const currentSession = sessionRef.current;
+      if (!currentSession) throw new Error("The onboarding session is unavailable.");
+      await service.completeSession(currentSession);
+      sessionRef.current = null;
       router.push(result.editorRoute);
     } catch {
       setCreationFailed(true);
@@ -1145,7 +1156,7 @@ export function OnboardingWizard({
               href="/"
               onClick={(event) => {
                 event.preventDefault();
-                if (exitUnavailable) return;
+                if (exitUnavailable || creationPendingRef.current) return;
                 void exitToDashboard("dashboard");
               }}
             >
@@ -1743,10 +1754,14 @@ function StorefrontLanguagesForm({
   selection: OnboardingLanguageSelection;
 }) {
   const text = storefrontLanguageText[locale];
-  const draft = selection;
+  const [draft, setDraft] = useState(selection);
+  const draftRef = useRef(selection);
+  const pendingPersistenceRef = useRef<Promise<unknown>>(Promise.resolve());
 
   const persist = (next: OnboardingLanguageSelection) => {
-    void onChange(next);
+    draftRef.current = next;
+    setDraft(next);
+    pendingPersistenceRef.current = pendingPersistenceRef.current.then(() => onChange(next));
   };
 
   return (
@@ -1755,7 +1770,7 @@ function StorefrontLanguagesForm({
       id="storefront-languages-form"
       onSubmit={(event) => {
         event.preventDefault();
-        void onComplete(draft);
+        void pendingPersistenceRef.current.then(() => onComplete(draftRef.current));
       }}
     >
       <fieldset aria-describedby="storefront-languages-help" className={styles.pathOptions}>
