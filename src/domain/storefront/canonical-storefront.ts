@@ -112,7 +112,11 @@ function sha256(input: string): string {
   return [...state].map((value) => value.toString(16).padStart(8, "0")).join("");
 }
 
-export function canonicalStorefrontContentFingerprint(snapshot: StorefrontSnapshot): string {
-  const canonical = canonicalStorefrontContentString(snapshot);
+export function canonicalValueFingerprint(value: unknown): string {
+  const canonical = canonicalValueString(value);
   return `v1_${canonical.length}_${sha256(canonical)}`;
+}
+
+export function canonicalStorefrontContentFingerprint(snapshot: StorefrontSnapshot): string {
+  return canonicalValueFingerprint(storefrontContent(snapshot));
 }

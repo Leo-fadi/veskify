@@ -104,6 +104,20 @@ does not persist or publish state, and converts successful execution through the
 lifecycle rather than defining a second proposal model or store. Provider-specific types must remain
 inside future provider adapters.
 
+### AI operation provider and proposal generation
+
+Current locations:
+
+- `src/application/ai-provider/**`
+- `src/application/ai-proposal-generation/**`
+
+The provider boundary owns provider-independent structured operation request and response schemas,
+deterministic mock adaptation, and validation of untrusted provider output. Proposal generation owns
+canonical editor-target request construction, planner-derived permissions, one-shot provider
+coordination, stale and superseded result guards, safe observability metadata, and creation of the
+existing pending proposal shape. Both layers are React-independent and must not mutate, persist,
+accept, reject, save, or publish storefront state.
+
 ### Controlled storefront template registry
 
 Current locations:
