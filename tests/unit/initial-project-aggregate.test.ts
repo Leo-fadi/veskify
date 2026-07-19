@@ -180,7 +180,7 @@ describe("createInitialProjectAggregate", () => {
     );
   });
 
-  it("preserves locale order and explicit sales-demo mode", () => {
+  it("canonicalizes locale order and preserves explicit sales-demo mode", () => {
     const fixture = initialAggregateFixture({
       suffix: "locales",
       selectedLanguages: ["fi", "en"],
@@ -190,7 +190,7 @@ describe("createInitialProjectAggregate", () => {
     expect(aggregate.project).toMatchObject({
       mode: "salesDemo",
       primaryLocale: "fi",
-      enabledLocales: ["fi", "en"],
+      enabledLocales: ["en", "fi"],
     });
   });
 

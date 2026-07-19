@@ -2,6 +2,7 @@ import { ZodError, z } from "zod";
 import {
   idSchema,
   isoDateTimeSchema,
+  canonicalLocaleOrder,
   localeSchema,
   safeExternalUrlSchema,
   type Locale,
@@ -228,20 +229,27 @@ export const storefrontStructureSchema = z
     }
   });
 
+const selectedLanguageListSchema = z
+  .array(localeSchema)
+  .max(2)
+  .default([])
+  .superRefine((selectedLanguages, context) => {
+    if (new Set(selectedLanguages).size !== selectedLanguages.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Selected storefront languages must be unique.",
+      });
+    }
+  })
+  .transform(canonicalLocaleOrder);
+
 export const languagePlanSchema = z
   .object({
-    selectedLanguages: z.array(localeSchema).max(2).default([]),
+    selectedLanguages: selectedLanguageListSchema,
     primaryLanguage: localeSchema.nullable().default(null),
   })
   .strict()
   .superRefine((languagePlan, context) => {
-    if (new Set(languagePlan.selectedLanguages).size !== languagePlan.selectedLanguages.length) {
-      context.addIssue({
-        code: "custom",
-        path: ["selectedLanguages"],
-        message: "Selected storefront languages must be unique.",
-      });
-    }
     if (
       languagePlan.primaryLanguage !== null &&
       !languagePlan.selectedLanguages.includes(languagePlan.primaryLanguage)
@@ -557,7 +565,9 @@ export function normalizeStorefrontDesignBriefInput(
     candidate.businessIdentity.secondaryMarkets,
   );
   candidate.brandDirection.toneKeywords = [...new Set(candidate.brandDirection.toneKeywords)];
-  candidate.languagePlan.selectedLanguages = [...new Set(candidate.languagePlan.selectedLanguages)];
+  candidate.languagePlan.selectedLanguages = canonicalLocaleOrder([
+    ...new Set(candidate.languagePlan.selectedLanguages),
+  ] as Locale[]);
   candidate.brandDirection.preferredBrandColours =
     candidate.brandDirection.preferredBrandColours.map(trimText);
 
