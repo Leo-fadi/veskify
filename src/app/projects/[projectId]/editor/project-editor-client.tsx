@@ -8,6 +8,7 @@ import {
   saveValidatedEditorDraft,
   StaleEditorDraftError,
 } from "@/application/draft-save";
+import type { AIProvider } from "@/application/ai-provider";
 import {
   canDuplicateSection,
   canToggleSectionVisibility,
@@ -128,9 +129,11 @@ function isTypingTarget(target: EventTarget | null) {
 export function ProjectEditorClient({
   projectId,
   repositoryFactory = defaultRepositoryFactory,
+  aiProvider,
 }: {
   projectId: string;
   repositoryFactory?: RepositoryFactory;
+  aiProvider?: AIProvider;
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -260,6 +263,7 @@ export function ProjectEditorClient({
     displayContext: readyContext,
     selectedSectionId,
     disabled: saveState.status === "saving",
+    provider: aiProvider,
     analytics: proposalAnalytics,
     analyticsRoute: `/projects/${projectId}/editor`,
     onAcceptedPage: (acceptedPage) => {
@@ -331,7 +335,7 @@ export function ProjectEditorClient({
   const previewHref = `/projects/${projectId}${page.slug === "/" ? "" : page.slug}`;
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
   const showingProposal = agent.previewActive;
-  const canvasPage = agent.proposal?.proposedPage ?? page;
+  const canvasPage = agent.generatedProposal?.proposal.proposedPage ?? page;
   const selectedSection = selectedSectionId
     ? page.sections.find((section) => section.id === selectedSectionId)
     : undefined;
@@ -731,7 +735,10 @@ export function ProjectEditorClient({
                 <input
                   checked={locale === enabledLocale}
                   name="editor-locale"
-                  onChange={() => setActiveLocale(enabledLocale)}
+                  onChange={() => {
+                    if (enabledLocale !== locale) agent.closeForLocaleChange();
+                    setActiveLocale(enabledLocale);
+                  }}
                   type="radio"
                   value={enabledLocale}
                 />
@@ -809,11 +816,12 @@ export function ProjectEditorClient({
             context={context}
             onPageChange={changePage}
             onSelectedSectionChange={(sectionId) => {
-              setSelectedSectionId(
+              const nextSectionId =
                 sectionId && page.sections.some((section) => section.id === sectionId)
                   ? sectionId
-                  : undefined,
-              );
+                  : undefined;
+              agent.closeForSelectionChange(nextSectionId);
+              setSelectedSectionId(nextSectionId);
             }}
             onValidationError={(message) => {
               if (!savePending.current) setValidationMessage(message);
@@ -822,7 +830,7 @@ export function ProjectEditorClient({
             readOnly={agent.blocksSave || saving}
             readOnlyLabel={showingProposal ? "Proposal preview canvas" : "Visual editor canvas"}
             resetKey={resetKeys[canvasPage.id] ?? 0}
-            sessionKey={agent.proposal?.id ?? "active"}
+            sessionKey={agent.generatedProposal?.proposal.id ?? "active"}
           />
         </main>
         <DesignAgentPanel
