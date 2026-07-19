@@ -10,9 +10,9 @@ import {
 } from "./contract";
 
 const executableContentPattern =
-  /<\/?(?:script|style|iframe|object|embed|html|body)\b|javascript\s*:|\b(?:eval|function)\s*\(|=>\s*\{|```(?:html|css|js|javascript|jsx|tsx)/i;
+  /<\/?(?:script|style|iframe|object|embed|html|body)\b|javascript\s*:|\b(?:eval|function)\s*\(|=>\s*\{|```(?:html|css|js|javascript|jsx|tsx)|(?:^|\n)\s*(?:[.#][\w-]+|[a-z][\w-]*)\s*\{[^}]*:[^}]*\}|\b(?:background|color|display|font-family|position)\s*:\s*[^;\n]+;/i;
 
-function assertNoExecutableContent(value: unknown) {
+export function assertNoExecutableContent(value: unknown) {
   const visit = (item: unknown): void => {
     if (typeof item === "string" && executableContentPattern.test(item)) {
       throw new Error("Design skills cannot emit executable or embedded content.");
