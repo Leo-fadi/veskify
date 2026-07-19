@@ -465,6 +465,42 @@ function mapZodError(error: ZodError): StorefrontDesignBriefValidationError {
   );
 }
 
+function parseLocaleBoundary(value: unknown, path: BriefIssuePath): Locale {
+  const result = localeSchema.safeParse(value);
+  if (!result.success) {
+    throw new StorefrontDesignBriefValidationError(
+      result.error.issues.map((issue) => ({
+        path: [...path, ...issue.path].filter(
+          (part): part is string | number => typeof part === "string" || typeof part === "number",
+        ),
+        code: issue.code,
+        message: issue.message,
+      })),
+    );
+  }
+  return result.data;
+}
+
+function parseNullableLocaleBoundary(value: unknown, path: BriefIssuePath): Locale | null {
+  return value === null ? null : parseLocaleBoundary(value, path);
+}
+
+function parseLocaleListBoundary(value: unknown, path: BriefIssuePath): Locale[] {
+  const result = z.array(localeSchema).safeParse(value);
+  if (!result.success) {
+    throw new StorefrontDesignBriefValidationError(
+      result.error.issues.map((issue) => ({
+        path: [...path, ...issue.path].filter(
+          (part): part is string | number => typeof part === "string" || typeof part === "number",
+        ),
+        code: issue.code,
+        message: issue.message,
+      })),
+    );
+  }
+  return result.data;
+}
+
 function parseBrief(input: unknown): StorefrontDesignBrief {
   try {
     return storefrontDesignBriefSchema.parse(input);
@@ -580,9 +616,20 @@ export function normalizeStorefrontDesignBriefInput(
     candidate.businessIdentity.secondaryMarkets,
   );
   candidate.brandDirection.toneKeywords = [...new Set(candidate.brandDirection.toneKeywords)];
-  candidate.languagePlan.selectedLanguages = canonicalLocaleOrder([
-    ...new Set(candidate.languagePlan.selectedLanguages),
-  ] as Locale[]);
+  const selectedLanguages = parseLocaleListBoundary(
+    candidate.languagePlan.selectedLanguages === undefined
+      ? []
+      : candidate.languagePlan.selectedLanguages,
+    ["languagePlan", "selectedLanguages"],
+  );
+  const primaryLanguage = parseNullableLocaleBoundary(
+    candidate.languagePlan.primaryLanguage === undefined
+      ? null
+      : candidate.languagePlan.primaryLanguage,
+    ["languagePlan", "primaryLanguage"],
+  );
+  candidate.languagePlan.selectedLanguages = canonicalLocaleOrder([...new Set(selectedLanguages)]);
+  candidate.languagePlan.primaryLanguage = primaryLanguage;
   candidate.brandDirection.preferredBrandColours =
     candidate.brandDirection.preferredBrandColours.map(trimText);
 

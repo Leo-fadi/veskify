@@ -4,6 +4,10 @@ P3-19 prepares the canonical language-selection boundary for onboarding O-08. It
 does not add the React onboarding screen, modify the onboarding wizard, or change
 the shell/save-and-exit flow.
 
+The authoritative product contract is `docs/VESKIFY_SDD.md`; this milestone note
+records the implementation scope and traceability for that SDD. The synchronized
+human-readable export is `docs/VESKIFY_SDD_v1.1.docx`.
+
 ## Canonical fields and values
 
 Storefront language choices remain in the existing fields:
@@ -15,8 +19,10 @@ Storefront language choices remain in the existing fields:
 
 The only supported storefront languages are `en` (English) and `fi` (Finnish).
 Canonical ordering is `en`, then `fi`, regardless of input order. Duplicates and
-unsupported values are rejected at the O-08 application boundary, including a
-distinct unsupported-primary error; strict schemas continue to reject malformed values.
+unsupported values are rejected at the domain and O-08 application boundaries,
+including a distinct unsupported-primary error; normalization validates every
+runtime locale before deduplication or ordering, and never silently filters a
+malformed locale. Strict schemas continue to reject malformed values.
 
 At least one language is required for O-08 completion. A primary language is
 required and must be one of the selected languages. If a selection would leave the

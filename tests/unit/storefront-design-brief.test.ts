@@ -417,6 +417,55 @@ describe("StorefrontDesignBrief", () => {
     ).toThrow(StorefrontDesignBriefValidationError);
   });
 
+  it.each([
+    ["unsupported locale before English", ["sv", "en"]],
+    ["unsupported locale after English", ["en", "sv"]],
+  ] as const)(
+    "rejects %s instead of filtering it during normalization",
+    (_label, selectedLanguages) => {
+      expect(() =>
+        normalizeStorefrontDesignBriefInput({
+          languagePlan: { selectedLanguages, primaryLanguage: "en" },
+        } as never),
+      ).toThrow(StorefrontDesignBriefValidationError);
+    },
+  );
+
+  it("rejects an unsupported primary language through the locale boundary", () => {
+    expect(() =>
+      normalizeStorefrontDesignBriefInput({
+        languagePlan: { selectedLanguages: ["en"], primaryLanguage: "sv" },
+      } as never),
+    ).toThrow(StorefrontDesignBriefValidationError);
+  });
+
+  it("canonicalizes valid locales and preserves supported duplicate normalization", () => {
+    expect(
+      normalizeStorefrontDesignBriefInput({
+        languagePlan: { selectedLanguages: ["fi", "en"], primaryLanguage: "fi" },
+      }).languagePlan,
+    ).toEqual({ selectedLanguages: ["en", "fi"], primaryLanguage: "fi" });
+    expect(
+      normalizeStorefrontDesignBriefInput({
+        languagePlan: { selectedLanguages: ["en", "en", "fi"], primaryLanguage: "en" },
+      }).languagePlan,
+    ).toEqual({ selectedLanguages: ["en", "fi"], primaryLanguage: "en" });
+  });
+
+  it("never silently removes an unsupported locale from the selected list", () => {
+    try {
+      normalizeStorefrontDesignBriefInput({
+        languagePlan: { selectedLanguages: ["sv", "en"], primaryLanguage: "en" },
+      } as never);
+      throw new Error("Expected unsupported locale validation to fail.");
+    } catch (error) {
+      expect(error).toBeInstanceOf(StorefrontDesignBriefValidationError);
+      expect((error as StorefrontDesignBriefValidationError).issues[0]).toMatchObject({
+        path: ["languagePlan", "selectedLanguages", 0],
+      });
+    }
+  });
+
   it("maps unsupported values to typed validation issues rather than exposing Zod errors", () => {
     try {
       validateStorefrontDesignBrief({ ...readyBrief(), catalogueContext: "provider-prompt" });
