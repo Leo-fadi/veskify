@@ -12,9 +12,28 @@ import {
   type AIProvider,
   type AiOperationRequest,
   type AiProviderResponse,
+  type AiProviderRequestOptions,
 } from "./contract";
 
+export const aiProviderFailureCategories = [
+  "missingApiKey",
+  "authenticationFailed",
+  "rateLimited",
+  "timeout",
+  "cancelled",
+  "networkFailure",
+  "malformedResponse",
+  "validationRejected",
+  "providerRefusal",
+  "unavailableModel",
+  "unexpectedProviderFailure",
+] as const;
+
+export type AiProviderFailureCategory = (typeof aiProviderFailureCategories)[number];
+
 export class AiProviderValidationError extends Error {
+  readonly category = "validationRejected" as const;
+
   constructor(
     readonly code: string,
     message: string,
@@ -27,18 +46,25 @@ export class AiProviderValidationError extends Error {
 export class AiProviderUnavailableError extends Error {
   constructor(
     message = "The design assistant is temporarily unavailable. Please try again or continue editing manually.",
+    readonly category: AiProviderFailureCategory = "unexpectedProviderFailure",
   ) {
     super(message);
     this.name = "AiProviderUnavailableError";
   }
 }
 
-export async function requestAiProposal(provider: AIProvider, request: AiOperationRequest) {
+export async function requestAiProposal(
+  provider: AIProvider,
+  request: AiOperationRequest,
+  options?: AiProviderRequestOptions,
+) {
   try {
-    const response = await provider.proposeChange(request);
+    const response = await provider.proposeChange(request, options);
     return { ok: true as const, proposal: validateAiProviderResponse(request, response) };
   } catch (error) {
-    if (error instanceof AiProviderValidationError) throw error;
+    if (error instanceof AiProviderValidationError || error instanceof AiProviderUnavailableError) {
+      throw error;
+    }
     throw new AiProviderUnavailableError();
   }
 }

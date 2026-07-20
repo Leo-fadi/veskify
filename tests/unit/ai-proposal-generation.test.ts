@@ -12,6 +12,7 @@ import {
   validateAiProviderResponse,
   type AIProvider,
   type AiOperationRequest,
+  type AiProviderRequestOptions,
 } from "@/application/ai-provider";
 import { designProposalSchema } from "@/application/design-operations";
 import { createDesignPlan } from "@/application/design-skills";
@@ -76,10 +77,12 @@ class RecordingProvider implements AIProvider {
 
 class DeferredProvider implements AIProvider {
   calls: AiOperationRequest[] = [];
+  signals: Array<AbortSignal | undefined> = [];
   resolvers: Array<(value: unknown) => void> = [];
 
-  proposeChange(request: AiOperationRequest): Promise<unknown> {
+  proposeChange(request: AiOperationRequest, options?: AiProviderRequestOptions): Promise<unknown> {
     this.calls.push(structuredClone(request));
+    this.signals.push(options?.signal);
     return new Promise((resolve) => this.resolvers.push(resolve));
   }
 
@@ -366,6 +369,8 @@ describe("P4-03 AI proposal generation orchestration", () => {
       command(provider, { merchantInstruction: "Improve the selected hero." }),
     );
     expect(provider.calls).toHaveLength(2);
+    expect(provider.signals[0]?.aborted).toBe(true);
+    expect(provider.signals[1]?.aborted).toBe(false);
     await provider.resolve(1);
     await expect(newer).resolves.toMatchObject({ state: "proposalReady" });
     const ready = orchestrator.inspect().proposal;
