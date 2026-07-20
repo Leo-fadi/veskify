@@ -86,11 +86,17 @@ describe("controlled design skill contract and registry", () => {
     expect(designSkillRegistry.listByIntent("luxuryStyle").map((skill) => skill.id)).toEqual([
       "applyLuxuryStyle",
       "improveHero",
+      "applyWarmPremiumStorefrontStyle",
     ]);
     expect(
       designSkillRegistry.filterByPageTypeAndScope("home", "page").map((skill) => skill.id),
     ).toEqual(["applyLuxuryStyle", "applyMinimalNordicStyle", "addCampaignSection"]);
     expect(designSkillRegistry.filterByPageTypeAndScope("product", "page")).toEqual([]);
+    expect(
+      designSkillRegistry
+        .filterByPageTypeAndScope("product", "storefront")
+        .map((skill) => skill.id),
+    ).toEqual(["applyWarmPremiumStorefrontStyle", "applyMinimalNordicStorefrontStyle"]);
   });
 });
 

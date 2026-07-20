@@ -70,7 +70,11 @@ function assertScope(request: AiOperationRequest, response: AiProviderResponse) 
         "The proposal references a section outside the selected page.",
       );
     }
-    if (operation.type === "APPLY_APPROVED_BRAND_COLOURS" && request.scope !== "brand") {
+    if (
+      (operation.type === "APPLY_APPROVED_BRAND_COLOURS" ||
+        operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY") &&
+      request.scope !== "brand"
+    ) {
       throw new AiProviderValidationError(
         "out-of-scope",
         "Brand changes are outside the selected target.",

@@ -91,6 +91,12 @@ type DesignSkillDefinition = {
 - `removeSection`
 - `reorderSections`
 - `updateBrandTokens`
+- approved whole-storefront colour and typography operations through target-bound P4-05B grants
+
+The registered `applyWarmPremiumStorefrontStyle` and `applyMinimalNordicStorefrontStyle` skills
+coordinate only approved background, section typography, brand colour, and brand typography
+operations across explicit page/section targets. They do not authorize page composition,
+navigation, catalogue, commerce, or arbitrary content changes.
 
 ### Next milestone
 

@@ -946,10 +946,32 @@ introduced section may therefore be customized only after a valid add in the sam
 an introduced-section grant matching its registered component and target page. Use-before-add,
 duplicate or cross-page section identities, grant-kind or component mismatches, unknown or
 page-incompatible components, unsupported variants or fields, protected fields, and malformed
-operation values are rejected before review or draft mutation. Generation remains P4-05B work;
-atomic multi-page draft application and site-wide history remain P4-05C work (FR-007, FR-014,
-FR-015, FR-016, FR-020, FR-027, FR-040, FR-041, FR-042, FR-050, NFR-006, NFR-009, AC-012,
-AC-013, AC-016).
+operation values are rejected before review or draft mutation.
+
+P4-05B adds a constrained generation-only path for applying one approved warm premium or minimal
+Nordic colour and typography direction across at least two explicitly targeted pages. The additive
+planner resolves eligible existing sections and optional explicit storefront design-system scope,
+then derives page/section/component/design-system-bound grants from registered storefront skills.
+The provider-independent request contains only the canonical target and projection, affected pages
+and sections, minimal component contracts, optional current colour/typography state, fingerprints,
+locale context, protected paths, labelled untrusted imports, and the structured-response contract.
+It excludes unrelated catalogue and commerce data, customers, UI state, analytics payloads, secrets,
+and repository state. Whole-storefront requests that require arbitrary composition, navigation,
+catalogue or commerce changes are rejected.
+
+The React-independent storefront orchestrator parses and plans before invocation, deduplicates an
+identical pending request, supersedes older work when a distinct newer request arrives, invokes the
+provider once, and rechecks request sequence, active target, draft identity, target/permission
+fingerprints and EN/FI locale context before returning one ready proposal. Relevant target page or
+global design-state changes make the result stale; volatile UI state is not part of this identity.
+The deterministic mock emits only approved colour and typography operations and preserves the
+complete page set, page order, navigation, untargeted pages, content and protected commerce truth.
+Ready validation requires the proposed projection and affected global design state to be exactly
+reproducible by replaying its validated operations from the original canonical projection. Failed,
+unsafe or mismatched provider output remains outside the ready-proposal type. Generation never
+mutates active, saved or published state. Atomic multi-page draft application and site-wide history
+remain P4-05C work (FR-007, FR-014, FR-015, FR-016, FR-020, FR-027, FR-040, FR-041, FR-042,
+FR-050, NFR-006, NFR-007, NFR-008, NFR-009, AC-012, AC-013, AC-016, AC-017).
 
 ## 12.8 Validation and application pipeline
 
@@ -1430,6 +1452,12 @@ generateMetadata(input: MetadataContext): Promise&lt;AIProposalEnvelope&gt;;<br 
 </tbody>
 </table>
 
+The provider-independent P4-05B storefront generation boundary is additive to this interface. A
+`StorefrontAIProvider` receives the canonical minimal storefront request and returns untrusted
+structured data. Provider adapters do not own planning, grants, fingerprints, proposal readiness,
+draft mutation or persistence. The deterministic mock supports the application without external
+credentials (NFR-007, NFR-008, AC-017).
+
 ## 17.3 Image provider interface
 
 <table>
@@ -1564,6 +1592,15 @@ restore(projectId: string, snapshotId: string): Promise&lt;StorefrontSnapshot&gt
 | history_restored             | projectId, timestamp, route, relevant target ID, duration when applicable |
 | import_completed             | projectId, timestamp, route, relevant target ID, duration when applicable |
 | generation_failed            | projectId, timestamp, route, relevant target ID, duration when applicable |
+| storefront_prompt_submitted  | projectId, request/provider identity, request sequence, target fingerprint, affected-page count |
+| storefront_proposal_generated | projectId, request/provider identity, request sequence, target fingerprint, affected-page/operation counts, duration, validation |
+| storefront_generation_failed | projectId, request/provider identity, request sequence when available, target fingerprint when available, affected-page count, controlled failure code |
+| storefront_generation_stale  | projectId, request/provider identity, request sequence, target fingerprint, affected-page/operation counts, duration, controlled failure code |
+| storefront_generation_superseded | projectId, request/provider identity, request sequence, target fingerprint, affected-page count, controlled failure code |
+
+Storefront generation analytics must not contain the merchant instruction, generated text,
+imported content, raw operations, provider output, catalogue/customer values, or secrets. Analytics
+recording is best-effort and cannot affect generation state.
 
 ## 19.2 Error principles
 

@@ -55,6 +55,12 @@ export const applyApprovedBrandColoursOperationSchema = z
     colors: brandSystemSchema.shape.colors,
   })
   .strict();
+export const applyApprovedBrandTypographyOperationSchema = z
+  .object({
+    type: z.literal("APPLY_APPROVED_BRAND_TYPOGRAPHY"),
+    typography: brandSystemSchema.shape.typography,
+  })
+  .strict();
 export const addApprovedSectionOperationSchema = z
   .object({
     type: z.literal("ADD_APPROVED_SECTION"),
@@ -81,6 +87,7 @@ export const designOperationSchema = z.discriminatedUnion("type", [
   changeAlignmentOperationSchema,
   changeCtaStyleOperationSchema,
   applyApprovedBrandColoursOperationSchema,
+  applyApprovedBrandTypographyOperationSchema,
   addApprovedSectionOperationSchema,
   removeOptionalSectionOperationSchema,
   reorderSectionsOperationSchema,
@@ -199,6 +206,9 @@ function applyDesignOperationInternal(
       break;
     case "APPLY_APPROVED_BRAND_COLOURS":
       candidate.themeOverride = { ...candidate.themeOverride, colors: operation.colors };
+      break;
+    case "APPLY_APPROVED_BRAND_TYPOGRAPHY":
+      candidate.themeOverride = { ...candidate.themeOverride, typography: operation.typography };
       break;
     case "ADD_APPROVED_SECTION": {
       if (candidate.sections.some((section) => section.id === operation.sectionId)) {

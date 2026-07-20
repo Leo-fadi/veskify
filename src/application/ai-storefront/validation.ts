@@ -262,7 +262,10 @@ export function canonicalizeAiStorefrontPermissionGrants(
 function operationTarget(
   operation: AiStorefrontOperation["operation"],
 ): { kind: "storefrontDesignSystem" } | { kind: "page" } | { kind: "section" } {
-  if (operation.type === "APPLY_APPROVED_BRAND_COLOURS") {
+  if (
+    operation.type === "APPLY_APPROVED_BRAND_COLOURS" ||
+    operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY"
+  ) {
     return { kind: "storefrontDesignSystem" };
   }
   if (operation.type === "REORDER_SECTIONS") {
@@ -447,19 +450,16 @@ export function validateAiStorefrontOperations(
         }
       }
     }
-    if (
-      operation.operation.type === "APPLY_APPROVED_BRAND_COLOURS" &&
-      declaredTarget.kind !== "storefrontDesignSystem"
-    ) {
+    const isDesignSystemOperation =
+      operation.operation.type === "APPLY_APPROVED_BRAND_COLOURS" ||
+      operation.operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY";
+    if (isDesignSystemOperation && declaredTarget.kind !== "storefrontDesignSystem") {
       invalid(
         "global-target-required",
         "Storefront-level design operations require an explicit global target.",
       );
     }
-    if (
-      operation.operation.type !== "APPLY_APPROVED_BRAND_COLOURS" &&
-      declaredTarget.kind === "storefrontDesignSystem"
-    ) {
+    if (!isDesignSystemOperation && declaredTarget.kind === "storefrontDesignSystem") {
       invalid(
         "invalid-global-operation",
         "Only approved design-system operations may use the global target.",

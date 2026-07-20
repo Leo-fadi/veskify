@@ -110,6 +110,8 @@ Current locations:
 
 - `src/application/ai-provider/**`
 - `src/application/ai-proposal-generation/**`
+- `src/application/ai-storefront/**`
+- `src/application/ai-storefront-generation/**`
 
 The provider boundary owns provider-independent structured operation request and response schemas,
 deterministic mock adaptation, and validation of untrusted provider output. Proposal generation owns
@@ -117,6 +119,11 @@ canonical editor-target request construction, planner-derived permissions, one-s
 coordination, stale and superseded result guards, safe observability metadata, and creation of the
 existing pending proposal shape. Both layers are React-independent and must not mutate, persist,
 accept, reject, save, or publish storefront state.
+
+The additive storefront boundaries own canonical multi-page targets, projections, grants and
+fingerprints plus the constrained whole-storefront colour/typography planner, provider request,
+deterministic mock and stale/superseded orchestration. Generation produces a ready proposal only;
+multi-page acceptance and history remain separate application work.
 
 ### Controlled storefront template registry
 
