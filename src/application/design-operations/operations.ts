@@ -120,7 +120,7 @@ function assertGlobalComposition(original: PageModel, candidate: PageModel) {
 function validateResult(
   original: PageModel,
   candidate: PageModel,
-  context: DesignOperationContext,
+  context?: DesignOperationContext,
 ) {
   const parsed = pageModelSchema.parse(candidate);
   assertGlobalComposition(original, parsed);
@@ -141,10 +141,10 @@ function patchSectionProperty(
   };
 }
 
-export function applyDesignOperation(
+function applyDesignOperationInternal(
   input: PageModel,
   operationInput: unknown,
-  context: DesignOperationContext,
+  context?: DesignOperationContext,
 ): PageModel {
   const original = pageModelSchema.parse(structuredClone(input));
   const operation = designOperationSchema.parse(operationInput);
@@ -245,6 +245,21 @@ export function applyDesignOperation(
   }
 
   return validateResult(original, candidate, context);
+}
+
+export function validateDesignOperationAgainstPage(
+  input: PageModel,
+  operationInput: unknown,
+): PageModel {
+  return applyDesignOperationInternal(input, operationInput);
+}
+
+export function applyDesignOperation(
+  input: PageModel,
+  operationInput: unknown,
+  context: DesignOperationContext,
+): PageModel {
+  return applyDesignOperationInternal(input, operationInput, context);
 }
 
 export function applyDesignOperations(
