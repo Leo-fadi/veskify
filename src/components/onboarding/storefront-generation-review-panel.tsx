@@ -10,6 +10,7 @@ import {
   cataloguePresentation,
   localizedPageType,
   presentAssumptions,
+  presentCreationAttention,
   presentDiagnostics,
   presentFacts,
   type MerchantDiagnostic,
@@ -71,6 +72,8 @@ const copy = {
     warningsCount: "warnings",
     note: "note",
     notesCount: "notes",
+    generalAttention: "Some required information still needs attention.",
+    attentionRequired: "Attention required",
     jumpToBlockers: "Jump to blockers",
     warningIntro: "These items do not prevent creation, but are worth reviewing.",
     blockerIntro: "These items must be resolved before creation.",
@@ -103,6 +106,8 @@ const copy = {
     warningsCount: "varoitusta",
     note: "lisätieto",
     notesCount: "lisätietoa",
+    generalAttention: "Jotkin pakolliset tiedot vaativat vielä huomiota.",
+    attentionRequired: "Huomiota tarvitaan",
     jumpToBlockers: "Siirry estäviin kohtiin",
     warningIntro: "Nämä kohdat eivät estä luomista, mutta ne kannattaa tarkistaa.",
     blockerIntro: "Nämä kohdat on ratkaistava ennen luomista.",
@@ -134,6 +139,8 @@ export function StorefrontGenerationReviewPanel({
   const text = copy[locale];
   const confirmDisabled = busy || !canonicalReview.canCreateProject;
   const diagnostics = presentDiagnostics(canonicalReview, locale);
+  const creationAttention = presentCreationAttention(canonicalReview, locale);
+  const displayedBlockers = creationAttention.blockers;
   const assumptions = presentAssumptions(canonicalReview, locale);
   const noteCount = diagnostics.notes.length + assumptions.length;
   const blockersRef = useRef<HTMLElement>(null);
@@ -167,20 +174,28 @@ export function StorefrontGenerationReviewPanel({
               {canonicalReview.canCreateProject ? text.ready : text.attention}
             </h3>
             <p>
-              {canonicalReview.canCreateProject ? text.readyDescription : text.attentionDescription}
+              {canonicalReview.canCreateProject
+                ? text.readyDescription
+                : creationAttention.hasUncountedAttention
+                  ? text.generalAttention
+                  : text.attentionDescription}
             </p>
           </div>
         </div>
         <ul className={styles.readinessCounts} aria-label={text.reviewSections}>
-          <li className={diagnostics.blockers.length ? styles.countBlocked : undefined}>
-            {countLabel(diagnostics.blockers.length, text.blocker, text.blockersCount)}
-          </li>
+          {creationAttention.hasUncountedAttention ? (
+            <li className={styles.countBlocked}>{text.attentionRequired}</li>
+          ) : (
+            <li className={displayedBlockers.length ? styles.countBlocked : undefined}>
+              {countLabel(displayedBlockers.length, text.blocker, text.blockersCount)}
+            </li>
+          )}
           <li className={diagnostics.warnings.length ? styles.countWarning : undefined}>
             {countLabel(diagnostics.warnings.length, text.warning, text.warningsCount)}
           </li>
           <li>{countLabel(noteCount, text.note, text.notesCount)}</li>
         </ul>
-        {diagnostics.blockers.length ? (
+        {displayedBlockers.length ? (
           <button className={styles.jumpButton} onClick={focusBlockers} type="button">
             {text.jumpToBlockers}
           </button>
@@ -199,7 +214,7 @@ export function StorefrontGenerationReviewPanel({
       ) : null}
 
       <div className={styles.diagnosticGroups}>
-        {diagnostics.blockers.length ? (
+        {displayedBlockers.length ? (
           <section
             className={`${styles.diagnosticGroup} ${styles.blockerGroup}`}
             id="review-blockers"
@@ -209,7 +224,7 @@ export function StorefrontGenerationReviewPanel({
           >
             <h3 id="review-blockers-title">{text.blockers}</h3>
             <p>{text.blockerIntro}</p>
-            <DiagnosticList diagnostics={diagnostics.blockers} />
+            <DiagnosticList diagnostics={displayedBlockers} />
           </section>
         ) : null}
 

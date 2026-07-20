@@ -96,7 +96,48 @@ describe("StorefrontGenerationReviewPanel", () => {
     expect(
       screen.getAllByText(/We could not connect the selected Vesko catalogue yet/),
     ).toHaveLength(2);
+    expect(screen.getByText("1 blocker")).toBeVisible();
     expect(screen.getByRole("button", { name: "Create storefront project" })).toBeDisabled();
+  });
+
+  it("represents non-diagnostic language attention and keeps creation disabled in EN and FI", () => {
+    const currentReview = review({ languagePlan: {} });
+    const english = renderPanel(currentReview);
+
+    expect(currentReview.blockers).toHaveLength(0);
+    expect(screen.getByRole("heading", { name: "Needs attention" })).toBeVisible();
+    expect(screen.getByText("1 blocker")).toBeVisible();
+    expect(screen.queryByText("0 blockers")).not.toBeInTheDocument();
+    expect(screen.getByText("Choose storefront languages")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Create storefront project" })).toBeDisabled();
+    english.unmount();
+
+    renderPanel(currentReview, { locale: "fi" });
+    expect(screen.getByText("1 estävä kohta")).toBeVisible();
+    expect(screen.getByText("Valitse verkkokaupan kielet")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Luo verkkokauppaprojekti" })).toBeDisabled();
+  });
+
+  it("uses broad attention wording when canonical ineligibility has no countable source", () => {
+    const currentReview = review();
+    const uncountedReview = {
+      ...currentReview,
+      canCreateProject: false,
+      languagePlan: { selectedLanguages: [], primaryLanguage: null },
+    };
+    const english = renderPanel(uncountedReview);
+
+    expect(screen.getByText("Some required information still needs attention.")).toBeVisible();
+    expect(screen.getByText("Attention required")).toBeVisible();
+    expect(screen.queryByText("0 blockers")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create storefront project" })).toBeDisabled();
+    english.unmount();
+
+    renderPanel(uncountedReview, { locale: "fi" });
+    expect(screen.getByText("Jotkin pakolliset tiedot vaativat vielä huomiota.")).toBeVisible();
+    expect(screen.getByText("Huomiota tarvitaan")).toBeVisible();
+    expect(screen.queryByText("0 estävää kohtaa")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Luo verkkokauppaprojekti" })).toBeDisabled();
   });
 
   it("orders blockers before warnings and compact notes", () => {

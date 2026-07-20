@@ -302,6 +302,94 @@ export function presentDiagnostics(
   };
 }
 
+const blockedSectionCopy: Partial<
+  Record<
+    StorefrontGenerationReviewSection["id"],
+    Readonly<{ title: LocalizedCopy; message: LocalizedCopy }>
+  >
+> = {
+  languages: {
+    title: copy("Choose storefront languages", "Valitse verkkokaupan kielet"),
+    message: copy(
+      "Select at least one storefront language and choose its primary language.",
+      "Valitse vähintään yksi verkkokaupan kieli ja määritä sille pääkieli.",
+    ),
+  },
+  business: {
+    title: copy("Complete your business information", "Täydennä yrityksesi tiedot"),
+    message: copy(
+      "Complete the required business information before creating the project.",
+      "Täydennä vaaditut yritystiedot ennen projektin luomista.",
+    ),
+  },
+  "brand-foundation": {
+    title: copy("Review the brand direction", "Tarkista brändisuunta"),
+    message: copy(
+      "The brand direction still contains an item that needs attention.",
+      "Brändisuunnassa on vielä huomiota vaativa kohta.",
+    ),
+  },
+  "storefront-template": {
+    title: copy("Review the storefront layout", "Tarkista verkkokaupan asettelu"),
+    message: copy(
+      "The storefront layout still contains an item that needs attention.",
+      "Verkkokaupan asettelussa on vielä huomiota vaativa kohta.",
+    ),
+  },
+  "storefront-pages": {
+    title: copy("Review the storefront pages", "Tarkista verkkokaupan sivut"),
+    message: copy(
+      "The planned storefront pages still contain an item that needs attention.",
+      "Suunnitelluissa verkkokaupan sivuissa on vielä huomiota vaativa kohta.",
+    ),
+  },
+  catalogue: {
+    title: copy("Review the catalogue plan", "Tarkista tuoteluettelosuunnitelma"),
+    message: copy(
+      "The catalogue plan still contains an item that needs attention.",
+      "Tuoteluettelosuunnitelmassa on vielä huomiota vaativa kohta.",
+    ),
+  },
+};
+
+export function presentCreationAttention(
+  review: StorefrontGenerationReview,
+  locale: ReviewLocale,
+): Readonly<{ blockers: MerchantDiagnostic[]; hasUncountedAttention: boolean }> {
+  const explicitBlockers = presentDiagnostics(review, locale).blockers;
+  const explicitBlockerCodes = new Set(
+    review.sourceDiagnostics
+      .filter(({ severity }) => severity === "blocker")
+      .map(({ code }) => code),
+  );
+  const sectionBlockers = review.sections
+    .filter(
+      (section) =>
+        section.status === "blocked" &&
+        !["assumptions", "warnings", "blockers"].includes(section.id) &&
+        !section.diagnosticCodes.some((code) => explicitBlockerCodes.has(code)),
+    )
+    .map((section): MerchantDiagnostic => {
+      const mapped = blockedSectionCopy[section.id];
+      return {
+        key: `blocked-section:${section.id}`,
+        tone: "blocker",
+        title: mapped?.title[locale] ?? section.heading[locale],
+        message:
+          mapped?.message[locale] ??
+          copy(
+            "Complete the required information in this section before creating the project.",
+            "Täydennä tämän osion vaaditut tiedot ennen projektin luomista.",
+          )[locale],
+      };
+    });
+  const blockers = [...explicitBlockers, ...sectionBlockers];
+  return {
+    blockers,
+    hasUncountedAttention: !review.canCreateProject && blockers.length === 0,
+  };
+}
+
 const assumptionCopy: ReadonlyArray<Readonly<{ match: RegExp; value: LocalizedCopy }>> = [
   {
     match: /foundation was selected from the available business context/i,
@@ -352,7 +440,75 @@ const assumptionCopy: ReadonlyArray<Readonly<{ match: RegExp; value: LocalizedCo
       "Luettavuus on etusijalla kohdissa, joissa tarvitaan suurta kontrastia.",
     ),
   },
+  {
+    match: /registered component defaults provide controlled presentation content/i,
+    value: copy(
+      "Approved storefront components use controlled starter content that you can edit later.",
+      "Hyväksytyt verkkokaupan osiot käyttävät hallittua aloitussisältöä, jota voit muokata myöhemmin.",
+    ),
+  },
+  {
+    match: /merchant-authored copy.*primary locale.*no translation/i,
+    value: copy(
+      "Merchant-provided text is kept in its original language and is not translated automatically.",
+      "Kauppiaan lisäämä teksti säilytetään alkuperäisellä kielellä, eikä sitä käännetä automaattisesti.",
+    ),
+  },
+  {
+    match: /(?:localized|locale-specific).*copy.*(?:fallback|unavailable|missing)/i,
+    value: copy(
+      "When localized text is unavailable, the primary-language text is shown instead.",
+      "Kun lokalisoitua tekstiä ei ole saatavilla, sen sijaan näytetään pääkielen teksti.",
+    ),
+  },
+  {
+    match: /(?:missing|unavailable).*locale-specific.*merchant.*content/i,
+    value: copy(
+      "Some merchant-provided content is not available in every selected language.",
+      "Osa kauppiaan lisäämästä sisällöstä ei ole saatavilla kaikilla valituilla kielillä.",
+    ),
+  },
+  {
+    match: /no project, snapshot, page, or section is persisted/i,
+    value: copy(
+      "Reviewing this plan does not create or save the storefront project.",
+      "Tämän suunnitelman tarkistaminen ei luo tai tallenna verkkokauppaprojektia.",
+    ),
+  },
 ];
+
+const harmlessDefaultPattern =
+  /\b(?:safe|harmless|controlled|recommended) default\b|\bdefault is used\b|\bno preference was provided\b/i;
+
+function sanitizeAssumption(value: string): string {
+  const normalized = value
+    .replace(/\b[a-z0-9]+(?:[_/-][a-z0-9]+)+\b/gi, (token) => token.replace(/[_/-]+/g, " "))
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!normalized) return "";
+  const sentence = `${normalized.charAt(0).toLocaleUpperCase()}${normalized.slice(1)}`;
+  return /[.!?]$/.test(sentence) ? sentence : `${sentence}.`;
+}
+
+function presentUnknownAssumption(
+  assumption: StorefrontGenerationReview["assumptions"][number],
+  locale: ReviewLocale,
+): string {
+  if (harmlessDefaultPattern.test(assumption.en)) {
+    return copy(
+      "A safe storefront default was used where no preference was provided.",
+      "Turvallista verkkokaupan oletusta käytettiin kohdassa, johon ei annettu toivetta.",
+    )[locale];
+  }
+  const localized = assumption[locale] === assumption.en ? assumption.en : assumption[locale];
+  const sanitized = sanitizeAssumption(localized);
+  if (locale === "en" || assumption.fi !== assumption.en) {
+    return sanitized || "A storefront plan limitation needs review.";
+  }
+  return sanitized
+    ? `Tarkista tämä verkkokauppasuunnitelman rajoitus: ${sanitized}`
+    : "Verkkokauppasuunnitelman rajoitus on tarkistettava.";
+}
 
 export function presentAssumptions(
   review: StorefrontGenerationReview,
@@ -360,13 +516,7 @@ export function presentAssumptions(
 ): string[] {
   const values = review.assumptions.map((assumption) => {
     const mapped = assumptionCopy.find(({ match }) => match.test(assumption.en));
-    return (
-      mapped?.value[locale] ??
-      copy(
-        "A safe storefront default was used where no preference was provided.",
-        "Turvallista verkkokaupan oletusta käytettiin kohdassa, johon ei annettu toivetta.",
-      )[locale]
-    );
+    return mapped?.value[locale] ?? presentUnknownAssumption(assumption, locale);
   });
   return [...new Set(values)];
 }
