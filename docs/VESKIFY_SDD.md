@@ -916,6 +916,28 @@ For page-level, design-system or whole-site operations, the agent must present a
 </tbody>
 </table>
 
+The P4-05A storefront contract foundation adds an additive, target-bound envelope for future
+whole-storefront proposals. Its canonical target names one project and draft snapshot/revision,
+the affected page IDs, optional page-bound section IDs, an optional explicit storefront
+design-system target, and the enabled/active `en` and `fi` locales. Target identity is normalized
+to deterministic page, section and locale ordering. The envelope retains the original and
+proposed storefront projections, affected pages, affected global design state, target-bound skill
+grants, target and permission fingerprints, contiguous operation ordering, and the existing
+`pending`/`accepted`/`rejected` proposal lifecycle. It is additive to the current single-page
+provider, generation and confirmation contracts; it does not apply multi-page changes or create a
+second proposal store.
+
+Every storefront operation and grant is validated against the declared target. Section targets
+must belong to their declared page, unknown pages and sections are rejected when an active
+projection is supplied, page grants cannot authorize another page, and global operations require
+an explicit storefront design-system grant. Unsupported, duplicate or conflicting target grants
+are rejected; no global flattened allow-list, silent filtering, commerce/customer data or secret
+enters the fingerprint context. Fingerprints use canonical serialization and include only the
+affected page content and identity, section identities, page ordering/navigation identity, relevant
+brand tokens, locales and draft identity. Generation remains P4-05B work; atomic multi-page draft
+application and site-wide history remain P4-05C work (FR-007, FR-020, FR-027, FR-040, FR-041,
+FR-042, FR-050, NFR-006, NFR-009, AC-012, AC-013, AC-016).
+
 ## 12.8 Validation and application pipeline
 
 > **1.** Classify intent and scope.

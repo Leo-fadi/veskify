@@ -36,6 +36,7 @@ export const aiOperationPermissionTargetSchema = z.discriminatedUnion("kind", [
     })
     .strict(),
   z.object({ kind: z.literal("page"), pageId: z.string().min(1) }).strict(),
+  z.object({ kind: z.literal("storefrontDesignSystem"), projectId: z.string().min(1) }).strict(),
 ]);
 
 export const aiOperationPermissionGrantSchema = z
@@ -91,6 +92,14 @@ export const aiOperationRequestSchema = z
     request.permissionGrants.forEach((grant, index) => {
       const grantPath = ["permissionGrants", index] as const;
       const grantTarget = grant.target;
+      if (grantTarget.kind === "storefrontDesignSystem") {
+        context.addIssue({
+          code: "custom",
+          path: [...grantPath, "target"],
+          message: "Single-page provider requests cannot use storefront-level grants.",
+        });
+        return;
+      }
       if (grantTarget.pageId !== request.page.id) {
         context.addIssue({
           code: "custom",
@@ -172,6 +181,7 @@ export const aiProviderResponseSchema = z
   .strict();
 
 export type AiOperationRequest = z.infer<typeof aiOperationRequestSchema>;
+export type AiOperationPermissionTarget = z.infer<typeof aiOperationPermissionTargetSchema>;
 export type AiOperationPermissionGrant = z.infer<typeof aiOperationPermissionGrantSchema>;
 export type AiProviderResponse = z.infer<typeof aiProviderResponseSchema>;
 export type AiProviderDiagnostic = z.infer<typeof aiProviderDiagnosticSchema>;

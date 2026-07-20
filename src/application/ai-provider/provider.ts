@@ -140,6 +140,7 @@ function assertOperationPermissions(request: AiOperationRequest, response: AiPro
       target !== null &&
       request.permissionGrants.some(
         (grant) =>
+          grant.target.kind !== "storefrontDesignSystem" &&
           grant.operationTypes.includes(operation.type) &&
           grant.target.kind === target.kind &&
           grant.target.pageId === target.pageId &&
