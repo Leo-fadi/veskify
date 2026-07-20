@@ -1,17 +1,17 @@
 import { z } from "zod";
 import { aiOperationPermissionGrantSchema } from "@/application/ai-provider";
+import { validateDesignOperationAgainstPage } from "@/application/design-operations";
+import { getComponentDefinition } from "@/components/registry";
 import { canonicalLocaleOrder } from "@/domain/shared";
-import { canonicalValueString } from "@/domain/storefront";
+import { canonicalValueString, type PageModel } from "@/domain/storefront";
 import {
   aiStorefrontContextSchema,
   aiStorefrontOperationSchema,
-  aiStorefrontProposalSchema,
   aiStorefrontTargetSchema,
   type AiStorefrontContext,
   type AiStorefrontOperation,
   type AiStorefrontPermissionTarget,
   type AiStorefrontPermissionGrant,
-  type AiStorefrontProposal,
   type AiStorefrontTarget,
 } from "./contract";
 
@@ -107,9 +107,22 @@ function assertSectionBelongsToTarget(
   }
 }
 
-function assertContextPage(context: AiStorefrontContext, pageId: string) {
-  if (!context.storefront.pages.some((page) => page.id === pageId)) {
+function contextPage(context: AiStorefrontContext, pageId: string): PageModel {
+  const page = context.storefront.pages.find((candidate) => candidate.id === pageId);
+  if (!page) {
     invalid("unknown-page", "The storefront context does not contain the declared page.");
+  }
+  return page;
+}
+
+function assertRegisteredComponent(componentType: string) {
+  try {
+    return getComponentDefinition(componentType);
+  } catch {
+    return invalid(
+      "unknown-component",
+      `The storefront permission references an unknown component: ${componentType}.`,
+    );
   }
 }
 
@@ -119,7 +132,7 @@ function assertContextGrantTarget(
 ) {
   switch (grantTarget.kind) {
     case "page":
-      assertContextPage(context, grantTarget.pageId);
+      contextPage(context, grantTarget.pageId);
       return;
     case "storefrontDesignSystem":
       if (grantTarget.projectId !== context.projectId) {
@@ -130,27 +143,57 @@ function assertContextGrantTarget(
       }
       return;
     case "existingSection": {
-      assertContextPage(context, grantTarget.pageId);
-      const section = context.storefront.pages
-        .find((page) => page.id === grantTarget.pageId)
-        ?.sections.find((candidate) => candidate.id === grantTarget.sectionId);
+      const page = contextPage(context, grantTarget.pageId);
+      const definition = assertRegisteredComponent(grantTarget.componentType);
+      const section = page.sections.find((candidate) => candidate.id === grantTarget.sectionId);
       if (!section || section.component !== grantTarget.componentType) {
         invalid(
           "unknown-section",
           "Existing-section grants must match a section in the active storefront context.",
         );
       }
+      try {
+        definition.validate(section, page.type);
+      } catch (error) {
+        invalid(
+          "invalid-component-contract",
+          error instanceof Error
+            ? error.message
+            : "The existing section does not satisfy its registered component contract.",
+        );
+      }
       return;
     }
     case "introducedSection": {
-      assertContextPage(context, grantTarget.pageId);
-      const sectionExists = context.storefront.pages
-        .find((page) => page.id === grantTarget.pageId)
-        ?.sections.some((candidate) => candidate.id === grantTarget.sectionId);
+      const page = contextPage(context, grantTarget.pageId);
+      const definition = assertRegisteredComponent(grantTarget.componentType);
+      const sectionExists = context.storefront.pages.some((candidate) =>
+        candidate.sections.some((section) => section.id === grantTarget.sectionId),
+      );
       if (sectionExists) {
         invalid(
           "duplicate-section",
           "Introduced-section grants cannot reuse an existing section identity.",
+        );
+      }
+      try {
+        definition.validate(
+          {
+            id: grantTarget.sectionId,
+            component: definition.type,
+            variant: definition.defaultVariant,
+            visible: true,
+            content: structuredClone(definition.defaultContent),
+            props: structuredClone(definition.defaultProps),
+          },
+          page.type,
+        );
+      } catch (error) {
+        invalid(
+          "invalid-component-contract",
+          error instanceof Error
+            ? error.message
+            : "The introduced section is not allowed on its target page.",
         );
       }
       return;
@@ -231,46 +274,59 @@ function operationTarget(
   return { kind: "page" };
 }
 
-function findGrantForOperation(
+type ResolvedOperationPermission =
+  | { kind: "storefrontDesignSystem"; projectId: string }
+  | { kind: "page"; pageId: string }
+  | {
+      kind: "existingSection" | "introducedSection";
+      pageId: string;
+      sectionId: string;
+      componentType: string;
+    };
+
+function hasOperationGrant(
   operation: AiStorefrontOperation,
+  permission: ResolvedOperationPermission,
   grants: readonly AiStorefrontPermissionGrant[],
-  context?: AiStorefrontContext,
 ) {
-  const derived = operationTarget(operation.operation);
-  if (derived.kind === "storefrontDesignSystem") {
-    return grants.some(
-      (grant) =>
-        grant.operationTypes.includes(operation.operation.type) &&
-        grant.target.kind === "storefrontDesignSystem",
+  return grants.some((grant) => {
+    if (!grant.operationTypes.includes(operation.operation.type)) return false;
+    if (permission.kind === "storefrontDesignSystem") {
+      return (
+        grant.target.kind === "storefrontDesignSystem" &&
+        grant.target.projectId === permission.projectId
+      );
+    }
+    if (permission.kind === "page") {
+      return grant.target.kind === "page" && grant.target.pageId === permission.pageId;
+    }
+    return (
+      grant.target.kind === permission.kind &&
+      grant.target.pageId === permission.pageId &&
+      grant.target.sectionId === permission.sectionId &&
+      grant.target.componentType === permission.componentType
+    );
+  });
+}
+
+function validateOperationAgainstWorkingPage(
+  workingPages: Map<string, PageModel>,
+  pageId: string,
+  operation: AiStorefrontOperation["operation"],
+) {
+  const page = workingPages.get(pageId);
+  if (!page) invalid("unknown-page", "The operation targets an unknown storefront page.");
+  try {
+    const next = validateDesignOperationAgainstPage(page, operation);
+    workingPages.set(pageId, next);
+  } catch (error) {
+    invalid(
+      "invalid-operation",
+      error instanceof Error
+        ? error.message
+        : "The operation does not satisfy the registered component contract.",
     );
   }
-  const pageId =
-    operation.target.kind === "page" || operation.target.kind === "section"
-      ? operation.target.pageId
-      : "";
-  const sectionId = operation.target.kind === "section" ? operation.target.sectionId : undefined;
-  const operationKind =
-    operation.operation.type === "ADD_APPROVED_SECTION"
-      ? "introducedSection"
-      : derived.kind === "section"
-        ? "existingSection"
-        : "page";
-  const componentType =
-    operation.operation.type === "ADD_APPROVED_SECTION"
-      ? operation.operation.component
-      : context?.storefront.pages
-          .find((page) => page.id === pageId)
-          ?.sections.find((section) => section.id === sectionId)?.component;
-  return grants.some(
-    (grant) =>
-      grant.operationTypes.includes(operation.operation.type) &&
-      grant.target.kind === operationKind &&
-      grant.target.pageId === pageId &&
-      (operationKind === "page" ||
-        (grant.target.kind !== "page" &&
-          grant.target.sectionId === sectionId &&
-          (componentType === undefined || grant.target.componentType === componentType))),
-  );
 }
 
 export function validateAiStorefrontOperations(
@@ -288,6 +344,10 @@ export function validateAiStorefrontOperations(
     input,
     "The storefront operations are incomplete or invalid.",
   );
+  const workingPages = new Map(
+    context?.storefront.pages.map((page) => [page.id, structuredClone(page)]) ?? [],
+  );
+  const introducedSections = new Map<string, { pageId: string; componentType: string }>();
   operations.forEach((operation, index) => {
     if (operation.order !== index) {
       invalid(
@@ -313,6 +373,7 @@ export function validateAiStorefrontOperations(
         "The operation section identity must match its declared target.",
       );
     }
+    let permission: ResolvedOperationPermission;
     if (declaredTarget.kind === "storefrontDesignSystem") {
       if (
         target.designSystemTarget === null ||
@@ -323,21 +384,66 @@ export function validateAiStorefrontOperations(
           "Global operations require the declared storefront design-system target.",
         );
       }
+      permission = {
+        kind: "storefrontDesignSystem",
+        projectId: declaredTarget.projectId,
+      };
     } else if (declaredTarget.kind === "page") {
       assertPageBelongsToTarget(target, declaredTarget.pageId);
-      if (context) assertContextPage(context, declaredTarget.pageId);
+      if (context) contextPage(context, declaredTarget.pageId);
+      permission = { kind: "page", pageId: declaredTarget.pageId };
     } else {
       assertSectionBelongsToTarget(target, declaredTarget.pageId, declaredTarget.sectionId);
-      if (context) {
-        assertContextPage(context, declaredTarget.pageId);
-        const section = context.storefront.pages
-          .find((page) => page.id === declaredTarget.pageId)
-          ?.sections.find((candidate) => candidate.id === declaredTarget.sectionId);
-        if (operation.operation.type !== "ADD_APPROVED_SECTION" && !section) {
-          invalid("unknown-section", "The operation targets an unknown storefront section.");
+      const page = context ? contextPage(context, declaredTarget.pageId) : undefined;
+      if (operation.operation.type === "ADD_APPROVED_SECTION") {
+        if (
+          introducedSections.has(declaredTarget.sectionId) ||
+          context?.storefront.pages.some((candidate) =>
+            candidate.sections.some((section) => section.id === declaredTarget.sectionId),
+          )
+        ) {
+          invalid(
+            "duplicate-section",
+            "An introduced section identity must be new across the storefront.",
+          );
         }
-        if (operation.operation.type === "ADD_APPROVED_SECTION" && section) {
-          invalid("duplicate-section", "The operation introduces an existing section identity.");
+        assertRegisteredComponent(operation.operation.component);
+        permission = {
+          kind: "introducedSection",
+          pageId: declaredTarget.pageId,
+          sectionId: declaredTarget.sectionId,
+          componentType: operation.operation.component,
+        };
+      } else {
+        const introduced = introducedSections.get(declaredTarget.sectionId);
+        if (introduced) {
+          if (introduced.pageId !== declaredTarget.pageId) {
+            invalid(
+              "introduced-section-page-mismatch",
+              "Introduced sections cannot be customized from another page.",
+            );
+          }
+          permission = {
+            kind: "introducedSection",
+            pageId: introduced.pageId,
+            sectionId: declaredTarget.sectionId,
+            componentType: introduced.componentType,
+          };
+        } else {
+          const currentPage = context ? workingPages.get(declaredTarget.pageId) : page;
+          const section = currentPage?.sections.find(
+            (candidate) => candidate.id === declaredTarget.sectionId,
+          );
+          if (!section) {
+            invalid("unknown-section", "The operation targets an unknown storefront section.");
+          }
+          assertRegisteredComponent(section.component);
+          permission = {
+            kind: "existingSection",
+            pageId: declaredTarget.pageId,
+            sectionId: declaredTarget.sectionId,
+            componentType: section.component,
+          };
         }
       }
     }
@@ -359,69 +465,27 @@ export function validateAiStorefrontOperations(
         "Only approved design-system operations may use the global target.",
       );
     }
-    if (!findGrantForOperation(operation, grants, context)) {
+    if (!hasOperationGrant(operation, permission, grants)) {
       invalid(
         "permission-grant-mismatch",
         "The storefront operation is not covered by a target-bound permission grant.",
       );
     }
+    if (context && declaredTarget.kind !== "storefrontDesignSystem") {
+      validateOperationAgainstWorkingPage(workingPages, declaredTarget.pageId, operation.operation);
+    }
+    if (operation.operation.type === "ADD_APPROVED_SECTION") {
+      if (permission.kind !== "introducedSection") {
+        invalid(
+          "operation-target-mismatch",
+          "Added sections require an introduced-section permission target.",
+        );
+      }
+      introducedSections.set(operation.operation.sectionId, {
+        pageId: permission.pageId,
+        componentType: operation.operation.component,
+      });
+    }
   });
   return operations;
-}
-
-export function validateAiStorefrontProposal(
-  input: unknown,
-  contextInput?: unknown,
-): AiStorefrontProposal {
-  const proposal = parse(
-    aiStorefrontProposalSchema,
-    input,
-    "The storefront proposal envelope is incomplete or invalid.",
-  );
-  const target = canonicalizeAiStorefrontTarget(proposal.target);
-  if (
-    proposal.projectId !== target.projectId ||
-    proposal.draftSnapshotId !== target.draftSnapshotId ||
-    proposal.draftRevision !== target.draftRevision
-  ) {
-    invalid(
-      "proposal-identity-mismatch",
-      "The proposal identity must match its storefront target.",
-    );
-  }
-  if (canonicalValueString(proposal.target) !== canonicalValueString(target)) {
-    invalid("non-canonical-target", "Storefront proposal targets must use canonical ordering.");
-  }
-  const affectedPageIds = proposal.affectedPages
-    .map((page) => page.id)
-    .sort((left, right) => left.localeCompare(right));
-  if (canonicalValueString(affectedPageIds) !== canonicalValueString(target.affectedPageIds)) {
-    invalid(
-      "affected-pages-mismatch",
-      "The proposal affected pages must match its declared target.",
-    );
-  }
-  const originalPages = new Map(proposal.originalStorefront.pages.map((page) => [page.id, page]));
-  const proposedPageIds = new Set(proposal.proposedStorefront.pages.map((page) => page.id));
-  for (const page of proposal.affectedPages) {
-    const originalPage = originalPages.get(page.id);
-    if (!originalPage || !proposedPageIds.has(page.id)) {
-      invalid(
-        "affected-pages-mismatch",
-        "Affected pages must exist in both storefront proposal projections.",
-      );
-    }
-    if (canonicalValueString(originalPage) !== canonicalValueString(page)) {
-      invalid(
-        "original-page-mismatch",
-        "Affected pages must match the proposal original storefront projection.",
-      );
-    }
-  }
-  const context = contextInput === undefined ? undefined : parseContext(contextInput);
-  if (context) {
-    assertTargetIdentity(target, context);
-  }
-  validateAiStorefrontOperations(proposal.operations, target, proposal.permissionGrants, context);
-  return proposal;
 }

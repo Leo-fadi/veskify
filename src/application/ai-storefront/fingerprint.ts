@@ -82,6 +82,7 @@ function relevantTargetContext(context: AiStorefrontContext, target: AiStorefron
     activeLocale: context.activeLocale,
     affectedPageIds: target.affectedPageIds,
     affectedSectionTargets: target.affectedSectionTargets,
+    designSystemTarget: target.designSystemTarget,
     affectedPages,
     pageOrder: context.storefront.pageOrder,
     navigation: context.storefront.navigation,

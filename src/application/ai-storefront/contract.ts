@@ -40,6 +40,7 @@ export const aiStorefrontTargetSchema = z
     }
     const pageIds = new Set(target.affectedPageIds);
     const sectionKeys = new Set<string>();
+    const sectionIds = new Set<string>();
     target.affectedSectionTargets.forEach((sectionTarget, index) => {
       if (!pageIds.has(sectionTarget.pageId)) {
         context.addIssue({
@@ -57,6 +58,14 @@ export const aiStorefrontTargetSchema = z
         });
       }
       sectionKeys.add(key);
+      if (sectionIds.has(sectionTarget.sectionId)) {
+        context.addIssue({
+          code: "custom",
+          path: ["affectedSectionTargets", index, "sectionId"],
+          message: "Affected section IDs must be unique across the storefront target.",
+        });
+      }
+      sectionIds.add(sectionTarget.sectionId);
     });
     if (!target.enabledLocales.includes(target.activeLocale)) {
       context.addIssue({
@@ -101,6 +110,21 @@ export const aiStorefrontProjectionSchema = z
         message: "Storefront projections must contain unique page IDs.",
       });
     }
+    const sectionLocations = new Map<string, { pageIndex: number; sectionIndex: number }>();
+    projection.pages.forEach((page, pageIndex) => {
+      page.sections.forEach((section, sectionIndex) => {
+        const previous = sectionLocations.get(section.id);
+        if (previous) {
+          context.addIssue({
+            code: "custom",
+            path: ["pages", pageIndex, "sections", sectionIndex, "id"],
+            message: `Section ID ${section.id} is already used on page ${projection.pages[previous.pageIndex].id}.`,
+          });
+        } else {
+          sectionLocations.set(section.id, { pageIndex, sectionIndex });
+        }
+      });
+    });
     if (
       new Set(projection.pageOrder).size !== projection.pageOrder.length ||
       projection.pageOrder.length !== pageIds.length ||
@@ -189,6 +213,25 @@ export const aiStorefrontProposalSchema = z
   })
   .strict();
 
+export const aiStorefrontReadyProposalSchema = aiStorefrontProposalSchema.superRefine(
+  (proposal, context) => {
+    if (!proposal.validation.valid) {
+      context.addIssue({
+        code: "custom",
+        path: ["validation", "valid"],
+        message: "Ready storefront proposals must have passed validation.",
+      });
+    }
+    if (proposal.validation.errors.length > 0) {
+      context.addIssue({
+        code: "custom",
+        path: ["validation", "errors"],
+        message: "Ready storefront proposals cannot retain validation errors.",
+      });
+    }
+  },
+);
+
 export type StorefrontDesignSystemTarget = z.infer<typeof storefrontDesignSystemTargetSchema>;
 export type AiStorefrontSectionTarget = z.infer<typeof aiStorefrontSectionTargetSchema>;
 export type AiStorefrontTarget = z.infer<typeof aiStorefrontTargetSchema>;
@@ -197,5 +240,6 @@ export type AiStorefrontContext = z.infer<typeof aiStorefrontContextSchema>;
 export type AiStorefrontOperationTarget = z.infer<typeof aiStorefrontOperationTargetSchema>;
 export type AiStorefrontOperation = z.infer<typeof aiStorefrontOperationSchema>;
 export type AiStorefrontProposal = z.infer<typeof aiStorefrontProposalSchema>;
+export type AiStorefrontReadyProposal = z.infer<typeof aiStorefrontReadyProposalSchema>;
 export type AiStorefrontPermissionGrant = z.infer<typeof aiOperationPermissionGrantSchema>;
 export type AiStorefrontPermissionTarget = AiOperationPermissionTarget;

@@ -7,21 +7,37 @@ proposals. The authoritative product and architecture baseline remains
 
 ## Implemented foundation
 
-The application now exposes an additive `ai-storefront` contract boundary containing:
+The application exposes an additive `ai-storefront` contract boundary containing:
 
-- a canonical storefront target for one project, draft snapshot/revision, affected pages,
-  page-bound section targets, an optional explicit storefront design-system target, and the
-  enabled/active English/Finnish locales;
-- an aggregate storefront projection that deliberately excludes catalogue, customer, UI-state,
-  and secret data while retaining page order, navigation identity, page content, and brand tokens;
+- a canonical storefront target for one project and draft revision, affected pages, globally
+  unambiguous page-bound section targets, an optional explicit storefront design-system target,
+  and the enabled/active English/Finnish locales;
+- an aggregate storefront projection that excludes catalogue, customer, UI-state, and secret data
+  while retaining the complete ordered page set, navigation identity, page content, and brand
+  tokens;
 - target-bound storefront operation envelopes with contiguous deterministic ordering;
-- an additive storefront proposal envelope carrying request/proposal identity, before/after
-  projections, affected pages and global design state, grants, fingerprints, validation metadata,
-  and the existing pending/accepted/rejected lifecycle values;
+- an additive raw proposal envelope that can retain provider validation failures, plus a separate
+  ready-proposal boundary that admits only `valid: true` proposals with no validation errors;
 - deterministic target and permission fingerprints built with the canonical storefront serializer;
-- validators for target ownership, page/section membership, active draft identity, duplicate or
-  conflicting grants, explicit global permission, and context-provided unknown page/section
-  rejection.
+- validators for target ownership, active draft identity, page/section membership, permission
+  grants, registered component contracts, projection preservation, and operation semantics.
+
+The target fingerprint includes the nullable design-system target as well as affected page and
+section identity. Ready-proposal validation recomputes both the target and permission fingerprints
+from the active canonical context and rejects stale or tampered values.
+
+Storefront projections require section IDs to be unique across the complete page set. Proposed
+projections must preserve every page, page order, and navigation. Pages outside the declared target
+must remain byte-for-byte canonically equivalent to their original projection. Global design state
+may change only with an explicit storefront design-system target and permission grant.
+
+Page reordering operations must contain exactly the current section IDs once each. Section
+operations are validated sequentially against an isolated working page by the existing design
+operation and component-registry boundary. This permits an approved section to be introduced and
+then customized in the same operation sequence while rejecting use-before-add, duplicate or
+cross-page identities, grant-kind or component mismatches, unsupported variants or fields,
+protected fields, malformed style values, and components that are unknown or disallowed for the
+target page. Validation does not mutate the active draft.
 
 The existing P4-01 permission model is extended only with the explicit
 `storefrontDesignSystem` target. The existing single-page provider request rejects that target,
@@ -39,8 +55,8 @@ P4-05B must build generation on these contracts. It should resolve a merchant re
 declared storefront target, produce a plan covering affected pages and optional global design
 state, derive grants from approved skills, invoke a provider through the existing untrusted-output
 boundary, and produce a canonical ready proposal. It must preserve EN/FI locale checks, target and
-permission fingerprints, deterministic operation order, stale request detection, and the
-existing single-page generation path.
+permission fingerprints, deterministic operation order, stale request detection, and the existing
+single-page generation path.
 
 P4-05B must not widen the supported locale set, flatten target grants into a global allow-list, or
 mutate the active draft before confirmation.
@@ -59,6 +75,6 @@ not claim that multi-page acceptance, site-wide undo, or publishing is implement
 
 ## Traceability
 
-The implementation follows SDD §§6.1, 6.2, 6.3, 6.4, 6.5, 12.3, 12.5–12.10, 13.1, 13.6,
-14.1, 15.3–15.5, 16.2, 18, and 20; FR-007, FR-013, FR-020, FR-027, FR-028, FR-040–FR-042,
-FR-050; NFR-006 and NFR-009; AC-012, AC-013, AC-016, and AC-017.
+The implementation follows SDD §§6.1–6.5, 12.3, 12.5–12.10, 13.1, 13.6, 14.1,
+15.3–15.5, 16.2, 18, and 20; FR-007, FR-013–FR-016, FR-020, FR-027, FR-028,
+FR-040–FR-042, FR-050; NFR-006 and NFR-009; AC-012, AC-013, AC-016, and AC-017.
