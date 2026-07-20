@@ -109,6 +109,13 @@
   line-height: 1.45;
 }
 
+.guidance {
+  margin: -0.35rem 0 0;
+  color: #59616d;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
 .form > button,
 .actions button:first-child {
   min-height: 2.75rem;

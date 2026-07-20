@@ -165,6 +165,11 @@ test("uses the selected Puck section and shows localized grouped proposal detail
   expect(detailCount).toBe(10);
   await expect(details.first()).toContainText(/layout|background|typography|spacing|shapes/i);
   await page.getByRole("radio", { name: "Suomi" }).click();
+  await expect(page.getByLabel("Design proposal")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Hyväksy ja käytä" })).toHaveCount(0);
+  await expect(page.getByLabel("Pyyntösi")).toHaveValue("Make the homepage feel more luxurious.");
+  await page.getByRole("button", { name: "Tee etusivusta ylellisempi." }).click();
+  await page.getByRole("button", { name: "Luo ehdotus" }).click();
   const finnishDetails = page
     .getByRole("list", { name: "Ehdotetut muutokset" })
     .getByRole("listitem");

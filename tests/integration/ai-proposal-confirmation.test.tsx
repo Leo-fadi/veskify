@@ -5,9 +5,10 @@ import { AiProposalConfirmationOrchestrator } from "@/application/ai-proposal-co
 import {
   AiProposalGenerationOrchestrator,
   type AiProposalEditorIdentity,
+  type GeneratedAiProposal,
 } from "@/application/ai-proposal-generation";
 import { createDeterministicMockAIProvider } from "@/application/ai-provider";
-import { InMemoryDesignProposalStore, type DesignProposal } from "@/application/design-operations";
+import { InMemoryDesignProposalStore } from "@/application/design-operations";
 import { CanonicalEditorHistory } from "@/application/editor-history";
 import { DesignAgentPanel } from "@/app/projects/[projectId]/editor/design-agent-panel";
 import type { DesignAgentSessionController } from "@/app/projects/[projectId]/editor/use-design-agent-session";
@@ -52,11 +53,12 @@ async function readyProposal(
 }
 
 function controller(
-  proposal: DesignProposal,
+  generatedProposal: GeneratedAiProposal,
   acceptProposal: () => void,
   rejectProposal: () => void,
 ): DesignAgentSessionController {
   const noop = vi.fn();
+  const proposal = generatedProposal.proposal;
   return {
     request: "Make the homepage feel more luxurious.",
     setRequest: noop,
@@ -79,13 +81,15 @@ function controller(
       clarificationQuestion: null,
       failure: null,
     },
-    proposal,
+    generatedProposal,
     visibleState: "proposalReady",
     statusMessage: "The proposal is ready to review.",
     previewActive: true,
     blocksSave: true,
     controlsDisabled: false,
+    generationRetryAvailable: false,
     submitRequest: noop,
+    retryGeneration: noop,
     answerClarification: noop,
     reviseProposal: noop,
     regenerateProposal: noop,
@@ -95,6 +99,8 @@ function controller(
     restartSession: noop,
     closeForPageSwitch: noop,
     closeForPageMutation: noop,
+    closeForSelectionChange: noop,
+    closeForLocaleChange: noop,
   };
 }
 
@@ -126,7 +132,7 @@ describe("P4-03 to P4-02 proposal confirmation integration", () => {
 
     render(
       createElement(DesignAgentPanel, {
-        controller: controller(generated.proposal, accept, vi.fn()),
+        controller: controller(generated, accept, vi.fn()),
         locale: "en",
         primaryLocale: "en",
         pageTitle: "Home",
@@ -163,7 +169,7 @@ describe("P4-03 to P4-02 proposal confirmation integration", () => {
     const draftBefore = structuredClone(current.page);
     render(
       createElement(DesignAgentPanel, {
-        controller: controller(rejectedGenerated.proposal, vi.fn(), () => rejection.reject()),
+        controller: controller(rejectedGenerated, vi.fn(), () => rejection.reject()),
         locale: "en",
         primaryLocale: "en",
         pageTitle: "Home",
