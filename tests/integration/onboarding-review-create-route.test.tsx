@@ -120,12 +120,14 @@ describe("O-09 onboarding review and project creation route", () => {
       "Storefront template",
       "Storefront pages",
       "Storefront languages",
-      "Catalogue readiness",
+      "Catalogue plan",
       "Warnings",
-      "Blockers",
     ]) {
       expect(screen.getByRole("heading", { name: heading })).toBeVisible();
     }
+    fireEvent.click(
+      screen.getByRole("heading", { name: "What we understood" }).closest("summary")!,
+    );
     expect(screen.getByText("Northern Light Studio")).toBeVisible();
     expect(createProject).not.toHaveBeenCalled();
 
@@ -157,6 +159,9 @@ describe("O-09 onboarding review and project creation route", () => {
     expect(
       await screen.findByRole("heading", { name: "Review your storefront plan" }),
     ).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("heading", { name: "Storefront languages" }).closest("summary")!,
+    );
     expect(screen.getByText("Finnish — Primary language")).toBeVisible();
   });
 
@@ -181,6 +186,9 @@ describe("O-09 onboarding review and project creation route", () => {
     expect(
       await screen.findByRole("heading", { name: "Review your storefront plan" }),
     ).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("heading", { name: "Storefront languages" }).closest("summary")!,
+    );
     expect(screen.getByText("English — Primary language")).toBeVisible();
     expect(screen.getByText("Finnish")).toBeVisible();
     expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
@@ -321,7 +329,7 @@ describe("O-09 onboarding review and project creation route", () => {
       "We could not create your storefront project",
     );
     expect(screen.queryByText(/repository detail/i)).not.toBeInTheDocument();
-    expect(screen.getByText("Northern Light Studio")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "What we understood" })).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: "Try creating again" }));
     await waitFor(() => expect(routerPush).toHaveBeenCalledWith(result.editorRoute));
@@ -363,7 +371,7 @@ describe("O-09 onboarding review and project creation route", () => {
       await screen.findByRole("heading", { name: "Review your storefront plan" }),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Create storefront project" })).toBeEnabled();
-    expect(screen.getByText("Empty catalogue")).toBeVisible();
+    expect(screen.getByText("Start without products")).toBeVisible();
     await userEvent
       .setup()
       .click(screen.getByRole("button", { name: "Create storefront project" }));

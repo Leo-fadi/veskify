@@ -1,9 +1,14 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { normalizeStorefrontDesignBriefInput } from "@/domain/design-brief";
 import { generateGuidedStorefront } from "@/application/guided-storefront-generation";
 import { createStorefrontGenerationReview } from "@/application/storefront-generation-review";
 import { StorefrontGenerationReviewPanel } from "@/components/onboarding/storefront-generation-review-panel";
+import {
+  presentAssumptions,
+  presentDiagnostics,
+} from "@/components/onboarding/storefront-generation-review-presentation";
+import { normalizeStorefrontDesignBriefInput } from "@/domain/design-brief";
 
 const createdAt = "2026-07-20T10:00:00.000Z";
 
@@ -49,102 +54,142 @@ function renderPanel(
 }
 
 describe("StorefrontGenerationReviewPanel", () => {
-  it("renders all canonical sections in order with merchant facts", () => {
-    renderPanel();
-    const headings = screen.getAllByRole("heading").map((heading) => heading.textContent);
-    expect(headings).toEqual(
-      expect.arrayContaining([
-        "What we understood",
-        "Brand direction",
-        "Storefront template",
-        "Storefront pages",
-        "Storefront languages",
-        "Catalogue readiness",
-        "Assumptions",
-        "Warnings",
-        "Blockers",
-      ]),
-    );
+  it("renders the canonical plan as compact merchant sections without internal identifiers", () => {
+    const { container } = renderPanel();
+    for (const heading of [
+      "What we understood",
+      "Brand direction",
+      "Storefront template",
+      "Storefront pages",
+      "Storefront languages",
+      "Catalogue plan",
+    ]) {
+      expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
+    }
     expect(screen.getByText("North Star Jewellery")).toBeInTheDocument();
     expect(screen.getByText("Exact merchant copy.")).toBeInTheDocument();
-    expect(
-      screen.queryByText(
-        /brief_panel_test|snapshot_panel_test|catalogue_panel_test|P3-05|brand-foundation/,
-      ),
-    ).not.toBeInTheDocument();
+    expect(container.textContent).not.toMatch(
+      /template_balanced_commerce|logo-available|when-not-requested|home\/announcement|home\/newsletter|product\/product-options|new-storefront|brief_panel_test|snapshot_panel_test|catalogue_panel_test/,
+    );
   });
 
-  it("localizes system copy and preserves Finnish merchant values", () => {
-    const currentReview = review({
-      businessIdentity: {
-        businessName: "Pohjoinen Studio",
-        shortDescription: "Harkittuja koruja.",
-        industry: "jewellery",
-      },
-      languagePlan: { selectedLanguages: ["fi"], primaryLanguage: "fi" },
-    });
-    renderPanel(currentReview, { locale: "fi" });
-    expect(screen.getByRole("button", { name: "Takaisin" })).toBeInTheDocument();
-    expect(screen.getByText("Pohjoinen Studio")).toBeInTheDocument();
-    expect(screen.getByText("Harkittuja koruja.")).toBeInTheDocument();
-    expect(screen.getByText(/suomi/)).toBeInTheDocument();
-  });
-
-  it("maps statuses, keeps not-applicable non-alarming, and renders pages without component IDs", () => {
+  it("deduplicates repeated stage warnings while preserving distinct fallback issues", () => {
     const currentReview = review();
+    const repeatedLogoDiagnostics = currentReview.sourceDiagnostics.filter(
+      ({ code, message }) =>
+        code === "OPTIONAL_CAPABILITY_UNAVAILABLE" && message.includes("logo-available"),
+    );
+    expect(repeatedLogoDiagnostics.length).toBeGreaterThan(1);
+
     renderPanel(currentReview);
-    expect(screen.getByText("Ready with notes")).toBeInTheDocument();
-    expect(screen.getAllByText("Complete").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("There are no blockers.").length).toBeGreaterThan(0);
-    expect(screen.queryByText("hero")).not.toBeInTheDocument();
-    expect(screen.getByText("/")).toBeInTheDocument();
+    expect(screen.getAllByText("Logo can be added later")).toHaveLength(1);
+    expect(screen.getAllByText("Catalogue content")).toHaveLength(1);
   });
 
-  it("renders diagnostics, assumptions and supplied errors without losing review context", () => {
-    const currentReview = review({ catalogueContext: "empty-catalogue" });
-    const error = "Project creation is temporarily unavailable.";
-    renderPanel(currentReview, { errorMessage: error });
-    expect(screen.getByRole("alert")).toHaveTextContent(error);
-    expect(screen.getAllByText(/Merchandising slots remain/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/controlled defaults/).length).toBeGreaterThan(0);
+  it("uses concise catalogue copy and the unresolved catalogue blocker", () => {
+    const currentReview = review({ catalogueContext: "existing-vesko-catalogue" });
+    renderPanel(currentReview);
+
+    expect(screen.getAllByText("Existing Vesko catalogue")).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "Catalogue plan" })).toBeInTheDocument();
+    expect(screen.getByText("Connect your catalogue")).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/We could not connect the selected Vesko catalogue yet/),
+    ).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Create storefront project" })).toBeDisabled();
   });
 
-  it("enables confirmation only for canCreateProject and blocks busy activation", () => {
-    const onConfirm = vi.fn();
-    const onBack = vi.fn();
+  it("orders blockers before warnings and compact notes", () => {
+    renderPanel(review({ catalogueContext: "existing-vesko-catalogue" }));
+    const blocker = screen.getByRole("heading", { name: "Blockers" });
+    const warning = screen.getByRole("heading", { name: "Warnings" });
+    const notes = screen.getByText("Defaults and notes");
+
+    expect(
+      blocker.compareDocumentPosition(warning) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(warning.compareDocumentPosition(notes) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("shows readiness and canonical presentation counts", () => {
     const currentReview = review();
-    const busyView = renderPanel(currentReview, { onConfirmCreate: onConfirm, onBack, busy: true });
+    const diagnostics = presentDiagnostics(currentReview, "en");
+    const noteCount = diagnostics.notes.length + presentAssumptions(currentReview, "en").length;
+    renderPanel(currentReview);
+
+    const readiness = screen.getByRole("heading", { name: "Ready to create" }).closest("section");
+    expect(readiness).not.toBeNull();
+    expect(within(readiness!).getByText(`${diagnostics.blockers.length} blockers`)).toBeVisible();
+    expect(within(readiness!).getByText(`${diagnostics.warnings.length} warnings`)).toBeVisible();
+    expect(within(readiness!).getByText(`${noteCount} notes`)).toBeVisible();
+  });
+
+  it.each(["controlled-demo-catalogue", "empty-catalogue"])(
+    "keeps the %s plan creatable",
+    (catalogueContext) => {
+      renderPanel(review({ catalogueContext }));
+      expect(screen.getByRole("button", { name: "Create storefront project" })).toBeEnabled();
+    },
+  );
+
+  it("supports keyboard focus for blockers and completed details", async () => {
+    const user = userEvent.setup();
+    renderPanel(review({ catalogueContext: "existing-vesko-catalogue" }));
+
+    const jump = screen.getByRole("button", { name: "Jump to blockers" });
+    jump.focus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("heading", { name: "Blockers" }).closest("section")).toHaveFocus();
+
+    const summary = screen.getByRole("heading", { name: "Brand direction" }).closest("summary");
+    const details = summary?.closest("details");
+    expect(details).not.toHaveAttribute("open");
+    summary?.focus();
+    fireEvent.click(summary!);
+    expect(details).toHaveAttribute("open");
+  });
+
+  it("uses natural EN and FI brand-direction labels and copy", () => {
+    const currentReview = review();
+    const english = renderPanel(currentReview);
+    expect(screen.getByText("Heading font")).toBeInTheDocument();
+    expect(screen.getByText("Body font")).toBeInTheDocument();
+    expect(screen.getAllByText("Georgia")).toHaveLength(2);
+    expect(screen.getByText("Studio photography")).toBeInTheDocument();
+    expect(screen.getByText("Balanced")).toBeInTheDocument();
+    expect(screen.getByText("Rounded")).toBeInTheDocument();
+    expect(screen.getByText("Premium, warm and inspirational")).toBeInTheDocument();
+    english.unmount();
+
+    renderPanel(currentReview, { locale: "fi" });
+    expect(screen.getByRole("heading", { name: "Valmis luotavaksi" })).toBeInTheDocument();
+    expect(screen.getByText("Otsikkofontti")).toBeInTheDocument();
+    expect(screen.getByText("Leipätekstin fontti")).toBeInTheDocument();
+    expect(screen.getByText("Studiovalokuvaus")).toBeInTheDocument();
+    expect(screen.getByText("Tasapainoinen")).toBeInTheDocument();
+    expect(screen.getByText("Pyöristetty")).toBeInTheDocument();
+    expect(screen.getByText("Premium, lämmin ja inspiroiva")).toBeInTheDocument();
+  });
+
+  it("renders supplied errors and preserves busy interaction semantics", () => {
+    const error = "Project creation is temporarily unavailable.";
+    const errorView = renderPanel(review(), { errorMessage: error });
+    expect(screen.getByRole("alert")).toHaveTextContent(error);
+    expect(screen.getByRole("button", { name: "Try creating again" })).toBeEnabled();
+    errorView.unmount();
+
+    const onBack = vi.fn();
+    renderPanel(review(), { busy: true, onBack });
     expect(screen.getByRole("button", { name: "Creating project…" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(onBack).not.toHaveBeenCalled();
-    busyView.unmount();
-    const { unmount } = renderPanel(currentReview, { onConfirmCreate: onConfirm, onBack });
-    fireEvent.click(screen.getByRole("button", { name: "Create storefront project" }));
-    expect(onConfirm).toHaveBeenCalledTimes(1);
-    unmount();
   });
 
-  it.each([
-    [
-      "an incomplete business brief and generated snapshot are missing",
-      { businessIdentity: {} },
-      true,
-      true,
-    ],
-    ["required pages are missing", { storefrontStructure: { pageTypes: ["home"] } }, true, true],
-    ["required languages are missing", { languagePlan: {} }, false, false],
-  ])("disables creation when %s", (_label, overrides, hasBlockers, snapshotMissing) => {
-    const currentReview = review(overrides);
-    renderPanel(currentReview);
-
-    expect(currentReview.canCreateProject).toBe(false);
-    expect(screen.getByRole("button", { name: "Create storefront project" })).toBeDisabled();
-    expect(screen.getByRole("heading", { name: "Blockers" })).toBeVisible();
-    expect(
-      screen.getByText("Resolve the items requiring attention before creating the project."),
-    ).toBeVisible();
-    if (hasBlockers) expect(currentReview.blockers.length).toBeGreaterThan(0);
-    if (snapshotMissing) expect(currentReview.generatedSnapshotId).toBeNull();
+  it("calls confirmation only when the canonical review permits creation", () => {
+    const onConfirm = vi.fn();
+    renderPanel(review(), { onConfirmCreate: onConfirm });
+    fireEvent.click(screen.getByRole("button", { name: "Create storefront project" }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
   });
 
   it("rejects malformed reviews at the canonical boundary", () => {

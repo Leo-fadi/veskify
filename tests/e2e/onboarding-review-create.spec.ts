@@ -71,6 +71,11 @@ test("restores O-09 without project persistence and renders its canonical review
 }) => {
   await page.goto("/projects/new");
   await expect(page.getByRole("heading", { name: "Review your storefront plan" })).toBeVisible();
+  const businessSummary = page
+    .getByRole("heading", { name: "What we understood" })
+    .locator("xpath=ancestor::summary");
+  await businessSummary.focus();
+  await page.keyboard.press("Enter");
   await expect(page.getByText("Northern Light Studio")).toBeVisible();
   for (const heading of [
     "What we understood",
@@ -78,12 +83,15 @@ test("restores O-09 without project persistence and renders its canonical review
     "Storefront template",
     "Storefront pages",
     "Storefront languages",
-    "Catalogue readiness",
+    "Catalogue plan",
     "Warnings",
-    "Blockers",
   ]) {
     await expect(page.getByRole("heading", { name: heading })).toBeVisible();
   }
+  await expect(page.getByRole("heading", { name: "Ready to create" })).toBeVisible();
+  await expect(
+    page.getByText(/template_balanced_commerce|logo-available|when-not-requested/),
+  ).toHaveCount(0);
   expect(
     await page.evaluate(async () =>
       (await indexedDB.databases()).some(({ name }) => name === "veskify"),

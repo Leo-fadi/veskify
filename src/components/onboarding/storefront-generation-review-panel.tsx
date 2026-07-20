@@ -1,12 +1,23 @@
 "use client";
 
+import { useRef } from "react";
 import {
   validateStorefrontGenerationReview,
   type StorefrontGenerationReview,
+  type StorefrontGenerationReviewSection,
 } from "@/application/storefront-generation-review/contract";
+import {
+  cataloguePresentation,
+  localizedPageType,
+  presentAssumptions,
+  presentDiagnostics,
+  presentFacts,
+  type MerchantDiagnostic,
+  type ReviewLocale,
+} from "./storefront-generation-review-presentation";
 import styles from "./storefront-generation-review-panel.module.css";
 
-type Locale = "en" | "fi";
+type Locale = ReviewLocale;
 
 export type StorefrontGenerationReviewPanelProps = {
   review: StorefrontGenerationReview;
@@ -15,11 +26,6 @@ export type StorefrontGenerationReviewPanelProps = {
   errorMessage?: string | null;
   onBack: () => void;
   onConfirmCreate: () => void;
-};
-
-const statusLabels: Record<Locale, Record<StorefrontGenerationReview["status"], string>> = {
-  en: { ready: "Ready", "ready-with-warnings": "Ready with notes", blocked: "Needs attention" },
-  fi: { ready: "Valmis", "ready-with-warnings": "Valmis huomioilla", blocked: "Vaatii huomiota" },
 };
 
 const sectionStatusLabels: Record<
@@ -40,43 +46,9 @@ const sectionStatusLabels: Record<
   },
 };
 
-const pageTypeLabels: Record<Locale, Record<string, string>> = {
-  en: {
-    home: "Home",
-    collection: "Collection",
-    product: "Product",
-    content: "Content",
-    cart: "Cart",
-    checkout: "Checkout",
-    landing: "Landing page",
-  },
-  fi: {
-    home: "Etusivu",
-    collection: "Kokoelma",
-    product: "Tuote",
-    content: "Sisältösivu",
-    cart: "Ostoskori",
-    checkout: "Kassasivu",
-    landing: "Kampanjasivu",
-  },
-};
-
 const languageLabels: Record<Locale, Record<string, string>> = {
   en: { en: "English", fi: "Finnish" },
   fi: { en: "englanti", fi: "suomi" },
-};
-
-const catalogueLabels: Record<Locale, Record<string, string>> = {
-  en: {
-    "existing-vesko-catalogue": "Existing Vesko catalogue",
-    "controlled-demo-catalogue": "Demo catalogue",
-    "empty-catalogue": "Empty catalogue",
-  },
-  fi: {
-    "existing-vesko-catalogue": "Olemassa oleva Vesko-tuoteluettelo",
-    "controlled-demo-catalogue": "Demotuoteluettelo",
-    "empty-catalogue": "Tyhjä tuoteluettelo",
-  },
 };
 
 const copy = {
@@ -86,17 +58,31 @@ const copy = {
     creating: "Creating project…",
     retry: "Try creating again",
     resolve: "Resolve the items requiring attention before creating the project.",
-    assumptionsEmpty: "No additional assumptions are required.",
-    warningsEmpty: "No warnings were reported.",
-    blockersEmpty: "There are no blockers.",
-    pagesEmpty: "No storefront pages were materialized.",
+    ready: "Ready to create",
+    readyDescription: "Your storefront plan is ready. Review the notes or create the project.",
+    attention: "Needs attention",
+    attentionDescription: "Resolve the blockers below before creating the project.",
+    blockers: "Blockers",
+    warnings: "Warnings",
+    notes: "Defaults and notes",
+    blocker: "blocker",
+    blockersCount: "blockers",
+    warning: "warning",
+    warningsCount: "warnings",
+    note: "note",
+    notesCount: "notes",
+    jumpToBlockers: "Jump to blockers",
+    warningIntro: "These items do not prevent creation, but are worth reviewing.",
+    blockerIntro: "These items must be resolved before creation.",
+    notesIntro: "Safe defaults and optional omissions used for the first version.",
+    pagesEmpty: "No storefront pages were prepared.",
     primary: "Primary language",
     sections: "sections",
     visible: "visible",
     hidden: "hidden",
-    warningIntro: "Review these notes before continuing.",
-    blockerIntro: "Resolve these items before creating the project.",
-    notSpecified: "Not specified",
+    path: "Storefront path",
+    detailsHint: "Show details",
+    reviewSections: "Plan details",
   },
   fi: {
     back: "Takaisin",
@@ -104,22 +90,36 @@ const copy = {
     creating: "Luodaan projektia…",
     retry: "Yritä luomista uudelleen",
     resolve: "Ratkaise huomiota vaativat kohdat ennen projektin luomista.",
-    assumptionsEmpty: "Muita oletuksia ei tarvita.",
-    warningsEmpty: "Huomautuksia ei ilmoitettu.",
-    blockersEmpty: "Estäviä tekijöitä ei ole.",
-    pagesEmpty: "Kaupan sivuja ei muodostettu.",
+    ready: "Valmis luotavaksi",
+    readyDescription: "Verkkokauppasuunnitelmasi on valmis. Tarkista huomiot tai luo projekti.",
+    attention: "Vaatii huomiota",
+    attentionDescription: "Ratkaise alla olevat estävät kohdat ennen projektin luomista.",
+    blockers: "Estävät kohdat",
+    warnings: "Varoitukset",
+    notes: "Oletukset ja lisätiedot",
+    blocker: "estävä kohta",
+    blockersCount: "estävää kohtaa",
+    warning: "varoitus",
+    warningsCount: "varoitusta",
+    note: "lisätieto",
+    notesCount: "lisätietoa",
+    jumpToBlockers: "Siirry estäviin kohtiin",
+    warningIntro: "Nämä kohdat eivät estä luomista, mutta ne kannattaa tarkistaa.",
+    blockerIntro: "Nämä kohdat on ratkaistava ennen luomista.",
+    notesIntro: "Ensimmäisessä versiossa käytetyt turvalliset oletukset ja valinnaiset poisjätöt.",
+    pagesEmpty: "Verkkokaupan sivuja ei valmisteltu.",
     primary: "Pääkieli",
     sections: "osiota",
     visible: "näkyvää",
     hidden: "piilotettua",
-    warningIntro: "Tarkista nämä huomautukset ennen jatkamista.",
-    blockerIntro: "Ratkaise nämä kohdat ennen projektin luomista.",
-    notSpecified: "Ei määritetty",
+    path: "Verkkokaupan polku",
+    detailsHint: "Näytä tiedot",
+    reviewSections: "Suunnitelman tiedot",
   },
 } as const;
 
-function humanize(value: string): string {
-  return value.replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+function countLabel(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? singular : plural}`;
 }
 
 export function StorefrontGenerationReviewPanel({
@@ -133,7 +133,18 @@ export function StorefrontGenerationReviewPanel({
   const canonicalReview = validateStorefrontGenerationReview(review);
   const text = copy[locale];
   const confirmDisabled = busy || !canonicalReview.canCreateProject;
-  const displayedStatus = canonicalReview.canCreateProject ? canonicalReview.status : "blocked";
+  const diagnostics = presentDiagnostics(canonicalReview, locale);
+  const assumptions = presentAssumptions(canonicalReview, locale);
+  const noteCount = diagnostics.notes.length + assumptions.length;
+  const blockersRef = useRef<HTMLElement>(null);
+  const detailSections = canonicalReview.sections.filter(
+    ({ id }) => !["assumptions", "warnings", "blockers"].includes(id),
+  );
+
+  const focusBlockers = () => {
+    blockersRef.current?.focus();
+    blockersRef.current?.scrollIntoView?.({ block: "start" });
+  };
 
   return (
     <section className={styles.panel} aria-busy={busy} aria-labelledby="generation-review-title">
@@ -141,13 +152,40 @@ export function StorefrontGenerationReviewPanel({
         <p className={styles.eyebrow}>Veskify</p>
         <h2 id="generation-review-title">{canonicalReview.title[locale]}</h2>
         <p className={styles.summary}>{canonicalReview.summary[locale]}</p>
-        <p
-          className={`${styles.overallStatus} ${styles[`status-${displayedStatus}`]}`}
-          role="status"
-        >
-          {statusLabels[locale][displayedStatus]}
-        </p>
       </header>
+
+      <section className={styles.readiness} aria-labelledby="readiness-title">
+        <div className={styles.readinessMain} role="status">
+          <span
+            aria-hidden="true"
+            className={`${styles.readinessIcon} ${
+              canonicalReview.canCreateProject ? styles.readinessReady : styles.readinessBlocked
+            }`}
+          />
+          <div>
+            <h3 id="readiness-title">
+              {canonicalReview.canCreateProject ? text.ready : text.attention}
+            </h3>
+            <p>
+              {canonicalReview.canCreateProject ? text.readyDescription : text.attentionDescription}
+            </p>
+          </div>
+        </div>
+        <ul className={styles.readinessCounts} aria-label={text.reviewSections}>
+          <li className={diagnostics.blockers.length ? styles.countBlocked : undefined}>
+            {countLabel(diagnostics.blockers.length, text.blocker, text.blockersCount)}
+          </li>
+          <li className={diagnostics.warnings.length ? styles.countWarning : undefined}>
+            {countLabel(diagnostics.warnings.length, text.warning, text.warningsCount)}
+          </li>
+          <li>{countLabel(noteCount, text.note, text.notesCount)}</li>
+        </ul>
+        {diagnostics.blockers.length ? (
+          <button className={styles.jumpButton} onClick={focusBlockers} type="button">
+            {text.jumpToBlockers}
+          </button>
+        ) : null}
+      </section>
 
       {errorMessage ? (
         <div className={styles.error} role="alert">
@@ -160,150 +198,170 @@ export function StorefrontGenerationReviewPanel({
         </p>
       ) : null}
 
-      <div className={styles.sections}>
-        {canonicalReview.sections.map((reviewSection) => (
+      <div className={styles.diagnosticGroups}>
+        {diagnostics.blockers.length ? (
           <section
-            className={styles.section}
-            key={reviewSection.id}
-            aria-labelledby={`review-section-${reviewSection.id}`}
+            className={`${styles.diagnosticGroup} ${styles.blockerGroup}`}
+            id="review-blockers"
+            ref={blockersRef}
+            tabIndex={-1}
+            aria-labelledby="review-blockers-title"
           >
-            <div className={styles.sectionHeader}>
-              <div>
-                <h3 id={`review-section-${reviewSection.id}`}>{reviewSection.heading[locale]}</h3>
-                <p>{reviewSection.summary[locale]}</p>
-              </div>
-              <span
-                className={`${styles.sectionStatus} ${styles[`section-${reviewSection.status}`]}`}
-              >
-                {sectionStatusLabels[locale][reviewSection.status]}
-              </span>
-            </div>
+            <h3 id="review-blockers-title">{text.blockers}</h3>
+            <p>{text.blockerIntro}</p>
+            <DiagnosticList diagnostics={diagnostics.blockers} />
+          </section>
+        ) : null}
 
-            {reviewSection.id === "storefront-pages" ? (
-              canonicalReview.pageSummaries.length ? (
-                <div className={styles.pageList}>
-                  {canonicalReview.pageSummaries.map((page) => (
-                    <article className={styles.pageCard} key={page.id}>
-                      <h4>{pageTypeLabels[locale][page.type] ?? humanize(page.type)}</h4>
-                      <p>{page.path}</p>
-                      <p>
-                        {page.totalSectionCount} {text.sections} · {page.visibleSectionCount}{" "}
-                        {text.visible} · {page.hiddenSectionCount} {text.hidden}
-                      </p>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <p className={styles.empty}>{text.pagesEmpty}</p>
-              )
-            ) : reviewSection.id === "languages" ? (
-              <ul className={styles.factList}>
-                {canonicalReview.languagePlan.selectedLanguages.map((language) => (
-                  <li key={language}>
-                    {languageLabels[locale][language] ?? humanize(language)}
-                    {canonicalReview.languagePlan.primaryLanguage === language
-                      ? ` — ${text.primary}`
-                      : ""}
-                  </li>
-                ))}
-                {!canonicalReview.languagePlan.selectedLanguages.length ? (
-                  <li>{text.notSpecified}</li>
-                ) : null}
-              </ul>
-            ) : reviewSection.id === "catalogue" ? (
-              <p className={styles.catalogueValue}>
-                {canonicalReview.catalogueContext
-                  ? catalogueLabels[locale][canonicalReview.catalogueContext]
-                  : text.notSpecified}
-              </p>
-            ) : reviewSection.id === "assumptions" ? (
-              canonicalReview.assumptions.length ? (
-                <ul className={styles.factList}>
-                  {canonicalReview.assumptions.map((assumption, index) => (
-                    <li key={`${index}-${assumption.en}`}>{assumption[locale]}</li>
+        {diagnostics.warnings.length ? (
+          <section
+            className={`${styles.diagnosticGroup} ${styles.warningGroup}`}
+            aria-labelledby="review-warnings-title"
+          >
+            <h3 id="review-warnings-title">{text.warnings}</h3>
+            <p>{text.warningIntro}</p>
+            <DiagnosticList diagnostics={diagnostics.warnings} />
+          </section>
+        ) : null}
+
+        {noteCount ? (
+          <details className={`${styles.diagnosticGroup} ${styles.noteGroup}`}>
+            <summary>
+              <span>{text.notes}</span>
+              <span className={styles.noteCount}>{noteCount}</span>
+            </summary>
+            <div className={styles.noteContent}>
+              <p>{text.notesIntro}</p>
+              {diagnostics.notes.length ? <DiagnosticList diagnostics={diagnostics.notes} /> : null}
+              {assumptions.length ? (
+                <ul className={styles.assumptionList}>
+                  {assumptions.map((assumption) => (
+                    <li key={assumption}>{assumption}</li>
                   ))}
                 </ul>
-              ) : (
-                <p className={styles.empty}>{text.assumptionsEmpty}</p>
-              )
-            ) : reviewSection.id === "warnings" ? (
-              canonicalReview.warnings.length ? (
-                <>
-                  <p className={styles.supportingCopy}>{text.warningIntro}</p>
-                  <DiagnosticList
-                    diagnostics={canonicalReview.warnings}
-                    locale={locale}
-                    tone="warning"
-                  />
-                </>
-              ) : (
-                <p className={styles.empty}>{text.warningsEmpty}</p>
-              )
-            ) : reviewSection.id === "blockers" ? (
-              canonicalReview.blockers.length ? (
-                <>
-                  <p className={styles.supportingCopy}>{text.blockerIntro}</p>
-                  <DiagnosticList
-                    diagnostics={canonicalReview.blockers}
-                    locale={locale}
-                    tone="blocked"
-                  />
-                </>
-              ) : (
-                <p className={styles.empty}>{text.blockersEmpty}</p>
-              )
-            ) : reviewSection.facts.filter((item) => !["brief-id", "foundation"].includes(item.id))
-                .length ? (
-              <dl className={styles.facts}>
-                {reviewSection.facts
-                  .filter((item) => !["brief-id", "foundation"].includes(item.id))
-                  .map((item) => (
-                    <div key={item.id}>
-                      <dt>{item.label[locale]}</dt>
-                      <dd>{item.value}</dd>
-                    </div>
-                  ))}
-              </dl>
-            ) : null}
-          </section>
+              ) : null}
+            </div>
+          </details>
+        ) : null}
+      </div>
+
+      <div className={styles.sections} aria-label={text.reviewSections}>
+        {detailSections.map((reviewSection) => (
+          <ReviewSection
+            key={reviewSection.id}
+            locale={locale}
+            review={canonicalReview}
+            section={reviewSection}
+          />
         ))}
       </div>
 
-      {!canonicalReview.canCreateProject && !busy ? (
-        <p className={styles.disabledCopy}>{text.resolve}</p>
-      ) : null}
       <footer className={styles.actions}>
-        <button type="button" className={styles.backButton} onClick={onBack} disabled={busy}>
-          {text.back}
-        </button>
-        <button
-          type="button"
-          className={styles.confirmButton}
-          onClick={onConfirmCreate}
-          disabled={confirmDisabled}
-          aria-disabled={confirmDisabled}
-        >
-          {busy ? text.creating : errorMessage ? text.retry : text.create}
-        </button>
+        <div>
+          {!canonicalReview.canCreateProject && !busy ? (
+            <p className={styles.disabledCopy}>{text.resolve}</p>
+          ) : null}
+        </div>
+        <div className={styles.actionButtons}>
+          <button type="button" className={styles.backButton} onClick={onBack} disabled={busy}>
+            {text.back}
+          </button>
+          <button
+            type="button"
+            className={styles.confirmButton}
+            onClick={onConfirmCreate}
+            disabled={confirmDisabled}
+            aria-disabled={confirmDisabled}
+          >
+            {busy ? text.creating : errorMessage ? text.retry : text.create}
+          </button>
+        </div>
       </footer>
     </section>
   );
 }
 
-function DiagnosticList({
-  diagnostics,
+function ReviewSection({
   locale,
-  tone,
+  review,
+  section,
 }: {
-  diagnostics: StorefrontGenerationReview["warnings"];
   locale: Locale;
-  tone: "warning" | "blocked";
+  review: StorefrontGenerationReview;
+  section: StorefrontGenerationReviewSection;
 }) {
+  const text = copy[locale];
+  const catalogue = section.id === "catalogue" ? cataloguePresentation(review, locale) : null;
+  const heading = catalogue?.heading ?? section.heading[locale];
+  const facts = presentFacts(section, locale);
+  const open = section.status === "blocked" || section.status === "warning";
+
   return (
-    <ul className={`${styles.diagnosticList} ${styles[`diagnostic-${tone}`]}`}>
-      {diagnostics.map((diagnostic, index) => (
-        <li key={`${diagnostic.stage}-${diagnostic.code}-${index}`}>
-          <strong>{diagnostic.context[locale]}</strong>
+    <details className={styles.section} open={open}>
+      <summary className={styles.sectionHeader}>
+        <div>
+          <h3 id={`review-section-${section.id}`}>{heading}</h3>
+          <p>{catalogue?.title ?? section.summary[locale]}</p>
+        </div>
+        <span className={`${styles.sectionStatus} ${styles[`section-${section.status}`]}`}>
+          {sectionStatusLabels[locale][section.status]}
+        </span>
+        <span className={styles.detailsHint}>{text.detailsHint}</span>
+      </summary>
+      <div className={styles.sectionContent}>
+        {catalogue ? (
+          <p className={styles.catalogueDescription}>{catalogue.description}</p>
+        ) : section.id === "storefront-pages" ? (
+          review.pageSummaries.length ? (
+            <div className={styles.pageList}>
+              {review.pageSummaries.map((page) => (
+                <article className={styles.pageCard} key={page.id}>
+                  <h4>{localizedPageType(page.type, locale)}</h4>
+                  <p>
+                    <span className={styles.visuallyHidden}>{text.path}: </span>
+                    {page.path}
+                  </p>
+                  <p>
+                    {page.totalSectionCount} {text.sections} · {page.visibleSectionCount}{" "}
+                    {text.visible}
+                    {page.hiddenSectionCount ? ` · ${page.hiddenSectionCount} ${text.hidden}` : ""}
+                  </p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.empty}>{text.pagesEmpty}</p>
+          )
+        ) : section.id === "languages" ? (
+          <ul className={styles.factList}>
+            {review.languagePlan.selectedLanguages.map((language) => (
+              <li key={language}>
+                {languageLabels[locale][language]}
+                {review.languagePlan.primaryLanguage === language ? ` — ${text.primary}` : ""}
+              </li>
+            ))}
+          </ul>
+        ) : facts.length ? (
+          <dl className={styles.facts}>
+            {facts.map((fact) => (
+              <div key={fact.key}>
+                <dt>{fact.label}</dt>
+                <dd>{fact.value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+      </div>
+    </details>
+  );
+}
+
+function DiagnosticList({ diagnostics }: { diagnostics: MerchantDiagnostic[] }) {
+  return (
+    <ul className={styles.diagnosticList}>
+      {diagnostics.map((diagnostic) => (
+        <li key={diagnostic.key}>
+          <strong>{diagnostic.title}</strong>
           <span>{diagnostic.message}</span>
         </li>
       ))}
