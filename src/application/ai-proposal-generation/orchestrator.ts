@@ -80,6 +80,7 @@ function sameTarget(
 type ActiveGeneration = {
   key: string;
   sequence: number;
+  controller: AbortController;
   promise: Promise<AiProposalGenerationResult>;
 };
 
@@ -121,6 +122,7 @@ export class AiProposalGenerationOrchestrator {
       command = parseAiProposalGenerationCommand(commandInput);
     } catch {
       this.#sequence += 1;
+      this.#active?.controller.abort();
       this.#active = null;
       return Promise.resolve(this.#fail(null, "invalidCommand"));
     }
@@ -129,6 +131,7 @@ export class AiProposalGenerationOrchestrator {
       request = buildAiOperationRequest(command);
     } catch (error) {
       this.#sequence += 1;
+      this.#active?.controller.abort();
       this.#active = null;
       const code =
         error instanceof AiProposalRequestBuildError && error.code === "unsupported-request"
@@ -163,12 +166,20 @@ export class AiProposalGenerationOrchestrator {
     });
     if (this.#active?.key === key) return this.#active.promise;
 
+    this.#active?.controller.abort();
     this.#sequence += 1;
     const sequence = this.#sequence;
-    const promise = this.#run(command, request, pageFingerprint, sequence).finally(() => {
+    const controller = new AbortController();
+    const promise = this.#run(
+      command,
+      request,
+      pageFingerprint,
+      sequence,
+      controller.signal,
+    ).finally(() => {
       if (this.#active?.sequence === sequence) this.#active = null;
     });
-    this.#active = { key, sequence, promise };
+    this.#active = { key, sequence, controller, promise };
     return promise;
   }
 
@@ -177,6 +188,7 @@ export class AiProposalGenerationOrchestrator {
     request: ReturnType<typeof buildAiOperationRequest>,
     pageFingerprint: string,
     sequence: number,
+    signal: AbortSignal,
   ): Promise<AiProposalGenerationResult> {
     this.#state = "generating";
     this.#proposal = null;
@@ -189,7 +201,7 @@ export class AiProposalGenerationOrchestrator {
     });
 
     try {
-      const result = await requestAiProposal(command.provider, request);
+      const result = await requestAiProposal(command.provider, request, { signal });
       if (sequence !== this.#sequence) {
         return this.#resultWithoutReplacingCurrent("superseded");
       }
