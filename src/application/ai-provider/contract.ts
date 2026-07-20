@@ -186,8 +186,12 @@ export type AiOperationPermissionGrant = z.infer<typeof aiOperationPermissionGra
 export type AiProviderResponse = z.infer<typeof aiProviderResponseSchema>;
 export type AiProviderDiagnostic = z.infer<typeof aiProviderDiagnosticSchema>;
 
+export type AiProviderRequestOptions = Readonly<{
+  signal?: AbortSignal;
+}>;
+
 export interface AIProvider {
-  proposeChange(request: AiOperationRequest): Promise<unknown>;
+  proposeChange(request: AiOperationRequest, options?: AiProviderRequestOptions): Promise<unknown>;
 }
 
 export type ValidatedAiProposal = AiProviderResponse & { proposedPage: PageModel };

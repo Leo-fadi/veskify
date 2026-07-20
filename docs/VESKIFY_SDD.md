@@ -1026,7 +1026,47 @@ checked before the result is exposed to a later onboarding review or project-cre
 
 ## 12.10 Model/provider abstraction
 
-The demo must use an AIProvider interface. A deterministic MockAIProvider is the default so the repository runs without secrets. A real provider may be enabled through environment configuration. The provider implementation must not leak provider-specific response formats into editor or domain code. The later Vesko integration can route AI workloads through AWS infrastructure.
+The demo must use an `AIProvider` interface. It supports an explicit deterministic provider and an
+optional OpenAI provider. The deterministic provider remains the default for local development,
+tests and CI so the repository runs without secrets. Provider selection is server-owned and must
+never silently fall back from OpenAI to the deterministic provider. Provider-specific request and
+response formats must not leak into editor or domain code. The later Vesko integration can route AI
+workloads through AWS infrastructure.
+
+| **Environment variable**         | **Contract**                                                                                                      |
+|----------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| `VESKIFY_AI_PROVIDER`            | Selects `mock` (default) or `openai`; unknown values fail closed.                                                 |
+| `OPENAI_API_KEY`                 | Required only for explicit OpenAI selection and read only by server code.                                         |
+| `VESKIFY_OPENAI_MODEL`           | Optional server-side OpenAI model override.                                                                       |
+| `VESKIFY_OPENAI_TIMEOUT_MS`      | Optional bounded server-side request timeout.                                                                     |
+| `VESKIFY_REAL_PROVIDER_SMOKE`    | Must equal `1`, together with `OPENAI_API_KEY`, before the opt-in local real-provider smoke test may run.          |
+
+The OpenAI adapter uses the official TypeScript SDK and Responses API with storage disabled. It
+requests strict structured output through an OpenAI-supported JSON Schema subset. Unsupported
+validation keywords are removed only from the provider-facing schema; the returned value remains
+untrusted, is parsed again with the full local Zod schema and must pass all canonical operation,
+permission, registry, locale, protected-field, executable-content, scope and isolated-application
+validation before it can become a ready proposal. An empty operation list is invalid.
+
+Browser request data is untrusted. The authoritative server boundary accepts only bounded intent
+and identity fields, authenticates and authorizes the project, reloads or verifies the canonical
+project, draft, revision, page, section and locale, and reconstructs target-bound permissions and
+fingerprints from server state. The browser cannot authorize its own operations, components,
+protected fields or fingerprints. The OpenAI key and provider selection remain server-only.
+
+Controlled generation failure categories cover missing API key, authentication failure, rate
+limiting, timeout, cancellation, network failure, provider refusal, malformed output, canonical
+validation rejection, unavailable model, unavailable server authority and unexpected provider
+failure. Unauthorized access is returned separately from retryable authority unavailability;
+unsupported merchant requests are non-provider validation outcomes; stale canonical identity or
+revision conflicts remain conflicts. No failure may expose raw authentication, repository, planner
+or provider errors.
+
+Prompts, merchant instructions and full provider responses must not be logged. API keys must never
+leave the server. Only safe metadata such as provider/model identifiers, provider request ID,
+duration, normalized outcome and numeric token counts may be recorded. Production authentication,
+tenant authorization, managed secret storage and rate limiting remain deployment boundaries that
+must be supplied before the real provider route is enabled in production.
 
 # 13. Draft, preview, versioning and publishing
 
@@ -1456,6 +1496,13 @@ generateMetadata(input: MetadataContext): Promise&lt;AIProposalEnvelope&gt;;<br 
 </tbody>
 </table>
 
+The current single-page proposal path uses `proposeChange` through the same provider-independent
+boundary. Its server route rebuilds canonical request authority before provider invocation and
+returns distinct controlled outcomes for unauthorized access (401), unsupported requests (400),
+stale or invalid canonical identity (409), and retryable authority unavailability (503). Provider
+output is data only and cannot mutate draft or published state before canonical validation and
+merchant acceptance.
+
 ## 17.3 Image provider interface
 
 <table>
@@ -1603,9 +1650,18 @@ restore(projectId: string, snapshotId: string): Promise&lt;StorefrontSnapshot&gt
 
 - Developer details may be logged to the console in development but not shown in merchant mode.
 
+- Authorization failures, unsupported requests, stale canonical conflicts, retryable authority
+  outages and provider failures must remain distinguishable without exposing raw backend errors.
+
+- A failed authority lookup, request build, provider call, schema parse or canonical validation must
+  leave the active draft, stored draft and published snapshot unchanged.
+
 ## 19.3 Observability for future integration
 
-Provider calls should record request IDs, operation counts, validation outcomes, latency and token/cost metadata where available. Prompt content and merchant data must not be logged by default. The later AWS deployment can connect these events to Vesko observability services.
+Provider calls should record request IDs, operation counts, validation outcomes, latency and
+token/cost metadata where available. Prompt content, merchant instructions, generated copy, full
+provider responses, protected section values and API keys must not be logged. The later AWS
+deployment can connect privacy-safe metadata events to Vesko observability services.
 
 # 20. Security and privacy
 
@@ -1621,13 +1677,24 @@ Provider calls should record request IDs, operation counts, validation outcomes,
 
 - Do not send more project data to an AI provider than required for the requested operation.
 
+- Build provider prompts from canonical component-registry metadata. Omit registry-protected and
+  read-only section paths, product/catalogue identities and operational commerce values while
+  retaining only the permitted merchant-facing text and design context required by the request.
+
+- Treat strict provider output as untrusted and revalidate it with the complete local schemas and
+  semantic guards; provider-facing schema limitations must never weaken canonical validation.
+
 - Provide a clear Reset/Delete demo project action that removes locally stored project data.
 
 - Do not store payment details, personal order data or production customer information in the standalone demo.
 
 ## 20.1 Prompt injection and imported content
 
-Website text, spreadsheet cells, product descriptions and uploaded files are data, not instructions. The AI context builder must label imported content as untrusted and must not follow instructions contained inside it. Only direct authenticated user instructions and system-defined policies may control operations.
+Website text, spreadsheet cells, product descriptions and uploaded files are data, not instructions.
+The AI context builder must label imported and merchant-facing content as untrusted and must not
+follow instructions contained inside it. Only direct authenticated user instructions and
+system-defined policies may control operations. Prompt construction must not mutate the canonical
+page, section, draft, catalogue or published snapshot.
 
 # 21. Testing and acceptance criteria
 
