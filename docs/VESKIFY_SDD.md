@@ -947,9 +947,28 @@ an introduced-section grant matching its registered component and target page. U
 duplicate or cross-page section identities, grant-kind or component mismatches, unknown or
 page-incompatible components, unsupported variants or fields, protected fields, and malformed
 operation values are rejected before review or draft mutation. Generation remains P4-05B work;
-atomic multi-page draft application and site-wide history remain P4-05C work (FR-007, FR-014,
+provider-driven whole-storefront generation remains separate from application (FR-007, FR-014,
 FR-015, FR-016, FR-020, FR-027, FR-040, FR-041, FR-042, FR-050, NFR-006, NFR-009, AC-012,
 AC-013, AC-016).
+
+The P4-05C application boundary accepts one validated pending whole-storefront proposal as one
+all-or-nothing active-draft transaction. It rechecks project and draft identity, complete original
+storefront state, target and permission fingerprints, target-bound grants, operation ordering,
+registered components, protected fields, and final projection equality before commit. Operations
+run sequentially against an isolated complete snapshot. Explicitly targeted colour and typography
+design state requires the declared storefront design-system target and matching grant. The complete
+result must preserve snapshot and catalogue identity, page set/order, navigation, untargeted pages,
+unrelated design state, and storefront-wide section uniqueness. Failure returns no result mutation.
+
+One accepted whole-storefront proposal creates one session-only composite history transaction with
+all affected before/after pages, complete before/after design state, unaffected-page fingerprints,
+draft context, timestamp, proposal identity, and complete storefront fingerprints. Commit validates
+both forward application and inverse restoration before changing history. Undo and Redo restore the
+entire transaction as one unit; partial page undo/redo is not possible. Existing single-page
+proposal confirmation and page-local history remain unchanged. Acceptance changes only active
+in-memory draft state; Save draft, publishing, published history, and restore remain explicit
+separate boundaries (FR-026, FR-028, FR-041, FR-042, FR-044–FR-050, NFR-006, NFR-009, AC-006,
+AC-008–AC-012, AC-016).
 
 ## 12.8 Validation and application pipeline
 
@@ -1019,6 +1038,7 @@ The demo must use an AIProvider interface. A deterministic MockAIProvider is the
 | Draft snapshot     | Editable working copy. All AI and manual edits occur here.              |
 | Pending proposal   | Temporary operation set that can be accepted, revised or rejected.      |
 | History snapshot   | Timestamped copy created on publish, restore or selected major changes. |
+| Composite editor transaction | Session-only whole-storefront before/after pages and design state applied, undone, or redone as one active-draft unit. |
 
 ## 13.2 Save draft flow
 
@@ -1373,6 +1393,11 @@ New skill-orchestration or provider folders must extend this structure through a
 
 All draft changes must be expressed as commands or structured operations. The editor store applies operations transactionally and records inverse operations for undo. UI components must not mutate nested snapshot objects directly.
 
+Whole-storefront proposal acceptance uses a complete cloned `StorefrontSnapshot` and one composite
+history transaction. The application validates the exact forward and inverse storefront states
+before changing active session state. It never approximates atomicity through independent page
+commits and never writes saved or published state.
+
 ## 16.5 Storefront renderer
 
 - Reads a validated StorefrontSnapshot.
@@ -1403,6 +1428,7 @@ After the demo, the design agent will operate inside Vesko Retail OS and replace
 | generateInitialStorefront(projectId)      | Builds initial brand system and page snapshot.                            |
 | proposeDesignChange(context, prompt)      | Returns validated pending proposal.                                       |
 | applyProposal(projectId, proposalId)      | Applies accepted validated operations to the active draft only.             |
+| applyStorefrontProposal(context, proposal) | Atomically validates and applies one whole-storefront proposal to the complete active draft and records one composite session-history transaction; does not save or publish. |
 | rejectProposal(projectId, proposalId)     | Discards pending proposal and preserves draft.                            |
 | saveDraft(projectId, expectedRevision)    | Persists the active draft without changing published state.                 |
 | publishDraft(projectId, expectation: PublishExpectation) | Separately validates the expected saved draft and published base, creates history, and atomically replaces the published snapshot with a synchronized saved draft. |
