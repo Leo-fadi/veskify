@@ -207,6 +207,31 @@ function assertAffectedDesignState(proposal: AiStorefrontReadyProposal) {
   }
 }
 
+function assertGlobalColourPayloads(proposal: AiStorefrontReadyProposal) {
+  const affectedColors = proposal.affectedDesignState?.colors;
+  const proposedColors = proposal.proposedStorefront.brandSystem.colors;
+  const operationColourPayloads = proposal.operations.flatMap((operation) =>
+    operation.operation.type === "APPLY_APPROVED_BRAND_COLOURS" ? [operation.operation.colors] : [],
+  );
+  if (operationColourPayloads.length === 0 && affectedColors === undefined) return;
+  const affectedFingerprint =
+    affectedColors === undefined ? null : canonicalValueFingerprint(affectedColors);
+  const proposedFingerprint = canonicalValueFingerprint(proposedColors);
+  if (
+    affectedFingerprint === null ||
+    operationColourPayloads.length === 0 ||
+    affectedFingerprint !== proposedFingerprint ||
+    operationColourPayloads.some(
+      (colors) => canonicalValueFingerprint(colors) !== affectedFingerprint,
+    )
+  ) {
+    invalid(
+      "unsupported-design-state",
+      "The global colour operation, affected design state, and proposed storefront colours must match exactly.",
+    );
+  }
+}
+
 function applyAffectedDesignState(
   candidate: StorefrontSnapshot,
   proposal: AiStorefrontReadyProposal,
@@ -287,6 +312,7 @@ export function executeAiStorefrontProposal({
     );
   }
   assertActiveFingerprint(proposal, context.activeDraft);
+  assertGlobalColourPayloads(proposal);
   assertAffectedDesignState(proposal);
 
   let candidate = structuredClone(context.activeDraft);

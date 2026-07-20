@@ -212,6 +212,16 @@ function designSystemProposal() {
   });
 }
 
+function globalColourOperation(proposal: AiStorefrontProposal) {
+  const operation = proposal.operations.find(
+    (candidate) => candidate.operation.type === "APPLY_APPROVED_BRAND_COLOURS",
+  );
+  if (!operation || operation.operation.type !== "APPLY_APPROVED_BRAND_COLOURS") {
+    throw new Error("Expected a global colour operation.");
+  }
+  return operation.operation;
+}
+
 function threeOperationProposal() {
   const target: AiStorefrontTarget = {
     scope: "storefront",
@@ -304,6 +314,65 @@ describe("P4-05C transactional storefront executor", () => {
     expect(result.brandSystem.spacing).toEqual(draft.brandSystem.spacing);
     expect(result.brandSystem.imagery).toEqual(draft.brandSystem.imagery);
     expect(result.brandSystem.voice).toEqual(draft.brandSystem.voice);
+  });
+
+  it.each([
+    [
+      "operation colours differ from affected design state",
+      (proposal: AiStorefrontProposal) => {
+        globalColourOperation(proposal).colors.primary = "#6A4428";
+      },
+    ],
+    [
+      "operation colours differ from the proposed storefront",
+      (proposal: AiStorefrontProposal) => {
+        proposal.proposedStorefront.brandSystem.colors.primary = "#6A4428";
+      },
+    ],
+    [
+      "affected design state colours differ from the proposed storefront",
+      (proposal: AiStorefrontProposal) => {
+        if (!proposal.affectedDesignState?.colors) {
+          throw new Error("Expected affected storefront colours.");
+        }
+        proposal.affectedDesignState.colors.primary = "#6A4428";
+      },
+    ],
+  ])("rejects when %s without mutating any lifecycle state", (_label, tamper) => {
+    const proposal = designSystemProposal();
+    tamper(proposal);
+    const value = coordinator(proposal);
+    const before = value.inspect();
+
+    expect(() => executeAiStorefrontProposal({ proposal, ...applicationContext() })).toThrow(
+      /must match exactly/i,
+    );
+    const rejected = value.accept();
+
+    expect(rejected.state).toBe("failed");
+    expect(rejected.proposal.status).toBe("pending");
+    expect(rejected.activeDraft).toEqual(before.activeDraft);
+    expect(rejected.storedDraft).toEqual(before.storedDraft);
+    expect(rejected.publishedSnapshot).toEqual(before.publishedSnapshot);
+    expect(value.inspectHistory()).toEqual({ past: [], future: [] });
+  });
+
+  it("accepts when the operation, affected design state, and proposed colours match", () => {
+    const proposal = designSystemProposal();
+    const operationColors = globalColourOperation(proposal).colors;
+    expect(canonicalValueString(operationColors)).toBe(
+      canonicalValueString(proposal.affectedDesignState?.colors),
+    );
+    expect(canonicalValueString(operationColors)).toBe(
+      canonicalValueString(proposal.proposedStorefront.brandSystem.colors),
+    );
+
+    const value = coordinator(proposal);
+    const accepted = value.accept();
+
+    expect(accepted.state).toBe("accepted");
+    expect(accepted.activeDraft.brandSystem.colors).toEqual(operationColors);
+    expect(value.inspectHistory().past).toHaveLength(1);
   });
 
   it.each([0, 1, 2])("rolls back when operation %i is invalid", (operationIndex) => {
