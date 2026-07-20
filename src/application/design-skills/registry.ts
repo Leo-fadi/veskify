@@ -10,7 +10,7 @@ import {
 } from "./contract";
 
 const executableContentPattern =
-  /<\/?(?:script|style|iframe|object|embed|html|body)\b|javascript\s*:|\b(?:eval|function)\s*\(|=>\s*\{|```(?:html|css|js|javascript|jsx|tsx)|(?:^|\n)\s*(?:[.#][\w-]+|[a-z][\w-]*)\s*\{[^}]*:[^}]*\}|\b(?:background|color|display|font-family|position)\s*:\s*[^;\n]+;/i;
+  /<\/?[a-z][^>]*>|javascript\s*:|\b(?:eval|function)\s*\(|=>\s*\{|```(?:html|css|js|javascript|jsx|tsx)|(?:^|\n)\s*(?:[.#][\w-]+|[a-z][\w-]*)\s*\{[^}]*:[^}]*\}|\b(?:background|color|display|font-family|position)\s*:\s*[^;\n]+;/i;
 
 export function assertNoExecutableContent(value: unknown) {
   const visit = (item: unknown): void => {

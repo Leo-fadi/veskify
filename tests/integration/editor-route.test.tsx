@@ -1122,14 +1122,26 @@ describe("P2-01 project editor route", () => {
 
   it("persists an accepted proposal through the same canonical save path", async () => {
     const value = statefulRepository();
+    const before = await value.get(aurumNordicSeed.project.id);
+    const publishedBefore = structuredClone(
+      before.snapshots.find((snapshot) => snapshot.id === before.project.publishedSnapshotId),
+    );
     route(value);
     await screen.findByText("Canvas: home / en");
+    const original = visibleCanvasPage();
     fireEvent.click(screen.getByRole("button", { name: "Add a campaign section." }));
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
-    await screen.findByLabelText("Design proposal");
+    const previewCanvas = await screen.findByLabelText("Proposal preview canvas");
+    const accepted = JSON.parse(previewCanvas.getAttribute("data-page")!) as PageModel;
+    expect(await value.get(aurumNordicSeed.project.id)).toEqual(before);
     expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
     await screen.findByText(/accepted for draft application/i);
+    expect(visibleCanvasPage()).toEqual(accepted);
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(visibleCanvasPage()).toEqual(original);
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(visibleCanvasPage()).toEqual(accepted);
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
     await screen.findByText("Draft saved successfully.");
 
@@ -1138,6 +1150,9 @@ describe("P2-01 project editor route", () => {
       (snapshot) => snapshot.id === after.project.draftSnapshotId,
     )!;
     expect(saved.pages.find((page) => page.type === "home")?.sections).toHaveLength(11);
+    expect(
+      after.snapshots.find((snapshot) => snapshot.id === after.project.publishedSnapshotId),
+    ).toEqual(publishedBefore);
   });
 
   it("treats edits after save as new work and discards to the latest saved baseline", async () => {
@@ -1666,5 +1681,33 @@ describe("P4-04 editor AI command integration", () => {
     });
     await provider.resolve(1);
     expect(await screen.findByLabelText("Design proposal")).toBeVisible();
+  });
+
+  it("prevents repeated retry activation while pending and after the single retry fails", async () => {
+    const provider = new DeferredProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      provider,
+    );
+    const request = await screen.findByLabelText("Your request");
+    fireEvent.change(request, {
+      target: { value: "Make the homepage feel more luxurious." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    provider.reject(0);
+    const retry = await screen.findByRole("button", { name: "Retry" });
+
+    fireEvent.click(retry);
+    fireEvent.click(retry);
+    expect(provider.calls).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+
+    provider.reject(1);
+    expect(await screen.findByRole("alert")).toHaveTextContent(/temporarily unavailable/i);
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+    expect(request).toHaveValue("Make the homepage feel more luxurious.");
+
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(provider.calls).toHaveLength(3);
   });
 });

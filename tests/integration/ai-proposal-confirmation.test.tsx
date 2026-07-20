@@ -250,4 +250,47 @@ describe("P4-03 to P4-02 proposal confirmation integration", () => {
     ).toBe("accepted");
     expect(current.page).toEqual(retryGenerated.proposal.proposedPage);
   });
+
+  it("rejects wrong project, snapshot, revision and target identities before application", async () => {
+    const publishedBefore = structuredClone(aurumNordicSeed.publishedSnapshot);
+    for (const changeIdentity of [
+      (current: AiProposalEditorIdentity): AiProposalEditorIdentity => ({
+        ...current,
+        projectId: "project_wrong",
+      }),
+      (current: AiProposalEditorIdentity): AiProposalEditorIdentity => ({
+        ...current,
+        draftSnapshotId: "snapshot_wrong",
+      }),
+      (current: AiProposalEditorIdentity): AiProposalEditorIdentity => ({
+        ...current,
+        draftRevision: current.draftRevision + 1,
+      }),
+      (current: AiProposalEditorIdentity): AiProposalEditorIdentity => ({
+        ...current,
+        target: {
+          type: "section",
+          pageId: current.page.id,
+          sectionId: current.page.sections.find((section) => section.component === "hero")!.id,
+        },
+      }),
+    ]) {
+      const store = new InMemoryDesignProposalStore();
+      let current = identity();
+      const generated = await readyProposal(store, () => current);
+      const confirmation = new AiProposalConfirmationOrchestrator({
+        proposalStore: store,
+        currentIdentity: () => current,
+      });
+      expect(confirmation.open(generated).state).toBe("ready");
+      const draftBefore = structuredClone(current.page);
+      current = changeIdentity(current);
+
+      expect(confirmation.beginAcceptance().state).toBe("stale");
+      expect(store.inspect(generated.proposal.id).status).toBe("rejected");
+      expect(current.page).toEqual(draftBefore);
+      expect(aurumNordicSeed.publishedSnapshot).toEqual(publishedBefore);
+      expect(() => confirmation.beginAcceptance()).toThrow(/ready or retryable/i);
+    }
+  });
 });

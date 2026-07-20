@@ -286,10 +286,13 @@ describe("canonical AI operation provider boundary", () => {
 
   it.each([
     ["HTML", "<script>alert(1)</script>"],
+    ["raw HTML markup", '<div data-injected="true">Injected markup</div>'],
     ["javascript URL", "javascript:alert(1)"],
     ["fenced JavaScript", "```javascript\nalert(1)\n```"],
+    ["fenced HTML", "```html\n<div>Injected markup</div>\n```"],
     ["function declaration", "function(){ return true; }"],
     ["CSS rule", ".hero { color: red; }"],
+    ["inline style declaration", "color: red; position: fixed;"],
   ])("rejects %s in generated text", (_label, value) => {
     expect(() =>
       validateAiProviderResponse(request(), providerResponse([textOperation(value)])),
@@ -322,6 +325,41 @@ describe("canonical AI operation provider boundary", () => {
         providerResponse([]),
       ),
     ).toThrow(/incomplete|current/i);
+  });
+
+  it("rejects protected commerce and catalogue fields before draft application", () => {
+    for (const field of ["price", "sku", "stockStatus", "inventory", "payment"]) {
+      expect(() =>
+        validateAiProviderResponse(
+          request(),
+          providerResponse([{ ...textOperation("Protected mutation"), field }]),
+        ),
+      ).toThrow(/could not be safely validated/i);
+    }
+  });
+
+  it("rejects a registered component when it is outside the granted request scope", () => {
+    const pageRequest = request("Add a campaign section.", {
+      target: { pageId: page.id },
+      scope: "page",
+      allowedOperationTypes: ["ADD_APPROVED_SECTION"],
+      allowedComponentTypes: ["hero", "campaignBanner"],
+      permissionGrants: [
+        introducedGrant("campaign_allowed", "campaignBanner", ["ADD_APPROVED_SECTION"]),
+      ],
+    });
+    expect(() =>
+      validateAiProviderResponse(
+        pageRequest,
+        providerResponse([
+          {
+            type: "ADD_APPROVED_SECTION",
+            sectionId: "hero_registered_but_not_granted",
+            component: "hero",
+          },
+        ]),
+      ),
+    ).toThrow(/approved skill target/i);
   });
 
   it("rejects stale target page identity before operations are applied", () => {
