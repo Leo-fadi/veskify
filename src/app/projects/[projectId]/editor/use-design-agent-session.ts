@@ -263,6 +263,7 @@ export function useDesignAgentSession({
 }: UseDesignAgentSessionInput): DesignAgentSessionController {
   const actionSequence = useRef(0);
   const acceptancePending = useRef(false);
+  const generationPending = useRef(false);
   const clarificationRequest = useRef<{ instruction: string; useOriginal: boolean } | null>(null);
   const merchantInstruction = useRef("");
   const lastGenerationInstruction = useRef("");
@@ -279,6 +280,7 @@ export function useDesignAgentSession({
   const [clarificationAnswer, setClarificationAnswer] = useState("");
   const [revision, setRevision] = useState("");
   const [session, setSession] = useState<ProposalReviewUiSession | null>(null);
+  const [generationRetryUsed, setGenerationRetryUsed] = useState(false);
 
   const locale = activeLocale ?? primaryLocale ?? "en";
   const fallbackLocale = primaryLocale ?? locale;
@@ -337,6 +339,8 @@ export function useDesignAgentSession({
   const clearWorkflow = useCallback((status?: LocalizedText) => {
     actionSequence.current += 1;
     acceptancePending.current = false;
+    generationPending.current = false;
+    setGenerationRetryUsed(false);
     clarificationRequest.current = null;
     setClarificationAnswer("");
     setRevision("");
@@ -434,7 +438,8 @@ export function useDesignAgentSession({
     instruction: string,
     mode: "initial" | "revision" | "regeneration" = "initial",
   ) => {
-    if (disabled) return;
+    if (disabled || generationPending.current) return;
+    generationPending.current = true;
     closePending();
     const actionId = actionSequence.current + 1;
     actionSequence.current = actionId;
@@ -464,6 +469,8 @@ export function useDesignAgentSession({
         fi: "Pyyntöä ei voitu toteuttaa turvallisesti. Nykyinen sivu säilyi ennallaan.",
       };
       setSession(uiSession("failed", message, { failure: { message, retryable: true } }));
+    } finally {
+      if (actionSequence.current === actionId) generationPending.current = false;
     }
   };
 
@@ -479,6 +486,7 @@ export function useDesignAgentSession({
       return;
     }
     merchantInstruction.current = instruction;
+    setGenerationRetryUsed(false);
     const classification = runtime.clarificationProvider.classifyDesignRequest(instruction, locale);
     if (classification.requiresClarification && classification.clarifications[0]) {
       clarificationRequest.current = {
@@ -504,6 +512,7 @@ export function useDesignAgentSession({
     const answer = clarificationAnswer.trim();
     if (!pending || !answer || disabled) return;
     clarificationRequest.current = null;
+    setGenerationRetryUsed(false);
     void generate(pending.useOriginal ? pending.instruction : answer);
   };
 
@@ -522,11 +531,13 @@ export function useDesignAgentSession({
       setSession((current) => (current ? { ...current, status: message } : current));
       return;
     }
+    setGenerationRetryUsed(false);
     void generate(minimalRevisionRequest(locale), "revision");
   };
 
   const regenerateProposal = () => {
     if (session?.state !== "proposalReady" || !lastGenerationInstruction.current) return;
+    setGenerationRetryUsed(false);
     void generate(lastGenerationInstruction.current, "regeneration");
   };
 
@@ -535,11 +546,13 @@ export function useDesignAgentSession({
       disabled ||
       session?.state !== "failed" ||
       !session.failure?.retryable ||
+      generationRetryUsed ||
       !lastGenerationInstruction.current ||
       runtime.confirmation.inspect().generatedProposal
     ) {
       return;
     }
+    setGenerationRetryUsed(true);
     void generate(lastGenerationInstruction.current);
   };
 
@@ -657,9 +670,11 @@ export function useDesignAgentSession({
     closePending();
     runtime.confirmation.reset();
     actionSequence.current += 1;
+    generationPending.current = false;
     clarificationRequest.current = null;
     merchantInstruction.current = "";
     lastGenerationInstruction.current = "";
+    setGenerationRetryUsed(false);
     setRequest("");
     setClarificationAnswer("");
     setRevision("");
@@ -674,6 +689,7 @@ export function useDesignAgentSession({
     updateRuntimeIdentity(nextPage, nextSectionId);
     actionSequence.current += 1;
     acceptancePending.current = false;
+    generationPending.current = false;
     clarificationRequest.current = null;
     setClarificationAnswer("");
     setRevision("");
@@ -740,6 +756,7 @@ export function useDesignAgentSession({
   const generationRetryAvailable =
     session?.state === "failed" &&
     Boolean(session.failure?.retryable) &&
+    !generationRetryUsed &&
     Boolean(request.trim()) &&
     generatedProposal === null;
   const updateRequest = (nextRequest: string) => {

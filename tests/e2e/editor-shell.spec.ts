@@ -134,6 +134,11 @@ test("requests, previews, rejects and accepts deterministic proposals on mobile"
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect(page.getByText("Draft saved successfully.")).toBeVisible();
+  await page.goto("/projects/project_aurum_nordic/published");
+  await expect(page.getByText("Published storefront")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Discover Rings" })).toHaveCount(0);
 });
 
 test("uses the selected Puck section and shows localized grouped proposal details", async ({
