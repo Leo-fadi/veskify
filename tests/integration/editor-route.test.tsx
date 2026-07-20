@@ -2,6 +2,11 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+import {
+  createDeterministicMockAIProvider,
+  type AIProvider,
+  type AiOperationRequest,
+} from "@/application/ai-provider";
 import type { ProposalAnalyticsEvent } from "@/application/analytics";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
 import { aurumNordicSeed } from "@/data/seed";
@@ -48,14 +53,13 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     >
       Canvas: {page.type} / {context.activeLocale}
       {readOnlyLabel === "Proposal preview canvas" ? <span>Locked proposal</span> : null}
+      <button onClick={() => onSelectedSectionChange?.(undefined)} type="button">
+        Clear section selection
+      </button>
       {page.sections.map((section) => (
         <div key={`section-${section.id}`}>
           {section.visible ? null : <span>Hidden {section.component} section</span>}
-          <button
-            disabled={readOnly}
-            onClick={() => onSelectedSectionChange?.(section.id)}
-            type="button"
-          >
+          <button onClick={() => onSelectedSectionChange?.(section.id)} type="button">
             Select {section.component} section
           </button>
           {!["header", "footer"].includes(section.component) ? (
@@ -155,8 +159,43 @@ function repository(get: ProjectRepository["get"]): ProjectRepository {
 
 const statefulRepository = () => new InMemoryProjectRepository([aggregate()]);
 
-const route = (value: ProjectRepository) =>
-  render(<ProjectEditorClient projectId="project_aurum_nordic" repositoryFactory={() => value} />);
+const route = (value: ProjectRepository, aiProvider?: AIProvider) =>
+  render(
+    <ProjectEditorClient
+      aiProvider={aiProvider}
+      projectId="project_aurum_nordic"
+      repositoryFactory={() => value}
+    />,
+  );
+
+class RecordingProvider implements AIProvider {
+  readonly calls: AiOperationRequest[] = [];
+  readonly #inner = createDeterministicMockAIProvider();
+
+  proposeChange(request: AiOperationRequest) {
+    this.calls.push(structuredClone(request));
+    return this.#inner.proposeChange(request);
+  }
+}
+
+class DeferredProvider implements AIProvider {
+  readonly calls: AiOperationRequest[] = [];
+  readonly #resolvers: Array<(value: unknown) => void> = [];
+
+  proposeChange(request: AiOperationRequest): Promise<unknown> {
+    this.calls.push(structuredClone(request));
+    return new Promise((resolve) => this.#resolvers.push(resolve));
+  }
+
+  async resolve(index: number) {
+    const response = await createDeterministicMockAIProvider().proposeChange(this.calls[index]);
+    this.#resolvers[index](response);
+  }
+
+  reject(index: number) {
+    this.#resolvers[index](Promise.reject(new Error("provider unavailable")));
+  }
+}
 
 const visibleCanvasPage = () =>
   JSON.parse(screen.getByLabelText("Visual editor canvas").getAttribute("data-page")!) as PageModel;
@@ -596,6 +635,9 @@ describe("P2-01 project editor route", () => {
         exact: true,
       }),
     ).toBeVisible();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Improve the selected hero." },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/not supported yet/i);
     expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
@@ -846,9 +888,10 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByText("Canvas: collection / en")).toBeVisible();
     expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Proposal preview canvas")).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/previous request was closed because you opened another page/i),
-    ).toBeVisible();
+    expect(screen.getByText(/page changed after this request started/i)).toBeVisible();
+    expect(screen.getByLabelText("Your request")).toHaveValue(
+      "Make the homepage feel more luxurious.",
+    );
 
     fireEvent.change(screen.getByLabelText("Storefront page"), {
       target: { value: "page_home" },
@@ -859,7 +902,7 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
   });
 
-  it("keeps a canonically valid proposal open when only the locale changes", async () => {
+  it("canonically stales a ready proposal when the locale changes", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Add a campaign section." }));
@@ -868,10 +911,10 @@ describe("P2-01 project editor route", () => {
 
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
 
-    expect(screen.getByLabelText("Design proposal")).toBeVisible();
-    expect(screen.getByLabelText("Proposal preview canvas")).toHaveAttribute("lang", "fi");
-    expect(screen.getByRole("heading", { name: /kampanjaosio/i })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Hyväksy ja käytä" })).toBeVisible();
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Hyväksy ja käytä" })).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(/sivu muuttui/i);
+    expect(screen.getByLabelText("Pyyntösi")).toHaveValue("Add a campaign section.");
   });
 
   it("accepts a campaign proposal into only the in-memory homepage", async () => {
@@ -998,22 +1041,20 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
   });
 
-  it("switches grouped proposal details between English and Finnish", async () => {
+  it("renders grouped proposal details in the active Finnish locale", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
-    fireEvent.click(screen.getByRole("button", { name: "Add a campaign section." }));
-    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
-    expect(await screen.findByRole("heading", { name: /campaign section/i })).toBeVisible();
-    expect(screen.getByText("Home · 1 sections", { exact: true })).toBeVisible();
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
-    expect(screen.getByRole("heading", { name: /kampanjaosio/i })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Lisää kampanjaosio." }));
+    fireEvent.click(screen.getByRole("button", { name: "Luo ehdotus" }));
+    expect(await screen.findByRole("heading", { name: /kampanjaosio/i })).toBeVisible();
     expect(screen.getByText("Etusivu · 1 osiota", { exact: true })).toBeVisible();
     const localizedDetails = within(screen.getByLabelText("Ehdotetut muutokset")).getAllByRole(
       "listitem",
     );
     expect(localizedDetails).toHaveLength(1);
     expect(localizedDetails[0]).toHaveTextContent(/lisää tämä/i);
-    expect(localizedDetails[0]).toHaveTextContent(/englanninkielinen otsikko/i);
+    expect(localizedDetails[0]).toHaveTextContent(/suomenkielinen otsikko/i);
     expect(screen.getByRole("button", { name: "Hyväksy ja käytä" })).toBeEnabled();
   });
 
@@ -1293,5 +1334,337 @@ describe("P2-01 project editor route", () => {
     expect(
       after.snapshots.find((snapshot) => snapshot.id === after.project.publishedSnapshotId),
     ).toEqual(publishedBefore);
+  });
+});
+
+describe("P4-04 editor AI command integration", () => {
+  it("builds canonical page, selected-section and planner-resolved section requests", async () => {
+    const provider = new RecordingProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      provider,
+    );
+    await screen.findByText("Canvas: home / en");
+
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Make the homepage feel more luxurious." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await screen.findByLabelText("Design proposal");
+    expect(provider.calls[0]).toMatchObject({
+      target: { pageId: "page_home" },
+      scope: "page",
+      locale: "en",
+    });
+    expect(screen.getByLabelText("Your request")).toHaveValue("");
+
+    fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Improve the selected hero." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await screen.findByLabelText("Design proposal");
+    expect(provider.calls[1]).toMatchObject({
+      target: { pageId: "page_home", sectionId: "section_home_hero" },
+      scope: "section",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Make the homepage feel more luxurious." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await screen.findByLabelText("Design proposal");
+    expect(provider.calls[2]).toMatchObject({
+      target: { pageId: "page_home" },
+      scope: "page",
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+    fireEvent.click(screen.getByRole("button", { name: "Select header section" }));
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Improve the hero." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await screen.findByRole("alert");
+    expect(provider.calls).toHaveLength(3);
+
+    fireEvent.click(screen.getByRole("button", { name: "Start over" }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear section selection" }));
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Improve the hero." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await screen.findByLabelText("Design proposal");
+    expect(provider.calls[3].target).toEqual({
+      pageId: "page_home",
+      sectionId: "section_home_hero",
+    });
+  });
+
+  it("rejects an empty keyboard submission and localizes composer guidance", async () => {
+    const provider = new RecordingProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      provider,
+    );
+    const request = await screen.findByLabelText("Your request");
+    expect(request).toHaveAttribute(
+      "placeholder",
+      "For example: Make the homepage feel more luxurious.",
+    );
+    expect(screen.getByText(/Control or Command \+ Enter/i)).toBeVisible();
+
+    fireEvent.change(request, { target: { value: "   " } });
+    fireEvent.keyDown(request, { key: "Enter", ctrlKey: true });
+    expect(await screen.findByRole("alert")).toHaveTextContent(/describe the storefront change/i);
+    expect(provider.calls).toHaveLength(0);
+    expect(request).toHaveFocus();
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create proposal" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+    expect(screen.getByLabelText("Pyyntösi")).toHaveAttribute(
+      "placeholder",
+      "Esimerkiksi: Tee etusivusta ylellisempi.",
+    );
+    expect(screen.getByText(/Control tai Command \+ Enter/i)).toBeVisible();
+  });
+
+  it("deduplicates double submit and starts a distinct request after locale changes", async () => {
+    const provider = new DeferredProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      provider,
+    );
+    const request = await screen.findByLabelText("Your request");
+    fireEvent.change(request, { target: { value: "Make the layout more minimal." } });
+    const form = request.closest("form");
+    if (!form) throw new Error("Expected the canonical request form.");
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+    expect(provider.calls).toHaveLength(1);
+    expect(provider.calls[0].locale).toBe("en");
+
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+    const finnishRequest = screen.getByLabelText("Pyyntösi");
+    expect(finnishRequest).toHaveValue("Make the layout more minimal.");
+    fireEvent.change(finnishRequest, { target: { value: "Tee asettelusta pelkistetympi." } });
+    fireEvent.keyDown(finnishRequest, { key: "Enter", ctrlKey: true });
+    expect(provider.calls).toHaveLength(2);
+    expect(provider.calls[1].locale).toBe("fi");
+
+    await provider.resolve(1);
+    expect(await screen.findByLabelText("Design proposal")).toBeVisible();
+    expect(screen.getByLabelText("Pyyntösi")).toHaveValue("");
+    await provider.resolve(0);
+    expect(screen.getByLabelText("Design proposal")).toBeVisible();
+  });
+
+  it("immediately supersedes delayed generation after relevant page content changes", async () => {
+    const editProvider = new DeferredProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      editProvider,
+    );
+    await screen.findByText("Canvas: home / en");
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Make the homepage feel more luxurious." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(editProvider.calls).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Edit current page" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/page changed/i);
+    const request = screen.getByLabelText("Your request");
+    expect(request).toBeEnabled();
+    expect(request).toHaveValue("Make the homepage feel more luxurious.");
+    fireEvent.change(request, { target: { value: "Make the layout more minimal." } });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(editProvider.calls).toHaveLength(2);
+    await editProvider.resolve(0);
+    expect(screen.getByText(/preparing the design proposal/i)).toBeVisible();
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    await editProvider.resolve(1);
+    expect(await screen.findByLabelText("Design proposal")).toHaveTextContent(
+      /simplify the layout/i,
+    );
+  });
+
+  it("immediately supersedes delayed generation after selection changes", async () => {
+    const selectionProvider = new DeferredProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      selectionProvider,
+    );
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Improve the selected hero." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(selectionProvider.calls).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Select productGrid section" }));
+    expect(screen.getByLabelText("Design request")).toHaveAttribute(
+      "data-agent-state",
+      "superseded",
+    );
+    const request = screen.getByLabelText("Your request");
+    expect(request).toBeEnabled();
+    expect(request).toHaveValue("Improve the selected hero.");
+    fireEvent.change(request, { target: { value: "Make the layout more minimal." } });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(selectionProvider.calls).toHaveLength(2);
+    await selectionProvider.resolve(0);
+    expect(screen.getByText(/preparing the design proposal/i)).toBeVisible();
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    await selectionProvider.resolve(1);
+    expect(await screen.findByLabelText("Design proposal")).toHaveTextContent(
+      /simplify the layout/i,
+    );
+  });
+
+  it("closes context-bound clarification for locale and section changes", async () => {
+    const first = route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Make it better." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    const answer = await screen.findByLabelText("Your answer");
+    fireEvent.change(answer, { target: { value: "Make it luxurious." } });
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+    expect(screen.queryByLabelText("Vastauksesi")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Jatka" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Pyyntösi")).toHaveValue("Make it better.");
+    first.unmount();
+
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Make it better." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await screen.findByLabelText("Your answer");
+    fireEvent.click(screen.getByRole("button", { name: "Select productGrid section" }));
+    expect(screen.queryByLabelText("Your answer")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Your request")).toHaveValue("Make it better.");
+  });
+
+  it("supersedes a delayed revision on locale change and ignores its result", async () => {
+    const provider = new DeferredProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      provider,
+    );
+    await screen.findByText("Canvas: home / en");
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Make the homepage feel more luxurious." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await provider.resolve(0);
+    await screen.findByLabelText("Design proposal");
+    fireEvent.change(screen.getByLabelText("How should this proposal change?"), {
+      target: { value: "Make it more minimal." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Revise" }));
+    expect(provider.calls).toHaveLength(2);
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/kieli vaihtui/i);
+    expect(screen.getByLabelText("Pyyntösi")).toHaveValue("Make the homepage feel more luxurious.");
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    await provider.resolve(1);
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+  });
+
+  it("keeps a ready proposal for duplicate selection and stales it for a true target change", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Improve the selected hero." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await screen.findByLabelText("Design proposal");
+
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    expect(screen.getByLabelText("Design proposal")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Accept and apply" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Select productGrid section" }));
+    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Accept and apply" })).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(/page changed/i);
+    expect(screen.getByLabelText("Your request")).toHaveValue("Improve the selected hero.");
+  });
+
+  it("keeps retryable provider failures safe, focused and privacy-preserving", async () => {
+    const events: ProposalAnalyticsEvent[] = [];
+    const listener = (event: Event) => {
+      events.push((event as CustomEvent<ProposalAnalyticsEvent>).detail);
+    };
+    window.addEventListener(browserProposalAnalyticsEventType, listener);
+    try {
+      const provider: AIProvider = {
+        proposeChange: () => Promise.reject(new Error("provider-secret-stack-detail")),
+      };
+      route(
+        repository(() => Promise.resolve(aggregate())),
+        provider,
+      );
+      const request = await screen.findByLabelText("Your request");
+      fireEvent.change(request, {
+        target: { value: "Make the homepage feel more luxurious." },
+      });
+      fireEvent.keyDown(request, { key: "Enter", metaKey: true });
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(/temporarily unavailable/i);
+      expect(request).toHaveValue("Make the homepage feel more luxurious.");
+      const retry = screen.getByRole("button", { name: "Retry" });
+      expect(retry).toHaveFocus();
+      expect(screen.getByRole("button", { name: "Create proposal" })).toBeEnabled();
+      expect(document.body).not.toHaveTextContent("provider-secret-stack-detail");
+      expect(events.map((event) => event.name)).toEqual([
+        "ai_prompt_submitted",
+        "generation_failed",
+      ]);
+      expect(JSON.stringify(events)).not.toMatch(/homepage feel more luxurious|provider-secret/i);
+    } finally {
+      window.removeEventListener(browserProposalAnalyticsEventType, listener);
+    }
+  });
+
+  it("retries once with the preserved instruction and current canonical context", async () => {
+    const user = userEvent.setup();
+    const provider = new DeferredProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      provider,
+    );
+    await screen.findByText("Canvas: home / en");
+    await user.click(screen.getByRole("button", { name: "Select hero section" }));
+    const request = await screen.findByLabelText("Your request");
+    await user.type(request, "Improve the selected hero.");
+    await user.click(screen.getByRole("button", { name: "Create proposal" }));
+    provider.reject(0);
+    const retry = await screen.findByRole("button", { name: "Retry" });
+    expect(retry).toHaveFocus();
+    expect(request).toHaveValue("Improve the selected hero.");
+
+    await user.click(screen.getByRole("radio", { name: "Suomi" }));
+    const finnishRetry = screen.getByRole("button", { name: "Yritä uudelleen" });
+    finnishRetry.focus();
+    await user.keyboard("{Enter}");
+    expect(provider.calls).toHaveLength(2);
+    expect(provider.calls[1]).toMatchObject({
+      instruction: "Improve the selected hero.",
+      locale: "fi",
+      target: { pageId: "page_home", sectionId: "section_home_hero" },
+    });
+    await provider.resolve(1);
+    expect(await screen.findByLabelText("Design proposal")).toBeVisible();
   });
 });

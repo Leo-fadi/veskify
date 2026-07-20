@@ -2,9 +2,11 @@ import { z } from "zod";
 import { idSchema, isoDateTimeSchema } from "@/domain/shared";
 
 export const proposalAnalyticsEventNameSchema = z.enum([
+  "ai_prompt_submitted",
   "ai_proposal_generated",
   "ai_proposal_accepted",
   "ai_proposal_rejected",
+  "generation_failed",
 ]);
 
 export const proposalAnalyticsEventSchema = z

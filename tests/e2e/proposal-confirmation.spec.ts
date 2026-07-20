@@ -51,8 +51,9 @@ test("reloading a proposal review never applies it", async ({ page }) => {
 
 test("renders Finnish proposal review labels", async ({ page }) => {
   await page.goto(editorUrl);
-  await createProposal(page);
   await page.getByRole("radio", { name: "Suomi" }).check();
+  await page.getByRole("button", { name: "Tee asettelusta pelkistetympi." }).click();
+  await page.getByRole("button", { name: "Luo ehdotus" }).click();
   const card = page.getByLabel("Design proposal");
   await expect(card).toContainText("Kohdesivu");
   await expect(card).toContainText("Suunnitellut muutokset");

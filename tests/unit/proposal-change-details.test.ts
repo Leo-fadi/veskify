@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import type { GeneratedAiProposal } from "@/application/ai-proposal-generation";
 import { InMemoryDesignProposalStore, type DesignProposal } from "@/application/design-operations";
 import {
   createDeterministicDesignProvider,
@@ -47,6 +48,36 @@ function affectedSectionIds(proposal: DesignProposal) {
   );
 }
 
+function generatedEnvelope(proposal: DesignProposal): GeneratedAiProposal {
+  return {
+    projectId: aurumNordicSeed.project.id,
+    pageId: proposal.originalPage.id,
+    sectionId: null,
+    draftSnapshotId: aurumNordicSeed.draftSnapshot.id,
+    draftRevision: aurumNordicSeed.draftSnapshot.revision,
+    providerRequestId: "provider_request_panel_test",
+    providerId: "panel-test",
+    editorTarget: { type: "page", pageId: proposal.originalPage.id },
+    targetFingerprint: "proposal-page-panel-test",
+    permissionGrants: [
+      {
+        skillId: "panelTestSkill",
+        skillVersion: "1.0.0",
+        skillScope: "page",
+        operationTypes: ["CHANGE_SECTION_VARIANT"],
+        target: { kind: "page", pageId: proposal.originalPage.id },
+      },
+    ],
+    permissionFingerprint: "proposal-permissions-panel-test",
+    proposal,
+    observability: {
+      operationCount: proposal.operations.length,
+      durationMs: 0,
+      validation: "valid",
+    },
+  };
+}
+
 function panelController(
   proposal: DesignProposal,
   state: "proposalReady" | "accepting" | "failed" = "proposalReady",
@@ -77,14 +108,16 @@ function panelController(
             }
           : null,
     },
-    proposal,
+    generatedProposal: generatedEnvelope(proposal),
     visibleState: state,
     statusMessage:
       state === "failed" ? "The proposal could not be applied safely." : "Proposal ready.",
     previewActive: true,
     blocksSave: true,
     controlsDisabled: state === "accepting",
+    generationRetryAvailable: false,
     submitRequest: noop,
+    retryGeneration: noop,
     answerClarification: noop,
     reviseProposal: noop,
     regenerateProposal: noop,
@@ -94,6 +127,8 @@ function panelController(
     restartSession: noop,
     closeForPageSwitch: noop,
     closeForPageMutation: noop,
+    closeForSelectionChange: noop,
+    closeForLocaleChange: noop,
   };
 }
 

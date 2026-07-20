@@ -1,19 +1,19 @@
 "use client";
 
-import { useEffect, useRef, type FormEvent } from "react";
+import { useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
 import { proposalChangeDetails, proposalDetailsHeading } from "./proposal-change-details";
 import type { DesignAgentSessionController } from "./use-design-agent-session";
 import styles from "./design-agent-panel.module.css";
 
-export const designAgentExamplePrompts = [
-  "Make the homepage feel more luxurious.",
-  "Make the layout more minimal.",
-  "Add a campaign section.",
-  "Tee etusivusta ylellisempi.",
-  "Tee ulkoasusta pelkistetympi.",
-  "Lisää kampanjaosio.",
-] as const;
+export const designAgentExamplePrompts = {
+  en: [
+    "Make the homepage feel more luxurious.",
+    "Make the layout more minimal.",
+    "Add a campaign section.",
+  ],
+  fi: ["Tee etusivusta ylellisempi.", "Tee asettelusta pelkistetympi.", "Lisää kampanjaosio."],
+} as const;
 
 const copy = {
   en: {
@@ -24,7 +24,10 @@ const copy = {
     selectedSection: "Selected section",
     noSection: "No section selected — this request will use the page context.",
     request: "Your request",
+    placeholder: "For example: Make the homepage feel more luxurious.",
+    keyboardGuidance: "Press Control or Command + Enter to create the proposal.",
     create: "Create proposal",
+    retry: "Retry",
     examples: "Try an example",
     clarification: "Your answer",
     continue: "Continue",
@@ -66,7 +69,10 @@ const copy = {
     selectedSection: "Valittu osio",
     noSection: "Osiota ei ole valittu — pyyntö käyttää koko sivun kontekstia.",
     request: "Pyyntösi",
+    placeholder: "Esimerkiksi: Tee etusivusta ylellisempi.",
+    keyboardGuidance: "Luo ehdotus painamalla Control tai Command + Enter.",
     create: "Luo ehdotus",
+    retry: "Yritä uudelleen",
     examples: "Kokeile esimerkkiä",
     clarification: "Vastauksesi",
     continue: "Jatka",
@@ -116,8 +122,10 @@ export function DesignAgentPanel({
   selectedSectionLabel?: string;
 }) {
   const text = copy[locale];
+  const requestRef = useRef<HTMLTextAreaElement>(null);
   const clarificationRef = useRef<HTMLTextAreaElement>(null);
   const proposalHeadingRef = useRef<HTMLHeadingElement>(null);
+  const retryRef = useRef<HTMLButtonElement>(null);
   const busy = ["generating", "revising", "accepting"].includes(controller.visibleState);
   const needsClarification = controller.session?.state === "needsClarification";
 
@@ -127,7 +135,20 @@ export function DesignAgentPanel({
 
   useEffect(() => {
     if (controller.previewActive) proposalHeadingRef.current?.focus();
-  }, [controller.previewActive, controller.proposal?.id]);
+  }, [controller.generatedProposal?.proposal.id, controller.previewActive]);
+
+  useEffect(() => {
+    if (controller.generationRetryAvailable) {
+      retryRef.current?.focus();
+      return;
+    }
+    if (
+      !controller.previewActive &&
+      ["failed", "stale", "superseded"].includes(controller.visibleState)
+    ) {
+      requestRef.current?.focus();
+    }
+  }, [controller.generationRetryAvailable, controller.previewActive, controller.visibleState]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -144,7 +165,13 @@ export function DesignAgentPanel({
     controller.reviseProposal();
   };
 
-  const proposal = controller.proposal;
+  const submitFromKeyboard = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== "Enter" || (!event.ctrlKey && !event.metaKey)) return;
+    event.preventDefault();
+    controller.submitRequest();
+  };
+
+  const proposal = controller.generatedProposal?.proposal ?? null;
   const session = controller.session;
   const applicationFailed = session?.state === "failed" && proposal !== null;
   const accepting = session?.state === "accepting";
@@ -186,14 +213,20 @@ export function DesignAgentPanel({
       <form className={styles.form} onSubmit={submit}>
         <label htmlFor="design-request">{text.request}</label>
         <textarea
+          aria-describedby="design-request-guidance"
+          aria-invalid={session?.state === "failed" && !controller.request.trim()}
           disabled={controller.controlsDisabled || controller.previewActive || needsClarification}
           id="design-request"
           onChange={(event) => controller.setRequest(event.target.value)}
-          placeholder={designAgentExamplePrompts[0]}
-          required
+          onKeyDown={submitFromKeyboard}
+          placeholder={text.placeholder}
+          ref={requestRef}
           rows={4}
           value={controller.request}
         />
+        <p className={styles.guidance} id="design-request-guidance">
+          {text.keyboardGuidance}
+        </p>
         <button
           disabled={
             controller.controlsDisabled ||
@@ -207,7 +240,7 @@ export function DesignAgentPanel({
         </button>
         <div className={styles.examples}>
           <span>{text.examples}</span>
-          {designAgentExamplePrompts.map((prompt) => (
+          {designAgentExamplePrompts[locale].map((prompt) => (
             <button
               disabled={
                 controller.controlsDisabled || controller.previewActive || needsClarification
@@ -393,6 +426,11 @@ export function DesignAgentPanel({
                 ? text.supersededGuidance
                 : text.unavailableGuidance}
           </p>
+          {controller.generationRetryAvailable ? (
+            <button onClick={controller.retryGeneration} ref={retryRef} type="button">
+              {text.retry}
+            </button>
+          ) : null}
         </section>
       ) : null}
 

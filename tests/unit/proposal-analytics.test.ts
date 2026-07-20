@@ -18,6 +18,12 @@ describe("proposal analytics contract", () => {
     expect(
       proposalAnalyticsEventSchema.parse({ ...event, name: "ai_proposal_rejected" }),
     ).toMatchObject({ name: "ai_proposal_rejected" });
+    expect(
+      proposalAnalyticsEventSchema.parse({ ...event, name: "ai_prompt_submitted" }),
+    ).toMatchObject({ name: "ai_prompt_submitted" });
+    expect(
+      proposalAnalyticsEventSchema.parse({ ...event, name: "generation_failed" }),
+    ).toMatchObject({ name: "generation_failed" });
   });
 
   it.each([
