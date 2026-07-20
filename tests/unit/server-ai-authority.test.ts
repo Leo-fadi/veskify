@@ -102,6 +102,10 @@ describe("P4-06 server AI authority boundary", () => {
     });
     const result = await handler(request(body({ draftRevision: 999 })));
     expect(result.status).toBe(409);
+    await expect(result.json()).resolves.toEqual({
+      ok: false,
+      failure: { category: "validationRejected", retryable: false },
+    });
     expect(provider.calls).toHaveLength(0);
   });
 
@@ -164,6 +168,51 @@ describe("P4-06 server AI authority boundary", () => {
     });
     const result = await handler(request());
     expect(result.status).toBe(401);
+    await expect(result.json()).resolves.toEqual({
+      ok: false,
+      failure: { category: "unauthorized", retryable: false },
+    });
+    expect(provider.calls).toHaveLength(0);
+  });
+
+  it("maps unavailable or unexpectedly failing authority to a controlled retryable 503", async () => {
+    for (const failure of [
+      new ServerAiAuthorityError("unavailable"),
+      new Error("raw repository host and stack must remain private"),
+    ]) {
+      const provider = new RecordingProvider();
+      const handler = createServerAiProposalHandler({
+        authority: { resolve: () => Promise.reject(failure) },
+        selectProvider: () => provider,
+      });
+      const result = await handler(request());
+      const payload: unknown = await result.json();
+      expect(result.status).toBe(503);
+      expect(payload).toEqual({
+        ok: false,
+        failure: { category: "authorityUnavailable", retryable: true },
+      });
+      expect(JSON.stringify(payload)).not.toMatch(/repository host|stack|private/i);
+      expect(provider.calls).toHaveLength(0);
+    }
+  });
+
+  it("maps unsupported merchant instructions before provider invocation", async () => {
+    const provider = new RecordingProvider();
+    const handler = createServerAiProposalHandler({
+      authority: authority(),
+      selectProvider: () => provider,
+    });
+    const result = await handler(
+      request(body({ merchantInstruction: "Change the checkout tax and payment configuration." })),
+    );
+    const payload: unknown = await result.json();
+    expect(result.status).toBe(400);
+    expect(payload).toEqual({
+      ok: false,
+      failure: { category: "unsupportedRequest", retryable: false },
+    });
+    expect(JSON.stringify(payload)).not.toMatch(/planner|checkout tax|payment configuration/i);
     expect(provider.calls).toHaveLength(0);
   });
 
@@ -200,6 +249,31 @@ describe("P4-06 server AI authority boundary", () => {
     });
     expect(payload).not.toHaveProperty("proposal");
     expect(after).toEqual(before);
+  });
+
+  it("preserves stored draft and published state after authority and request-builder failures", async () => {
+    const value = repository();
+    const before = await value.get(aurumNordicSeed.project.id);
+    const provider = new RecordingProvider();
+    const authorityFailure = createServerAiProposalHandler({
+      authority: { resolve: () => Promise.reject(new ServerAiAuthorityError("unavailable")) },
+      selectProvider: () => provider,
+    });
+    const unsupported = createServerAiProposalHandler({
+      authority: authority(value),
+      selectProvider: () => provider,
+    });
+
+    expect((await authorityFailure(request())).status).toBe(503);
+    expect(
+      (
+        await unsupported(
+          request(body({ merchantInstruction: "Configure live inventory replenishment." })),
+        )
+      ).status,
+    ).toBe(400);
+    expect(await value.get(aurumNordicSeed.project.id)).toEqual(before);
+    expect(provider.calls).toHaveLength(0);
   });
 
   it("keeps provider selection server-owned and invokes it only after authority succeeds", async () => {

@@ -45,16 +45,89 @@ const modelExplanationSchema = z
 
 export const openAiModelOutputSchema = z
   .object({
-    operations: z.array(openAiModelOperationSchema),
+    operations: z.array(openAiModelOperationSchema).min(1),
     diagnostics: z.array(aiProviderDiagnosticSchema),
     explanation: modelExplanationSchema.nullable(),
   })
   .strict();
 
-export const openAiStructuredOutputJsonSchema = z.toJSONSchema(openAiModelOutputSchema, {
-  target: "draft-7",
-  unrepresentable: "throw",
-});
+export const openAiUnsupportedStrictSchemaKeywords = [
+  "$schema",
+  "allOf",
+  "contains",
+  "const",
+  "contentEncoding",
+  "contentMediaType",
+  "default",
+  "dependencies",
+  "dependentRequired",
+  "dependentSchemas",
+  "else",
+  "examples",
+  "exclusiveMaximum",
+  "exclusiveMinimum",
+  "format",
+  "if",
+  "maxContains",
+  "maxItems",
+  "maxLength",
+  "maxProperties",
+  "maximum",
+  "minContains",
+  "minItems",
+  "minLength",
+  "minProperties",
+  "minimum",
+  "multipleOf",
+  "not",
+  "oneOf",
+  "pattern",
+  "patternProperties",
+  "propertyNames",
+  "then",
+  "unevaluatedItems",
+  "unevaluatedProperties",
+  "uniqueItems",
+] as const;
+
+const unsupportedStrictSchemaKeywords = new Set<string>(openAiUnsupportedStrictSchemaKeywords);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function sanitizeOpenAiStrictSchemaValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sanitizeOpenAiStrictSchemaValue);
+  if (!isRecord(value)) return value;
+
+  const sanitized: Record<string, unknown> = {};
+  for (const [key, child] of Object.entries(value)) {
+    if (unsupportedStrictSchemaKeywords.has(key)) continue;
+    sanitized[key] = sanitizeOpenAiStrictSchemaValue(child);
+  }
+  if (Object.hasOwn(value, "const") && sanitized.enum === undefined) {
+    sanitized.enum = [sanitizeOpenAiStrictSchemaValue(value.const)];
+  }
+
+  if (sanitized.type === "object" && isRecord(sanitized.properties)) {
+    sanitized.required = Object.keys(sanitized.properties);
+    sanitized.additionalProperties = false;
+  }
+  return sanitized;
+}
+
+export function createOpenAiStrictJsonSchema(schema: unknown): Record<string, unknown> {
+  const sanitized = sanitizeOpenAiStrictSchemaValue(schema);
+  if (!isRecord(sanitized)) throw new Error("OpenAI structured output requires an object schema.");
+  return sanitized;
+}
+
+export const openAiStructuredOutputJsonSchema = createOpenAiStrictJsonSchema(
+  z.toJSONSchema(openAiModelOutputSchema, {
+    target: "draft-7",
+    unrepresentable: "throw",
+  }),
+);
 
 export type OpenAiModelOutput = z.infer<typeof openAiModelOutputSchema>;
 

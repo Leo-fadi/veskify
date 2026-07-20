@@ -7,6 +7,7 @@ import {
   requestAiProposal,
 } from "@/application/ai-provider";
 import {
+  AiProposalRequestBuildError,
   aiProposalGenerationCommandSchema,
   buildAiOperationRequest,
   editorProposalTargetSchema,
@@ -14,7 +15,11 @@ import {
 import { createStorefrontRenderContext } from "@/components/registry";
 import { idSchema, localeSchema } from "@/domain/shared";
 import { canonicalValueString } from "@/domain/storefront";
-import type { ProjectRepository } from "@/services/storage";
+import {
+  ProjectNotFoundError,
+  RepositoryValidationError,
+  type ProjectRepository,
+} from "@/services/storage";
 
 export const serverAiProposalIntentSchema = z
   .object({
@@ -88,46 +93,69 @@ export function createProjectRepositoryAiAuthorityResolver({
 }): ServerAiProposalAuthorityResolver {
   return {
     async resolve(intent, request) {
-      await authorizer.assertAuthorized(request, intent.projectId);
-      const aggregate = await repository.get(intent.projectId);
-      const draft = aggregate.snapshots.find(
-        (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
-      );
-      if (
-        !draft ||
-        draft.id !== intent.draftSnapshotId ||
-        draft.revision !== intent.draftRevision ||
-        !aggregate.project.enabledLocales.includes(intent.activeLocale)
-      ) {
-        throw new ServerAiAuthorityError("identityMismatch");
+      try {
+        await authorizer.assertAuthorized(request, intent.projectId);
+      } catch (error) {
+        if (error instanceof ServerAiAuthorityError) throw error;
+        throw new ServerAiAuthorityError("unavailable");
       }
-      const page = draft.pages.find((candidate) => candidate.id === intent.target.pageId);
-      const targetSectionId =
-        intent.target.type === "section" ? intent.target.sectionId : undefined;
-      if (
-        !page ||
-        (targetSectionId !== undefined &&
-          !page.sections.some((section) => section.id === targetSectionId))
-      ) {
-        throw new ServerAiAuthorityError("identityMismatch");
+
+      let aggregate: Awaited<ReturnType<ProjectRepository["get"]>>;
+      try {
+        aggregate = await repository.get(intent.projectId);
+      } catch (error) {
+        if (error instanceof ProjectNotFoundError || error instanceof RepositoryValidationError) {
+          throw new ServerAiAuthorityError("identityMismatch");
+        }
+        throw new ServerAiAuthorityError("unavailable");
       }
-      return authoritativeAiProposalContextSchema.parse({
-        projectId: aggregate.project.id,
-        draftSnapshotId: draft.id,
-        draftRevision: draft.revision,
-        page,
-        target: intent.target,
-        activeLocale: intent.activeLocale,
-        enabledLocales: aggregate.project.enabledLocales,
-        brandSystem: draft.brandSystem,
-        displayContext: createStorefrontRenderContext({
+
+      try {
+        const draft = aggregate.snapshots.find(
+          (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
+        );
+        if (
+          !draft ||
+          draft.id !== intent.draftSnapshotId ||
+          draft.revision !== intent.draftRevision ||
+          !aggregate.project.enabledLocales.includes(intent.activeLocale)
+        ) {
+          throw new ServerAiAuthorityError("identityMismatch");
+        }
+        const page = draft.pages.find((candidate) => candidate.id === intent.target.pageId);
+        const targetSectionId =
+          intent.target.type === "section" ? intent.target.sectionId : undefined;
+        if (
+          !page ||
+          (targetSectionId !== undefined &&
+            !page.sections.some((section) => section.id === targetSectionId))
+        ) {
+          throw new ServerAiAuthorityError("identityMismatch");
+        }
+        return authoritativeAiProposalContextSchema.parse({
+          projectId: aggregate.project.id,
+          draftSnapshotId: draft.id,
+          draftRevision: draft.revision,
+          page,
+          target: intent.target,
           activeLocale: intent.activeLocale,
-          primaryLocale: aggregate.project.primaryLocale,
-          catalogue: aggregate.catalogue,
-          snapshot: draft,
-        }),
-        importedContent: [],
-      });
+          enabledLocales: aggregate.project.enabledLocales,
+          brandSystem: draft.brandSystem,
+          displayContext: createStorefrontRenderContext({
+            activeLocale: intent.activeLocale,
+            primaryLocale: aggregate.project.primaryLocale,
+            catalogue: aggregate.catalogue,
+            snapshot: draft,
+          }),
+          importedContent: [],
+        });
+      } catch (error) {
+        if (error instanceof ServerAiAuthorityError) throw error;
+        if (error instanceof z.ZodError || error instanceof RepositoryValidationError) {
+          throw new ServerAiAuthorityError("identityMismatch");
+        }
+        throw new ServerAiAuthorityError("unavailable");
+      }
     },
   };
 }
@@ -169,9 +197,16 @@ export function createServerAiProposalHandler({
     }
 
     try {
-      const context = authoritativeAiProposalContextSchema.parse(
-        await authority.resolve(intent, request),
-      );
+      let authorityContext: AuthoritativeAiProposalContext;
+      try {
+        authorityContext = await authority.resolve(intent, request);
+      } catch (error) {
+        if (error instanceof ServerAiAuthorityError) throw error;
+        throw new ServerAiAuthorityError("unavailable");
+      }
+      const resolvedContext = authoritativeAiProposalContextSchema.safeParse(authorityContext);
+      if (!resolvedContext.success) throw new ServerAiAuthorityError("identityMismatch");
+      const context = resolvedContext.data;
       if (!authoritativeIdentityMatches(intent, context)) {
         throw new ServerAiAuthorityError("identityMismatch");
       }
@@ -195,9 +230,37 @@ export function createServerAiProposalHandler({
       return json(200, { ok: true, proposal: publicProviderResponse(proposal) });
     } catch (error) {
       if (error instanceof ServerAiAuthorityError) {
-        return json(error.code === "unauthorized" ? 401 : 409, {
+        if (error.code === "unauthorized") {
+          return json(401, {
+            ok: false,
+            failure: { category: "unauthorized", retryable: false },
+          });
+        }
+        if (error.code === "unavailable") {
+          return json(503, {
+            ok: false,
+            failure: { category: "authorityUnavailable", retryable: true },
+          });
+        }
+        return json(409, {
           ok: false,
-          failure: { category: "validationRejected" },
+          failure: { category: "validationRejected", retryable: false },
+        });
+      }
+      if (error instanceof AiProposalRequestBuildError) {
+        if (error.code === "target-mismatch") {
+          return json(409, {
+            ok: false,
+            failure: { category: "validationRejected", retryable: false },
+          });
+        }
+        return json(400, {
+          ok: false,
+          failure: {
+            category:
+              error.code === "unsupported-request" ? "unsupportedRequest" : "validationRejected",
+            retryable: false,
+          },
         });
       }
       if (error instanceof AiProviderValidationError) {

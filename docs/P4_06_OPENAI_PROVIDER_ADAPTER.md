@@ -38,6 +38,12 @@ section, locales, brand system, catalogue-backed render context, snapshot ID, an
 derives the P4-01 request and target-bound grants through the existing P4-03 planner. Provider
 selection is injected on the server and occurs only after authority succeeds.
 
+Authority failures are distinct and merchant-safe: unauthorized access returns 401, repository or
+authority unavailability returns a retryable `authorityUnavailable` 503, and stale canonical
+identity, revision, target or validation conflicts return 409. Unsupported planner requests return
+a non-provider `unsupportedRequest` 400 before provider invocation. Raw authorization, repository
+and planner errors are never returned.
+
 The standalone application currently persists merchant projects in browser IndexedDB and has no
 production authentication or server project repository. The production route is therefore wired
 to an unavailable authority resolver and fails closed. A deployment must supply authenticated
@@ -48,14 +54,22 @@ enabling this route. This task deliberately does not invent that deferred produc
 
 The OpenAI input contains only the merchant design instruction, current page or selected section,
 current brand system, target scope, approved target-bound operation/component vocabulary, enabled
-EN/FI locales, and the static protected-field list. It excludes imported-content bodies, full
-storefronts, catalogue products, customers, orders, payments, inventory, logistics, analytics,
-and secrets. System instructions label merchant and canonical content as untrusted data and state
-that it cannot widen policy or permissions.
+EN/FI locales, and the static protected-field list. The component vocabulary is deterministic and
+contains only target-permitted component variants needed by `CHANGE_SECTION_VARIANT` or
+`ADD_APPROVED_SECTION`. Section context is projected through canonical registry editor metadata;
+registry-protected/read-only paths, product and catalogue identities and commerce values are
+omitted without mutating the source section. It excludes imported-content bodies, full storefronts,
+catalogue products, customers, orders, payments, inventory, logistics, analytics, and secrets.
+System instructions label merchant and canonical content as untrusted data and state that it cannot
+widen policy or permissions.
 
 The Responses request uses strict JSON Schema structured output for canonical design operations,
-diagnostics, and an optional localized explanation. React, HTML, CSS, JavaScript, executable code,
-unsupported schemas, and protected commerce fields remain forbidden.
+diagnostics, and an optional localized explanation. One explicit conversion boundary recursively
+removes OpenAI-unsupported validation keywords while preserving object properties, complete
+required lists, `additionalProperties: false`, arrays/items, enums, `anyOf` and nullable forms.
+The local Zod schema retains all string, number and array constraints and requires at least one
+operation. React, HTML, CSS, JavaScript, executable code, unsupported schemas, and protected
+commerce fields remain forbidden.
 
 Every response is untrusted. The adapter first checks response status/refusal and parses the strict
 model shape. `requestAiProposal` then reuses the complete P4-01 validation path: canonical request
@@ -70,9 +84,11 @@ outside this task.
 
 Provider failures normalize to: `missingApiKey`, `authenticationFailed`, `rateLimited`, `timeout`,
 `cancelled`, `networkFailure`, `malformedResponse`, `validationRejected`, `providerRefusal`,
-`unavailableModel`, or `unexpectedProviderFailure`. Raw SDK errors, response bodies, stack traces,
-and secrets are not returned. Failed, cancelled, timed-out, stale, or superseded work cannot create
-a ready proposal or mutate active, stored, or published state.
+`unavailableModel`, or `unexpectedProviderFailure`. Server authority additionally reports the
+controlled `authorityUnavailable` retryable category. Raw SDK, authorization, repository and
+planner errors, response bodies, stack traces, and secrets are not returned. Failed, cancelled,
+timed-out, empty, stale, or superseded work cannot create a ready proposal or mutate active, stored,
+or published state.
 
 The route propagates its abort signal. P4-03 continues to deduplicate identical pending requests;
 when a newer request supersedes an older one, it aborts the older provider signal and retains its

@@ -11,12 +11,16 @@ import {
   requestAiProposal,
   type AiOperationRequest,
 } from "@/application/ai-provider";
-import { createStorefrontRenderContext } from "@/components/registry";
+import { createStorefrontRenderContext, getComponentDefinition } from "@/components/registry";
 import { aurumNordicSeed } from "@/data/seed";
 import {
   buildOpenAiResponsesRequest,
+  createOpenAiStrictJsonSchema,
   defaultOpenAiModel,
   mapOpenAiFailure,
+  openAiModelOutputSchema,
+  openAiStructuredOutputJsonSchema,
+  openAiUnsupportedStrictSchemaKeywords,
   OpenAiProvider,
 } from "@/integrations/ai/openai";
 import { selectServerAiProvider } from "@/integrations/ai/openai/openai-client.server";
@@ -28,6 +32,9 @@ import type {
 const page = aurumNordicSeed.draftSnapshot.pages.find((candidate) => candidate.type === "home")!;
 const heroId = page.sections.find((section) => section.component === "hero")!.id;
 const siblingId = page.sections.find((section) => section.component === "productGrid")!.id;
+const productPage = aurumNordicSeed.draftSnapshot.pages.find(
+  (candidate) => candidate.type === "product",
+)!;
 const displayContext = createStorefrontRenderContext({
   activeLocale: "en",
   primaryLocale: "en",
@@ -116,6 +123,76 @@ function provider(transport = new RecordingTransport()) {
   return { provider: new OpenAiProvider({ responses: transport }), transport };
 }
 
+function componentInput(input: string) {
+  return JSON.parse(input) as {
+    approvedVocabulary: {
+      componentVocabulary: Array<{
+        componentType: string;
+        label: string;
+        variants: string[];
+        permittedOperations: string[];
+      }>;
+    };
+    currentDesignContext: {
+      page: { sections: Array<Record<string, unknown>> };
+    };
+  };
+}
+
+function sectionPromptRequest(
+  currentPage: AiOperationRequest["page"],
+  sectionId: string,
+  componentType: string,
+  operationTypes: AiOperationRequest["allowedOperationTypes"],
+): AiOperationRequest {
+  return request({
+    page: structuredClone(currentPage),
+    target: { pageId: currentPage.id, sectionId },
+    scope: "section",
+    allowedComponentTypes: [componentType],
+    allowedOperationTypes: operationTypes,
+    permissionGrants: [
+      {
+        skillId: "promptSafetyTest",
+        skillVersion: "1.0.0",
+        skillScope: "section",
+        operationTypes,
+        target: {
+          kind: "existingSection",
+          pageId: currentPage.id,
+          sectionId,
+          componentType,
+        },
+      },
+    ],
+  });
+}
+
+function schemaKeys(value: unknown): string[] {
+  if (Array.isArray(value)) return value.flatMap(schemaKeys);
+  if (typeof value !== "object" || value === null) return [];
+  return Object.entries(value).flatMap(([key, child]) => [key, ...schemaKeys(child)]);
+}
+
+function expectStrictObjectRequirements(value: unknown): void {
+  if (Array.isArray(value)) {
+    value.forEach(expectStrictObjectRequirements);
+    return;
+  }
+  if (typeof value !== "object" || value === null) return;
+  const schema = value as Record<string, unknown>;
+  if (
+    schema.type === "object" &&
+    typeof schema.properties === "object" &&
+    schema.properties !== null &&
+    !Array.isArray(schema.properties)
+  ) {
+    expect(schema.additionalProperties).toBe(false);
+    expect(schema.required).toEqual(Object.keys(schema.properties as Record<string, unknown>));
+  }
+  Object.values(schema).forEach(expectStrictObjectRequirements);
+}
+
 describe("P4-06 OpenAI provider adapter", () => {
   beforeEach(() => vi.restoreAllMocks());
 
@@ -140,6 +217,138 @@ describe("P4-06 OpenAI provider adapter", () => {
     expect(mapped.input).not.toContain("merchant-import.txt");
     expect(mapped.input).not.toMatch(/price.*1290|RING-AUR|customer/i);
     expect(input).toHaveProperty("approvedVocabulary");
+  });
+
+  it("converts the full Zod contract into a deterministic OpenAI-safe strict schema", () => {
+    const keys = new Set(schemaKeys(openAiStructuredOutputJsonSchema));
+    for (const keyword of openAiUnsupportedStrictSchemaKeywords) {
+      expect(keys.has(keyword), keyword).toBe(false);
+    }
+    expectStrictObjectRequirements(openAiStructuredOutputJsonSchema);
+    expect(JSON.stringify(openAiStructuredOutputJsonSchema)).toContain('"type":"array"');
+    expect(JSON.stringify(openAiStructuredOutputJsonSchema)).toContain('"type":"null"');
+    expect(JSON.stringify(createOpenAiStrictJsonSchema(openAiStructuredOutputJsonSchema))).toBe(
+      JSON.stringify(openAiStructuredOutputJsonSchema),
+    );
+  });
+
+  it("keeps full local Zod constraints after provider-schema constraints are removed", () => {
+    const valid = { operations: [operation()], diagnostics: [], explanation: null };
+    expect(openAiModelOutputSchema.safeParse(valid).success).toBe(true);
+    expect(
+      openAiModelOutputSchema.safeParse({
+        ...valid,
+        operations: [operation({ value: "x".repeat(2_001) })],
+      }).success,
+    ).toBe(false);
+    expect(openAiModelOutputSchema.safeParse({ ...valid, operations: [] }).success).toBe(false);
+  });
+
+  it("projects only prompt-safe registry fields without mutating protected section content", () => {
+    const productGrid = page.sections.find((section) => section.component === "productGrid")!;
+    const productInfo = productPage.sections.find(
+      (section) => section.component === "productInfo",
+    )!;
+    const beforeGrid = structuredClone(productGrid);
+    const beforeProductInfo = structuredClone(productInfo);
+    const gridPrompt = buildOpenAiResponsesRequest(
+      sectionPromptRequest(page, productGrid.id, productGrid.component, [
+        "CHANGE_LOCALIZED_SECTION_TEXT",
+      ]),
+      defaultOpenAiModel,
+    ).input;
+    const productPrompt = buildOpenAiResponsesRequest(
+      sectionPromptRequest(productPage, productInfo.id, productInfo.component, [
+        "CHANGE_SECTION_VARIANT",
+      ]),
+      defaultOpenAiModel,
+    ).input;
+    const productId = String(productInfo.content.productId);
+    const catalogueProduct = aurumNordicSeed.catalogue.products[0];
+
+    expect(gridPrompt).toContain(JSON.stringify(productGrid.content.heading));
+    expect(gridPrompt).toContain(productGrid.id);
+    expect(gridPrompt).toContain(productGrid.component);
+    expect(gridPrompt).toContain(productGrid.variant);
+    for (const protectedValue of [
+      ...(productGrid.content.productIds as string[]),
+      productId,
+      aurumNordicSeed.catalogue.id,
+      catalogueProduct.id,
+      catalogueProduct.sku!,
+      String(catalogueProduct.price.amount),
+    ]) {
+      expect(`${gridPrompt}${productPrompt}`).not.toContain(protectedValue);
+    }
+    expect(productGrid).toEqual(beforeGrid);
+    expect(productInfo).toEqual(beforeProductInfo);
+  });
+
+  it("supplies only target-permitted canonical component variants in deterministic order", () => {
+    const heroVocabulary = componentInput(
+      buildOpenAiResponsesRequest(request(), defaultOpenAiModel).input,
+    ).approvedVocabulary.componentVocabulary;
+    expect(heroVocabulary).toEqual([
+      {
+        componentType: "hero",
+        label: getComponentDefinition("hero").label,
+        variants: [...getComponentDefinition("hero").variants].sort(),
+        permittedOperations: ["CHANGE_SECTION_VARIANT"],
+      },
+    ]);
+
+    const campaignGrant: AiOperationRequest["permissionGrants"][number] = {
+      skillId: "addCampaignSection",
+      skillVersion: "1.0.0",
+      skillScope: "page",
+      operationTypes: ["ADD_APPROVED_SECTION", "CHANGE_LOCALIZED_SECTION_TEXT"],
+      target: {
+        kind: "introducedSection",
+        pageId: page.id,
+        sectionId: "section_campaign_generated",
+        componentType: "campaignBanner",
+      },
+    };
+    const heroGrant = request().permissionGrants[0];
+    const vocabularyRequest = (permissionGrants: AiOperationRequest["permissionGrants"]) =>
+      request({
+        target: { pageId: page.id },
+        scope: "page",
+        allowedComponentTypes: ["campaignBanner", "hero"],
+        allowedOperationTypes: [
+          "CHANGE_SECTION_VARIANT",
+          "ADD_APPROVED_SECTION",
+          "CHANGE_LOCALIZED_SECTION_TEXT",
+        ],
+        permissionGrants,
+      });
+    const first = componentInput(
+      buildOpenAiResponsesRequest(vocabularyRequest([campaignGrant, heroGrant]), defaultOpenAiModel)
+        .input,
+    ).approvedVocabulary.componentVocabulary;
+    const second = componentInput(
+      buildOpenAiResponsesRequest(vocabularyRequest([heroGrant, campaignGrant]), defaultOpenAiModel)
+        .input,
+    ).approvedVocabulary.componentVocabulary;
+    expect(first).toEqual(second);
+    expect(first.find(({ componentType }) => componentType === "campaignBanner")).toEqual({
+      componentType: "campaignBanner",
+      label: getComponentDefinition("campaignBanner").label,
+      variants: [...getComponentDefinition("campaignBanner").variants].sort(),
+      permittedOperations: ["ADD_APPROVED_SECTION"],
+    });
+    expect(first.map(({ componentType }) => componentType)).not.toContain("productGrid");
+
+    const productGrid = page.sections.find((section) => section.component === "productGrid")!;
+    const textOnly = componentInput(
+      buildOpenAiResponsesRequest(
+        sectionPromptRequest(page, productGrid.id, productGrid.component, [
+          "CHANGE_LOCALIZED_SECTION_TEXT",
+        ]),
+        defaultOpenAiModel,
+      ).input,
+    ).approvedVocabulary.componentVocabulary;
+    expect(textOnly).toEqual([]);
   });
 
   it("uses no SDK retries, a bounded timeout, and the caller cancellation signal", async () => {
@@ -205,6 +414,31 @@ describe("P4-06 OpenAI provider adapter", () => {
       });
       await expect(value.proposeChange(request())).rejects.not.toThrow(/provider-secret-body/);
     }
+  });
+
+  it("rejects an empty operation response without creating a proposal or recording unsafe data", async () => {
+    const draftBefore = structuredClone(aurumNordicSeed.draftSnapshot);
+    const publishedBefore = structuredClone(aurumNordicSeed.publishedSnapshot);
+    const telemetry = { record: vi.fn() };
+    const value = new OpenAiProvider({
+      responses: new RecordingTransport(() => Promise.resolve(response([]))),
+      telemetry,
+    });
+    let failure: unknown;
+    try {
+      await requestAiProposal(value, request());
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure).toMatchObject({ category: "malformedResponse" });
+    expect(failure).toBeInstanceOf(Error);
+    expect((failure as Error).message).toMatch(/temporarily unavailable/i);
+    expect(aurumNordicSeed.draftSnapshot).toEqual(draftBefore);
+    expect(aurumNordicSeed.publishedSnapshot).toEqual(publishedBefore);
+    expect(telemetry.record).toHaveBeenCalledWith(
+      expect.objectContaining({ outcome: "malformedResponse" }),
+    );
+    expect(JSON.stringify(telemetry.record.mock.calls)).not.toMatch(/Improve the hero|considered/i);
   });
 
   it("maps a structured model refusal", async () => {
