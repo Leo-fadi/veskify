@@ -26,3 +26,21 @@ This slice implements SDD §5.3 O-08/O-09, §6.1 FR-001/FR-004/FR-007–FR-010, 
 §15.7 and AC-001, AC-018, AC-021, AC-023, AC-025–AC-027. It preserves ADR-002's controlled
 generation boundary, draft/published separation, protected commerce fields, the Vesko shell and the
 existing onboarding mutation queue.
+
+## P3-UI-02 merchant review presentation
+
+The O-09 presentation maps canonical facts and diagnostics into concise EN/FI merchant copy without
+changing the review projection or creation eligibility. Repeated diagnostics use a deterministic
+presentation identity based on canonical code and message, so the same issue reported by multiple
+generation stages appears once while distinct blockers and fallback issues remain visible.
+
+The review presents blockers, warnings and compact informational notes in that order. A readiness
+summary reports their presentation counts from the canonical review, unresolved blockers provide a
+keyboard-focus target, completed plan sections use native disclosure controls, and the creation
+actions remain available in a sticky footer. Brand-direction tokens are rendered as plain-language
+labels, and internal template, capability, slot and context identifiers remain confined to canonical
+data and tests.
+
+This presentation polish implements SDD §5.3 O-09, FR-008, FR-055, FR-056, NFR-004, NFR-010,
+AC-018, AC-026 and AC-027. It does not alter generation, catalogue resolution, persistence, duplicate
+prevention, project creation or the returned editor route.
