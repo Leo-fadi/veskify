@@ -456,11 +456,16 @@ export function ProjectEditorClient({
     ) {
       return;
     }
+    const nextOriginalPage = state.pages.find((candidate) => candidate.id === nextPageId);
+    const nextPage = nextOriginalPage
+      ? (sessionPages[nextOriginalPage.id] ?? nextOriginalPage)
+      : undefined;
+    if (!nextPage || nextPage.id === page.id) return;
+    agent.closeForPageSwitch(nextPage);
     setSelectedPageId(nextPageId);
     setSelectedSectionId(undefined);
     setValidationMessage("");
     setHistoryStatus("");
-    agent.closeForPageSwitch();
   };
 
   const discardChanges = () => {
@@ -820,6 +825,7 @@ export function ProjectEditorClient({
                 sectionId && page.sections.some((section) => section.id === sectionId)
                   ? sectionId
                   : undefined;
+              if (nextSectionId === selectedSectionId) return;
               agent.closeForSelectionChange(nextSectionId);
               setSelectedSectionId(nextSectionId);
             }}

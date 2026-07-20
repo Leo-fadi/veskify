@@ -16,9 +16,11 @@ editor-history transaction.
 The composer provides EN/FI labels, examples, placeholders and keyboard guidance.
 Control/Command + Enter submits once, empty requests are rejected before provider
 invocation, successful ready handoff clears the visible input, and retryable failures
-retain and refocus it. In-flight page edits and selection changes are rechecked by
-P4-03, while a locale switch supersedes the editor attempt so a new locale-aware
-request can be submitted.
+retain it and expose a focused, localized Retry action. Material page, section, locale
+and page-content changes immediately supersede context-bound UI work, clear old
+clarification answers and make the composer usable. Ready proposals are marked stale
+through P4-02; older async results remain guarded by P4-03 sequence, target and
+fingerprint validation. Duplicate canonical section-selection events are no-ops.
 
 Editor analytics forwards only the canonical privacy-safe prompt-submitted,
 proposal-generated, generation-failed, accepted and rejected events. Merchant

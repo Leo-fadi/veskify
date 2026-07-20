@@ -12,7 +12,7 @@ export const designAgentExamplePrompts = {
     "Make the layout more minimal.",
     "Add a campaign section.",
   ],
-  fi: ["Tee etusivusta ylellisempi.", "Tee ulkoasusta pelkistetympi.", "Lisää kampanjaosio."],
+  fi: ["Tee etusivusta ylellisempi.", "Tee asettelusta pelkistetympi.", "Lisää kampanjaosio."],
 } as const;
 
 const copy = {
@@ -27,6 +27,7 @@ const copy = {
     placeholder: "For example: Make the homepage feel more luxurious.",
     keyboardGuidance: "Press Control or Command + Enter to create the proposal.",
     create: "Create proposal",
+    retry: "Retry",
     examples: "Try an example",
     clarification: "Your answer",
     continue: "Continue",
@@ -71,6 +72,7 @@ const copy = {
     placeholder: "Esimerkiksi: Tee etusivusta ylellisempi.",
     keyboardGuidance: "Luo ehdotus painamalla Control tai Command + Enter.",
     create: "Luo ehdotus",
+    retry: "Yritä uudelleen",
     examples: "Kokeile esimerkkiä",
     clarification: "Vastauksesi",
     continue: "Jatka",
@@ -123,6 +125,7 @@ export function DesignAgentPanel({
   const requestRef = useRef<HTMLTextAreaElement>(null);
   const clarificationRef = useRef<HTMLTextAreaElement>(null);
   const proposalHeadingRef = useRef<HTMLHeadingElement>(null);
+  const retryRef = useRef<HTMLButtonElement>(null);
   const busy = ["generating", "revising", "accepting"].includes(controller.visibleState);
   const needsClarification = controller.session?.state === "needsClarification";
 
@@ -135,13 +138,17 @@ export function DesignAgentPanel({
   }, [controller.generatedProposal?.proposal.id, controller.previewActive]);
 
   useEffect(() => {
+    if (controller.generationRetryAvailable) {
+      retryRef.current?.focus();
+      return;
+    }
     if (
       !controller.previewActive &&
       ["failed", "stale", "superseded"].includes(controller.visibleState)
     ) {
       requestRef.current?.focus();
     }
-  }, [controller.previewActive, controller.visibleState]);
+  }, [controller.generationRetryAvailable, controller.previewActive, controller.visibleState]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -419,6 +426,11 @@ export function DesignAgentPanel({
                 ? text.supersededGuidance
                 : text.unavailableGuidance}
           </p>
+          {controller.generationRetryAvailable ? (
+            <button onClick={controller.retryGeneration} ref={retryRef} type="button">
+              {text.retry}
+            </button>
+          ) : null}
         </section>
       ) : null}
 

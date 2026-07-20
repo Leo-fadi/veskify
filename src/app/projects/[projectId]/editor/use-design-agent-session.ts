@@ -67,7 +67,9 @@ export type DesignAgentSessionController = {
   previewActive: boolean;
   blocksSave: boolean;
   controlsDisabled: boolean;
+  generationRetryAvailable: boolean;
   submitRequest: () => void;
+  retryGeneration: () => void;
   answerClarification: () => void;
   reviseProposal: () => void;
   regenerateProposal: () => void;
@@ -75,7 +77,7 @@ export type DesignAgentSessionController = {
   rejectProposal: () => void;
   cancelSession: () => void;
   restartSession: () => void;
-  closeForPageSwitch: () => void;
+  closeForPageSwitch: (nextPage: PageModel) => void;
   closeForPageMutation: (nextPage: PageModel) => void;
   closeForSelectionChange: (nextSectionId?: string) => void;
   closeForLocaleChange: () => void;
@@ -150,6 +152,10 @@ const statuses = {
   localeSwitch: {
     en: "The language changed while the proposal was being prepared. Submit the request again in the current language.",
     fi: "Kieli vaihtui ehdotuksen valmistelun aikana. Lähetä pyyntö uudelleen nykyisellä kielellä.",
+  },
+  contextSwitch: {
+    en: "The page or selected section changed. Submit the preserved request again for the current selection.",
+    fi: "Sivu tai valittu osio vaihtui. Lähetä säilytetty pyyntö uudelleen nykyiselle valinnalle.",
   },
 } satisfies Record<string, LocalizedText>;
 
@@ -258,6 +264,7 @@ export function useDesignAgentSession({
   const actionSequence = useRef(0);
   const acceptancePending = useRef(false);
   const clarificationRequest = useRef<{ instruction: string; useOriginal: boolean } | null>(null);
+  const merchantInstruction = useRef("");
   const lastGenerationInstruction = useRef("");
   const initialLifecycle = useRef(true);
   const [runtimeBridge] = useState(() => createRuntimeBridge(analytics, analyticsRoute));
@@ -344,6 +351,8 @@ export function useDesignAgentSession({
     closePending();
     runtime.confirmation.reset();
     clearWorkflow();
+    merchantInstruction.current = "";
+    lastGenerationInstruction.current = "";
     setRequest("");
   }, [clearWorkflow, closePending, lifecycleKey, runtime]);
 
@@ -449,6 +458,7 @@ export function useDesignAgentSession({
         mode === "regeneration" ? statuses.regenerated : statuses.ready,
       );
     } catch {
+      if (actionSequence.current !== actionId) return;
       const message = {
         en: "That request could not be completed safely. Your current page has not changed.",
         fi: "Pyyntöä ei voitu toteuttaa turvallisesti. Nykyinen sivu säilyi ennallaan.",
@@ -463,11 +473,12 @@ export function useDesignAgentSession({
     if (!instruction) {
       setSession(
         uiSession("failed", statuses.empty, {
-          failure: { message: statuses.empty, retryable: true },
+          failure: { message: statuses.empty, retryable: false },
         }),
       );
       return;
     }
+    merchantInstruction.current = instruction;
     const classification = runtime.clarificationProvider.classifyDesignRequest(instruction, locale);
     if (classification.requiresClarification && classification.clarifications[0]) {
       clarificationRequest.current = {
@@ -517,6 +528,19 @@ export function useDesignAgentSession({
   const regenerateProposal = () => {
     if (session?.state !== "proposalReady" || !lastGenerationInstruction.current) return;
     void generate(lastGenerationInstruction.current, "regeneration");
+  };
+
+  const retryGeneration = () => {
+    if (
+      disabled ||
+      session?.state !== "failed" ||
+      !session.failure?.retryable ||
+      !lastGenerationInstruction.current ||
+      runtime.confirmation.inspect().generatedProposal
+    ) {
+      return;
+    }
+    void generate(lastGenerationInstruction.current);
   };
 
   const applyConfirmationResult = (result: AiProposalConfirmationResult) => {
@@ -634,42 +658,67 @@ export function useDesignAgentSession({
     runtime.confirmation.reset();
     actionSequence.current += 1;
     clarificationRequest.current = null;
+    merchantInstruction.current = "";
+    lastGenerationInstruction.current = "";
     setRequest("");
     setClarificationAnswer("");
     setRevision("");
     setSession(uiSession("idle", statuses.idle));
   };
 
-  const closeForPageSwitch = () => {
-    closePending();
-    clearWorkflow(statuses.pageSwitch);
-    setRequest("");
+  const supersedeForContextChange = (
+    nextPage: PageModel | undefined,
+    nextSectionId: string | undefined,
+    status: LocalizedText,
+  ) => {
+    updateRuntimeIdentity(nextPage, nextSectionId);
+    actionSequence.current += 1;
+    acceptancePending.current = false;
+    clarificationRequest.current = null;
+    setClarificationAnswer("");
+    setRevision("");
+
+    const current = runtime.confirmation.inspect();
+    const hasContextBoundWorkflow = Boolean(
+      session &&
+      ["needsClarification", "generating", "proposalReady", "revising", "accepting"].includes(
+        session.state,
+      ),
+    );
+    if (
+      merchantInstruction.current &&
+      (hasContextBoundWorkflow || ["ready", "accepting", "failed"].includes(current.state))
+    ) {
+      setRequest(merchantInstruction.current);
+    }
+    if (["ready", "accepting", "failed"].includes(current.state)) {
+      applyConfirmationResult(runtime.confirmation.markStale());
+      return;
+    }
+    if (hasContextBoundWorkflow) {
+      setSession(
+        uiSession("superseded", status, {
+          failure: { message: status, retryable: false },
+        }),
+      );
+    }
+  };
+
+  const closeForPageSwitch = (nextPage: PageModel) => {
+    supersedeForContextChange(nextPage, undefined, statuses.pageSwitch);
   };
 
   const closeForPageMutation = (nextPage: PageModel) => {
-    updateRuntimeIdentity(nextPage, selectedSectionId);
-    const current = runtime.confirmation.inspect();
-    if (["ready", "accepting", "failed"].includes(current.state)) {
-      applyConfirmationResult(runtime.confirmation.markStale());
-    }
+    supersedeForContextChange(nextPage, selectedSectionId, statuses.stale);
   };
 
   const closeForSelectionChange = (nextSectionId?: string) => {
-    updateRuntimeIdentity(page, nextSectionId);
-    const current = runtime.confirmation.inspect();
-    if (["ready", "accepting", "failed"].includes(current.state)) {
-      applyConfirmationResult(runtime.confirmation.markStale());
-    }
+    if (nextSectionId === selectedSectionId) return;
+    supersedeForContextChange(page, nextSectionId, statuses.contextSwitch);
   };
 
   const closeForLocaleChange = () => {
-    if (session?.state !== "generating" && session?.state !== "revising") return;
-    actionSequence.current += 1;
-    setSession(
-      uiSession("superseded", statuses.localeSwitch, {
-        failure: { message: statuses.localeSwitch, retryable: true },
-      }),
-    );
+    supersedeForContextChange(page, selectedSectionId, statuses.localeSwitch);
   };
 
   const confirmation = runtime.confirmation.inspect();
@@ -688,6 +737,11 @@ export function useDesignAgentSession({
   const blocksSave = previewActive || session?.state === "needsClarification";
   const controlsDisabled =
     disabled || ["generating", "revising", "accepting"].includes(visibleState);
+  const generationRetryAvailable =
+    session?.state === "failed" &&
+    Boolean(session.failure?.retryable) &&
+    Boolean(request.trim()) &&
+    generatedProposal === null;
   const updateRequest = (nextRequest: string) => {
     setRequest(nextRequest);
     if (session && ["failed", "stale", "superseded"].includes(session.state)) {
@@ -709,7 +763,9 @@ export function useDesignAgentSession({
     previewActive,
     blocksSave,
     controlsDisabled,
+    generationRetryAvailable,
     submitRequest,
+    retryGeneration,
     answerClarification,
     reviseProposal,
     regenerateProposal,
