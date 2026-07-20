@@ -6,6 +6,7 @@ import {
 import {
   canonicalizeAiStorefrontPermissionGrants,
   canonicalizeAiStorefrontTarget,
+  createAiStorefrontBaselineFingerprint,
   createAiStorefrontPermissionFingerprint,
   createAiStorefrontTargetFingerprint,
   validateAiStorefrontOperations,
@@ -134,6 +135,35 @@ describe("P4-05A whole-storefront AI contract foundations", () => {
     expect(createAiStorefrontTargetFingerprint(withNoise, target())).toBe(
       createAiStorefrontTargetFingerprint(context(), target()),
     );
+  });
+
+  it("fingerprints the complete canonical storefront baseline without volatile UI state", () => {
+    const baseline = createAiStorefrontBaselineFingerprint(context());
+    expect(baseline).toMatch(/^storefront-baseline-/);
+    expect(
+      createAiStorefrontBaselineFingerprint({
+        ...context(),
+        uiState: { selectedPageId: collectionPage.id, expandedPanel: "layers" },
+      }),
+    ).toBe(baseline);
+
+    const changedUntargetedPage = context();
+    changedUntargetedPage.storefront.pages.find((page) => page.type === "product")!.title.en =
+      "Untargeted page changed";
+    expect(createAiStorefrontBaselineFingerprint(changedUntargetedPage)).not.toBe(baseline);
+
+    const changedNavigation = context();
+    changedNavigation.storefront.navigation.primary.reverse();
+    expect(createAiStorefrontBaselineFingerprint(changedNavigation)).not.toBe(baseline);
+
+    const changedPageOrder = context();
+    changedPageOrder.storefront.pageOrder.reverse();
+    changedPageOrder.storefront.pages.reverse();
+    expect(createAiStorefrontBaselineFingerprint(changedPageOrder)).not.toBe(baseline);
+
+    const changedDesignSystem = context();
+    changedDesignSystem.storefront.brandSystem.colors.accent = "#B8860B";
+    expect(createAiStorefrontBaselineFingerprint(changedDesignSystem)).not.toBe(baseline);
   });
 
   it("keeps page grants target-bound and rejects section escape", () => {

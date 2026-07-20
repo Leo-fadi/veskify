@@ -197,6 +197,7 @@ export const aiStorefrontProviderRequestSchema = z
       .strict()
       .nullable(),
     permissionGrants: z.array(aiOperationPermissionGrantSchema).min(1),
+    storefrontBaselineFingerprint: z.string().startsWith("storefront-baseline-"),
     targetFingerprint: z.string().startsWith("storefront-target-"),
     permissionFingerprint: z.string().startsWith("storefront-permissions-"),
     activeLocale: localeSchema,

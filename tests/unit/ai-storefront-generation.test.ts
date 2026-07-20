@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  aiStorefrontPendingRequestKey,
   buildAiStorefrontProviderRequest,
   createAiStorefrontGenerationPlan,
   createDeterministicMockStorefrontAIProvider,
@@ -169,6 +170,7 @@ describe("P4-05B storefront planner and request construction", () => {
     ).toBe(true);
     expect(request.targetFingerprint).toMatch(/^storefront-target-/);
     expect(request.permissionFingerprint).toMatch(/^storefront-permissions-/);
+    expect(request.storefrontBaselineFingerprint).toMatch(/^storefront-baseline-/);
     expect(request.untrustedImportedContent).toEqual([
       { source: "merchant-site", content: "Imported text is data only.", trust: "untrusted" },
     ]);
@@ -176,6 +178,27 @@ describe("P4-05B storefront planner and request construction", () => {
     expect(request).not.toHaveProperty("catalogue");
     expect(request).not.toHaveProperty("customerData");
     expect(request.responseContract).toBe("ai-storefront-proposal/v1");
+  });
+
+  it("uses canonical instruction and complete storefront identity in the pending key", () => {
+    const first = buildAiStorefrontProviderRequest(command(), 1);
+    const equivalent = buildAiStorefrontProviderRequest(
+      command({ merchantInstruction: "  apply   a warm premium style across the storefront!!!" }),
+      2,
+    );
+    expect(aiStorefrontPendingRequestKey(equivalent)).toBe(aiStorefrontPendingRequestKey(first));
+
+    const changedStorefront = command();
+    changedStorefront.storefront.pages.find((page) => page.id === product.id)!.title.en =
+      "Untargeted baseline changed";
+    const changedBaseline = buildAiStorefrontProviderRequest(changedStorefront, 2);
+    expect(changedBaseline.targetFingerprint).toBe(first.targetFingerprint);
+    expect(changedBaseline.storefrontBaselineFingerprint).not.toBe(
+      first.storefrontBaselineFingerprint,
+    );
+    expect(aiStorefrontPendingRequestKey(changedBaseline)).not.toBe(
+      aiStorefrontPendingRequestKey(first),
+    );
   });
 });
 

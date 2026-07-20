@@ -2,6 +2,7 @@ import {
   canonicalizeAiStorefrontPermissionGrants,
   canonicalizeAiStorefrontTarget,
   createAiStorefrontPermissionFingerprint,
+  createAiStorefrontBaselineFingerprint,
   createAiStorefrontTargetFingerprint,
   type AiStorefrontContext,
 } from "@/application/ai-storefront";
@@ -16,7 +17,11 @@ import {
   type AiStorefrontGenerationCommand,
   type AiStorefrontProviderRequest,
 } from "./contract";
-import { AiStorefrontPlanError, createAiStorefrontGenerationPlan } from "./planner";
+import {
+  AiStorefrontPlanError,
+  createAiStorefrontGenerationPlan,
+  normalizeStorefrontInstruction,
+} from "./planner";
 
 export class AiStorefrontRequestBuildError extends Error {
   constructor(
@@ -123,6 +128,7 @@ export function buildAiStorefrontProviderRequest(
     target,
     context,
   );
+  const storefrontBaselineFingerprint = createAiStorefrontBaselineFingerprint(context);
   const pagesById = new Map(command.storefront.pages.map((page) => [page.id, page]));
   const affectedPages = target.affectedPageIds.map((pageId) =>
     structuredClone(pagesById.get(pageId)!),
@@ -157,6 +163,7 @@ export function buildAiStorefrontProviderRequest(
     requestSequence,
     providerId: command.providerId,
     normalizedInstruction: plan.normalizedInstruction,
+    storefrontBaselineFingerprint,
     targetFingerprint,
     permissionFingerprint,
     importedContent: command.importedContent,
@@ -180,6 +187,7 @@ export function buildAiStorefrontProviderRequest(
             typography: structuredClone(command.storefront.brandSystem.typography),
           },
     permissionGrants,
+    storefrontBaselineFingerprint,
     targetFingerprint,
     permissionFingerprint,
     activeLocale: command.activeLocale,
@@ -194,7 +202,10 @@ export function buildAiStorefrontProviderRequest(
 }
 
 export function aiStorefrontPendingRequestKey(request: AiStorefrontProviderRequest): string {
-  const identity: Partial<AiStorefrontProviderRequest> = { ...request };
+  const identity: Partial<AiStorefrontProviderRequest> = {
+    ...request,
+    instruction: normalizeStorefrontInstruction(request.instruction),
+  };
   delete identity.requestId;
   delete identity.requestSequence;
   return canonicalValueString(identity);

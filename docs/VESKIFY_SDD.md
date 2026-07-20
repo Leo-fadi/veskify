@@ -962,8 +962,12 @@ catalogue or commerce changes are rejected.
 The React-independent storefront orchestrator parses and plans before invocation, deduplicates an
 identical pending request, supersedes older work when a distinct newer request arrives, invokes the
 provider once, and rechecks request sequence, active target, draft identity, target/permission
-fingerprints and EN/FI locale context before returning one ready proposal. Relevant target page or
-global design-state changes make the result stale; volatile UI state is not part of this identity.
+fingerprints, a deterministic complete-storefront baseline fingerprint, and EN/FI locale context
+before returning one ready proposal. Equivalent supported instructions use the planner's canonical
+NFC, casing, whitespace and harmless trailing-punctuation normalization in the pending-request key.
+Changes to any canonical page content or identity, page order, navigation, global design state,
+draft identity/revision or locale context make the result stale; volatile UI state is not part of
+this identity.
 The deterministic mock emits only approved colour and typography operations and preserves the
 complete page set, page order, navigation, untargeted pages, content and protected commerce truth.
 Ready validation requires the proposed projection and affected global design state to be exactly

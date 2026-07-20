@@ -136,6 +136,36 @@ describe("P4-05B storefront generation orchestration", () => {
     expect((await first).state).toBe("ready");
   });
 
+  it.each([
+    ["casing", "apply a warm premium style across the storefront."],
+    ["trailing punctuation", "Apply a warm premium style across the storefront!!!"],
+    ["whitespace", "  Apply   a warm premium style across the storefront.  "],
+  ])("deduplicates equivalent %s while pending", async (_equivalence, merchantInstruction) => {
+    const fixture = setup();
+    const first = fixture.orchestrator.generate(fixture.input);
+    const second = fixture.orchestrator.generate({ ...fixture.input, merchantInstruction });
+    expect(second).toBe(first);
+    expect(fixture.storefrontProvider.calls).toHaveLength(1);
+    await fixture.storefrontProvider.resolve(0);
+    expect((await second).state).toBe("ready");
+  });
+
+  it("deduplicates Unicode-equivalent instructions while pending", async () => {
+    const fixture = setup();
+    const composed = command(fixture.storefrontProvider, {
+      merchantInstruction: "Käytä lämmintä premium-ilmettä koko kaupassa.",
+    });
+    const first = fixture.orchestrator.generate(composed);
+    const second = fixture.orchestrator.generate({
+      ...composed,
+      merchantInstruction: composed.merchantInstruction.normalize("NFD"),
+    });
+    expect(second).toBe(first);
+    expect(fixture.storefrontProvider.calls).toHaveLength(1);
+    await fixture.storefrontProvider.resolve(0);
+    expect((await second).state).toBe("ready");
+  });
+
   it("lets a newer request supersede an older result", async () => {
     const fixture = setup();
     const older = fixture.orchestrator.generate(fixture.input);
@@ -164,6 +194,43 @@ describe("P4-05B storefront generation orchestration", () => {
     const result = await pending;
     expect(result.state).toBe("stale");
     expect(result.failure?.code).toBe("staleDraft");
+  });
+
+  it("marks an untargeted page change stale without creating a ready proposal", async () => {
+    const fixture = setup();
+    const pending = fixture.orchestrator.generate(fixture.input);
+    const changed = fixture.current();
+    changed.context.storefront.pages.find((page) => page.id === product.id)!.title.en =
+      "Untargeted merchant edit";
+    fixture.setCurrent(changed);
+    await fixture.storefrontProvider.resolve(0);
+    const result = await pending;
+    expect(result.state).toBe("stale");
+    expect(result.proposal).toBeNull();
+    expect(fixture.orchestrator.inspect()).toMatchObject({ state: "stale", proposal: null });
+  });
+
+  it.each([
+    [
+      "navigation",
+      (current: AiStorefrontGenerationIdentity) =>
+        current.context.storefront.navigation.primary.reverse(),
+    ],
+    [
+      "page ordering",
+      (current: AiStorefrontGenerationIdentity) => {
+        current.context.storefront.pageOrder.reverse();
+        current.context.storefront.pages.reverse();
+      },
+    ],
+  ])("marks %s changes stale", async (_change, mutate) => {
+    const fixture = setup();
+    const pending = fixture.orchestrator.generate(fixture.input);
+    const changed = fixture.current();
+    mutate(changed);
+    fixture.setCurrent(changed);
+    await fixture.storefrontProvider.resolve(0);
+    expect((await pending).failure?.code).toBe("staleDraft");
   });
 
   it("ignores unrelated volatile UI state", async () => {
@@ -211,6 +278,27 @@ describe("P4-05B storefront generation orchestration", () => {
     expect(fixture.storefrontProvider.calls).toHaveLength(2);
     expect(fixture.storefrontProvider.calls[0].requestId).not.toBe(
       fixture.storefrontProvider.calls[1].requestId,
+    );
+    await fixture.storefrontProvider.resolve(1);
+    expect((await second).state).toBe("ready");
+    await fixture.storefrontProvider.resolve(0);
+    expect((await first).state).toBe("superseded");
+  });
+
+  it("treats a changed untargeted storefront baseline as a distinct request", async () => {
+    const fixture = setup();
+    const first = fixture.orchestrator.generate(fixture.input);
+    const changedBaseline = command(fixture.storefrontProvider);
+    changedBaseline.storefront.pages.find((page) => page.id === product.id)!.title.en =
+      "New complete storefront baseline";
+    fixture.setCurrent(identity(changedBaseline));
+    const second = fixture.orchestrator.generate(changedBaseline);
+    expect(fixture.storefrontProvider.calls).toHaveLength(2);
+    expect(fixture.storefrontProvider.calls[0].targetFingerprint).toBe(
+      fixture.storefrontProvider.calls[1].targetFingerprint,
+    );
+    expect(fixture.storefrontProvider.calls[0].storefrontBaselineFingerprint).not.toBe(
+      fixture.storefrontProvider.calls[1].storefrontBaselineFingerprint,
     );
     await fixture.storefrontProvider.resolve(1);
     expect((await second).state).toBe("ready");

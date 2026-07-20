@@ -45,10 +45,13 @@ still current. It does not store proposals or mutate active, saved, or published
 
 Request identity covers the normalized instruction, provider, project/draft identity, complete
 canonical target, affected pages and sections, optional design-system target, locale context, target
-fingerprint, permission fingerprint, and request sequence. A distinct newer request supersedes the
-older result; an invalid newer command also supersedes pending work. Changes to relevant pages,
-global design state, target identity, revision, or locale context make a result stale. Volatile UI
-state is outside the identity and cannot stale generation.
+fingerprint, permission fingerprint, deterministic complete-storefront baseline fingerprint, and
+request sequence. The pending key uses the planner's NFC, casing, whitespace, and harmless trailing
+punctuation normalization, so equivalent supported instructions share one invocation. A distinct
+newer request supersedes the older result; an invalid newer command also supersedes pending work.
+Changes to any canonical page content or identity, page order, navigation, global design state,
+target identity, draft revision, or locale context make a result stale. Volatile UI state is outside
+the identity and cannot stale generation.
 
 ## Deterministic provider and validation
 

@@ -1,5 +1,6 @@
 import {
   canonicalizeAiStorefrontTarget,
+  createAiStorefrontBaselineFingerprint,
   createAiStorefrontPermissionFingerprint,
   createAiStorefrontTargetFingerprint,
   type AiStorefrontContext,
@@ -214,6 +215,8 @@ export class AiStorefrontGenerationOrchestrator {
       return "staleTarget";
     }
     try {
+      const currentStorefrontBaselineFingerprint =
+        createAiStorefrontBaselineFingerprint(currentContext);
       const currentTargetFingerprint = createAiStorefrontTargetFingerprint(
         currentContext,
         currentTarget,
@@ -223,7 +226,8 @@ export class AiStorefrontGenerationOrchestrator {
         currentTarget,
         currentContext,
       );
-      return currentTargetFingerprint === request.targetFingerprint &&
+      return currentStorefrontBaselineFingerprint === request.storefrontBaselineFingerprint &&
+        currentTargetFingerprint === request.targetFingerprint &&
         currentPermissionFingerprint === request.permissionFingerprint
         ? null
         : "staleDraft";
