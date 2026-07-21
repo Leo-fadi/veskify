@@ -182,7 +182,7 @@ export function runProjectRepositoryContract(
       expect(created.snapshotHistoryMetadata).toEqual(input.snapshotHistoryMetadata);
 
       created.project.name = "Mutated result";
-      created.catalogue.products[0].price.amount = 1;
+      created.catalogue.products[0].price!.amount = 1;
       created.snapshots[0].pages[0].title.en = "Mutated result";
       const isolated = await repository.get(input.project.id);
       expect(isolated.project).toEqual(input.project);
@@ -358,7 +358,7 @@ export function runProjectRepositoryContract(
     it("defensively isolates returned data and saved inputs", async () => {
       const first = await repository.get(projectId);
       first.project.name = "Mutated outside";
-      first.catalogue.products[0].price.amount = 1;
+      first.catalogue.products[0].price!.amount = 1;
       first.snapshots[0].pages[0].title.en = "Mutated outside";
 
       const draft = editableDraft();
@@ -369,7 +369,7 @@ export function runProjectRepositoryContract(
 
       const stored = await repository.get(projectId);
       expect(stored.project.name).toBe("Aurum Nordic");
-      expect(stored.catalogue.products[0].price.amount).toBe(1290);
+      expect(stored.catalogue.products[0].price!.amount).toBe(1290);
       expect(stored.snapshots.some((snapshot) => snapshot.pages[0].title.en === "Home")).toBe(true);
       expect(
         stored.snapshots.find((snapshot) => snapshot.id === draft.id)?.pages[0]?.title.en,

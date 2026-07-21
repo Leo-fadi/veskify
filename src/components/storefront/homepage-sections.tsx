@@ -12,6 +12,24 @@ export type SafeLink = { label: LocalizedText; href: string };
 const text = (value: LocalizedText, context: StorefrontRenderContext) =>
   resolveLocalizedText(value, context.activeLocale, context.primaryLocale);
 
+const formatPrice = (amount: number) =>
+  new Intl.NumberFormat("fi-FI", {
+    style: "currency",
+    currency: "EUR",
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+
+const productPriceLabel = (
+  product: StorefrontRenderContext["catalogue"]["products"][number],
+  context: StorefrontRenderContext,
+) =>
+  product.price
+    ? formatPrice(product.price.amount)
+    : product.priceUnavailableReason
+      ? text(product.priceUnavailableReason, context)
+      : text({ en: "Price unavailable", fi: "Hinta ei ole saatavilla" }, context);
+
 const assetAlt = (asset: AssetRef, context: StorefrontRenderContext) =>
   asset.decorative || !asset.alt ? "" : text(asset.alt, context);
 
@@ -222,13 +240,6 @@ export function FeaturedCategories({
   );
 }
 
-const formatPrice = (amount: number) =>
-  new Intl.NumberFormat("fi-FI", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
 const stockLabel = (stock: string | undefined, context: StorefrontRenderContext) =>
   text(
     stock === undefined
@@ -276,7 +287,7 @@ export function ProductGrid({
               <StorefrontImage asset={product.images[0]} context={context} />
               <div>
                 <h3>{text(product.title, context)}</h3>
-                <p>{formatPrice(product.price.amount)}</p>
+                <p>{productPriceLabel(product, context)}</p>
                 <p className="product-card__stock">{stockLabel(product.stockStatus, context)}</p>
               </div>
             </article>

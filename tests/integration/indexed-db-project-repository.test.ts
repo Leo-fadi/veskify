@@ -639,13 +639,13 @@ describe("IndexedDbProjectRepository persistence", () => {
     const databaseName = testDatabaseName("isolation");
     const first = openRepository(databaseName);
     const aggregate = await first.get(aurumNordicSeed.project.id);
-    aggregate.catalogue.products[0].price.amount = 1;
+    aggregate.catalogue.products[0].price!.amount = 1;
     aggregate.project.name = "External mutation";
     await first.close();
 
     const reopened = openRepository(databaseName);
     const persisted = await reopened.get(aurumNordicSeed.project.id);
-    expect(persisted.catalogue.products[0].price.amount).toBe(1290);
+    expect(persisted.catalogue.products[0].price!.amount).toBe(1290);
     expect(persisted.project.name).toBe("Aurum Nordic");
   });
 });

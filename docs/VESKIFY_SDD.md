@@ -820,11 +820,15 @@ Catalogue intelligence exists to improve storefront presentation, not to operate
 
 - Source price and stock values are read-only in the design agent.
 
+- Current price and public availability are mutually exclusive display data: a product must provide exactly one of `price` or a localized `priceUnavailableReason`. Optional compare-at prices, variant prices and availability labels remain read-only display data.
+
 - Duplicate suggestions require user confirmation before records are hidden from the demo catalogue.
 
 - Missing information is shown as a recommendation, not invented as factual product data.
 
 - Generated descriptive copy must not claim certifications, materials or properties absent from source data.
+
+- Product collection membership remains in the canonical collections model; material, colour and stone details remain in product attributes.
 
 # 12. AI agent specification
 
@@ -1398,7 +1402,12 @@ id: string;<br />
 sku?: string;<br />
 title: LocalizedText;<br />
 description?: LocalizedText;<br />
-price: { amount: number; currency: "EUR" }; // read-only<br />
+brand?: string;<br />
+category?: string;<br />
+price?: { amount: number; currency: "EUR" }; // exactly one with priceUnavailableReason; read-only<br />
+compareAtPrice?: { amount: number; currency: "EUR" }; // read-only<br />
+priceUnavailableReason?: LocalizedText; // exactly one with price<br />
+availabilityLabel?: LocalizedText; // read-only display label<br />
 stockStatus?: "inStock" | "lowStock" | "outOfStock"; // read-only dummy display<br />
 images: AssetRef[];<br />
 productType: string;<br />
@@ -1412,6 +1421,26 @@ seo?: LocalizedSEO;<br />
 <tbody>
 </tbody>
 </table>
+
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>type ProductVariantDisplay = {<br />
+id: string;<br />
+label: LocalizedText;<br />
+attributes: Record&lt;string, string | number | string[]&gt;;<br />
+price?: { amount: number; currency: "EUR" }; // read-only<br />
+};</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+
+Every product provides exactly one of `price` or `priceUnavailableReason`; both missing or both present are invalid. Collection membership is represented by the canonical collections model, and material, colour and stone details remain in `attributes`.
 
 ## 15.7 Persistence for the standalone demo
 

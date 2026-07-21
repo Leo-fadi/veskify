@@ -74,10 +74,10 @@ describe("Aurum Nordic jewellery seed", () => {
     for (const product of aurumNordicSeed.catalogue.products) {
       expect(Object.isFrozen(product)).toBe(true);
       expect(Object.isFrozen(product.price)).toBe(true);
-      expect(product.price.currency).toBe("EUR");
-      expect(product.price.amount).toBeGreaterThan(0);
+      expect(product.price!.currency).toBe("EUR");
+      expect(product.price!.amount).toBeGreaterThan(0);
       expect(["inStock", "lowStock", "outOfStock"]).toContain(product.stockStatus);
-      expect(() => Object.assign(product.price, { amount: 1 })).toThrow();
+      expect(() => Object.assign(product.price!, { amount: 1 })).toThrow();
     }
   });
 

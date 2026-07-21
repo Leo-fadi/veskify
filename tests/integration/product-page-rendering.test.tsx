@@ -115,7 +115,7 @@ describe("Aurum Nordic product composition", () => {
     [1290.5, /1\s?290,50\s?€/],
   ])("preserves the catalogue price %s in product and related presentation", (amount, expected) => {
     const catalogue = structuredClone(aurumNordicSeed.catalogue);
-    catalogue.products[0].price.amount = amount;
+    catalogue.products[0].price!.amount = amount;
     const pricePage = structuredClone(page);
     pricePage.sections[6].content.productIds = ["product_aurora_ring_585"];
     render(
