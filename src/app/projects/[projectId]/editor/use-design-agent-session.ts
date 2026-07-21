@@ -1202,6 +1202,13 @@ export function useDesignAgentSession({
       updateRuntimeIdentity(nextPage, undefined, targetScope);
       return;
     }
+    if (targetScope === "section") {
+      targetExplicitlySelected.current = false;
+      setTargetScope("page");
+      supersedeForContextChange(nextPage, undefined, statuses.pageSwitch);
+      updateRuntimeIdentity(nextPage, undefined, "page");
+      return;
+    }
     supersedeForContextChange(nextPage, undefined, statuses.pageSwitch);
   };
 
