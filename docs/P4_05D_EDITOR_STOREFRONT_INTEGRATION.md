@@ -2,7 +2,7 @@
 
 Status: implemented on `codex/p4-05d-editor-storefront-integration`.
 
-The authoritative product and architecture contract remains [VESKIFY_SDD.md](./VESKIFY_SDD.md). This note records the P4-05D editor adapter and does not replace or broaden that contract.
+The authoritative product and architecture contract is [VESKIFY_SDD.md](./VESKIFY_SDD.md), especially §12.7, §12.8, §16.4, and §21.2. This note is an implementation record for the P4-05D editor adapter and does not replace, broaden, or govern that contract.
 
 ## Scope and traceability
 
@@ -18,7 +18,7 @@ The design-assistant panel exposes three localized targets:
 - Current page / Nykyinen sivu;
 - Entire storefront / Koko verkkokauppa.
 
-Selected section is disabled until the canvas reports an eligible canonical selection. The existing automatic selected-section behavior remains until the merchant explicitly chooses a target. Choosing the already-active target is a no-op. A real target change supersedes target-bound clarification, generation, review, and retry state without mutating the draft.
+Selected section is disabled until the canvas reports an eligible canonical selection. The existing automatic selected-section behavior remains until the merchant explicitly chooses a target. Choosing the already-active target is a no-op. A real target change supersedes target-bound clarification, generation, review, and retry state without mutating the draft. If the selected section disappears or becomes ineligible while section scope is active, the editor visibly falls back to Current page and supersedes old section-scoped work.
 
 The panel shows merchant page and section names only. Internal IDs, fingerprints, permission grants, operation codes, provider payloads, and raw errors are not rendered.
 
@@ -50,13 +50,13 @@ Reject and Cancel close the active proposal without draft or history mutation. R
 
 ## Atomic history and draft separation
 
-One accepted entire-storefront proposal produces one P4-05C composite history transaction. Editor Undo and Redo delegate to that transaction, restoring all affected pages and the complete original/resulting design system together. Page-level history remains available for ordinary page edits; the editor does not simulate storefront undo with multiple page operations.
+One accepted entire-storefront proposal produces one P4-05C composite history transaction. Pending proposal review state is separate from accepted history: opening, rejecting, cancelling, staling, revising or regenerating another proposal does not discard earlier accepted unsaved storefront history. Editor Undo and Redo delegate to composite transactions only when no newer page-local action is pending, restoring all affected pages and the complete original/resulting design system together. Page-level history remains available for ordinary page edits; the editor does not simulate storefront undo with multiple page operations.
 
-Accept changes only the active editor draft. It does not write browser storage and does not publish. Save draft remains explicit and now assembles the accepted validated brand system together with changed pages. Publishing remains a separate review and confirmation workflow. Reject, Cancel, failed validation, and stale proposals leave active, stored, and published state unchanged.
+Accept changes only the active editor draft. It does not write browser storage and does not publish. Save draft remains explicit and assembles the complete canonical active storefront, including accepted changes to supported pages that are not listed in the editor page selector, unchanged pages, complete page order, navigation, global brand/design-system state, catalogue reference, and protected commerce truth. Publishing remains a separate review and confirmation workflow. Reject, Cancel, failed validation, and stale proposals leave active, stored, and published state unchanged.
 
 ## Stale and concurrency behavior
 
-Storefront generation and acceptance remain bound to project, draft identity/revision, enabled and active locales, ordered pages, navigation, complete page content, and relevant design-system state through the P4-05A/B fingerprints. Canonical page edits, global design changes, locale changes, and real target changes make active work stale or superseded. Page browsing during an entire-storefront review and review accordion/focus changes do not alter canonical state.
+Storefront generation and acceptance remain bound to project, draft identity/revision, enabled and active locales, ordered pages, navigation, complete page content, and relevant design-system state through the P4-05A/B fingerprints. Canonical page edits, global design changes, locale changes, and real target changes make active work stale or superseded. Stale, superseded, rejected, closed, failed, or accepted proposal projections cannot remain in the editable canvas; inactive preview state renders the actual active draft. Page browsing during an entire-storefront review and review accordion/focus changes do not alter canonical state.
 
 Duplicate submission and duplicate Accept are blocked by the existing orchestrators and UI controls. Starting newer work prevents older asynchronous results from replacing the active session.
 

@@ -57,6 +57,66 @@ test("Reject closes the storefront review without draft mutation", async ({ page
   await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
 });
 
+test("stale storefront previews leave the canvas before normal editing resumes", async ({
+  page,
+}) => {
+  await page.goto(editorUrl);
+  const canvasRoot = page.frameLocator("iframe").locator("[data-veskify-canvas-root]");
+  await openStorefrontProposal(page);
+  await expect(page.getByLabel("Proposal preview canvas")).toBeVisible();
+  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#7B4A2D");
+
+  await page.getByRole("radio", { name: "Suomi" }).check();
+
+  await expect(page.getByLabel("Proposal preview canvas")).toHaveCount(0);
+  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#8A5A2B");
+  await expect(page.getByLabel("Visual editor canvas")).toBeVisible();
+  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+});
+
+test("accepted storefront history survives a later rejected proposal", async ({ page }) => {
+  await page.goto(editorUrl);
+  const canvasRoot = page.frameLocator("iframe").locator("[data-veskify-canvas-root]");
+  await openStorefrontProposal(page);
+  await page.getByRole("button", { name: "Accept and apply" }).click();
+  await expect(page.getByLabel("Draft status")).toContainText("Unsaved changes");
+  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#7B4A2D");
+
+  await page.getByRole("button", { name: "Start over" }).click();
+  await openStorefrontProposal(page);
+  await page.getByRole("button", { name: "Reject" }).click();
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+
+  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#8A5A2B");
+  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+});
+
+test("page edits after storefront Accept are undone before the composite storefront change", async ({
+  page,
+}) => {
+  await page.goto(editorUrl);
+  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  const canvasRoot = page.frameLocator("iframe").locator("[data-veskify-canvas-root]");
+  await openStorefrontProposal(page);
+  await page.getByRole("button", { name: "Accept and apply" }).click();
+  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#7B4A2D");
+
+  await canvas.getByText("Made for northern light", { exact: true }).click();
+  await page
+    .getByLabel("Selected section actions")
+    .getByRole("button", { name: "Duplicate" })
+    .click();
+  await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(2);
+
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(1);
+  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#7B4A2D");
+
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#8A5A2B");
+  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+});
+
 test("retryable storefront failure requires an explicit Retry", async ({ page }) => {
   await page.goto(editorUrl);
   await page.getByRole("radio", { name: "Entire storefront" }).check();

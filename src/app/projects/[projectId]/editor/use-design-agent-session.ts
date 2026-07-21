@@ -20,6 +20,7 @@ import {
   type StorefrontAIProvider,
 } from "@/application/ai-storefront-generation";
 import {
+  CanonicalStorefrontHistory,
   StorefrontProposalAcceptanceCoordinator,
   projectAiStorefrontSnapshot,
   type AiStorefrontProposal,
@@ -36,11 +37,15 @@ import {
   minimalRevisionRequest,
 } from "@/application/design-agent/revisions";
 import { createDeterministicDesignProvider } from "@/application/design-skills";
-import type { StorefrontRenderContext } from "@/components/registry";
+import { validateRegisteredSnapshot, type StorefrontRenderContext } from "@/components/registry";
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { BrandSystem } from "@/domain/design-system";
 import { resolveLocalizedText, type Locale, type LocalizedText } from "@/domain/shared";
-import type { PageModel, StorefrontSnapshot } from "@/domain/storefront";
+import {
+  canonicalStorefrontContentFingerprint,
+  type PageModel,
+  type StorefrontSnapshot,
+} from "@/domain/storefront";
 
 export type DesignAgentTargetScope = "section" | "page" | "storefront";
 
@@ -357,7 +362,9 @@ export function useDesignAgentSession({
   const lastGenerationScope = useRef<DesignAgentTargetScope>("page");
   const targetExplicitlySelected = useRef(false);
   const initialLifecycle = useRef(true);
-  const storefrontAcceptance = useRef<StorefrontProposalAcceptanceCoordinator | null>(null);
+  const pendingStorefrontAcceptance = useRef<StorefrontProposalAcceptanceCoordinator | null>(null);
+  const acceptedStorefrontHistory = useRef<CanonicalStorefrontHistory | null>(null);
+  const acceptedStorefrontHistoryFingerprint = useRef<string | null>(null);
   const [runtimeBridge] = useState(() => createRuntimeBridge(analytics, analyticsRoute));
   const [runtime] = useState<Runtime>(() =>
     createRuntime(
@@ -436,17 +443,45 @@ export function useDesignAgentSession({
   }, [activeDraft, activeLocale, enabledLocales, projectId, runtimeBridge]);
 
   const refreshStorefrontHistory = useCallback(() => {
-    const coordinator = storefrontAcceptance.current;
-    if (!coordinator) {
+    const history = acceptedStorefrontHistory.current;
+    if (!history) {
       setStorefrontHistoryState({ canUndo: false, canRedo: false });
       return;
     }
-    const transactions = coordinator.inspectHistory();
+    const transactions = history.inspectTransactions();
     setStorefrontHistoryState({
       canUndo: transactions.past.length > 0,
       canRedo: transactions.future.length > 0,
     });
   }, []);
+
+  const ensureAcceptedStorefrontHistory = useCallback(
+    (snapshot: StorefrontSnapshot) => {
+      if (!catalogue || !activeLocale || !primaryLocale) {
+        throw new Error("Storefront history requires complete validation context.");
+      }
+      const validated = validateRegisteredSnapshot(
+        snapshot,
+        catalogue,
+        activeLocale,
+        primaryLocale,
+      );
+      const history =
+        acceptedStorefrontHistory.current ??
+        new CanonicalStorefrontHistory({
+          validateSnapshot: (candidate) =>
+            validateRegisteredSnapshot(candidate, catalogue, activeLocale, primaryLocale),
+        });
+      if (!acceptedStorefrontHistory.current) {
+        history.initialize(validated);
+        acceptedStorefrontHistory.current = history;
+      } else {
+        history.rebaseCurrent(validated);
+      }
+      return history;
+    },
+    [activeLocale, catalogue, primaryLocale],
+  );
 
   const trackConfirmationEvent = (
     name: Extract<ProposalAnalyticsEvent["name"], "ai_proposal_accepted" | "ai_proposal_rejected">,
@@ -472,10 +507,11 @@ export function useDesignAgentSession({
 
   const closeStorefrontPending = useCallback(() => {
     runtime.storefrontGeneration.supersede();
-    const coordinator = storefrontAcceptance.current;
+    const coordinator = pendingStorefrontAcceptance.current;
     if (coordinator && ["ready", "failed"].includes(coordinator.inspect().state)) {
       coordinator.close();
     }
+    pendingStorefrontAcceptance.current = null;
     setGeneratedStorefrontProposal(null);
   }, [runtime]);
 
@@ -491,7 +527,8 @@ export function useDesignAgentSession({
   }, []);
 
   const clearStorefrontHistory = useCallback(() => {
-    storefrontAcceptance.current = null;
+    acceptedStorefrontHistory.current = null;
+    acceptedStorefrontHistoryFingerprint.current = null;
     setStorefrontHistoryState({ canUndo: false, canRedo: false });
   }, []);
 
@@ -525,6 +562,21 @@ export function useDesignAgentSession({
     },
     [closePending, closeStorefrontPending],
   );
+
+  useEffect(() => {
+    if (!activeDraft || !acceptedStorefrontHistory.current) return;
+    try {
+      const fingerprint = canonicalStorefrontContentFingerprint(activeDraft);
+      if (fingerprint === acceptedStorefrontHistoryFingerprint.current) return;
+      ensureAcceptedStorefrontHistory(activeDraft);
+      acceptedStorefrontHistoryFingerprint.current = fingerprint;
+      refreshStorefrontHistory();
+    } catch {
+      acceptedStorefrontHistory.current = null;
+      acceptedStorefrontHistoryFingerprint.current = null;
+      refreshStorefrontHistory();
+    }
+  }, [activeDraft, ensureAcceptedStorefrontHistory, refreshStorefrontHistory]);
 
   const commandFor = (instruction: string) => {
     if (
@@ -710,7 +762,7 @@ export function useDesignAgentSession({
       ) {
         throw new Error("The storefront proposal cannot be opened without complete draft context.");
       }
-      storefrontAcceptance.current = new StorefrontProposalAcceptanceCoordinator({
+      pendingStorefrontAcceptance.current = new StorefrontProposalAcceptanceCoordinator({
         proposal: result.proposal,
         activeDraft,
         storedDraft,
@@ -912,7 +964,7 @@ export function useDesignAgentSession({
       return;
     }
     if (generatedStorefrontProposal) {
-      const coordinator = storefrontAcceptance.current;
+      const coordinator = pendingStorefrontAcceptance.current;
       if (!coordinator) return;
       acceptancePending.current = true;
       setSession(uiSession("accepting", statuses.accepting));
@@ -923,10 +975,43 @@ export function useDesignAgentSession({
           acceptancePending.current = false;
           return;
         }
+        const beforeAcceptance = coordinator.inspect().activeDraft;
         const result = coordinator.accept();
         acceptancePending.current = false;
         if (result.state === "accepted") {
-          onStorefrontSnapshot(result.activeDraft);
+          if (!result.transaction) {
+            const message = {
+              en: "The storefront proposal could not be recorded safely. Your draft is unchanged.",
+              fi: "Kaupan ehdotusta ei voitu kirjata turvallisesti. Luonnos säilyi ennallaan.",
+            };
+            setSession(
+              uiSession("failed", message, {
+                failure: { message, retryable: true },
+              }),
+            );
+            return;
+          }
+          let activeStorefront: StorefrontSnapshot;
+          try {
+            const history = ensureAcceptedStorefrontHistory(beforeAcceptance);
+            activeStorefront = history.commit(result.transaction);
+            acceptedStorefrontHistoryFingerprint.current =
+              canonicalStorefrontContentFingerprint(activeStorefront);
+          } catch {
+            const message = {
+              en: "The storefront proposal could not be recorded safely. Your draft is unchanged.",
+              fi: "Kaupan ehdotusta ei voitu kirjata turvallisesti. Luonnos säilyi ennallaan.",
+            };
+            setSession(
+              uiSession("failed", message, {
+                failure: { message, retryable: true },
+              }),
+            );
+            refreshStorefrontHistory();
+            return;
+          }
+          onStorefrontSnapshot(activeStorefront);
+          pendingStorefrontAcceptance.current = null;
           setGeneratedStorefrontProposal(null);
           refreshStorefrontHistory();
           setSession(uiSession("accepted", statuses.storefrontAccepted));
@@ -941,6 +1026,10 @@ export function useDesignAgentSession({
             failure: { message, retryable: result.failure?.retryable ?? false },
           }),
         );
+        if (result.state === "stale") {
+          pendingStorefrontAcceptance.current = null;
+          setGeneratedStorefrontProposal(null);
+        }
       }, 0);
       return;
     }
@@ -962,7 +1051,6 @@ export function useDesignAgentSession({
         const result = runtime.confirmation.completeAcceptance(onAcceptedPage);
         applyConfirmationResult(result);
         if (result.state === "accepted" && result.generatedProposal) {
-          clearStorefrontHistory();
           trackConfirmationEvent("ai_proposal_accepted", result.generatedProposal);
         }
       } finally {
@@ -980,10 +1068,11 @@ export function useDesignAgentSession({
       return;
     }
     if (generatedStorefrontProposal) {
-      const coordinator = storefrontAcceptance.current;
+      const coordinator = pendingStorefrontAcceptance.current;
       if (!coordinator) return;
       const result = coordinator.reject();
       if (result.state === "rejected") {
+        pendingStorefrontAcceptance.current = null;
         setGeneratedStorefrontProposal(null);
         setSession(uiSession("rejected", statuses.rejected));
       }
@@ -1117,12 +1206,29 @@ export function useDesignAgentSession({
   };
 
   const closeForPageMutation = (nextPage: PageModel) => {
-    clearStorefrontHistory();
-    supersedeForContextChange(nextPage, selectedSectionId, statuses.stale);
+    const nextSectionId =
+      selectedSectionId && nextPage.sections.some((section) => section.id === selectedSectionId)
+        ? selectedSectionId
+        : undefined;
+    if (targetScope === "section" && !nextSectionId) {
+      targetExplicitlySelected.current = false;
+      setTargetScope("page");
+      supersedeForContextChange(nextPage, undefined, statuses.contextSwitch);
+      updateRuntimeIdentity(nextPage, undefined, "page");
+      return;
+    }
+    supersedeForContextChange(nextPage, nextSectionId, statuses.stale);
   };
 
   const closeForSelectionChange = (nextSectionId?: string) => {
     if (nextSectionId === selectedSectionId) return;
+    if (targetScope === "section" && !nextSectionId) {
+      targetExplicitlySelected.current = false;
+      supersedeForContextChange(page, undefined, statuses.contextSwitch);
+      setTargetScope("page");
+      updateRuntimeIdentity(page, undefined, "page");
+      return;
+    }
     if (!targetExplicitlySelected.current) {
       const automaticScope: DesignAgentTargetScope = nextSectionId ? "section" : "page";
       if (automaticScope !== targetScope) {
@@ -1172,21 +1278,34 @@ export function useDesignAgentSession({
   };
 
   const undoStorefront = () => {
-    const previous = storefrontAcceptance.current?.undo();
-    if (!previous) return false;
-    onStorefrontSnapshot(previous);
-    refreshStorefrontHistory();
-    setSession(uiSession("accepted", statuses.storefrontUndone));
-    return true;
+    try {
+      const previous = acceptedStorefrontHistory.current?.undo();
+      if (!previous) return false;
+      acceptedStorefrontHistoryFingerprint.current =
+        canonicalStorefrontContentFingerprint(previous);
+      onStorefrontSnapshot(previous);
+      refreshStorefrontHistory();
+      setSession(uiSession("accepted", statuses.storefrontUndone));
+      return true;
+    } catch {
+      refreshStorefrontHistory();
+      return false;
+    }
   };
 
   const redoStorefront = () => {
-    const next = storefrontAcceptance.current?.redo();
-    if (!next) return false;
-    onStorefrontSnapshot(next);
-    refreshStorefrontHistory();
-    setSession(uiSession("accepted", statuses.storefrontRedone));
-    return true;
+    try {
+      const next = acceptedStorefrontHistory.current?.redo();
+      if (!next) return false;
+      acceptedStorefrontHistoryFingerprint.current = canonicalStorefrontContentFingerprint(next);
+      onStorefrontSnapshot(next);
+      refreshStorefrontHistory();
+      setSession(uiSession("accepted", statuses.storefrontRedone));
+      return true;
+    } catch {
+      refreshStorefrontHistory();
+      return false;
+    }
   };
 
   const confirmation = runtime.confirmation.inspect();

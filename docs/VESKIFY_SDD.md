@@ -997,6 +997,47 @@ in-memory draft state; Save draft, publishing, published history, and restore re
 separate boundaries (FR-026, FR-028, FR-041, FR-042, FR-044–FR-050, NFR-006, NFR-009, AC-006,
 AC-008–AC-012, AC-016).
 
+P4-05D integrates the controlled proposal lifecycle into the editor with three merchant-visible AI
+target scopes: Selected section, Current page, and Entire storefront. Section/page requests continue
+through the single-page proposal generation and confirmation boundary. Entire-storefront requests
+use the P4-05B request builder and P4-05C atomic application boundary, with deterministic mock
+generation as the local/test default and optional real providers confined to the existing provider
+interface. Switching target, locale, page, or selected section supersedes pending work bound to the
+old context. If a selected section disappears or becomes ineligible while section scope is active,
+the editor must visibly move the target back to Current page and make the old section proposal
+unusable rather than silently submitting a page-scoped request while section scope appears selected
+(FR-020–FR-022, FR-027, FR-028, FR-040–FR-042, FR-050, NFR-004, NFR-006–NFR-009, AC-004,
+AC-006, AC-012, AC-016–AC-018, AC-020).
+
+The editor canvas may show an AI preview only while the proposal is the active pending canonical
+ready/accepting review for the current target and draft identity. Stale, superseded, rejected,
+closed, failed, or accepted proposal projections must not remain in the editable canvas. When review
+becomes inactive, the canvas renders the actual active draft and normal editor mutations apply only
+to that active draft. Merchant-safe failure, stale, retry, and supersession messages may remain in
+the review panel, but stale or inactive proposed pages and brand state are never a mutation source
+(FR-028, FR-041, FR-042, FR-050, NFR-006–NFR-009, AC-006, AC-008, AC-012, AC-016–AC-018,
+AC-020).
+
+The editor session maintains one complete canonical active storefront aggregate for draft
+persistence. Filtering the editor sidebar and canvas to home, collection, and product pages is a
+presentation concern only. Save draft must assemble persistence from the complete active draft:
+every page changed by an accepted whole-storefront proposal, every normal editor-visible page
+change, unchanged non-editor pages, complete page order, navigation, global brand/design-system
+state, catalogue reference, and protected commerce truth. Save draft remains explicit and must not
+alter the published snapshot or publish history (FR-011–FR-016, FR-020, FR-041–FR-045, FR-050,
+NFR-006, AC-008, AC-012, AC-015, AC-016).
+
+Pending proposal review state and accepted storefront history are separate editor concerns.
+Opening, revising, regenerating, rejecting, cancelling, failing, or staling a later proposal must not
+destroy previously accepted unsaved composite history. Accepting each whole-storefront proposal
+appends one chronological composite transaction. Later page-local edits remain newer actions and are
+undone first; after they are undone or discarded, whole-storefront Undo remains available and
+restores all affected pages plus global design state together. Redo restores accepted storefront
+transactions in chronological order. Saving the draft establishes the normal saved baseline and
+clears session-only unsaved history according to the editor contract; publishing remains an
+unchanged separate confirmation boundary (FR-026, FR-028, FR-041–FR-050, NFR-006, NFR-009,
+AC-006, AC-008–AC-012, AC-016).
+
 ## 12.8 Validation and application pipeline
 
 > **1.** Classify intent and scope.
@@ -1463,7 +1504,10 @@ All draft changes must be expressed as commands or structured operations. The ed
 Whole-storefront proposal acceptance uses a complete cloned `StorefrontSnapshot` and one composite
 history transaction. The application validates the exact forward and inverse storefront states
 before changing active session state. It never approximates atomicity through independent page
-commits and never writes saved or published state.
+commits and never writes saved or published state. Editor adapters must keep the complete active
+storefront aggregate as the draft-persistence source; visible editor page filters, pending proposal
+review state, and accepted composite history are separate adapter concerns. Inactive, stale, failed
+or terminal proposal projections cannot be rendered as editable canvas state.
 
 ## 16.5 Storefront renderer
 
