@@ -182,6 +182,22 @@ describe("P4-05D editor storefront integration", () => {
     expect(screen.getByRole("radio", { name: "Selected section" })).toBeChecked();
   });
 
+  it("falls back to Current page when a page switch removes the selected-section target", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    expect(screen.getByRole("radio", { name: "Selected section" })).toBeChecked();
+
+    fireEvent.change(screen.getByLabelText("Storefront page"), {
+      target: { value: "page_collection_rings" },
+    });
+
+    await screen.findByText("Canvas: collection / en");
+    expect(screen.getByRole("radio", { name: "Current page" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Selected section" })).toBeDisabled();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+  });
+
   it("changes targets without mutating the active draft", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await openStorefrontTarget();
