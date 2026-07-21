@@ -210,9 +210,9 @@ describe("createInitialProjectAggregate", () => {
     expect(detached).toEqual(originalBefore);
     expect(independentlyClonedReview).toEqual(original.review);
 
-    detached.catalogue.products[0].price.amount = 1;
+    detached.catalogue.products[0].price!.amount = 1;
     detached.brief.businessIdentity.businessName = "Changed after construction";
-    expect(first.catalogue.products[0].price.amount).not.toBe(1);
+    expect(first.catalogue.products[0].price!.amount).not.toBe(1);
     expect(first.project.name).toBe("Northern Light Studio");
     expect(() => {
       first.project.name = "Mutation attempt";

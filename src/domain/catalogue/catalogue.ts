@@ -7,11 +7,19 @@ const attributeValueSchema = z.union([
   z.array(z.string().trim().min(1)).min(1),
 ]);
 
+export const productPriceSchema = z
+  .object({
+    amount: z.number().nonnegative(),
+    currency: z.literal("EUR"),
+  })
+  .strict();
+
 export const productVariantDisplaySchema = z
   .object({
     id: idSchema,
     label: localizedTextSchema,
     attributes: z.record(z.string(), attributeValueSchema),
+    price: productPriceSchema.optional(),
   })
   .strict();
 
@@ -62,7 +70,12 @@ export const productDisplayModelSchema = z
     sku: z.string().trim().min(1).max(80).optional(),
     title: localizedTextSchema,
     description: localizedTextSchema.optional(),
-    price: z.object({ amount: z.number().nonnegative(), currency: z.literal("EUR") }).strict(),
+    brand: z.string().trim().min(1).max(120).optional(),
+    category: z.string().trim().min(1).max(120).optional(),
+    price: productPriceSchema.optional(),
+    compareAtPrice: productPriceSchema.optional(),
+    priceUnavailableReason: localizedTextSchema.optional(),
+    availabilityLabel: localizedTextSchema.optional(),
     stockStatus: z.enum(["inStock", "lowStock", "outOfStock"]).optional(),
     images: z.array(assetRefSchema).min(1),
     productType: z.string().trim().min(1).max(80),
@@ -73,8 +86,19 @@ export const productDisplayModelSchema = z
   })
   .strict()
   .superRefine((product, context) => {
+    const hasPrice = product.price !== undefined;
+    const hasPriceUnavailableReason = product.priceUnavailableReason !== undefined;
     const variantIds = product.variants.map((variant) => variant.id);
     const optionIds = product.orderOptions?.map((option) => option.id) ?? [];
+    if (hasPrice === hasPriceUnavailableReason) {
+      context.addIssue({
+        code: "custom",
+        message: hasPrice
+          ? "Products cannot define both a current price and a price-unavailable reason."
+          : "Products require either a current price or a price-unavailable reason.",
+        path: [hasPrice ? "priceUnavailableReason" : "price"],
+      });
+    }
     if (new Set(variantIds).size !== variantIds.length) {
       context.addIssue({
         code: "custom",

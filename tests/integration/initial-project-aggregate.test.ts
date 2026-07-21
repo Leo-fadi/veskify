@@ -73,13 +73,13 @@ describe.each(["in-memory", "indexed-db"] as const)(
         input.guidedGenerationPlan.generatedSnapshot,
       );
 
-      input.catalogue.products[0].price.amount = 1;
-      created.catalogue.products[0].price.amount = 2;
+      input.catalogue.products[0].price!.amount = 1;
+      created.catalogue.products[0].price!.amount = 2;
       loaded.project.name = "Returned value mutation";
       const preserved = await repository.get(aggregate.project.id);
       expect(preserved.project.name).toBe("Northern Light Studio");
-      expect(preserved.catalogue.products[0].price.amount).not.toBe(1);
-      expect(preserved.catalogue.products[0].price.amount).not.toBe(2);
+      expect(preserved.catalogue.products[0].price!.amount).not.toBe(1);
+      expect(preserved.catalogue.products[0].price!.amount).not.toBe(2);
     });
 
     it("starts synchronized, then supports the normal changed-draft publish flow", async () => {

@@ -276,7 +276,7 @@ describe("P4-06 OpenAI provider adapter", () => {
       aurumNordicSeed.catalogue.id,
       catalogueProduct.id,
       catalogueProduct.sku!,
-      String(catalogueProduct.price.amount),
+      String(catalogueProduct.price!.amount),
     ]) {
       expect(`${gridPrompt}${productPrompt}`).not.toContain(protectedValue);
     }

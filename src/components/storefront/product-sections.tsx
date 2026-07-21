@@ -18,6 +18,12 @@ const formatPrice = (amount: number) =>
     minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(amount);
+const productPriceLabel = (product: ProductDisplayModel, context: StorefrontRenderContext) =>
+  product.price
+    ? formatPrice(product.price.amount)
+    : product.priceUnavailableReason
+      ? text(product.priceUnavailableReason, context)
+      : label("Price unavailable", "Hinta ei ole saatavilla", context);
 const label = (en: string, fi: string, context: StorefrontRenderContext) =>
   context.activeLocale === "fi" ? fi : en;
 const stockLabel = (stock: ProductDisplayModel["stockStatus"], context: StorefrontRenderContext) =>
@@ -135,7 +141,7 @@ export function ProductInfo({
           ★★★★★ <small>{label("Visual demo", "Visuaalinen demo", context)}</small>
         </p>
       ) : null}
-      <p className={styles.price}>{formatPrice(product.price.amount)}</p>
+      <p className={styles.price}>{productPriceLabel(product, context)}</p>
       <p className={styles.stock}>
         {stockLabel(product.stockStatus, context)} · {label("Display only", "Vain esitys", context)}
       </p>
@@ -295,7 +301,7 @@ export function RelatedProducts({
             <article key={product.id}>
               <StorefrontImage asset={product.images[0]} context={context} />
               <h3>{text(product.title, context)}</h3>
-              <p>{formatPrice(product.price.amount)}</p>
+              <p>{productPriceLabel(product, context)}</p>
               <p>
                 {stockLabel(product.stockStatus, context)} ·{" "}
                 {label("Display only", "Vain esitys", context)}
