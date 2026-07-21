@@ -511,7 +511,11 @@ export function DesignAgentPanel({
       ) : null}
 
       {controller.previewActive && proposal && session ? (
-        <section aria-label="Design proposal" className={styles.card}>
+        <section
+          aria-label="Design proposal"
+          className={styles.card}
+          data-proposal-id={proposal.id}
+        >
           <p className={styles.eyebrow}>{applicationFailed ? text.applyFailed : text.ready}</p>
           <h3 ref={proposalHeadingRef} tabIndex={-1}>
             {resolveLocalizedText(proposal.summary, locale, primaryLocale)}
