@@ -1,6 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
-import { aurumNordicSeed } from "@/data/seed";
+import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import { projectSchema, type Project } from "@/domain/project";
 import {
   canonicalStorefrontContentEqual,
@@ -823,6 +823,35 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       "readwrite",
     );
     const projects = transaction.objectStore("projects");
+    const catalogues = transaction.objectStore("catalogues");
+    const snapshots = transaction.objectStore("snapshots");
+    const snapshotProvenance = transaction.objectStore("snapshotProvenance");
+    const seedKarvonenIfSafe = async () => {
+      const karvonenIdentifiersOccupied =
+        (await projects.get(karvonenSeed.project.id)) !== undefined ||
+        (await catalogues.get(karvonenSeed.catalogue.id)) !== undefined ||
+        (await snapshots.get(karvonenSeed.publishedSnapshot.id)) !== undefined ||
+        (await snapshots.get(karvonenSeed.draftSnapshot.id)) !== undefined ||
+        (await snapshotProvenance.get(karvonenSeed.draftSnapshot.id)) !== undefined;
+      if (karvonenIdentifiersOccupied) return;
+
+      const karvonenAggregate = validateProjectAggregate({
+        project: clone(karvonenSeed.project),
+        catalogue: clone(karvonenSeed.catalogue),
+        snapshots: [clone(karvonenSeed.publishedSnapshot), clone(karvonenSeed.draftSnapshot)],
+      });
+      await catalogues.add(karvonenAggregate.catalogue);
+      for (const snapshot of karvonenAggregate.snapshots) {
+        await snapshots.add(snapshot);
+      }
+      await snapshotProvenance.add(
+        managedDraftProvenance(
+          karvonenAggregate.project.id,
+          karvonenAggregate.project.draftSnapshotId,
+        ),
+      );
+      await projects.add(karvonenAggregate.project);
+    };
     if ((await projects.count()) > 0) {
       const legacyProject = await projects.get(aurumNordicSeed.project.id);
       if (legacyProject) {
@@ -864,6 +893,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
           }
         }
       }
+      await seedKarvonenIfSafe();
       await transaction.done;
       return;
     }
@@ -881,6 +911,7 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       .objectStore("snapshotProvenance")
       .put(managedDraftProvenance(aggregate.project.id, aggregate.project.draftSnapshotId));
     await projects.put(aggregate.project);
+    await seedKarvonenIfSafe();
     await transaction.done;
   }
 }
