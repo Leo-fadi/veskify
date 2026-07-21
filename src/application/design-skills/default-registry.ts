@@ -3,6 +3,8 @@ import {
   addCampaignSectionSkill,
   applyLuxuryStyleSkill,
   applyMinimalNordicStyleSkill,
+  applyMinimalNordicStorefrontStyleSkill,
+  applyWarmPremiumStorefrontStyleSkill,
   improveHeroSkill,
 } from "./skills";
 
@@ -11,4 +13,6 @@ export const designSkillRegistry = new DesignSkillRegistry([
   applyMinimalNordicStyleSkill,
   addCampaignSectionSkill,
   improveHeroSkill,
+  applyWarmPremiumStorefrontStyleSkill,
+  applyMinimalNordicStorefrontStyleSkill,
 ]);

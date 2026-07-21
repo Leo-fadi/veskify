@@ -100,6 +100,18 @@ export function createAiStorefrontTargetFingerprint(
   return `storefront-target-${canonicalValueFingerprint(relevantTargetContext(context, target))}`;
 }
 
+export function createAiStorefrontBaselineFingerprint(contextInput: unknown): string {
+  const context = parseFingerprintContext(contextInput);
+  return `storefront-baseline-${canonicalValueFingerprint({
+    projectId: context.projectId,
+    draftSnapshotId: context.draftSnapshotId,
+    draftRevision: context.draftRevision,
+    enabledLocales: context.enabledLocales,
+    activeLocale: context.activeLocale,
+    storefront: context.storefront,
+  })}`;
+}
+
 export function createAiStorefrontPermissionFingerprint(
   grantsInput: unknown,
   targetInput?: unknown,

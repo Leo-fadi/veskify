@@ -1,4 +1,5 @@
 import { canonicalLocaleOrder } from "@/domain/shared";
+import { validateDesignOperationAgainstPage } from "@/application/design-operations";
 import { canonicalValueString } from "@/domain/storefront";
 import {
   aiStorefrontContextSchema,
@@ -180,6 +181,81 @@ function assertProjectionPreservation(
   });
 }
 
+function assertSupportedDesignStateProjection(proposal: AiStorefrontReadyProposal) {
+  const original = proposal.originalStorefront.brandSystem;
+  const proposed = proposal.proposedStorefront.brandSystem;
+  for (const key of ["shape", "spacing", "imagery", "voice"] as const) {
+    if (canonicalValueString(original[key]) !== canonicalValueString(proposed[key])) {
+      invalid(
+        "unsupported-design-state",
+        "Whole-storefront application cannot change shape, spacing, imagery, or voice state.",
+      );
+    }
+  }
+}
+
+function assertProjectionMatchesOperations(
+  proposal: AiStorefrontReadyProposal,
+  context: AiStorefrontContext,
+) {
+  const projected = structuredClone(context.storefront);
+  let affectedDesignState: AiStorefrontReadyProposal["affectedDesignState"] = null;
+  for (const envelope of proposal.operations) {
+    if (envelope.operation.type === "APPLY_APPROVED_BRAND_COLOURS") {
+      projected.brandSystem.colors = structuredClone(envelope.operation.colors);
+      affectedDesignState = {
+        ...(affectedDesignState ?? {}),
+        colors: structuredClone(envelope.operation.colors),
+      };
+      continue;
+    }
+    if (envelope.operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY") {
+      projected.brandSystem.typography = structuredClone(envelope.operation.typography);
+      affectedDesignState = {
+        ...(affectedDesignState ?? {}),
+        typography: structuredClone(envelope.operation.typography),
+      };
+      continue;
+    }
+    if (envelope.target.kind === "storefrontDesignSystem") {
+      invalid(
+        "invalid-global-operation",
+        "Only approved design-system operations may use the global target.",
+      );
+    }
+    const pageId = envelope.target.pageId;
+    const pageIndex = projected.pages.findIndex((page) => page.id === pageId);
+    if (pageIndex < 0) {
+      invalid("unknown-page", "The operation targets an unknown storefront page.");
+    }
+    try {
+      projected.pages[pageIndex] = validateDesignOperationAgainstPage(
+        projected.pages[pageIndex],
+        envelope.operation,
+      );
+    } catch {
+      invalid(
+        "invalid-operation-projection",
+        "The proposal operations cannot produce the declared storefront projection.",
+      );
+    }
+  }
+  if (
+    canonicalValueString(affectedDesignState) !== canonicalValueString(proposal.affectedDesignState)
+  ) {
+    invalid(
+      "proposal-projection-mismatch",
+      "Affected design state must match exactly the global design changes derived from validated operations.",
+    );
+  }
+  if (canonicalValueString(projected) !== canonicalValueString(proposal.proposedStorefront)) {
+    invalid(
+      "proposal-projection-mismatch",
+      "The proposed storefront must match exactly the storefront reproducible from its validated operations.",
+    );
+  }
+}
+
 export function validateAiStorefrontProposal(
   input: unknown,
   contextInput: unknown,
@@ -190,6 +266,8 @@ export function validateAiStorefrontProposal(
   assertProposalIdentity(proposal, target, context);
   assertProposalFingerprints(proposal, target, context);
   assertProjectionPreservation(proposal, target);
+  assertSupportedDesignStateProjection(proposal);
   validateAiStorefrontOperations(proposal.operations, target, proposal.permissionGrants, context);
+  assertProjectionMatchesOperations(proposal, context);
   return proposal;
 }

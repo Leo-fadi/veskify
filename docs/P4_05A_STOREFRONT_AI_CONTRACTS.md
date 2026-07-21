@@ -49,17 +49,15 @@ The foundation is contract-only. It does not invoke providers, compose merchant 
 editor selection, display confirmation UI, persist a second proposal store, apply multi-page
 changes, implement site-wide atomicity, add site-wide undo/redo, or publish.
 
-## P4-05B — remaining generation work
+## P4-05B — generation implemented
 
-P4-05B must build generation on these contracts. It should resolve a merchant request into a
-declared storefront target, produce a plan covering affected pages and optional global design
-state, derive grants from approved skills, invoke a provider through the existing untrusted-output
-boundary, and produce a canonical ready proposal. It must preserve EN/FI locale checks, target and
-permission fingerprints, deterministic operation order, stale request detection, and the existing
-single-page generation path.
-
-P4-05B must not widen the supported locale set, flatten target grants into a global allow-list, or
-mutate the active draft before confirmation.
+P4-05B now builds the constrained whole-storefront colour/typography generation path on these
+contracts. It resolves approved EN/FI merchant requests into explicit page, section and optional
+design-system targets, derives target-bound grants from registered storefront skills, builds a
+minimal provider-independent request, validates untrusted output, and returns one canonical ready
+proposal with stale, dedupe and supersede protection. It does not widen locales, flatten grants,
+mutate the active draft, or replace the existing single-page path. See
+[`docs/P4_05B_STOREFRONT_AI_GENERATION.md`](P4_05B_STOREFRONT_AI_GENERATION.md).
 
 ## P4-05C — remaining atomic application and history work
 
