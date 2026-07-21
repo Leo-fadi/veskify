@@ -18,6 +18,7 @@ import {
   type AiStorefrontReadyProposal,
 } from "./contract";
 import { validateAiStorefrontProposal } from "./proposal-validator";
+import { AiStorefrontValidationError } from "./validation";
 
 export type AiStorefrontApplicationErrorCode =
   | "invalid-application-context"
@@ -171,7 +172,7 @@ function assertActiveFingerprint(
 
 function hasGlobalGrant(
   proposal: AiStorefrontReadyProposal,
-  operationType: "APPLY_APPROVED_BRAND_COLOURS" | "CHANGE_TYPOGRAPHY",
+  operationType: "APPLY_APPROVED_BRAND_COLOURS" | "APPLY_APPROVED_BRAND_TYPOGRAPHY",
 ) {
   return proposal.permissionGrants.some(
     (grant) =>
@@ -232,10 +233,7 @@ function assertGlobalColourPayloads(proposal: AiStorefrontReadyProposal) {
   }
 }
 
-function applyAffectedDesignState(
-  candidate: StorefrontSnapshot,
-  proposal: AiStorefrontReadyProposal,
-) {
+function assertAffectedDesignStatePermissions(proposal: AiStorefrontReadyProposal) {
   const affected = proposal.affectedDesignState;
   if (affected === null) return;
   if (proposal.target.designSystemTarget === null) {
@@ -258,21 +256,14 @@ function applyAffectedDesignState(
         "Storefront colour changes require an explicit global colour grant.",
       );
     }
-    candidate.brandSystem.colors = structuredClone(affected.colors);
   }
   if (affected.typography) {
-    if (!hasGlobalGrant(proposal, "CHANGE_TYPOGRAPHY")) {
+    if (!hasGlobalGrant(proposal, "APPLY_APPROVED_BRAND_TYPOGRAPHY")) {
       invalid(
         "design-state-permission-mismatch",
         "Storefront typography changes require an explicit global typography grant.",
       );
     }
-    candidate.brandSystem.typography = structuredClone(affected.typography);
-  }
-  try {
-    candidate.brandSystem = brandSystemSchema.parse(candidate.brandSystem);
-  } catch (cause) {
-    invalid("unsupported-design-state", "The proposed storefront design state is invalid.", cause);
   }
 }
 
@@ -305,6 +296,9 @@ export function executeAiStorefrontProposal({
   try {
     proposal = validateAiStorefrontProposal(pending, context.proposalContext);
   } catch (cause) {
+    if (cause instanceof AiStorefrontValidationError) {
+      return invalid("invalid-proposal", cause.message, cause);
+    }
     return invalid(
       "invalid-proposal",
       "The storefront proposal did not pass final acceptance validation.",
@@ -319,13 +313,16 @@ export function executeAiStorefrontProposal({
   for (const operation of proposal.operations) {
     try {
       if (operation.target.kind === "storefrontDesignSystem") {
-        if (operation.operation.type !== "APPLY_APPROVED_BRAND_COLOURS") {
+        if (operation.operation.type === "APPLY_APPROVED_BRAND_COLOURS") {
+          candidate.brandSystem.colors = structuredClone(operation.operation.colors);
+        } else if (operation.operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY") {
+          candidate.brandSystem.typography = structuredClone(operation.operation.typography);
+        } else {
           invalid(
             "operation-application-failed",
-            "Only approved global colour operations can use the design-system operation target.",
+            "Only approved global design operations can use the design-system operation target.",
           );
         }
-        candidate.brandSystem.colors = structuredClone(operation.operation.colors);
         candidate.brandSystem = brandSystemSchema.parse(candidate.brandSystem);
       } else {
         const pageId = operation.target.pageId;
@@ -352,7 +349,7 @@ export function executeAiStorefrontProposal({
     }
   }
 
-  applyAffectedDesignState(candidate, proposal);
+  assertAffectedDesignStatePermissions(proposal);
   assertPreservedSnapshot(context.activeDraft, candidate);
 
   let validated: StorefrontSnapshot;

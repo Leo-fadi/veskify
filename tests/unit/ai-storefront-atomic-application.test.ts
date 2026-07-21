@@ -85,12 +85,14 @@ function pageGrant(page: PageModel): AiOperationPermissionGrant {
   };
 }
 
-function designGrant(): AiOperationPermissionGrant {
+function designGrant(
+  operationTypes: AiOperationPermissionGrant["operationTypes"],
+): AiOperationPermissionGrant {
   return {
     skillId: "storefrontDesignSystem",
     skillVersion: "1.0.0",
     skillScope: "brand",
-    operationTypes: ["APPLY_APPROVED_BRAND_COLOURS", "CHANGE_TYPOGRAPHY"],
+    operationTypes,
     target: { kind: "storefrontDesignSystem", projectId: draft.projectId },
   };
 }
@@ -176,7 +178,13 @@ function twoPageProposal() {
   return buildProposal({ operations, grants, target, proposed });
 }
 
-function designSystemProposal() {
+function designSystemProposal({
+  includeColors = true,
+  includeTypography = true,
+}: {
+  includeColors?: boolean;
+  includeTypography?: boolean;
+} = {}) {
   const base = twoPageProposal();
   const colors = { ...draft.brandSystem.colors, primary: "#78512F", accent: "#C6943F" };
   const typography = {
@@ -189,25 +197,42 @@ function designSystemProposal() {
     ...base.target,
     designSystemTarget: { kind: "storefrontDesignSystem", projectId: draft.projectId },
   };
-  const grants = [...base.permissionGrants, designGrant()];
-  const operations: AiStorefrontOperation[] = [
-    ...base.operations,
-    {
-      order: 2,
+  const globalOperationTypes: AiOperationPermissionGrant["operationTypes"] = [];
+  const operations: AiStorefrontOperation[] = [...base.operations];
+  if (includeColors) {
+    globalOperationTypes.push("APPLY_APPROVED_BRAND_COLOURS");
+    operations.push({
+      order: operations.length,
       target: { kind: "storefrontDesignSystem", projectId: draft.projectId },
       operation: { type: "APPLY_APPROVED_BRAND_COLOURS", colors },
-    },
-  ];
+    });
+  }
+  if (includeTypography) {
+    globalOperationTypes.push("APPLY_APPROVED_BRAND_TYPOGRAPHY");
+    operations.push({
+      order: operations.length,
+      target: { kind: "storefrontDesignSystem", projectId: draft.projectId },
+      operation: { type: "APPLY_APPROVED_BRAND_TYPOGRAPHY", typography },
+    });
+  }
+  const grants = [...base.permissionGrants, designGrant(globalOperationTypes)];
   const proposed = structuredClone(draft);
   proposed.pages = structuredClone(base.proposedStorefront.pages);
-  proposed.brandSystem.colors = colors;
-  proposed.brandSystem.typography = typography;
+  const affectedDesignState: NonNullable<AiStorefrontProposal["affectedDesignState"]> = {};
+  if (includeColors) {
+    proposed.brandSystem.colors = colors;
+    affectedDesignState.colors = colors;
+  }
+  if (includeTypography) {
+    proposed.brandSystem.typography = typography;
+    affectedDesignState.typography = typography;
+  }
   return buildProposal({
     operations,
     grants,
     target,
     proposed,
-    affectedDesignState: { colors, typography },
+    affectedDesignState,
     id: "storefront_proposal_c05c0002",
   });
 }
@@ -218,6 +243,16 @@ function globalColourOperation(proposal: AiStorefrontProposal) {
   );
   if (!operation || operation.operation.type !== "APPLY_APPROVED_BRAND_COLOURS") {
     throw new Error("Expected a global colour operation.");
+  }
+  return operation.operation;
+}
+
+function globalTypographyOperation(proposal: AiStorefrontProposal) {
+  const operation = proposal.operations.find(
+    (candidate) => candidate.operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY",
+  );
+  if (!operation || operation.operation.type !== "APPLY_APPROVED_BRAND_TYPOGRAPHY") {
+    throw new Error("Expected a global typography operation.");
   }
   return operation.operation;
 }
@@ -307,6 +342,8 @@ describe("P4-05C transactional storefront executor", () => {
 
   it("applies multiple pages plus explicitly granted colour and typography state", () => {
     const proposal = designSystemProposal();
+    expect(globalColourOperation(proposal)).toBeTruthy();
+    expect(globalTypographyOperation(proposal)).toBeTruthy();
     const result = executeAiStorefrontProposal({ proposal, ...applicationContext() });
     expect(result.brandSystem.colors).toEqual(proposal.affectedDesignState?.colors);
     expect(result.brandSystem.typography).toEqual(proposal.affectedDesignState?.typography);
@@ -339,7 +376,7 @@ describe("P4-05C transactional storefront executor", () => {
       },
     ],
   ])("rejects when %s without mutating any lifecycle state", (_label, tamper) => {
-    const proposal = designSystemProposal();
+    const proposal = designSystemProposal({ includeTypography: false });
     tamper(proposal);
     const value = coordinator(proposal);
     const before = value.inspect();
@@ -358,7 +395,7 @@ describe("P4-05C transactional storefront executor", () => {
   });
 
   it("accepts when the operation, affected design state, and proposed colours match", () => {
-    const proposal = designSystemProposal();
+    const proposal = designSystemProposal({ includeTypography: false });
     const operationColors = globalColourOperation(proposal).colors;
     expect(canonicalValueString(operationColors)).toBe(
       canonicalValueString(proposal.affectedDesignState?.colors),
@@ -373,6 +410,66 @@ describe("P4-05C transactional storefront executor", () => {
     expect(accepted.state).toBe("accepted");
     expect(accepted.activeDraft.brandSystem.colors).toEqual(operationColors);
     expect(value.inspectHistory().past).toHaveLength(1);
+  });
+
+  it("accepts when the typography operation, affected design state, and projection match", () => {
+    const proposal = designSystemProposal({ includeColors: false });
+    const operationTypography = globalTypographyOperation(proposal).typography;
+    expect(canonicalValueString(operationTypography)).toBe(
+      canonicalValueString(proposal.affectedDesignState?.typography),
+    );
+    expect(canonicalValueString(operationTypography)).toBe(
+      canonicalValueString(proposal.proposedStorefront.brandSystem.typography),
+    );
+
+    const value = coordinator(proposal);
+    const accepted = value.accept();
+
+    expect(accepted.state).toBe("accepted");
+    expect(accepted.activeDraft.brandSystem.typography).toEqual(operationTypography);
+    expect(value.inspectHistory().past).toHaveLength(1);
+  });
+
+  it("rejects typography metadata without an explicit typography operation", () => {
+    const proposal = designSystemProposal({ includeTypography: false });
+    const typography = {
+      ...draft.brandSystem.typography,
+      headingFont: "system-serif" as const,
+      bodyFont: "system-sans" as const,
+      scaleRatio: 1.333,
+    };
+    proposal.affectedDesignState = { ...proposal.affectedDesignState, typography };
+    proposal.proposedStorefront.brandSystem.typography = typography;
+    const value = coordinator(proposal);
+    const before = value.inspect();
+
+    expect(() => executeAiStorefrontProposal({ proposal, ...applicationContext() })).toThrow(
+      /Affected design state must match exactly/i,
+    );
+    const failed = value.accept();
+
+    expect(failed.activeDraft).toEqual(before.activeDraft);
+    expect(value.inspectHistory()).toEqual({ past: [], future: [] });
+  });
+
+  it("rejects typography changed only in the proposed storefront", () => {
+    const proposal = designSystemProposal({ includeTypography: false });
+    proposal.proposedStorefront.brandSystem.typography = {
+      ...draft.brandSystem.typography,
+      headingFont: "system-serif",
+      bodyFont: "system-sans",
+      scaleRatio: 1.333,
+    };
+    const value = coordinator(proposal);
+    const before = value.inspect();
+
+    expect(() => executeAiStorefrontProposal({ proposal, ...applicationContext() })).toThrow(
+      /must match exactly/i,
+    );
+    const failed = value.accept();
+
+    expect(failed.activeDraft).toEqual(before.activeDraft);
+    expect(value.inspectHistory()).toEqual({ past: [], future: [] });
   });
 
   it.each([0, 1, 2])("rolls back when operation %i is invalid", (operationIndex) => {

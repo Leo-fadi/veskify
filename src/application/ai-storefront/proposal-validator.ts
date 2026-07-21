@@ -181,6 +181,19 @@ function assertProjectionPreservation(
   });
 }
 
+function assertSupportedDesignStateProjection(proposal: AiStorefrontReadyProposal) {
+  const original = proposal.originalStorefront.brandSystem;
+  const proposed = proposal.proposedStorefront.brandSystem;
+  for (const key of ["shape", "spacing", "imagery", "voice"] as const) {
+    if (canonicalValueString(original[key]) !== canonicalValueString(proposed[key])) {
+      invalid(
+        "unsupported-design-state",
+        "Whole-storefront application cannot change shape, spacing, imagery, or voice state.",
+      );
+    }
+  }
+}
+
 function assertProjectionMatchesOperations(
   proposal: AiStorefrontReadyProposal,
   context: AiStorefrontContext,
@@ -228,12 +241,17 @@ function assertProjectionMatchesOperations(
     }
   }
   if (
-    canonicalValueString(projected) !== canonicalValueString(proposal.proposedStorefront) ||
     canonicalValueString(affectedDesignState) !== canonicalValueString(proposal.affectedDesignState)
   ) {
     invalid(
       "proposal-projection-mismatch",
-      "The proposed storefront must be exactly reproducible from its validated operations.",
+      "Affected design state must match exactly the global design changes derived from validated operations.",
+    );
+  }
+  if (canonicalValueString(projected) !== canonicalValueString(proposal.proposedStorefront)) {
+    invalid(
+      "proposal-projection-mismatch",
+      "The proposed storefront must match exactly the storefront reproducible from its validated operations.",
     );
   }
 }
@@ -248,6 +266,7 @@ export function validateAiStorefrontProposal(
   assertProposalIdentity(proposal, target, context);
   assertProposalFingerprints(proposal, target, context);
   assertProjectionPreservation(proposal, target);
+  assertSupportedDesignStateProjection(proposal);
   validateAiStorefrontOperations(proposal.operations, target, proposal.permissionGrants, context);
   assertProjectionMatchesOperations(proposal, context);
   return proposal;
