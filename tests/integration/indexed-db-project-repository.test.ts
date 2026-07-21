@@ -167,6 +167,38 @@ async function writeP102Seed(
   database.close();
 }
 
+type KarvonenConflictKind = "catalogue" | "publishedSnapshot" | "draftSnapshot";
+
+async function writeKarvonenConflict(databaseName: string, kind: KarvonenConflictKind) {
+  const database = await openDB(databaseName, 1, {
+    upgrade(db) {
+      db.createObjectStore("projects", { keyPath: "id" });
+      db.createObjectStore("catalogues", { keyPath: "id" });
+      const snapshots = db.createObjectStore("snapshots", { keyPath: "id" });
+      snapshots.createIndex("by-project", "projectId");
+    },
+  });
+  const transaction = database.transaction(["catalogues", "snapshots"], "readwrite");
+  if (kind === "catalogue") {
+    await transaction.objectStore("catalogues").put({
+      id: karvonenSeed.catalogue.id,
+      marker: "existing-catalogue",
+    });
+  } else {
+    const snapshotId =
+      kind === "publishedSnapshot"
+        ? karvonenSeed.publishedSnapshot.id
+        : karvonenSeed.draftSnapshot.id;
+    await transaction.objectStore("snapshots").put({
+      id: snapshotId,
+      projectId: "project_existing-conflict",
+      marker: "existing-snapshot",
+    });
+  }
+  await transaction.done;
+  database.close();
+}
+
 afterEach(async () => {
   await Promise.all(openRepositories.splice(0).map((repository) => repository.close()));
   await Promise.all([...databaseNames].map((name) => deleteDB(name)));
@@ -517,6 +549,41 @@ describe("IndexedDbProjectRepository persistence", () => {
     expect(await databaseAfterRepeat.getAll("snapshotProvenance")).toHaveLength(2);
     databaseAfterRepeat.close();
   });
+
+  it.each(["catalogue", "publishedSnapshot", "draftSnapshot"] as const)(
+    "skips the complete Karvonen seed when the %s identifier is occupied",
+    async (kind) => {
+      const databaseName = testDatabaseName(`karvonen-conflict-${kind}`);
+      await writeKarvonenConflict(databaseName, kind);
+
+      const repository = openRepository(databaseName);
+      await repository.get(aurumNordicSeed.project.id);
+      const database = await openDB(databaseName);
+
+      expect(await database.get("projects", karvonenSeed.project.id)).toBeUndefined();
+      if (kind === "catalogue") {
+        expect(await database.get("catalogues", karvonenSeed.catalogue.id)).toMatchObject({
+          marker: "existing-catalogue",
+        });
+      } else {
+        expect(await database.get("catalogues", karvonenSeed.catalogue.id)).toBeUndefined();
+      }
+      expect(await database.get("snapshots", karvonenSeed.publishedSnapshot.id)).toEqual(
+        kind === "publishedSnapshot"
+          ? expect.objectContaining({ marker: "existing-snapshot" })
+          : undefined,
+      );
+      expect(await database.get("snapshots", karvonenSeed.draftSnapshot.id)).toEqual(
+        kind === "draftSnapshot"
+          ? expect.objectContaining({ marker: "existing-snapshot" })
+          : undefined,
+      );
+      expect(
+        await database.get("snapshotProvenance", karvonenSeed.draftSnapshot.id),
+      ).toBeUndefined();
+      database.close();
+    },
+  );
 
   it("preserves unknown stored snapshots while pruning only provenance-managed drafts", async () => {
     const databaseName = testDatabaseName("unknown-legacy-retention");

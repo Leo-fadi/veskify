@@ -830,6 +830,8 @@ Catalogue intelligence exists to improve storefront presentation, not to operate
 
 - Product collection membership remains in the canonical collections model; material, colour and stone details remain in product attributes.
 
+- Local/default demo bootstrap includes both the canonical Aurum Nordic and Karvonen demo projects. Existing projects and merchant edits are preserved; if any canonical Karvonen seed identifier is already occupied, the complete Karvonen seed aggregate is skipped to prevent unsafe insertion.
+
 # 12. AI agent specification
 
 ## 12.1 Agent responsibilities
