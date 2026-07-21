@@ -7,6 +7,11 @@ import {
   type AIProvider,
   type AiOperationRequest,
 } from "@/application/ai-provider";
+import {
+  createDeterministicMockStorefrontAIProvider,
+  type AiStorefrontProviderRequest,
+  type StorefrontAIProvider,
+} from "@/application/ai-storefront-generation";
 import type { ProposalAnalyticsEvent } from "@/application/analytics";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
 import { aurumNordicSeed } from "@/data/seed";
@@ -146,6 +151,268 @@ const aggregate = (): ProjectAggregate => ({
   ],
 });
 
+describe("P4-05D editor storefront integration", () => {
+  const openStorefrontTarget = async () => {
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("radio", { name: "Entire storefront" }));
+  };
+
+  const createWarmStorefrontProposal = async () => {
+    await openStorefrontTarget();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Apply a warm premium style across the storefront." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    return screen.findByLabelText("Storefront design proposal");
+  };
+
+  it("offers page and storefront targets while disabling section scope without a selection", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    expect(screen.getByRole("radio", { name: "Current page" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Selected section" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "Entire storefront" })).toBeEnabled();
+  });
+
+  it("enables and automatically selects section scope for an eligible canvas selection", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
+    expect(screen.getByRole("radio", { name: "Selected section" })).toBeEnabled();
+    expect(screen.getByRole("radio", { name: "Selected section" })).toBeChecked();
+  });
+
+  it("changes targets without mutating the active draft", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await openStorefrontTarget();
+    fireEvent.click(screen.getByRole("radio", { name: "Current page" }));
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled();
+  });
+
+  it("treats selecting the already active target as a no-op", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await createWarmStorefrontProposal();
+    fireEvent.click(screen.getByRole("radio", { name: "Entire storefront" }));
+    expect(screen.getByLabelText("Storefront design proposal")).toBeVisible();
+  });
+
+  it("generates one canonical entire-storefront proposal with planner-resolved coverage", async () => {
+    const provider = new DeferredStorefrontProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      undefined,
+      provider,
+    );
+    await openStorefrontTarget();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Apply a warm premium style across the storefront." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(provider.calls).toHaveLength(1);
+    expect(provider.calls[0].target.affectedPageIds).toHaveLength(3);
+    expect(provider.calls[0].target.affectedSectionTargets.length).toBeGreaterThan(0);
+    await provider.resolve(0);
+    expect(await screen.findByLabelText("Storefront design proposal")).toBeVisible();
+  });
+
+  it("renders merchant-readable global and per-page review without internal identities", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    const review = await createWarmStorefrontProposal();
+    expect(review).toHaveTextContent("Shared storefront design");
+    expect(review).toHaveTextContent("Homepage");
+    expect(review).toHaveTextContent("Rings");
+    expect(review).toHaveTextContent("Aurora Ring 585");
+    expect(review.textContent).not.toMatch(
+      /page_home|section_home|APPLY_APPROVED|storefront_proposal_/,
+    );
+  });
+
+  it("previews storefront colour and page changes without changing the draft", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    const originalPrimary = (await screen.findByLabelText("Visual editor canvas")).getAttribute(
+      "data-primary",
+    );
+    await createWarmStorefrontProposal();
+    expect(screen.getByLabelText("Proposal preview canvas")).not.toHaveAttribute(
+      "data-primary",
+      originalPrimary,
+    );
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+  });
+
+  it("accepts all storefront changes into one unsaved editor transaction", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await createWarmStorefrontProposal();
+    const accept = screen.getByRole("button", { name: "Accept and apply" });
+    expect(accept).toBeEnabled();
+    fireEvent.click(accept);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Design request")).toHaveAttribute(
+        "data-agent-state",
+        "accepted",
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes"),
+    );
+    expect(screen.getByRole("button", { name: "Undo" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled();
+  });
+
+  it("undoes and redoes an accepted storefront proposal atomically", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    const before = screen.queryByLabelText("Visual editor canvas")?.getAttribute("data-primary");
+    await createWarmStorefrontProposal();
+    const accept = screen.getByRole("button", { name: "Accept and apply" });
+    expect(accept).toBeEnabled();
+    fireEvent.click(accept);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Undo" })).toBeEnabled());
+    const accepted = screen.getByLabelText("Visual editor canvas").getAttribute("data-primary");
+    expect(accepted).not.toBe(before);
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByLabelText("Visual editor canvas")).toHaveAttribute("data-primary", before);
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    expect(screen.getByLabelText("Visual editor canvas")).toHaveAttribute("data-primary", accepted);
+  });
+
+  it("rejects a ready storefront proposal without draft mutation", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await createWarmStorefrontProposal();
+    fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+    expect(screen.queryByLabelText("Storefront design proposal")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+  });
+
+  it("cancels a ready storefront proposal without draft mutation", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await createWarmStorefrontProposal();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByLabelText("Storefront design proposal")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+  });
+
+  it("supersedes a ready storefront proposal when the merchant changes target", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await createWarmStorefrontProposal();
+    fireEvent.click(screen.getByRole("radio", { name: "Current page" }));
+    expect(screen.queryByLabelText("Storefront design proposal")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Design request")).toHaveAttribute(
+      "data-agent-state",
+      "superseded",
+    );
+  });
+
+  it("ignores a delayed storefront result after a canonical page mutation", async () => {
+    const provider = new DeferredStorefrontProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      undefined,
+      provider,
+    );
+    await openStorefrontTarget();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Apply a warm premium style across the storefront." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove hero section" }));
+    await provider.resolve(0);
+    expect(screen.queryByLabelText("Storefront design proposal")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+  });
+
+  it("supports the exact Finnish entire-storefront request and review labels", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Koko verkkokauppa" }));
+    fireEvent.change(screen.getByLabelText("Pyyntösi"), {
+      target: { value: "Käytä lämmintä premium-ilmettä koko kaupassa." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Luo ehdotus" }));
+    const review = await screen.findByLabelText("Storefront design proposal");
+    expect(review).toHaveTextContent("Verkkokaupan yhteinen ilme");
+    expect(review).toHaveTextContent("Etusivu");
+  });
+
+  it("shows one retry for unsupported storefront instructions without draft mutation", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await openStorefrontTarget();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Rebuild the storefront navigation." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(await screen.findByRole("button", { name: "Retry" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+  });
+
+  it("uses the existing canonical page request path when Current page is selected", async () => {
+    const provider = new RecordingProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      provider,
+    );
+    await screen.findByText("Canvas: home / en");
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Make the homepage feel more luxurious." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    await screen.findByLabelText("Design proposal");
+    expect(provider.calls[0].target).toEqual({ pageId: "page_home" });
+  });
+
+  it("prevents duplicate storefront submission while generation is pending", async () => {
+    const provider = new DeferredStorefrontProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      undefined,
+      provider,
+    );
+    await openStorefrontTarget();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Apply a warm premium style across the storefront." },
+    });
+    const create = screen.getByRole("button", { name: "Create proposal" });
+    fireEvent.click(create);
+    fireEvent.click(create);
+    expect(provider.calls).toHaveLength(1);
+    await provider.resolve(0);
+  });
+
+  it("prevents a cancelled delayed storefront result from becoming ready", async () => {
+    const provider = new DeferredStorefrontProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      undefined,
+      provider,
+    );
+    await openStorefrontTarget();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Apply a warm premium style across the storefront." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await provider.resolve(0);
+    expect(screen.queryByLabelText("Storefront design proposal")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+  });
+
+  it("keeps stored and published snapshots unchanged until explicit Save draft", async () => {
+    const value = statefulRepository();
+    const before = await value.get(aurumNordicSeed.project.id);
+    route(value);
+    await createWarmStorefrontProposal();
+    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes"),
+    );
+    const afterAccept = await value.get(aurumNordicSeed.project.id);
+    expect(afterAccept.snapshots).toEqual(before.snapshots);
+    expect(afterAccept.project.draftSnapshotId).toBe(before.project.draftSnapshotId);
+    expect(afterAccept.project.publishedSnapshotId).toBe(before.project.publishedSnapshotId);
+  });
+});
+
 function repository(get: ProjectRepository["get"]): ProjectRepository {
   return {
     list: vi.fn(),
@@ -159,12 +426,17 @@ function repository(get: ProjectRepository["get"]): ProjectRepository {
 
 const statefulRepository = () => new InMemoryProjectRepository([aggregate()]);
 
-const route = (value: ProjectRepository, aiProvider?: AIProvider) =>
+const route = (
+  value: ProjectRepository,
+  aiProvider?: AIProvider,
+  storefrontAiProvider?: StorefrontAIProvider,
+) =>
   render(
     <ProjectEditorClient
       aiProvider={aiProvider}
       projectId="project_aurum_nordic"
       repositoryFactory={() => value}
+      storefrontAiProvider={storefrontAiProvider}
     />,
   );
 
@@ -194,6 +466,24 @@ class DeferredProvider implements AIProvider {
 
   reject(index: number) {
     this.#resolvers[index](Promise.reject(new Error("provider unavailable")));
+  }
+}
+
+class DeferredStorefrontProvider implements StorefrontAIProvider {
+  readonly id = "deterministic-storefront-mock";
+  readonly calls: AiStorefrontProviderRequest[] = [];
+  readonly #resolvers: Array<(value: unknown) => void> = [];
+
+  proposeStorefront(request: AiStorefrontProviderRequest): Promise<unknown> {
+    this.calls.push(structuredClone(request));
+    return new Promise((resolve) => this.#resolvers.push(resolve));
+  }
+
+  async resolve(index: number) {
+    const response = await createDeterministicMockStorefrontAIProvider().proposeStorefront(
+      this.calls[index],
+    );
+    this.#resolvers[index](response);
   }
 }
 

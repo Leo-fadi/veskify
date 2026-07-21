@@ -78,7 +78,7 @@ function option(value: string, locale: Locale) {
   return optionNames[value]?.[locale] ?? humanize(value);
 }
 
-function localizedValue(value: unknown, locale: Locale, primaryLocale: Locale) {
+export function localizedMerchantValue(value: unknown, locale: Locale, primaryLocale: Locale) {
   if (!value || typeof value !== "object") return undefined;
   const localized = value as Partial<Record<Locale, unknown>>;
   const preferred = localized[locale] ?? localized[primaryLocale] ?? localized.en ?? localized.fi;
@@ -89,10 +89,14 @@ function sectionFor(page: PageModel, sectionId: string) {
   return page.sections.find((section) => section.id === sectionId);
 }
 
-function sectionName(section: SectionInstance | undefined, locale: Locale, primaryLocale: Locale) {
+export function merchantSectionName(
+  section: SectionInstance | undefined,
+  locale: Locale,
+  primaryLocale: Locale,
+) {
   if (!section) return locale === "fi" ? "Valittu osio" : "Selected section";
   for (const field of ["title", "heading", "eyebrow"]) {
-    const value = localizedValue(section.content[field], locale, primaryLocale);
+    const value = localizedMerchantValue(section.content[field], locale, primaryLocale);
     if (value) return value;
   }
   return getComponentDefinition(section.component).label;
@@ -106,14 +110,14 @@ function detailTitle(
 ) {
   if (sectionId === null) {
     return (
-      localizedValue(proposal.proposedPage.title, locale, primaryLocale) ??
-      localizedValue(proposal.originalPage.title, locale, primaryLocale) ??
+      localizedMerchantValue(proposal.proposedPage.title, locale, primaryLocale) ??
+      localizedMerchantValue(proposal.originalPage.title, locale, primaryLocale) ??
       (locale === "fi" ? "Nykyinen sivu" : "Current page")
     );
   }
   const section =
     sectionFor(proposal.proposedPage, sectionId) ?? sectionFor(proposal.originalPage, sectionId);
-  return sectionName(section, locale, primaryLocale);
+  return merchantSectionName(section, locale, primaryLocale);
 }
 
 function languageName(language: Locale, locale: Locale) {
@@ -158,11 +162,11 @@ function operationTargets(
   return [];
 }
 
-function detailPart(
-  proposal: DesignProposal,
+export function merchantOperationChangePart(
   operation: DesignOperation,
   sectionId: string | null,
   locale: Locale,
+  proposedPage?: PageModel,
 ): string | undefined {
   switch (operation.type) {
     case "CHANGE_LOCALIZED_SECTION_TEXT": {
@@ -207,6 +211,10 @@ function detailPart(
         ? `hyväksytyt brändivärit: ${colours}`
         : `approved brand colours: ${colours}`;
     }
+    case "APPLY_APPROVED_BRAND_TYPOGRAPHY":
+      return locale === "fi"
+        ? `hyväksytty bränditypografia: ${humanize(operation.typography.headingFont)} otsikoihin ja ${humanize(operation.typography.bodyFont)} leipätekstiin`
+        : `approved brand typography: ${humanize(operation.typography.headingFont)} headings and ${humanize(operation.typography.bodyFont)} body text`;
     case "ADD_APPROVED_SECTION":
       return locale === "fi"
         ? `lisää tämä ${operation.variant ? `${option(operation.variant, locale)} ` : ""}osio`
@@ -216,11 +224,11 @@ function detailPart(
     case "REORDER_SECTIONS": {
       if (sectionId === null) return undefined;
       const position =
-        proposal.proposedPage.sections.findIndex((section) => section.id === sectionId) + 1;
-      if (position < 1) return undefined;
+        proposedPage?.sections.findIndex((section) => section.id === sectionId) ?? -1;
+      if (position < 0) return undefined;
       return locale === "fi"
-        ? `uusi paikka sivulla: ${position}`
-        : `new page position: ${position}`;
+        ? `uusi paikka sivulla: ${position + 1}`
+        : `new page position: ${position + 1}`;
     }
   }
 }
@@ -237,7 +245,7 @@ export function proposalChangeDetails(
 
   proposal.operations.forEach((operation, operationIndex) => {
     for (const sectionId of operationTargets(proposal, operation)) {
-      const part = detailPart(proposal, operation, sectionId, locale);
+      const part = merchantOperationChangePart(operation, sectionId, locale, proposal.proposedPage);
       if (!part) continue;
       const key = sectionId ?? `page:${proposal.originalPage.id}`;
       const group = groups.get(key) ?? { sectionId, parts: [], operationIndexes: [] };

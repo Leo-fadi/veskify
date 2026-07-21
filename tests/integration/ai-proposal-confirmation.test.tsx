@@ -60,6 +60,9 @@ function controller(
   const noop = vi.fn();
   const proposal = generatedProposal.proposal;
   return {
+    targetScope: "page",
+    selectTarget: noop,
+    selectedSectionEligible: false,
     request: "Make the homepage feel more luxurious.",
     setRequest: noop,
     clarificationAnswer: "",
@@ -82,12 +85,15 @@ function controller(
       failure: null,
     },
     generatedProposal,
+    generatedStorefrontProposal: null,
     visibleState: "proposalReady",
     statusMessage: "The proposal is ready to review.",
     previewActive: true,
     blocksSave: true,
     controlsDisabled: false,
     generationRetryAvailable: false,
+    canUndoStorefront: false,
+    canRedoStorefront: false,
     submitRequest: noop,
     retryGeneration: noop,
     answerClarification: noop,
@@ -101,6 +107,9 @@ function controller(
     closeForPageMutation: noop,
     closeForSelectionChange: noop,
     closeForLocaleChange: noop,
+    undoStorefront: () => false,
+    redoStorefront: () => false,
+    clearStorefrontHistory: noop,
   };
 }
 

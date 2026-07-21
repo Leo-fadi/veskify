@@ -197,8 +197,9 @@ function assertAffectedDesignState(proposal: AiStorefrontReadyProposal) {
   for (const key of ["colors", "typography"] as const) {
     const changed = canonicalValueString(original[key]) !== canonicalValueString(proposed[key]);
     if (
-      changed !== (affected?.[key] !== undefined) ||
-      (changed && canonicalValueString(affected?.[key]) !== canonicalValueString(proposed[key]))
+      (changed && affected?.[key] === undefined) ||
+      (affected?.[key] !== undefined &&
+        canonicalValueString(affected[key]) !== canonicalValueString(proposed[key]))
     ) {
       invalid(
         "unsupported-design-state",
