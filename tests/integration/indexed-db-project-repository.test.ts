@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deleteDB, openDB } from "idb";
-import { aurumNordicSeed } from "@/data/seed";
+import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import { projectSchema } from "@/domain/project";
 import { canonicalStorefrontContentFingerprint } from "@/domain/storefront";
 import {
@@ -232,9 +232,9 @@ describe("IndexedDbProjectRepository persistence", () => {
     const invalid = createdAggregate("indexed_invalid");
     invalid.snapshots[0].pages[0].sections[0].component = "unknownComponent";
     await expect(repository.create(invalid)).rejects.toBeInstanceOf(RepositoryValidationError);
-    expect(await repository.list()).toEqual([
-      expect.objectContaining({ id: aurumNordicSeed.project.id }),
-    ]);
+    expect(await repository.list()).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: aurumNordicSeed.project.id })]),
+    );
     const database = await openDB(databaseName);
     const transaction = database.transaction(
       ["projects", "catalogues", "snapshots", "snapshotProvenance", "snapshotHistoryMetadata"],
@@ -449,6 +449,73 @@ describe("IndexedDbProjectRepository persistence", () => {
     expect(
       aggregate.snapshots.some((snapshot) => snapshot.id === aurumNordicSeed.draftSnapshot.id),
     ).toBe(true);
+  });
+
+  it("bootstraps both Aurum Nordic and Karvonen into an empty database", async () => {
+    const databaseName = testDatabaseName("karvonen-empty");
+    const repository = openRepository(databaseName);
+
+    expect((await repository.get(aurumNordicSeed.project.id)).project.id).toBe(
+      aurumNordicSeed.project.id,
+    );
+    const karvonen = await repository.get(karvonenSeed.project.id);
+    expect(karvonen.catalogue.products).toHaveLength(10);
+    expect(karvonen.snapshots.map(({ id }) => id).sort()).toEqual(
+      [karvonenSeed.publishedSnapshot.id, karvonenSeed.draftSnapshot.id].sort(),
+    );
+    expect(karvonen.snapshots).toHaveLength(2);
+  });
+
+  it("adds missing Karvonen without overwriting an existing Aurum database", async () => {
+    const databaseName = testDatabaseName("karvonen-missing");
+    const first = openRepository(databaseName);
+    await first.get(aurumNordicSeed.project.id);
+    await first.close();
+
+    const database = await openDB(databaseName);
+    const transaction = database.transaction(
+      ["projects", "catalogues", "snapshots", "snapshotProvenance"],
+      "readwrite",
+    );
+    await transaction.objectStore("projects").delete(karvonenSeed.project.id);
+    await transaction.objectStore("catalogues").delete(karvonenSeed.catalogue.id);
+    for (const snapshot of [karvonenSeed.publishedSnapshot, karvonenSeed.draftSnapshot]) {
+      await transaction.objectStore("snapshots").delete(snapshot.id);
+      await transaction.objectStore("snapshotProvenance").delete(snapshot.id);
+    }
+    await transaction.done;
+    database.close();
+
+    const reopened = openRepository(databaseName);
+    expect((await reopened.get(aurumNordicSeed.project.id)).project.name).toBe("Aurum Nordic");
+    expect((await reopened.get(karvonenSeed.project.id)).catalogue.products).toHaveLength(10);
+  });
+
+  it("does not overwrite an existing Karvonen project and remains idempotent", async () => {
+    const databaseName = testDatabaseName("karvonen-idempotent");
+    const first = openRepository(databaseName);
+    await first.get(karvonenSeed.project.id);
+    await first.close();
+
+    const database = await openDB(databaseName);
+    const project = projectSchema.parse(await database.get("projects", karvonenSeed.project.id));
+    expect(project).toBeDefined();
+    project.name = "Merchant-edited Karvonen";
+    await database.put("projects", project);
+    database.close();
+
+    const reopened = openRepository(databaseName);
+    expect((await reopened.get(karvonenSeed.project.id)).project.name).toBe(
+      "Merchant-edited Karvonen",
+    );
+    await reopened.close();
+
+    const databaseAfterRepeat = await openDB(databaseName);
+    expect(await databaseAfterRepeat.getAll("projects")).toHaveLength(2);
+    expect(await databaseAfterRepeat.getAll("catalogues")).toHaveLength(2);
+    expect(await databaseAfterRepeat.getAll("snapshots")).toHaveLength(4);
+    expect(await databaseAfterRepeat.getAll("snapshotProvenance")).toHaveLength(2);
+    databaseAfterRepeat.close();
   });
 
   it("preserves unknown stored snapshots while pruning only provenance-managed drafts", async () => {

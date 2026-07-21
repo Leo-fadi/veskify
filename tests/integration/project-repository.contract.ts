@@ -139,15 +139,17 @@ export function runProjectRepositoryContract(
     });
 
     it("lists deterministic seeded summaries and gets the complete aggregate", async () => {
-      expect(await repository.list()).toEqual([
-        expect.objectContaining({
-          id: projectId,
-          name: "Aurum Nordic",
-          revision: 2,
-          publishedSnapshotId: aurumNordicSeed.publishedSnapshot.id,
-          draftSnapshotId: aurumNordicSeed.draftSnapshot.id,
-        }),
-      ]);
+      expect(await repository.list()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: projectId,
+            name: "Aurum Nordic",
+            revision: 2,
+            publishedSnapshotId: aurumNordicSeed.publishedSnapshot.id,
+            draftSnapshotId: aurumNordicSeed.draftSnapshot.id,
+          }),
+        ]),
+      );
       const aggregate = await repository.get(projectId);
       expect(aggregate.catalogue.products).toHaveLength(6);
       expect(

@@ -1,6 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
-import { aurumNordicSeed } from "@/data/seed";
+import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import { projectSchema, type Project } from "@/domain/project";
 import {
   canonicalStorefrontContentEqual,
@@ -864,6 +864,26 @@ export class IndexedDbProjectRepository implements ProjectRepository {
           }
         }
       }
+      if (!(await projects.get(karvonenSeed.project.id))) {
+        const karvonenAggregate = validateProjectAggregate({
+          project: clone(karvonenSeed.project),
+          catalogue: clone(karvonenSeed.catalogue),
+          snapshots: [clone(karvonenSeed.publishedSnapshot), clone(karvonenSeed.draftSnapshot)],
+        });
+        await transaction.objectStore("catalogues").put(karvonenAggregate.catalogue);
+        for (const snapshot of karvonenAggregate.snapshots) {
+          await transaction.objectStore("snapshots").put(snapshot);
+        }
+        await transaction
+          .objectStore("snapshotProvenance")
+          .put(
+            managedDraftProvenance(
+              karvonenAggregate.project.id,
+              karvonenAggregate.project.draftSnapshotId,
+            ),
+          );
+        await projects.put(karvonenAggregate.project);
+      }
       await transaction.done;
       return;
     }
@@ -873,6 +893,11 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       catalogue: clone(aurumNordicSeed.catalogue),
       snapshots: [clone(aurumNordicSeed.publishedSnapshot), clone(aurumNordicSeed.draftSnapshot)],
     });
+    const karvonenAggregate = validateProjectAggregate({
+      project: clone(karvonenSeed.project),
+      catalogue: clone(karvonenSeed.catalogue),
+      snapshots: [clone(karvonenSeed.publishedSnapshot), clone(karvonenSeed.draftSnapshot)],
+    });
     await transaction.objectStore("catalogues").put(aggregate.catalogue);
     for (const snapshot of aggregate.snapshots) {
       await transaction.objectStore("snapshots").put(snapshot);
@@ -881,6 +906,19 @@ export class IndexedDbProjectRepository implements ProjectRepository {
       .objectStore("snapshotProvenance")
       .put(managedDraftProvenance(aggregate.project.id, aggregate.project.draftSnapshotId));
     await projects.put(aggregate.project);
+    await transaction.objectStore("catalogues").put(karvonenAggregate.catalogue);
+    for (const snapshot of karvonenAggregate.snapshots) {
+      await transaction.objectStore("snapshots").put(snapshot);
+    }
+    await transaction
+      .objectStore("snapshotProvenance")
+      .put(
+        managedDraftProvenance(
+          karvonenAggregate.project.id,
+          karvonenAggregate.project.draftSnapshotId,
+        ),
+      );
+    await projects.put(karvonenAggregate.project);
     await transaction.done;
   }
 }
