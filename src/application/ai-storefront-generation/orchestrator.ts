@@ -102,6 +102,14 @@ export class AiStorefrontGenerationOrchestrator {
     });
   }
 
+  supersede(): void {
+    this.#sequence += 1;
+    this.#active = null;
+    this.#state = "superseded";
+    this.#proposal = null;
+    this.#lastFailure = failure("superseded");
+  }
+
   generate(commandInput: unknown): Promise<AiStorefrontGenerationResult> {
     let command: AiStorefrontGenerationCommand;
     try {

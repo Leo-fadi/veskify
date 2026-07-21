@@ -72,6 +72,34 @@
   margin: 0;
 }
 
+.targetSelector {
+  display: grid;
+  min-width: 0;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.8rem;
+  border: 1px solid #c6ccd3;
+  border-radius: 0.6rem;
+}
+
+.targetSelector legend {
+  padding: 0 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.targetSelector label {
+  display: flex;
+  min-width: 0;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.82rem;
+}
+
+.targetSelector input {
+  margin-top: 0.15rem;
+}
+
 .reviewFacts {
   display: grid;
   gap: 0.55rem;
@@ -193,6 +221,27 @@
   overflow-wrap: anywhere;
 }
 
+.storefrontPages {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.4rem;
+}
+
+.storefrontPages details {
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid #d6dae0;
+  border-radius: 0.45rem;
+  background: white;
+}
+
+.storefrontPages summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
 .previewNotice,
 .boundary {
   padding: 0.7rem;
@@ -209,6 +258,8 @@
 
 .panel button:focus-visible,
 .panel textarea:focus-visible,
+.panel input:focus-visible,
+.storefrontPages summary:focus-visible,
 .card h3:focus-visible {
   outline: 3px solid #d4a72c;
   outline-offset: 2px;

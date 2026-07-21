@@ -3,6 +3,7 @@
 import { useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
 import { proposalChangeDetails, proposalDetailsHeading } from "./proposal-change-details";
+import { createStorefrontProposalReview } from "./storefront-proposal-review";
 import type { DesignAgentSessionController } from "./use-design-agent-session";
 import styles from "./design-agent-panel.module.css";
 
@@ -15,6 +16,17 @@ export const designAgentExamplePrompts = {
   fi: ["Tee etusivusta ylellisempi.", "Tee asettelusta pelkistetympi.", "Lisää kampanjaosio."],
 } as const;
 
+const storefrontExamplePrompts = {
+  en: [
+    "Apply a warm premium style across the storefront.",
+    "Use a minimal Nordic colour and typography direction throughout the site.",
+  ],
+  fi: [
+    "Käytä lämmintä premium-ilmettä koko kaupassa.",
+    "Käytä pelkistettyä pohjoismaista väri- ja typografiailmettä koko sivustolla.",
+  ],
+} as const;
+
 const copy = {
   en: {
     eyebrow: "Design assistant",
@@ -23,6 +35,11 @@ const copy = {
     currentPage: "Current page",
     selectedSection: "Selected section",
     noSection: "No section selected — this request will use the page context.",
+    target: "Apply the request to",
+    sectionTarget: "Selected section",
+    pageTarget: "Current page",
+    storefrontTarget: "Entire storefront",
+    sectionUnavailable: "Select an eligible section on the canvas to use this target.",
     request: "Your request",
     placeholder: "For example: Make the homepage feel more luxurious.",
     keyboardGuidance: "Press Control or Command + Enter to create the proposal.",
@@ -60,6 +77,10 @@ const copy = {
     reject: "Reject",
     startOver: "Start over",
     unsaved: "Accepting adds an unsaved editor change. It does not save or publish it.",
+    globalChanges: "Shared storefront design",
+    affectedPages: "Affected pages",
+    pageChanges: "Planned page changes",
+    completeReview: "Every planned storefront change is represented below.",
   },
   fi: {
     eyebrow: "Suunnitteluavustaja",
@@ -68,6 +89,11 @@ const copy = {
     currentPage: "Nykyinen sivu",
     selectedSection: "Valittu osio",
     noSection: "Osiota ei ole valittu — pyyntö käyttää koko sivun kontekstia.",
+    target: "Kohdista pyyntö",
+    sectionTarget: "Valittu osio",
+    pageTarget: "Nykyinen sivu",
+    storefrontTarget: "Koko verkkokauppa",
+    sectionUnavailable: "Valitse sopiva osio sivulta käyttääksesi tätä kohdetta.",
     request: "Pyyntösi",
     placeholder: "Esimerkiksi: Tee etusivusta ylellisempi.",
     keyboardGuidance: "Luo ehdotus painamalla Control tai Command + Enter.",
@@ -105,6 +131,10 @@ const copy = {
     reject: "Hylkää",
     startOver: "Aloita alusta",
     unsaved: "Hyväksyminen lisää tallentamattoman muutoksen. Se ei tallenna tai julkaise.",
+    globalChanges: "Verkkokaupan yhteinen ilme",
+    affectedPages: "Kohdesivut",
+    pageChanges: "Suunnitellut sivumuutokset",
+    completeReview: "Kaikki suunnitellut verkkokaupan muutokset näkyvät alla.",
   },
 } as const;
 
@@ -114,12 +144,14 @@ export function DesignAgentPanel({
   primaryLocale,
   pageTitle,
   selectedSectionLabel,
+  storefrontPageCount,
 }: {
   controller: DesignAgentSessionController;
   locale: Locale;
   primaryLocale: Locale;
   pageTitle: string;
   selectedSectionLabel?: string;
+  storefrontPageCount?: number;
 }) {
   const text = copy[locale];
   const requestRef = useRef<HTMLTextAreaElement>(null);
@@ -135,7 +167,11 @@ export function DesignAgentPanel({
 
   useEffect(() => {
     if (controller.previewActive) proposalHeadingRef.current?.focus();
-  }, [controller.generatedProposal?.proposal.id, controller.previewActive]);
+  }, [
+    controller.generatedProposal?.proposal.id,
+    controller.generatedStorefrontProposal?.id,
+    controller.previewActive,
+  ]);
 
   useEffect(() => {
     if (controller.generationRetryAvailable) {
@@ -172,12 +208,27 @@ export function DesignAgentPanel({
   };
 
   const proposal = controller.generatedProposal?.proposal ?? null;
+  const storefrontProposal = controller.generatedStorefrontProposal;
   const session = controller.session;
-  const applicationFailed = session?.state === "failed" && proposal !== null;
+  const applicationFailed =
+    session?.state === "failed" && (proposal !== null || storefrontProposal !== null);
   const accepting = session?.state === "accepting";
   const changeDetails = proposal
     ? proposalChangeDetails(proposal, locale, primaryLocale)
     : { items: [], representedOperationIndexes: [], complete: false };
+  const storefrontReview = storefrontProposal
+    ? createStorefrontProposalReview(storefrontProposal, locale, primaryLocale)
+    : null;
+  const examples =
+    controller.targetScope === "storefront"
+      ? storefrontExamplePrompts[locale]
+      : designAgentExamplePrompts[locale];
+  const targetSummary =
+    controller.targetScope === "storefront"
+      ? `${text.storefrontTarget} — ${storefrontPageCount ?? 0} ${locale === "fi" ? "sivua" : "pages"}`
+      : controller.targetScope === "section" && selectedSectionLabel
+        ? `${selectedSectionLabel} · ${pageTitle}`
+        : `${text.pageTarget} · ${pageTitle}`;
   const scope = session
     ? session.affectedSectionIds.length > 0
       ? `${pageTitle} · ${session.affectedSectionIds.length} ${
@@ -210,6 +261,33 @@ export function DesignAgentPanel({
         </div>
       </dl>
 
+      <fieldset className={styles.targetSelector} disabled={busy}>
+        <legend>{text.target}</legend>
+        {(
+          [
+            ["section", text.sectionTarget],
+            ["page", text.pageTarget],
+            ["storefront", text.storefrontTarget],
+          ] as const
+        ).map(([target, label]) => (
+          <label key={target}>
+            <input
+              checked={controller.targetScope === target}
+              disabled={target === "section" && !controller.selectedSectionEligible}
+              name="design-agent-target"
+              onChange={() => controller.selectTarget(target)}
+              type="radio"
+              value={target}
+            />
+            <span>{label}</span>
+          </label>
+        ))}
+        {!controller.selectedSectionEligible ? (
+          <p className={styles.guidance}>{text.sectionUnavailable}</p>
+        ) : null}
+        <p className={styles.guidance}>{targetSummary}</p>
+      </fieldset>
+
       <form className={styles.form} onSubmit={submit}>
         <label htmlFor="design-request">{text.request}</label>
         <textarea
@@ -240,7 +318,7 @@ export function DesignAgentPanel({
         </button>
         <div className={styles.examples}>
           <span>{text.examples}</span>
-          {designAgentExamplePrompts[locale].map((prompt) => (
+          {examples.map((prompt) => (
             <button
               disabled={
                 controller.controlsDisabled || controller.previewActive || needsClarification
@@ -269,6 +347,12 @@ export function DesignAgentPanel({
       >
         {controller.statusMessage}
       </div>
+
+      {controller.visibleState === "generating" || controller.visibleState === "revising" ? (
+        <button className={styles.startOver} onClick={controller.cancelSession} type="button">
+          {text.cancel}
+        </button>
+      ) : null}
 
       {needsClarification && session?.clarificationQuestion ? (
         <form className={styles.card} onSubmit={clarify}>
@@ -299,6 +383,135 @@ export function DesignAgentPanel({
             </button>
           </div>
         </form>
+      ) : null}
+
+      {controller.previewActive && storefrontProposal && storefrontReview && session ? (
+        <section
+          aria-label="Storefront design proposal"
+          className={styles.card}
+          data-proposal-id={storefrontProposal.id}
+        >
+          <p className={styles.eyebrow}>{applicationFailed ? text.applyFailed : text.ready}</p>
+          <h3 ref={proposalHeadingRef} tabIndex={-1}>
+            {resolveLocalizedText(storefrontProposal.summary, locale, primaryLocale)}
+          </h3>
+          <p className={styles.previewNotice}>{text.preview}</p>
+          <dl className={styles.reviewFacts}>
+            <div>
+              <dt>{text.affected}</dt>
+              <dd>{text.storefrontTarget}</dd>
+            </div>
+            <div>
+              <dt>{text.affectedPages}</dt>
+              <dd>{storefrontReview.affectedPageCount}</dd>
+            </div>
+            <div>
+              <dt>{text.operationCount}</dt>
+              <dd>{storefrontReview.operationCount}</dd>
+            </div>
+          </dl>
+          {storefrontReview.globalChanges.length > 0 ? (
+            <div>
+              <strong>{text.globalChanges}</strong>
+              <ul className={styles.changeDetails}>
+                {storefrontReview.globalChanges.map((change, index) => (
+                  <li key={index}>
+                    <strong>{change.title}</strong>
+                    <span>{change.summary}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          <div>
+            <strong>{text.pageChanges}</strong>
+            <div className={styles.storefrontPages}>
+              {storefrontReview.pages.map((pageReview, pageIndex) => (
+                <details key={pageIndex} open={pageIndex === 0}>
+                  <summary>
+                    {pageReview.title} · {pageReview.operationCount}{" "}
+                    {text.operationCount.toLocaleLowerCase(locale)}
+                  </summary>
+                  <ul className={styles.changeDetails}>
+                    {pageReview.items.map((item, itemIndex) => (
+                      <li key={itemIndex}>
+                        <strong>{item.title}</strong>
+                        <span>{item.summary}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ))}
+            </div>
+          </div>
+          <div>
+            <strong>{text.warnings}</strong>
+            {storefrontReview.blockers.length > 0 ? (
+              <ul>
+                {storefrontReview.blockers.map((blocker, index) => (
+                  <li key={index}>{blocker}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>{text.completeReview}</p>
+            )}
+            {applicationFailed && session.failure ? (
+              <p>{resolveLocalizedText(session.failure.message, locale, primaryLocale)}</p>
+            ) : null}
+          </div>
+          <p className={styles.boundary}>{text.unsaved}</p>
+          <div className={styles.actions}>
+            <button
+              disabled={controller.controlsDisabled || !storefrontReview.complete}
+              onClick={controller.acceptProposal}
+              type="button"
+            >
+              {accepting ? text.accepting : applicationFailed ? text.retryAccept : text.accept}
+            </button>
+            {!applicationFailed ? (
+              <button
+                disabled={controller.controlsDisabled}
+                onClick={controller.regenerateProposal}
+                type="button"
+              >
+                {text.regenerate}
+              </button>
+            ) : null}
+            <button
+              disabled={controller.controlsDisabled}
+              onClick={controller.rejectProposal}
+              type="button"
+            >
+              {text.reject}
+            </button>
+            <button
+              disabled={controller.controlsDisabled}
+              onClick={controller.cancelSession}
+              type="button"
+            >
+              {text.cancel}
+            </button>
+          </div>
+          {!applicationFailed ? (
+            <form className={styles.form} onSubmit={revise}>
+              <label htmlFor="storefront-design-revision">{text.revision}</label>
+              <textarea
+                disabled={controller.controlsDisabled}
+                id="storefront-design-revision"
+                onChange={(event) => controller.setRevision(event.target.value)}
+                required
+                rows={3}
+                value={controller.revision}
+              />
+              <button
+                disabled={controller.controlsDisabled || !controller.revision.trim()}
+                type="submit"
+              >
+                {text.revise}
+              </button>
+            </form>
+          ) : null}
+        </section>
       ) : null}
 
       {controller.previewActive && proposal && session ? (

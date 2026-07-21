@@ -254,11 +254,33 @@ test("revises and regenerates before accepting without changing the active draft
 
   await page.getByLabel("How should this proposal change?").fill("Make it more minimal.");
   await page.getByRole("button", { name: "Revise" }).click();
+  await expect
+    .poll(async () => {
+      const nextId = await proposal.getAttribute("data-proposal-id");
+      return nextId && nextId !== firstId ? nextId : null;
+    })
+    .not.toBeNull();
+  await expect(page.getByLabel("Design request")).toHaveAttribute(
+    "data-agent-state",
+    "proposalReady",
+  );
+  await expect(proposal).toBeVisible();
   await expect(proposal).not.toHaveAttribute("data-proposal-id", firstId!);
   const revisedId = await proposal.getAttribute("data-proposal-id");
   await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
 
   await page.getByRole("button", { name: "Regenerate" }).click();
+  await expect
+    .poll(async () => {
+      const nextId = await proposal.getAttribute("data-proposal-id");
+      return nextId && nextId !== revisedId ? nextId : null;
+    })
+    .not.toBeNull();
+  await expect(page.getByLabel("Design request")).toHaveAttribute(
+    "data-agent-state",
+    "proposalReady",
+  );
+  await expect(proposal).toBeVisible();
   await expect(proposal).not.toHaveAttribute("data-proposal-id", revisedId!);
   await expect(page.getByText(/regenerated proposal is ready/i)).toBeVisible();
   await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");

@@ -4,6 +4,7 @@ import {
   validateRegisteredSnapshot,
 } from "@/components/registry";
 import type { Locale } from "@/domain/shared";
+import type { BrandSystem } from "@/domain/design-system";
 import type { PageModel, StorefrontSnapshot } from "@/domain/storefront";
 import {
   DraftConflictError,
@@ -68,12 +69,14 @@ export function assembleValidatedEditorDraft({
   aggregate,
   primaryLocale,
   identity,
+  brandSystem,
 }: {
   baseDraft: StorefrontSnapshot;
   changedPages: readonly PageModel[];
   aggregate: Pick<ProjectAggregate, "catalogue">;
   primaryLocale: Locale;
   identity?: Pick<StorefrontSnapshot, "id" | "createdAt" | "createdBy">;
+  brandSystem?: BrandSystem;
 }): StorefrontSnapshot {
   try {
     const changedById = new Map(changedPages.map((page) => [page.id, structuredClone(page)]));
@@ -89,6 +92,7 @@ export function assembleValidatedEditorDraft({
     const candidate: StorefrontSnapshot = {
       ...structuredClone(baseDraft),
       ...(identity ?? {}),
+      ...(brandSystem ? { brandSystem: structuredClone(brandSystem) } : {}),
       pages: baseDraft.pages.map((page) => changedById.get(page.id) ?? structuredClone(page)),
     };
     const context = createStorefrontRenderContext({
@@ -113,6 +117,7 @@ export async function saveValidatedEditorDraft({
   primaryLocale,
   now = () => new Date(),
   createSnapshotId,
+  brandSystem,
 }: {
   repository: ProjectRepository;
   projectId: string;
@@ -121,6 +126,7 @@ export async function saveValidatedEditorDraft({
   primaryLocale: Locale;
   now?: () => Date;
   createSnapshotId?: (date: Date) => string;
+  brandSystem?: BrandSystem;
 }): Promise<{ aggregate: ProjectAggregate; draft: StorefrontSnapshot }> {
   const latest = await repository.get(projectId);
   const latestDraft = currentDraft(latest);
@@ -141,6 +147,7 @@ export async function saveValidatedEditorDraft({
     changedPages,
     aggregate: latest,
     primaryLocale,
+    brandSystem,
     identity: {
       id: snapshotId,
       createdAt: date.toISOString(),

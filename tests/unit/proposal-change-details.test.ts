@@ -84,6 +84,9 @@ function panelController(
 ): DesignAgentSessionController {
   const noop = vi.fn();
   return {
+    targetScope: "page",
+    selectTarget: noop,
+    selectedSectionEligible: false,
     request: "Make the homepage feel more luxurious.",
     setRequest: noop,
     clarificationAnswer: "",
@@ -109,6 +112,7 @@ function panelController(
           : null,
     },
     generatedProposal: generatedEnvelope(proposal),
+    generatedStorefrontProposal: null,
     visibleState: state,
     statusMessage:
       state === "failed" ? "The proposal could not be applied safely." : "Proposal ready.",
@@ -116,6 +120,8 @@ function panelController(
     blocksSave: true,
     controlsDisabled: state === "accepting",
     generationRetryAvailable: false,
+    canUndoStorefront: false,
+    canRedoStorefront: false,
     submitRequest: noop,
     retryGeneration: noop,
     answerClarification: noop,
@@ -129,6 +135,9 @@ function panelController(
     closeForPageMutation: noop,
     closeForSelectionChange: noop,
     closeForLocaleChange: noop,
+    undoStorefront: () => false,
+    redoStorefront: () => false,
+    clearStorefrontHistory: noop,
   };
 }
 

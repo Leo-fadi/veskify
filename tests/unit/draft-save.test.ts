@@ -55,6 +55,23 @@ describe("P2-07 validated editor draft save", () => {
     expect(assembled.revision).toBe(aurumNordicSeed.draftSnapshot.revision);
   });
 
+  it("assembles a validated accepted storefront brand system with changed pages", () => {
+    const brandSystem = structuredClone(aurumNordicSeed.draftSnapshot.brandSystem);
+    brandSystem.colors.primary = "#7B4A2D";
+    const assembled = assembleValidatedEditorDraft({
+      baseDraft: aurumNordicSeed.draftSnapshot,
+      changedPages: [changedPage("home", "Storefront proposal home")],
+      brandSystem,
+      aggregate: aurumNordicSeed,
+      primaryLocale: "en",
+    });
+
+    expect(assembled.brandSystem.colors.primary).toBe("#7B4A2D");
+    expect(assembled.pages.find((page) => page.type === "home")?.title.en).toBe(
+      "Storefront proposal home",
+    );
+  });
+
   it("saves multiple pages while preserving published, catalogue and untouched pages", async () => {
     const value = repository();
     const before = await value.get(projectId);

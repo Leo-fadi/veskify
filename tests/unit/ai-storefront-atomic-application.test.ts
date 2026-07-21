@@ -430,6 +430,22 @@ describe("P4-05C transactional storefront executor", () => {
     expect(value.inspectHistory().past).toHaveLength(1);
   });
 
+  it("accepts an explicit no-op typography operation when metadata and projection match", () => {
+    const proposal = designSystemProposal({ includeColors: false });
+    const typography = structuredClone(draft.brandSystem.typography);
+    globalTypographyOperation(proposal).typography = typography;
+    proposal.affectedDesignState = { typography };
+    proposal.proposedStorefront.brandSystem.typography = typography;
+
+    const resulting = executeAiStorefrontProposal({
+      proposal,
+      ...applicationContext(),
+    });
+
+    expect(resulting.brandSystem.typography).toEqual(draft.brandSystem.typography);
+    expect(resulting.pages).toEqual(proposal.proposedStorefront.pages);
+  });
+
   it("rejects typography metadata without an explicit typography operation", () => {
     const proposal = designSystemProposal({ includeTypography: false });
     const typography = {

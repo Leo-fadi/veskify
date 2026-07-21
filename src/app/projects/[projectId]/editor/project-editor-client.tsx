@@ -9,6 +9,7 @@ import {
   StaleEditorDraftError,
 } from "@/application/draft-save";
 import type { AIProvider } from "@/application/ai-provider";
+import type { StorefrontAIProvider } from "@/application/ai-storefront-generation";
 import {
   canDuplicateSection,
   canToggleSectionVisibility,
@@ -25,7 +26,7 @@ import {
   merchantEditorSectionLabel,
   validateRegisteredPage,
 } from "@/components/registry";
-import { brandSystemToCssVariables } from "@/domain/design-system";
+import { brandSystemToCssVariables, type BrandSystem } from "@/domain/design-system";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
 import type { PageModel, PageType, StorefrontSnapshot } from "@/domain/storefront";
 import { VeskifyPuckCanvas } from "@/integrations/puck/veskify-puck-editor";
@@ -39,6 +40,12 @@ import {
 import { createBrowserProposalAnalyticsSink } from "@/services/analytics";
 import styles from "./project-editor.module.css";
 import { DesignAgentPanel } from "./design-agent-panel";
+import {
+  canonicalPagesEqual,
+  changedPagesForActiveDraft,
+  composeActiveEditorDraft,
+  proposalStorefrontPreview,
+} from "./editor-draft-state";
 import { useDesignAgentSession } from "./use-design-agent-session";
 
 type RepositoryFactory = () => ProjectRepository;
@@ -103,9 +110,6 @@ function snapshotDesign(snapshot: StorefrontSnapshot) {
 const draftDiffers = (draft: StorefrontSnapshot, published: StorefrontSnapshot) =>
   JSON.stringify(snapshotDesign(draft)) !== JSON.stringify(snapshotDesign(published));
 
-const canonicalPagesEqual = (left: PageModel, right: PageModel) =>
-  JSON.stringify(left) === JSON.stringify(right);
-
 function duplicatedSectionFrom(transaction: CanonicalCommandTransaction | undefined) {
   if (
     transaction?.forward.length !== 1 ||
@@ -130,10 +134,12 @@ export function ProjectEditorClient({
   projectId,
   repositoryFactory = defaultRepositoryFactory,
   aiProvider,
+  storefrontAiProvider,
 }: {
   projectId: string;
   repositoryFactory?: RepositoryFactory;
   aiProvider?: AIProvider;
+  storefrontAiProvider?: StorefrontAIProvider;
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -144,10 +150,12 @@ export function ProjectEditorClient({
   const [selectedSectionId, setSelectedSectionId] = useState<string>();
   const [activeLocale, setActiveLocale] = useState<Locale>();
   const [sessionPages, setSessionPages] = useState<Record<string, PageModel>>({});
+  const [sessionBrandSystem, setSessionBrandSystem] = useState<BrandSystem>();
   const [resetKeys, setResetKeys] = useState<Record<string, number>>({});
   const [validationMessage, setValidationMessage] = useState("");
   const [historyStatus, setHistoryStatus] = useState("");
   const [editorHistory, setEditorHistory] = useState<CanonicalEditorHistory>();
+  const [pageEditsAfterStorefront, setPageEditsAfterStorefront] = useState(0);
   const [saveState, setSaveState] = useState<SaveUiState>({ status: "idle" });
   const savePending = useRef(false);
 
@@ -208,9 +216,11 @@ export function ProjectEditorClient({
           setSelectedSectionId(undefined);
           setActiveLocale(aggregate.project.primaryLocale);
           setSessionPages({});
+          setSessionBrandSystem(undefined);
           setResetKeys({});
           setValidationMessage("");
           setHistoryStatus("");
+          setPageEditsAfterStorefront(0);
           setSaveState({ status: "idle" });
           setState({ status: "ready", aggregate, draft, published, pages });
         } catch {
@@ -240,13 +250,20 @@ export function ProjectEditorClient({
     ? (sessionPages[readyOriginalPage.id] ?? readyOriginalPage)
     : undefined;
   const readyLocale = activeLocale ?? readyState?.aggregate.project.primaryLocale;
+  const activeDraft = readyState
+    ? composeActiveEditorDraft({
+        draft: readyState.draft,
+        sessionPages,
+        brandSystem: sessionBrandSystem,
+      })
+    : undefined;
   const readyContext =
-    readyState && readyLocale
+    readyState && readyLocale && activeDraft
       ? createStorefrontRenderContext({
           activeLocale: readyLocale,
           primaryLocale: readyState.aggregate.project.primaryLocale,
           catalogue: readyState.aggregate.catalogue,
-          snapshot: readyState.draft,
+          snapshot: activeDraft,
           pagePathPrefix: `/projects/${projectId}`,
         })
       : undefined;
@@ -259,11 +276,16 @@ export function ProjectEditorClient({
     activeLocale: readyLocale,
     primaryLocale: readyState?.aggregate.project.primaryLocale,
     enabledLocales: readyState?.aggregate.project.enabledLocales,
-    brandSystem: readyState?.draft.brandSystem,
+    brandSystem: activeDraft?.brandSystem,
     displayContext: readyContext,
     selectedSectionId,
+    activeDraft,
+    storedDraft: readyState?.draft,
+    publishedSnapshot: readyState?.published,
+    catalogue: readyState?.aggregate.catalogue,
     disabled: saveState.status === "saving",
     provider: aiProvider,
+    storefrontProvider: storefrontAiProvider,
     analytics: proposalAnalytics,
     analyticsRoute: `/projects/${projectId}/editor`,
     onAcceptedPage: (acceptedPage) => {
@@ -273,11 +295,45 @@ export function ProjectEditorClient({
       setSessionPages((current) => ({ ...current, [acceptedPage.id]: committedPage }));
       setValidationMessage("");
       setHistoryStatus("Proposal applied. You can undo this change.");
+      setPageEditsAfterStorefront((current) => (agent.canUndoStorefront ? current + 1 : current));
       setSaveState({ status: "idle" });
       setResetKeys((current) => ({
         ...current,
         [acceptedPage.id]: (current[acceptedPage.id] ?? 0) + 1,
       }));
+    },
+    onStorefrontSnapshot: (snapshot) => {
+      if (!readyState) return;
+      setSessionPages(
+        Object.fromEntries(
+          snapshot.pages.flatMap((snapshotPage) => {
+            const baseline = readyState.draft.pages.find((item) => item.id === snapshotPage.id);
+            return baseline && canonicalPagesEqual(snapshotPage, baseline)
+              ? []
+              : [[snapshotPage.id, structuredClone(snapshotPage)] as const];
+          }),
+        ),
+      );
+      setSessionBrandSystem(structuredClone(snapshot.brandSystem));
+      snapshot.pages.forEach((snapshotPage) => editorHistory?.rebase(snapshotPage));
+      setResetKeys((current) =>
+        Object.fromEntries(
+          snapshot.pages.map((snapshotPage) => [
+            snapshotPage.id,
+            (current[snapshotPage.id] ?? 0) + 1,
+          ]),
+        ),
+      );
+      setSelectedSectionId((current) =>
+        current &&
+        snapshot.pages.some((item) => item.sections.some((section) => section.id === current))
+          ? current
+          : undefined,
+      );
+      setValidationMessage("");
+      setHistoryStatus("Storefront proposal applied as one change. You can undo it atomically.");
+      setPageEditsAfterStorefront(0);
+      setSaveState({ status: "idle" });
     },
   });
 
@@ -324,18 +380,32 @@ export function ProjectEditorClient({
   const originalPage = readyOriginalPage!;
   const page = readyPage!;
   const currentPageHasUnsavedChanges = !canonicalPagesEqual(page, originalPage);
-  const changedPages = state.pages.flatMap((baselinePage) => {
-    const sessionPage = sessionPages[baselinePage.id];
-    return sessionPage && !canonicalPagesEqual(sessionPage, baselinePage) ? [sessionPage] : [];
+  const changedPages = changedPagesForActiveDraft({
+    baseDraft: state.draft,
+    activeDraft: activeDraft!,
   });
-  const hasUnsavedChanges = changedPages.length > 0;
+  const brandSystemChanged =
+    JSON.stringify(activeDraft!.brandSystem) !== JSON.stringify(state.draft.brandSystem);
+  const hasUnsavedChanges = changedPages.length > 0 || brandSystemChanged;
   const locale = readyLocale!;
   const title = resolveLocalizedText(page.title, locale, state.aggregate.project.primaryLocale);
   const context = readyContext!;
   const previewHref = `/projects/${projectId}${page.slug === "/" ? "" : page.slug}`;
-  const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
-  const showingProposal = agent.previewActive;
-  const canvasPage = agent.generatedProposal?.proposal.proposedPage ?? page;
+  const previewStorefront = proposalStorefrontPreview({
+    proposal: agent.generatedStorefrontProposal,
+    previewActive: agent.previewActive,
+    visibleState: agent.visibleState,
+  });
+  const displayedBrandSystem = previewStorefront?.brandSystem ?? activeDraft!.brandSystem;
+  const style = brandSystemToCssVariables(displayedBrandSystem) as CSSProperties;
+  const showingProposal =
+    (agent.generatedProposal !== null || previewStorefront !== undefined) &&
+    agent.previewActive &&
+    (agent.visibleState === "proposalReady" || agent.visibleState === "accepting");
+  const canvasPage =
+    (showingProposal ? agent.generatedProposal?.proposal.proposedPage : undefined) ??
+    previewStorefront?.pages.find((item) => item.id === page.id) ??
+    page;
   const selectedSection = selectedSectionId
     ? page.sections.find((section) => section.id === selectedSectionId)
     : undefined;
@@ -345,6 +415,7 @@ export function ProjectEditorClient({
       assembleValidatedEditorDraft({
         baseDraft: state.draft,
         changedPages,
+        brandSystem: activeDraft!.brandSystem,
         aggregate: state.aggregate,
         primaryLocale: state.aggregate.project.primaryLocale,
       });
@@ -362,8 +433,10 @@ export function ProjectEditorClient({
     Boolean(validationMessage) ||
     proposalBlocksSave ||
     saveState.status === "saving";
-  const canUndo = editorHistory?.canUndo(page.id) ?? false;
-  const canRedo = editorHistory?.canRedo(page.id) ?? false;
+  const currentPageCanUndo = editorHistory?.canUndo(page.id) ?? false;
+  const canUndoStorefront = agent.canUndoStorefront && pageEditsAfterStorefront === 0;
+  const canUndo = canUndoStorefront || currentPageCanUndo;
+  const canRedo = agent.canRedoStorefront || (editorHistory?.canRedo(page.id) ?? false);
 
   const remountPage = (pageId: string) => {
     setResetKeys((current) => ({
@@ -410,6 +483,7 @@ export function ProjectEditorClient({
     }
     const committedPage = editorHistory?.commit(nextPage, "Edit page") ?? structuredClone(nextPage);
     setSessionPages((current) => ({ ...current, [nextPage.id]: committedPage }));
+    setPageEditsAfterStorefront((current) => (agent.canUndoStorefront ? current + 1 : current));
     setValidationMessage("");
     setHistoryStatus("Change added. You can undo it from the editor toolbar.");
     setSaveState({ status: "idle" });
@@ -426,6 +500,7 @@ export function ProjectEditorClient({
     if (!previousPage) return false;
     agent.closeForPageMutation(previousPage);
     showHistoryPage(previousPage);
+    setPageEditsAfterStorefront((current) => Math.max(0, current - 1));
     if (duplicatedSection && selectedSectionId === duplicatedSection.id) {
       setSelectedSectionId(previousPage.sections[Math.max(0, duplicateIndex - 1)]?.id);
     }
@@ -441,9 +516,31 @@ export function ProjectEditorClient({
     if (!nextPage) return false;
     agent.closeForPageMutation(nextPage);
     showHistoryPage(nextPage);
+    setPageEditsAfterStorefront((current) => (agent.canUndoStorefront ? current + 1 : current));
     if (duplicatedSection) setSelectedSectionId(duplicatedSection.id);
     setHistoryStatus("Redid the last change on this page.");
     return true;
+  };
+
+  const undoEditor = () => {
+    if (mutationsBlocked) return false;
+    if (currentPageCanUndo && pageEditsAfterStorefront > 0) return undoCurrentPage();
+    if (canUndoStorefront) {
+      const undone = agent.undoStorefront();
+      if (undone) setHistoryStatus("Undid the storefront proposal as one change.");
+      return undone;
+    }
+    return undoCurrentPage();
+  };
+
+  const redoEditor = () => {
+    if (mutationsBlocked) return false;
+    if (agent.canRedoStorefront) {
+      const redone = agent.redoStorefront();
+      if (redone) setHistoryStatus("Redid the storefront proposal as one change.");
+      return redone;
+    }
+    return redoCurrentPage();
   };
 
   const selectPage = (nextPageId: string) => {
@@ -487,6 +584,7 @@ export function ProjectEditorClient({
     remountPage(originalPage.id);
     setValidationMessage("");
     setHistoryStatus("Discarded this page's changes and cleared its undo history.");
+    setPageEditsAfterStorefront((current) => Math.max(0, current - 1));
     setSaveState({ status: "idle" });
     agent.closeForPageMutation(resetPage);
   };
@@ -516,6 +614,7 @@ export function ProjectEditorClient({
           });
       agent.closeForPageMutation(nextPage);
       showHistoryPage(nextPage);
+      setPageEditsAfterStorefront((current) => (agent.canUndoStorefront ? current + 1 : current));
       const duplicatedSection = duplicatedSectionFrom(transaction);
       if (duplicatedSection) setSelectedSectionId(duplicatedSection.id);
       const duplicatedLabel = duplicatedSection
@@ -552,6 +651,7 @@ export function ProjectEditorClient({
           });
       agent.closeForPageMutation(nextPage);
       showHistoryPage(nextPage);
+      setPageEditsAfterStorefront((current) => (agent.canUndoStorefront ? current + 1 : current));
       setHistoryStatus(
         `${selectedSection.visible ? "Hid" : "Showed"} ${getComponentDefinition(selectedSection.component).label}.`,
       );
@@ -572,6 +672,7 @@ export function ProjectEditorClient({
         projectId,
         loadedDraft: capturedDraft,
         changedPages: capturedChangedPages,
+        brandSystem: activeDraft!.brandSystem,
         primaryLocale: state.aggregate.project.primaryLocale,
       });
       const published = result.aggregate.snapshots.find(
@@ -595,6 +696,9 @@ export function ProjectEditorClient({
           }),
         ),
       );
+      setSessionBrandSystem(undefined);
+      agent.clearStorefrontHistory();
+      setPageEditsAfterStorefront(0);
       setResetKeys((current) =>
         Object.fromEntries(pages.map((item) => [item.id, (current[item.id] ?? 0) + 1])),
       );
@@ -657,7 +761,7 @@ export function ProjectEditorClient({
             <button
               data-editor-history-action="undo"
               disabled={!canUndo || mutationsBlocked}
-              onClick={undoCurrentPage}
+              onClick={undoEditor}
               title="Undo (Ctrl or Command + Z)"
               type="button"
             >
@@ -666,7 +770,7 @@ export function ProjectEditorClient({
             <button
               data-editor-history-action="redo"
               disabled={!canRedo || mutationsBlocked}
-              onClick={redoCurrentPage}
+              onClick={redoEditor}
               title="Redo (Ctrl or Command + Shift + Z)"
               type="button"
             >
@@ -817,7 +921,7 @@ export function ProjectEditorClient({
             </div>
           ) : null}
           <VeskifyPuckCanvas
-            brandSystem={state.draft.brandSystem}
+            brandSystem={displayedBrandSystem}
             context={context}
             onPageChange={changePage}
             onSelectedSectionChange={(sectionId) => {
@@ -836,7 +940,11 @@ export function ProjectEditorClient({
             readOnly={agent.blocksSave || saving}
             readOnlyLabel={showingProposal ? "Proposal preview canvas" : "Visual editor canvas"}
             resetKey={resetKeys[canvasPage.id] ?? 0}
-            sessionKey={agent.generatedProposal?.proposal.id ?? "active"}
+            sessionKey={
+              agent.generatedProposal?.proposal.id ??
+              agent.generatedStorefrontProposal?.id ??
+              "active"
+            }
           />
         </main>
         <DesignAgentPanel
@@ -847,6 +955,7 @@ export function ProjectEditorClient({
           selectedSectionLabel={
             selectedSection ? merchantEditorSectionLabel(page, selectedSection, locale) : undefined
           }
+          storefrontPageCount={activeDraft!.pages.length}
         />
       </div>
     </div>

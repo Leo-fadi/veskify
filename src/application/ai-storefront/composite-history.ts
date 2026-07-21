@@ -287,6 +287,27 @@ export class CanonicalStorefrontHistory {
     return cloneSnapshot(this.#requiredState().current);
   }
 
+  rebaseCurrent(snapshotInput: unknown) {
+    const state = this.#requiredState();
+    const snapshot = this.#validateSnapshot(structuredClone(snapshotInput));
+    if (
+      snapshot.projectId !== state.current.projectId ||
+      snapshot.id !== state.current.id ||
+      snapshot.revision !== state.current.revision ||
+      snapshot.catalogueRef !== state.current.catalogueRef ||
+      canonicalValueString(snapshot.navigation) !==
+        canonicalValueString(state.current.navigation) ||
+      canonicalValueString(snapshot.pages.map((page) => page.id)) !==
+        canonicalValueString(state.current.pages.map((page) => page.id))
+    ) {
+      throw new CompositeStorefrontHistoryError(
+        "Canonical storefront history cannot be rebased onto a different storefront identity.",
+      );
+    }
+    state.current = cloneSnapshot(snapshot);
+    return cloneSnapshot(state.current);
+  }
+
   inspectTransactions() {
     const state = this.#requiredState();
     return {
