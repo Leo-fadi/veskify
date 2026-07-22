@@ -1,6 +1,7 @@
 import { DesignSkillRegistry } from "./registry";
 import {
   addCampaignSectionSkill,
+  applyExactBrandPaletteSkill,
   applyLuxuryStyleSkill,
   applyMinimalNordicStyleSkill,
   applyMinimalNordicStorefrontStyleSkill,
@@ -13,6 +14,7 @@ export const designSkillRegistry = new DesignSkillRegistry([
   applyMinimalNordicStyleSkill,
   addCampaignSectionSkill,
   improveHeroSkill,
+  applyExactBrandPaletteSkill,
   applyWarmPremiumStorefrontStyleSkill,
   applyMinimalNordicStorefrontStyleSkill,
 ]);

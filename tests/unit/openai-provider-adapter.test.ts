@@ -244,6 +244,44 @@ describe("P4-06 OpenAI provider adapter", () => {
     expect(openAiModelOutputSchema.safeParse({ ...valid, operations: [] }).success).toBe(false);
   });
 
+  it("accepts a mocked exact-palette response only through the canonical brand operation", async () => {
+    const colors = {
+      primary: "#173F35",
+      secondary: "#82917B",
+      accent: "#C2A35A",
+      background: "#F7F2E8",
+      surface: "#FFFFFF",
+      text: "#292D2B",
+      mutedText: "#56615B",
+      border: "#D8D1BF",
+    };
+    const brandRequest = request({
+      target: { pageId: page.id },
+      instruction: "Apply the supplied exact brand palette and preserve typography and content.",
+      scope: "brand",
+      allowedOperationTypes: ["APPLY_APPROVED_BRAND_COLOURS"],
+      permissionGrants: [
+        {
+          skillId: "applyExactBrandPalette",
+          skillVersion: "1.0.0",
+          skillScope: "brand",
+          operationTypes: ["APPLY_APPROVED_BRAND_COLOURS"],
+          target: { kind: "page", pageId: page.id },
+        },
+      ],
+    });
+    const value = new OpenAiProvider({
+      responses: new RecordingTransport(() =>
+        Promise.resolve(response([{ type: "APPLY_APPROVED_BRAND_COLOURS", colors }])),
+      ),
+    });
+
+    const result = await requestAiProposal(value, brandRequest);
+
+    expect(result.proposal.operations).toEqual([{ type: "APPLY_APPROVED_BRAND_COLOURS", colors }]);
+    expect(result.proposal.proposedPage.themeOverride?.colors).toEqual(colors);
+  });
+
   it("projects only prompt-safe registry fields without mutating protected section content", () => {
     const productGrid = page.sections.find((section) => section.component === "productGrid")!;
     const productInfo = productPage.sections.find(

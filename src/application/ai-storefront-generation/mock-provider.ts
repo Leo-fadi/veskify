@@ -4,6 +4,7 @@ import {
 } from "@/application/ai-storefront";
 import { validateDesignOperationAgainstPage } from "@/application/design-operations";
 import {
+  createExactBrandPaletteOperation,
   createStorefrontDesignSystemOperations,
   createStorefrontStyleOperations,
   type StorefrontStyleDirection,
@@ -15,23 +16,32 @@ import {
   type StorefrontAIProvider,
 } from "./contract";
 
-function directionFromRequest(request: AiStorefrontProviderRequest): StorefrontStyleDirection {
+type MockStorefrontDirection = StorefrontStyleDirection | "exactBrandPalette";
+
+function directionFromRequest(request: AiStorefrontProviderRequest): MockStorefrontDirection {
   const skillIds = new Set(request.permissionGrants.map((grant) => grant.skillId));
   if (skillIds.size !== 1)
     throw new Error("Storefront requests must use one approved style skill.");
   const skillId = [...skillIds][0];
   if (skillId === "applyWarmPremiumStorefrontStyle") return "warmPremium";
   if (skillId === "applyMinimalNordicStorefrontStyle") return "minimalNordic";
+  if (skillId === "applyExactBrandPalette") return "exactBrandPalette";
   throw new Error("Unsupported storefront style skill.");
 }
 
 function proposalOperations(
   request: AiStorefrontProviderRequest,
-  direction: StorefrontStyleDirection,
+  direction: MockStorefrontDirection,
 ): AiStorefrontOperation[] {
   const operations: AiStorefrontOperation[] = [];
   if (request.target.designSystemTarget !== null) {
-    for (const operation of createStorefrontDesignSystemOperations(direction)) {
+    const designSystemOperations =
+      direction === "exactBrandPalette"
+        ? request.brandPalettePlan
+          ? [createExactBrandPaletteOperation(request.brandPalettePlan.colors)]
+          : []
+        : createStorefrontDesignSystemOperations(direction);
+    for (const operation of designSystemOperations) {
       operations.push({
         order: operations.length,
         target: request.target.designSystemTarget,
@@ -39,6 +49,7 @@ function proposalOperations(
       });
     }
   }
+  if (direction === "exactBrandPalette") return operations;
   const targetSections = new Set(
     request.target.affectedSectionTargets.map((target) => `${target.pageId}:${target.sectionId}`),
   );
@@ -111,15 +122,26 @@ export class DeterministicMockStorefrontAIProvider implements StorefrontAIProvid
       operations,
     );
     const summary =
-      direction === "warmPremium"
+      direction === "exactBrandPalette"
         ? {
-            en: "Apply a consistent warm premium colour and typography direction across the selected storefront pages.",
-            fi: "Käytä yhtenäistä lämmintä premium-väri- ja typografiailmettä valituilla kaupan sivuilla.",
+            en: [
+              "Apply the validated merchant brand palette without changing typography, layout, imagery, content, products, or section structure.",
+              ...(request.brandPalettePlan?.warnings.flatMap((warning) => warning.en ?? []) ?? []),
+            ].join(" "),
+            fi: [
+              "Käytä kauppiaan validoitua brändiväripalettia muuttamatta typografiaa, asettelua, kuvia, sisältöä, tuotteita tai osiorakennetta.",
+              ...(request.brandPalettePlan?.warnings.flatMap((warning) => warning.fi ?? []) ?? []),
+            ].join(" "),
           }
-        : {
-            en: "Apply a consistent minimal Nordic colour and typography direction across the selected storefront pages.",
-            fi: "Käytä yhtenäistä pelkistettyä pohjoismaista väri- ja typografiailmettä valituilla kaupan sivuilla.",
-          };
+        : direction === "warmPremium"
+          ? {
+              en: "Apply a consistent warm premium colour and typography direction across the selected storefront pages.",
+              fi: "Käytä yhtenäistä lämmintä premium-väri- ja typografiailmettä valituilla kaupan sivuilla.",
+            }
+          : {
+              en: "Apply a consistent minimal Nordic colour and typography direction across the selected storefront pages.",
+              fi: "Käytä yhtenäistä pelkistettyä pohjoismaista väri- ja typografiailmettä valituilla kaupan sivuilla.",
+            };
     return Promise.resolve(
       aiStorefrontProviderResponseSchema.parse({
         providerRequestId: request.requestId,

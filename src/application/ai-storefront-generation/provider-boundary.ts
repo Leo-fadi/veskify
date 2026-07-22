@@ -47,6 +47,46 @@ function contextFromRequest(request: AiStorefrontProviderRequest): AiStorefrontC
   };
 }
 
+function assertExactPaletteResponse(
+  request: AiStorefrontProviderRequest,
+  response: AiStorefrontProviderResponse,
+) {
+  if (request.brandPalettePlan === null) return;
+  const paletteOperations = response.proposal.operations.filter(
+    ({ operation }) => operation.type === "APPLY_APPROVED_BRAND_COLOURS",
+  );
+  if (
+    response.proposal.operations.length !== 1 ||
+    paletteOperations.length !== 1 ||
+    paletteOperations[0].operation.type !== "APPLY_APPROVED_BRAND_COLOURS" ||
+    canonicalValueString(paletteOperations[0].operation.colors) !==
+      canonicalValueString(request.brandPalettePlan.colors)
+  ) {
+    invalid(
+      "brand-palette-mismatch",
+      "The provider proposal does not match the validated merchant brand palette.",
+    );
+  }
+}
+
+function appendPaletteWarnings(
+  request: AiStorefrontProviderRequest,
+  response: AiStorefrontProviderResponse,
+): AiStorefrontProviderResponse {
+  if (request.brandPalettePlan === null || request.brandPalettePlan.warnings.length === 0) {
+    return response;
+  }
+  const summary = structuredClone(response.proposal.summary);
+  for (const warning of request.brandPalettePlan.warnings) {
+    for (const locale of ["en", "fi"] as const) {
+      const message = warning[locale];
+      if (!message || summary[locale]?.includes(message)) continue;
+      summary[locale] = [summary[locale], message].filter(Boolean).join(" ");
+    }
+  }
+  return { ...response, proposal: { ...response.proposal, summary } };
+}
+
 export function validateAiStorefrontProviderResponse(
   requestInput: unknown,
   responseInput: unknown,
@@ -74,6 +114,7 @@ export function validateAiStorefrontProviderResponse(
       "The provider response does not match the active storefront request.",
     );
   }
+  assertExactPaletteResponse(request, response);
   if (
     response.metadata.validation !== "valid" ||
     response.metadata.operationCount !== response.proposal.operations.length
@@ -130,10 +171,10 @@ export function validateAiStorefrontProviderResponse(
     );
   }
   try {
-    return {
+    return appendPaletteWarnings(request, {
       ...response,
       proposal: validateAiStorefrontProposal(response.proposal, contextFromRequest(request)),
-    };
+    });
   } catch {
     return invalid(
       "invalid-storefront-proposal",
