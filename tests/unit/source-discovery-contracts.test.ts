@@ -177,7 +177,9 @@ describe("P7-01 source discovery and Storefront Design Brief contracts", () => {
       provenance: {
         sourceReferenceId: "source_other",
         sourceUrl: sourceReference().url,
+        documentUrl: sourceReference().url,
         observedAt: now,
+        extractionLocation: "cross-source fixture",
       },
     });
     const result = discovery(crossSourceEvidence);
@@ -619,7 +621,9 @@ describe("P7-01 source discovery and Storefront Design Brief contracts", () => {
       provenance: {
         sourceReferenceId: "source_demo",
         sourceUrl: sourceReference().url,
+        documentUrl: sourceReference().url,
         observedAt: "2026-07-22T12:00:00.000Z",
+        extractionLocation: "timestamp fixture",
       },
     });
     const first = createStorefrontDesignBriefEvidenceFingerprint({

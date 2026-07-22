@@ -1158,6 +1158,8 @@ complete: boolean;<br />
 
 **P7-02 implementation note:** The existing persisted onboarding aggregate now owns a provider-independent URL-to-brief workflow with resumable discovery, canonical Vesko reconciliation, merchant decisions, evidence-fingerprint approval, staleness detection and superseding brief revisions. Local and focused-test operation uses the deterministic discovery adapter and must not be presented as a real crawl; production crawling and merchant-facing presentation remain separate adapter and W4 work.
 
+**P7-03 implementation note:** The server-only public-source adapter inspects one bounded HTTPS document through strict URL, DNS, redirect, timeout, response-size and HTML content policies. DNS answers are validated and pinned for acquisition, public content remains inert source evidence, and remote media remains unapproved candidate metadata with provenance. Deterministic mode remains the default local/test path; the adapter is not a recursive crawler, does not execute page content and does not ingest remote binaries into approved media.
+
 ## 16.4 Integration rules
 - Domain and editor features depend on interfaces, never on IndexedDB, Karvonen IDs or local file paths.
 

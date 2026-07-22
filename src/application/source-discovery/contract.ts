@@ -9,7 +9,10 @@ import type {
   StorefrontDesignBriefContract,
 } from "@/domain/source-discovery";
 
-export type SourceDiscoveryAdapterInput = Readonly<{ source: SourceReference }>;
+export type SourceDiscoveryAdapterInput = Readonly<{
+  source: SourceReference;
+  signal?: AbortSignal;
+}>;
 
 export interface SourceDiscoveryAdapter {
   readonly id: string;
@@ -24,6 +27,7 @@ export type SourceDiscoveryApplicationErrorCode =
   | "blocked-source"
   | "unavailable-source"
   | "timeout"
+  | "cancelled"
   | "no-reusable-evidence"
   | "conflicting-evidence"
   | "missing-canonical-vesko-projection"
