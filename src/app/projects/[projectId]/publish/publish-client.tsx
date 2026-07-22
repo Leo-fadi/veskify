@@ -338,7 +338,7 @@ function RouteStatus({
             Try again
           </button>
         ) : null}
-        <Link href="/">Return to Veskify home</Link>
+        <Link href="/">Return to Vesko home</Link>
       </section>
     </main>
   );

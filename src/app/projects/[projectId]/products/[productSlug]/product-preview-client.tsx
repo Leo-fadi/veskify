@@ -59,7 +59,7 @@ function StatusPanel({
             Try again
           </button>
         ) : null}
-        <Link href="/">Return to Veskify home</Link>
+        <Link href="/">Return to Vesko home</Link>
       </section>
     </main>
   );
@@ -223,7 +223,7 @@ function ProductPreviewLoader({
       <div
         className="project-preview__header"
         role="region"
-        aria-label={`Veskify ${snapshotKind} preview controls`}
+        aria-label={`Vesko ${snapshotKind} preview controls`}
       >
         <div>
           <Link

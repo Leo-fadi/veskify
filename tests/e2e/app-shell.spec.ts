@@ -1,29 +1,26 @@
 import { expect, test } from "@playwright/test";
 
-test("loads the Veskify launchpad and exposes the working journeys", async ({ page }) => {
+test("loads the Vesko Storefront Studio entry and exposes the working journeys", async ({
+  page,
+}) => {
   await page.goto("/");
-  await expect(
-    page.getByRole("heading", { name: /Veskify storefront design demo/i }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Shape a storefront/i })).toBeVisible();
   await expect(page.getByRole("link", { name: "Start storefront setup" })).toHaveAttribute(
     "href",
     "/projects/new",
   );
-  await expect(page.getByRole("link", { name: "Open visual editor" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Continue editing storefront" })).toHaveAttribute(
     "href",
     "/projects/project_aurum_nordic/editor",
   );
-  await expect(page.getByRole("link", { name: "View storefront preview" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Preview storefront" })).toHaveAttribute(
     "href",
     "/projects/project_aurum_nordic",
-  );
-  await expect(page.getByRole("link", { name: "Open isolated Puck proof" })).toHaveAttribute(
-    "href",
-    "/puck-proof",
   );
   await expect(page.getByText(/Batch 1|stops before onboarding|editor is deferred/i)).toHaveCount(
     0,
   );
+  await expect(page.getByText(/Veskify|Puck|Developer tools|Open visual editor/i)).toHaveCount(0);
 });
 
 test("loads the isolated Puck compatibility proof", async ({ page }) => {

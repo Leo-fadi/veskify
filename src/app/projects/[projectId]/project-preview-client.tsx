@@ -59,7 +59,7 @@ function StatusPanel({
             Try again
           </button>
         ) : null}
-        <Link href="/">Return to Veskify home</Link>
+        <Link href="/">Return to Vesko home</Link>
       </section>
     </main>
   );
@@ -210,7 +210,7 @@ export function ProjectPreviewClient({
       <header className="project-preview__header">
         <div>
           <Link className="project-preview__back" href="/">
-            Veskify home
+            Vesko home
           </Link>
           <h1>{state.aggregate.project.name}</h1>
         </div>

@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -23,6 +21,7 @@ import {
   type OnboardingLanguageSelection,
 } from "@/application/onboarding";
 import { StorefrontGenerationReviewPanel } from "@/components/onboarding";
+import { AppShell, Button, Notice, StatusPill } from "@/components/ui";
 import {
   businessBasicsFieldIds,
   type BusinessBasicsField,
@@ -73,7 +72,7 @@ export type OnboardingWizardProps = {
 const copy = {
   en: {
     eyebrow: "Guided storefront setup",
-    heading: "Create your storefront with Veskify",
+    heading: "Create your storefront with Vesko",
     draft: "Draft · onboarding",
     context: "Storefront setup",
     dashboard: "Back to dashboard",
@@ -131,7 +130,7 @@ const copy = {
   },
   fi: {
     eyebrow: "Ohjattu verkkokaupan aloitus",
-    heading: "Luo verkkokauppasi Veskifylla",
+    heading: "Luo verkkokauppasi Veskolla",
     draft: "Luonnos · aloitus",
     context: "Verkkokaupan aloitus",
     dashboard: "Takaisin hallintapaneeliin",
@@ -200,7 +199,7 @@ const catalogueContextText = {
       },
       "controlled-demo-catalogue": {
         label: "Demo catalogue",
-        description: "Use Veskify's controlled built-in sample catalogue for the demonstration.",
+        description: "Use Vesko's controlled built-in sample catalogue for the demonstration.",
       },
       "empty-catalogue": {
         label: "Empty catalogue",
@@ -218,7 +217,7 @@ const catalogueContextText = {
       },
       "controlled-demo-catalogue": {
         label: "Demotuoteluettelo",
-        description: "Käytä Veskifyn hallittua sisäänrakennettua esimerkkiluetteloa demossa.",
+        description: "Käytä Veskon hallittua sisäänrakennettua esimerkkiluetteloa demossa.",
       },
       "empty-catalogue": {
         label: "Tyhjä tuoteluettelo",
@@ -1119,237 +1118,229 @@ export function OnboardingWizard({
 
   return (
     <main className={styles.page}>
-      <header className={styles.appBar}>
-        <div className={styles.appBarInner}>
-          <div className={styles.brandContext}>
-            <span className={styles.logoFrame}>
-              <Image
-                alt="Vesko"
-                className={styles.logo}
-                height={240}
-                priority
-                src="/vesko-logo.png"
-                width={240}
-              />
-            </span>
-            <span className={styles.appContext}>{text.context}</span>
-          </div>
-          <div className={styles.shellActions}>
-            <p
-              aria-live="polite"
-              aria-label={text.saveStatus}
-              className={`${styles.saveState} ${saveState === "failed" ? styles.saveStateFailed : ""}`}
-              role="status"
-            >
-              <span aria-hidden="true" className={styles.saveStateDot} />
-              {saveState === "saving"
-                ? text.saving
-                : saveState === "failed"
-                  ? text.saveFailed
-                  : saveState === "unsaved"
-                    ? text.unsaved
-                    : text.saved}
-            </p>
-            <Link
-              aria-disabled={exitUnavailable}
-              className={styles.dashboardLink}
+      <AppShell
+        headerActions={
+          <>
+            <StatusPill
+              ariaLabel={text.saveStatus}
+              label={
+                saveState === "saving"
+                  ? text.saving
+                  : saveState === "failed"
+                    ? text.saveFailed
+                    : saveState === "unsaved"
+                      ? text.unsaved
+                      : text.saved
+              }
+              live
+              status={
+                saveState === "saving"
+                  ? "saving"
+                  : saveState === "failed"
+                    ? "failed"
+                    : saveState === "unsaved"
+                      ? "unsaved"
+                      : "saved"
+              }
+            />
+            <Button
+              disabled={exitUnavailable}
               href="/"
               onClick={(event) => {
                 event.preventDefault();
                 if (exitUnavailable || creationPendingRef.current) return;
                 void exitToDashboard("dashboard");
               }}
+              variant="secondary"
             >
               {pendingExit === "dashboard" ? text.leaving : text.dashboard}
-            </Link>
-            <button
-              className={styles.saveExitButton}
-              disabled={exitUnavailable}
-              onClick={() => void exitToDashboard("save")}
-              type="button"
-            >
+            </Button>
+            <Button disabled={exitUnavailable} onClick={() => void exitToDashboard("save")}>
               {pendingExit === "save" ? text.saving : text.saveExit}
-            </button>
-          </div>
-        </div>
-        {exitError ? (
-          <p className={styles.exitError} role="alert">
-            {exitError}
-          </p>
-        ) : null}
-      </header>
-
-      <div className={styles.shellBody}>
-        <header className={styles.header}>
-          <div>
-            <p className={styles.eyebrow}>{text.eyebrow}</p>
-            <h1>{text.heading}</h1>
-            <span className={styles.context}>{text.draft}</span>
-          </div>
-          <fieldset className={styles.localeControl}>
-            <legend>{text.languageLabel}</legend>
-            {(["en", "fi"] as const).map((value) => (
-              <label key={value}>
-                <input
-                  checked={locale === value}
-                  name="interface-locale"
-                  onChange={() => setLocale(value)}
-                  type="radio"
-                  value={value}
-                />
-                <span>{value === "en" ? text.english : text.finnish}</span>
-              </label>
-            ))}
-          </fieldset>
-        </header>
-
-        <section aria-label={text.heading} className={styles.card}>
-          {view.kind === "loading" && (
-            <div aria-live="polite" className={styles.centerState} role="status">
-              <span aria-hidden="true" className={styles.spinner} />
-              <p>{text.loading}</p>
-            </div>
-          )}
-
-          {view.kind === "storage-error" && (
-            <RecoveryState
-              body={text.storageBody}
-              heading={text.storageHeading}
-              onAction={() => void resume()}
-              action={text.retry}
-            />
-          )}
-
-          {view.kind === "recovery" && (
-            <RecoveryState
-              body={view.reason === "corrupt" ? text.corruptBody : text.incompatibleBody}
-              heading={view.reason === "corrupt" ? text.corruptHeading : text.incompatibleHeading}
-              onAction={() => setRestartOpen(true)}
-              action={text.discardRestart}
-            />
-          )}
-
-          {view.kind === "ready" && preparedProject ? (
-            <StorefrontGenerationReviewPanel
-              busy={creationPending}
-              errorMessage={creationFailed ? text.creationFailure : null}
-              locale={locale}
-              onBack={() => {
-                setCreationFailed(false);
-                void updateSession((session) => service.goBack(session));
-              }}
-              onConfirmCreate={() => void confirmProjectCreation()}
-              review={preparedProject.review}
-            />
-          ) : view.kind === "ready" ? (
-            <ActiveStep
-              locale={locale}
-              businessDraft={businessDraft ?? view.session.designBrief.businessIdentity}
-              businessErrors={businessErrors}
-              existingSourceDraft={
-                existingSourceDraft ??
-                view.session.designBrief.creationContext.existingStorefrontUrl ??
-                ""
-              }
-              existingSourceErrors={existingSourceErrors}
-              visualDirectionDraft={
-                visualDirectionDraft ?? visualDirectionDraftFromSession(view.session)
-              }
-              visualDirectionErrors={visualDirectionErrors}
-              catalogueContextDraft={
-                catalogueContextDraft ?? view.session.designBrief.catalogueContext
-              }
-              catalogueContextError={catalogueContextErrors}
-              pagesDraft={pagesDraft ?? pagesDraftFromSession(view.session)}
-              pagesError={pagesError}
-              languageError={languageError}
-              message={message || (view.origin === "new" ? text.newStatus : text.resumedStatus)}
-              onBusinessDraftChange={markBusinessDraftChanged}
-              onBusinessField={(field, value) =>
-                updateSession((session) =>
-                  service.updateBusinessIdentityField(session, field, value),
-                )
-              }
-              onBusinessComplete={(draft) =>
-                updateSession((session) => service.completeBusinessBasics(session, draft))
-              }
-              onExistingSourceDraftChange={markExistingSourceDraftChanged}
-              onExistingSourceField={(value) =>
-                updateSession((session) => service.updateExistingStorefrontUrl(session, value))
-              }
-              onExistingSourcesComplete={(value) =>
-                updateSession((session) => service.completeExistingSources(session, value))
-              }
-              onExistingSourcesSkip={() =>
-                void updateSession((session) => service.skipExistingSources(session))
-              }
-              onVisualDirectionDraftChange={setVisualDirectionDraft}
-              onVisualDirectionFieldSave={(draft) =>
-                updateSession((session) => service.updateVisualDirection(session, draft))
-              }
-              onVisualDirectionComplete={(draft) =>
-                updateSession((session) => service.completeVisualDirection(session, draft))
-              }
-              onVisualDirectionSkip={() =>
-                void updateSession((session) => service.skipVisualDirection(session))
-              }
-              onCatalogueContextChange={(value) => {
-                setCatalogueContextDraft(value);
-                void updateSession((session) => service.updateCatalogueContext(session, value));
-              }}
-              onCatalogueContextComplete={(value) =>
-                updateSession((session) => service.completeCatalogueContext(session, value))
-              }
-              onCatalogueContextSkip={() =>
-                void updateSession((session) => service.skipCatalogueContext(session))
-              }
-              onPagesChange={(value) => {
-                setPagesDraft(value);
-                void updateSession((session) => service.updateStorefrontPages(session, value));
-              }}
-              onPagesComplete={(value) =>
-                updateSession((session) => service.completeStorefrontPages(session, value))
-              }
-              onLanguagesChange={(selection) =>
-                updateSession((session) => service.updateLanguages(session, selection))
-              }
-              onLanguagesComplete={(selection) =>
-                updateSession((session) => service.completeLanguages(session, selection))
-              }
-              onBack={() => void updateSession((session) => service.goBack(session))}
-              onContinue={() => void updateSession((session) => service.advance(session))}
-              onPath={(path) =>
-                void updateSession((session) => service.selectCreationPath(session, path))
-              }
-              onRestart={() => setRestartOpen(true)}
-              onSkip={() => void updateSession((session) => service.skip(session))}
-              service={service}
-              session={view.session}
-            />
+            </Button>
+          </>
+        }
+        locale={locale}
+        moduleName={text.context}
+        showModuleNav={false}
+      >
+        <div className={styles.shellBody}>
+          {exitError ? (
+            <Notice live role="alert" variant="danger">
+              {exitError}
+            </Notice>
           ) : null}
-        </section>
-      </div>
-      {restartOpen && (
-        <div className={styles.dialogBackdrop}>
-          <div
-            aria-labelledby="restart-heading"
-            aria-modal="true"
-            className={styles.dialog}
-            role="dialog"
-          >
-            <h2 id="restart-heading">{text.confirmHeading}</h2>
-            <p>{text.confirmBody}</p>
-            <div className={styles.dialogActions}>
-              <button className={styles.secondaryButton} onClick={() => setRestartOpen(false)}>
-                {text.cancel}
-              </button>
-              <button className={styles.dangerButton} onClick={() => void restart()}>
-                {text.confirmRestart}
-              </button>
+          <header className={styles.header}>
+            <div>
+              <p className={styles.eyebrow}>{text.eyebrow}</p>
+              <h1>{text.heading}</h1>
+              <span className={styles.context}>{text.draft}</span>
+            </div>
+            <fieldset className={styles.localeControl}>
+              <legend>{text.languageLabel}</legend>
+              {(["en", "fi"] as const).map((value) => (
+                <label key={value}>
+                  <input
+                    checked={locale === value}
+                    name="interface-locale"
+                    onChange={() => setLocale(value)}
+                    type="radio"
+                    value={value}
+                  />
+                  <span>{value === "en" ? text.english : text.finnish}</span>
+                </label>
+              ))}
+            </fieldset>
+          </header>
+
+          <section aria-label={text.heading} className={styles.card}>
+            {view.kind === "loading" && (
+              <div aria-live="polite" className={styles.centerState} role="status">
+                <span aria-hidden="true" className={styles.spinner} />
+                <p>{text.loading}</p>
+              </div>
+            )}
+
+            {view.kind === "storage-error" && (
+              <RecoveryState
+                body={text.storageBody}
+                heading={text.storageHeading}
+                onAction={() => void resume()}
+                action={text.retry}
+              />
+            )}
+
+            {view.kind === "recovery" && (
+              <RecoveryState
+                body={view.reason === "corrupt" ? text.corruptBody : text.incompatibleBody}
+                heading={view.reason === "corrupt" ? text.corruptHeading : text.incompatibleHeading}
+                onAction={() => setRestartOpen(true)}
+                action={text.discardRestart}
+              />
+            )}
+
+            {view.kind === "ready" && preparedProject ? (
+              <StorefrontGenerationReviewPanel
+                busy={creationPending}
+                errorMessage={creationFailed ? text.creationFailure : null}
+                locale={locale}
+                onBack={() => {
+                  setCreationFailed(false);
+                  void updateSession((session) => service.goBack(session));
+                }}
+                onConfirmCreate={() => void confirmProjectCreation()}
+                review={preparedProject.review}
+              />
+            ) : view.kind === "ready" ? (
+              <ActiveStep
+                locale={locale}
+                businessDraft={businessDraft ?? view.session.designBrief.businessIdentity}
+                businessErrors={businessErrors}
+                existingSourceDraft={
+                  existingSourceDraft ??
+                  view.session.designBrief.creationContext.existingStorefrontUrl ??
+                  ""
+                }
+                existingSourceErrors={existingSourceErrors}
+                visualDirectionDraft={
+                  visualDirectionDraft ?? visualDirectionDraftFromSession(view.session)
+                }
+                visualDirectionErrors={visualDirectionErrors}
+                catalogueContextDraft={
+                  catalogueContextDraft ?? view.session.designBrief.catalogueContext
+                }
+                catalogueContextError={catalogueContextErrors}
+                pagesDraft={pagesDraft ?? pagesDraftFromSession(view.session)}
+                pagesError={pagesError}
+                languageError={languageError}
+                message={message || (view.origin === "new" ? text.newStatus : text.resumedStatus)}
+                onBusinessDraftChange={markBusinessDraftChanged}
+                onBusinessField={(field, value) =>
+                  updateSession((session) =>
+                    service.updateBusinessIdentityField(session, field, value),
+                  )
+                }
+                onBusinessComplete={(draft) =>
+                  updateSession((session) => service.completeBusinessBasics(session, draft))
+                }
+                onExistingSourceDraftChange={markExistingSourceDraftChanged}
+                onExistingSourceField={(value) =>
+                  updateSession((session) => service.updateExistingStorefrontUrl(session, value))
+                }
+                onExistingSourcesComplete={(value) =>
+                  updateSession((session) => service.completeExistingSources(session, value))
+                }
+                onExistingSourcesSkip={() =>
+                  void updateSession((session) => service.skipExistingSources(session))
+                }
+                onVisualDirectionDraftChange={setVisualDirectionDraft}
+                onVisualDirectionFieldSave={(draft) =>
+                  updateSession((session) => service.updateVisualDirection(session, draft))
+                }
+                onVisualDirectionComplete={(draft) =>
+                  updateSession((session) => service.completeVisualDirection(session, draft))
+                }
+                onVisualDirectionSkip={() =>
+                  void updateSession((session) => service.skipVisualDirection(session))
+                }
+                onCatalogueContextChange={(value) => {
+                  setCatalogueContextDraft(value);
+                  void updateSession((session) => service.updateCatalogueContext(session, value));
+                }}
+                onCatalogueContextComplete={(value) =>
+                  updateSession((session) => service.completeCatalogueContext(session, value))
+                }
+                onCatalogueContextSkip={() =>
+                  void updateSession((session) => service.skipCatalogueContext(session))
+                }
+                onPagesChange={(value) => {
+                  setPagesDraft(value);
+                  void updateSession((session) => service.updateStorefrontPages(session, value));
+                }}
+                onPagesComplete={(value) =>
+                  updateSession((session) => service.completeStorefrontPages(session, value))
+                }
+                onLanguagesChange={(selection) =>
+                  updateSession((session) => service.updateLanguages(session, selection))
+                }
+                onLanguagesComplete={(selection) =>
+                  updateSession((session) => service.completeLanguages(session, selection))
+                }
+                onBack={() => void updateSession((session) => service.goBack(session))}
+                onContinue={() => void updateSession((session) => service.advance(session))}
+                onPath={(path) =>
+                  void updateSession((session) => service.selectCreationPath(session, path))
+                }
+                onRestart={() => setRestartOpen(true)}
+                onSkip={() => void updateSession((session) => service.skip(session))}
+                service={service}
+                session={view.session}
+              />
+            ) : null}
+          </section>
+        </div>
+        {restartOpen && (
+          <div className={styles.dialogBackdrop}>
+            <div
+              aria-labelledby="restart-heading"
+              aria-modal="true"
+              className={styles.dialog}
+              role="dialog"
+            >
+              <h2 id="restart-heading">{text.confirmHeading}</h2>
+              <p>{text.confirmBody}</p>
+              <div className={styles.dialogActions}>
+                <button className={styles.secondaryButton} onClick={() => setRestartOpen(false)}>
+                  {text.cancel}
+                </button>
+                <button className={styles.dangerButton} onClick={() => void restart()}>
+                  {text.confirmRestart}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </AppShell>
     </main>
   );
 }
