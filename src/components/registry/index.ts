@@ -2,6 +2,7 @@ export * from "./aurum-hero";
 export * from "./contract";
 export * from "./design-vocabulary";
 export * from "./dynamic-product-detail";
+export * from "./dynamic-collection-commerce";
 export * from "./collection";
 export * from "./homepage";
 export * from "./product";
