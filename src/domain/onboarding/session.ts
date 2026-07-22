@@ -19,9 +19,11 @@ import {
 import { evaluateBusinessBasics } from "./business-basics";
 import { validateExistingStorefrontSource } from "./existing-sources";
 import { getOnboardingStep } from "./steps";
+import { createIdleUrlBriefWorkflow, urlBriefWorkflowSchema } from "./url-brief-workflow";
 
-export const ONBOARDING_SCHEMA_VERSION = 2 as const;
+export const ONBOARDING_SCHEMA_VERSION = 3 as const;
 export const PREVIOUS_ONBOARDING_SCHEMA_VERSION = 1 as const;
+export const INTERMEDIATE_ONBOARDING_SCHEMA_VERSION = 2 as const;
 
 export const onboardingStepIds = [
   "creation-path",
@@ -193,6 +195,7 @@ export const onboardingSessionSchema = z
     schemaVersion: z.literal(ONBOARDING_SCHEMA_VERSION),
     ...sessionWorkflowShape,
     designBrief: storefrontDesignBriefSchema,
+    urlBriefWorkflow: urlBriefWorkflowSchema,
   })
   .strict()
   .superRefine((session, context) => {
@@ -226,6 +229,20 @@ export const onboardingSessionSchema = z
         code: "custom",
         path: ["designBrief", "updatedAt"],
         message: "The session timestamp must not precede its design brief.",
+      });
+    }
+    if (Date.parse(session.urlBriefWorkflow.createdAt) !== Date.parse(session.createdAt)) {
+      context.addIssue({
+        code: "custom",
+        path: ["urlBriefWorkflow", "createdAt"],
+        message: "The URL brief workflow must preserve the onboarding creation timestamp.",
+      });
+    }
+    if (Date.parse(session.urlBriefWorkflow.updatedAt) > Date.parse(session.updatedAt)) {
+      context.addIssue({
+        code: "custom",
+        path: ["urlBriefWorkflow", "updatedAt"],
+        message: "The session timestamp must not precede its URL brief workflow.",
       });
     }
     if (session.completedStepIds.includes("business-basics")) {
@@ -413,7 +430,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * All other persisted values proceed unchanged to strict schema validation.
  */
 export function normalizePersistedOnboardingSession(input: unknown): unknown {
-  if (!isRecord(input) || input.schemaVersion !== ONBOARDING_SCHEMA_VERSION) return input;
+  if (
+    !isRecord(input) ||
+    (input.schemaVersion !== ONBOARDING_SCHEMA_VERSION &&
+      input.schemaVersion !== INTERMEDIATE_ONBOARDING_SCHEMA_VERSION)
+  ) {
+    return input;
+  }
 
   let normalized: Record<string, unknown> = input;
   const selectedLanguages = input.selectedLanguages;
@@ -478,6 +501,10 @@ export function onboardingBriefIdForSession(sessionId: string): string {
   return `${sessionId}_brief`.slice(0, 80);
 }
 
+export function onboardingUrlBriefWorkflowIdForSession(sessionId: string): string {
+  return `url_workflow_${sessionId}`.slice(0, 80);
+}
+
 function latestTimestamp(...timestamps: readonly string[]): string {
   return new Date(Math.max(...timestamps.map((timestamp) => Date.parse(timestamp)))).toISOString();
 }
@@ -517,6 +544,26 @@ export function migrateOnboardingSession(input: unknown): OnboardingSession {
     return onboardingSessionSchema.parse(normalizePersistedOnboardingSession(input));
   }
 
+  if (
+    typeof input === "object" &&
+    input !== null &&
+    "schemaVersion" in input &&
+    input.schemaVersion === INTERMEDIATE_ONBOARDING_SCHEMA_VERSION
+  ) {
+    const normalized = normalizePersistedOnboardingSession(input);
+    if (!isRecord(normalized)) return onboardingSessionSchema.parse(normalized);
+    const id = idSchema.parse(normalized.id);
+    const createdAt = isoDateTimeSchema.parse(normalized.createdAt);
+    return onboardingSessionSchema.parse({
+      ...normalized,
+      schemaVersion: ONBOARDING_SCHEMA_VERSION,
+      urlBriefWorkflow: createIdleUrlBriefWorkflow({
+        id: onboardingUrlBriefWorkflowIdForSession(id),
+        now: createdAt,
+      }),
+    });
+  }
+
   const legacy = legacyOnboardingSessionSchema.parse(input);
   let brief = createEmptyStorefrontDesignBrief({
     id: onboardingBriefIdForSession(legacy.id),
@@ -539,6 +586,10 @@ export function migrateOnboardingSession(input: unknown): OnboardingSession {
     ...stepState,
     updatedAt,
     designBrief: brief,
+    urlBriefWorkflow: createIdleUrlBriefWorkflow({
+      id: onboardingUrlBriefWorkflowIdForSession(legacy.id),
+      now: legacy.createdAt,
+    }),
   });
 }
 

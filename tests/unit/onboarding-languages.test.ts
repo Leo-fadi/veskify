@@ -6,6 +6,7 @@ import {
 } from "@/application/onboarding";
 import {
   ONBOARDING_SCHEMA_VERSION,
+  createIdleUrlBriefWorkflow,
   onboardingSessionSchema,
   type OnboardingSession,
 } from "@/domain/onboarding";
@@ -150,6 +151,10 @@ describe("canonical O-08 language selection", () => {
       updatedAt: timestamp,
       designBrief: createEmptyStorefrontDesignBrief({
         id: "onboarding_duplicate_languages_brief",
+        now: timestamp,
+      }),
+      urlBriefWorkflow: createIdleUrlBriefWorkflow({
+        id: "url_workflow_duplicate_languages",
         now: timestamp,
       }),
     });

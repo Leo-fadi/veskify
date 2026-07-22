@@ -91,6 +91,27 @@ export type ApproveStorefrontDesignBriefInput = Readonly<{
   approvedBrandDirection?: unknown;
 }>;
 
+export type UpdateStorefrontDesignBriefReviewInput = Readonly<{
+  now?: Date | string;
+  materialEvidence: StorefrontSourceEvidenceMaterial;
+  businessIdentity?: unknown;
+  languagePlan?: unknown;
+  brandProposal?: BrandReconstructionProposal | null;
+  approvedBrandDirection?: unknown;
+  approvedReusableAssetIds?: readonly string[];
+  pagePlan?: unknown;
+  navigationDirection?: readonly string[];
+  homepageGoals?: readonly string[];
+  collectionPageGoals?: readonly string[];
+  productPageGoals?: readonly string[];
+  visualPriorities?: readonly string[];
+  contentAssumptions?: readonly string[];
+  unresolvedItems?: readonly string[];
+  materialUnresolvedBlockers?: readonly string[];
+  excludedClaims?: readonly string[];
+  generationPermissions?: Partial<StorefrontDesignBriefContract["generationPermissions"]>;
+}>;
+
 export type SupersedeStorefrontDesignBriefInput = Readonly<{
   now?: Date | string;
   sourceReferenceIds?: readonly string[];

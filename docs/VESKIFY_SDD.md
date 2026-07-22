@@ -1156,6 +1156,8 @@ complete: boolean;<br />
 
 **P7-01 implementation note:** The provider-independent source-discovery package now defines validated source references, evidence and asset provenance, canonical-commerce reconciliation, reviewable brand reconstruction and merchant-approved Storefront Design Brief lifecycle contracts. The deterministic mock adapter is the only discovery implementation in this slice; real crawling and merchant UI remain future adapter/product work.
 
+**P7-02 implementation note:** The existing persisted onboarding aggregate now owns a provider-independent URL-to-brief workflow with resumable discovery, canonical Vesko reconciliation, merchant decisions, evidence-fingerprint approval, staleness detection and superseding brief revisions. Local and focused-test operation uses the deterministic discovery adapter and must not be presented as a real crawl; production crawling and merchant-facing presentation remain separate adapter and W4 work.
+
 ## 16.4 Integration rules
 - Domain and editor features depend on interfaces, never on IndexedDB, Karvonen IDs or local file paths.
 

@@ -5,6 +5,8 @@ import { OnboardingWizard } from "@/app/projects/new/onboarding-wizard";
 import type { ApprovedStorefrontProjectResult } from "@/application/approved-storefront-project";
 import { normalizeStorefrontDesignBriefInput, type CatalogueContext } from "@/domain/design-brief";
 import {
+  ONBOARDING_SCHEMA_VERSION,
+  createIdleUrlBriefWorkflow,
   onboardingBriefIdForSession,
   onboardingSessionSchema,
   type OnboardingSession,
@@ -23,7 +25,7 @@ function reviewSession(
 ): OnboardingSession {
   const id = "onboarding_review_route";
   return onboardingSessionSchema.parse({
-    schemaVersion: 2,
+    schemaVersion: ONBOARDING_SCHEMA_VERSION,
     id,
     creationPath: "new-storefront",
     activeStepId: "review-plan",
@@ -63,6 +65,10 @@ function reviewSession(
       catalogueContext,
       storefrontStructure: { pageTypes: ["home", "collection", "product"] },
       languagePlan: { selectedLanguages: ["en", "fi"], primaryLanguage: "en" },
+    }),
+    urlBriefWorkflow: createIdleUrlBriefWorkflow({
+      id: "url_workflow_review_route",
+      now: createdAt,
     }),
   });
 }

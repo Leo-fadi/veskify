@@ -4,6 +4,8 @@ import { createApprovedStorefrontProject } from "@/application/approved-storefro
 import { aurumNordicSeed } from "@/data/seed";
 import { normalizeStorefrontDesignBriefInput, type CatalogueContext } from "@/domain/design-brief";
 import {
+  ONBOARDING_SCHEMA_VERSION,
+  createIdleUrlBriefWorkflow,
   onboardingBriefIdForSession,
   onboardingSessionSchema,
   type OnboardingSession,
@@ -15,7 +17,7 @@ const createdAt = "2026-07-19T10:00:00.000Z";
 function reviewSession(catalogueContext: CatalogueContext): OnboardingSession {
   const id = `onboarding_catalogue_${catalogueContext}`;
   return onboardingSessionSchema.parse({
-    schemaVersion: 2,
+    schemaVersion: ONBOARDING_SCHEMA_VERSION,
     id,
     creationPath: "new-storefront",
     activeStepId: "review-plan",
@@ -50,6 +52,10 @@ function reviewSession(catalogueContext: CatalogueContext): OnboardingSession {
       catalogueContext,
       storefrontStructure: { pageTypes: ["home", "collection", "product"] },
       languagePlan: { selectedLanguages: ["en", "fi"], primaryLanguage: "en" },
+    }),
+    urlBriefWorkflow: createIdleUrlBriefWorkflow({
+      id: "url_workflow_project_creation",
+      now: createdAt,
     }),
   });
 }
