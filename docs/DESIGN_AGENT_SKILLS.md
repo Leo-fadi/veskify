@@ -147,13 +147,13 @@ Status values:
 
 ### 6.1 Existing design-agent baseline
 
-| Skill | Status | Purpose |
-|---|---|---|
-| `improveSelectedSection` | Baseline | Propose validated changes to one eligible section. |
-| `improveCurrentPage` | Baseline | Coordinate compatible changes across one page. |
-| `restyleWholeStorefront` | Baseline | Apply validated brand-system and multi-page design changes atomically. |
-| `applyLuxuryStyle` | Baseline | Apply a premium direction through approved variants and tokens. |
-| `applyMinimalNordicStyle` | Baseline | Simplify composition and apply restrained Nordic design direction. |
+| Skill                       | Status   | Purpose                                                                     |
+| --------------------------- | -------- | --------------------------------------------------------------------------- |
+| `improveSelectedSection`    | Baseline | Propose validated changes to one eligible section.                          |
+| `improveCurrentPage`        | Baseline | Coordinate compatible changes across one page.                              |
+| `restyleWholeStorefront`    | Baseline | Apply validated brand-system and multi-page design changes atomically.      |
+| `applyLuxuryStyle`          | Baseline | Apply a premium direction through approved variants and tokens.             |
+| `applyMinimalNordicStyle`   | Baseline | Simplify composition and apply restrained Nordic design direction.          |
 | `translateLocalizedContent` | Baseline | Update eligible EN/FI presentation content without touching protected data. |
 
 These skills already use proposal review, protected-field guards, stale protection, atomic acceptance and undo/redo. Do not rebuild their lifecycle.

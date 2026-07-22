@@ -106,12 +106,12 @@ Do not rebuild these systems. Harden only confirmed failures and build the remai
 
 Current worktrees:
 
-| Window | Path | Default role |
-|---|---|---|
-| W1 | `/Users/leo/veskify` | Shared contracts, component registry v2, documentation and merge-leading work. |
-| W2 | `/Users/leo/veskify-p1-02` | Merchant shell and presentation-only UI. |
-| W3 | `/Users/leo/veskify-p1-03` | Source discovery, onboarding contracts and independent capabilities. |
-| W4 | `/Users/leo/veskify-qa` | Manual QA and real-provider regression. |
+| Window | Path                       | Default role                                                                   |
+| ------ | -------------------------- | ------------------------------------------------------------------------------ |
+| W1     | `/Users/leo/veskify`       | Shared contracts, component registry v2, documentation and merge-leading work. |
+| W2     | `/Users/leo/veskify-p1-02` | Merchant shell and presentation-only UI.                                       |
+| W3     | `/Users/leo/veskify-p1-03` | Source discovery, onboarding contracts and independent capabilities.           |
+| W4     | `/Users/leo/veskify-qa`    | Manual QA and real-provider regression.                                        |
 
 Roles may change per phase, but every task must declare ownership and no-touch areas.
 

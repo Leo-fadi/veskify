@@ -15,29 +15,29 @@ Veskify remains a design engine. It consumes read-only canonical Vesko commerce 
 
 The roadmap begins from the repository state proven on 22 July 2026.
 
-| Area | Outcome |
-|---|---|
-| Foundation and renderer | Canonical schemas, registered components, responsive rendering, fixtures and storage adapters. |
-| Visual editor | Page/locale context, selection, manual section operations, device modes and undo/redo. |
-| Controlled proposals | Selected-section, current-page and whole-storefront scope with review, accept, reject and stale protection. |
-| Real provider | Secure OpenAI adapter through the same structured and guarded lifecycle as the mock provider. |
-| Atomic storefront application | Multi-page and brand-system changes apply and undo as one history transaction. |
-| Draft and publishing | Separate draft, save and publish flows with history and restore architecture. |
-| Real merchant fixture | Karvonen catalogue and local assets render without changing protected product truth. |
-| End-to-end proof | Real prompt → validated proposal → atomic acceptance → undo/redo → save → publish succeeded. |
+| Area                          | Outcome                                                                                                     |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Foundation and renderer       | Canonical schemas, registered components, responsive rendering, fixtures and storage adapters.              |
+| Visual editor                 | Page/locale context, selection, manual section operations, device modes and undo/redo.                      |
+| Controlled proposals          | Selected-section, current-page and whole-storefront scope with review, accept, reject and stale protection. |
+| Real provider                 | Secure OpenAI adapter through the same structured and guarded lifecycle as the mock provider.               |
+| Atomic storefront application | Multi-page and brand-system changes apply and undo as one history transaction.                              |
+| Draft and publishing          | Separate draft, save and publish flows with history and restore architecture.                               |
+| Real merchant fixture         | Karvonen catalogue and local assets render without changing protected product truth.                        |
+| End-to-end proof              | Real prompt → validated proposal → atomic acceptance → undo/redo → save → publish succeeded.                |
 
 These capabilities are not future work and must not be rebuilt.
 
 ## 3. Real-provider findings
 
-| Finding | Roadmap consequence |
-|---|---|
-| Whole-storefront safe lifecycle works. | Keep architecture; harden only confirmed failures. |
-| Premium prompt produced a coherent redesign. | Invest in component variety and page depth. |
-| Detailed exact-palette prompt was rejected safely. | Expand approved palette intent and token operations. |
+| Finding                                            | Roadmap consequence                                          |
+| -------------------------------------------------- | ------------------------------------------------------------ |
+| Whole-storefront safe lifecycle works.             | Keep architecture; harden only confirmed failures.           |
+| Premium prompt produced a coherent redesign.       | Invest in component variety and page depth.                  |
+| Detailed exact-palette prompt was rejected safely. | Expand approved palette intent and token operations.         |
 | Aurum/demo copy leaked into Karvonen presentation. | Remove fixture defaults and strengthen source-aware binding. |
-| Karvonen needed explicit bootstrap wiring. | Add reliable load/reset demo workflows. |
-| Editor still looks like a development tool. | Build the native Storefront Studio merchant shell. |
+| Karvonen needed explicit bootstrap wiring.         | Add reliable load/reset demo workflows.                      |
+| Editor still looks like a development tool.        | Build the native Storefront Studio merchant shell.           |
 
 ## 4. Remaining phases
 
@@ -222,12 +222,12 @@ These capabilities are not future work and must not be rebuilt.
 
 After the v1.2 documentation PR merges:
 
-| Window | Task | Outcome | Overlap rule |
-|---|---|---|---|
-| W1 | **P5-01 Component registry v2 and commerce-presentation contracts** | Define component, binding, product-presentation, blueprint and conformance contracts. | Shared contract branch; merge first. |
-| W2 | **P10-01 Storefront Studio shell foundation** | Implement native shell, workspace header and compact rails. | Presentation-only; do not alter W1 contracts. |
-| W3 | **P7-01 Source discovery and Storefront Design Brief contracts** | Define source evidence, provenance, asset inventory, reconciliation and brief schemas with deterministic fixtures. | New source/onboarding modules; do not alter component registry. |
-| W4 | **Manual testing only** | Preserve real-provider Karvonen environment. | No Codex task unless explicitly assigned. |
+| Window | Task                                                                | Outcome                                                                                                            | Overlap rule                                                    |
+| ------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| W1     | **P5-01 Component registry v2 and commerce-presentation contracts** | Define component, binding, product-presentation, blueprint and conformance contracts.                              | Shared contract branch; merge first.                            |
+| W2     | **P10-01 Storefront Studio shell foundation**                       | Implement native shell, workspace header and compact rails.                                                        | Presentation-only; do not alter W1 contracts.                   |
+| W3     | **P7-01 Source discovery and Storefront Design Brief contracts**    | Define source evidence, provenance, asset inventory, reconciliation and brief schemas with deterministic fixtures. | New source/onboarding modules; do not alter component registry. |
+| W4     | **Manual testing only**                                             | Preserve real-provider Karvonen environment.                                                                       | No Codex task unless explicitly assigned.                       |
 
 ## 6. Merge sequence
 
