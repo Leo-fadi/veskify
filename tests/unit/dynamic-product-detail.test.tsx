@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import {
   dynamicProductDetailComponentByTarget,
@@ -262,6 +263,21 @@ function rendererInput(
   product: ProductPresentationContext,
   overrides: Partial<DynamicProductDetailRendererInput> = {},
 ): DynamicProductDetailRendererInput {
+  const selectedValues = product.selectedValues.flatMap((selection) =>
+    "valueId" in selection ? [{ groupId: selection.groupId, valueId: selection.valueId }] : [],
+  );
+  const textEntryValues = product.selectedValues.flatMap((selection) =>
+    "enteredText" in selection
+      ? [
+          {
+            groupId: selection.groupId,
+            value: selection.enteredText,
+            valid: selection.complete,
+            validationMessages: [],
+          },
+        ]
+      : [],
+  );
   return {
     target: "preview",
     instance: instance(product),
@@ -277,9 +293,44 @@ function rendererInput(
     activeLocale: "en",
     primaryLocale: "en",
     primaryAction: { enabled: true, state: "ready" },
+    resolvedOptions: {
+      productId: product.productId,
+      catalogueRevision: product.revision,
+      selectedValues,
+      textEntryValues,
+      incompleteRequiredGroupIds: product.optionGroups.flatMap((optionGroup) => {
+        if (!optionGroup.required) return [];
+        const completed = product.selectedValues.find(
+          (selection) => selection.groupId === optionGroup.id,
+        )?.complete;
+        return completed ? [] : [optionGroup.id];
+      }),
+      disabledOptionValues: product.optionGroups.flatMap((optionGroup) =>
+        optionGroup.values.flatMap((optionValue) =>
+          optionValue.disabled
+            ? [
+                {
+                  groupId: optionGroup.id,
+                  valueId: optionValue.id,
+                  reasons: ["canonical" as const],
+                },
+              ]
+            : [],
+        ),
+      ),
+      unavailableCombinations: product.unavailableCombinations,
+      dependencyState: product.optionGroups.map((optionGroup) => ({
+        groupId: optionGroup.id,
+        satisfied: true,
+        unmetGroupIds: [],
+      })),
+      resolvedConfiguration: { kind: "baseProduct" },
+      canAddToCart: true,
+    },
     resolveAssetUrl: (assetId) => `/seed-assets/${assetId}.svg`,
     onSelectOption: vi.fn(),
     onTextOptionChange: vi.fn(),
+    onPrimaryAction: vi.fn(),
     ...overrides,
   };
 }
@@ -376,7 +427,10 @@ describe("P6-02 dynamic product-detail component family", () => {
     expect(engraving).toHaveValue("Leo 2026");
     expect(engraving).toHaveAttribute("maxlength", "20");
     expect(engraving).toHaveAttribute("minlength", "2");
-    expect(engraving).toHaveAccessibleDescription(/8\/20.*lettersNumbersAndSpaces/i);
+    expect(engraving).toHaveAccessibleDescription(
+      /8\/20 characters.*Allowed length: 2-20.*letters, numbers, spaces and common punctuation/i,
+    );
+    expect(screen.queryByText(/lettersNumbersAndSpaces/i)).not.toBeInTheDocument();
     fireEvent.change(engraving, { target: { value: "LF 2026" } });
     expect(onTextOptionChange).toHaveBeenCalledWith("engraving", "LF 2026");
   });
@@ -551,5 +605,284 @@ describe("P6-02 dynamic product-detail component family", () => {
       "data-asset-provenance",
       "canonicalProductMedia",
     );
+  });
+
+  it("emits one typed primary-action intent without performing commerce mutations", async () => {
+    const user = userEvent.setup();
+    const onPrimaryAction = vi.fn();
+    render(renderDynamicProductDetail(rendererInput(watchProduct, { onPrimaryAction })));
+
+    await user.click(screen.getByRole("button", { name: "Add to cart" }));
+
+    expect(onPrimaryAction).toHaveBeenCalledTimes(1);
+    expect(onPrimaryAction).toHaveBeenCalledWith({
+      type: "activatePrimaryProductAction",
+      action: "addToCart",
+      productId: "product_watch",
+      catalogueRevision: "product-rev-watch",
+      resolvedConfiguration: { kind: "baseProduct" },
+      selectedValues: [{ groupId: "colour", valueId: "colour_silver" }],
+      textEntries: [],
+    });
+  });
+
+  it("does not emit a primary-action intent while the supplied action is disabled", () => {
+    const onPrimaryAction = vi.fn();
+    render(
+      renderDynamicProductDetail(
+        rendererInput(watchProduct, {
+          onPrimaryAction,
+          primaryAction: {
+            enabled: false,
+            state: "unavailable",
+            message: localized("This product is unavailable."),
+          },
+        }),
+      ),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
+    expect(onPrimaryAction).not.toHaveBeenCalled();
+  });
+
+  it("honours supplied unavailable-combination state and never resolves combinations in React", () => {
+    const product = structuredClone(watchProduct);
+    product.optionGroups[0].values.push(value("colour", "gold"));
+    product.unavailableCombinations = [
+      {
+        selections: [{ groupId: "colour", valueId: "colour_gold" }],
+        reason: localized("This colour is unavailable for the current configuration."),
+      },
+    ];
+    const input = rendererInput(product);
+    input.resolvedOptions = {
+      ...input.resolvedOptions,
+      disabledOptionValues: [
+        {
+          groupId: "colour",
+          valueId: "colour_gold",
+          reasons: ["unavailableCombination"],
+        },
+      ],
+    };
+    const onSelectOption = vi.fn();
+    input.onSelectOption = onSelectOption;
+    render(renderDynamicProductDetail(input));
+
+    const gold = screen.getByRole("button", { name: "gold" });
+    expect(gold).toBeDisabled();
+    expect(gold).toHaveAccessibleDescription("Unavailable with the current selection.");
+    fireEvent.click(gold);
+    expect(onSelectOption).not.toHaveBeenCalled();
+
+    const malformed = rendererInput(product);
+    malformed.resolvedOptions = { ...malformed.resolvedOptions, unavailableCombinations: [] };
+    expect(() => renderDynamicProductDetail(malformed)).toThrow(
+      /must preserve canonical unavailable combinations/i,
+    );
+  });
+
+  it("renders dependency-blocked controls with accessible guidance and emits no intent", () => {
+    const product = structuredClone(ringProduct);
+    const karat = product.optionGroups.find((optionGroup) => optionGroup.id === "karat")!;
+    karat.dependsOn = [{ groupId: "size" }];
+    const input = rendererInput(product);
+    input.resolvedOptions = {
+      ...input.resolvedOptions,
+      dependencyState: input.resolvedOptions.dependencyState.map((state) =>
+        state.groupId === "karat"
+          ? { groupId: "karat", satisfied: false, unmetGroupIds: ["size"] }
+          : state,
+      ),
+      disabledOptionValues: [
+        ...input.resolvedOptions.disabledOptionValues,
+        ...karat.values.map((optionValue) => ({
+          groupId: "karat",
+          valueId: optionValue.id,
+          reasons: ["dependency" as const],
+        })),
+      ],
+    };
+    const onSelectOption = vi.fn();
+    input.onSelectOption = onSelectOption;
+    render(renderDynamicProductDetail(input));
+
+    const select = screen.getByRole("combobox", { name: /karat/i });
+    expect(select).toBeDisabled();
+    expect(select).toHaveAccessibleDescription("Choose first: size.");
+    fireEvent.change(select, { target: { value: "karat_18k" } });
+    expect(onSelectOption).not.toHaveBeenCalled();
+  });
+
+  it("uses supplied resolved selections instead of deriving selection state from the product", () => {
+    const product = structuredClone(watchProduct);
+    product.optionGroups[0].values.push(value("colour", "gold"));
+    const input = rendererInput(product);
+    input.resolvedOptions = {
+      ...input.resolvedOptions,
+      selectedValues: [{ groupId: "colour", valueId: "colour_gold" }],
+    };
+    render(renderDynamicProductDetail(input));
+
+    expect(screen.getByRole("button", { name: "gold" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "silver" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("allows the optional related-products binding to be omitted", () => {
+    const input = rendererInput(ringProduct);
+    input.instance = instance(ringProduct, {
+      bindings: [
+        {
+          slotId: "primaryProduct",
+          source: "product",
+          productId: ringProduct.productId,
+          revision: ringProduct.revision,
+        },
+      ],
+      assetAssignments: [],
+    });
+    render(renderDynamicProductDetail(input));
+
+    expect(screen.queryByRole("heading", { name: "Related wedding ring" })).not.toBeInTheDocument();
+  });
+
+  it("requires a present related-products binding to match canonical IDs exactly", () => {
+    const input = rendererInput(ringProduct);
+    input.projection = {
+      ...(input.projection as object),
+      products: [ringProduct, relatedRing, watchProduct],
+    };
+    input.instance = instance(ringProduct, {
+      bindings: [
+        {
+          slotId: "primaryProduct",
+          source: "product",
+          productId: ringProduct.productId,
+          revision: ringProduct.revision,
+        },
+        {
+          slotId: "relatedProducts",
+          source: "productList",
+          productIds: [watchProduct.productId],
+          revision: "product-list-rev-1",
+        },
+      ],
+    });
+
+    expect(() => renderDynamicProductDetail(input)).toThrow(/must exactly match/i);
+  });
+
+  it("localizes every text character policy in EN and FI without exposing enum names", () => {
+    const policies = [
+      {
+        policy: "unicodeText" as const,
+        en: "control characters are not allowed",
+        fi: "ohjausmerkkejä ei sallita",
+      },
+      {
+        policy: "lettersAndSpaces" as const,
+        en: "apostrophes and hyphens only",
+        fi: "heittomerkkejä ja yhdysmerkkejä",
+      },
+      {
+        policy: "lettersNumbersAndSpaces" as const,
+        en: "common punctuation only",
+        fi: "yleisiä välimerkkejä",
+      },
+      {
+        policy: "asciiPrintable" as const,
+        en: "standard Latin letters",
+        fi: "latinalaisia peruskirjaimia",
+      },
+    ];
+
+    for (const { policy, en, fi } of policies) {
+      const product = structuredClone(ringProduct);
+      product.optionGroups.find(
+        (optionGroup) => optionGroup.id === "engraving",
+      )!.textEntryConstraints!.characterPolicy = policy;
+      const engravingSelection = product.selectedValues.find(
+        (selection) => selection.groupId === "engraving",
+      );
+      if (engravingSelection && "enteredText" in engravingSelection) {
+        engravingSelection.enteredText = "Leo";
+      }
+      const english = render(renderDynamicProductDetail(rendererInput(product)));
+      expect(screen.getByRole("textbox", { name: /engraving/i })).toHaveAccessibleDescription(
+        new RegExp(en, "i"),
+      );
+      expect(english.container).not.toHaveTextContent(policy);
+      english.unmount();
+
+      const finnish = render(
+        renderDynamicProductDetail(
+          rendererInput(product, { activeLocale: "fi", primaryLocale: "fi" }),
+        ),
+      );
+      expect(screen.getByRole("textbox", { name: /engraving/i })).toHaveAccessibleDescription(
+        new RegExp(fi, "i"),
+      );
+      expect(finnish.container).not.toHaveTextContent(policy);
+      finnish.unmount();
+    }
+  });
+
+  it("rejects unknown text character policies at the canonical schema boundary", () => {
+    const invalid = structuredClone(ringProduct);
+    Object.assign(
+      invalid.optionGroups.find((optionGroup) => optionGroup.id === "engraving")!
+        .textEntryConstraints!,
+      { characterPolicy: "rawDeveloperPolicy" },
+    );
+
+    expect(() => renderDynamicProductDetail(rendererInput(invalid))).toThrow();
+  });
+
+  it("uses explicit approved media assignments and approved canonical fallback media", () => {
+    const explicit = render(renderDynamicProductDetail(rendererInput(watchProduct)));
+    expect(explicit.container.querySelector('[data-asset-id="asset_watch_main"]')).toBeVisible();
+    explicit.unmount();
+
+    const fallback = rendererInput(watchProduct);
+    fallback.instance = instance(watchProduct, { assetAssignments: [] });
+    const renderedFallback = render(renderDynamicProductDetail(fallback));
+    expect(
+      renderedFallback.container.querySelector('[data-asset-id="asset_watch_main"]'),
+    ).toHaveAttribute("data-asset-provenance", "canonicalProductMedia");
+  });
+
+  it("rejects unknown or unapproved fallback media while zero-media products render safely", () => {
+    const unknown = rendererInput(watchProduct);
+    unknown.instance = instance(watchProduct, { assetAssignments: [] });
+    unknown.projection = { ...(unknown.projection as object), assets: [] };
+    expect(() => renderDynamicProductDetail(unknown)).toThrow(/missing from inventory/i);
+
+    const unapproved = rendererInput(watchProduct);
+    unapproved.instance = instance(watchProduct, { assetAssignments: [] });
+    unapproved.projection = {
+      ...(unapproved.projection as object),
+      assets: [asset("asset_watch_main", "productMainImage", "rejected")],
+    };
+    expect(() => renderDynamicProductDetail(unapproved)).toThrow(/not approved/i);
+
+    const product = structuredClone(watchProduct);
+    product.productId = "product_no_media";
+    product.revision = "product-rev-no-media";
+    product.media = [];
+    const noMedia = rendererInput(product);
+    noMedia.instance = instance(product, { assetAssignments: [] });
+    render(renderDynamicProductDetail(noMedia));
+    expect(screen.getByText("Product media is unavailable.")).toBeVisible();
+  });
+
+  it("documents the final dynamicProductDetail binding and renderer contract", () => {
+    const sdd = readFileSync("docs/VESKIFY_SDD.md", "utf8");
+
+    expect(sdd).toContain("Registered `dynamicProductDetail` contract");
+    expect(sdd).toContain("`primaryProduct`");
+    expect(sdd).toContain("`relatedProducts`");
+    expect(sdd).toContain("`productMedia`");
+    expect(sdd).toContain("primary-action intent");
+    expect(sdd).toContain("P6 option-resolution engine");
   });
 });

@@ -1,15 +1,17 @@
 "use client";
 
-import { useId, useState, type CSSProperties } from "react";
+import { useId, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { z } from "zod";
 import {
   componentProjectionContextSchema,
+  unavailableCombinationSchema,
   type ProductPresentationContext,
   type StorefrontAssetMetadata,
 } from "@/domain/component-platform";
 import {
   assetRefSchema,
+  idSchema,
   localeSchema,
   localizedTextSchema,
   resolveLocalizedText,
@@ -18,6 +20,7 @@ import {
   type Locale,
   type LocalizedText,
 } from "@/domain/shared";
+import { canonicalValueString } from "@/domain/storefront";
 import {
   dynamicProductDetailContentSchema,
   dynamicProductDetailPropsSchema,
@@ -57,6 +60,102 @@ export type ProductOptionIntentCallbacks = {
   onTextOptionChange: (groupId: string, enteredValue: string) => void;
 };
 
+const resolvedConfigurationSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("baseProduct") }).strict(),
+  z.object({ kind: z.literal("variant"), variantId: idSchema }).strict(),
+  z.object({ kind: z.literal("configuration"), configurationId: idSchema }).strict(),
+]);
+
+const selectedEnumeratedValueSchema = z.object({ groupId: idSchema, valueId: idSchema }).strict();
+
+const resolvedTextEntrySchema = z
+  .object({
+    groupId: idSchema,
+    value: z.string().max(500),
+    valid: z.boolean(),
+    validationMessages: z.array(z.string().trim().min(1)),
+  })
+  .strict();
+
+export const dynamicProductOptionPresentationSchema = z
+  .object({
+    productId: idSchema,
+    catalogueRevision: z.string().trim().min(1).max(120),
+    selectedValues: z.array(selectedEnumeratedValueSchema),
+    textEntryValues: z.array(resolvedTextEntrySchema),
+    incompleteRequiredGroupIds: z.array(idSchema),
+    disabledOptionValues: z.array(
+      z
+        .object({
+          groupId: idSchema,
+          valueId: idSchema,
+          reasons: z
+            .array(z.enum(["canonical", "dependency", "unavailableCombination", "resolver"]))
+            .min(1),
+        })
+        .strict(),
+    ),
+    unavailableCombinations: z.array(unavailableCombinationSchema),
+    dependencyState: z.array(
+      z
+        .object({
+          groupId: idSchema,
+          satisfied: z.boolean(),
+          unmetGroupIds: z.array(idSchema),
+        })
+        .strict(),
+    ),
+    resolvedConfiguration: resolvedConfigurationSchema.optional(),
+    canAddToCart: z.boolean(),
+  })
+  .passthrough();
+
+type DeepReadonly<Value> = Value extends (...args: never[]) => unknown
+  ? Value
+  : Value extends readonly (infer Item)[]
+    ? readonly DeepReadonly<Item>[]
+    : Value extends object
+      ? { readonly [Key in keyof Value]: DeepReadonly<Value[Key]> }
+      : Value;
+
+type ParsedDynamicProductOptionPresentation = z.infer<
+  typeof dynamicProductOptionPresentationSchema
+>;
+
+export type DynamicProductOptionPresentation = DeepReadonly<
+  Pick<
+    ParsedDynamicProductOptionPresentation,
+    | "productId"
+    | "catalogueRevision"
+    | "selectedValues"
+    | "textEntryValues"
+    | "incompleteRequiredGroupIds"
+    | "disabledOptionValues"
+    | "unavailableCombinations"
+    | "dependencyState"
+    | "resolvedConfiguration"
+    | "canAddToCart"
+  >
+>;
+
+export const productPrimaryActionIntentSchema = z
+  .object({
+    type: z.literal("activatePrimaryProductAction"),
+    action: z.literal("addToCart"),
+    productId: idSchema,
+    catalogueRevision: z.string().trim().min(1).max(120),
+    resolvedConfiguration: resolvedConfigurationSchema.optional(),
+    selectedValues: z.array(selectedEnumeratedValueSchema),
+    textEntries: z.array(z.object({ groupId: idSchema, value: z.string().max(500) }).strict()),
+  })
+  .strict();
+
+export type ProductPrimaryActionIntent = z.infer<typeof productPrimaryActionIntentSchema>;
+
+export type ProductPrimaryActionIntentCallback = (
+  intent: ProductPrimaryActionIntent,
+) => void | Promise<void>;
+
 export type DynamicProductDetailRendererInput = ProductOptionIntentCallbacks & {
   target: "editor" | "preview" | "published";
   instance: unknown;
@@ -64,7 +163,9 @@ export type DynamicProductDetailRendererInput = ProductOptionIntentCallbacks & {
   activeLocale: Locale;
   primaryLocale: Locale;
   primaryAction: ProductPrimaryActionPresentation;
+  resolvedOptions: DynamicProductOptionPresentation;
   resolveAssetUrl: (assetId: string) => string;
+  onPrimaryAction: ProductPrimaryActionIntentCallback;
 };
 
 type ResolvedAsset = {
@@ -83,7 +184,9 @@ type PreparedDynamicProductDetail = ProductOptionIntentCallbacks & {
   activeLocale: Locale;
   primaryLocale: Locale;
   primaryAction: ProductPrimaryActionPresentation;
+  resolvedOptions: DynamicProductOptionPresentation;
   assetFor: (assetId: string, alt?: LocalizedText) => ResolvedAsset;
+  onPrimaryAction: ProductPrimaryActionIntentCallback;
 };
 
 const arraysEqual = (left: readonly string[], right: readonly string[]) =>
@@ -130,6 +233,92 @@ function requiredAssetRoles(
   return required;
 }
 
+function validateResolvedOptionPresentation(
+  input: unknown,
+  product: ProductPresentationContext,
+): DynamicProductOptionPresentation {
+  const resolved = dynamicProductOptionPresentationSchema.parse(input);
+  if (resolved.productId !== product.productId || resolved.catalogueRevision !== product.revision) {
+    throw new Error("Resolved PDP option state must match the canonical product revision.");
+  }
+  if (
+    canonicalValueString(resolved.unavailableCombinations) !==
+    canonicalValueString(product.unavailableCombinations)
+  ) {
+    throw new Error("Resolved PDP option state must preserve canonical unavailable combinations.");
+  }
+
+  const groups = new Map(product.optionGroups.map((group) => [group.id, group]));
+  const groupIds = product.optionGroups.map((group) => group.id);
+  if (
+    !arraysEqual(
+      resolved.dependencyState.map((state) => state.groupId),
+      groupIds,
+    )
+  ) {
+    throw new Error("Resolved PDP dependency state must cover option groups in canonical order.");
+  }
+  const ensureUnique = (keys: readonly string[], message: string) => {
+    if (new Set(keys).size !== keys.length) throw new Error(message);
+  };
+  ensureUnique(
+    resolved.selectedValues.map((selection) => selection.groupId),
+    "Resolved PDP selections must contain at most one value per group.",
+  );
+  ensureUnique(
+    resolved.textEntryValues.map((entry) => entry.groupId),
+    "Resolved PDP text state must contain at most one value per group.",
+  );
+  ensureUnique(
+    resolved.disabledOptionValues.map((value) => `${value.groupId}:${value.valueId}`),
+    "Resolved PDP disabled values must be unique.",
+  );
+  ensureUnique(
+    resolved.incompleteRequiredGroupIds,
+    "Resolved PDP incomplete required groups must be unique.",
+  );
+
+  resolved.selectedValues.forEach((selection) => {
+    const group = groups.get(selection.groupId);
+    if (
+      !group ||
+      group.presentation === "textInput" ||
+      !group.values.some((value) => value.id === selection.valueId)
+    ) {
+      throw new Error("Resolved PDP selections must reference canonical enumerated values.");
+    }
+  });
+  resolved.textEntryValues.forEach((entry) => {
+    if (groups.get(entry.groupId)?.presentation !== "textInput") {
+      throw new Error("Resolved PDP text state must reference canonical text-option groups.");
+    }
+  });
+  resolved.disabledOptionValues.forEach((disabled) => {
+    const group = groups.get(disabled.groupId);
+    if (
+      !group ||
+      group.presentation === "textInput" ||
+      !group.values.some((value) => value.id === disabled.valueId)
+    ) {
+      throw new Error("Resolved PDP disabled state must reference canonical option values.");
+    }
+  });
+  resolved.dependencyState.forEach((state) => {
+    if (state.unmetGroupIds.some((groupId) => !groups.has(groupId))) {
+      throw new Error("Resolved PDP dependency state references an unknown prerequisite group.");
+    }
+    if (state.satisfied !== (state.unmetGroupIds.length === 0)) {
+      throw new Error("Resolved PDP dependency state is internally inconsistent.");
+    }
+  });
+  resolved.incompleteRequiredGroupIds.forEach((groupId) => {
+    if (!groups.get(groupId)?.required) {
+      throw new Error("Resolved PDP incomplete state must reference required option groups.");
+    }
+  });
+  return resolved;
+}
+
 function prepareDynamicProductDetail(
   input: DynamicProductDetailRendererInput,
 ): PreparedDynamicProductDetail {
@@ -155,34 +344,51 @@ function prepareDynamicProductDetail(
   const relatedBinding = instance.bindings.find(
     (binding) => binding.slotId === "relatedProducts" && binding.source === "productList",
   );
-  const relatedIds =
-    relatedBinding?.source === "productList" ? relatedBinding.productIds : ([] as string[]);
-  if (!arraysEqual(relatedIds, product.relatedProductIds)) {
+  if (
+    relatedBinding?.source === "productList" &&
+    !arraysEqual(relatedBinding.productIds, product.relatedProductIds)
+  ) {
     throw new Error(
       "Related-product bindings must exactly match the canonical product presentation context.",
     );
   }
+  const relatedIds =
+    relatedBinding?.source === "productList" ? relatedBinding.productIds : ([] as string[]);
   const relatedProducts = relatedIds.map((productId) => {
     const related = projection.products.find((candidate) => candidate.productId === productId);
     if (!related) throw new Error(`Unknown related product: ${productId}.`);
     return related;
   });
 
+  const resolvedOptions = validateResolvedOptionPresentation(input.resolvedOptions, product);
   const requiredAssets = requiredAssetRoles(product, relatedProducts);
   const assignedAssets = new Map(
     instance.assetAssignments.map((assignment) => [assignment.assetId, assignment.role]),
   );
-  for (const [assetId, expectedRole] of requiredAssets) {
-    if (assignedAssets.get(assetId) !== expectedRole) {
-      throw new Error(`Missing canonical PDP asset assignment: ${assetId}.`);
-    }
-  }
-  for (const assetId of assignedAssets.keys()) {
-    if (!requiredAssets.has(assetId)) {
-      throw new Error(`Unused PDP asset assignment is not permitted: ${assetId}.`);
-    }
-  }
   const assetMetadata = new Map(projection.assets.map((asset) => [asset.assetId, asset]));
+  if (assignedAssets.size > 0) {
+    for (const [assetId, expectedRole] of requiredAssets) {
+      if (assignedAssets.get(assetId) !== expectedRole) {
+        throw new Error(`Missing canonical PDP asset assignment: ${assetId}.`);
+      }
+    }
+    for (const assetId of assignedAssets.keys()) {
+      if (!requiredAssets.has(assetId)) {
+        throw new Error(`Unused PDP asset assignment is not permitted: ${assetId}.`);
+      }
+    }
+  } else {
+    for (const [assetId, expectedRole] of requiredAssets) {
+      const metadata = assetMetadata.get(assetId);
+      if (!metadata) throw new Error(`Canonical PDP media is missing from inventory: ${assetId}.`);
+      if (metadata.approvalStatus !== "approved") {
+        throw new Error(`Canonical PDP media is not approved: ${assetId}.`);
+      }
+      if (metadata.role !== expectedRole) {
+        throw new Error(`Canonical PDP media role does not match metadata: ${assetId}.`);
+      }
+    }
+  }
 
   return {
     target: input.target,
@@ -195,12 +401,18 @@ function prepareDynamicProductDetail(
     activeLocale: localeSchema.parse(input.activeLocale),
     primaryLocale: localeSchema.parse(input.primaryLocale),
     primaryAction: productPrimaryActionPresentationSchema.parse(input.primaryAction),
+    resolvedOptions,
     onSelectOption: input.onSelectOption,
     onTextOptionChange: input.onTextOptionChange,
+    onPrimaryAction: input.onPrimaryAction,
     assetFor(assetId, alt) {
       const metadata = assetMetadata.get(assetId);
       if (!metadata || metadata.approvalStatus !== "approved") {
         throw new Error(`PDP media requires approved asset metadata: ${assetId}.`);
+      }
+      const expectedRole = requiredAssets.get(assetId);
+      if (!expectedRole || metadata.role !== expectedRole) {
+        throw new Error(`PDP media requires its canonical approved role: ${assetId}.`);
       }
       const asset = assetRefSchema.parse({
         id: assetId,
@@ -379,8 +591,78 @@ export function DynamicProductIdentity({
   );
 }
 
-function selectedState(product: ProductPresentationContext, groupId: string) {
-  return product.selectedValues.find((selection) => selection.groupId === groupId);
+function selectedEnumeratedState(resolved: DynamicProductOptionPresentation, groupId: string) {
+  return resolved.selectedValues.find((selection) => selection.groupId === groupId);
+}
+
+function selectedTextState(resolved: DynamicProductOptionPresentation, groupId: string) {
+  return resolved.textEntryValues.find((entry) => entry.groupId === groupId);
+}
+
+function dependencyState(resolved: DynamicProductOptionPresentation, groupId: string) {
+  return resolved.dependencyState.find((state) => state.groupId === groupId)!;
+}
+
+function dependencyMessage(
+  product: ProductPresentationContext,
+  resolved: DynamicProductOptionPresentation,
+  groupId: string,
+  locale: LocaleContext,
+) {
+  const dependency = dependencyState(resolved, groupId);
+  if (dependency.satisfied) return undefined;
+  const labels = dependency.unmetGroupIds.map((dependencyId) => {
+    const group = product.optionGroups.find((candidate) => candidate.id === dependencyId)!;
+    return text(group.label, locale);
+  });
+  return locale.activeLocale === "fi"
+    ? `Valitse ensin: ${labels.join(", ")}.`
+    : `Choose first: ${labels.join(", ")}.`;
+}
+
+function resolvedValuePresentation(
+  product: ProductPresentationContext,
+  group: ProductPresentationContext["optionGroups"][number],
+  value: ProductPresentationContext["optionGroups"][number]["values"][number],
+  resolved: DynamicProductOptionPresentation,
+  locale: LocaleContext,
+) {
+  const resolvedDisabled = resolved.disabledOptionValues.find(
+    (candidate) => candidate.groupId === group.id && candidate.valueId === value.id,
+  );
+  const dependencyReason = dependencyMessage(product, resolved, group.id, locale);
+  const disabled =
+    value.disabled || resolvedDisabled !== undefined || dependencyReason !== undefined;
+  if (!disabled) return { disabled: false, reason: undefined } as const;
+  if (value.unavailableReason) {
+    return { disabled: true, reason: text(value.unavailableReason, locale) } as const;
+  }
+  if (dependencyReason) return { disabled: true, reason: dependencyReason } as const;
+  const reasons = resolvedDisabled?.reasons ?? [];
+  if (reasons.includes("unavailableCombination")) {
+    return {
+      disabled: true,
+      reason: fallbackLabel(
+        "Unavailable with the current selection.",
+        "Ei saatavilla nykyisellä valinnalla.",
+        locale,
+      ),
+    } as const;
+  }
+  if (reasons.includes("resolver")) {
+    return {
+      disabled: true,
+      reason: fallbackLabel(
+        "Unavailable for this product configuration.",
+        "Ei saatavilla tällä tuotekokoonpanolla.",
+        locale,
+      ),
+    } as const;
+  }
+  return {
+    disabled: true,
+    reason: fallbackLabel("Unavailable", "Ei saatavilla", locale),
+  } as const;
 }
 
 function OptionGroupStatus({
@@ -413,19 +695,22 @@ function EnumeratedOptionGroup({
   product,
   locale,
   assetFor,
+  resolvedOptions,
   onSelectOption,
 }: {
   group: ProductPresentationContext["optionGroups"][number];
   product: ProductPresentationContext;
   locale: LocaleContext;
   assetFor: PreparedDynamicProductDetail["assetFor"];
+  resolvedOptions: DynamicProductOptionPresentation;
   onSelectOption: ProductOptionIntentCallbacks["onSelectOption"];
 }) {
   const describedById = useId();
-  const selection = selectedState(product, group.id);
-  const selectedValueId =
-    selection && "valueId" in selection ? selection.valueId : group.selectedValueId;
-  const complete = selection?.complete ?? false;
+  const selection = selectedEnumeratedState(resolvedOptions, group.id);
+  const selectedValueId = selection?.valueId;
+  const complete = !resolvedOptions.incompleteRequiredGroupIds.includes(group.id);
+  const groupDependencyReason = dependencyMessage(product, resolvedOptions, group.id, locale);
+  const groupDependencyReasonId = `${describedById}-dependency`;
 
   if (group.presentation === "dropdown") {
     return (
@@ -435,12 +720,23 @@ function EnumeratedOptionGroup({
           <OptionGroupStatus complete={complete} locale={locale} required={group.required} />
         </label>
         {group.helpText ? <p id={describedById}>{text(group.helpText, locale)}</p> : null}
+        {groupDependencyReason ? <p id={groupDependencyReasonId}>{groupDependencyReason}</p> : null}
         <select
-          aria-describedby={group.helpText ? describedById : undefined}
+          aria-describedby={
+            [group.helpText ? describedById : undefined, groupDependencyReasonId]
+              .filter((id) => id && (id !== groupDependencyReasonId || groupDependencyReason))
+              .join(" ") || undefined
+          }
+          disabled={groupDependencyReason !== undefined}
           id={`${describedById}-select`}
           onChange={(event) => {
             const value = group.values.find((candidate) => candidate.id === event.target.value);
-            if (value && !value.disabled) onSelectOption(group.id, value.id);
+            if (
+              value &&
+              !resolvedValuePresentation(product, group, value, resolvedOptions, locale).disabled
+            ) {
+              onSelectOption(group.id, value.id);
+            }
           }}
           required={group.required}
           value={selectedValueId ?? ""}
@@ -448,14 +744,21 @@ function EnumeratedOptionGroup({
           <option value="">
             {fallbackLabel("Choose an option", "Valitse vaihtoehto", locale)}
           </option>
-          {group.values.map((value) => (
-            <option disabled={value.disabled} key={value.id} value={value.id}>
-              {text(value.label, locale)}
-              {value.disabled
-                ? ` — ${value.unavailableReason ? text(value.unavailableReason, locale) : fallbackLabel("unavailable", "ei saatavilla", locale)}`
-                : ""}
-            </option>
-          ))}
+          {group.values.map((value) => {
+            const presentation = resolvedValuePresentation(
+              product,
+              group,
+              value,
+              resolvedOptions,
+              locale,
+            );
+            return (
+              <option disabled={presentation.disabled} key={value.id} value={value.id}>
+                {text(value.label, locale)}
+                {presentation.reason ? ` — ${presentation.reason}` : ""}
+              </option>
+            );
+          })}
         </select>
       </div>
     );
@@ -469,28 +772,31 @@ function EnumeratedOptionGroup({
           <OptionGroupStatus complete={complete} locale={locale} required={group.required} />
         </legend>
         {group.helpText ? <p>{text(group.helpText, locale)}</p> : null}
-        {group.values.map((value) => (
-          <label key={value.id}>
-            <input
-              checked={selectedValueId === value.id}
-              disabled={value.disabled}
-              name={group.id}
-              onChange={() => {
-                if (!value.disabled) onSelectOption(group.id, value.id);
-              }}
-              type="radio"
-              value={value.id}
-            />
-            <span>{text(value.label, locale)}</span>
-            {value.disabled ? (
-              <small>
-                {value.unavailableReason
-                  ? text(value.unavailableReason, locale)
-                  : fallbackLabel("Unavailable", "Ei saatavilla", locale)}
-              </small>
-            ) : null}
-          </label>
-        ))}
+        {group.values.map((value) => {
+          const presentation = resolvedValuePresentation(
+            product,
+            group,
+            value,
+            resolvedOptions,
+            locale,
+          );
+          return (
+            <label key={value.id}>
+              <input
+                checked={selectedValueId === value.id}
+                disabled={presentation.disabled}
+                name={group.id}
+                onChange={() => {
+                  if (!presentation.disabled) onSelectOption(group.id, value.id);
+                }}
+                type="radio"
+                value={value.id}
+              />
+              <span>{text(value.label, locale)}</span>
+              {presentation.reason ? <small>{presentation.reason}</small> : null}
+            </label>
+          );
+        })}
       </fieldset>
     );
   }
@@ -505,6 +811,13 @@ function EnumeratedOptionGroup({
       <div className={styles.optionValues}>
         {group.values.map((value) => {
           const reasonId = `${describedById}-${value.id}`;
+          const presentation = resolvedValuePresentation(
+            product,
+            group,
+            value,
+            resolvedOptions,
+            locale,
+          );
           const image = value.swatch?.assetId
             ? assetFor(value.swatch.assetId, value.label)
             : undefined;
@@ -514,13 +827,13 @@ function EnumeratedOptionGroup({
           return (
             <div className={styles.optionValue} key={value.id}>
               <button
-                aria-describedby={value.disabled ? reasonId : undefined}
+                aria-describedby={presentation.disabled ? reasonId : undefined}
                 aria-label={text(value.label, locale)}
                 aria-pressed={selectedValueId === value.id}
                 className={`${styles.optionButton} ${styles[`option_${group.presentation}`]}`}
-                disabled={value.disabled}
+                disabled={presentation.disabled}
                 onClick={() => {
-                  if (!value.disabled) onSelectOption(group.id, value.id);
+                  if (!presentation.disabled) onSelectOption(group.id, value.id);
                 }}
                 style={swatchStyle}
                 type="button"
@@ -533,13 +846,7 @@ function EnumeratedOptionGroup({
                 ) : null}
                 <span>{text(value.label, locale)}</span>
               </button>
-              {value.disabled ? (
-                <small id={reasonId}>
-                  {value.unavailableReason
-                    ? text(value.unavailableReason, locale)
-                    : fallbackLabel("Unavailable", "Ei saatavilla", locale)}
-                </small>
-              ) : null}
+              {presentation.reason ? <small id={reasonId}>{presentation.reason}</small> : null}
             </div>
           );
         })}
@@ -552,45 +859,73 @@ function TextOptionGroup({
   group,
   product,
   locale,
+  resolvedOptions,
   onTextOptionChange,
 }: {
   group: ProductPresentationContext["optionGroups"][number];
   product: ProductPresentationContext;
   locale: LocaleContext;
+  resolvedOptions: DynamicProductOptionPresentation;
   onTextOptionChange: ProductOptionIntentCallbacks["onTextOptionChange"];
 }) {
   const inputId = useId();
   const constraintsId = `${inputId}-constraints`;
-  const selection = selectedState(product, group.id);
-  const enteredText = selection && "enteredText" in selection ? selection.enteredText : "";
+  const dependencyId = `${inputId}-dependency`;
+  const selection = selectedTextState(resolvedOptions, group.id);
+  const enteredText = selection?.value ?? "";
   const constraints = group.textEntryConstraints!;
+  const blockedReason = dependencyMessage(product, resolvedOptions, group.id, locale);
+  const policyGuidance: Record<typeof constraints.characterPolicy, { en: string; fi: string }> = {
+    unicodeText: {
+      en: "Letters, numbers, spaces and symbols are allowed; control characters are not allowed.",
+      fi: "Kirjaimet, numerot, välilyönnit ja symbolit sallitaan; ohjausmerkkejä ei sallita.",
+    },
+    lettersAndSpaces: {
+      en: "Use letters, spaces, apostrophes and hyphens only.",
+      fi: "Käytä vain kirjaimia, välilyöntejä, heittomerkkejä ja yhdysmerkkejä.",
+    },
+    lettersNumbersAndSpaces: {
+      en: "Use letters, numbers, spaces and common punctuation only.",
+      fi: "Käytä vain kirjaimia, numeroita, välilyöntejä ja yleisiä välimerkkejä.",
+    },
+    asciiPrintable: {
+      en: "Use standard Latin letters, numbers, spaces and common symbols only.",
+      fi: "Käytä vain latinalaisia peruskirjaimia, numeroita, välilyöntejä ja yleisiä symboleja.",
+    },
+  };
+  const constraintsDescription =
+    locale.activeLocale === "fi"
+      ? `${enteredText.length}/${constraints.maxLength} merkkiä. Sallittu pituus: ${constraints.minLength}-${constraints.maxLength} merkkiä. ${policyGuidance[constraints.characterPolicy].fi}`
+      : `${enteredText.length}/${constraints.maxLength} characters. Allowed length: ${constraints.minLength}-${constraints.maxLength} characters. ${policyGuidance[constraints.characterPolicy].en}`;
   return (
     <div className={styles.textOption} data-option-group-id={group.id}>
       <label htmlFor={inputId}>
         <span>{text(group.label, locale)}</span>
         <OptionGroupStatus
-          complete={selection?.complete ?? false}
+          complete={!resolvedOptions.incompleteRequiredGroupIds.includes(group.id)}
           locale={locale}
           required={group.required}
         />
       </label>
       {group.helpText ? <p>{text(group.helpText, locale)}</p> : null}
+      {blockedReason ? <p id={dependencyId}>{blockedReason}</p> : null}
       <input
-        aria-describedby={constraintsId}
+        aria-describedby={[constraintsId, blockedReason ? dependencyId : undefined]
+          .filter(Boolean)
+          .join(" ")}
+        disabled={blockedReason !== undefined}
         id={inputId}
         maxLength={constraints.maxLength}
         minLength={constraints.minLength}
-        onChange={(event) => onTextOptionChange(group.id, event.target.value)}
+        onChange={(event) => {
+          if (!blockedReason) onTextOptionChange(group.id, event.target.value);
+        }}
         placeholder={constraints.placeholder ? text(constraints.placeholder, locale) : undefined}
         required={group.required}
         type="text"
         value={enteredText}
       />
-      <small id={constraintsId}>
-        {fallbackLabel("Character limit", "Merkkiraja", locale)}: {enteredText.length}/
-        {constraints.maxLength}. {fallbackLabel("Policy", "Sääntö", locale)}:{" "}
-        {constraints.characterPolicy}.
-      </small>
+      <small id={constraintsId}>{constraintsDescription}</small>
     </div>
   );
 }
@@ -600,6 +935,7 @@ export function DynamicProductOptionGroups({
   locale,
   density,
   assetFor,
+  resolvedOptions,
   onSelectOption,
   onTextOptionChange,
 }: {
@@ -607,6 +943,7 @@ export function DynamicProductOptionGroups({
   locale: LocaleContext;
   density: DynamicProductDetailProps["optionDensity"];
   assetFor: PreparedDynamicProductDetail["assetFor"];
+  resolvedOptions: DynamicProductOptionPresentation;
 } & ProductOptionIntentCallbacks) {
   const headingId = useId();
   if (product.optionGroups.length === 0) return null;
@@ -627,6 +964,7 @@ export function DynamicProductOptionGroups({
             locale={locale}
             onTextOptionChange={onTextOptionChange}
             product={product}
+            resolvedOptions={resolvedOptions}
           />
         ) : (
           <EnumeratedOptionGroup
@@ -636,6 +974,7 @@ export function DynamicProductOptionGroups({
             locale={locale}
             onSelectOption={onSelectOption}
             product={product}
+            resolvedOptions={resolvedOptions}
           />
         ),
       )}
@@ -738,10 +1077,7 @@ export function DynamicRelatedProducts({
           return (
             <article key={product.productId}>
               {image ? (
-                <figure
-                  data-asset-id={media.assetId}
-                  data-asset-provenance={image.provenance.kind}
-                >
+                <figure data-asset-id={media.assetId} data-asset-provenance={image.provenance.kind}>
                   <ProductAssetImage asset={image.asset} locale={locale} />
                 </figure>
               ) : null}
@@ -765,13 +1101,54 @@ export function DynamicProductPrimaryAction({
   state,
   locale,
   sticky,
+  product,
+  resolvedOptions,
+  onPrimaryAction,
 }: {
   label: LocalizedText;
   state: ProductPrimaryActionPresentation;
   locale: LocaleContext;
   sticky: boolean;
+  product: ProductPresentationContext;
+  resolvedOptions: DynamicProductOptionPresentation;
+  onPrimaryAction: ProductPrimaryActionIntentCallback;
 }) {
   const messageId = useId();
+  const inFlight = useRef(false);
+  const [submitting, setSubmitting] = useState(false);
+  const emitPrimaryAction = () => {
+    if (!state.enabled || inFlight.current) return;
+    const intent = productPrimaryActionIntentSchema.parse({
+      type: "activatePrimaryProductAction",
+      action: "addToCart",
+      productId: product.productId,
+      catalogueRevision: resolvedOptions.catalogueRevision,
+      resolvedConfiguration: resolvedOptions.resolvedConfiguration,
+      selectedValues: resolvedOptions.selectedValues,
+      textEntries: resolvedOptions.textEntryValues.map((entry) => ({
+        groupId: entry.groupId,
+        value: entry.value,
+      })),
+    });
+    inFlight.current = true;
+    let result: void | Promise<void>;
+    try {
+      result = onPrimaryAction(intent);
+    } catch (error) {
+      inFlight.current = false;
+      throw error;
+    }
+    if (result instanceof Promise) {
+      setSubmitting(true);
+      const resetSubmission = () => {
+        inFlight.current = false;
+        setSubmitting(false);
+      };
+      void result.then(resetSubmission, resetSubmission);
+      return;
+    }
+    inFlight.current = false;
+  };
   return (
     <section
       aria-label={fallbackLabel("Purchase action", "Ostotoiminto", locale)}
@@ -780,8 +1157,9 @@ export function DynamicProductPrimaryAction({
     >
       <button
         aria-describedby={state.message ? messageId : undefined}
-        aria-disabled={!state.enabled}
-        disabled={!state.enabled}
+        aria-disabled={!state.enabled || submitting}
+        disabled={!state.enabled || submitting}
+        onClick={emitPrimaryAction}
         type="button"
       >
         {text(label, locale)}
@@ -832,10 +1210,14 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
             onSelectOption={input.onSelectOption}
             onTextOptionChange={input.onTextOptionChange}
             product={input.product}
+            resolvedOptions={input.resolvedOptions}
           />
           <DynamicProductPrimaryAction
             label={input.content.primaryActionLabel}
             locale={locale}
+            onPrimaryAction={input.onPrimaryAction}
+            product={input.product}
+            resolvedOptions={input.resolvedOptions}
             state={input.primaryAction}
             sticky={input.props.stickyMobileAction}
           />
