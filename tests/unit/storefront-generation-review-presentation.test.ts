@@ -4,6 +4,7 @@ import { createStorefrontGenerationReview } from "@/application/storefront-gener
 import {
   presentAssumptions,
   presentCreationAttention,
+  presentDiagnostics,
 } from "@/components/onboarding/storefront-generation-review-presentation";
 import { normalizeStorefrontDesignBriefInput } from "@/domain/design-brief";
 
@@ -68,6 +69,16 @@ describe("storefront generation review presentation", () => {
   it("reports no attention items for a creatable review", () => {
     const attention = presentCreationAttention(review(), "en");
     expect(attention).toEqual({ blockers: [], hasUncountedAttention: false });
+  });
+
+  it("maps omitted optional sections to distinct merchant notes", () => {
+    const diagnostics = presentDiagnostics(review(), "en");
+    const notes = diagnostics.notes.map(({ message }) => message);
+
+    expect(notes).toContain("The announcement bar was not added because it was not selected.");
+    expect(notes).toContain("The newsletter section was not added because it was not selected.");
+    expect(notes).toContain("Product options were not added because they were not requested.");
+    expect(new Set(notes).size).toBe(notes.length);
   });
 
   it("preserves the merchant-copy translation limitation in EN and FI", () => {

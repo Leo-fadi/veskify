@@ -2,8 +2,8 @@
   width: min(100%, 72rem);
   margin: 0 auto;
   padding: clamp(1rem, 4vw, 3rem);
-  color: var(--brand-color-text, #1d1a16);
-  background: var(--brand-color-background, #fffcf7);
+  color: var(--vesko-app-text, #173324);
+  background: var(--vesko-app-surface, #fff);
 }
 
 .visuallyHidden {
@@ -21,7 +21,7 @@
 
 .eyebrow {
   margin: 0;
-  color: var(--brand-color-primary, #8a5a2b);
+  color: var(--vesko-green-800, #005e2f);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.14em;
@@ -30,7 +30,7 @@
 
 .header h2 {
   margin: 0.35rem 0 0.5rem;
-  font-family: var(--brand-font-heading, Georgia, serif);
+  font-family: var(--vesko-app-font, sans-serif);
   font-size: clamp(1.8rem, 4vw, 3rem);
   line-height: 1.08;
 }
@@ -38,7 +38,7 @@
 .summary {
   max-width: 48rem;
   margin: 0;
-  color: var(--brand-color-muted-text, #5f574f);
+  color: var(--vesko-app-muted, #52685b);
   line-height: 1.55;
 }
 
@@ -48,11 +48,11 @@
   gap: 1rem 1.5rem;
   align-items: center;
   margin-bottom: 1.25rem;
-  border: 1px solid var(--brand-color-border, #ddd2c2);
-  border-radius: 1rem;
+  border: 1px solid var(--vesko-app-border, #cbd8cf);
+  border-radius: 0.75rem;
   padding: clamp(1rem, 3vw, 1.4rem);
-  background: var(--brand-color-surface, #fff);
-  box-shadow: 0 0.5rem 1.5rem rgb(56 42 22 / 6%);
+  background: var(--vesko-app-surface, #fff);
+  box-shadow: 0 0.35rem 1.25rem rgb(0 53 21 / 6%);
 }
 
 .readinessMain {
@@ -68,10 +68,9 @@
 }
 
 .readinessMain p,
-.diagnosticGroup > p,
 .noteContent > p {
   margin: 0.3rem 0 0;
-  color: var(--brand-color-muted-text, #5f574f);
+  color: var(--vesko-app-muted, #52685b);
   line-height: 1.5;
 }
 
@@ -108,20 +107,20 @@
 .noteCount {
   border-radius: 999px;
   padding: 0.3rem 0.65rem;
-  background: #eeeae4;
-  color: #514b45;
+  background: var(--vesko-information-bg, #edf5ef);
+  color: var(--vesko-app-text, #173324);
   font-size: 0.8rem;
   font-weight: 750;
 }
 
 .readinessCounts .countBlocked {
-  background: #fde5e5;
-  color: #8b1e1e;
+  background: var(--vesko-danger-bg, #fdecea);
+  color: var(--vesko-danger-text, #8b1e1e);
 }
 
 .readinessCounts .countWarning {
-  background: #fff2d5;
-  color: #79520b;
+  background: var(--vesko-warning-bg, #fff4dd);
+  color: var(--vesko-color-warning, #684800);
 }
 
 .jumpButton {
@@ -129,23 +128,13 @@
   justify-self: end;
   border: 0;
   padding: 0;
-  color: #8b1e1e;
-  background: transparent;
-  font: inherit;
   font-size: 0.9rem;
-  font-weight: 750;
   text-decoration: underline;
   text-underline-offset: 0.2em;
-  cursor: pointer;
 }
 
 .error {
   margin-bottom: 1rem;
-  border: 1px solid #b83232;
-  border-radius: 0.7rem;
-  padding: 0.85rem 1rem;
-  background: #fff0f0;
-  color: #7c1d1d;
 }
 
 .diagnosticGroups {
@@ -155,9 +144,7 @@
 }
 
 .diagnosticGroup {
-  border: 1px solid var(--brand-color-border, #ddd2c2);
-  border-radius: 0.85rem;
-  padding: 1rem;
+  padding: 0;
 }
 
 .diagnosticGroup:focus {
@@ -166,27 +153,32 @@
 }
 
 .blockerGroup {
-  border-color: #d88b8b;
-  background: #fff0f0;
+  scroll-margin-top: 1rem;
 }
 
-.blockerGroup h3,
-.blockerGroup .diagnosticList strong {
-  color: #8b1e1e;
+.blockerNotice,
+.warningNotice {
+  padding: 1rem;
 }
 
-.warningGroup {
-  border-color: #e0bd72;
-  background: #fff9ec;
+.blockerNotice h3,
+.warningNotice h3 {
+  margin: 0;
+  font-size: 1.1rem;
 }
 
-.warningGroup h3,
-.warningGroup .diagnosticList strong {
-  color: #79520b;
+.blockerNotice p,
+.warningNotice p {
+  margin: 0.3rem 0 0;
+  color: var(--vesko-app-muted, #52685b);
+  line-height: 1.5;
 }
 
 .noteGroup {
-  background: #f7f5f2;
+  border: 1px solid var(--vesko-app-border, #cbd8cf);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  background: var(--vesko-information-bg, #edf5ef);
 }
 
 .noteGroup > summary {
@@ -200,7 +192,7 @@
 
 .noteContent {
   margin-top: 0.75rem;
-  border-top: 1px solid var(--brand-color-border, #ddd2c2);
+  border-top: 1px solid var(--vesko-app-border, #cbd8cf);
   padding-top: 0.75rem;
 }
 
@@ -226,14 +218,14 @@
 }
 
 .diagnosticList span {
-  color: var(--brand-color-text, #1d1a16);
+  color: var(--vesko-app-text, #173324);
   line-height: 1.45;
 }
 
 .assumptionList,
 .factList {
   padding-left: 1.2rem;
-  color: var(--brand-color-muted-text, #5f574f);
+  color: var(--vesko-app-muted, #52685b);
   line-height: 1.45;
 }
 
@@ -243,10 +235,14 @@
 }
 
 .section {
-  border: 1px solid var(--brand-color-border, #ddd2c2);
-  border-radius: 0.9rem;
-  background: var(--brand-color-surface, #fff);
-  box-shadow: 0 0.35rem 1rem rgb(56 42 22 / 5%);
+  border: 1px solid var(--vesko-app-border, #cbd8cf);
+  border-radius: 0.75rem;
+  background: var(--vesko-app-surface, #fff);
+  box-shadow: 0 0.35rem 1rem rgb(0 53 21 / 5%);
+}
+
+.sectionDetails {
+  min-width: 0;
 }
 
 .sectionHeader {
@@ -270,7 +266,7 @@
 
 .sectionHeader p {
   margin: 0.25rem 0 0;
-  color: var(--brand-color-muted-text, #5f574f);
+  color: var(--vesko-app-muted, #52685b);
   line-height: 1.4;
 }
 
@@ -278,43 +274,13 @@
   content: "+";
   grid-column: 3;
   grid-row: 1;
-  color: var(--brand-color-primary, #8a5a2b);
+  color: var(--vesko-green-800, #005e2f);
   font-size: 1.25rem;
   font-weight: 800;
 }
 
-.section[open] > .sectionHeader::after {
+.sectionDetails[open] > .sectionHeader::after {
   content: "−";
-}
-
-.sectionStatus {
-  display: inline-flex;
-  width: fit-content;
-  align-items: center;
-  border-radius: 999px;
-  padding: 0.3rem 0.65rem;
-  font-size: 0.76rem;
-  font-weight: 750;
-}
-
-.section-complete {
-  background: #e5f3e8;
-  color: #185c2a;
-}
-
-.section-warning {
-  background: #fff2d5;
-  color: #79520b;
-}
-
-.section-blocked {
-  background: #fde5e5;
-  color: #8b1e1e;
-}
-
-.section-not-applicable {
-  background: #eeeae4;
-  color: #625d56;
 }
 
 .detailsHint {
@@ -327,7 +293,7 @@
 }
 
 .sectionContent {
-  border-top: 1px solid var(--brand-color-border, #ddd2c2);
+  border-top: 1px solid var(--vesko-app-border, #cbd8cf);
   padding: 0 1.1rem 1.1rem;
 }
 
@@ -345,7 +311,7 @@
 }
 
 .facts dt {
-  color: var(--brand-color-muted-text, #5f574f);
+  color: var(--vesko-app-muted, #52685b);
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -358,7 +324,7 @@
 .empty,
 .catalogueDescription {
   margin: 0.85rem 0 0;
-  color: var(--brand-color-muted-text, #5f574f);
+  color: var(--vesko-app-muted, #52685b);
   line-height: 1.5;
 }
 
@@ -370,7 +336,7 @@
 }
 
 .pageCard {
-  border: 1px solid var(--brand-color-border, #ddd2c2);
+  border: 1px solid var(--vesko-app-border, #cbd8cf);
   border-radius: 0.75rem;
   padding: 0.8rem;
 }
@@ -382,14 +348,14 @@
 
 .pageCard p {
   margin: 0.25rem 0 0;
-  color: var(--brand-color-muted-text, #5f574f);
+  color: var(--vesko-app-muted, #52685b);
   overflow-wrap: anywhere;
 }
 
 .disabledCopy {
   max-width: 36rem;
   margin: 0;
-  color: #8b1e1e;
+  color: var(--vesko-danger-text, #8b1e1e);
   font-size: 0.9rem;
   font-weight: 650;
 }
@@ -403,9 +369,9 @@
   gap: 1rem;
   align-items: center;
   margin: 1.5rem -0.5rem -0.5rem;
-  border-top: 1px solid var(--brand-color-border, #ddd2c2);
-  padding: 0.9rem 0.5rem 0.5rem;
-  background: color-mix(in srgb, var(--brand-color-background, #fffcf7) 94%, transparent);
+  border-top: 1px solid var(--vesko-app-border, #cbd8cf);
+  padding: 0.9rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--vesko-app-surface, #fff) 96%, transparent);
   backdrop-filter: blur(0.5rem);
 }
 
@@ -418,30 +384,14 @@
 
 .actions button {
   min-height: 2.75rem;
-  border: 1px solid var(--brand-color-primary, #8a5a2b);
-  border-radius: 0.65rem;
-  padding: 0.65rem 1rem;
-  font: inherit;
-  font-weight: 750;
-  cursor: pointer;
 }
 
 .actions button:focus-visible,
 .jumpButton:focus-visible,
 .sectionHeader:focus-visible,
 .noteGroup > summary:focus-visible {
-  outline: 3px solid var(--brand-color-accent, #d6a84f);
+  outline: 3px solid var(--vesko-green-600, #008c45);
   outline-offset: 3px;
-}
-
-.backButton {
-  background: transparent;
-  color: var(--brand-color-primary, #8a5a2b);
-}
-
-.confirmButton {
-  background: var(--brand-color-primary, #8a5a2b);
-  color: #fff;
 }
 
 .actions button:disabled {
@@ -473,7 +423,7 @@
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .sectionStatus {
+  .sectionHeader > span[aria-label] {
     grid-column: 1;
     margin-top: 0.25rem;
   }

@@ -1165,11 +1165,6 @@ export function OnboardingWizard({
             >
               {pendingExit === "dashboard" ? text.leaving : text.dashboard}
             </Button>
-            {preparedProject ? (
-              <Button disabled={exitUnavailable} onClick={() => void exitToDashboard("save")}>
-                {pendingExit === "save" ? text.saving : text.saveExit}
-              </Button>
-            ) : null}
           </>
         }
         locale={locale}
@@ -1243,8 +1238,11 @@ export function OnboardingWizard({
                   setCreationFailed(false);
                   void updateSession((session) => service.goBack(session));
                 }}
+                onSaveExit={() => void exitToDashboard("save")}
                 onConfirmCreate={() => void confirmProjectCreation()}
                 review={preparedProject.review}
+                saveExitDisabled={exitUnavailable}
+                saveExitLabel={pendingExit === "save" ? text.saving : text.saveExit}
               />
             ) : view.kind === "ready" ? (
               <ActiveStep

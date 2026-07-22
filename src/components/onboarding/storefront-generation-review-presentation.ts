@@ -66,7 +66,6 @@ const diagnosticCopy: Record<
       "Ensimmäisestä versiosta jätettiin pois valinnaiset osiot, joita ei pyydetty tai joille ei ollut sisältöä.",
     ),
     tone: "note",
-    grouped: true,
   },
   "preferred-colour-low-contrast": {
     title: copy("Accessible brand colours", "Saavutettavat brändivärit"),
@@ -265,6 +264,40 @@ function optionalCapabilityCopy(
   return null;
 }
 
+function optionalSlotCopy(
+  message: string,
+  locale: ReviewLocale,
+): Pick<MerchantDiagnostic, "title" | "message"> | null {
+  const mappings = [
+    {
+      match: /home\/announcement/i,
+      value: copy("Announcement bar", "Ilmoituspalkki"),
+      message: copy(
+        "The announcement bar was not added because it was not selected.",
+        "Ilmoituspalkkia ei lisätty, koska sitä ei valittu.",
+      ),
+    },
+    {
+      match: /home\/newsletter/i,
+      value: copy("Newsletter section", "Uutiskirjeosio"),
+      message: copy(
+        "The newsletter section was not added because it was not selected.",
+        "Uutiskirjeosiota ei lisätty, koska sitä ei valittu.",
+      ),
+    },
+    {
+      match: /product\/product-options/i,
+      value: copy("Product options", "Tuotevalinnat"),
+      message: copy(
+        "Product options were not added because they were not requested.",
+        "Tuotevalintoja ei lisätty, koska niitä ei pyydetty.",
+      ),
+    },
+  ] as const;
+  const mapping = mappings.find(({ match }) => match.test(message));
+  return mapping ? { title: mapping.value[locale], message: mapping.message[locale] } : null;
+}
+
 export function presentDiagnostics(
   review: StorefrontGenerationReview,
   locale: ReviewLocale,
@@ -287,11 +320,16 @@ export function presentDiagnostics(
       diagnostic.code === "OPTIONAL_CAPABILITY_UNAVAILABLE"
         ? optionalCapabilityCopy(diagnostic.message, locale)
         : null;
+    const slotCopy =
+      diagnostic.code === "optional-slot-omitted"
+        ? optionalSlotCopy(diagnostic.message, locale)
+        : null;
     presented.push({
       key,
       tone,
-      title: capabilityCopy?.title ?? mapped?.title[locale] ?? fallback.title,
-      message: capabilityCopy?.message ?? mapped?.message[locale] ?? fallback.message,
+      title: slotCopy?.title ?? capabilityCopy?.title ?? mapped?.title[locale] ?? fallback.title,
+      message:
+        slotCopy?.message ?? capabilityCopy?.message ?? mapped?.message[locale] ?? fallback.message,
     });
   });
 
