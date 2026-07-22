@@ -11,6 +11,7 @@ vi.mock("@puckeditor/core", () => ({
     config,
     data,
     onChange,
+    ui,
   }: {
     config: {
       root: {
@@ -19,11 +20,13 @@ vi.mock("@puckeditor/core", () => ({
     };
     data: { content: Array<{ type: string; props: Record<string, unknown> }> };
     onChange?: (data: unknown) => void;
+    ui?: { leftSideBarVisible?: boolean };
   }) => {
     const [initialData] = useState(data);
     return (
       <div
         data-content-ids={initialData.content.map((item) => item.props.id).join(",")}
+        data-left-sidebar-visible={String(ui?.leftSideBarVisible)}
         data-testid="puck-iframe-document"
       >
         {config.root.render({ children: <div>Canonical storefront sections</div> })}
@@ -84,6 +87,10 @@ describe("Puck iframe storefront boundary", () => {
         .querySelector<HTMLElement>("[data-veskify-canvas-root]")!;
 
     expect(canvasRoot()).toHaveAttribute("lang", "en");
+    expect(screen.getByTestId("puck-iframe-document")).toHaveAttribute(
+      "data-left-sidebar-visible",
+      "false",
+    );
     expect(canvasRoot().style.getPropertyValue("--brand-color-primary")).toBe("#123456");
     expect(canvasRoot().style.getPropertyValue("--brand-color-background")).toBe("#F0E1D2");
     expect(canvasRoot().style.getPropertyValue("--brand-font-heading")).toContain("Georgia");

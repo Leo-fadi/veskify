@@ -19,6 +19,37 @@ function join(...classes: Array<string | undefined | false>) {
   return classes.filter(Boolean).join(" ");
 }
 
+function PlatformNavContent({
+  destination,
+  label,
+}: {
+  destination: "home" | "studio" | "projects" | "account";
+  label: string;
+}) {
+  return (
+    <>
+      <svg aria-hidden="true" className={styles.platformNavIcon} fill="none" viewBox="0 0 24 24">
+        {destination === "home" ? (
+          <path d="M3.5 10.5 12 3l8.5 7.5V21h-6v-6h-5v6h-6V10.5Z" />
+        ) : destination === "studio" ? (
+          <>
+            <rect height="16" rx="2" width="18" x="3" y="4" />
+            <path d="M8 4v16M8 9h13" />
+          </>
+        ) : destination === "projects" ? (
+          <path d="M3 7.5h7l2-2h9v14H3v-12Z" />
+        ) : (
+          <>
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4.5 21a7.5 7.5 0 0 1 15 0" />
+          </>
+        )}
+      </svg>
+      <span className={styles.platformNavLabel}>{label}</span>
+    </>
+  );
+}
+
 export function Button({
   children,
   className,
@@ -154,6 +185,7 @@ export function Field({
 export function Tabs({
   items,
   label = "Sections",
+  onSelect,
 }: {
   items: ReadonlyArray<{
     active?: boolean;
@@ -163,6 +195,7 @@ export function Tabs({
     label: string;
   }>;
   label?: string;
+  onSelect?: (id: string) => void;
 }) {
   return (
     <nav aria-label={label} className={styles.tabs}>
@@ -176,6 +209,16 @@ export function Tabs({
           >
             {item.label}
           </span>
+        ) : onSelect ? (
+          <button
+            aria-current={item.active ? "page" : undefined}
+            className={styles.tab}
+            key={item.id}
+            onClick={() => onSelect(item.id)}
+            type="button"
+          >
+            {item.label}
+          </button>
         ) : (
           <Link
             aria-current={item.active ? "page" : undefined}
@@ -216,35 +259,6 @@ export function Notice({
   );
 }
 
-export function Drawer({
-  children,
-  closeLabel = "Close",
-  onClose,
-  open,
-  title,
-}: {
-  children: ReactNode;
-  closeLabel?: string;
-  onClose: () => void;
-  open: boolean;
-  title: string;
-}) {
-  if (!open) return null;
-  return (
-    <div className={styles.drawerBackdrop} role="presentation">
-      <aside aria-label={title} aria-modal="true" className={styles.drawer} role="dialog">
-        <div className={styles.drawerHeader}>
-          <strong>{title}</strong>
-          <Button onClick={onClose} variant="quiet">
-            {closeLabel}
-          </Button>
-        </div>
-        {children}
-      </aside>
-    </div>
-  );
-}
-
 export function AppShell({
   activeModule,
   children,
@@ -257,6 +271,7 @@ export function AppShell({
   projectName,
   onHomeNavigate,
   homeNavigationDisabled = false,
+  editorMode = false,
   showModuleNav = Boolean(projectId),
 }: {
   activeModule?: ModuleId;
@@ -270,6 +285,7 @@ export function AppShell({
   projectName?: string;
   onHomeNavigate?: (event: MouseEvent<HTMLElement>) => void;
   homeNavigationDisabled?: boolean;
+  editorMode?: boolean;
   showModuleNav?: boolean;
 }) {
   const isFinnish = locale === "fi";
@@ -282,7 +298,7 @@ export function AppShell({
   const projectPath = projectId ? `/projects/${projectId}` : "/projects/new";
 
   return (
-    <div className={styles.shell}>
+    <div className={join(styles.shell, editorMode && styles.editorShell)}>
       <header className={styles.globalBar}>
         <Link
           aria-disabled={homeNavigationDisabled || undefined}
@@ -308,18 +324,20 @@ export function AppShell({
             href="/"
             onClick={onHomeNavigate}
           >
-            {labels.home}
+            <PlatformNavContent destination="home" label={labels.home} />
           </Link>
           <Link aria-current={projectId ? "page" : undefined} href={projectPath}>
-            {labels.studio}
+            <PlatformNavContent destination="studio" label={labels.studio} />
           </Link>
-          <Link href="/projects/new">{labels.projects}</Link>
+          <Link href="/projects/new">
+            <PlatformNavContent destination="projects" label={labels.projects} />
+          </Link>
           <Link
             aria-disabled={homeNavigationDisabled || undefined}
             href="/"
             onClick={onHomeNavigate}
           >
-            {labels.account}
+            <PlatformNavContent destination="account" label={labels.account} />
           </Link>
         </nav>
       </header>

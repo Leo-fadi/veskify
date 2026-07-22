@@ -1,9 +1,30 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const editorUrl = "/projects/project_aurum_nordic/editor";
 const storefrontInstruction = "Apply a warm premium style across the storefront.";
 
+async function selectHomepageHero(page: Page) {
+  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  await canvas.getByText("Made for northern light", { exact: true }).click();
+  await expect(page.getByRole("radio", { name: "Selected section" })).toBeChecked({
+    timeout: 3_000,
+  });
+  return canvas;
+}
+
+async function openSectionActions(sectionActions: Locator) {
+  const details = sectionActions.locator("details");
+  if (!(await details.evaluate((element: HTMLDetailsElement) => element.open))) {
+    await sectionActions.locator("summary").click();
+  }
+  await expect(details).toHaveJSProperty("open", true);
+  await expect(sectionActions.getByRole("button", { name: "Duplicate" })).toBeVisible();
+}
+
 async function openStorefrontProposal(page: Page, instruction = storefrontInstruction) {
+  if ((page.viewportSize()?.width ?? 1440) < 1024) {
+    await page.getByRole("button", { name: "Open AI assistant" }).click();
+  }
   await page.getByRole("radio", { name: "Entire storefront" }).check();
   await page.getByLabel("Your request").fill(instruction);
   await page.getByRole("button", { name: "Create proposal" }).click();
@@ -12,9 +33,7 @@ async function openStorefrontProposal(page: Page, instruction = storefrontInstru
 
 test("selected-section proposal uses the existing editor flow", async ({ page }) => {
   await page.goto(editorUrl);
-  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
-  await canvas.getByText("Made for northern light", { exact: true }).click();
-  await expect(page.getByRole("radio", { name: "Selected section" })).toBeChecked();
+  await selectHomepageHero(page);
   await page.getByLabel("Your request").fill("Improve the selected hero.");
   await page.getByRole("button", { name: "Create proposal" }).click();
   await expect(page.getByLabel("Design proposal")).toBeVisible();
@@ -24,9 +43,7 @@ test("selected-section target falls back to Current page when its section disapp
   page,
 }) => {
   await page.goto(editorUrl);
-  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
-  await canvas.getByText("Made for northern light", { exact: true }).click();
-  await expect(page.getByRole("radio", { name: "Selected section" })).toBeChecked();
+  await selectHomepageHero(page);
 
   await page.getByLabel("Storefront page").selectOption("page_collection_rings");
 
@@ -169,10 +186,9 @@ test("page edits after storefront Accept are undone before the composite storefr
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#7B4A2D");
 
   await canvas.getByText("Made for northern light", { exact: true }).click();
-  await page
-    .getByLabel("Selected section actions")
-    .getByRole("button", { name: "Duplicate" })
-    .click();
+  const sectionActions = page.getByLabel("Selected section actions");
+  await openSectionActions(sectionActions);
+  await sectionActions.getByRole("button", { name: "Duplicate" }).click();
   await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(2);
 
   await page.getByRole("button", { name: "Undo", exact: true }).click();

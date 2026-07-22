@@ -130,6 +130,7 @@ function VeskifyPuckCanvasSession({
             ? editingPermissions
             : { ...editingPermissions, delete: true, drag: true, edit: true, insert: true }
         }
+        ui={{ leftSideBarVisible: false }}
       />
     </section>
   );

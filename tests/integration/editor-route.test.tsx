@@ -823,6 +823,63 @@ describe("P2-01 project editor route", () => {
     confirm.mockRestore();
   });
 
+  it("reuses validation and discard safeguards in the compact editor drawer", async () => {
+    const originalMatchMedia = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: vi.fn().mockImplementation((media: string) => ({
+        addEventListener: vi.fn(),
+        addListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+        matches: media === "(max-width: 63.99rem)",
+        media,
+        onchange: null,
+        removeEventListener: vi.fn(),
+        removeListener: vi.fn(),
+      })),
+    });
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const user = userEvent.setup();
+
+    try {
+      route(repository(() => Promise.resolve(aggregate())));
+      await screen.findByText("Canvas: home / en");
+      await user.click(screen.getByRole("button", { name: "Edit current page" }));
+      await user.click(screen.getByRole("button", { name: "Emit invalid change" }));
+      await user.click(screen.getByRole("button", { name: "Pages & sections" }));
+
+      let dialog = screen.getByRole("dialog", { name: "Pages & sections" });
+      expect(within(dialog).getByText("That change could not be applied safely.")).toHaveAttribute(
+        "role",
+        "alert",
+      );
+      const discard = within(dialog).getByRole("button", { name: "Discard changes" });
+      expect(discard).toBeEnabled();
+      await user.click(discard);
+      expect(confirm).toHaveBeenCalledWith(
+        "Discard the unsaved changes on this page? This cannot be undone.",
+      );
+      expect(within(dialog).getByRole("button", { name: "Discard changes" })).toBeDisabled();
+      expect(within(dialog).getByText(/save draft becomes available/i)).toBeVisible();
+
+      await user.click(within(dialog).getByRole("button", { name: "Close" }));
+      await user.click(screen.getByRole("radio", { name: "Suomi" }));
+      await user.click(screen.getByRole("button", { name: "Sivut ja osiot" }));
+      dialog = screen.getByRole("dialog", { name: "Sivut ja osiot" });
+      expect(
+        within(dialog).getByRole("button", { name: "Peruuta sivun muutokset" }),
+      ).toBeDisabled();
+      expect(within(dialog).getByText(/luonnoksen tallennus tulee käyttöön/i)).toBeVisible();
+      expect(within(dialog).getByRole("button", { name: "Sulje" })).toBeVisible();
+    } finally {
+      confirm.mockRestore();
+      Object.defineProperty(window, "matchMedia", {
+        configurable: true,
+        value: originalMatchMedia,
+      });
+    }
+  });
+
   it("warns before page switches and isolates each page's session edits", async () => {
     const confirm = vi.spyOn(window, "confirm");
     route(repository(() => Promise.resolve(aggregate())));

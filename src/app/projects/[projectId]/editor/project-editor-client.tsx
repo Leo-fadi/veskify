@@ -38,7 +38,7 @@ import {
   type ProjectRepository,
 } from "@/services/storage";
 import { createBrowserProposalAnalyticsSink } from "@/services/analytics";
-import { AppShell, Button, StatusPill } from "@/components/ui";
+import { AppShell, Button, Card, Drawer, Field, Notice, StatusPill, Tabs } from "@/components/ui";
 import styles from "./project-editor.module.css";
 import { DesignAgentPanel } from "./design-agent-panel";
 import {
@@ -47,7 +47,10 @@ import {
   composeActiveEditorDraft,
   proposalStorefrontPreview,
 } from "./editor-draft-state";
-import { useDesignAgentSession } from "./use-design-agent-session";
+import {
+  useDesignAgentSession,
+  type DesignAgentSessionController,
+} from "./use-design-agent-session";
 
 type RepositoryFactory = () => ProjectRepository;
 type ReadyState = {
@@ -131,6 +134,112 @@ function isTypingTarget(target: EventTarget | null) {
   );
 }
 
+function editorPageName(page: PageModel, locale: Locale, primaryLocale: Locale) {
+  return page.type === "home"
+    ? locale === "fi"
+      ? "Etusivu"
+      : "Homepage"
+    : resolveLocalizedText(page.title, locale, primaryLocale);
+}
+
+function EditorDesignTools({
+  locale,
+  selectedSectionLabel,
+}: {
+  locale: Locale;
+  selectedSectionLabel?: string;
+}) {
+  const text =
+    locale === "fi"
+      ? {
+          heading: "Design",
+          intro: "Muokkaa valitun osion sisältöä ja ulkoasua työskentelyalueella.",
+          select: "Valitse osio sivulta nähdäksesi sen säätimet.",
+          groups: ["Asettelu", "Sisältö", "Väri", "Typografia", "Väljyys", "Muoto", "Näkyvyys"],
+        }
+      : {
+          heading: "Design",
+          intro: "Edit the selected section's content and appearance in the workspace.",
+          select: "Select a section on the canvas to see its controls.",
+          groups: ["Layout", "Content", "Colour", "Typography", "Spacing", "Shape", "Visibility"],
+        };
+
+  return (
+    <div className={styles.designTools}>
+      <Card className={styles.toolCard}>
+        <p className={styles.eyebrow}>{text.heading}</p>
+        <h2>{selectedSectionLabel ?? text.select}</h2>
+        <p>{text.intro}</p>
+        <Notice variant="info">{selectedSectionLabel ? text.intro : text.select}</Notice>
+      </Card>
+      <div
+        aria-label={locale === "fi" ? "Design-säätimet" : "Design controls"}
+        className={styles.designGroups}
+      >
+        {text.groups.map((group, index) => (
+          <details key={group} open={index === 0}>
+            <summary>{group}</summary>
+            <p>{selectedSectionLabel ? text.intro : text.select}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EditorToolRail({
+  activeTab,
+  controller,
+  locale,
+  onTabChange,
+  pageTitle,
+  primaryLocale,
+  selectedSectionLabel,
+  storefrontPageCount,
+}: {
+  activeTab: "design" | "ai";
+  controller: DesignAgentSessionController;
+  locale: Locale;
+  onTabChange: (tab: "design" | "ai") => void;
+  pageTitle: string;
+  primaryLocale: Locale;
+  selectedSectionLabel?: string;
+  storefrontPageCount: number;
+}) {
+  return (
+    <section aria-label="Editor tools" className={styles.toolRail}>
+      <Tabs
+        items={[
+          {
+            active: activeTab === "design",
+            id: "design",
+            label: locale === "fi" ? "Design" : "Design",
+          },
+          {
+            active: activeTab === "ai",
+            id: "ai",
+            label: locale === "fi" ? "Suunnitteluavustaja" : "AI assistant",
+          },
+        ]}
+        label={locale === "fi" ? "Muokkaustyökalut" : "Editor tools"}
+        onSelect={(id) => onTabChange(id === "ai" ? "ai" : "design")}
+      />
+      {activeTab === "design" ? (
+        <EditorDesignTools locale={locale} selectedSectionLabel={selectedSectionLabel} />
+      ) : (
+        <DesignAgentPanel
+          controller={controller}
+          locale={locale}
+          pageTitle={pageTitle}
+          primaryLocale={primaryLocale}
+          selectedSectionLabel={selectedSectionLabel}
+          storefrontPageCount={storefrontPageCount}
+        />
+      )}
+    </section>
+  );
+}
+
 export function ProjectEditorClient({
   projectId,
   repositoryFactory = defaultRepositoryFactory,
@@ -158,7 +267,20 @@ export function ProjectEditorClient({
   const [editorHistory, setEditorHistory] = useState<CanonicalEditorHistory>();
   const [pageEditsAfterStorefront, setPageEditsAfterStorefront] = useState(0);
   const [saveState, setSaveState] = useState<SaveUiState>({ status: "idle" });
+  const [activeToolTab, setActiveToolTab] = useState<"design" | "ai">("ai");
+  const [outlineDrawerOpen, setOutlineDrawerOpen] = useState(false);
+  const [toolDrawerOpen, setToolDrawerOpen] = useState(false);
+  const [compactViewport, setCompactViewport] = useState(false);
   const savePending = useRef(false);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia("(max-width: 63.99rem)");
+    const update = () => setCompactViewport(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     const handleHistoryShortcut = (event: KeyboardEvent) => {
@@ -590,10 +712,25 @@ export function ProjectEditorClient({
     setHistoryStatus("");
   };
 
+  const selectSection = (nextSectionId: string) => {
+    if (savePending.current || mutationsBlocked) return;
+    if (!page.sections.some((section) => section.id === nextSectionId)) return;
+    if (nextSectionId === selectedSectionId) return;
+    agent.closeForSelectionChange(nextSectionId);
+    setSelectedSectionId(nextSectionId);
+  };
+
   const discardChanges = () => {
     if (savePending.current) return;
     if (!currentPageHasUnsavedChanges) return;
-    if (!window.confirm("Discard the unsaved changes on this page? This cannot be undone.")) return;
+    if (
+      !window.confirm(
+        locale === "fi"
+          ? "Peruutetaanko tämän sivun tallentamattomat muutokset? Toimintoa ei voi kumota."
+          : "Discard the unsaved changes on this page? This cannot be undone.",
+      )
+    )
+      return;
     const resetPage = editorHistory?.reset(originalPage) ?? structuredClone(originalPage);
     setSessionPages((current) => {
       const next = { ...current };
@@ -685,6 +822,195 @@ export function ProjectEditorClient({
     }
   };
 
+  const outlineList = (
+    <ol
+      aria-label={locale === "fi" ? "Sivut ja osiot" : "Pages and sections"}
+      className={styles.outlineList}
+    >
+      {state.pages.map((item) => {
+        const itemIsCurrent = item.id === page.id;
+        const itemPage = sessionPages[item.id] ?? item;
+        return (
+          <li key={item.id}>
+            <button
+              aria-current={itemIsCurrent ? "page" : undefined}
+              className={styles.outlinePage}
+              disabled={saving}
+              onClick={() => selectPage(item.id)}
+              type="button"
+            >
+              <span>{editorPageName(item, locale, state.aggregate.project.primaryLocale)}</span>
+              <small>
+                {itemPage.sections.length} {locale === "fi" ? "osiota" : "sections"}
+              </small>
+            </button>
+            {itemIsCurrent ? (
+              <ol className={styles.outlineSections}>
+                {itemPage.sections.map((section) => (
+                  <li key={section.id}>
+                    <button
+                      aria-current={section.id === selectedSectionId ? "step" : undefined}
+                      aria-label={`${merchantEditorSectionLabel(itemPage, section, locale)} — ${section.visible ? (locale === "fi" ? "Näkyvä" : "Visible") : locale === "fi" ? "Piilotettu" : "Hidden"}`}
+                      className={styles.outlineSection}
+                      disabled={saving}
+                      onClick={() => selectSection(section.id)}
+                      type="button"
+                    >
+                      <span>{merchantEditorSectionLabel(itemPage, section, locale)}</span>
+                      <small>
+                        {section.visible
+                          ? locale === "fi"
+                            ? "Näkyvä"
+                            : "Visible"
+                          : locale === "fi"
+                            ? "Piilotettu"
+                            : "Hidden"}
+                      </small>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+          </li>
+        );
+      })}
+    </ol>
+  );
+
+  const sectionActions = (
+    <Card aria-label="Selected section actions" className={styles.sectionActions}>
+      <details open>
+        <summary>{locale === "fi" ? "Osion toiminnot" : "Section options"}</summary>
+        <h2>{locale === "fi" ? "Valittu osio" : "Selected section"}</h2>
+        {selectedSection ? (
+          <>
+            <p>
+              <strong>{merchantEditorSectionLabel(page, selectedSection, locale)}</strong>
+              <span>
+                {selectedSection.visible
+                  ? locale === "fi"
+                    ? "Näkyvä"
+                    : "Visible"
+                  : locale === "fi"
+                    ? "Piilotettu"
+                    : "Hidden"}
+              </span>
+            </p>
+            <div>
+              <Button
+                disabled={!canDuplicateSection(selectedSection) || mutationsBlocked}
+                onClick={duplicateSelectedSection}
+                variant="secondary"
+              >
+                {locale === "fi" ? "Monista" : "Duplicate"}
+              </Button>
+              <Button
+                disabled={!canToggleSectionVisibility(selectedSection) || mutationsBlocked}
+                onClick={toggleSelectedSection}
+                variant="secondary"
+              >
+                {selectedSection.visible
+                  ? locale === "fi"
+                    ? "Piilota"
+                    : "Hide"
+                  : locale === "fi"
+                    ? "Näytä"
+                    : "Show"}
+              </Button>
+            </div>
+            {!canDuplicateSection(selectedSection) ||
+            !canToggleSectionVisibility(selectedSection) ? (
+              <p>
+                {locale === "fi"
+                  ? "Pakollinen osio pysyy näkyvissä ja voi esiintyä vain kerran."
+                  : "This required section must remain visible and can only appear once."}
+              </p>
+            ) : null}
+          </>
+        ) : (
+          <p>{locale === "fi" ? "Valitse osio sivulta." : "Select a section on the canvas."}</p>
+        )}
+      </details>
+    </Card>
+  );
+
+  const toolRail = (
+    <EditorToolRail
+      activeTab={activeToolTab}
+      controller={agent}
+      locale={locale}
+      onTabChange={setActiveToolTab}
+      pageTitle={title}
+      primaryLocale={state.aggregate.project.primaryLocale}
+      selectedSectionLabel={
+        selectedSection ? merchantEditorSectionLabel(page, selectedSection, locale) : undefined
+      }
+      storefrontPageCount={activeDraft!.pages.length}
+    />
+  );
+
+  const renderDraftSafeguards = (compact: boolean) => {
+    const saveDisabledReason = validationMessage
+      ? validationMessage
+      : hasUnsavedChanges && !completeDraftIsValid
+        ? locale === "fi"
+          ? "Joitakin muutoksia on korjattava ennen luonnoksen tallentamista."
+          : "Some changes need attention before this draft can be saved."
+        : proposalBlocksSave
+          ? locale === "fi"
+            ? "Viimeistele nykyisen ehdotuksen tarkistus ennen luonnoksen tallentamista."
+            : "Finish reviewing the current proposal before saving the draft."
+          : saving
+            ? locale === "fi"
+              ? "Luonnosta tallennetaan. Odota, kunnes tallennus on valmis."
+              : "The draft is being saved. Wait until saving is complete."
+            : !hasUnsavedChanges
+              ? locale === "fi"
+                ? "Luonnoksen tallennus tulee käyttöön, kun teet muutoksen."
+                : "Save draft becomes available after you make a change."
+              : undefined;
+    const saveIsBlockedByValidation =
+      Boolean(validationMessage) || (hasUnsavedChanges && !completeDraftIsValid);
+
+    return (
+      <section
+        aria-label={locale === "fi" ? "Luonnoksen suojaukset" : "Draft safeguards"}
+        className={styles.draftSafeguards}
+      >
+        <Button
+          className={styles.discardButton}
+          disabled={!currentPageHasUnsavedChanges || saving}
+          onClick={discardChanges}
+          variant="quiet"
+        >
+          {locale === "fi" ? "Peruuta sivun muutokset" : "Discard changes"}
+        </Button>
+        <p className={styles.boundaryNote}>
+          {hasUnsavedChanges
+            ? locale === "fi"
+              ? "Tallenna muutokset luonnokseen ennen julkaisemista. Julkaisun tarkistus käyttää vain viimeksi tallennettua luonnosta."
+              : "Save these changes to the draft before publishing. Publish review uses only the last saved draft."
+            : locale === "fi"
+              ? "Luonnoksen tallentaminen ei julkaise muutoksia. Tarkista ja vahvista julkaisu erikseen."
+              : "Saving a draft does not publish it. Review and confirm publishing separately."}
+        </p>
+        {compact && saveDisabled && saveDisabledReason ? (
+          <Notice
+            className={styles.validationMessage}
+            role={saveIsBlockedByValidation ? "alert" : undefined}
+            variant={saveIsBlockedByValidation ? "danger" : "info"}
+          >
+            {saveDisabledReason}
+          </Notice>
+        ) : !compact && validationMessage ? (
+          <p className={styles.validationMessage} role="alert">
+            {validationMessage}
+          </p>
+        ) : null}
+      </section>
+    );
+  };
+
   const saveDraft = async () => {
     if (saveDisabled || savePending.current) return;
     const capturedDraft = structuredClone(state.draft);
@@ -765,22 +1091,69 @@ export function ProjectEditorClient({
     >
       <AppShell
         activeModule="editor"
+        editorMode
         headerActions={
           <div className={styles.draftActions}>
-            <div aria-label="Draft status" className={styles.draftStatus} role="status">
-              <StatusPill label={statusLabel} live status={status} />
-              <span>{hasUnsavedChanges ? "Unsaved changes" : "No unsaved changes"}</span>
-              <span>
-                {draftDiffers(state.draft, state.published)
-                  ? "The stored draft differs from the published storefront."
-                  : "Changes stay in this editor session until saved."}
-              </span>
+            <fieldset className={styles.headerLocale}>
+              <legend>{locale === "fi" ? "Kieli" : "Language"}</legend>
+              {state.aggregate.project.enabledLocales.map((enabledLocale) => (
+                <label key={enabledLocale}>
+                  <input
+                    checked={locale === enabledLocale}
+                    name="editor-locale"
+                    onChange={() => {
+                      if (enabledLocale !== locale) agent.closeForLocaleChange();
+                      setActiveLocale(enabledLocale);
+                    }}
+                    type="radio"
+                    value={enabledLocale}
+                  />
+                  <span>{enabledLocale === "en" ? "English" : "Suomi"}</span>
+                </label>
+              ))}
+            </fieldset>
+            <div className={styles.statusCluster}>
+              <div aria-label="Draft status" className={styles.draftStatus} role="status">
+                <StatusPill label={statusLabel} live status={status} />
+                <span>{hasUnsavedChanges ? "Unsaved changes" : "No unsaved changes"}</span>
+                <span>
+                  {draftDiffers(state.draft, state.published)
+                    ? "The stored draft differs from the published storefront."
+                    : "Changes stay in this editor session until saved."}
+                </span>
+              </div>
+              <div aria-label="Publish status" className={styles.publishStatus} role="status">
+                <StatusPill
+                  label={
+                    draftDiffers(state.draft, state.published)
+                      ? locale === "fi"
+                        ? "Valmis julkaistavaksi"
+                        : "Ready to publish"
+                      : locale === "fi"
+                        ? "Julkaistu"
+                        : "Published"
+                  }
+                  status={
+                    draftDiffers(state.draft, state.published) ? "ready-to-publish" : "published"
+                  }
+                />
+                <span>
+                  {draftDiffers(state.draft, state.published)
+                    ? locale === "fi"
+                      ? "Luonnos eroaa julkaistusta kaupasta."
+                      : "Draft differs from published storefront."
+                    : locale === "fi"
+                      ? "Julkaistu tila on ajan tasalla."
+                      : "Published storefront is up to date."}
+                </span>
+              </div>
             </div>
             <div aria-label="Edit history" className={styles.historyActions}>
               <Button
                 data-editor-history-action="undo"
                 disabled={!canUndo || mutationsBlocked}
                 onClick={undoEditor}
+                variant="quiet"
                 title="Undo (Ctrl or Command + Z)"
               >
                 Undo
@@ -789,12 +1162,13 @@ export function ProjectEditorClient({
                 data-editor-history-action="redo"
                 disabled={!canRedo || mutationsBlocked}
                 onClick={redoEditor}
+                variant="quiet"
                 title="Redo (Ctrl or Command + Shift + Z)"
               >
                 Redo
               </Button>
             </div>
-            <Button href={previewHref} variant="quiet">
+            <Button href={previewHref} variant="secondary">
               {locale === "fi" ? "Esikatsele kauppaa" : "Preview storefront"}
             </Button>
             <Button disabled={saveDisabled} onClick={() => void saveDraft()}>
@@ -805,10 +1179,18 @@ export function ProjectEditorClient({
                 {locale === "fi" ? "Julkaise muutokset" : "Publish changes"}
               </span>
             ) : (
-              <Button href={`/projects/${projectId}/publish`} variant="secondary">
+              <Button href={`/projects/${projectId}/publish`} variant="primary">
                 {locale === "fi" ? "Julkaise muutokset" : "Publish changes"}
               </Button>
             )}
+            <details className={styles.headerOverflow}>
+              <summary>{locale === "fi" ? "Lisää" : "More"}</summary>
+              <div>
+                <Button href={previewHref} variant="quiet">
+                  {locale === "fi" ? "Avaa esikatselu" : "Open preview"}
+                </Button>
+              </div>
+            </details>
             <div aria-live="polite" aria-atomic="true" className={styles.saveStatus}>
               {saveState.status === "saving" ? (
                 <p role="status">Saving your draft… Please wait before making more changes.</p>
@@ -833,107 +1215,72 @@ export function ProjectEditorClient({
         projectId={projectId}
         projectName={state.aggregate.project.name}
       >
+        <div className={styles.workspaceToolbar}>
+          <Button
+            className={styles.drawerTrigger}
+            onClick={() => {
+              setOutlineDrawerOpen(true);
+              setToolDrawerOpen(false);
+            }}
+            variant="secondary"
+          >
+            {locale === "fi" ? "Sivut ja osiot" : "Pages & sections"}
+          </Button>
+          <Button
+            className={styles.drawerTrigger}
+            onClick={() => {
+              setToolDrawerOpen(true);
+              setOutlineDrawerOpen(false);
+            }}
+            variant="secondary"
+          >
+            {activeToolTab === "ai"
+              ? locale === "fi"
+                ? "Avaa suunnitteluavustaja"
+                : "Open AI assistant"
+              : locale === "fi"
+                ? "Avaa design-työkalut"
+                : "Open design tools"}
+          </Button>
+        </div>
         <div className={styles.workspace}>
-          <aside aria-label="Editor controls" className={styles.sidebar}>
-            <section>
-              <label htmlFor="editor-page">Storefront page</label>
-              <select
-                disabled={saving}
+          {!compactViewport ? (
+            <aside aria-label="Editor controls" className={styles.sidebar}>
+              <section className={styles.outlineHeader}>
+                <p className={styles.eyebrow}>{locale === "fi" ? "Rakenne" : "Structure"}</p>
+                <h2>{locale === "fi" ? "Sivut ja osiot" : "Pages & sections"}</h2>
+                <p>
+                  {locale === "fi"
+                    ? "Valitse sivu ja sen osio työskentelyä varten."
+                    : "Choose a page and section to work on."}
+                </p>
+              </section>
+              <Field
+                hint="Homepage, collection and product pages use their approved sections."
                 id="editor-page"
-                onChange={(event) => selectPage(event.target.value)}
-                value={page.id}
+                label="Storefront page"
               >
-                {state.pages.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.type === "home"
-                      ? "Homepage"
-                      : resolveLocalizedText(
-                          item.title,
-                          locale,
-                          state.aggregate.project.primaryLocale,
-                        )}
-                  </option>
-                ))}
-              </select>
-              <p>Homepage, collection and product pages use their own approved sections.</p>
-            </section>
-            <fieldset>
-              <legend>Storefront language</legend>
-              {state.aggregate.project.enabledLocales.map((enabledLocale) => (
-                <label key={enabledLocale}>
-                  <input
-                    checked={locale === enabledLocale}
-                    name="editor-locale"
-                    onChange={() => {
-                      if (enabledLocale !== locale) agent.closeForLocaleChange();
-                      setActiveLocale(enabledLocale);
-                    }}
-                    type="radio"
-                    value={enabledLocale}
-                  />
-                  <span>{enabledLocale === "en" ? "English" : "Suomi"}</span>
-                </label>
-              ))}
-            </fieldset>
-            <section aria-label="Selected section actions" className={styles.sectionActions}>
-              <h2>Selected section</h2>
-              {selectedSection ? (
-                <>
-                  <p>
-                    <strong>{merchantEditorSectionLabel(page, selectedSection, locale)}</strong>
-                    <span>{selectedSection.visible ? "Visible" : "Hidden"}</span>
-                  </p>
-                  <div>
-                    <button
-                      disabled={!canDuplicateSection(selectedSection) || mutationsBlocked}
-                      onClick={duplicateSelectedSection}
-                      type="button"
-                    >
-                      Duplicate
-                    </button>
-                    <button
-                      disabled={!canToggleSectionVisibility(selectedSection) || mutationsBlocked}
-                      onClick={toggleSelectedSection}
-                      type="button"
-                    >
-                      {selectedSection.visible ? "Hide" : "Show"}
-                    </button>
-                  </div>
-                  {!canDuplicateSection(selectedSection) ||
-                  !canToggleSectionVisibility(selectedSection) ? (
-                    <p>This required section must remain visible and can only appear once.</p>
-                  ) : null}
-                </>
-              ) : (
-                <p>Select a section on the canvas to duplicate, hide or show it.</p>
-              )}
-            </section>
-            <Link className={styles.previewLink} href={previewHref}>
-              View selected page
-            </Link>
-            <button
-              className={styles.discardButton}
-              disabled={!currentPageHasUnsavedChanges || saving}
-              onClick={discardChanges}
-              type="button"
-            >
-              Discard changes
-            </button>
-            <p className={styles.boundaryNote}>
-              {hasUnsavedChanges
-                ? locale === "fi"
-                  ? "Tallenna muutokset luonnokseen ennen julkaisemista. Julkaisun tarkistus käyttää vain viimeksi tallennettua luonnosta."
-                  : "Save these changes to the draft before publishing. Publish review uses only the last saved draft."
-                : locale === "fi"
-                  ? "Luonnoksen tallentaminen ei julkaise muutoksia. Tarkista ja vahvista julkaisu erikseen."
-                  : "Saving a draft does not publish it. Review and confirm publishing separately."}
-            </p>
-            {validationMessage ? (
-              <p className={styles.validationMessage} role="alert">
-                {validationMessage}
-              </p>
-            ) : null}
-          </aside>
+                <select
+                  disabled={saving}
+                  id="editor-page"
+                  onChange={(event) => selectPage(event.target.value)}
+                  value={page.id}
+                >
+                  {state.pages.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {editorPageName(item, locale, state.aggregate.project.primaryLocale)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              {outlineList}
+              {sectionActions}
+              <Link className={styles.previewLink} href={previewHref}>
+                View selected page
+              </Link>
+              {renderDraftSafeguards(false)}
+            </aside>
+          ) : null}
           <main className={styles.canvas}>
             {showingProposal ? (
               <div className={styles.proposalPreviewLabel} role="status">
@@ -967,19 +1314,28 @@ export function ProjectEditorClient({
               }
             />
           </main>
-          <DesignAgentPanel
-            controller={agent}
-            locale={locale}
-            pageTitle={title}
-            primaryLocale={state.aggregate.project.primaryLocale}
-            selectedSectionLabel={
-              selectedSection
-                ? merchantEditorSectionLabel(page, selectedSection, locale)
-                : undefined
-            }
-            storefrontPageCount={activeDraft!.pages.length}
-          />
+          {!compactViewport ? toolRail : null}
         </div>
+        <Drawer
+          closeLabel={locale === "fi" ? "Sulje" : "Close"}
+          onClose={() => setOutlineDrawerOpen(false)}
+          open={outlineDrawerOpen}
+          title={locale === "fi" ? "Sivut ja osiot" : "Pages & sections"}
+        >
+          <div className={styles.drawerContent}>
+            {outlineList}
+            {sectionActions}
+            {compactViewport ? renderDraftSafeguards(true) : null}
+          </div>
+        </Drawer>
+        <Drawer
+          closeLabel={locale === "fi" ? "Sulje" : "Close"}
+          onClose={() => setToolDrawerOpen(false)}
+          open={toolDrawerOpen}
+          title={locale === "fi" ? "Muokkaustyökalut" : "Editor tools"}
+        >
+          <div className={styles.drawerContent}>{toolRail}</div>
+        </Drawer>
       </AppShell>
     </div>
   );
