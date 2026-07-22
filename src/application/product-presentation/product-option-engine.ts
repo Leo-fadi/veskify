@@ -21,10 +21,10 @@ import {
 
 type OptionGroup = ProductPresentationContext["optionGroups"][number];
 
-export function initializeProductOptionEngine(
+export async function initializeProductOptionEngine(
   contextInput: unknown,
   resolver?: CanonicalProductConfigurationResolver,
-): ProductOptionResolutionOutcome {
+): Promise<ProductOptionResolutionOutcome> {
   const contextResult = productPresentationContextSchema.safeParse(contextInput);
   if (!contextResult.success) {
     return resolveProductOptions({
@@ -35,10 +35,12 @@ export function initializeProductOptionEngine(
   }
   const initialState: ProductOptionSelectionState = {
     selectedValues: contextResult.data.selectedValues.flatMap((selection) =>
-      "valueId" in selection ? [{ groupId: selection.groupId, valueId: selection.valueId }] : [],
+      "valueId" in selection && selection.complete
+        ? [{ groupId: selection.groupId, valueId: selection.valueId }]
+        : [],
     ),
     textEntries: contextResult.data.selectedValues.flatMap((selection) =>
-      "enteredText" in selection
+      "enteredText" in selection && selection.complete
         ? [{ groupId: selection.groupId, value: selection.enteredText }]
         : [],
     ),
@@ -52,12 +54,12 @@ export function initializeProductOptionEngine(
   });
 }
 
-export function applyProductOptionIntent(input: {
+export async function applyProductOptionIntent(input: {
   context: unknown;
   previousResult: ProductOptionResolutionResult;
   intent: unknown;
   resolver?: CanonicalProductConfigurationResolver;
-}): ProductOptionResolutionOutcome {
+}): Promise<ProductOptionResolutionOutcome> {
   const contextResult = productPresentationContextSchema.safeParse(input.context);
   if (!contextResult.success) {
     return preservePrevious(
@@ -117,7 +119,7 @@ export function applyProductOptionIntent(input: {
   }
 
   const normalized = pruneDependentSelections(context, state);
-  const next = resolveProductOptions({
+  const next = await resolveProductOptions({
     context,
     selectionState: normalized.state,
     resolver: input.resolver,

@@ -7,6 +7,7 @@ import {
 } from "@/application/product-presentation";
 import type { ProductPresentationContext } from "@/domain/component-platform";
 import type {
+  CanonicalProductConfigurationInput,
   CanonicalProductConfigurationResolver,
   ProductOptionResolutionOutcome,
   ProductOptionResolutionResult,
@@ -142,6 +143,16 @@ const zeroOptionContext: ProductPresentationContext = {
   revision: "simple-revision-1",
 };
 
+const unavailablePriceContext: ProductPresentationContext = {
+  ...zeroOptionContext,
+  productId: "product_quote_only",
+  sku: "QUOTE-ONLY",
+  price: undefined,
+  priceUnavailableReason: localized("Request a price"),
+  compareAtPrice: undefined,
+  revision: "quote-revision-1",
+};
+
 const canonicalResolver: CanonicalProductConfigurationResolver = {
   resolve(input) {
     expect(Object.isFrozen(input)).toBe(true);
@@ -193,14 +204,14 @@ function success(outcome: ProductOptionResolutionOutcome): ProductOptionResoluti
   return outcome.result;
 }
 
-function initialize(
+async function initialize(
   context: ProductPresentationContext = ringContext,
   resolver: CanonicalProductConfigurationResolver = canonicalResolver,
 ) {
-  return success(initializeProductOptionEngine(context, resolver));
+  return success(await initializeProductOptionEngine(context, resolver));
 }
 
-function apply(
+async function apply(
   context: ProductPresentationContext,
   previousResult: ProductOptionResolutionResult,
   intent: unknown,
@@ -209,21 +220,23 @@ function apply(
   return applyProductOptionIntent({ context, previousResult, intent, resolver });
 }
 
-function choose(
+async function choose(
   context: ProductPresentationContext,
   previous: ProductOptionResolutionResult,
   groupId: string,
   valueId: string,
 ) {
-  return success(apply(context, previous, { type: "selectEnumeratedValue", groupId, valueId }));
+  return success(
+    await apply(context, previous, { type: "selectEnumeratedValue", groupId, valueId }),
+  );
 }
 
-function completeRing(context: ProductPresentationContext = ringContext) {
-  let result = initialize(context);
-  result = choose(context, result, "ring_size", "ring_size_16");
-  result = choose(context, result, "metal", "metal_yellow");
-  result = choose(context, result, "karat", "karat_18");
-  result = choose(context, result, "stone", "stone_diamond");
+async function completeRing(context: ProductPresentationContext = ringContext) {
+  let result = await initialize(context);
+  result = await choose(context, result, "ring_size", "ring_size_16");
+  result = await choose(context, result, "metal", "metal_yellow");
+  result = await choose(context, result, "karat", "karat_18");
+  result = await choose(context, result, "stone", "stone_diamond");
   return choose(context, result, "quality", "quality_vs");
 }
 
@@ -239,12 +252,12 @@ function sourceFiles(directory: string): string[] {
 }
 
 describe("P6-01 dynamic product-option resolution engine", () => {
-  it("resolves a watch colour selection through the canonical resolver", () => {
-    const initial = initialize(watchContext);
+  it("resolves a watch colour selection through the canonical resolver", async () => {
+    const initial = await initialize(watchContext);
     expect(initial.incompleteRequiredGroupIds).toEqual(["colour"]);
     expect(initial.canAddToCart).toBe(false);
 
-    const selected = choose(watchContext, initial, "colour", "colour_silver");
+    const selected = await choose(watchContext, initial, "colour", "colour_silver");
     expect(selected.selectedValues).toEqual([{ groupId: "colour", valueId: "colour_silver" }]);
     expect(selected.resolvedConfiguration).toEqual({
       kind: "variant",
@@ -253,16 +266,60 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     expect(selected.canAddToCart).toBe(true);
   });
 
-  it("resolves complex ring selections only in canonical dependency order", () => {
-    const initial = initialize();
-    const earlyKarat = apply(ringContext, initial, {
+  it("awaits and validates asynchronous canonical resolver results", async () => {
+    const asyncResolver: CanonicalProductConfigurationResolver = {
+      async resolve(input) {
+        await Promise.resolve();
+        return canonicalResolver.resolve(input);
+      },
+    };
+    const initial = await initialize(watchContext, asyncResolver);
+    const selected = success(
+      await apply(
+        watchContext,
+        initial,
+        {
+          type: "selectEnumeratedValue",
+          groupId: "colour",
+          valueId: "colour_black",
+        },
+        asyncResolver,
+      ),
+    );
+
+    expect(selected.resolvedConfiguration).toEqual({
+      kind: "variant",
+      variantId: "variant_watch_black",
+    });
+    expect(selected.displayedPrice).toEqual({ amount: 359, currency: "EUR" });
+  });
+
+  it("rejects asynchronous invalid resolver payloads safely", async () => {
+    const invalidResolver: CanonicalProductConfigurationResolver = {
+      async resolve() {
+        await Promise.resolve();
+        return { purchasable: true };
+      },
+    };
+
+    const outcome = await initializeProductOptionEngine(watchContext, invalidResolver);
+    expect(outcome).toMatchObject({
+      ok: false,
+      error: { code: "INVALID_RESOLVER_RESULT" },
+      result: null,
+    });
+  });
+
+  it("resolves complex ring selections only in canonical dependency order", async () => {
+    const initial = await initialize();
+    const earlyKarat = await apply(ringContext, initial, {
       type: "selectEnumeratedValue",
       groupId: "karat",
       valueId: "karat_18",
     });
     expect(earlyKarat).toMatchObject({ ok: false, error: { code: "DEPENDENCY_UNSATISFIED" } });
 
-    const complete = completeRing();
+    const complete = await completeRing();
     expect(complete.selectedValues.map((selection) => selection.groupId)).toEqual([
       "ring_size",
       "metal",
@@ -274,16 +331,16 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     expect(complete.canAddToCart).toBe(true);
   });
 
-  it("disables values that would complete an unavailable combination", () => {
-    let result = initialize();
-    result = choose(ringContext, result, "metal", "metal_white");
+  it("disables values that would complete an unavailable combination", async () => {
+    let result = await initialize();
+    result = await choose(ringContext, result, "metal", "metal_white");
     expect(result.disabledOptionValues).toContainEqual({
       groupId: "karat",
       valueId: "karat_14",
       reasons: ["unavailableCombination"],
     });
 
-    const rejected = apply(ringContext, result, {
+    const rejected = await apply(ringContext, result, {
       type: "selectEnumeratedValue",
       groupId: "karat",
       valueId: "karat_14",
@@ -292,9 +349,9 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     expect(rejected.result).toBe(result);
   });
 
-  it("rejects unknown group and value IDs without changing the valid result", () => {
-    const previous = initialize(watchContext);
-    const unknownGroup = apply(watchContext, previous, {
+  it("rejects unknown group and value IDs without changing the valid result", async () => {
+    const previous = await initialize(watchContext);
+    const unknownGroup = await apply(watchContext, previous, {
       type: "selectEnumeratedValue",
       groupId: "movement",
       valueId: "movement_auto",
@@ -302,7 +359,7 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     expect(unknownGroup).toMatchObject({ ok: false, error: { code: "UNKNOWN_GROUP" } });
     expect(unknownGroup.result).toBe(previous);
 
-    const unknownValue = apply(watchContext, previous, {
+    const unknownValue = await apply(watchContext, previous, {
       type: "selectEnumeratedValue",
       groupId: "colour",
       valueId: "colour_blue",
@@ -311,8 +368,8 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     expect(unknownValue.result).toBe(previous);
   });
 
-  it("keeps Add to cart disabled until every required group is complete", () => {
-    let result = initialize();
+  it("keeps Add to cart disabled until every required group is complete", async () => {
+    let result = await initialize();
     expect(result.incompleteRequiredGroupIds).toEqual([
       "ring_size",
       "metal",
@@ -320,23 +377,23 @@ describe("P6-01 dynamic product-option resolution engine", () => {
       "stone",
       "quality",
     ]);
-    result = choose(ringContext, result, "ring_size", "ring_size_16");
-    result = choose(ringContext, result, "metal", "metal_yellow");
+    result = await choose(ringContext, result, "ring_size", "ring_size_16");
+    result = await choose(ringContext, result, "metal", "metal_yellow");
     expect(result.incompleteRequiredGroupIds).toEqual(["karat", "stone", "quality"]);
     expect(result.canAddToCart).toBe(false);
   });
 
-  it("allows optional selections and engraving to remain empty", () => {
-    const complete = completeRing();
+  it("allows optional selections and engraving to remain empty", async () => {
+    const complete = await completeRing();
     expect(complete.textEntryValues).toEqual([]);
     expect(complete.incompleteRequiredGroupIds).not.toContain("engraving");
     expect(complete.canAddToCart).toBe(true);
   });
 
-  it("clears text options and resets all selections through typed intents", () => {
-    const complete = completeRing();
+  it("clears text options and resets all selections through typed intents", async () => {
+    const complete = await completeRing();
     const engraved = success(
-      apply(ringContext, complete, {
+      await apply(ringContext, complete, {
         type: "enterTextOption",
         groupId: "engraving",
         value: "Leo 26",
@@ -345,12 +402,12 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     expect(engraved.textEntryValues).toHaveLength(1);
 
     const cleared = success(
-      apply(ringContext, engraved, { type: "clearTextOption", groupId: "engraving" }),
+      await apply(ringContext, engraved, { type: "clearTextOption", groupId: "engraving" }),
     );
     expect(cleared.textEntryValues).toEqual([]);
     expect(cleared.canAddToCart).toBe(true);
 
-    const reset = success(apply(ringContext, cleared, { type: "resetSelections" }));
+    const reset = success(await apply(ringContext, cleared, { type: "resetSelections" }));
     expect(reset.selectedValues).toEqual([]);
     expect(reset.incompleteRequiredGroupIds).toEqual([
       "ring_size",
@@ -362,10 +419,10 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     expect(reset.canAddToCart).toBe(false);
   });
 
-  it("enforces engraving length and named character constraints", () => {
-    const complete = completeRing();
+  it("enforces engraving length and named character constraints", async () => {
+    const complete = await completeRing();
     const partial = success(
-      apply(ringContext, complete, {
+      await apply(ringContext, complete, {
         type: "enterTextOption",
         groupId: "engraving",
         value: "L",
@@ -378,7 +435,7 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     expect(partial.canAddToCart).toBe(false);
 
     for (const invalidValue of ["This is too long", "Leo 💍"]) {
-      const rejected = apply(ringContext, complete, {
+      const rejected = await apply(ringContext, complete, {
         type: "enterTextOption",
         groupId: "engraving",
         value: invalidValue,
@@ -391,7 +448,7 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     }
   });
 
-  it("clearing an optional prerequisite removes dependent selections deterministically", () => {
+  it("clearing an optional prerequisite removes dependent selections deterministically", async () => {
     const context = structuredClone(ringContext);
     const stone = context.optionGroups.find((group) => group.id === "stone");
     const quality = context.optionGroups.find((group) => group.id === "quality");
@@ -399,13 +456,13 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     stone.required = false;
     quality.required = false;
 
-    let result = initialize(context);
-    result = choose(context, result, "metal", "metal_yellow");
-    result = choose(context, result, "karat", "karat_18");
-    result = choose(context, result, "stone", "stone_diamond");
-    result = choose(context, result, "quality", "quality_vs");
+    let result = await initialize(context);
+    result = await choose(context, result, "metal", "metal_yellow");
+    result = await choose(context, result, "karat", "karat_18");
+    result = await choose(context, result, "stone", "stone_diamond");
+    result = await choose(context, result, "quality", "quality_vs");
     const cleared = success(
-      apply(context, result, { type: "clearOptionalSelection", groupId: "stone" }),
+      await apply(context, result, { type: "clearOptionalSelection", groupId: "stone" }),
     );
 
     expect(cleared.selectedValues.map((selection) => selection.groupId)).not.toContain("stone");
@@ -415,9 +472,9 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     );
   });
 
-  it("uses canonical configuration price, availability and media presentation", () => {
-    const initial = initialize(watchContext);
-    const black = choose(watchContext, initial, "colour", "colour_black");
+  it("uses canonical configuration price, availability and media presentation", async () => {
+    const initial = await initialize(watchContext);
+    const black = await choose(watchContext, initial, "colour", "colour_black");
 
     expect(black.displayedPrice).toEqual({ amount: 359, currency: "EUR" });
     expect(black.displayedCompareAtPrice).toEqual({ amount: 419, currency: "EUR" });
@@ -427,11 +484,137 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     ]);
   });
 
-  it("never mutates canonical product truth while applying intents", () => {
+  it("preserves base and resolver-provided unavailable-price reasons exclusively", async () => {
+    const base = success(await initializeProductOptionEngine(unavailablePriceContext));
+    expect(base.displayedPrice).toBeUndefined();
+    expect(base.displayedPriceUnavailableReason).toEqual(localized("Request a price"));
+
+    const unavailableResolver: CanonicalProductConfigurationResolver = {
+      async resolve() {
+        await Promise.resolve();
+        return {
+          resolvedConfiguration: { kind: "baseProduct" },
+          purchasable: false,
+          priceUnavailableReason: localized("Price available after consultation"),
+          availability: localized("Contact the store"),
+        };
+      },
+    };
+    const resolved = success(
+      await initializeProductOptionEngine(unavailablePriceContext, unavailableResolver),
+    );
+    expect(resolved.displayedPrice).toBeUndefined();
+    expect(resolved.displayedPriceUnavailableReason).toEqual(
+      localized("Price available after consultation"),
+    );
+  });
+
+  it("never reuses a base compare-at price for an undiscounted resolved variant", async () => {
+    const undiscountedResolver: CanonicalProductConfigurationResolver = {
+      resolve(input) {
+        if (input.selectedValues.length === 0) return { purchasable: false };
+        return {
+          resolvedConfiguration: { kind: "variant", variantId: "variant_watch_black" },
+          purchasable: true,
+          price: { amount: 359, currency: "EUR" },
+          availability: localized("In stock"),
+          mediaAssetIds: ["asset_watch_black"],
+        };
+      },
+    };
+    const initial = await initialize(watchContext, undiscountedResolver);
+    const selected = success(
+      await apply(
+        watchContext,
+        initial,
+        {
+          type: "selectEnumeratedValue",
+          groupId: "colour",
+          valueId: "colour_black",
+        },
+        undiscountedResolver,
+      ),
+    );
+    expect(selected.displayedPrice).toEqual({ amount: 359, currency: "EUR" });
+    expect(selected.displayedCompareAtPrice).toBeUndefined();
+  });
+
+  it("shows resolved compare-at price only when supplied and keeps base state without resolution", async () => {
+    const base = success(await initializeProductOptionEngine(watchContext));
+    expect(base.displayedPrice).toEqual(watchContext.price);
+    expect(base.displayedCompareAtPrice).toEqual(watchContext.compareAtPrice);
+
+    const initial = await initialize(watchContext);
+    const resolved = await choose(watchContext, initial, "colour", "colour_black");
+    expect(resolved.displayedCompareAtPrice).toEqual({ amount: 419, currency: "EUR" });
+    expect(resolved.displayedPriceUnavailableReason).toBeUndefined();
+  });
+
+  it("excludes incomplete initial enumerated selections until an explicit intent completes them", async () => {
+    const context = structuredClone(watchContext);
+    context.selectedValues = [{ groupId: "colour", valueId: "colour_silver", complete: false }];
+    const resolverInputs: CanonicalProductConfigurationInput[] = [];
+    const capturingResolver: CanonicalProductConfigurationResolver = {
+      resolve(input) {
+        resolverInputs.push(input);
+        if (input.selectedValues.length === 0) return { purchasable: false };
+        return {
+          resolvedConfiguration: { kind: "variant", variantId: "variant_watch_silver" },
+          purchasable: true,
+          price: { amount: 349, currency: "EUR" },
+        };
+      },
+    };
+
+    const initial = await initialize(context, capturingResolver);
+    expect(initial.selectedValues).toEqual([]);
+    expect(initial.incompleteRequiredGroupIds).toEqual(["colour"]);
+    expect(initial.canAddToCart).toBe(false);
+    expect(resolverInputs[0]?.selectedValues).toEqual([]);
+
+    const completed = success(
+      await apply(
+        context,
+        initial,
+        {
+          type: "selectEnumeratedValue",
+          groupId: "colour",
+          valueId: "colour_silver",
+        },
+        capturingResolver,
+      ),
+    );
+    expect(completed.selectedValues).toEqual([{ groupId: "colour", valueId: "colour_silver" }]);
+    expect(completed.incompleteRequiredGroupIds).toEqual([]);
+    expect(completed.canAddToCart).toBe(true);
+  });
+
+  it("keeps incomplete initial text entries out of resolver and completion state", async () => {
+    const context = structuredClone(ringContext);
+    const engraving = context.optionGroups.find((group) => group.id === "engraving");
+    if (!engraving) throw new Error("Ring fixture is incomplete.");
+    engraving.required = true;
+    context.selectedValues = [{ groupId: "engraving", enteredText: "Leo", complete: false }];
+    const resolverInputs: CanonicalProductConfigurationInput[] = [];
+    const capturingResolver: CanonicalProductConfigurationResolver = {
+      resolve(input) {
+        resolverInputs.push(input);
+        return { purchasable: false };
+      },
+    };
+
+    const initial = await initialize(context, capturingResolver);
+    expect(initial.textEntryValues).toEqual([]);
+    expect(initial.incompleteRequiredGroupIds).toContain("engraving");
+    expect(initial.canAddToCart).toBe(false);
+    expect(resolverInputs[0]?.textEntries).toEqual([]);
+  });
+
+  it("never mutates canonical product truth while applying intents", async () => {
     const original = structuredClone(ringContext);
-    const result = completeRing();
+    const result = await completeRing();
     success(
-      apply(ringContext, result, {
+      await apply(ringContext, result, {
         type: "enterTextOption",
         groupId: "engraving",
         value: "Leo 26",
@@ -445,22 +628,22 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     expect(ringContext.media).toEqual(original.media);
   });
 
-  it("resolves zero-option products as purchasable when canonically available", () => {
-    const result = initialize(zeroOptionContext);
+  it("resolves zero-option products as purchasable when canonically available", async () => {
+    const result = await initialize(zeroOptionContext);
     expect(result.incompleteRequiredGroupIds).toEqual([]);
     expect(result.resolvedConfiguration).toEqual({ kind: "baseProduct" });
     expect(result.displayedPrice).toEqual({ amount: 100, currency: "EUR" });
     expect(result.canAddToCart).toBe(true);
   });
 
-  it("produces identical immutable results for the same context and intent sequence", () => {
-    const run = () => {
-      let result = initialize(watchContext);
-      result = choose(watchContext, result, "colour", "colour_black");
+  it("produces identical immutable results for the same context and intent sequence", async () => {
+    const run = async () => {
+      let result = await initialize(watchContext);
+      result = await choose(watchContext, result, "colour", "colour_black");
       return result;
     };
-    const first = run();
-    const second = run();
+    const first = await run();
+    const second = await run();
 
     expect(second).toEqual(first);
     expect(Object.isFrozen(first)).toBe(true);
@@ -468,18 +651,19 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     expect(Object.isFrozen(first.selectedMediaReferences[0])).toBe(true);
   });
 
-  it("preserves the previous valid result for malformed intents and resolver failures", () => {
-    const previous = initialize(watchContext);
-    const malformed = apply(watchContext, previous, { type: "selectEnumeratedValue" });
+  it("preserves the previous valid result for malformed intents and resolver failures", async () => {
+    const previous = await initialize(watchContext);
+    const malformed = await apply(watchContext, previous, { type: "selectEnumeratedValue" });
     expect(malformed).toMatchObject({ ok: false, error: { code: "INVALID_INTENT" } });
     expect(malformed.result).toBe(previous);
 
     const failingResolver: CanonicalProductConfigurationResolver = {
-      resolve() {
+      async resolve() {
+        await Promise.resolve();
         throw new Error("adapter unavailable");
       },
     };
-    const failed = applyProductOptionIntent({
+    const failed = await applyProductOptionIntent({
       context: watchContext,
       previousResult: previous,
       intent: {
@@ -493,13 +677,13 @@ describe("P6-01 dynamic product-option resolution engine", () => {
     expect(failed.result).toBe(previous);
   });
 
-  it("rejects cyclic or invalid dependency contexts safely", () => {
+  it("rejects cyclic or invalid dependency contexts safely", async () => {
     const cyclic = structuredClone(ringContext);
     const metal = cyclic.optionGroups.find((group) => group.id === "metal");
     if (!metal) throw new Error("Ring fixture is incomplete.");
     metal.dependsOn = [{ groupId: "quality" }];
 
-    const outcome = initializeProductOptionEngine(cyclic, canonicalResolver);
+    const outcome = await initializeProductOptionEngine(cyclic, canonicalResolver);
     expect(outcome).toMatchObject({ ok: false, error: { code: "INVALID_CONTEXT" }, result: null });
   });
 

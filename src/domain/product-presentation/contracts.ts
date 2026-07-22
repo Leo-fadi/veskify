@@ -116,6 +116,7 @@ export const canonicalProductConfigurationResultSchema = z
     resolvedConfiguration: resolvedProductConfigurationSchema.optional(),
     purchasable: z.boolean(),
     price: moneyDisplaySchema.optional(),
+    priceUnavailableReason: localizedTextSchema.optional(),
     compareAtPrice: moneyDisplaySchema.optional(),
     availability: localizedTextSchema.optional(),
     mediaAssetIds: z.array(idSchema).optional(),
@@ -129,6 +130,24 @@ export const canonicalProductConfigurationResultSchema = z
         code: "custom",
         message: "Purchasable resolver results require a canonical resolved configuration.",
         path: ["resolvedConfiguration"],
+      });
+    }
+    if (result.price !== undefined && result.priceUnavailableReason !== undefined) {
+      context.addIssue({
+        code: "custom",
+        message: "Resolver results cannot expose both price and unavailable-price reason.",
+        path: ["priceUnavailableReason"],
+      });
+    }
+    if (
+      result.resolvedConfiguration !== undefined &&
+      result.price === undefined &&
+      result.priceUnavailableReason === undefined
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Resolved configurations require an explicit canonical price state.",
+        path: ["price"],
       });
     }
     const disabledKeys = result.disabledOptionValues.map(
@@ -174,13 +193,29 @@ export const productOptionResolutionResultSchema = z
     dependencyState: z.array(optionDependencyStateSchema),
     resolvedConfiguration: resolvedProductConfigurationSchema.optional(),
     displayedPrice: moneyDisplaySchema.optional(),
+    displayedPriceUnavailableReason: localizedTextSchema.optional(),
     displayedCompareAtPrice: moneyDisplaySchema.optional(),
     displayedAvailability: localizedTextSchema.optional(),
     selectedMediaReferences: z.array(productMediaPresentationSchema),
     validationWarnings: z.array(productOptionWarningSchema),
     canAddToCart: z.boolean(),
   })
-  .strict();
+  .strict()
+  .superRefine((result, context) => {
+    if (
+      (result.displayedPrice === undefined) ===
+      (result.displayedPriceUnavailableReason === undefined)
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Resolution must expose exactly one coherent displayed price state.",
+        path:
+          result.displayedPrice === undefined
+            ? ["displayedPriceUnavailableReason"]
+            : ["displayedPrice"],
+      });
+    }
+  });
 
 export const productOptionResolutionErrorCodeSchema = z.enum([
   "INVALID_CONTEXT",
@@ -232,8 +267,10 @@ export type ProductOptionResolutionErrorCode = z.infer<
   typeof productOptionResolutionErrorCodeSchema
 >;
 
+type MaybePromise<T> = T | Promise<T>;
+
 export type CanonicalProductConfigurationResolver = {
-  resolve(input: CanonicalProductConfigurationInput): unknown;
+  resolve(input: CanonicalProductConfigurationInput): MaybePromise<unknown>;
 };
 
 export type ProductOptionResolutionOutcome =

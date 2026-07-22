@@ -32,7 +32,9 @@ const disabledReasonOrder = [
   "resolver",
 ] as const;
 
-export function resolveProductOptions(input: ResolutionInput): ProductOptionResolutionOutcome {
+export async function resolveProductOptions(
+  input: ResolutionInput,
+): Promise<ProductOptionResolutionOutcome> {
   const contextResult = productPresentationContextSchema.safeParse(input.context);
   if (!contextResult.success) {
     return failure("INVALID_CONTEXT", "Product presentation context is invalid.");
@@ -174,7 +176,7 @@ export function resolveProductOptions(input: ResolutionInput): ProductOptionReso
     );
     let rawResolverResult: unknown;
     try {
-      rawResolverResult = input.resolver.resolve(resolverInput);
+      rawResolverResult = await input.resolver.resolve(resolverInput);
     } catch {
       return failure("RESOLVER_FAILURE", "Canonical product configuration resolution failed.");
     }
@@ -231,6 +233,18 @@ export function resolveProductOptions(input: ResolutionInput): ProductOptionReso
 
   const selectedMediaReferences = resolveMediaReferences(context, canonicalResult?.mediaAssetIds);
   const allTextEntriesValid = textEntries.every((entry) => entry.valid);
+  const resolverControlsPriceState =
+    canonicalResult !== null &&
+    (canonicalResult.resolvedConfiguration !== undefined ||
+      canonicalResult.price !== undefined ||
+      canonicalResult.priceUnavailableReason !== undefined);
+  const displayedPrice = resolverControlsPriceState ? canonicalResult?.price : context.price;
+  const displayedPriceUnavailableReason = resolverControlsPriceState
+    ? canonicalResult?.priceUnavailableReason
+    : context.priceUnavailableReason;
+  const displayedCompareAtPrice = resolverControlsPriceState
+    ? canonicalResult?.compareAtPrice
+    : context.compareAtPrice;
   const result = productOptionResolutionResultSchema.parse({
     productId: context.productId,
     catalogueRevision: context.revision,
@@ -241,8 +255,9 @@ export function resolveProductOptions(input: ResolutionInput): ProductOptionReso
     unavailableCombinations: context.unavailableCombinations,
     dependencyState,
     resolvedConfiguration: canonicalResult?.resolvedConfiguration,
-    displayedPrice: canonicalResult?.price ?? context.price,
-    displayedCompareAtPrice: canonicalResult?.compareAtPrice ?? context.compareAtPrice,
+    displayedPrice,
+    displayedPriceUnavailableReason,
+    displayedCompareAtPrice,
     displayedAvailability: canonicalResult?.availability ?? context.availability,
     selectedMediaReferences,
     validationWarnings,
