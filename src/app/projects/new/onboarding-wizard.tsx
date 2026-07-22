@@ -1558,114 +1558,116 @@ function ActiveStep({
       </aside>
 
       <div className={styles.workflowMain}>
-        <div
-          aria-label={text.progressLabel}
-          className={styles.compactProgress}
-          data-onboarding-progress="compact"
-        >
-          <div className={styles.compactProgressCopy}>
-            <span>
-              {text.step} {progress.current} {text.of} {progress.total}
-            </span>
-            <strong>{step.title[locale]}</strong>
-          </div>
-          <progress
-            aria-label={`${text.step} ${progress.current} ${text.of} ${progress.total}`}
-            max={progress.total}
-            value={progress.completed}
-          />
-        </div>
-
-        <div className={styles.stepContent}>
-          <p aria-live="polite" className={styles.status} role="status">
-            {message}
-          </p>
-          <p className={styles.stepNumber}>
-            {text.step} {step.position}
-          </p>
-          <h2>{step.title[locale]}</h2>
-          <p className={styles.description}>{step.description[locale]}</p>
-
-          {step.id === "creation-path" ? (
-            <fieldset className={styles.pathOptions}>
-              <legend>{text.pathLegend}</legend>
-              {pathOptions.map((option) => (
-                <label key={option.value}>
-                  <input
-                    checked={session.creationPath === option.value}
-                    name="creation-path"
-                    onChange={() => onPath(option.value)}
-                    type="radio"
-                    value={option.value}
-                  />
-                  <span>
-                    <strong>{option.title[locale]}</strong>
-                    <small>{option.description[locale]}</small>
-                  </span>
-                </label>
-              ))}
-            </fieldset>
-          ) : step.id === "business-basics" ? (
-            <BusinessBasicsForm
-              draft={businessDraft}
-              errors={businessErrors}
-              locale={locale}
-              onComplete={onBusinessComplete}
-              onDraftChange={onBusinessDraftChange}
-              onField={onBusinessField}
-            />
-          ) : step.id === "existing-sources" ? (
-            <ExistingSourcesStep
-              draft={existingSourceDraft}
-              errors={existingSourceErrors}
-              locale={locale}
-              onComplete={onExistingSourcesComplete}
-              onDraftChange={onExistingSourceDraftChange}
-              onField={onExistingSourceField}
-              sourceType={session.designBrief.creationContext.type}
-            />
-          ) : step.id === "visual-direction" ? (
-            <VisualDirectionForm
-              draft={visualDirectionDraft}
-              errors={visualDirectionErrors}
-              locale={locale}
-              onComplete={onVisualDirectionComplete}
-              onDraftChange={onVisualDirectionDraftChange}
-              onField={onVisualDirectionFieldSave}
-            />
-          ) : step.id === "catalogue" ? (
-            <CatalogueContextForm
-              draft={catalogueContextDraft}
-              error={catalogueContextError}
-              locale={locale}
-              onChange={onCatalogueContextChange}
-              onComplete={onCatalogueContextComplete}
-            />
-          ) : step.id === "pages" ? (
-            <PagesForm
-              draft={pagesDraft}
-              error={pagesError}
-              locale={locale}
-              onChange={onPagesChange}
-              onComplete={onPagesComplete}
-            />
-          ) : step.id === "languages" ? (
-            <StorefrontLanguagesForm
-              error={languageError}
-              locale={locale}
-              onChange={onLanguagesChange}
-              onComplete={onLanguagesComplete}
-              selection={{
-                selectedLanguages: session.selectedLanguages,
-                primaryLanguage: session.primaryLanguage,
-              }}
-            />
-          ) : (
-            <div className={styles.placeholder}>
-              <strong>{text.futureLabel}</strong>
-              <p>{step.placeholder[locale]}</p>
+        <div className={styles.workflowContent}>
+          <div
+            aria-label={text.progressLabel}
+            className={styles.compactProgress}
+            data-onboarding-progress="compact"
+          >
+            <div className={styles.compactProgressCopy}>
+              <span>
+                {text.step} {progress.current} {text.of} {progress.total}
+              </span>
+              <strong>{step.title[locale]}</strong>
             </div>
-          )}
+            <progress
+              aria-label={`${text.step} ${progress.current} ${text.of} ${progress.total}`}
+              max={progress.total}
+              value={progress.completed}
+            />
+          </div>
+
+          <div className={styles.stepContent}>
+            <p aria-live="polite" className={styles.status} role="status">
+              {message}
+            </p>
+            <p className={styles.stepNumber}>
+              {text.step} {step.position}
+            </p>
+            <h2>{step.title[locale]}</h2>
+            <p className={styles.description}>{step.description[locale]}</p>
+
+            {step.id === "creation-path" ? (
+              <fieldset className={styles.pathOptions}>
+                <legend>{text.pathLegend}</legend>
+                {pathOptions.map((option) => (
+                  <label key={option.value}>
+                    <input
+                      checked={session.creationPath === option.value}
+                      name="creation-path"
+                      onChange={() => onPath(option.value)}
+                      type="radio"
+                      value={option.value}
+                    />
+                    <span>
+                      <strong>{option.title[locale]}</strong>
+                      <small>{option.description[locale]}</small>
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+            ) : step.id === "business-basics" ? (
+              <BusinessBasicsForm
+                draft={businessDraft}
+                errors={businessErrors}
+                locale={locale}
+                onComplete={onBusinessComplete}
+                onDraftChange={onBusinessDraftChange}
+                onField={onBusinessField}
+              />
+            ) : step.id === "existing-sources" ? (
+              <ExistingSourcesStep
+                draft={existingSourceDraft}
+                errors={existingSourceErrors}
+                locale={locale}
+                onComplete={onExistingSourcesComplete}
+                onDraftChange={onExistingSourceDraftChange}
+                onField={onExistingSourceField}
+                sourceType={session.designBrief.creationContext.type}
+              />
+            ) : step.id === "visual-direction" ? (
+              <VisualDirectionForm
+                draft={visualDirectionDraft}
+                errors={visualDirectionErrors}
+                locale={locale}
+                onComplete={onVisualDirectionComplete}
+                onDraftChange={onVisualDirectionDraftChange}
+                onField={onVisualDirectionFieldSave}
+              />
+            ) : step.id === "catalogue" ? (
+              <CatalogueContextForm
+                draft={catalogueContextDraft}
+                error={catalogueContextError}
+                locale={locale}
+                onChange={onCatalogueContextChange}
+                onComplete={onCatalogueContextComplete}
+              />
+            ) : step.id === "pages" ? (
+              <PagesForm
+                draft={pagesDraft}
+                error={pagesError}
+                locale={locale}
+                onChange={onPagesChange}
+                onComplete={onPagesComplete}
+              />
+            ) : step.id === "languages" ? (
+              <StorefrontLanguagesForm
+                error={languageError}
+                locale={locale}
+                onChange={onLanguagesChange}
+                onComplete={onLanguagesComplete}
+                selection={{
+                  selectedLanguages: session.selectedLanguages,
+                  primaryLanguage: session.primaryLanguage,
+                }}
+              />
+            ) : (
+              <div className={styles.placeholder}>
+                <strong>{text.futureLabel}</strong>
+                <p>{step.placeholder[locale]}</p>
+              </div>
+            )}
+          </div>
         </div>
 
         <footer

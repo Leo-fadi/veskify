@@ -114,7 +114,6 @@
 }
 
 .card {
-  overflow: hidden;
   border: 1px solid var(--brand-color-border);
   border-radius: 0.75rem;
   background: var(--vesko-color-surface);
@@ -270,6 +269,12 @@
   display: flex;
   min-width: 0;
   flex-direction: column;
+}
+
+.workflowContent {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 0.75rem 0.75rem 0 0;
 }
 
 .stepContent h2,

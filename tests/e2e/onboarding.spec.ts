@@ -70,6 +70,29 @@ for (const width of [375, 768, 1024, 1440]) {
   });
 }
 
+test("keeps sticky onboarding actions visible after mobile page scroll", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 360 });
+  await page.goto("/projects/new");
+
+  const actions = page.locator('[data-sticky-actions="true"]');
+  const path = page.getByRole("radio", { name: /Create a new storefront/i });
+  await path.focus();
+  await page.keyboard.press("Space");
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect(actions).toBeInViewport();
+  await expect(actions.getByRole("button", { name: "Continue" })).toBeVisible();
+
+  await actions.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Business basics" })).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect(actions).toBeInViewport();
+
+  const saveExit = actions.getByRole("button", { name: "Save & exit" });
+  await saveExit.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL("/");
+});
+
 type StoredOnboardingSession = {
   activeStepId?: string;
   skippedStepIds?: string[];
