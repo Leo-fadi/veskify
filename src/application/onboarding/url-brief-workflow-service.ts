@@ -61,6 +61,13 @@ export type PrepareUrlStorefrontBriefInput = Readonly<{
   visualPriorities?: readonly string[];
   contentAssumptions?: readonly string[];
   materialUnresolvedBlockers?: readonly string[];
+  excludedClaims?: readonly string[];
+  generationPermissions?: Partial<StorefrontDesignBriefContract["generationPermissions"]>;
+}>;
+
+export type CanonicalMerchantReconciliationMatch = Readonly<{
+  canonicalProductId?: string | null;
+  canonicalCollectionId?: string | null;
 }>;
 
 export class UrlBriefWorkflowOperationError extends Error {
@@ -111,7 +118,10 @@ function replaceSource(
 }
 
 function failureCode(error: unknown): SourceDiscoveryApplicationErrorCode {
-  return error instanceof SourceDiscoveryApplicationError ? error.code : "unavailable-source";
+  return error instanceof SourceDiscoveryApplicationError ||
+    error instanceof UrlBriefWorkflowOperationError
+    ? error.code
+    : "unavailable-source";
 }
 
 function sourceFailureCode(code: SourceDiscoveryApplicationErrorCode): SourceFailureCode {
@@ -151,6 +161,15 @@ function replaceBrief(
 ): StorefrontDesignBriefContract[] {
   return [...briefs.filter((candidate) => candidate.revision !== brief.revision), brief].sort(
     (left, right) => left.revision - right.revision,
+  );
+}
+
+function sourceReferencesMatch(left: SourceReference, right: SourceReference): boolean {
+  return (
+    left.id === right.id &&
+    left.url === right.url &&
+    left.normalizedOrigin === right.normalizedOrigin &&
+    left.requestedLocale === right.requestedLocale
   );
 }
 
@@ -240,39 +259,45 @@ export class UrlBriefWorkflowService {
     }
 
     const normalized = normalizeSourceUrl(parsed.toString());
+    const locale = localeSchema.parse(requestedLocale);
+    const currentSource = loaded.workflow.sourceReferences.find(
+      (candidate) => candidate.id === loaded.workflow.currentSourceReferenceId,
+    );
+    if (
+      currentSource?.url === normalized.url &&
+      currentSource.normalizedOrigin === normalized.normalizedOrigin &&
+      currentSource.requestedLocale === locale
+    ) {
+      return cloneUrlBriefWorkflow(loaded.workflow);
+    }
+
     const timestamp = this.#now();
     const source = sourceReferenceSchema.parse({
       id: this.#createSourceId(),
       sourceType: "merchant-provided-url",
       url: normalized.url,
       normalizedOrigin: normalized.normalizedOrigin,
-      requestedLocale: localeSchema.parse(requestedLocale),
+      requestedLocale: locale,
       discoveredAt: timestamp,
       allowedDiscoveryPolicy: this.#policy,
       status: "pending",
       warnings: [],
       failure: null,
     });
-    const currentBrief = currentUrlBrief(loaded.workflow);
-    const retainApprovedReview = currentBrief?.status === "approved";
     const next = urlBriefWorkflowSchema.parse({
       ...loaded.workflow,
       status: "source-submitted",
       lastSafeState: "source-submitted",
-      sourceReferences: replaceSource(loaded.workflow.sourceReferences, source),
+      sourceReferences: [source],
       currentSourceReferenceId: source.id,
-      discoveryResult: retainApprovedReview ? loaded.workflow.discoveryResult : null,
-      reconciliation: retainApprovedReview ? loaded.workflow.reconciliation : null,
-      merchantResolutions: retainApprovedReview ? loaded.workflow.merchantResolutions : [],
-      unresolvedInformationIds: retainApprovedReview
-        ? loaded.workflow.unresolvedInformationIds
-        : [],
-      brandProposal: retainApprovedReview ? loaded.workflow.brandProposal : null,
-      briefRevisions: retainApprovedReview ? loaded.workflow.briefRevisions : [],
-      currentBriefRevision: retainApprovedReview ? loaded.workflow.currentBriefRevision : null,
-      approvedEvidenceFingerprint: retainApprovedReview
-        ? loaded.workflow.approvedEvidenceFingerprint
-        : null,
+      discoveryResult: null,
+      reconciliation: null,
+      merchantResolutions: [],
+      unresolvedInformationIds: [],
+      brandProposal: null,
+      briefRevisions: [],
+      currentBriefRevision: null,
+      approvedEvidenceFingerprint: null,
       failure: null,
       updatedAt: timestamp,
     });
@@ -375,10 +400,13 @@ export class UrlBriefWorkflowService {
   async reconcile(): Promise<UrlBriefWorkflow> {
     const loaded = await this.#load();
     const discovery = loaded.workflow.discoveryResult;
-    if (!discovery) {
+    const currentSource = loaded.workflow.sourceReferences.find(
+      (candidate) => candidate.id === loaded.workflow.currentSourceReferenceId,
+    );
+    if (!discovery || !currentSource || !sourceReferencesMatch(discovery.source, currentSource)) {
       throw new UrlBriefWorkflowOperationError(
         "invalid-lifecycle",
-        "Discover storefront evidence before reconciliation.",
+        "Discover evidence for the current storefront source before reconciliation.",
         cloneUrlBriefWorkflow(loaded.workflow),
       );
     }
@@ -512,11 +540,26 @@ export class UrlBriefWorkflowService {
         ? updateStorefrontDesignBriefReview(current, {
             now: this.#now(),
             materialEvidence: material,
+            businessIdentity: input.businessIdentity,
+            languagePlan: input.languagePlan,
             brandProposal: loaded.workflow.brandProposal,
             approvedBrandDirection: input.approvedBrandDirection,
-            approvedReusableAssetIds: input.approvedReusableAssetIds,
+            approvedReusableAssetIds: input.approvedReusableAssetIds ?? [],
+            pagePlan: input.pagePlan ?? { pageTypes: ["home", "collection", "product"] },
+            navigationDirection: input.navigationDirection ?? [],
+            homepageGoals: input.homepageGoals ?? [],
+            collectionPageGoals: input.collectionPageGoals ?? [],
+            productPageGoals: input.productPageGoals ?? [],
+            visualPriorities: input.visualPriorities ?? [],
+            contentAssumptions: input.contentAssumptions ?? [],
             unresolvedItems: [],
-            materialUnresolvedBlockers: input.materialUnresolvedBlockers,
+            materialUnresolvedBlockers: input.materialUnresolvedBlockers ?? [],
+            excludedClaims: input.excludedClaims ?? [],
+            generationPermissions: {
+              allowMarketingCopy: input.generationPermissions?.allowMarketingCopy ?? true,
+              allowAssetReuse: input.generationPermissions?.allowAssetReuse ?? false,
+              allowGeneratedImagery: input.generationPermissions?.allowGeneratedImagery ?? false,
+            },
           })
         : createStorefrontDesignBrief({
             id: `${loaded.workflow.id}_brief`.slice(0, 80),
@@ -538,6 +581,8 @@ export class UrlBriefWorkflowService {
             visualPriorities: input.visualPriorities,
             contentAssumptions: input.contentAssumptions,
             materialUnresolvedBlockers: input.materialUnresolvedBlockers,
+            excludedClaims: input.excludedClaims,
+            generationPermissions: input.generationPermissions,
           });
     const nextStatus =
       loaded.workflow.status === "superseded" ? "superseded" : "brief-needs-review";
@@ -559,6 +604,7 @@ export class UrlBriefWorkflowService {
     decisionId: string,
     outcome: MerchantReconciliationResolution["outcome"],
     note: string | null = null,
+    canonicalMatch: CanonicalMerchantReconciliationMatch = {},
   ): Promise<UrlBriefWorkflow> {
     const loaded = await this.#load();
     const reconciliation = loaded.workflow.reconciliation;
@@ -569,12 +615,94 @@ export class UrlBriefWorkflowService {
         cloneUrlBriefWorkflow(loaded.workflow),
       );
     }
-    const resolution = merchantReconciliationResolutionSchema.parse({
+    const decision = reconciliation.decisions.find((candidate) => candidate.id === decisionId);
+    if (!decision) {
+      throw new UrlBriefWorkflowOperationError(
+        "invalid-lifecycle",
+        "The reconciliation decision is no longer available.",
+        cloneUrlBriefWorkflow(loaded.workflow),
+      );
+    }
+
+    const canonicalProductId = canonicalMatch.canonicalProductId ?? null;
+    const canonicalCollectionId = canonicalMatch.canonicalCollectionId ?? null;
+    if (decision.field === null) {
+      if (
+        outcome === "use-vesko-truth" ||
+        canonicalProductId !== null ||
+        canonicalCollectionId !== null
+      ) {
+        throw new UrlBriefWorkflowOperationError(
+          "conflicting-evidence",
+          "Choose whether to use or reject this non-commerce source evidence.",
+          cloneUrlBriefWorkflow(loaded.workflow),
+        );
+      }
+    } else {
+      const expectsCollection = decision.field === "collection-identity";
+      const allowsEitherTarget = decision.field === "collection-membership";
+      const selectedId = expectsCollection
+        ? canonicalCollectionId
+        : allowsEitherTarget
+          ? (canonicalCollectionId ?? canonicalProductId)
+          : canonicalProductId;
+      const hasWrongTarget = expectsCollection
+        ? canonicalProductId !== null
+        : !allowsEitherTarget && canonicalCollectionId !== null;
+      if (
+        outcome !== "use-vesko-truth" ||
+        selectedId === null ||
+        hasWrongTarget ||
+        (decision.candidateCanonicalIds.length > 0 &&
+          !decision.candidateCanonicalIds.includes(selectedId))
+      ) {
+        throw new UrlBriefWorkflowOperationError(
+          "conflicting-evidence",
+          "Select an exact canonical Vesko match before resolving this commerce conflict.",
+          cloneUrlBriefWorkflow(loaded.workflow),
+        );
+      }
+      let projection: CanonicalCommerceProjection | null;
+      try {
+        projection = await this.#commerce.load();
+      } catch (error) {
+        throw new UrlBriefWorkflowOperationError(
+          "unavailable-source",
+          "The current Vesko catalogue could not be verified. Try reconciliation again.",
+          cloneUrlBriefWorkflow(loaded.workflow),
+          { cause: error },
+        );
+      }
+      const projectionIsCurrent = projection?.id === reconciliation.canonicalCommerceProjectionRef;
+      const targetExists =
+        canonicalCollectionId !== null
+          ? projection?.collections.some((collection) => collection.id === selectedId)
+          : projection?.products.some((product) => product.id === selectedId);
+      if (!projectionIsCurrent || !targetExists) {
+        throw new UrlBriefWorkflowOperationError(
+          projection ? "conflicting-evidence" : "missing-canonical-vesko-projection",
+          "The selected Vesko record is not available in the current catalogue. Reconcile again.",
+          cloneUrlBriefWorkflow(loaded.workflow),
+        );
+      }
+    }
+    const parsedResolution = merchantReconciliationResolutionSchema.safeParse({
       decisionId,
       outcome,
+      canonicalProductId,
+      canonicalCollectionId,
       note,
       resolvedAt: this.#now(),
     });
+    if (!parsedResolution.success) {
+      throw new UrlBriefWorkflowOperationError(
+        "invalid-contract",
+        "The reconciliation choice is invalid. Review the selection and try again.",
+        cloneUrlBriefWorkflow(loaded.workflow),
+        { cause: parsedResolution.error },
+      );
+    }
+    const resolution = parsedResolution.data;
     const merchantResolutions = [
       ...loaded.workflow.merchantResolutions.filter(
         (candidate) => candidate.decisionId !== decisionId,
@@ -626,11 +754,64 @@ export class UrlBriefWorkflowService {
   async approveBrief(actorId: string, approvedBrandDirection?: unknown): Promise<UrlBriefWorkflow> {
     const loaded = await this.#load();
     const brief = currentUrlBrief(loaded.workflow);
-    if (!brief || loaded.workflow.unresolvedInformationIds.length > 0) {
+    const material = urlBriefWorkflowMaterialEvidence(loaded.workflow);
+    if (!brief || !material || loaded.workflow.unresolvedInformationIds.length > 0) {
       throw new UrlBriefWorkflowOperationError(
         "conflicting-evidence",
         "Resolve all material source decisions before approval.",
         cloneUrlBriefWorkflow(loaded.workflow),
+      );
+    }
+
+    let projection: CanonicalCommerceProjection | null;
+    try {
+      projection = await this.#commerce.load();
+    } catch (error) {
+      throw new UrlBriefWorkflowOperationError(
+        "unavailable-source",
+        "The current Vesko catalogue could not be verified. Try approval again.",
+        cloneUrlBriefWorkflow(loaded.workflow),
+        { cause: error },
+      );
+    }
+    const currentProjectionRef =
+      loaded.workflow.reconciliation?.canonicalCommerceProjectionRef ?? null;
+    const currentEvidenceFingerprint = createStorefrontSourceEvidenceFingerprint(material);
+    if (
+      projection === null ||
+      projection.id !== currentProjectionRef ||
+      brief.canonicalCommerceProjectionRef !== currentProjectionRef ||
+      brief.evidenceFingerprint !== currentEvidenceFingerprint
+    ) {
+      const failureCode: SourceDiscoveryApplicationErrorCode = projection
+        ? "stale-brief-approval"
+        : "missing-canonical-vesko-projection";
+      const reviewStatus: UrlBriefWorkflow["status"] =
+        brief.status === "approved"
+          ? "stale"
+          : loaded.workflow.status === "superseded"
+            ? "superseded"
+            : "brief-needs-review";
+      const stale = urlBriefWorkflowSchema.parse({
+        ...loaded.workflow,
+        status: reviewStatus,
+        lastSafeState: reviewStatus,
+        approvedEvidenceFingerprint:
+          brief.status === "approved" ? loaded.workflow.approvedEvidenceFingerprint : null,
+        failure: {
+          code: failureCode,
+          message: projection
+            ? "Storefront evidence or protected Vesko commerce changed. Refresh the brief before approval."
+            : "A current canonical Vesko catalogue is required before approval.",
+          retryable: true,
+        },
+        updatedAt: this.#now(),
+      });
+      const persisted = await this.#persist(loaded.session, stale, loaded.workflow);
+      throw new UrlBriefWorkflowOperationError(
+        failureCode,
+        persisted.workflow.failure?.message ?? "Refresh the brief before approval.",
+        cloneUrlBriefWorkflow(persisted.workflow),
       );
     }
     try {

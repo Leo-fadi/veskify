@@ -17,9 +17,16 @@ import { aurumNordicSeed } from "@/data/seed";
 import {
   currentUrlBrief,
   onboardingSessionSchema,
+  urlBriefWorkflowMaterialEvidence,
   type OnboardingSession,
 } from "@/domain/onboarding";
-import { sourceDiscoveryResultSchema, sourceEvidenceSchema } from "@/domain/source-discovery";
+import {
+  createStorefrontSourceEvidenceFingerprint,
+  reconciliationDecisionSchema,
+  sourceDiscoveryResultSchema,
+  sourceEvidenceSchema,
+  sourceReferenceSchema,
+} from "@/domain/source-discovery";
 import type {
   OnboardingSessionLoadResult,
   OnboardingSessionRepository,
@@ -111,6 +118,49 @@ async function reachApproved(service: UrlBriefWorkflowService) {
   await service.proposeBrand();
   await service.prepareBrief(briefInput);
   return service.approveBrief("merchant_owner");
+}
+
+async function reachReview(service: UrlBriefWorkflowService, input = briefInput) {
+  await service.submitSourceUrl("https://merchant.example/store#ignored");
+  await service.discover();
+  await service.reconcile();
+  await service.proposeBrand();
+  return service.prepareBrief(input);
+}
+
+function unresolvedCommerceAdapter(
+  kind: "product-reference-observed" | "collection-reference-observed",
+): SourceDiscoveryAdapter {
+  const base = createDeterministicMockDiscoveryAdapter();
+  return {
+    id: `unresolved-${kind}`,
+    async discover(input) {
+      const result = await base.discover(input);
+      const commerceEvidence = sourceEvidenceSchema.parse({
+        id: `evidence_${input.source.id}_${kind}`,
+        kind,
+        provenance: {
+          sourceReferenceId: input.source.id,
+          sourceUrl: input.source.url,
+          observedAt: input.source.discoveredAt,
+        },
+        sourceUrl: input.source.url,
+        confidence: 0.9,
+        observedValue:
+          kind === "product-reference-observed"
+            ? { title: { en: "Unknown public product" }, price: { amount: 1, currency: "EUR" } }
+            : { title: { en: "Unknown public collection" } },
+        extractionMethod: "deterministic-unresolved-commerce",
+        locale: "en",
+        warnings: [],
+        uncertainty: { isUncertain: false, reason: null },
+      });
+      return sourceDiscoveryResultSchema.parse({
+        ...result,
+        evidence: [...result.evidence, commerceEvidence],
+      });
+    },
+  };
 }
 
 function uncertainAdapter(): SourceDiscoveryAdapter {
@@ -433,5 +483,454 @@ describe("P7-02 URL-to-approved-Storefront-Design-Brief workflow", () => {
     expect(sources).not.toMatch(/from ["']react["']|@puckeditor|integrations\/puck/);
     expect(sources).not.toMatch(/from ["']openai["']|responses\.create|chat\.completions/);
     expect(sources).not.toMatch(/process\.env|OPENAI_API_KEY/);
+  });
+});
+
+describe("P7-02 automated review hardening", () => {
+  it("rejects source-evidence acceptance for product identity and commerce conflicts", async () => {
+    const { service } = await setup(unresolvedCommerceAdapter("product-reference-observed"));
+    await service.submitSourceUrl("https://merchant.example/store");
+    await service.discover();
+    const reconciled = await service.reconcile();
+    const decisionId = reconciled.unresolvedInformationIds[0];
+    if (!decisionId) throw new Error("Expected an unresolved product decision.");
+
+    await expect(
+      service.recordMerchantResolution(decisionId, "accept-source-evidence"),
+    ).rejects.toMatchObject({ code: "conflicting-evidence" });
+  });
+
+  it("rejects source-evidence acceptance for collection identity and membership conflicts", async () => {
+    const identity = await setup(unresolvedCommerceAdapter("collection-reference-observed"));
+    await identity.service.submitSourceUrl("https://merchant.example/store");
+    await identity.service.discover();
+    const identityWorkflow = await identity.service.reconcile();
+    const identityDecisionId = identityWorkflow.unresolvedInformationIds[0];
+    if (!identityDecisionId) throw new Error("Expected an unresolved collection decision.");
+    await expect(
+      identity.service.recordMerchantResolution(identityDecisionId, "accept-source-evidence"),
+    ).rejects.toMatchObject({ code: "conflicting-evidence" });
+
+    const membership = await setup();
+    await membership.service.submitSourceUrl("https://merchant.example/store");
+    await membership.service.discover();
+    const reconciled = await membership.service.reconcile();
+    const collection = aurumNordicSeed.catalogue.collections[0];
+    if (!collection || !membership.repository.session || !reconciled.reconciliation) {
+      throw new Error("Expected collection and reconciliation fixtures.");
+    }
+    const decision = reconciliationDecisionSchema.parse({
+      id: "reconcile_collection_membership_review",
+      kind: "unresolved-conflict",
+      evidenceId: null,
+      canonicalProductId: null,
+      canonicalCollectionId: null,
+      candidateCanonicalIds: [collection.id],
+      field: "collection-membership",
+      sourceValue: ["public_product"],
+      canonicalValue: collection.productIds,
+      reason: "Confirm the canonical collection membership.",
+      merchantDecisionRequired: true,
+    });
+    membership.repository.session = onboardingSessionSchema.parse({
+      ...membership.repository.session,
+      urlBriefWorkflow: {
+        ...reconciled,
+        status: "reconciliation-needed",
+        lastSafeState: "reconciliation-needed",
+        reconciliation: {
+          ...reconciled.reconciliation,
+          decisions: [...reconciled.reconciliation.decisions, decision],
+          unresolvedConflictIds: [...reconciled.reconciliation.unresolvedConflictIds, decision.id],
+        },
+        unresolvedInformationIds: [decision.id],
+      },
+    });
+
+    await expect(
+      membership.service.recordMerchantResolution(decision.id, "accept-source-evidence"),
+    ).rejects.toMatchObject({ code: "conflicting-evidence" });
+  });
+
+  it("clears commerce conflicts only after an exact canonical Vesko match is supplied", async () => {
+    const { service } = await setup(unresolvedCommerceAdapter("product-reference-observed"));
+    await service.submitSourceUrl("https://merchant.example/store");
+    await service.discover();
+    const reconciled = await service.reconcile();
+    const decisionId = reconciled.unresolvedInformationIds[0];
+    const product = aurumNordicSeed.catalogue.products[0];
+    if (!decisionId || !product) throw new Error("Expected product fixtures.");
+
+    await expect(
+      service.recordMerchantResolution(decisionId, "use-vesko-truth"),
+    ).rejects.toMatchObject({ code: "conflicting-evidence" });
+    const resolved = await service.recordMerchantResolution(
+      decisionId,
+      "use-vesko-truth",
+      "Use the verified catalogue product.",
+      { canonicalProductId: product.id },
+    );
+
+    expect(resolved.unresolvedInformationIds).toEqual([]);
+    expect(resolved.merchantResolutions).toContainEqual(
+      expect.objectContaining({
+        decisionId,
+        outcome: "use-vesko-truth",
+        canonicalProductId: product.id,
+      }),
+    );
+  });
+
+  it("still allows merchant acceptance or rejection for uncertain design evidence", async () => {
+    const { service } = await setup(uncertainAdapter());
+    await service.submitSourceUrl("https://merchant.example/store");
+    await service.discover();
+    const reconciled = await service.reconcile();
+    const decisionId = reconciled.unresolvedInformationIds[0];
+    if (!decisionId) throw new Error("Expected an uncertain design decision.");
+
+    const accepted = await service.recordMerchantResolution(
+      decisionId,
+      "accept-source-evidence",
+      "Use the observed colour direction.",
+    );
+    expect(accepted.unresolvedInformationIds).toEqual([]);
+    expect(
+      urlBriefWorkflowMaterialEvidence(accepted)?.reconciliation?.decisions.find(
+        (decision) => decision.id === decisionId,
+      ),
+    ).toMatchObject({ kind: "accepted-evidence", merchantDecisionRequired: false });
+  });
+
+  it("keeps protected product values under canonical Vesko authority after resolution", async () => {
+    const { service } = await setup(unresolvedCommerceAdapter("product-reference-observed"));
+    await service.submitSourceUrl("https://merchant.example/store");
+    await service.discover();
+    const reconciled = await service.reconcile();
+    const decisionId = reconciled.unresolvedInformationIds[0];
+    const product = aurumNordicSeed.catalogue.products[0];
+    if (!decisionId || !product) throw new Error("Expected product fixtures.");
+    const resolved = await service.recordMerchantResolution(decisionId, "use-vesko-truth", null, {
+      canonicalProductId: product.id,
+    });
+    const decision = urlBriefWorkflowMaterialEvidence(resolved)?.reconciliation?.decisions.find(
+      (candidate) => candidate.id === decisionId,
+    );
+
+    expect(decision).toMatchObject({
+      kind: "canonical-override",
+      canonicalProductId: product.id,
+    });
+    expect(decision?.sourceValue).toMatchObject({ price: { amount: 1, currency: "EUR" } });
+    expect(aurumNordicSeed.catalogue.products[0]).toEqual(product);
+  });
+
+  it("preserves the persisted workflow after an invalid commerce resolution attempt", async () => {
+    const { repository, service } = await setup(
+      unresolvedCommerceAdapter("product-reference-observed"),
+    );
+    await service.submitSourceUrl("https://merchant.example/store");
+    await service.discover();
+    const reconciled = await service.reconcile();
+    const decisionId = reconciled.unresolvedInformationIds[0];
+    if (!decisionId) throw new Error("Expected an unresolved product decision.");
+    const persistedBefore = structuredClone(repository.session);
+    const saveCountBefore = repository.saveCount;
+
+    await expect(
+      service.recordMerchantResolution(decisionId, "use-vesko-truth", null, {
+        canonicalProductId: "product_not_in_vesko",
+      }),
+    ).rejects.toMatchObject({ code: "conflicting-evidence" });
+    expect(repository.session).toEqual(persistedBefore);
+    expect(repository.saveCount).toBe(saveCountBefore);
+  });
+
+  it("rejects approval when material evidence changes before approval", async () => {
+    const base = createDeterministicMockDiscoveryAdapter();
+    let version = 1;
+    const adapter: SourceDiscoveryAdapter = {
+      id: "preapproval-changing-evidence",
+      async discover(input) {
+        const result = await base.discover(input);
+        return sourceDiscoveryResultSchema.parse({
+          ...result,
+          evidence: result.evidence.map((evidence) =>
+            evidence.kind === "page-identity"
+              ? { ...evidence, observedValue: { pageTitle: `Review version ${version}` } }
+              : evidence,
+          ),
+        });
+      },
+    };
+    const { service } = await setup(adapter);
+    await reachReview(service);
+    version = 2;
+    await service.discover();
+    await service.reconcile();
+
+    await expect(service.approveBrief("merchant_owner")).rejects.toMatchObject({
+      code: "stale-brief-approval",
+      workflow: { status: "brief-needs-review", failure: { retryable: true } },
+    });
+  });
+
+  it("rejects approval when the current canonical commerce projection changes", async () => {
+    let projection = aurumNordicSeed.catalogue;
+    const { service } = await setup(createDeterministicMockDiscoveryAdapter(), {
+      load: () => projection,
+    });
+    await reachReview(service);
+    projection = { ...aurumNordicSeed.catalogue, id: "catalogue_aurum_review_2" };
+
+    await expect(service.approveBrief("merchant_owner")).rejects.toMatchObject({
+      code: "stale-brief-approval",
+      workflow: { status: "brief-needs-review" },
+    });
+  });
+
+  it("approves when the current review evidence and projection are unchanged", async () => {
+    const { service } = await setup();
+    await reachReview(service);
+    await expect(service.approveBrief("merchant_owner")).resolves.toMatchObject({
+      status: "approved",
+      failure: null,
+    });
+  });
+
+  it("ignores approval metadata and observation timestamps in material freshness", async () => {
+    const { service } = await setup();
+    const review = await reachReview(service);
+    const material = urlBriefWorkflowMaterialEvidence(review);
+    if (!material) throw new Error("Expected material evidence.");
+    const laterMaterial = {
+      ...material,
+      sourceReferences: material.sourceReferences.map((source) => ({
+        ...source,
+        discoveredAt: "2026-07-22T18:00:00.000Z",
+      })),
+      evidence: material.evidence.map((evidence) => ({
+        ...evidence,
+        provenance: { ...evidence.provenance, observedAt: "2026-07-22T18:00:00.000Z" },
+      })),
+    };
+
+    expect(createStorefrontSourceEvidenceFingerprint(laterMaterial)).toBe(
+      createStorefrontSourceEvidenceFingerprint(material),
+    );
+    await expect(service.approveBrief("merchant_owner")).resolves.toMatchObject({
+      status: "approved",
+    });
+  });
+
+  it("refreshes every merchant-reviewable brief input", async () => {
+    const { service } = await setup();
+    await reachReview(service);
+    const refreshedInput = {
+      businessIdentity: {
+        businessName: "Updated Merchant",
+        shortDescription: "Updated positioning.",
+        industry: "home",
+        targetCustomer: "Nordic design customers",
+        primaryMarket: "Sweden",
+      },
+      languagePlan: { selectedLanguages: ["fi", "en"], primaryLanguage: "fi" },
+      approvedBrandDirection: {
+        ...approvedBrandDirection,
+        typographyDirection: "sans-led",
+        toneKeywords: ["modern", "warm"],
+      },
+      approvedReusableAssetIds: ["asset_reused_logo"],
+      pagePlan: { pageTypes: ["home", "product"] },
+      navigationDirection: ["Products first"],
+      homepageGoals: ["Explain the offer"],
+      collectionPageGoals: ["Support browsing"],
+      productPageGoals: ["Build confidence"],
+      visualPriorities: ["Products", "Trust"],
+      contentAssumptions: ["Merchant supplies final legal copy"],
+      materialUnresolvedBlockers: [],
+      excludedClaims: ["Delivery promises"],
+      generationPermissions: {
+        allowMarketingCopy: false,
+        allowAssetReuse: true,
+        allowGeneratedImagery: true,
+      },
+    } as const;
+    const refreshed = await service.prepareBrief(refreshedInput);
+
+    expect(currentUrlBrief(refreshed)).toMatchObject({
+      businessIdentity: refreshedInput.businessIdentity,
+      languagePlan: { selectedLanguages: ["en", "fi"], primaryLanguage: "fi" },
+      approvedBrandDirection: refreshedInput.approvedBrandDirection,
+      approvedReusableAssetIds: refreshedInput.approvedReusableAssetIds,
+      pagePlan: refreshedInput.pagePlan,
+      navigationDirection: refreshedInput.navigationDirection,
+      homepageGoals: refreshedInput.homepageGoals,
+      collectionPageGoals: refreshedInput.collectionPageGoals,
+      productPageGoals: refreshedInput.productPageGoals,
+      visualPriorities: refreshedInput.visualPriorities,
+      contentAssumptions: refreshedInput.contentAssumptions,
+      excludedClaims: refreshedInput.excludedClaims,
+      generationPermissions: refreshedInput.generationPermissions,
+    });
+  });
+
+  it("keeps repeated identical brief refreshes deterministic", async () => {
+    const { service } = await setup();
+    await reachReview(service);
+    const first = currentUrlBrief(await service.prepareBrief(briefInput));
+    const second = currentUrlBrief(await service.prepareBrief(briefInput));
+    if (!first || !second) throw new Error("Expected reviewable briefs.");
+
+    expect(second.evidenceFingerprint).toBe(first.evidenceFingerprint);
+    expect({ ...second, updatedAt: first.updatedAt, fingerprint: first.fingerprint }).toEqual(
+      first,
+    );
+  });
+
+  it("refreshes a review to the current canonical projection without inheriting approval", async () => {
+    let projection = aurumNordicSeed.catalogue;
+    const { service } = await setup(createDeterministicMockDiscoveryAdapter(), {
+      load: () => projection,
+    });
+    const initial = await reachReview(service);
+    const initialBrief = currentUrlBrief(initial);
+    projection = { ...aurumNordicSeed.catalogue, id: "catalogue_aurum_review_3" };
+    await service.reconcile();
+    const refreshed = await service.prepareBrief(briefInput);
+    const refreshedBrief = currentUrlBrief(refreshed);
+
+    expect(refreshedBrief).toMatchObject({
+      status: "needsReview",
+      revision: 1,
+      canonicalCommerceProjectionRef: "catalogue_aurum_review_3",
+      approvedEvidenceFingerprint: null,
+      approval: { status: "pending", actorId: null, approvedAt: null },
+    });
+    expect(refreshedBrief?.evidenceFingerprint).not.toBe(initialBrief?.evidenceFingerprint);
+  });
+
+  it("blocks approval when the current canonical projection is missing", async () => {
+    let projection: typeof aurumNordicSeed.catalogue | null = aurumNordicSeed.catalogue;
+    const { service } = await setup(createDeterministicMockDiscoveryAdapter(), {
+      load: () => projection,
+    });
+    await reachReview(service);
+    projection = null;
+
+    await expect(service.approveBrief("merchant_owner")).rejects.toMatchObject({
+      code: "missing-canonical-vesko-projection",
+      workflow: { status: "brief-needs-review" },
+    });
+  });
+
+  it("clears all prior-source state when a different normalized source is submitted", async () => {
+    const { service } = await setup();
+    await reachApproved(service);
+    const switched = await service.submitSourceUrl("https://other.example/store");
+
+    expect(switched).toMatchObject({
+      status: "source-submitted",
+      discoveryResult: null,
+      reconciliation: null,
+      merchantResolutions: [],
+      unresolvedInformationIds: [],
+      brandProposal: null,
+      briefRevisions: [],
+      currentBriefRevision: null,
+      approvedEvidenceFingerprint: null,
+    });
+    expect(switched.sourceReferences).toHaveLength(1);
+    expect(switched.sourceReferences[0]?.normalizedOrigin).toBe("https://other.example");
+  });
+
+  it("preserves reviewed state only for the exact same normalized source", async () => {
+    const { repository, service } = await setup();
+    const approved = await reachApproved(service);
+    const saveCount = repository.saveCount;
+    const resubmitted = await service.submitSourceUrl(
+      "https://merchant.example/store#another-fragment",
+    );
+
+    expect(resubmitted).toEqual(approved);
+    expect(repository.saveCount).toBe(saveCount);
+  });
+
+  it("refuses to reconcile discovery evidence that does not match the current source", async () => {
+    const { repository, service, now } = await setup();
+    await service.submitSourceUrl("https://merchant.example/store");
+    const evidenceReady = await service.discover();
+    const oldSource = evidenceReady.sourceReferences[0];
+    if (!oldSource || !repository.session) throw new Error("Expected source fixtures.");
+    const otherSource = sourceReferenceSchema.parse({
+      ...oldSource,
+      id: "source_other_current",
+      url: "https://other.example/store",
+      normalizedOrigin: "https://other.example",
+      discoveredAt: now(),
+      status: "pending",
+    });
+    repository.session = onboardingSessionSchema.parse({
+      ...repository.session,
+      urlBriefWorkflow: {
+        ...evidenceReady,
+        sourceReferences: [oldSource, otherSource],
+        currentSourceReferenceId: otherSource.id,
+      },
+    });
+    const before = structuredClone(repository.session);
+
+    await expect(service.reconcile()).rejects.toMatchObject({ code: "invalid-lifecycle" });
+    expect(repository.session).toEqual(before);
+  });
+
+  it("restores a switched source without reviving prior-source review data", async () => {
+    const { repository, service } = await setup();
+    await reachApproved(service);
+    await service.submitSourceUrl("https://other.example/store");
+    const refreshedService = new UrlBriefWorkflowService(
+      repository,
+      createDeterministicMockDiscoveryAdapter(),
+      commerce,
+      { now: clock() },
+    );
+    const restored = await refreshedService.restore();
+
+    expect(restored.status).toBe("source-submitted");
+    expect(restored.discoveryResult).toBeNull();
+    expect(restored.reconciliation).toBeNull();
+    expect(restored.briefRevisions).toEqual([]);
+  });
+
+  it("requires fresh discovery before the new source can reconcile or approve", async () => {
+    const { service } = await setup();
+    await reachApproved(service);
+    await service.submitSourceUrl("https://other.example/store");
+
+    await expect(service.reconcile()).rejects.toMatchObject({ code: "invalid-lifecycle" });
+    await expect(service.approveBrief("merchant_owner")).rejects.toMatchObject({
+      code: "conflicting-evidence",
+    });
+  });
+
+  it("retains source provenance and revision history across safe review refreshes", async () => {
+    const { service } = await setup();
+    const firstWorkflow = await reachReview(service);
+    const first = currentUrlBrief(firstWorkflow);
+    const refreshedWorkflow = await service.prepareBrief({
+      ...briefInput,
+      homepageGoals: ["Feature new arrivals"],
+    });
+    const refreshed = currentUrlBrief(refreshedWorkflow);
+
+    expect(refreshed).toMatchObject({
+      revision: 1,
+      createdAt: first?.createdAt,
+      sourceReferenceIds: first?.sourceReferenceIds,
+      sourceEvidenceIds: first?.sourceEvidenceIds,
+      canonicalCommerceProjectionRef: first?.canonicalCommerceProjectionRef,
+    });
+    expect(refreshedWorkflow.briefRevisions).toHaveLength(1);
+    expect(refreshed?.homepageGoals).toEqual(["Feature new arrivals"]);
   });
 });

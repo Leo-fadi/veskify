@@ -6,6 +6,7 @@ import {
   sourceFailureCodeSchema,
   sourceReferenceSchema,
   storefrontDesignBriefContractSchema,
+  type ReconciliationDecision,
   type ReconciliationResult,
   type StorefrontDesignBriefContract,
   type StorefrontSourceEvidenceMaterial,
@@ -45,10 +46,21 @@ export const merchantReconciliationResolutionSchema = z
   .object({
     decisionId: idSchema,
     outcome: z.enum(["accept-source-evidence", "reject-source-evidence", "use-vesko-truth"]),
+    canonicalProductId: idSchema.nullable().default(null),
+    canonicalCollectionId: idSchema.nullable().default(null),
     note: z.string().trim().min(1).max(500).nullable(),
     resolvedAt: isoDateTimeSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((resolution, context) => {
+    if (resolution.canonicalProductId !== null && resolution.canonicalCollectionId !== null) {
+      context.addIssue({
+        code: "custom",
+        path: ["canonicalCollectionId"],
+        message: "A merchant resolution cannot target both a product and a collection.",
+      });
+    }
+  });
 
 export const urlBriefWorkflowFailureSchema = z
   .object({
@@ -127,6 +139,17 @@ export const urlBriefWorkflowSchema = z
           code: "custom",
           path: ["merchantResolutions", index, "decisionId"],
           message: "Merchant resolutions must reference the current reconciliation.",
+        });
+        return;
+      }
+      const decision = workflow.reconciliation?.decisions.find(
+        (candidate) => candidate.id === resolution.decisionId,
+      );
+      if (decision && !resolutionMatchesDecision(decision, resolution)) {
+        context.addIssue({
+          code: "custom",
+          path: ["merchantResolutions", index],
+          message: "Merchant resolutions must match the reconciliation decision and target.",
         });
       }
     });
@@ -254,7 +277,17 @@ export function unresolvedReconciliationDecisionIds(
   reconciliation: ReconciliationResult,
   resolutions: readonly MerchantReconciliationResolution[],
 ): string[] {
-  const resolved = new Set(resolutions.map((resolution) => resolution.decisionId));
+  const decisionById = new Map(
+    reconciliation.decisions.map((decision) => [decision.id, decision] as const),
+  );
+  const resolved = new Set(
+    resolutions
+      .filter((resolution) => {
+        const decision = decisionById.get(resolution.decisionId);
+        return decision ? resolutionMatchesDecision(decision, resolution) : false;
+      })
+      .map((resolution) => resolution.decisionId),
+  );
   return [
     ...new Set([...reconciliation.unresolvedConflictIds, ...reconciliation.missingInformationIds]),
   ].filter((identifier) => !resolved.has(identifier));
@@ -265,7 +298,14 @@ export function resolvedWorkflowReconciliation(
   resolutions: readonly MerchantReconciliationResolution[],
 ): ReconciliationResult {
   const resolutionById = new Map(
-    resolutions.map((resolution) => [resolution.decisionId, resolution]),
+    resolutions
+      .filter((resolution) => {
+        const decision = reconciliation.decisions.find(
+          (candidate) => candidate.id === resolution.decisionId,
+        );
+        return decision ? resolutionMatchesDecision(decision, resolution) : false;
+      })
+      .map((resolution) => [resolution.decisionId, resolution]),
   );
   return reconciliationResultSchema.parse({
     ...reconciliation,
@@ -278,7 +318,13 @@ export function resolvedWorkflowReconciliation(
           : resolution.outcome === "reject-source-evidence"
             ? "rejected-evidence"
             : "canonical-override";
-      return { ...decision, kind, merchantDecisionRequired: false };
+      return {
+        ...decision,
+        kind,
+        canonicalProductId: resolution.canonicalProductId ?? decision.canonicalProductId,
+        canonicalCollectionId: resolution.canonicalCollectionId ?? decision.canonicalCollectionId,
+        merchantDecisionRequired: false,
+      };
     }),
     unresolvedConflictIds: reconciliation.unresolvedConflictIds.filter(
       (identifier) => !resolutionById.has(identifier),
@@ -289,10 +335,43 @@ export function resolvedWorkflowReconciliation(
   });
 }
 
+export function resolutionMatchesDecision(
+  decision: ReconciliationDecision,
+  resolution: MerchantReconciliationResolution,
+): boolean {
+  if (decision.field === null) {
+    return (
+      resolution.outcome !== "use-vesko-truth" &&
+      resolution.canonicalProductId === null &&
+      resolution.canonicalCollectionId === null
+    );
+  }
+  if (resolution.outcome !== "use-vesko-truth") return false;
+
+  const targetsCollection = decision.field === "collection-identity";
+  const allowsEitherTarget = decision.field === "collection-membership";
+  const targetId = targetsCollection
+    ? resolution.canonicalCollectionId
+    : allowsEitherTarget
+      ? (resolution.canonicalCollectionId ?? resolution.canonicalProductId)
+      : resolution.canonicalProductId;
+  if (targetId === null) return false;
+  if (targetsCollection && resolution.canonicalProductId !== null) {
+    return false;
+  }
+  if (!targetsCollection && !allowsEitherTarget && resolution.canonicalCollectionId !== null) {
+    return false;
+  }
+  return (
+    decision.candidateCanonicalIds.length === 0 || decision.candidateCanonicalIds.includes(targetId)
+  );
+}
+
 export function urlBriefWorkflowMaterialEvidence(
   workflow: UrlBriefWorkflow,
 ): StorefrontSourceEvidenceMaterial | null {
   if (workflow.discoveryResult === null || workflow.reconciliation === null) return null;
+  if (workflow.currentSourceReferenceId !== workflow.discoveryResult.source.id) return null;
   if (workflow.reconciliation.sourceReferenceId !== workflow.discoveryResult.source.id) return null;
   return {
     sourceReferences: [workflow.discoveryResult.source],
