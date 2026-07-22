@@ -3,7 +3,7 @@
 This document records the application and history foundation for accepting a validated P4-05A
 whole-storefront proposal. The authoritative product and architecture baseline remains
 [`docs/VESKIFY_SDD.md`](VESKIFY_SDD.md); the synchronized human-readable export is
-[`docs/VESKIFY_SDD_v1.1.docx`](VESKIFY_SDD_v1.1.docx).
+[`docs/archive/VESKIFY_SDD_v1.1.docx`](archive/VESKIFY_SDD_v1.1.docx).
 
 ## Transactional executor
 

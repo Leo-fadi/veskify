@@ -1,57 +1,130 @@
 # Veskify
 
-Veskify is a standalone AI storefront **design** agent demo for retailers with very low technical and design knowledge. This foundation uses dummy-only commerce boundaries and does not configure real prices, payments, shipping, taxes, inventory, logistics, or orders.
+Veskify is the controlled AI storefront-design engine that powers the future **Vesko Storefront Studio** merchant experience.
 
-## Authoritative specification
+It helps retailers transform an existing public storefront, a logo, available media and canonical Vesko commerce data into a coherent, responsive and editable online storefront. Merchants can request design changes in plain language, review validated proposals, adjust the result visually, save a draft and publish explicitly.
 
-- Product and software specification: [`docs/VESKIFY_SDD.md`](docs/VESKIFY_SDD.md)
-- Codex repository instructions: [`AGENTS.md`](AGENTS.md)
-- Phase 0 implementation history: [`docs/PHASE_0_FOUNDATION.md`](docs/PHASE_0_FOUNDATION.md)
-- Phase 0 completion matrix: [`docs/PHASE_0_COMPLETION.md`](docs/PHASE_0_COMPLETION.md)
-- Phase 1 storefront renderer: [`docs/PHASE_1_STOREFRONT_RENDERER.md`](docs/PHASE_1_STOREFRONT_RENDERER.md)
+## Product boundary
 
-## Current scope
+Veskify designs presentation. It does not operate commerce.
 
-**Phase 0 is complete and Phase 1 has started.** P1-01 adds the complete responsive, bilingual **Aurum Nordic** homepage: announcement, navigation, editorial hero, collection and product discovery, campaign, brand story, benefits, demo newsletter and footer. It is loaded from IndexedDB and rendered from canonical snapshot data through the controlled registry.
+It may design:
 
-This does not mean the full Veskify product is complete. Collection, product, cart and checkout rendering remain deferred Phase 1 work. Editor UI, onboarding, AI operations, publishing workflows, and production integrations also remain deferred.
+- brand tokens and visual direction;
+- navigation, header and footer;
+- homepage, collection and product-detail pages;
+- content, campaign, cart and checkout presentation;
+- reusable responsive component compositions;
+- dynamic product option presentation;
+- localized presentation copy and SEO metadata.
 
-## What can be tested
+It must not modify:
 
-After starting the development server, these local routes are available:
+- product identity or SKU;
+- product type, option values or variant identity;
+- price, compare-at-price, stock or availability truth;
+- payments, shipping, logistics, taxes, orders or inventory;
+- operational checkout behaviour.
 
-- `http://localhost:3000/` — foundation status and route links
-- `http://localhost:3000/puck-proof` — isolated Puck compatibility proof
-- `http://localhost:3000/projects/project_aurum_nordic` — complete persisted read-only Aurum Nordic homepage with English/Finnish switching
+Canonical commerce data is consumed through read-only adapters.
 
-## Setup
+## Current verified baseline
 
-```bash
-pnpm install
+The repository currently includes:
+
+- Next.js App Router, React, TypeScript, Tailwind CSS and Zod;
+- Puck isolated as the visual-editor foundation;
+- canonical storefront, brand, snapshot and history models;
+- registered responsive components;
+- manual section editing and device preview;
+- selected-section, current-page and whole-storefront AI proposal scopes;
+- structured validation and protected-field guards;
+- deterministic and OpenAI provider adapters;
+- atomic multi-page acceptance with undo/redo;
+- separate save draft and publish flows;
+- IndexedDB persistence and realistic Aurum/Karvonen fixtures;
+- a verified real-provider Karvonen redesign and publish journey.
+
+## Next development direction
+
+The v1.2 roadmap prioritizes:
+
+1. reusable component registry v2 and typed data bindings;
+2. dynamic product-detail pages for simple and complex product types;
+3. URL-first source discovery and brand reconstruction;
+4. asset-aware initial generation;
+5. exact brand-palette and whole-storefront design quality;
+6. native Vesko Storefront Studio product UX;
+7. reliable staging and Vesko integration handoff.
+
+Veskify is not building another catalogue/import system. Jewellery and watches remain the first deep reference industry before broader expansion.
+
+## Architecture
+
+```text
+Vesko / fixture commerce truth
+  -> read-only commerce projection
+  -> Veskify canonical storefront contracts
+  -> controlled component families and page blueprints
+  -> design skills and structured operations
+  -> validated proposal
+  -> draft acceptance and atomic history
+  -> explicit save and publish
 ```
 
-## Commands
+Public website discovery is treated as untrusted design evidence with provenance. It informs brand and asset reconstruction but never overrides canonical Vesko commerce values.
+
+## Local development
+
+Requirements:
+
+- Node.js version supported by the repository;
+- pnpm;
+- a modern browser with IndexedDB.
+
+Install and start:
 
 ```bash
-pnpm dev        # Start the Next.js development server
-pnpm typecheck  # Run strict TypeScript checks
-pnpm lint       # Run ESLint with: eslint .
-pnpm format:check # Verify repository formatting
-pnpm test       # Run Vitest unit and integration tests
-pnpm build      # Build the Next.js application
-pnpm test:e2e   # Run Chromium Playwright smoke tests
-pnpm validate   # Typecheck, lint, format, test, and production build
-pnpm validate:full # Run validate plus Playwright
+pnpm install --frozen-lockfile
+pnpm dev
 ```
 
-## Implementation notes
+The deterministic AI provider is the default and requires no secret.
 
-- Package manager: pnpm
-- Framework: Next.js App Router with strict TypeScript
-- Styling: Tailwind CSS and CSS variables generated from validated brand tokens
-- Validation: Zod schemas in `src/domain/**` and Puck adapter validation in `src/integrations/puck/**`
-- Testing: Vitest, React Testing Library, and Playwright
-- Persistence: `ProjectRepository` adapters for deterministic memory storage and browser IndexedDB via `idb`
-- IndexedDB tests: shared repository contract coverage plus persistence tests using development-only `fake-indexeddb`
-- Embedded editor foundation: `@puckeditor/core` via an isolated Veskify adapter; HugoBlox is not used
-- Supported locales: English (`en`) and Finnish (`fi`)
+For the optional real OpenAI provider, configure a local server-side environment file:
+
+```bash
+OPENAI_API_KEY=<your-key>
+VESKIFY_AI_PROVIDER=openai
+```
+
+Never commit provider keys.
+
+## Validation
+
+Normal feature PRs should run focused tests plus typecheck, lint and formatting once when required. GitHub CI performs the broad gate.
+
+Full repository validation is reserved for phase/release gates, high-risk migrations, staging acceptance or explicit instruction.
+
+## Documentation
+
+- [`docs/VESKIFY_SDD.md`](docs/VESKIFY_SDD.md) — authoritative product and architecture specification.
+- [`docs/VESKIFY_SDD_v1.2.docx`](docs/VESKIFY_SDD_v1.2.docx) — synchronized human-readable export.
+- [`AGENTS.md`](AGENTS.md) — binding Codex/developer constitution.
+- [`docs/VESKIFY_DEVELOPMENT_ROADMAP.md`](docs/VESKIFY_DEVELOPMENT_ROADMAP.md) — current phase plan.
+- [`docs/DESIGN_AGENT_SKILLS.md`](docs/DESIGN_AGENT_SKILLS.md) — controlled skill catalogue.
+- [`docs/DEVELOPMENT_GUIDE.md`](docs/DEVELOPMENT_GUIDE.md) — worktree, testing and PR workflow.
+- `docs/adr/` — binding architecture decisions.
+
+## Core decisions
+
+- Puck provides editor mechanics but does not own canonical state.
+- AI emits structured operations, never arbitrary frontend code.
+- Veskify owns storefront composition and proposal safety.
+- Vesko owns commerce truth.
+- Components are reusable, versioned and data-bound.
+- Dynamic product pages render option groups supplied by canonical data.
+- Material changes are reviewable and reversible.
+- Save draft and Publish changes are separate actions.
+
+Owner: Vesko Oy

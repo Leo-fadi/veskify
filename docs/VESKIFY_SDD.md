@@ -1,146 +1,162 @@
 **VESKIFY**
 
-Software Design Specification
+**Software Design
+Specification**
 
-AI Storefront Design Agent · Standalone Demo Product
+Dynamic storefront generation · URL-first onboarding · reusable commerce components · Vesko integration handoff
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-| **DOCUMENT ID** | VESKIFY-SDD-001                            |
-|-----------------|--------------------------------------------|
-| **VERSION**     | 1.1                                        |
-| **STATUS**      | Implementation baseline — controlled design-agent architecture                    |
-| **DATE**        | 17 July 2026                               |
-| **PRIMARY USE** | Codex implementation and product alignment |
-| **REPOSITORY**  | New standalone repository                  |
-
-Owner: Vesko Oy · Product: Veskify
-
-# Document control
+| **DOCUMENT FIELD**          | **VALUE**                                                              |
+|-----------------------------|------------------------------------------------------------------------|
+| **Document ID**             | VESKIFY-SDD-001                                                        |
+| **Version**                 | 1.2                                                                    |
+| **Status**                  | Product integration baseline — dynamic storefront design architecture  |
+| **Date**                    | 22 July 2026                                                           |
+| **Merchant-facing product** | Vesko Storefront Studio                                                |
+| **Internal engine**         | Veskify                                                                |
+| **Primary use**             | Codex implementation, teammate handoff and Vesko Retail OS integration |
+| **Repository state**        | Standalone product repository with defined Vesko adapter boundary      |
 
 <table>
 <colgroup>
-<col style="width: 100%" />
+<col style="width: 1%" />
+<col style="width: 98%" />
 </colgroup>
 <thead>
 <tr class="header">
-<th><p><strong>Purpose of this document</strong></p>
-<p>This specification is the authoritative baseline for the Veskify standalone demo. It is written to be directly usable by Codex and by Vesko developers who later integrate the product into Vesko Retail OS.</p></th>
+<th></th>
+<th><p><strong>v1.2 decision</strong></p>
+<p>Veskify is no longer specified as merely a standalone demo. It is the controlled storefront-design engine that will power Vesko Storefront Studio. The standalone repository remains the implementation and validation environment, but every new capability must be integration-ready and must consume canonical Vesko commerce data through read-only adapters.</p></th>
 </tr>
 </thead>
 <tbody>
 </tbody>
 </table>
 
-| **Field**                | **Definition**                                                                                              |
-|--------------------------|-------------------------------------------------------------------------------------------------------------|
-| Product name             | Veskify — AI Storefront Design Agent / UI Agent                                                             |
-| Product type             | Standalone interactive demo, later integrated into Vesko Retail OS                                          |
-| Primary objective        | Enable low-technical-skill retailers to create or redesign a complete online storefront visually and safely |
-| Data policy for demo     | Dummy commerce data; local demo projects and draft/published snapshots                                      |
-| Implementation authority | This document takes priority over ad hoc implementation assumptions                                         |
-| Change policy            | Material changes must update this document, its requirement IDs, and affected acceptance criteria           |
+Owner: Vesko Oy · Product owner: Leo Fadi
+
+# Document control
+<table>
+<colgroup>
+<col style="width: 1%" />
+<col style="width: 98%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th><p><strong>Purpose of this document</strong></p>
+<p>This specification supersedes the product direction and roadmap portions of v1.1 while preserving its safety architecture. It defines the next development path for a real Vesko product: URL-first merchant onboarding, brand reconstruction, asset-aware generation, reusable dynamic components, schema-driven product pages and a clean integration handoff.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+
+| **Field**                      | **Definition**                                                                                                                                                                                           |
+|--------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Product name**               | Merchant-facing: Vesko Storefront Studio. Internal controlled design engine: Veskify.                                                                                                                    |
+| **Primary objective**          | Remove the heavy storefront design and setup burden from new Vesko customers, including merchants who have an existing website but little or no usable brand system beyond a logo.                       |
+| **Primary onboarding route**   | Improve an existing store from a public website URL, then reconcile discovered design evidence with canonical Vesko catalogue and product data.                                                          |
+| **Secondary onboarding route** | Create a new storefront from business information, logo, canonical catalogue data and guided visual choices.                                                                                             |
+| **Commerce boundary**          | Veskify consumes read-only canonical Vesko product, collection, price, variant, option and media projections. It does not become an inventory, order, payment, logistics or catalogue-management system. |
+| **Implementation authority**   | The requirement IDs, architecture boundaries, roadmap gates and acceptance criteria in this document are binding for v1.2 work.                                                                          |
+| **Source basis**               | VESKIFY SDD v1.1, the approved Vesko Storefront Studio product-design direction, the current repository baseline and the verified real-provider Karvonen test.                                           |
+
 
 ## Source of truth
 
 - `docs/VESKIFY_SDD.md` is the authoritative implementation baseline.
-- `docs/VESKIFY_SDD_v1.1.docx` is the synchronized human-readable export.
-- If the Markdown and DOCX differ, the Markdown specification takes precedence.
-- ADR-001 and ADR-002 are binding architectural decisions that clarify this SDD.
-- Update this Markdown specification first, then synchronize the DOCX export.
+- `docs/VESKIFY_SDD_v1.2.docx` is the synchronized human-readable export.
+- `docs/archive/VESKIFY_SDD_v1.1.docx` is retained only as historical context and is superseded for new work.
+- ADR-001, ADR-002, ADR-003 and ADR-004 are binding architectural decisions that clarify this SDD.
+- If Markdown and DOCX differ, the Markdown specification takes precedence.
+- Update this Markdown specification first, then synchronize the DOCX export and affected supporting documents.
 
 ## Revision history
+| **Version** | **Date**        | **Status**                       | **Summary**                                                                                                                                                                                                                                                                                   |
+|-------------|-----------------|----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1.0         | 15 July 2026    | Initial baseline                 | Established the standalone controlled storefront-editor product.                                                                                                                                                                                                                              |
+| 1.1         | 16-17 July 2026 | Controlled design-agent baseline | Added structured skills, operations, proposal-before-apply, canonical composition ownership, validation and Puck boundaries.                                                                                                                                                                  |
+| 1.2         | 22 July 2026    | Product integration baseline     | Repositions Veskify as the Vesko design engine; makes URL-first onboarding primary; replaces catalogue/import drift with canonical Vesko projections; specifies reusable dynamic components and a schema-driven product-detail page; resets the roadmap after the verified real-AI milestone. |
 
-| **Version** | **Date**       | **Status**                                                     | **Summary** |
-|-------------|----------------|----------------------------------------------------------------|-------------|
-| 1.0         | 15 July 2026   | Initial implementation baseline                                | Established the standalone Veskify demo product, controlled component model, editor, draft/published state, and acceptance criteria. |
-| 1.1         | 17 July 2026   | Implementation baseline — controlled design-agent architecture | Introduced bounded skills, structured validated operations, reuse-before-generation, proposal-first behaviour, canonical composition ownership, and separate Save draft and Publish changes workflows. |
+## How implementation agents and developers must use v1.2
+1.  Read the complete affected section and named requirement IDs before modifying code.
 
-## How Codex must use this document
+2.  Preserve the v1.1 non-negotiables: controlled components, structured operations, validation, protected commerce truth, proposal review, reversible drafts and separate publishing.
 
-> **1.** Read the complete relevant section before modifying code. Do not implement from an isolated task sentence when this document defines the behaviour.
->
-> **2.** Treat every MUST requirement and acceptance criterion as binding. SHOULD requirements may be deferred only when the task explicitly says so.
->
-> **3.** Generate UI from controlled schemas and approved components. Never let the AI generate arbitrary executable frontend code.
->
-> **4.** Keep draft changes separate from the published demo snapshot. No AI action may silently alter the published version.
->
-> **5.** Use dummy commerce operations. Do not add real payment, shipping, order, pricing, inventory, or tax configuration.
->
-> **6.** For each task, identify the affected requirement IDs and include tests for the relevant acceptance criteria.
+3.  Do not introduce another catalogue, product-type or variant model inside Veskify. Use a read-only presentation projection from Vesko or a fixture that follows the same contract.
+
+4.  Build reusable component families and data-binding contracts before adding merchant-specific layouts.
+
+5.  Keep the merchant experience free from developer concepts such as raw JSON, registries, provider envelopes, component IDs and prompt internals.
+
+6.  Every task must state the user-visible capability, affected requirements, tests, constraints, branch/PR rules and integration impact.
 
 ## Requirement language
-
-| **Term** | **Meaning**                                                  |
-|----------|--------------------------------------------------------------|
-| MUST     | Mandatory for the defined release or behaviour.              |
-| MUST NOT | Prohibited.                                                  |
-| SHOULD   | Expected unless there is a documented implementation reason. |
-| MAY      | Optional or implementation-dependent.                        |
+| **Term**     | **Meaning**                                                                |
+|--------------|----------------------------------------------------------------------------|
+| **MUST**     | Mandatory for the defined capability or release gate.                      |
+| **MUST NOT** | Prohibited.                                                                |
+| **SHOULD**   | Expected unless a documented implementation constraint justifies deferral. |
+| **MAY**      | Optional or adapter-specific.                                              |
 
 # Contents
+- 1\. Executive product definition
 
-[<u>1. Executive product definition</u>](#executive-product-definition)
+- 2\. Comparison with v1.1 and required corrections
 
-[<u>2. Product principles and boundaries</u>](#product-principles-and-boundaries)
+- 3\. Current verified implementation baseline
 
-[<u>3. Users, roles and jobs to be done</u>](#users-roles-and-jobs-to-be-done)
+- 4\. Users, roles and jobs to be done
 
-[<u>4. End-to-end user journeys</u>](#end-to-end-user-journeys)
+- 5\. Product boundaries and ownership
 
-[<u>5. Information architecture and screens</u>](#information-architecture-and-screens)
+- 6\. End-to-end merchant journeys
 
-[<u>6. Functional requirements</u>](#functional-requirements)
+- 7\. URL-first source discovery and reconciliation
 
-[<u>7. Editor and interaction specification</u>](#editor-and-interaction-specification)
+- 8\. Brand reconstruction and asset-aware generation
 
-[<u>8. Storefront design system</u>](#storefront-design-system)
+- 9\. Reusable dynamic component platform
 
-[<u>9. Controlled component system</u>](#controlled-component-system)
+- 10\. Dynamic product-detail page system
 
-[<u>10. Page specifications</u>](#page-specifications)
+- 11\. Homepage and collection-page design depth
 
-[<u>11. Product and catalogue intelligence</u>](#product-and-catalogue-intelligence)
+- 12\. AI design-agent specification v1.2
 
-[<u>12. AI agent specification</u>](#ai-agent-specification)
+- 13\. Storefront design system and whole-site consistency
 
-[<u>13. Draft, preview, versioning and publishing</u>](#draft-preview-versioning-and-publishing)
+- 14\. Vesko Storefront Studio merchant experience
 
-[<u>14. Localisation and content</u>](#localisation-and-content)
+- 15\. Data model and contracts
 
-[<u>15. Data model and schemas</u>](#data-model-and-schemas)
+- 16\. Technical architecture and Vesko integration
 
-[<u>16. Technical architecture</u>](#technical-architecture)
+- 17\. Security, privacy, performance and observability
 
-[<u>17. API and service contracts</u>](#api-and-service-contracts)
+- 18\. Testing and release acceptance criteria
 
-[<u>18. Non-functional requirements</u>](#non-functional-requirements)
+- 19\. Correct development roadmap
 
-[<u>19. Analytics, errors and observability</u>](#analytics-errors-and-observability)
+- 20\. Handoff and final integration package
 
-[<u>20. Security and privacy</u>](#security-and-privacy)
-
-[<u>21. Testing and acceptance criteria</u>](#testing-and-acceptance-criteria)
-
-[<u>22. Implementation roadmap</u>](#implementation-roadmap)
-
-[<u>23. Codex execution contract</u>](#codex-execution-contract)
-
-[<u>Appendices</u>](#appendices)
+- Appendices
 
 # 1. Executive product definition
-
-Veskify is a standalone AI storefront design agent for retailers. It allows a merchant with very limited technical or design knowledge to create, redesign and maintain the customer-facing experience of an online store through guided onboarding, conversational instructions, a visual canvas, structured controls and safe approval flows.
+Veskify is the controlled AI storefront-design engine used by Vesko Storefront Studio. It enables a merchant with limited technical or design knowledge to transform business information, an existing public website, a logo, available media and canonical Vesko commerce data into a coherent, responsive and editable storefront.
 
 <table>
 <colgroup>
-<col style="width: 100%" />
+<col style="width: 1%" />
+<col style="width: 98%" />
 </colgroup>
 <thead>
 <tr class="header">
-<th><p><strong>Core experience</strong></p>
-<p>Describe what you want, review a proposed design, apply accepted changes to a draft, adjust it visually, save the draft, and explicitly publish when ready — without writing code or understanding professional design tools.</p></th>
+<th></th>
+<th><p><strong>Core merchant promise</strong></p>
+<p>Connect what you already have, approve the design direction, receive a complete storefront, and keep improving it through plain-language instructions — without rebuilding product data, writing code or becoming a web designer.</p></th>
 </tr>
 </thead>
 <tbody>
@@ -148,65 +164,183 @@ Veskify is a standalone AI storefront design agent for retailers. It allows a me
 </table>
 
 ## 1.1 Product goal
+The product goal is to remove the heavy UI, visual-design and storefront-composition work from Vesko onboarding. A new customer should not need a complete brand guide, a developer or a separate web-design project before using Vesko. When the merchant has an existing website, that site becomes design evidence and reusable source material; Vesko commerce data remains the operational truth.
 
-The goal is to demonstrate how Vesko can replace a traditional drag-and-drop website builder with an AI-guided design environment. The demo must feel like a real product rather than a static prototype, while using dummy commerce data and local/mock integrations.
+## 1.2 Product identity
+| **Layer**                | **Name**                | **Merchant visibility** | **Responsibility**                                                                                                  |
+|--------------------------|-------------------------|-------------------------|---------------------------------------------------------------------------------------------------------------------|
+| Vesko module             | Vesko Storefront Studio | Visible                 | Onboarding, design workspace, preview, draft, publishing and history within Vesko Retail OS.                        |
+| Design engine            | Veskify                 | Usually hidden          | Intent, planning, design skills, component selection, structured operations, validation, proposals and composition. |
+| Visual editor foundation | Puck integration        | Hidden as technology    | Canvas mechanics, section selection, insertion, reordering and field controls through an isolated adapter.          |
+| AI provider              | Configured text model   | Hidden                  | Model execution only. Provider-specific output never becomes canonical application state.                           |
 
-## 1.2 What Veskify designs
+## 1.3 What Veskify designs
+- Global brand and design tokens derived from merchant evidence and approved preferences.
 
-- Complete storefront page structures and responsive layouts.
+- Navigation, header, footer, homepage, collection pages, product-detail pages, content pages, campaign pages, cart and checkout presentation.
 
-- Industry-specific visual systems, themes and page compositions.
+- Responsive compositions using controlled component families and reusable page blueprints.
 
-- Homepages, collection pages, product pages, content pages, cart and checkout user interfaces.
+- Presentation of canonical product data, including media, attributes, variants, option groups, prices, compare-at prices, availability labels and order options.
 
-- Navigation, footer, search and filter presentation.
+- Editable marketing copy, SEO metadata, translations and non-factual presentation enrichment.
 
-- Marketing sections, campaign landing pages, hero banners and promotional content.
+- Asset selection, cropping role, placement and reuse; optional image generation only when approved assets are insufficient or explicitly requested.
 
-- Written content, SEO metadata, translations and generated visual assets.
+## 1.4 What Veskify does not own
+- Product creation, catalogue management, product-type definitions or operational inventory.
 
-## 1.3 What Veskify does not manage
+- SKU, price, compare-at price, stock, availability truth, variant values or order-option values.
 
-- Product pricing or price changes.
+- Payments, taxes, logistics, shipping configuration, orders, returns or invoicing.
 
-- Payment provider activation, payment rules or payment processing.
+- Unrestricted code generation, arbitrary CSS, scripts, plugins or merchant-executed embeds.
 
-- Shipping methods, shipping prices, logistics services or delivery configuration.
+- An independent customer-data model that competes with Vesko Retail OS.
 
-- Taxes, tax rules, invoicing rules or financial operations.
+## 1.5 Standalone repository and real-product rule
+The standalone repository remains the fastest environment for implementation, deterministic tests, real-provider validation and demonstrations. It must, however, behave as a replaceable module. IndexedDB, local fixtures and demo routes are adapters, not assumptions that may leak into domain or editor logic. Every new contract must have a clear mapping to Vesko authentication, canonical commerce data, media, persistence and publishing services.
 
-- Order operations, returns operations or inventory quantities.
+# 2. Comparison with v1.1 and required corrections
+Version 1.1 correctly established the controlled-agent safety architecture. Its main weakness is product sequencing: it still frames the repository as a standalone demo with broad import and catalogue-intelligence work, while the actual product need is a Vesko-integrated design agent that can reconstruct an existing storefront, reuse available assets and render dynamic product types safely.
 
-- Real storefront deployment or production infrastructure in the standalone demo.
+| **Area**                 | **v1.1 position**                                                | **v1.2 decision**                                                                                                                                  | **Action**                                 |
+|--------------------------|------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
+| **Product positioning**  | Standalone interactive demo, later integrated.                   | Integration-ready Vesko product module; standalone repository is the implementation environment.                                                   | Replace framing.                           |
+| **Merchant-facing name** | Veskify / AI Storefront Design Agent.                            | Vesko Storefront Studio; Veskify remains the internal engine.                                                                                      | Replace naming in merchant UI.             |
+| **Primary onboarding**   | New store, redesign and demo preset treated as peers.            | Improve existing store by URL is primary; new store is secondary.                                                                                  | Reorder journey and screens.               |
+| **Brand inputs**         | Upload brand guide or use guided creation.                       | Assume many merchants only have a logo and public website; reconstruct brand evidence and ask only for material gaps.                              | Expand requirements.                       |
+| **Catalogue scope**      | Dummy catalogue plus CSV/Excel mapping and product intelligence. | Consume canonical Vesko commerce projections. CSV/Excel/import work is not a prerequisite for the design-agent product.                            | Narrow and defer.                          |
+| **Component system**     | Controlled registry and a list of components/variants.           | Explicit layered platform: primitives, patterns, commerce-bound components, reusable compositions and page blueprints with data-binding contracts. | Deepen architecture.                       |
+| **Product page**         | Generic productGallery, productInfo and productOptions blocks.   | Schema-driven dynamic PDP that adapts to product type, attribute groups, variant dimensions, dependencies and order options.                       | Replace page specification.                |
+| **Asset handling**       | Uploads, local assets and optional generation.                   | Asset inventory with provenance, role eligibility, responsive crops, reuse priority, quality warnings and design-brief approval.                   | Expand architecture.                       |
+| **AI capability**        | Safe structured proposals, limited initial skills.               | Retain safety; expand design vocabulary, exact palette instructions, source-aware generation and coordinated multi-page composition.               | Extend skills and contracts.               |
+| **UI shell**             | Standalone editor/demo interface.                                | Native Vesko Storefront Studio shell with one merchant workflow and no developer surfaces.                                                         | Apply approved product-design direction.   |
+| **Roadmap**              | Phases 0-8 still listed as future.                               | Foundation, editor, onboarding baseline, AI operations, real provider, atomic whole-storefront change and publishing are already proven.           | Reset roadmap from the verified milestone. |
 
-## 1.4 Demo definition
+## 2.1 v1.1 decisions that remain binding
+- The AI proposes; Veskify owns canonical truth.
 
-The first implementation is a standalone repository. It uses dummy product, collection, cart, checkout and operational data. It must provide realistic creation, editing, preview, draft and simulated publishing behaviour. Later, Vesko developers will integrate the design agent with Vesko Retail OS, its Node.js monorepo, SQL data, JSON-based industry product models, media storage, authentication and publishing services.
+- AI output is structured operations, never executable frontend code.
 
-# 2. Product principles and boundaries
+- Components and variants are registered, validated and responsive by construction.
 
-| **Principle**               | **Required interpretation**                                                                                                                      |
-|-----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| Canvas first, chat assisted | The storefront canvas is the primary product surface. Chat is the simplest control interface, not the product by itself.                         |
-| Safe by default             | AI proposals do not alter the active draft before acceptance. Saving a draft never changes the published snapshot; publishing requires separate explicit confirmation. |
-| Controlled creativity       | The agent may compose and configure approved components and design primitives but must not generate unrestricted frontend code.                  |
-| Simple language             | Controls, questions and confirmations must use retailer-friendly language rather than developer or designer terminology.                         |
-| Progressive disclosure      | The default interface exposes only the minimum controls needed. More detailed options appear when the user asks or selects advanced editing.     |
-| Local editing               | Regenerating one section must not change unrelated sections, page structures or the global brand system unless explicitly requested.             |
-| Design consistency          | Every page must inherit the same design tokens, typography, spacing, navigation and footer unless the page has an intentional campaign override. |
-| Responsive by construction  | All approved components must be responsive and tested. Users cannot freely resize sections in ways that break responsive behaviour.              |
-| Reversible actions          | Users can review, undo, reject, discard or restore changes without losing the last published version.                                            |
+- Material changes are reviewable, reversible and scoped.
 
-## 2.1 Fixed product boundaries
+- Published state is never silently mutated; Save draft and Publish remain separate actions.
+
+- Product, price, stock, option, payment, shipping, tax and order truth is protected.
+
+- Puck remains isolated behind the visual-editor integration boundary.
+
+- Provider-specific formats remain behind adapters.
+
+- Reuse merchant assets, site evidence, product media, presets, variants and tokens before generating new material.
+
+## 2.2 v1.1 items deliberately removed from the immediate critical path
+- Building a general CSV/Excel catalogue-import product inside Veskify.
+
+- Creating a second product-type, variant or attribute system for the design agent.
+
+- Broad presentation-enrichment workflows unrelated to the first integrated storefront journey.
+
+- AI image generation as a default dependency.
+
+- More industries before jewellery and watches achieve deep dynamic page quality.
+
+# 3. Current verified implementation baseline
+The v1.2 roadmap starts from the repository state verified on 22 July 2026, not from the original phase list in v1.1.
+
+| **Capability**                                | **Current status** | **Evidence / consequence**                                                                                            |
+|-----------------------------------------------|--------------------|-----------------------------------------------------------------------------------------------------------------------|
+| **Canonical storefront model and validation** | Complete baseline  | Pages, sections, brand system, protected catalogue references and snapshots are validated before rendering.           |
+| **Visual editor and manual editing**          | Complete baseline  | Selection, page/locale context, section operations, device modes and undo/redo exist.                                 |
+| **Proposal lifecycle**                        | Complete baseline  | Selected-section, current-page and whole-storefront proposals support review, accept, reject and stale protection.    |
+| **Atomic whole-storefront application**       | Complete baseline  | Multi-page plus brand-system changes apply as one history transaction with whole-storefront undo/redo.                |
+| **Real provider adapter**                     | Verified           | OpenAI provider runs server-side through the same structured, guarded lifecycle as the deterministic provider.        |
+| **Draft, save and publish**                   | Verified           | Accepted changes can be saved and published separately; history and restoration architecture exist.                   |
+| **Realistic merchant fixture**                | Verified           | Karvonen catalogue and local assets can drive the storefront without changing protected product truth.                |
+| **End-to-end real-AI proof**                  | Verified           | Karvonen → merchant prompt → real provider → validated proposal → atomic application → undo/redo → publish succeeded. |
+
+## 3.1 Findings from the real-provider test
+| **Finding**                                                             | **Meaning for v1.2**                                                                                                              |
+|-------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| The safe whole-storefront pipeline works.                               | Do not rebuild Phase 4 architecture. Harden only confirmed failures.                                                              |
+| A simple premium-style prompt produced a coherent multi-section result. | The design engine is viable; visible quality now depends on richer components and page depth.                                     |
+| An exact long palette prompt was rejected safely.                       | Keep the guardrail, but expand approved brand-token intent and operation coverage so normal merchant colour instructions succeed. |
+| Residual Aurum/demo copy appeared inside Karvonen presentation.         | Source-aware content, reusable fixture mapping and design generation must separate component defaults from merchant content.      |
+| Karvonen required explicit bootstrap wiring.                            | Demo reliability needs reset/load workflows and no hidden IndexedDB preparation.                                                  |
+| The editor still looks like a development product.                      | Merchant productization and the Vesko shell are now required, but should not distract from dynamic component depth.               |
 
 <table>
 <colgroup>
-<col style="width: 100%" />
+<col style="width: 1%" />
+<col style="width: 98%" />
 </colgroup>
 <thead>
 <tr class="header">
-<th><p><strong>No arbitrary code generation</strong></p>
-<p>AI output is structured storefront JSON that references registered components and validated properties. It is never JavaScript, React, HTML or CSS executed directly.</p></th>
+<th></th>
+<th><p><strong>Roadmap consequence</strong></p>
+<p>The next phase is not another AI adapter or catalogue detour. It is the productization of what the AI can design: reusable dynamic components, deep product/collection pages, URL-first onboarding, asset-aware brand reconstruction, whole-site consistency and a reliable Vesko-integrated merchant experience.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+
+# 4. Users, roles and jobs to be done
+| **User**                                  | **Situation**                                                                                     | **Primary job**                                                                                                                        |
+|-------------------------------------------|---------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| Existing-site Vesko customer              | Has a public website, products and some imagery, but the site may be outdated or hard to migrate. | Use the existing URL as design evidence, preserve useful assets and receive a modern Vesko storefront without rebuilding product data. |
+| New-store Vesko customer                  | Has products and a logo, but no full website or brand guide.                                      | Generate a credible brand system and storefront from minimal inputs and guided choices.                                                |
+| Existing Vesko merchant                   | Already has a Vesko storefront and needs a redesign or campaign.                                  | Request section, page, design-system or whole-site changes safely in plain language.                                                   |
+| Vesko salesperson / onboarding specialist | Creates a store together with a prospect or customer.                                             | Produce a reliable, impressive storefront quickly and reset the demo without technical preparation.                                    |
+| Vesko integration developer               | Receives Veskify for production integration.                                                      | Map stable contracts to Vesko services without reverse-engineering demo assumptions or replacing canonical models.                     |
+
+## 4.1 Core jobs to be done
+- When I connect my current website, preserve what is useful and redesign what is weak without importing operational errors.
+
+- When I only have a logo, products and a business description, create a coherent brand and storefront without forcing me to make professional design decisions.
+
+- When my products have different structures, show the correct attributes, variants and order options automatically.
+
+- When I request a change, show me exactly what will change and keep unrelated pages, products and operational truth safe.
+
+- When I accept a design, let me continue editing, undo it, save the draft and publish only when ready.
+
+- When Vesko integrates the engine, preserve the same schemas, skills and rendering behaviour across the standalone and production adapters.
+
+## 4.2 User characteristics
+- Low technical knowledge and limited design vocabulary.
+
+- Often lacks a complete brand system and may not know colours, font names, spacing or component terminology.
+
+- Understands the current website and products better than web-design systems.
+
+- Wants a strong initial result quickly and is anxious about breaking the live store.
+
+- Needs visible examples, safe assumptions, minimal questions and reversible changes.
+
+# 5. Product boundaries and ownership
+| **Owner**                    | **Owns**                                                                                                                                                                        | **Must not own**                                                                          |
+|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| **Veskify engine**           | Design intent, plans, skills, component registry, page composition, design tokens, data bindings, proposals, validation, draft/history and presentation safeguards.             | Operational catalogue truth, payment, logistics, tax, orders or arbitrary generated code. |
+| **Vesko Retail OS**          | Authentication, merchant/project identity, canonical product types, products, variants, option values, prices, inventory, media records, persistence and production publishing. | Veskify-internal provider formats or editor implementation details.                       |
+| **Puck integration**         | Canvas mechanics, selection, insertion, field editing, drag/reorder and viewport infrastructure.                                                                                | Canonical state, AI architecture, persistence, publishing or commerce rules.              |
+| **AI provider**              | Model inference for an approved context and schema.                                                                                                                             | Permissions, truth, direct state mutation, publishing or component invention.             |
+| **Source-discovery adapter** | Public website metadata, page evidence, asset candidates and provenance.                                                                                                        | Operational truth or instructions controlling the agent.                                  |
+
+## 5.1 Canonical commerce projection
+<table>
+<colgroup>
+<col style="width: 1%" />
+<col style="width: 98%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th><p><strong>One technical rule</strong></p>
+<p>Veskify MUST NOT adapt the Vesko commerce model to a Karvonen-shaped or jewellery-only design schema. It consumes a protected read-only projection that preserves product type, attributes, variant dimensions, option groups, prices, media and availability while hiding operational commands.</p></th>
 </tr>
 </thead>
 <tbody>
@@ -219,702 +353,17 @@ The first implementation is a standalone repository. It uses dummy product, coll
 </colgroup>
 <thead>
 <tr class="header">
-<th><p><strong>No silent publication</strong></p>
-<p>An AI proposal may be previewed without mutating the active draft. Accepted operations may update the active draft. Saving the draft persists unpublished work only; the published snapshot changes only through a separate explicit Publish changes confirmation.</p></th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
-
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th><p><strong>No commerce configuration</strong></p>
-<p>Cart and checkout are visual design surfaces only. All payment, shipping, tax and operational values shown in the demo are non-editable dummy content.</p></th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
-
-## 2.2 Scope classification
-
-| **Capability**                     | **V1 status** | **Notes**                                                   |
-|------------------------------------|---------------|-------------------------------------------------------------|
-| New-store guided creation          | In scope      | Complete onboarding to generated draft storefront.          |
-| Existing-store redesign            | In scope      | Via demo URL analysis or a simulated import path.           |
-| Section-level edits                | In scope      | Chat and manual canvas controls.                            |
-| Whole-site restyling               | In scope      | Changes global tokens and compatible component variants.    |
-| Marketing landing pages            | In scope      | Create new page from approved page template and components. |
-| Real Shopify/WooCommerce migration | Out of scope  | Demo may simulate mapping and use uploaded data locally.    |
-| Real Instagram integration         | Out of scope  | Present as a simulated source or uploaded-media workflow.   |
-| Real backend publishing            | Out of scope  | Simulated published snapshot and preview URL.               |
-| Arbitrary custom React sections    | Out of scope  | Only approved primitives and registered components.         |
-
-# 3. Users, roles and jobs to be done
-
-## 3.1 Primary target users
-
-| **User**                                  | **Primary need**                                                                                                               |
-|-------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| First-time retailer                       | Creates a first online store with no existing design or technical knowledge.                                                   |
-| Migrating retailer                        | Brings an existing Shopify, WooCommerce, spreadsheet, ERP export, supplier catalogue or older site into a new design workflow. |
-| Vesko salesperson                         | Builds or demonstrates a store together with a prospective customer.                                                           |
-| Existing Vesko merchant — campaign editor | Updates a landing page, hero banner or marketing section without redesigning the full store.                                   |
-| Existing Vesko merchant — site editor     | Updates the full storefront design, fonts, colours, layouts and page presentation.                                             |
-
-## 3.2 User characteristics
-
-- Very low technical knowledge and limited familiarity with professional design terminology.
-
-- Needs visible examples and guided choices rather than blank-canvas configuration.
-
-- Wants a usable result quickly and expects the system to recommend sensible defaults.
-
-- May be anxious about breaking the live storefront; therefore draft and confirmation states must be obvious.
-
-- May work in Finnish or English and may need the storefront in both languages.
-
-## 3.3 Roles and permissions in the demo
-
-| **Role**          | **Allowed actions**                                                                              |
-|-------------------|--------------------------------------------------------------------------------------------------|
-| Merchant owner    | Create project, edit all pages, manage draft, preview and simulate publishing.                   |
-| Merchant editor   | Edit pages and content, preview changes; simulated publishing may be allowed by project setting. |
-| Vesko salesperson | Create assisted demo projects and switch between merchant scenarios.                             |
-| Viewer            | Open published preview only; no editing.                                                         |
-
-## 3.4 Core jobs to be done
-
-- When I have no website, help me turn basic business information into a complete storefront without making design decisions I do not understand.
-
-- When my current website is outdated, help me preserve useful brand assets while producing a clearer modern design.
-
-- When I need a campaign, let me create a new landing page or promotional section without changing the rest of the store.
-
-- When I want a different visual style, let me preview a complete restyle before saving it.
-
-- When I select a section, let me change it through simple prompts and direct controls without affecting unrelated content.
-
-# 4. End-to-end user journeys
-
-## 4.1 Path A — new customer or new store
-
-| **Step**            | **Required behaviour**                                                                                |
-|---------------------|-------------------------------------------------------------------------------------------------------|
-| Entry               | User chooses Create a new storefront.                                                                 |
-| Business setup      | Business name, description, industry and target customer.                                             |
-| Starting material   | Select existing site, uploaded files/assets, or start from description only.                          |
-| Brand setup         | Upload logo/brand guide or use guided brand creation.                                                 |
-| Visual direction    | Choose visual references, tone, density and preferences using example cards.                          |
-| Catalogue source    | Upload CSV/Excel or choose an industry dummy catalogue.                                               |
-| Pages and languages | Confirm required pages and the canonical English (en)/Finnish (fi) storefront configuration, including one primary language. |
-| Generation plan     | Veskify summarises what it will build and asks for confirmation.                                      |
-| Initial generation  | System creates global design tokens, navigation, pages and a populated homepage/product presentation. |
-| Editor tutorial     | Short overlay teaches section selection, proposal review, draft status, Save draft, and Publish changes.       |
-| Editor              | User reviews and edits through canvas, chat and structured controls.                                  |
-| Full preview        | User opens the complete draft storefront in a dedicated preview route.                                |
-| Save draft          | User persists editor changes without affecting the published snapshot.                                         |
-| Publish changes     | User separately confirms publication; the valid saved draft becomes the published snapshot and history is created. |
-
-## 4.2 Path B — existing Vesko customer
-
-| **Step**         | **Required behaviour**                                                                                            |
-|------------------|-------------------------------------------------------------------------------------------------------------------|
-| Entry            | User opens an existing demo project and sees the current published storefront.                                    |
-| Intent           | User requests a section edit, page creation, campaign, new visual direction or whole-site redesign.               |
-| Selection        | User may select the target section/page before prompting; the selection is passed as context.                     |
-| Clarification    | Agent asks only for information that materially affects the result, such as campaign objective or required media. |
-| Proposal         | Agent presents a short plan and a structured confirmation card.                                                   |
-| Proposal preview | Validated operations are previewed without mutating the active draft.                                             |
-| Review           | User compares, revises, accepts, rejects, or regenerates the proposal. Accepted operations are then applied to the active draft. |
-| Full preview     | User opens the full draft route in desktop or mobile preview.                                                     |
-| Save draft       | User persists the active draft without changing the published snapshot.                                          |
-| Publish changes  | User separately confirms publication when the saved draft is ready.                                               |
-
-Initial generation is a deterministic application boundary. The guided brief is validated first,
-P3-05 plans the canonical BrandSystem, P3-06 selects a controlled template foundation, and P3-08
-materializes the initial snapshot. The deterministic guided-generation orchestrator owns this fixed
-composition order and returns the three stage plans, stage-labelled diagnostics, assumptions and
-warnings as one immutable reviewable in-memory result. It does not duplicate preset, scoring,
-resolver or page-materialization policy. If a stage is blocked, later stages are explicitly not run,
-the top-level status is blocked, and no snapshot is returned. Project creation, draft persistence,
-editor handoff, Save draft and Publish changes remain later boundaries; orchestration does not persist
-anything.
-
-A template selection is bound to a deterministic fingerprint of the current selection-relevant brief
-state. If the brief changes after selection, P3-08 blocks generation until P3-06 is run again. IDs and
-`createdAt` are explicit inputs; runtime time and randomness are prohibited.
-
-The P3-10 result is projected by a deterministic P3-13 review application service into a localized
-EN/FI merchant-readable review. The review preserves original stage diagnostics and does not rerun
-planning or materialization. Its fixed sections cover business understanding, brand direction,
-template, pages, languages, catalogue, assumptions, warnings and blockers. The review remains in
-memory and is a later O-09 consumer; it does not create or persist a Project. Project creation may
-continue only when the validated result is non-blocked, has the required generated pages and has no
-blocker diagnostics. The language section carries the canonical selected storefront locales and
-primary locale from the validated brief; unsupported or malformed locale input is rejected before
-review or project-creation propagation.
-
-## 4.3 Vesko salesperson assisted mode
-
-Assisted mode uses the same creation and editing flows but provides quick scenario switching, sample business presets, reset-to-demo controls and an optional presenter mode. Presenter mode must not expose developer tools, raw JSON or internal prompt content.
-
-## 4.4 Critical journey rules
-
-- A user must always be able to skip optional onboarding inputs and continue with recommended defaults.
-
-- The system must save onboarding progress locally so an accidental refresh does not restart the flow.
-
-- O-08 language selections must resume from the saved onboarding session. A partial selection remains on O-08; completion requires at least one supported storefront language and a primary language selected from that set, then advances atomically to O-09.
-
-- The user must see whether they are editing Draft or Published at all times.
-
-- The agent must never ask a question that can be answered safely from existing project context or a default recommendation.
-
-- A failed AI generation must preserve the current draft and offer retry or manual editing.
-
-# 5. Information architecture and screens
-
-## 5.1 Application-level routes
-
-| **Route**                       | **Purpose**                                                 |
-|---------------------------------|-------------------------------------------------------------|
-| /                               | Product landing or project chooser.                         |
-| /projects                       | List demo projects, presets and recent edits.               |
-| /projects/new                   | Guided onboarding wizard.                                   |
-| /projects/{projectId}/editor    | Main editor: canvas, chat, page tree and property controls. |
-| /projects/{projectId}/preview   | Full draft preview with device controls.                    |
-| /projects/{projectId}/published | Published demo storefront.                                  |
-| /projects/{projectId}/history   | Draft/published snapshots and restore actions.              |
-| /demo/presets                   | Salesperson scenario presets.                               |
-
-## 5.2 Editor layout
-
-| **Region**    | **Purpose**                                                               | **Default behaviour**                                                               |
-|---------------|---------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| Top bar       | Project, draft status, undo/redo, device mode, View in full, Save draft, Publish changes | Persistent. Save draft is enabled for unsaved work; Publish changes is separate and requires confirmation. |
-| Left rail     | Pages, section tree, add page, site structure                             | Collapsible. Shows current page and selected section.                               |
-| Canvas        | Interactive storefront preview                                            | Primary workspace. Supports selection, hover labels and direct text editing.        |
-| Right panel   | Contextual manual controls                                                | Shows section settings, content, design, visibility and variants.                   |
-| Chat panel    | Agent instructions, plans and confirmations                               | Docked or overlay. Knows current page/selection.                                    |
-| Bottom status | Generation progress, validation issues and responsive warnings            | Appears only when relevant.                                                         |
-
-## 5.3 Onboarding screens
-
-| **ID** | **Screen**                | **Core content**                                                          |
-|--------|---------------------------|---------------------------------------------------------------------------|
-| O-01   | Welcome and creation path | New store / redesign existing store / use demo preset.                    |
-| O-02   | Business basics           | Name, description, industry, target customer and primary market.          |
-| O-03   | Existing sources          | Website URL, social profile, uploads or start without sources.            |
-| O-04   | Brand assets              | Logo, brand guide, colour/font data and images.                           |
-| O-05   | Visual direction          | Guided style cards, tone, image style and layout density.                 |
-| O-06   | Catalogue                 | CSV/Excel upload or industry sample catalogue.                            |
-| O-07   | Pages                     | Required page set and optional pages.                                     |
-| O-08   | Languages                 | English (en), Finnish (fi), or both in canonical order; one selected primary language. Unsupported runtime locales are rejected rather than filtered. |
-| O-09   | Review plan               | Summary of inputs, assumptions, missing optional data and planned output. |
-| O-10   | Generating                | Progressive status with meaningful stages.                                |
-| O-11   | Editor tutorial           | Three to five short, dismissible guided steps.                            |
-
-# 6. Functional requirements
-
-## 6.1 Project and onboarding requirements
-
-| **ID** | **Requirement**                                                                                            |
-|--------|------------------------------------------------------------------------------------------------------------|
-| FR-001 | The system MUST create a standalone project from a guided onboarding flow.                                 |
-| FR-002 | The system MUST support new-store, existing-store redesign and demo-preset entry paths.                    |
-| FR-003 | The onboarding flow MUST allow optional inputs to be skipped and replaced with documented defaults.        |
-| FR-004 | The onboarding flow MUST persist progress locally after every completed step, including resumable O-08 language selections and completion. |
-| FR-005 | The user MUST be able to provide a business name, description, industry and target customer.               |
-| FR-006 | The user MUST be able to upload logo, brand materials, product images, CSV and Excel files through the UI. |
-| FR-007 | The demo MUST support only English (en) and Finnish (fi) as storefront locales; the primary language MUST be one of the selected locales, and unsupported runtime locale values MUST be rejected. |
-| FR-008 | Before generation, Veskify MUST show a plain-language build plan and request confirmation.                 |
-| FR-009 | The system MUST create an initial design system and storefront draft after confirmation.                   |
-| FR-010 | The system MUST provide sample industry data when no usable catalogue data is supplied.                    |
-
-## 6.2 Storefront generation requirements
-
-| **ID** | **Requirement**                                                                                                                   |
-|--------|-----------------------------------------------------------------------------------------------------------------------------------|
-| FR-011 | The system MUST generate a homepage, collection/category page, product page, navigation, footer, cart UI and checkout UI.         |
-| FR-012 | The system SHOULD generate About, Contact, Delivery, Returns, Privacy and Terms pages using editable placeholder content.         |
-| FR-013 | All generated pages MUST use the same project design tokens unless a page-level override is explicitly created.                   |
-| FR-014 | Generated layouts MUST reference only registered components and valid component variants.                                         |
-| FR-015 | The system MUST validate generated storefront JSON before rendering it.                                                           |
-| FR-016 | Invalid generated properties MUST be rejected or replaced with safe defaults; they MUST NOT reach the renderer unchecked.         |
-| FR-017 | The system MUST support desktop, tablet and mobile rendering modes.                                                               |
-| FR-018 | The homepage and product page MUST receive the highest visual and content quality priority.                                       |
-| FR-019 | Cart and checkout MUST visually inherit the site design but MUST expose no real payment or logistics configuration.               |
-| FR-020 | The system MUST permit a complete theme restyle without changing dummy products, product prices or page content unless requested. |
-
-## 6.3 Editing requirements
-
-| **ID** | **Requirement**                                                                                                                                 |
-|--------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| FR-021 | The user MUST be able to select a section directly from the canvas or section tree.                                                             |
-| FR-022 | The current page and selected section MUST be included in the agent context.                                                                    |
-| FR-023 | The user MUST be able to reorder, add, duplicate, hide and remove sections.                                                                     |
-| FR-024 | The user MUST be able to edit text, media, colours, typography styles, alignment, spacing presets and layout variants.                          |
-| FR-025 | The system MUST support inline text editing for eligible text fields.                                                                           |
-| FR-026 | The system MUST support undo and redo for all draft mutations.                                                                                  |
-| FR-027 | Regenerating one section MUST NOT alter unrelated sections or global design tokens unless the instruction explicitly requests a broader change. |
-| FR-028 | The user MUST be able to accept, revise, reject or regenerate an AI proposal.                                                                   |
-| FR-029 | The system SHOULD highlight changed sections until the user dismisses the change summary.                                                       |
-| FR-030 | The system MUST prevent unrestricted section resizing; it MUST use approved sizing and spacing presets.                                         |
-
-## 6.4 AI and content requirements
-
-| **ID** | **Requirement**                                                                                                 |
-|--------|-----------------------------------------------------------------------------------------------------------------|
-| FR-031 | The agent MUST identify the retailer industry or ask for clarification when confidence is insufficient.         |
-| FR-032 | The agent MUST generate section titles, supporting copy, calls to action and page metadata.                     |
-| FR-033 | The agent MUST be able to create an industry-specific visual direction and landing page composition.            |
-| FR-034 | The agent MAY generate images through an image-service adapter and MUST also support merchant-provided assets.  |
-| FR-035 | The agent MUST infer or create a coherent design language from provided brand materials and guided preferences. |
-| FR-036 | The agent MUST generate and translate editable storefront content in English and Finnish.                       |
-| FR-037 | The product intelligence layer MUST detect obvious duplicate dummy/imported product records.                    |
-| FR-038 | The product intelligence layer MUST recommend filters and identify missing display information.                 |
-| FR-039 | The agent MUST ask questions only when missing information materially affects the requested design outcome.     |
-| FR-040 | The agent MUST return structured output conforming to the schemas in this document.                             |
-
-## 6.5 Draft and publishing requirements
-
-| **ID** | **Requirement**                                                                                                  |
-|--------|------------------------------------------------------------------------------------------------------------------|
-| FR-041 | Every project MUST maintain separate active draft, saved draft, and published snapshot state.                              |
-| FR-042 | Manual edits and accepted AI proposals MUST mutate only the active draft. AI proposals MUST NOT mutate it before acceptance. |
-| FR-043 | View in full MUST open the complete active or saved draft storefront without publishing it.                              |
-| FR-044 | Save draft MUST persist the current valid draft and MUST NOT alter the published snapshot or create a publish-history entry. |
-| FR-045 | Publish changes MUST require separate explicit confirmation, validate the saved/current draft, replace the published snapshot, and create history. |
-| FR-046 | Discard changes MUST restore the active draft to the latest saved draft, or to the published snapshot when no saved draft exists. |
-| FR-047 | The system MUST show persistent unsaved and unpublished indicators that distinguish active-draft changes from saved-but-unpublished changes. |
-| FR-048 | The system MUST keep a bounded local history of published snapshots and allow restoration into draft.                   |
-| FR-049 | Destructive section/page actions MUST require confirmation when they remove non-empty content.                          |
-| FR-050 | A failed save, publish, or generation MUST preserve the previous published snapshot and current usable draft; the published route MUST remain read-only. |
-| FR-051 | Initial storefront generation MUST deterministically materialize a validated in-memory StorefrontSnapshot from the current brief, approved controlled template selection and canonical BrandSystem without persisting a Project or snapshot. |
-| FR-052 | A template selection MUST be bound to the current selection-relevant brief state; stale selections MUST block initial generation until the controlled selection planner runs again. |
-| FR-053 | Guided storefront generation MUST execute the deterministic P3-05 brand-foundation, P3-06 template-selection and P3-08 materialization stages in that order, returning one immutable reviewable in-memory result with stage-labelled diagnostics. |
-| FR-054 | A blocked guided-generation stage MUST prevent later stages from running and MUST return no generated snapshot; explicit identifiers, catalogue reference and createdAt MUST be supplied inputs, with no persistence or runtime randomness. |
-| FR-055 | The guided-generation result MUST be projectable into a deterministic localized EN/FI merchant review that preserves stage ownership, diagnostics, assumptions, warnings and blockers without rerunning generation or persisting a Project. |
-| FR-056 | Project creation MUST be allowed from the review only when the validated guided result is non-blocked, contains a generated snapshot with the required home, collection and product pages, and has no blocker diagnostics. |
-
-# 7. Editor and interaction specification
-
-## 7.1 Canvas selection model
-
-Every rendered section must expose a stable section ID and editor metadata. Hovering a section displays a subtle outline and label. Clicking selects it, updates the section tree, opens contextual controls and passes the selection into chat context. Selection visuals must never appear in full preview or published routes.
-
-## 7.2 Manual section actions
-
-| **Action**     | **Behaviour**                                                 | **Guardrail**                                         |
-|----------------|---------------------------------------------------------------|-------------------------------------------------------|
-| Reorder        | Drag within the current page section list or use Move up/down | Header and footer remain in protected global regions. |
-| Add            | Open component gallery filtered by page type and industry     | Only compatible registered components are shown.      |
-| Duplicate      | Create a new section ID with copied content and props         | Duplicate is inserted directly after source.          |
-| Hide           | Set visibility false without deleting content                 | Hidden section remains visible in tree with status.   |
-| Delete         | Remove from draft after confirmation where needed             | Undo must restore it.                                 |
-| Change variant | Select approved layout variant                                | Content mapping is preserved where compatible.        |
-| Edit content   | Inline or property-panel editing                              | Validation applies before mutation.                   |
-| Regenerate     | AI replaces only selected target                              | Before/after summary required.                        |
-
-## 7.3 Chat interaction states
-
-| **State**         | **Description**                                                                     |
-|-------------------|-------------------------------------------------------------------------------------|
-| Idle              | Prompt box is available; current page and section context are visible.              |
-| Understanding     | Agent classifies scope: selected field, section, page, design system or whole site. |
-| Needs information | Agent asks one focused question or presents simple options.                         |
-| Plan ready        | Agent shows intended changes, affected scope and any assumptions.                   |
-| Generating        | Progress indicates meaningful work stages and allows cancellation when safe.        |
-| Proposal ready    | A visual proposal preview and confirmation card are shown; the active draft remains unchanged. |
-| Revision          | User provides follow-up instruction against the proposal.                           |
-| Accepted in draft | Validated operations are applied to the active draft; saved and published snapshots remain unchanged. |
-| Rejected          | Proposal is discarded and the active draft remains unchanged.                                |
-| Error             | Current draft remains usable; retry and manual edit options appear.                 |
-
-## 7.4 Structured confirmation card
-
-Every non-trivial AI proposal must include: requested outcome, affected page/section, changed content, changed design properties, generated assets, unresolved assumptions, and actions for Accept and apply to draft, Revise, Regenerate, and Reject. The card must state that acceptance updates only the active draft and does not save or publish it.
-
-## 7.5 Direct manipulation limits
-
-- No freeform pixel positioning.
-
-- No arbitrary width or height fields for ordinary users.
-
-- No custom CSS editor in V1.
-
-- No arbitrary font upload unless the font is already available through a safe configured source.
-
-- No direct editing of raw storefront JSON in merchant mode.
-
-- No editing of dummy price, stock, payment or shipping values through the design interface.
-
-## 7.6 Editor onboarding tutorial
-
-> **1.** Click any section to select and edit it.
->
-> **2.** Ask Veskify to change the selected section or the whole page.
->
-> **3.** Use desktop, tablet and mobile controls to review responsive layouts.
->
-> **4.** Use View in full to inspect the complete draft.
->
-> **5.** Use Save draft to persist unpublished work. Use Publish changes separately only when the saved draft is ready to replace the published demo version.
-
-# 8. Storefront design system
-
-## 8.1 Brand system generation
-
-When the merchant supplies no complete brand guideline, Veskify must generate a coherent brand system from the business description, industry, customer profile and guided visual choices. The user selects visual examples and simple preferences; the system converts them into validated design tokens.
-
-## 8.2 Required design tokens
-
-| **Token group** | **Required fields**                                                                               |
-|-----------------|---------------------------------------------------------------------------------------------------|
-| Colour          | primary, secondary, accent, background, surface, text, mutedText, border, success, warning, error |
-| Typography      | headingFont, bodyFont, baseSize, scaleRatio, headingWeight, bodyWeight, lineHeight                |
-| Shape           | cornerRadiusSmall, cornerRadiusMedium, cornerRadiusLarge, borderWidth                             |
-| Spacing         | xs, sm, md, lg, xl, sectionCompact, sectionStandard, sectionSpacious                              |
-| Buttons         | primary, secondary, text, destructive; each with size and shape variants                          |
-| Imagery         | aspect-ratio defaults, crop mode, image radius, overlay strength, treatment style                 |
-| Layout          | contentMaxWidth, readingWidth, gridGap, pageGutter, headerMode                                    |
-| Voice           | tone keywords, sentence length, formality, CTA style, prohibited language                         |
-
-## 8.3 Guided brand creation controls
-
-| **Merchant-facing question**            | **Structured result**                                                |
-|-----------------------------------------|----------------------------------------------------------------------|
-| Which feeling should the store create?  | tone: elegant / modern / warm / bold / minimal / playful / technical |
-| Which colour direction fits your brand? | palette family and contrast preference                               |
-| How should the store feel visually?     | density: airy / balanced / compact                                   |
-| How should images appear?               | studio / lifestyle / editorial / product-focused / mixed             |
-| Which typography feels right?           | serif-led / sans-led / mixed / strong / soft                         |
-| How prominent should promotions be?     | subtle / balanced / campaign-led                                     |
-
-## 8.4 Design system inheritance
-
-- Global tokens apply to all pages and components by default.
-
-- A component may expose a limited local override only for properties approved in its schema.
-
-- A campaign page may define a page-level theme override while preserving accessibility and shared navigation rules.
-
-- Changing a global token must preview the effect across at least the homepage, collection page and product page before acceptance.
-
-- Changing fonts or colours must not modify content, products or section ordering.
-
-## 8.5 Industry themes for V1
-
-| **Industry**        | **Demo support**             | **Design emphasis**                                                                   |
-|---------------------|------------------------------|---------------------------------------------------------------------------------------|
-| Jewellery & watches | Complete                     | Premium imagery, editorial spacing, material/stone filters, high-trust product pages. |
-| Fashion & clothing  | Recommended secondary preset | Collections, campaigns, size/colour options and visual merchandising.                 |
-| Other retail        | Generic fallback             | Neutral retail template and dummy data.                                               |
-
-# 9. Controlled component system
-
-## 9.1 Component contract
-
-Each component must be registered in a component registry with a stable type, supported variants, property schema, content schema, responsive rules, editable fields, allowed page types and industry tags. The renderer must reject unknown component types.
-
-Initial storefront materialization must clone registered component defaults, preserve protected
-commerce fields, validate the selected variant and target page type, and reject required slots that
-cannot be represented by a registered valid default. Template plans remain the sole source of page
-and section composition.
-
-## 9.2 Core component inventory
-
-| **Type**           | **Pages**         | **Variants**                              | **Editable content**                 |
-|--------------------|-------------------|-------------------------------------------|--------------------------------------|
-| announcementBar    | Global            | singleLine, rotating                      | Announcement text, link, visibility  |
-| header             | Global            | centered, split, compact, transparent     | Logo, menu, search/cart controls     |
-| hero               | Home/Landing      | editorial, split, fullBleed, productFocus | Eyebrow, heading, copy, CTA, media   |
-| featuredCategories | Home              | grid, editorialCards, carousel            | Category references, labels, media   |
-| productGrid        | Home/Collection   | standard, editorial, compact              | Product references, columns, heading |
-| productCarousel    | Home/Product      | standard, spotlight                       | Product references, heading          |
-| campaignBanner     | Home/Landing      | imageOverlay, split, minimal              | Heading, copy, CTA, media            |
-| imageText          | Any content page  | imageLeft, imageRight, stacked            | Heading, copy, CTA, media            |
-| brandStory         | Home/About        | editorial, timeline, founder              | Text blocks, media, facts            |
-| benefitIcons       | Home/Product/Cart | threeColumn, fourColumn                   | Icon, title, text                    |
-| testimonials       | Home/Product      | cards, quoteFocus                         | Quotes, people, ratings              |
-| gallery            | Home/About        | masonry, grid, strip                      | Media items, captions                |
-| newsletter         | Global/Home       | inline, card, fullWidth                   | Heading, copy, form labels           |
-| faq                | Any               | accordion, grouped                        | Question/answer entries              |
-| storeLocations     | Contact           | cards, mapPlaceholder                     | Locations, hours, contact            |
-| footer             | Global            | columns, editorial, compact               | Menus, contact, social, legal        |
-| collectionHeader   | Collection        | editorial, compact, image                 | Title, copy, media                   |
-| filterBar          | Collection        | sidebar, horizontal, drawer               | Filter definitions, sort control     |
-| productGallery     | Product           | grid, thumbnails, editorial               | Images, video placeholders           |
-| productInfo        | Product           | standard, premium, compact                | Title, price display, options, CTAs  |
-| productOptions     | Product           | buttons, swatches, dropdowns              | Variant and order options            |
-| relatedProducts    | Product           | grid, carousel                            | Product references                   |
-| cartDrawer         | Cart              | standard, compact                         | Items, totals, CTA; dummy content    |
-| cartPage           | Cart              | split, stacked                            | Items, summary; dummy content        |
-| checkoutShell      | Checkout          | singleColumn, splitSummary                | Steps, form placeholders, summary    |
-
-## 9.3 Custom sections rule
-
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th><p><strong>Permitted</strong></p>
-<p>Veskify may create a new section composition by arranging approved primitives and mapping content into a registered schema. The result must be saved as a valid component instance or reusable composition.</p></th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
-
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th><p><strong>Not permitted</strong></p>
-<p>Veskify may not emit arbitrary React, HTML, CSS, scripts, external embeds or executable code as a section.</p></th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
-
-## 9.4 Component variant switching
-
-A variant switch must preserve compatible content fields. When fields do not map, the editor must show what will be dropped or moved before applying the change. Variant switching must not silently delete media or copy.
-
-## 9.5 Responsive contract
-
-- Every component defines desktop, tablet and mobile layout rules in code, not in AI output.
-
-- AI may select responsive-safe options such as column count, content order and compact/standard/spacious presets.
-
-- The renderer must enforce minimum touch-target sizes, readable line lengths and non-overlapping content.
-
-- Unsupported property combinations must be corrected during schema validation.
-
-# 10. Page specifications
-
-## 10.1 Homepage
-
-The homepage is the principal design surface and must communicate the retailer identity, product focus and reasons to trust the store. It should normally contain 6–10 sections, with a clear hierarchy rather than a dense set of unrelated promotions.
-
-| **Priority** | **Requirement**                                                                  |
-|--------------|----------------------------------------------------------------------------------|
-| P0           | Hero communicates brand/product value within the first viewport.                 |
-| P0           | Navigation, colour, typography and imagery establish the global design language. |
-| P0           | At least one product or category discovery section appears near the top.         |
-| P1           | Trust, service or delivery information appears without dominating the page.      |
-| P1           | Campaign and storytelling content supports conversion and brand identity.        |
-| P1           | Footer provides contact, policies and navigation.                                |
-
-## 10.2 Collection/category page
-
-- Collection header with title, optional description and optional media.
-
-- Responsive product grid using dummy products.
-
-- Search, sorting and filter presentation appropriate to the selected industry.
-
-- Empty and no-results states.
-
-- Mobile filter drawer and desktop sidebar or horizontal filter variant.
-
-## 10.3 Product page
-
-The product page is the second highest-priority design surface. It must clearly present product media, title, dummy price, product options, descriptive content, trust information and related products while remaining consistent with the site design system.
-
-| **Area**        | **Requirements**                                                                                       |
-|-----------------|--------------------------------------------------------------------------------------------------------|
-| Gallery         | Responsive images, thumbnails/grid variants, zoom placeholder and media labels.                        |
-| Product summary | Title, dummy price, concise description, availability placeholder and rating placeholder when enabled. |
-| Options         | Industry-specific variants and configurable order options.                                             |
-| Primary action  | Add to cart visual control; no real transaction processing required.                                   |
-| Details         | Description, material/specification data, delivery/returns placeholder and care instructions.          |
-| Discovery       | Related products or recently viewed dummy products.                                                    |
-
-## 10.4 Cart and checkout UI
-
-The cart and checkout use dummy items and values. They exist to demonstrate that the design system continues through the transaction experience. No settings screen for payments, logistics, taxes or shipping prices is included.
-
-- Cart drawer and cart page share the same tokens, button styles and spacing as the storefront.
-
-- Checkout includes contact, delivery, payment and review visual steps using non-functional placeholder controls.
-
-- Dummy payment and delivery labels are read-only presentation data.
-
-- The editor may change visual layout, text style, background, spacing and trust content but not operational options.
-
-## 10.5 Content and legal pages
-
-About, Contact, Delivery, Returns, Privacy and Terms pages are generated as editable content-page structures. Legal and policy text must be clearly labelled as draft placeholder content requiring merchant review; the system must not present generated text as legal advice.
-
-## 10.6 Campaign landing pages
-
-- Created from a campaign objective, audience, offer, required media and call to action.
-
-- May use a page-level theme override but must remain consistent with the merchant brand.
-
-- Uses only registered components and may be linked from navigation or a campaign banner in the draft.
-
-- Creation must not alter the homepage unless the user explicitly asks to add a link or campaign section.
-
-# 11. Product and catalogue intelligence
-
-## 11.1 V1 purpose
-
-Catalogue intelligence exists to improve storefront presentation, not to operate the merchant catalogue. It may interpret uploaded or dummy data, recommend structure and populate design components. It must not change prices or operational inventory data.
-
-## 11.2 Supported input modes
-
-| **Input**            | **Demo behaviour**                                                                   |
-|----------------------|--------------------------------------------------------------------------------------|
-| No catalogue         | Use industry-specific dummy catalogue.                                               |
-| CSV                  | Parse locally, map common columns and show mapping review.                           |
-| Excel                | Parse first suitable worksheet locally and show mapping review.                      |
-| ERP/supplier export  | Treat as CSV/Excel mapping in V1; no vendor-specific connector.                      |
-| Existing website URL | Use simulated analysis by default; optional public metadata fetch behind an adapter. |
-| Instagram/social     | Simulated source selection or uploaded media; no OAuth integration.                  |
-| Product images       | Store locally/mock, allow manual assignment and optional AI description.             |
-
-## 11.3 Permitted product intelligence actions
-
-- Identify likely product type and industry display requirements.
-
-- Suggest presentation titles and descriptions without altering source price fields.
-
-- Detect obvious duplicate records using normalized titles, SKUs and image fingerprints where available.
-
-- Recommend collection filters based on attributes present in data.
-
-- Detect missing display information such as absent images, material or option labels.
-
-- Translate display text and product descriptions between English and Finnish.
-
-- Generate SEO titles and meta descriptions as editable content.
-
-## 11.4 Jewellery and watches display model
-
-| **Field group**   | **Display attributes**                                                                    |
-|-------------------|-------------------------------------------------------------------------------------------|
-| Material          | gold, silver, platinum, steel, titanium, other                                            |
-| Gold purity/karat | 9K, 14K, 18K and local fineness values such as 375, 585, 750                              |
-| Metal colour      | yellow, white, rose, mixed                                                                |
-| Stone             | type, shape, colour, clarity/cut placeholders, setting                                    |
-| Ring dimensions   | ring size, width in millimetres, profile and thickness where available                    |
-| Engraving         | enabled, text, font style and character limit as an order-option presentation             |
-| Watch fields      | brand, model, case size, strap material, movement and water resistance                    |
-| Audience/style    | gender/unisex, collection, occasion and style tags                                        |
-| Filters           | material, colour, brand, price, audience, stone shape, style and availability placeholder |
-
-## 11.5 Product data safeguards
-
-- Source price and stock values are read-only in the design agent.
-
-- Current price and public availability are mutually exclusive display data: a product must provide exactly one of `price` or a localized `priceUnavailableReason`. Optional compare-at prices, variant prices and availability labels remain read-only display data.
-
-- Duplicate suggestions require user confirmation before records are hidden from the demo catalogue.
-
-- Missing information is shown as a recommendation, not invented as factual product data.
-
-- Generated descriptive copy must not claim certifications, materials or properties absent from source data.
-
-- Product collection membership remains in the canonical collections model; material, colour and stone details remain in product attributes.
-
-- Local/default demo bootstrap includes both the canonical Aurum Nordic and Karvonen demo projects. Existing projects and merchant edits are preserved; if any canonical Karvonen seed identifier is already occupied, the complete Karvonen seed aggregate is skipped to prevent unsafe insertion.
-
-# 12. AI agent specification
-
-## 12.1 Agent responsibilities
-
-The Veskify agent converts natural-language design intent and project context into validated design operations. It plans the change, asks only necessary questions, returns structured operations, explains the result in plain language and never directly writes executable frontend code.
-
-## 12.2 Context available to the agent
-
-- Project business profile, industry, target customer and languages.
-
-- Current global design tokens and brand voice.
-
-- Page tree and current page schema.
-
-- Selected section and its current properties/content.
-
-- Registered component catalogue and compatibility rules.
-
-- Dummy/imported product and collection summaries.
-
-- User instruction and recent accepted/rejected proposals.
-
-- Media asset metadata and usage references.
-
-## 12.3 Intent classification
-
-| **Scope**            | **Examples**                                            | **Expected operation**                                   |
-|----------------------|---------------------------------------------------------|----------------------------------------------------------|
-| Field                | “Make this heading shorter”                             | Patch one content field.                                 |
-| Section              | “Make this hero more premium”                           | Patch selected section variant/content/style overrides.  |
-| Page                 | “Build a summer campaign page”                          | Create or replace page sections.                         |
-| Design system        | “Use warmer colours and a softer font”                  | Patch global tokens after cross-page preview.            |
-| Whole site           | “Redesign the entire store as a luxury jewellery brand” | Generate coordinated page and token operations.          |
-| Content/localisation | “Translate the product page to Finnish”                 | Patch locale content only.                               |
-| Asset                | “Create a new banner image”                             | Request image generation and map result to target field. |
-
-## 12.4 Clarification policy
-
-The agent should proceed with safe assumptions when the result can be revised visually. It asks a question only when the missing answer changes business meaning, required assets, page scope, language, campaign objective or a destructive operation. It asks one focused question at a time and may offer two to four visual choices.
-
-## 12.5 Plan-before-generate policy
-
-For page-level, design-system or whole-site operations, the agent must present a short plan containing the target, intended components, design direction, content assumptions, affected pages and generated assets. Section-level cosmetic edits may use a compact one-line plan.
-
-## 12.6 Structured operation types
-
-| **Operation**          | **Purpose**                                               |
-|------------------------|-----------------------------------------------------------|
-| PATCH_DESIGN_TOKENS    | Update validated global token fields.                     |
-| ADD_PAGE               | Create a page using a registered page type.               |
-| PATCH_PAGE             | Change page metadata or page-level theme override.        |
-| ADD_SECTION            | Insert a registered component instance.                   |
-| PATCH_SECTION          | Patch content, variant or allowed local style properties. |
-| MOVE_SECTION           | Change section order within one page.                     |
-| DUPLICATE_SECTION      | Clone a section with a new ID.                            |
-| SET_SECTION_VISIBILITY | Hide or reveal a section.                                 |
-| REMOVE_SECTION         | Remove a draft section with undo support.                 |
-| GENERATE_ASSET         | Request an image and map the resulting asset reference.   |
-| PATCH_LOCALE_CONTENT   | Add or edit English/Finnish fields.                       |
-
-## 12.7 AI output envelope
-
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>{<br />
-"requestId": "req_...",<br />
-"scope": "section | page | designSystem | site",<br />
-"summary": "Plain-language description",<br />
-"assumptions": ["..."],<br />
-"requiresConfirmation": true,<br />
-"operations": [<br />
-{<br />
-"type": "PATCH_SECTION",<br />
-"targetId": "section_hero_01",<br />
-"patch": { "variant": "editorial", "content": { "heading": { "en": "...", "fi": "..." } } }<br />
-}<br />
-],<br />
-"generatedAssetRequests": [],<br />
-"warnings": []<br />
+<th>type CommercePresentationProjection = {<br />
+catalogueId: string;<br />
+products: ProductPresentationContext[];<br />
+collections: CollectionPresentationContext[];<br />
+locale: Locale;<br />
+revision: string;<br />
+};<br />
+<br />
+// Read-only adapter; no create/update product commands exist here.<br />
+interface CommercePresentationRepository {<br />
+getProjection(projectId: string): Promise&lt;CommercePresentationProjection&gt;;<br />
 }</th>
 </tr>
 </thead>
@@ -922,374 +371,160 @@ For page-level, design-system or whole-site operations, the agent must present a
 </tbody>
 </table>
 
-The P4-05A storefront contract foundation adds an additive, target-bound envelope for future
-whole-storefront proposals. Its canonical target names one project and draft snapshot/revision,
-the affected page IDs, globally unambiguous page-bound section IDs, an optional explicit storefront
-design-system target, and the enabled/active `en` and `fi` locales. Target identity is normalized
-to deterministic page, section and locale ordering. The target fingerprint includes the nullable
-design-system target. The envelope retains the original and proposed storefront projections,
-affected pages, affected global design state, target-bound skill grants, target and permission
-fingerprints, contiguous operation ordering, and the existing `pending`/`accepted`/`rejected`
-proposal lifecycle. The raw envelope may retain provider validation failures for diagnostics; only
-a proposal with `valid: true` and no validation errors may cross the ready-proposal boundary. It is
-additive to the current single-page provider, generation and confirmation contracts; it does not
-apply multi-page changes or create a second proposal store.
+## 5.2 Protected truth
+- Product IDs, SKUs, product types, variant IDs and option values are immutable through design operations.
 
-Every storefront operation and grant is validated against the declared target. Section targets
-must belong to their declared page, section IDs must be unique across the complete storefront,
-unknown pages and sections are rejected when an active projection is supplied, page grants cannot
-authorize another page, and global operations require an explicit storefront design-system grant.
-Unsupported, duplicate or conflicting target grants are rejected; no global flattened allow-list,
-silent filtering, commerce/customer data or secret enters the fingerprint context. Ready-proposal
-validation recomputes both target and permission fingerprints from the active canonical context and
-rejects stale or tampered values.
+- Price and availability may change when the selected canonical variant changes, but the design agent does not set the value.
 
-The proposed projection must preserve the complete page set, page order and navigation, and every
-page outside the declared target must remain canonically unchanged. A page reorder must name exactly
-the page's current section IDs once each. Section operations are validated sequentially against an
-isolated working page through the existing design-operation and component-registry rules. An
-introduced section may therefore be customized only after a valid add in the same sequence and with
-an introduced-section grant matching its registered component and target page. Use-before-add,
-duplicate or cross-page section identities, grant-kind or component mismatches, unknown or
-page-incompatible components, unsupported variants or fields, protected fields, and malformed
-operation values are rejected before review or draft mutation.
+- The AI may choose presentation, hierarchy, labels, selector style and section placement; it may not create a nonexistent material, size, colour, stone, watch movement or certification.
 
-P4-05B adds a constrained generation-only path for applying one approved warm premium or minimal
-Nordic colour and typography direction across at least two explicitly targeted pages. The additive
-planner resolves eligible existing sections and optional explicit storefront design-system scope,
-then derives page/section/component/design-system-bound grants from registered storefront skills.
-The provider-independent request contains only the canonical target and projection, affected pages
-and sections, minimal component contracts, optional current colour/typography state, fingerprints,
-locale context, protected paths, labelled untrusted imports, and the structured-response contract.
-It excludes unrelated catalogue and commerce data, customers, UI state, analytics payloads, secrets,
-and repository state. Whole-storefront requests that require arbitrary composition, navigation,
-catalogue or commerce changes are rejected.
+- Generated copy must distinguish editable marketing language from factual product attributes.
 
-The React-independent storefront orchestrator parses and plans before invocation, deduplicates an
-identical pending request, supersedes older work when a distinct newer request arrives, invokes the
-provider once, and rechecks request sequence, active target, draft identity, target/permission
-fingerprints, a deterministic complete-storefront baseline fingerprint, and EN/FI locale context
-before returning one ready proposal. Equivalent supported instructions use the planner's canonical
-NFC, casing, whitespace and harmless trailing-punctuation normalization in the pending-request key.
-Changes to any canonical page content or identity, page order, navigation, global design state,
-draft identity/revision or locale context make the result stale; volatile UI state is not part of
-this identity.
-The deterministic mock emits only approved colour and typography operations and preserves the
-complete page set, page order, navigation, untargeted pages, content and protected commerce truth.
-Ready validation requires the proposed projection and affected global design state to be exactly
-reproducible by replaying its validated operations from the original canonical projection. Failed,
-unsafe or mismatched provider output remains outside the ready-proposal type. Generation never
-mutates active, saved or published state. Atomic multi-page application and site-wide history are
-owned by the separate P4-05C boundary below (FR-007, FR-014, FR-015, FR-016, FR-020, FR-027,
-FR-040, FR-041, FR-042, FR-050, NFR-006, NFR-007, NFR-008, NFR-009, AC-012, AC-013, AC-016,
-AC-017).
+# 6. End-to-end merchant journeys
+## 6.1 Primary path — improve an existing store from a URL
+| **1. Enter URL →**            | **2. Discover evidence →** | **3. Connect Vesko catalogue →** | **4. Reconcile →** |
+|-------------------------------|----------------------------|----------------------------------|--------------------|
+| **5. Approve design brief →** | **6. Generate →**          | **7. Review & edit →**           | **8. Publish**     |
 
-The P4-05C application boundary accepts one validated pending whole-storefront proposal as one
-all-or-nothing active-draft transaction. It rechecks project and draft identity, complete original
-storefront state, target and permission fingerprints, target-bound grants, operation ordering,
-registered components, protected fields, and final projection equality before commit. Operations
-run sequentially against an isolated complete snapshot. Explicitly targeted colour and typography
-design state requires the declared storefront design-system target and matching grant. The complete
-result must preserve snapshot and catalogue identity, page set/order, navigation, untargeted pages,
-unrelated design state, and storefront-wide section uniqueness. Failure returns no result mutation.
+| **Step**                       | **Required behaviour**                                                                                                                                                      |
+|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1\. Entry                      | Merchant chooses Improve my existing store and enters the public storefront URL.                                                                                            |
+| 2\. Source discovery           | The adapter analyses public pages, logo, colours, typography clues, navigation, content hierarchy, page types and reusable image candidates.                                |
+| 3\. Canonical connection       | The project loads the authoritative Vesko catalogue projection. Website content is not allowed to replace Vesko product truth.                                              |
+| 4\. Reconciliation             | Veskify links source-site assets and page evidence to canonical products/collections where confidence is sufficient; uncertain matches are shown as assumptions or omitted. |
+| 5\. Brand reconstruction       | The system proposes a brand system from the logo, site evidence, product imagery, business profile and industry preset.                                                     |
+| 6\. Missing-information review | The merchant is asked only for gaps that materially affect the result: preferred logo, required hero, colour constraints, language, key collections or pages.               |
+| 7\. Storefront Design Brief    | Veskify presents the intended pages, design direction, reused assets, assumptions, protected data sources and expected output for approval.                                 |
+| 8\. Initial generation         | The engine composes a homepage, collection page and dynamic product page first, then the remaining approved surfaces.                                                       |
+| 9\. Proposal review            | The merchant reviews the generated storefront and change summary before accepting the initial draft.                                                                        |
+| 10\. Editor and publish        | The merchant adjusts through Design and AI tools, previews all breakpoints, saves a draft and separately publishes.                                                         |
 
-One accepted whole-storefront proposal creates one session-only composite history transaction with
-all affected before/after pages, complete before/after design state, unaffected-page fingerprints,
-draft context, timestamp, proposal identity, and complete storefront fingerprints. Commit validates
-both forward application and inverse restoration before changing history. Undo and Redo restore the
-entire transaction as one unit; partial page undo/redo is not possible. Existing single-page
-proposal confirmation and page-local history remain unchanged. Acceptance changes only active
-in-memory draft state; Save draft, publishing, published history, and restore remain explicit
-separate boundaries (FR-026, FR-028, FR-041, FR-042, FR-044–FR-050, NFR-006, NFR-009, AC-006,
-AC-008–AC-012, AC-016).
+## 6.2 Secondary path — create a new storefront from minimal inputs
+| **Step**             | **Required behaviour**                                                                                                   |
+|----------------------|--------------------------------------------------------------------------------------------------------------------------|
+| Business setup       | Name, short description, industry, target customer, market and languages.                                                |
+| Available evidence   | Logo, product/collection media, social or visual references; all are optional except the canonical catalogue connection. |
+| Guided direction     | Simple visual choices: premium/accessible, warm/cool, minimal/editorial, airy/balanced/compact and image style.          |
+| Brand generation     | Create a validated token system and voice without requiring the merchant to choose hex values or font families.          |
+| Brief and generation | Approve the Storefront Design Brief, generate the initial site, review, edit and publish.                                |
 
-P4-05D integrates the controlled proposal lifecycle into the editor with three merchant-visible AI
-target scopes: Selected section, Current page, and Entire storefront. Section/page requests continue
-through the single-page proposal generation and confirmation boundary. Entire-storefront requests
-use the P4-05B request builder and P4-05C atomic application boundary, with deterministic mock
-generation as the local/test default and optional real providers confined to the existing provider
-interface. Switching target, locale, page, or selected section supersedes pending work bound to the
-old context. If a selected section disappears or becomes ineligible while section scope is active,
-the editor must visibly move the target back to Current page and make the old section proposal
-unusable rather than silently submitting a page-scoped request while section scope appears selected
-(FR-020–FR-022, FR-027, FR-028, FR-040–FR-042, FR-050, NFR-004, NFR-006–NFR-009, AC-004,
-AC-006, AC-012, AC-016–AC-018, AC-020).
+## 6.3 Existing Vesko merchant redesign
+- Open the current published storefront and active draft.
 
-The editor canvas may show an AI preview only while the proposal is the active pending canonical
-ready/accepting review for the current target and draft identity. Stale, superseded, rejected,
-closed, failed, or accepted proposal projections must not remain in the editable canvas. When review
-becomes inactive, the canvas renders the actual active draft and normal editor mutations apply only
-to that active draft. Merchant-safe failure, stale, retry, and supersession messages may remain in
-the review panel, but stale or inactive proposed pages and brand state are never a mutation source
-(FR-028, FR-041, FR-042, FR-050, NFR-006–NFR-009, AC-006, AC-008, AC-012, AC-016–AC-018,
-AC-020).
+- Choose selected section, current page, design system or entire storefront scope.
 
-The editor session maintains one complete canonical active storefront aggregate for draft
-persistence. Filtering the editor sidebar and canvas to home, collection, and product pages is a
-presentation concern only. Save draft must assemble persistence from the complete active draft:
-every page changed by an accepted whole-storefront proposal, every normal editor-visible page
-change, unchanged non-editor pages, complete page order, navigation, global brand/design-system
-state, catalogue reference, and protected commerce truth. Save draft remains explicit and must not
-alter the published snapshot or publish history (FR-011–FR-016, FR-020, FR-041–FR-045, FR-050,
-NFR-006, AC-008, AC-012, AC-015, AC-016).
+- Describe the desired result in merchant language, including exact approved colours or brand constraints.
 
-Pending proposal review state and accepted storefront history are separate editor concerns.
-Opening, revising, regenerating, rejecting, cancelling, failing, or staling a later proposal must not
-destroy previously accepted unsaved composite history. Accepting each whole-storefront proposal
-appends one chronological composite transaction. Later page-local edits remain newer actions and are
-undone first; after they are undone or discarded, whole-storefront Undo remains available and
-restores all affected pages plus global design state together. Redo restores accepted storefront
-transactions in chronological order. Saving the draft establishes the normal saved baseline and
-clears session-only unsaved history according to the editor contract; publishing remains an
-unchanged separate confirmation boundary (FR-026, FR-028, FR-041–FR-050, NFR-006, NFR-009,
-AC-006, AC-008–AC-012, AC-016).
+- Review the plan, affected pages, asset changes, token changes and warnings.
 
-## 12.8 Validation and application pipeline
+- Accept to the draft, revise, reject, undo or redo; save and publish separately.
 
-> **1.** Classify intent and scope.
->
-> **2.** Build minimum required context bundle.
->
-> **3.** Generate structured proposal.
->
-> **4.** Parse JSON strictly; reject additional unknown fields.
->
-> **5.** Validate operations against Zod/JSON schemas and component registry.
->
-> **6.** Run semantic guards for protected fields and unrelated-target mutations.
->
-> **7.** Apply operations to an isolated proposal transaction, not the active draft.
->
-> **8.** Render the proposal preview and run basic layout validation.
->
-> **9.** Show the proposal summary and visual result while the active draft remains unchanged.
->
-> **10.** On acceptance, apply the validated operations to the active draft. On revision or rejection, preserve the active draft.
+## 6.4 Sales-assisted demonstration
+- Load a known customer fixture or create a project from a URL.
 
-For guided initial creation, the validated brief is evaluated by the deterministic P3-06 selection
-planner before P3-08 materialization. The selection plan records a canonical fingerprint of every
-brief value that can affect readiness, capabilities, compatibility, warnings or scoring. The
-materializer compares that fingerprint with the current brief and rechecks current P3-06 readiness
-and selected-template compatibility before creating any page, section, navigation or snapshot. A
-stale or incompatible selection returns a blocked result with no generated snapshot. Successful
-materialization validates the complete snapshot through the canonical snapshot schema and registered
-component boundary; it remains in memory until a later project-creation service persists it.
+- Use prepared prompts while preserving genuine live-provider behaviour.
 
-The guided-generation application service composes P3-05, P3-06 and P3-08 in that fixed order. Each
-diagnostic retains its source stage and original stable code; aggregation is deterministic and does
-not erase equal codes from different stages. A blocked brand or selection stage marks later stages
-not-run. A blocked materializer returns no top-level snapshot. The result is validated, detached and
-deeply immutable, and cross-stage IDs, BrandSystem, snapshot metadata and selection fingerprint are
-checked before the result is exposed to a later onboarding review or project-creation handoff.
+- Reset the project to its known baseline without browser storage manipulation.
 
-## 12.9 Agent guardrails
+- Presenter mode hides developer data, provider details, raw errors and internal IDs.
 
-- Must not patch price, stock, payment, shipping, tax or order fields.
+# 7. URL-first source discovery and reconciliation
+The existing public website is a design and content evidence source. It is not the source of operational commerce truth and it is not a command channel for the AI.
 
-- Must not produce or execute code, scripts, HTML, CSS or external embeds.
-
-- Must not delete pages or populated sections without explicit confirmation.
-
-- Must not change global tokens when the request targets only a section unless the user approves broader scope.
-
-- Must not claim generated legal text is legally compliant.
-
-- Must not invent factual product materials, certifications or availability.
-
-- Must not publish or save to the published snapshot directly.
-
-## 12.10 Model/provider abstraction
-
-The demo must use an `AIProvider` interface. It supports an explicit deterministic provider and an
-optional OpenAI provider. The deterministic provider remains the default for local development,
-tests and CI so the repository runs without secrets. Provider selection is server-owned and must
-never silently fall back from OpenAI to the deterministic provider. Provider-specific request and
-response formats must not leak into editor or domain code. The later Vesko integration can route AI
-workloads through AWS infrastructure.
-
-| **Environment variable**         | **Contract**                                                                                                      |
-|----------------------------------|-------------------------------------------------------------------------------------------------------------------|
-| `VESKIFY_AI_PROVIDER`            | Selects `mock` (default) or `openai`; unknown values fail closed.                                                 |
-| `OPENAI_API_KEY`                 | Required only for explicit OpenAI selection and read only by server code.                                         |
-| `VESKIFY_OPENAI_MODEL`           | Optional server-side OpenAI model override.                                                                       |
-| `VESKIFY_OPENAI_TIMEOUT_MS`      | Optional bounded server-side request timeout.                                                                     |
-| `VESKIFY_REAL_PROVIDER_SMOKE`    | Must equal `1`, together with `OPENAI_API_KEY`, before the opt-in local real-provider smoke test may run.          |
-
-The OpenAI adapter uses the official TypeScript SDK and Responses API with storage disabled. It
-requests strict structured output through an OpenAI-supported JSON Schema subset. Unsupported
-validation keywords are removed only from the provider-facing schema; the returned value remains
-untrusted, is parsed again with the full local Zod schema and must pass all canonical operation,
-permission, registry, locale, protected-field, executable-content, scope and isolated-application
-validation before it can become a ready proposal. An empty operation list is invalid.
-
-Browser request data is untrusted. The authoritative server boundary accepts only bounded intent
-and identity fields, authenticates and authorizes the project, reloads or verifies the canonical
-project, draft, revision, page, section and locale, and reconstructs target-bound permissions and
-fingerprints from server state. The browser cannot authorize its own operations, components,
-protected fields or fingerprints. The OpenAI key and provider selection remain server-only.
-
-Controlled generation failure categories cover missing API key, authentication failure, rate
-limiting, timeout, cancellation, network failure, provider refusal, malformed output, canonical
-validation rejection, unavailable model, unavailable server authority and unexpected provider
-failure. Unauthorized access is returned separately from retryable authority unavailability;
-unsupported merchant requests are non-provider validation outcomes; stale canonical identity or
-revision conflicts remain conflicts. No failure may expose raw authentication, repository, planner
-or provider errors.
-
-Prompts, merchant instructions and full provider responses must not be logged. API keys must never
-leave the server. Only safe metadata such as provider/model identifiers, provider request ID,
-duration, normalized outcome and numeric token counts may be recorded. Production authentication,
-tenant authorization, managed secret storage and rate limiting remain deployment boundaries that
-must be supplied before the real provider route is enabled in production.
-
-# 13. Draft, preview, versioning and publishing
-
-## 13.1 State model
-
-| **State**          | **Meaning**                                                             |
-|--------------------|-------------------------------------------------------------------------|
-| Published snapshot | The current read-only demo storefront visible at the published route.   |
-| Draft snapshot     | Editable working copy. All AI and manual edits occur here.              |
-| Pending proposal   | Temporary operation set that can be accepted, revised or rejected.      |
-| History snapshot   | Timestamped copy created on publish, restore or selected major changes. |
-| Composite editor transaction | Session-only whole-storefront before/after pages and design state applied, undone, or redone as one active-draft unit. |
-
-## 13.2 Save draft flow
-
-> **1.** User selects Save draft from the editor top bar.
->
-> **2.** System validates the active draft and shows validation issues if saving cannot proceed.
->
-> **3.** On success, the active draft is persisted as the latest saved draft.
->
-> **4.** The published snapshot and publish history remain unchanged.
->
-> **5.** The editor distinguishes a clean saved draft from a saved-but-unpublished draft.
-
-## 13.3 Publish changes flow
-
-> **1.** User selects Publish changes separately from Save draft.
->
-> **2.** System validates the complete draft and shows a summary of changed pages, sections, design tokens, and generated assets.
->
-> **3.** User explicitly confirms or cancels publication.
->
-> **4.** On confirmation, the current published snapshot is added to history.
->
-> **5.** The validated draft becomes the new published snapshot.
->
-> **6.** The active and saved drafts are synchronized with the new published revision and marked clean.
-
-## 13.4 View in full
-
-View in full opens the draft storefront in a dedicated route. It must support desktop, tablet and mobile widths, page navigation and interaction with visual controls. It must display a clear Draft preview badge and must not show editor outlines or property controls.
-
-## 13.5 History and restore
-
-- Keep at least 20 snapshots per project in the demo storage layer.
-
-- Show timestamp, author role, reason and summary for each snapshot.
-
-- Restore creates a new draft from the selected snapshot; it does not immediately publish.
-
-- A restore action must be reversible before publishing.
-
-Project creation is a separate, pre-editor persistence boundary. Once a later application
-workflow has produced a complete validated `ProjectAggregate`, it may submit that aggregate to
-`ProjectRepository.create`; creation does not publish, overwrite an existing project, or invent
-publish/restore history (FR-001, FR-009, FR-041, FR-044, FR-045, NFR-006, AC-001, AC-008, AC-010,
-AC-011, AC-025).
-
-## 13.6 Conflict model
-
-The standalone demo assumes one active editor per local project. The domain model should nevertheless include revision numbers. Future backend integration should reject stale save-draft and publish operations based on expected revisions and offer a merge or reload flow.
-
-# 14. Localisation and content
-
-## 14.1 Supported languages
-
-V1 supports only English (en) and Finnish (fi). Every user-editable storefront content field uses a
-locale map. The project has one primary language and may enable the second language. Onboarding O-08
-stores the selected storefront locales in canonical `en`, then `fi` order and requires the primary
-language to be one of those selected locales before completion.
-
-The domain and onboarding application boundaries validate every runtime selected-language and
-primary-language value through the canonical locale schema before deduplication or ordering. An
-unsupported locale, including one mixed with supported values, is rejected with a typed validation
-error. Supported duplicate selections retain the existing normalization behaviour; malformed locale
-input is never silently filtered, repaired or replaced with a fallback.
-
-## 14.2 Translation rules
-
-- Translations are generated as editable suggestions.
-
-- The system must preserve brand names, SKUs and explicitly protected terms.
-
-- Missing translation fields fall back to the primary language in the editor with a visible warning.
-
-- The published demo should not show untranslated debug labels.
-
-- SEO title and meta description are stored per locale.
-
-## 14.3 Content tone
-
-The generated brand voice should be represented by structured attributes such as formal/casual, concise/descriptive, premium/accessible, warm/neutral and direct/inspirational. Content generation uses these attributes and the retailer industry. The merchant may edit the text manually at any time.
-
-## 14.4 Legal and policy content
-
+## 7.1 Source-discovery output
 <table>
 <colgroup>
 <col style="width: 100%" />
 </colgroup>
 <thead>
 <tr class="header">
-<th><p><strong>Required label</strong></p>
-<p>Generated delivery, returns, privacy and terms text must be labelled “Draft placeholder — review before publishing”. The demo must not represent the content as legal advice or guaranteed compliance.</p></th>
+<th>type SourceDiscoveryResult = {<br />
+sourceUrl: string;<br />
+discoveredAt: string;<br />
+siteIdentity: SiteIdentityEvidence;<br />
+brandEvidence: BrandEvidence[];<br />
+pageEvidence: PageEvidence[];<br />
+assetCandidates: AssetCandidate[];<br />
+contentEvidence: ContentEvidence[];<br />
+warnings: SourceWarning[];<br />
+provenance: SourceProvenance[];<br />
+};</th>
 </tr>
 </thead>
 <tbody>
 </tbody>
 </table>
 
-# 15. Data model and schemas
+| **Evidence group** | **Examples**                                                                                      | **Use**                                                                      |
+|--------------------|---------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| Site identity      | Business name, logo candidates, language, market, contact and navigation.                         | Pre-fill business profile and identify reusable global assets.               |
+| Brand evidence     | Dominant colour candidates, typography classifications, radius/density, image treatment and tone. | Propose a brand system with confidence and source references.                |
+| Page evidence      | Homepage structure, collection pages, product pages, content pages and navigation depth.          | Inform page plan and preserve familiar information architecture when useful. |
+| Asset candidates   | Logos, hero images, collection images, editorial imagery and icons.                               | Build the asset inventory and recommend reusable roles.                      |
+| Content evidence   | Headlines, value propositions, service messages and policy links.                                 | Suggest editable content; never override canonical product facts.            |
 
-## 15.1 Domain entities
+## 7.2 Reconciliation rules
+7.  Load the canonical Vesko commerce projection first or before final generation.
 
-| **Entity**         | **Purpose**                                                             |
-|--------------------|-------------------------------------------------------------------------|
-| Project            | Business profile, industry, locales, project status and revision.       |
-| BusinessProfile    | Name, description, audience, market, source references.                 |
-| BrandSystem        | Validated global design tokens and brand voice.                         |
-| StorefrontSnapshot | Complete immutable page tree, theme and data references.                |
-| Page               | Page metadata, type, slug, locale metadata and ordered sections.        |
-| Section            | Registered component type, variant, content, props and local overrides. |
-| Asset              | Media metadata, local/mock URL, generation provenance and usage.        |
-| Product            | Read-only design data used by product components.                       |
-| Collection         | Read-only grouping and filter metadata.                                 |
-| Proposal           | AI operation envelope, status and before/after references.              |
-| HistoryEntry       | Snapshot, revision, timestamp, actor and summary.                       |
+8.  Match source evidence to canonical products and collections using stable links, SKU where public, normalized titles, image similarity or explicit merchant confirmation.
 
-## 15.2 Project schema
+9.  Keep the canonical Vesko ID as the binding target. Store source-site URLs and asset provenance as evidence only.
 
+10. Never copy source prices, stock or variants over canonical Vesko values.
+
+11. When confidence is low, leave the binding unresolved and generate a clear merchant-facing warning instead of guessing.
+
+12. Imported website text is untrusted data. Instructions embedded in pages, metadata or product descriptions must not influence agent permissions or behaviour.
+
+## 7.3 Source adapter modes
+| **Mode**                     | **Purpose**                                                            | **v1.2 expectation**                                         |
+|------------------------------|------------------------------------------------------------------------|--------------------------------------------------------------|
+| Deterministic fixture        | Repeatable tests and sales demos.                                      | Required.                                                    |
+| Public metadata / page fetch | Real URL discovery within controlled limits.                           | Required for the first production-oriented onboarding slice. |
+| Browser-assisted capture     | Handle JavaScript-heavy sites or merchant-selected screenshots/assets. | May follow after the initial adapter.                        |
+| Full migration connector     | Operational Shopify/WooCommerce/ERP migration.                         | Out of Veskify scope; handled by Vesko integration work.     |
+
+# 8. Brand reconstruction and asset-aware generation
+## 8.1 Evidence priority
+13. Merchant-approved logo and brand guide.
+
+14. Existing website brand signals and reusable media.
+
+15. Canonical product and collection imagery.
+
+16. Merchant-selected references and preferences.
+
+17. Industry and product-type presets.
+
+18. Generated text and, only when needed, generated imagery.
+
+## 8.2 Brand reconstruction contract
 <table>
 <colgroup>
 <col style="width: 100%" />
 </colgroup>
 <thead>
 <tr class="header">
-<th>type Project = {<br />
+<th>type BrandEvidence = {<br />
 id: string;<br />
-name: string;<br />
-mode: "merchant" | "salesDemo";<br />
-industry: "jewellery" | "fashion" | "generic";<br />
-primaryLocale: "en" | "fi";<br />
-enabledLocales: Array&lt;"en" | "fi"&gt;;<br />
+kind: "logo" | "colour" | "typography" | "shape" | "imagery" | "voice";<br />
+value: unknown;<br />
+sourceRef: string;<br />
+confidence: number; // 0..1<br />
+merchantApproved: boolean;<br />
+};<br />
+<br />
+type StorefrontDesignBrief = {<br />
 businessProfile: BusinessProfile;<br />
-publishedSnapshotId: string;<br />
-draftSnapshotId: string;<br />
-revision: number;<br />
-createdAt: string;<br />
-updatedAt: string;<br />
+sourceSummary: SourceSummary;<br />
+brandDirection: BrandDirection;<br />
+approvedAssets: AssetRoleAssignment[];<br />
+pagePlan: PagePlan[];<br />
+catalogueProjectionRef: string;<br />
+productPresentationRules: ProductPresentationRule[];<br />
+assumptions: Assumption[];<br />
+warnings: Warning[];<br />
+approval: "pending" | "approved";<br />
 };</th>
 </tr>
 </thead>
@@ -1297,24 +532,81 @@ updatedAt: string;<br />
 </tbody>
 </table>
 
-## 15.3 Storefront snapshot schema
+## 8.3 Asset inventory
+| **Asset role**               | **Required metadata**                                                                             | **Behaviour**                                                                               |
+|------------------------------|---------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| Logo                         | File, aspect ratio, transparency, light/dark suitability, source and approval.                    | Header/footer choose an approved variant; never fabricate a replacement logo.               |
+| Hero media                   | Orientation, minimum dimensions, safe crop zones, subject position, source and usage rights note. | AI may choose role and crop treatment, not alter factual product identity.                  |
+| Collection imagery           | Collection binding, aspect ratio and focal point.                                                 | Used by category cards, collection headers and campaigns.                                   |
+| Product media                | Canonical product/variant binding, main/alternate role and order.                                 | Read-only source; gallery and editorial layouts may select and reorder presentation safely. |
+| Editorial/supporting imagery | Theme, people/product context, orientation and provenance.                                        | Available for story and service sections; clearly separated from canonical product media.   |
 
+## 8.4 Asset-aware generation rules
+- Every proposed asset placement must reference an asset ID and role, not a free-form remote URL.
+
+- The system should score eligibility by role, resolution, orientation, crop safety and merchant approval.
+
+- A single source asset may have multiple responsive crops, but provenance remains shared.
+
+- Missing hero or collection assets should produce a recommendation: reuse, upload, choose an existing asset or generate. Generation is never the silent default.
+
+- The AI may not place a product image under the wrong product or collection binding.
+
+- The Storefront Design Brief must show which assets will be reused and which remain missing before initial generation.
+
+## 8.5 Exact brand instructions
+<table>
+<colgroup>
+<col style="width: 1%" />
+<col style="width: 98%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th><p><strong>Required capability</strong></p>
+<p>Detailed merchant colour requests must map to approved PATCH_DESIGN_TOKENS operations when contrast and schema validation pass. Reject invalid values or protected changes, not normal brand intent merely because it is more specific than a preset phrase.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+
+# 9. Reusable dynamic component platform
+The component inventory in v1.1 is necessary but insufficient. v1.2 defines a layered design platform so the AI can create meaningfully different storefronts without generating new code for every merchant.
+
+## 9.1 Five reusable layers
+| **Layer**                         | **Examples**                                                                                                                   | **Rule**                                                                                                                                        |
+|-----------------------------------|--------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| 1\. Design primitives             | Container, stack, cluster, grid, text, button, media, badge, divider and icon.                                                 | Engineering-owned, accessible and responsive. AI does not instantiate arbitrary primitive trees unless saved as an approved composition schema. |
+| 2\. Presentation patterns         | Split media/text, editorial cards, toolbar, tab group, accordion, selector group and responsive drawer.                        | Reusable within multiple commerce and marketing components.                                                                                     |
+| 3\. Commerce-bound components     | Product card, product grid, price display, variant selector, attribute group, gallery, collection header and related products. | Bind only through declared read-only data contracts.                                                                                            |
+| 4\. Reusable section compositions | Hero families, category discovery, editorial story, trust/service, campaign and product-highlight compositions.                | Versioned registry entries with approved variants and slot contracts.                                                                           |
+| 5\. Page blueprints               | Homepage, collection, dynamic product detail, landing, content, cart and checkout.                                             | Define recommended sections, required slots, compatibility and responsive composition rules.                                                    |
+
+## 9.2 Component definition v2
 <table>
 <colgroup>
 <col style="width: 100%" />
 </colgroup>
 <thead>
 <tr class="header">
-<th>type StorefrontSnapshot = {<br />
-id: string;<br />
-projectId: string;<br />
-revision: number;<br />
-brandSystem: BrandSystem;<br />
-navigation: NavigationModel;<br />
-pages: PageModel[];<br />
-catalogueRef: string;<br />
-createdAt: string;<br />
-createdBy: "user" | "agent" | "system";<br />
+<th>type ComponentDefinitionV2 = {<br />
+type: string;<br />
+version: number;<br />
+family: "marketing" | "navigation" | "commerce" | "content" | "service";<br />
+variants: VariantDefinition[];<br />
+slots: SlotDefinition[];<br />
+contentSchema: ZodSchema;<br />
+propsSchema: ZodSchema;<br />
+bindingSchema?: ZodSchema;<br />
+allowedPageTypes: PageType[];<br />
+productTypePredicate?: ProductTypePredicate;<br />
+responsiveContract: ResponsiveContract;<br />
+editablePaths: string[];<br />
+protectedPaths: string[];<br />
+assetRoles: AssetRoleRequirement[];<br />
+accessibilityContract: AccessibilityContract;<br />
+migration: ComponentMigration[];<br />
 };</th>
 </tr>
 </thead>
@@ -1322,14 +614,368 @@ createdBy: "user" | "agent" | "system";<br />
 </tbody>
 </table>
 
-The initial storefront materializer creates revision `0` with `createdBy: "agent"`, the supplied
-`projectId`, `snapshotId`, `catalogueRef` and explicit `createdAt`. It generates only the required
-homepage, collection page and product page slice, deterministic navigation and registered sections.
-The output is validated and immutable in application memory; it is not a Project aggregate or a
-published snapshot.
+## 9.3 Data-binding contract
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>type DataBinding =<br />
+| { kind: "product"; productId: string }<br />
+| { kind: "collection"; collectionId: string }<br />
+| { kind: "productList"; productIds: string[] }<br />
+| { kind: "collectionList"; collectionIds: string[] }<br />
+| { kind: "asset"; assetId: string }<br />
+| { kind: "navigation"; navigationId: string };<br />
+<br />
+// Design operations may change the binding target only to another valid canonical ID.<br />
+// They may never patch fields inside the referenced commerce object.</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
 
-## 15.4 Page and section schema
+## 9.4 AI and component reuse
+19. Select an existing compatible component family.
 
+20. Choose an approved variant and responsive-safe props.
+
+21. Bind canonical product, collection, navigation and asset IDs through declared slots.
+
+22. Patch allowed content and design tokens.
+
+23. Create a new reusable composition only through an engineering-defined composition schema and registration path.
+
+24. Reject unknown components, unsupported variants, invalid bindings and data requirements that are not satisfied.
+
+## 9.5 Immediate component families
+| **Priority** | **Family**             | **Required variants / depth**                                                                                  |
+|--------------|------------------------|----------------------------------------------------------------------------------------------------------------|
+| P0           | Hero                   | Editorial split, image-led full bleed, product-focus, collection-focus, minimal copy and campaign overlay.     |
+| P0           | Product card and grids | Standard, editorial, compact, image-first, horizontal; badges and price states; 2-4 column responsive density. |
+| P0           | Dynamic PDP shell      | Gallery, summary, option groups, attributes, trust, delivery, related products and sticky mobile action.       |
+| P0           | Collection discovery   | Collection cards, editorial category rows, carousel and image/text collection features.                        |
+| P1           | Navigation/header      | Centered, split, compact, transparent and mega-navigation-ready presentation.                                  |
+| P1           | Editorial storytelling | Image/text, brand story, journal cards, quote and product editorial.                                           |
+| P1           | Trust/service          | Delivery, care, warranty, consultation, store location and benefits.                                           |
+| P1           | Footer/newsletter      | Compact, editorial and multi-column with language and legal regions.                                           |
+| P2           | Campaign and landing   | Reusable campaign sections and page-level theme override.                                                      |
+
+# 10. Dynamic product-detail page system
+<table>
+<colgroup>
+<col style="width: 1%" />
+<col style="width: 98%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th></th>
+<th><p><strong>Highest-priority page capability</strong></p>
+<p>The product-detail page must be driven by the selected product type and canonical product configuration. A watch with one colour choice and a ring with five or six required choices must use the same technical engine while rendering different selector groups, hierarchy, information and completion rules.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+
+## 10.1 Product presentation context
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>type ProductPresentationContext = {<br />
+productId: string;<br />
+productTypeId: string;<br />
+title: LocalizedText;<br />
+description?: LocalizedText;<br />
+media: ProductMedia[];<br />
+basePrice?: Money;<br />
+compareAtPrice?: Money;<br />
+priceUnavailableReason?: LocalizedText;<br />
+availabilityLabel?: LocalizedText;<br />
+attributeGroups: AttributeGroup[];<br />
+variantDimensions: VariantDimension[];<br />
+variants: ProductVariantPresentation[];<br />
+orderOptions: ProductOrderOption[];<br />
+relatedProductIds: string[];<br />
+revision: string;<br />
+};</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+
+## 10.2 Dynamic option groups
+| **Product example** | **Canonical dimensions / options**                                                                                    | **Expected presentation**                                                                                                                        |
+|---------------------|-----------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| Watch               | Colour; optional strap/bracelet; optional case size.                                                                  | One or two compact selector groups, usually swatches or buttons. Technical attributes receive greater visual priority.                           |
+| Ring                | Ring size, metal colour, gold purity/karat, stone type, diamond quality, engraving or other configured order options. | Up to five or six ordered groups with required-state guidance, dependency handling, size help and a clear completion summary before Add to cart. |
+| Simple jewellery    | Colour or material only.                                                                                              | A compact selector with no empty complex-option shell.                                                                                           |
+| Fashion             | Size, colour and optional fit/style.                                                                                  | Size grid, colour swatches, availability by combination and size guidance.                                                                       |
+
+## 10.3 Product option renderer
+| **Option presentation type** | **Use**                                                     | **Constraints**                                                                                         |
+|------------------------------|-------------------------------------------------------------|---------------------------------------------------------------------------------------------------------|
+| Swatch                       | Colour, metal colour, material visual samples.              | Accessible label and selected state; swatch metadata comes from canonical configuration.                |
+| Button group                 | Ring size, karat, stone shape, case size.                   | Responsive wrapping, unavailable states and no invented values.                                         |
+| Dropdown                     | Large option sets or compact mobile presentation.           | Label, required state and current selection remain visible.                                             |
+| Image choice                 | Setting, stone or style choices with approved option media. | Images bind to canonical option values.                                                                 |
+| Text input                   | Engraving text or approved personalisation.                 | Character limit, allowed characters and required/optional state come from canonical order-option rules. |
+| Radio / segmented control    | Binary or small mutually exclusive choices.                 | Keyboard and touch accessible.                                                                          |
+
+## 10.4 Selection and variant resolution
+25. Build option groups from canonical variant dimensions and order-option definitions.
+
+26. Preserve canonical ordering where business logic depends on it; otherwise use product-type presentation rules.
+
+27. Track selected values in a UI selection model separate from canonical data.
+
+28. Resolve the canonical variant only through the Vesko-provided variant matrix or resolver contract.
+
+29. Display the resolved price, compare-at price, media and availability read-only.
+
+30. Disable impossible combinations and explain unavailable states in merchant/customer language.
+
+31. Do not enable the primary action until required selections are complete.
+
+32. The design agent may change selector presentation, group hierarchy and supporting content, but never values, dependencies or availability.
+
+## 10.5 Dynamic product-page composition
+| **Region**                | **Required dynamic behaviour**                                                                               | **AI-editable presentation**                                                  |
+|---------------------------|--------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| Gallery                   | Uses canonical main and alternate media; may switch grid, thumbnails, editorial or mixed-media presentation. | Layout variant, crop treatment, thumbnail position and mobile behaviour.      |
+| Summary                   | Title, brand, price state, availability and concise description.                                             | Typography hierarchy, spacing, badges and placement.                          |
+| Option groups             | Generated only for dimensions/options present on the product.                                                | Renderer style, order where allowed, density and help placement.              |
+| Attributes/specifications | Groups relevant attributes by product type.                                                                  | Accordion, table, highlights, icon facts or editorial layout.                 |
+| Trust and service         | Delivery, returns, care, warranty, consultation or store service content.                                    | Section variant and merchant-owned copy; operational promises remain sourced. |
+| Related products          | Canonical related IDs or compatible collection query.                                                        | Grid/carousel variant and heading.                                            |
+| Mobile action             | Sticky summary and primary action when appropriate.                                                          | Approved compact variants only.                                               |
+
+## 10.6 Product-type presentation rules
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>type ProductTypePresentationRule = {<br />
+productTypeId: string;<br />
+preferredPdpBlueprints: string[];<br />
+attributeGroupOrder: string[];<br />
+optionPresentationHints: Record&lt;string, OptionPresentationType&gt;;<br />
+requiredHelpContent: string[];<br />
+compatibleComponents: string[];<br />
+fallbackBlueprint: string;<br />
+};</th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+
+## 10.7 Dynamic PDP guardrails
+- No product-type-specific hardcoded merchant component such as KarvonenRingPage.
+
+- No assumption that every product has price, variants, stock or a fixed jewellery attribute set.
+
+- Exactly one price state must render: canonical price, variant-resolved price or an explicit unavailable reason.
+
+- Unknown product types use the generic fallback blueprint and render available attributes/options without losing data.
+
+- A component may hide an empty region; it may not invent placeholder options or facts to fill the layout.
+
+- Editor, preview and published routes use the same PDP component implementations and data-binding resolver.
+
+# 11. Homepage and collection-page design depth
+## 11.1 Homepage composition
+The homepage must be generated as a coherent hierarchy rather than a fixed seed with renamed content. The AI selects component families and assets based on the Storefront Design Brief, catalogue shape and merchant priorities.
+
+| **Priority** | **Capability**                                                                                               |
+|--------------|--------------------------------------------------------------------------------------------------------------|
+| P0           | Hero that uses approved asset roles and communicates the merchant value/product focus in the first viewport. |
+| P0           | Category or product discovery near the top, bound to canonical collections/products.                         |
+| P0           | Consistent navigation, typography, colour and button system.                                                 |
+| P1           | Editorial product or collection storytelling using approved media.                                           |
+| P1           | Trust/service section appropriate to the business.                                                           |
+| P1           | Campaign, journal, newsletter or location content only when supported by the brief.                          |
+| P1           | Footer with real merchant identity and no fixture-specific placeholder copy.                                 |
+
+## 11.2 Collection page
+- Collection title, description and optional approved hero media bind to the canonical collection.
+
+- Product grids use dynamic product cards and read-only price/availability states.
+
+- Filters derive from canonical attributes and product-type rules, not a hardcoded jewellery filter list.
+
+- Desktop sidebar, horizontal bar and mobile drawer are presentation variants of one filter model.
+
+- Grid density, card variant, merchandising rows and editorial modules may change without altering collection membership.
+
+- No-results and incomplete-data states are intentionally designed.
+
+## 11.3 Shared page consistency
+- Header, footer, token system, spacing rhythm and interaction styles are shared globally.
+
+- Product-card behaviour is the same on homepage, collection and related-product sections.
+
+- A whole-storefront proposal must preview at least homepage, one collection page and representative product pages before acceptance.
+
+- Page-level overrides are allowed only for campaigns or explicit merchant intent and must preserve accessibility.
+
+# 12. AI design-agent specification v1.2
+## 12.1 Required execution lifecycle
+| **1. Merchant intent →** | **2. Context & brief →** | **3. Plan / skill selection →**   | **4. Structured operations →** |
+|--------------------------|--------------------------|-----------------------------------|--------------------------------|
+| **5. Validation →**      | **6. Visual proposal →** | **7. Accept / revise / reject →** | **8. Draft / publish**         |
+
+The existing proposal lifecycle, atomic application, stale protection, protected-field validation and history behaviour remain the foundation. v1.2 expands what the agent may safely express; it does not weaken the lifecycle.
+
+## 12.2 Context available to the agent
+- Approved Storefront Design Brief and business profile.
+
+- Current brand system, page tree, selected scope and responsive state.
+
+- ComponentDefinitionV2 registry, variants, slot contracts and page blueprints.
+
+- Read-only canonical commerce presentation projection.
+
+- Source-discovery evidence and merchant-approved asset inventory.
+
+- Current draft, published snapshot, history summary and recent proposal outcome.
+
+- Explicit user instruction, languages and protected-field policy.
+
+## 12.3 v1.2 design skills
+| **Skill family**        | **Required skills**                                                                                                     |
+|-------------------------|-------------------------------------------------------------------------------------------------------------------------|
+| Source and brand        | analyseStorefrontSource, reconstructBrandSystem, buildStorefrontDesignBrief, assignAssetRoles.                          |
+| Initial generation      | generateStorefrontFromBrief, composeHomepage, composeCollectionPage, composeDynamicProductPage.                         |
+| Section and page design | improveHero, addCollectionDiscovery, addProductEditorial, addTrustSection, redesignCollectionPage, redesignProductPage. |
+| Design system           | applyBrandPalette, improveTypography, improveSpacing, updateShapeSystem, applyImageTreatment.                           |
+| Whole storefront        | coordinateWholeStorefront, applyPremiumJewelleryDirection, applyMinimalNordicDirection, alignNavigationAndFooter.       |
+| Responsive and quality  | fixMobileLayout, improveProductGridDensity, improvePdpMobileAction, improveAccessibility.                               |
+| Content                 | rewriteMarketingCopy, changeTone, translateEditableContent, replaceFixturePlaceholders, generateSeoMetadata.            |
+
+## 12.4 Operation extensions
+| **Operation**              | **Purpose**                                                                                               |
+|----------------------------|-----------------------------------------------------------------------------------------------------------|
+| PATCH_DESIGN_TOKENS        | Update validated exact or semantic brand-token fields.                                                    |
+| ASSIGN_ASSET_ROLE          | Map an approved asset to a component/page role with crop metadata.                                        |
+| PATCH_BINDING              | Change a component binding to another valid canonical ID.                                                 |
+| APPLY_PAGE_BLUEPRINT       | Create or replace a page composition using an approved blueprint.                                         |
+| PATCH_COMPONENT_VARIANT    | Change an approved variant while preserving compatible slots and bindings.                                |
+| PATCH_PRODUCT_PRESENTATION | Change PDP layout, selector presentation or attribute hierarchy without changing canonical option values. |
+| PATCH_PAGE_SET             | Coordinate multiple eligible pages and global regions in one complete proposal.                           |
+
+## 12.5 Prompt and capability policy
+- The agent must understand natural merchant language rather than depend on exact example prompts.
+
+- Detailed but valid colour, typography, spacing and brand constraints should be normalized into approved token operations.
+
+- Unsupported requests should return a specific explanation and the closest safe capability, not a generic failure when possible.
+
+- The agent must not expose provider errors, schemas or internal capability names to merchants.
+
+- A failed provider call or validation leaves the draft and history unchanged.
+
+- The deterministic provider remains available for repeatable tests and offline development.
+
+## 12.6 Whole-storefront consistency contract
+- A site-scoped plan names affected global tokens, navigation/footer regions and page families.
+
+- The proposal is generated against one complete-snapshot fingerprint and applied atomically.
+
+- Representative products must include at least one simple product and one complex multi-option product when the catalogue contains both.
+
+- The result must use one coherent design language while allowing product-type-specific PDP structures.
+
+- Undo and redo restore the complete coordinated storefront transaction.
+
+# 13. Storefront design system and whole-site consistency
+## 13.1 Design-token groups
+| **Group**  | **Required fields / behaviour**                                                                                            |
+|------------|----------------------------------------------------------------------------------------------------------------------------|
+| Colour     | Primary, secondary, accent, background, surface, text, muted text, border, success, warning and error; contrast validated. |
+| Typography | Heading/body families, scale, weights, line heights, reading widths and product-price hierarchy.                           |
+| Spacing    | Base scale, page gutter, grid gaps, section compact/standard/spacious and component density.                               |
+| Shape      | Radii, border width, control shapes and badge/button treatment.                                                            |
+| Imagery    | Aspect-ratio defaults, crop mode, focal point, radius, overlay, editorial/studio/lifestyle treatment.                      |
+| Layout     | Content max width, grid system, header mode, product-page split and sticky-action policy.                                  |
+| Voice      | Tone, sentence length, CTA style, prohibited claims and language fallbacks.                                                |
+
+## 13.2 Brand-system proposal behaviour
+- Global colour or typography changes must preview homepage, collection and product page before acceptance.
+
+- Exact colours supplied by the merchant should be preserved when accessible; invalid contrast receives a proposed safe adjustment and warning.
+
+- Token changes do not reorder sections, replace assets or rewrite content unless those operations are explicitly part of the proposal.
+
+- Component variants declare compatibility with token density, image treatment and page blueprint.
+
+## 13.3 Responsive quality targets
+| **Viewport** | **Required review**                                                                                   |
+|--------------|-------------------------------------------------------------------------------------------------------|
+| 375 px       | Mobile navigation, hero crop, selector usability, sticky PDP action, filter drawer and text wrapping. |
+| 768 px       | Tablet grids, two-column transitions, rail/drawer behaviour and image/text order.                     |
+| 1024 px      | Compact desktop composition, product gallery/summary balance and navigation spacing.                  |
+| 1440 px      | Full desktop max-width, editorial rhythm, whitespace and image quality.                               |
+
+# 14. Vesko Storefront Studio merchant experience
+The approved product direction is one native Vesko module, not a collection of demo screens. Veskify remains an engine/codename; merchant-facing copy uses Vesko Storefront Studio and AI design assistant.
+
+## 14.1 Application shell
+| **Zone**             | **Required behaviour**                                                                                     |
+|----------------------|------------------------------------------------------------------------------------------------------------|
+| Vesko global rail    | Collapsed in editor mode; provides platform navigation without consuming the design canvas.                |
+| Workspace header     | Breadcrumb, project/page context, draft status, undo/redo, Preview, Save draft and Publish.                |
+| Left rail            | Pages and sections outline with compact contextual actions.                                                |
+| Centre canvas        | Dominant surface with grouped viewport/zoom controls and no visible developer tooling.                     |
+| Right tool rail      | Two tabs: Design and AI assistant. Only one toolset is visible at a time.                                  |
+| Proposal review      | Displayed in the AI tab or focused drawer with affected scope, summary, warnings and accept/revise/reject. |
+| Responsive workspace | Rails become drawers or bottom sheets while the canvas remains primary.                                    |
+
+## 14.2 Merchant language
+| **Internal term**    | **Merchant-facing language**                                                 |
+|----------------------|------------------------------------------------------------------------------|
+| BrandSystem          | Brand style / Store style                                                    |
+| Component variant    | Layout                                                                       |
+| StorefrontSnapshot   | Draft version / Published version                                            |
+| PATCH_DESIGN_TOKENS  | Update colours and typography                                                |
+| Proposal transaction | Suggested changes                                                            |
+| Catalogue projection | Products from Vesko                                                          |
+| Provider unavailable | The AI design assistant is temporarily unavailable; your draft is unchanged. |
+
+## 14.3 Save and publish clarity
+- Accepting an AI proposal changes the active draft only.
+
+- Save draft persists work without changing the customer-facing storefront.
+
+- Publish opens a final review and explicitly replaces the published version.
+
+- History restore creates a new draft and never silently republishes an older version.
+
+- Status text and button hierarchy must make these differences obvious to a first-time merchant.
+
+# 15. Data model and contracts
+## 15.1 Core entities
+| **Entity**                 | **Purpose**                                                                                                                                |
+|----------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| Project                    | Merchant identity, mode, locales, source references, catalogue projection reference and snapshot pointers.                                 |
+| StorefrontDesignBrief      | Approved generation input: business, source evidence, brand direction, asset roles, page plan, assumptions and product-presentation rules. |
+| BrandSystem                | Validated global design tokens and brand voice.                                                                                            |
+| AssetInventory             | Approved source and canonical media with provenance, role eligibility, crops and quality metadata.                                         |
+| ComponentDefinitionV2      | Registered reusable component contract, variants, slots, bindings, responsive and accessibility rules.                                     |
+| PageBlueprint              | Approved composition rules for a page type and merchant/product context.                                                                   |
+| ProductPresentationContext | Read-only canonical product projection used by dynamic commerce components.                                                                |
+| Proposal                   | Structured design operations, scope, assumptions, warnings, fingerprint, before/after references and lifecycle state.                      |
+| StorefrontSnapshot         | Immutable brand system, navigation, pages and read-only data references.                                                                   |
+
+## 15.2 Page and section model
 <table>
 <colgroup>
 <col style="width: 100%" />
@@ -1339,18 +985,22 @@ published snapshot.
 <th>type PageModel = {<br />
 id: string;<br />
 type: "home" | "collection" | "product" | "content" | "cart" | "checkout" | "landing";<br />
+blueprintId?: string;<br />
 slug: string;<br />
 title: LocalizedText;<br />
 seo: LocalizedSEO;<br />
 themeOverride?: Partial&lt;BrandSystem&gt;;<br />
+pageBinding?: DataBinding;<br />
 sections: SectionInstance[];<br />
 };<br />
 <br />
 type SectionInstance = {<br />
 id: string;<br />
-component: RegisteredComponentType;<br />
+component: string;<br />
+componentVersion: number;<br />
 variant: string;<br />
 visible: boolean;<br />
+bindings: DataBinding[];<br />
 content: Record&lt;string, unknown&gt;;<br />
 props: Record&lt;string, unknown&gt;;<br />
 styleOverrides?: AllowedSectionOverrides;<br />
@@ -1361,236 +1011,27 @@ styleOverrides?: AllowedSectionOverrides;<br />
 </tbody>
 </table>
 
-## 15.5 Brand system schema
-
+## 15.3 Variant resolver boundary
 <table>
 <colgroup>
 <col style="width: 100%" />
 </colgroup>
 <thead>
 <tr class="header">
-<th>type BrandSystem = {<br />
-colors: {<br />
-primary: string; secondary: string; accent: string;<br />
-background: string; surface: string; text: string;<br />
-mutedText: string; border: string;<br />
-};<br />
-typography: {<br />
-headingFont: FontToken; bodyFont: FontToken;<br />
-baseSize: number; scaleRatio: number;<br />
-headingWeight: number; bodyWeight: number;<br />
-};<br />
-shape: { radius: "square" | "subtle" | "rounded" | "pill" };<br />
-spacing: { density: "airy" | "balanced" | "compact" };<br />
-imagery: { style: "studio" | "lifestyle" | "editorial" | "mixed" };<br />
-voice: BrandVoice;<br />
-};</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
-
-## 15.6 Protected product schema
-
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>type ProductDisplayModel = {<br />
-id: string;<br />
-sku?: string;<br />
-title: LocalizedText;<br />
-description?: LocalizedText;<br />
-brand?: string;<br />
-category?: string;<br />
-price?: { amount: number; currency: "EUR" }; // exactly one with priceUnavailableReason; read-only<br />
-compareAtPrice?: { amount: number; currency: "EUR" }; // read-only<br />
-priceUnavailableReason?: LocalizedText; // exactly one with price<br />
-availabilityLabel?: LocalizedText; // read-only display label<br />
-stockStatus?: "inStock" | "lowStock" | "outOfStock"; // read-only dummy display<br />
-images: AssetRef[];<br />
-productType: string;<br />
-attributes: Record&lt;string, string | number | string[]&gt;;<br />
-variants: ProductVariantDisplay[];<br />
-orderOptions?: ProductOrderOptionDisplay[];<br />
-seo?: LocalizedSEO;<br />
-};</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
-
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>type ProductVariantDisplay = {<br />
-id: string;<br />
-label: LocalizedText;<br />
-attributes: Record&lt;string, string | number | string[]&gt;;<br />
-price?: { amount: number; currency: "EUR" }; // read-only<br />
-};</th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
-
-Every product provides exactly one of `price` or `priceUnavailableReason`; both missing or both present are invalid. Collection membership is represented by the canonical collections model, and material, colour and stone details remain in `attributes`.
-
-## 15.7 Persistence for the standalone demo
-
-The implementation should use a storage adapter. The default adapter may use IndexedDB for projects, snapshots and assets plus seeded JSON files for dummy catalogues. If a server-backed implementation is selected, SQLite is acceptable for the demo. Domain code must depend on repository interfaces so persistence can later move to Vesko SQL services.
-
-The canonical repository boundary accepts atomic creation of a complete validated `ProjectAggregate`
-through `ProjectRepository.create(aggregate)`. The repository validates the project, catalogue,
-registered snapshot composition, snapshot references and optional history metadata before writing.
-Project, catalogue, snapshots and metadata are inserted as one operation; an invalid aggregate or
-existing project, catalogue or snapshot identity leaves all adapters unchanged. Creation returns a
-detached validated aggregate, marks only the current draft as managed for later bounded retention,
-and preserves supplied metadata without fabricating publish or restore events. Project construction
-and onboarding remain application boundaries separate from this persistence operation (FR-001,
-FR-009, FR-041, FR-044, FR-045, FR-050, NFR-006, AC-001, AC-008, AC-010, AC-011, AC-025).
-Snapshot IDs remain globally unique after creation: repository-generated IDs are project-scoped,
-and save, publish, restore and synchronized-draft writes reject injected or corrupted cross-project
-collisions without renaming existing persisted snapshots or committing partial state.
-
-# 16. Technical architecture
-
-## 16.1 Recommended standalone stack
-
-| **Layer**            | **Recommendation**                                                                       |
-|----------------------|------------------------------------------------------------------------------------------|
-| Application          | Next.js App Router with TypeScript and React.                                            |
-| Styling              | Tailwind CSS plus CSS variables generated from validated brand tokens.                   |
-| UI primitives        | Accessible controlled primitives; shadcn/ui or equivalent may be used for editor chrome. |
-| Forms and validation | React Hook Form with Zod schemas.                                                        |
-| Editor state         | Zustand or equivalent predictable store with command-based undo/redo.                    |
-| Server/state queries | TanStack Query only where asynchronous adapters require it.                              |
-| Persistence          | Storage adapter; IndexedDB default, optional SQLite server adapter.                      |
-| File parsing         | Browser-safe CSV parser and Excel workbook parser.                                       |
-| AI                   | Provider abstraction with deterministic mock provider and optional real provider.        |
-| Testing              | Vitest, React Testing Library and Playwright.                                            |
-
-## 16.2 Architectural layers
-
-- Presentation: onboarding, editor shell, canvas, preview and published storefront.
-
-- Domain: projects, snapshots, pages, sections, design tokens, operations and guardrails.
-
-- Application services: create project, generate storefront, apply proposal, publish, restore and import catalogue.
-
-- Project construction remains an application concern; the storage adapter owns only atomic
-  persistence of a complete validated aggregate through `ProjectRepository.create`.
-
-- The deterministic initial storefront materializer is an application service that consumes the
-  approved brief, P3-06 selection plan and canonical BrandSystem, then returns a validated in-memory
-  snapshot without persistence.
-
-- Adapters: storage, AI, image generation, file import and future backend integration.
-
-- Onboarding language selection is owned by the canonical domain brief and the React-independent
-  onboarding application service. The session repository persists the validated O-08 state; review,
-  generation and project-construction boundaries consume that state without defining another locale
-  model.
-
-- Component registry: storefront component definitions, schemas, variants and renderer mapping.
-
-## 16.3 Current repository structure
-
-The implementation baseline uses the repository paths that exist today:
-
-```text
-src/
-  app/
-    projects/
-      [projectId]/
-        editor/
-  components/
-    registry/
-    storefront/
-  application/
-    design-operations/
-  integrations/
-    puck/
-  services/
-    storage/
-  data/
-    seed/
-  tests/
-```
-
-New skill-orchestration or provider folders must extend this structure through an approved PR and be documented in `DEVELOPMENT_GUIDE.md`; they must not create parallel canonical models.
-
-## 16.4 State mutation pattern
-
-All draft changes must be expressed as commands or structured operations. The editor store applies operations transactionally and records inverse operations for undo. UI components must not mutate nested snapshot objects directly.
-
-Whole-storefront proposal acceptance uses a complete cloned `StorefrontSnapshot` and one composite
-history transaction. The application validates the exact forward and inverse storefront states
-before changing active session state. It never approximates atomicity through independent page
-commits and never writes saved or published state. Editor adapters must keep the complete active
-storefront aggregate as the draft-persistence source; visible editor page filters, pending proposal
-review state, and accepted composite history are separate adapter concerns. Inactive, stale, failed
-or terminal proposal projections cannot be rendered as editable canvas state.
-
-## 16.5 Storefront renderer
-
-- Reads a validated StorefrontSnapshot.
-
-- Resolves each section through the component registry.
-
-- Applies global CSS variables and approved local overrides.
-
-- Receives editor mode metadata only in the editor route.
-
-- Renders the same component implementation in editor, full preview and published routes to avoid visual divergence.
-
-## 16.6 Future Vesko integration
-
-After the demo, the design agent will operate inside Vesko Retail OS and replace the current Puck-based website builder. Integration adapters will connect to Vesko authentication, Node.js monorepo services, SQL persistence, JSON-based industry product models, media services, backend page storage and publishing. Stripe and nShift remain operational integrations outside the design agent; Veskify only styles their customer-facing UI surfaces.
-
-# 17. API and service contracts
-
-## 17.1 Internal application services
-
-| **Service**                               | **Contract**                                                              |
-|-------------------------------------------|---------------------------------------------------------------------------|
-| createProject(input)                      | Creates project, seed profile and empty snapshots.                        |
-| completeOnboarding(projectId, input)      | Validates onboarding and creates generation plan.                         |
-| materializeInitialStorefront(input)       | Deterministically creates and validates the initial in-memory snapshot; does not persist. |
-| generateGuidedStorefront(input)            | Composes P3-05, P3-06 and P3-08 in order and returns one immutable reviewable in-memory generation result; does not create or persist a Project. |
-| createStorefrontGenerationReview(input)    | Projects a validated guided-generation result into an immutable localized merchant review; does not rerun generation or create/persist a Project. |
-| generateInitialStorefront(projectId)      | Builds initial brand system and page snapshot.                            |
-| proposeDesignChange(context, prompt)      | Returns validated pending proposal.                                       |
-| applyProposal(projectId, proposalId)      | Applies accepted validated operations to the active draft only.             |
-| applyStorefrontProposal(context, proposal) | Atomically validates and applies one whole-storefront proposal to the complete active draft and records one composite session-history transaction; does not save or publish. |
-| rejectProposal(projectId, proposalId)     | Discards pending proposal and preserves draft.                            |
-| saveDraft(projectId, expectedRevision)    | Persists the active draft without changing published state.                 |
-| publishDraft(projectId, expectation: PublishExpectation) | Separately validates the expected saved draft and published base, creates history, and atomically replaces the published snapshot with a synchronized saved draft. |
-| discardDraft(projectId)                   | Restores the active draft to the latest saved draft, or published snapshot when no saved draft exists. |
-| restoreSnapshot(projectId, snapshotId)    | Creates a new draft from history.                                         |
-| importCatalogue(projectId, file)          | Parses and maps local data without changing protected operational fields. |
-
-## 17.2 AI provider interface
-
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>interface AIProvider {<br />
-createInitialStorefront(input: InitialGenerationContext): Promise&lt;AIProposalEnvelope&gt;;<br />
-proposeChange(input: ChangeContext): Promise&lt;AIProposalEnvelope&gt;;<br />
-translateContent(input: TranslationContext): Promise&lt;AIProposalEnvelope&gt;;<br />
-generateMetadata(input: MetadataContext): Promise&lt;AIProposalEnvelope&gt;;<br />
+<th>interface ProductVariantResolver {<br />
+resolve(input: {<br />
+productId: string;<br />
+selectedValues: Record&lt;string, string&gt;;<br />
+catalogueRevision: string;<br />
+}): Promise&lt;{<br />
+variantId?: string;<br />
+price?: Money;<br />
+compareAtPrice?: Money;<br />
+availabilityLabel?: LocalizedText;<br />
+mediaIds?: string[];<br />
+unavailableValueIds: string[];<br />
+complete: boolean;<br />
+}&gt;;<br />
 }</th>
 </tr>
 </thead>
@@ -1598,326 +1039,321 @@ generateMetadata(input: MetadataContext): Promise&lt;AIProposalEnvelope&gt;;<br 
 </tbody>
 </table>
 
-The provider-independent P4-05B storefront generation boundary is additive to this interface. A
-`StorefrontAIProvider` receives the canonical minimal storefront request and returns untrusted
-structured data. Provider adapters do not own planning, grants, fingerprints, proposal readiness,
-draft mutation or persistence. The deterministic mock supports the application without external
-credentials (NFR-007, NFR-008, AC-017).
+## 15.4 Schema evolution
+- Every component definition and page blueprint is versioned.
 
-The current single-page proposal path uses `proposeChange` through the same provider-independent
-boundary. Its server route rebuilds canonical request authority before provider invocation and
-returns distinct controlled outcomes for unauthorized access (401), unsupported requests (400),
-stale or invalid canonical identity (409), and retryable authority unavailability (503). Provider
-output is data only and cannot mutate draft or published state before canonical validation and
-merchant acceptance.
+- Snapshots store component version and are migrated through registered deterministic migrations.
 
-## 17.3 Image provider interface
+- Vesko adapter contracts are versioned independently from provider adapters.
 
+- Unknown future product attributes remain available through generic attribute groups rather than being dropped.
+
+- Canonical commerce revisions are recorded with proposals so stale product bindings can be rejected or refreshed safely.
+
+# 16. Technical architecture and Vesko integration
+## 16.1 Architectural layers
+| **Layer**             | **Responsibilities**                                                                                                 |
+|-----------------------|----------------------------------------------------------------------------------------------------------------------|
+| Merchant presentation | Onboarding, design brief review, editor shell, preview, publishing and history.                                      |
+| Design application    | Intent planning, skills, proposal orchestration, page composition, asset assignment and quality checks.              |
+| Domain                | Projects, snapshots, brand system, components, page blueprints, bindings, operations, protected fields and history.  |
+| Renderer              | Resolve validated components and bindings; render identical implementations in editor, preview and published routes. |
+| Adapters              | AI provider, source discovery, commerce projection, media, storage, publishing, authentication and observability.    |
+| Vesko services        | Canonical commerce, media, merchant identity, persistence, domain/publishing and operational systems.                |
+
+## 16.2 Integration flow
+| **1. Vesko merchant/project →**     | **2. Commerce projection →** | **3. Veskify design engine →** | **4. Validated snapshot →** |
+|-------------------------------------|------------------------------|--------------------------------|-----------------------------|
+| **5. Vesko persistence/publishing** |                              |                                |                             |
+
+## 16.3 Adapter interfaces required for handoff
+| **Adapter**                    | **Standalone implementation**                       | **Vesko implementation**                                                |
+|--------------------------------|-----------------------------------------------------|-------------------------------------------------------------------------|
+| ProjectContextAdapter          | Local project/fixture identity.                     | Authenticated merchant, store and permissions.                          |
+| CommercePresentationRepository | Seeded canonical fixtures.                          | Read-only Vesko product/collection projection.                          |
+| MediaRepository                | Local public assets / IndexedDB metadata.           | Vesko media storage and signed URLs.                                    |
+| SourceDiscoveryAdapter         | Deterministic fixture plus controlled public fetch. | Production-safe discovery service and policies.                         |
+| StorefrontRepository           | IndexedDB snapshots/history.                        | Vesko SQL/backend page and version services.                            |
+| PublishingAdapter              | Local published snapshot route.                     | Vesko publishing command and domain deployment.                         |
+| AIProvider                     | Mock/OpenAI server adapter.                         | Vesko-managed provider routing, credentials, budgets and observability. |
+
+## 16.4 Integration rules
+- Domain and editor features depend on interfaces, never on IndexedDB, Karvonen IDs or local file paths.
+
+- The Vesko adapter maps existing canonical product models into ProductPresentationContext without flattening away product-type meaning.
+
+- Veskify does not replace Vesko publishing, authentication or permissions; it calls them through adapters.
+
+- Puck state is not the persistence format. Canonical Veskify snapshots remain the source of composition truth.
+
+- The handoff includes adapter conformance tests using the same fixtures and acceptance journeys.
+
+## 16.5 Deployment stages
+| **Stage**                     | **Purpose**                                        | **Required gate**                                                                 |
+|-------------------------------|----------------------------------------------------|-----------------------------------------------------------------------------------|
+| Local standalone              | Fast development and deterministic/manual testing. | All domain and adapter tests; no secrets in browser.                              |
+| Shareable staging demo        | Team, investor and customer demonstration.         | Server-side provider key, resettable fixture, protected access and observability. |
+| Vesko integration environment | Map real services and product types.               | Adapter conformance, permission model, migration and publish rollback.            |
+| Production                    | Merchant-facing Vesko Storefront Studio.           | Final security, accessibility, performance, monitoring and operational runbook.   |
+
+# 17. Security, privacy, performance and observability
+## 17.1 Security and prompt-injection rules
+- Website pages, metadata, product descriptions and uploaded files are untrusted data, not instructions.
+
+- Source discovery follows controlled public-fetch rules, size limits, content-type validation and allow/deny policies.
+
+- Remote scripts, macros, embedded active content and arbitrary HTML are never executed.
+
+- AI context contains the minimum required merchant and storefront data for the requested scope.
+
+- Provider keys remain server-side and provider errors are mapped to safe merchant messages.
+
+- All bindings and operations are validated against project permissions, component contracts and protected paths.
+
+## 17.2 Asset and privacy rules
+- Store provenance for discovered and uploaded assets and record merchant approval before production use.
+
+- Do not hotlink unstable third-party media in published storefronts; ingest through approved Vesko media services where permitted.
+
+- Do not store payment details, order PII or unrelated operational customer data in Veskify.
+
+- Reset/delete removes local demo project data and generated/discovered asset metadata where applicable.
+
+## 17.3 Performance budgets
+| **Surface**          | **Target**                                                                                                                |
+|----------------------|---------------------------------------------------------------------------------------------------------------------------|
+| Editor interaction   | Section selection and manual property changes feel immediate; expensive resolver/provider work is asynchronous.           |
+| Storefront rendering | No repeated provider calls; all pages render from validated snapshots and cached/read-only projections.                   |
+| Images               | Responsive sources, lazy loading outside the first viewport and known aspect ratios to prevent layout shift.              |
+| AI proposal          | Visible progress and cancellation where safe; timeout preserves draft; provider latency and token/cost metadata recorded. |
+| Source discovery     | Progressive stages, bounded page/asset count and resumable failure state.                                                 |
+
+## 17.4 Observability
+- Record request ID, provider, scope, skill plan, operation count, validation result, latency and failure category.
+
+- Record source-discovery page/asset counts, warnings and reconciliation confidence without logging full sensitive page content by default.
+
+- Record component/blueprint versions and commerce revision for accepted proposals.
+
+- Do not log provider secrets, raw merchant files or complete prompts by default.
+
+# 18. Testing and release acceptance criteria
+## 18.1 Test layers
+| **Layer**           | **Coverage**                                                                                                                                              |
+|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Unit                | Schemas, component contracts, binding guards, option-group mapping, variant resolver adapters, token validation and source evidence parsing.              |
+| Component           | Dynamic PDP selectors, product cards, galleries, collection filters, asset roles, editor controls and proposal summaries.                                 |
+| Integration         | URL discovery to design brief, canonical reconciliation, brief to generation, real/mock provider proposals, atomic application, save/publish and restore. |
+| End to end          | Existing-site onboarding and new-store onboarding through publish, including simple watch and complex ring products.                                      |
+| Visual regression   | Homepage, collection and representative product pages at 375, 768, 1024 and 1440 px.                                                                      |
+| Accessibility       | Keyboard paths, focus, semantic selectors, labels, contrast, drawers, dialogs and dynamic option states.                                                  |
+| Adapter conformance | Standalone and Vesko adapters return equivalent canonical contracts for the same fixtures.                                                                |
+
+## 18.2 Release acceptance criteria
+| **ID**     | **Acceptance criterion**                                                                                                                                                      |
+|------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **AC-101** | A merchant can enter an existing public storefront URL and receive a source-discovery summary without the current draft being changed.                                        |
+| **AC-102** | Discovered website prices, stock and variant values never replace canonical Vesko commerce data.                                                                              |
+| **AC-103** | A merchant with only a logo, business description and canonical catalogue can approve a coherent Storefront Design Brief.                                                     |
+| **AC-104** | The brief lists reused assets, missing assets, page plan, assumptions and protected commerce source.                                                                          |
+| **AC-105** | Initial generation creates a coherent homepage, collection page and dynamic product page using registered components and bindings.                                            |
+| **AC-106** | A watch with one colour dimension renders only the relevant compact selector and technical attributes.                                                                        |
+| **AC-107** | A ring with five or six configured dimensions/options renders every required group, dependencies, unavailable states and completion guidance.                                 |
+| **AC-108** | Changing PDP layout or selector style does not change canonical option values, variants, prices, stock or SKUs.                                                               |
+| **AC-109** | The selected canonical variant controls displayed price, availability and variant media through the resolver adapter.                                                         |
+| **AC-110** | Unknown product types render with a generic dynamic fallback without dropping available attributes or options.                                                                |
+| **AC-111** | Product cards render valid price, compare-at-price or explicit unavailable-price state without inventing a value.                                                             |
+| **AC-112** | The same registered component implementations render in editor, preview and published routes.                                                                                 |
+| **AC-113** | A merchant can request an exact valid brand palette and receive a validated token proposal rather than a generic unsupported failure.                                         |
+| **AC-114** | Whole-storefront restyling coordinates global tokens, navigation, footer, homepage, collection and representative product pages atomically.                                   |
+| **AC-115** | A failed provider call, invalid operation or stale commerce revision preserves the active draft and history.                                                                  |
+| **AC-116** | Accepted whole-storefront changes undo and redo as one complete transaction.                                                                                                  |
+| **AC-117** | Generated storefronts contain no seed-brand or fixture-specific copy unrelated to the selected merchant.                                                                      |
+| **AC-118** | Asset placement uses approved asset IDs and provenance; product media is never bound to the wrong product.                                                                    |
+| **AC-119** | Missing hero or collection media produces a clear reuse/upload/generate choice rather than silent generation.                                                                 |
+| **AC-120** | The Karvonen demo can be loaded, reset and demonstrated repeatedly without manual IndexedDB preparation.                                                                      |
+| **AC-121** | Merchant mode exposes no raw JSON, internal IDs, provider payloads or developer tools.                                                                                        |
+| **AC-122** | Primary journeys have no visible clipping or overlap at 375, 768, 1024 and 1440 px.                                                                                           |
+| **AC-123** | Dynamic selectors, drawers, proposal actions, save and publish are keyboard operable and labelled.                                                                            |
+| **AC-124** | A Vesko integration adapter passes the same contract tests as the standalone fixtures for project, commerce, media, storage and publishing.                                   |
+| **AC-125** | A complete customer-ready journey succeeds: URL or minimal-input onboarding → approved brief → generation → AI edit → manual edit → save draft → preview → publish → restore. |
+
+## 18.3 Definition of done for every implementation task
+- The merchant-visible capability is explicit and demonstrable.
+
+- Affected v1.2 requirement and acceptance IDs are named.
+
+- No competing commerce/product model or direct protected-field mutation is introduced.
+
+- Loading, empty, error, stale, unavailable and success states are handled.
+
+- Focused unit/integration tests and relevant responsive/accessibility checks pass.
+
+- Provider, storage and Vesko boundaries remain behind interfaces.
+
+- SDD/ADR/component documentation is updated when contracts or roadmap assumptions change.
+
+# 19. Correct development roadmap
 <table>
 <colgroup>
-<col style="width: 100%" />
+<col style="width: 1%" />
+<col style="width: 98%" />
 </colgroup>
 <thead>
 <tr class="header">
-<th>interface ImageProvider {<br />
-generate(input: {<br />
-prompt: string;<br />
-aspectRatio: "1:1" | "4:3" | "3:2" | "16:9" | "9:16";<br />
-style: "studio" | "lifestyle" | "editorial" | "graphic";<br />
-safetyContext: string;<br />
-}): Promise&lt;Asset&gt;;<br />
-}</th>
+<th></th>
+<th><p><strong>Roadmap reset</strong></p>
+<p>Phases 0-4 from v1.1 are no longer future work. The controlled architecture, editor, proposal lifecycle, real provider, atomic whole-storefront application and publishing loop have been proven. The remaining roadmap begins with one small real-AI hardening pass and then focuses on the merchant product and integration depth.</p></th>
 </tr>
 </thead>
 <tbody>
 </tbody>
 </table>
 
-## 17.4 Storage interface
+## 19.1 Completed baseline
+| **Completed area**                 | **Outcome**                                                                                    |
+|------------------------------------|------------------------------------------------------------------------------------------------|
+| Foundation and renderer            | Canonical schemas, registered components, responsive rendering, fixtures and storage adapters. |
+| Editor and manual design           | Canvas selection, page context, manual operations, device modes and undo/redo.                 |
+| Guided onboarding baseline         | Persisted onboarding, design brief/generation review foundations and project creation flow.    |
+| Controlled AI operations           | Intent scopes, structured proposals, validation, protected fields and confirmation lifecycle.  |
+| Real provider and whole storefront | Secure provider adapter, complete-snapshot proposal, atomic application and composite history. |
+| Draft and publishing               | Separate draft/save/publish, history and restore architecture.                                 |
+| Realistic design-agent proof       | Karvonen fixture and live provider end-to-end test.                                            |
+
+## 19.2 Remaining phases
+| **Phase**                                              | **Scope**                                                                                                                     | **Merchant outcome**                                                                                     | **Gate**                                                                    |
+|--------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| **P4.1 — Real-AI findings and hardening**              | Fix only confirmed provider parsing, supported intent, error messaging, stale/timeout and fixture-content problems.           | Normal real-provider requests behave through the existing safe lifecycle.                                | One focused hardening PR set; no architecture rewrite.                      |
+| **P5 — Dynamic component and binding platform**        | ComponentDefinitionV2, binding contracts, page blueprints, asset roles, versioning and generic commerce projection.           | The AI has a reusable design vocabulary that is not merchant- or product-specific.                       | Contracts merged and adapter tests green.                                   |
+| **P6 — Dynamic commerce page depth**                   | Dynamic PDP first; then product cards, collection filters, collection headers and homepage commerce sections.                 | Rings, watches and other product types render the right options and information automatically.           | Complex ring and simple watch acceptance journeys pass at all viewports.    |
+| **P7 — URL-first onboarding and brand reconstruction** | Source discovery, provenance, canonical reconciliation, brand evidence, asset inventory and approved Storefront Design Brief. | A merchant can connect an existing site or start from minimal assets without rebuilding catalogue truth. | URL → approved brief works with deterministic and real public-source modes. |
+| **P8 — Asset-aware initial generation**                | Compose homepage, collection and dynamic PDP from the brief; reuse approved assets; remove fixture defaults.                  | The first generated storefront feels specific to the merchant and catalogue.                             | Initial generation passes source/asset/binding checks and visual review.    |
+| **P9 — Whole-storefront design quality**               | Expand skills, exact palette support, coordinated navigation/footer/pages, responsive polish and content cleanup.             | The AI can produce genuinely different, coherent storefronts rather than small rearrangements.           | Whole-site prompts pass quality, atomicity and protected-data checks.       |
+| **P10 — Vesko Storefront Studio product UX**           | Native Vesko shell, onboarding refinement, focused editor rails, merchant language, preview/publishing/history polish.        | The product is understandable and customer-ready without developer assistance.                           | First-time user completes the journey without developer terminology.        |
+| **P11 — Demo reliability and staging**                 | Load/reset fixtures, known prompts, provider failure recovery, staging deployment, access control and observability.          | Sales and customer demos are repeatable and shareable.                                                   | Final acceptance journey passes from a clean environment.                   |
+| **P12 — Vesko integration handoff**                    | Production adapters, conformance tests, migration plan, documentation, ownership and rollout runbook.                         | The teammate can integrate Veskify into Vesko without redesigning the engine.                            | All adapter contracts mapped and integration acceptance signed off.         |
+
+## 19.3 Recommended immediate three-worktree start
+| **Window** | **First task**                                                  | **Owned outcome**                                                                                                           | **Dependency / overlap rule**                                                                          |
+|------------|-----------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| **W1**     | P5-01 Component registry v2 and commerce-presentation contracts | Define ComponentDefinitionV2, DataBinding, ProductPresentationContext, page blueprint and adapter conformance contracts.    | Shared contract branch; merge first before dynamic PDP implementation.                                 |
+| **W2**     | P10-01 Vesko Storefront Studio shell foundation                 | Implement the approved native shell, workspace header, compact rails and merchant naming without changing domain contracts. | Presentation-only; do not touch registry/domain files owned by W1.                                     |
+| **W3**     | P7-01 Source discovery and Storefront Design Brief contracts    | Create source-evidence, provenance, asset inventory, reconciliation and brief schemas plus deterministic adapter fixtures.  | New onboarding/source modules; consume existing project contracts without changing component registry. |
+| **W4**     | Manual testing only                                             | Keep the real-provider Karvonen environment available for regression and product review.                                    | No Codex task unless explicitly assigned.                                                              |
+
+## 19.4 Merge sequence after the first three tasks
+33. Merge P5-01 shared component and commerce contracts first.
+
+34. Update dependent worktrees with git fetch and git merge origin/main; never rebase.
+
+35. Start P6-01 dynamic option-group engine and P6-02 dynamic PDP components in separate files with one coordinated registry integration owner.
+
+36. Continue P7 URL-first onboarding against the approved brief contracts.
+
+37. Merge the shell independently when it does not conflict with active editor feature files.
+
+38. Use W4 for one real-provider regression at each phase gate, not for continuous automated work.
+
+## 19.5 Explicit non-priorities before the integration-ready design demo
+- Another catalogue-management or product-entry system.
+
+- Operational inventory, orders, payments, logistics or returns.
+
+- General CSV/Excel import as a prerequisite for the design agent.
+
+- More AI provider adapters unless a production routing requirement appears.
+
+- AI image generation before existing-asset reuse is strong.
+
+- Broad industry expansion before jewellery/watches dynamic PDP and whole-store quality are proven.
+
+- Unrestricted custom code or model-invented components.
+
+# 20. Handoff and final integration package
+## 20.1 Required handoff artifacts
+| **Artifact**                     | **Required content**                                                                                                               |
+|----------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| Authoritative SDD and roadmap    | v1.2 requirements, acceptance criteria, phase gates and task references.                                                           |
+| Architecture decisions           | Controlled agent, Puck boundary, canonical commerce projection, component registry v2, URL-source trust and publishing boundaries. |
+| Type and schema package          | Versioned component, binding, product presentation, source discovery, asset inventory, brief, proposal and snapshot schemas.       |
+| Adapter package                  | Project context, commerce projection, media, storage, publishing, source discovery, AI provider and observability interfaces.      |
+| Component and blueprint registry | Registered component manifests, responsive/accessibility contracts, migrations and page blueprints.                                |
+| Reference fixtures               | Karvonen plus simple watch and complex ring fixtures following the canonical projection.                                           |
+| Conformance tests                | Adapter parity, protected data, dynamic options, rendering, proposal lifecycle and publish/restore.                                |
+| Deployment runbook               | Environment variables, secrets, staging access, reset workflow, monitoring and rollback.                                           |
+| Integration guide                | Mapping table from Veskify contracts to Vesko services, owners, dependencies and unresolved decisions.                             |
+
+## 20.2 Final acceptance journey
+| **1. Open Storefront Studio →** | **2. Connect URL / minimal inputs →** | **3. Approve design brief →** | **4. Generate storefront →** |
+|---------------------------------|---------------------------------------|-------------------------------|------------------------------|
+| **5. AI redesign →**            | **6. Manual adjust →**                | **7. Save draft →**           | **8. Preview & publish →**   |
+| **9. Restore history**          |                                       |                               |                              |
+
+The final integration-ready result is not measured by the number of schemas or components. It is successful when a real Vesko customer can reach a product-type-correct, visually coherent storefront quickly, understand every proposal, preserve canonical commerce truth and publish safely without developer assistance.
+
+## 20.3 Open implementation decisions
+- Exact production source-discovery service and crawling limits.
+
+- Exact mapping of Vesko product-type and option schemas into ProductPresentationContext.
+
+- Whether page blueprints are code-first manifests, versioned JSON or generated from a typed DSL.
+
+- Exact Vesko media ingestion and responsive crop service.
+
+- Exact staging authentication and customer-demo access model.
+
+- The final production provider routing and cost-control policy.
 
 <table>
 <colgroup>
-<col style="width: 100%" />
+<col style="width: 1%" />
+<col style="width: 98%" />
 </colgroup>
 <thead>
 <tr class="header">
-<th>type PublishSnapshotExpectation = {<br />
-id: string;<br />
-revision: number;<br />
-contentFingerprint: string;<br />
-};<br />
-type PublishExpectation = {<br />
-projectRevision: number;<br />
-draft: PublishSnapshotExpectation;<br />
-published: PublishSnapshotExpectation;<br />
-};<br />
-type ProjectAggregate = {<br />
-project: Project;<br />
-catalogue: CatalogueDisplayModel;<br />
-snapshots: StorefrontSnapshot[];<br />
-snapshotHistoryMetadata?: SnapshotHistoryMetadata[];<br />
-};<br />
-interface ProjectRepository {<br />
-list(): Promise&lt;ProjectSummary[]&gt;;<br />
-get(projectId: string): Promise&lt;ProjectAggregate&gt;;<br />
-create(aggregate: ProjectAggregate): Promise&lt;ProjectAggregate&gt;;<br />
-saveDraft(projectId: string, snapshot: StorefrontSnapshot): Promise&lt;void&gt;;<br />
-publish(projectId: string, expectation: PublishExpectation): Promise&lt;ProjectAggregate&gt;;<br />
-restore(projectId: string, snapshotId: string): Promise&lt;StorefrontSnapshot&gt;;<br />
-}</th>
+<th></th>
+<th><p><strong>Final baseline statement</strong></p>
+<p>Veskify v1.2 is a controlled, reusable and integration-ready storefront design engine. Its next success depends on deeper dynamic components and merchant onboarding, not on expanding into commerce operations. The product must turn existing website evidence, minimal brand assets and canonical Vesko product data into a complete storefront while keeping every operational fact protected and every material design change reviewable.</p></th>
 </tr>
 </thead>
 <tbody>
 </tbody>
 </table>
 
-## 17.5 Mock integration requirements
-
-- Mock providers must return deterministic results for seeded demo scenarios.
-
-- Mock latency may be added to demonstrate progress states but must be configurable and short.
-
-- URL and Instagram imports must be clearly represented as demo/simulated behaviour in developer documentation, not necessarily in merchant-facing presentation mode.
-
-- The application must run fully without external credentials.
-
-# 18. Non-functional requirements
-
-| **ID**  | **Requirement**                                                                                                        |
-|---------|------------------------------------------------------------------------------------------------------------------------|
-| NFR-001 | A seeded demo project MUST load its editor within 3 seconds on a typical modern laptop after initial application load. |
-| NFR-002 | Section selection and ordinary manual edits SHOULD respond within 100 ms.                                              |
-| NFR-003 | The editor MUST preserve user work across refreshes once a draft mutation is committed locally.                        |
-| NFR-004 | All merchant-facing controls MUST meet WCAG 2.2 AA contrast and keyboard-operation expectations.                       |
-| NFR-005 | The storefront renderer MUST support current desktop and mobile evergreen browsers.                                    |
-| NFR-006 | The application MUST use strict TypeScript and schema validation at all AI, onboarding and persistence boundaries, including atomic aggregate creation; unsupported runtime locale values MUST NOT be filtered or silently repaired. |
-| NFR-007 | The editor MUST remain usable when the AI provider is unavailable.                                                     |
-| NFR-008 | The demo MUST run without external API keys using seeded data and mock providers.                                      |
-| NFR-009 | No AI response may be rendered as executable markup or code.                                                           |
-| NFR-010 | The generated storefront MUST pass automated viewport checks at 375, 768, 1024 and 1440 pixel widths.                  |
-| NFR-011 | The initial storefront creation journey SHOULD be completable in under 30 minutes by a first-time merchant.            |
-| NFR-012 | The application SHOULD support at least 100 products in a dummy/imported catalogue without editor degradation.         |
-
-## 18.1 Accessibility details
-
-- All editor actions have accessible names and visible focus states.
-
-- Canvas selection is possible from the section tree without using a pointer.
-
-- Generated images require editable alt text; decorative images may be explicitly marked decorative.
-
-- Heading levels are validated per page.
-
-- Colour changes must be checked against minimum contrast before acceptance.
-
-- Animations respect reduced-motion preferences.
-
-## 18.2 Performance strategy
-
-- Lazy-load non-visible page previews and large media assets.
-
-- Memoize section rendering by section ID and revision.
-
-- Keep AI generation outside the main UI thread.
-
-- Use image size metadata and responsive image sources.
-
-- Avoid storing duplicated large base64 assets inside snapshots.
-
-# 19. Analytics, errors and observability
-
-## 19.1 Demo analytics events
-
-| **Event**                    | **Minimum properties**                                                    |
-|------------------------------|---------------------------------------------------------------------------|
-| project_created              | projectId, timestamp, route, relevant target ID, duration when applicable |
-| onboarding_step_completed    | projectId, timestamp, route, relevant target ID, duration when applicable |
-| initial_generation_started   | projectId, timestamp, route, relevant target ID, duration when applicable |
-| initial_generation_completed | projectId, timestamp, route, relevant target ID, duration when applicable |
-| section_selected             | projectId, timestamp, route, relevant target ID, duration when applicable |
-| manual_edit_applied          | projectId, timestamp, route, relevant target ID, duration when applicable |
-| ai_prompt_submitted          | projectId, timestamp, route, relevant target ID, duration when applicable |
-| ai_proposal_generated        | projectId, timestamp, route, relevant target ID, duration when applicable |
-| ai_proposal_accepted         | projectId, timestamp, route, relevant target ID, duration when applicable |
-| ai_proposal_rejected         | projectId, timestamp, route, relevant target ID, duration when applicable |
-| draft_preview_opened         | projectId, timestamp, route, relevant target ID, duration when applicable |
-| draft_published              | projectId, timestamp, route, relevant target ID, duration when applicable |
-| history_restored             | projectId, timestamp, route, relevant target ID, duration when applicable |
-| import_completed             | projectId, timestamp, route, relevant target ID, duration when applicable |
-| generation_failed            | projectId, timestamp, route, relevant target ID, duration when applicable |
-| storefront_prompt_submitted  | projectId, request/provider identity, request sequence, target fingerprint, affected-page count |
-| storefront_proposal_generated | projectId, request/provider identity, request sequence, target fingerprint, affected-page/operation counts, duration, validation |
-| storefront_generation_failed | projectId, request/provider identity, request sequence when available, target fingerprint when available, affected-page count, controlled failure code |
-| storefront_generation_stale  | projectId, request/provider identity, request sequence, target fingerprint, affected-page/operation counts, duration, controlled failure code |
-| storefront_generation_superseded | projectId, request/provider identity, request sequence, target fingerprint, affected-page count, controlled failure code |
-
-Storefront generation analytics must not contain the merchant instruction, generated text,
-imported content, raw operations, provider output, catalogue/customer values, or secrets. Analytics
-recording is best-effort and cannot affect generation state.
-
-## 19.2 Error principles
-
-- Errors must explain what failed in merchant-friendly language and preserve the current draft.
-
-- AI generation errors must offer Retry and Continue manually.
-
-- Validation errors should identify the affected field or section and apply safe fallback values where possible.
-
-- Import errors must show row/column context without exposing stack traces.
-
-- Developer details may be logged to the console in development but not shown in merchant mode.
-
-- Authorization failures, unsupported requests, stale canonical conflicts, retryable authority
-  outages and provider failures must remain distinguishable without exposing raw backend errors.
-
-- A failed authority lookup, request build, provider call, schema parse or canonical validation must
-  leave the active draft, stored draft and published snapshot unchanged.
-
-## 19.3 Observability for future integration
-
-Provider calls should record request IDs, operation counts, validation outcomes, latency and
-token/cost metadata where available. Prompt content, merchant instructions, generated copy, full
-provider responses, protected section values and API keys must not be logged. The later AWS
-deployment can connect privacy-safe metadata events to Vesko observability services.
-
-# 20. Security and privacy
-
-- Treat uploaded files as untrusted input and validate type, size and parser output.
-
-- Do not execute macros, scripts or embedded content from CSV/Excel uploads.
-
-- Sanitise all rich text and disallow arbitrary HTML in content fields.
-
-- Use local object URLs or controlled asset endpoints; do not render arbitrary remote scripts.
-
-- Do not expose AI provider secrets to the browser.
-
-- Do not send more project data to an AI provider than required for the requested operation.
-
-- Build provider prompts from canonical component-registry metadata. Omit registry-protected and
-  read-only section paths, product/catalogue identities and operational commerce values while
-  retaining only the permitted merchant-facing text and design context required by the request.
-
-- Treat strict provider output as untrusted and revalidate it with the complete local schemas and
-  semantic guards; provider-facing schema limitations must never weaken canonical validation.
-
-- Provide a clear Reset/Delete demo project action that removes locally stored project data.
-
-- Do not store payment details, personal order data or production customer information in the standalone demo.
-
-## 20.1 Prompt injection and imported content
-
-Website text, spreadsheet cells, product descriptions and uploaded files are data, not instructions.
-The AI context builder must label imported and merchant-facing content as untrusted and must not
-follow instructions contained inside it. Only direct authenticated user instructions and
-system-defined policies may control operations. Prompt construction must not mutate the canonical
-page, section, draft, catalogue or published snapshot.
-
-# 21. Testing and acceptance criteria
-
-## 21.1 Test layers
-
-| **Layer**         | **Coverage**                                                                                |
-|-------------------|---------------------------------------------------------------------------------------------|
-| Unit              | Schemas, locale normalization, operation guards, token validation, reducers, undo/redo and import mapping. |
-| Component         | Editor controls, selection states, responsive storefront components and confirmation cards. |
-| Integration       | Onboarding-to-generation language propagation, AI proposal validation, draft mutation, publish and restore. |
-| End-to-end        | Complete new-store and existing-customer journeys at desktop and mobile widths.             |
-| Visual regression | Homepage, collection, product, cart and checkout at required viewports.                     |
-| Accessibility     | Automated axe checks plus keyboard-path verification.                                       |
-
-## 21.2 Release acceptance criteria
-
-| **ID** | **Acceptance criterion**                                                                                                                                  |
-|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| AC-001 | A user can create a jewellery demo store from business description only and reach the editor with a generated homepage, collection page and product page. |
-| AC-002 | A user can complete onboarding without uploading any assets or catalogue files.                                                                           |
-| AC-003 | A user can upload a logo and see it used in the generated header.                                                                                         |
-| AC-004 | A user can select a hero section, ask for a more premium design and receive a changed draft hero without unrelated section changes.                       |
-| AC-005 | A user can manually change hero text, background, typography style, spacing preset and layout variant.                                                    |
-| AC-006 | Undo restores the immediately previous draft state and redo reapplies it.                                                                                 |
-| AC-007 | View in full displays the complete draft with a Draft preview indicator and no editor outlines.                                                           |
-| AC-008 | Save draft persists the current valid draft, survives reload, and leaves the published route and publish history unchanged.                            |
-| AC-009 | Cancelling Publish changes leaves the published route, history, and saved draft unchanged.                                                                 |
-| AC-010 | After confirmed Publish changes, the published route matches the validated draft and a new immutable history entry exists.                                |
-| AC-011 | Restoring history creates an active draft that can be saved and reviewed; it does not immediately alter the published route.                               |
-| AC-012 | A whole-site font/colour restyle changes global presentation without changing dummy product prices or content ordering.                                   |
-| AC-013 | The user can switch between English and Finnish storefront content; the project retains one primary locale and may enable the second locale.                 |
-| AC-014 | The jewellery product page displays material, karat, stone, ring-size or watch-specific attributes appropriate to the seeded product.                     |
-| AC-015 | Cart and checkout visually inherit the design system and expose no editable payment or shipping configuration.                                            |
-| AC-016 | Unknown AI component types or protected-field patches are rejected before draft application.                                                              |
-| AC-017 | The application works without external AI or image API credentials.                                                                                       |
-| AC-018 | All primary flows are keyboard operable and pass automated accessibility checks.                                                                          |
-| AC-019 | Homepage and product page have no visible clipping or overlap at 375, 768, 1024 and 1440 pixel widths.                                                    |
-| AC-020 | A first-time user can understand section selection, proposal review, draft preview, Save draft, and Publish changes through the built-in tutorial without developer terminology. |
-| AC-021 | After guided creation confirmation, the system can produce a validated in-memory snapshot with homepage, collection page, product page, navigation and registered sections without persisting a Project. |
-| AC-022 | If the selection-relevant brief changes after template selection, initial generation is blocked until the template selection is regenerated; no snapshot is produced from stale selection data. |
-| AC-023 | Guided creation composes brand foundation, template selection and initial materialization in order, exposes stage-labelled diagnostics and a validated immutable snapshot for review without creating or persisting a Project. |
-| AC-024 | If guided selection is blocked, materialization is not run and the review result contains no generated snapshot; changing only explicit generation identifiers changes only the predictable relevant IDs. |
-| AC-025 | A complete validated project aggregate can be created atomically through the repository; identity conflicts or validation failures leave existing projects, catalogues, snapshots and history unchanged. |
-| AC-026 | A later review projection shows the business, brand, template, canonical selected languages and primary language, and catalogue plan in EN/FI with preserved diagnostics, and does not create or persist a Project. |
-| AC-027 | Project creation is disabled for a blocked or incomplete generation review and enabled only for a valid non-blocked review with required pages and no blocker diagnostics. |
-
-## 21.3 Definition of done for every Codex task
-
-- Affected requirement IDs are named in the task or implementation notes.
-
-- Code is typed, formatted and lint-clean.
-
-- Relevant unit/integration tests are added or updated.
-
-- No protected commerce fields or arbitrary-code paths are introduced.
-
-- Loading, empty and error states are handled.
-
-- Keyboard access and responsive behaviour are checked for changed UI.
-
-- No regression is introduced to draft/published separation.
-
-- Developer documentation is updated when schemas, adapters or commands change.
-
-# 22. Implementation roadmap
-
-| **Phase**                          | **Deliverables**                                                                                             |
-|------------------------------------|--------------------------------------------------------------------------------------------------------------|
-| Phase 0 — Foundation               | Repository, linting, testing, application shell, schemas, component registry, seed data and storage adapter. |
-| Phase 1 — Storefront renderer      | Brand tokens, core components, homepage/collection/product/cart/checkout templates and responsive rendering. |
-| Phase 2 — Editor shell             | Page tree, canvas selection, property panel, section actions, undo/redo and device modes.                    |
-| Phase 3 — Onboarding               | Wizard, local persistence, brand inputs, dummy catalogue selection and initial generation plan.              |
-| Phase 4 — AI operations            | Mock provider, intent scopes, structured proposals, validation pipeline and confirmation cards.              |
-| Phase 5 — Draft and publishing     | Save draft, draft/full preview, separate publish confirmation, history, and restore-to-draft.                  |
-| Phase 6 — Localisation and imports | English/Finnish content, CSV/Excel mapping, asset upload and missing-data recommendations.                   |
-| Phase 7 — Real provider adapters   | Optional text/image providers, secure server routes and AWS-ready provider interfaces.                       |
-| Phase 8 — Demo polish              | Sales presets, presenter mode, visual regression, accessibility and performance.                             |
-
-## 22.1 Recommended first vertical slice
-
-The first demonstrable slice should be one seeded jewellery project with a responsive homepage and product page, editor selection, chat-driven mock hero redesign, manual controls, full draft preview, Save draft, and separate explicit Publish changes. This validates the central product loop before building broad onboarding or import capability.
-
-## 22.2 Deliberately deferred items
-
-- Real Shopify, WooCommerce, Instagram, ERP and supplier integrations.
-
-- Production authentication and multi-tenant authorisation.
-
-- Real domain configuration and deployment pipelines.
-
-- Operational checkout, payments, logistics, taxes and orders.
-
-- Unrestricted custom code, plugins or third-party script embeds.
-
-- Real-time multi-user collaboration.
-
-- More than English and Finnish.
-
-# 23. Codex execution contract
-
-## 23.1 Task preparation
-
-Every new Codex task should begin with the task template below. A task may narrow scope but may not silently contradict this specification. When a task reveals a missing product decision, Codex should use the safest existing principle, record the assumption and keep the implementation reversible.
-
-## 23.2 Codex task template
-
+# Appendix A — v1.1 to v1.2 requirement mapping
+| **v1.1 area**                             | **v1.2 treatment**                                                                                 |
+|-------------------------------------------|----------------------------------------------------------------------------------------------------|
+| Executive definition                      | Reframed from standalone demo to Vesko Storefront Studio design engine.                            |
+| New-store and existing-store journeys     | Existing-store URL path becomes primary; new-store path assumes minimal brand assets.              |
+| Controlled component system               | Retained and expanded into a layered, versioned component/binding/blueprint platform.              |
+| Product page                              | Replaced with dynamic product-type-driven PDP composition and option resolver boundaries.          |
+| Product/catalogue intelligence            | Narrowed to presentation and reconciliation; canonical Vesko commerce projection is authoritative. |
+| AI operations and guardrails              | Retained; capability vocabulary expanded for sources, assets, exact tokens and dynamic pages.      |
+| Draft, preview, versioning and publishing | Retained as a proven baseline.                                                                     |
+| Technical architecture                    | Expanded with source, commerce, media and publishing adapters for Vesko integration.               |
+| Roadmap                                   | Reset from the verified Phase 4/publishing milestone.                                              |
+
+# Appendix B — Dynamic PDP examples
+## B.1 Watch example
+| **Input**                | **Rendered result**                                                                                      |
+|--------------------------|----------------------------------------------------------------------------------------------------------|
+| **Product type**         | Watch                                                                                                    |
+| **Variant dimensions**   | Colour                                                                                                   |
+| **Attributes**           | Brand, model, case size, strap material, movement, water resistance                                      |
+| **PDP composition**      | Gallery + compact summary + colour swatches + technical specifications + service/trust + related watches |
+| **Hidden empty regions** | No ring-size, stone, karat or engraving UI.                                                              |
+
+## B.2 Ring example
+| **Input**              | **Rendered result**                                                                                                                                    |
+|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Product type**       | Ring                                                                                                                                                   |
+| **Variant dimensions** | Ring size, metal colour, karat, stone type and diamond quality                                                                                         |
+| **Order options**      | Engraving text and style                                                                                                                               |
+| **PDP composition**    | Gallery + premium summary + ordered selector groups + size help + resolved price/availability + material/stone details + care/delivery + related rings |
+| **Completion rule**    | Primary action waits for every required dimension; impossible combinations are disabled.                                                               |
+
+# Appendix C — Codex task contract for v1.2
 <table>
 <colgroup>
 <col style="width: 100%" />
@@ -1925,313 +1361,56 @@ Every new Codex task should begin with the task template below. A task may narro
 <thead>
 <tr class="header">
 <th>TASK TITLE<br />
-[Clear, outcome-based title]<br />
+[Outcome-based capability]<br />
 <br />
 OBJECTIVE<br />
-[What must work for the user after this task]<br />
+[What the merchant can do after this PR]<br />
 <br />
 SPEC REFERENCES<br />
-[Requirement IDs and sections from VESKIFY-SDD-001]<br />
+[v1.2 sections, requirement IDs and acceptance criteria]<br />
 <br />
-IN SCOPE<br />
-- ...<br />
+BRANCH / PR<br />
+[Exact branch; one task, one PR; never rebase]<br />
 <br />
-OUT OF SCOPE<br />
-- ...<br />
+DEPENDENCIES<br />
+[Required merged commit/PR and adapter/schema versions]<br />
 <br />
-USER FLOW<br />
-1. ...<br />
+OWNED FILES / DO NOT TOUCH<br />
+[Prevent parallel worktree overlap]<br />
 <br />
-DATA / SCHEMAS<br />
-[Entities, operations and component schemas affected]<br />
+IN SCOPE / OUT OF SCOPE<br />
+[Explicit product boundary]<br />
 <br />
-UI STATES<br />
-- Default<br />
-- Loading/generating<br />
-- Empty<br />
-- Error<br />
-- Success/draft changed<br />
+USER FLOW AND UI STATES<br />
+[Default, loading, empty, error, stale, success, undo/publish]<br />
 <br />
-ACCEPTANCE CRITERIA<br />
-- Given / When / Then statements<br />
+DATA / SCHEMAS / MIGRATIONS<br />
+[Canonical contracts and version impact]<br />
 <br />
-TESTS REQUIRED<br />
-- Unit<br />
-- Component/integration<br />
-- E2E or visual where applicable<br />
+TESTS<br />
+[Focused unit/component/integration/visual as required]<br />
 <br />
-CONSTRAINTS<br />
-- Dummy commerce data only<br />
-- No arbitrary generated code<br />
-- Draft must remain separate from published snapshot<br />
-- Protected price/payment/shipping/tax/order fields must not be modified<br />
+VALIDATION<br />
+[Focused tests; typecheck, lint, formatting once; rely on CI for full gate]<br />
 <br />
-DELIVERABLES<br />
-- Code<br />
-- Tests<br />
-- Documentation/schema updates</th>
+DELIVERABLE<br />
+[Commit, push, PR, one automatic review cycle, report and stop]</th>
 </tr>
 </thead>
 <tbody>
 </tbody>
 </table>
 
-## 23.3 Mandatory implementation rules
-
-- Do not create a second competing domain model for pages, sections or tokens.
-
-- Do not bypass the component registry in storefront rendering.
-
-- Do not apply AI output before schema and semantic validation.
-
-- Do not mutate published state from editor actions.
-
-- Do not hide missing error/loading/empty states behind TODO comments.
-
-- Do not introduce provider lock-in into domain or UI code.
-
-- Do not add production commerce functionality to the standalone demo.
-
-- Prefer small vertical slices that end in a usable user flow over disconnected infrastructure.
-
-## 23.4 Pull-request checklist
-
-- [ ] Requirement IDs linked
-
-- [ ] Type checks pass
-
-- [ ] Lint passes
-
-- [ ] Tests pass
-
-- [ ] Responsive review complete
-
-- [ ] Keyboard review complete
-
-- [ ] Draft/published separation preserved
-
-- [ ] Protected fields untouched
-
-- [ ] No arbitrary AI code path
-
-- [ ] Documentation updated
-
-## 23.5 Decision precedence
-
-> **1.** Explicit user instruction for the current task, provided it does not violate a non-negotiable product boundary.
->
-> **2.** This Software Design Specification and its requirement IDs.
->
-> **3.** Existing tested architecture and component contracts in the repository.
->
-> **4.** Documented safe defaults and reversible assumptions.
->
-> **5.** Developer preference only when the above sources do not decide the matter.
-
-# Appendices
-
-## Appendix A — Seed demo scenarios
-
-| **Preset**                | **Purpose**                | **Required content**                                                                                   |
-|---------------------------|----------------------------|--------------------------------------------------------------------------------------------------------|
-| Nordic Jewellery          | Primary complete scenario  | Premium jewellery brand, EN/FI, ring and watch products, editorial homepage and detailed product page. |
-| Independent Fashion Store | Secondary visual scenario  | Clothing collections, size/colour options and campaign-led homepage.                                   |
-| Legacy Store Redesign     | Existing-site scenario     | Outdated starting design transformed through a whole-site prompt.                                      |
-| Campaign Builder          | Existing-customer scenario | Published base store plus a new seasonal landing page and homepage campaign section.                   |
-
-## Appendix B — Sample jewellery catalogue
-
-| **Product**          | **SKU**         | **Dummy price** | **Display attributes**                           |
-|----------------------|-----------------|-----------------|--------------------------------------------------|
-| Aurora Ring 585      | RING-AUR-585    | €1,290          | Yellow gold 585; diamond; sizes 15–21; engraving |
-| Lumi Halo Ring       | RING-LUM-HALO   | €1,890          | White gold 585; round diamond; sizes 15–20       |
-| Aava Silver Necklace | NECK-AAVA-925   | €149            | Sterling silver; 45/50 cm variants               |
-| Sisu Automatic Watch | WATCH-SISU-AUTO | €690            | Steel; 40 mm; automatic; 10 ATM                  |
-| Kajo Rose Earrings   | EAR-KAJO-585    | €490            | Rose gold 585; zirconia; pair                    |
-| Meri Bracelet        | BRAC-MERI-925   | €179            | Sterling silver; 17/19/21 cm                     |
-
-## Appendix C — Page template defaults
-
-| **Page**   | **Default sections**                                                                                                         |
-|------------|------------------------------------------------------------------------------------------------------------------------------|
-| Home       | announcementBar, header, hero, featuredCategories, productGrid, campaignBanner, brandStory, benefitIcons, newsletter, footer |
-| Collection | header, collectionHeader, filterBar, productGrid, footer                                                                     |
-| Product    | header, productGallery, productInfo, benefitIcons, imageText/details, relatedProducts, footer                                |
-| About      | header, hero or imageText, brandStory, gallery, testimonials, footer                                                         |
-| Contact    | header, imageText/contact intro, storeLocations, faq, footer                                                                 |
-| Cart       | header, cartPage, benefitIcons, footer                                                                                       |
-| Checkout   | checkoutShell                                                                                                                |
-| Landing    | header optional, hero, campaign sections, product grid or CTA, FAQ optional, footer optional                                 |
-
-## Appendix D — Global validation rules
-
-- Every page ID, section ID, asset ID and snapshot ID must be unique within its aggregate.
-
-- Every section component type and variant must exist in the component registry.
-
-- Every locale field must use only enabled locale keys.
-
-- Colour tokens must be valid colour values and pass configured contrast checks for required pairings.
-
-- Font tokens must resolve to approved fonts.
-
-- Protected commerce paths must be immutable through design operations.
-
-- Navigation targets must resolve to an existing page or safe external URL.
-
-- A page must not contain more than one global header or footer instance.
-
-- Checkout and cart components must use read-only dummy operational content.
-
-- AI operations must target the current project and expected draft revision.
-
-## Appendix E — Product vocabulary
-
-| **Term**      | **Definition**                                                                             |
-|---------------|--------------------------------------------------------------------------------------------|
-| Agent         | The AI-guided design capability that proposes structured storefront operations.            |
-| Canvas        | Interactive storefront rendering surface inside the editor.                                |
-| Component     | Registered, tested storefront section implementation.                                      |
-| Composition   | Approved arrangement of primitives represented as a registered schema, not arbitrary code. |
-| Design tokens | Validated global values controlling colour, typography, shape, spacing and imagery.        |
-| Draft         | Editable working snapshot. It may be unsaved or saved, but remains unpublished until explicit publication. |
-| Published     | Read-only snapshot visible through the published route and changed only by explicit publication.       |
-| Proposal      | Validated set of AI operations awaiting user acceptance or rejection.                      |
-| Section       | One component instance placed on a page.                                                   |
-| Snapshot      | Immutable representation of the complete storefront at a revision.                         |
-
-## Appendix F — Open implementation choices
-
-The following choices may be made by the implementing team without changing the product definition, provided the interfaces and acceptance criteria remain intact:
-
-- IndexedDB versus SQLite as the default demo persistence adapter.
-
-- Exact accessible editor primitive library.
-
-- Exact optional AI and image provider behind the defined adapters.
-
-- Exact approach for visual regression snapshots.
-
-- Whether presenter mode is a route, project flag or query parameter.
-
-- Whether import mapping is implemented in a worker for larger files.
-
-## Appendix G — Final baseline statement
-
-<table>
-<colgroup>
-<col style="width: 100%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th><p><strong>Implementation baseline</strong></p>
-<p>The standalone Veskify demo is a design agent, not a commerce operations agent. Its defining loop is guided input → controlled proposal → accepted draft editing → full preview → Save draft → explicit Publish changes. Any implementation that bypasses controlled components, mutates operational commerce data, or publishes without confirmation is outside this specification.</p></th>
-</tr>
-</thead>
-<tbody>
-</tbody>
-</table>
-
-
-# Addendum A — Controlled Design Skills Architecture
-
-**Version 1.1 — Normative override.** This addendum is authoritative where it clarifies or narrows earlier AI-generation language and overrides any conflicting terminology or workflow remaining from version 1.0.
-
-## A.1 Product direction
-
-Veskify is a controlled storefront design agent for everyday retailers with very low technical and design knowledge. It is not a free-form frontend generator and not a commerce operations engine.
-
-The system must reduce repeated invention, unnecessary generated assets, token consumption, and unpredictable visual output. It must reuse approved components, variants, presets, brand tokens, and merchant assets wherever possible.
-
-## A.2 Required execution pipeline
-
-```text
-Merchant request
-  -> intent classification
-  -> design plan
-  -> approved design skill selection
-  -> structured design operations
-  -> schema and semantic validation
-  -> proposal preview without active-draft mutation
-  -> merchant accept, revise, or reject
-  -> apply accepted operations to active draft
-  -> Save draft
-  -> explicit Publish changes
-```
-
-The AI proposes. Veskify owns the source of truth. AI output never becomes active draft state or published output directly.
-
-## A.3 Design skills model
-
-A design skill is a bounded capability with a clear user outcome, required context, allowed operation set, structured output schema, protected-field rules, validation, failure states, implementation status, and tests.
-
-Skills may compose other skills, but they may not bypass validation, mutate published state, or generate arbitrary React, HTML, CSS, JavaScript, scripts, embeds, or executable code.
-
-## A.4 Initial skills and workflows
-
-- **Composite workflow:** `generateStorefront` orchestrates bounded skills; it is not a primitive skill.
-- **Storefront assembly:** `generateBrandSystem`, `generateHomepage`, `generateCollectionPage`, `generateProductPage`.
-- **Section work:** `generateHero`, `improveHero`, `addCampaignSection`, `addFeaturedCategories`, `addProductGrid`, `addBrandStory`, `addBenefits`, `addNewsletter`, `improveHeader`, `improveFooter`.
-- **Visual direction:** `applyLuxuryStyle`, `applyMinimalNordicStyle`, `applyEditorialStyle`, `improveTypography`, `improveColourPalette`, `improveSpacing`, `increaseVisualHierarchy`, `fixMobileLayout`, `improveAccessibility`.
-- **Content and localisation:** `generateSectionCopy`, `shortenCopy`, `changeToneOfVoice`, `translateStorefront`, `generateSeoMetadata`, `detectMissingContent`.
-
-Implementation status is defined in `DESIGN_AGENT_SKILLS.md`; inclusion here does not mean that every skill is already implemented.
-
-## A.5 Reuse before generation
-
-Veskify must prefer merchant-provided brand assets and guidelines, existing store content and product imagery, approved industry presets, existing component variants, and validated brand tokens before generating new content.
-
-Image generation is optional and should be used only when suitable reusable assets are missing or the merchant explicitly requests new imagery.
-
-## A.6 Presentation enrichment
-
-Veskify may maintain a separate, reviewable presentation-enrichment layer for product titles, descriptions, attributes, categories, collections, filters, translations, and SEO metadata.
-
-Enrichment is non-destructive and exportable. It may not overwrite protected source price, SKU, stock, inventory, payment, shipping, tax, logistics, order, or operational checkout data.
-
-## A.7 Puck and Veskify ownership
-
-Puck remains the embedded visual-editor foundation and owns canvas mechanics, selection, insertion, drag-and-drop reordering, editor fields, and viewport controls.
-
-Veskify owns canonical schemas, controlled components, design operations, validation, active and saved draft state, proposals, publishing, AI behaviour, presentation enrichment, and protected commerce boundaries.
-
-## A.8 Merchant-facing experience
-
-The internal system may use skills, operations, schemas, planners, and adapters, but these engineering concepts must remain hidden from merchants.
-
-The merchant sees a short explanation, a visual proposal, and simple Accept and apply to draft, Revise, Regenerate, and Reject actions. Save draft and Publish changes remain separate editor actions.
-
-## A.9 Six-week product priority
-
-- Week 1: real Puck editor and 10–12 high-quality jewellery components.
-- Week 2: structured design operations and proposal acceptance.
-- Week 3: merchant chat, intent classification, planning, and skill orchestration.
-- Week 4: guided store creation and initial design generation.
-- Week 5: real catalogue/media ingestion and presentation enrichment.
-- Week 6: explicit publishing, Vesko adapter contracts, deployment, accessibility, performance, and demo polish.
-
-## A.10 Development rule
-
-After the foundation is stable, each pull request should create a visible merchant capability or directly unblock the next end-to-end product slice. Architecture-only work should be limited to concrete blockers. The first complete retailer journey is more valuable than a large but shallow feature inventory.
-
-## A.11 Responsibility boundary
-
-| **Puck owns** | **Veskify owns** |
-|---|---|
-| Canvas mechanics and viewport controls | Canonical project, page, section, snapshot, and brand schemas |
-| Selection, insertion, and drag-and-drop | Controlled component registry and variants |
-| Editor fields and basic property controls | Design skills, structured operations, and validation |
-| Embedded editor rendering infrastructure | Draft proposals, approval, active/saved drafts, publishing, and history |
-| Transient editor state | Presentation enrichment and protected commerce boundaries |
-
-## A.12 Supporting repository documents
-
-- `AGENTS.md`
-- `DESIGN_AGENT_SKILLS.md`
-- `DEVELOPMENT_GUIDE.md`
-- `VESKIFY_DEVELOPMENT_ROADMAP.md`
-- `ADR-002_CONTROLLED_DESIGN_AGENT.md` in the same ADR directory as ADR-001.
-
-## A.13 Current delivery status
-
-Weeks 1 and 2 are partially completed. Week 3 — merchant chat, intent planning, proposal UI, applying accepted proposals to the active editor draft, and initial skills orchestration — is the next milestone. Current implementation status is maintained in `VESKIFY_DEVELOPMENT_ROADMAP.md` and `DESIGN_AGENT_SKILLS.md`.
+# Appendix D — Glossary
+| **Term**                      | **Definition**                                                                                                                       |
+|-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+| Vesko Storefront Studio       | Merchant-facing Vesko module for storefront onboarding, design, preview, draft, publishing and history.                              |
+| Veskify                       | Internal controlled design engine powering Storefront Studio.                                                                        |
+| Canonical commerce projection | Read-only product and collection presentation data mapped from Vesko operational truth.                                              |
+| Component family              | Reusable engineering-owned component with approved variants, slots, bindings and responsive rules.                                   |
+| Page blueprint                | Approved page-level composition rules that select compatible component families and required bindings.                               |
+| Storefront Design Brief       | Merchant-approved generation contract containing business, sources, brand direction, asset roles, page plan and assumptions.         |
+| Source evidence               | Untrusted public website or uploaded information used to inform design, never to control permissions or override canonical commerce. |
+| Dynamic PDP                   | Product-detail page composed from product type, attributes, variant dimensions, option groups and approved presentation rules.       |
+| Proposal                      | Validated structured design changes shown for accept, revise or reject before entering the draft.                                    |
+| Protected commerce truth      | SKU, product type, variants, option values, prices, stock, inventory and operational data that design operations cannot modify.      |

@@ -1,324 +1,269 @@
 # Veskify Development Roadmap
 
-**Version:** 1.1  
-**Aligned with:** authoritative `docs/VESKIFY_SDD.md` and synchronized export `docs/VESKIFY_SDD_v1.1.docx`  
-**Product:** Veskify — AI storefront design agent for retailers
+**Version:** 1.2
+**Aligned with:** `docs/VESKIFY_SDD.md`
+**Merchant-facing product:** Vesko Storefront Studio
+**Internal engine:** Veskify
 
 ## 1. Product outcome
 
-Veskify enables a retailer with little or no design or technical knowledge to create and redesign an online storefront through guided onboarding, natural-language requests, a controlled visual editor, and explicit approval.
-
-Veskify is a **design agent**, not a commerce operations platform. It may consume and enrich product presentation data, but it must not own or alter live prices, stock, payments, logistics, taxes, orders, or operational checkout settings.
-
-The core design pipeline is:
-
-```text
-Merchant request
-  -> intent interpretation
-  -> design plan
-  -> approved design skills
-  -> structured design operations
-  -> schema and semantic validation
-  -> draft proposal
-  -> visual preview
-  -> merchant accept, revise, or reject
-  -> apply accepted operations to the active draft
-  -> save draft
-  -> explicit publish
-```
-
-Puck is the permanent embedded visual-editor foundation. Veskify owns the canonical composition, design system, component contracts, agent skills, operations, validation, draft state, publishing rules, and Vesko integration boundary.
-
-## 2. Current baseline
-
-### Completed
-
-- Next.js App Router, React, strict TypeScript, Tailwind CSS, Zod, Vitest, Playwright, and pnpm foundation;
-- Puck isolated behind `src/integrations/puck`;
-- canonical project, page, section, snapshot, brand, catalogue, and history models;
-- deterministic jewellery seed data in English and Finnish;
-- in-memory and IndexedDB repository adapters;
-- separate draft and published snapshots;
-- protected commerce fields and dummy operational data;
-- real `/projects/[projectId]/editor` route;
-- homepage, collection, and product switching;
-- EN/FI switching inside the editor and iframe;
-- page-scoped Puck configuration;
-- add, select, edit, reorder, and remove approved sections;
-- validated in-memory editing;
-- unsaved state and discard;
-- bounded canonical per-page undo/redo for manual edits and accepted proposals;
-- safe selected-section duplicate and hide/show actions;
-- protected commerce-field enforcement;
-- controlled storefront design vocabulary;
-- multiple variants and brand-token controls;
-- deterministic structured design operations;
-- in-memory proposal create, inspect, accept, and reject lifecycle;
-- canonical controlled-skill contract and typed skill registry;
-- deterministic EN/FI intent classification and immutable design planning;
-- transactional orchestration for luxury, minimal Nordic, campaign-section, and hero skills;
-- deterministic provider facade and existing-proposal lifecycle conversion.
-
-### Still pending from Week 1
-
-- cart and checkout editor surfaces;
-- persisting edits after refresh;
-
-### Still pending from Week 2
-
-- proposal UI inside the editor;
-- proposal revision workflow;
-- broader skills implementation and merchant-facing orchestration;
-- applying accepted proposals to the active editor draft;
-- broader page-composition operations.
-
-Weeks 1 and 2 are therefore **partially completed**. Week 3 is the clear next milestone, while the remaining Week 1 and Week 2 items should be completed only where they directly support the Week 3 merchant flow.
-
-## 3. Six-week delivery plan
-
-### Week 1 — Real editor and storefront design vocabulary
-
-**Status: Partially completed**
-
-#### Completed
-
-- real project editor route;
-- homepage, collection, and product switching;
-- EN/FI switching;
-- page-scoped Puck configuration;
-- add, select, edit, reorder, and remove approved sections;
-- validated in-memory editing;
-- unsaved state and discard;
-- bounded canonical per-page undo/redo;
-- selected-section duplicate and hide/show actions;
-- protected commerce-field enforcement;
-- controlled storefront design vocabulary with multiple variants and brand-token controls.
-
-#### Remaining
-
-- cart and checkout editor surfaces;
-- persistence after refresh;
-- final responsive preview and remaining component polish.
-
-#### Exit criteria
-
-- A non-technical user can edit supported pages without seeing code or implementation concepts.
-- The same controlled components render in editor, preview, and storefront routes.
-- Invalid components and protected product fields cannot enter draft state.
-
-### Week 2 — Structured design operations and proposals
+A new Vesko customer can connect an existing storefront URL or provide minimal business inputs, approve a reconstructed brand and storefront plan, receive a dynamic product-type-correct storefront, improve it through plain-language design requests and publish safely without developer assistance.
 
-**Status: Partially completed**
+Veskify remains a design engine. It consumes read-only canonical Vesko commerce projections and does not become a catalogue, inventory, order, payment, logistics or tax system.
 
-#### Completed
+## 2. Verified baseline — complete
 
-- deterministic structured design-operation schemas and executor foundation;
-- protected-field validation;
-- section add, remove, reorder, content, prop, style-token, variant, and brand-token operations;
-- deterministic homepage proposal generation;
-- in-memory proposal create, inspect, accept, and reject lifecycle.
+The roadmap begins from the repository state proven on 22 July 2026.
 
-#### Remaining
+| Area | Outcome |
+|---|---|
+| Foundation and renderer | Canonical schemas, registered components, responsive rendering, fixtures and storage adapters. |
+| Visual editor | Page/locale context, selection, manual section operations, device modes and undo/redo. |
+| Controlled proposals | Selected-section, current-page and whole-storefront scope with review, accept, reject and stale protection. |
+| Real provider | Secure OpenAI adapter through the same structured and guarded lifecycle as the mock provider. |
+| Atomic storefront application | Multi-page and brand-system changes apply and undo as one history transaction. |
+| Draft and publishing | Separate draft, save and publish flows with history and restore architecture. |
+| Real merchant fixture | Karvonen catalogue and local assets render without changing protected product truth. |
+| End-to-end proof | Real prompt → validated proposal → atomic acceptance → undo/redo → save → publish succeeded. |
 
-- proposal UI inside the editor;
-- proposal revision workflow;
-- applying accepted proposals to the active editor draft;
-- duplicate and visibility operations;
-- broader page-composition operations;
-- broader skills implementation and merchant-facing orchestration.
+These capabilities are not future work and must not be rebuilt.
 
-#### Exit criteria
+## 3. Real-provider findings
 
-- A request creates a valid proposal without mutating the active draft before acceptance.
-- Accepted operations can be applied to the active draft through the editor flow.
-- Rejected proposals leave the active draft and published snapshot unchanged.
+| Finding | Roadmap consequence |
+|---|---|
+| Whole-storefront safe lifecycle works. | Keep architecture; harden only confirmed failures. |
+| Premium prompt produced a coherent redesign. | Invest in component variety and page depth. |
+| Detailed exact-palette prompt was rejected safely. | Expand approved palette intent and token operations. |
+| Aurum/demo copy leaked into Karvonen presentation. | Remove fixture defaults and strengthen source-aware binding. |
+| Karvonen needed explicit bootstrap wiring. | Add reliable load/reset demo workflows. |
+| Editor still looks like a development tool. | Build the native Storefront Studio merchant shell. |
 
-### Week 3 — Merchant chat, intent planning, and skills orchestration
+## 4. Remaining phases
 
-**Status: Partially completed**
+### P4.1 — Real-AI findings and hardening
 
-#### Completed
+**Goal:** Make normal real-provider requests reliable without changing the proven architecture.
 
-- deterministic EN/FI classification for the initial supported request families;
-- scope-aware design plans with ordered approved skills and merchant-facing explanations;
-- initial `applyLuxuryStyle`, `applyMinimalNordicStyle`, `addCampaignSection`, and `improveHero`
-  implementations;
-- transactional execution, rollback, protected-commerce enforcement, and canonical page validation;
-- conversion into the existing proposal lifecycle without UI, persistence, or publishing coupling;
-- deterministic provider facade that runs without external credentials.
+**Scope:**
 
-#### Remaining
+- provider parsing and safe error mapping;
+- exact supported brand-token requests;
+- timeout/unavailable states;
+- stale and invalid proposal summaries;
+- fixture-specific content cleanup;
+- demo load/reset reliability;
+- confirmed undo/publish regressions only.
 
-- merchant-friendly chat beside the canvas;
-- proposal and confirmation UI integration;
-- proposal revision and applying accepted proposals to the active editor draft;
-- optional real provider adapter;
-- remaining initial workflows and broader skill catalogue.
+**Merchant outcome:** Normal design requests behave through the same safe lifecycle as the deterministic provider.
 
-#### Goal
+**Gate:** Focused hardening PRs pass relevant tests; no architecture rewrite.
 
-A retailer can request design changes in everyday language.
+### P5 — Dynamic component and binding platform
 
-#### Deliverables
+**Goal:** Give the AI a reusable, versioned storefront vocabulary.
 
-- merchant-friendly chat beside the canvas;
-- intent classification and scope resolution;
-- design planner that chooses approved skills;
-- skill execution plan visible as a short human explanation;
-- confirmation cards for material changes;
-- deterministic mock provider for repeatable testing;
-- optional real provider interface isolated behind an adapter;
-- clarification only when missing information materially affects the design;
-- initial complete workflows:
-  - “Make the homepage feel more luxurious.”
-  - “Create a summer campaign section.”
-  - “Improve this hero for mobile.”
-  - “Use our brand colours and make the typography more premium.”
+**Deliverables:**
 
-#### Exit criteria
+- `ComponentDefinitionV2`;
+- typed slots and editable fields;
+- `DataBinding` contracts;
+- `ProductPresentationContext`;
+- asset roles and provenance bindings;
+- page blueprints;
+- component versioning and migrations;
+- generic standalone/Vesko projection adapters;
+- conformance tests.
 
-- Chat requests produce structured proposals, not raw code.
-- The retailer can accept, revise, or reject before changes become part of the draft.
+**Merchant outcome:** The AI composes reusable storefronts without merchant-specific code or copied product facts.
 
-### Week 4 — Guided storefront creation
+**Gate:** Contracts merge first and adapter tests are green.
 
-#### Goal
+### P6 — Dynamic commerce page depth
 
-A new retailer can move from business information to an editable storefront.
+**Goal:** Render product-type-correct product and collection experiences from canonical Vesko data.
 
-#### Deliverables
+**Deliverables:**
 
-- guided onboarding for:
-  - business identity and description;
-  - industry and target customer;
-  - existing website reference;
-  - logo, colours, typography, and media;
-  - visual preferences;
-  - language selection;
-  - catalogue source;
-- generated brand system when complete guidelines are unavailable;
-- initial store generation using approved industry presets and skills;
-- editor introduction showing how to select and edit sections;
-- jewellery-first template set for homepage, collection, and product presentation.
+- dynamic option-group schema and renderer;
+- option dependencies and required-selection guidance;
+- variant resolver boundary;
+- dynamic product gallery and information components;
+- price/compare-at/unavailable-price presentation;
+- product cards and grids;
+- collection header and filter presentation;
+- unknown product-type fallback;
+- responsive and keyboard behaviour.
 
-#### Exit criteria
+**Acceptance:**
 
-- A retailer can reach a usable first storefront within 30 minutes.
-- Generation reuses existing merchant assets and presets before creating new content or imagery.
+- simple watch with one colour dimension;
+- complex ring with five or six option groups;
+- unavailable combinations;
+- selected variant controls price, availability and media;
+- layout changes never change option or product truth.
 
-### Week 5 — Real merchant data and presentation enrichment
+**Gate:** AC-106 through AC-112 pass at 375, 768, 1024 and 1440 px.
 
-#### Goal
+### P7 — URL-first onboarding and brand reconstruction
 
-Veskify can design from real-life merchant catalogue and media data without becoming the source of commerce truth.
+**Goal:** Let merchants start from what they already have.
 
-#### Deliverables
+**Deliverables:**
 
-- CSV and Excel catalogue import;
-- configurable field mapping into Veskify display models;
-- product media upload and mapping;
-- jewellery and watch attribute detection;
-- suggestions for collections and storefront filters;
-- EN/FI translation and SEO metadata generation;
-- missing-content and duplicate-presentation detection;
-- separate, reviewable enrichment layer;
-- export/import contracts for future Vesko integration;
-- one real merchant catalogue tested end to end.
+- public URL source adapter and deterministic fixture adapter;
+- source evidence with provenance and confidence;
+- prompt-injection-resistant parsing;
+- reconciliation against canonical commerce data;
+- logo, colour, typography, copy and asset discovery;
+- asset inventory and roles;
+- guided brand reconstruction;
+- merchant-approved Storefront Design Brief.
 
-#### Exit criteria
+**Merchant outcome:** A merchant with an existing site or only a logo can approve a complete design direction without rebuilding catalogue truth.
 
-- Source product data remains unchanged.
-- Enriched presentation data is reviewable, reversible, and exportable.
-- Product price, SKU, stock, and operational attributes remain protected.
+**Gate:** URL/minimal inputs → approved brief succeeds; public commerce conflicts never override Vesko.
 
-### Week 6 — Save/publish integration, reliability, and full demo
+### P8 — Asset-aware initial generation
 
-#### Goal
+**Goal:** Generate a complete merchant-specific first storefront.
 
-Deliver a stable, customer-ready Veskify demo and a clean Vesko integration boundary.
+**Deliverables:**
 
-#### Deliverables
+- homepage, collection and dynamic PDP generation from the approved brief;
+- page-blueprint selection;
+- asset-role placement;
+- missing-asset choices: reuse, upload, continue or generate;
+- removal of seed-brand defaults;
+- source/binding/asset validation before proposal.
 
-- save draft;
-- full-page draft preview;
-- explicit publish confirmation;
-- previous published version and restore-to-draft;
-- public or shareable demo preview route;
-- accessibility and keyboard QA;
-- desktop/mobile visual regression;
-- error recovery and empty/loading states;
-- performance and bundle review;
-- deployment environment;
-- Vesko integration adapter documentation and sample payloads;
-- prepared demo journeys and merchant scenarios;
-- final bug and polish buffer.
+**Merchant outcome:** Initial generation feels specific to the merchant and uses existing assets correctly.
 
-#### Exit criteria
+**Gate:** AC-103 through AC-105 and AC-117 through AC-119 pass.
 
-- No change reaches the published storefront without explicit approval.
-- The jewellery demo works with real merchant data and survives refresh/reload.
-- The codebase exposes clear interfaces for Vesko authentication, catalogue, media, persistence, and publishing services.
+### P9 — Whole-storefront design quality
 
-## 4. Initial design-skill priority
+**Goal:** Produce genuinely different, coherent complete storefronts.
 
-Build a small, deep catalogue before expanding breadth.
+**Deliverables:**
 
-### Store creation
+- exact valid brand-palette support;
+- richer hero, editorial, collection, product and trust variants;
+- coordinated navigation and footer;
+- typography, spacing, buttons and image-treatment skills;
+- coherent homepage, collection and product-page restyling;
+- responsive visual polish;
+- fixture-content cleanup.
 
-1. `generateBrandSystem`
-2. `generateHomepage`
-3. `generateCollectionPage`
-4. `generateProductPage`
+**Merchant outcome:** “Redesign this as a premium Scandinavian jewellery storefront” creates one coordinated storefront, not isolated page edits.
 
-### Section and campaign design
+**Gate:** AC-113 through AC-123 pass, including atomic whole-site undo/redo.
 
-5. `generateHero`
-6. `improveHero`
-7. `addCampaignSection`
-8. `addFeaturedCategories`
-9. `addProductGrid`
-10. `improveHeader`
-11. `improveFooter`
+### P10 — Vesko Storefront Studio product UX
 
-### Visual direction
+**Goal:** Turn the engine into an understandable Vesko product.
 
-12. `applyLuxuryStyle`
-13. `applyMinimalNordicStyle`
-14. `improveTypography`
-15. `improveSpacing`
-16. `fixMobileLayout`
+**Deliverables:**
 
-### Presentation enrichment
+- native Vesko application shell;
+- merchant naming and navigation;
+- focused Setup, Editor, Preview, Publishing and History workspace;
+- compact page/outline rail;
+- larger canvas;
+- tabbed Design/AI controls;
+- responsive drawers/bottom sheets;
+- first-use guidance;
+- no developer tools or internal terminology.
 
-17. `detectJewelleryAttributes`
-18. `suggestCollections`
-19. `suggestFilters`
-20. `translateStorefront`
+**Merchant outcome:** A first-time retailer completes the journey without developer assistance.
 
-## 5. Scope controls
+**Gate:** AC-121, AC-123 and first-time usability acceptance pass.
 
-The six-week demo must remain focused:
+### P11 — Demo reliability and staging
 
-- jewellery and watches are the complete first industry;
-- 10–12 excellent components are preferred over a large shallow registry;
-- 12–20 reliable skills are preferred over unrestricted generation;
-- image generation is optional and used only after merchant assets, product imagery, presets, and existing variants are considered;
-- no live payments, shipping, logistics, orders, taxes, or inventory operations;
-- no arbitrary generated React, HTML, CSS, JavaScript, scripts, or embeds;
-- no second persisted Puck page tree;
-- no silent publishing;
-- no infrastructure-only work unless it directly unblocks the next visible merchant journey.
+**Goal:** Make sales/customer demonstrations repeatable and shareable.
 
-## 6. Product completion test
+**Deliverables:**
 
-The full demo is ready when a retailer can:
+- load/reset Karvonen and reference fixtures;
+- known prompt library;
+- clean-state start and restore;
+- provider failure recovery;
+- staging deployment with server-side secrets;
+- access control;
+- logging, latency and cost observability;
+- final performance and accessibility gate.
 
-1. provide business, brand, media, and catalogue information;
-2. receive a generated jewellery storefront using approved components;
-3. edit the storefront manually in Puck;
-4. request design changes through chat;
-5. review structured proposals;
-6. accept, revise, or reject changes;
-7. preview the complete draft;
-8. explicitly publish it;
-9. return later and restore or redesign without losing commerce truth.
+**Merchant outcome:** The same demo works repeatedly without IndexedDB preparation or developer intervention.
+
+**Gate:** AC-120 and the complete final acceptance journey pass from a clean environment.
+
+### P12 — Vesko integration handoff
+
+**Goal:** Hand the engine to the Vesko teammate without redesigning it.
+
+**Deliverables:**
+
+- production adapter contracts and implementations;
+- project/authentication context mapping;
+- canonical commerce projection mapping;
+- media, persistence, publishing and source-discovery adapters;
+- component/blueprint registry package;
+- migrations and version policy;
+- conformance tests;
+- deployment and rollback runbook;
+- ownership and unresolved-decision table.
+
+**Merchant outcome:** Veskify operates inside Vesko Storefront Studio against real Vesko services.
+
+**Gate:** AC-124 and AC-125 pass; integration sign-off complete.
+
+## 5. Immediate parallel start
+
+After the v1.2 documentation PR merges:
+
+| Window | Task | Outcome | Overlap rule |
+|---|---|---|---|
+| W1 | **P5-01 Component registry v2 and commerce-presentation contracts** | Define component, binding, product-presentation, blueprint and conformance contracts. | Shared contract branch; merge first. |
+| W2 | **P10-01 Storefront Studio shell foundation** | Implement native shell, workspace header and compact rails. | Presentation-only; do not alter W1 contracts. |
+| W3 | **P7-01 Source discovery and Storefront Design Brief contracts** | Define source evidence, provenance, asset inventory, reconciliation and brief schemas with deterministic fixtures. | New source/onboarding modules; do not alter component registry. |
+| W4 | **Manual testing only** | Preserve real-provider Karvonen environment. | No Codex task unless explicitly assigned. |
+
+## 6. Merge sequence
+
+1. Merge P5-01 shared contracts first.
+2. Update dependent branches with `git fetch origin` and `git merge origin/main`; never rebase.
+3. Start P6-01 dynamic option-group engine and P6-02 dynamic PDP components with one named registry integration owner.
+4. Continue P7 source discovery against approved brief contracts.
+5. Merge the shell independently when it does not overlap active editor files.
+6. Use W4 for one manual real-provider regression at each phase gate.
+
+## 7. Explicit non-priorities
+
+Do not prioritize before the integration-ready design demo:
+
+- another catalogue-management or product-entry system;
+- general CSV/Excel import as a prerequisite;
+- operational inventory, orders, payments, logistics, returns or taxes;
+- more AI providers without a production requirement;
+- AI image generation before existing-asset reuse works well;
+- broad industry expansion before jewellery/watches PDP depth;
+- unrestricted custom code or model-invented components.
+
+## 8. Release acceptance
+
+The product is integration-ready when a customer can:
+
+1. open Vesko Storefront Studio;
+2. connect a public website or provide minimal inputs;
+3. review source evidence and canonical reconciliation;
+4. approve a Storefront Design Brief;
+5. generate homepage, collection and product pages;
+6. see correct product-type options and selected-variant data;
+7. request an AI redesign, including exact brand colours;
+8. review and accept or reject the proposal;
+9. adjust manually;
+10. save draft;
+11. preview and publish explicitly;
+12. restore history;
+13. repeat the flow reliably in staging.
