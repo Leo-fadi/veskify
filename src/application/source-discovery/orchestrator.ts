@@ -707,7 +707,15 @@ export function createStorefrontDesignBriefEvidenceFingerprint(
       "The material source evidence does not match the Storefront Design Brief references.",
     );
   }
-  return createStorefrontSourceEvidenceFingerprint(input.materialEvidence);
+  const sourceEvidenceFingerprint = createStorefrontSourceEvidenceFingerprint(
+    input.materialEvidence,
+  );
+  return input.assetReviewFingerprint
+    ? canonicalValueFingerprint({
+        sourceEvidenceFingerprint,
+        assetReviewFingerprint: input.assetReviewFingerprint,
+      })
+    : sourceEvidenceFingerprint;
 }
 
 function reconciliationQuestions(
@@ -746,6 +754,7 @@ export function createStorefrontDesignBrief(
     sourceEvidenceIds,
     canonicalCommerceProjectionRef,
     materialEvidence: input.materialEvidence,
+    assetReviewFingerprint: input.assetReviewFingerprint,
   });
   const candidate = {
     id: idSchema.parse(input.id),
@@ -766,6 +775,8 @@ export function createStorefrontDesignBrief(
       ? brandReconstructionProposalSchema.parse(input.brandProposal)
       : null,
     approvedReusableAssetIds: list(input.approvedReusableAssetIds),
+    approvedAssetAssignments: [...(input.approvedAssetAssignments ?? [])],
+    assetReviewFingerprint: input.assetReviewFingerprint ?? null,
     pagePlan: storefrontStructureSchema.parse(
       input.pagePlan ?? { pageTypes: ["home", "collection", "product"] },
     ),
@@ -872,6 +883,7 @@ export function updateStorefrontDesignBriefReview(
     sourceEvidenceIds,
     canonicalCommerceProjectionRef,
     materialEvidence: input.materialEvidence,
+    assetReviewFingerprint: input.assetReviewFingerprint ?? brief.assetReviewFingerprint,
   });
   const timestamp = isoNow(input.now);
   const candidate = {
@@ -902,6 +914,14 @@ export function updateStorefrontDesignBriefReview(
       input.approvedReusableAssetIds === undefined
         ? brief.approvedReusableAssetIds
         : list(input.approvedReusableAssetIds),
+    approvedAssetAssignments:
+      input.approvedAssetAssignments === undefined
+        ? brief.approvedAssetAssignments
+        : [...input.approvedAssetAssignments],
+    assetReviewFingerprint:
+      input.assetReviewFingerprint === undefined
+        ? brief.assetReviewFingerprint
+        : input.assetReviewFingerprint,
     pagePlan:
       input.pagePlan === undefined
         ? brief.pagePlan
@@ -979,6 +999,7 @@ export function supersedeStorefrontDesignBrief(
     sourceEvidenceIds,
     canonicalCommerceProjectionRef: replacementCanonicalCommerceProjectionRef,
     materialEvidence: input.materialEvidence,
+    assetReviewFingerprint: input.assetReviewFingerprint ?? null,
   });
   const supersededCandidate = {
     ...brief,
@@ -1009,6 +1030,10 @@ export function supersedeStorefrontDesignBrief(
     approvedReusableAssetIds: input.approvedReusableAssetIds
       ? list(input.approvedReusableAssetIds)
       : [],
+    approvedAssetAssignments: input.approvedAssetAssignments
+      ? [...input.approvedAssetAssignments]
+      : [],
+    assetReviewFingerprint: input.assetReviewFingerprint ?? null,
     approval: { status: "pending" as const, actorId: null, approvedAt: null },
     unresolvedItems: uniqueList([
       ...list(input.unresolvedItems),
