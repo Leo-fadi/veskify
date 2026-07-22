@@ -339,7 +339,7 @@ function ReviewSection({
             <p>{catalogue?.title ?? section.summary[locale]}</p>
           </div>
           <StatusPill
-            ariaLabel={section.heading[locale]}
+            ariaLabel={`${heading}: ${sectionStatusLabels[locale][section.status]}`}
             label={sectionStatusLabels[locale][section.status]}
             status={
               section.status === "complete"

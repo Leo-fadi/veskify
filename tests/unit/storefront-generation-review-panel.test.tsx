@@ -207,6 +207,24 @@ describe("StorefrontGenerationReviewPanel", () => {
     expect(details).toHaveAttribute("open");
   });
 
+  it("exposes each section heading together with its localized status", () => {
+    const currentReview = review();
+    const english = renderPanel(currentReview);
+
+    expect(screen.getByLabelText("Brand direction: Complete")).toBeInTheDocument();
+    expect(screen.getByLabelText("Catalogue plan: Note")).toBeInTheDocument();
+    english.unmount();
+
+    const blocked = renderPanel(review({ catalogueContext: "existing-vesko-catalogue" }));
+    expect(screen.getByLabelText("Catalogue plan: Needs attention")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Catalogue plan")).not.toBeInTheDocument();
+    blocked.unmount();
+
+    renderPanel(currentReview, { locale: "fi" });
+    expect(screen.getByLabelText("Brändisuunta: Valmis")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tuoteluettelosuunnitelma: Huomio")).toBeInTheDocument();
+  });
+
   it("uses natural EN and FI brand-direction labels and copy", () => {
     const currentReview = review();
     const english = renderPanel(currentReview);
