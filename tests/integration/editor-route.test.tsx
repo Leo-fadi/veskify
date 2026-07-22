@@ -563,7 +563,32 @@ describe("P2-01 project editor route", () => {
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     expect(screen.getByText("Canvas: home / fi")).toBeVisible();
-    fireEvent.change(screen.getByLabelText("Storefront page"), {
+    expect(screen.getByRole("navigation", { name: "Editorin navigointi" })).toBeVisible();
+    expect(screen.getByRole("navigation", { name: "Storefront Studion moduulit" })).toBeVisible();
+    for (const label of [
+      "Yleiskatsaus",
+      "Määritykset",
+      "Editori",
+      "Esikatselu",
+      "Julkaiseminen",
+      "Historia",
+    ]) {
+      expect(screen.getByRole("link", { name: label })).toBeVisible();
+    }
+    expect(screen.getByLabelText("Luonnoksen tila")).toHaveTextContent(
+      "Ei tallentamattomia muutoksia",
+    );
+    expect(screen.getByRole("button", { name: "Kumoa" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Tee uudelleen" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Tallenna luonnos" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Esikatsele kauppaa" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Julkaise muutokset" })).toBeVisible();
+    expect(screen.getByLabelText("Kauppasivuston sivu")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Suunnitteluavustaja" })).toBeVisible();
+    expect(
+      screen.queryByText(/No unsaved changes|Save draft|Overview|Storefront page/i),
+    ).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Kauppasivuston sivu"), {
       target: { value: "page_collection_rings" },
     });
     expect(screen.getByRole("heading", { name: "Sormukset" })).toBeVisible();
@@ -732,7 +757,7 @@ describe("P2-01 project editor route", () => {
     ).toBeVisible();
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     expect(
-      within(screen.getByLabelText("Selected section actions")).getByText("Aurum-hero — kopio 3"),
+      within(screen.getByLabelText("Valitun osion toiminnot")).getByText("Aurum-hero — kopio 3"),
     ).toBeVisible();
   });
 
@@ -1428,12 +1453,14 @@ describe("P2-01 project editor route", () => {
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
-    const save = screen.getByRole("button", { name: "Save draft" });
+    const save = screen.getByRole("button", { name: "Tallenna luonnos" });
     expect(save).toBeEnabled();
     fireEvent.click(save);
 
-    expect(await screen.findByText("Draft saved successfully.")).toHaveAttribute("role", "status");
-    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(await screen.findByText("Luonnos tallennettiin.")).toHaveAttribute("role", "status");
+    expect(screen.getByLabelText("Luonnoksen tila")).toHaveTextContent(
+      "Ei tallentamattomia muutoksia",
+    );
     expect(screen.getByRole("radio", { name: "Suomi" })).toBeChecked();
     expect(screen.getByText("Canvas: home / fi")).toBeVisible();
     const after = await value.get(aurumNordicSeed.project.id);
@@ -1444,9 +1471,11 @@ describe("P2-01 project editor route", () => {
       before.snapshots.find((snapshot) => snapshot.id === before.project.publishedSnapshotId),
     );
 
-    expect(screen.getByRole("button", { name: "Undo" })).toBeEnabled();
-    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    expect(screen.getByRole("button", { name: "Kumoa" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Kumoa" }));
+    expect(screen.getByLabelText("Luonnoksen tila")).toHaveTextContent(
+      "Tallentamattomia muutoksia",
+    );
     expect(visibleCanvasPage().title).toEqual({ en: "Home", fi: "Etusivu" });
     const afterUndo = await value.get(aurumNordicSeed.project.id);
     expect(afterUndo).toEqual(after);

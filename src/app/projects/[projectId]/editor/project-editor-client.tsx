@@ -38,7 +38,17 @@ import {
   type ProjectRepository,
 } from "@/services/storage";
 import { createBrowserProposalAnalyticsSink } from "@/services/analytics";
-import { AppShell, Button, Card, Drawer, Field, Notice, StatusPill, Tabs } from "@/components/ui";
+import {
+  AppShell,
+  Button,
+  Card,
+  Drawer,
+  editorCopy,
+  Field,
+  Notice,
+  StatusPill,
+  Tabs,
+} from "@/components/ui";
 import styles from "./project-editor.module.css";
 import { DesignAgentPanel } from "./design-agent-panel";
 import {
@@ -149,16 +159,15 @@ function EditorDesignTools({
   locale: Locale;
   selectedSectionLabel?: string;
 }) {
+  const toolCopy = editorCopy[locale].tools;
   const text =
     locale === "fi"
       ? {
-          heading: "Design",
           intro: "Muokkaa valitun osion sisältöä ja ulkoasua työskentelyalueella.",
           select: "Valitse osio sivulta nähdäksesi sen säätimet.",
           groups: ["Asettelu", "Sisältö", "Väri", "Typografia", "Väljyys", "Muoto", "Näkyvyys"],
         }
       : {
-          heading: "Design",
           intro: "Edit the selected section's content and appearance in the workspace.",
           select: "Select a section on the canvas to see its controls.",
           groups: ["Layout", "Content", "Colour", "Typography", "Spacing", "Shape", "Visibility"],
@@ -167,15 +176,12 @@ function EditorDesignTools({
   return (
     <div className={styles.designTools}>
       <Card className={styles.toolCard}>
-        <p className={styles.eyebrow}>{text.heading}</p>
+        <p className={styles.eyebrow}>{toolCopy.design}</p>
         <h2>{selectedSectionLabel ?? text.select}</h2>
         <p>{text.intro}</p>
         <Notice variant="info">{selectedSectionLabel ? text.intro : text.select}</Notice>
       </Card>
-      <div
-        aria-label={locale === "fi" ? "Design-säätimet" : "Design controls"}
-        className={styles.designGroups}
-      >
+      <div aria-label={toolCopy.designControls} className={styles.designGroups}>
         {text.groups.map((group, index) => (
           <details key={group} open={index === 0}>
             <summary>{group}</summary>
@@ -206,22 +212,24 @@ function EditorToolRail({
   selectedSectionLabel?: string;
   storefrontPageCount: number;
 }) {
+  const text = editorCopy[locale].tools;
+
   return (
-    <section aria-label="Editor tools" className={styles.toolRail}>
+    <section aria-label={text.label} className={styles.toolRail}>
       <Tabs
         items={[
           {
             active: activeTab === "design",
             id: "design",
-            label: locale === "fi" ? "Design" : "Design",
+            label: text.design,
           },
           {
             active: activeTab === "ai",
             id: "ai",
-            label: locale === "fi" ? "Suunnitteluavustaja" : "AI assistant",
+            label: text.assistant,
           },
         ]}
-        label={locale === "fi" ? "Muokkaustyökalut" : "Editor tools"}
+        label={text.label}
         onSelect={(id) => onTabChange(id === "ai" ? "ai" : "design")}
       />
       {activeTab === "design" ? (
@@ -560,6 +568,7 @@ export function ProjectEditorClient({
   const canUndoStorefront = agent.canUndoStorefront && pageEditsAfterStorefront === 0;
   const canUndo = canUndoStorefront || currentPageCanUndo;
   const canRedo = agent.canRedoStorefront || (editorHistory?.canRedo(page.id) ?? false);
+  const text = editorCopy[locale];
   const status =
     saveState.status === "saving"
       ? "saving"
@@ -569,21 +578,7 @@ export function ProjectEditorClient({
           ? "draft-different"
           : "saved";
   const statusLabel =
-    locale === "fi"
-      ? status === "saving"
-        ? "Tallennetaan"
-        : status === "unsaved"
-          ? "Tallentamattomia muutoksia"
-          : status === "draft-different"
-            ? "Luonnos eroaa julkaistusta"
-            : "Tallennettu"
-      : status === "saving"
-        ? "Saving draft"
-        : status === "unsaved"
-          ? "Unsaved changes"
-          : status === "draft-different"
-            ? "Draft differs from published"
-            : "Saved";
+    status === "draft-different" ? text.status.draftDifferent : text.status[status];
 
   const remountPage = (pageId: string) => {
     setResetKeys((current) => ({
@@ -878,7 +873,7 @@ export function ProjectEditorClient({
   );
 
   const sectionActions = (
-    <Card aria-label="Selected section actions" className={styles.sectionActions}>
+    <Card aria-label={text.section.actions} className={styles.sectionActions}>
       <details open>
         <summary>{locale === "fi" ? "Osion toiminnot" : "Section options"}</summary>
         <h2>{locale === "fi" ? "Valittu osio" : "Selected section"}</h2>
@@ -1054,14 +1049,17 @@ export function ProjectEditorClient({
         Object.fromEntries(pages.map((item) => [item.id, (current[item.id] ?? 0) + 1])),
       );
       setValidationMessage("");
-      setHistoryStatus("Draft saved. Undo remains available and will create new unsaved work.");
-      setSaveState({ status: "success", message: "Draft saved successfully." });
+      setHistoryStatus(
+        locale === "fi"
+          ? "Luonnos tallennettiin. Kumoa-toiminto on edelleen käytettävissä ja luo uusia tallentamattomia muutoksia."
+          : "Draft saved. Undo remains available and will create new unsaved work.",
+      );
+      setSaveState({ status: "success", message: text.feedback.saved });
     } catch (error) {
       if (error instanceof StaleEditorDraftError) {
         setSaveState({
           status: "stale",
-          message:
-            "A newer draft was saved elsewhere. Reload before saving; your current changes are still here.",
+          message: text.feedback.saveStale,
         });
       } else if (
         error instanceof EditorDraftValidationError ||
@@ -1069,12 +1067,12 @@ export function ProjectEditorClient({
       ) {
         setSaveState({
           status: "validation",
-          message: "This draft could not be validated. Your changes are still here for review.",
+          message: text.feedback.saveValidation,
         });
       } else {
         setSaveState({
           status: "storage",
-          message: "The draft could not be saved. Check your browser storage and try again.",
+          message: text.feedback.saveStorage,
         });
       }
     } finally {
@@ -1113,25 +1111,21 @@ export function ProjectEditorClient({
               ))}
             </fieldset>
             <div className={styles.statusCluster}>
-              <div aria-label="Draft status" className={styles.draftStatus} role="status">
+              <div aria-label={text.status.draft} className={styles.draftStatus} role="status">
                 <StatusPill label={statusLabel} live status={status} />
-                <span>{hasUnsavedChanges ? "Unsaved changes" : "No unsaved changes"}</span>
+                <span>{hasUnsavedChanges ? text.status.unsaved : text.status.noUnsaved}</span>
                 <span>
                   {draftDiffers(state.draft, state.published)
-                    ? "The stored draft differs from the published storefront."
-                    : "Changes stay in this editor session until saved."}
+                    ? text.status.storedDraftDiffers
+                    : text.status.sessionNotice}
                 </span>
               </div>
-              <div aria-label="Publish status" className={styles.publishStatus} role="status">
+              <div aria-label={text.status.publish} className={styles.publishStatus} role="status">
                 <StatusPill
                   label={
                     draftDiffers(state.draft, state.published)
-                      ? locale === "fi"
-                        ? "Valmis julkaistavaksi"
-                        : "Ready to publish"
-                      : locale === "fi"
-                        ? "Julkaistu"
-                        : "Published"
+                      ? text.status.readyToPublish
+                      : text.status.published
                   }
                   status={
                     draftDiffers(state.draft, state.published) ? "ready-to-publish" : "published"
@@ -1148,53 +1142,51 @@ export function ProjectEditorClient({
                 </span>
               </div>
             </div>
-            <div aria-label="Edit history" className={styles.historyActions}>
+            <div aria-label={text.status.history} className={styles.historyActions}>
               <Button
                 data-editor-history-action="undo"
                 disabled={!canUndo || mutationsBlocked}
                 onClick={undoEditor}
                 variant="quiet"
-                title="Undo (Ctrl or Command + Z)"
+                title={text.actions.undoTitle}
               >
-                Undo
+                {text.actions.undo}
               </Button>
               <Button
                 data-editor-history-action="redo"
                 disabled={!canRedo || mutationsBlocked}
                 onClick={redoEditor}
                 variant="quiet"
-                title="Redo (Ctrl or Command + Shift + Z)"
+                title={text.actions.redoTitle}
               >
-                Redo
+                {text.actions.redo}
               </Button>
             </div>
             <Button href={previewHref} variant="secondary">
-              {locale === "fi" ? "Esikatsele kauppaa" : "Preview storefront"}
+              {text.actions.preview}
             </Button>
             <Button disabled={saveDisabled} onClick={() => void saveDraft()}>
-              {saveState.status === "saving" ? "Saving draft…" : "Save draft"}
+              {saveState.status === "saving" ? text.actions.savingDraft : text.actions.saveDraft}
             </Button>
             {hasUnsavedChanges ? (
               <span aria-disabled="true" className={styles.publishAction}>
-                {locale === "fi" ? "Julkaise muutokset" : "Publish changes"}
+                {text.actions.publish}
               </span>
             ) : (
               <Button href={`/projects/${projectId}/publish`} variant="primary">
-                {locale === "fi" ? "Julkaise muutokset" : "Publish changes"}
+                {text.actions.publish}
               </Button>
             )}
             <details className={styles.headerOverflow}>
-              <summary>{locale === "fi" ? "Lisää" : "More"}</summary>
+              <summary>{text.actions.more}</summary>
               <div>
                 <Button href={previewHref} variant="quiet">
-                  {locale === "fi" ? "Avaa esikatselu" : "Open preview"}
+                  {text.actions.openPreview}
                 </Button>
               </div>
             </details>
             <div aria-live="polite" aria-atomic="true" className={styles.saveStatus}>
-              {saveState.status === "saving" ? (
-                <p role="status">Saving your draft… Please wait before making more changes.</p>
-              ) : null}
+              {saveState.status === "saving" ? <p role="status">{text.feedback.saving}</p> : null}
               {saveState.status === "success" ? <p role="status">{saveState.message}</p> : null}
               {saveState.status === "validation" ||
               saveState.status === "storage" ||
@@ -1202,7 +1194,7 @@ export function ProjectEditorClient({
                 <p role="alert">{saveState.message}</p>
               ) : null}
               {hasUnsavedChanges && !completeDraftIsValid ? (
-                <p role="alert">Some changes need attention before this draft can be saved.</p>
+                <p role="alert">{text.feedback.saveAttention}</p>
               ) : null}
             </div>
             <p aria-live="polite" aria-atomic="true" className={styles.historyStatus} role="status">
@@ -1210,7 +1202,8 @@ export function ProjectEditorClient({
             </p>
           </div>
         }
-        pageLabel={locale === "fi" ? "Nykyinen sivu" : "Current page"}
+        locale={locale}
+        pageLabel={text.navigation.currentPage}
         pageTitle={title}
         projectId={projectId}
         projectName={state.aggregate.project.name}
@@ -1256,9 +1249,9 @@ export function ProjectEditorClient({
                 </p>
               </section>
               <Field
-                hint="Homepage, collection and product pages use their approved sections."
+                hint={text.navigation.storefrontPageHint}
                 id="editor-page"
-                label="Storefront page"
+                label={text.navigation.storefrontPage}
               >
                 <select
                   disabled={saving}
@@ -1276,7 +1269,7 @@ export function ProjectEditorClient({
               {outlineList}
               {sectionActions}
               <Link className={styles.previewLink} href={previewHref}>
-                View selected page
+                {text.navigation.viewSelectedPage}
               </Link>
               {renderDraftSafeguards(false)}
             </aside>

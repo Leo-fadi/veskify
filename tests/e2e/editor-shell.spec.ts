@@ -54,7 +54,7 @@ test("loads the in-memory Puck editor and switches page and locale", async ({ pa
   await expect(page.getByText("Layout", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "AI assistant", exact: true }).click();
 
-  const switcher = page.getByLabel("Storefront page");
+  const switcher = page.locator("#editor-page");
   await switcher.selectOption("page_collection_rings");
   await expect(page.getByRole("heading", { name: "Rings", exact: true }).first()).toBeVisible();
   await expect(page.getByRole("link", { name: "View selected page" })).toHaveAttribute(
@@ -70,7 +70,7 @@ test("loads the in-memory Puck editor and switches page and locale", async ({ pa
   await expect(
     page.getByRole("heading", { name: "Aurora-sormus 585", exact: true }).first(),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: "View selected page" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Näytä valittu sivu" })).toHaveAttribute(
     "href",
     "/projects/project_aurum_nordic/products/aurora-ring-585",
   );

@@ -2090,18 +2090,12 @@ function BusinessBasicsForm({
           aria-describedby={inputDescription("industry")}
           aria-invalid={Boolean(errors.industry)}
           id="business-industry"
-          onChange={(event) =>
-            updateField(
-              "industry",
-              event.target.value === "" ? null : (event.target.value as StorefrontIndustry),
-            )
-          }
-          onBlur={(event) =>
-            persistField(
-              "industry",
-              event.target.value === "" ? null : (event.target.value as StorefrontIndustry),
-            )
-          }
+          onChange={(event) => {
+            const value =
+              event.target.value === "" ? null : (event.target.value as StorefrontIndustry);
+            updateField("industry", value);
+            persistField("industry", value);
+          }}
           ref={(element) => {
             fieldRefs.current.industry = element;
           }}
