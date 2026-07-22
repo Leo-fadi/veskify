@@ -3,7 +3,7 @@
 This document records the implemented generation-only slice for controlled whole-storefront AI
 proposals. The authoritative product and architecture baseline remains
 [`docs/VESKIFY_SDD.md`](VESKIFY_SDD.md); its synchronized human-readable export is
-[`docs/VESKIFY_SDD_v1.1.docx`](VESKIFY_SDD_v1.1.docx).
+[`docs/archive/VESKIFY_SDD_v1.1.docx`](archive/VESKIFY_SDD_v1.1.docx).
 
 ## Supported capability
 

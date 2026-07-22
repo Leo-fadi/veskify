@@ -1,418 +1,298 @@
 # Veskify Development Guide
 
-**Version:** 1.1  
-**Aligned with:** authoritative `docs/VESKIFY_SDD.md` and synchronized export `docs/VESKIFY_SDD_v1.1.docx`
+**Version:** 1.2
+**Aligned with:** `docs/VESKIFY_SDD.md` and `AGENTS.md`
 
 ## 1. Purpose
 
-This guide defines how Veskify is implemented with Codex, GitHub, VS Code, worktrees, testing, and pull requests while preserving the controlled design-agent architecture.
+This guide defines how Veskify is developed, tested, reviewed and handed off while preserving the controlled design-agent architecture and the Vesko integration boundary.
 
-The goal is fast delivery without parallel branches corrupting shared contracts or shifting the product back toward unrestricted website generation.
+The goal is fast, parallel delivery without duplicate commerce models, conflicting canonical contracts, unnecessary Codex usage or stale branches.
 
 ## 2. Repository ownership map
 
-This ownership map describes the repository as it exists now. Future folders must not be documented as current architecture until they are introduced by an approved PR.
+### Canonical domain and contracts
 
-### Editor route and merchant-facing editor UI
+Typical locations:
 
-Current location:
+- `src/domain/**`
+- `src/application/**/contract.ts`
+- versioned schema modules
 
-- `src/app/projects/[projectId]/editor/**`
+Owns projects, pages, sections, snapshots, brand systems, proposals, operations, product-presentation contexts, bindings, source evidence, asset inventory and Storefront Design Brief contracts.
 
-Owns route composition, editor shell integration, page and locale switching, dirty-state presentation, proposal UI integration, and merchant-facing controls. Canonical logic must remain outside route components.
+Canonical modules must not import Puck or provider-specific types.
 
-### Canonical editor history and section actions
+### Component platform
 
-Current location:
+Typical locations:
 
-- `src/application/editor-history/**`
-
-Owns bounded, immutable, per-page command-transaction undo/redo history and canonical duplicate and
-visibility commands. Past and future entries contain explicit forward/inverse commands rather than
-page snapshots; only the current `PageModel` is retained as editor state. This layer is React- and
-Puck-independent, validates every complete command result, and does not persist, publish or define a
-second composition model.
-
-### Component registry and storefront
-
-Current locations:
-
-- `src/components/registry/**`
+- `src/registry/**`
 - `src/components/storefront/**`
+- `src/page-blueprints/**`
 
-Owns approved component types, variants, editable-field contracts, page permissions, renderer bindings, responsive rules, accessibility behaviour, and the controlled storefront design vocabulary.
-
-### Structured design operations
-
-Current location:
-
-- `src/application/design-operations/**`
-
-Owns operation schemas, validation, protected-field enforcement, deterministic execution, proposal application rules, and transaction behaviour. This layer must not depend on Puck-specific types or a specific AI provider.
+Owns component families, variants, slots, editable fields, data-binding requirements, page permissions, responsive/accessibility rules, renderer mapping and migrations.
 
 ### Puck integration
 
-Current location:
+Location:
 
 - `src/integrations/puck/**`
 
-Owns direct imports from `@puckeditor/core`, page-scoped Puck configuration, mapping between Veskify composition and transient Puck data, and validated handoff back into Veskify-owned draft state. Puck callbacks must never publish directly.
+Owns direct Puck imports, canonical-to-Puck mapping, transient editor configuration and validated Puck-to-canonical handoff. Puck is not persistence or canonical state.
 
-### Persistence
+### Design agent
 
-Current location:
+Typical locations:
 
+- `src/domain/design-agent/**`
+- `src/services/design-agent/**`
+- `src/features/design-agent/**`
+
+Owns skills, planning contracts, structured operations, provider adapters, proposal lifecycle, merchant summaries and guarded application.
+
+### Source discovery and onboarding
+
+Typical locations:
+
+- `src/domain/source-discovery/**`
+- `src/services/source-discovery/**`
+- `src/domain/storefront-design-brief/**`
+- `src/features/onboarding/**`
+
+Owns source evidence, provenance, crawl adapter contracts, reconciliation, asset inventory and approved Storefront Design Briefs.
+
+### Vesko and persistence adapters
+
+Typical locations:
+
+- `src/integrations/vesko/**`
 - `src/services/storage/**`
+- `src/services/media/**`
+- `src/services/publishing/**`
 
-Owns in-memory and IndexedDB persistence adapters, draft and published snapshot persistence, and repository interfaces. Product features depend on repository contracts rather than concrete adapters.
+Owns adapter interfaces and standalone implementations. Features depend on interfaces rather than IndexedDB, seed or future Vesko implementation details.
 
-### Guided onboarding foundation
+## 3. Current implementation baseline
 
-Current locations:
+Verified on 22 July 2026:
 
-- `src/domain/onboarding/**`
-- `src/application/onboarding/**`
-- `src/services/onboarding/**`
-- `src/app/projects/new/**`
+- controlled storefront schemas and registered components;
+- visual editor and manual section operations;
+- selected-section, current-page and whole-storefront proposals;
+- secure real OpenAI provider adapter;
+- atomic whole-storefront acceptance and composite undo/redo;
+- separate save draft and publish flows;
+- history and restore architecture;
+- Karvonen real-data fixture and end-to-end real-provider proof.
 
-The domain owns the versioned onboarding-session schema and the single ordered O-01–O-09 step
-registry. The React-independent application service owns validated navigation and progress. Browser
-persistence is isolated behind `OnboardingSessionRepository`; the route never reads or writes raw
-storage values. This foundation does not create projects, generate storefronts, import catalogues,
-or call design-agent providers.
+Do not rebuild these systems. Harden only confirmed failures and build the remaining v1.2 product depth.
 
-### Publishing application boundary
+## 4. Branch and PR strategy
 
-Current location:
+- One task equals one branch, one worktree and one PR.
+- Start from the latest approved `origin/main` unless the task names an unmerged dependency.
+- Use outcome-based branch names, for example:
+  - `codex/p5-01-component-registry-v2`
+  - `codex/p7-01-source-discovery-contracts`
+  - `codex/p10-01-storefront-studio-shell`
+- Use `git fetch origin` and `git merge origin/main`. Never rebase.
+- Do not force-push to rewrite history.
+- Update an existing open PR rather than creating a duplicate.
+- Keep documentation-only updates in one documentation PR.
+- Merge only after CI is green, the PR is mergeable and the single automatic review cycle is resolved.
 
-- `src/application/publishing/**`
+## 5. Worktree workflow
 
-Owns React-independent publish preparation, canonical storefront comparison, deterministic change
-summaries, explicit confirmation and stale-preparation handling. It coordinates the atomic repository
-publish contract but does not own editor UI, published routes or history presentation.
+Current worktrees:
 
-### Controlled design skills and deterministic provider
+| Window | Path                       | Default role                                                                   |
+| ------ | -------------------------- | ------------------------------------------------------------------------------ |
+| W1     | `/Users/leo/veskify`       | Shared contracts, component registry v2, documentation and merge-leading work. |
+| W2     | `/Users/leo/veskify-p1-02` | Merchant shell and presentation-only UI.                                       |
+| W3     | `/Users/leo/veskify-p1-03` | Source discovery, onboarding contracts and independent capabilities.           |
+| W4     | `/Users/leo/veskify-qa`    | Manual QA and real-provider regression.                                        |
 
-Current location:
+Roles may change per phase, but every task must declare ownership and no-touch areas.
 
-- `src/application/design-skills/**`
+### Safe parallel example
 
-Owns the Veskify skill contract and registry, deterministic EN/FI intent classification, immutable
-design plans, initial bounded skill implementations, transactional orchestration over the existing
-design-operation executor, and the deterministic provider facade. This layer is React-independent,
-does not persist or publish state, and converts successful execution through the existing proposal
-lifecycle rather than defining a second proposal model or store. Provider-specific types must remain
-inside future provider adapters.
+- W1 defines new component/binding contracts.
+- W2 builds the Storefront Studio shell without touching domain/registry contracts.
+- W3 builds source-evidence and Storefront Design Brief contracts in new modules.
 
-### AI operation provider and proposal generation
+### Unsafe parallel example
 
-Current locations:
+- two branches modify the same registry index;
+- two branches alter `BrandSystem` or `StorefrontSnapshot` simultaneously;
+- one branch changes option-group schemas while another builds against the old shape;
+- two branches modify the same editor route/store;
+- one branch changes a persistence migration while another changes bootstrap logic.
 
-- `src/application/ai-provider/**`
-- `src/application/ai-proposal-generation/**`
-- `src/application/ai-storefront/**`
-- `src/application/ai-storefront-generation/**`
+## 6. Task design
 
-The provider boundary owns provider-independent structured operation request and response schemas,
-deterministic mock adaptation, and validation of untrusted provider output. Proposal generation owns
-canonical editor-target request construction, planner-derived permissions, one-shot provider
-coordination, stale and superseded result guards, safe observability metadata, and creation of the
-existing pending proposal shape. Both layers are React-independent and must not mutate, persist,
-accept, reject, save, or publish storefront state.
+Every task prompt must include:
 
-The additive storefront boundaries own canonical multi-page targets, projections, grants and
-fingerprints plus the constrained whole-storefront colour/typography planner, provider request,
-deterministic mock and stale/superseded orchestration. Generation produces a ready proposal only;
-multi-page acceptance and history remain separate application work.
+1. outcome-based title;
+2. merchant-visible objective;
+3. SDD sections, requirement IDs and acceptance criteria;
+4. exact branch and existing PR if applicable;
+5. dependencies and required base commit/PR;
+6. owned files/modules and files not to touch;
+7. in-scope and out-of-scope functionality;
+8. user flow and UI states;
+9. data/schema/migration impact;
+10. focused tests;
+11. validation limits;
+12. commit, push, PR and review instructions;
+13. final report format.
 
-### Controlled storefront template registry
-
-Current locations:
-
-- `src/application/storefront-templates/**`
-- `src/components/registry/supported-vocabulary.ts`
-
-The template layer owns versioned, deterministic page-plan definitions and compatibility resolution
-for approved storefront foundations. It is React-, Next.js-, Puck-, browser-, provider-, storage-,
-and ProjectRepository-independent. The pure supported-vocabulary manifest is checked against the
-executable renderer registry by tests; templates never invent component types or variants and do not
-consume the StorefrontDesignBrief contract.
-
-### Deterministic design-agent orchestration
-
-Current location:
-
-- `src/application/design-agent/**`
-
-Owns the React-independent request session state machine, clarification flow, bounded proposal
-revision constraints, stale-base checks, and accept/reject/cancel/restart coordination. It composes
-the existing design-skills provider and proposal lifecycle rather than duplicating their contracts.
-It must not import editor, Puck, persistence, draft-save, publishing, or storefront-renderer modules.
-
-## 3. Branch and pull-request strategy
-
-### Rules
-
-- One task equals one branch and one PR.
-- Branch names use outcome-based identifiers, for example:
-  - `codex/p2-01-editor-shell`
-  - `codex/p2-02-storefront-components`
-  - `codex/p3-01-design-operations`
-- Start from the latest approved `main` unless the task explicitly depends on an unmerged integration branch.
-- Keep PRs reviewable. Prefer one or two tightly related commits.
-- Do not combine unrelated refactors, architecture documentation, and feature work.
-- Open PRs as drafts while implementation or validation is incomplete.
-- Merge only after CI, review feedback, and manual checks are complete.
-
-## 4. Three-worktree parallel workflow
-
-### Roles
-
-- **W1 — Validation and merge control**
-  - latest `main`;
-  - full validation;
-  - Playwright and manual QA;
-  - reviewing diffs;
-  - synchronizing feature branches with `origin/main`;
-  - preparing prompts and resolving integration issues.
-
-- **W2 — Merchant/editor feature**
-  - Puck editor shell;
-  - page and locale interaction;
-  - manual editing experience;
-  - proposal and chat UI integration.
-
-- **W3 — Independent product capability**
-  - storefront components;
-  - design-operation engine;
-  - skills;
-  - data-enrichment adapters;
-  - work that does not touch W2-owned files.
-
-### Safe parallel task examples
-
-Safe:
-
-- W2 builds editor route and canvas shell.
-- W3 builds new storefront components and registry entries in separate files with a coordinated registry integration plan.
-
-Safe:
-
-- W2 builds proposal/confirmation UI.
-- W3 builds React-independent operation executor and skill contracts.
-
-Unsafe:
-
-- both branches modify the same operation schemas;
-- both branches modify the same registry index or shared Puck config;
-- both branches modify the same editor store;
-- one branch changes canonical types while another builds against the old types.
-
-### Merge sequence
-
-1. Merge the branch that establishes shared contracts first.
-2. In the second worktree:
-
-```bash
-git fetch origin
-git merge origin/main
-pnpm validate:full
-git push
-```
-
-3. Fix conflicts and integration failures before pushing.
-4. Reserve rebase and `--force-with-lease` for deliberate cases where nobody else depends on the branch.
-5. Review and merge the second PR.
-
-## 5. Task design
-
-Every task prompt must contain:
-
-- outcome-based title;
-- user-visible objective;
-- SDD references and requirement IDs;
-- exact branch name;
-- dependencies and latest required base commit/PR;
-- in-scope files or modules;
-- explicitly owned files that must not be modified;
-- out-of-scope functionality;
-- required UI states;
-- required tests;
-- validation commands;
-- commit and PR instructions;
-- requested final report.
-
-### Product-value test
-
-Before starting, answer:
+Ask before starting:
 
 > What can the merchant do after this PR that they could not do before?
 
-An architecture-only task is acceptable only when it immediately unblocks a named merchant capability in the next PR.
+Architecture-only tasks are allowed only when they directly unlock a named merchant capability and have a clear consumer task.
 
-## 6. Recommended implementation order
+## 7. Development sequence
 
-### Product slice A — Manual design
+### P4.1 — Real-provider hardening
 
-1. Real project editor route.
-2. Page and locale switchers.
-3. Puck add/select/edit/reorder/remove.
-4. Unsaved state and discard.
-5. High-quality component expansion.
-6. Desktop/mobile preview.
+Fix only confirmed parsing, capability, timeout, error-summary, fixture-content and demo-reset issues. Do not redesign the proposal lifecycle.
 
-### Product slice B — Controlled design agent
+### P5 — Dynamic component and binding platform
 
-1. Operation schemas.
-2. Deterministic executor.
-3. Proposal store and status.
-4. Initial skills.
-5. Chat and intent planning.
-6. Proposal preview and accept/reject/revise.
+Build:
 
-### Product slice C — New-store creation
+- `ComponentDefinitionV2`;
+- typed data bindings;
+- `ProductPresentationContext`;
+- page blueprints;
+- asset roles;
+- component versioning and migrations;
+- standalone and Vesko adapter conformance tests.
 
-1. Onboarding.
-2. Brand-system generation.
-3. Initial storefront workflow.
-4. Guided editor introduction.
+### P6 — Dynamic commerce page depth
 
-### Product slice D — Real merchant data
+Build dynamic option groups and the PDP first, then product cards, collection filters, collection headers and homepage commerce sections.
 
-1. File import and mapping.
-2. Media handling.
-3. Presentation enrichment.
-4. Review/export.
-5. Vesko adapter contracts.
+### P7 — URL-first onboarding
 
-### Product slice E — Publish and demo readiness
+Build public-source discovery, provenance, reconciliation, brand reconstruction, asset inventory and approved Storefront Design Briefs.
 
-1. Save draft.
-2. Full draft preview.
-3. Explicit publish.
-4. Restore-to-draft.
-5. Deployment and final QA.
+### P8-P10 — Generation, quality and product UX
 
-## 7. Testing strategy
+Build asset-aware initial generation, exact palette support, coordinated whole-site design, responsive quality and the native Vesko Storefront Studio shell.
 
-### Unit tests
+### P11-P12 — Staging and handoff
 
-Required for:
+Add reliable reset/demo flows, staging, access control, observability, production adapters, conformance tests and integration documentation.
 
-- Zod schemas;
-- skills and operation validation;
-- protected paths;
-- operation execution and rollback;
-- repository contracts;
-- locale fallback;
-- enrichment confidence and source preservation.
+## 8. Testing strategy
 
-### Component/integration tests
+### Focused tests per PR
 
-Required for:
+Use the smallest relevant set:
 
-- editor states;
-- Puck adapter mapping;
-- proposal cards;
-- accept/reject/revise;
-- page and locale switching;
-- component fields and variants;
-- draft/published separation.
+- schema and contract unit tests;
+- executor/rollback tests;
+- component/binding tests;
+- repository or adapter contract tests;
+- focused React integration tests;
+- one relevant Playwright journey only when the visible risk requires it;
+- responsive/accessibility checks for changed components.
 
-### Playwright
+### Dynamic PDP minimum fixtures
 
-Required for visible user journeys:
+- simple watch with one colour dimension;
+- complex ring with five or six groups;
+- incomplete selection;
+- unavailable combination;
+- selected-variant price, availability and media resolution;
+- unknown product-type fallback.
 
-- open project editor;
-- edit a section;
-- add and reorder a section;
-- discard changes;
-- request and preview an agent proposal;
-- accept or reject proposal;
-- full preview and publish;
-- English/Finnish switching;
-- desktop/mobile layouts;
-- refresh persistence.
+### Source discovery minimum fixtures
 
-### Accessibility and visual checks
+- valid public source summary;
+- blocked or unavailable source;
+- conflicting public and canonical prices;
+- missing logo/hero media;
+- prompt-injection-like page text treated as data only;
+- deterministic evidence and provenance.
 
-Use automated checks plus manual review for:
+## 9. Validation policy
 
-- keyboard selection and controls;
-- visible focus;
-- headings and landmarks;
-- colour contrast;
-- responsive clipping/overflow;
-- editor and storefront consistency;
-- component variants at supported breakpoints.
+Normal feature PR:
 
-## 8. Full validation gate
-
-Before pushing or merging:
-
-```bash
-pnpm install --frozen-lockfile
-pnpm typecheck
-pnpm lint
-pnpm test
-pnpm build
-pnpm test:e2e
+```text
+focused tests
++ typecheck once
++ lint once
++ formatting once
++ GitHub CI broad gate
 ```
 
-Use `pnpm validate:full` when available. Do not report a command as passed unless it actually ran successfully.
+Do not run, unless explicitly requested:
 
-## 9. Review checklist
+- `pnpm validate:full`;
+- full Vitest;
+- full Playwright;
+- repeated production builds;
+- repeated validation after no relevant changes.
 
-### Architecture
+Run full validation only at phase/release gates, high-risk migrations, staging acceptance or explicit product-owner instruction.
 
-- No Puck imports outside the integration boundary.
-- No provider-specific types in canonical design-agent modules.
-- No parallel page tree or duplicate model.
-- No raw AI output applied directly.
+## 10. Review workflow
 
-### Product safety
+1. Open or update the single PR for the task.
+2. Allow one automatic Codex review.
+3. Collect all findings.
+4. Fix every valid finding once in one focused pass.
+5. Run focused validation once.
+6. Push and stop.
+7. Do not request a second review.
+8. Merge when CI is green and the PR is mergeable.
 
-- Draft/published separation preserved.
-- Protected commerce fields unchanged.
-- Rejected proposals leave draft unchanged.
-- Missing business facts are not invented.
+Do not continuously watch CI or create follow-up tasks after completion.
 
-### UX
+## 11. Integration readiness checklist
 
-- Merchant-facing language is understandable.
-- Loading, error, empty, dirty, success, and confirmation states exist.
-- Responsive and keyboard interaction works.
-- The feature provides visible merchant value.
+- No Puck imports outside its adapter.
+- No provider-specific types in canonical modules.
+- No duplicate product, variant or option model.
+- Canonical commerce values are read-only.
+- Public source data has provenance and lower trust than Vesko data.
+- Components use typed bindings and canonical IDs.
+- Same components render in editor, preview and published routes.
+- Dynamic PDP preserves every option group and resolver rule.
+- Failed/rejected/stale proposals preserve draft and history.
+- Save draft and publish remain separate.
+- Merchant UI exposes no developer internals.
+- Adapter interfaces have standalone fixtures and conformance tests.
 
-### Code quality
+## 12. Teammate handoff package
 
-- Full validation passes.
-- Relevant Playwright coverage exists.
-- No unrelated changes.
-- Public APIs and limitations are documented.
+Before Vesko integration, deliver:
 
-## 10. Vesko integration readiness
+- authoritative SDD and ADRs;
+- schema/type package with versions;
+- component and page-blueprint manifests;
+- project, commerce, media, source, storage, provider and publishing adapters;
+- Karvonen, watch and complex-ring reference fixtures;
+- conformance tests;
+- environment and deployment runbook;
+- mapping from Veskify contracts to Vesko services;
+- unresolved decisions and ownership table.
 
-The standalone demo must remain replaceable at integration boundaries.
+## 13. Completion report
 
-Define interfaces for:
+Report:
 
-- authenticated user and project context;
-- catalogue and product display data;
-- media upload and retrieval;
-- draft and published snapshot persistence;
-- publishing command;
-- brand assets and domain configuration;
-- AI/provider credentials and execution;
-- enrichment import/export.
+- merchant outcome;
+- commit SHA and PR;
+- changed modules;
+- focused tests and totals;
+- typecheck/lint/format status;
+- known limitations;
+- confirmation that no rebase, duplicate PR, second review request or unrelated validation was performed.
 
-Do not hard-code assumptions from IndexedDB or dummy seed data into domain and editor features. The same canonical Veskify models should map to Vesko services later.
-
-## 11. Delivery discipline
-
-- Build one complete jewellery journey before expanding industries.
-- Keep the final week protected for reliability and demo polish.
-- Prefer 10–12 excellent components over dozens of incomplete ones.
-- Prefer 12–20 reliable skills over open-ended generation.
-- Review generated assets before storing them.
-- Stop and reassess when work no longer improves the real merchant journey.
+Then stop.

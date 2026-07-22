@@ -6,7 +6,7 @@ the shell/save-and-exit flow.
 
 The authoritative product contract is `docs/VESKIFY_SDD.md`; this milestone note
 records the implementation scope and traceability for that SDD. The synchronized
-human-readable export is `docs/VESKIFY_SDD_v1.1.docx`.
+human-readable export is `docs/archive/VESKIFY_SDD_v1.1.docx`.
 
 ## Canonical fields and values
 
