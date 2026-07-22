@@ -1,0 +1,452 @@
+.root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+  color: var(--brand-color-text);
+  background: var(--brand-color-background);
+}
+
+.surface_soft {
+  background: color-mix(in srgb, var(--brand-color-surface) 72%, var(--brand-color-background));
+}
+
+.surface_plain {
+  background: var(--brand-color-background);
+}
+
+.productCore {
+  display: grid;
+  min-width: 0;
+}
+
+.gallery,
+.emptyGallery,
+.productInformation,
+.specifications,
+.supportingContent,
+.relatedProducts {
+  min-width: 0;
+  padding: clamp(1.25rem, 4vw, 4rem) clamp(1rem, 5vw, 5rem);
+}
+
+.gallery,
+.emptyGallery {
+  background: var(--brand-color-surface);
+}
+
+.primaryMedia {
+  margin: 0;
+}
+
+.primaryImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 46rem;
+  object-fit: contain;
+  background: var(--brand-color-background);
+}
+
+.thumbnails {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(3.25rem, 5rem));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.thumbnails button {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--brand-radius);
+  background: var(--brand-color-background);
+  padding: 0.25rem;
+}
+
+.thumbnails button[aria-pressed="true"] {
+  border: 2px solid var(--brand-color-primary);
+}
+
+.thumbnails img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.gallery_grid .thumbnails {
+  grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
+}
+
+.productInformation {
+  align-self: start;
+  background: var(--brand-color-background);
+}
+
+.identity h1 {
+  margin: 0.5rem 0 1rem;
+  font-family: var(--brand-font-heading);
+  font-size: clamp(2.25rem, 6vw, 4.75rem);
+  line-height: 1.02;
+  overflow-wrap: anywhere;
+}
+
+.sku {
+  color: var(--brand-color-muted-text);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.sku span {
+  font-weight: 700;
+}
+
+.priceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 1.25rem 0 0.25rem;
+}
+
+.price,
+.priceUnavailable {
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  font-weight: 800;
+}
+
+.compareAtPrice {
+  color: var(--brand-color-muted-text);
+}
+
+.availability {
+  color: var(--brand-color-primary);
+  font-weight: 700;
+}
+
+.description,
+.supportingContent > p {
+  max-width: 42rem;
+  color: var(--brand-color-muted-text);
+  line-height: 1.7;
+}
+
+.options {
+  margin-top: clamp(1.5rem, 4vw, 3rem);
+}
+
+.options h2,
+.specifications h2,
+.supportingContent h2,
+.relatedProducts h2 {
+  font-family: var(--brand-font-heading);
+  font-size: clamp(1.65rem, 4vw, 2.75rem);
+  overflow-wrap: anywhere;
+}
+
+.options_compact > * + * {
+  margin-top: 1rem;
+}
+
+.options_comfortable > * + * {
+  margin-top: 1.75rem;
+}
+
+.variant_compact .gallery,
+.variant_compact .emptyGallery,
+.variant_compact .productInformation,
+.variant_compact .specifications,
+.variant_compact .supportingContent,
+.variant_compact .relatedProducts {
+  padding-block: clamp(1rem, 3vw, 2.5rem);
+}
+
+.variant_editorial .primaryImage {
+  object-fit: cover;
+}
+
+.buttonGroup,
+.radioGroup {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.buttonGroup legend,
+.radioGroup legend,
+.dropdownGroup label,
+.textOption label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  width: 100%;
+  font-weight: 800;
+}
+
+.optionStatus {
+  color: var(--brand-color-muted-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.optionStatus[data-complete="false"] {
+  color: var(--brand-color-primary);
+}
+
+.optionValues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.optionValue {
+  display: grid;
+  min-width: 0;
+  gap: 0.25rem;
+}
+
+.optionValue small,
+.radioGroup small,
+.textOption small,
+.dropdownGroup p,
+.buttonGroup > p,
+.radioGroup > p,
+.textOption p {
+  max-width: 34rem;
+  color: var(--brand-color-muted-text);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.optionButton,
+.primaryAction button {
+  min-height: 2.75rem;
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--brand-radius);
+  background: var(--brand-color-surface);
+  color: var(--brand-color-text);
+  padding: 0.65rem 0.9rem;
+  font: inherit;
+  font-weight: 700;
+}
+
+.optionButton {
+  display: inline-flex;
+  min-width: 2.75rem;
+  max-width: 12rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+.optionButton[aria-pressed="true"] {
+  border-color: var(--brand-color-primary);
+  outline: 2px solid var(--brand-color-primary);
+  outline-offset: 1px;
+}
+
+.optionButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.option_imageChoice {
+  display: grid;
+  max-width: 8rem;
+}
+
+.option_imageChoice img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.swatch {
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--brand-color-border);
+  border-radius: 50%;
+  background: var(--option-swatch);
+}
+
+.radioGroup label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.25rem 0.65rem;
+  align-items: center;
+  min-height: 2.75rem;
+  margin-top: 0.5rem;
+}
+
+.radioGroup input {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.radioGroup small {
+  grid-column: 2;
+}
+
+.dropdownGroup,
+.textOption {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.dropdownGroup select,
+.textOption input {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--brand-radius);
+  background: var(--brand-color-surface);
+  color: var(--brand-color-text);
+  padding: 0.65rem;
+  font: inherit;
+}
+
+.primaryAction {
+  margin-top: 2rem;
+}
+
+.primaryAction button {
+  width: 100%;
+  border-color: var(--brand-color-primary);
+  background: var(--brand-color-primary);
+  color: var(--brand-color-surface);
+}
+
+.primaryAction button:disabled {
+  border-color: var(--brand-color-border);
+  background: var(--brand-color-border);
+  color: var(--brand-color-muted-text);
+  cursor: not-allowed;
+}
+
+.primaryAction p {
+  color: var(--brand-color-muted-text);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.specifications,
+.relatedProducts {
+  background: var(--brand-color-surface);
+}
+
+.specificationGroups,
+.trustItems,
+.relatedGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+  gap: 1.25rem;
+}
+
+.specificationGroups section,
+.trustItems section,
+.relatedGrid article {
+  min-width: 0;
+}
+
+.specificationGroups h3,
+.trustItems h3,
+.relatedGrid h3 {
+  font-family: var(--brand-font-heading);
+  overflow-wrap: anywhere;
+}
+
+.specificationGroups dl {
+  margin: 0;
+}
+
+.specificationGroups dl div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 1rem;
+  border-top: 1px solid var(--brand-color-border);
+  padding: 0.75rem 0;
+}
+
+.specificationGroups dt {
+  color: var(--brand-color-muted-text);
+}
+
+.specificationGroups dd {
+  margin: 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.specifications_table .specificationGroups {
+  grid-template-columns: 1fr;
+}
+
+.relatedGrid figure {
+  margin: 0;
+}
+
+.relatedGrid img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  background: var(--brand-color-background);
+}
+
+.relatedGrid p {
+  color: var(--brand-color-muted-text);
+}
+
+@media (min-width: 48rem) {
+  .gallery,
+  .emptyGallery,
+  .productInformation,
+  .specifications,
+  .supportingContent,
+  .relatedProducts {
+    padding-inline: clamp(2rem, 5vw, 5rem);
+  }
+}
+
+@media (min-width: 64rem) {
+  .productCore {
+    grid-template-columns: minmax(0, 1.1fr) minmax(20rem, 0.9fr);
+    align-items: start;
+  }
+
+  .gallery,
+  .emptyGallery,
+  .productInformation {
+    min-height: 38rem;
+  }
+
+  .productInformation {
+    position: sticky;
+    top: 0;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .primaryAction_sticky {
+    position: sticky;
+    z-index: 2;
+    bottom: 0;
+    margin-inline: -1rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid var(--brand-color-border);
+    background: var(--brand-color-surface);
+  }
+
+  .specificationGroups dl div {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
