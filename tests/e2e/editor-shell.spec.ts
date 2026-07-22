@@ -80,6 +80,30 @@ test("loads the in-memory Puck editor and switches page and locale", async ({ pa
   await expect(canvasFrame).toHaveAttribute("lang", "en");
 });
 
+test("keeps every collapsed editor rail destination visible and labelled", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await page.goto(url);
+  const navigation = page.getByRole("navigation", { name: "Global navigation" });
+  const rail = page.getByRole("banner");
+  await expect(rail).toHaveCSS("width", "72px");
+  const home = navigation.getByRole("link", { name: "Vesko home" });
+  await home.hover();
+  await expect(home.getByText("Vesko home", { exact: true })).toBeVisible();
+
+  for (const label of ["Vesko home", "Storefront Studio", "Projects", "Account"]) {
+    const destination = navigation.getByRole("link", { name: label });
+    await expect(destination.locator("svg")).toBeVisible();
+    await destination.focus();
+    await expect(destination.getByText(label, { exact: true })).toBeVisible();
+  }
+
+  const studio = navigation.getByRole("link", { name: "Storefront Studio" });
+  await expect(studio).toHaveAttribute("aria-current", "page");
+  expect(await studio.evaluate((element) => getComputedStyle(element, "::before").width)).not.toBe(
+    "0px",
+  );
+});
+
 test("selects and edits an approved field, then discards the session change", async ({ page }) => {
   await page.goto(url);
   const canvas = await selectHomepageHero(page);
@@ -142,6 +166,43 @@ test("duplicates and hides the actual selected section with undo and redo on mob
     true,
   );
 });
+
+for (const width of [375, 768]) {
+  test(`keeps compact draft safeguards available at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(url);
+    const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+    await canvas.getByText("Made for northern light", { exact: true }).click();
+    const trigger = page.getByRole("button", { name: "Pages & sections" });
+    await trigger.click();
+    const dialog = page.getByRole("dialog", { name: "Pages & sections" });
+    await expect(dialog.getByRole("button", { name: "Close" })).toBeFocused();
+
+    const sectionActions = dialog.getByLabel("Selected section actions");
+    await openSectionActions(sectionActions);
+    await expect(sectionActions.getByText("Aurum hero", { exact: true })).toBeVisible();
+    await sectionActions.getByRole("button", { name: "Duplicate" }).click();
+    await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(2);
+    await expect(dialog.getByRole("button", { name: "Discard changes" })).toBeEnabled();
+    await expect(
+      dialog.getByText(/save these changes to the draft before publishing/i),
+    ).toBeVisible();
+
+    page.once("dialog", (confirmation) => confirmation.accept());
+    await dialog.getByRole("button", { name: "Discard changes" }).click();
+    await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(1);
+    await expect(dialog.getByRole("button", { name: "Discard changes" })).toBeDisabled();
+    await expect(
+      dialog.getByText(/save draft becomes available after you make a change/i),
+    ).toBeVisible();
+
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await expect(trigger).toBeFocused();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+  });
+}
 
 test("requests, previews, rejects and accepts deterministic proposals on mobile", async ({
   page,

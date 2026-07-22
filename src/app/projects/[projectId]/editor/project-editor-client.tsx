@@ -723,7 +723,14 @@ export function ProjectEditorClient({
   const discardChanges = () => {
     if (savePending.current) return;
     if (!currentPageHasUnsavedChanges) return;
-    if (!window.confirm("Discard the unsaved changes on this page? This cannot be undone.")) return;
+    if (
+      !window.confirm(
+        locale === "fi"
+          ? "Peruutetaanko tämän sivun tallentamattomat muutokset? Toimintoa ei voi kumota."
+          : "Discard the unsaved changes on this page? This cannot be undone.",
+      )
+    )
+      return;
     const resetPage = editorHistory?.reset(originalPage) ?? structuredClone(originalPage);
     setSessionPages((current) => {
       const next = { ...current };
@@ -941,6 +948,68 @@ export function ProjectEditorClient({
       storefrontPageCount={activeDraft!.pages.length}
     />
   );
+
+  const renderDraftSafeguards = (compact: boolean) => {
+    const saveDisabledReason = validationMessage
+      ? validationMessage
+      : hasUnsavedChanges && !completeDraftIsValid
+        ? locale === "fi"
+          ? "Joitakin muutoksia on korjattava ennen luonnoksen tallentamista."
+          : "Some changes need attention before this draft can be saved."
+        : proposalBlocksSave
+          ? locale === "fi"
+            ? "Viimeistele nykyisen ehdotuksen tarkistus ennen luonnoksen tallentamista."
+            : "Finish reviewing the current proposal before saving the draft."
+          : saving
+            ? locale === "fi"
+              ? "Luonnosta tallennetaan. Odota, kunnes tallennus on valmis."
+              : "The draft is being saved. Wait until saving is complete."
+            : !hasUnsavedChanges
+              ? locale === "fi"
+                ? "Luonnoksen tallennus tulee käyttöön, kun teet muutoksen."
+                : "Save draft becomes available after you make a change."
+              : undefined;
+    const saveIsBlockedByValidation =
+      Boolean(validationMessage) || (hasUnsavedChanges && !completeDraftIsValid);
+
+    return (
+      <section
+        aria-label={locale === "fi" ? "Luonnoksen suojaukset" : "Draft safeguards"}
+        className={styles.draftSafeguards}
+      >
+        <Button
+          className={styles.discardButton}
+          disabled={!currentPageHasUnsavedChanges || saving}
+          onClick={discardChanges}
+          variant="quiet"
+        >
+          {locale === "fi" ? "Peruuta sivun muutokset" : "Discard changes"}
+        </Button>
+        <p className={styles.boundaryNote}>
+          {hasUnsavedChanges
+            ? locale === "fi"
+              ? "Tallenna muutokset luonnokseen ennen julkaisemista. Julkaisun tarkistus käyttää vain viimeksi tallennettua luonnosta."
+              : "Save these changes to the draft before publishing. Publish review uses only the last saved draft."
+            : locale === "fi"
+              ? "Luonnoksen tallentaminen ei julkaise muutoksia. Tarkista ja vahvista julkaisu erikseen."
+              : "Saving a draft does not publish it. Review and confirm publishing separately."}
+        </p>
+        {compact && saveDisabled && saveDisabledReason ? (
+          <Notice
+            className={styles.validationMessage}
+            role={saveIsBlockedByValidation ? "alert" : undefined}
+            variant={saveIsBlockedByValidation ? "danger" : "info"}
+          >
+            {saveDisabledReason}
+          </Notice>
+        ) : !compact && validationMessage ? (
+          <p className={styles.validationMessage} role="alert">
+            {validationMessage}
+          </p>
+        ) : null}
+      </section>
+    );
+  };
 
   const saveDraft = async () => {
     if (saveDisabled || savePending.current) return;
@@ -1209,28 +1278,7 @@ export function ProjectEditorClient({
               <Link className={styles.previewLink} href={previewHref}>
                 View selected page
               </Link>
-              <Button
-                className={styles.discardButton}
-                disabled={!currentPageHasUnsavedChanges || saving}
-                onClick={discardChanges}
-                variant="quiet"
-              >
-                {locale === "fi" ? "Peruuta sivun muutokset" : "Discard changes"}
-              </Button>
-              <p className={styles.boundaryNote}>
-                {hasUnsavedChanges
-                  ? locale === "fi"
-                    ? "Tallenna muutokset luonnokseen ennen julkaisemista. Julkaisun tarkistus käyttää vain viimeksi tallennettua luonnosta."
-                    : "Save these changes to the draft before publishing. Publish review uses only the last saved draft."
-                  : locale === "fi"
-                    ? "Luonnoksen tallentaminen ei julkaise muutoksia. Tarkista ja vahvista julkaisu erikseen."
-                    : "Saving a draft does not publish it. Review and confirm publishing separately."}
-              </p>
-              {validationMessage ? (
-                <p className={styles.validationMessage} role="alert">
-                  {validationMessage}
-                </p>
-              ) : null}
+              {renderDraftSafeguards(false)}
             </aside>
           ) : null}
           <main className={styles.canvas}>
@@ -1277,6 +1325,7 @@ export function ProjectEditorClient({
           <div className={styles.drawerContent}>
             {outlineList}
             {sectionActions}
+            {compactViewport ? renderDraftSafeguards(true) : null}
           </div>
         </Drawer>
         <Drawer

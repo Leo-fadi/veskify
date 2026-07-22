@@ -63,6 +63,17 @@
   text-decoration: none;
 }
 
+.platformNavIcon {
+  display: none;
+  width: 1.35rem;
+  height: 1.35rem;
+  flex: 0 0 auto;
+  stroke: currentcolor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 .platformNav a:hover,
 .platformNav a[aria-current="page"],
 .moduleNav a:hover,
@@ -381,11 +392,49 @@
   }
 
   .editorShell .platformNav a {
+    position: relative;
     width: 2.8rem;
     justify-content: center;
-    overflow: hidden;
     padding-inline: 0.25rem;
-    text-indent: -9999px;
+  }
+
+  .editorShell .platformNavIcon {
+    display: block;
+  }
+
+  .editorShell .platformNavLabel {
+    position: absolute;
+    z-index: 30;
+    left: calc(100% + 0.7rem);
+    padding: 0.45rem 0.6rem;
+    border: 1px solid rgb(255 255 255 / 24%);
+    border-radius: 0.4rem;
+    background: var(--vesko-evergreen-950);
+    box-shadow: 0 0.4rem 1rem rgb(0 0 0 / 20%);
+    color: white;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-0.2rem);
+    transition:
+      opacity 120ms ease,
+      transform 120ms ease;
+    white-space: nowrap;
+  }
+
+  .editorShell .platformNav a:hover .platformNavLabel,
+  .editorShell .platformNav a:focus-visible .platformNavLabel {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .editorShell .platformNav a[aria-current="page"]::before {
+    position: absolute;
+    left: -0.85rem;
+    width: 0.25rem;
+    height: 1.5rem;
+    border-radius: 0 999px 999px 0;
+    background: white;
+    content: "";
   }
 
   .editorShell .shellBody {

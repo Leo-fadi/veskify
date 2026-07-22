@@ -51,6 +51,18 @@
   color: #6f2f16 !important;
 }
 
+.draftSafeguards {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.draftSafeguards p {
+  margin: 0;
+  color: var(--vesko-app-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
 .currentPage span,
 .draftStatus span {
   display: block;
@@ -616,6 +628,11 @@
 
 .drawerContent .toolRail {
   border-left: 0;
+}
+
+.drawerContent .draftSafeguards {
+  padding-top: 1rem;
+  border-top: 1px solid var(--vesko-app-border);
 }
 
 .drawerContent .toolRail > aside {
