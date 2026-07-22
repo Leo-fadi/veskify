@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createStorefrontRenderContext } from "@/components/registry";
+import { createStorefrontRenderContext, validateRegisteredSnapshot } from "@/components/registry";
 import {
   AiStorefrontGenerationOrchestrator,
   buildAiStorefrontProviderRequest,
@@ -9,6 +9,7 @@ import {
   type AiStorefrontGenerationCommand,
 } from "@/application/ai-storefront-generation";
 import {
+  CanonicalStorefrontHistory,
   StorefrontProposalAcceptanceCoordinator,
   type AiStorefrontProposal,
 } from "@/application/ai-storefront";
@@ -74,6 +75,47 @@ function proposalContext(input: AiStorefrontGenerationCommand, requestSequence =
       target: structuredClone(request.target),
     },
   };
+}
+
+function generationIdentity(input: AiStorefrontGenerationCommand) {
+  return {
+    context: {
+      projectId: input.projectId,
+      draftSnapshotId: input.draftSnapshotId,
+      draftRevision: input.draftRevision,
+      enabledLocales: input.enabledLocales,
+      activeLocale: input.activeLocale,
+      storefront: structuredClone(input.storefront),
+    },
+    target: {
+      scope: "storefront" as const,
+      projectId: input.projectId,
+      draftSnapshotId: input.draftSnapshotId,
+      draftRevision: input.draftRevision,
+      affectedPageIds: input.affectedPageIds,
+      affectedSectionTargets: input.affectedSectionTargets,
+      designSystemTarget: input.designSystemTarget,
+      enabledLocales: input.enabledLocales,
+      activeLocale: input.activeLocale,
+    },
+  };
+}
+
+async function generateWithProviderGuard(merchantInstruction: string) {
+  let providerCalls = 0;
+  const provider = {
+    id: "rejected-palette-call-guard",
+    proposeStorefront: () => {
+      providerCalls += 1;
+      return Promise.resolve({});
+    },
+  };
+  const input = command(merchantInstruction, { provider, providerId: provider.id });
+  const orchestrator = new AiStorefrontGenerationOrchestrator({
+    currentIdentity: () => generationIdentity(input),
+  });
+  const result = await orchestrator.generate(input);
+  return { input, providerCalls, result };
 }
 
 async function readyProposal(input: AiStorefrontGenerationCommand) {
@@ -227,10 +269,129 @@ describe("P4.1-01 exact merchant brand palettes", () => {
     expect(() => createAiStorefrontGenerationPlan(command(instruction))).toThrow(/CSS|code/i);
   });
 
-  it("rejects unknown brand token names instead of inventing a representation", () => {
-    expect(() =>
-      createAiStorefrontGenerationPlan(command("Set neonGlow: #FF00FF for the brand palette.")),
-    ).toThrow(/not an approved brand token/i);
+  it.each([
+    ["named colour", "Set neonGlow: red for the brand palette."],
+    ["named phrase", "Set brandMagic = forest green for the brand palette."],
+    ["hex colour", "Set headerGlow: #00FF00 for the brand palette."],
+  ])("rejects an unknown token assigned a %s", (_label, instruction) => {
+    expect(() => createAiStorefrontGenerationPlan(command(instruction))).toThrow(
+      /not an approved brand token/i,
+    );
+  });
+
+  it("rejects an unknown named-colour token before invoking the provider", async () => {
+    const { providerCalls, result } = await generateWithProviderGuard(
+      "Set neonGlow: red for the brand palette.",
+    );
+
+    expect(result).toMatchObject({ state: "failed", failure: { code: "unsupportedRequest" } });
+    expect(providerCalls).toBe(0);
+  });
+
+  it.each([
+    "Apply this palette: primary #173F35, and add a section.",
+    "Use these colours and make the layout compact.",
+    "Set primary red and redesign the footer.",
+    "Apply the palette and show more products.",
+    "Apply the palette primary red and rewrite the content.",
+    "Apply the palette primary red and edit the navigation.",
+  ])("rejects a mixed broader request: %s", (instruction) => {
+    expect(() => createAiStorefrontGenerationPlan(command(instruction))).toThrow(
+      /mixes colour changes/i,
+    );
+  });
+
+  it("rejects a mixed broader request before provider invocation", async () => {
+    const { providerCalls, result } = await generateWithProviderGuard(
+      "Apply this palette: primary #173F35, and add a section.",
+    );
+
+    expect(result).toMatchObject({ state: "failed", failure: { code: "unsupportedRequest" } });
+    expect(providerCalls).toBe(0);
+  });
+
+  it("accepts explicit preservation clauses and colour-only descriptive changes", () => {
+    const preserved = createAiStorefrontGenerationPlan(
+      command(
+        "Apply the palette primary red. Keep the layout, typography, images, copy, products, prices, navigation, and section structure unchanged.",
+      ),
+    );
+    const descriptive = createAiStorefrontGenerationPlan(command("Make the primary green darker."));
+
+    expect(preserved.brandPalettePlan?.requestedTokens).toEqual(["primary"]);
+    expect(descriptive.brandPalettePlan?.colors.primary).toBe("#2F6B4F");
+  });
+
+  it("binds role-labelled named colours separated by and", () => {
+    const plan = createAiStorefrontGenerationPlan(command("primary red and secondary blue"));
+
+    expect(plan.brandPalettePlan?.requestedTokens).toEqual(["primary", "secondary"]);
+    expect(plan.brandPalettePlan?.colors).toMatchObject({
+      primary: "#A52A2A",
+      secondary: "#315A7D",
+    });
+  });
+
+  it("binds role-labelled hex colours separated by and", () => {
+    const plan = createAiStorefrontGenerationPlan(command("primary #173F35 and secondary #82917B"));
+
+    expect(plan.brandPalettePlan?.requestedTokens).toEqual(["primary", "secondary"]);
+    expect(plan.brandPalettePlan?.colors).toMatchObject({
+      primary: "#173F35",
+      secondary: "#82917B",
+    });
+  });
+
+  it("binds three role-labelled colours separated by comma and and", () => {
+    const plan = createAiStorefrontGenerationPlan(
+      command("primary forest green, secondary sage and accent soft gold"),
+    );
+
+    expect(plan.brandPalettePlan?.requestedTokens).toEqual(["primary", "secondary", "accent"]);
+    expect(plan.brandPalettePlan?.colors).toMatchObject({
+      primary: "#1F4D3B",
+      secondary: "#8A9A82",
+      accent: "#C2A35A",
+    });
+  });
+
+  it("still rejects duplicate canonical token assignments", () => {
+    expect(() => createAiStorefrontGenerationPlan(command("primary red and primary blue"))).toThrow(
+      /only one value for the primary/i,
+    );
+  });
+
+  it("keeps deterministic positional mapping for unlabelled named colours", () => {
+    const plan = createAiStorefrontGenerationPlan(
+      command("Apply this brand palette: forest green, muted sage, and soft gold."),
+    );
+
+    expect(plan.brandPalettePlan?.requestedTokens).toEqual(["primary", "secondary", "accent"]);
+    expect(plan.brandPalettePlan?.colors).toMatchObject({
+      primary: "#1F4D3B",
+      secondary: "#82917B",
+      accent: "#C2A35A",
+    });
+  });
+
+  it("leaves the active draft and composite history unchanged for rejected requests", async () => {
+    const history = new CanonicalStorefrontHistory({
+      validateSnapshot: (candidate) =>
+        validateRegisteredSnapshot(candidate, aurumNordicSeed.catalogue, "en", "en"),
+    });
+    history.initialize(snapshot);
+    const draftBefore = history.current();
+    const historyBefore = history.inspectTransactions();
+
+    const { input, providerCalls, result } = await generateWithProviderGuard(
+      "Apply the palette primary red and show more products.",
+    );
+
+    expect(result).toMatchObject({ state: "failed", failure: { code: "unsupportedRequest" } });
+    expect(providerCalls).toBe(0);
+    expect(input.storefront).toEqual(command(input.merchantInstruction).storefront);
+    expect(history.current()).toEqual(draftBefore);
+    expect(history.inspectTransactions()).toEqual(historyBefore);
   });
 
   it("corrects only an unsafe text dependency and exposes a proposal warning", async () => {

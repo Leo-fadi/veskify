@@ -44,12 +44,20 @@ const tokenIndex = new Map(tokenOrder.map((token, index) => [token, index]));
 const paletteIntentPattern = /\b(?:brand\s+)?(?:palette|colou?rs?|hex)\b|#[a-z0-9]/i;
 const existingPalettePattern = /\b(?:existing|current)\s+(?:brand\s+)?palette\b/i;
 const unsupportedGradientPattern = /\b(?:linear|radial|conic)?-?gradient\b|\bgradient\s*\(/i;
-const protectedMutationPattern =
-  /\b(?:change|update|set|replace|edit|increase|decrease|remove)\b[^.!?]{0,80}\b(?:prices?|sku|stock|inventory|products?|variants?|payments?|shipping|tax|orders?)\b/i;
-const broaderMutationPattern =
-  /\b(?:change|update|replace|rewrite|reorder|remove|edit)\b[^.!?]{0,80}\b(?:layout|typography|fonts?|images?|imagery|copy|content|products?|sections?|structure)\b/i;
-const preservationClausePattern =
-  /\b(?:keep|preserve|leave|retain)\b[^.!?]{0,240}\b(?:unchanged|same|intact|as\s+is)\b/gi;
+const mutationVerbPattern =
+  "(?:add|create|insert|make|simplify|compact|expand|redesign|rebuild|move|reorder|hide|show|change|update|replace|rewrite|remove|edit|set|increase|decrease)";
+const protectedMutationPattern = new RegExp(
+  `\\b${mutationVerbPattern}\\b[^.!?]{0,80}\\b(?:prices?|sku|stock|inventory|products?|variants?|payments?|shipping|tax|orders?)\\b`,
+  "i",
+);
+const broaderMutationPattern = new RegExp(
+  `\\b${mutationVerbPattern}\\b[^.!?]{0,80}\\b(?:layout|typography|fonts?|images?|imagery|copy|content|sections?|structure|navigation|footer|page\\s+composition)\\b`,
+  "i",
+);
+const preservationClausePatterns = [
+  /\b(?:keep|preserve|leave|retain)\b[^.!?]{0,240}\b(?:unchanged|same|intact|as\s+is)\b/gi,
+  /\b(?:do\s+not|don't|without)\s+(?:change|changing|update|updating|replace|replacing|edit|editing|remove|removing|reorder|reordering|alter|altering)\b[^.!?]{0,240}\b(?:layout|typography|fonts?|images?|imagery|copy|content|products?|prices?|sku|stock|inventory|variants?|sections?|structure|navigation|footer|page\s+composition)\b[^.!?]*/gi,
+];
 
 const tokenAliases: ReadonlyArray<{
   token: BrandColourToken;
@@ -65,6 +73,14 @@ const tokenAliases: ReadonlyArray<{
   { token: "text", pattern: /\btext\b/i, normalized: ["text"] },
   { token: "border", pattern: /\bborders?\b/i, normalized: ["border", "borders"] },
 ];
+
+const roleLabelPatternSource =
+  "(?:muted[\\s_-]*text|primary|secondary|accents?|background|surface|text|borders?)";
+const roleConjunctionPattern = new RegExp(
+  `\\band\\s+(?=${roleLabelPatternSource}\\b(?:\\s*(?::|=))?)`,
+  "gi",
+);
+const assignmentNamePattern = /["']?(muted(?:[\s_-]+text)|[a-zA-Z][a-zA-Z0-9_-]*)["']?\s*(?::|=)/gi;
 
 const knownAssignmentNames = new Set([
   ...tokenAliases.flatMap(({ normalized }) => normalized),
@@ -147,17 +163,25 @@ function findNamedColours(instruction: string): ColourOccurrence[] {
 }
 
 function segmentAround(instruction: string, occurrence: ColourOccurrence) {
-  const left = Math.max(
-    instruction.lastIndexOf(",", occurrence.index - 1),
-    instruction.lastIndexOf(";", occurrence.index - 1),
-  );
+  let left =
+    Math.max(
+      instruction.lastIndexOf(",", occurrence.index - 1),
+      instruction.lastIndexOf(";", occurrence.index - 1),
+    ) + 1;
   const rightCandidates = [
     instruction.indexOf(",", occurrence.end),
     instruction.indexOf(";", occurrence.end),
     instruction.indexOf(".", occurrence.end),
   ].filter((index) => index >= 0);
+  for (const match of instruction.matchAll(roleConjunctionPattern)) {
+    if (match.index < occurrence.index) {
+      left = Math.max(left, match.index + match[0].length);
+    } else if (match.index >= occurrence.end) {
+      rightCandidates.push(match.index);
+    }
+  }
   const right = rightCandidates.length > 0 ? Math.min(...rightCandidates) : instruction.length;
-  return instruction.slice(left + 1, right);
+  return instruction.slice(left, right);
 }
 
 function roleForOccurrence(
@@ -177,10 +201,15 @@ function positionalRoles(count: number): readonly BrandColourToken[] | undefined
   return undefined;
 }
 
-function assertKnownAssignments(instruction: string) {
-  for (const match of instruction.matchAll(
-    /["']?([a-zA-Z][a-zA-Z0-9_-]*)["']?\s*(?::|=)\s*#[a-zA-Z0-9_-]+/g,
-  )) {
+function assertKnownAssignments(instruction: string, occurrences: readonly ColourOccurrence[]) {
+  for (const match of instruction.matchAll(assignmentNamePattern)) {
+    const assignmentEnd = match.index + match[0].length;
+    const assignedColour = occurrences.find(
+      (occurrence) =>
+        occurrence.index >= assignmentEnd &&
+        /^\s*(?:(?:a|an|the)\s+)?$/i.test(instruction.slice(assignmentEnd, occurrence.index)),
+    );
+    if (!assignedColour) continue;
     const normalized = match[1].replace(/[\s_-]/g, "").toLocaleLowerCase();
     if (!knownAssignmentNames.has(normalized)) {
       throw new BrandPaletteInstructionError(
@@ -205,7 +234,7 @@ function requestedPalette(
       );
     }
     const existing = assigned.get(token);
-    if (existing !== undefined && existing !== occurrence.value) {
+    if (existing !== undefined) {
       throw new BrandPaletteInstructionError(
         `Supply only one value for the ${token} colour token.`,
       );
@@ -276,30 +305,51 @@ function assertSafeInstruction(instruction: string) {
       "Use ordinary colour instructions rather than a style object.",
     );
   }
-  const actionable = instruction.replace(preservationClausePattern, "");
+  const actionable = preservationClausePatterns.reduce(
+    (value, pattern) => value.replace(pattern, ""),
+    instruction,
+  );
   if (protectedMutationPattern.test(actionable)) {
     throw new BrandPaletteInstructionError(
-      "Brand palette requests cannot modify products or protected commerce information.",
+      "This request mixes colour changes with protected commerce changes. Submit the colour palette separately; protected commerce data cannot be changed by a brand-palette proposal.",
     );
   }
   if (broaderMutationPattern.test(actionable)) {
     throw new BrandPaletteInstructionError(
-      "Submit layout, typography, imagery, content, or structure changes as a separate reviewed request.",
+      "This request mixes colour changes with unsupported layout, typography, imagery, content, navigation, or structure changes. Submit the colour palette as a separate reviewed request.",
     );
   }
-  assertKnownAssignments(instruction);
 }
 
 export function planExactBrandPalette(
   instruction: string,
   currentColorsInput: BrandSystem["colors"],
 ): ExactBrandPalettePlan | null {
-  if (!paletteIntentPattern.test(instruction)) return null;
-  const current = brandSystemSchema.shape.colors.parse(structuredClone(currentColorsInput));
-  assertSafeInstruction(instruction);
   const hex = findHexColours(instruction);
   const named = findNamedColours(instruction);
   const occurrences = [...hex, ...named].sort((left, right) => left.index - right.index);
+  const hasRoleLabelledNamedColour =
+    named.length > 0 && tokenAliases.some(({ pattern }) => pattern.test(instruction));
+  const hasAssignedNamedColour =
+    named.length > 0 &&
+    [...instruction.matchAll(assignmentNamePattern)].some((match) => {
+      const assignmentEnd = match.index + match[0].length;
+      return named.some(
+        (occurrence) =>
+          occurrence.index >= assignmentEnd &&
+          /^\s*(?:(?:a|an|the)\s+)?$/i.test(instruction.slice(assignmentEnd, occurrence.index)),
+      );
+    });
+  if (
+    !paletteIntentPattern.test(instruction) &&
+    !hasRoleLabelledNamedColour &&
+    !hasAssignedNamedColour
+  ) {
+    return null;
+  }
+  const current = brandSystemSchema.shape.colors.parse(structuredClone(currentColorsInput));
+  assertSafeInstruction(instruction);
+  assertKnownAssignments(instruction, occurrences);
   if (occurrences.length === 0) {
     if (!existingPalettePattern.test(instruction)) {
       throw new BrandPaletteInstructionError(
