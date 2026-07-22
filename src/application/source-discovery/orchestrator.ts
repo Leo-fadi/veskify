@@ -43,6 +43,7 @@ import {
   type StorefrontDesignBriefEvidenceFingerprintInput,
   type SupersedeStorefrontDesignBriefInput,
   type SupersedeStorefrontDesignBriefResult,
+  type UpdateStorefrontDesignBriefReviewInput,
 } from "./contract";
 
 function isoNow(input?: Date | string): string {
@@ -834,6 +835,63 @@ export function approveStorefrontDesignBrief(
       actorId: idSchema.parse(input.actorId),
       approvedAt: approvalTime,
     },
+  };
+  return storefrontDesignBriefContractSchema.parse({
+    ...candidate,
+    fingerprint: fingerprintBrief(candidate),
+  });
+}
+
+/** Rebuilds the current unapproved revision after merchant reconciliation decisions. */
+export function updateStorefrontDesignBriefReview(
+  briefInput: StorefrontDesignBriefContract,
+  input: UpdateStorefrontDesignBriefReviewInput,
+): StorefrontDesignBriefContract {
+  const brief = storefrontDesignBriefContractSchema.parse(briefInput);
+  if (brief.status !== "needsReview") {
+    throw new SourceDiscoveryApplicationError(
+      "invalid-lifecycle",
+      "Only a current brief needing review can be updated.",
+    );
+  }
+  const sourceReferenceIds = input.materialEvidence.sourceReferences.map((source) => source.id);
+  const sourceEvidenceIds = input.materialEvidence.evidence.map((evidence) => evidence.id);
+  const evidenceFingerprint = createStorefrontDesignBriefEvidenceFingerprint({
+    sourceReferenceIds,
+    sourceEvidenceIds,
+    canonicalCommerceProjectionRef: brief.canonicalCommerceProjectionRef,
+    materialEvidence: input.materialEvidence,
+  });
+  const timestamp = isoNow(input.now);
+  const candidate = {
+    ...brief,
+    updatedAt: timestamp,
+    sourceReferenceIds,
+    sourceEvidenceIds,
+    approvedBrandDirection:
+      input.approvedBrandDirection === undefined
+        ? brief.approvedBrandDirection
+        : brandDirectionSchema.parse(input.approvedBrandDirection),
+    brandProposal:
+      input.brandProposal === undefined
+        ? brief.brandProposal
+        : input.brandProposal
+          ? brandReconstructionProposalSchema.parse(input.brandProposal)
+          : null,
+    approvedReusableAssetIds:
+      input.approvedReusableAssetIds === undefined
+        ? brief.approvedReusableAssetIds
+        : list(input.approvedReusableAssetIds),
+    unresolvedItems: uniqueList([
+      ...list(input.unresolvedItems),
+      ...reconciliationQuestions(input.materialEvidence),
+    ]),
+    materialUnresolvedBlockers:
+      input.materialUnresolvedBlockers === undefined
+        ? brief.materialUnresolvedBlockers
+        : list(input.materialUnresolvedBlockers),
+    evidenceFingerprint,
+    approvedEvidenceFingerprint: null,
   };
   return storefrontDesignBriefContractSchema.parse({
     ...candidate,

@@ -91,6 +91,16 @@ export type ApproveStorefrontDesignBriefInput = Readonly<{
   approvedBrandDirection?: unknown;
 }>;
 
+export type UpdateStorefrontDesignBriefReviewInput = Readonly<{
+  now?: Date | string;
+  materialEvidence: StorefrontSourceEvidenceMaterial;
+  brandProposal?: BrandReconstructionProposal | null;
+  approvedBrandDirection?: unknown;
+  approvedReusableAssetIds?: readonly string[];
+  unresolvedItems?: readonly string[];
+  materialUnresolvedBlockers?: readonly string[];
+}>;
+
 export type SupersedeStorefrontDesignBriefInput = Readonly<{
   now?: Date | string;
   sourceReferenceIds?: readonly string[];
