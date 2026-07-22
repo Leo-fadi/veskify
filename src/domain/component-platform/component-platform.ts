@@ -450,7 +450,7 @@ export const productBindingSchema = bindingBaseSchema
 export const productListBindingSchema = bindingBaseSchema
   .extend({
     source: z.literal("productList"),
-    productIds: z.array(idSchema).min(1),
+    productIds: z.array(idSchema),
   })
   .strict()
   .superRefine((binding, context) => {
@@ -956,17 +956,72 @@ export const collectionFilterPresentationSchema = z
   .object({
     id: idSchema,
     label: localizedTextSchema,
+    presentation: z.enum(["enumerated", "range"]).optional(),
     values: z.array(
       z
         .object({
           id: idSchema,
           label: localizedTextSchema,
           count: z.number().int().nonnegative().optional(),
+          selected: z.boolean().optional(),
+          disabled: z.boolean().optional(),
         })
         .strict(),
     ),
+    range: z
+      .object({
+        min: z.number(),
+        max: z.number(),
+        selectedMin: z.number().optional(),
+        selectedMax: z.number().optional(),
+        step: z.number().positive().optional(),
+        unit: localizedTextSchema.optional(),
+      })
+      .strict()
+      .optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((filter, context) => {
+    if (!unique(filter.values.map((value) => value.id))) {
+      context.addIssue({
+        code: "custom",
+        message: "Collection filter value IDs must be unique within a group.",
+        path: ["values"],
+      });
+    }
+    const presentation = filter.presentation ?? "enumerated";
+    if (presentation === "range") {
+      if (filter.range === undefined) {
+        context.addIssue({
+          code: "custom",
+          message: "Range collection filters require canonical range presentation state.",
+          path: ["range"],
+        });
+        return;
+      }
+      if (filter.values.length > 0) {
+        context.addIssue({
+          code: "custom",
+          message: "Range collection filters cannot also declare enumerated values.",
+          path: ["values"],
+        });
+      }
+      const { min, max, selectedMin = min, selectedMax = max } = filter.range;
+      if (min > max || selectedMin < min || selectedMax > max || selectedMin > selectedMax) {
+        context.addIssue({
+          code: "custom",
+          message: "Collection filter range state must remain within canonical bounds.",
+          path: ["range"],
+        });
+      }
+    } else if (filter.range !== undefined) {
+      context.addIssue({
+        code: "custom",
+        message: "Enumerated collection filters cannot declare range state.",
+        path: ["range"],
+      });
+    }
+  });
 
 export const collectionSortPresentationSchema = z
   .object({
@@ -992,6 +1047,17 @@ export const collectionPresentationContextSchema = z
     productIds: z.array(idSchema),
     filters: z.array(collectionFilterPresentationSchema),
     sorting: z.array(collectionSortPresentationSchema),
+    breadcrumbs: z
+      .array(
+        z
+          .object({
+            collectionId: idSchema,
+            label: localizedTextSchema,
+          })
+          .strict(),
+      )
+      .optional(),
+    childCollectionIds: z.array(idSchema).optional(),
     emptyState: z
       .object({
         title: localizedTextSchema,
@@ -1007,6 +1073,28 @@ export const collectionPresentationContextSchema = z
         code: "custom",
         message: "Collection product references must be unique.",
         path: ["productIds"],
+      });
+    }
+    for (const [field, ids] of [
+      ["assets", collection.assets.map((asset) => asset.assetId)],
+      ["filters", collection.filters.map((filter) => filter.id)],
+      ["sorting", collection.sorting.map((sort) => sort.id)],
+      ["breadcrumbs", (collection.breadcrumbs ?? []).map((item) => item.collectionId)],
+      ["childCollectionIds", collection.childCollectionIds ?? []],
+    ] as const) {
+      if (!unique(ids)) {
+        context.addIssue({
+          code: "custom",
+          message: `Collection ${field} references must be unique.`,
+          path: [field],
+        });
+      }
+    }
+    if (collection.sorting.filter((sort) => sort.default).length > 1) {
+      context.addIssue({
+        code: "custom",
+        message: "Collection sorting may declare at most one default option.",
+        path: ["sorting"],
       });
     }
   });

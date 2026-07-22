@@ -733,6 +733,41 @@ dependency state, unavailable combinations and disabled reasons. It does not tra
 calculate price or resolve variants in React; disabled guidance is localized for EN/FI before it is
 shown or exposed through accessible descriptions.
 
+## 9.7 Registered `dynamicCollectionCommerce` contract
+The `dynamicCollectionCommerce` type is the registered `ComponentDefinitionV2` commerce family for
+collection headers, product grids/cards, collection filters, sorting and optional child-collection
+navigation. Its required, revision-bound `primaryCollection` slot accepts one canonical collection
+binding. Its required, revision-bound `collectionProducts` slot accepts the ordered canonical
+product-list binding and must exactly match the bound collection's membership and order, including
+the valid empty-list case. The optional, revision-bound `childCollections` slot accepts an ordered
+canonical collection-list binding; when present it must exactly match the canonical child collection
+references, and when omitted the child-navigation region is hidden.
+
+The optional `collectionCommerceMedia` asset slot accepts approved collection and product-main
+media. Explicit assignments must exactly cover the collection hero and first product-card media used
+by the renderer. When assignments are omitted, the renderer may use only canonical media references
+already present in the collection/product presentation contexts and approved by the projection asset
+inventory. Unknown, rejected, unapproved, unused or wrong-role assets fail conformance. Missing
+collection hero media is omitted safely, while missing product media uses a localized presentation
+placeholder without copying an asset or product fact into editable content.
+
+The default presentation uses the `standard` family variant, standard grid density, standard cards,
+sidebar filters, visible collection description/product count/badges, up to two concise canonical
+attributes and optional child collections. Product-card variants and grid/filter presentation may
+change without changing collection membership. The canonical collection filter model may supply
+ordered enumerated values (selected, disabled and optional counts) or bounded numeric-range state,
+plus supported sort options, breadcrumbs and child collection references. Loading, empty and
+no-media states are presentation inputs; they do not query or repair commerce data.
+
+The same engineering-owned React implementation serves editor, preview and published targets.
+Product/collection navigation, enumerated/range filtering, clear, clear-all and sorting emit typed
+presentation intents only. The component performs no product query, filter evaluation, sorting,
+inventory, pricing, stock, collection-membership or navigation mutation. Product identity, type,
+SKU, price, compare-at price, availability, collection membership/filter state and asset provenance
+remain protected read-only commerce fields. Merchant-facing labels resolve through canonical EN/FI
+localization. This contract traces to FR-102, FR-107, FR-109, FR-110, FR-112 and FR-114; NFR-101,
+NFR-102, NFR-103, NFR-108 and NFR-109; and AC-111, AC-112, AC-118, AC-122 and AC-123.
+
 # 10. Dynamic product-detail page system
 <table>
 <colgroup>
@@ -880,13 +915,17 @@ The homepage must be generated as a coherent hierarchy rather than a fixed seed 
 
 - Product grids use dynamic product cards and read-only price/availability states.
 
-- Filters derive from canonical attributes and product-type rules, not a hardcoded jewellery filter list.
+- Filters consume ordered canonical enumerated or range presentation state, including selected,
+  disabled and count state; they do not contain a hardcoded jewellery filter list or evaluate product
+  queries in React.
 
 - Desktop sidebar, horizontal bar and mobile drawer are presentation variants of one filter model.
 
+- Sorting, filtering, clearing and product/collection navigation emit typed presentation intents only.
+
 - Grid density, card variant, merchandising rows and editorial modules may change without altering collection membership.
 
-- No-results and incomplete-data states are intentionally designed.
+- Loading, no-results, missing-hero and missing-product-media states are intentionally designed.
 
 ## 11.3 Shared page consistency
 - Header, footer, token system, spacing rhythm and interaction styles are shared globally.
