@@ -43,6 +43,7 @@ import {
   type StorefrontDesignBriefEvidenceFingerprintInput,
   type SupersedeStorefrontDesignBriefInput,
   type SupersedeStorefrontDesignBriefResult,
+  type UpdateStorefrontDesignBriefReviewInput,
 } from "./contract";
 
 function isoNow(input?: Date | string): string {
@@ -841,6 +842,106 @@ export function approveStorefrontDesignBrief(
   });
 }
 
+/** Rebuilds the current unapproved revision after merchant reconciliation decisions. */
+export function updateStorefrontDesignBriefReview(
+  briefInput: StorefrontDesignBriefContract,
+  input: UpdateStorefrontDesignBriefReviewInput,
+): StorefrontDesignBriefContract {
+  const brief = storefrontDesignBriefContractSchema.parse(briefInput);
+  if (brief.status !== "needsReview") {
+    throw new SourceDiscoveryApplicationError(
+      "invalid-lifecycle",
+      "Only a current brief needing review can be updated.",
+    );
+  }
+  const sourceReferenceIds = input.materialEvidence.sourceReferences.map((source) => source.id);
+  const sourceEvidenceIds = input.materialEvidence.evidence.map((evidence) => evidence.id);
+  const canonicalCommerceProjectionRef =
+    input.materialEvidence.reconciliation?.canonicalCommerceProjectionRef ?? null;
+  const evidenceFingerprint = createStorefrontDesignBriefEvidenceFingerprint({
+    sourceReferenceIds,
+    sourceEvidenceIds,
+    canonicalCommerceProjectionRef,
+    materialEvidence: input.materialEvidence,
+  });
+  const timestamp = isoNow(input.now);
+  const candidate = {
+    ...brief,
+    updatedAt: timestamp,
+    businessIdentity:
+      input.businessIdentity === undefined
+        ? brief.businessIdentity
+        : businessIdentitySchema.parse(input.businessIdentity),
+    languagePlan:
+      input.languagePlan === undefined
+        ? brief.languagePlan
+        : languagePlanSchema.parse(input.languagePlan),
+    sourceReferenceIds,
+    sourceEvidenceIds,
+    canonicalCommerceProjectionRef,
+    approvedBrandDirection:
+      input.approvedBrandDirection === undefined
+        ? brief.approvedBrandDirection
+        : brandDirectionSchema.parse(input.approvedBrandDirection),
+    brandProposal:
+      input.brandProposal === undefined
+        ? brief.brandProposal
+        : input.brandProposal
+          ? brandReconstructionProposalSchema.parse(input.brandProposal)
+          : null,
+    approvedReusableAssetIds:
+      input.approvedReusableAssetIds === undefined
+        ? brief.approvedReusableAssetIds
+        : list(input.approvedReusableAssetIds),
+    pagePlan:
+      input.pagePlan === undefined
+        ? brief.pagePlan
+        : storefrontStructureSchema.parse(input.pagePlan),
+    navigationDirection:
+      input.navigationDirection === undefined
+        ? brief.navigationDirection
+        : list(input.navigationDirection),
+    homepageGoals:
+      input.homepageGoals === undefined ? brief.homepageGoals : list(input.homepageGoals),
+    collectionPageGoals:
+      input.collectionPageGoals === undefined
+        ? brief.collectionPageGoals
+        : list(input.collectionPageGoals),
+    productPageGoals:
+      input.productPageGoals === undefined ? brief.productPageGoals : list(input.productPageGoals),
+    visualPriorities:
+      input.visualPriorities === undefined ? brief.visualPriorities : list(input.visualPriorities),
+    contentAssumptions:
+      input.contentAssumptions === undefined
+        ? brief.contentAssumptions
+        : list(input.contentAssumptions),
+    unresolvedItems: uniqueList([
+      ...list(input.unresolvedItems),
+      ...reconciliationQuestions(input.materialEvidence),
+    ]),
+    materialUnresolvedBlockers:
+      input.materialUnresolvedBlockers === undefined
+        ? brief.materialUnresolvedBlockers
+        : list(input.materialUnresolvedBlockers),
+    excludedClaims:
+      input.excludedClaims === undefined ? brief.excludedClaims : list(input.excludedClaims),
+    generationPermissions:
+      input.generationPermissions === undefined
+        ? brief.generationPermissions
+        : {
+            allowMarketingCopy: input.generationPermissions.allowMarketingCopy ?? true,
+            allowAssetReuse: input.generationPermissions.allowAssetReuse ?? false,
+            allowGeneratedImagery: input.generationPermissions.allowGeneratedImagery ?? false,
+          },
+    evidenceFingerprint,
+    approvedEvidenceFingerprint: null,
+  };
+  return storefrontDesignBriefContractSchema.parse({
+    ...candidate,
+    fingerprint: fingerprintBrief(candidate),
+  });
+}
+
 export function supersedeStorefrontDesignBrief(
   briefInput: StorefrontDesignBriefContract,
   input: SupersedeStorefrontDesignBriefInput,
@@ -861,10 +962,13 @@ export function supersedeStorefrontDesignBrief(
   const sourceEvidenceIds = input.sourceEvidenceIds
     ? list(input.sourceEvidenceIds)
     : input.materialEvidence.evidence.map((evidence) => evidence.id);
+  const replacementCanonicalCommerceProjectionRef =
+    input.materialEvidence.reconciliation?.canonicalCommerceProjectionRef ??
+    brief.canonicalCommerceProjectionRef;
   const replacementEvidenceFingerprint = createStorefrontDesignBriefEvidenceFingerprint({
     sourceReferenceIds,
     sourceEvidenceIds,
-    canonicalCommerceProjectionRef: brief.canonicalCommerceProjectionRef,
+    canonicalCommerceProjectionRef: replacementCanonicalCommerceProjectionRef,
     materialEvidence: input.materialEvidence,
   });
   const supersededCandidate = {
@@ -885,6 +989,7 @@ export function supersedeStorefrontDesignBrief(
     updatedAt: timestamp,
     sourceReferenceIds,
     sourceEvidenceIds,
+    canonicalCommerceProjectionRef: replacementCanonicalCommerceProjectionRef,
     approvedBrandDirection: null,
     brandProposal:
       input.brandProposal === undefined

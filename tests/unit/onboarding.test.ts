@@ -10,6 +10,7 @@ import {
 import {
   ONBOARDING_SCHEMA_VERSION,
   PREVIOUS_ONBOARDING_SCHEMA_VERSION,
+  createIdleUrlBriefWorkflow,
   migrateOnboardingSession,
   onboardingSessionSchema,
   onboardingStepIds,
@@ -118,6 +119,9 @@ function validSession(overrides: Partial<OnboardingSession> = {}): OnboardingSes
     createdAt: timestamp,
     updatedAt,
     designBrief,
+    urlBriefWorkflow:
+      overrides.urlBriefWorkflow ??
+      createIdleUrlBriefWorkflow({ id: "url_workflow_onboarding_test", now: timestamp }),
     ...overrides,
   });
 }
@@ -258,7 +262,7 @@ const completeVisualDirectionDraft: VisualDirectionDraft = {
 describe("onboarding session schema", () => {
   it("accepts the canonical initial state", () => {
     expect(validSession()).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: ONBOARDING_SCHEMA_VERSION,
       activeStepId: "creation-path",
       selectedLanguages: ["en"],
     });

@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { normalizeStorefrontDesignBriefInput } from "@/domain/design-brief";
-import { onboardingBriefIdForSession, onboardingSessionSchema } from "@/domain/onboarding";
+import {
+  ONBOARDING_SCHEMA_VERSION,
+  createIdleUrlBriefWorkflow,
+  onboardingBriefIdForSession,
+  onboardingSessionSchema,
+} from "@/domain/onboarding";
 
 const storageKey = "veskify:onboarding-session";
 const createdAt = "2026-07-19T10:00:00.000Z";
@@ -8,7 +13,7 @@ const createdAt = "2026-07-19T10:00:00.000Z";
 function reviewSession() {
   const id = "onboarding_review_e2e";
   return onboardingSessionSchema.parse({
-    schemaVersion: 2,
+    schemaVersion: ONBOARDING_SCHEMA_VERSION,
     id,
     creationPath: "new-storefront",
     activeStepId: "review-plan",
@@ -48,6 +53,10 @@ function reviewSession() {
       catalogueContext: "controlled-demo-catalogue",
       storefrontStructure: { pageTypes: ["home", "collection", "product"] },
       languagePlan: { selectedLanguages: ["en", "fi"], primaryLanguage: "en" },
+    }),
+    urlBriefWorkflow: createIdleUrlBriefWorkflow({
+      id: "url_workflow_review_e2e",
+      now: createdAt,
     }),
   });
 }

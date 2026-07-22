@@ -1,5 +1,6 @@
 import {
   ONBOARDING_SCHEMA_VERSION,
+  INTERMEDIATE_ONBOARDING_SCHEMA_VERSION,
   cloneOnboardingSession,
   migrateOnboardingSession,
   normalizePersistedOnboardingSession,
@@ -45,7 +46,11 @@ export class BrowserOnboardingSessionRepository implements OnboardingSessionRepo
       }
 
       if (typeof value === "object" && value !== null && "schemaVersion" in value) {
-        if (value.schemaVersion !== ONBOARDING_SCHEMA_VERSION && value.schemaVersion !== 1) {
+        if (
+          value.schemaVersion !== ONBOARDING_SCHEMA_VERSION &&
+          value.schemaVersion !== INTERMEDIATE_ONBOARDING_SCHEMA_VERSION &&
+          value.schemaVersion !== 1
+        ) {
           return Promise.resolve({ status: "incompatible" });
         }
         const normalized = normalizePersistedOnboardingSession(value);
@@ -55,7 +60,7 @@ export class BrowserOnboardingSessionRepository implements OnboardingSessionRepo
         } catch {
           return Promise.resolve({ status: "corrupt" });
         }
-        if (value.schemaVersion === 1 || normalized !== value) {
+        if (value.schemaVersion !== ONBOARDING_SCHEMA_VERSION || normalized !== value) {
           try {
             storage.setItem(ONBOARDING_SESSION_STORAGE_KEY, JSON.stringify(migrated));
           } catch {

@@ -3,12 +3,15 @@ import {
   creationPathToBriefContext,
   getOnboardingStep,
   onboardingBriefIdForSession,
+  onboardingUrlBriefWorkflowIdForSession,
   onboardingSessionSchema,
   onboardingStepRegistry,
   evaluateBusinessBasics as evaluateBusinessBasicsForBrief,
   type BusinessBasicsField,
   type OnboardingCreationPath,
   type OnboardingSession,
+  createIdleUrlBriefWorkflow,
+  ONBOARDING_SCHEMA_VERSION,
 } from "@/domain/onboarding";
 import {
   evaluateExistingSourcesCompletion,
@@ -145,7 +148,7 @@ export class OnboardingService {
     const id = this.#createId();
     const session = onboardingSessionSchema.parse({
       id,
-      schemaVersion: 2,
+      schemaVersion: ONBOARDING_SCHEMA_VERSION,
       creationPath: null,
       activeStepId: "creation-path",
       completedStepIds: [],
@@ -157,6 +160,10 @@ export class OnboardingService {
       updatedAt: timestamp,
       designBrief: createEmptyStorefrontDesignBrief({
         id: onboardingBriefIdForSession(id),
+        now: timestamp,
+      }),
+      urlBriefWorkflow: createIdleUrlBriefWorkflow({
+        id: onboardingUrlBriefWorkflowIdForSession(id),
         now: timestamp,
       }),
     });
