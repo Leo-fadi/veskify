@@ -132,6 +132,7 @@ for (const width of [375, 768, 1024, 1440]) {
   test(`editor AI command and confirmation remain usable at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(editorUrl);
+    if (width < 1024) await page.getByRole("button", { name: "Open AI assistant" }).click();
     const request = page.getByLabel("Your request");
     await expect(request).toBeVisible();
     await request.fill("Add a campaign section.");

@@ -154,6 +154,7 @@ export function Field({
 export function Tabs({
   items,
   label = "Sections",
+  onSelect,
 }: {
   items: ReadonlyArray<{
     active?: boolean;
@@ -163,6 +164,7 @@ export function Tabs({
     label: string;
   }>;
   label?: string;
+  onSelect?: (id: string) => void;
 }) {
   return (
     <nav aria-label={label} className={styles.tabs}>
@@ -176,6 +178,16 @@ export function Tabs({
           >
             {item.label}
           </span>
+        ) : onSelect ? (
+          <button
+            aria-current={item.active ? "page" : undefined}
+            className={styles.tab}
+            key={item.id}
+            onClick={() => onSelect(item.id)}
+            type="button"
+          >
+            {item.label}
+          </button>
         ) : (
           <Link
             aria-current={item.active ? "page" : undefined}
@@ -257,6 +269,7 @@ export function AppShell({
   projectName,
   onHomeNavigate,
   homeNavigationDisabled = false,
+  editorMode = false,
   showModuleNav = Boolean(projectId),
 }: {
   activeModule?: ModuleId;
@@ -270,6 +283,7 @@ export function AppShell({
   projectName?: string;
   onHomeNavigate?: (event: MouseEvent<HTMLElement>) => void;
   homeNavigationDisabled?: boolean;
+  editorMode?: boolean;
   showModuleNav?: boolean;
 }) {
   const isFinnish = locale === "fi";
@@ -282,7 +296,7 @@ export function AppShell({
   const projectPath = projectId ? `/projects/${projectId}` : "/projects/new";
 
   return (
-    <div className={styles.shell}>
+    <div className={join(styles.shell, editorMode && styles.editorShell)}>
       <header className={styles.globalBar}>
         <Link
           aria-disabled={homeNavigationDisabled || undefined}

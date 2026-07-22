@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
-import { AppShell, Button, StatusPill } from "@/components/ui";
+import { describe, expect, it, vi } from "vitest";
+import { AppShell, Button, StatusPill, Tabs } from "@/components/ui";
 
 describe("Vesko UI foundations", () => {
   it("provides the Storefront Studio module shell and distinct workspace actions", () => {
@@ -83,5 +83,26 @@ describe("Vesko UI foundations", () => {
       "buttonPrimary",
     );
     expect(screen.getByRole("link", { name: "Primary link" }).className).toContain("buttonPrimary");
+  });
+
+  it("supports the collapsed editor shell and local tool tabs", () => {
+    const onSelect = vi.fn();
+    render(
+      <AppShell editorMode projectId="project_aurum_nordic">
+        <Tabs
+          items={[
+            { active: true, id: "design", label: "Design" },
+            { id: "ai", label: "AI assistant" },
+          ]}
+          label="Editor tools"
+          onSelect={onSelect}
+        />
+      </AppShell>,
+    );
+
+    expect(screen.getByLabelText("Vesko home")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Design" })).toHaveAttribute("aria-current", "page");
+    fireEvent.click(screen.getByRole("button", { name: "AI assistant" }));
+    expect(onSelect).toHaveBeenCalledWith("ai");
   });
 });

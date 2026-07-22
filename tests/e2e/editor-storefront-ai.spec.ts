@@ -4,6 +4,9 @@ const editorUrl = "/projects/project_aurum_nordic/editor";
 const storefrontInstruction = "Apply a warm premium style across the storefront.";
 
 async function openStorefrontProposal(page: Page, instruction = storefrontInstruction) {
+  if ((page.viewportSize()?.width ?? 1440) < 1024) {
+    await page.getByRole("button", { name: "Open AI assistant" }).click();
+  }
   await page.getByRole("radio", { name: "Entire storefront" }).check();
   await page.getByLabel("Your request").fill(instruction);
   await page.getByRole("button", { name: "Create proposal" }).click();

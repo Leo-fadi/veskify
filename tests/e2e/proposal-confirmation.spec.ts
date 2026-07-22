@@ -3,6 +3,9 @@ import { expect, test, type Page } from "@playwright/test";
 const editorUrl = "/projects/project_aurum_nordic/editor";
 
 async function createProposal(page: Page) {
+  if ((page.viewportSize()?.width ?? 1440) < 1024) {
+    await page.getByRole("button", { name: "Open AI assistant" }).click();
+  }
   await page.getByRole("button", { name: "Make the layout more minimal." }).click();
   await page.getByRole("button", { name: "Create proposal" }).click();
   await expect(page.getByLabel("Design proposal")).toBeVisible();
@@ -34,6 +37,7 @@ test("reviews, rejects and accepts a proposal without automatic draft mutation",
   await page.keyboard.press("Enter");
   await expect(page.getByText(/accepted for draft application/i)).toBeVisible();
   await expect(page.getByLabel("Draft status")).toContainText("Unsaved changes");
+  await page.getByRole("button", { name: "Close" }).click();
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
 });

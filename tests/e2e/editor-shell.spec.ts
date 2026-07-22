@@ -15,6 +15,11 @@ test("loads the in-memory Puck editor and switches page and locale", async ({ pa
   await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
   await expect(page.getByRole("button", { name: "Save draft" })).toBeDisabled();
   await expect(page.getByRole("button", { name: /publish/i })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Design", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "AI assistant", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Design", exact: true }).click();
+  await expect(page.getByText("Layout", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "AI assistant", exact: true }).click();
 
   const switcher = page.getByLabel("Storefront page");
   await switcher.selectOption("page_collection_rings");
@@ -86,7 +91,10 @@ test("duplicates and hides the actual selected section with undo and redo on mob
   await page.goto(url);
   const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
   await canvas.getByText("Made for northern light", { exact: true }).click();
-  const sectionActions = page.getByLabel("Selected section actions");
+  await page.getByRole("button", { name: "Pages & sections" }).click();
+  const sectionActions = page
+    .getByRole("dialog", { name: "Pages & sections" })
+    .getByLabel("Selected section actions");
   await expect(sectionActions.getByText("Aurum hero", { exact: true })).toBeVisible();
 
   await sectionActions.getByRole("button", { name: "Duplicate" }).click();
@@ -110,6 +118,7 @@ test("requests, previews, rejects and accepts deterministic proposals on mobile"
 }) => {
   await page.setViewportSize({ width: 375, height: 900 });
   await page.goto(url);
+  await page.getByRole("button", { name: "Open AI assistant" }).click();
   await page.getByRole("button", { name: "Make the homepage feel more luxurious." }).click();
   await page.getByRole("button", { name: "Create proposal" }).click();
   await expect(page.getByLabel("Design proposal")).toBeVisible();
@@ -127,6 +136,7 @@ test("requests, previews, rejects and accepts deterministic proposals on mobile"
   await expect(page.getByRole("button", { name: "Save draft" })).toBeEnabled();
   const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
   await expect(canvas.getByRole("heading", { name: "Discover Rings" })).toBeVisible();
+  await page.getByRole("button", { name: "Close" }).click();
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(canvas.getByRole("heading", { name: "Discover Rings" })).toHaveCount(0);
   await page.getByRole("button", { name: "Redo" }).click();
