@@ -52,6 +52,21 @@ export const collectionNavigationIntentSchema = z
   })
   .strict();
 
+export const collectionRangeFilterIntentSchema = z
+  .object({
+    type: z.literal("setCollectionFilterRange"),
+    collectionId: idSchema,
+    collectionRevision: z.string().trim().min(1).max(120),
+    filterId: idSchema,
+    min: z.number().finite(),
+    max: z.number().finite(),
+  })
+  .strict()
+  .refine((intent) => intent.min <= intent.max, {
+    message: "Collection range filter minimum cannot exceed its maximum.",
+    path: ["min"],
+  });
+
 export const collectionFilterIntentSchema = z.discriminatedUnion("type", [
   z
     .object({
@@ -63,16 +78,7 @@ export const collectionFilterIntentSchema = z.discriminatedUnion("type", [
       selected: z.boolean(),
     })
     .strict(),
-  z
-    .object({
-      type: z.literal("setCollectionFilterRange"),
-      collectionId: idSchema,
-      collectionRevision: z.string().trim().min(1).max(120),
-      filterId: idSchema,
-      min: z.number(),
-      max: z.number(),
-    })
-    .strict(),
+  collectionRangeFilterIntentSchema,
   z
     .object({
       type: z.literal("clearCollectionFilter"),
@@ -119,7 +125,18 @@ export type DynamicCollectionCommerceRendererInput = {
 };
 
 type LocaleContext = { activeLocale: Locale; primaryLocale: Locale };
-type ResolvedAsset = { asset: AssetRef; provenance: StorefrontAssetMetadata["provenance"] };
+type ResolvedAsset = {
+  asset: AssetRef;
+  provenance: StorefrontAssetMetadata["provenance"];
+  role: StorefrontAssetMetadata["role"];
+};
+type ProductMediaPresentation = ProductPresentationContext["media"][number];
+type CollectionCommerceAssetRole =
+  "collectionImage" | "productMainImage" | "productAlternativeImage" | "editorialImage";
+type SelectedCardMedia = {
+  media: ProductMediaPresentation;
+  role: Exclude<CollectionCommerceAssetRole, "collectionImage">;
+};
 
 type PreparedDynamicCollectionCommerce = Omit<
   DynamicCollectionCommerceRendererInput,
@@ -134,6 +151,7 @@ type PreparedDynamicCollectionCommerce = Omit<
   styleOverrides: DynamicCollectionCommerceStyleOverrides;
   loading: z.infer<typeof collectionLoadingPresentationSchema>;
   assetFor: (assetId: string, alt?: LocalizedText) => ResolvedAsset;
+  cardMediaFor: (productId: string) => ProductMediaPresentation | undefined;
 };
 
 const arraysEqual = (left: readonly string[], right: readonly string[]) =>
@@ -145,12 +163,37 @@ const text = (value: LocalizedText, locale: LocaleContext) =>
 const fallback = (en: string, fi: string, locale: LocaleContext) =>
   locale.activeLocale === "fi" ? fi : en;
 
+function productMediaAssetRole(role: ProductMediaPresentation["role"]): SelectedCardMedia["role"] {
+  if (role === "main") return "productMainImage";
+  if (role === "editorial") return "editorialImage";
+  return "productAlternativeImage";
+}
+
+function selectCardMedia(
+  product: ProductPresentationContext,
+  assetMetadata: ReadonlyMap<string, StorefrontAssetMetadata>,
+  assignedAssets?: ReadonlyMap<string, StorefrontAssetMetadata["role"]>,
+): SelectedCardMedia | undefined {
+  for (const media of product.media) {
+    const role = productMediaAssetRole(media.role);
+    const metadata = assetMetadata.get(media.assetId);
+    if (
+      metadata?.approvalStatus === "approved" &&
+      metadata.role === role &&
+      (assignedAssets === undefined || assignedAssets.get(media.assetId) === role)
+    ) {
+      return { media, role };
+    }
+  }
+  return undefined;
+}
+
 function requiredAssetRoles(
   collection: CollectionPresentationContext,
-  products: readonly ProductPresentationContext[],
+  selectedCardMedia: ReadonlyMap<string, SelectedCardMedia>,
 ) {
-  const required = new Map<string, "collectionImage" | "productMainImage">();
-  const add = (assetId: string, role: "collectionImage" | "productMainImage") => {
+  const required = new Map<string, CollectionCommerceAssetRole>();
+  const add = (assetId: string, role: CollectionCommerceAssetRole) => {
     const existing = required.get(assetId);
     if (existing !== undefined && existing !== role) {
       throw new Error(`Canonical asset ${assetId} cannot fill conflicting collection roles.`);
@@ -159,10 +202,7 @@ function requiredAssetRoles(
   };
   const hero = collection.assets.find((asset) => asset.role === "hero");
   if (hero) add(hero.assetId, "collectionImage");
-  products.forEach((product) => {
-    const media = product.media[0];
-    if (media) add(media.assetId, "productMainImage");
-  });
+  selectedCardMedia.forEach(({ media, role }) => add(media.assetId, role));
   return required;
 }
 
@@ -225,11 +265,21 @@ function prepareDynamicCollectionCommerce(
         })
       : [];
 
-  const requiredAssets = requiredAssetRoles(collection, products);
   const assignedAssets = new Map(
     instance.assetAssignments.map((assignment) => [assignment.assetId, assignment.role]),
   );
   const assetMetadata = new Map(projection.assets.map((asset) => [asset.assetId, asset]));
+  const selectedCardMedia = new Map(
+    products.flatMap((product) => {
+      const selected = selectCardMedia(
+        product,
+        assetMetadata,
+        assignedAssets.size > 0 ? assignedAssets : undefined,
+      );
+      return selected ? [[product.productId, selected] as const] : [];
+    }),
+  );
+  const requiredAssets = requiredAssetRoles(collection, selectedCardMedia);
   if (assignedAssets.size > 0) {
     for (const [assetId, expectedRole] of requiredAssets) {
       if (assignedAssets.get(assetId) !== expectedRole) {
@@ -270,6 +320,9 @@ function prepareDynamicCollectionCommerce(
     onNavigateCollection: input.onNavigateCollection,
     onFilterIntent: input.onFilterIntent,
     onSortIntent: input.onSortIntent,
+    cardMediaFor(productId) {
+      return selectedCardMedia.get(productId)?.media;
+    },
     assetFor(assetId, alt) {
       const metadata = assetMetadata.get(assetId);
       if (!metadata || metadata.approvalStatus !== "approved") {
@@ -287,6 +340,7 @@ function prepareDynamicCollectionCommerce(
           decorative: metadata.decorative,
         }),
         provenance: metadata.provenance,
+        role: metadata.role,
       };
     },
   };
@@ -319,6 +373,7 @@ function moneyLabel(
 
 export function DynamicCollectionProductCard({
   product,
+  media,
   locale,
   assetFor,
   content,
@@ -326,6 +381,7 @@ export function DynamicCollectionProductCard({
   onNavigateProduct,
 }: {
   product: ProductPresentationContext;
+  media?: ProductMediaPresentation;
   locale: LocaleContext;
   assetFor: PreparedDynamicCollectionCommerce["assetFor"];
   content: DynamicCollectionCommerceContent;
@@ -333,7 +389,6 @@ export function DynamicCollectionProductCard({
   onNavigateProduct: DynamicCollectionCommerceRendererInput["onNavigateProduct"];
 }) {
   const titleId = useId();
-  const media = product.media[0];
   const image = media ? assetFor(media.assetId, media.alt ?? product.title) : undefined;
   const attributes = product.attributeGroups
     .flatMap((group) => group.attributes)
@@ -357,8 +412,12 @@ export function DynamicCollectionProductCard({
       data-product-type={product.productTypeId}
     >
       <div className={styles.productMedia}>
-        {image ? (
-          <figure data-asset-id={media.assetId} data-asset-provenance={image.provenance.kind}>
+        {image && media ? (
+          <figure
+            data-asset-id={media.assetId}
+            data-asset-provenance={image.provenance.kind}
+            data-asset-role={image.role}
+          >
             <CommerceImage locale={locale} resolved={image} />
           </figure>
         ) : (
@@ -455,7 +514,11 @@ function CollectionHeader({
           ) : null}
         </div>
         {image ? (
-          <figure data-asset-id={hero!.assetId} data-asset-provenance={image.provenance.kind}>
+          <figure
+            data-asset-id={hero!.assetId}
+            data-asset-provenance={image.provenance.kind}
+            data-asset-role={image.role}
+          >
             <CommerceImage locale={locale} resolved={image} />
           </figure>
         ) : null}
@@ -496,6 +559,134 @@ function ChildCollectionNavigation({
   );
 }
 
+type CollectionRangePresentation = NonNullable<
+  CollectionPresentationContext["filters"][number]["range"]
+>;
+
+function decimalPlaces(value: number) {
+  const [coefficient = "", exponentText] = Math.abs(value).toString().toLowerCase().split("e");
+  const [, decimals = ""] = coefficient.split(".");
+  const exponent = exponentText === undefined ? 0 : Number(exponentText);
+  return Math.max(0, decimals.length - exponent);
+}
+
+function normalizeRangeValue(
+  rawValue: number,
+  range: CollectionRangePresentation,
+  lowerBound: number,
+  upperBound: number,
+) {
+  if (!Number.isFinite(rawValue)) return undefined;
+  const clamped = Math.min(upperBound, Math.max(lowerBound, rawValue));
+  if (range.step === undefined) return clamped;
+  const snapped = range.min + Math.round((clamped - range.min) / range.step) * range.step;
+  const precision = Math.max(decimalPlaces(range.min), decimalPlaces(range.step));
+  return Math.min(upperBound, Math.max(lowerBound, Number(snapped.toFixed(precision))));
+}
+
+export function createCollectionRangeFilterIntent({
+  collectionId,
+  collectionRevision,
+  filterId,
+  range,
+  changedBound,
+  rawValue,
+}: {
+  collectionId: string;
+  collectionRevision: string;
+  filterId: string;
+  range: CollectionRangePresentation;
+  changedBound: "min" | "max";
+  rawValue: number;
+}) {
+  const currentMin = range.selectedMin ?? range.min;
+  const currentMax = range.selectedMax ?? range.max;
+  const normalized = normalizeRangeValue(
+    rawValue,
+    range,
+    changedBound === "min" ? range.min : currentMin,
+    changedBound === "min" ? currentMax : range.max,
+  );
+  if (normalized === undefined) return undefined;
+  return collectionRangeFilterIntentSchema.parse({
+    type: "setCollectionFilterRange",
+    collectionId,
+    collectionRevision,
+    filterId,
+    min: changedBound === "min" ? normalized : currentMin,
+    max: changedBound === "max" ? normalized : currentMax,
+  });
+}
+
+function CollectionRangeFilter({
+  filter,
+  range,
+  collection,
+  locale,
+  emit,
+}: {
+  filter: CollectionPresentationContext["filters"][number];
+  range: CollectionRangePresentation;
+  collection: CollectionPresentationContext;
+  locale: LocaleContext;
+  emit: (intent: CollectionFilterIntent) => void;
+}) {
+  const descriptionId = useId();
+  const currentMin = range.selectedMin ?? range.min;
+  const currentMax = range.selectedMax ?? range.max;
+  const unit = range.unit ? ` ${text(range.unit, locale)}` : "";
+  const step = range.step ? ` ${fallback("Step", "Askel", locale)} ${range.step}${unit}.` : "";
+  const emitBound = (changedBound: "min" | "max", rawValue: number) => {
+    const intent = createCollectionRangeFilterIntent({
+      collectionId: collection.collectionId,
+      collectionRevision: collection.revision,
+      filterId: filter.id,
+      range,
+      changedBound,
+      rawValue,
+    });
+    if (intent) emit(intent);
+  };
+  return (
+    <div className={styles.rangeControls}>
+      <label>
+        {fallback("Minimum", "Vähimmäisarvo", locale)}
+        <input
+          aria-describedby={`${descriptionId}-minimum`}
+          aria-label={`${text(filter.label, locale)} ${fallback("minimum", "vähimmäisarvo", locale)}`}
+          max={currentMax}
+          min={range.min}
+          onChange={(event) => emitBound("min", Number(event.currentTarget.value))}
+          step={range.step}
+          type="range"
+          value={currentMin}
+        />
+        <span className={styles.rangeDescription} id={`${descriptionId}-minimum`}>
+          {fallback("Allowed", "Sallittu", locale)} {range.min}–{currentMax}
+          {unit}.{step}
+        </span>
+      </label>
+      <label>
+        {fallback("Maximum", "Enimmäisarvo", locale)}
+        <input
+          aria-describedby={`${descriptionId}-maximum`}
+          aria-label={`${text(filter.label, locale)} ${fallback("maximum", "enimmäisarvo", locale)}`}
+          max={range.max}
+          min={currentMin}
+          onChange={(event) => emitBound("max", Number(event.currentTarget.value))}
+          step={range.step}
+          type="range"
+          value={currentMax}
+        />
+        <span className={styles.rangeDescription} id={`${descriptionId}-maximum`}>
+          {fallback("Allowed", "Sallittu", locale)} {currentMin}–{range.max}
+          {unit}.{step}
+        </span>
+      </label>
+    </div>
+  );
+}
+
 function CollectionFilters({
   input,
   locale,
@@ -513,7 +704,10 @@ function CollectionFilters({
   const emit = (intent: CollectionFilterIntent) =>
     input.onFilterIntent(collectionFilterIntentSchema.parse(intent));
   return (
-    <details className={`${styles.filters} ${styles[`filters_${input.props.filterLayout}`]}`}>
+    <details
+      className={`${styles.filters} ${styles[`filters_${input.props.filterLayout}`]}`}
+      data-layout-region="filters"
+    >
       <summary>{text(input.content.filterTriggerLabel, locale)}</summary>
       <div className={styles.filterPanel}>
         <div className={styles.filterHeading}>
@@ -539,51 +733,13 @@ function CollectionFilters({
             <fieldset key={filter.id}>
               <legend>{text(filter.label, locale)}</legend>
               {isRange && range ? (
-                <div className={styles.rangeControls}>
-                  <label>
-                    {fallback("Minimum", "Vähimmäisarvo", locale)}
-                    <input
-                      aria-label={`${text(filter.label, locale)} ${fallback("minimum", "vähimmäisarvo", locale)}`}
-                      max={range.max}
-                      min={range.min}
-                      onChange={(event) =>
-                        emit({
-                          type: "setCollectionFilterRange",
-                          collectionId: input.collection.collectionId,
-                          collectionRevision: input.collection.revision,
-                          filterId: filter.id,
-                          min: Number(event.target.value),
-                          max: range.selectedMax ?? range.max,
-                        })
-                      }
-                      step={range.step}
-                      type="range"
-                      value={range.selectedMin ?? range.min}
-                    />
-                  </label>
-                  <label>
-                    {fallback("Maximum", "Enimmäisarvo", locale)}
-                    <input
-                      aria-label={`${text(filter.label, locale)} ${fallback("maximum", "enimmäisarvo", locale)}`}
-                      max={range.max}
-                      min={range.min}
-                      onChange={(event) =>
-                        emit({
-                          type: "setCollectionFilterRange",
-                          collectionId: input.collection.collectionId,
-                          collectionRevision: input.collection.revision,
-                          filterId: filter.id,
-                          min: range.selectedMin ?? range.min,
-                          max: Number(event.target.value),
-                        })
-                      }
-                      step={range.step}
-                      type="range"
-                      value={range.selectedMax ?? range.max}
-                    />
-                  </label>
-                  {range.unit ? <span>{text(range.unit, locale)}</span> : null}
-                </div>
+                <CollectionRangeFilter
+                  collection={input.collection}
+                  emit={emit}
+                  filter={filter}
+                  locale={locale}
+                  range={range}
+                />
               ) : (
                 <ul>
                   {filter.values.map((value) => (
@@ -691,9 +847,17 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
     >
       <CollectionHeader input={input} locale={locale} />
       <ChildCollectionNavigation input={input} locale={locale} />
-      <div className={styles.commerceLayout}>
+      <div
+        className={`${styles.commerceLayout} ${styles[`layout_${input.props.filterLayout}`]}`}
+        data-filter-layout={input.props.filterLayout}
+      >
         <CollectionFilters input={input} locale={locale} />
-        <section aria-busy={input.loading.status === "loading"} aria-labelledby={productsHeadingId}>
+        <section
+          aria-busy={input.loading.status === "loading"}
+          aria-labelledby={productsHeadingId}
+          className={styles.productResults}
+          data-layout-region="products"
+        >
           <div className={styles.productGridHeading}>
             <h2 id={productsHeadingId}>{text(input.content.productsHeading, locale)}</h2>
             <CollectionSort input={input} locale={locale} />
@@ -721,6 +885,7 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
                   key={product.productId}
                   locale={locale}
                   onNavigateProduct={input.onNavigateProduct}
+                  media={input.cardMediaFor(product.productId)}
                   product={product}
                   props={input.props}
                 />

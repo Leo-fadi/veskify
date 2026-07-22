@@ -970,11 +970,11 @@ export const collectionFilterPresentationSchema = z
     ),
     range: z
       .object({
-        min: z.number(),
-        max: z.number(),
-        selectedMin: z.number().optional(),
-        selectedMax: z.number().optional(),
-        step: z.number().positive().optional(),
+        min: z.number().finite(),
+        max: z.number().finite(),
+        selectedMin: z.number().finite().optional(),
+        selectedMax: z.number().finite().optional(),
+        step: z.number().finite().positive().optional(),
         unit: localizedTextSchema.optional(),
       })
       .strict()
@@ -1013,6 +1013,22 @@ export const collectionFilterPresentationSchema = z
           message: "Collection filter range state must remain within canonical bounds.",
           path: ["range"],
         });
+      }
+      if (filter.range.step !== undefined) {
+        for (const [field, value] of [
+          ["selectedMin", filter.range.selectedMin],
+          ["selectedMax", filter.range.selectedMax],
+        ] as const) {
+          if (value === undefined) continue;
+          const steps = (value - min) / filter.range.step;
+          if (Math.abs(steps - Math.round(steps)) > 1e-9) {
+            context.addIssue({
+              code: "custom",
+              message: "Selected collection range values must align with the canonical step.",
+              path: ["range", field],
+            });
+          }
+        }
       }
     } else if (filter.range !== undefined) {
       context.addIssue({

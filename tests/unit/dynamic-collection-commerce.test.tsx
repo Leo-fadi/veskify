@@ -3,8 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import {
+  collectionRangeFilterIntentSchema,
+  createCollectionRangeFilterIntent,
   dynamicCollectionCommerceComponentByTarget,
   renderDynamicCollectionCommerce,
+  type CollectionFilterIntent,
   type DynamicCollectionCommerceRendererInput,
 } from "@/components/storefront/dynamic-collection-commerce";
 import {
@@ -227,6 +230,49 @@ function rendererInput(
   };
 }
 
+function collectionWithRange(
+  rangeOverrides: Partial<NonNullable<CollectionPresentationContext["filters"][number]["range"]>>,
+) {
+  const next = structuredClone(collection);
+  const range = next.filters.find((filter) => filter.id === "price")!.range!;
+  Object.assign(range, rangeOverrides);
+  return next;
+}
+
+function productMediaInput(
+  product: ProductPresentationContext,
+  productAssets: StorefrontAssetMetadata[],
+  assetAssignments: Array<{
+    slotId: "collectionCommerceMedia";
+    assetId: string;
+    role: StorefrontAssetMetadata["role"];
+  }> = [],
+) {
+  const currentCollection: CollectionPresentationContext = {
+    collectionId: `collection_${product.productId}`,
+    title: localized("Product media collection"),
+    assets: [],
+    productIds: [product.productId],
+    filters: [],
+    sorting: [],
+    emptyState: { title: localized("No products") },
+    revision: `collection-rev-${product.productId}`,
+  };
+  const input = rendererInput(currentCollection);
+  input.instance = instance(currentCollection, { assetAssignments });
+  input.projection = {
+    products: [product],
+    collections: [currentCollection],
+    assets: productAssets,
+    navigation: [],
+    projectBrandContexts: [],
+    localizedContents: [],
+    productListRevision: "product-list-rev-1",
+    collectionListRevision: "collection-list-rev-1",
+  };
+  return input;
+}
+
 describe("P6-04 dynamic collection commerce", () => {
   it("renders canonical product facts, coherent price states and concise attributes", () => {
     render(renderDynamicCollectionCommerce(rendererInput()));
@@ -331,6 +377,116 @@ describe("P6-04 dynamic collection commerce", () => {
     expect(screen.getByRole("slider", { name: "Price minimum" })).toHaveValue("100");
     expect(screen.getByRole("slider", { name: "Price maximum" })).toHaveValue("800");
     expect(screen.getByRole("button", { name: "Clear all filters" })).toBeEnabled();
+    expect(screen.getByRole("slider", { name: "Price minimum" })).toHaveAccessibleDescription(
+      "Allowed 0–800 EUR. Step 50 EUR.",
+    );
+    expect(screen.getByRole("slider", { name: "Price maximum" })).toHaveAccessibleDescription(
+      "Allowed 100–1000 EUR. Step 50 EUR.",
+    );
+  });
+
+  it("clamps minimum and maximum slider intents to the selected opposite bound", () => {
+    const intents: CollectionFilterIntent[] = [];
+    render(
+      renderDynamicCollectionCommerce(
+        rendererInput(collection, { onFilterIntent: (intent) => intents.push(intent) }),
+      ),
+    );
+
+    fireEvent.change(screen.getByRole("slider", { name: "Price minimum" }), {
+      target: { value: "950" },
+    });
+    fireEvent.change(screen.getByRole("slider", { name: "Price maximum" }), {
+      target: { value: "50" },
+    });
+
+    expect(intents).toEqual([
+      expect.objectContaining({ type: "setCollectionFilterRange", min: 800, max: 800 }),
+      expect.objectContaining({ type: "setCollectionFilterRange", min: 100, max: 100 }),
+    ]);
+    expect(
+      intents.every((intent) =>
+        intent.type === "setCollectionFilterRange" ? intent.min <= intent.max : true,
+      ),
+    ).toBe(true);
+  });
+
+  it("uses canonical bounds for partially selected ranges", () => {
+    const missingMinimum = collectionWithRange({ selectedMin: undefined });
+    const minimumIntents: CollectionFilterIntent[] = [];
+    const minimumRender = render(
+      renderDynamicCollectionCommerce(
+        rendererInput(missingMinimum, {
+          onFilterIntent: (intent) => minimumIntents.push(intent),
+        }),
+      ),
+    );
+    fireEvent.change(screen.getByRole("slider", { name: "Price maximum" }), {
+      target: { value: "700" },
+    });
+    expect(minimumIntents).toContainEqual(
+      expect.objectContaining({ type: "setCollectionFilterRange", min: 0, max: 700 }),
+    );
+    minimumRender.unmount();
+
+    const missingMaximum = collectionWithRange({ selectedMax: undefined });
+    const maximumIntents: CollectionFilterIntent[] = [];
+    render(
+      renderDynamicCollectionCommerce(
+        rendererInput(missingMaximum, {
+          onFilterIntent: (intent) => maximumIntents.push(intent),
+        }),
+      ),
+    );
+    fireEvent.change(screen.getByRole("slider", { name: "Price minimum" }), {
+      target: { value: "300" },
+    });
+    expect(maximumIntents).toContainEqual(
+      expect.objectContaining({ type: "setCollectionFilterRange", min: 300, max: 1000 }),
+    );
+  });
+
+  it("normalizes finite range values to canonical bounds and step before intent emission", () => {
+    const range = collection.filters.find((filter) => filter.id === "price")!.range!;
+    const base = {
+      collectionId: collection.collectionId,
+      collectionRevision: collection.revision,
+      filterId: "price",
+      range,
+      changedBound: "min" as const,
+    };
+
+    expect(createCollectionRangeFilterIntent({ ...base, rawValue: 126 })).toEqual(
+      expect.objectContaining({ min: 150, max: 800 }),
+    );
+    expect(createCollectionRangeFilterIntent({ ...base, rawValue: -500 })).toEqual(
+      expect.objectContaining({ min: 0, max: 800 }),
+    );
+    expect(createCollectionRangeFilterIntent({ ...base, rawValue: Number.NaN })).toBeUndefined();
+    expect(
+      createCollectionRangeFilterIntent({ ...base, rawValue: Number.POSITIVE_INFINITY }),
+    ).toBeUndefined();
+    expect(() =>
+      collectionRangeFilterIntentSchema.parse({
+        type: "setCollectionFilterRange",
+        collectionId: collection.collectionId,
+        collectionRevision: collection.revision,
+        filterId: "price",
+        min: 900,
+        max: 800,
+      }),
+    ).toThrow(/minimum cannot exceed/i);
+  });
+
+  it("rejects invalid initial selected range ordering, bounds, finiteness and step", () => {
+    for (const invalid of [
+      collectionWithRange({ selectedMin: 900, selectedMax: 800 }),
+      collectionWithRange({ selectedMin: -50 }),
+      collectionWithRange({ selectedMax: Number.POSITIVE_INFINITY }),
+      collectionWithRange({ selectedMin: 125 }),
+    ]) {
+      expect(() => renderDynamicCollectionCommerce(rendererInput(invalid))).toThrow();
+    }
   });
 
   it("never emits filter intent for a disabled value", () => {
@@ -411,32 +567,134 @@ describe("P6-04 dynamic collection commerce", () => {
     );
   });
 
-  it("rejects unknown, unapproved and wrong-role assets before rendering", () => {
-    const unknown = rendererInput();
-    unknown.projection = { ...(unknown.projection as object), assets: [] };
-    expect(() => renderDynamicCollectionCommerce(unknown)).toThrow(/missing from inventory/i);
+  it("renders approved main, variant, alternative and editorial card media without relabelling", () => {
+    const scenarios = [
+      ["main", "productMainImage"],
+      ["variant", "productAlternativeImage"],
+      ["alternative", "productAlternativeImage"],
+      ["editorial", "editorialImage"],
+    ] as const;
 
-    const unapproved = rendererInput();
-    unapproved.projection = {
-      ...(unapproved.projection as object),
-      assets: [
-        asset("asset_collection", "collectionImage"),
-        asset("asset_watch", "productMainImage", "pending"),
-        asset("asset_ring", "productMainImage"),
-      ],
-    };
-    expect(() => renderDynamicCollectionCommerce(unapproved)).toThrow(/not approved/i);
+    for (const [canonicalRole, inventoryRole] of scenarios) {
+      const product = {
+        ...structuredClone(watch),
+        productId: `product_${canonicalRole}`,
+        media: [
+          {
+            assetId: `asset_${canonicalRole}`,
+            role: canonicalRole,
+            alt: localized(`${canonicalRole} watch`),
+          },
+        ],
+        revision: `product-rev-${canonicalRole}`,
+      };
+      const rendered = render(
+        renderDynamicCollectionCommerce(
+          productMediaInput(product, [asset(`asset_${canonicalRole}`, inventoryRole)]),
+        ),
+      );
+      expect(
+        rendered.container.querySelector(`[data-asset-id="asset_${canonicalRole}"]`),
+      ).toHaveAttribute("data-asset-role", inventoryRole);
+      rendered.unmount();
+    }
+  });
 
-    const wrongRole = rendererInput();
-    wrongRole.projection = {
-      ...(wrongRole.projection as object),
-      assets: [
-        asset("asset_collection", "collectionImage"),
-        asset("asset_watch", "collectionImage"),
-        asset("asset_ring", "productMainImage"),
+  it("falls back deterministically from unsupported first media to approved compatible media", () => {
+    const product = {
+      ...structuredClone(watch),
+      productId: "product_media_fallback",
+      media: [
+        { assetId: "asset_wrong_role", role: "main" as const, alt: localized("Wrong role") },
+        {
+          assetId: "asset_approved_alternative",
+          role: "alternative" as const,
+          alt: localized("Approved alternative"),
+        },
       ],
+      revision: "product-rev-media-fallback",
     };
-    expect(() => renderDynamicCollectionCommerce(wrongRole)).toThrow(/role does not match/i);
+    const rendered = render(
+      renderDynamicCollectionCommerce(
+        productMediaInput(product, [
+          asset("asset_wrong_role", "iconDecorative"),
+          asset("asset_approved_alternative", "productAlternativeImage"),
+        ]),
+      ),
+    );
+
+    expect(
+      rendered.container.querySelector('[data-asset-id="asset_approved_alternative"]'),
+    ).toHaveAttribute("data-asset-role", "productAlternativeImage");
+    expect(
+      rendered.container.querySelector('[data-asset-id="asset_wrong_role"]'),
+    ).not.toBeInTheDocument();
+  });
+
+  it("uses the safe placeholder when no approved compatible card media exists", () => {
+    const product = {
+      ...structuredClone(watch),
+      productId: "product_media_placeholder",
+      media: [
+        { assetId: "asset_unknown", role: "main" as const, alt: localized("Unknown") },
+        { assetId: "asset_rejected", role: "editorial" as const, alt: localized("Rejected") },
+      ],
+      revision: "product-rev-media-placeholder",
+    };
+    render(
+      renderDynamicCollectionCommerce(
+        productMediaInput(product, [asset("asset_rejected", "editorialImage", "rejected")]),
+      ),
+    );
+
+    expect(screen.getByText("Product image unavailable")).toBeVisible();
+    expect(screen.queryByRole("img", { name: /unknown|rejected/i })).not.toBeInTheDocument();
+  });
+
+  it("rejects unknown and unapproved explicitly assigned product media", () => {
+    const unknownProduct = {
+      ...structuredClone(watch),
+      productId: "product_explicit_unknown",
+      media: [{ assetId: "asset_explicit_unknown", role: "main" as const }],
+      revision: "product-rev-explicit-unknown",
+    };
+    expect(() =>
+      renderDynamicCollectionCommerce(
+        productMediaInput(
+          unknownProduct,
+          [],
+          [
+            {
+              slotId: "collectionCommerceMedia",
+              assetId: "asset_explicit_unknown",
+              role: "productMainImage",
+            },
+          ],
+        ),
+      ),
+    ).toThrow(/missing from inventory/i);
+
+    const unapprovedProduct = {
+      ...structuredClone(watch),
+      productId: "product_explicit_unapproved",
+      media: [{ assetId: "asset_explicit_unapproved", role: "alternative" as const }],
+      revision: "product-rev-explicit-unapproved",
+    };
+    expect(() =>
+      renderDynamicCollectionCommerce(
+        productMediaInput(
+          unapprovedProduct,
+          [asset("asset_explicit_unapproved", "productAlternativeImage", "pending")],
+          [
+            {
+              slotId: "collectionCommerceMedia",
+              assetId: "asset_explicit_unapproved",
+              role: "productAlternativeImage",
+            },
+          ],
+        ),
+      ),
+    ).toThrow(/not approved/i);
   });
 
   it("allows optional child collections to be omitted and validates them when present", () => {
@@ -525,6 +783,41 @@ describe("P6-04 dynamic collection commerce", () => {
       expect(rendered.container.querySelector('[data-product-type="ring"]')).toBeVisible();
       rendered.unmount();
     }
+  });
+
+  it("places horizontal filters and products on explicit full-width desktop rows", () => {
+    const input = rendererInput();
+    input.instance = instance(collection, {
+      props: { ...dynamicCollectionCommerceDefaultProps, filterLayout: "horizontal" },
+    });
+    const rendered = render(renderDynamicCollectionCommerce(input));
+    const layout = rendered.container.querySelector('[data-filter-layout="horizontal"]')!;
+    const regions = layout.querySelectorAll("[data-layout-region]");
+    const css = readFileSync(
+      "src/components/storefront/dynamic-collection-commerce.module.css",
+      "utf8",
+    );
+
+    expect(layout.className).toMatch(/layout_horizontal/);
+    expect(regions[0]).toHaveAttribute("data-layout-region", "filters");
+    expect(regions[1]).toHaveAttribute("data-layout-region", "products");
+    expect(css).toContain(".layout_horizontal > .filters");
+    expect(css).toContain(".layout_horizontal > .productResults");
+    expect(css).toMatch(/\.layout_horizontal[^}]*grid-template-columns: minmax\(0, 1fr\)/s);
+  });
+
+  it("preserves the explicit sidebar and product-column desktop layout", () => {
+    const rendered = render(renderDynamicCollectionCommerce(rendererInput()));
+    const layout = rendered.container.querySelector('[data-filter-layout="sidebar"]')!;
+    const css = readFileSync(
+      "src/components/storefront/dynamic-collection-commerce.module.css",
+      "utf8",
+    );
+
+    expect(layout.className).toMatch(/layout_sidebar/);
+    expect(css).toMatch(
+      /\.layout_sidebar[^}]*grid-template-columns: minmax\(14rem, 0\.25fr\) minmax\(0, 1fr\)/s,
+    );
   });
 
   it("keeps protected commerce facts outside editable schemas and rejects unknown props", () => {

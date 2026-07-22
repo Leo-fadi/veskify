@@ -166,6 +166,12 @@
   gap: 0.35rem;
 }
 
+.rangeDescription {
+  color: var(--brand-color-muted-text);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
 .rangeControls input,
 .sortControl select {
   width: 100%;
@@ -315,8 +321,12 @@
 }
 
 @media (min-width: 64rem) {
-  .commerceLayout {
+  .layout_sidebar {
     grid-template-columns: minmax(14rem, 0.25fr) minmax(0, 1fr);
+  }
+
+  .layout_horizontal {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .filters > summary {
@@ -327,7 +337,8 @@
     display: grid;
   }
 
-  .filters_horizontal {
+  .layout_horizontal > .filters,
+  .layout_horizontal > .productResults {
     grid-column: 1 / -1;
   }
 

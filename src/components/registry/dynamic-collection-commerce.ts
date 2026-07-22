@@ -127,7 +127,12 @@ const definitionInput = {
     {
       id: "collectionCommerceMedia",
       title: { en: "Collection and product media", fi: "Mallisto- ja tuotemedia" },
-      acceptedRoles: ["collectionImage", "productMainImage"],
+      acceptedRoles: [
+        "collectionImage",
+        "productMainImage",
+        "productAlternativeImage",
+        "editorialImage",
+      ],
       required: false,
       minItems: 0,
       maxItems: 256,

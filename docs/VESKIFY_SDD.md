@@ -743,13 +743,17 @@ the valid empty-list case. The optional, revision-bound `childCollections` slot 
 canonical collection-list binding; when present it must exactly match the canonical child collection
 references, and when omitted the child-navigation region is hidden.
 
-The optional `collectionCommerceMedia` asset slot accepts approved collection and product-main
-media. Explicit assignments must exactly cover the collection hero and first product-card media used
-by the renderer. When assignments are omitted, the renderer may use only canonical media references
-already present in the collection/product presentation contexts and approved by the projection asset
-inventory. Unknown, rejected, unapproved, unused or wrong-role assets fail conformance. Missing
-collection hero media is omitted safely, while missing product media uses a localized presentation
-placeholder without copying an asset or product fact into editable content.
+The optional `collectionCommerceMedia` asset slot accepts approved collection, product-main,
+product-alternative and editorial media. Product-card selection follows canonical media order and
+preserves the selected asset's actual canonical role; variant media uses the existing approved
+product-alternative role. If an item is not approved or its inventory role does not match its
+canonical media role, selection continues deterministically to the next compatible item. Explicit
+assignments must exactly cover the collection hero and product-card media used by the renderer, and
+unknown or unapproved explicit assignments fail conformance. When assignments are omitted, the
+renderer may use only compatible canonical media references already approved by the projection asset
+inventory. Missing collection hero media is omitted safely, while no compatible approved product
+media uses a localized presentation placeholder without copying an asset or product fact into
+editable content.
 
 The default presentation uses the `standard` family variant, standard grid density, standard cards,
 sidebar filters, visible collection description/product count/badges, up to two concise canonical
@@ -761,7 +765,11 @@ no-media states are presentation inputs; they do not query or repair commerce da
 
 The same engineering-owned React implementation serves editor, preview and published targets.
 Product/collection navigation, enumerated/range filtering, clear, clear-all and sorting emit typed
-presentation intents only. The component performs no product query, filter evaluation, sorting,
+presentation intents only. Range controls reject malformed initial state and clamp finite,
+step-aligned active values to the canonical bounds and selected opposite bound before emitting; an
+intent cannot carry a minimum above its maximum. Horizontal desktop filters and product results each
+occupy a full-width row, while the sidebar variant retains separate filter and product columns. The
+component performs no product query, filter evaluation, sorting,
 inventory, pricing, stock, collection-membership or navigation mutation. Product identity, type,
 SKU, price, compare-at price, availability, collection membership/filter state and asset provenance
 remain protected read-only commerce fields. Merchant-facing labels resolve through canonical EN/FI
