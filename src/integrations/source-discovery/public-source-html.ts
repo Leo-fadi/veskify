@@ -5,6 +5,10 @@ export type PublicHtmlAssetCandidate = Readonly<{
 }>;
 
 export type PublicHtmlExtraction = Readonly<{
+  robotsPolicy: Readonly<{
+    denied: boolean;
+    directives: readonly string[];
+  }>;
   title: string | null;
   metaDescription: string | null;
   openGraphTitle: string | null;
@@ -17,6 +21,10 @@ export type PublicHtmlExtraction = Readonly<{
   marketingCopyCandidates: readonly string[];
   assets: readonly PublicHtmlAssetCandidate[];
   hasRecognizedHtml: boolean;
+}>;
+
+export type PublicHtmlExtractionOptions = Readonly<{
+  robotsAgentName?: string;
 }>;
 
 function decodeEntities(value: string): string {
@@ -94,11 +102,62 @@ function visibleTextCandidates(html: string, tagName: "h1" | "h2" | "p"): string
     .filter((value): value is string => value !== null);
 }
 
-export function extractPublicHtml(htmlInput: string): PublicHtmlExtraction {
+function robotsDirectives(
+  metas: readonly Record<string, string>[],
+  robotsAgentName: string | undefined,
+): string[] {
+  const applicableNames = new Set(["robots"]);
+  const normalizedAgentName = robotsAgentName?.trim().toLowerCase();
+  if (normalizedAgentName) applicableNames.add(normalizedAgentName);
+
+  return unique(
+    metas.flatMap((meta) => {
+      const name = meta.name?.trim().toLowerCase();
+      if (!name || !applicableNames.has(name)) return [];
+      return (meta.content ?? "")
+        .toLowerCase()
+        .split(/[\s,]+/)
+        .map((directive) => directive.trim())
+        .filter(Boolean);
+    }),
+  );
+}
+
+function deniedExtraction(
+  hasRecognizedHtml: boolean,
+  directives: readonly string[],
+): PublicHtmlExtraction {
+  return {
+    robotsPolicy: { denied: true, directives },
+    title: null,
+    metaDescription: null,
+    openGraphTitle: null,
+    openGraphDescription: null,
+    openGraphSiteName: null,
+    declaredLanguage: null,
+    canonicalUrl: null,
+    themeColour: null,
+    brandNameCandidates: [],
+    marketingCopyCandidates: [],
+    assets: [],
+    hasRecognizedHtml,
+  };
+}
+
+export function extractPublicHtml(
+  htmlInput: string,
+  options: PublicHtmlExtractionOptions = {},
+): PublicHtmlExtraction {
   const html = htmlInput
     .replace(/<!--[\s\S]*?-->/g, " ")
     .replace(/<(script|style|noscript|template|svg)\b[^>]*>[\s\S]*?<\/\1>/gi, " ");
   const metas = tags(html, "meta");
+  const directives = robotsDirectives(metas, options.robotsAgentName);
+  const hasRecognizedHtml =
+    /<(?:html|head|body|title|meta|link|h1|h2|p|img)\b/i.test(html) && html.trim().length > 0;
+  if (directives.includes("none") || directives.includes("noindex")) {
+    return deniedExtraction(hasRecognizedHtml, directives);
+  }
   const links = tags(html, "link");
   const images = tags(html, "img");
   const htmlAttributes = tags(html, "html")[0] ?? {};
@@ -148,6 +207,7 @@ export function extractPublicHtml(htmlInput: string): PublicHtmlExtraction {
   }
 
   return {
+    robotsPolicy: { denied: false, directives },
     title,
     metaDescription,
     openGraphTitle,
@@ -159,7 +219,6 @@ export function extractPublicHtml(htmlInput: string): PublicHtmlExtraction {
     brandNameCandidates,
     marketingCopyCandidates,
     assets,
-    hasRecognizedHtml:
-      /<(?:html|head|body|title|meta|link|h1|h2|p|img)\b/i.test(html) && html.trim().length > 0,
+    hasRecognizedHtml,
   };
 }

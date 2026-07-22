@@ -21,6 +21,7 @@ import {
   createServerUrlBriefWorkflowService,
   selectServerSourceDiscoveryAdapter,
 } from "@/integrations/source-discovery/index.server";
+import { extractPublicHtml } from "@/integrations/source-discovery/public-source-html";
 import type {
   OnboardingSessionLoadResult,
   OnboardingSessionRepository,
@@ -113,6 +114,32 @@ const completeHtml = `<!doctype html>
     <main><h1>North Star Goods</h1><p>Made for calm, considered spaces.</p></main>
   </body>
 </html>`;
+
+function htmlWithRobotsMeta(name: string, content: string): string {
+  return completeHtml.replace("<head>", `<head><meta name="${name}" content="${content}">`);
+}
+
+function pendingNetworkReply(
+  input: PublicSourceNetworkRequest,
+): Promise<PublicSourceNetworkResponse> {
+  return new Promise((_, reject) => {
+    if (input.signal.aborted) {
+      const error = new Error("aborted");
+      error.name = "AbortError";
+      reject(error);
+      return;
+    }
+    input.signal.addEventListener(
+      "abort",
+      () => {
+        const error = new Error("aborted");
+        error.name = "AbortError";
+        reject(error);
+      },
+      { once: true },
+    );
+  });
+}
 
 class MemoryOnboardingRepository implements OnboardingSessionRepository {
   session?: OnboardingSession;
@@ -237,40 +264,87 @@ describe("P7-03 safe public-source discovery adapter", () => {
     expect(network.requestCalls).toEqual([]);
   });
 
-  it("maps timeout and merchant cancellation to stable safe errors", async () => {
-    const pendingReply = (input: PublicSourceNetworkRequest) =>
-      new Promise<PublicSourceNetworkResponse>((_, reject) => {
-        if (input.signal.aborted) {
-          const error = new Error("aborted");
-          error.name = "AbortError";
-          reject(error);
-          return;
-        }
-        input.signal.addEventListener(
-          "abort",
-          () => {
-            const error = new Error("aborted");
-            error.name = "AbortError";
-            reject(error);
-          },
-          { once: true },
-        );
-      });
-    const timeoutNetwork = new MockPublicSourceNetwork([pendingReply]);
+  it("rejects a pre-aborted signal as cancellation without invoking the network", async () => {
+    const network = new MockPublicSourceNetwork([]);
+    const controller = new AbortController();
+    const addListener = vi.spyOn(controller.signal, "addEventListener");
+    controller.abort();
+
+    await expect(
+      createPublicSourceDiscoveryAdapter({ network }).discover({
+        source: source(),
+        signal: controller.signal,
+      }),
+    ).rejects.toMatchObject({
+      code: "cancelled",
+      message: "Storefront discovery was cancelled. Your reviewed progress is unchanged.",
+    });
+    expect(network.resolveCalls).toEqual([]);
+    expect(network.requestCalls).toEqual([]);
+    expect(addListener).not.toHaveBeenCalled();
+  });
+
+  it("cancels safely while a network request is active", async () => {
+    let markRequestStarted: (() => void) | undefined;
+    const requestStarted = new Promise<void>((resolve) => {
+      markRequestStarted = resolve;
+    });
+    const cancellationNetwork = new MockPublicSourceNetwork([
+      (input) => {
+        markRequestStarted?.();
+        return pendingNetworkReply(input);
+      },
+    ]);
+    const controller = new AbortController();
+    const addListener = vi.spyOn(controller.signal, "addEventListener");
+    const removeListener = vi.spyOn(controller.signal, "removeEventListener");
+    const discovery = createPublicSourceDiscoveryAdapter({
+      network: cancellationNetwork,
+      timeoutMs: 2_000,
+    }).discover({ source: source(), signal: controller.signal });
+    await requestStarted;
+    controller.abort();
+
+    await expect(discovery).rejects.toMatchObject({ code: "cancelled" });
+    expect(cancellationNetwork.requestCalls).toHaveLength(1);
+    expect(addListener).toHaveBeenCalledTimes(1);
+    expect(removeListener).toHaveBeenCalledTimes(1);
+    expect(removeListener.mock.calls[0]?.[1]).toBe(addListener.mock.calls[0]?.[1]);
+  });
+
+  it("keeps adapter timeout distinct from merchant cancellation", async () => {
+    const timeoutNetwork = new MockPublicSourceNetwork([pendingNetworkReply]);
     await expect(
       createPublicSourceDiscoveryAdapter({ network: timeoutNetwork, timeoutMs: 100 }).discover({
         source: source(),
       }),
     ).rejects.toMatchObject({ code: "timeout" });
+  });
 
-    const cancellationNetwork = new MockPublicSourceNetwork([pendingReply]);
-    const controller = new AbortController();
-    const discovery = createPublicSourceDiscoveryAdapter({
-      network: cancellationNetwork,
-      timeoutMs: 2_000,
-    }).discover({ source: source(), signal: controller.signal });
-    controller.abort();
-    await expect(discovery).rejects.toMatchObject({ code: "cancelled" });
+  it("removes caller abort listeners after successful and failed discovery", async () => {
+    const successController = new AbortController();
+    const successAdd = vi.spyOn(successController.signal, "addEventListener");
+    const successRemove = vi.spyOn(successController.signal, "removeEventListener");
+    await createPublicSourceDiscoveryAdapter({
+      network: new MockPublicSourceNetwork([htmlResponse(completeHtml)]),
+    }).discover({ source: source(), signal: successController.signal });
+
+    expect(successAdd).toHaveBeenCalledTimes(1);
+    expect(successRemove).toHaveBeenCalledTimes(1);
+    expect(successRemove.mock.calls[0]?.[1]).toBe(successAdd.mock.calls[0]?.[1]);
+
+    const failureController = new AbortController();
+    const failureAdd = vi.spyOn(failureController.signal, "addEventListener");
+    const failureRemove = vi.spyOn(failureController.signal, "removeEventListener");
+    await expect(
+      createPublicSourceDiscoveryAdapter({
+        network: new MockPublicSourceNetwork([new Error("simulated fetch failure")]),
+      }).discover({ source: source(), signal: failureController.signal }),
+    ).rejects.toMatchObject({ code: "unavailable-source" });
+
+    expect(failureAdd).toHaveBeenCalledTimes(1);
+    expect(failureRemove).toHaveBeenCalledTimes(1);
+    expect(failureRemove.mock.calls[0]?.[1]).toBe(failureAdd.mock.calls[0]?.[1]);
   });
 
   it("rejects responses larger than the configured byte limit", async () => {
@@ -309,6 +383,7 @@ describe("P7-03 safe public-source discovery adapter", () => {
     await expect(
       createPublicSourceDiscoveryAdapter({ network: robotsDenied }).discover({ source: source() }),
     ).rejects.toMatchObject({ code: "blocked-source" });
+    expect(robotsDenied.resolveCalls).toEqual(["merchant.example"]);
 
     const loop = new MockPublicSourceNetwork([
       htmlResponse("", { status: 302, headers: { location: source().url } }),
@@ -317,6 +392,60 @@ describe("P7-03 safe public-source discovery adapter", () => {
       createPublicSourceDiscoveryAdapter({ network: loop }).discover({ source: source() }),
     ).rejects.toMatchObject({ code: "blocked-source" });
     expect(loop.requestCalls).toHaveLength(1);
+  });
+
+  it.each([
+    ["robots noindex", "robots", "noindex"],
+    ["robots none", "robots", "none"],
+    ["mixed-case robots noindex", "RoBoTs", "NoInDeX"],
+    ["comma-separated robots noindex", "robots", "nofollow, noindex"],
+    ["whitespace-separated robots noindex", "robots", "nofollow noindex"],
+    ["bot-specific noindex", "VeskifyPublicSourceDiscovery", "noindex"],
+  ])("blocks %s before producing public evidence", async (_label, name, content) => {
+    const network = new MockPublicSourceNetwork([htmlResponse(htmlWithRobotsMeta(name, content))]);
+
+    await expect(
+      createPublicSourceDiscoveryAdapter({ network }).discover({ source: source() }),
+    ).rejects.toMatchObject({
+      code: "blocked-source",
+      message: "The storefront declares that this page must not be indexed or reused.",
+    });
+    expect(network.resolveCalls).toEqual(["merchant.example"]);
+    expect(network.requestCalls).toHaveLength(1);
+  });
+
+  it("emits no title, copy, colour or asset candidates for a denied HTML document", () => {
+    const extracted = extractPublicHtml(htmlWithRobotsMeta("robots", "noindex"), {
+      robotsAgentName: "veskifypublicsourcediscovery",
+    });
+
+    expect(extracted).toMatchObject({
+      robotsPolicy: { denied: true, directives: ["noindex"] },
+      title: null,
+      metaDescription: null,
+      openGraphTitle: null,
+      openGraphDescription: null,
+      openGraphSiteName: null,
+      themeColour: null,
+      brandNameCandidates: [],
+      marketingCopyCandidates: [],
+      assets: [],
+    });
+  });
+
+  it("allows nofollow without noindex and extracts ordinary evidence", async () => {
+    const network = new MockPublicSourceNetwork([
+      htmlResponse(htmlWithRobotsMeta("ROBOTS", "NOFOLLOW")),
+    ]);
+
+    const result = await createPublicSourceDiscoveryAdapter({
+      network,
+      now: () => retrievedAt,
+    }).discover({ source: source() });
+
+    expect(result.evidence).toContainEqual(expect.objectContaining({ kind: "page-identity" }));
+    expect(result.evidence).toContainEqual(expect.objectContaining({ kind: "colour-signal" }));
+    expect(result.assetCandidates).toHaveLength(3);
   });
 
   it("rejects cross-source provenance through the existing orchestrator", async () => {

@@ -35,6 +35,10 @@ const redirectStatuses = new Set([301, 302, 303, 307, 308]);
 const defaultTimeoutMs = 8_000;
 const defaultMaxRedirects = 3;
 const defaultMaxResponseBytes = 512 * 1024;
+const publicSourceAgentProduct = "VeskifyPublicSourceDiscovery";
+const publicSourceRobotsAgentName = publicSourceAgentProduct.toLowerCase();
+const publicSourceUserAgent = `${publicSourceAgentProduct}/1.0`;
+const robotsDeniedMessage = "The storefront declares that this page must not be indexed or reused.";
 
 export type PublicSourceDiscoveryAdapterOptions = Readonly<{
   network?: PublicSourceNetwork;
@@ -80,6 +84,13 @@ function abortError(
           ? "Storefront discovery was cancelled. Your reviewed progress is unchanged."
           : "The storefront source could not be reached safely.",
       );
+}
+
+function throwIfAborted(signal: AbortSignal): void {
+  if (!signal.aborted) return;
+  const error = new Error("The public-source request was cancelled.");
+  error.name = "AbortError";
+  throw error;
 }
 
 function mediaTypeFor(url: URL): string | null {
@@ -182,6 +193,7 @@ export class PublicSourceDiscoveryAdapter implements SourceDiscoveryAdapter {
   }
 
   async discover(input: SourceDiscoveryAdapterInput): Promise<SourceDiscoveryResult> {
+    if (input.signal?.aborted) throw abortError(input.signal, false);
     validatePublicSourceUrl(input.source.url);
     const source = sourceReferenceSchema.parse(input.source);
     if (source.allowedDiscoveryPolicy.mode !== "bounded-public") {
@@ -198,12 +210,22 @@ export class PublicSourceDiscoveryAdapter implements SourceDiscoveryAdapter {
     }, this.#timeoutMs);
     const cancel = () => timeoutController.abort();
     input.signal?.addEventListener("abort", cancel, { once: true });
+    if (input.signal?.aborted) cancel();
 
     try {
+      throwIfAborted(timeoutController.signal);
       const { response, finalUrl } = await this.#fetchDocument(source, timeoutController.signal);
+      throwIfAborted(timeoutController.signal);
       const observedAt = this.#now();
       const html = new TextDecoder("utf-8", { fatal: false }).decode(response.body);
-      const extracted = extractPublicHtml(html);
+      throwIfAborted(timeoutController.signal);
+      const extracted = extractPublicHtml(html, {
+        robotsAgentName: publicSourceRobotsAgentName,
+      });
+      throwIfAborted(timeoutController.signal);
+      if (extracted.robotsPolicy.denied) {
+        throw new SourceDiscoveryApplicationError("blocked-source", robotsDeniedMessage);
+      }
       if (!extracted.hasRecognizedHtml) {
         throw new SourceDiscoveryApplicationError(
           "no-reusable-evidence",
@@ -233,6 +255,7 @@ export class PublicSourceDiscoveryAdapter implements SourceDiscoveryAdapter {
         timeoutController.signal,
         warnings,
       );
+      throwIfAborted(timeoutController.signal);
       const evidenceItems: SourceEvidence[] = [];
       if (
         extracted.title ||
@@ -318,6 +341,7 @@ export class PublicSourceDiscoveryAdapter implements SourceDiscoveryAdapter {
         timeoutController.signal,
         warnings,
       );
+      throwIfAborted(timeoutController.signal);
       for (const asset of assets) {
         evidenceItems.push(
           evidence({
@@ -382,6 +406,7 @@ export class PublicSourceDiscoveryAdapter implements SourceDiscoveryAdapter {
     let currentUrl = validatePublicSourceUrl(source.url);
     const visited = new Set<string>();
     for (let redirectCount = 0; ; redirectCount += 1) {
+      throwIfAborted(signal);
       if (visited.has(currentUrl.toString())) {
         throw new SourceDiscoveryApplicationError(
           "blocked-source",
@@ -390,6 +415,7 @@ export class PublicSourceDiscoveryAdapter implements SourceDiscoveryAdapter {
       }
       visited.add(currentUrl.toString());
       const addresses = await this.#network.resolve(publicSourceHostname(currentUrl), signal);
+      throwIfAborted(signal);
       assertPublicResolvedAddresses(addresses.map((address) => address.address));
       const response = await this.#network.request({
         url: currentUrl,
@@ -398,11 +424,12 @@ export class PublicSourceDiscoveryAdapter implements SourceDiscoveryAdapter {
           accept: "text/html, application/xhtml+xml;q=0.9",
           "accept-language": `${source.requestedLocale}, en;q=0.8`,
           "cache-control": "no-cache",
-          "user-agent": "VeskifyPublicSourceDiscovery/1.0",
+          "user-agent": publicSourceUserAgent,
         },
         maxBytes: this.#maxResponseBytes,
         signal,
       });
+      throwIfAborted(signal);
       if (response.body.byteLength > this.#maxResponseBytes) {
         throw new PublicSourceNetworkError(
           "response-too-large",
@@ -450,10 +477,7 @@ export class PublicSourceDiscoveryAdapter implements SourceDiscoveryAdapter {
       }
       const robotsPolicy = response.headers["x-robots-tag"]?.toLowerCase() ?? "";
       if (/\b(?:none|noindex)\b/.test(robotsPolicy)) {
-        throw new SourceDiscoveryApplicationError(
-          "blocked-source",
-          "The storefront declares that this page must not be indexed or reused.",
-        );
+        throw new SourceDiscoveryApplicationError("blocked-source", robotsDeniedMessage);
       }
       const contentEncoding = response.headers["content-encoding"]?.toLowerCase();
       if (contentEncoding && contentEncoding !== "identity") {
@@ -488,6 +512,7 @@ export class PublicSourceDiscoveryAdapter implements SourceDiscoveryAdapter {
   ): Promise<string | null> {
     if (!rawUrl) return null;
     try {
+      throwIfAborted(signal);
       const url = validatePublicSourceUrl(new URL(rawUrl, documentUrl).toString());
       if (url.origin !== requestedOrigin) {
         warnings.push(
@@ -499,6 +524,7 @@ export class PublicSourceDiscoveryAdapter implements SourceDiscoveryAdapter {
         return null;
       }
       const addresses = await this.#network.resolve(publicSourceHostname(url), signal);
+      throwIfAborted(signal);
       assertPublicResolvedAddresses(addresses.map((address) => address.address));
       return url.toString();
     } catch (error) {
@@ -521,6 +547,7 @@ export class PublicSourceDiscoveryAdapter implements SourceDiscoveryAdapter {
     const assets: AssetCandidate[] = [];
     const seen = new Set<string>();
     for (const candidate of candidates) {
+      throwIfAborted(signal);
       if (assets.length >= source.allowedDiscoveryPolicy.maxAssets) {
         warnings.push(
           sourceWarning("limited-assets", "Additional public asset candidates were omitted."),
@@ -540,6 +567,7 @@ export class PublicSourceDiscoveryAdapter implements SourceDiscoveryAdapter {
         }
         if (seen.has(url.toString())) continue;
         const addresses = await this.#network.resolve(publicSourceHostname(url), signal);
+        throwIfAborted(signal);
         assertPublicResolvedAddresses(addresses.map((address) => address.address));
         seen.add(url.toString());
         const role = candidate.kind === "open-graph-image" ? "hero" : "logo";

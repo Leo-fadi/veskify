@@ -17,13 +17,36 @@ function abortError(): Error {
   return error;
 }
 
-function waitForAbort(signal: AbortSignal): Promise<never> {
-  return new Promise((_, reject) => {
-    if (signal.aborted) {
-      reject(abortError());
-      return;
-    }
-    signal.addEventListener("abort", () => reject(abortError()), { once: true });
+function networkFailure(error: unknown): Error {
+  return error instanceof Error
+    ? error
+    : new PublicSourceNetworkError("network-failure", "The public source request failed.", {
+        cause: error,
+      });
+}
+
+function resolveWithAbort<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) return Promise.reject(abortError());
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let cleanup: () => void = () => undefined;
+    const settleResolve = (value: T) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(value);
+    };
+    const settleReject = (error: unknown) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(networkFailure(error));
+    };
+    const cancel = () => settleReject(abortError());
+    cleanup = () => signal.removeEventListener("abort", cancel);
+    signal.addEventListener("abort", cancel, { once: true });
+    if (signal.aborted) cancel();
+    operation.then(settleResolve, settleReject);
   });
 }
 
@@ -46,10 +69,7 @@ export class NodePublicSourceNetwork implements PublicSourceNetwork {
     signal: AbortSignal,
   ): Promise<readonly PublicSourceResolvedAddress[]> {
     if (signal.aborted) throw abortError();
-    const result = await Promise.race([
-      lookup(hostname, { all: true, verbatim: true }),
-      waitForAbort(signal),
-    ]);
+    const result = await resolveWithAbort(lookup(hostname, { all: true, verbatim: true }), signal);
     return result.map((entry) => ({
       address: entry.address,
       family: entry.family === 6 ? 6 : 4,
@@ -70,16 +90,18 @@ export class NodePublicSourceNetwork implements PublicSourceNetwork {
 
     return new Promise((resolve, reject) => {
       let settled = false;
+      let cleanup: () => void = () => undefined;
       const settleReject = (error: unknown) => {
         if (settled) return;
         settled = true;
-        reject(
-          error instanceof Error
-            ? error
-            : new PublicSourceNetworkError("network-failure", "The public source request failed.", {
-                cause: error,
-              }),
-        );
+        cleanup();
+        reject(networkFailure(error));
+      };
+      const settleResolve = (response: PublicSourceNetworkResponse) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(response);
       };
       const pinnedLookup: LookupFunction = (_hostname, _options, callback) => {
         callback(null, pinnedAddress.address, pinnedAddress.family);
@@ -120,9 +142,7 @@ export class NodePublicSourceNetwork implements PublicSourceNetwork {
             chunks.push(chunk);
           });
           response.on("end", () => {
-            if (settled) return;
-            settled = true;
-            resolve({
+            settleResolve({
               status: response.statusCode ?? 0,
               headers: responseHeaders(response.headers),
               body: Buffer.concat(chunks),
@@ -131,13 +151,16 @@ export class NodePublicSourceNetwork implements PublicSourceNetwork {
           response.on("error", settleReject);
         },
       );
-      const cancel = () => clientRequest.destroy(abortError());
-      input.signal.addEventListener("abort", cancel, { once: true });
-      clientRequest.on("error", (error) => {
-        input.signal.removeEventListener("abort", cancel);
+      const cancel = () => {
+        const error = abortError();
+        clientRequest.destroy(error);
         settleReject(error);
-      });
-      clientRequest.on("close", () => input.signal.removeEventListener("abort", cancel));
+      };
+      cleanup = () => input.signal.removeEventListener("abort", cancel);
+      input.signal.addEventListener("abort", cancel, { once: true });
+      if (input.signal.aborted) cancel();
+      clientRequest.on("error", settleReject);
+      clientRequest.on("close", cleanup);
       clientRequest.end();
     });
   }
