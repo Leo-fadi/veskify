@@ -152,6 +152,29 @@ test("confirms O-09 from the keyboard and enters the returned editor route", asy
   await expect(page.getByRole("button", { name: "Create storefront project" })).toHaveCount(0);
 });
 
+test("keeps review actions visible and keyboard accessible while scrolling on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 640 });
+  await page.goto("/projects/new");
+  await expect(page.getByRole("heading", { name: "Review your storefront plan" })).toBeVisible();
+
+  const actions = page.locator('footer[aria-label="Review actions"]');
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect(actions).toBeVisible();
+
+  const box = await actions.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(640);
+
+  const create = page.getByRole("button", { name: "Create storefront project" });
+  await create.focus();
+  await expect(create).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Creating project…" })).toBeDisabled();
+});
+
 for (const width of [375, 768, 1024, 1440]) {
   test(`O-09 has no horizontal overflow at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
