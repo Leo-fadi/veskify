@@ -271,7 +271,8 @@ describe("O-09 onboarding review and project creation route", () => {
     rejectCreation(new Error("creation failed"));
     expect(await screen.findByRole("alert")).toBeVisible();
     expect(saveExit).toBeEnabled();
-    expect(dashboard).toHaveAttribute("aria-disabled", "false");
+    expect(dashboard).not.toHaveAttribute("aria-disabled", "true");
+    expect(dashboard).toHaveAttribute("href", "/");
     expect(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY)).not.toBeNull();
 
     await user.click(dashboard);
