@@ -12,11 +12,15 @@ async function saveHomepageHeading(
 ) {
   await page.goto(editorUrl);
   const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  await canvas.getByText(currentHeading, { exact: true }).click();
+  await expect(page.getByRole("radio", { name: "Selected section" })).toBeChecked({
+    timeout: 3_000,
+  });
+  const designTab = page.getByRole("button", { name: "Design", exact: true });
+  await designTab.click();
+  await expect(designTab).toHaveAttribute("aria-current", "page");
   const headingField = page.getByRole("textbox", { name: "Main heading", exact: true });
-  await expect(async () => {
-    await canvas.getByText(currentHeading, { exact: true }).click();
-    await expect(headingField).toBeVisible({ timeout: 1_500 });
-  }).toPass({ timeout: 15_000 });
+  await expect(headingField).toBeVisible({ timeout: 3_000 });
   await headingField.fill(heading);
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByText("Draft saved successfully.")).toBeVisible();

@@ -1,6 +1,39 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const url = "/projects/project_aurum_nordic/editor";
+
+async function selectHomepageHero(page: Page) {
+  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  await canvas.getByText("Made for northern light", { exact: true }).click();
+  await expect(page.getByRole("radio", { name: "Selected section" })).toBeChecked({
+    timeout: 3_000,
+  });
+  return canvas;
+}
+
+async function activateDesignControls(page: Page) {
+  const designTab = page.getByRole("button", { name: "Design", exact: true });
+  await designTab.click();
+  await expect(designTab).toHaveAttribute("aria-current", "page");
+  const headingField = page.getByRole("textbox", { name: "Main heading", exact: true });
+  await expect(headingField).toBeVisible({ timeout: 3_000 });
+  return headingField;
+}
+
+async function activateAiAssistant(page: Page) {
+  const aiTab = page.getByRole("button", { name: "AI assistant", exact: true });
+  await aiTab.click();
+  await expect(aiTab).toHaveAttribute("aria-current", "page");
+}
+
+async function openSectionActions(sectionActions: Locator) {
+  const details = sectionActions.locator("details");
+  if (!(await details.evaluate((element: HTMLDetailsElement) => element.open))) {
+    await sectionActions.locator("summary").click();
+  }
+  await expect(details).toHaveJSProperty("open", true);
+  await expect(sectionActions.getByRole("button", { name: "Duplicate" })).toBeVisible();
+}
 
 test("loads the in-memory Puck editor and switches page and locale", async ({ page }) => {
   await page.goto(url);
@@ -49,12 +82,8 @@ test("loads the in-memory Puck editor and switches page and locale", async ({ pa
 
 test("selects and edits an approved field, then discards the session change", async ({ page }) => {
   await page.goto(url);
-  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
-  const headingField = page.getByRole("textbox", { name: "Main heading", exact: true });
-  await expect(async () => {
-    await canvas.getByText("Made for northern light", { exact: true }).click();
-    await expect(headingField).toBeVisible({ timeout: 1_500 });
-  }).toPass({ timeout: 15_000 });
+  const canvas = await selectHomepageHero(page);
+  const headingField = await activateDesignControls(page);
   await headingField.fill("A merchant-made homepage");
   await expect(
     canvas.getByRole("heading", { name: "A merchant-made homepage", exact: true }),
@@ -70,12 +99,10 @@ test("selects and edits an approved field, then discards the session change", as
 
 test("uses canonical keyboard undo and redo outside typing controls", async ({ page }) => {
   await page.goto(url);
-  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
-  await canvas.getByText("Made for northern light", { exact: true }).click();
-  await page
-    .getByLabel("Selected section actions")
-    .getByRole("button", { name: "Duplicate" })
-    .click();
+  const canvas = await selectHomepageHero(page);
+  const sectionActions = page.getByLabel("Selected section actions");
+  await openSectionActions(sectionActions);
+  await sectionActions.getByRole("button", { name: "Duplicate" }).click();
   await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(2);
   await page.getByRole("button", { name: "Undo", exact: true }).focus();
   await page.keyboard.press("ControlOrMeta+z");
@@ -95,6 +122,7 @@ test("duplicates and hides the actual selected section with undo and redo on mob
   const sectionActions = page
     .getByRole("dialog", { name: "Pages & sections" })
     .getByLabel("Selected section actions");
+  await openSectionActions(sectionActions);
   await expect(sectionActions.getByText("Aurum hero", { exact: true })).toBeVisible();
 
   await sectionActions.getByRole("button", { name: "Duplicate" }).click();
@@ -103,6 +131,8 @@ test("duplicates and hides the actual selected section with undo and redo on mob
   await expect(canvas.getByText("Hidden section — select it to show it again")).toBeVisible();
   await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(1);
 
+  await page.getByRole("button", { name: "Close" }).click();
+  await expect(page.getByRole("dialog", { name: "Pages & sections" })).toHaveCount(0);
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(2);
   await page.getByRole("button", { name: "Redo" }).click();
@@ -155,12 +185,9 @@ test("uses the selected Puck section and shows localized grouped proposal detail
   page,
 }) => {
   await page.goto(url);
-  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
-  const headingField = page.getByRole("textbox", { name: "Main heading", exact: true });
-  await expect(async () => {
-    await canvas.getByText("Made for northern light", { exact: true }).click();
-    await expect(headingField).toBeVisible({ timeout: 1_500 });
-  }).toPass({ timeout: 15_000 });
+  await selectHomepageHero(page);
+  await activateDesignControls(page);
+  await activateAiAssistant(page);
   const requestPanel = page.getByLabel("Design request");
   await expect(requestPanel.getByText("Aurum hero", { exact: true })).toBeVisible();
 
@@ -196,15 +223,12 @@ test("uses the selected Puck section and shows localized grouped proposal detail
 
 test("discard closes a proposal so discarded edits cannot be accepted later", async ({ page }) => {
   await page.goto(url);
-  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
-  const headingField = page.getByRole("textbox", { name: "Main heading", exact: true });
-  await expect(async () => {
-    await canvas.getByText("Made for northern light", { exact: true }).click();
-    await expect(headingField).toBeVisible({ timeout: 1_500 });
-  }).toPass({ timeout: 15_000 });
+  const canvas = await selectHomepageHero(page);
+  const headingField = await activateDesignControls(page);
   await headingField.fill("A proposal base that will be discarded");
   await expect(page.getByLabel("Draft status")).toContainText("Unsaved changes");
 
+  await activateAiAssistant(page);
   await page.getByRole("button", { name: "Make the homepage feel more luxurious." }).click();
   await page.getByRole("button", { name: "Create proposal" }).click();
   await expect(page.getByLabel("Proposal preview canvas")).toBeVisible();
@@ -221,12 +245,8 @@ test("discard closes a proposal so discarded edits cannot be accepted later", as
 
 test("saved manual and accepted proposal changes survive editor refresh", async ({ page }) => {
   await page.goto(url);
-  let canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
-  const headingField = page.getByRole("textbox", { name: "Main heading", exact: true });
-  await expect(async () => {
-    await canvas.getByText("Made for northern light", { exact: true }).click();
-    await expect(headingField).toBeVisible({ timeout: 1_500 });
-  }).toPass({ timeout: 15_000 });
+  let canvas = await selectHomepageHero(page);
+  const headingField = await activateDesignControls(page);
   await headingField.fill("A saved merchant homepage");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByText("Draft saved successfully.")).toBeVisible();
@@ -237,6 +257,7 @@ test("saved manual and accepted proposal changes survive editor refresh", async 
   await expect(canvas.getByRole("heading", { name: "A saved merchant homepage" })).toBeVisible();
   await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
 
+  await activateAiAssistant(page);
   await page.getByRole("button", { name: "Add a campaign section." }).click();
   await page.getByRole("button", { name: "Create proposal" }).click();
   await expect(page.getByLabel("Design proposal")).toBeVisible();
