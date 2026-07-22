@@ -5,10 +5,13 @@ import Image from "next/image";
 import { z } from "zod";
 import {
   componentProjectionContextSchema,
-  unavailableCombinationSchema,
   type ProductPresentationContext,
   type StorefrontAssetMetadata,
 } from "@/domain/component-platform";
+import {
+  productOptionResolutionResultSchema,
+  type ProductOptionResolutionResult,
+} from "@/domain/product-presentation";
 import {
   assetRefSchema,
   idSchema,
@@ -60,6 +63,18 @@ export type ProductOptionIntentCallbacks = {
   onTextOptionChange: (groupId: string, enteredValue: string) => void;
 };
 
+export const productResolutionLifecyclePresentationSchema = z
+  .object({
+    state: z.enum(["ready", "pending", "failure"]),
+    message: localizedTextSchema.optional(),
+    warnings: z.array(localizedTextSchema).default([]),
+  })
+  .strict();
+
+export type ProductResolutionLifecyclePresentation = z.infer<
+  typeof productResolutionLifecyclePresentationSchema
+>;
+
 const resolvedConfigurationSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("baseProduct") }).strict(),
   z.object({ kind: z.literal("variant"), variantId: idSchema }).strict(),
@@ -68,75 +83,9 @@ const resolvedConfigurationSchema = z.discriminatedUnion("kind", [
 
 const selectedEnumeratedValueSchema = z.object({ groupId: idSchema, valueId: idSchema }).strict();
 
-const resolvedTextEntrySchema = z
-  .object({
-    groupId: idSchema,
-    value: z.string().max(500),
-    valid: z.boolean(),
-    validationMessages: z.array(z.string().trim().min(1)),
-  })
-  .strict();
+export const dynamicProductOptionPresentationSchema = productOptionResolutionResultSchema;
 
-export const dynamicProductOptionPresentationSchema = z
-  .object({
-    productId: idSchema,
-    catalogueRevision: z.string().trim().min(1).max(120),
-    selectedValues: z.array(selectedEnumeratedValueSchema),
-    textEntryValues: z.array(resolvedTextEntrySchema),
-    incompleteRequiredGroupIds: z.array(idSchema),
-    disabledOptionValues: z.array(
-      z
-        .object({
-          groupId: idSchema,
-          valueId: idSchema,
-          reasons: z
-            .array(z.enum(["canonical", "dependency", "unavailableCombination", "resolver"]))
-            .min(1),
-        })
-        .strict(),
-    ),
-    unavailableCombinations: z.array(unavailableCombinationSchema),
-    dependencyState: z.array(
-      z
-        .object({
-          groupId: idSchema,
-          satisfied: z.boolean(),
-          unmetGroupIds: z.array(idSchema),
-        })
-        .strict(),
-    ),
-    resolvedConfiguration: resolvedConfigurationSchema.optional(),
-    canAddToCart: z.boolean(),
-  })
-  .passthrough();
-
-type DeepReadonly<Value> = Value extends (...args: never[]) => unknown
-  ? Value
-  : Value extends readonly (infer Item)[]
-    ? readonly DeepReadonly<Item>[]
-    : Value extends object
-      ? { readonly [Key in keyof Value]: DeepReadonly<Value[Key]> }
-      : Value;
-
-type ParsedDynamicProductOptionPresentation = z.infer<
-  typeof dynamicProductOptionPresentationSchema
->;
-
-export type DynamicProductOptionPresentation = DeepReadonly<
-  Pick<
-    ParsedDynamicProductOptionPresentation,
-    | "productId"
-    | "catalogueRevision"
-    | "selectedValues"
-    | "textEntryValues"
-    | "incompleteRequiredGroupIds"
-    | "disabledOptionValues"
-    | "unavailableCombinations"
-    | "dependencyState"
-    | "resolvedConfiguration"
-    | "canAddToCart"
-  >
->;
+export type DynamicProductOptionPresentation = ProductOptionResolutionResult;
 
 export const productPrimaryActionIntentSchema = z
   .object({
@@ -163,6 +112,7 @@ export type DynamicProductDetailRendererInput = ProductOptionIntentCallbacks & {
   activeLocale: Locale;
   primaryLocale: Locale;
   primaryAction: ProductPrimaryActionPresentation;
+  resolutionLifecycle?: ProductResolutionLifecyclePresentation;
   resolvedOptions: DynamicProductOptionPresentation;
   resolveAssetUrl: (assetId: string) => string;
   onPrimaryAction: ProductPrimaryActionIntentCallback;
@@ -184,6 +134,7 @@ type PreparedDynamicProductDetail = ProductOptionIntentCallbacks & {
   activeLocale: Locale;
   primaryLocale: Locale;
   primaryAction: ProductPrimaryActionPresentation;
+  resolutionLifecycle: ProductResolutionLifecyclePresentation;
   resolvedOptions: DynamicProductOptionPresentation;
   assetFor: (assetId: string, alt?: LocalizedText) => ResolvedAsset;
   onPrimaryAction: ProductPrimaryActionIntentCallback;
@@ -316,6 +267,13 @@ function validateResolvedOptionPresentation(
       throw new Error("Resolved PDP incomplete state must reference required option groups.");
     }
   });
+  const canonicalMedia = new Map(product.media.map((media) => [media.assetId, media]));
+  resolved.selectedMediaReferences.forEach((media) => {
+    const canonical = canonicalMedia.get(media.assetId);
+    if (!canonical || canonicalValueString(canonical) !== canonicalValueString(media)) {
+      throw new Error("Resolved PDP media must preserve canonical product media references.");
+    }
+  });
   return resolved;
 }
 
@@ -361,6 +319,13 @@ function prepareDynamicProductDetail(
   });
 
   const resolvedOptions = validateResolvedOptionPresentation(input.resolvedOptions, product);
+  const primaryAction = productPrimaryActionPresentationSchema.parse(input.primaryAction);
+  if (
+    primaryAction.enabled &&
+    (!resolvedOptions.canAddToCart || resolvedOptions.resolvedConfiguration === undefined)
+  ) {
+    throw new Error("The PDP primary action requires a purchasable canonical configuration.");
+  }
   const requiredAssets = requiredAssetRoles(product, relatedProducts);
   const assignedAssets = new Map(
     instance.assetAssignments.map((assignment) => [assignment.assetId, assignment.role]),
@@ -400,7 +365,10 @@ function prepareDynamicProductDetail(
     styleOverrides: dynamicProductDetailStyleOverridesSchema.parse(instance.styleOverrides),
     activeLocale: localeSchema.parse(input.activeLocale),
     primaryLocale: localeSchema.parse(input.primaryLocale),
-    primaryAction: productPrimaryActionPresentationSchema.parse(input.primaryAction),
+    primaryAction,
+    resolutionLifecycle: productResolutionLifecyclePresentationSchema.parse(
+      input.resolutionLifecycle ?? { state: "ready", warnings: [] },
+    ),
     resolvedOptions,
     onSelectOption: input.onSelectOption,
     onTextOptionChange: input.onTextOptionChange,
@@ -477,17 +445,19 @@ function mediaAlt(product: ProductPresentationContext, assetId: string) {
 
 export function DynamicProductGallery({
   product,
+  media,
   assetFor,
   layout,
   locale,
 }: {
   product: ProductPresentationContext;
+  media: DynamicProductOptionPresentation["selectedMediaReferences"];
   assetFor: PreparedDynamicProductDetail["assetFor"];
   layout: DynamicProductDetailProps["galleryLayout"];
   locale: LocaleContext;
 }) {
-  const [selectedAssetId, setSelectedAssetId] = useState(product.media[0]?.assetId);
-  if (product.media.length === 0) {
+  const [selectedAssetId, setSelectedAssetId] = useState(media[0]?.assetId);
+  if (media.length === 0) {
     return (
       <section
         aria-label={fallbackLabel("Product gallery", "Tuotegalleria", locale)}
@@ -499,8 +469,7 @@ export function DynamicProductGallery({
       </section>
     );
   }
-  const selected =
-    product.media.find((media) => media.assetId === selectedAssetId) ?? product.media[0];
+  const selected = media.find((item) => item.assetId === selectedAssetId) ?? media[0];
   const resolved = assetFor(selected.assetId, mediaAlt(product, selected.assetId));
   return (
     <section
@@ -515,21 +484,21 @@ export function DynamicProductGallery({
       >
         <ProductAssetImage asset={resolved.asset} className={styles.primaryImage} locale={locale} />
       </figure>
-      {product.media.length > 1 ? (
+      {media.length > 1 ? (
         <div
           aria-label={fallbackLabel("Choose product image", "Valitse tuotekuva", locale)}
           className={styles.thumbnails}
           role="group"
         >
-          {product.media.map((media, index) => {
-            const item = assetFor(media.assetId, mediaAlt(product, media.assetId));
+          {media.map((mediaItem, index) => {
+            const item = assetFor(mediaItem.assetId, mediaAlt(product, mediaItem.assetId));
             return (
               <button
                 aria-label={`${fallbackLabel("View product image", "Näytä tuotekuva", locale)} ${index + 1}`}
-                aria-pressed={media.assetId === selected.assetId}
+                aria-pressed={mediaItem.assetId === selected.assetId}
                 data-asset-provenance={item.provenance.kind}
-                key={media.assetId}
-                onClick={() => setSelectedAssetId(media.assetId)}
+                key={mediaItem.assetId}
+                onClick={() => setSelectedAssetId(mediaItem.assetId)}
                 type="button"
               >
                 <ProductAssetImage asset={item.asset} locale={locale} />
@@ -544,12 +513,14 @@ export function DynamicProductGallery({
 
 export function DynamicProductIdentity({
   product,
+  resolvedOptions,
   showDescription,
   showSku,
   locale,
   titleId,
 }: {
   product: ProductPresentationContext;
+  resolvedOptions: DynamicProductOptionPresentation;
   showDescription: boolean;
   showSku: boolean;
   locale: LocaleContext;
@@ -564,24 +535,26 @@ export function DynamicProductIdentity({
         </p>
       ) : null}
       <div aria-label={fallbackLabel("Price", "Hinta", locale)} className={styles.priceRow}>
-        {product.price ? (
+        {resolvedOptions.displayedPrice ? (
           <>
-            <span className={styles.price}>{moneyLabel(product.price, locale)}</span>
-            {product.compareAtPrice ? (
+            <span className={styles.price}>
+              {moneyLabel(resolvedOptions.displayedPrice, locale)}
+            </span>
+            {resolvedOptions.displayedCompareAtPrice ? (
               <del className={styles.compareAtPrice}>
-                {moneyLabel(product.compareAtPrice, locale)}
+                {moneyLabel(resolvedOptions.displayedCompareAtPrice, locale)}
               </del>
             ) : null}
           </>
         ) : (
           <span className={styles.priceUnavailable}>
-            {text(product.priceUnavailableReason!, locale)}
+            {text(resolvedOptions.displayedPriceUnavailableReason!, locale)}
           </span>
         )}
       </div>
-      {product.availability ? (
+      {resolvedOptions.displayedAvailability ? (
         <p aria-live="polite" className={styles.availability}>
-          {text(product.availability, locale)}
+          {text(resolvedOptions.displayedAvailability, locale)}
         </p>
       ) : null}
       {showDescription && product.description ? (
@@ -697,6 +670,7 @@ function EnumeratedOptionGroup({
   assetFor,
   resolvedOptions,
   onSelectOption,
+  interactionDisabled,
 }: {
   group: ProductPresentationContext["optionGroups"][number];
   product: ProductPresentationContext;
@@ -704,6 +678,7 @@ function EnumeratedOptionGroup({
   assetFor: PreparedDynamicProductDetail["assetFor"];
   resolvedOptions: DynamicProductOptionPresentation;
   onSelectOption: ProductOptionIntentCallbacks["onSelectOption"];
+  interactionDisabled: boolean;
 }) {
   const describedById = useId();
   const selection = selectedEnumeratedState(resolvedOptions, group.id);
@@ -727,7 +702,7 @@ function EnumeratedOptionGroup({
               .filter((id) => id && (id !== groupDependencyReasonId || groupDependencyReason))
               .join(" ") || undefined
           }
-          disabled={groupDependencyReason !== undefined}
+          disabled={interactionDisabled || groupDependencyReason !== undefined}
           id={`${describedById}-select`}
           onChange={(event) => {
             const value = group.values.find((candidate) => candidate.id === event.target.value);
@@ -735,7 +710,7 @@ function EnumeratedOptionGroup({
               value &&
               !resolvedValuePresentation(product, group, value, resolvedOptions, locale).disabled
             ) {
-              onSelectOption(group.id, value.id);
+              if (!interactionDisabled) onSelectOption(group.id, value.id);
             }
           }}
           required={group.required}
@@ -784,10 +759,12 @@ function EnumeratedOptionGroup({
             <label key={value.id}>
               <input
                 checked={selectedValueId === value.id}
-                disabled={presentation.disabled}
+                disabled={interactionDisabled || presentation.disabled}
                 name={group.id}
                 onChange={() => {
-                  if (!presentation.disabled) onSelectOption(group.id, value.id);
+                  if (!interactionDisabled && !presentation.disabled) {
+                    onSelectOption(group.id, value.id);
+                  }
                 }}
                 type="radio"
                 value={value.id}
@@ -831,9 +808,11 @@ function EnumeratedOptionGroup({
                 aria-label={text(value.label, locale)}
                 aria-pressed={selectedValueId === value.id}
                 className={`${styles.optionButton} ${styles[`option_${group.presentation}`]}`}
-                disabled={presentation.disabled}
+                disabled={interactionDisabled || presentation.disabled}
                 onClick={() => {
-                  if (!presentation.disabled) onSelectOption(group.id, value.id);
+                  if (!interactionDisabled && !presentation.disabled) {
+                    onSelectOption(group.id, value.id);
+                  }
                 }}
                 style={swatchStyle}
                 type="button"
@@ -861,12 +840,14 @@ function TextOptionGroup({
   locale,
   resolvedOptions,
   onTextOptionChange,
+  interactionDisabled,
 }: {
   group: ProductPresentationContext["optionGroups"][number];
   product: ProductPresentationContext;
   locale: LocaleContext;
   resolvedOptions: DynamicProductOptionPresentation;
   onTextOptionChange: ProductOptionIntentCallbacks["onTextOptionChange"];
+  interactionDisabled: boolean;
 }) {
   const inputId = useId();
   const constraintsId = `${inputId}-constraints`;
@@ -913,12 +894,14 @@ function TextOptionGroup({
         aria-describedby={[constraintsId, blockedReason ? dependencyId : undefined]
           .filter(Boolean)
           .join(" ")}
-        disabled={blockedReason !== undefined}
+        disabled={interactionDisabled || blockedReason !== undefined}
         id={inputId}
         maxLength={constraints.maxLength}
         minLength={constraints.minLength}
         onChange={(event) => {
-          if (!blockedReason) onTextOptionChange(group.id, event.target.value);
+          if (!interactionDisabled && !blockedReason) {
+            onTextOptionChange(group.id, event.target.value);
+          }
         }}
         placeholder={constraints.placeholder ? text(constraints.placeholder, locale) : undefined}
         required={group.required}
@@ -938,12 +921,14 @@ export function DynamicProductOptionGroups({
   resolvedOptions,
   onSelectOption,
   onTextOptionChange,
+  interactionDisabled,
 }: {
   product: ProductPresentationContext;
   locale: LocaleContext;
   density: DynamicProductDetailProps["optionDensity"];
   assetFor: PreparedDynamicProductDetail["assetFor"];
   resolvedOptions: DynamicProductOptionPresentation;
+  interactionDisabled: boolean;
 } & ProductOptionIntentCallbacks) {
   const headingId = useId();
   if (product.optionGroups.length === 0) return null;
@@ -960,6 +945,7 @@ export function DynamicProductOptionGroups({
         group.presentation === "textInput" ? (
           <TextOptionGroup
             group={group}
+            interactionDisabled={interactionDisabled}
             key={group.id}
             locale={locale}
             onTextOptionChange={onTextOptionChange}
@@ -970,6 +956,7 @@ export function DynamicProductOptionGroups({
           <EnumeratedOptionGroup
             assetFor={assetFor}
             group={group}
+            interactionDisabled={interactionDisabled}
             key={group.id}
             locale={locale}
             onSelectOption={onSelectOption}
@@ -978,6 +965,32 @@ export function DynamicProductOptionGroups({
           />
         ),
       )}
+    </section>
+  );
+}
+
+export function DynamicProductResolutionStatus({
+  lifecycle,
+  locale,
+}: {
+  lifecycle: ProductResolutionLifecyclePresentation;
+  locale: LocaleContext;
+}) {
+  if (!lifecycle.message && lifecycle.warnings.length === 0) return null;
+  return (
+    <section
+      aria-live="polite"
+      className={styles.resolutionStatus}
+      data-resolution-state={lifecycle.state}
+    >
+      {lifecycle.message ? <p>{text(lifecycle.message, locale)}</p> : null}
+      {lifecycle.warnings.length > 0 ? (
+        <ul>
+          {lifecycle.warnings.map((warning) => (
+            <li key={canonicalValueString(warning)}>{text(warning, locale)}</li>
+          ))}
+        </ul>
+      ) : null}
     </section>
   );
 }
@@ -1117,7 +1130,14 @@ export function DynamicProductPrimaryAction({
   const inFlight = useRef(false);
   const [submitting, setSubmitting] = useState(false);
   const emitPrimaryAction = () => {
-    if (!state.enabled || inFlight.current) return;
+    if (
+      !state.enabled ||
+      !resolvedOptions.canAddToCart ||
+      resolvedOptions.resolvedConfiguration === undefined ||
+      inFlight.current
+    ) {
+      return;
+    }
     const intent = productPrimaryActionIntentSchema.parse({
       type: "activatePrimaryProductAction",
       action: "addToCart",
@@ -1193,19 +1213,23 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
           assetFor={input.assetFor}
           layout={input.props.galleryLayout}
           locale={locale}
+          media={input.resolvedOptions.selectedMediaReferences}
           product={input.product}
         />
         <div className={styles.productInformation}>
           <DynamicProductIdentity
             locale={locale}
             product={input.product}
+            resolvedOptions={input.resolvedOptions}
             showDescription={input.props.showDescription}
             showSku={input.props.showSku}
             titleId={titleId}
           />
+          <DynamicProductResolutionStatus lifecycle={input.resolutionLifecycle} locale={locale} />
           <DynamicProductOptionGroups
             assetFor={input.assetFor}
             density={input.props.optionDensity}
+            interactionDisabled={input.resolutionLifecycle.state === "pending"}
             locale={locale}
             onSelectOption={input.onSelectOption}
             onTextOptionChange={input.onTextOptionChange}
