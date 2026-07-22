@@ -16,6 +16,7 @@ import {
   type MerchantDiagnostic,
   type ReviewLocale,
 } from "./storefront-generation-review-presentation";
+import { Button, Card, Notice, StatusPill } from "@/components/ui";
 import styles from "./storefront-generation-review-panel.module.css";
 
 type Locale = ReviewLocale;
@@ -26,6 +27,9 @@ export type StorefrontGenerationReviewPanelProps = {
   busy?: boolean;
   errorMessage?: string | null;
   onBack: () => void;
+  onSaveExit?: () => void;
+  saveExitDisabled?: boolean;
+  saveExitLabel?: string;
   onConfirmCreate: () => void;
 };
 
@@ -55,6 +59,7 @@ const languageLabels: Record<Locale, Record<string, string>> = {
 const copy = {
   en: {
     back: "Back",
+    saveExit: "Save & exit",
     create: "Create storefront project",
     creating: "Creating project…",
     retry: "Try creating again",
@@ -86,9 +91,11 @@ const copy = {
     path: "Storefront path",
     detailsHint: "Show details",
     reviewSections: "Plan details",
+    reviewActions: "Review actions",
   },
   fi: {
     back: "Takaisin",
+    saveExit: "Tallenna ja poistu",
     create: "Luo verkkokauppaprojekti",
     creating: "Luodaan projektia…",
     retry: "Yritä luomista uudelleen",
@@ -120,6 +127,7 @@ const copy = {
     path: "Verkkokaupan polku",
     detailsHint: "Näytä tiedot",
     reviewSections: "Suunnitelman tiedot",
+    reviewActions: "Tarkistuksen toiminnot",
   },
 } as const;
 
@@ -133,6 +141,9 @@ export function StorefrontGenerationReviewPanel({
   busy = false,
   errorMessage = null,
   onBack,
+  onSaveExit,
+  saveExitDisabled = false,
+  saveExitLabel,
   onConfirmCreate,
 }: StorefrontGenerationReviewPanelProps) {
   const canonicalReview = validateStorefrontGenerationReview(review);
@@ -162,7 +173,7 @@ export function StorefrontGenerationReviewPanel({
       </header>
 
       <section className={styles.readiness} aria-labelledby="readiness-title">
-        <div className={styles.readinessMain} role="status">
+        <div className={styles.readinessMain}>
           <span
             aria-hidden="true"
             className={`${styles.readinessIcon} ${
@@ -171,7 +182,12 @@ export function StorefrontGenerationReviewPanel({
           />
           <div>
             <h3 id="readiness-title">
-              {canonicalReview.canCreateProject ? text.ready : text.attention}
+              <StatusPill
+                ariaLabel={canonicalReview.canCreateProject ? text.ready : text.attention}
+                label={canonicalReview.canCreateProject ? text.ready : text.attention}
+                live
+                status={canonicalReview.canCreateProject ? "saved" : "failed"}
+              />
             </h3>
             <p>
               {canonicalReview.canCreateProject
@@ -196,16 +212,16 @@ export function StorefrontGenerationReviewPanel({
           <li>{countLabel(noteCount, text.note, text.notesCount)}</li>
         </ul>
         {displayedBlockers.length ? (
-          <button className={styles.jumpButton} onClick={focusBlockers} type="button">
+          <Button className={styles.jumpButton} onClick={focusBlockers} variant="quiet">
             {text.jumpToBlockers}
-          </button>
+          </Button>
         ) : null}
       </section>
 
       {errorMessage ? (
-        <div className={styles.error} role="alert">
+        <Notice className={styles.error} live role="alert" variant="danger">
           {errorMessage}
-        </div>
+        </Notice>
       ) : null}
       {busy ? (
         <p aria-live="polite" className={styles.visuallyHidden} role="status">
@@ -222,9 +238,11 @@ export function StorefrontGenerationReviewPanel({
             tabIndex={-1}
             aria-labelledby="review-blockers-title"
           >
-            <h3 id="review-blockers-title">{text.blockers}</h3>
-            <p>{text.blockerIntro}</p>
-            <DiagnosticList diagnostics={displayedBlockers} />
+            <Notice className={styles.blockerNotice} variant="danger">
+              <h3 id="review-blockers-title">{text.blockers}</h3>
+              <p>{text.blockerIntro}</p>
+              <DiagnosticList diagnostics={displayedBlockers} />
+            </Notice>
           </section>
         ) : null}
 
@@ -233,9 +251,11 @@ export function StorefrontGenerationReviewPanel({
             className={`${styles.diagnosticGroup} ${styles.warningGroup}`}
             aria-labelledby="review-warnings-title"
           >
-            <h3 id="review-warnings-title">{text.warnings}</h3>
-            <p>{text.warningIntro}</p>
-            <DiagnosticList diagnostics={diagnostics.warnings} />
+            <Notice className={styles.warningNotice} variant="warning">
+              <h3 id="review-warnings-title">{text.warnings}</h3>
+              <p>{text.warningIntro}</p>
+              <DiagnosticList diagnostics={diagnostics.warnings} />
+            </Notice>
           </section>
         ) : null}
 
@@ -271,25 +291,24 @@ export function StorefrontGenerationReviewPanel({
         ))}
       </div>
 
-      <footer className={styles.actions}>
+      <footer aria-label={text.reviewActions} className={styles.actions}>
         <div>
           {!canonicalReview.canCreateProject && !busy ? (
             <p className={styles.disabledCopy}>{text.resolve}</p>
           ) : null}
         </div>
         <div className={styles.actionButtons}>
-          <button type="button" className={styles.backButton} onClick={onBack} disabled={busy}>
+          <Button variant="secondary" onClick={onBack} disabled={busy}>
             {text.back}
-          </button>
-          <button
-            type="button"
-            className={styles.confirmButton}
-            onClick={onConfirmCreate}
-            disabled={confirmDisabled}
-            aria-disabled={confirmDisabled}
-          >
+          </Button>
+          {onSaveExit ? (
+            <Button disabled={busy || saveExitDisabled} onClick={onSaveExit} variant="quiet">
+              {saveExitLabel ?? text.saveExit}
+            </Button>
+          ) : null}
+          <Button disabled={confirmDisabled} onClick={onConfirmCreate}>
             {busy ? text.creating : errorMessage ? text.retry : text.create}
-          </button>
+          </Button>
         </div>
       </footer>
     </section>
@@ -312,62 +331,76 @@ function ReviewSection({
   const open = section.status === "blocked" || section.status === "warning";
 
   return (
-    <details className={styles.section} open={open}>
-      <summary className={styles.sectionHeader}>
-        <div>
-          <h3 id={`review-section-${section.id}`}>{heading}</h3>
-          <p>{catalogue?.title ?? section.summary[locale]}</p>
-        </div>
-        <span className={`${styles.sectionStatus} ${styles[`section-${section.status}`]}`}>
-          {sectionStatusLabels[locale][section.status]}
-        </span>
-        <span className={styles.detailsHint}>{text.detailsHint}</span>
-      </summary>
-      <div className={styles.sectionContent}>
-        {catalogue ? (
-          <p className={styles.catalogueDescription}>{catalogue.description}</p>
-        ) : section.id === "storefront-pages" ? (
-          review.pageSummaries.length ? (
-            <div className={styles.pageList}>
-              {review.pageSummaries.map((page) => (
-                <article className={styles.pageCard} key={page.id}>
-                  <h4>{localizedPageType(page.type, locale)}</h4>
-                  <p>
-                    <span className={styles.visuallyHidden}>{text.path}: </span>
-                    {page.path}
-                  </p>
-                  <p>
-                    {page.totalSectionCount} {text.sections} · {page.visibleSectionCount}{" "}
-                    {text.visible}
-                    {page.hiddenSectionCount ? ` · ${page.hiddenSectionCount} ${text.hidden}` : ""}
-                  </p>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <p className={styles.empty}>{text.pagesEmpty}</p>
-          )
-        ) : section.id === "languages" ? (
-          <ul className={styles.factList}>
-            {review.languagePlan.selectedLanguages.map((language) => (
-              <li key={language}>
-                {languageLabels[locale][language]}
-                {review.languagePlan.primaryLanguage === language ? ` — ${text.primary}` : ""}
-              </li>
-            ))}
-          </ul>
-        ) : facts.length ? (
-          <dl className={styles.facts}>
-            {facts.map((fact) => (
-              <div key={fact.key}>
-                <dt>{fact.label}</dt>
-                <dd>{fact.value}</dd>
+    <Card className={styles.section}>
+      <details className={styles.sectionDetails} open={open}>
+        <summary className={styles.sectionHeader}>
+          <div>
+            <h3 id={`review-section-${section.id}`}>{heading}</h3>
+            <p>{catalogue?.title ?? section.summary[locale]}</p>
+          </div>
+          <StatusPill
+            ariaLabel={section.heading[locale]}
+            label={sectionStatusLabels[locale][section.status]}
+            status={
+              section.status === "complete"
+                ? "saved"
+                : section.status === "warning"
+                  ? "unsaved"
+                  : section.status === "blocked"
+                    ? "failed"
+                    : "draft-different"
+            }
+          />
+          <span className={styles.detailsHint}>{text.detailsHint}</span>
+        </summary>
+        <div className={styles.sectionContent}>
+          {catalogue ? (
+            <p className={styles.catalogueDescription}>{catalogue.description}</p>
+          ) : section.id === "storefront-pages" ? (
+            review.pageSummaries.length ? (
+              <div className={styles.pageList}>
+                {review.pageSummaries.map((page) => (
+                  <article className={styles.pageCard} key={page.id}>
+                    <h4>{localizedPageType(page.type, locale)}</h4>
+                    <p>
+                      <span className={styles.visuallyHidden}>{text.path}: </span>
+                      {page.path}
+                    </p>
+                    <p>
+                      {page.totalSectionCount} {text.sections} · {page.visibleSectionCount}{" "}
+                      {text.visible}
+                      {page.hiddenSectionCount
+                        ? ` · ${page.hiddenSectionCount} ${text.hidden}`
+                        : ""}
+                    </p>
+                  </article>
+                ))}
               </div>
-            ))}
-          </dl>
-        ) : null}
-      </div>
-    </details>
+            ) : (
+              <p className={styles.empty}>{text.pagesEmpty}</p>
+            )
+          ) : section.id === "languages" ? (
+            <ul className={styles.factList}>
+              {review.languagePlan.selectedLanguages.map((language) => (
+                <li key={language}>
+                  {languageLabels[locale][language]}
+                  {review.languagePlan.primaryLanguage === language ? ` — ${text.primary}` : ""}
+                </li>
+              ))}
+            </ul>
+          ) : facts.length ? (
+            <dl className={styles.facts}>
+              {facts.map((fact) => (
+                <div key={fact.key}>
+                  <dt>{fact.label}</dt>
+                  <dd>{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+        </div>
+      </details>
+    </Card>
   );
 }
 

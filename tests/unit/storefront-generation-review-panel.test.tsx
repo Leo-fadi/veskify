@@ -55,7 +55,9 @@ function renderPanel(
 
 describe("StorefrontGenerationReviewPanel", () => {
   it("renders the canonical plan as compact merchant sections without internal identifiers", () => {
-    const { container } = renderPanel();
+    const currentReview = review();
+    const originalReview = structuredClone(currentReview);
+    const { container } = renderPanel(currentReview);
     for (const heading of [
       "What we understood",
       "Brand direction",
@@ -71,6 +73,7 @@ describe("StorefrontGenerationReviewPanel", () => {
     expect(container.textContent).not.toMatch(
       /template_balanced_commerce|logo-available|when-not-requested|home\/announcement|home\/newsletter|product\/product-options|new-storefront|brief_panel_test|snapshot_panel_test|catalogue_panel_test/,
     );
+    expect(currentReview).toEqual(originalReview);
   });
 
   it("deduplicates repeated stage warnings while preserving distinct fallback issues", () => {
@@ -163,6 +166,20 @@ describe("StorefrontGenerationReviewPanel", () => {
     expect(within(readiness!).getByText(`${diagnostics.blockers.length} blockers`)).toBeVisible();
     expect(within(readiness!).getByText(`${diagnostics.warnings.length} warnings`)).toBeVisible();
     expect(within(readiness!).getByText(`${noteCount} notes`)).toBeVisible();
+    expect(screen.getByRole("status", { name: "Ready to create" })).toHaveTextContent(
+      "Ready to create",
+    );
+  });
+
+  it("keeps the guarded Save & exit action in the review footer", () => {
+    const onSaveExit = vi.fn();
+    renderPanel(review(), { onSaveExit });
+
+    const actions = screen.getByRole("contentinfo", { name: "Review actions" });
+    const saveExit = within(actions).getByRole("button", { name: "Save & exit" });
+    expect(saveExit).toBeEnabled();
+    fireEvent.click(saveExit);
+    expect(onSaveExit).toHaveBeenCalledTimes(1);
   });
 
   it.each(["controlled-demo-catalogue", "empty-catalogue"])(
