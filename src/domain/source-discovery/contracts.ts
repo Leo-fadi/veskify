@@ -61,6 +61,7 @@ export const sourceFailureCodeSchema = z.enum([
   "blocked-source",
   "unavailable-source",
   "timeout",
+  "cancelled",
   "no-reusable-evidence",
   "conflicting-evidence",
   "missing-canonical-vesko-projection",
@@ -146,7 +147,9 @@ export const evidenceProvenanceSchema = z
   .object({
     sourceReferenceId: idSchema,
     sourceUrl: safeExternalUrlSchema,
+    documentUrl: safeExternalUrlSchema.nullable().default(null),
     observedAt: isoDateTimeSchema,
+    extractionLocation: z.string().trim().min(1).max(200).default("unspecified"),
   })
   .strict();
 export type EvidenceProvenance = z.infer<typeof evidenceProvenanceSchema>;
@@ -197,6 +200,16 @@ export const sourceEvidenceSchema = z
         message: "Evidence source URL must match its provenance.",
       });
     }
+    if (
+      evidence.provenance.documentUrl !== null &&
+      evidence.sourceUrl !== evidence.provenance.documentUrl
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["provenance", "documentUrl"],
+        message: "Evidence must identify the document from which it was extracted.",
+      });
+    }
   });
 export type SourceEvidence = z.infer<typeof sourceEvidenceSchema>;
 
@@ -244,6 +257,8 @@ export const assetCandidateSchema = z
     confidence: z.number().min(0).max(1),
     proposedReusePurpose: z.string().trim().min(1).max(500),
     licensingUsageConfirmation: z.enum(["unknown", "pending", "confirmed", "rejected"]),
+    warnings: z.array(sourceWarningSchema).default([]),
+    uncertainty: evidenceUncertaintySchema.default({ isUncertain: true, reason: "Needs review." }),
     fingerprint: assetFingerprintSchema.nullable(),
     duplicateOfAssetId: idSchema.nullable(),
   })

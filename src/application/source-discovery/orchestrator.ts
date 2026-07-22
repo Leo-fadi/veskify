@@ -126,9 +126,13 @@ function assertDiscoveryResultBelongsToSource(
 
   for (const evidence of result.evidence) {
     const evidenceUrl = normalizedUrl(evidence.sourceUrl);
+    const documentUrl = evidence.provenance.documentUrl
+      ? normalizedUrl(evidence.provenance.documentUrl)
+      : evidenceUrl;
     if (
       evidence.provenance.sourceReferenceId !== requested.id ||
-      evidenceUrl.origin !== requested.normalizedOrigin
+      evidenceUrl.origin !== requested.normalizedOrigin ||
+      documentUrl.origin !== requested.normalizedOrigin
     ) {
       throw discoveryIntegrityFailure();
     }
@@ -137,9 +141,13 @@ function assertDiscoveryResultBelongsToSource(
   for (const asset of result.assetCandidates) {
     if (asset.source.kind === "merchant-upload") continue;
     const assetUrl = normalizedUrl(asset.source.url);
+    const documentUrl = asset.provenance.documentUrl
+      ? normalizedUrl(asset.provenance.documentUrl)
+      : assetUrl;
     if (
       asset.provenance.sourceReferenceId !== requested.id ||
-      assetUrl.origin !== requested.normalizedOrigin
+      assetUrl.origin !== requested.normalizedOrigin ||
+      documentUrl.origin !== requested.normalizedOrigin
     ) {
       throw discoveryIntegrityFailure();
     }
@@ -149,6 +157,7 @@ function assertDiscoveryResultBelongsToSource(
 export async function discoverStorefrontSource(
   adapter: SourceDiscoveryAdapter,
   sourceInput: unknown,
+  signal?: AbortSignal,
 ): Promise<SourceDiscoveryResult> {
   let source: SourceReference;
   try {
@@ -157,7 +166,7 @@ export async function discoverStorefrontSource(
     throw sourceValidationFailure(sourceInput);
   }
   try {
-    const result = await adapter.discover({ source });
+    const result = await adapter.discover({ source, signal });
     const parsed = parseContract(
       (value) => sourceDiscoveryResultSchema.parse(value),
       result,

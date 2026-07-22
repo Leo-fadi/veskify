@@ -131,6 +131,7 @@ function sourceFailureCode(code: SourceDiscoveryApplicationErrorCode): SourceFai
     case "blocked-source":
     case "unavailable-source":
     case "timeout":
+    case "cancelled":
     case "no-reusable-evidence":
     case "conflicting-evidence":
     case "missing-canonical-vesko-projection":
@@ -305,7 +306,7 @@ export class UrlBriefWorkflowService {
     return cloneUrlBriefWorkflow(persisted.workflow);
   }
 
-  async discover(): Promise<UrlBriefWorkflow> {
+  async discover(signal?: AbortSignal): Promise<UrlBriefWorkflow> {
     const loaded = await this.#load();
     const source = loaded.workflow.sourceReferences.find(
       (candidate) => candidate.id === loaded.workflow.currentSourceReferenceId,
@@ -336,7 +337,7 @@ export class UrlBriefWorkflowService {
     const active = await this.#persist(loaded.session, discovering, loaded.workflow);
 
     try {
-      const discovered = await discoverStorefrontSource(this.#adapter, discoveringSource);
+      const discovered = await discoverStorefrontSource(this.#adapter, discoveringSource, signal);
       if (discovered.evidence.length === 0 && discovered.assetCandidates.length === 0) {
         throw new SourceDiscoveryApplicationError(
           "no-reusable-evidence",
@@ -345,7 +346,8 @@ export class UrlBriefWorkflowService {
       }
       const completedSource = sourceReferenceSchema.parse({
         ...discovered.source,
-        status: "complete",
+        status: discovered.source.status === "partial" ? "partial" : "complete",
+        warnings: discovered.warnings,
         failure: null,
       });
       const completedResult = sourceDiscoveryResultSchema.parse({
