@@ -131,6 +131,34 @@
   line-height: 1.7;
 }
 
+.resolutionStatus {
+  margin-top: 1rem;
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--brand-radius);
+  background: var(--brand-color-surface);
+  padding: 0.75rem 1rem;
+  color: var(--brand-color-muted-text);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.resolutionStatus[data-resolution-state="failure"] {
+  border-color: var(--brand-color-error);
+}
+
+.resolutionStatus p,
+.resolutionStatus ul {
+  margin: 0;
+}
+
+.resolutionStatus ul {
+  padding-inline-start: 1.25rem;
+}
+
+.resolutionStatus > * + * {
+  margin-top: 0.5rem;
+}
+
 .options {
   margin-top: clamp(1.5rem, 4vw, 3rem);
 }
@@ -223,6 +251,7 @@
 }
 
 .optionButton,
+.resetOptions,
 .primaryAction button {
   min-height: 2.75rem;
   border: 1px solid var(--brand-color-border);
@@ -232,6 +261,10 @@
   padding: 0.65rem 0.9rem;
   font: inherit;
   font-weight: 700;
+}
+
+.resetOptions {
+  margin-top: 1rem;
 }
 
 .optionButton {
