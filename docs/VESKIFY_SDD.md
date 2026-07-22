@@ -703,6 +703,36 @@ migration: ComponentMigration[];<br />
 | P1           | Footer/newsletter      | Compact, editorial and multi-column with language and legal regions.                                           |
 | P2           | Campaign and landing   | Reusable campaign sections and page-level theme override.                                                      |
 
+## 9.6 Registered `dynamicProductDetail` contract
+The `dynamicProductDetail` type is the registered `ComponentDefinitionV2` commerce family for the
+product-detail shell. Its required, revision-bound `primaryProduct` slot accepts one canonical
+product binding. Its optional, revision-bound `relatedProducts` slot accepts an ordered canonical
+product-list binding; when the slot is omitted the related-products region is hidden, and when it is
+present its IDs must exactly match the approved `ProductPresentationContext.relatedProductIds`.
+
+The optional `productMedia` asset slot accepts approved product-main, product-alternative and
+editorial media. Explicit assignments must exactly cover the media used by the bound product,
+option choices and any bound related products. When assignments are omitted, the renderer may use
+only canonical media references already present in `ProductPresentationContext` and approved by the
+projection asset inventory. Unknown, rejected, unapproved or wrong-role assets fail conformance;
+products with no media render a localized empty state without copying media into editable content or
+props.
+
+The default presentation is the `balanced` variant with thumbnail gallery, comfortable option
+spacing, grouped attributes, visible description and SKU, sticky mobile action and a plain surface.
+The same engineering-owned React implementation serves editor, preview and published targets.
+Option-selection, text-entry and primary-action intent callbacks are presentation boundaries only:
+the component performs no option resolution, cart, pricing, stock, inventory or checkout mutation.
+The primary-action intent carries canonical product/revision and resolved configuration/selection
+identity for a future Vesko commerce adapter.
+
+Product identity, SKU, price, compare-at price, availability, option values/dependencies and asset
+provenance remain protected read-only commerce fields. The renderer consumes the current validated
+result from the P6 option-resolution engine, including selected values, incomplete required groups,
+dependency state, unavailable combinations and disabled reasons. It does not traverse dependencies,
+calculate price or resolve variants in React; disabled guidance is localized for EN/FI before it is
+shown or exposed through accessible descriptions.
+
 # 10. Dynamic product-detail page system
 <table>
 <colgroup>
