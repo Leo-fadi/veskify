@@ -776,6 +776,47 @@ remain protected read-only commerce fields. Merchant-facing labels resolve throu
 localization. This contract traces to FR-102, FR-107, FR-109, FR-110, FR-112 and FR-114; NFR-101,
 NFR-102, NFR-103, NFR-108 and NFR-109; and AC-111, AC-112, AC-118, AC-122 and AC-123.
 
+## 9.8 Registered homepage commerce component family
+The reusable homepage family consists of six product-type-independent `ComponentDefinitionV2`
+types: `homepageHero`, `homepageFeaturedCollections`, `homepageFeaturedProducts`,
+`homepageCollectionNavigation`, `homepagePromotion` and `homepageTrust`. Every type requires a
+revision-bound `presentationContext` project/brand binding and may reference a revision-bound
+`copyContext` localized-content source. The same engineering-owned renderer for each type serves
+editor, preview and published targets.
+
+`homepageHero` supports an optional revision-bound `heroAsset` binding and matching optional
+`heroMedia` assignment, plus optional `primaryAction` and `secondaryAction` navigation bindings.
+Omitting media hides the media region safely. `homepagePromotion` uses equivalent optional
+`promotionAsset`, `promotionMedia` and `promotionAction` contracts. A visible action label and its
+canonical navigation binding must be supplied together; activation emits a typed approved-navigation
+intent and performs no routing, cart, publishing or other mutation inside the component.
+
+`homepageFeaturedCollections` and `homepageCollectionNavigation` consume an ordered,
+revision-bound `collectionList` binding through the `collections` slot. Optional
+`collectionMedia` assignments may contain approved collection or editorial assets. Missing compatible
+media renders a localized placeholder for image presentations and is omitted for text-only
+presentation. Collection titles, descriptions, IDs and canonical order are resolved from the bound
+projection rather than editable content.
+
+`homepageFeaturedProducts` consumes an ordered, revision-bound `productList` binding through the
+`products` slot and reuses the canonical product-card presentation shared with collection commerce.
+Its optional `productMedia` assignments accept approved product-main, product-alternative and
+editorial assets. Product identity, type, SKU, price, compare-at price, unavailable-price state,
+availability and media provenance remain read-only projection values. Grid and carousel-style
+presentation change only responsive layout and card treatment, never product facts.
+
+`homepageTrust` accepts structured localized delivery, returns, service and store-support copy plus
+an optional `supportAction` navigation binding. These items are presentation messages, not logistics,
+returns, payment, order or store-operation logic. Across the family, editable content is limited to
+localized marketing/support copy and action labels; editable props and style overrides are strict
+approved presentation enums and bounded column counts. Unknown fields, bindings and IDs fail
+validation, arbitrary CSS is not accepted, explicit unknown/rejected/unapproved assets fail
+conformance, and asset provenance remains attached to every rendered approved image.
+
+This family traces to FR-102, FR-107, FR-109, FR-110, FR-114 and FR-118; NFR-101, NFR-102,
+NFR-103, NFR-108 and NFR-109; and AC-105, AC-111, AC-112, AC-118, AC-119, AC-122, AC-123 and
+AC-124.
+
 # 10. Dynamic product-detail page system
 <table>
 <colgroup>
