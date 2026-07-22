@@ -39,6 +39,60 @@ test("supports keyboard Save & exit and resume at 375px", async ({ page }) => {
   expect(horizontalOverflow).toBe(false);
 });
 
+for (const width of [375, 768, 1024, 1440]) {
+  test(`refines the onboarding shell at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/projects/new");
+
+    const desktopProgress = page.locator('[data-onboarding-progress="desktop"]');
+    const compactProgress = page.locator('[data-onboarding-progress="compact"]');
+    if (width >= 832) {
+      await expect(desktopProgress).toBeVisible();
+      await expect(desktopProgress.getByText("Business basics")).toBeVisible();
+      await expect(compactProgress).toBeHidden();
+    } else {
+      await expect(desktopProgress).toBeHidden();
+      await expect(compactProgress).toBeVisible();
+      await expect(compactProgress.getByText("How would you like to begin?")).toBeVisible();
+    }
+
+    const actions = page.locator('[data-sticky-actions="true"]');
+    for (const label of ["Back", "Save & exit", "Continue"]) {
+      const button = actions.getByRole("button", { name: label });
+      await expect(button).toBeVisible();
+      expect((await button.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+    }
+
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    expect(await page.locator("body").innerText()).not.toMatch(/Veskify|Puck|developer/i);
+  });
+}
+
+test("keeps sticky onboarding actions visible after mobile page scroll", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 360 });
+  await page.goto("/projects/new");
+
+  const actions = page.locator('[data-sticky-actions="true"]');
+  const path = page.getByRole("radio", { name: /Create a new storefront/i });
+  await path.focus();
+  await page.keyboard.press("Space");
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect(actions).toBeInViewport();
+  await expect(actions.getByRole("button", { name: "Continue" })).toBeVisible();
+
+  await actions.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Business basics" })).toBeVisible();
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect(actions).toBeInViewport();
+
+  const saveExit = actions.getByRole("button", { name: "Save & exit" });
+  await saveExit.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL("/");
+});
+
 type StoredOnboardingSession = {
   activeStepId?: string;
   skippedStepIds?: string[];

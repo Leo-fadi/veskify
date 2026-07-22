@@ -20,7 +20,7 @@
 
 .header,
 .card {
-  width: min(100%, 68rem);
+  width: min(100%, 70rem);
   margin-inline: auto;
 }
 
@@ -114,31 +114,43 @@
 }
 
 .card {
-  min-height: 36rem;
-  overflow: hidden;
   border: 1px solid var(--brand-color-border);
-  border-radius: var(--vesko-radius-lg);
+  border-radius: 0.75rem;
   background: var(--vesko-color-surface);
   box-shadow: var(--vesko-shadow-md);
 }
 
-.progressBlock {
-  padding: 1.25rem clamp(1.25rem, 4vw, 3rem) 1rem;
-  border-bottom: 1px solid var(--brand-color-border);
-  background: var(--vesko-color-active);
+.workflowLayout {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(13rem, 16rem) minmax(0, 1fr);
 }
 
-.progressLabels {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.6rem;
+.progressRail {
+  min-width: 0;
+  padding: 1.5rem 1.1rem;
+  border-right: 1px solid var(--brand-color-border);
+  background: var(--vesko-color-surface);
+}
+
+.progressRailHeader {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  color: var(--brand-color-text);
+  font-size: 0.84rem;
+}
+
+.progressEyebrow {
   color: var(--brand-color-muted-text);
-  font-size: 0.82rem;
-  font-weight: 750;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.progressBlock progress {
+.progressRail progress,
+.compactProgress progress {
   width: 100%;
   height: 0.45rem;
   overflow: hidden;
@@ -148,31 +160,41 @@
   color: var(--brand-color-primary);
 }
 
-.progressBlock progress::-webkit-progress-bar {
+.progressRail progress::-webkit-progress-bar,
+.compactProgress progress::-webkit-progress-bar {
   background: var(--brand-color-border);
 }
 
-.progressBlock progress::-webkit-progress-value,
-.progressBlock progress::-moz-progress-bar {
+.progressRail progress::-webkit-progress-value,
+.progressRail progress::-moz-progress-bar,
+.compactProgress progress::-webkit-progress-value,
+.compactProgress progress::-moz-progress-bar {
   background: var(--brand-color-primary);
 }
 
 .stepList {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  gap: 0.4rem;
-  margin: 0.8rem 0 0;
+  gap: 0.25rem;
+  margin: 1.25rem 0 0;
   padding: 0;
   list-style: none;
 }
 
 .stepList li {
   display: flex;
-  justify-content: center;
+  min-width: 0;
+  align-items: center;
+  gap: 0.65rem;
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.45rem;
+  color: var(--brand-color-muted-text);
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
-.stepList li > span:first-child {
+.stepMarker {
   display: inline-flex;
+  flex: 0 0 auto;
   width: 1.6rem;
   height: 1.6rem;
   align-items: center;
@@ -184,14 +206,75 @@
   font-weight: 800;
 }
 
+.stepName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .stepList .currentStep > span:first-child {
   border-color: var(--brand-color-primary);
   background: var(--brand-color-primary);
   color: white;
 }
 
+.stepList .currentStep {
+  background: var(--vesko-color-active);
+  color: var(--brand-color-text);
+}
+
+.stepList .completedStep > span:first-child {
+  border-color: var(--brand-color-primary);
+  background: var(--brand-color-primary);
+  color: white;
+}
+
+.stepList .completedStep {
+  color: var(--brand-color-text);
+}
+
+.stepList .upcomingStep {
+  color: var(--brand-color-muted-text);
+}
+
+.compactProgress {
+  display: none;
+  gap: 0.7rem;
+  padding: 1rem clamp(1.25rem, 4vw, 2rem);
+  border-bottom: 1px solid var(--brand-color-border);
+  background: var(--vesko-color-active);
+}
+
+.compactProgressCopy {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  color: var(--brand-color-muted-text);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.compactProgressCopy strong {
+  color: var(--brand-color-text);
+  font-size: 0.92rem;
+}
+
 .stepContent {
   padding: clamp(1.5rem, 5vw, 3.5rem);
+}
+
+.workflowMain {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.workflowContent {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 0.75rem 0.75rem 0 0;
 }
 
 .stepContent h2,
@@ -555,9 +638,9 @@
   line-height: 1.5;
 }
 
-.formField input,
-.formField textarea,
-.formField select {
+.businessForm input,
+.businessForm textarea,
+.businessForm select {
   width: 100%;
   border: 1px solid var(--brand-color-border);
   border-radius: 0.7rem;
@@ -568,20 +651,20 @@
   line-height: 1.45;
 }
 
-.formField textarea {
+.businessForm textarea {
   resize: vertical;
 }
 
-.formField input:focus-visible,
-.formField textarea:focus-visible,
-.formField select:focus-visible {
+.businessForm input:focus-visible,
+.businessForm textarea:focus-visible,
+.businessForm select:focus-visible {
   outline: 3px solid var(--brand-color-accent);
   outline-offset: 2px;
 }
 
-.formField input[aria-invalid="true"],
-.formField textarea[aria-invalid="true"],
-.formField select[aria-invalid="true"] {
+.businessForm input[aria-invalid="true"],
+.businessForm textarea[aria-invalid="true"],
+.businessForm select[aria-invalid="true"] {
   border-color: var(--vesko-color-danger);
 }
 
@@ -610,54 +693,36 @@
 }
 
 .actions {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+  position: sticky;
+  z-index: 2;
+  bottom: 0;
+  display: flex;
   gap: 1rem;
   align-items: center;
   padding: 1.25rem clamp(1.25rem, 4vw, 3rem);
   border-top: 1px solid var(--brand-color-border);
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 -0.5rem 1.25rem rgb(0 53 21 / 5%);
 }
 
+.actionLeading,
 .forwardActions {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 0.75rem;
 }
 
-.primaryButton,
-.secondaryButton,
-.dangerButton,
-.restartButton {
-  min-height: 2.75rem;
-  cursor: pointer;
-  border-radius: var(--vesko-radius-sm);
-  padding: 0.65rem 1.15rem;
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 800;
+.actionLeading {
+  align-items: center;
 }
 
-.primaryButton {
-  border: 1px solid var(--brand-color-primary);
-  background: var(--brand-color-primary);
-  color: white;
+.forwardActions {
+  margin-left: auto;
+  justify-content: flex-end;
 }
 
-.primaryButton:hover:not(:disabled) {
-  border-color: var(--vesko-color-primary-hover);
-  background: var(--vesko-color-primary-hover);
-}
-
-.secondaryButton {
-  border: 1px solid var(--brand-color-border);
-  background: white;
-  color: var(--brand-color-text);
-}
-
-.dangerButton {
-  border: 1px solid var(--vesko-color-danger);
-  background: var(--vesko-color-danger);
-  color: white;
+.workflowAction {
+  min-height: 3rem;
 }
 
 .restartButton {
@@ -666,12 +731,7 @@
   color: var(--vesko-color-danger);
   text-decoration: underline;
   text-underline-offset: 0.2rem;
-}
-
-.primaryButton:disabled,
-.secondaryButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.48;
+  min-height: 3rem;
 }
 
 .centerState {
@@ -781,22 +841,27 @@
     min-height: auto;
   }
 
-  .actions {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .forwardActions {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
   .visualChoiceGrid,
   .preferenceGrid {
     grid-template-columns: 1fr;
   }
+}
 
-  .restartButton {
-    grid-column: 1 / -1;
+@media (max-width: 52rem) {
+  .workflowLayout {
+    display: block;
+  }
+
+  .progressRail {
+    display: none;
+  }
+
+  .compactProgress {
+    display: grid;
+  }
+
+  .stepContent {
+    padding: clamp(1.25rem, 5vw, 2.5rem);
   }
 }
 
@@ -814,18 +879,20 @@
   }
 
   .actions,
+  .actionLeading,
   .forwardActions {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .actions > button,
-  .forwardActions button {
+  .workflowAction,
+  .restartButton {
     width: 100%;
   }
 
   .forwardActions {
-    grid-column: 1 / -1;
+    margin-left: 0;
+    grid-column: auto;
     grid-row: auto;
   }
 }

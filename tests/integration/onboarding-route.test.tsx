@@ -89,6 +89,46 @@ describe("guided onboarding route", () => {
     expect(screen.getByRole("button", { name: "Tallenna ja poistu" })).toBeEnabled();
   });
 
+  it("renders named progress states and a stable action area in EN and FI", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+
+    const rail = await screen.findByRole("complementary", { name: "Onboarding progress" });
+    expect(
+      within(rail).getByRole("listitem", { name: /How would you like to begin?/ }),
+    ).toHaveAttribute("data-state", "current");
+    expect(within(rail).getByRole("listitem", { name: /Business basics/ })).toHaveAttribute(
+      "data-state",
+      "upcoming",
+    );
+    expect(within(rail).getByRole("listitem", { name: /Storefront languages/ })).toHaveAttribute(
+      "data-state",
+      "upcoming",
+    );
+
+    const actions = screen.getByRole("contentinfo", { name: "Onboarding actions" });
+    expect(within(actions).getByRole("button", { name: "Back" })).toBeDisabled();
+    expect(within(actions).getByRole("button", { name: "Save & exit" })).toBeEnabled();
+    expect(within(actions).getByRole("button", { name: "Continue" })).toBeDisabled();
+
+    await user.click(screen.getByRole("radio", { name: /Create a new storefront/i }));
+    await user.click(within(actions).getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: "Business basics" })).toBeVisible();
+    expect(
+      within(rail).getByRole("listitem", { name: /How would you like to begin?/ }),
+    ).toHaveAttribute("data-state", "completed");
+    expect(within(rail).getByRole("listitem", { name: /Business basics/ })).toHaveAttribute(
+      "data-state",
+      "current",
+    );
+
+    await user.click(screen.getByRole("radio", { name: "Suomi" }));
+    expect(screen.getByRole("complementary", { name: "Aloituksen edistyminen" })).toBeVisible();
+    expect(screen.getByRole("contentinfo", { name: "Aloituksen toiminnot" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Tallenna ja poistu" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Jatka" })).toBeEnabled();
+  });
+
   it("announces a focused local edit as unsaved before blur, then returns to Saved", async () => {
     const user = userEvent.setup();
     render(<OnboardingWizard />);

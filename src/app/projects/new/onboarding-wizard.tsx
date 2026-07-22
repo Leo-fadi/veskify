@@ -21,7 +21,7 @@ import {
   type OnboardingLanguageSelection,
 } from "@/application/onboarding";
 import { StorefrontGenerationReviewPanel } from "@/components/onboarding";
-import { AppShell, Button, Notice, StatusPill } from "@/components/ui";
+import { AppShell, Button, Card, Field, Notice, StatusPill } from "@/components/ui";
 import {
   businessBasicsFieldIds,
   type BusinessBasicsField,
@@ -93,6 +93,10 @@ const copy = {
     step: "Step",
     of: "of",
     complete: "complete",
+    progressLabel: "Onboarding progress",
+    actionsLabel: "Onboarding actions",
+    completed: "Completed",
+    upcoming: "Upcoming",
     back: "Back",
     continue: "Continue",
     skip: "Skip for now",
@@ -151,6 +155,10 @@ const copy = {
     step: "Vaihe",
     of: "/",
     complete: "valmis",
+    progressLabel: "Aloituksen edistyminen",
+    actionsLabel: "Aloituksen toiminnot",
+    completed: "Valmis",
+    upcoming: "Tulossa",
     back: "Takaisin",
     continue: "Jatka",
     skip: "Ohita nyt",
@@ -1157,9 +1165,11 @@ export function OnboardingWizard({
             >
               {pendingExit === "dashboard" ? text.leaving : text.dashboard}
             </Button>
-            <Button disabled={exitUnavailable} onClick={() => void exitToDashboard("save")}>
-              {pendingExit === "save" ? text.saving : text.saveExit}
-            </Button>
+            {preparedProject ? (
+              <Button disabled={exitUnavailable} onClick={() => void exitToDashboard("save")}>
+                {pendingExit === "save" ? text.saving : text.saveExit}
+              </Button>
+            ) : null}
           </>
         }
         locale={locale}
@@ -1198,7 +1208,7 @@ export function OnboardingWizard({
             </fieldset>
           </header>
 
-          <section aria-label={text.heading} className={styles.card}>
+          <Card aria-label={text.heading} className={styles.card}>
             {view.kind === "loading" && (
               <div aria-live="polite" className={styles.centerState} role="status">
                 <span aria-hidden="true" className={styles.spinner} />
@@ -1311,6 +1321,7 @@ export function OnboardingWizard({
                 onLanguagesComplete={(selection) =>
                   updateSession((session) => service.completeLanguages(session, selection))
                 }
+                onSaveExit={() => void exitToDashboard("save")}
                 onBack={() => void updateSession((session) => service.goBack(session))}
                 onContinue={() => void updateSession((session) => service.advance(session))}
                 onPath={(path) =>
@@ -1318,11 +1329,13 @@ export function OnboardingWizard({
                 }
                 onRestart={() => setRestartOpen(true)}
                 onSkip={() => void updateSession((session) => service.skip(session))}
+                saveExitDisabled={exitUnavailable}
+                saveExitLabel={pendingExit === "save" ? text.saving : text.saveExit}
                 service={service}
                 session={view.session}
               />
             ) : null}
-          </section>
+          </Card>
         </div>
         {restartOpen && (
           <div className={styles.dialogBackdrop}>
@@ -1335,12 +1348,12 @@ export function OnboardingWizard({
               <h2 id="restart-heading">{text.confirmHeading}</h2>
               <p>{text.confirmBody}</p>
               <div className={styles.dialogActions}>
-                <button className={styles.secondaryButton} onClick={() => setRestartOpen(false)}>
+                <Button onClick={() => setRestartOpen(false)} variant="secondary">
                   {text.cancel}
-                </button>
-                <button className={styles.dangerButton} onClick={() => void restart()}>
+                </Button>
+                <Button onClick={() => void restart()} variant="danger">
                   {text.confirmRestart}
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -1365,9 +1378,7 @@ function RecoveryState({
     <div className={styles.centerState} role="alert">
       <h2>{heading}</h2>
       <p>{body}</p>
-      <button className={styles.primaryButton} onClick={onAction}>
-        {action}
-      </button>
+      <Button onClick={onAction}>{action}</Button>
     </div>
   );
 }
@@ -1404,6 +1415,9 @@ function ActiveStep({
   onPagesComplete,
   onLanguagesChange,
   onLanguagesComplete,
+  onSaveExit,
+  saveExitDisabled,
+  saveExitLabel,
   onBack,
   onContinue,
   onPath,
@@ -1450,11 +1464,14 @@ function ActiveStep({
   onLanguagesComplete: (
     selection: OnboardingLanguageSelection,
   ) => Promise<OnboardingSession | null>;
+  onSaveExit: () => void;
   onBack: () => void;
   onContinue: () => void;
   onPath: (path: OnboardingCreationPath) => void;
   onRestart: () => void;
   onSkip: () => void;
+  saveExitDisabled: boolean;
+  saveExitLabel: string;
   service: OnboardingService;
   session: OnboardingSession;
 }) {
@@ -1466,206 +1483,250 @@ function ActiveStep({
     (step.id === "creation-path" && !session.creationPath) ||
     (step.id === "pages" &&
       !generatedStorefrontPageTypes.every((pageType) => pagesDraft.includes(pageType)));
+  const continueForm =
+    step.id === "business-basics"
+      ? "business-basics-form"
+      : step.id === "existing-sources" &&
+          session.designBrief.creationContext.type === "redesign-existing-storefront"
+        ? "existing-sources-form"
+        : step.id === "visual-direction"
+          ? "visual-direction-form"
+          : step.id === "catalogue"
+            ? "catalogue-context-form"
+            : step.id === "pages"
+              ? "pages-form"
+              : step.id === "languages"
+                ? "storefront-languages-form"
+                : undefined;
+  const continueType = continueForm ? "submit" : "button";
+  const completedStepIds = new Set([...session.completedStepIds, ...session.skippedStepIds]);
 
   return (
-    <>
-      <div className={styles.progressBlock}>
-        <div className={styles.progressLabels}>
-          <span>
+    <div className={styles.workflowLayout}>
+      <aside
+        aria-label={text.progressLabel}
+        className={styles.progressRail}
+        data-onboarding-progress="desktop"
+      >
+        <div className={styles.progressRailHeader}>
+          <span className={styles.progressEyebrow}>{text.progressLabel}</span>
+          <strong>
             {text.step} {progress.current} {text.of} {progress.total}
-          </span>
-          <span>
-            {progress.percent}% {text.complete}
-          </span>
+          </strong>
         </div>
         <progress
           aria-label={`${text.step} ${progress.current} ${text.of} ${progress.total}`}
           max={progress.total}
           value={progress.completed}
         />
-        <ol aria-label={text.heading} className={styles.stepList}>
-          {onboardingStepRegistry.map((item) => (
-            <li
-              aria-current={item.id === step.id ? "step" : undefined}
-              className={item.id === step.id ? styles.currentStep : undefined}
-              key={item.id}
-            >
-              <span aria-hidden="true">{item.position}</span>
-              <span className={styles.visuallyHidden}>{item.title[locale]}</span>
-            </li>
-          ))}
-        </ol>
-      </div>
-
-      <div className={styles.stepContent}>
-        <p aria-live="polite" className={styles.status} role="status">
-          {message}
-        </p>
-        <p className={styles.stepNumber}>
-          {text.step} {step.position}
-        </p>
-        <h2>{step.title[locale]}</h2>
-        <p className={styles.description}>{step.description[locale]}</p>
-
-        {step.id === "creation-path" ? (
-          <fieldset className={styles.pathOptions}>
-            <legend>{text.pathLegend}</legend>
-            {pathOptions.map((option) => (
-              <label key={option.value}>
-                <input
-                  checked={session.creationPath === option.value}
-                  name="creation-path"
-                  onChange={() => onPath(option.value)}
-                  type="radio"
-                  value={option.value}
-                />
-                <span>
-                  <strong>{option.title[locale]}</strong>
-                  <small>{option.description[locale]}</small>
+        <ol className={styles.stepList}>
+          {onboardingStepRegistry.map((item) => {
+            const state =
+              item.id === step.id
+                ? "current"
+                : completedStepIds.has(item.id)
+                  ? "completed"
+                  : "upcoming";
+            const stateLabel =
+              state === "completed"
+                ? text.completed
+                : state === "upcoming"
+                  ? text.upcoming
+                  : text.step;
+            return (
+              <li
+                aria-current={state === "current" ? "step" : undefined}
+                aria-label={`${item.title[locale]} — ${stateLabel}`}
+                className={
+                  state === "current"
+                    ? styles.currentStep
+                    : state === "completed"
+                      ? styles.completedStep
+                      : styles.upcomingStep
+                }
+                data-state={state}
+                key={item.id}
+              >
+                <span aria-hidden="true" className={styles.stepMarker}>
+                  {state === "completed" ? "✓" : item.position}
                 </span>
-              </label>
-            ))}
-          </fieldset>
-        ) : step.id === "business-basics" ? (
-          <BusinessBasicsForm
-            draft={businessDraft}
-            errors={businessErrors}
-            locale={locale}
-            onComplete={onBusinessComplete}
-            onDraftChange={onBusinessDraftChange}
-            onField={onBusinessField}
-          />
-        ) : step.id === "existing-sources" ? (
-          <ExistingSourcesStep
-            draft={existingSourceDraft}
-            errors={existingSourceErrors}
-            locale={locale}
-            onComplete={onExistingSourcesComplete}
-            onDraftChange={onExistingSourceDraftChange}
-            onField={onExistingSourceField}
-            sourceType={session.designBrief.creationContext.type}
-          />
-        ) : step.id === "visual-direction" ? (
-          <VisualDirectionForm
-            draft={visualDirectionDraft}
-            errors={visualDirectionErrors}
-            locale={locale}
-            onComplete={onVisualDirectionComplete}
-            onDraftChange={onVisualDirectionDraftChange}
-            onField={onVisualDirectionFieldSave}
-          />
-        ) : step.id === "catalogue" ? (
-          <CatalogueContextForm
-            draft={catalogueContextDraft}
-            error={catalogueContextError}
-            locale={locale}
-            onChange={onCatalogueContextChange}
-            onComplete={onCatalogueContextComplete}
-          />
-        ) : step.id === "pages" ? (
-          <PagesForm
-            draft={pagesDraft}
-            error={pagesError}
-            locale={locale}
-            onChange={onPagesChange}
-            onComplete={onPagesComplete}
-          />
-        ) : step.id === "languages" ? (
-          <StorefrontLanguagesForm
-            error={languageError}
-            locale={locale}
-            onChange={onLanguagesChange}
-            onComplete={onLanguagesComplete}
-            selection={{
-              selectedLanguages: session.selectedLanguages,
-              primaryLanguage: session.primaryLanguage,
-            }}
-          />
-        ) : (
-          <div className={styles.placeholder}>
-            <strong>{text.futureLabel}</strong>
-            <p>{step.placeholder[locale]}</p>
-          </div>
-        )}
-      </div>
+                <span className={styles.stepName}>{item.title[locale]}</span>
+              </li>
+            );
+          })}
+        </ol>
+      </aside>
 
-      <footer className={styles.actions}>
-        <button className={styles.secondaryButton} disabled={!step.previousStepId} onClick={onBack}>
-          {text.back}
-        </button>
-        <div className={styles.forwardActions}>
-          {step.optional && (
-            <button
-              className={styles.secondaryButton}
-              onClick={
-                step.id === "existing-sources"
-                  ? onExistingSourcesSkip
-                  : step.id === "visual-direction"
-                    ? onVisualDirectionSkip
-                    : step.id === "catalogue"
-                      ? onCatalogueContextSkip
-                      : onSkip
-              }
-            >
-              {text.skip}
-            </button>
-          )}
-          <button
-            className={styles.primaryButton}
-            disabled={continueDisabled}
-            form={
-              step.id === "business-basics"
-                ? "business-basics-form"
-                : step.id === "existing-sources" &&
-                    session.designBrief.creationContext.type === "redesign-existing-storefront"
-                  ? "existing-sources-form"
-                  : step.id === "visual-direction"
-                    ? "visual-direction-form"
-                    : step.id === "catalogue"
-                      ? "catalogue-context-form"
-                      : step.id === "pages"
-                        ? "pages-form"
-                        : step.id === "languages"
-                          ? "storefront-languages-form"
-                          : undefined
-            }
-            onClick={
-              step.id === "business-basics" ||
-              (step.id === "existing-sources" &&
-                session.designBrief.creationContext.type === "redesign-existing-storefront") ||
-              step.id === "visual-direction"
-                ? undefined
-                : step.id === "catalogue"
-                  ? undefined
-                  : step.id === "pages"
-                    ? undefined
-                    : step.id === "languages"
-                      ? undefined
-                      : onContinue
-            }
-            type={
-              step.id === "business-basics" ||
-              (step.id === "existing-sources" &&
-                session.designBrief.creationContext.type === "redesign-existing-storefront") ||
-              step.id === "visual-direction"
-                ? "submit"
-                : step.id === "catalogue"
-                  ? "submit"
-                  : step.id === "pages"
-                    ? "submit"
-                    : step.id === "languages"
-                      ? "submit"
-                      : "button"
-            }
+      <div className={styles.workflowMain}>
+        <div className={styles.workflowContent}>
+          <div
+            aria-label={text.progressLabel}
+            className={styles.compactProgress}
+            data-onboarding-progress="compact"
           >
-            {text.continue}
-          </button>
+            <div className={styles.compactProgressCopy}>
+              <span>
+                {text.step} {progress.current} {text.of} {progress.total}
+              </span>
+              <strong>{step.title[locale]}</strong>
+            </div>
+            <progress
+              aria-label={`${text.step} ${progress.current} ${text.of} ${progress.total}`}
+              max={progress.total}
+              value={progress.completed}
+            />
+          </div>
+
+          <div className={styles.stepContent}>
+            <p aria-live="polite" className={styles.status} role="status">
+              {message}
+            </p>
+            <p className={styles.stepNumber}>
+              {text.step} {step.position}
+            </p>
+            <h2>{step.title[locale]}</h2>
+            <p className={styles.description}>{step.description[locale]}</p>
+
+            {step.id === "creation-path" ? (
+              <fieldset className={styles.pathOptions}>
+                <legend>{text.pathLegend}</legend>
+                {pathOptions.map((option) => (
+                  <label key={option.value}>
+                    <input
+                      checked={session.creationPath === option.value}
+                      name="creation-path"
+                      onChange={() => onPath(option.value)}
+                      type="radio"
+                      value={option.value}
+                    />
+                    <span>
+                      <strong>{option.title[locale]}</strong>
+                      <small>{option.description[locale]}</small>
+                    </span>
+                  </label>
+                ))}
+              </fieldset>
+            ) : step.id === "business-basics" ? (
+              <BusinessBasicsForm
+                draft={businessDraft}
+                errors={businessErrors}
+                locale={locale}
+                onComplete={onBusinessComplete}
+                onDraftChange={onBusinessDraftChange}
+                onField={onBusinessField}
+              />
+            ) : step.id === "existing-sources" ? (
+              <ExistingSourcesStep
+                draft={existingSourceDraft}
+                errors={existingSourceErrors}
+                locale={locale}
+                onComplete={onExistingSourcesComplete}
+                onDraftChange={onExistingSourceDraftChange}
+                onField={onExistingSourceField}
+                sourceType={session.designBrief.creationContext.type}
+              />
+            ) : step.id === "visual-direction" ? (
+              <VisualDirectionForm
+                draft={visualDirectionDraft}
+                errors={visualDirectionErrors}
+                locale={locale}
+                onComplete={onVisualDirectionComplete}
+                onDraftChange={onVisualDirectionDraftChange}
+                onField={onVisualDirectionFieldSave}
+              />
+            ) : step.id === "catalogue" ? (
+              <CatalogueContextForm
+                draft={catalogueContextDraft}
+                error={catalogueContextError}
+                locale={locale}
+                onChange={onCatalogueContextChange}
+                onComplete={onCatalogueContextComplete}
+              />
+            ) : step.id === "pages" ? (
+              <PagesForm
+                draft={pagesDraft}
+                error={pagesError}
+                locale={locale}
+                onChange={onPagesChange}
+                onComplete={onPagesComplete}
+              />
+            ) : step.id === "languages" ? (
+              <StorefrontLanguagesForm
+                error={languageError}
+                locale={locale}
+                onChange={onLanguagesChange}
+                onComplete={onLanguagesComplete}
+                selection={{
+                  selectedLanguages: session.selectedLanguages,
+                  primaryLanguage: session.primaryLanguage,
+                }}
+              />
+            ) : (
+              <div className={styles.placeholder}>
+                <strong>{text.futureLabel}</strong>
+                <p>{step.placeholder[locale]}</p>
+              </div>
+            )}
+          </div>
         </div>
-        <button className={styles.restartButton} onClick={onRestart}>
-          {text.restart}
-        </button>
-      </footer>
-    </>
+
+        <footer
+          aria-label={text.actionsLabel}
+          className={styles.actions}
+          data-sticky-actions="true"
+        >
+          <div className={styles.actionLeading}>
+            <Button
+              className={styles.workflowAction}
+              disabled={!step.previousStepId}
+              onClick={onBack}
+              variant="secondary"
+            >
+              {text.back}
+            </Button>
+            <Button className={styles.restartButton} onClick={onRestart} variant="quiet">
+              {text.restart}
+            </Button>
+          </div>
+          <div className={styles.forwardActions}>
+            {step.optional && (
+              <Button
+                className={styles.workflowAction}
+                onClick={
+                  step.id === "existing-sources"
+                    ? onExistingSourcesSkip
+                    : step.id === "visual-direction"
+                      ? onVisualDirectionSkip
+                      : step.id === "catalogue"
+                        ? onCatalogueContextSkip
+                        : onSkip
+                }
+                variant="quiet"
+              >
+                {text.skip}
+              </Button>
+            )}
+            <Button
+              className={styles.workflowAction}
+              disabled={saveExitDisabled}
+              onClick={onSaveExit}
+              variant="secondary"
+            >
+              {saveExitLabel}
+            </Button>
+            <Button
+              className={styles.workflowAction}
+              disabled={continueDisabled}
+              form={continueForm}
+              onClick={continueForm ? undefined : onContinue}
+              type={continueType}
+            >
+              {text.continue}
+            </Button>
+          </div>
+        </footer>
+      </div>
+    </div>
   );
 }
 
@@ -2191,20 +2252,14 @@ function ExistingSourcesForm({
         void onComplete(draft);
       }}
     >
-      {errors.existingStorefrontUrl && (
-        <div aria-live="assertive" className={styles.validationSummary} role="alert">
-          <strong>{text.summary}</strong>
-          <ul>
-            <li>{errors.existingStorefrontUrl}</li>
-          </ul>
-        </div>
-      )}
-
-      <div className={styles.formField}>
-        <label htmlFor="existing-storefront-url">{text.url.label}</label>
-        <p id="existingStorefrontUrl-description">{text.url.description}</p>
+      <Field
+        error={errors.existingStorefrontUrl}
+        hint={text.url.description}
+        id="existing-storefront-url"
+        label={text.url.label}
+      >
         <input
-          aria-describedby={`existingStorefrontUrl-description${errors.existingStorefrontUrl ? " existingStorefrontUrl-error" : ""}`}
+          aria-describedby={`existing-storefront-url-hint${errors.existingStorefrontUrl ? " existing-storefront-url-error" : ""}`}
           aria-invalid={Boolean(errors.existingStorefrontUrl)}
           autoComplete="url"
           id="existing-storefront-url"
@@ -2218,12 +2273,7 @@ function ExistingSourcesForm({
           type="url"
           value={draft}
         />
-        {errors.existingStorefrontUrl && (
-          <span className={styles.fieldError} id="existingStorefrontUrl-error">
-            {errors.existingStorefrontUrl}
-          </span>
-        )}
-      </div>
+      </Field>
     </form>
   );
 }
