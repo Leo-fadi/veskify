@@ -2,8 +2,19 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { createStorefrontRenderContext, validateRegisteredPage } from "@/components/registry";
+import {
+  createCatalogueStorefrontCommerceRouteAdapter,
+  type ProductCommerceRoutePresentation,
+  type StorefrontCommerceRouteAdapter,
+} from "@/integrations/storefront-commerce-routes";
+import {
+  createStorefrontRenderContext,
+  validateRegisteredPage,
+  veskifyComponentRegistryV2,
+} from "@/components/registry";
+import { StorefrontProductCommerceRoute } from "@/components/storefront/storefront-commerce-route";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
+import type { ProductPrimaryActionIntentCallback } from "@/components/storefront/dynamic-product-detail";
 import { brandSystemToCssVariables } from "@/domain/design-system";
 import type { Locale } from "@/domain/shared";
 import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
@@ -34,9 +45,12 @@ type LoadState =
       aggregate: ProjectAggregate;
       draft: ProjectAggregate["snapshots"][number];
       productPage: ProductPageModel;
+      commercePresentation: ProductCommerceRoutePresentation | null;
     };
 
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
+const defaultCommerceAdapter = createCatalogueStorefrontCommerceRouteAdapter();
+const ignorePrimaryAction: ProductPrimaryActionIntentCallback = () => undefined;
 function StatusPanel({
   title,
   message,
@@ -71,6 +85,8 @@ type ProductPreviewClientProps = {
   repositoryFactory?: RepositoryFactory;
   snapshotKind?: SnapshotKind;
   historicalSnapshotId?: string;
+  commerceAdapter?: StorefrontCommerceRouteAdapter;
+  onPrimaryAction?: ProductPrimaryActionIntentCallback;
 };
 
 export function ProductPreviewClient(props: ProductPreviewClientProps) {
@@ -83,6 +99,8 @@ function ProductPreviewLoader({
   repositoryFactory = defaultRepositoryFactory,
   snapshotKind = "draft",
   historicalSnapshotId,
+  commerceAdapter = defaultCommerceAdapter,
+  onPrimaryAction = ignorePrimaryAction,
 }: ProductPreviewClientProps) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -128,11 +146,33 @@ function ProductPreviewLoader({
           if (!references.length || references.some((reference) => reference !== product.id))
             throw new Error("Product page references do not match the canonical product.");
           void renderStorefrontPage(productPage, context);
+          const commercePresentation = commerceAdapter.product({
+            aggregate,
+            snapshot: draft,
+            page: productPage,
+            product,
+          });
+          if (commercePresentation) {
+            veskifyComponentRegistryV2.validateInstanceConformance(
+              commercePresentation.instance,
+              commercePresentation.projection,
+            );
+            if (commercePresentation.productContext.productId !== product.id) {
+              throw new Error("The dynamic product route resolved a different canonical product.");
+            }
+          }
+          setActiveLocale(aggregate.project.primaryLocale);
+          setState({
+            status: "success",
+            aggregate,
+            draft,
+            productPage,
+            commercePresentation,
+          });
+          return;
         } catch {
           return setState({ status: "validationFailure" });
         }
-        setActiveLocale(aggregate.project.primaryLocale);
-        setState({ status: "success", aggregate, draft, productPage });
       })
       .catch((error: unknown) => {
         if (!cancelled)
@@ -141,7 +181,7 @@ function ProductPreviewLoader({
     return () => {
       cancelled = true;
     };
-  }, [attempt, historicalSnapshotId, productSlug, projectId, snapshotKind]);
+  }, [attempt, commerceAdapter, historicalSnapshotId, productSlug, projectId, snapshotKind]);
 
   const retry = () => {
     setState({ status: "loading" });
@@ -268,7 +308,19 @@ function ProductPreviewLoader({
         }
         className="project-preview__storefront"
       >
-        {renderStorefrontPage(state.productPage, context)}
+        {state.commercePresentation ? (
+          <StorefrontProductCommerceRoute
+            activeLocale={locale}
+            context={context}
+            onPrimaryAction={onPrimaryAction}
+            page={state.productPage}
+            presentation={state.commercePresentation}
+            primaryLocale={state.aggregate.project.primaryLocale}
+            target={snapshotKind === "published" ? "published" : "preview"}
+          />
+        ) : (
+          renderStorefrontPage(state.productPage, context)
+        )}
       </div>
     </div>
   );
