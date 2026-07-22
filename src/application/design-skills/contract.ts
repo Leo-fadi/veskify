@@ -20,6 +20,7 @@ import {
 } from "@/domain/storefront";
 
 export const designIntentSchema = z.enum([
+  "exactBrandPalette",
   "luxuryStyle",
   "minimalNordicStyle",
   "campaignSection",

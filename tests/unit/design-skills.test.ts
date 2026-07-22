@@ -83,6 +83,9 @@ describe("controlled design skill contract and registry", () => {
 
   it("retrieves by ID and filters by intent, PageType and scope", () => {
     expect(designSkillRegistry.get("applyLuxuryStyle").version).toBe("1.0.0");
+    expect(designSkillRegistry.listByIntent("exactBrandPalette").map((skill) => skill.id)).toEqual([
+      "applyExactBrandPalette",
+    ]);
     expect(designSkillRegistry.listByIntent("luxuryStyle").map((skill) => skill.id)).toEqual([
       "applyLuxuryStyle",
       "improveHero",
@@ -96,7 +99,11 @@ describe("controlled design skill contract and registry", () => {
       designSkillRegistry
         .filterByPageTypeAndScope("product", "storefront")
         .map((skill) => skill.id),
-    ).toEqual(["applyWarmPremiumStorefrontStyle", "applyMinimalNordicStorefrontStyle"]);
+    ).toEqual([
+      "applyExactBrandPalette",
+      "applyWarmPremiumStorefrontStyle",
+      "applyMinimalNordicStorefrontStyle",
+    ]);
   });
 });
 

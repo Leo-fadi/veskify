@@ -116,7 +116,10 @@ export function buildAiStorefrontProviderRequest(
       skillId: skill.id,
       skillVersion: skill.version,
       skillScope: skill.scope,
-      operationTypes: ["APPLY_APPROVED_BRAND_COLOURS", "APPLY_APPROVED_BRAND_TYPOGRAPHY"],
+      operationTypes:
+        plan.brandPalettePlan === null
+          ? ["APPLY_APPROVED_BRAND_COLOURS", "APPLY_APPROVED_BRAND_TYPOGRAPHY"]
+          : ["APPLY_APPROVED_BRAND_COLOURS"],
       target: target.designSystemTarget,
     });
   }
@@ -186,6 +189,7 @@ export function buildAiStorefrontProviderRequest(
             colors: structuredClone(command.storefront.brandSystem.colors),
             typography: structuredClone(command.storefront.brandSystem.typography),
           },
+    brandPalettePlan: plan.brandPalettePlan,
     permissionGrants,
     storefrontBaselineFingerprint,
     targetFingerprint,

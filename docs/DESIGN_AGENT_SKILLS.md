@@ -147,14 +147,15 @@ Status values:
 
 ### 6.1 Existing design-agent baseline
 
-| Skill                       | Status   | Purpose                                                                     |
-| --------------------------- | -------- | --------------------------------------------------------------------------- |
-| `improveSelectedSection`    | Baseline | Propose validated changes to one eligible section.                          |
-| `improveCurrentPage`        | Baseline | Coordinate compatible changes across one page.                              |
-| `restyleWholeStorefront`    | Baseline | Apply validated brand-system and multi-page design changes atomically.      |
-| `applyLuxuryStyle`          | Baseline | Apply a premium direction through approved variants and tokens.             |
-| `applyMinimalNordicStyle`   | Baseline | Simplify composition and apply restrained Nordic design direction.          |
-| `translateLocalizedContent` | Baseline | Update eligible EN/FI presentation content without touching protected data. |
+| Skill                       | Status   | Purpose                                                                                   |
+| --------------------------- | -------- | ----------------------------------------------------------------------------------------- |
+| `improveSelectedSection`    | Baseline | Propose validated changes to one eligible section.                                        |
+| `improveCurrentPage`        | Baseline | Coordinate compatible changes across one page.                                            |
+| `restyleWholeStorefront`    | Baseline | Apply validated brand-system and multi-page design changes atomically.                    |
+| `applyExactBrandPalette`    | Baseline | Map named or exact colours to validated global tokens without changing layout or content. |
+| `applyLuxuryStyle`          | Baseline | Apply a premium direction through approved variants and tokens.                           |
+| `applyMinimalNordicStyle`   | Baseline | Simplify composition and apply restrained Nordic design direction.                        |
+| `translateLocalizedContent` | Baseline | Update eligible EN/FI presentation content without touching protected data.               |
 
 These skills already use proposal review, protected-field guards, stale protection, atomic acceptance and undo/redo. Do not rebuild their lifecycle.
 
@@ -237,7 +238,7 @@ May change density, card family, image treatment, columns, heading and ordering 
 
 #### `applyExactBrandPalette`
 
-**Status:** Next
+**Status:** Baseline
 Accept named colours or valid colour values, map them to approved token roles, validate contrast and return a cross-page proposal. It must preserve layout, content and product truth unless broader changes are explicitly requested.
 
 #### `improveTypography`

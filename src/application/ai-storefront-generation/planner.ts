@@ -6,6 +6,11 @@ import {
   type AiStorefrontGenerationCommand,
   type AiStorefrontGenerationPlan,
 } from "./contract";
+import {
+  BrandPaletteInstructionError,
+  planExactBrandPalette,
+  type ExactBrandPalettePlan,
+} from "./brand-palette";
 
 export class AiStorefrontPlanError extends Error {
   constructor(
@@ -30,6 +35,7 @@ type SupportedStorefrontRequest = {
   direction: AiStorefrontGenerationPlan["direction"];
   skillId: string;
   designSystem: "required" | "none";
+  brandPalettePlan?: ExactBrandPalettePlan;
 };
 
 const supportedRequests = new Map<string, SupportedStorefrontRequest>([
@@ -115,10 +121,29 @@ const supportedRequests = new Map<string, SupportedStorefrontRequest>([
   ],
 ]);
 
-function classifyInstruction(instruction: string): SupportedStorefrontRequest {
+function classifyInstruction(
+  instruction: string,
+  currentColors: AiStorefrontGenerationCommand["storefront"]["brandSystem"]["colors"],
+): SupportedStorefrontRequest {
   const normalized = normalizeStorefrontInstruction(instruction);
   const supported = supportedRequests.get(normalized);
   if (supported) return supported;
+  try {
+    const brandPalettePlan = planExactBrandPalette(instruction, currentColors);
+    if (brandPalettePlan) {
+      return {
+        direction: "exactBrandPalette",
+        skillId: "applyExactBrandPalette",
+        designSystem: "required",
+        brandPalettePlan,
+      };
+    }
+  } catch (error) {
+    if (error instanceof BrandPaletteInstructionError) {
+      throw new AiStorefrontPlanError("unsupported-request", error.message);
+    }
+    throw error;
+  }
   const warm = /\b(warm|premium|lämmin|premium-ilme)/i.test(normalized);
   const minimal = /\b(minimal|nordic|pelkistet|pohjois)/i.test(normalized);
   if (warm && minimal) {
@@ -145,7 +170,10 @@ export function createAiStorefrontGenerationPlan(
   command: AiStorefrontGenerationCommand,
 ): AiStorefrontGenerationPlan {
   const normalizedInstruction = normalizeStorefrontInstruction(command.merchantInstruction);
-  const classified = classifyInstruction(command.merchantInstruction);
+  const classified = classifyInstruction(
+    command.merchantInstruction,
+    command.storefront.brandSystem.colors,
+  );
   if (classified.designSystem === "required" && command.designSystemTarget === null) {
     throw new AiStorefrontPlanError(
       "target-mismatch",
@@ -173,55 +201,66 @@ export function createAiStorefrontGenerationPlan(
   const explicitTargets = new Map(
     command.affectedSectionTargets.map((target) => [target.sectionId, target]),
   );
-  const sectionTargets = affectedPageIds.flatMap((pageId) => {
-    const page = pagesById.get(pageId);
-    if (!page) {
-      throw new AiStorefrontPlanError(
-        "target-mismatch",
-        "An affected page no longer exists in the storefront projection.",
-      );
-    }
-    if (!skill.supportedPageTypes.includes(page.type)) {
-      throw new AiStorefrontPlanError(
-        "unsupported-request",
-        `The approved storefront style does not support ${page.type} pages.`,
-      );
-    }
-    const candidates = page.sections.filter((section) =>
-      explicitTargets.size > 0 ? explicitTargets.has(section.id) : true,
+  if (classified.direction === "exactBrandPalette" && explicitTargets.size > 0) {
+    throw new AiStorefrontPlanError(
+      "target-mismatch",
+      "A global brand palette request cannot use selected-section targets.",
     );
-    const targets = candidates.flatMap((section) => {
-      if (!skill.allowedComponentTypes.some((component) => component === section.component)) {
-        if (explicitTargets.has(section.id)) {
-          throw new AiStorefrontPlanError(
-            "unsupported-request",
-            `The selected component ${section.component} is outside the approved storefront skill.`,
+  }
+  const sectionTargets =
+    classified.direction === "exactBrandPalette"
+      ? []
+      : affectedPageIds.flatMap((pageId) => {
+          const page = pagesById.get(pageId);
+          if (!page) {
+            throw new AiStorefrontPlanError(
+              "target-mismatch",
+              "An affected page no longer exists in the storefront projection.",
+            );
+          }
+          if (!skill.supportedPageTypes.includes(page.type)) {
+            throw new AiStorefrontPlanError(
+              "unsupported-request",
+              `The approved storefront style does not support ${page.type} pages.`,
+            );
+          }
+          const candidates = page.sections.filter((section) =>
+            explicitTargets.size > 0 ? explicitTargets.has(section.id) : true,
           );
-        }
-        return [];
-      }
-      const operationTypes = approvedStyleOperations(section.component).filter((operationType) =>
-        skill.allowedOperationTypes.includes(operationType),
-      );
-      if (operationTypes.length === 0) {
-        if (explicitTargets.has(section.id)) {
-          throw new AiStorefrontPlanError(
-            "unsupported-request",
-            `The selected component ${section.component} has no approved colour or typography controls.`,
-          );
-        }
-        return [];
-      }
-      return [{ pageId, sectionId: section.id, componentType: section.component, operationTypes }];
-    });
-    if (targets.length === 0) {
-      throw new AiStorefrontPlanError(
-        "unsupported-request",
-        "Every affected page must contain an approved colour or typography target.",
-      );
-    }
-    return targets;
-  });
+          const targets = candidates.flatMap((section) => {
+            if (!skill.allowedComponentTypes.some((component) => component === section.component)) {
+              if (explicitTargets.has(section.id)) {
+                throw new AiStorefrontPlanError(
+                  "unsupported-request",
+                  `The selected component ${section.component} is outside the approved storefront skill.`,
+                );
+              }
+              return [];
+            }
+            const operationTypes = approvedStyleOperations(section.component).filter(
+              (operationType) => skill.allowedOperationTypes.includes(operationType),
+            );
+            if (operationTypes.length === 0) {
+              if (explicitTargets.has(section.id)) {
+                throw new AiStorefrontPlanError(
+                  "unsupported-request",
+                  `The selected component ${section.component} has no approved colour or typography controls.`,
+                );
+              }
+              return [];
+            }
+            return [
+              { pageId, sectionId: section.id, componentType: section.component, operationTypes },
+            ];
+          });
+          if (targets.length === 0) {
+            throw new AiStorefrontPlanError(
+              "unsupported-request",
+              "Every affected page must contain an approved colour or typography target.",
+            );
+          }
+          return targets;
+        });
   if (explicitTargets.size > 0 && sectionTargets.length !== explicitTargets.size) {
     throw new AiStorefrontPlanError(
       "target-mismatch",
@@ -241,16 +280,22 @@ export function createAiStorefrontGenerationPlan(
     affectedPageIds,
     sectionTargets,
     designSystemTarget: command.designSystemTarget,
+    brandPalettePlan: classified.brandPalettePlan ?? null,
     explanation:
-      classified.direction === "warmPremium"
+      classified.direction === "exactBrandPalette"
         ? {
-            en: "Apply one approved warm premium colour and typography direction across the selected storefront pages.",
-            fi: "Käytä yhtä hyväksyttyä lämmintä premium-väri- ja typografiailmettä valituilla kaupan sivuilla.",
+            en: "Apply the merchant’s validated brand colours across the storefront while preserving typography, layout, imagery, content, products, and section structure.",
+            fi: "Käytä kauppiaan validoituja brändivärejä koko kaupassa säilyttäen typografia, asettelu, kuvat, sisältö, tuotteet ja osiorakenne.",
           }
-        : {
-            en: "Apply one approved minimal Nordic colour and typography direction across the selected storefront pages.",
-            fi: "Käytä yhtä hyväksyttyä pelkistettyä pohjoismaista väri- ja typografiailmettä valituilla kaupan sivuilla.",
-          },
+        : classified.direction === "warmPremium"
+          ? {
+              en: "Apply one approved warm premium colour and typography direction across the selected storefront pages.",
+              fi: "Käytä yhtä hyväksyttyä lämmintä premium-väri- ja typografiailmettä valituilla kaupan sivuilla.",
+            }
+          : {
+              en: "Apply one approved minimal Nordic colour and typography direction across the selected storefront pages.",
+              fi: "Käytä yhtä hyväksyttyä pelkistettyä pohjoismaista väri- ja typografiailmettä valituilla kaupan sivuilla.",
+            },
     validation: { valid: true, errors: [] as string[] },
   };
   return aiStorefrontGenerationPlanSchema.parse({

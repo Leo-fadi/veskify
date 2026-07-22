@@ -34,8 +34,8 @@ const messages = {
     fi: "Kaupan pyyntö on puutteellinen. Tarkista valitut sivut ja yritä uudelleen.",
   },
   unsupportedRequest: {
-    en: "That whole-storefront change is not supported yet. Choose an approved colour and typography direction.",
-    fi: "Tätä koko kaupan muutosta ei vielä tueta. Valitse hyväksytty väri- ja typografiailme.",
+    en: "That whole-storefront change is not supported. Use named colours, valid six-digit hex values, or an approved colour and typography direction.",
+    fi: "Tätä koko kaupan muutosta ei tueta. Käytä nimettyjä värejä, kelvollisia kuusinumeroisia heksavärejä tai hyväksyttyä väri- ja typografiailmettä.",
   },
   providerUnavailable: {
     en: "The storefront design assistant is temporarily unavailable. Try again later.",

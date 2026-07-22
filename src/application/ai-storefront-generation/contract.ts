@@ -13,9 +13,14 @@ import { designOperationTypeSchema } from "@/application/design-skills";
 import { brandSystemSchema } from "@/domain/design-system";
 import { idSchema, localeSchema, localizedTextSchema } from "@/domain/shared";
 import { pageModelSchema, sectionInstanceSchema } from "@/domain/storefront";
+import { exactBrandPalettePlanSchema } from "./brand-palette";
 
 export const storefrontGenerationCapabilitySchema = z.literal("approvedColorTypographyDirection");
-export const storefrontStyleDirectionSchema = z.enum(["warmPremium", "minimalNordic"]);
+export const storefrontStyleDirectionSchema = z.enum([
+  "warmPremium",
+  "minimalNordic",
+  "exactBrandPalette",
+]);
 
 export interface StorefrontAIProvider {
   readonly id: string;
@@ -153,15 +158,49 @@ export const aiStorefrontGenerationPlanSchema = z
     skillVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
     requestedScope: z.literal("storefront"),
     affectedPageIds: z.array(idSchema).min(2),
-    sectionTargets: z.array(storefrontPlanSectionTargetSchema).min(1),
+    sectionTargets: z.array(storefrontPlanSectionTargetSchema),
     designSystemTarget: z
       .object({ kind: z.literal("storefrontDesignSystem"), projectId: idSchema })
       .strict()
       .nullable(),
+    brandPalettePlan: exactBrandPalettePlanSchema.nullable(),
     explanation: localizedTextSchema,
     validation: proposalValidationResultSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((plan, context) => {
+    if (plan.direction === "exactBrandPalette") {
+      if (plan.brandPalettePlan === null) {
+        context.addIssue({
+          code: "custom",
+          path: ["brandPalettePlan"],
+          message: "Exact brand-palette plans require canonical colour values.",
+        });
+      }
+      if (plan.designSystemTarget === null || plan.sectionTargets.length > 0) {
+        context.addIssue({
+          code: "custom",
+          path: ["sectionTargets"],
+          message: "Exact brand palettes require one global target and no section operations.",
+        });
+      }
+    } else {
+      if (plan.brandPalettePlan !== null) {
+        context.addIssue({
+          code: "custom",
+          path: ["brandPalettePlan"],
+          message: "Preset storefront directions cannot carry an exact palette plan.",
+        });
+      }
+      if (plan.sectionTargets.length === 0) {
+        context.addIssue({
+          code: "custom",
+          path: ["sectionTargets"],
+          message: "Preset storefront directions require approved section targets.",
+        });
+      }
+    }
+  });
 
 export const storefrontAffectedSectionContextSchema = z
   .object({ pageId: idSchema, section: sectionInstanceSchema })
@@ -187,8 +226,8 @@ export const aiStorefrontProviderRequestSchema = z
     target: aiStorefrontTargetSchema,
     storefront: aiStorefrontProjectionSchema,
     affectedPages: z.array(pageModelSchema).min(2),
-    affectedSections: z.array(storefrontAffectedSectionContextSchema).min(1),
-    componentContracts: z.array(storefrontComponentContractSchema).min(1),
+    affectedSections: z.array(storefrontAffectedSectionContextSchema),
+    componentContracts: z.array(storefrontComponentContractSchema),
     designSystemContext: z
       .object({
         colors: brandSystemSchema.shape.colors,
@@ -196,6 +235,7 @@ export const aiStorefrontProviderRequestSchema = z
       })
       .strict()
       .nullable(),
+    brandPalettePlan: exactBrandPalettePlanSchema.nullable(),
     permissionGrants: z.array(aiOperationPermissionGrantSchema).min(1),
     storefrontBaselineFingerprint: z.string().startsWith("storefront-baseline-"),
     targetFingerprint: z.string().startsWith("storefront-target-"),
@@ -206,7 +246,38 @@ export const aiStorefrontProviderRequestSchema = z
     untrustedImportedContent: z.array(labelledUntrustedContentSchema),
     responseContract: z.literal("ai-storefront-proposal/v1"),
   })
-  .strict();
+  .strict()
+  .superRefine((request, context) => {
+    if (request.brandPalettePlan === null) {
+      if (request.affectedSections.length === 0 || request.componentContracts.length === 0) {
+        context.addIssue({
+          code: "custom",
+          path: ["affectedSections"],
+          message: "Preset storefront requests require approved section contracts.",
+        });
+      }
+      return;
+    }
+    const paletteGrants = request.permissionGrants.filter(
+      (grant) =>
+        grant.target.kind === "storefrontDesignSystem" &&
+        grant.operationTypes.length === 1 &&
+        grant.operationTypes[0] === "APPLY_APPROVED_BRAND_COLOURS",
+    );
+    if (
+      request.target.designSystemTarget === null ||
+      request.affectedSections.length > 0 ||
+      request.componentContracts.length > 0 ||
+      request.permissionGrants.length !== 1 ||
+      paletteGrants.length !== 1
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["brandPalettePlan"],
+        message: "Exact palette requests may grant only one global brand-colour operation.",
+      });
+    }
+  });
 
 export const aiStorefrontProviderResponseSchema = z
   .object({
