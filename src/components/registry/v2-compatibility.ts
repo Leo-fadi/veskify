@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 import type { PageType } from "@/domain/storefront";
 import {
   type ComponentDefinitionV2,
@@ -27,6 +27,10 @@ export type InspectableComponentDefinitionV1 = {
 
 function localizedEnglish(value: string) {
   return { en: value };
+}
+
+function serializableObjectContract(schema: z.ZodType) {
+  return z.toJSONSchema(schema);
 }
 
 function editableFieldFromV1(
@@ -59,6 +63,14 @@ export function adaptV1ComponentDefinitionToV2(
     })),
     defaultVariant: definition.defaultVariant,
     industryTags: [],
+    contentSchema: serializableObjectContract(definition.contentSchema),
+    propsSchema: serializableObjectContract(definition.propsSchema),
+    styleOverridesSchema: {
+      type: "object",
+      properties: {},
+      required: [],
+      additionalProperties: false,
+    },
     contentSlots: [],
     commerceBindingSlots: [],
     assetSlots: [],

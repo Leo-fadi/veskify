@@ -27,9 +27,44 @@ const pathSchema = z
   .trim()
   .min(1)
   .max(160)
-  .regex(/^[a-z][A-Za-z0-9]*(?:\.\*|(?:\.[a-z][A-Za-z0-9]*))*$/);
+  .regex(/^(?:\*|[a-z][A-Za-z0-9]*)(?:\.(?:\*|[a-z][A-Za-z0-9]*))*$/);
 
 const unique = (values: readonly string[]) => new Set(values).size === values.length;
+
+export const componentDataSchemaContractSchema = z
+  .object({
+    type: z.literal("object"),
+    properties: z.record(z.string(), z.json()),
+    required: z.array(z.string()).default([]),
+    additionalProperties: z.literal(false),
+  })
+  .catchall(z.json())
+  .superRefine((contract, context) => {
+    if (!unique(contract.required)) {
+      context.addIssue({
+        code: "custom",
+        message: "Required schema fields must be unique.",
+        path: ["required"],
+      });
+    }
+    contract.required.forEach((field, index) => {
+      if (!(field in contract.properties)) {
+        context.addIssue({
+          code: "custom",
+          message: "Required schema fields must be declared in properties.",
+          path: ["required", index],
+        });
+      }
+    });
+    try {
+      z.fromJSONSchema(contract as Parameters<typeof z.fromJSONSchema>[0]);
+    } catch {
+      context.addIssue({
+        code: "custom",
+        message: "Component data contracts must contain a supported JSON Schema.",
+      });
+    }
+  });
 
 export const moneyDisplaySchema = z
   .object({
@@ -86,7 +121,9 @@ export const contentSlotDefinitionSchema = z
 
 export const commerceBindingSourceTypeSchema = z.enum([
   "product",
+  "productList",
   "collection",
+  "collectionList",
   "asset",
   "navigation",
   "projectBrandContext",
@@ -217,7 +254,7 @@ export const rendererAdapterIdentitySchema = z
   .object({
     adapterId: tokenSchema,
     exportName: rendererExportNameSchema,
-    supportedTargets: z.array(z.enum(["editor", "preview", "published"])).min(1),
+    supportedTargets: z.array(z.enum(["editor", "preview", "published"])).length(3),
   })
   .strict()
   .superRefine((identity, context) => {
@@ -227,6 +264,15 @@ export const rendererAdapterIdentitySchema = z
         message: "Renderer targets must be unique.",
         path: ["supportedTargets"],
       });
+    }
+    for (const target of ["editor", "preview", "published"] as const) {
+      if (!identity.supportedTargets.includes(target)) {
+        context.addIssue({
+          code: "custom",
+          message: `Renderer target ${target} is required.`,
+          path: ["supportedTargets"],
+        });
+      }
     }
   });
 
@@ -268,6 +314,10 @@ export const componentMigrationMetadataSchema = z
   .strict();
 
 export const protectedCommerceFieldPaths = [
+  "productIds",
+  "collectionIds",
+  "products",
+  "collections",
   "bindings.product.id",
   "bindings.product.productId",
   "bindings.product.productTypeId",
@@ -302,6 +352,9 @@ export const componentDefinitionV2Schema = z
     variants: z.array(componentVariantDefinitionSchema).min(1),
     defaultVariant: tokenSchema,
     industryTags: z.array(tokenSchema),
+    contentSchema: componentDataSchemaContractSchema,
+    propsSchema: componentDataSchemaContractSchema,
+    styleOverridesSchema: componentDataSchemaContractSchema,
     contentSlots: z.array(contentSlotDefinitionSchema),
     commerceBindingSlots: z.array(commerceBindingSlotDefinitionSchema),
     assetSlots: z.array(assetSlotDefinitionSchema),
@@ -342,15 +395,39 @@ export const componentDefinitionV2Schema = z
       });
     }
 
+    validateMigrationConsistency(definition, context);
+
     const allProtectedPaths = [
       ...definition.protectedFields.readOnlyPaths,
       ...protectedCommerceFieldPaths,
     ];
     definition.editablePresentationFields.forEach((field, index) => {
-      if (allProtectedPaths.some((protectedPath) => pathsOverlap(field.path, protectedPath))) {
+      const relativePath = field.path.startsWith(`${field.source}.`)
+        ? field.path.slice(field.source.length + 1)
+        : field.path;
+      if (
+        allProtectedPaths.some(
+          (protectedPath) =>
+            pathsOverlap(field.path, protectedPath) || pathsOverlap(relativePath, protectedPath),
+        )
+      ) {
         context.addIssue({
           code: "custom",
           message: "Protected commerce fields cannot be declared editable.",
+          path: ["editablePresentationFields", index, "path"],
+        });
+      }
+
+      const contract =
+        field.source === "content"
+          ? definition.contentSchema
+          : field.source === "props"
+            ? definition.propsSchema
+            : definition.styleOverridesSchema;
+      if (!jsonSchemaDeclaresPath(contract, relativePath)) {
+        context.addIssue({
+          code: "custom",
+          message: `Editable ${field.source} fields must resolve within their declared schema.`,
           path: ["editablePresentationFields", index, "path"],
         });
       }
@@ -370,12 +447,44 @@ export const productBindingSchema = bindingBaseSchema
   })
   .strict();
 
+export const productListBindingSchema = bindingBaseSchema
+  .extend({
+    source: z.literal("productList"),
+    productIds: z.array(idSchema).min(1),
+  })
+  .strict()
+  .superRefine((binding, context) => {
+    if (!unique(binding.productIds)) {
+      context.addIssue({
+        code: "custom",
+        message: "Product list bindings must contain unique canonical IDs.",
+        path: ["productIds"],
+      });
+    }
+  });
+
 export const collectionBindingSchema = bindingBaseSchema
   .extend({
     source: z.literal("collection"),
     collectionId: idSchema,
   })
   .strict();
+
+export const collectionListBindingSchema = bindingBaseSchema
+  .extend({
+    source: z.literal("collectionList"),
+    collectionIds: z.array(idSchema).min(1),
+  })
+  .strict()
+  .superRefine((binding, context) => {
+    if (!unique(binding.collectionIds)) {
+      context.addIssue({
+        code: "custom",
+        message: "Collection list bindings must contain unique canonical IDs.",
+        path: ["collectionIds"],
+      });
+    }
+  });
 
 export const assetBindingSchema = bindingBaseSchema
   .extend({
@@ -410,7 +519,9 @@ export const localizedContentBindingSchema = bindingBaseSchema
 
 export const presentationBindingSchema = z.discriminatedUnion("source", [
   productBindingSchema,
+  productListBindingSchema,
   collectionBindingSchema,
+  collectionListBindingSchema,
   assetBindingSchema,
   navigationBindingSchema,
   projectBrandContextBindingSchema,
@@ -465,6 +576,45 @@ export const optionValuePresentationSchema = z
   })
   .strict();
 
+export const optionGroupDependencySchema = z
+  .object({
+    groupId: idSchema,
+    valueIds: z.array(idSchema).min(1).optional(),
+  })
+  .strict()
+  .superRefine((dependency, context) => {
+    if (dependency.valueIds !== undefined && !unique(dependency.valueIds)) {
+      context.addIssue({
+        code: "custom",
+        message: "Dependency value references must be unique.",
+        path: ["valueIds"],
+      });
+    }
+  });
+
+export const textEntryConstraintsSchema = z
+  .object({
+    maxLength: z.number().int().positive().max(500),
+    minLength: z.number().int().nonnegative().default(0),
+    characterPolicy: z.enum([
+      "unicodeText",
+      "lettersAndSpaces",
+      "lettersNumbersAndSpaces",
+      "asciiPrintable",
+    ]),
+    placeholder: localizedTextSchema.optional(),
+  })
+  .strict()
+  .superRefine((constraints, context) => {
+    if (constraints.minLength > constraints.maxLength) {
+      context.addIssue({
+        code: "custom",
+        message: "Text option minLength cannot exceed maxLength.",
+        path: ["minLength"],
+      });
+    }
+  });
+
 export const productOptionGroupSchema = z
   .object({
     id: idSchema,
@@ -481,16 +631,46 @@ export const productOptionGroupSchema = z
     ]),
     values: z.array(optionValuePresentationSchema),
     selectedValueId: idSchema.optional(),
-    dependsOn: z.array(idSchema).default([]),
+    dependsOn: z.array(optionGroupDependencySchema).default([]),
+    textEntryConstraints: textEntryConstraintsSchema.optional(),
     helpText: localizedTextSchema.optional(),
   })
   .strict()
   .superRefine((group, context) => {
-    if (group.presentation !== "textInput" && group.values.length === 0) {
+    if (group.presentation === "textInput") {
+      if (group.values.length !== 0) {
+        context.addIssue({
+          code: "custom",
+          message: "Text-entry option groups cannot declare placeholder option values.",
+          path: ["values"],
+        });
+      }
+      if (group.selectedValueId !== undefined) {
+        context.addIssue({
+          code: "custom",
+          message: "Text-entry option state must not use selectedValueId.",
+          path: ["selectedValueId"],
+        });
+      }
+      if (group.textEntryConstraints === undefined) {
+        context.addIssue({
+          code: "custom",
+          message: "Text-entry option groups require canonical text constraints.",
+          path: ["textEntryConstraints"],
+        });
+      }
+    } else if (group.values.length === 0) {
       context.addIssue({
         code: "custom",
         message: "Selectable option groups require at least one value.",
         path: ["values"],
+      });
+    }
+    if (group.presentation !== "textInput" && group.textEntryConstraints !== undefined) {
+      context.addIssue({
+        code: "custom",
+        message: "Enumerated option groups cannot declare text-entry constraints.",
+        path: ["textEntryConstraints"],
       });
     }
     if (
@@ -510,9 +690,16 @@ export const productOptionGroupSchema = z
         path: ["values"],
       });
     }
+    if (!unique(group.dependsOn.map((dependency) => dependency.groupId))) {
+      context.addIssue({
+        code: "custom",
+        message: "Option group dependencies must reference each group at most once.",
+        path: ["dependsOn"],
+      });
+    }
   });
 
-export const selectedOptionStateSchema = z
+export const selectedEnumeratedOptionStateSchema = z
   .object({
     groupId: idSchema,
     valueId: idSchema,
@@ -520,12 +707,41 @@ export const selectedOptionStateSchema = z
   })
   .strict();
 
-export const unavailableCombinationSchema = z
+export const selectedTextOptionStateSchema = z
   .object({
-    valueIds: z.array(idSchema).min(1),
-    reason: localizedTextSchema,
+    groupId: idSchema,
+    enteredText: z.string().max(500),
+    complete: z.boolean(),
   })
   .strict();
+
+export const selectedOptionStateSchema = z.union([
+  selectedEnumeratedOptionStateSchema,
+  selectedTextOptionStateSchema,
+]);
+
+export const optionCombinationSelectionSchema = z
+  .object({
+    groupId: idSchema,
+    valueId: idSchema,
+  })
+  .strict();
+
+export const unavailableCombinationSchema = z
+  .object({
+    selections: z.array(optionCombinationSelectionSchema).min(1),
+    reason: localizedTextSchema,
+  })
+  .strict()
+  .superRefine((combination, context) => {
+    if (!unique(combination.selections.map((selection) => selection.groupId))) {
+      context.addIssue({
+        code: "custom",
+        message: "Unavailable combinations cannot reference the same group more than once.",
+        path: ["selections"],
+      });
+    }
+  });
 
 export const productPresentationContextSchema = z
   .object({
@@ -564,17 +780,177 @@ export const productPresentationContextSchema = z
         path: ["optionGroups"],
       });
     }
-    const knownOptionGroups = new Set(optionGroupIds);
+    const knownOptionGroups = new Map(product.optionGroups.map((group) => [group.id, group]));
+    if (!unique(product.selectedValues.map((selection) => selection.groupId))) {
+      context.addIssue({
+        code: "custom",
+        message: "Selected option state must contain at most one entry per group.",
+        path: ["selectedValues"],
+      });
+    }
     product.selectedValues.forEach((selection, index) => {
-      if (!knownOptionGroups.has(selection.groupId)) {
+      const group = knownOptionGroups.get(selection.groupId);
+      if (!group) {
         context.addIssue({
           code: "custom",
           message: "Selected values must reference an existing option group.",
           path: ["selectedValues", index, "groupId"],
         });
+        return;
       }
+      if ("valueId" in selection) {
+        if (group.presentation === "textInput") {
+          context.addIssue({
+            code: "custom",
+            message: "Text-entry selections must use enteredText state.",
+            path: ["selectedValues", index],
+          });
+        } else if (!group.values.some((value) => value.id === selection.valueId)) {
+          context.addIssue({
+            code: "custom",
+            message: "Selected value must resolve within its canonical option group.",
+            path: ["selectedValues", index, "valueId"],
+          });
+        }
+        return;
+      }
+      if (group.presentation !== "textInput" || group.textEntryConstraints === undefined) {
+        context.addIssue({
+          code: "custom",
+          message: "Entered text state must reference a text-entry option group.",
+          path: ["selectedValues", index],
+        });
+        return;
+      }
+      validateEnteredText(selection, group, index, context);
+    });
+
+    product.optionGroups.forEach((group, groupIndex) => {
+      group.dependsOn.forEach((dependency, dependencyIndex) => {
+        const target = knownOptionGroups.get(dependency.groupId);
+        const path = ["optionGroups", groupIndex, "dependsOn", dependencyIndex] as const;
+        if (!target) {
+          context.addIssue({
+            code: "custom",
+            message: "Option dependencies must reference an existing group.",
+            path: [...path, "groupId"],
+          });
+          return;
+        }
+        if (dependency.groupId === group.id) {
+          context.addIssue({
+            code: "custom",
+            message: "Option groups cannot depend on themselves.",
+            path: [...path, "groupId"],
+          });
+        }
+        dependency.valueIds?.forEach((valueId, valueIndex) => {
+          if (
+            target.presentation === "textInput" ||
+            !target.values.some((value) => value.id === valueId)
+          ) {
+            context.addIssue({
+              code: "custom",
+              message: "Dependency values must resolve within the referenced enumerated group.",
+              path: [...path, "valueIds", valueIndex],
+            });
+          }
+        });
+      });
+    });
+
+    if (hasDependencyCycle(product.optionGroups)) {
+      context.addIssue({
+        code: "custom",
+        message: "Option group dependency cycles are not supported.",
+        path: ["optionGroups"],
+      });
+    }
+
+    product.unavailableCombinations.forEach((combination, combinationIndex) => {
+      combination.selections.forEach((selection, selectionIndex) => {
+        const group = knownOptionGroups.get(selection.groupId);
+        if (
+          !group ||
+          group.presentation === "textInput" ||
+          !group.values.some((value) => value.id === selection.valueId)
+        ) {
+          context.addIssue({
+            code: "custom",
+            message: "Unavailable combinations must reference canonical enumerated values.",
+            path: ["unavailableCombinations", combinationIndex, "selections", selectionIndex],
+          });
+        }
+      });
     });
   });
+
+function validateEnteredText(
+  selection: z.infer<typeof selectedTextOptionStateSchema>,
+  group: z.infer<typeof productOptionGroupSchema>,
+  selectionIndex: number,
+  context: z.RefinementCtx,
+) {
+  const constraints = group.textEntryConstraints;
+  if (constraints === undefined) return;
+  const length = Array.from(selection.enteredText).length;
+  if (length > constraints.maxLength) {
+    context.addIssue({
+      code: "custom",
+      message: "Entered text exceeds the canonical maximum length.",
+      path: ["selectedValues", selectionIndex, "enteredText"],
+    });
+  }
+  if ((selection.complete || length > 0) && length < constraints.minLength) {
+    context.addIssue({
+      code: "custom",
+      message: "Entered text is shorter than the canonical minimum length.",
+      path: ["selectedValues", selectionIndex, "enteredText"],
+    });
+  }
+  if (selection.complete && group.required && length === 0) {
+    context.addIssue({
+      code: "custom",
+      message: "Required text-entry options cannot be completed without text.",
+      path: ["selectedValues", selectionIndex, "enteredText"],
+    });
+  }
+  const accepted =
+    constraints.characterPolicy === "unicodeText"
+      ? !/[\p{Cc}\p{Cf}]/u.test(selection.enteredText)
+      : constraints.characterPolicy === "lettersAndSpaces"
+        ? /^[\p{L}\p{M} '\u2019-]*$/u.test(selection.enteredText)
+        : constraints.characterPolicy === "lettersNumbersAndSpaces"
+          ? /^[\p{L}\p{M}\p{N} .,\u2019'&-]*$/u.test(selection.enteredText)
+          : /^[\x20-\x7E]*$/.test(selection.enteredText);
+  if (!accepted) {
+    context.addIssue({
+      code: "custom",
+      message: `Entered text violates the ${constraints.characterPolicy} character policy.`,
+      path: ["selectedValues", selectionIndex, "enteredText"],
+    });
+  }
+}
+
+function hasDependencyCycle(groups: readonly z.infer<typeof productOptionGroupSchema>[]): boolean {
+  const graph = new Map(
+    groups.map((group) => [group.id, group.dependsOn.map((dependency) => dependency.groupId)]),
+  );
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const visit = (groupId: string): boolean => {
+    if (visiting.has(groupId)) return true;
+    if (visited.has(groupId)) return false;
+    visiting.add(groupId);
+    for (const dependencyId of graph.get(groupId) ?? []) {
+      if (graph.has(dependencyId) && visit(dependencyId)) return true;
+    }
+    visiting.delete(groupId);
+    visited.add(groupId);
+    return false;
+  };
+  return groups.some((group) => visit(group.id));
+}
 
 export const collectionFilterPresentationSchema = z
   .object({
@@ -675,14 +1051,69 @@ export const storefrontAssetMetadataSchema = z
     alt: localizedTextSchema.optional(),
     decorative: z.boolean().default(false),
     provenance: assetProvenanceSchema,
-    approved: z.boolean(),
+    approvalStatus: z.enum(["pending", "approved", "rejected"]),
     usageRights: z.enum(["merchantOwned", "licensed", "publicSource", "generated", "unknown"]),
     responsiveCrops: z.array(assetCropSchema).default([]),
+    revision: z.string().trim().min(1).max(120).optional(),
   })
   .strict()
   .refine((asset) => asset.decorative || asset.alt !== undefined, {
     message: "Non-decorative assets require localized alt text.",
     path: ["alt"],
+  });
+
+const navigationProjectionReferenceSchema = z
+  .object({
+    navigationId: idSchema,
+    revision: z.string().trim().min(1).max(120).optional(),
+  })
+  .strict();
+
+const projectBrandProjectionReferenceSchema = z
+  .object({
+    projectId: idSchema,
+    brandSystemRefs: z.array(idSchema).default([]),
+    revision: z.string().trim().min(1).max(120).optional(),
+  })
+  .strict();
+
+const localizedContentProjectionReferenceSchema = z
+  .object({
+    contentId: idSchema,
+    locales: z.array(localeSchema).min(1),
+    revision: z.string().trim().min(1).max(120).optional(),
+  })
+  .strict();
+
+export const componentProjectionContextSchema = z
+  .object({
+    products: z.array(productPresentationContextSchema).default([]),
+    collections: z.array(collectionPresentationContextSchema).default([]),
+    assets: z.array(storefrontAssetMetadataSchema).default([]),
+    navigation: z.array(navigationProjectionReferenceSchema).default([]),
+    projectBrandContexts: z.array(projectBrandProjectionReferenceSchema).default([]),
+    localizedContents: z.array(localizedContentProjectionReferenceSchema).default([]),
+    productListRevision: z.string().trim().min(1).max(120).optional(),
+    collectionListRevision: z.string().trim().min(1).max(120).optional(),
+  })
+  .strict()
+  .superRefine((projection, context) => {
+    for (const [field, ids] of [
+      ["products", projection.products.map((product) => product.productId)],
+      ["collections", projection.collections.map((collection) => collection.collectionId)],
+      ["assets", projection.assets.map((asset) => asset.assetId)],
+      ["navigation", projection.navigation.map((item) => item.navigationId)],
+      ["projectBrandContexts", projection.projectBrandContexts.map((item) => item.projectId)],
+      ["localizedContents", projection.localizedContents.map((item) => item.contentId)],
+    ] as const) {
+      if (!unique(ids)) {
+        context.addIssue({
+          code: "custom",
+          message: `${field} projection references must be unique.`,
+          path: [field],
+        });
+      }
+    }
   });
 
 export const componentInstanceV2Schema = z
@@ -691,8 +1122,9 @@ export const componentInstanceV2Schema = z
     component: tokenSchema,
     componentVersion: componentVersionSchema,
     variant: tokenSchema,
-    content: z.record(z.string(), z.unknown()).default({}),
-    props: z.record(z.string(), z.unknown()).default({}),
+    content: z.record(z.string(), z.json()).default({}),
+    props: z.record(z.string(), z.json()).default({}),
+    styleOverrides: z.record(z.string(), z.json()).default({}),
     bindings: z.array(presentationBindingSchema).default([]),
     assetAssignments: z
       .array(
@@ -716,10 +1148,158 @@ export function compareComponentVersions(left: ComponentVersion, right: Componen
 }
 
 function pathsOverlap(left: string, right: string): boolean {
-  if (left === right) return true;
-  const leftPrefix = left.endsWith(".*") ? left.slice(0, -2) : left;
-  const rightPrefix = right.endsWith(".*") ? right.slice(0, -2) : right;
-  return leftPrefix.startsWith(`${rightPrefix}.`) || rightPrefix.startsWith(`${leftPrefix}.`);
+  const leftSegments = left.split(".");
+  const rightSegments = right.split(".");
+  const sharedLength = Math.min(leftSegments.length, rightSegments.length);
+  for (let index = 0; index < sharedLength; index += 1) {
+    const leftSegment = leftSegments[index];
+    const rightSegment = rightSegments[index];
+    if (leftSegment !== "*" && rightSegment !== "*" && leftSegment !== rightSegment) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function jsonSchemaDeclaresPath(
+  contract: z.infer<typeof componentDataSchemaContractSchema>,
+  path: string,
+): boolean {
+  let current: unknown = contract;
+  for (const segment of path.split(".")) {
+    if (
+      typeof current !== "object" ||
+      current === null ||
+      !("properties" in current) ||
+      typeof current.properties !== "object" ||
+      current.properties === null ||
+      !(segment in current.properties)
+    ) {
+      return false;
+    }
+    current = (current.properties as Record<string, unknown>)[segment];
+  }
+  return true;
+}
+
+function validateMigrationConsistency(
+  definition: {
+    version: ComponentVersion;
+    migration: ComponentMigrationMetadata;
+  },
+  context: z.RefinementCtx,
+) {
+  const { migration, version } = definition;
+  const previousKeys = migration.previousVersions.map(formatComponentVersion);
+  if (!unique(previousKeys)) {
+    context.addIssue({
+      code: "custom",
+      message: "Previous component versions must be unique.",
+      path: ["migration", "previousVersions"],
+    });
+  }
+  migration.previousVersions.forEach((previousVersion, index) => {
+    if (compareComponentVersions(previousVersion, version) >= 0) {
+      context.addIssue({
+        code: "custom",
+        message: "Previous component versions must be older than the current version.",
+        path: ["migration", "previousVersions", index],
+      });
+    }
+  });
+
+  const declaredPrevious = new Set(previousKeys);
+  const migrationFromKeys = migration.migrations.map((item) =>
+    formatComponentVersion(item.fromVersion),
+  );
+  if (!unique(migrationFromKeys)) {
+    context.addIssue({
+      code: "custom",
+      message: "Migration paths must be unambiguous for every previous version.",
+      path: ["migration", "migrations"],
+    });
+  }
+  const migrationIds = migration.migrations.flatMap((item) =>
+    item.migrationId === undefined ? [] : [item.migrationId],
+  );
+  if (!unique(migrationIds)) {
+    context.addIssue({
+      code: "custom",
+      message: "Registered migration IDs must be unique.",
+      path: ["migration", "migrations"],
+    });
+  }
+  migration.migrations.forEach((item, index) => {
+    if (!declaredPrevious.has(formatComponentVersion(item.fromVersion))) {
+      context.addIssue({
+        code: "custom",
+        message: "Migrations must start from a declared previous version.",
+        path: ["migration", "migrations", index, "fromVersion"],
+      });
+    }
+    if (compareComponentVersions(item.toVersion, version) !== 0) {
+      context.addIssue({
+        code: "custom",
+        message: "Migrations must target the current component version.",
+        path: ["migration", "migrations", index, "toVersion"],
+      });
+    }
+  });
+
+  if (migration.policy === "stable") {
+    if (migration.previousVersions.length !== 0 || migration.migrations.length !== 0) {
+      context.addIssue({
+        code: "custom",
+        message: "Stable components cannot declare previous versions or migrations.",
+        path: ["migration"],
+      });
+    }
+    return;
+  }
+  if (migration.policy === "compatible") {
+    if (migration.migrations.length !== 0) {
+      context.addIssue({
+        code: "custom",
+        message: "Compatible versions must not require migration steps.",
+        path: ["migration", "migrations"],
+      });
+    }
+    return;
+  }
+  if (migration.previousVersions.length === 0) {
+    context.addIssue({
+      code: "custom",
+      message: `${migration.policy} policy requires at least one previous version.`,
+      path: ["migration", "previousVersions"],
+    });
+  }
+  previousKeys.forEach((previousKey, index) => {
+    const migrationIndex = migrationFromKeys.indexOf(previousKey);
+    if (migrationIndex === -1) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Every previous version requires one deterministic migration to the current version.",
+        path: ["migration", "previousVersions", index],
+      });
+      return;
+    }
+    const strategy = migration.migrations[migrationIndex]?.strategy;
+    if (migration.policy === "migrationRequired" && strategy === "manualReplacement") {
+      context.addIssue({
+        code: "custom",
+        message: "migrationRequired policy cannot use manual replacement steps.",
+        path: ["migration", "migrations", migrationIndex, "strategy"],
+      });
+    }
+    if (migration.policy === "manualReplacement" && strategy !== "manualReplacement") {
+      context.addIssue({
+        code: "custom",
+        message: "manualReplacement policy requires manual replacement steps.",
+        path: ["migration", "migrations", migrationIndex, "strategy"],
+      });
+    }
+  });
 }
 
 export function validateComponentDefinitionV2(input: unknown): ComponentDefinitionV2 {
@@ -763,8 +1343,21 @@ export function createComponentRegistryV2(definitions: readonly ComponentDefinit
       throw new Error(`Unsupported ${instance.component} variant: ${instance.variant}.`);
     }
 
+    validateInstanceData(instance, definition);
     validateInstanceBindings(instance, definition);
     validateInstanceAssetAssignments(instance, definition);
+    return instance;
+  }
+
+  function validateInstanceConformance(
+    input: unknown,
+    projectionInput: unknown,
+  ): ComponentInstanceV2 {
+    const instance = validateInstance(input);
+    const projection = componentProjectionContextSchema.parse(projectionInput);
+    const definition = get(instance.component);
+    validateBindingTargets(instance, definition, projection);
+    validateAssignedAssetInventory(instance, projection.assets);
     return instance;
   }
 
@@ -786,8 +1379,23 @@ export function createComponentRegistryV2(definitions: readonly ComponentDefinit
     get,
     has: (type: string) => byType.has(type),
     validateInstance,
+    validateInstanceConformance,
     migrationFor,
   };
+}
+
+function validateInstanceData(instance: ComponentInstanceV2, definition: ComponentDefinitionV2) {
+  for (const [label, value, contract] of [
+    ["content", instance.content, definition.contentSchema],
+    ["props", instance.props, definition.propsSchema],
+    ["styleOverrides", instance.styleOverrides, definition.styleOverridesSchema],
+  ] as const) {
+    const schema = z.fromJSONSchema(contract as Parameters<typeof z.fromJSONSchema>[0]);
+    const result = schema.safeParse(value);
+    if (!result.success) {
+      throw new Error(`Invalid component ${label}: ${z.prettifyError(result.error)}`);
+    }
+  }
 }
 
 function validateInstanceBindings(
@@ -796,9 +1404,14 @@ function validateInstanceBindings(
 ) {
   const slots = new Map(definition.commerceBindingSlots.map((slot) => [slot.id, slot]));
   const seenRequired = new Set<string>();
+  const seenSlots = new Set<string>();
   instance.bindings.forEach((binding) => {
     const slot = slots.get(binding.slotId);
     if (!slot) throw new Error(`Invalid commerce binding slot: ${binding.slotId}.`);
+    if (seenSlots.has(binding.slotId)) {
+      throw new Error(`Commerce binding slot ${binding.slotId} can only be assigned once.`);
+    }
+    seenSlots.add(binding.slotId);
     if (!slot.acceptedSourceTypes.includes(binding.source)) {
       throw new Error(`Binding slot ${binding.slotId} does not accept ${binding.source}.`);
     }
@@ -819,12 +1432,18 @@ function validateInstanceAssetAssignments(
   definition: ComponentDefinitionV2,
 ) {
   const slots = new Map(definition.assetSlots.map((slot) => [slot.id, slot]));
+  const seenAssignments = new Set<string>();
   instance.assetAssignments.forEach((assignment) => {
     const slot = slots.get(assignment.slotId);
     if (!slot) throw new Error(`Invalid asset slot: ${assignment.slotId}.`);
     if (!slot.acceptedRoles.includes(assignment.role)) {
       throw new Error(`Asset slot ${assignment.slotId} does not accept ${assignment.role}.`);
     }
+    const assignmentKey = assignment.assetId;
+    if (seenAssignments.has(assignmentKey)) {
+      throw new Error(`Asset ${assignmentKey} cannot be assigned more than once.`);
+    }
+    seenAssignments.add(assignmentKey);
   });
   for (const slot of definition.assetSlots) {
     const count = instance.assetAssignments.filter(
@@ -839,11 +1458,150 @@ function validateInstanceAssetAssignments(
   }
 }
 
+function validateBindingTargets(
+  instance: ComponentInstanceV2,
+  definition: ComponentDefinitionV2,
+  projection: ComponentProjectionContext,
+) {
+  const slots = new Map(definition.commerceBindingSlots.map((slot) => [slot.id, slot]));
+  const products = new Map(projection.products.map((product) => [product.productId, product]));
+  const collections = new Map(
+    projection.collections.map((collection) => [collection.collectionId, collection]),
+  );
+  const assets = new Map(projection.assets.map((asset) => [asset.assetId, asset]));
+  const navigation = new Map(
+    projection.navigation.map((reference) => [reference.navigationId, reference]),
+  );
+  const projects = new Map(
+    projection.projectBrandContexts.map((reference) => [reference.projectId, reference]),
+  );
+  const localizedContents = new Map(
+    projection.localizedContents.map((reference) => [reference.contentId, reference]),
+  );
+
+  for (const binding of instance.bindings) {
+    const slot = slots.get(binding.slotId);
+    if (!slot) continue;
+    switch (binding.source) {
+      case "product": {
+        const target = products.get(binding.productId);
+        if (!target) throw new Error(`Unknown product binding target: ${binding.productId}.`);
+        assertBindingRevision(binding.revision, target.revision, slot);
+        break;
+      }
+      case "productList":
+        binding.productIds.forEach((productId) => {
+          if (!products.has(productId)) {
+            throw new Error(`Unknown product list binding target: ${productId}.`);
+          }
+        });
+        assertBindingRevision(binding.revision, projection.productListRevision, slot);
+        break;
+      case "collection": {
+        const target = collections.get(binding.collectionId);
+        if (!target) {
+          throw new Error(`Unknown collection binding target: ${binding.collectionId}.`);
+        }
+        assertBindingRevision(binding.revision, target.revision, slot);
+        break;
+      }
+      case "collectionList":
+        binding.collectionIds.forEach((collectionId) => {
+          if (!collections.has(collectionId)) {
+            throw new Error(`Unknown collection list binding target: ${collectionId}.`);
+          }
+        });
+        assertBindingRevision(binding.revision, projection.collectionListRevision, slot);
+        break;
+      case "asset": {
+        const target = assets.get(binding.assetId);
+        if (!target) throw new Error(`Unknown asset binding target: ${binding.assetId}.`);
+        if (target.approvalStatus !== "approved") {
+          throw new Error(`Asset binding target is not approved: ${binding.assetId}.`);
+        }
+        if (binding.role !== undefined && binding.role !== target.role) {
+          throw new Error(
+            `Asset binding role does not match approved metadata: ${binding.assetId}.`,
+          );
+        }
+        assertBindingRevision(binding.revision, target.revision, slot);
+        break;
+      }
+      case "navigation": {
+        const target = navigation.get(binding.navigationId);
+        if (!target) {
+          throw new Error(`Unknown navigation binding target: ${binding.navigationId}.`);
+        }
+        assertBindingRevision(binding.revision, target.revision, slot);
+        break;
+      }
+      case "projectBrandContext": {
+        const target = projects.get(binding.projectId);
+        if (!target) {
+          throw new Error(`Unknown project brand binding target: ${binding.projectId}.`);
+        }
+        if (
+          binding.brandSystemRef !== undefined &&
+          !target.brandSystemRefs.includes(binding.brandSystemRef)
+        ) {
+          throw new Error(`Unknown brand-system reference: ${binding.brandSystemRef}.`);
+        }
+        assertBindingRevision(binding.revision, target.revision, slot);
+        break;
+      }
+      case "localizedContent": {
+        const target = localizedContents.get(binding.contentId);
+        if (!target) {
+          throw new Error(`Unknown localized-content binding target: ${binding.contentId}.`);
+        }
+        for (const locale of [binding.locale, binding.fallbackLocale]) {
+          if (locale !== undefined && !target.locales.includes(locale)) {
+            throw new Error(
+              `Localized-content target ${binding.contentId} does not provide ${locale}.`,
+            );
+          }
+        }
+        assertBindingRevision(binding.revision, target.revision, slot);
+        break;
+      }
+    }
+  }
+}
+
+function assertBindingRevision(
+  bindingRevision: string | undefined,
+  targetRevision: string | undefined,
+  slot: CommerceBindingSlotDefinition,
+) {
+  if (slot.revisionRequired && bindingRevision !== targetRevision) {
+    throw new Error(`Binding slot ${slot.id} revision must match its canonical projection target.`);
+  }
+}
+
+function validateAssignedAssetInventory(
+  instance: ComponentInstanceV2,
+  inventory: readonly StorefrontAssetMetadata[],
+) {
+  const assets = new Map(inventory.map((asset) => [asset.assetId, asset]));
+  for (const assignment of instance.assetAssignments) {
+    const metadata = assets.get(assignment.assetId);
+    if (!metadata)
+      throw new Error(`Assigned asset is missing from inventory: ${assignment.assetId}.`);
+    if (metadata.approvalStatus !== "approved") {
+      throw new Error(`Assigned asset is not approved: ${assignment.assetId}.`);
+    }
+    if (metadata.role !== assignment.role) {
+      throw new Error(`Assigned asset role does not match metadata: ${assignment.assetId}.`);
+    }
+  }
+}
+
 export function formatComponentVersion(version: ComponentVersion): string {
   return `${version.major}.${version.minor}.${version.patch}`;
 }
 
 export type MoneyDisplay = z.infer<typeof moneyDisplaySchema>;
+export type ComponentDataSchemaContract = z.infer<typeof componentDataSchemaContractSchema>;
 export type ComponentVersion = z.infer<typeof componentVersionSchema>;
 export type ComponentFamily = z.infer<typeof componentFamilySchema>;
 export type ComponentVariantDefinition = z.infer<typeof componentVariantDefinitionSchema>;
@@ -861,7 +1619,9 @@ export type ComponentMigrationContract = z.infer<typeof componentMigrationContra
 export type ComponentMigrationMetadata = z.infer<typeof componentMigrationMetadataSchema>;
 export type ComponentDefinitionV2 = z.infer<typeof componentDefinitionV2Schema>;
 export type ProductBinding = z.infer<typeof productBindingSchema>;
+export type ProductListBinding = z.infer<typeof productListBindingSchema>;
 export type CollectionBinding = z.infer<typeof collectionBindingSchema>;
+export type CollectionListBinding = z.infer<typeof collectionListBindingSchema>;
 export type AssetBinding = z.infer<typeof assetBindingSchema>;
 export type NavigationBinding = z.infer<typeof navigationBindingSchema>;
 export type ProjectBrandContextBinding = z.infer<typeof projectBrandContextBindingSchema>;
@@ -871,4 +1631,5 @@ export type ProductPresentationContext = z.infer<typeof productPresentationConte
 export type CollectionPresentationContext = z.infer<typeof collectionPresentationContextSchema>;
 export type AssetProvenance = z.infer<typeof assetProvenanceSchema>;
 export type StorefrontAssetMetadata = z.infer<typeof storefrontAssetMetadataSchema>;
+export type ComponentProjectionContext = z.infer<typeof componentProjectionContextSchema>;
 export type ComponentInstanceV2 = z.infer<typeof componentInstanceV2Schema>;
