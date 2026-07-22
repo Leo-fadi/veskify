@@ -293,10 +293,12 @@ export const reconciliationCommerceFieldSchema = z.enum([
   "product-identity",
   "sku",
   "price",
+  "compare-at-price",
   "availability",
   "inventory",
   "variants",
   "order-options",
+  "collection-identity",
   "collection-membership",
 ]);
 export type ReconciliationCommerceField = z.infer<typeof reconciliationCommerceFieldSchema>;
@@ -307,13 +309,24 @@ export const reconciliationDecisionSchema = z
     kind: reconciliationDecisionKindSchema,
     evidenceId: idSchema.nullable(),
     canonicalProductId: idSchema.nullable(),
+    canonicalCollectionId: idSchema.nullable(),
+    candidateCanonicalIds: z.array(idSchema),
     field: reconciliationCommerceFieldSchema.nullable(),
     sourceValue: z.unknown(),
     canonicalValue: z.unknown(),
     reason: z.string().trim().min(1).max(500),
     merchantDecisionRequired: z.boolean(),
   })
-  .strict();
+  .strict()
+  .superRefine((decision, context) => {
+    if (decision.canonicalProductId !== null && decision.canonicalCollectionId !== null) {
+      context.addIssue({
+        code: "custom",
+        path: ["canonicalCollectionId"],
+        message: "A reconciliation decision cannot target both a product and a collection.",
+      });
+    }
+  });
 export type ReconciliationDecision = z.infer<typeof reconciliationDecisionSchema>;
 
 export const reconciliationResultSchema = z
@@ -324,8 +337,147 @@ export const reconciliationResultSchema = z
     unresolvedConflictIds: z.array(idSchema),
     missingInformationIds: z.array(idSchema),
   })
-  .strict();
+  .strict()
+  .superRefine((result, context) => {
+    const decisionIds = new Set(result.decisions.map((decision) => decision.id));
+    for (const [field, identifiers] of [
+      ["unresolvedConflictIds", result.unresolvedConflictIds],
+      ["missingInformationIds", result.missingInformationIds],
+    ] as const) {
+      if (new Set(identifiers).size !== identifiers.length) {
+        context.addIssue({
+          code: "custom",
+          path: [field],
+          message: "Reconciliation summary identifiers must be unique.",
+        });
+      }
+      identifiers.forEach((identifier, index) => {
+        if (!decisionIds.has(identifier)) {
+          context.addIssue({
+            code: "custom",
+            path: [field, index],
+            message: "Reconciliation summary identifiers must reference a decision.",
+          });
+        }
+      });
+    }
+  });
 export type ReconciliationResult = z.infer<typeof reconciliationResultSchema>;
+
+export const storefrontSourceEvidenceMaterialSchema = z
+  .object({
+    sourceReferences: z.array(sourceReferenceSchema),
+    evidence: z.array(sourceEvidenceSchema),
+    assetCandidates: z.array(assetCandidateSchema),
+    reconciliation: reconciliationResultSchema.nullable(),
+  })
+  .strict()
+  .superRefine((material, context) => {
+    for (const [field, identifiers] of [
+      ["sourceReferences", material.sourceReferences.map((source) => source.id)],
+      ["evidence", material.evidence.map((evidence) => evidence.id)],
+      ["assetCandidates", material.assetCandidates.map((asset) => asset.id)],
+    ] as const) {
+      if (new Set(identifiers).size !== identifiers.length) {
+        context.addIssue({
+          code: "custom",
+          path: [field],
+          message: "Material evidence identifiers must be unique.",
+        });
+      }
+    }
+    const sourceIds = new Set(material.sourceReferences.map((source) => source.id));
+    material.evidence.forEach((evidence, index) => {
+      if (!sourceIds.has(evidence.provenance.sourceReferenceId)) {
+        context.addIssue({
+          code: "custom",
+          path: ["evidence", index, "provenance", "sourceReferenceId"],
+          message: "Material evidence provenance must reference a supplied source.",
+        });
+      }
+    });
+    if (
+      material.reconciliation !== null &&
+      !sourceIds.has(material.reconciliation.sourceReferenceId)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["reconciliation", "sourceReferenceId"],
+        message: "Reconciliation must reference a supplied source.",
+      });
+    }
+  });
+export type StorefrontSourceEvidenceMaterial = z.infer<
+  typeof storefrontSourceEvidenceMaterialSchema
+>;
+
+function sortedById<Value extends { id: string }>(values: readonly Value[]): Value[] {
+  return [...values].sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function sortedWarnings(warnings: readonly SourceWarning[]): SourceWarning[] {
+  return [...warnings].sort((left, right) =>
+    `${left.code}:${left.message}`.localeCompare(`${right.code}:${right.message}`),
+  );
+}
+
+/** Fingerprints only material discovery, asset and reconciliation state. */
+export function createStorefrontSourceEvidenceFingerprint(input: unknown): string {
+  const material = storefrontSourceEvidenceMaterialSchema.parse(input);
+  return canonicalValueFingerprint({
+    sourceReferences: sortedById(material.sourceReferences).map((source) => ({
+      id: source.id,
+      sourceType: source.sourceType,
+      url: source.url,
+      normalizedOrigin: source.normalizedOrigin,
+      requestedLocale: source.requestedLocale,
+      allowedDiscoveryPolicy: source.allowedDiscoveryPolicy,
+      status: source.status,
+      warnings: sortedWarnings(source.warnings),
+      failure: source.failure,
+    })),
+    evidence: sortedById(material.evidence).map((evidence) => ({
+      id: evidence.id,
+      kind: evidence.kind,
+      provenance: {
+        sourceReferenceId: evidence.provenance.sourceReferenceId,
+        sourceUrl: evidence.provenance.sourceUrl,
+      },
+      sourceUrl: evidence.sourceUrl,
+      confidence: evidence.confidence,
+      observedValue: evidence.observedValue,
+      extractionMethod: evidence.extractionMethod,
+      locale: evidence.locale,
+      warnings: sortedWarnings(evidence.warnings),
+      uncertainty: evidence.uncertainty,
+    })),
+    assetCandidates: sortedById(material.assetCandidates).map((asset) => ({
+      id: asset.id,
+      role: asset.role,
+      source: asset.source,
+      dimensions: asset.dimensions,
+      mediaType: asset.mediaType,
+      provenance: {
+        sourceReferenceId: asset.provenance.sourceReferenceId,
+        sourceUrl: asset.provenance.sourceUrl,
+      },
+      confidence: asset.confidence,
+      proposedReusePurpose: asset.proposedReusePurpose,
+      licensingUsageConfirmation: asset.licensingUsageConfirmation,
+      fingerprint: asset.fingerprint,
+      duplicateOfAssetId: asset.duplicateOfAssetId,
+    })),
+    reconciliation: material.reconciliation
+      ? {
+          sourceReferenceId: material.reconciliation.sourceReferenceId,
+          canonicalCommerceProjectionRef: material.reconciliation.canonicalCommerceProjectionRef,
+          decisions: sortedById(material.reconciliation.decisions),
+          unresolvedConflictIds: [...material.reconciliation.unresolvedConflictIds].sort(),
+          missingInformationIds: [...material.reconciliation.missingInformationIds].sort(),
+        }
+      : null,
+  });
+}
 
 export const brandReconstructionProposalSchema = z
   .object({
@@ -427,6 +579,11 @@ export const storefrontDesignBriefContractSchema = z
       })
       .strict(),
     approval: briefApprovalSchema,
+    evidenceFingerprint: z.string().trim().min(1),
+    approvedEvidenceFingerprint: z.string().trim().min(1).nullable(),
+    supersedesRevision: z.number().int().positive().nullable(),
+    supersededByRevision: z.number().int().positive().nullable(),
+    supersessionReason: z.string().trim().min(1).max(500).nullable(),
     fingerprint: z.string().trim().min(1),
   })
   .strict()
@@ -445,7 +602,18 @@ export const storefrontDesignBriefContractSchema = z
         message: "Approved briefs require approved metadata.",
       });
     }
-    if (brief.status !== "approved" && brief.approval.status === "approved") {
+    if (brief.status === "superseded" && brief.approval.status !== "approved") {
+      context.addIssue({
+        code: "custom",
+        path: ["approval"],
+        message: "A superseded revision must retain its approval history.",
+      });
+    }
+    if (
+      brief.status !== "approved" &&
+      brief.status !== "superseded" &&
+      brief.approval.status === "approved"
+    ) {
       context.addIssue({
         code: "custom",
         path: ["approval"],
@@ -457,6 +625,69 @@ export const storefrontDesignBriefContractSchema = z
         code: "custom",
         path: ["canonicalCommerceProjectionRef"],
         message: "An approved brief requires canonical Vesko commerce.",
+      });
+    }
+    if (
+      (brief.status === "approved" || brief.status === "superseded") &&
+      brief.approvedEvidenceFingerprint === null
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["approvedEvidenceFingerprint"],
+        message: "Approved and superseded revisions require their approved evidence fingerprint.",
+      });
+    }
+    if (
+      (brief.status === "approved" || brief.status === "superseded") &&
+      brief.approvedEvidenceFingerprint !== null &&
+      brief.approvedEvidenceFingerprint !== brief.evidenceFingerprint
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["approvedEvidenceFingerprint"],
+        message: "The approved evidence fingerprint must match the approved material evidence.",
+      });
+    }
+    if (
+      brief.status !== "approved" &&
+      brief.status !== "superseded" &&
+      brief.approvedEvidenceFingerprint !== null
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["approvedEvidenceFingerprint"],
+        message: "Unapproved revisions cannot retain an approved evidence fingerprint.",
+      });
+    }
+    if (brief.status === "superseded" && brief.supersededByRevision === null) {
+      context.addIssue({
+        code: "custom",
+        path: ["supersededByRevision"],
+        message: "A superseded revision must identify its replacement revision.",
+      });
+    }
+    if (
+      (brief.supersedesRevision !== null || brief.supersededByRevision !== null) &&
+      brief.supersessionReason === null
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["supersessionReason"],
+        message: "Related brief revisions require a supersession reason.",
+      });
+    }
+    if (brief.status !== "superseded" && brief.supersededByRevision !== null) {
+      context.addIssue({
+        code: "custom",
+        path: ["supersededByRevision"],
+        message: "Only a superseded revision may identify a replacement revision.",
+      });
+    }
+    if (brief.supersedesRevision !== null && brief.supersedesRevision >= brief.revision) {
+      context.addIssue({
+        code: "custom",
+        path: ["supersedesRevision"],
+        message: "A replacement must supersede an earlier revision.",
       });
     }
   });

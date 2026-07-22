@@ -5,6 +5,7 @@ import type {
   SourceDiscoveryResult,
   SourceEvidence,
   SourceReference,
+  StorefrontSourceEvidenceMaterial,
   StorefrontDesignBriefContract,
 } from "@/domain/source-discovery";
 
@@ -52,6 +53,13 @@ export type ProposeBrandReconstructionInput = Readonly<{
   assetCandidates: readonly AssetCandidate[];
 }>;
 
+export type StorefrontDesignBriefEvidenceFingerprintInput = Readonly<{
+  sourceReferenceIds: readonly string[];
+  sourceEvidenceIds: readonly string[];
+  canonicalCommerceProjectionRef: string | null;
+  materialEvidence: StorefrontSourceEvidenceMaterial;
+}>;
+
 export type CreateStorefrontDesignBriefInput = Readonly<{
   id: string;
   now?: Date | string;
@@ -59,6 +67,7 @@ export type CreateStorefrontDesignBriefInput = Readonly<{
   languagePlan?: unknown;
   sourceReferenceIds: readonly string[];
   sourceEvidenceIds: readonly string[];
+  materialEvidence: StorefrontSourceEvidenceMaterial;
   canonicalCommerceProjectionRef?: string | null;
   brandProposal?: BrandReconstructionProposal | null;
   approvedBrandDirection?: unknown;
@@ -86,5 +95,15 @@ export type SupersedeStorefrontDesignBriefInput = Readonly<{
   now?: Date | string;
   sourceReferenceIds?: readonly string[];
   sourceEvidenceIds?: readonly string[];
+  materialEvidence: StorefrontSourceEvidenceMaterial;
+  brandProposal?: BrandReconstructionProposal | null;
+  approvedReusableAssetIds?: readonly string[];
+  unresolvedItems?: readonly string[];
+  materialUnresolvedBlockers?: readonly string[];
   reason?: string;
+}>;
+
+export type SupersedeStorefrontDesignBriefResult = Readonly<{
+  superseded: StorefrontDesignBriefContract;
+  replacement: StorefrontDesignBriefContract;
 }>;

@@ -3,6 +3,7 @@ import {
   assetCandidateSchema,
   brandReconstructionProposalSchema,
   canonicalCommerceProjectionSchema,
+  createStorefrontSourceEvidenceFingerprint,
   reconciliationDecisionSchema,
   reconciliationResultSchema,
   sourceDiscoveryResultSchema,
@@ -18,7 +19,9 @@ import {
   type SourceEvidence,
   type SourceReference,
   type StorefrontDesignBriefContract,
+  type StorefrontSourceEvidenceMaterial,
 } from "@/domain/source-discovery";
+import { productPriceSchema } from "@/domain/catalogue";
 import {
   brandDirectionSchema,
   businessIdentitySchema,
@@ -37,7 +40,9 @@ import {
   type ReconcileStorefrontSourcesInput,
   type SourceDiscoveryAdapter,
   SourceDiscoveryApplicationError,
+  type StorefrontDesignBriefEvidenceFingerprintInput,
   type SupersedeStorefrontDesignBriefInput,
+  type SupersedeStorefrontDesignBriefResult,
 } from "./contract";
 
 function isoNow(input?: Date | string): string {
@@ -86,6 +91,60 @@ function sourceValidationFailure(input: unknown): SourceDiscoveryApplicationErro
   );
 }
 
+function normalizedUrl(value: string): URL {
+  const url = new URL(value);
+  url.hash = "";
+  return url;
+}
+
+function discoveryIntegrityFailure(): SourceDiscoveryApplicationError {
+  return new SourceDiscoveryApplicationError(
+    "unavailable-source",
+    "The storefront source response could not be safely verified. Try discovery again.",
+  );
+}
+
+function assertDiscoveryResultBelongsToSource(
+  requested: SourceReference,
+  result: SourceDiscoveryResult,
+): void {
+  const requestedUrl = normalizedUrl(requested.url);
+  const resultUrl = normalizedUrl(result.source.url);
+  if (
+    result.source.id !== requested.id ||
+    result.source.sourceType !== requested.sourceType ||
+    result.source.normalizedOrigin !== requested.normalizedOrigin ||
+    resultUrl.toString() !== requestedUrl.toString() ||
+    result.source.requestedLocale !== requested.requestedLocale ||
+    result.source.discoveredAt !== requested.discoveredAt ||
+    canonicalValueString(result.source.allowedDiscoveryPolicy) !==
+      canonicalValueString(requested.allowedDiscoveryPolicy)
+  ) {
+    throw discoveryIntegrityFailure();
+  }
+
+  for (const evidence of result.evidence) {
+    const evidenceUrl = normalizedUrl(evidence.sourceUrl);
+    if (
+      evidence.provenance.sourceReferenceId !== requested.id ||
+      evidenceUrl.origin !== requested.normalizedOrigin
+    ) {
+      throw discoveryIntegrityFailure();
+    }
+  }
+
+  for (const asset of result.assetCandidates) {
+    if (asset.source.kind === "merchant-upload") continue;
+    const assetUrl = normalizedUrl(asset.source.url);
+    if (
+      asset.provenance.sourceReferenceId !== requested.id ||
+      assetUrl.origin !== requested.normalizedOrigin
+    ) {
+      throw discoveryIntegrityFailure();
+    }
+  }
+}
+
 export async function discoverStorefrontSource(
   adapter: SourceDiscoveryAdapter,
   sourceInput: unknown,
@@ -98,11 +157,13 @@ export async function discoverStorefrontSource(
   }
   try {
     const result = await adapter.discover({ source });
-    return parseContract(
+    const parsed = parseContract(
       (value) => sourceDiscoveryResultSchema.parse(value),
       result,
       "The source discovery result is invalid",
     );
+    assertDiscoveryResultBelongsToSource(source, parsed);
+    return parsed;
   } catch (error) {
     if (error instanceof SourceDiscoveryApplicationError) throw error;
     throw new SourceDiscoveryApplicationError(
@@ -112,35 +173,109 @@ export async function discoverStorefrontSource(
   }
 }
 
-function localizedValue(value: unknown): string[] {
-  if (!value || typeof value !== "object") return [];
-  return Object.values(value).filter((entry): entry is string => typeof entry === "string");
+function localizedValues(value: unknown): string[] {
+  const values =
+    typeof value === "string"
+      ? [value]
+      : value && typeof value === "object"
+        ? Object.values(value).filter((entry): entry is string => typeof entry === "string")
+        : [];
+  return values.map((entry) => entry.trim().toLocaleLowerCase()).filter(Boolean);
 }
 
-function canonicalProductForEvidence(
+function sameStringSet(left: unknown, right: readonly string[]): boolean {
+  if (!Array.isArray(left) || !left.every((value) => typeof value === "string")) return false;
+  return canonicalValueString([...left].sort()) === canonicalValueString([...right].sort());
+}
+
+type CanonicalMatch<Value> =
+  | Readonly<{ kind: "resolved"; value: Value; matchedBy: "id" | "sku" | "slug" | "title" }>
+  | Readonly<{ kind: "ambiguous"; candidateIds: string[] }>
+  | Readonly<{ kind: "missing"; candidateIds: [] }>;
+
+function matchCanonicalProduct(
   evidence: SourceEvidence,
   projection: CanonicalCommerceProjection,
-) {
+): CanonicalMatch<CanonicalCommerceProjection["products"][number]> {
   if (
     evidence.kind !== "product-reference-observed" ||
     !evidence.observedValue ||
     typeof evidence.observedValue !== "object"
   ) {
-    return null;
+    return { kind: "missing", candidateIds: [] };
   }
   const observed = evidence.observedValue as Record<string, unknown>;
-  const productId = typeof observed.productId === "string" ? observed.productId : null;
-  const sku = typeof observed.sku === "string" ? observed.sku : null;
-  const titles = localizedValue(observed.title);
-  return (
-    projection.products.find(
-      (product) =>
-        (productId !== null && product.id === productId) ||
-        (sku !== null && product.sku === sku) ||
-        (titles.length > 0 &&
-          localizedValue(product.title).some((title) => titles.includes(title))),
-    ) ?? null
+  if (typeof observed.productId === "string") {
+    const byId = projection.products.find((product) => product.id === observed.productId);
+    if (byId) return { kind: "resolved", value: byId, matchedBy: "id" };
+  }
+  if (typeof observed.sku === "string") {
+    const bySku = projection.products.find((product) => product.sku === observed.sku);
+    if (bySku) return { kind: "resolved", value: bySku, matchedBy: "sku" };
+  }
+  const observedTitles = localizedValues(observed.title);
+  const titleMatches = projection.products.filter(
+    (product) =>
+      observedTitles.length > 0 &&
+      localizedValues(product.title).some((title) => observedTitles.includes(title)),
   );
+  if (titleMatches.length === 1) {
+    return { kind: "resolved", value: titleMatches[0], matchedBy: "title" };
+  }
+  if (titleMatches.length > 1) {
+    return { kind: "ambiguous", candidateIds: titleMatches.map((product) => product.id).sort() };
+  }
+  return { kind: "missing", candidateIds: [] };
+}
+
+function matchCanonicalCollection(
+  evidence: SourceEvidence,
+  projection: CanonicalCommerceProjection,
+): CanonicalMatch<CanonicalCommerceProjection["collections"][number]> {
+  if (
+    evidence.kind !== "collection-reference-observed" ||
+    !evidence.observedValue ||
+    typeof evidence.observedValue !== "object"
+  ) {
+    return { kind: "missing", candidateIds: [] };
+  }
+  const observed = evidence.observedValue as Record<string, unknown>;
+  if (typeof observed.collectionId === "string") {
+    const byId = projection.collections.find(
+      (collection) => collection.id === observed.collectionId,
+    );
+    if (byId) return { kind: "resolved", value: byId, matchedBy: "id" };
+  }
+  if (typeof observed.slug === "string") {
+    const slugMatches = projection.collections.filter(
+      (collection) => collection.slug === observed.slug,
+    );
+    if (slugMatches.length === 1) {
+      return { kind: "resolved", value: slugMatches[0], matchedBy: "slug" };
+    }
+    if (slugMatches.length > 1) {
+      return {
+        kind: "ambiguous",
+        candidateIds: slugMatches.map((collection) => collection.id).sort(),
+      };
+    }
+  }
+  const observedTitles = localizedValues(observed.title);
+  const titleMatches = projection.collections.filter(
+    (collection) =>
+      observedTitles.length > 0 &&
+      localizedValues(collection.title).some((title) => observedTitles.includes(title)),
+  );
+  if (titleMatches.length === 1) {
+    return { kind: "resolved", value: titleMatches[0], matchedBy: "title" };
+  }
+  if (titleMatches.length > 1) {
+    return {
+      kind: "ambiguous",
+      candidateIds: titleMatches.map((collection) => collection.id).sort(),
+    };
+  }
+  return { kind: "missing", candidateIds: [] };
 }
 
 function canonicalFieldValue(
@@ -155,6 +290,8 @@ function canonicalFieldValue(
       return product.sku ?? null;
     case "price":
       return product.price ?? product.priceUnavailableReason ?? null;
+    case "compare-at-price":
+      return product.compareAtPrice ?? null;
     case "availability":
       return product.availabilityLabel ?? product.stockStatus ?? null;
     case "inventory":
@@ -174,6 +311,7 @@ const observedFieldNames: ReadonlyArray<readonly [ReconciliationCommerceField, s
   ["product-identity", ["productId", "title"]],
   ["sku", ["sku"]],
   ["price", ["price"]],
+  ["compare-at-price", ["compareAtPrice"]],
   ["availability", ["availability", "availabilityLabel"]],
   ["inventory", ["inventory", "stockStatus"]],
   ["variants", ["variants"]],
@@ -194,6 +332,7 @@ export function reconcileStorefrontSources(
     input.discovery,
     "The discovery result is invalid",
   );
+  assertDiscoveryResultBelongsToSource(source, discovery);
   if (input.canonicalCommerceProjection === null) {
     throw new SourceDiscoveryApplicationError(
       "missing-canonical-vesko-projection",
@@ -208,9 +347,15 @@ export function reconcileStorefrontSources(
   const decisions: Array<ReturnType<typeof reconciliationDecisionSchema.parse>> = [];
   const unresolvedConflictIds: string[] = [];
   const missingInformationIds: string[] = [];
+  const addMissingInformation = (decisionId: string) => {
+    if (!missingInformationIds.includes(decisionId)) missingInformationIds.push(decisionId);
+  };
 
   for (const evidence of discovery.evidence) {
-    if (evidence.kind !== "product-reference-observed") {
+    if (
+      evidence.kind !== "product-reference-observed" &&
+      evidence.kind !== "collection-reference-observed"
+    ) {
       const decisionId = `reconcile_${evidence.id}`;
       decisions.push(
         reconciliationDecisionSchema.parse({
@@ -220,6 +365,8 @@ export function reconcileStorefrontSources(
             : "accepted-evidence",
           evidenceId: evidence.id,
           canonicalProductId: null,
+          canonicalCollectionId: null,
+          candidateCanonicalIds: [],
           field: null,
           sourceValue: evidence.observedValue,
           canonicalValue: null,
@@ -229,51 +376,184 @@ export function reconcileStorefrontSources(
           merchantDecisionRequired: evidence.uncertainty.isUncertain,
         }),
       );
+      if (evidence.uncertainty.isUncertain) addMissingInformation(decisionId);
       continue;
     }
 
-    const product = canonicalProductForEvidence(evidence, projection);
-    if (!product) {
+    if (evidence.kind === "collection-reference-observed") {
+      const match = matchCanonicalCollection(evidence, projection);
+      if (match.kind !== "resolved") {
+        const decisionId = `reconcile_${evidence.id}_collection`;
+        const ambiguous = match.kind === "ambiguous";
+        decisions.push(
+          reconciliationDecisionSchema.parse({
+            id: decisionId,
+            kind: ambiguous ? "merchant-decision-required" : "unresolved-conflict",
+            evidenceId: evidence.id,
+            canonicalProductId: null,
+            canonicalCollectionId: null,
+            candidateCanonicalIds: match.candidateIds,
+            field: "collection-identity",
+            sourceValue: evidence.observedValue,
+            canonicalValue: ambiguous
+              ? projection.collections
+                  .filter((collection) => match.candidateIds.includes(collection.id))
+                  .map((collection) => ({
+                    id: collection.id,
+                    slug: collection.slug,
+                    title: collection.title,
+                  }))
+              : null,
+            reason: ambiguous
+              ? "Multiple canonical Vesko collections match the observed title; merchant confirmation is required."
+              : "The observed collection could not be matched to the canonical Vesko catalogue.",
+            merchantDecisionRequired: ambiguous,
+          }),
+        );
+        unresolvedConflictIds.push(decisionId);
+        if (ambiguous) addMissingInformation(decisionId);
+        continue;
+      }
+
+      const observed = evidence.observedValue as Record<string, unknown>;
+      const collection = match.value;
+      const sourceCollectionId =
+        typeof observed.collectionId === "string" ? observed.collectionId : null;
+      const sourceSlug = typeof observed.slug === "string" ? observed.slug : null;
+      const identityConflicts =
+        (sourceCollectionId !== null && sourceCollectionId !== collection.id) ||
+        (sourceSlug !== null && sourceSlug !== collection.slug) ||
+        (localizedValues(observed.title).length > 0 &&
+          !localizedValues(collection.title).some((title) =>
+            localizedValues(observed.title).includes(title),
+          ));
+      decisions.push(
+        reconciliationDecisionSchema.parse({
+          id: `reconcile_${evidence.id}_collection-identity`,
+          kind: identityConflicts ? "canonical-override" : "accepted-evidence",
+          evidenceId: evidence.id,
+          canonicalProductId: null,
+          canonicalCollectionId: collection.id,
+          candidateCanonicalIds: [],
+          field: "collection-identity",
+          sourceValue: {
+            collectionId: observed.collectionId ?? null,
+            slug: observed.slug ?? null,
+            title: observed.title ?? null,
+          },
+          canonicalValue: { id: collection.id, slug: collection.slug, title: collection.title },
+          reason: identityConflicts
+            ? "Canonical Vesko collection identity remains authoritative."
+            : "The observed collection resolves to one canonical Vesko collection.",
+          merchantDecisionRequired: false,
+        }),
+      );
+
+      const membershipKey = ["productIds", "membership", "productSkus"].find((key) =>
+        Object.prototype.hasOwnProperty.call(observed, key),
+      );
+      if (membershipKey) {
+        const sourceMembership = observed[membershipKey] ?? null;
+        const canonicalMembership = collection.productIds;
+        const sameMembership = sameStringSet(sourceMembership, canonicalMembership);
+        decisions.push(
+          reconciliationDecisionSchema.parse({
+            id: `reconcile_${evidence.id}_collection-membership`,
+            kind: sameMembership ? "accepted-evidence" : "canonical-override",
+            evidenceId: evidence.id,
+            canonicalProductId: null,
+            canonicalCollectionId: collection.id,
+            candidateCanonicalIds: [],
+            field: "collection-membership",
+            sourceValue: sourceMembership,
+            canonicalValue: canonicalMembership,
+            reason: sameMembership
+              ? "The public collection membership agrees with canonical Vesko data."
+              : "Canonical Vesko collection product membership remains authoritative.",
+            merchantDecisionRequired: false,
+          }),
+        );
+      }
+      continue;
+    }
+
+    const match = matchCanonicalProduct(evidence, projection);
+    if (match.kind !== "resolved") {
       const decisionId = `reconcile_${evidence.id}_missing`;
+      const ambiguous = match.kind === "ambiguous";
       decisions.push(
         reconciliationDecisionSchema.parse({
           id: decisionId,
-          kind: "unresolved-conflict",
+          kind: ambiguous ? "merchant-decision-required" : "unresolved-conflict",
           evidenceId: evidence.id,
           canonicalProductId: null,
+          canonicalCollectionId: null,
+          candidateCanonicalIds: match.candidateIds,
           field: "product-identity",
           sourceValue: evidence.observedValue,
-          canonicalValue: null,
-          reason: "The observed product could not be matched to the canonical Vesko catalogue.",
-          merchantDecisionRequired: true,
+          canonicalValue: ambiguous
+            ? projection.products
+                .filter((product) => match.candidateIds.includes(product.id))
+                .map((product) => ({ id: product.id, sku: product.sku, title: product.title }))
+            : null,
+          reason: ambiguous
+            ? "Multiple canonical Vesko products match the observed title; merchant confirmation is required."
+            : "The observed product could not be matched to the canonical Vesko catalogue.",
+          merchantDecisionRequired: ambiguous,
         }),
       );
       unresolvedConflictIds.push(decisionId);
+      if (ambiguous) addMissingInformation(decisionId);
       continue;
     }
 
+    const product = match.value;
     const observed = evidence.observedValue as Record<string, unknown>;
     for (const [field, keys] of observedFieldNames) {
       const key = keys.find((candidate) =>
         Object.prototype.hasOwnProperty.call(observed, candidate),
       );
       if (!key) continue;
-      const sourceValue = observed[key];
+      const rawSourceValue = observed[key];
+      const sourceValue =
+        field === "product-identity"
+          ? { productId: observed.productId ?? null, title: observed.title ?? null }
+          : (rawSourceValue ?? null);
       const canonicalValue = canonicalFieldValue(product, field, projection);
-      const same = canonicalValueString(sourceValue) === canonicalValueString(canonicalValue);
+      const protectedPriceIsValid =
+        field !== "compare-at-price" ||
+        sourceValue === null ||
+        productPriceSchema.safeParse(sourceValue).success;
+      const observedTitles = localizedValues(observed.title);
+      const identityMatches =
+        (typeof observed.productId !== "string" || observed.productId === product.id) &&
+        (observedTitles.length === 0 ||
+          localizedValues(product.title).some((title) => observedTitles.includes(title)));
+      const same =
+        field === "product-identity"
+          ? identityMatches
+          : canonicalValueString(sourceValue) === canonicalValueString(canonicalValue);
       const decisionId = `reconcile_${evidence.id}_${field}`;
       decisions.push(
         reconciliationDecisionSchema.parse({
           id: decisionId,
-          kind: same ? "accepted-evidence" : "canonical-override",
+          kind: !protectedPriceIsValid
+            ? "rejected-evidence"
+            : same
+              ? "accepted-evidence"
+              : "canonical-override",
           evidenceId: evidence.id,
           canonicalProductId: product.id,
+          canonicalCollectionId: null,
+          candidateCanonicalIds: [],
           field,
           sourceValue,
           canonicalValue,
-          reason: same
-            ? "The source evidence agrees with canonical Vesko data."
-            : "Canonical Vesko commerce data remains authoritative.",
+          reason: !protectedPriceIsValid
+            ? "The observed compare-at price is invalid and was rejected."
+            : same
+              ? "The source evidence agrees with canonical Vesko data."
+              : "Canonical Vesko commerce data remains authoritative.",
           merchantDecisionRequired: false,
         }),
       );
@@ -283,11 +563,12 @@ export function reconcileStorefrontSources(
   for (const evidence of discovery.evidence.filter(
     (candidate) => candidate.uncertainty.isUncertain,
   )) {
-    if (
-      !decisions.some(
-        (decision) => decision.evidenceId === evidence.id && decision.merchantDecisionRequired,
-      )
-    ) {
+    const existingDecision = decisions.find(
+      (decision) => decision.evidenceId === evidence.id && decision.merchantDecisionRequired,
+    );
+    if (existingDecision) {
+      addMissingInformation(existingDecision.id);
+    } else {
       const decisionId = `reconcile_${evidence.id}_uncertain`;
       decisions.push(
         reconciliationDecisionSchema.parse({
@@ -295,6 +576,8 @@ export function reconcileStorefrontSources(
           kind: "merchant-decision-required",
           evidenceId: evidence.id,
           canonicalProductId: null,
+          canonicalCollectionId: null,
+          candidateCanonicalIds: [],
           field: null,
           sourceValue: evidence.observedValue,
           canonicalValue: null,
@@ -302,7 +585,7 @@ export function reconcileStorefrontSources(
           merchantDecisionRequired: true,
         }),
       );
-      missingInformationIds.push(decisionId);
+      addMissingInformation(decisionId);
     }
   }
 
@@ -315,8 +598,15 @@ export function reconcileStorefrontSources(
   });
 }
 
+const trustedBrandEvidenceConfidence = 0.7;
+
 function evidenceString(evidence: readonly SourceEvidence[], kind: EvidenceKind): string | null {
-  const candidate = evidence.find((item) => item.kind === kind && !item.uncertainty.isUncertain);
+  const candidate = evidence.find(
+    (item) =>
+      item.kind === kind &&
+      !item.uncertainty.isUncertain &&
+      item.confidence >= trustedBrandEvidenceConfidence,
+  );
   if (typeof candidate?.observedValue === "string") return candidate.observedValue;
   return null;
 }
@@ -328,12 +618,17 @@ export function proposeBrandReconstruction(
   const evidence = input.evidence.map((item) => sourceEvidenceSchema.parse(item));
   const assets = input.assetCandidates.map((item) => assetCandidateSchema.parse(item));
   const colourEvidence = evidence.find(
-    (item) => item.kind === "colour-signal" && !item.uncertainty.isUncertain,
+    (item) =>
+      item.kind === "colour-signal" &&
+      !item.uncertainty.isUncertain &&
+      item.confidence >= trustedBrandEvidenceConfidence,
   );
   const colourValue =
     typeof colourEvidence?.observedValue === "string" ? colourEvidence.observedValue : null;
   const logoAssetIds = assets.filter((asset) => asset.role === "logo").map((asset) => asset.id);
-  const uncertain = evidence.filter((item) => item.uncertainty.isUncertain);
+  const needsReview = evidence.filter(
+    (item) => item.uncertainty.isUncertain || item.confidence < trustedBrandEvidenceConfidence,
+  );
   const proposal = {
     id: `brand_proposal_${source.id}`,
     status: "needsReview" as const,
@@ -343,7 +638,12 @@ export function proposeBrandReconstruction(
     shapeDirection: null,
     imageryDirection: evidenceString(evidence, "imagery-style"),
     toneOfVoice: evidence
-      .filter((item) => item.kind === "marketing-copy-candidate")
+      .filter(
+        (item) =>
+          item.kind === "marketing-copy-candidate" &&
+          !item.uncertainty.isUncertain &&
+          item.confidence >= trustedBrandEvidenceConfidence,
+      )
       .flatMap((item) => (typeof item.observedValue === "string" ? [item.observedValue] : [])),
     reusedAssetIds: logoAssetIds,
     assumptions:
@@ -356,9 +656,11 @@ export function proposeBrandReconstruction(
       evidence.length === 0
         ? 0
         : evidence.reduce((sum, item) => sum + item.confidence, 0) / evidence.length,
-    warnings: uncertain.map((item) => ({
+    warnings: needsReview.map((item) => ({
       code: "uncertain-evidence" as const,
-      message: item.uncertainty.reason ?? "This signal needs merchant confirmation.",
+      message:
+        item.uncertainty.reason ??
+        "This low-confidence signal needs merchant confirmation before reuse.",
     })),
     evidenceReferenceIds: evidence.map((item) => item.id),
     merchantApproved: false as const,
@@ -370,14 +672,71 @@ function list(values: readonly string[] | undefined): string[] {
   return [...(values ?? [])];
 }
 
-function fingerprintBrief(brief: Omit<StorefrontDesignBriefContract, "fingerprint">): string {
-  return canonicalValueFingerprint(brief);
+function uniqueList(values: readonly string[]): string[] {
+  return [...new Set(values)];
+}
+
+function sameIdentifiers(left: readonly string[], right: readonly string[]): boolean {
+  return canonicalValueString([...left].sort()) === canonicalValueString([...right].sort());
+}
+
+export function createStorefrontDesignBriefEvidenceFingerprint(
+  input: StorefrontDesignBriefEvidenceFingerprintInput,
+): string {
+  const materialSourceIds = input.materialEvidence.sourceReferences.map((source) => source.id);
+  const materialEvidenceIds = input.materialEvidence.evidence.map((evidence) => evidence.id);
+  if (
+    !sameIdentifiers(materialSourceIds, input.sourceReferenceIds) ||
+    !sameIdentifiers(materialEvidenceIds, input.sourceEvidenceIds) ||
+    (input.materialEvidence.reconciliation !== null &&
+      input.materialEvidence.reconciliation.canonicalCommerceProjectionRef !==
+        input.canonicalCommerceProjectionRef)
+  ) {
+    throw new SourceDiscoveryApplicationError(
+      "invalid-contract",
+      "The material source evidence does not match the Storefront Design Brief references.",
+    );
+  }
+  return createStorefrontSourceEvidenceFingerprint(input.materialEvidence);
+}
+
+function reconciliationQuestions(
+  materialEvidence: StorefrontSourceEvidenceMaterial | undefined,
+): string[] {
+  if (!materialEvidence?.reconciliation) return [];
+  return uniqueList(
+    materialEvidence.reconciliation.decisions
+      .filter(
+        (decision) =>
+          decision.merchantDecisionRequired ||
+          materialEvidence.reconciliation?.missingInformationIds.includes(decision.id) ||
+          materialEvidence.reconciliation?.unresolvedConflictIds.includes(decision.id),
+      )
+      .map((decision) => decision.reason),
+  );
+}
+
+function fingerprintBrief(
+  brief: Omit<StorefrontDesignBriefContract, "fingerprint"> | StorefrontDesignBriefContract,
+): string {
+  const value = { ...brief } as Partial<StorefrontDesignBriefContract>;
+  delete value.fingerprint;
+  return canonicalValueFingerprint(value);
 }
 
 export function createStorefrontDesignBrief(
   input: CreateStorefrontDesignBriefInput,
 ): StorefrontDesignBriefContract {
   const timestamp = isoNow(input.now);
+  const sourceReferenceIds = list(input.sourceReferenceIds);
+  const sourceEvidenceIds = list(input.sourceEvidenceIds);
+  const canonicalCommerceProjectionRef = input.canonicalCommerceProjectionRef ?? null;
+  const evidenceFingerprint = createStorefrontDesignBriefEvidenceFingerprint({
+    sourceReferenceIds,
+    sourceEvidenceIds,
+    canonicalCommerceProjectionRef,
+    materialEvidence: input.materialEvidence,
+  });
   const candidate = {
     id: idSchema.parse(input.id),
     revision: 1,
@@ -386,9 +745,9 @@ export function createStorefrontDesignBrief(
     updatedAt: timestamp,
     businessIdentity: businessIdentitySchema.parse(input.businessIdentity ?? {}),
     languagePlan: languagePlanSchema.parse(input.languagePlan ?? { selectedLanguages: [] }),
-    sourceReferenceIds: list(input.sourceReferenceIds),
-    sourceEvidenceIds: list(input.sourceEvidenceIds),
-    canonicalCommerceProjectionRef: input.canonicalCommerceProjectionRef ?? null,
+    sourceReferenceIds,
+    sourceEvidenceIds,
+    canonicalCommerceProjectionRef,
     approvedBrandDirection:
       input.approvedBrandDirection === undefined
         ? null
@@ -406,7 +765,10 @@ export function createStorefrontDesignBrief(
     productPageGoals: list(input.productPageGoals),
     visualPriorities: list(input.visualPriorities),
     contentAssumptions: list(input.contentAssumptions),
-    unresolvedItems: list(input.unresolvedItems),
+    unresolvedItems: uniqueList([
+      ...list(input.unresolvedItems),
+      ...reconciliationQuestions(input.materialEvidence),
+    ]),
     materialUnresolvedBlockers: list(input.materialUnresolvedBlockers),
     excludedClaims: list(input.excludedClaims),
     generationPermissions: {
@@ -415,6 +777,11 @@ export function createStorefrontDesignBrief(
       allowGeneratedImagery: input.generationPermissions?.allowGeneratedImagery ?? false,
     },
     approval: { status: "pending" as const, actorId: null, approvedAt: null },
+    evidenceFingerprint,
+    approvedEvidenceFingerprint: null,
+    supersedesRevision: null,
+    supersededByRevision: null,
+    supersessionReason: null,
   };
   return storefrontDesignBriefContractSchema.parse({
     ...candidate,
@@ -455,15 +822,17 @@ export function approveStorefrontDesignBrief(
       "Merchant brand confirmation is required before approval.",
     );
   }
+  const approvalTime = isoNow(input.approvedAt);
   const candidate = {
     ...brief,
     status: "approved" as const,
-    updatedAt: isoNow(input.approvedAt),
+    updatedAt: approvalTime,
     approvedBrandDirection,
+    approvedEvidenceFingerprint: brief.evidenceFingerprint,
     approval: {
       status: "approved" as const,
       actorId: idSchema.parse(input.actorId),
-      approvedAt: isoNow(input.approvedAt),
+      approvedAt: approvalTime,
     },
   };
   return storefrontDesignBriefContractSchema.parse({
@@ -474,8 +843,8 @@ export function approveStorefrontDesignBrief(
 
 export function supersedeStorefrontDesignBrief(
   briefInput: StorefrontDesignBriefContract,
-  input: SupersedeStorefrontDesignBriefInput = {},
-): StorefrontDesignBriefContract {
+  input: SupersedeStorefrontDesignBriefInput,
+): SupersedeStorefrontDesignBriefResult {
   const brief = storefrontDesignBriefContractSchema.parse(briefInput);
   if (brief.status !== "approved") {
     throw new SourceDiscoveryApplicationError(
@@ -484,28 +853,65 @@ export function supersedeStorefrontDesignBrief(
     );
   }
   const timestamp = isoNow(input.now);
-  const candidate = {
+  const replacementRevision = brief.revision + 1;
+  const reason = input.reason ?? "Material source evidence changed; merchant review is required.";
+  const sourceReferenceIds = input.sourceReferenceIds
+    ? list(input.sourceReferenceIds)
+    : input.materialEvidence.sourceReferences.map((source) => source.id);
+  const sourceEvidenceIds = input.sourceEvidenceIds
+    ? list(input.sourceEvidenceIds)
+    : input.materialEvidence.evidence.map((evidence) => evidence.id);
+  const replacementEvidenceFingerprint = createStorefrontDesignBriefEvidenceFingerprint({
+    sourceReferenceIds,
+    sourceEvidenceIds,
+    canonicalCommerceProjectionRef: brief.canonicalCommerceProjectionRef,
+    materialEvidence: input.materialEvidence,
+  });
+  const supersededCandidate = {
     ...brief,
-    revision: brief.revision + 1,
     status: "superseded" as const,
     updatedAt: timestamp,
-    sourceReferenceIds: input.sourceReferenceIds
-      ? list(input.sourceReferenceIds)
-      : brief.sourceReferenceIds,
-    sourceEvidenceIds: input.sourceEvidenceIds
-      ? list(input.sourceEvidenceIds)
-      : brief.sourceEvidenceIds,
-    approvedBrandDirection: null,
-    approval: { status: "pending" as const, actorId: null, approvedAt: null },
-    unresolvedItems: [
-      ...brief.unresolvedItems,
-      input.reason ?? "Material source evidence changed; merchant review is required.",
-    ],
+    supersededByRevision: replacementRevision,
+    supersessionReason: brief.supersessionReason ?? reason,
   };
-  return storefrontDesignBriefContractSchema.parse({
-    ...candidate,
-    fingerprint: fingerprintBrief(candidate),
+  const superseded = storefrontDesignBriefContractSchema.parse({
+    ...supersededCandidate,
+    fingerprint: fingerprintBrief(supersededCandidate),
   });
+  const replacementCandidate = {
+    ...brief,
+    revision: replacementRevision,
+    status: "needsReview" as const,
+    updatedAt: timestamp,
+    sourceReferenceIds,
+    sourceEvidenceIds,
+    approvedBrandDirection: null,
+    brandProposal:
+      input.brandProposal === undefined
+        ? null
+        : input.brandProposal
+          ? brandReconstructionProposalSchema.parse(input.brandProposal)
+          : null,
+    approvedReusableAssetIds: input.approvedReusableAssetIds
+      ? list(input.approvedReusableAssetIds)
+      : [],
+    approval: { status: "pending" as const, actorId: null, approvedAt: null },
+    unresolvedItems: uniqueList([
+      ...list(input.unresolvedItems),
+      ...reconciliationQuestions(input.materialEvidence),
+    ]),
+    materialUnresolvedBlockers: list(input.materialUnresolvedBlockers),
+    evidenceFingerprint: replacementEvidenceFingerprint,
+    approvedEvidenceFingerprint: null,
+    supersedesRevision: brief.revision,
+    supersededByRevision: null,
+    supersessionReason: reason,
+  };
+  const replacement = storefrontDesignBriefContractSchema.parse({
+    ...replacementCandidate,
+    fingerprint: fingerprintBrief(replacementCandidate),
+  });
+  return { superseded, replacement };
 }
 
 export function requireApprovedCurrentStorefrontDesignBrief(
@@ -520,8 +926,8 @@ export function requireApprovedCurrentStorefrontDesignBrief(
     );
   }
   if (
-    currentEvidenceFingerprint !== undefined &&
-    currentEvidenceFingerprint !== brief.fingerprint
+    currentEvidenceFingerprint === undefined ||
+    currentEvidenceFingerprint !== brief.approvedEvidenceFingerprint
   ) {
     throw new SourceDiscoveryApplicationError(
       "stale-brief-approval",
