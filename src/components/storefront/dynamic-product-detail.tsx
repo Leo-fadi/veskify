@@ -61,7 +61,15 @@ export type ProductPrimaryActionPresentation = z.infer<
 export type ProductOptionIntentCallbacks = {
   onSelectOption: (groupId: string, valueId: string) => void;
   onTextOptionChange: (groupId: string, enteredValue: string) => void;
+  onClearOption?: (groupId: string) => void;
+  onResetOptions?: () => void;
 };
+
+export const productTextEntryDraftSchema = z
+  .object({ groupId: idSchema, value: z.string().max(500) })
+  .strict();
+
+export type ProductTextEntryDraft = z.infer<typeof productTextEntryDraftSchema>;
 
 export const productResolutionLifecyclePresentationSchema = z
   .object({
@@ -114,6 +122,7 @@ export type DynamicProductDetailRendererInput = ProductOptionIntentCallbacks & {
   primaryAction: ProductPrimaryActionPresentation;
   resolutionLifecycle?: ProductResolutionLifecyclePresentation;
   resolvedOptions: DynamicProductOptionPresentation;
+  textEntryDrafts?: readonly ProductTextEntryDraft[];
   resolveAssetUrl: (assetId: string) => string;
   onPrimaryAction: ProductPrimaryActionIntentCallback;
 };
@@ -136,6 +145,7 @@ type PreparedDynamicProductDetail = ProductOptionIntentCallbacks & {
   primaryAction: ProductPrimaryActionPresentation;
   resolutionLifecycle: ProductResolutionLifecyclePresentation;
   resolvedOptions: DynamicProductOptionPresentation;
+  textEntryDrafts: readonly ProductTextEntryDraft[];
   assetFor: (assetId: string, alt?: LocalizedText) => ResolvedAsset;
   onPrimaryAction: ProductPrimaryActionIntentCallback;
 };
@@ -319,6 +329,23 @@ function prepareDynamicProductDetail(
   });
 
   const resolvedOptions = validateResolvedOptionPresentation(input.resolvedOptions, product);
+  const textEntryDrafts = z.array(productTextEntryDraftSchema).parse(
+    input.textEntryDrafts ??
+      resolvedOptions.textEntryValues.map((entry) => ({
+        groupId: entry.groupId,
+        value: entry.value,
+      })),
+  );
+  if (new Set(textEntryDrafts.map((draft) => draft.groupId)).size !== textEntryDrafts.length) {
+    throw new Error("PDP text-entry drafts must contain at most one value per group.");
+  }
+  textEntryDrafts.forEach((draft) => {
+    if (
+      product.optionGroups.find((group) => group.id === draft.groupId)?.presentation !== "textInput"
+    ) {
+      throw new Error("PDP text-entry drafts must reference canonical text-option groups.");
+    }
+  });
   const primaryAction = productPrimaryActionPresentationSchema.parse(input.primaryAction);
   if (
     primaryAction.enabled &&
@@ -370,8 +397,11 @@ function prepareDynamicProductDetail(
       input.resolutionLifecycle ?? { state: "ready", warnings: [] },
     ),
     resolvedOptions,
+    textEntryDrafts,
     onSelectOption: input.onSelectOption,
     onTextOptionChange: input.onTextOptionChange,
+    onClearOption: input.onClearOption,
+    onResetOptions: input.onResetOptions,
     onPrimaryAction: input.onPrimaryAction,
     assetFor(assetId, alt) {
       const metadata = assetMetadata.get(assetId);
@@ -456,7 +486,11 @@ export function DynamicProductGallery({
   layout: DynamicProductDetailProps["galleryLayout"];
   locale: LocaleContext;
 }) {
-  const [selectedAssetId, setSelectedAssetId] = useState(media[0]?.assetId);
+  const mediaFingerprint = canonicalValueString(media.map((item) => item.assetId));
+  const [selection, setSelection] = useState(() => ({
+    mediaFingerprint,
+    assetId: media[0]?.assetId,
+  }));
   if (media.length === 0) {
     return (
       <section
@@ -469,6 +503,11 @@ export function DynamicProductGallery({
       </section>
     );
   }
+  const selectedAssetId =
+    selection.mediaFingerprint === mediaFingerprint &&
+    media.some((item) => item.assetId === selection.assetId)
+      ? selection.assetId
+      : media[0].assetId;
   const selected = media.find((item) => item.assetId === selectedAssetId) ?? media[0];
   const resolved = assetFor(selected.assetId, mediaAlt(product, selected.assetId));
   return (
@@ -498,7 +537,7 @@ export function DynamicProductGallery({
                 aria-pressed={mediaItem.assetId === selected.assetId}
                 data-asset-provenance={item.provenance.kind}
                 key={mediaItem.assetId}
-                onClick={() => setSelectedAssetId(mediaItem.assetId)}
+                onClick={() => setSelection({ mediaFingerprint, assetId: mediaItem.assetId })}
                 type="button"
               >
                 <ProductAssetImage asset={item.asset} locale={locale} />
@@ -670,6 +709,7 @@ function EnumeratedOptionGroup({
   assetFor,
   resolvedOptions,
   onSelectOption,
+  onClearOption,
   interactionDisabled,
 }: {
   group: ProductPresentationContext["optionGroups"][number];
@@ -678,6 +718,7 @@ function EnumeratedOptionGroup({
   assetFor: PreparedDynamicProductDetail["assetFor"];
   resolvedOptions: DynamicProductOptionPresentation;
   onSelectOption: ProductOptionIntentCallbacks["onSelectOption"];
+  onClearOption: ProductOptionIntentCallbacks["onClearOption"];
   interactionDisabled: boolean;
 }) {
   const describedById = useId();
@@ -706,6 +747,10 @@ function EnumeratedOptionGroup({
           id={`${describedById}-select`}
           onChange={(event) => {
             const value = group.values.find((candidate) => candidate.id === event.target.value);
+            if (!value && !group.required && !interactionDisabled) {
+              onClearOption?.(group.id);
+              return;
+            }
             if (
               value &&
               !resolvedValuePresentation(product, group, value, resolvedOptions, locale).disabled
@@ -840,20 +885,20 @@ function TextOptionGroup({
   locale,
   resolvedOptions,
   onTextOptionChange,
-  interactionDisabled,
+  draftValue,
 }: {
   group: ProductPresentationContext["optionGroups"][number];
   product: ProductPresentationContext;
   locale: LocaleContext;
   resolvedOptions: DynamicProductOptionPresentation;
   onTextOptionChange: ProductOptionIntentCallbacks["onTextOptionChange"];
-  interactionDisabled: boolean;
+  draftValue: string | undefined;
 }) {
   const inputId = useId();
   const constraintsId = `${inputId}-constraints`;
   const dependencyId = `${inputId}-dependency`;
   const selection = selectedTextState(resolvedOptions, group.id);
-  const enteredText = selection?.value ?? "";
+  const enteredText = draftValue ?? selection?.value ?? "";
   const constraints = group.textEntryConstraints!;
   const blockedReason = dependencyMessage(product, resolvedOptions, group.id, locale);
   const policyGuidance: Record<typeof constraints.characterPolicy, { en: string; fi: string }> = {
@@ -894,12 +939,12 @@ function TextOptionGroup({
         aria-describedby={[constraintsId, blockedReason ? dependencyId : undefined]
           .filter(Boolean)
           .join(" ")}
-        disabled={interactionDisabled || blockedReason !== undefined}
+        disabled={blockedReason !== undefined}
         id={inputId}
         maxLength={constraints.maxLength}
         minLength={constraints.minLength}
         onChange={(event) => {
-          if (!interactionDisabled && !blockedReason) {
+          if (!blockedReason) {
             onTextOptionChange(group.id, event.target.value);
           }
         }}
@@ -921,7 +966,10 @@ export function DynamicProductOptionGroups({
   resolvedOptions,
   onSelectOption,
   onTextOptionChange,
+  onClearOption,
+  onResetOptions,
   interactionDisabled,
+  textEntryDrafts,
 }: {
   product: ProductPresentationContext;
   locale: LocaleContext;
@@ -929,6 +977,7 @@ export function DynamicProductOptionGroups({
   assetFor: PreparedDynamicProductDetail["assetFor"];
   resolvedOptions: DynamicProductOptionPresentation;
   interactionDisabled: boolean;
+  textEntryDrafts: readonly ProductTextEntryDraft[];
 } & ProductOptionIntentCallbacks) {
   const headingId = useId();
   if (product.optionGroups.length === 0) return null;
@@ -944,8 +993,8 @@ export function DynamicProductOptionGroups({
       {product.optionGroups.map((group) =>
         group.presentation === "textInput" ? (
           <TextOptionGroup
+            draftValue={textEntryDrafts.find((draft) => draft.groupId === group.id)?.value}
             group={group}
-            interactionDisabled={interactionDisabled}
             key={group.id}
             locale={locale}
             onTextOptionChange={onTextOptionChange}
@@ -959,12 +1008,20 @@ export function DynamicProductOptionGroups({
             interactionDisabled={interactionDisabled}
             key={group.id}
             locale={locale}
+            onClearOption={onClearOption}
             onSelectOption={onSelectOption}
             product={product}
             resolvedOptions={resolvedOptions}
           />
         ),
       )}
+      {onResetOptions &&
+      (resolvedOptions.selectedValues.length > 0 ||
+        textEntryDrafts.some((draft) => draft.value.length > 0)) ? (
+        <button className={styles.resetOptions} onClick={onResetOptions} type="button">
+          {fallbackLabel("Reset options", "Tyhjennä valinnat", locale)}
+        </button>
+      ) : null}
     </section>
   );
 }
@@ -1231,10 +1288,13 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
             density={input.props.optionDensity}
             interactionDisabled={input.resolutionLifecycle.state === "pending"}
             locale={locale}
+            onClearOption={input.onClearOption}
+            onResetOptions={input.onResetOptions}
             onSelectOption={input.onSelectOption}
             onTextOptionChange={input.onTextOptionChange}
             product={input.product}
             resolvedOptions={input.resolvedOptions}
+            textEntryDrafts={input.textEntryDrafts}
           />
           <DynamicProductPrimaryAction
             label={input.content.primaryActionLabel}

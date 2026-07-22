@@ -251,6 +251,7 @@
 }
 
 .optionButton,
+.resetOptions,
 .primaryAction button {
   min-height: 2.75rem;
   border: 1px solid var(--brand-color-border);
@@ -260,6 +261,10 @@
   padding: 0.65rem 0.9rem;
   font: inherit;
   font-weight: 700;
+}
+
+.resetOptions {
+  margin-top: 1rem;
 }
 
 .optionButton {

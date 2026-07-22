@@ -459,6 +459,62 @@ describe("P6-02 dynamic product-detail component family", () => {
     expect(screen.queryByText("€399")).not.toBeInTheDocument();
   });
 
+  it("selects the first canonical media item whenever the resolved media order changes", () => {
+    const input = rendererInput(ringProduct);
+    const { rerender } = render(renderDynamicProductDetail(input));
+    expect(document.querySelector("figure[data-asset-id]")).toHaveAttribute(
+      "data-asset-id",
+      "asset_ring_main",
+    );
+
+    input.resolvedOptions = {
+      ...input.resolvedOptions,
+      selectedMediaReferences: [ringProduct.media[1], ringProduct.media[0]],
+    };
+    rerender(renderDynamicProductDetail(input));
+    expect(document.querySelector("figure[data-asset-id]")).toHaveAttribute(
+      "data-asset-id",
+      "asset_ring_side",
+    );
+  });
+
+  it("preserves a chosen thumbnail only while the resolved media fingerprint is unchanged", async () => {
+    const input = rendererInput(ringProduct);
+    const { rerender } = render(renderDynamicProductDetail(input));
+    await userEvent.click(screen.getByRole("button", { name: "View product image 2" }));
+    expect(document.querySelector("figure[data-asset-id]")).toHaveAttribute(
+      "data-asset-id",
+      "asset_ring_side",
+    );
+
+    rerender(
+      renderDynamicProductDetail({
+        ...input,
+        resolutionLifecycle: { state: "ready", warnings: [] },
+      }),
+    );
+    expect(document.querySelector("figure[data-asset-id]")).toHaveAttribute(
+      "data-asset-id",
+      "asset_ring_side",
+    );
+  });
+
+  it("falls back to the new first media item when the selected thumbnail is removed", async () => {
+    const input = rendererInput(ringProduct);
+    const { rerender } = render(renderDynamicProductDetail(input));
+    await userEvent.click(screen.getByRole("button", { name: "View product image 2" }));
+
+    input.resolvedOptions = {
+      ...input.resolvedOptions,
+      selectedMediaReferences: [ringProduct.media[0]],
+    };
+    rerender(renderDynamicProductDetail(input));
+    expect(document.querySelector("figure[data-asset-id]")).toHaveAttribute(
+      "data-asset-id",
+      "asset_ring_main",
+    );
+  });
+
   it("keeps product identity, SKU and all commerce truth outside editable fields", () => {
     const editablePaths = dynamicProductDetailDefinition.editablePresentationFields.map(
       (field) => field.path,
