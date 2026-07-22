@@ -4,26 +4,24 @@ import HomePage from "@/app/page";
 import { AURUM_NORDIC_PROJECT_ID } from "@/data/seed/identifiers";
 
 describe("application shell", () => {
-  it("renders the accessible Veskify launchpad with canonical working destinations", () => {
+  it("renders the merchant Vesko entry surface with canonical working destinations", () => {
     render(<HomePage />);
 
     expect(screen.getByRole("main")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { level: 1, name: /Veskify storefront design demo/i }),
+      screen.getByRole("heading", { level: 1, name: /Shape a storefront/i }),
     ).toBeInTheDocument();
 
     const setup = screen.getByRole("link", { name: "Start storefront setup" });
-    const editor = screen.getByRole("link", { name: "Open visual editor" });
-    const preview = screen.getByRole("link", { name: "View storefront preview" });
-    const puckProof = screen.getByRole("link", { name: "Open isolated Puck proof" });
+    const editor = screen.getByRole("link", { name: "Continue editing storefront" });
+    const preview = screen.getByRole("link", { name: "Preview storefront" });
 
     expect(setup).toHaveAttribute("href", "/projects/new");
     expect(editor).toHaveAttribute("href", `/projects/${AURUM_NORDIC_PROJECT_ID}/editor`);
     expect(preview).toHaveAttribute("href", `/projects/${AURUM_NORDIC_PROJECT_ID}`);
-    expect(puckProof).toHaveAttribute("href", "/puck-proof");
-    expect([setup, editor, preview, puckProof].every((link) => link.tagName === "A")).toBe(true);
+    expect([setup, editor, preview].every((link) => link.tagName === "A")).toBe(true);
     expect(
-      screen.queryByText(/Batch 1|stops before onboarding|editor is deferred/i),
+      screen.queryByText(/Veskify|Puck|Developer tools|Open visual editor|Controlled demo/i),
     ).not.toBeInTheDocument();
     expect(screen.queryAllByRole("button")).toHaveLength(0);
   });

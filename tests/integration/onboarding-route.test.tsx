@@ -247,6 +247,12 @@ describe("guided onboarding route", () => {
     await user.click(screen.getByRole("button", { name: "Saving…" }));
     expect(persist).toHaveBeenCalledTimes(1);
     expect(routerPush).not.toHaveBeenCalled();
+    const globalHome = within(
+      screen.getByRole("navigation", { name: "Global navigation" }),
+    ).getByRole("link", { name: "Vesko home" });
+    expect(globalHome).toHaveAttribute("aria-disabled", "true");
+    await user.click(globalHome);
+    expect(routerPush).not.toHaveBeenCalled();
     releaseSave();
     await waitFor(() => expect(routerPush).toHaveBeenCalledOnce());
   });

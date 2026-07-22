@@ -1001,6 +1001,13 @@ The approved product direction is one native Vesko module, not a collection of d
 
 - Status text and button hierarchy must make these differences obvious to a first-time merchant.
 
+## 14.4 DS-01 foundation
+The DS-01 implementation provides the shared Vesko UI layer and the first Storefront Studio shell
+proof. The normal merchant entry route and onboarding/editor workspace use shared primitives for
+navigation, cards, actions, notices and status presentation. Existing canonical onboarding, draft,
+published, save, publish, history, AI proposal and Puck boundaries remain authoritative; the UI layer
+does not create a second state or persistence path.
+
 # 15. Data model and contracts
 ## 15.1 Core entities
 | **Entity**                 | **Purpose**                                                                                                                                |

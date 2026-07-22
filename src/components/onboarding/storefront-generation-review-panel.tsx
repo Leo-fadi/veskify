@@ -156,7 +156,7 @@ export function StorefrontGenerationReviewPanel({
   return (
     <section className={styles.panel} aria-busy={busy} aria-labelledby="generation-review-title">
       <header className={styles.header}>
-        <p className={styles.eyebrow}>Veskify</p>
+        <p className={styles.eyebrow}>Vesko Storefront Studio</p>
         <h2 id="generation-review-title">{canonicalReview.title[locale]}</h2>
         <p className={styles.summary}>{canonicalReview.summary[locale]}</p>
       </header>

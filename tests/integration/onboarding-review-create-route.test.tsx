@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OnboardingWizard } from "@/app/projects/new/onboarding-wizard";
@@ -259,22 +259,30 @@ describe("O-09 onboarding review and project creation route", () => {
     const confirm = await screen.findByRole("button", { name: "Create storefront project" });
     const saveExit = screen.getByRole("button", { name: "Save & exit" });
     const dashboard = screen.getByRole("link", { name: "Back to dashboard" });
+    const globalHome = within(
+      screen.getByRole("navigation", { name: "Global navigation" }),
+    ).getByRole("link", { name: "Vesko home" });
     fireEvent.click(confirm);
     fireEvent.click(saveExit);
     dashboard.focus();
     await user.keyboard("{Enter}");
+    fireEvent.click(globalHome);
 
     expect(saveExit).toBeDisabled();
     expect(dashboard).toHaveAttribute("aria-disabled", "true");
+    expect(globalHome).toHaveAttribute("aria-disabled", "true");
     expect(routerPush).not.toHaveBeenCalled();
 
     rejectCreation(new Error("creation failed"));
     expect(await screen.findByRole("alert")).toBeVisible();
     expect(saveExit).toBeEnabled();
-    expect(dashboard).toHaveAttribute("aria-disabled", "false");
+    expect(dashboard).not.toHaveAttribute("aria-disabled", "true");
+    expect(globalHome).not.toHaveAttribute("aria-disabled", "true");
+    expect(dashboard).toHaveAttribute("href", "/");
+    expect(globalHome).toHaveAttribute("href", "/");
     expect(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY)).not.toBeNull();
 
-    await user.click(dashboard);
+    await user.click(globalHome);
     expect(routerPush).toHaveBeenCalledTimes(1);
     expect(routerPush).toHaveBeenCalledWith("/");
   });

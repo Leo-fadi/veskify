@@ -1,8 +1,8 @@
 .editor {
-  min-height: 100vh;
-  background: #eef0f3;
+  min-width: 0;
+  background: var(--vesko-app-canvas);
   color: var(--brand-color-text);
-  font-family: var(--brand-font-body);
+  font-family: var(--vesko-app-font);
 }
 
 .topbar {
@@ -88,10 +88,10 @@
 .sectionActions button {
   min-height: 2.75rem;
   padding: 0.55rem 0.85rem;
-  border: 1px solid #56616d;
-  border-radius: 0.45rem;
-  background: white;
-  color: #26313c;
+  border: 1px solid var(--vesko-app-border);
+  border-radius: 0.5rem;
+  background: var(--vesko-app-surface);
+  color: var(--vesko-green-800);
   font: inherit;
   font-weight: 700;
 }
@@ -104,7 +104,7 @@
 
 .historyActions button:focus-visible,
 .sectionActions button:focus-visible {
-  outline: 3px solid #d4a72c;
+  outline: 3px solid var(--vesko-green-600);
   outline-offset: 2px;
 }
 

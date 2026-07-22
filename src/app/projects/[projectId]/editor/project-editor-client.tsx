@@ -38,6 +38,7 @@ import {
   type ProjectRepository,
 } from "@/services/storage";
 import { createBrowserProposalAnalyticsSink } from "@/services/analytics";
+import { AppShell, Button, StatusPill } from "@/components/ui";
 import styles from "./project-editor.module.css";
 import { DesignAgentPanel } from "./design-agent-panel";
 import {
@@ -84,7 +85,7 @@ function StatusPanel({
   return (
     <main className={styles.state}>
       <section aria-live="polite" className={styles.statePanel}>
-        <p className={styles.eyebrow}>Visual editor</p>
+        <p className={styles.eyebrow}>Storefront Studio</p>
         <h1>{title}</h1>
         <p>{message}</p>
         {retry ? (
@@ -92,7 +93,7 @@ function StatusPanel({
             Try again
           </button>
         ) : null}
-        <Link href="/">Return to Veskify home</Link>
+        <Link href="/">Return to Vesko home</Link>
       </section>
     </main>
   );
@@ -437,6 +438,30 @@ export function ProjectEditorClient({
   const canUndoStorefront = agent.canUndoStorefront && pageEditsAfterStorefront === 0;
   const canUndo = canUndoStorefront || currentPageCanUndo;
   const canRedo = agent.canRedoStorefront || (editorHistory?.canRedo(page.id) ?? false);
+  const status =
+    saveState.status === "saving"
+      ? "saving"
+      : hasUnsavedChanges
+        ? "unsaved"
+        : draftDiffers(state.draft, state.published)
+          ? "draft-different"
+          : "saved";
+  const statusLabel =
+    locale === "fi"
+      ? status === "saving"
+        ? "Tallennetaan"
+        : status === "unsaved"
+          ? "Tallentamattomia muutoksia"
+          : status === "draft-different"
+            ? "Luonnos eroaa julkaistusta"
+            : "Tallennettu"
+      : status === "saving"
+        ? "Saving draft"
+        : status === "unsaved"
+          ? "Unsaved changes"
+          : status === "draft-different"
+            ? "Draft differs from published"
+            : "Saved";
 
   const remountPage = (pageId: string) => {
     setResetKeys((current) => ({
@@ -738,226 +763,224 @@ export function ProjectEditorClient({
       lang={locale}
       style={style}
     >
-      <header className={styles.topbar}>
-        <nav aria-label="Editor navigation" className={styles.navigation}>
-          <Link href="/">Veskify home</Link>
-          <span aria-hidden="true">/</span>
-          <strong>{state.aggregate.project.name}</strong>
-        </nav>
-        <div className={styles.currentPage}>
-          <span>Current page</span>
-          <h1>{title}</h1>
-        </div>
-        <div className={styles.draftActions}>
-          <div aria-label="Draft status" className={styles.draftStatus} role="status">
-            <strong>{hasUnsavedChanges ? "Unsaved changes" : "No unsaved changes"}</strong>
-            <span>
-              {draftDiffers(state.draft, state.published)
-                ? "The stored draft differs from the published storefront."
-                : "Changes stay in this editor session until saved."}
-            </span>
-          </div>
-          <div aria-label="Edit history" className={styles.historyActions}>
-            <button
-              data-editor-history-action="undo"
-              disabled={!canUndo || mutationsBlocked}
-              onClick={undoEditor}
-              title="Undo (Ctrl or Command + Z)"
-              type="button"
-            >
-              Undo
-            </button>
-            <button
-              data-editor-history-action="redo"
-              disabled={!canRedo || mutationsBlocked}
-              onClick={redoEditor}
-              title="Redo (Ctrl or Command + Shift + Z)"
-              type="button"
-            >
-              Redo
-            </button>
-          </div>
-          <button
-            className={styles.saveDraftButton}
-            disabled={saveDisabled}
-            onClick={() => void saveDraft()}
-            type="button"
-          >
-            {saveState.status === "saving" ? "Saving draft…" : "Save draft"}
-          </button>
-          {hasUnsavedChanges ? (
-            <span aria-disabled="true" className={styles.publishAction}>
-              {locale === "fi" ? "Julkaise muutokset" : "Publish changes"}
-            </span>
-          ) : (
-            <Link className={styles.publishAction} href={`/projects/${projectId}/publish`}>
-              {locale === "fi" ? "Julkaise muutokset" : "Publish changes"}
-            </Link>
-          )}
-          <div aria-live="polite" aria-atomic="true" className={styles.saveStatus}>
-            {saveState.status === "saving" ? (
-              <p role="status">Saving your draft… Please wait before making more changes.</p>
-            ) : null}
-            {saveState.status === "success" ? <p role="status">{saveState.message}</p> : null}
-            {saveState.status === "validation" ||
-            saveState.status === "storage" ||
-            saveState.status === "stale" ? (
-              <p role="alert">{saveState.message}</p>
-            ) : null}
-            {hasUnsavedChanges && !completeDraftIsValid ? (
-              <p role="alert">Some changes need attention before this draft can be saved.</p>
-            ) : null}
-          </div>
-          <p aria-live="polite" aria-atomic="true" className={styles.historyStatus} role="status">
-            {historyStatus}
-          </p>
-        </div>
-      </header>
-      <div className={styles.workspace}>
-        <aside aria-label="Editor controls" className={styles.sidebar}>
-          <section>
-            <label htmlFor="editor-page">Storefront page</label>
-            <select
-              disabled={saving}
-              id="editor-page"
-              onChange={(event) => selectPage(event.target.value)}
-              value={page.id}
-            >
-              {state.pages.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.type === "home"
-                    ? "Homepage"
-                    : resolveLocalizedText(
-                        item.title,
-                        locale,
-                        state.aggregate.project.primaryLocale,
-                      )}
-                </option>
-              ))}
-            </select>
-            <p>Homepage, collection and product pages use their own approved sections.</p>
-          </section>
-          <fieldset>
-            <legend>Storefront language</legend>
-            {state.aggregate.project.enabledLocales.map((enabledLocale) => (
-              <label key={enabledLocale}>
-                <input
-                  checked={locale === enabledLocale}
-                  name="editor-locale"
-                  onChange={() => {
-                    if (enabledLocale !== locale) agent.closeForLocaleChange();
-                    setActiveLocale(enabledLocale);
-                  }}
-                  type="radio"
-                  value={enabledLocale}
-                />
-                <span>{enabledLocale === "en" ? "English" : "Suomi"}</span>
-              </label>
-            ))}
-          </fieldset>
-          <section aria-label="Selected section actions" className={styles.sectionActions}>
-            <h2>Selected section</h2>
-            {selectedSection ? (
-              <>
-                <p>
-                  <strong>{merchantEditorSectionLabel(page, selectedSection, locale)}</strong>
-                  <span>{selectedSection.visible ? "Visible" : "Hidden"}</span>
-                </p>
-                <div>
-                  <button
-                    disabled={!canDuplicateSection(selectedSection) || mutationsBlocked}
-                    onClick={duplicateSelectedSection}
-                    type="button"
-                  >
-                    Duplicate
-                  </button>
-                  <button
-                    disabled={!canToggleSectionVisibility(selectedSection) || mutationsBlocked}
-                    onClick={toggleSelectedSection}
-                    type="button"
-                  >
-                    {selectedSection.visible ? "Hide" : "Show"}
-                  </button>
-                </div>
-                {!canDuplicateSection(selectedSection) ||
-                !canToggleSectionVisibility(selectedSection) ? (
-                  <p>This required section must remain visible and can only appear once.</p>
-                ) : null}
-              </>
-            ) : (
-              <p>Select a section on the canvas to duplicate, hide or show it.</p>
-            )}
-          </section>
-          <Link className={styles.previewLink} href={previewHref}>
-            View selected page
-          </Link>
-          <button
-            className={styles.discardButton}
-            disabled={!currentPageHasUnsavedChanges || saving}
-            onClick={discardChanges}
-            type="button"
-          >
-            Discard changes
-          </button>
-          <p className={styles.boundaryNote}>
-            {hasUnsavedChanges
-              ? locale === "fi"
-                ? "Tallenna muutokset luonnokseen ennen julkaisemista. Julkaisun tarkistus käyttää vain viimeksi tallennettua luonnosta."
-                : "Save these changes to the draft before publishing. Publish review uses only the last saved draft."
-              : locale === "fi"
-                ? "Luonnoksen tallentaminen ei julkaise muutoksia. Tarkista ja vahvista julkaisu erikseen."
-                : "Saving a draft does not publish it. Review and confirm publishing separately."}
-          </p>
-          {validationMessage ? (
-            <p className={styles.validationMessage} role="alert">
-              {validationMessage}
-            </p>
-          ) : null}
-        </aside>
-        <main className={styles.canvas}>
-          {showingProposal ? (
-            <div className={styles.proposalPreviewLabel} role="status">
-              Proposal preview — your current page is unchanged
+      <AppShell
+        activeModule="editor"
+        headerActions={
+          <div className={styles.draftActions}>
+            <div aria-label="Draft status" className={styles.draftStatus} role="status">
+              <StatusPill label={statusLabel} live status={status} />
+              <span>{hasUnsavedChanges ? "Unsaved changes" : "No unsaved changes"}</span>
+              <span>
+                {draftDiffers(state.draft, state.published)
+                  ? "The stored draft differs from the published storefront."
+                  : "Changes stay in this editor session until saved."}
+              </span>
             </div>
-          ) : null}
-          <VeskifyPuckCanvas
-            brandSystem={displayedBrandSystem}
-            context={context}
-            onPageChange={changePage}
-            onSelectedSectionChange={(sectionId) => {
-              const nextSectionId =
-                sectionId && page.sections.some((section) => section.id === sectionId)
-                  ? sectionId
-                  : undefined;
-              if (nextSectionId === selectedSectionId) return;
-              agent.closeForSelectionChange(nextSectionId);
-              setSelectedSectionId(nextSectionId);
-            }}
-            onValidationError={(message) => {
-              if (!savePending.current) setValidationMessage(message);
-            }}
-            page={canvasPage}
-            readOnly={agent.blocksSave || saving}
-            readOnlyLabel={showingProposal ? "Proposal preview canvas" : "Visual editor canvas"}
-            resetKey={resetKeys[canvasPage.id] ?? 0}
-            sessionKey={
-              agent.generatedProposal?.proposal.id ??
-              agent.generatedStorefrontProposal?.id ??
-              "active"
+            <div aria-label="Edit history" className={styles.historyActions}>
+              <Button
+                data-editor-history-action="undo"
+                disabled={!canUndo || mutationsBlocked}
+                onClick={undoEditor}
+                title="Undo (Ctrl or Command + Z)"
+              >
+                Undo
+              </Button>
+              <Button
+                data-editor-history-action="redo"
+                disabled={!canRedo || mutationsBlocked}
+                onClick={redoEditor}
+                title="Redo (Ctrl or Command + Shift + Z)"
+              >
+                Redo
+              </Button>
+            </div>
+            <Button href={previewHref} variant="quiet">
+              {locale === "fi" ? "Esikatsele kauppaa" : "Preview storefront"}
+            </Button>
+            <Button disabled={saveDisabled} onClick={() => void saveDraft()}>
+              {saveState.status === "saving" ? "Saving draft…" : "Save draft"}
+            </Button>
+            {hasUnsavedChanges ? (
+              <span aria-disabled="true" className={styles.publishAction}>
+                {locale === "fi" ? "Julkaise muutokset" : "Publish changes"}
+              </span>
+            ) : (
+              <Button href={`/projects/${projectId}/publish`} variant="secondary">
+                {locale === "fi" ? "Julkaise muutokset" : "Publish changes"}
+              </Button>
+            )}
+            <div aria-live="polite" aria-atomic="true" className={styles.saveStatus}>
+              {saveState.status === "saving" ? (
+                <p role="status">Saving your draft… Please wait before making more changes.</p>
+              ) : null}
+              {saveState.status === "success" ? <p role="status">{saveState.message}</p> : null}
+              {saveState.status === "validation" ||
+              saveState.status === "storage" ||
+              saveState.status === "stale" ? (
+                <p role="alert">{saveState.message}</p>
+              ) : null}
+              {hasUnsavedChanges && !completeDraftIsValid ? (
+                <p role="alert">Some changes need attention before this draft can be saved.</p>
+              ) : null}
+            </div>
+            <p aria-live="polite" aria-atomic="true" className={styles.historyStatus} role="status">
+              {historyStatus}
+            </p>
+          </div>
+        }
+        pageLabel={locale === "fi" ? "Nykyinen sivu" : "Current page"}
+        pageTitle={title}
+        projectId={projectId}
+        projectName={state.aggregate.project.name}
+      >
+        <div className={styles.workspace}>
+          <aside aria-label="Editor controls" className={styles.sidebar}>
+            <section>
+              <label htmlFor="editor-page">Storefront page</label>
+              <select
+                disabled={saving}
+                id="editor-page"
+                onChange={(event) => selectPage(event.target.value)}
+                value={page.id}
+              >
+                {state.pages.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.type === "home"
+                      ? "Homepage"
+                      : resolveLocalizedText(
+                          item.title,
+                          locale,
+                          state.aggregate.project.primaryLocale,
+                        )}
+                  </option>
+                ))}
+              </select>
+              <p>Homepage, collection and product pages use their own approved sections.</p>
+            </section>
+            <fieldset>
+              <legend>Storefront language</legend>
+              {state.aggregate.project.enabledLocales.map((enabledLocale) => (
+                <label key={enabledLocale}>
+                  <input
+                    checked={locale === enabledLocale}
+                    name="editor-locale"
+                    onChange={() => {
+                      if (enabledLocale !== locale) agent.closeForLocaleChange();
+                      setActiveLocale(enabledLocale);
+                    }}
+                    type="radio"
+                    value={enabledLocale}
+                  />
+                  <span>{enabledLocale === "en" ? "English" : "Suomi"}</span>
+                </label>
+              ))}
+            </fieldset>
+            <section aria-label="Selected section actions" className={styles.sectionActions}>
+              <h2>Selected section</h2>
+              {selectedSection ? (
+                <>
+                  <p>
+                    <strong>{merchantEditorSectionLabel(page, selectedSection, locale)}</strong>
+                    <span>{selectedSection.visible ? "Visible" : "Hidden"}</span>
+                  </p>
+                  <div>
+                    <button
+                      disabled={!canDuplicateSection(selectedSection) || mutationsBlocked}
+                      onClick={duplicateSelectedSection}
+                      type="button"
+                    >
+                      Duplicate
+                    </button>
+                    <button
+                      disabled={!canToggleSectionVisibility(selectedSection) || mutationsBlocked}
+                      onClick={toggleSelectedSection}
+                      type="button"
+                    >
+                      {selectedSection.visible ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                  {!canDuplicateSection(selectedSection) ||
+                  !canToggleSectionVisibility(selectedSection) ? (
+                    <p>This required section must remain visible and can only appear once.</p>
+                  ) : null}
+                </>
+              ) : (
+                <p>Select a section on the canvas to duplicate, hide or show it.</p>
+              )}
+            </section>
+            <Link className={styles.previewLink} href={previewHref}>
+              View selected page
+            </Link>
+            <button
+              className={styles.discardButton}
+              disabled={!currentPageHasUnsavedChanges || saving}
+              onClick={discardChanges}
+              type="button"
+            >
+              Discard changes
+            </button>
+            <p className={styles.boundaryNote}>
+              {hasUnsavedChanges
+                ? locale === "fi"
+                  ? "Tallenna muutokset luonnokseen ennen julkaisemista. Julkaisun tarkistus käyttää vain viimeksi tallennettua luonnosta."
+                  : "Save these changes to the draft before publishing. Publish review uses only the last saved draft."
+                : locale === "fi"
+                  ? "Luonnoksen tallentaminen ei julkaise muutoksia. Tarkista ja vahvista julkaisu erikseen."
+                  : "Saving a draft does not publish it. Review and confirm publishing separately."}
+            </p>
+            {validationMessage ? (
+              <p className={styles.validationMessage} role="alert">
+                {validationMessage}
+              </p>
+            ) : null}
+          </aside>
+          <main className={styles.canvas}>
+            {showingProposal ? (
+              <div className={styles.proposalPreviewLabel} role="status">
+                Proposal preview — your current page is unchanged
+              </div>
+            ) : null}
+            <VeskifyPuckCanvas
+              brandSystem={displayedBrandSystem}
+              context={context}
+              onPageChange={changePage}
+              onSelectedSectionChange={(sectionId) => {
+                const nextSectionId =
+                  sectionId && page.sections.some((section) => section.id === sectionId)
+                    ? sectionId
+                    : undefined;
+                if (nextSectionId === selectedSectionId) return;
+                agent.closeForSelectionChange(nextSectionId);
+                setSelectedSectionId(nextSectionId);
+              }}
+              onValidationError={(message) => {
+                if (!savePending.current) setValidationMessage(message);
+              }}
+              page={canvasPage}
+              readOnly={agent.blocksSave || saving}
+              readOnlyLabel={showingProposal ? "Proposal preview canvas" : "Visual editor canvas"}
+              resetKey={resetKeys[canvasPage.id] ?? 0}
+              sessionKey={
+                agent.generatedProposal?.proposal.id ??
+                agent.generatedStorefrontProposal?.id ??
+                "active"
+              }
+            />
+          </main>
+          <DesignAgentPanel
+            controller={agent}
+            locale={locale}
+            pageTitle={title}
+            primaryLocale={state.aggregate.project.primaryLocale}
+            selectedSectionLabel={
+              selectedSection
+                ? merchantEditorSectionLabel(page, selectedSection, locale)
+                : undefined
             }
+            storefrontPageCount={activeDraft!.pages.length}
           />
-        </main>
-        <DesignAgentPanel
-          controller={agent}
-          locale={locale}
-          pageTitle={title}
-          primaryLocale={state.aggregate.project.primaryLocale}
-          selectedSectionLabel={
-            selectedSection ? merchantEditorSectionLabel(page, selectedSection, locale) : undefined
-          }
-          storefrontPageCount={activeDraft!.pages.length}
-        />
-      </div>
+        </div>
+      </AppShell>
     </div>
   );
 }
