@@ -155,21 +155,38 @@ export function Tabs({
   items,
   label = "Sections",
 }: {
-  items: ReadonlyArray<{ href: string; id: string; label: string; active?: boolean }>;
+  items: ReadonlyArray<{
+    active?: boolean;
+    disabled?: boolean;
+    href?: string;
+    id: string;
+    label: string;
+  }>;
   label?: string;
 }) {
   return (
     <nav aria-label={label} className={styles.tabs}>
-      {items.map((item) => (
-        <Link
-          aria-current={item.active ? "page" : undefined}
-          className={styles.tab}
-          href={item.href}
-          key={item.id}
-        >
-          {item.label}
-        </Link>
-      ))}
+      {items.map((item) =>
+        item.disabled ? (
+          <span
+            aria-disabled="true"
+            className={join(styles.tab, styles.tabDisabled)}
+            key={item.id}
+            role="link"
+          >
+            {item.label}
+          </span>
+        ) : (
+          <Link
+            aria-current={item.active ? "page" : undefined}
+            className={styles.tab}
+            href={item.href ?? "#"}
+            key={item.id}
+          >
+            {item.label}
+          </Link>
+        ),
+      )}
     </nav>
   );
 }
@@ -238,6 +255,8 @@ export function AppShell({
   pageTitle,
   projectId,
   projectName,
+  onHomeNavigate,
+  homeNavigationDisabled = false,
   showModuleNav = Boolean(projectId),
 }: {
   activeModule?: ModuleId;
@@ -249,6 +268,8 @@ export function AppShell({
   pageTitle?: ReactNode;
   projectId?: string;
   projectName?: string;
+  onHomeNavigate?: (event: MouseEvent<HTMLElement>) => void;
+  homeNavigationDisabled?: boolean;
   showModuleNav?: boolean;
 }) {
   const isFinnish = locale === "fi";
@@ -263,7 +284,13 @@ export function AppShell({
   return (
     <div className={styles.shell}>
       <header className={styles.globalBar}>
-        <Link aria-label={labels.home} className={styles.brand} href="/">
+        <Link
+          aria-disabled={homeNavigationDisabled || undefined}
+          aria-label={labels.home}
+          className={styles.brand}
+          href="/"
+          onClick={onHomeNavigate}
+        >
           <Image
             alt="Vesko"
             className={styles.brandMark}
@@ -275,14 +302,25 @@ export function AppShell({
           <span className={styles.brandName}>Vesko</span>
         </Link>
         <nav aria-label="Global navigation" className={styles.platformNav}>
-          <Link aria-current={!projectId ? "page" : undefined} href="/">
+          <Link
+            aria-current={!projectId ? "page" : undefined}
+            aria-disabled={homeNavigationDisabled || undefined}
+            href="/"
+            onClick={onHomeNavigate}
+          >
             {labels.home}
           </Link>
           <Link aria-current={projectId ? "page" : undefined} href={projectPath}>
             {labels.studio}
           </Link>
           <Link href="/projects/new">{labels.projects}</Link>
-          <Link href="/">{labels.account}</Link>
+          <Link
+            aria-disabled={homeNavigationDisabled || undefined}
+            href="/"
+            onClick={onHomeNavigate}
+          >
+            {labels.account}
+          </Link>
         </nav>
       </header>
       <div className={styles.shellBody}>
@@ -300,23 +338,28 @@ export function AppShell({
           </div>
           {headerActions ? <div className={styles.headerActions}>{headerActions}</div> : null}
         </div>
-        {showModuleNav && projectId ? (
+        {showModuleNav ? (
           <Tabs
-            items={moduleItems.map(([id, en, fi]) => ({
-              active: activeModule === id,
-              href:
-                id === "overview"
-                  ? `/projects/${projectId}`
-                  : id === "setup"
-                    ? "/projects/new"
-                    : id === "preview"
+            items={moduleItems
+              .filter(([id]) => projectId || id === "setup")
+              .map(([id, en, fi]) => ({
+                active: activeModule === id,
+                disabled: id === "setup" && Boolean(projectId),
+                href:
+                  id === "setup"
+                    ? projectId
+                      ? undefined
+                      : "/projects/new"
+                    : id === "overview"
                       ? `/projects/${projectId}`
-                      : id === "publishing"
-                        ? `/projects/${projectId}/publish`
-                        : `/projects/${projectId}/${id === "editor" ? "editor" : id}`,
-              id,
-              label: isFinnish ? fi : en,
-            }))}
+                      : id === "preview"
+                        ? `/projects/${projectId}`
+                        : id === "publishing"
+                          ? `/projects/${projectId}/publish`
+                          : `/projects/${projectId}/${id === "editor" ? "editor" : id}`,
+                id,
+                label: isFinnish ? fi : en,
+              }))}
             label={isFinnish ? "Storefront Studio -moduulit" : "Storefront Studio modules"}
           />
         ) : null}

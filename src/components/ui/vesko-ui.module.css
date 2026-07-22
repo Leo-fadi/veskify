@@ -160,12 +160,12 @@
 }
 
 .buttonPrimary {
-  background: var(--vesko-green-600);
+  background: var(--vesko-green-800);
   color: white;
 }
 
 .buttonPrimary:hover:not(:disabled) {
-  background: var(--vesko-green-800);
+  background: var(--vesko-evergreen-950);
 }
 
 .buttonSecondary {
@@ -192,6 +192,11 @@
 
 .button:disabled,
 .button[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.tabDisabled {
   cursor: not-allowed;
   opacity: 0.52;
 }

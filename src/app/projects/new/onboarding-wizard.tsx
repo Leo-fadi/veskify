@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import {
   createApprovedStorefrontProject,
   type ApprovedStorefrontProjectResult,
@@ -1116,6 +1116,12 @@ export function OnboardingWizard({
     }
   };
 
+  const handleDashboardNavigation = (event: MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    if (exitUnavailable || creationPendingRef.current) return;
+    void exitToDashboard("dashboard");
+  };
+
   return (
     <main className={styles.page}>
       <AppShell
@@ -1146,11 +1152,7 @@ export function OnboardingWizard({
             <Button
               disabled={exitUnavailable}
               href="/"
-              onClick={(event) => {
-                event.preventDefault();
-                if (exitUnavailable || creationPendingRef.current) return;
-                void exitToDashboard("dashboard");
-              }}
+              onClick={handleDashboardNavigation}
               variant="secondary"
             >
               {pendingExit === "dashboard" ? text.leaving : text.dashboard}
@@ -1162,7 +1164,10 @@ export function OnboardingWizard({
         }
         locale={locale}
         moduleName={text.context}
-        showModuleNav={false}
+        onHomeNavigate={handleDashboardNavigation}
+        homeNavigationDisabled={exitUnavailable}
+        activeModule="setup"
+        showModuleNav
       >
         <div className={styles.shellBody}>
           {exitError ? (

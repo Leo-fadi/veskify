@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { AppShell, Button, StatusPill } from "@/components/ui";
 
@@ -50,5 +50,38 @@ describe("Vesko UI foundations", () => {
     );
     expect(screen.getAllByRole("link", { name: "Vesko-etusivu" })).not.toHaveLength(0);
     expect(screen.getAllByText("Storefront Studio")).not.toHaveLength(0);
+  });
+
+  it("keeps Setup linked to onboarding only and disables it in project workspaces", () => {
+    const { rerender } = render(
+      <AppShell activeModule="setup" showModuleNav>
+        Onboarding
+      </AppShell>,
+    );
+    expect(screen.getByRole("link", { name: "Setup" })).toHaveAttribute("href", "/projects/new");
+
+    rerender(
+      <AppShell activeModule="editor" projectId="project_aurum_nordic">
+        Workspace
+      </AppShell>,
+    );
+    const setup = screen.getByRole("link", { name: "Setup" });
+    expect(setup).toHaveAttribute("aria-disabled", "true");
+    expect(setup).not.toHaveAttribute("href", "/projects/new");
+    fireEvent.click(setup);
+    expect(window.location.pathname).not.toBe("/projects/new");
+  });
+
+  it("uses the compliant dark green for every primary button", () => {
+    render(
+      <>
+        <Button>Primary button</Button>
+        <Button href="/projects/new">Primary link</Button>
+      </>,
+    );
+    expect(screen.getByRole("button", { name: "Primary button" }).className).toContain(
+      "buttonPrimary",
+    );
+    expect(screen.getByRole("link", { name: "Primary link" }).className).toContain("buttonPrimary");
   });
 });
