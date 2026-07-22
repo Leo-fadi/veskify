@@ -11,7 +11,7 @@ These rules apply to every Codex task and every developer working in the Veskify
 - `docs/VESKIFY_SDD.md` is the authoritative product and architecture baseline.
 - `docs/VESKIFY_SDD_v1.2.docx` is the synchronized human-readable export.
 - ADR-001 through ADR-004 are binding architecture decisions.
-- Read the complete affected SDD sections, requirement IDs and acceptance criteria before changing code.
+- Read the complete affected SDD sections, v1.2 FR/NFR requirement IDs and acceptance criteria before changing code.
 - Material product, architecture, schema, roadmap or integration changes require documentation updates in the same PR.
 - If a task conflicts with the SDD or an ADR, stop and report the conflict. Do not silently redefine the product.
 

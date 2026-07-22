@@ -101,6 +101,46 @@ Owner: Vesko Oy · Product owner: Leo Fadi
 | **SHOULD**   | Expected unless a documented implementation constraint justifies deferral. |
 | **MAY**      | Optional or adapter-specific.                                              |
 
+## v1.2 requirement catalogue
+The following stable v1.2 requirement IDs are binding for implementation tasks.
+They replace the obsolete v1.1 roadmap identifiers for new work while preserving the
+controlled-agent, protected-commerce, reversible-draft and explicit-publishing safety model.
+
+### Functional requirements
+| **ID**     | **Requirement**                                                                                                                                                                                          |
+|------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **FR-101** | Veskify MUST operate as the controlled storefront-design engine for Vesko Storefront Studio while the standalone repository remains only an implementation, validation and demo environment.              |
+| **FR-102** | Veskify MUST preserve product identity and commerce boundaries: no design flow may own or mutate catalogue management, product types, variants, prices, stock, inventory, orders, payments, tax or logistics. |
+| **FR-103** | The primary onboarding path MUST start from an existing public storefront URL, discover reusable source evidence and present it without changing the current draft.                                      |
+| **FR-104** | Source discovery MUST record evidence, provenance, warnings and confidence, and MUST reconcile discovered products, collections and assets against canonical Vesko commerce data before generation.       |
+| **FR-105** | The merchant MUST approve a Storefront Design Brief before initial generation; the brief MUST include business profile, source summary, brand direction, approved assets, page plan, assumptions, warnings and protected commerce source. |
+| **FR-106** | Brand reconstruction MUST work from logo, public-site evidence, product imagery, merchant preferences and industry presets, including exact valid palette instructions when schema and contrast validation pass. |
+| **FR-107** | Asset inventory, selection and reuse MUST preserve asset IDs, role eligibility, responsive crop metadata, provenance and merchant approval; generation MAY be offered only when reusable assets are insufficient or explicitly requested. |
+| **FR-108** | AI design changes MUST use controlled proposals, approved skills, structured operations, target-bound permissions, validation and merchant review before draft mutation.                                  |
+| **FR-109** | The component platform MUST provide reusable ComponentDefinitionV2 families, variants, slots, bindings, page blueprints, migrations and shared editor/preview/published renderers.                       |
+| **FR-110** | Storefront components MUST bind to a canonical read-only Vesko commerce projection and MUST NOT create a competing product, product-type, option, variant or catalogue model.                            |
+| **FR-111** | Dynamic product-detail pages MUST render option groups, dependencies, required states, variant resolution, media, price and availability from canonical product configuration.                            |
+| **FR-112** | Collection-page presentation MUST bind collection headers, filters, product grids, merchandising rows and no-results states to canonical collection/product data without changing membership or commerce truth. |
+| **FR-113** | Whole-storefront design changes MUST coordinate global tokens, navigation, footer and representative pages through one validated proposal and atomic application/undo path.                              |
+| **FR-114** | Generated and edited storefronts MUST meet responsive and accessibility quality requirements across merchant onboarding, editor, proposal review, dynamic PDP, collection and publishing surfaces.        |
+| **FR-115** | Draft, history, Save draft, Publish and Restore MUST remain separate: accepted changes mutate the active draft only, Save persists draft only, Publish requires explicit confirmation and Restore creates a draft. |
+| **FR-116** | Vesko Storefront Studio MUST expose a merchant-facing product shell and language that hides raw JSON, registry IDs, provider payloads, component internals and developer tooling.                        |
+| **FR-117** | Provider failure, validation failure, stale context and demo reset/load flows MUST preserve active draft/history and keep deterministic mock-provider reliability for repeatable tests and demos.         |
+| **FR-118** | Future Vesko adapters and teammate handoff MUST map project, commerce, media, storage, publishing, source discovery, AI provider and observability contracts without redesigning the Veskify engine.     |
+
+### Non-functional requirements
+| **ID**      | **Requirement**                                                                                                                                                                                     |
+|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **NFR-101** | Security and protected commerce data MUST be enforced at every source, provider, operation, binding, storage and publishing boundary; untrusted source/provider content cannot grant permissions.   |
+| **NFR-102** | Merchant-facing flows MUST meet WCAG 2.2 AA expectations for keyboard access, focus visibility, semantics, labels, contrast and dynamic state announcements.                                      |
+| **NFR-103** | Responsive behaviour MUST be validated for primary surfaces at 375, 768, 1024 and 1440 px with no visible clipping, overlap or unusable dynamic controls.                                        |
+| **NFR-104** | Performance-sensitive editor interactions SHOULD feel immediate, while source discovery, resolver calls and provider work run asynchronously with visible progress and bounded failure states.      |
+| **NFR-105** | Reliability and rollback MUST be deterministic: failed, invalid, stale or rejected proposals, saves, publishes and restores preserve the last valid active, saved and published state.             |
+| **NFR-106** | Observability MUST record safe metadata such as request ID, provider, scope, operation count, validation result, latency, failure category, component versions and commerce revision without secrets or full prompts by default. |
+| **NFR-107** | Provider isolation MUST keep provider-specific formats, credentials, errors and retries behind adapters; deterministic fixtures remain the default for local and automated tests.                  |
+| **NFR-108** | Deterministic testing MUST cover schemas, bindings, source evidence, proposals, atomic application, adapter conformance, responsive/accessibility gates and the customer-ready journey.             |
+| **NFR-109** | Maintainability MUST preserve integration boundaries: Puck stays isolated, canonical domain/application modules avoid UI/provider dependencies, and historical documents remain superseded context. |
+
 # Contents
 - 1\. Executive product definition
 
@@ -1150,33 +1190,33 @@ complete: boolean;<br />
 | Adapter conformance | Standalone and Vesko adapters return equivalent canonical contracts for the same fixtures.                                                                |
 
 ## 18.2 Release acceptance criteria
-| **ID**     | **Acceptance criterion**                                                                                                                                                      |
-|------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **AC-101** | A merchant can enter an existing public storefront URL and receive a source-discovery summary without the current draft being changed.                                        |
-| **AC-102** | Discovered website prices, stock and variant values never replace canonical Vesko commerce data.                                                                              |
-| **AC-103** | A merchant with only a logo, business description and canonical catalogue can approve a coherent Storefront Design Brief.                                                     |
-| **AC-104** | The brief lists reused assets, missing assets, page plan, assumptions and protected commerce source.                                                                          |
-| **AC-105** | Initial generation creates a coherent homepage, collection page and dynamic product page using registered components and bindings.                                            |
-| **AC-106** | A watch with one colour dimension renders only the relevant compact selector and technical attributes.                                                                        |
-| **AC-107** | A ring with five or six configured dimensions/options renders every required group, dependencies, unavailable states and completion guidance.                                 |
-| **AC-108** | Changing PDP layout or selector style does not change canonical option values, variants, prices, stock or SKUs.                                                               |
-| **AC-109** | The selected canonical variant controls displayed price, availability and variant media through the resolver adapter.                                                         |
-| **AC-110** | Unknown product types render with a generic dynamic fallback without dropping available attributes or options.                                                                |
-| **AC-111** | Product cards render valid price, compare-at-price or explicit unavailable-price state without inventing a value.                                                             |
-| **AC-112** | The same registered component implementations render in editor, preview and published routes.                                                                                 |
-| **AC-113** | A merchant can request an exact valid brand palette and receive a validated token proposal rather than a generic unsupported failure.                                         |
-| **AC-114** | Whole-storefront restyling coordinates global tokens, navigation, footer, homepage, collection and representative product pages atomically.                                   |
-| **AC-115** | A failed provider call, invalid operation or stale commerce revision preserves the active draft and history.                                                                  |
-| **AC-116** | Accepted whole-storefront changes undo and redo as one complete transaction.                                                                                                  |
-| **AC-117** | Generated storefronts contain no seed-brand or fixture-specific copy unrelated to the selected merchant.                                                                      |
-| **AC-118** | Asset placement uses approved asset IDs and provenance; product media is never bound to the wrong product.                                                                    |
-| **AC-119** | Missing hero or collection media produces a clear reuse/upload/generate choice rather than silent generation.                                                                 |
-| **AC-120** | The Karvonen demo can be loaded, reset and demonstrated repeatedly without manual IndexedDB preparation.                                                                      |
-| **AC-121** | Merchant mode exposes no raw JSON, internal IDs, provider payloads or developer tools.                                                                                        |
-| **AC-122** | Primary journeys have no visible clipping or overlap at 375, 768, 1024 and 1440 px.                                                                                           |
-| **AC-123** | Dynamic selectors, drawers, proposal actions, save and publish are keyboard operable and labelled.                                                                            |
-| **AC-124** | A Vesko integration adapter passes the same contract tests as the standalone fixtures for project, commerce, media, storage and publishing.                                   |
-| **AC-125** | A complete customer-ready journey succeeds: URL or minimal-input onboarding → approved brief → generation → AI edit → manual edit → save draft → preview → publish → restore. |
+| **ID**     | **Acceptance criterion**                                                                                                                                                      | **Requirement trace**                         |
+|------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
+| **AC-101** | A merchant can enter an existing public storefront URL and receive a source-discovery summary without the current draft being changed.                                        | FR-103, FR-104, FR-115, NFR-105               |
+| **AC-102** | Discovered website prices, stock and variant values never replace canonical Vesko commerce data.                                                                              | FR-102, FR-104, FR-110, NFR-101               |
+| **AC-103** | A merchant with only a logo, business description and canonical catalogue can approve a coherent Storefront Design Brief.                                                     | FR-105, FR-106, FR-110, NFR-105               |
+| **AC-104** | The brief lists reused assets, missing assets, page plan, assumptions and protected commerce source.                                                                          | FR-104, FR-105, FR-107, NFR-101               |
+| **AC-105** | Initial generation creates a coherent homepage, collection page and dynamic product page using registered components and bindings.                                            | FR-108, FR-109, FR-110, FR-111, NFR-108, NFR-109 |
+| **AC-106** | A watch with one colour dimension renders only the relevant compact selector and technical attributes.                                                                        | FR-110, FR-111, NFR-102, NFR-103              |
+| **AC-107** | A ring with five or six configured dimensions/options renders every required group, dependencies, unavailable states and completion guidance.                                 | FR-110, FR-111, NFR-102, NFR-103              |
+| **AC-108** | Changing PDP layout or selector style does not change canonical option values, variants, prices, stock or SKUs.                                                               | FR-102, FR-108, FR-110, FR-111, NFR-101       |
+| **AC-109** | The selected canonical variant controls displayed price, availability and variant media through the resolver adapter.                                                         | FR-110, FR-111, NFR-101, NFR-105              |
+| **AC-110** | Unknown product types render with a generic dynamic fallback without dropping available attributes or options.                                                                | FR-109, FR-110, FR-111, NFR-109               |
+| **AC-111** | Product cards render valid price, compare-at-price or explicit unavailable-price state without inventing a value.                                                             | FR-110, FR-112, NFR-101                       |
+| **AC-112** | The same registered component implementations render in editor, preview and published routes.                                                                                 | FR-109, FR-114, NFR-109                       |
+| **AC-113** | A merchant can request an exact valid brand palette and receive a validated token proposal rather than a generic unsupported failure.                                         | FR-106, FR-108, FR-113, NFR-105               |
+| **AC-114** | Whole-storefront restyling coordinates global tokens, navigation, footer, homepage, collection and representative product pages atomically.                                   | FR-108, FR-113, FR-115, NFR-105               |
+| **AC-115** | A failed provider call, invalid operation or stale commerce revision preserves the active draft and history.                                                                  | FR-108, FR-115, FR-117, NFR-105, NFR-107      |
+| **AC-116** | Accepted whole-storefront changes undo and redo as one complete transaction.                                                                                                  | FR-113, FR-115, NFR-105                       |
+| **AC-117** | Generated storefronts contain no seed-brand or fixture-specific copy unrelated to the selected merchant.                                                                      | FR-103, FR-105, FR-106, FR-108, NFR-107, NFR-108 |
+| **AC-118** | Asset placement uses approved asset IDs and provenance; product media is never bound to the wrong product.                                                                    | FR-104, FR-107, FR-110, NFR-101               |
+| **AC-119** | Missing hero or collection media produces a clear reuse/upload/generate choice rather than silent generation.                                                                 | FR-105, FR-107, FR-116, NFR-102               |
+| **AC-120** | The Karvonen demo can be loaded, reset and demonstrated repeatedly without manual IndexedDB preparation.                                                                      | FR-117, NFR-107, NFR-108                      |
+| **AC-121** | Merchant mode exposes no raw JSON, internal IDs, provider payloads or developer tools.                                                                                        | FR-116, NFR-101, NFR-107                      |
+| **AC-122** | Primary journeys have no visible clipping or overlap at 375, 768, 1024 and 1440 px.                                                                                           | FR-114, NFR-103                               |
+| **AC-123** | Dynamic selectors, drawers, proposal actions, save and publish are keyboard operable and labelled.                                                                            | FR-111, FR-114, FR-116, NFR-102               |
+| **AC-124** | A Vesko integration adapter passes the same contract tests as the standalone fixtures for project, commerce, media, storage and publishing.                                   | FR-101, FR-110, FR-118, NFR-108, NFR-109      |
+| **AC-125** | A complete customer-ready journey succeeds: URL or minimal-input onboarding → approved brief → generation → AI edit → manual edit → save draft → preview → publish → restore. | FR-101, FR-103, FR-105, FR-108, FR-115, FR-118, NFR-105, NFR-108, NFR-109 |
 
 ## 18.3 Definition of done for every implementation task
 - The merchant-visible capability is explicit and demonstrable.
