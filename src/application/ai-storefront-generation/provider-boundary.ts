@@ -144,9 +144,35 @@ export function validateAiStorefrontProviderResponse(
     request.targetFingerprint,
     request.permissionFingerprint,
     response.proposal.operations,
+    response.proposal.assetPlacementOperations ?? [],
   );
   if (response.proposal.id !== expectedProposalId) {
     invalid("proposal-identity-mismatch", "The storefront proposal identity is invalid.");
+  }
+  const requestPlacements = new Map(
+    request.assetPlacementOperations.map((operation) => [
+      canonicalValueString(operation),
+      operation,
+    ]),
+  );
+  const proposalPlacements = response.proposal.assetPlacementOperations ?? [];
+  if (
+    proposalPlacements.some(
+      (operation) => !requestPlacements.has(canonicalValueString(operation)),
+    ) ||
+    request.assetPlacementOperations
+      .filter((operation) => operation.required)
+      .some(
+        (operation) =>
+          !proposalPlacements.some(
+            (candidate) => canonicalValueString(candidate) === canonicalValueString(operation),
+          ),
+      )
+  ) {
+    invalid(
+      "asset-placement-mismatch",
+      "The provider proposal did not preserve the required approved source-asset placements.",
+    );
   }
   for (const envelope of response.proposal.operations) {
     if (

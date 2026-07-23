@@ -121,6 +121,7 @@ export class DeterministicMockStorefrontAIProvider implements StorefrontAIProvid
       request.targetFingerprint,
       request.permissionFingerprint,
       operations,
+      request.assetPlacementOperations,
     );
     const summary =
       direction === "exactBrandPalette"
@@ -162,6 +163,7 @@ export class DeterministicMockStorefrontAIProvider implements StorefrontAIProvid
           targetFingerprint: request.targetFingerprint,
           permissionFingerprint: request.permissionFingerprint,
           operations,
+          assetPlacementOperations: request.assetPlacementOperations,
           summary,
           validation: { valid: true, errors: [] },
           status: "pending",

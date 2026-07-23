@@ -214,13 +214,26 @@ describe("P7-05 approved source-asset generation context", () => {
       },
     ];
     const definitions = [brandHeader];
+    const target = {
+      affectedPageIds: ["page_home"],
+      pages: [
+        {
+          id: "page_home",
+          sections: [{ id: "section_brand_header", component: "brandHeader", visible: true }],
+        },
+      ],
+    };
     const operation = {
       type: "PLACE_APPROVED_SOURCE_ASSET" as const,
       pageId: "page_home",
+      componentId: "section_brand_header",
       componentType: "brandHeader",
       assetSlotId: "brandLogo",
       assetId: context.assets[0].assetId,
       role: "logo" as const,
+      assetRevision: context.assets[0].revision,
+      materialFingerprint: context.assets[0].materialFingerprint,
+      sourceReferenceId: context.assets[0].sourceReferenceId,
       required: true,
     };
 
@@ -229,6 +242,7 @@ describe("P7-05 approved source-asset generation context", () => {
         context,
         operations: [operation],
         componentDefinitions: definitions,
+        target,
       }),
     ).toEqual([operation]);
     expect(() =>
@@ -236,6 +250,7 @@ describe("P7-05 approved source-asset generation context", () => {
         context,
         operations: [{ ...operation, assetSlotId: "unknown" }],
         componentDefinitions: definitions,
+        target,
       }),
     ).toThrow(/not compatible/i);
     expect(() =>
@@ -259,6 +274,21 @@ describe("P7-05 approved source-asset generation context", () => {
           },
         ],
         componentDefinitions: [dynamicCollectionCommerceDefinition],
+        target: {
+          affectedPageIds: ["page_home"],
+          pages: [
+            {
+              id: "page_home",
+              sections: [
+                {
+                  id: "section_brand_header",
+                  component: "dynamicCollectionCommerce",
+                  visible: true,
+                },
+              ],
+            },
+          ],
+        },
       }),
     ).toThrow(/cannot replace canonical product/i);
   });

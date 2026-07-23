@@ -20,7 +20,15 @@ export const approvedGenerationAssetSchema = z
     materialFingerprint: z.string().trim().min(1),
     provenance: z
       .object({
-        extractionLocation: z.string().trim().min(1).max(200),
+        location: z.enum([
+          "html-meta",
+          "open-graph",
+          "link-icon",
+          "image-element",
+          "css-style",
+          "merchant-upload",
+          "other-safe-source-location",
+        ]),
         observedAt: z.string().datetime(),
       })
       .strict(),
@@ -53,7 +61,16 @@ export const approvedGenerationAssetSchema = z
       })
       .strict(),
   })
-  .strict();
+  .strict()
+  .superRefine((asset, refinement) => {
+    if (!asset.presentation.decorative && asset.alt === null) {
+      refinement.addIssue({
+        code: "custom",
+        path: ["alt"],
+        message: "Non-decorative approved assets require localized alternative text.",
+      });
+    }
+  });
 
 export const approvedGenerationAssetContextSchema = z
   .object({
@@ -96,10 +113,14 @@ export const approvedAssetPlacementOperationSchema = z
   .object({
     type: z.literal("PLACE_APPROVED_SOURCE_ASSET"),
     pageId: idSchema,
+    componentId: idSchema,
     componentType: z.string().trim().min(1).max(80),
     assetSlotId: z.string().trim().min(1).max(80),
     assetId: idSchema,
     role: assetRoleSchema,
+    assetRevision: z.string().trim().min(1).max(120),
+    materialFingerprint: z.string().trim().min(1),
+    sourceReferenceId: idSchema,
     required: z.boolean().default(false),
   })
   .strict();
@@ -235,7 +256,7 @@ function assetFromProjection(
     revision: asset.revision,
     materialFingerprint: asset.fingerprint,
     provenance: {
-      extractionLocation: asset.provenance.extractionLocation,
+      location: sanitizeExtractionLocation(asset.provenance.extractionLocation),
       observedAt: asset.provenance.observedAt,
     },
     alt: asset.componentMetadata.alt ?? null,
@@ -254,6 +275,21 @@ function assetFromProjection(
       actorReference: candidate.approvalDecision.actorReference,
     },
   });
+}
+
+function sanitizeExtractionLocation(
+  value: string,
+): z.infer<typeof approvedGenerationAssetSchema>["provenance"]["location"] {
+  const normalized = value.normalize("NFKC").trim().toLowerCase();
+  if (/https?:|<[^>]+>|javascript:|\p{Cc}|.{201}/u.test(normalized))
+    return "other-safe-source-location";
+  if (/open[ -]?graph|\bog:/.test(normalized)) return "open-graph";
+  if (/\bmeta\b/.test(normalized)) return "html-meta";
+  if (/\b(icon|favicon)\b/.test(normalized)) return "link-icon";
+  if (/\b(css|style)\b/.test(normalized)) return "css-style";
+  if (/\b(img|image|picture)\b/.test(normalized)) return "image-element";
+  if (/merchant[ -]?upload/.test(normalized)) return "merchant-upload";
+  return "other-safe-source-location";
 }
 
 /**
@@ -310,6 +346,13 @@ export function validateApprovedAssetPlacementOperations(input: {
   context: ApprovedGenerationAssetContext;
   operations: readonly ApprovedAssetPlacementOperation[];
   componentDefinitions: readonly z.infer<typeof componentDefinitionV2Schema>[];
+  target: {
+    affectedPageIds: readonly string[];
+    pages: readonly {
+      id: string;
+      sections: readonly { id: string; component: string; visible: boolean }[];
+    }[];
+  };
 }): ApprovedAssetPlacementOperation[] {
   const context = approvedGenerationAssetContextSchema.parse(input.context);
   const assets = new Map(context.assets.map((asset) => [asset.assetId, asset]));
@@ -329,6 +372,20 @@ export function validateApprovedAssetPlacementOperations(input: {
         left.assetId.localeCompare(right.assetId),
     )
     .map((operation) => {
+      if (!input.target.affectedPageIds.includes(operation.pageId)) {
+        return invalid(
+          "incompatible-asset-role-slot",
+          "The approved source asset placement targets a page outside the approved generation scope.",
+        );
+      }
+      const page = input.target.pages.find((candidate) => candidate.id === operation.pageId);
+      const component = page?.sections.find((candidate) => candidate.id === operation.componentId);
+      if (!component || !component.visible || component.component !== operation.componentType) {
+        return invalid(
+          "incompatible-asset-role-slot",
+          "The approved source asset placement does not match an active storefront component.",
+        );
+      }
       const asset = assets.get(operation.assetId);
       if (!asset) {
         return invalid(
@@ -336,7 +393,12 @@ export function validateApprovedAssetPlacementOperations(input: {
           "This source asset is no longer approved for storefront generation.",
         );
       }
-      if (asset.role !== operation.role) {
+      if (
+        asset.role !== operation.role ||
+        asset.revision !== operation.assetRevision ||
+        asset.materialFingerprint !== operation.materialFingerprint ||
+        asset.sourceReferenceId !== operation.sourceReferenceId
+      ) {
         return invalid(
           "stale-asset-revision",
           "The proposed source asset role no longer matches its approved revision.",

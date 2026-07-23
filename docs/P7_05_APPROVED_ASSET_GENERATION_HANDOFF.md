@@ -20,9 +20,13 @@ The provider-independent context contains only canonical references and safe rev
 
 It deliberately excludes source URLs, raw HTML, binary data, and provider-specific formats. Assets are ordered by ID and the context has a deterministic fingerprint.
 
+Raw extraction locations remain in the P7-04 audit record. Before a provider receives an asset, the handoff deterministically reduces that detail to one controlled classification: `html-meta`, `open-graph`, `link-icon`, `image-element`, `css-style`, `merchant-upload`, or `other-safe-source-location`. URL-like, markup-like, script-like, control-character, and excessive free-form values never cross the boundary. Non-decorative assets require localized alternative text; decorative assets may use no alternative text.
+
 ## Roles and slots
 
 Placement intents use `PLACE_APPROVED_SOURCE_ASSET` with page, component type, asset slot, asset ID, role, and requiredness. They are checked against `ComponentDefinitionV2.assetSlots` before a provider is invoked. Unknown assets, role mismatches, and incompatible slots fail safely. The intent is structured, reviewable, and reversible; it is not a new renderer, component, or UI surface.
+
+Each placement also identifies the active component instance and exact approved asset revision, material fingerprint, and source reference. Validation proves that the affected page is in the active generation scope and that the named visible component instance and slot exist there. Required placements are carried into the provider proposal change set and cannot be omitted or altered by a provider.
 
 ## Provider capability
 
@@ -31,6 +35,8 @@ Providers declare either `structuredApprovedAssets` or `none`. Capable providers
 ## Fingerprints and stale results
 
 The request and pending-request identity include the normalized approved asset context fingerprint and placement intents. Equivalent ordering yields the same fingerprint. A changed role, revision, or material fingerprint changes it. The generation orchestrator also compares the active asset-context fingerprint before activating an asynchronous result, preventing a stale result from becoming ready.
+
+The reviewed proposal retains structured source-asset placement changes. Rejecting or closing a proposal leaves the draft unchanged; existing atomic history, Undo, and Redo boundaries continue to preserve complete draft state. P7-05 does not add binary media persistence or canonical-product-media mutation.
 
 ## Protected product media
 

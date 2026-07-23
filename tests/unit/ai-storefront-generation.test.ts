@@ -82,7 +82,7 @@ function approvedAssetContext(role: "logo" | "collectionImage" = "logo") {
         sourceReferenceId: "source_approved_assets",
         revision: "2:asset-material",
         materialFingerprint: "asset-material",
-        provenance: { extractionLocation: "hero metadata", observedAt: "2026-07-23T10:00:00.000Z" },
+        provenance: { location: "html-meta" as const, observedAt: "2026-07-23T10:00:00.000Z" },
         alt: { en: "Approved source asset", fi: "Hyväksytty lähdeaineisto" },
         presentation: { decorative: false, mediaType: "image/jpeg", responsiveCrops: [] },
         approval: { actorId: "merchant_owner", actorReference: "merchant-session" },
@@ -253,10 +253,14 @@ describe("P4-05B storefront planner and request construction", () => {
     const placement = {
       type: "PLACE_APPROVED_SOURCE_ASSET" as const,
       pageId: collection.id,
+      componentId: "section_collection_products",
       componentType: "dynamicCollectionCommerce",
       assetSlotId: "collectionCommerceMedia",
       assetId: context.assets[0].assetId,
       role: "collectionImage" as const,
+      assetRevision: context.assets[0].revision,
+      materialFingerprint: context.assets[0].materialFingerprint,
+      sourceReferenceId: context.assets[0].sourceReferenceId,
       required: true,
     };
     const incapableProvider = {
@@ -273,7 +277,7 @@ describe("P4-05B storefront planner and request construction", () => {
         }),
         1,
       ),
-    ).toThrow(/cannot use required approved source assets/i);
+    ).toThrow(/does not match an active storefront component/i);
     expect(() =>
       buildAiStorefrontProviderRequest(
         command({
@@ -282,7 +286,7 @@ describe("P4-05B storefront planner and request construction", () => {
         }),
         1,
       ),
-    ).toThrow(/no longer approved/i);
+    ).toThrow(/does not match an active storefront component/i);
   });
 });
 

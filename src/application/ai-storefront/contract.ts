@@ -8,6 +8,7 @@ import {
 import { brandSystemSchema } from "@/domain/design-system";
 import { idSchema, localeSchema, localizedTextSchema } from "@/domain/shared";
 import { navigationModelSchema, pageModelSchema } from "@/domain/storefront";
+import { approvedAssetPlacementOperationSchema } from "@/application/ai-storefront-generation/approved-asset-context";
 
 export const storefrontDesignSystemTargetSchema = z
   .object({ kind: z.literal("storefrontDesignSystem"), projectId: idSchema })
@@ -207,6 +208,7 @@ export const aiStorefrontProposalSchema = z
     targetFingerprint: z.string().startsWith("storefront-target-"),
     permissionFingerprint: z.string().startsWith("storefront-permissions-"),
     operations: z.array(aiStorefrontOperationSchema).min(1),
+    assetPlacementOperations: z.array(approvedAssetPlacementOperationSchema).optional(),
     summary: localizedTextSchema,
     validation: proposalValidationResultSchema,
     status: z.enum(["pending", "accepted", "rejected"]),

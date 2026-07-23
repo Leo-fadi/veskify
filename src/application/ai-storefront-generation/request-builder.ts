@@ -92,30 +92,6 @@ export function buildAiStorefrontProviderRequest(
   const providerAssetCapability = command.provider.assetReferenceCapability ?? "none";
   let approvedAssetContext = command.approvedAssetContext ?? null;
   let assetPlacementOperations = command.assetPlacementOperations ?? [];
-  if (approvedAssetContext !== null) {
-    try {
-      assetPlacementOperations = validateApprovedAssetPlacementOperations({
-        context: approvedAssetContext,
-        operations: assetPlacementOperations,
-        componentDefinitions: veskifyComponentDefinitionsV2,
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new AiStorefrontRequestBuildError("unsupported-request", error.message);
-      }
-      throw error;
-    }
-    if (providerAssetCapability === "none") {
-      if (assetPlacementOperations.some((operation) => operation.required)) {
-        throw new AiStorefrontRequestBuildError(
-          "asset-capability-unavailable",
-          "This storefront design assistant cannot use required approved source assets.",
-        );
-      }
-      approvedAssetContext = null;
-      assetPlacementOperations = [];
-    }
-  }
   let plan;
   try {
     plan = createAiStorefrontGenerationPlan(command);
@@ -142,6 +118,41 @@ export function buildAiStorefrontProviderRequest(
     enabledLocales: command.enabledLocales,
     activeLocale: command.activeLocale,
   });
+  if (approvedAssetContext !== null) {
+    try {
+      assetPlacementOperations = validateApprovedAssetPlacementOperations({
+        context: approvedAssetContext,
+        operations: assetPlacementOperations,
+        componentDefinitions: veskifyComponentDefinitionsV2,
+        target: {
+          affectedPageIds: target.affectedPageIds,
+          pages: command.storefront.pages.map((page) => ({
+            id: page.id,
+            sections: page.sections.map((section) => ({
+              id: section.id,
+              component: section.component,
+              visible: section.visible,
+            })),
+          })),
+        },
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new AiStorefrontRequestBuildError("unsupported-request", error.message);
+      }
+      throw error;
+    }
+    if (providerAssetCapability === "none") {
+      if (assetPlacementOperations.some((operation) => operation.required)) {
+        throw new AiStorefrontRequestBuildError(
+          "asset-capability-unavailable",
+          "This storefront design assistant cannot use required approved source assets.",
+        );
+      }
+      approvedAssetContext = null;
+      assetPlacementOperations = [];
+    }
+  }
   const skill = designSkillRegistry.get(plan.skillId);
   const grants: AiOperationPermissionGrant[] = plan.sectionTargets.map((sectionTarget) => ({
     skillId: skill.id,

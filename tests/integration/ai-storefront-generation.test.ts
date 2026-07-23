@@ -227,10 +227,7 @@ describe("P4-05B storefront generation orchestration", () => {
           sourceReferenceId: "source_approved_assets",
           revision: "2:asset-material",
           materialFingerprint: "asset-material",
-          provenance: {
-            extractionLocation: "logo metadata",
-            observedAt: "2026-07-23T10:00:00.000Z",
-          },
+          provenance: { location: "html-meta" as const, observedAt: "2026-07-23T10:00:00.000Z" },
           alt: { en: "Merchant logo", fi: "Kauppiaan logo" },
           presentation: { decorative: false, mediaType: "image/svg+xml", responsiveCrops: [] },
           approval: { actorId: "merchant_owner", actorReference: "merchant-session" },
