@@ -31,7 +31,9 @@ function invalid(code: WholeStorefrontProposalErrorCode, message: string): never
   throw new WholeStorefrontProposalError(code, message);
 }
 
-function roleForPageType(type: WholeStorefrontRuntimePage["type"]): WholeStorefrontRuntimePage["role"] {
+function roleForPageType(
+  type: WholeStorefrontRuntimePage["type"],
+): WholeStorefrontRuntimePage["role"] {
   if (type === "home") return "homepage";
   if (type === "collection") return "collection-template";
   if (type === "product") return "product-template";
@@ -41,7 +43,10 @@ function roleForPageType(type: WholeStorefrontRuntimePage["type"]): WholeStorefr
 function parse(input: unknown): WholeStorefrontProposalCompilationInput {
   const result = wholeStorefrontProposalCompilationInputSchema.safeParse(input);
   if (!result.success) {
-    return invalid("invalid-plan", "The whole-storefront proposal request is incomplete or invalid.");
+    return invalid(
+      "invalid-plan",
+      "The whole-storefront proposal request is incomplete or invalid.",
+    );
   }
   return result.data;
 }
@@ -50,8 +55,12 @@ function parseCurrent(input: unknown): WholeStorefrontProposalCompilationInput {
   const candidate = input as { plan?: unknown; planningInput?: unknown };
   const plan = wholeStorefrontGenerationPlanSchema.safeParse(candidate?.plan);
   const planningInput = wholeStorefrontPlanningInputSchema.safeParse(candidate?.planningInput);
-  if (plan.success && planningInput.success) return { plan: plan.data, planningInput: planningInput.data };
-  return invalid("invalid-plan", "The current whole-storefront proposal inputs are incomplete or invalid.");
+  if (plan.success && planningInput.success)
+    return { plan: plan.data, planningInput: planningInput.data };
+  return invalid(
+    "invalid-plan",
+    "The current whole-storefront proposal inputs are incomplete or invalid.",
+  );
 }
 
 function validateCurrentPlan(input: WholeStorefrontProposalCompilationInput) {
@@ -73,7 +82,10 @@ function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
     return createWholeStorefrontGenerationPlan(input.planningInput);
   } catch (error) {
     if (error instanceof WholeStorefrontProposalError) throw error;
-    return invalid("stale-plan", "The active whole-storefront planning inputs are no longer valid.");
+    return invalid(
+      "stale-plan",
+      "The active whole-storefront planning inputs are no longer valid.",
+    );
   }
 }
 
@@ -85,8 +97,12 @@ function sourceComponent(
   const expected = plan.pagePlans
     .find((candidate) => candidate.pageId === page.id)
     ?.components.find(
-      (component): component is Extract<(typeof plan.pagePlans)[number]["components"][number], { componentId: string }> =>
-        "componentId" in component && component.componentId === section.id,
+      (
+        component,
+      ): component is Extract<
+        (typeof plan.pagePlans)[number]["components"][number],
+        { componentId: string }
+      > => "componentId" in component && component.componentId === section.id,
     );
   if (!expected) {
     return invalid(
@@ -102,14 +118,14 @@ function sourceComponent(
   }
   return {
     ...componentInstanceV2Schema.parse({
-    id: section.id,
-    component: section.component,
-    componentVersion: expected.componentVersion,
-    variant: section.variant,
-    content: structuredClone(section.content),
-    props: structuredClone(section.props),
-    styleOverrides: {},
-    bindings: [],
+      id: section.id,
+      component: section.component,
+      componentVersion: expected.componentVersion,
+      variant: section.variant,
+      content: structuredClone(section.content),
+      props: structuredClone(section.props),
+      styleOverrides: {},
+      bindings: [],
       assetAssignments: [],
     }),
     visible: section.visible,
@@ -167,7 +183,9 @@ function createOriginalState(
   };
 }
 
-function pageTypeForRole(role: WholeStorefrontRuntimePage["role"]): WholeStorefrontRuntimePage["type"] {
+function pageTypeForRole(
+  role: WholeStorefrontRuntimePage["role"],
+): WholeStorefrontRuntimePage["type"] {
   if (role === "homepage") return "home";
   if (role === "collection-template") return "collection";
   if (role === "product-template") return "product";
@@ -181,17 +199,26 @@ function plannedPage(
 ): { page: WholeStorefrontRuntimePage; removedComponentIds: string[] } {
   const originalPage = original.pages.find((page) => page.pageId === pagePlan.pageId);
   if (pagePlan.disposition !== "created" && !originalPage) {
-    invalid("invalid-page-component-target", "A retained planned page is missing from the active draft.");
+    invalid(
+      "invalid-page-component-target",
+      "A retained planned page is missing from the active draft.",
+    );
   }
-  const sourceById = new Map(originalPage?.components.map((component) => [component.id, component]));
+  const sourceById = new Map(
+    originalPage?.components.map((component) => [component.id, component]),
+  );
   const retainedById = new Map(
     pagePlan.components.flatMap((component) =>
       "instance" in component ? [] : [[component.componentId, component] as const],
     ),
   );
   const replacements = pagePlan.components.filter(
-    (component): component is Extract<(typeof pagePlan.components)[number], { instance: ComponentInstanceV2 }> =>
-      "instance" in component && component.disposition === "replacement",
+    (
+      component,
+    ): component is Extract<
+      (typeof pagePlan.components)[number],
+      { instance: ComponentInstanceV2 }
+    > => "instance" in component && component.disposition === "replacement",
   );
   const replacementByTarget = new Map<string, (typeof replacements)[number]>();
   replacements.forEach((replacement) => {
@@ -206,7 +233,9 @@ function plannedPage(
     });
   });
   const replacementVisibility = (replacement: (typeof replacements)[number]) => {
-    const targets = replacement.replacesComponentIds.map((componentId) => sourceById.get(componentId)!);
+    const targets = replacement.replacesComponentIds.map((componentId) =>
+      sourceById.get(componentId)!,
+    );
     const visible = targets[0]?.visible;
     if (visible === undefined || targets.some((target) => target.visible !== visible)) {
       invalid(
@@ -227,7 +256,9 @@ function plannedPage(
       const replacement = replacementByTarget.get(source.id);
       if (replacement) {
         if (!insertedReplacements.has(replacement.instance.id)) {
-          components.push(componentFromInstance(replacement.instance, replacementVisibility(replacement)));
+          components.push(
+            componentFromInstance(replacement.instance, replacementVisibility(replacement)),
+          );
           insertedReplacements.add(replacement.instance.id);
         }
         continue;
@@ -241,7 +272,8 @@ function plannedPage(
       }
       if (
         source.component !== retained.component ||
-        canonicalValueString(source.componentVersion) !== canonicalValueString(retained.componentVersion) ||
+        canonicalValueString(source.componentVersion) !==
+          canonicalValueString(retained.componentVersion) ||
         source.variant !== retained.variant
       ) {
         invalid(
@@ -305,7 +337,8 @@ function withPlacement(
   }
   if (
     component.assetAssignments.some(
-      (assignment) => assignment.slotId === placement.assetSlotId && assignment.assetId === placement.assetId,
+      (assignment) =>
+        assignment.slotId === placement.assetSlotId && assignment.assetId === placement.assetId,
     )
   ) {
     invalid("duplicate-operation-identity", "An approved source asset placement is duplicated.");
@@ -330,22 +363,39 @@ export function replayWholeStorefrontProposalOperations(
   const identities = new Set<string>();
   operationsInput.forEach((envelope, index) => {
     if (envelope.order !== index) {
-      invalid("duplicate-operation-identity", "Whole-storefront operations must have contiguous ordering.");
+      invalid(
+        "duplicate-operation-identity",
+        "Whole-storefront operations must have contiguous ordering.",
+      );
     }
-    if (identities.has(envelope.identity) || envelope.identity !== operationIdentity(envelope.operation)) {
-      invalid("duplicate-operation-identity", "Whole-storefront operation identities must be unique and canonical.");
+    if (
+      identities.has(envelope.identity) ||
+      envelope.identity !== operationIdentity(envelope.operation)
+    ) {
+      invalid(
+        "duplicate-operation-identity",
+        "Whole-storefront operation identities must be unique and canonical.",
+      );
     }
     identities.add(envelope.identity);
     const operation = envelope.operation;
     switch (operation.type) {
       case "RETAIN_BRAND_SYSTEM":
-        if (canonicalValueString(state.brandSystem) !== canonicalValueString(operation.brandSystem)) {
-          invalid("protected-commerce-mutation", "The plan cannot replace the active BrandSystem without an explicit supported operation.");
+        if (
+          canonicalValueString(state.brandSystem) !== canonicalValueString(operation.brandSystem)
+        ) {
+          invalid(
+            "protected-commerce-mutation",
+            "The plan cannot replace the active BrandSystem without an explicit supported operation.",
+          );
         }
         break;
       case "RETAIN_NAVIGATION":
         if (canonicalValueString(state.navigation) !== canonicalValueString(operation.navigation)) {
-          invalid("unsupported-plan-operation", "The plan cannot change navigation without an explicit supported operation.");
+          invalid(
+            "unsupported-plan-operation",
+            "The plan cannot change navigation without an explicit supported operation.",
+          );
         }
         break;
       case "APPLY_PAGE_COMPONENTS": {
@@ -357,7 +407,10 @@ export function replayWholeStorefrontProposalOperations(
         const removed = new Set(operation.removedComponentIds);
         if (
           removed.size !== operation.removedComponentIds.length ||
-          [...removed].some((componentId) => !previous?.components.some((component) => component.id === componentId)) ||
+          [...removed].some(
+            (componentId) =>
+              !previous?.components.some((component) => component.id === componentId),
+          ) ||
           operation.page.components.some((component) => removed.has(component.id))
         ) {
           invalid(
@@ -386,35 +439,52 @@ function reviewSummary(
   original: WholeStorefrontRuntimeState,
 ): WholeStorefrontProposalReviewSummary {
   type ReviewComponent = WholeStorefrontProposalReviewSummary["components"][number];
-  const components = plan.pagePlans.flatMap((page) => {
-    const replaced = new Set(
-      page.components.flatMap((component) => ("instance" in component ? component.replacesComponentIds : [])),
-    );
-    const planned: ReviewComponent[] = page.components.flatMap((component): ReviewComponent[] => {
-      if ("instance" in component) {
-        return [{
-          componentId: component.instance.id,
-          component: component.instance.component,
-          status: component.disposition === "replacement" ? ("replaced" as const) : ("added" as const),
-        }];
-      }
-      if (replaced.has(component.componentId)) return [];
-      return [{
-        componentId: component.componentId,
-        component: component.component,
-        status: component.disposition === "fallback-retained" ? ("fallback-retained" as const) : ("retained" as const),
-      }];
-    });
-    const sourcePage = original.pages.find((candidate) => candidate.pageId === page.pageId);
-    const removed: ReviewComponent[] = [...replaced].map((componentId) => {
-      const component = sourcePage?.components.find((candidate) => candidate.id === componentId);
-      if (!component) {
-        invalid("invalid-page-component-target", "A replacement references an unknown active component.");
-      }
-      return { componentId, component: component.component, status: "removed" as const };
-    });
-    return [...planned, ...removed];
-  }).sort((left, right) => left.componentId.localeCompare(right.componentId));
+  const components = plan.pagePlans
+    .flatMap((page) => {
+      const replaced = new Set(
+        page.components.flatMap((component) =>
+          "instance" in component ? component.replacesComponentIds : [],
+        ),
+      );
+      const planned: ReviewComponent[] = page.components.flatMap((component): ReviewComponent[] => {
+        if ("instance" in component) {
+          return [
+            {
+              componentId: component.instance.id,
+              component: component.instance.component,
+              status:
+                component.disposition === "replacement"
+                  ? ("replaced" as const)
+                  : ("added" as const),
+            },
+          ];
+        }
+        if (replaced.has(component.componentId)) return [];
+        return [
+          {
+            componentId: component.componentId,
+            component: component.component,
+            status:
+              component.disposition === "fallback-retained"
+                ? ("fallback-retained" as const)
+                : ("retained" as const),
+          },
+        ];
+      });
+      const sourcePage = original.pages.find((candidate) => candidate.pageId === page.pageId);
+      const removed: ReviewComponent[] = [...replaced].map((componentId) => {
+        const component = sourcePage?.components.find((candidate) => candidate.id === componentId);
+        if (!component) {
+          invalid(
+            "invalid-page-component-target",
+            "A replacement references an unknown active component.",
+          );
+        }
+        return { componentId, component: component.component, status: "removed" as const };
+      });
+      return [...planned, ...removed];
+    })
+    .sort((left, right) => left.componentId.localeCompare(right.componentId));
   return {
     sharedDesignSystemChanges: [...plan.reviewSummary.sharedDesignSystemChanges],
     pages: plan.pagePlans
@@ -462,7 +532,11 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
   const original = createOriginalState(input, plan);
   const operations: WholeStorefrontProposalOperationEnvelope[] = [];
   const add = (operation: WholeStorefrontProposalOperationEnvelope["operation"]) => {
-    operations.push({ order: operations.length, identity: operationIdentity(operation), operation });
+    operations.push({
+      order: operations.length,
+      identity: operationIdentity(operation),
+      operation,
+    });
   };
   add({ type: "RETAIN_BRAND_SYSTEM", brandSystem: structuredClone(original.brandSystem) });
   add({ type: "RETAIN_NAVIGATION", navigation: structuredClone(original.navigation) });
@@ -515,10 +589,19 @@ export function validateWholeStorefrontProposal(
   const current = parseCurrent(currentInputValue);
   const preconditions = proposal.preconditions;
   if (preconditions.projectRevision !== current.planningInput.project.revision) {
-    invalid("stale-project", "The project changed after the whole-storefront proposal was prepared.");
+    invalid(
+      "stale-project",
+      "The project changed after the whole-storefront proposal was prepared.",
+    );
   }
-  if (preconditions.draftFingerprint !== `draft-${canonicalValueFingerprint(current.planningInput.draft)}`) {
-    invalid("stale-draft", "The active draft changed after the whole-storefront proposal was prepared.");
+  if (
+    preconditions.draftFingerprint !==
+    `draft-${canonicalValueFingerprint(current.planningInput.draft)}`
+  ) {
+    invalid(
+      "stale-draft",
+      "The active draft changed after the whole-storefront proposal was prepared.",
+    );
   }
   if (
     preconditions.componentRegistryFingerprint !==
@@ -534,13 +617,19 @@ export function validateWholeStorefrontProposal(
     preconditions.canonicalCommerceFingerprint !==
     `canonical-commerce-${canonicalValueFingerprint(current.planningInput.catalogue)}`
   ) {
-    invalid("stale-commerce", "The canonical commerce projection changed after the proposal was prepared.");
+    invalid(
+      "stale-commerce",
+      "The canonical commerce projection changed after the proposal was prepared.",
+    );
   }
   if (
     preconditions.assetContextFingerprint !==
     (current.planningInput.approvedAssetContext?.fingerprint ?? null)
   ) {
-    invalid("stale-approved-asset-context", "The approved asset context changed after the proposal was prepared.");
+    invalid(
+      "stale-approved-asset-context",
+      "The approved asset context changed after the proposal was prepared.",
+    );
   }
   const plan = createPlanFromInputs(current);
   if (preconditions.planFingerprint !== plan.fingerprint) {
@@ -548,13 +637,13 @@ export function validateWholeStorefrontProposal(
   }
   const currentState = createOriginalState(current, plan);
   if (canonicalValueString(proposal.originalStorefront) !== canonicalValueString(currentState)) {
-    invalid("stale-draft", "The proposal original storefront no longer matches the active storefront.");
+    invalid(
+      "stale-draft",
+      "The proposal original storefront no longer matches the active storefront.",
+    );
   }
   const expected = compileWholeStorefrontProposal({ plan, planningInput: current.planningInput });
-  if (
-    canonicalValueString({ ...proposal, status: "pending" }) !==
-    canonicalValueString(expected)
-  ) {
+  if (canonicalValueString({ ...proposal, status: "pending" }) !== canonicalValueString(expected)) {
     invalid(
       "incomplete-required-operation-compilation",
       "The whole-storefront proposal does not represent the complete validated plan.",
@@ -562,7 +651,10 @@ export function validateWholeStorefrontProposal(
   }
   const replayed = replayWholeStorefrontProposalOperations(currentState, proposal.operations);
   if (canonicalValueString(replayed) !== canonicalValueString(proposal.proposedStorefront)) {
-    invalid("proposal-projection-mismatch", "The whole-storefront proposal is not reproducible from its operations.");
+    invalid(
+      "proposal-projection-mismatch",
+      "The whole-storefront proposal is not reproducible from its operations.",
+    );
   }
   return proposal;
 }

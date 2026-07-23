@@ -17,13 +17,13 @@ The resulting proposal contains a complete V2 runtime graph rather than arbitrar
 
 Every compiled proposal has contiguous, canonical operation identities and is replayed from its original runtime storefront:
 
-| Plan material | Replayable proposal operation |
-|---|---|
-| Current BrandSystem | `RETAIN_BRAND_SYSTEM` |
-| Current navigation/shared chrome | `RETAIN_NAVIGATION` |
-| Retained, added and replacement component graphs per page | `APPLY_PAGE_COMPONENTS` |
-| Removed replacement targets | `removedComponentIds` on the corresponding page operation and normalized review summary |
-| Approved P7-05 source asset placement | `PLACE_APPROVED_SOURCE_ASSET` |
+| Plan material                                             | Replayable proposal operation                                                           |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Current BrandSystem                                       | `RETAIN_BRAND_SYSTEM`                                                                   |
+| Current navigation/shared chrome                          | `RETAIN_NAVIGATION`                                                                     |
+| Retained, added and replacement component graphs per page | `APPLY_PAGE_COMPONENTS`                                                                 |
+| Removed replacement targets                               | `removedComponentIds` on the corresponding page operation and normalized review summary |
+| Approved P7-05 source asset placement                     | `PLACE_APPROVED_SOURCE_ASSET`                                                           |
 
 The compiler does not infer a token patch from descriptive brand direction. P8-01 records a shared direction and current BrandSystem fingerprint, but not a concrete colour or typography payload. Inventing one would violate the structured-operation boundary; the existing explicit global colour/typography proposal operations remain the only way to change those fields.
 

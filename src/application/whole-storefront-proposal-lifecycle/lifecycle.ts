@@ -88,12 +88,21 @@ export class WholeStorefrontProposalAcceptanceCoordinator {
   }
 
   accept(): WholeStorefrontProposalLifecycleSnapshot {
-    if (this.#state === "accepted" || this.#past.some((item) => item.proposalId === this.#proposal.id)) {
-      this.#failure = { code: "duplicate-acceptance", message: "This whole-storefront proposal was already accepted." };
+    if (
+      this.#state === "accepted" ||
+      this.#past.some((item) => item.proposalId === this.#proposal.id)
+    ) {
+      this.#failure = {
+        code: "duplicate-acceptance",
+        message: "This whole-storefront proposal was already accepted.",
+      };
       return this.inspect();
     }
     if (["rejected", "closed", "stale"].includes(this.#state)) {
-      this.#failure = { code: "terminal-proposal", message: "This whole-storefront proposal is closed." };
+      this.#failure = {
+        code: "terminal-proposal",
+        message: "This whole-storefront proposal is closed.",
+      };
       return this.inspect();
     }
     const before = clone(this.#activeStorefront);
@@ -122,19 +131,28 @@ export class WholeStorefrontProposalAcceptanceCoordinator {
       this.#past.push(clone(transaction));
       this.#future = [];
       this.#transaction = clone(transaction);
-      this.#proposal = wholeStorefrontProposalSchema.parse({ ...this.#proposal, status: "accepted" });
+      this.#proposal = wholeStorefrontProposalSchema.parse({
+        ...this.#proposal,
+        status: "accepted",
+      });
       this.#state = "accepted";
       this.#failure = null;
     } catch (error) {
       this.#activeStorefront = before;
       if (error instanceof WholeStorefrontProposalError && error.code.startsWith("stale-")) {
-        this.#proposal = wholeStorefrontProposalSchema.parse({ ...this.#proposal, status: "rejected" });
+        this.#proposal = wholeStorefrontProposalSchema.parse({
+          ...this.#proposal,
+          status: "rejected",
+        });
         this.#state = "stale";
         this.#failure = { code: error.code, message: error.message };
       } else {
         this.#state = "failed";
         this.#failure = {
-          code: error instanceof WholeStorefrontProposalError ? error.code : "acceptance-transaction-failed",
+          code:
+            error instanceof WholeStorefrontProposalError
+              ? error.code
+              : "acceptance-transaction-failed",
           message: "The whole-storefront proposal could not be applied safely.",
         };
       }
@@ -144,7 +162,10 @@ export class WholeStorefrontProposalAcceptanceCoordinator {
 
   reject(): WholeStorefrontProposalLifecycleSnapshot {
     if (this.#state === "ready" || this.#state === "failed") {
-      this.#proposal = wholeStorefrontProposalSchema.parse({ ...this.#proposal, status: "rejected" });
+      this.#proposal = wholeStorefrontProposalSchema.parse({
+        ...this.#proposal,
+        status: "rejected",
+      });
       this.#state = "rejected";
       this.#failure = null;
     }
@@ -153,7 +174,10 @@ export class WholeStorefrontProposalAcceptanceCoordinator {
 
   close(): WholeStorefrontProposalLifecycleSnapshot {
     if (this.#state === "ready" || this.#state === "failed") {
-      this.#proposal = wholeStorefrontProposalSchema.parse({ ...this.#proposal, status: "rejected" });
+      this.#proposal = wholeStorefrontProposalSchema.parse({
+        ...this.#proposal,
+        status: "rejected",
+      });
       this.#state = "closed";
       this.#failure = null;
     }
@@ -162,7 +186,10 @@ export class WholeStorefrontProposalAcceptanceCoordinator {
 
   undo(): WholeStorefrontRuntimeState | undefined {
     const transaction = this.#past.at(-1);
-    if (!transaction || canonicalValueString(this.#activeStorefront) !== canonicalValueString(transaction.resulting)) {
+    if (
+      !transaction ||
+      canonicalValueString(this.#activeStorefront) !== canonicalValueString(transaction.resulting)
+    ) {
       return undefined;
     }
     this.#past.pop();
@@ -173,7 +200,10 @@ export class WholeStorefrontProposalAcceptanceCoordinator {
 
   redo(): WholeStorefrontRuntimeState | undefined {
     const transaction = this.#future[0];
-    if (!transaction || canonicalValueString(this.#activeStorefront) !== canonicalValueString(transaction.original)) {
+    if (
+      !transaction ||
+      canonicalValueString(this.#activeStorefront) !== canonicalValueString(transaction.original)
+    ) {
       return undefined;
     }
     this.#future.shift();

@@ -1,7 +1,5 @@
 import { z } from "zod";
-import {
-  approvedAssetPlacementOperationSchema,
-} from "@/application/ai-storefront-generation";
+import { approvedAssetPlacementOperationSchema } from "@/application/ai-storefront-generation";
 import {
   wholeStorefrontGenerationPlanSchema,
   wholeStorefrontPlanningInputSchema,
@@ -129,9 +127,7 @@ export const wholeStorefrontProposalReviewSummarySchema = z
         .strict(),
     ),
     navigationChanges: z.array(
-      z
-        .object({ navigationItemId: idSchema, status: z.enum(["retained", "changed"]) })
-        .strict(),
+      z.object({ navigationItemId: idSchema, status: z.enum(["retained", "changed"]) }).strict(),
     ),
     visibilityChanges: z.array(
       z
@@ -146,7 +142,8 @@ export const wholeStorefrontProposalReviewSummarySchema = z
     approvedAssetPlacements: z.array(approvedAssetPlacementOperationSchema),
     protectedFactsPreserved: z.array(z.string().trim().min(1).max(240)).min(1),
     warnings: wholeStorefrontReviewSummarySchema.shape.warnings,
-    requiredMerchantReviewItems: wholeStorefrontReviewSummarySchema.shape.requiredMerchantReviewItems,
+    requiredMerchantReviewItems:
+      wholeStorefrontReviewSummarySchema.shape.requiredMerchantReviewItems,
   })
   .strict();
 
@@ -199,7 +196,9 @@ export const wholeStorefrontProposalCompilationInputSchema = z
 export type WholeStorefrontRuntimePage = z.infer<typeof wholeStorefrontRuntimePageSchema>;
 export type WholeStorefrontRuntimeComponent = WholeStorefrontRuntimePage["components"][number];
 export type WholeStorefrontRuntimeState = z.infer<typeof wholeStorefrontRuntimeStateSchema>;
-export type WholeStorefrontProposalOperation = z.infer<typeof wholeStorefrontProposalOperationSchema>;
+export type WholeStorefrontProposalOperation = z.infer<
+  typeof wholeStorefrontProposalOperationSchema
+>;
 export type WholeStorefrontProposalOperationEnvelope = z.infer<
   typeof wholeStorefrontProposalOperationEnvelopeSchema
 >;
