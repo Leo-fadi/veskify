@@ -11,6 +11,7 @@ import {
   registerDiscoveredAssetCandidates,
   rejectAssetCandidate,
 } from "@/domain/asset-review";
+import { assetReviewBriefData } from "@/application/asset-review";
 import { storefrontAssetMetadataSchema } from "@/domain/component-platform";
 import { aurumNordicSeed } from "@/data/seed";
 import {
@@ -352,6 +353,163 @@ describe("P7-04 discovered asset review domain", () => {
       now,
     });
     expect(required.candidates[0]?.requiredForBrief).toBe(true);
+  });
+
+  it("increments revisions for meaningful duplicate merges but not true no-ops", () => {
+    const first = candidate({
+      id: "asset_merge_a",
+      fingerprint: { algorithm: "sha256", value: "same" },
+    });
+    const duplicate = candidate({
+      id: "asset_merge_b",
+      role: "hero",
+      fingerprint: { algorithm: "sha256", value: "same" },
+    });
+    const initial = discovered(first);
+    const merged = registerDiscoveredAssetCandidates({
+      state: initial,
+      source: source(),
+      candidates: [duplicate],
+      now,
+    });
+
+    expect(merged.candidates[0]).toMatchObject({
+      revision: 2,
+      observations: [{ id: first.id }, { id: duplicate.id }],
+    });
+    expect(() =>
+      assignAssetCandidateRole({
+        state: merged,
+        candidateId: merged.candidates[0].id,
+        sourceReferenceId: source().id,
+        expectedRevision: initial.candidates[0].revision,
+        role: "logo",
+        alt: { en: "Logo" },
+        actorId: "merchant_asset_owner",
+        now,
+      }),
+    ).toThrow(/refresh/i);
+
+    const required = registerDiscoveredAssetCandidates({
+      state: merged,
+      source: source(),
+      candidates: [duplicate],
+      requiredCandidateIds: [duplicate.id],
+      now,
+    });
+    expect(required.candidates[0]).toMatchObject({ revision: 3, requiredForBrief: true });
+
+    const noOp = registerDiscoveredAssetCandidates({
+      state: required,
+      source: source(),
+      candidates: [duplicate],
+      requiredCandidateIds: [duplicate.id],
+      now,
+    });
+    expect(noOp.candidates[0]?.revision).toBe(required.candidates[0]?.revision);
+  });
+
+  it("supersedes same-id material changes without inheriting approval", () => {
+    const approvedState = approved();
+    const changed = candidate({
+      id: "asset_review_logo",
+      fingerprint: { algorithm: "sha256", value: "same-id-new-material" },
+    });
+
+    const state = registerDiscoveredAssetCandidates({
+      state: approvedState,
+      source: source(),
+      candidates: [changed],
+      now: "2026-07-23T09:00:00.000Z",
+    });
+    const old = state.candidates.find((item) => item.id === "asset_review_logo");
+    const replacement = state.candidates.find((item) => item.id !== "asset_review_logo");
+
+    expect(old).toMatchObject({
+      status: "superseded",
+      materialFingerprint: approvedState.candidates[0].materialFingerprint,
+      supersededBy: { candidateId: replacement?.id },
+    });
+    expect(replacement).toMatchObject({
+      sourceCandidateId: "asset_review_logo",
+      status: "needsReview",
+      approvalDecision: null,
+      supersedes: { candidateId: "asset_review_logo" },
+    });
+    expect(typeof replacement?.materialFingerprint).toBe("string");
+    expect(replacement?.materialFingerprint).not.toBe(old?.materialFingerprint);
+    expect(approvedAssetProjection(state)).toEqual([]);
+  });
+
+  it("keeps same-id identical material rediscovery as a no-op and rejects cross-source reuse", () => {
+    const initial = discovered();
+    const unchanged = registerDiscoveredAssetCandidates({
+      state: initial,
+      source: source(),
+      candidates: [candidate()],
+      now,
+    });
+    expect(unchanged).toMatchObject({ revision: initial.revision, candidates: [{ revision: 1 }] });
+
+    expect(() =>
+      registerDiscoveredAssetCandidates({
+        state: initial,
+        source: source("source_other", "https://other.example"),
+        candidates: [
+          candidate({
+            sourceReferenceId: "source_other",
+            source: { kind: "source-url", url: "https://other.example/media/logo.svg" },
+            provenance: {
+              sourceReferenceId: "source_other",
+              sourceUrl: "https://other.example/media/logo.svg",
+              documentUrl: "https://other.example/",
+              observedAt: now,
+              extractionLocation: "head logo metadata",
+            },
+          }),
+        ],
+        now,
+      }),
+    ).toThrow(/different storefront source/i);
+  });
+
+  it("returns required unavailable blockers with explicit next actions and bounded summaries", () => {
+    const purpose = "A".repeat(500);
+    const pending = discovered(candidate({ proposedReusePurpose: purpose }), source(), [
+      "asset_review_logo",
+    ]);
+    const current = pending.candidates[0];
+    const unavailable = markAssetCandidateUnavailable({
+      state: pending,
+      candidateId: current.id,
+      sourceReferenceId: current.sourceReferenceId,
+      expectedRevision: current.revision,
+      reason: "The source image is no longer available.",
+      now,
+    });
+    const [review] = listAssetCandidatesRequiringReview(unavailable);
+    const blocker = assetReviewBriefData(unavailable).blockers[0];
+
+    expect(review).toMatchObject({
+      id: current.id,
+      status: "unavailable",
+      unavailableDecision: { reason: "The source image is no longer available." },
+      provenance: { sourceReferenceId: current.sourceReferenceId },
+      allowedActions: ["reject", "mark-not-required", "select-replacement"],
+    });
+    expect(blocker).toMatch(/^Asset review: The required logo needs a merchant decision\.$/);
+    expect(blocker.length).toBeLessThanOrEqual(500);
+    expect(blocker).not.toContain(purpose);
+    expect(() =>
+      approveAssetCandidate({
+        state: unavailable,
+        source: source(),
+        candidateId: current.id,
+        expectedRevision: unavailable.candidates[0].revision,
+        actorId: "merchant_asset_owner",
+        now,
+      }),
+    ).toThrow(/unavailable asset/i);
   });
 
   it("never merges materially identical candidates from different source references", () => {

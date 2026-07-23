@@ -76,6 +76,7 @@ const assetUnavailableDecisionSchema = z
 export const assetReviewCandidateSchema = z
   .object({
     id: idSchema,
+    sourceCandidateId: idSchema.optional(),
     sourceReferenceId: idSchema,
     normalizedSourceUrl: safeExternalUrlSchema,
     finalFetchedUrl: safeExternalUrlSchema.nullable(),
@@ -252,6 +253,18 @@ export type AssetReviewCandidate = z.infer<typeof assetReviewCandidateSchema>;
 export type AssetReviewState = z.infer<typeof assetReviewStateSchema>;
 export type ApprovedAssetProjectionItem = z.infer<typeof approvedAssetProjectionItemSchema>;
 
+export const assetReviewActionSchema = z.enum([
+  "confirm-role",
+  "approve",
+  "reject",
+  "mark-not-required",
+  "select-replacement",
+]);
+export type AssetReviewAction = z.infer<typeof assetReviewActionSchema>;
+export type AssetReviewActionCandidate = AssetReviewCandidate & {
+  allowedActions: readonly AssetReviewAction[];
+};
+
 export type AssetReviewErrorCode =
   | "unknown-candidate"
   | "cross-source-candidate"
@@ -286,6 +299,31 @@ const roleSuggestions: Record<AssetCandidate["role"], readonly ComponentAssetRol
 
 function sortedCandidates(candidates: readonly AssetReviewCandidate[]): AssetReviewCandidate[] {
   return [...candidates].sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function logicalCandidateId(candidate: AssetReviewCandidate): string {
+  return candidate.sourceCandidateId ?? candidate.originalCandidate.id;
+}
+
+function normalizedSuggestedRoles(roles: readonly ComponentAssetRole[]): ComponentAssetRole[] {
+  return [...new Set(roles)].sort(
+    (left, right) =>
+      componentAssetRoleSchema.options.indexOf(left) -
+      componentAssetRoleSchema.options.indexOf(right),
+  );
+}
+
+function replacementRecordId(
+  sourceCandidateId: string,
+  material: string,
+  candidates: readonly AssetReviewCandidate[],
+): string {
+  const base = `${sourceCandidateId.slice(0, 64)}-r-${material.slice(-10)}`;
+  if (!candidates.some((candidate) => candidate.id === base)) return base;
+  throw new AssetReviewError(
+    "conflicting-decision",
+    "The source returned conflicting asset material for the same review revision.",
+  );
 }
 
 function reviewFingerprint(candidates: readonly AssetReviewCandidate[]): string {
@@ -330,6 +368,16 @@ function finalizeState(
 
 export function createEmptyAssetReviewState(): AssetReviewState {
   return finalizeState([], 0);
+}
+
+export function assetReviewHasMaterialChanges(stateInput: AssetReviewState): boolean {
+  const state = cloneAssetReviewState(stateInput);
+  return state.candidates.some(
+    (candidate) =>
+      candidate.requiredForBrief ||
+      candidate.status === "approved" ||
+      candidate.approvalDecision !== null,
+  );
 }
 
 export function cloneAssetReviewState(state: AssetReviewState): AssetReviewState {
@@ -408,10 +456,12 @@ function newCandidate(
   source: SourceReference,
   candidate: AssetCandidate,
   requiredForBrief: boolean,
+  recordId = candidate.id,
 ): AssetReviewCandidate {
   const material = candidateMaterialFingerprint(source.id, candidate);
   return assetReviewCandidateSchema.parse({
-    id: candidate.id,
+    id: recordId,
+    sourceCandidateId: candidate.id,
     sourceReferenceId: source.id,
     normalizedSourceUrl: normalizedAssetUrl(candidate),
     finalFetchedUrl: candidate.provenance.documentUrl,
@@ -457,11 +507,14 @@ export function registerDiscoveredAssetCandidates(input: {
     const candidate = assetCandidateSchema.parse(raw);
     assertSafeProvenance(source, candidate);
     const material = candidateMaterialFingerprint(source.id, candidate);
-    const idConflict = candidates.find((existing) => existing.id === candidate.id);
-    if (idConflict && idConflict.materialFingerprint !== material) {
+    const crossSourceCandidate = candidates.find(
+      (existing) =>
+        logicalCandidateId(existing) === candidate.id && existing.sourceReferenceId !== source.id,
+    );
+    if (crossSourceCandidate) {
       throw new AssetReviewError(
-        "conflicting-decision",
-        "The discovered asset identifier is already used by different material.",
+        "cross-source-candidate",
+        "The discovered asset identifier is already owned by a different storefront source.",
       );
     }
     const duplicate = candidates.find(
@@ -472,13 +525,14 @@ export function registerDiscoveredAssetCandidates(input: {
       const hasObservation = duplicate.observations.some(
         (observation) => observation.id === candidate.id,
       );
-      const suggestedRoles = [
-        ...new Set([...duplicate.suggestedRoles, ...roleSuggestions[candidate.role]]),
-      ];
+      const suggestedRoles = normalizedSuggestedRoles([
+        ...duplicate.suggestedRoles,
+        ...roleSuggestions[candidate.role],
+      ]);
       const requiredForBrief = duplicate.requiredForBrief || requiredIds.has(candidate.id);
       if (
         !hasObservation ||
-        suggestedRoles.length !== duplicate.suggestedRoles.length ||
+        suggestedRoles.some((role, index) => role !== duplicate.suggestedRoles[index]) ||
         requiredForBrief !== duplicate.requiredForBrief
       ) {
         const merged = assetReviewCandidateSchema.parse({
@@ -490,6 +544,7 @@ export function registerDiscoveredAssetCandidates(input: {
               ),
           suggestedRoles,
           requiredForBrief,
+          revision: duplicate.revision + 1,
         });
         candidates = candidates.map((item) => (item.id === duplicate.id ? merged : item));
         changed = true;
@@ -497,12 +552,27 @@ export function registerDiscoveredAssetCandidates(input: {
       continue;
     }
 
-    let created = newCandidate(source, candidate, requiredIds.has(candidate.id));
-    const replaced = candidates.find(
+    const normalizedUrl = normalizedAssetUrl(candidate);
+    const sameLogicalCandidate = candidates.find(
       (existing) =>
         existing.sourceReferenceId === source.id &&
-        existing.normalizedSourceUrl === created.normalizedSourceUrl &&
+        logicalCandidateId(existing) === candidate.id &&
+        existing.status !== "superseded",
+    );
+    const approvedAtSameUrl = candidates.find(
+      (existing) =>
+        existing.sourceReferenceId === source.id &&
+        existing.normalizedSourceUrl === normalizedUrl &&
         existing.status === "approved",
+    );
+    const replaced = sameLogicalCandidate ?? approvedAtSameUrl;
+    let created = newCandidate(
+      source,
+      candidate,
+      requiredIds.has(candidate.id),
+      replaced && logicalCandidateId(replaced) === candidate.id
+        ? replacementRecordId(candidate.id, material, candidates)
+        : candidate.id,
     );
     if (replaced) {
       const reason = "The public source produced materially changed asset metadata.";
@@ -517,7 +587,7 @@ export function registerDiscoveredAssetCandidates(input: {
         status: "needsReview",
         requiredForBrief: created.requiredForBrief || replaced.requiredForBrief,
         supersedes: { candidateId: replaced.id, recordedAt: input.now, reason },
-        revision: replaced.revision + 1,
+        revision: 1,
       });
       candidates = candidates.map((item) => (item.id === replaced.id ? superseded : item));
     }
@@ -793,11 +863,23 @@ export function markAssetCandidateRequired(input: {
 
 export function listAssetCandidatesRequiringReview(
   stateInput: AssetReviewState,
-): AssetReviewCandidate[] {
+): AssetReviewActionCandidate[] {
   const state = cloneAssetReviewState(stateInput);
   return state.candidates
-    .filter((candidate) => candidate.status === "discovered" || candidate.status === "needsReview")
-    .map((candidate) => assetReviewCandidateSchema.parse(structuredClone(candidate)));
+    .filter(
+      (candidate) =>
+        candidate.status === "discovered" ||
+        candidate.status === "needsReview" ||
+        (candidate.status === "unavailable" && candidate.requiredForBrief),
+    )
+    .map((candidate) => {
+      const reviewCandidate = assetReviewCandidateSchema.parse(structuredClone(candidate));
+      const allowedActions: AssetReviewAction[] =
+        reviewCandidate.status === "unavailable"
+          ? ["reject", "mark-not-required", "select-replacement"]
+          : ["confirm-role", "approve", "reject", "mark-not-required"];
+      return { ...reviewCandidate, allowedActions };
+    });
 }
 
 export function unresolvedRequiredAssetCandidates(

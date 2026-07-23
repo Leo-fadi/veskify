@@ -9,9 +9,13 @@ import { aurumNordicSeed } from "@/data/seed";
 import {
   currentUrlBrief,
   onboardingSessionSchema,
+  urlBriefWorkflowMaterialEvidence,
   type OnboardingSession,
 } from "@/domain/onboarding";
-import { assetCandidateSchema } from "@/domain/source-discovery";
+import {
+  assetCandidateSchema,
+  createStorefrontSourceEvidenceFingerprint,
+} from "@/domain/source-discovery";
 import {
   BrowserOnboardingSessionRepository,
   type OnboardingSessionLoadResult,
@@ -188,6 +192,93 @@ describe("P7-04 asset-review persistence and Storefront Design Brief integration
     expect(
       (await assets.listCandidatesRequiringReview()).find((item) => item.id === candidate.id),
     ).toBeUndefined();
+  });
+
+  it("keeps a legacy approved brief valid until a material asset-review change occurs", async () => {
+    const { repository, urlWorkflow, assets } = await setup();
+    await urlWorkflow.prepareBrief(briefInput);
+    await urlWorkflow.approveBrief("merchant_owner");
+    const persisted = await repository.load();
+    if (persisted.status !== "found") throw new Error("Expected a persisted session.");
+    const legacyFingerprint = createStorefrontSourceEvidenceFingerprint(
+      urlBriefWorkflowMaterialEvidence(persisted.session.urlBriefWorkflow),
+    );
+    const legacySession = onboardingSessionSchema.parse({
+      ...persisted.session,
+      urlBriefWorkflow: {
+        ...persisted.session.urlBriefWorkflow,
+        approvedEvidenceFingerprint: legacyFingerprint,
+        briefRevisions: persisted.session.urlBriefWorkflow.briefRevisions.map((brief) => ({
+          ...brief,
+          evidenceFingerprint: legacyFingerprint,
+          approvedEvidenceFingerprint: legacyFingerprint,
+          assetReviewFingerprint: null,
+        })),
+      },
+    });
+    await repository.save(legacySession);
+
+    await expect(urlWorkflow.requireApprovedBriefForGeneration()).resolves.toMatchObject({
+      status: "approved",
+      assetReviewFingerprint: null,
+    });
+
+    const [candidate] = await assets.listCandidatesRequiringReview();
+    if (!candidate) throw new Error("Expected a discovered asset candidate.");
+    await assets.markRequired({
+      candidateId: candidate.id,
+      sourceReferenceId: candidate.sourceReferenceId,
+      expectedRevision: candidate.revision,
+      required: true,
+    });
+
+    expect((await urlWorkflow.restore()).status).toBe("stale");
+    await expect(urlWorkflow.requireApprovedBriefForGeneration()).rejects.toMatchObject({
+      code: "stale-brief-approval",
+    });
+  });
+
+  it("keeps required unavailable candidates actionable after restoration", async () => {
+    const repository = new BrowserOnboardingSessionRepository();
+    const { urlWorkflow, assets } = await setup(repository);
+    const [candidate] = await assets.listCandidatesRequiringReview();
+    if (!candidate) throw new Error("Expected a discovered asset candidate.");
+    const required = await assets.markRequired({
+      candidateId: candidate.id,
+      sourceReferenceId: candidate.sourceReferenceId,
+      expectedRevision: candidate.revision,
+      required: true,
+    });
+    const requiredCandidate = required.candidates.find((item) => item.id === candidate.id);
+    if (!requiredCandidate) throw new Error("Expected a required asset candidate.");
+    await assets.markUnavailable({
+      candidateId: requiredCandidate.id,
+      sourceReferenceId: requiredCandidate.sourceReferenceId,
+      expectedRevision: requiredCandidate.revision,
+      reason: "The source no longer serves this image.",
+    });
+
+    const restoredAssets = new AssetReviewService(new BrowserOnboardingSessionRepository(), {
+      now: clock(),
+    });
+    const [unavailable] = await restoredAssets.listCandidatesRequiringReview();
+    expect(unavailable).toMatchObject({
+      id: candidate.id,
+      status: "unavailable",
+      allowedActions: ["reject", "mark-not-required", "select-replacement"],
+      unavailableDecision: { reason: "The source no longer serves this image." },
+    });
+    if (!unavailable) throw new Error("Expected an unavailable review action.");
+
+    await restoredAssets.reject({
+      candidateId: unavailable.id,
+      sourceReferenceId: unavailable.sourceReferenceId,
+      expectedRevision: unavailable.revision,
+      actorId: "merchant_asset_owner",
+      note: "Do not reuse the unavailable asset.",
+    });
+    const review = await urlWorkflow.prepareBrief(briefInput);
+    expect(currentUrlBrief(review)?.materialUnresolvedBlockers).toEqual([]);
   });
 
   it("marks an approved brief stale when its material approved-asset set changes", async () => {

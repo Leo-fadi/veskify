@@ -21,6 +21,7 @@ import {
   type OnboardingSession,
 } from "@/domain/onboarding";
 import {
+  assetCandidateSchema,
   createStorefrontSourceEvidenceFingerprint,
   reconciliationDecisionSchema,
   sourceDiscoveryResultSchema,
@@ -194,6 +195,72 @@ function uncertainAdapter(): SourceDiscoveryAdapter {
 }
 
 describe("P7-02 URL-to-approved-Storefront-Design-Brief workflow", () => {
+  it("keeps URL discovery successful when an adapter also returns a merchant-upload candidate", async () => {
+    const base = createDeterministicMockDiscoveryAdapter();
+    const adapter: SourceDiscoveryAdapter = {
+      id: "mixed-upload-and-url-assets",
+      async discover(input) {
+        const result = await base.discover(input);
+        const upload = assetCandidateSchema.parse({
+          id: "asset_uploaded_merchant_logo",
+          role: "logo",
+          source: { kind: "merchant-upload", assetId: "asset_uploaded_merchant_logo" },
+          dimensions: { width: 800, height: 400 },
+          mediaType: "image/png",
+          provenance: {
+            sourceReferenceId: input.source.id,
+            sourceUrl: input.source.url,
+            documentUrl: input.source.url,
+            observedAt: input.source.discoveredAt,
+            extractionLocation: "merchant upload handoff",
+          },
+          confidence: 1,
+          proposedReusePurpose: "Merchant-provided logo awaiting review.",
+          licensingUsageConfirmation: "pending",
+          warnings: [],
+          uncertainty: { isUncertain: true, reason: "Merchant approval is required." },
+          fingerprint: null,
+          duplicateOfAssetId: null,
+        });
+        const invalidUpload = assetCandidateSchema.parse({
+          ...upload,
+          id: "asset_invalid_uploaded_logo",
+          source: { kind: "merchant-upload", assetId: "asset_invalid_uploaded_logo" },
+          mediaType: null,
+          provenance: {
+            ...upload.provenance,
+            sourceReferenceId: "source_unrelated",
+          },
+        });
+        return sourceDiscoveryResultSchema.parse({
+          ...result,
+          assetCandidates: [...result.assetCandidates, upload, invalidUpload],
+        });
+      },
+    };
+    const { service } = await setup(adapter);
+    await service.submitSourceUrl("https://merchant.example/store");
+
+    const workflow = await service.discover();
+    const upload = workflow.discoveryResult?.assetCandidates.find(
+      (candidate) => candidate.source.kind === "merchant-upload",
+    );
+
+    expect(workflow.status).toBe("evidence-ready");
+    expect(workflow.discoveryResult?.evidence).not.toEqual([]);
+    expect(upload).toMatchObject({
+      source: { kind: "merchant-upload", assetId: "asset_uploaded_merchant_logo" },
+      licensingUsageConfirmation: "pending",
+      uncertainty: { isUncertain: true },
+    });
+    expect(workflow.assetReview.candidates).not.toContainEqual(
+      expect.objectContaining({ sourceCandidateId: "asset_uploaded_merchant_logo" }),
+    );
+    expect(workflow.discoveryResult?.warnings).toContainEqual(
+      expect.objectContaining({ code: "unreusable-asset" }),
+    );
+  });
+
   it("normalizes a realistic URL and reaches an approved brief in deterministic mode", async () => {
     const { repository } = await setup();
     const service = createDeterministicUrlBriefWorkflowService(repository, commerce, {

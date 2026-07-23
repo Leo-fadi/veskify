@@ -9,7 +9,7 @@ import {
   registerDiscoveredAssetCandidates,
   rejectAssetCandidate,
   type ApprovedAssetProjectionItem,
-  type AssetReviewCandidate,
+  type AssetReviewActionCandidate,
   type AssetReviewState,
 } from "@/domain/asset-review";
 import { cloneOnboardingSession, type OnboardingSession } from "@/domain/onboarding";
@@ -52,7 +52,7 @@ export class AssetReviewService {
     this.#now = options.now ?? (() => new Date().toISOString());
   }
 
-  async listCandidatesRequiringReview(): Promise<AssetReviewCandidate[]> {
+  async listCandidatesRequiringReview(): Promise<AssetReviewActionCandidate[]> {
     const session = await this.#load();
     return listAssetCandidatesRequiringReview(session.urlBriefWorkflow.assetReview);
   }
@@ -71,7 +71,7 @@ export class AssetReviewService {
       registerDiscoveredAssetCandidates({
         state,
         source: input.source,
-        candidates: input.candidates,
+        candidates: input.candidates.filter((candidate) => candidate.source.kind === "source-url"),
         requiredCandidateIds: input.requiredCandidateIds,
         now: this.#now(),
       }),

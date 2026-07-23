@@ -15,6 +15,7 @@ import {
   type SourceDiscoveryApplicationErrorCode,
 } from "@/application/source-discovery";
 import {
+  assetReviewHasMaterialChanges,
   createEmptyAssetReviewState,
   registerDiscoveredAssetCandidates,
 } from "@/domain/asset-review";
@@ -35,6 +36,8 @@ import {
   normalizeSourceUrl,
   sourceDiscoveryResultSchema,
   sourceReferenceSchema,
+  sourceWarningSchema,
+  type AssetCandidate,
   type CanonicalCommerceProjection,
   type SourceFailureCode,
   type SourceReference,
@@ -181,14 +184,45 @@ function sourceReferencesMatch(left: SourceReference, right: SourceReference): b
 function workflowEvidenceFingerprint(
   workflow: UrlBriefWorkflow,
   material: NonNullable<ReturnType<typeof urlBriefWorkflowMaterialEvidence>>,
+  brief?: StorefrontDesignBriefContract | null,
 ): string {
   return createStorefrontDesignBriefEvidenceFingerprint({
     sourceReferenceIds: material.sourceReferences.map((source) => source.id),
     sourceEvidenceIds: material.evidence.map((evidence) => evidence.id),
     canonicalCommerceProjectionRef: material.reconciliation?.canonicalCommerceProjectionRef ?? null,
     materialEvidence: material,
-    assetReviewFingerprint: workflow.assetReview.materialFingerprint,
+    assetReviewFingerprint:
+      brief?.assetReviewFingerprint === null ? undefined : workflow.assetReview.materialFingerprint,
   });
+}
+
+function assetReviewInvalidatesApprovedBrief(
+  workflow: UrlBriefWorkflow,
+  brief: StorefrontDesignBriefContract,
+): boolean {
+  return brief.assetReviewFingerprint === null
+    ? assetReviewHasMaterialChanges(workflow.assetReview)
+    : brief.assetReviewFingerprint !== workflow.assetReview.materialFingerprint;
+}
+
+function merchantUploadReviewWarning(
+  asset: AssetCandidate,
+  source: SourceReference,
+): ReturnType<typeof sourceWarningSchema.parse> | null {
+  if (asset.source.kind !== "merchant-upload") return null;
+  if (asset.provenance.sourceReferenceId !== source.id) {
+    return sourceWarningSchema.parse({
+      code: "unreusable-asset",
+      message: "A merchant-upload asset could not be linked to this storefront source.",
+    });
+  }
+  if (!asset.mediaType || !/^image\/[a-z0-9.+-]+$/i.test(asset.mediaType)) {
+    return sourceWarningSchema.parse({
+      code: "unreusable-asset",
+      message: "A merchant-upload asset has unsupported media metadata for review.",
+    });
+  }
+  return null;
 }
 
 export class UrlBriefWorkflowService {
@@ -362,20 +396,27 @@ export class UrlBriefWorkflowService {
           "The source did not provide reusable storefront evidence.",
         );
       }
+      const uploadWarnings = discovered.assetCandidates
+        .map((asset) => merchantUploadReviewWarning(asset, discoveringSource))
+        .filter((warning) => warning !== null);
+      const completedWarnings = [...discovered.warnings, ...uploadWarnings];
       const completedSource = sourceReferenceSchema.parse({
         ...discovered.source,
         status: discovered.source.status === "partial" ? "partial" : "complete",
-        warnings: discovered.warnings,
+        warnings: completedWarnings,
         failure: null,
       });
       const completedResult = sourceDiscoveryResultSchema.parse({
         ...discovered,
         source: completedSource,
+        warnings: completedWarnings,
       });
       const assetReview = registerDiscoveredAssetCandidates({
         state: active.workflow.assetReview,
         source: completedSource,
-        candidates: completedResult.assetCandidates,
+        candidates: completedResult.assetCandidates.filter(
+          (asset) => asset.source.kind === "source-url",
+        ),
         now: this.#now(),
       });
       const candidate = urlBriefWorkflowSchema.parse({
@@ -470,8 +511,11 @@ export class UrlBriefWorkflowService {
       const brief = currentUrlBrief(candidate);
       const material = urlBriefWorkflowMaterialEvidence(candidate);
       if (brief?.status === "approved" && material) {
-        const fingerprint = workflowEvidenceFingerprint(candidate, material);
-        if (fingerprint === brief.approvedEvidenceFingerprint) {
+        const fingerprint = workflowEvidenceFingerprint(candidate, material, brief);
+        if (
+          fingerprint === brief.approvedEvidenceFingerprint &&
+          !assetReviewInvalidatesApprovedBrief(candidate, brief)
+        ) {
           status = "approved";
           lastSafeState = "approved";
         } else {
@@ -813,12 +857,17 @@ export class UrlBriefWorkflowService {
     }
     const currentProjectionRef =
       loaded.workflow.reconciliation?.canonicalCommerceProjectionRef ?? null;
-    const currentEvidenceFingerprint = workflowEvidenceFingerprint(loaded.workflow, material);
+    const currentEvidenceFingerprint = workflowEvidenceFingerprint(
+      loaded.workflow,
+      material,
+      brief,
+    );
     if (
       projection === null ||
       projection.id !== currentProjectionRef ||
       brief.canonicalCommerceProjectionRef !== currentProjectionRef ||
-      brief.evidenceFingerprint !== currentEvidenceFingerprint
+      brief.evidenceFingerprint !== currentEvidenceFingerprint ||
+      (brief.status === "approved" && assetReviewInvalidatesApprovedBrief(loaded.workflow, brief))
     ) {
       const failureCode: SourceDiscoveryApplicationErrorCode = projection
         ? "stale-brief-approval"
@@ -937,7 +986,7 @@ export class UrlBriefWorkflowService {
     try {
       return requireApprovedCurrentStorefrontDesignBrief(
         brief,
-        workflowEvidenceFingerprint(loaded.workflow, material),
+        workflowEvidenceFingerprint(loaded.workflow, material, brief),
       );
     } catch (error) {
       const code = failureCode(error);

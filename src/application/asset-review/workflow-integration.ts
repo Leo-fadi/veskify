@@ -1,4 +1,5 @@
 import {
+  assetReviewHasMaterialChanges,
   approvedAssetProjection,
   unresolvedRequiredAssetCandidates,
   type AssetReviewState,
@@ -14,6 +15,21 @@ import { updateStorefrontDesignBriefReview } from "@/application/source-discover
 
 const assetBlockerPrefix = "Asset review: ";
 
+const blockerRoleLabels = {
+  logo: "logo",
+  hero: "hero image",
+  collection: "collection image",
+  product: "product image",
+  editorial: "editorial image",
+  supporting: "supporting image",
+} as const;
+
+function requiredAssetBlocker(
+  candidate: ReturnType<typeof unresolvedRequiredAssetCandidates>[number],
+) {
+  return `${assetBlockerPrefix}The required ${blockerRoleLabels[candidate.discoveredRole]} needs a merchant decision.`;
+}
+
 export function assetReviewBriefData(state: AssetReviewState) {
   const approved = approvedAssetProjection(state);
   return {
@@ -25,10 +41,7 @@ export function assetReviewBriefData(state: AssetReviewState) {
       fingerprint: asset.fingerprint,
     })),
     assetReviewFingerprint: state.materialFingerprint,
-    blockers: unresolvedRequiredAssetCandidates(state).map(
-      (candidate) =>
-        `${assetBlockerPrefix}${candidate.originalCandidate.proposedReusePurpose} requires a merchant decision.`,
-    ),
+    blockers: unresolvedRequiredAssetCandidates(state).map(requiredAssetBlocker),
   };
 }
 
@@ -66,7 +79,9 @@ export function synchronizeAssetReviewWithBrief(
     );
   } else if (
     current?.status === "approved" &&
-    current.assetReviewFingerprint !== briefData.assetReviewFingerprint
+    (current.assetReviewFingerprint === null
+      ? assetReviewHasMaterialChanges(state)
+      : current.assetReviewFingerprint !== briefData.assetReviewFingerprint)
   ) {
     status = "stale";
     lastSafeState = "stale";
