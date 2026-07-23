@@ -160,32 +160,22 @@ function EditorDesignTools({
   selectedSectionLabel?: string;
 }) {
   const toolCopy = editorCopy[locale].tools;
-  const text =
-    locale === "fi"
-      ? {
-          intro: "Muokkaa valitun osion sisältöä ja ulkoasua työskentelyalueella.",
-          select: "Valitse osio sivulta nähdäksesi sen säätimet.",
-          groups: ["Asettelu", "Sisältö", "Väri", "Typografia", "Väljyys", "Muoto", "Näkyvyys"],
-        }
-      : {
-          intro: "Edit the selected section's content and appearance in the workspace.",
-          select: "Select a section on the canvas to see its controls.",
-          groups: ["Layout", "Content", "Colour", "Typography", "Spacing", "Shape", "Visibility"],
-        };
 
   return (
     <div className={styles.designTools}>
       <Card className={styles.toolCard}>
         <p className={styles.eyebrow}>{toolCopy.design}</p>
-        <h2>{selectedSectionLabel ?? text.select}</h2>
-        <p>{text.intro}</p>
-        <Notice variant="info">{selectedSectionLabel ? text.intro : text.select}</Notice>
+        <h2>{selectedSectionLabel ?? toolCopy.selectSection}</h2>
+        <p>{toolCopy.designIntro}</p>
+        <Notice variant="info">
+          {selectedSectionLabel ? toolCopy.designIntro : toolCopy.selectSection}
+        </Notice>
       </Card>
       <div aria-label={toolCopy.designControls} className={styles.designGroups}>
-        {text.groups.map((group, index) => (
+        {toolCopy.groups.map((group, index) => (
           <details key={group} open={index === 0}>
             <summary>{group}</summary>
-            <p>{selectedSectionLabel ? text.intro : text.select}</p>
+            <p>{selectedSectionLabel ? toolCopy.designIntro : toolCopy.selectSection}</p>
           </details>
         ))}
       </div>
@@ -196,6 +186,7 @@ function EditorDesignTools({
 function EditorToolRail({
   activeTab,
   controller,
+  id,
   locale,
   onTabChange,
   pageTitle,
@@ -205,6 +196,7 @@ function EditorToolRail({
 }: {
   activeTab: "design" | "ai";
   controller: DesignAgentSessionController;
+  id?: string;
   locale: Locale;
   onTabChange: (tab: "design" | "ai") => void;
   pageTitle: string;
@@ -215,7 +207,7 @@ function EditorToolRail({
   const text = editorCopy[locale].tools;
 
   return (
-    <section aria-label={text.label} className={styles.toolRail}>
+    <section aria-label={editorCopy[locale].panels.contextual} className={styles.toolRail} id={id}>
       <Tabs
         items={[
           {
@@ -276,6 +268,8 @@ export function ProjectEditorClient({
   const [pageEditsAfterStorefront, setPageEditsAfterStorefront] = useState(0);
   const [saveState, setSaveState] = useState<SaveUiState>({ status: "idle" });
   const [activeToolTab, setActiveToolTab] = useState<"design" | "ai">("ai");
+  const [leftPanelOpen, setLeftPanelOpen] = useState(true);
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [outlineDrawerOpen, setOutlineDrawerOpen] = useState(false);
   const [toolDrawerOpen, setToolDrawerOpen] = useState(false);
   const [compactViewport, setCompactViewport] = useState(false);
@@ -605,12 +599,10 @@ export function ProjectEditorClient({
     try {
       validateRegisteredPage(nextPage, context);
     } catch {
-      setValidationMessage(
-        "That page change is not valid yet, so it cannot be saved. Your last valid design is still shown.",
-      );
+      setValidationMessage(text.feedback.pageValidation);
       setSaveState({
         status: "validation",
-        message: "Fix the page issue before saving your draft.",
+        message: text.feedback.pageSaveValidation,
       });
       return;
     }
@@ -783,7 +775,7 @@ export function ProjectEditorClient({
           : `${duplicatedLabel} was created and selected.`,
       );
     } catch {
-      setValidationMessage("That section cannot be duplicated safely.");
+      setValidationMessage(text.feedback.duplicateUnavailable);
     }
   };
 
@@ -813,15 +805,12 @@ export function ProjectEditorClient({
         `${selectedSection.visible ? "Hid" : "Showed"} ${getComponentDefinition(selectedSection.component).label}.`,
       );
     } catch {
-      setValidationMessage("That section must remain visible on this page.");
+      setValidationMessage(text.feedback.requiredVisible);
     }
   };
 
   const outlineList = (
-    <ol
-      aria-label={locale === "fi" ? "Sivut ja osiot" : "Pages and sections"}
-      className={styles.outlineList}
-    >
+    <ol aria-label={text.navigation.outline} className={styles.outlineList}>
       {state.pages.map((item) => {
         const itemIsCurrent = item.id === page.id;
         const itemPage = sessionPages[item.id] ?? item;
@@ -836,7 +825,7 @@ export function ProjectEditorClient({
             >
               <span>{editorPageName(item, locale, state.aggregate.project.primaryLocale)}</span>
               <small>
-                {itemPage.sections.length} {locale === "fi" ? "osiota" : "sections"}
+                {itemPage.sections.length} {text.navigation.sections}
               </small>
             </button>
             {itemIsCurrent ? (
@@ -845,22 +834,14 @@ export function ProjectEditorClient({
                   <li key={section.id}>
                     <button
                       aria-current={section.id === selectedSectionId ? "step" : undefined}
-                      aria-label={`${merchantEditorSectionLabel(itemPage, section, locale)} — ${section.visible ? (locale === "fi" ? "Näkyvä" : "Visible") : locale === "fi" ? "Piilotettu" : "Hidden"}`}
+                      aria-label={`${merchantEditorSectionLabel(itemPage, section, locale)} — ${section.visible ? text.section.visible : text.section.hidden}`}
                       className={styles.outlineSection}
                       disabled={saving}
                       onClick={() => selectSection(section.id)}
                       type="button"
                     >
                       <span>{merchantEditorSectionLabel(itemPage, section, locale)}</span>
-                      <small>
-                        {section.visible
-                          ? locale === "fi"
-                            ? "Näkyvä"
-                            : "Visible"
-                          : locale === "fi"
-                            ? "Piilotettu"
-                            : "Hidden"}
-                      </small>
+                      <small>{section.visible ? text.section.visible : text.section.hidden}</small>
                     </button>
                   </li>
                 ))}
@@ -875,21 +856,13 @@ export function ProjectEditorClient({
   const sectionActions = (
     <Card aria-label={text.section.actions} className={styles.sectionActions}>
       <details open>
-        <summary>{locale === "fi" ? "Osion toiminnot" : "Section options"}</summary>
-        <h2>{locale === "fi" ? "Valittu osio" : "Selected section"}</h2>
+        <summary>{text.section.options}</summary>
+        <h2>{text.section.selected}</h2>
         {selectedSection ? (
           <>
             <p>
               <strong>{merchantEditorSectionLabel(page, selectedSection, locale)}</strong>
-              <span>
-                {selectedSection.visible
-                  ? locale === "fi"
-                    ? "Näkyvä"
-                    : "Visible"
-                  : locale === "fi"
-                    ? "Piilotettu"
-                    : "Hidden"}
-              </span>
+              <span>{selectedSection.visible ? text.section.visible : text.section.hidden}</span>
             </p>
             <div>
               <Button
@@ -897,33 +870,23 @@ export function ProjectEditorClient({
                 onClick={duplicateSelectedSection}
                 variant="secondary"
               >
-                {locale === "fi" ? "Monista" : "Duplicate"}
+                {text.section.duplicate}
               </Button>
               <Button
                 disabled={!canToggleSectionVisibility(selectedSection) || mutationsBlocked}
                 onClick={toggleSelectedSection}
                 variant="secondary"
               >
-                {selectedSection.visible
-                  ? locale === "fi"
-                    ? "Piilota"
-                    : "Hide"
-                  : locale === "fi"
-                    ? "Näytä"
-                    : "Show"}
+                {selectedSection.visible ? text.section.hide : text.section.show}
               </Button>
             </div>
             {!canDuplicateSection(selectedSection) ||
             !canToggleSectionVisibility(selectedSection) ? (
-              <p>
-                {locale === "fi"
-                  ? "Pakollinen osio pysyy näkyvissä ja voi esiintyä vain kerran."
-                  : "This required section must remain visible and can only appear once."}
-              </p>
+              <p>{text.section.required}</p>
             ) : null}
           </>
         ) : (
-          <p>{locale === "fi" ? "Valitse osio sivulta." : "Select a section on the canvas."}</p>
+          <p>{text.section.empty}</p>
         )}
       </details>
     </Card>
@@ -933,6 +896,7 @@ export function ProjectEditorClient({
     <EditorToolRail
       activeTab={activeToolTab}
       controller={agent}
+      id="editor-contextual-panel"
       locale={locale}
       onTabChange={setActiveToolTab}
       pageTitle={title}
@@ -1138,12 +1102,8 @@ export function ProjectEditorClient({
                 />
                 <span>
                   {draftDiffers(state.draft, state.published)
-                    ? locale === "fi"
-                      ? "Luonnos eroaa julkaistusta kaupasta."
-                      : "Draft differs from published storefront."
-                    : locale === "fi"
-                      ? "Julkaistu tila on ajan tasalla."
-                      : "Published storefront is up to date."}
+                    ? text.status.draftDiffersDetail
+                    : text.status.publishedCurrent}
                 </span>
               </div>
             </div>
@@ -1213,45 +1173,69 @@ export function ProjectEditorClient({
         projectId={projectId}
         projectName={state.aggregate.project.name}
       >
-        <div className={styles.workspaceToolbar}>
+        <div aria-label={text.panels.contextual} className={styles.workspaceToolbar}>
           <Button
-            className={styles.drawerTrigger}
+            aria-controls={compactViewport ? undefined : "editor-workspace-panel"}
+            aria-expanded={compactViewport ? outlineDrawerOpen : leftPanelOpen}
+            className={compactViewport ? styles.drawerTrigger : undefined}
             onClick={() => {
-              setOutlineDrawerOpen(true);
-              setToolDrawerOpen(false);
+              if (compactViewport) {
+                setOutlineDrawerOpen(true);
+                setToolDrawerOpen(false);
+                return;
+              }
+              setLeftPanelOpen((current) => !current);
             }}
             variant="secondary"
           >
-            {locale === "fi" ? "Sivut ja osiot" : "Pages & sections"}
+            {compactViewport
+              ? text.panels.workspace
+              : leftPanelOpen
+                ? text.panels.collapseWorkspace
+                : text.panels.expandWorkspace}
           </Button>
           <Button
-            className={styles.drawerTrigger}
+            aria-controls={compactViewport ? undefined : "editor-contextual-panel"}
+            aria-expanded={compactViewport ? toolDrawerOpen : rightPanelOpen}
+            className={compactViewport ? styles.drawerTrigger : undefined}
             onClick={() => {
-              setToolDrawerOpen(true);
-              setOutlineDrawerOpen(false);
+              if (compactViewport) {
+                setToolDrawerOpen(true);
+                setOutlineDrawerOpen(false);
+                return;
+              }
+              setRightPanelOpen((current) => !current);
             }}
             variant="secondary"
           >
-            {activeToolTab === "ai"
-              ? locale === "fi"
-                ? "Avaa suunnitteluavustaja"
-                : "Open AI assistant"
-              : locale === "fi"
-                ? "Avaa design-työkalut"
-                : "Open design tools"}
+            {compactViewport
+              ? activeToolTab === "ai"
+                ? text.tools.openAssistant
+                : text.tools.openDesign
+              : rightPanelOpen
+                ? text.panels.collapseContextual
+                : text.panels.expandContextual}
           </Button>
         </div>
-        <div className={styles.workspace}>
-          {!compactViewport ? (
-            <aside aria-label="Editor controls" className={styles.sidebar}>
+        <div
+          className={[
+            styles.workspace,
+            !leftPanelOpen && styles.workspaceLeftCollapsed,
+            !rightPanelOpen && styles.workspaceRightCollapsed,
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
+          {!compactViewport && leftPanelOpen ? (
+            <aside
+              aria-label={text.panels.workspace}
+              className={styles.sidebar}
+              id="editor-workspace-panel"
+            >
               <section className={styles.outlineHeader}>
-                <p className={styles.eyebrow}>{locale === "fi" ? "Rakenne" : "Structure"}</p>
-                <h2>{locale === "fi" ? "Sivut ja osiot" : "Pages & sections"}</h2>
-                <p>
-                  {locale === "fi"
-                    ? "Valitse sivu ja sen osio työskentelyä varten."
-                    : "Choose a page and section to work on."}
-                </p>
+                <p className={styles.eyebrow}>{text.navigation.structure}</p>
+                <h2>{text.panels.workspace}</h2>
+                <p>{text.navigation.structureHelp}</p>
               </section>
               <Field
                 hint={text.navigation.storefrontPageHint}
@@ -1282,7 +1266,7 @@ export function ProjectEditorClient({
           <main className={styles.canvas}>
             {showingProposal ? (
               <div className={styles.proposalPreviewLabel} role="status">
-                Proposal preview — your current page is unchanged
+                {text.canvas.proposalNotice}
               </div>
             ) : null}
             <VeskifyPuckCanvas
@@ -1303,22 +1287,24 @@ export function ProjectEditorClient({
               }}
               page={canvasPage}
               readOnly={agent.blocksSave || saving}
-              readOnlyLabel={showingProposal ? "Proposal preview canvas" : "Visual editor canvas"}
+              readOnlyLabel={showingProposal ? text.canvas.proposal : text.canvas.editor}
               resetKey={resetKeys[canvasPage.id] ?? 0}
               sessionKey={
                 agent.generatedProposal?.proposal.id ??
                 agent.generatedStorefrontProposal?.id ??
                 "active"
               }
+              contextualPanel={!compactViewport && rightPanelOpen ? toolRail : undefined}
+              showDesignFields={!compactViewport && rightPanelOpen && activeToolTab === "design"}
+              validationErrorMessage={text.feedback.canvasValidation}
             />
           </main>
-          {!compactViewport ? toolRail : null}
         </div>
         <Drawer
-          closeLabel={locale === "fi" ? "Sulje" : "Close"}
+          closeLabel={text.actions.close}
           onClose={() => setOutlineDrawerOpen(false)}
           open={outlineDrawerOpen}
-          title={locale === "fi" ? "Sivut ja osiot" : "Pages & sections"}
+          title={text.panels.workspace}
         >
           <div className={styles.drawerContent}>
             {outlineList}
@@ -1327,10 +1313,10 @@ export function ProjectEditorClient({
           </div>
         </Drawer>
         <Drawer
-          closeLabel={locale === "fi" ? "Sulje" : "Close"}
+          closeLabel={text.actions.close}
           onClose={() => setToolDrawerOpen(false)}
           open={toolDrawerOpen}
-          title={locale === "fi" ? "Muokkaustyökalut" : "Editor tools"}
+          title={text.panels.contextual}
         >
           <div className={styles.drawerContent}>{toolRail}</div>
         </Drawer>

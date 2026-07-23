@@ -81,6 +81,11 @@ const copy = {
     affectedPages: "Affected pages",
     pageChanges: "Planned page changes",
     completeReview: "Every planned storefront change is represented below.",
+    panel: "Design request",
+    storefrontProposal: "Storefront design proposal",
+    proposal: "Design proposal",
+    pages: "pages",
+    sections: "sections",
   },
   fi: {
     eyebrow: "Suunnitteluavustaja",
@@ -135,6 +140,11 @@ const copy = {
     affectedPages: "Kohdesivut",
     pageChanges: "Suunnitellut sivumuutokset",
     completeReview: "Kaikki suunnitellut verkkokaupan muutokset näkyvät alla.",
+    panel: "Suunnittelupyyntö",
+    storefrontProposal: "Verkkokaupan suunnitteluehdotus",
+    proposal: "Suunnitteluehdotus",
+    pages: "sivua",
+    sections: "osiota",
   },
 } as const;
 
@@ -225,22 +235,20 @@ export function DesignAgentPanel({
       : designAgentExamplePrompts[locale];
   const targetSummary =
     controller.targetScope === "storefront"
-      ? `${text.storefrontTarget} — ${storefrontPageCount ?? 0} ${locale === "fi" ? "sivua" : "pages"}`
+      ? `${text.storefrontTarget} — ${storefrontPageCount ?? 0} ${text.pages}`
       : controller.targetScope === "section" && selectedSectionLabel
         ? `${selectedSectionLabel} · ${pageTitle}`
         : `${text.pageTarget} · ${pageTitle}`;
   const scope = session
     ? session.affectedSectionIds.length > 0
-      ? `${pageTitle} · ${session.affectedSectionIds.length} ${
-          locale === "fi" ? "osiota" : "sections"
-        }`
+      ? `${pageTitle} · ${session.affectedSectionIds.length} ${text.sections}`
       : pageTitle
     : text.pageScope;
 
   return (
     <aside
       aria-busy={busy}
-      aria-label="Design request"
+      aria-label={text.panel}
       className={styles.panel}
       data-agent-state={controller.visibleState}
     >
@@ -387,7 +395,7 @@ export function DesignAgentPanel({
 
       {controller.previewActive && storefrontProposal && storefrontReview && session ? (
         <section
-          aria-label="Storefront design proposal"
+          aria-label={text.storefrontProposal}
           className={styles.card}
           data-proposal-id={storefrontProposal.id}
         >
@@ -515,11 +523,7 @@ export function DesignAgentPanel({
       ) : null}
 
       {controller.previewActive && proposal && session ? (
-        <section
-          aria-label="Design proposal"
-          className={styles.card}
-          data-proposal-id={proposal.id}
-        >
+        <section aria-label={text.proposal} className={styles.card} data-proposal-id={proposal.id}>
           <p className={styles.eyebrow}>{applicationFailed ? text.applyFailed : text.ready}</p>
           <h3 ref={proposalHeadingRef} tabIndex={-1}>
             {resolveLocalizedText(proposal.summary, locale, primaryLocale)}

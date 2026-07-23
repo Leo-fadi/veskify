@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Puck, Render, type Data, type OnAction } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
 import type { StorefrontRenderContext } from "@/components/registry";
@@ -34,6 +34,9 @@ export function VeskifyPuckCanvas({
   onSelectedSectionChange,
   readOnly = false,
   readOnlyLabel,
+  validationErrorMessage,
+  contextualPanel,
+  showDesignFields = false,
 }: {
   page: PageModel;
   context: StorefrontRenderContext;
@@ -45,6 +48,9 @@ export function VeskifyPuckCanvas({
   onSelectedSectionChange?: (sectionId: string | undefined) => void;
   readOnly?: boolean;
   readOnlyLabel?: string;
+  validationErrorMessage?: string;
+  contextualPanel?: ReactNode;
+  showDesignFields?: boolean;
 }) {
   const boundaryKey = `${page.id}-${context.activeLocale}-${resetKey}-${sessionKey}`;
   return (
@@ -58,6 +64,9 @@ export function VeskifyPuckCanvas({
       page={page}
       readOnly={readOnly}
       readOnlyLabel={readOnlyLabel}
+      validationErrorMessage={validationErrorMessage}
+      contextualPanel={contextualPanel}
+      showDesignFields={showDesignFields}
     />
   );
 }
@@ -71,6 +80,9 @@ function VeskifyPuckCanvasSession({
   onSelectedSectionChange,
   readOnly,
   readOnlyLabel,
+  validationErrorMessage,
+  contextualPanel,
+  showDesignFields,
 }: Omit<Parameters<typeof VeskifyPuckCanvas>[0], "resetKey" | "sessionKey">) {
   const [recoveryVersion, setRecoveryVersion] = useState(0);
   const trustedPage = useRef(page);
@@ -83,7 +95,8 @@ function VeskifyPuckCanvasSession({
       onPageChange(puckDataToPage(nextData, trustedPage.current, context));
     } catch {
       onValidationError(
-        "That change could not be applied safely. Your last valid design is still shown.",
+        validationErrorMessage ??
+          "That change could not be applied safely. Your last valid design is still shown.",
       );
       trustedPage.current = page;
       setRecoveryVersion((current) => current + 1);
@@ -119,19 +132,34 @@ function VeskifyPuckCanvasSession({
       <Puck
         config={config}
         data={data}
-        headerTitle="Visual editor"
         height="calc(100vh - 12rem)"
         key={recoveryVersion}
         onAction={handleAction}
         onChange={readOnly ? undefined : handleChange}
-        overrides={{ headerActions: () => <></> }}
         permissions={
           readOnly
             ? editingPermissions
             : { ...editingPermissions, delete: true, drag: true, edit: true, insert: true }
         }
-        ui={{ leftSideBarVisible: false }}
-      />
+        ui={{ leftSideBarVisible: false, rightSideBarVisible: false }}
+      >
+        <div
+          className="grid h-full min-h-[44rem] bg-white"
+          style={{
+            gridTemplateColumns: contextualPanel ? "minmax(0, 1fr) minmax(18rem, 20rem)" : "1fr",
+          }}
+        >
+          <div className="min-w-0">
+            <Puck.Preview />
+          </div>
+          {contextualPanel ? (
+            <aside className="overflow-y-auto border-l border-[var(--vesko-app-border)] bg-white p-3">
+              {contextualPanel}
+              {showDesignFields ? <Puck.Fields /> : null}
+            </aside>
+          ) : null}
+        </div>
+      </Puck>
     </section>
   );
 }

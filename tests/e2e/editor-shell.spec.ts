@@ -104,6 +104,38 @@ test("keeps every collapsed editor rail destination visible and labelled", async
   );
 });
 
+test("uses one collapsible merchant workspace panel on each side at desktop width", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(url);
+
+  await expect(page.getByRole("complementary", { name: "Pages & sections" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Contextual tools" })).toBeVisible();
+  await expect(page.getByText("Blocks", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Outline", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Puck", { exact: true })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Collapse pages and sections" }).click();
+  await page.getByRole("button", { name: "Collapse contextual tools" }).click();
+  await expect(page.getByRole("complementary", { name: "Pages & sections" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Contextual tools" })).toHaveCount(0);
+
+  const canvas = page.getByLabel("Visual editor canvas");
+  await expect(canvas).toBeVisible();
+  expect(await canvas.evaluate((element) => element.getBoundingClientRect().width >= 900)).toBe(
+    true,
+  );
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+
+  await page.getByRole("button", { name: "Expand pages and sections" }).click();
+  await page.getByRole("button", { name: "Expand contextual tools" }).click();
+  await expect(page.getByRole("complementary", { name: "Pages & sections" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Contextual tools" })).toBeVisible();
+});
+
 test("selects and edits an approved field, then discards the session change", async ({ page }) => {
   await page.goto(url);
   const canvas = await selectHomepageHero(page);
