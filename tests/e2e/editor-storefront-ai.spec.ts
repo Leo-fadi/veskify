@@ -49,7 +49,7 @@ test("selected-section target falls back to Current page when its section disapp
 
   await expect(page.getByRole("radio", { name: "Current page" })).toBeChecked();
   await expect(page.getByRole("radio", { name: "Selected section" })).toBeDisabled();
-  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
 });
 
 test("current-page proposal uses the existing editor flow", async ({ page }) => {
@@ -74,7 +74,7 @@ test("entire-storefront Accept, Undo and Redo remain one editor action", async (
   await page.goto(editorUrl);
   await openStorefrontProposal(page);
   await page.getByRole("button", { name: "Accept and apply" }).click();
-  await expect(page.getByLabel("Draft status")).toContainText("Unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("Unsaved changes");
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(page.getByRole("button", { name: "Redo", exact: true })).toBeEnabled();
   await page.getByRole("button", { name: "Redo", exact: true }).click();
@@ -87,7 +87,7 @@ test("Save draft reloads the complete accepted storefront without changing Publi
   await page.goto(editorUrl);
   await openStorefrontProposal(page);
   await page.getByRole("button", { name: "Accept and apply" }).click();
-  await expect(page.getByLabel("Draft status")).toContainText("Unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("Unsaved changes");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByText("Draft saved successfully.")).toBeVisible();
 
@@ -99,7 +99,7 @@ test("Save draft reloads the complete accepted storefront without changing Publi
     canvasRoot = page.frameLocator("iframe").locator("[data-veskify-canvas-root]");
     await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#7B4A2D");
   }
-  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
 
   await page.goto("/projects/project_aurum_nordic/published");
   await expect(page.getByLabel("Published storefront")).toBeVisible();
@@ -111,7 +111,7 @@ test("Reject closes the storefront review without draft mutation", async ({ page
   await openStorefrontProposal(page);
   await page.getByRole("button", { name: "Reject" }).click();
   await expect(page.getByLabel("Storefront design proposal")).toHaveCount(0);
-  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
 });
 
 test("stale storefront previews leave the canvas before normal editing resumes", async ({
@@ -128,7 +128,8 @@ test("stale storefront previews leave the canvas before normal editing resumes",
   await expect(page.getByLabel("Proposal preview canvas")).toHaveCount(0);
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#8A5A2B");
   await expect(page.getByLabel("Visual editor canvas")).toBeVisible();
-  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByTestId("draft-status")).toHaveAccessibleName("Luonnoksen tila");
+  await expect(page.getByTestId("draft-status")).toContainText("Ei tallentamattomia muutoksia");
 });
 
 test("accepted storefront history survives a later rejected proposal", async ({ page }) => {
@@ -136,7 +137,7 @@ test("accepted storefront history survives a later rejected proposal", async ({ 
   const canvasRoot = page.frameLocator("iframe").locator("[data-veskify-canvas-root]");
   await openStorefrontProposal(page);
   await page.getByRole("button", { name: "Accept and apply" }).click();
-  await expect(page.getByLabel("Draft status")).toContainText("Unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("Unsaved changes");
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#7B4A2D");
 
   await page.getByRole("button", { name: "Start over" }).click();
@@ -145,7 +146,7 @@ test("accepted storefront history survives a later rejected proposal", async ({ 
   await page.getByRole("button", { name: "Undo", exact: true }).click();
 
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#8A5A2B");
-  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
 });
 
 test("multiple accepted storefront proposals undo and redo in chronological order", async ({
@@ -197,7 +198,7 @@ test("page edits after storefront Accept are undone before the composite storefr
 
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#8A5A2B");
-  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
 });
 
 test("retryable storefront failure requires an explicit Retry", async ({ page }) => {
@@ -208,7 +209,7 @@ test("retryable storefront failure requires an explicit Retry", async ({ page })
   const retry = page.getByRole("button", { name: "Retry" });
   await expect(retry).toBeVisible();
   await expect(retry).toBeFocused();
-  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
 });
 
 test("target switch makes an old storefront proposal unusable", async ({ page }) => {

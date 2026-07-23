@@ -72,6 +72,16 @@ describe("Vesko UI foundations", () => {
     expect(setup).not.toHaveAttribute("href", "/projects/new");
     fireEvent.click(setup);
     expect(window.location.pathname).not.toBe("/projects/new");
+
+    rerender(
+      <AppShell activeModule="setup" locale="fi" showModuleNav>
+        Onboarding
+      </AppShell>,
+    );
+    expect(screen.getByRole("link", { name: "Määritykset" })).toHaveAttribute(
+      "href",
+      "/projects/new",
+    );
   });
 
   it("uses the compliant dark green for every primary button", () => {

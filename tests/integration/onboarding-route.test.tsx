@@ -723,6 +723,51 @@ describe("guided onboarding route", () => {
     expect(screen.getByRole("textbox", { name: "Business name" })).toHaveValue("Aurum Nordic");
   });
 
+  it("restores the canonical industry after returning through the new-store path", async () => {
+    const user = userEvent.setup();
+    render(<OnboardingWizard />);
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    await user.click(screen.getByRole("radio", { name: /Create a new storefront/i }));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    await user.type(screen.getByRole("textbox", { name: "Business name" }), "Aurum Nordic");
+    await user.type(
+      screen.getByRole("textbox", { name: "Short business description" }),
+      "A Helsinki jewellery studio.",
+    );
+    fireEvent.change(screen.getByRole("combobox", { name: "Industry" }), {
+      target: { value: "jewellery" },
+    });
+    await user.type(
+      screen.getByRole("textbox", { name: "Target customer" }),
+      "Customers looking for Nordic jewellery.",
+    );
+    await user.type(screen.getByRole("textbox", { name: "Primary market" }), "Finland");
+    await user.tab();
+    fireEvent.click(screen.getByRole("button", { name: "Back" }));
+
+    await screen.findByRole("heading", { name: "How would you like to begin?" });
+    fireEvent.click(screen.getByRole("radio", { name: /Create a new storefront/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+
+    expect(await screen.findByRole("heading", { name: "Business basics" })).toBeVisible();
+    expect(screen.getByRole("combobox", { name: "Industry" })).toHaveValue("jewellery");
+    expect(screen.getByRole("textbox", { name: "Business name" })).toHaveValue("Aurum Nordic");
+    expect(screen.getByRole("textbox", { name: "Short business description" })).toHaveValue(
+      "A Helsinki jewellery studio.",
+    );
+    expect(screen.getByRole("textbox", { name: "Target customer" })).toHaveValue(
+      "Customers looking for Nordic jewellery.",
+    );
+    expect(screen.getByRole("textbox", { name: "Primary market" })).toHaveValue("Finland");
+    expect(JSON.parse(localStorage.getItem(ONBOARDING_SESSION_STORAGE_KEY) ?? "{}")).toMatchObject({
+      designBrief: { businessIdentity: { industry: "jewellery" } },
+    });
+
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(await screen.findByRole("heading", { name: "Existing sources" })).toBeVisible();
+  });
+
   it("keeps the in-memory form usable when a field save temporarily fails", async () => {
     const user = userEvent.setup();
     render(<OnboardingWizard />);

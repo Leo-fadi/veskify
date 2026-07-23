@@ -2,17 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import type { MouseEvent, ReactNode } from "react";
 import styles from "./vesko-ui.module.css";
+import {
+  storefrontShellCopy,
+  storefrontStudioModuleItems,
+  type StorefrontStudioModuleId,
+} from "./storefront-studio-copy";
 
-const moduleItems = [
-  ["overview", "Overview", "Yleiskatsaus"],
-  ["setup", "Setup", "Asetukset"],
-  ["editor", "Editor", "Editori"],
-  ["preview", "Preview", "Esikatselu"],
-  ["publishing", "Publishing", "Julkaiseminen"],
-  ["history", "History", "Historia"],
-] as const;
-
-type ModuleId = (typeof moduleItems)[number][0];
+type ModuleId = StorefrontStudioModuleId;
 type Locale = "en" | "fi";
 
 function join(...classes: Array<string | undefined | false>) {
@@ -288,13 +284,7 @@ export function AppShell({
   editorMode?: boolean;
   showModuleNav?: boolean;
 }) {
-  const isFinnish = locale === "fi";
-  const labels = {
-    home: isFinnish ? "Vesko-etusivu" : "Vesko home",
-    studio: isFinnish ? "Storefront Studio" : "Storefront Studio",
-    projects: isFinnish ? "Projektit" : "Projects",
-    account: isFinnish ? "Tili" : "Account",
-  };
+  const labels = storefrontShellCopy[locale];
   const projectPath = projectId ? `/projects/${projectId}` : "/projects/new";
 
   return (
@@ -317,7 +307,7 @@ export function AppShell({
           />
           <span className={styles.brandName}>Vesko</span>
         </Link>
-        <nav aria-label="Global navigation" className={styles.platformNav}>
+        <nav aria-label={labels.globalNavigation} className={styles.platformNav}>
           <Link
             aria-current={!projectId ? "page" : undefined}
             aria-disabled={homeNavigationDisabled || undefined}
@@ -344,7 +334,7 @@ export function AppShell({
       <div className={styles.shellBody}>
         <div className={styles.moduleHeader}>
           <div
-            aria-label={projectId ? "Editor navigation" : undefined}
+            aria-label={projectId ? labels.editorNavigation : undefined}
             className={styles.moduleIdentity}
             role={projectId ? "navigation" : undefined}
           >
@@ -358,7 +348,7 @@ export function AppShell({
         </div>
         {showModuleNav ? (
           <Tabs
-            items={moduleItems
+            items={storefrontStudioModuleItems
               .filter(([id]) => projectId || id === "setup")
               .map(([id, en, fi]) => ({
                 active: activeModule === id,
@@ -376,9 +366,9 @@ export function AppShell({
                           ? `/projects/${projectId}/publish`
                           : `/projects/${projectId}/${id === "editor" ? "editor" : id}`,
                 id,
-                label: isFinnish ? fi : en,
+                label: locale === "fi" ? fi : en,
               }))}
-            label={isFinnish ? "Storefront Studio -moduulit" : "Storefront Studio modules"}
+            label={labels.modules}
           />
         ) : null}
         <div className={styles.content}>{children}</div>
