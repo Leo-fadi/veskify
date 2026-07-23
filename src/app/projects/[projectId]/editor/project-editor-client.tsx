@@ -1111,7 +1111,12 @@ export function ProjectEditorClient({
               ))}
             </fieldset>
             <div className={styles.statusCluster}>
-              <div aria-label={text.status.draft} className={styles.draftStatus} role="status">
+              <div
+                aria-label={text.status.draft}
+                className={styles.draftStatus}
+                data-testid="draft-status"
+                role="status"
+              >
                 <StatusPill label={statusLabel} live status={status} />
                 <span>{hasUnsavedChanges ? text.status.unsaved : text.status.noUnsaved}</span>
                 <span>

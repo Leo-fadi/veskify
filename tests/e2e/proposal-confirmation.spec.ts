@@ -22,12 +22,12 @@ test("reviews, rejects and accepts a proposal without automatic draft mutation",
   await expect(card).toContainText("Affected scope");
   await expect(card).toContainText("Planned changes");
   await expect(card).toContainText("Warnings and diagnostics");
-  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
 
   await page.getByRole("button", { name: "Reject" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText(/page remains unchanged/i)).toBeVisible();
-  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
 
   await page.getByRole("button", { name: "Start over" }).click();
   await page.getByRole("button", { name: "Add a campaign section." }).click();
@@ -36,7 +36,7 @@ test("reviews, rejects and accepts a proposal without automatic draft mutation",
   await page.getByRole("button", { name: "Accept and apply" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText(/accepted for draft application/i)).toBeVisible();
-  await expect(page.getByLabel("Draft status")).toContainText("Unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("Unsaved changes");
   await page.getByRole("button", { name: "Close" }).click();
   await page.getByRole("button", { name: "Undo" }).click();
   await expect(page.getByRole("button", { name: "Undo" })).toBeDisabled();
@@ -45,11 +45,11 @@ test("reviews, rejects and accepts a proposal without automatic draft mutation",
 test("reloading a proposal review never applies it", async ({ page }) => {
   await page.goto(editorUrl);
   await createProposal(page);
-  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
 
   await page.reload();
   await expect(page.getByLabel("Design proposal")).toHaveCount(0);
-  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
   await expect(page.getByRole("button", { name: "Save draft" })).toBeDisabled();
 });
 

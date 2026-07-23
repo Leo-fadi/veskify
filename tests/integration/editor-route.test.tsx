@@ -575,9 +575,8 @@ describe("P2-01 project editor route", () => {
     ]) {
       expect(screen.getByRole("link", { name: label })).toBeVisible();
     }
-    expect(screen.getByLabelText("Luonnoksen tila")).toHaveTextContent(
-      "Ei tallentamattomia muutoksia",
-    );
+    expect(screen.getByTestId("draft-status")).toHaveAccessibleName("Luonnoksen tila");
+    expect(screen.getByTestId("draft-status")).toHaveTextContent("Ei tallentamattomia muutoksia");
     expect(screen.getByRole("button", { name: "Kumoa" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Tee uudelleen" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Tallenna luonnos" })).toBeVisible();

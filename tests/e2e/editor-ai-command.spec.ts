@@ -62,11 +62,14 @@ test("submits a localized editor command from the keyboard without mutating the 
   await expect(proposal).toBeVisible();
   await expect(proposal.getByRole("heading")).toBeFocused();
   await expect(request).toHaveValue("");
-  await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+  await expect(page.getByTestId("draft-status")).toHaveAccessibleName("Draft status");
+  await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
 
   await page.getByRole("button", { name: "Reject" }).click();
   await page.getByRole("button", { name: "Start over" }).click();
   await page.getByRole("radio", { name: "Suomi" }).check();
+  await expect(page.getByTestId("draft-status")).toHaveAccessibleName("Luonnoksen tila");
+  await expect(page.getByTestId("draft-status")).toContainText("Ei tallentamattomia muutoksia");
   await expect(page.getByLabel("Pyyntösi")).toHaveAttribute(
     "placeholder",
     "Esimerkiksi: Tee etusivusta ylellisempi.",
@@ -101,7 +104,9 @@ for (const contextChange of ["page", "locale", "section"] as const) {
 
     await expect(page.getByLabel("Design proposal")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Accept and apply" })).toHaveCount(0);
-    await expect(page.getByLabel("Draft status")).toContainText("No unsaved changes");
+    await expect(page.getByTestId("draft-status")).toContainText(
+      contextChange === "locale" ? "Ei tallentamattomia muutoksia" : "No unsaved changes",
+    );
     await expect(
       page.getByLabel(contextChange === "locale" ? "Pyyntösi" : "Your request"),
     ).not.toHaveValue("");
