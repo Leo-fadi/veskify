@@ -711,7 +711,7 @@ function CollectionFilters({
       className={`${styles.filters} ${styles[`filters_${input.props.filterLayout}`]}`}
       data-layout-region="filters"
     >
-      <summary>{text(input.content.filterTriggerLabel, locale)}</summary>
+      <summary role="button">{text(input.content.filterTriggerLabel, locale)}</summary>
       <div className={styles.filterPanel}>
         <div className={styles.filterHeading}>
           <h2>{text(input.content.filtersHeading, locale)}</h2>
