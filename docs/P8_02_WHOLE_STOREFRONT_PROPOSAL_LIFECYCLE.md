@@ -11,7 +11,7 @@
 
 The compiler reconstructs the current plan before compiling. It records the plan fingerprint, brief revision and evidence fingerprint, project revision, active-draft fingerprint, registry fingerprint, canonical-commerce fingerprint and approved-asset-context fingerprint as proposal preconditions. A change to any of these values blocks review or acceptance with a typed stale failure.
 
-The resulting proposal contains a complete V2 runtime graph rather than arbitrary HTML, React, CSS or executable content. The graph keeps the active BrandSystem and navigation as retained values, preserves page and retained-component identities, and represents generated or replacement components as validated `ComponentInstanceV2` values.
+The resulting proposal contains a complete V2 runtime graph rather than arbitrary HTML, React, CSS or executable content. The graph keeps the active BrandSystem and navigation as retained values, preserves page and retained-component identities and visual order, and represents generated or replacement components as validated `ComponentInstanceV2` values with the authoritative draft section visibility state.
 
 ## Operation mapping
 
@@ -27,6 +27,8 @@ Every compiled proposal has contiguous, canonical operation identities and is re
 
 The compiler does not infer a token patch from descriptive brand direction. P8-01 records a shared direction and current BrandSystem fingerprint, but not a concrete colour or typography payload. Inventing one would violate the structured-operation boundary; the existing explicit global colour/typography proposal operations remain the only way to change those fields.
 
+For retained pages, component order follows the original draft section order. A replacement occupies the first position of the component(s) it replaces; unaffected components do not move, and removed targets close the gap. Explicit additions retain their normalized plan order and are inserted before a retained footer. A created page uses the normalized component order recorded by its validated plan. Visibility is never inferred from component identity or position: retained and replacement components carry the source section's boolean visibility state, and a replacement with mixed target visibility is rejected as incomplete rather than activating hidden merchant content. P8-01 has no explicit visibility operation, so this implementation records no visibility change in review unless a future plan contract supplies one.
+
 Invalid or incomplete plan material, invalid page/component targets, unrepresented navigation changes, duplicate operation identities, protected-commerce mutation attempts and invalid asset targets fail safely. A proposal cannot be accepted unless replay reproduces its declared proposed storefront exactly.
 
 ## Protected commerce and assets
@@ -38,6 +40,8 @@ The runtime graph stores only canonical IDs and revision-bound presentation bind
 The normalized review summary deterministically lists shared design-system direction, page status, component additions/replacements/removals, retained navigation, canonical bindings, approved source-asset placements, protected facts, warnings and merchant-review items.
 
 `WholeStorefrontProposalAcceptanceCoordinator` provides the same explicit lifecycle states as the existing storefront proposal path: ready, accepted, rejected, closed, stale and failed. Acceptance validates current preconditions, replays all operations into one complete runtime graph, verifies the exact reviewed projection, and records one history transaction. A stale or failed acceptance leaves active, stored and published runtime state unchanged. Reject and Close are non-mutating. Undo restores the exact original graph; Redo restores the exact accepted graph.
+
+Persisted `pending` and `rejected` proposals restore the original graph. Persisted `accepted` proposals restore the validated proposed graph without re-executing operations or inventing a history transaction; duplicate Accept remains blocked. The persisted proposal schema has no distinct `closed` status—Close serializes as rejected—so closed restoration also exposes the original graph.
 
 ## Non-goals
 

@@ -203,37 +203,131 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
     expect(proposal.reviewSummary.canonicalBindings).toEqual(source.plan.canonicalCommerceBindings);
   });
 
-  it("blocks stale project, draft, registry, commerce and asset inputs before review or acceptance", () => {
+  it("preserves merchant section order and visibility through replacement, accept, undo and redo", () => {
+    const source = input();
+    const home = source.planningInput.draft.pages.find((page) => page.type === "home");
+    const collection = source.planningInput.draft.pages.find((page) => page.type === "collection");
+    if (!home || !collection) throw new Error("Missing storefront page fixtures");
+    const movableIndexes = home.sections
+      .map((section, index) => ({ section, index }))
+      .filter(({ section }) => section.component !== "header" && section.component !== "footer")
+      .map(({ index }) => index);
+    const first = movableIndexes[0];
+    const second = movableIndexes[1];
+    if (first === undefined || second === undefined) throw new Error("Missing movable storefront sections");
+    [home.sections[first], home.sections[second]] = [home.sections[second], home.sections[first]];
+    home.sections[first].visible = false;
+    source.plan = createWholeStorefrontGenerationPlan(source.planningInput);
+
+    const proposal = compileWholeStorefrontProposal(source);
+    const homeRuntime = proposal.proposedStorefront.pages.find((page) => page.pageId === home.id);
+    const collectionRuntime = proposal.proposedStorefront.pages.find(
+      (page) => page.pageId === collection.id,
+    );
+    const collectionPlan = source.plan.pagePlans.find((page) => page.pageId === collection.id);
+    const replacement = collectionPlan?.components.find(
+      (component): component is Extract<(typeof collectionPlan.components)[number], { instance: unknown }> =>
+        "instance" in component && component.disposition === "replacement",
+    );
+    if (!homeRuntime || !collectionRuntime || !replacement || !("instance" in replacement)) {
+      throw new Error("Missing compiled storefront replacement");
+    }
+
+    expect(homeRuntime.components.map((component) => component.id)).toEqual(
+      home.sections.map((section) => section.id),
+    );
+    expect(homeRuntime.components.find((component) => component.id === home.sections[first].id)?.visible).toBe(
+      false,
+    );
+    const replacementIndex = collectionRuntime.components.findIndex(
+      (component) => component.id === replacement.instance.id,
+    );
+    const firstReplacedIndex = Math.min(
+      ...replacement.replacesComponentIds.map((componentId) =>
+        collection.sections.findIndex((section) => section.id === componentId),
+      ),
+    );
+    expect(replacementIndex).toBe(firstReplacedIndex);
+    expect(proposal.reviewSummary.visibilityChanges).toEqual([]);
+
+    const coordinator = new WholeStorefrontProposalAcceptanceCoordinator({
+      proposal,
+      currentInput: () => source,
+    });
+    expect(coordinator.accept().activeStorefront).toEqual(proposal.proposedStorefront);
+    expect(coordinator.undo()).toEqual(proposal.originalStorefront);
+    expect(coordinator.redo()).toEqual(proposal.proposedStorefront);
+  });
+
+  it("uses the normalized plan component order for fully new pages", () => {
+    const source = input();
+    source.planningInput.draft.pages = source.planningInput.draft.pages.filter(
+      (page) => page.type === "home",
+    );
+    source.planningInput.draft.navigation = { primary: [], footer: [] };
+    source.plan = createWholeStorefrontGenerationPlan(source.planningInput);
+
+    const proposal = compileWholeStorefrontProposal(source);
+    for (const pagePlan of source.plan.pagePlans.filter((page) => page.disposition === "created")) {
+      const runtime = proposal.proposedStorefront.pages.find((page) => page.pageId === pagePlan.pageId);
+      if (!runtime) throw new Error("Missing created runtime page");
+      expect(runtime.components.map((component) => component.id)).toEqual(
+        pagePlan.components.flatMap((component) => ("instance" in component ? [component.instance.id] : [])),
+      );
+    }
+  });
+
+  it("blocks stale project and draft inputs before review or acceptance", () => {
     const cases: Array<{
       mutate: (value: WholeStorefrontProposalCompilationInput) => void;
       expected: string;
     }> = [
       { mutate: (value) => { value.planningInput.project.revision += 1; }, expected: "stale-project" },
       { mutate: (value) => { value.planningInput.draft.revision += 1; }, expected: "stale-draft" },
-      { mutate: (value) => { value.planningInput.componentDefinitions[0].version.patch += 1; }, expected: "stale-registry" },
-      { mutate: (value) => { value.planningInput.catalogue.products[0].title.en = "Changed"; }, expected: "stale-commerce" },
-      {
-        mutate: (value) => {
-          if (value.planningInput.approvedAssetContext === null) throw new Error("Missing asset context");
-          const assetContext = value.planningInput.approvedAssetContext;
-          const assetInput = structuredClone(assetContext);
-          delete assetInput.fingerprint;
-          assetContext.assets[0].materialFingerprint = "changed-asset-material";
-          assetContext.fingerprint = createApprovedGenerationAssetContextFingerprint({
-            ...assetInput,
-            assets: assetContext.assets,
-          });
-        },
-        expected: "stale-approved-asset-context",
-      },
     ];
     for (const { mutate, expected } of cases) {
-      const source = withApprovedPlacement();
+      const source = input();
       const proposal = compileWholeStorefrontProposal(source);
       const current = structuredClone(source);
       mutate(current);
       expect(errorCode(() => validateWholeStorefrontProposal(proposal, current))).toBe(expected);
     }
+  });
+
+  it("blocks stale registry and commerce inputs before review or acceptance", () => {
+    const cases: Array<{
+      mutate: (value: WholeStorefrontProposalCompilationInput) => void;
+      expected: string;
+    }> = [
+      { mutate: (value) => { value.planningInput.componentDefinitions[0].version.patch += 1; }, expected: "stale-registry" },
+      { mutate: (value) => { value.planningInput.catalogue.products[0].title.en = "Changed"; }, expected: "stale-commerce" },
+    ];
+    for (const { mutate, expected } of cases) {
+      const source = input();
+      const proposal = compileWholeStorefrontProposal(source);
+      const current = structuredClone(source);
+      mutate(current);
+      expect(errorCode(() => validateWholeStorefrontProposal(proposal, current))).toBe(expected);
+    }
+  });
+
+  it("blocks a stale approved asset context before review or acceptance", () => {
+    const source = withApprovedPlacement();
+    const proposal = compileWholeStorefrontProposal(source);
+    const current = structuredClone(source);
+    if (current.planningInput.approvedAssetContext === null) throw new Error("Missing asset context");
+    const assetContext = current.planningInput.approvedAssetContext;
+    const { fingerprint, ...assetInputWithoutFingerprint } = structuredClone(assetContext);
+    expect(fingerprint).toBe(assetContext.fingerprint);
+    assetContext.assets[0].materialFingerprint = "changed-asset-material";
+    assetContext.fingerprint = createApprovedGenerationAssetContextFingerprint({
+      ...assetInputWithoutFingerprint,
+      assets: assetContext.assets,
+    });
+
+    expect(errorCode(() => validateWholeStorefrontProposal(proposal, current))).toBe(
+      "stale-approved-asset-context",
+    );
   });
 
   it("produces a normalized deterministic review summary", () => {
@@ -288,6 +382,50 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
 
     expect(rejected.reject().activeStorefront).toEqual(proposal.originalStorefront);
     expect(closed.close().activeStorefront).toEqual(proposal.originalStorefront);
+  });
+
+  it("restores accepted proposals to their accepted graph without reapplying operations", () => {
+    const source = withApprovedPlacement();
+    const proposal = compileWholeStorefrontProposal(source);
+    const accepted = new WholeStorefrontProposalAcceptanceCoordinator({
+      proposal,
+      currentInput: () => source,
+    }).accept();
+    const restored = new WholeStorefrontProposalAcceptanceCoordinator({
+      proposal: accepted.proposal,
+      currentInput: () => source,
+    });
+
+    expect(restored.inspect().state).toBe("accepted");
+    expect(restored.inspect().activeStorefront).toEqual(accepted.proposal.proposedStorefront);
+    expect(restored.inspect().transaction).toBeNull();
+    expect(restored.accept().failure?.code).toBe("duplicate-acceptance");
+    expect(restored.inspect().activeStorefront).toEqual(accepted.proposal.proposedStorefront);
+  });
+
+  it("restores pending, rejected and closed proposal persistence states to the original graph", () => {
+    const source = input();
+    const proposal = compileWholeStorefrontProposal(source);
+    const pending = new WholeStorefrontProposalAcceptanceCoordinator({ proposal, currentInput: () => source });
+    const rejectedProposal = pending.reject().proposal;
+    const closedProposal = new WholeStorefrontProposalAcceptanceCoordinator({
+      proposal,
+      currentInput: () => source,
+    }).close().proposal;
+
+    expect(pending.inspect().activeStorefront).toEqual(proposal.originalStorefront);
+    expect(
+      new WholeStorefrontProposalAcceptanceCoordinator({
+        proposal: rejectedProposal,
+        currentInput: () => source,
+      }).inspect().activeStorefront,
+    ).toEqual(proposal.originalStorefront);
+    expect(
+      new WholeStorefrontProposalAcceptanceCoordinator({
+        proposal: closedProposal,
+        currentInput: () => source,
+      }).inspect().activeStorefront,
+    ).toEqual(proposal.originalStorefront);
   });
 
   it("undo and redo restore the exact coordinated storefront states", () => {

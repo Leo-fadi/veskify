@@ -19,7 +19,11 @@ export const wholeStorefrontRuntimePageSchema = z
     pageId: idSchema,
     role: z.enum(["homepage", "collection-template", "product-template", "other"]),
     type: pageTypeSchema,
-    components: z.array(componentInstanceV2Schema),
+    components: z.array(
+      componentInstanceV2Schema.extend({
+        visible: z.boolean(),
+      }),
+    ),
   })
   .strict()
   .superRefine((page, context) => {
@@ -129,6 +133,15 @@ export const wholeStorefrontProposalReviewSummarySchema = z
         .object({ navigationItemId: idSchema, status: z.enum(["retained", "changed"]) })
         .strict(),
     ),
+    visibilityChanges: z.array(
+      z
+        .object({
+          componentId: idSchema,
+          previousVisible: z.boolean(),
+          visible: z.boolean(),
+        })
+        .strict(),
+    ),
     canonicalBindings: wholeStorefrontReviewSummarySchema.shape.canonicalBindings,
     approvedAssetPlacements: z.array(approvedAssetPlacementOperationSchema),
     protectedFactsPreserved: z.array(z.string().trim().min(1).max(240)).min(1),
@@ -184,6 +197,7 @@ export const wholeStorefrontProposalCompilationInputSchema = z
   });
 
 export type WholeStorefrontRuntimePage = z.infer<typeof wholeStorefrontRuntimePageSchema>;
+export type WholeStorefrontRuntimeComponent = WholeStorefrontRuntimePage["components"][number];
 export type WholeStorefrontRuntimeState = z.infer<typeof wholeStorefrontRuntimeStateSchema>;
 export type WholeStorefrontProposalOperation = z.infer<typeof wholeStorefrontProposalOperationSchema>;
 export type WholeStorefrontProposalOperationEnvelope = z.infer<

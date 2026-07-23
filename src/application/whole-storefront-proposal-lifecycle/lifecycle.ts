@@ -67,7 +67,9 @@ export class WholeStorefrontProposalAcceptanceCoordinator {
     this.#proposal = wholeStorefrontProposalSchema.parse(clone(proposal));
     this.#currentInput = currentInput;
     const validated = validateWholeStorefrontProposal(this.#proposal, currentInput());
-    this.#activeStorefront = clone(validated.originalStorefront);
+    this.#activeStorefront = clone(
+      validated.status === "accepted" ? validated.proposedStorefront : validated.originalStorefront,
+    );
     this.#storedStorefront = clone(storedStorefront ?? validated.originalStorefront);
     this.#publishedStorefront = clone(publishedStorefront ?? validated.originalStorefront);
     this.#state = validated.status === "pending" ? "ready" : validated.status;

@@ -21,6 +21,7 @@ import {
   type WholeStorefrontProposalErrorCode,
   type WholeStorefrontProposalOperationEnvelope,
   type WholeStorefrontProposalReviewSummary,
+  type WholeStorefrontRuntimeComponent,
   type WholeStorefrontRuntimePage,
   type WholeStorefrontRuntimeState,
   WholeStorefrontProposalError,
@@ -80,7 +81,7 @@ function sourceComponent(
   page: WholeStorefrontProposalCompilationInput["planningInput"]["draft"]["pages"][number],
   section: WholeStorefrontProposalCompilationInput["planningInput"]["draft"]["pages"][number]["sections"][number],
   plan: ReturnType<typeof validateCurrentPlan>,
-): ComponentInstanceV2 {
+): WholeStorefrontRuntimeComponent {
   const expected = plan.pagePlans
     .find((candidate) => candidate.pageId === page.id)
     ?.components.find(
@@ -99,7 +100,8 @@ function sourceComponent(
       "The validated plan does not contain a supported V2 operation for existing section style overrides.",
     );
   }
-  return componentInstanceV2Schema.parse({
+  return {
+    ...componentInstanceV2Schema.parse({
     id: section.id,
     component: section.component,
     componentVersion: expected.componentVersion,
@@ -108,8 +110,10 @@ function sourceComponent(
     props: structuredClone(section.props),
     styleOverrides: {},
     bindings: [],
-    assetAssignments: [],
-  });
+      assetAssignments: [],
+    }),
+    visible: section.visible,
+  };
 }
 
 function createOriginalState(
@@ -122,7 +126,14 @@ function createOriginalState(
       const components = page.sections.map((section) => sourceComponent(page, section, plan));
       components.forEach((component) => {
         try {
-          registry.validateInstance(component);
+          const { visible, ...instance } = component;
+          if (visible !== true && visible !== false) {
+            invalid(
+              "invalid-page-component-target",
+              "Whole-storefront runtime components must declare merchant visibility explicitly.",
+            );
+          }
+          registry.validateInstance(instance);
         } catch (error) {
           invalid(
             "invalid-page-component-target",
@@ -173,44 +184,111 @@ function plannedPage(
     invalid("invalid-page-component-target", "A retained planned page is missing from the active draft.");
   }
   const sourceById = new Map(originalPage?.components.map((component) => [component.id, component]));
-  const replaced = new Set(
+  const retainedById = new Map(
     pagePlan.components.flatMap((component) =>
-      "instance" in component ? component.replacesComponentIds : [],
+      "instance" in component ? [] : [[component.componentId, component] as const],
     ),
   );
-  const components: ComponentInstanceV2[] = [];
-  for (const component of pagePlan.components) {
-    if ("instance" in component) {
-      components.push(structuredClone(component.instance));
-      continue;
-    }
-    if (replaced.has(component.componentId)) continue;
-    const source = sourceById.get(component.componentId);
-    if (!source) {
+  const replacements = pagePlan.components.filter(
+    (component): component is Extract<(typeof pagePlan.components)[number], { instance: ComponentInstanceV2 }> =>
+      "instance" in component && component.disposition === "replacement",
+  );
+  const replacementByTarget = new Map<string, (typeof replacements)[number]>();
+  replacements.forEach((replacement) => {
+    replacement.replacesComponentIds.forEach((componentId) => {
+      if (replacementByTarget.has(componentId) || !sourceById.has(componentId)) {
+        invalid(
+          "invalid-page-component-target",
+          "Replacement components must target one available component identity exactly once.",
+        );
+      }
+      replacementByTarget.set(componentId, replacement);
+    });
+  });
+  const replacementVisibility = (replacement: (typeof replacements)[number]) => {
+    const targets = replacement.replacesComponentIds.map((componentId) => sourceById.get(componentId)!);
+    const visible = targets[0]?.visible;
+    if (visible === undefined || targets.some((target) => target.visible !== visible)) {
       invalid(
-        "invalid-page-component-target",
-        "A retained component is missing from the active storefront component graph.",
+        "incomplete-required-operation-compilation",
+        "A replacement must preserve one unambiguous merchant visibility state.",
       );
     }
-    if (
-      source.component !== component.component ||
-      canonicalValueString(source.componentVersion) !== canonicalValueString(component.componentVersion) ||
-      source.variant !== component.variant
-    ) {
-      invalid(
-        "stale-plan",
-        "A retained component no longer matches the component identity recorded by the plan.",
-      );
+    return visible;
+  };
+  const componentFromInstance = (instance: ComponentInstanceV2, visible: boolean) => ({
+    ...structuredClone(instance),
+    visible,
+  });
+  const components: WholeStorefrontRuntimeComponent[] = [];
+  const insertedReplacements = new Set<string>();
+  if (originalPage) {
+    for (const source of originalPage.components) {
+      const replacement = replacementByTarget.get(source.id);
+      if (replacement) {
+        if (!insertedReplacements.has(replacement.instance.id)) {
+          components.push(componentFromInstance(replacement.instance, replacementVisibility(replacement)));
+          insertedReplacements.add(replacement.instance.id);
+        }
+        continue;
+      }
+      const retained = retainedById.get(source.id);
+      if (!retained) {
+        invalid(
+          "incomplete-required-operation-compilation",
+          "Every existing component must be retained or replaced by the validated plan.",
+        );
+      }
+      if (
+        source.component !== retained.component ||
+        canonicalValueString(source.componentVersion) !== canonicalValueString(retained.componentVersion) ||
+        source.variant !== retained.variant
+      ) {
+        invalid(
+          "stale-plan",
+          "A retained component no longer matches the component identity recorded by the plan.",
+        );
+      }
+      components.push(structuredClone(source));
     }
-    components.push(structuredClone(source));
   }
+  const additions = pagePlan.components.flatMap((component) =>
+    "instance" in component && component.disposition === "added"
+      ? [componentFromInstance(component.instance, true)]
+      : [],
+  );
+  if (originalPage) {
+    const footerIndex = components.findIndex((component) => component.component === "footer");
+    components.splice(footerIndex < 0 ? components.length : footerIndex, 0, ...additions);
+  } else {
+    pagePlan.components.forEach((component) => {
+      if (!("instance" in component)) {
+        invalid(
+          "incomplete-required-operation-compilation",
+          "New pages may only contain explicit validated component instances.",
+        );
+      }
+      if (component.replacesComponentIds.length > 0) {
+        invalid(
+          "invalid-page-component-target",
+          "New pages cannot replace components that do not exist.",
+        );
+      }
+      components.push(componentFromInstance(component.instance, true));
+    });
+  }
+  const removedComponentIds = originalPage
+    ? originalPage.components
+        .filter((component) => replacementByTarget.has(component.id))
+        .map((component) => component.id)
+    : [];
   const page = {
     pageId: pagePlan.pageId,
     role: pagePlan.role,
     type: originalPage?.type ?? pageTypeForRole(pagePlan.role),
-    components: components.sort((left, right) => left.id.localeCompare(right.id)),
+    components,
   } satisfies WholeStorefrontRuntimePage;
-  return { page, removedComponentIds: [...replaced].sort((left, right) => left.localeCompare(right)) };
+  return { page, removedComponentIds };
 }
 
 function withPlacement(
@@ -354,6 +432,7 @@ function reviewSummary(
     navigationChanges: plan.navigationChanges
       .map((item) => ({ navigationItemId: item.navigationItemId, status: "retained" as const }))
       .sort((left, right) => left.navigationItemId.localeCompare(right.navigationItemId)),
+    visibilityChanges: [],
     canonicalBindings: structuredClone(plan.canonicalCommerceBindings),
     approvedAssetPlacements: structuredClone(plan.approvedAssetPlacements),
     protectedFactsPreserved: [...plan.reviewSummary.protectedFactsPreserved],
