@@ -36,6 +36,7 @@ import {
   type DynamicProductDetailVariant,
 } from "@/components/registry";
 import styles from "./dynamic-product-detail.module.css";
+import { validateRouteUsedAssetConformance } from "./storefront-asset-conformance";
 
 export const productPrimaryActionPresentationSchema = z
   .object({
@@ -194,6 +195,57 @@ function requiredAssetRoles(
   return required;
 }
 
+export function validateDynamicProductDetailRoutePresentation(
+  instanceInput: unknown,
+  projectionInput: unknown,
+) {
+  const instance = veskifyComponentRegistryV2.validateInstanceConformance(
+    instanceInput,
+    projectionInput,
+  );
+  if (instance.component !== "dynamicProductDetail") {
+    throw new Error("The dynamic PDP renderer requires a dynamicProductDetail instance.");
+  }
+  const projection = componentProjectionContextSchema.parse(projectionInput);
+  const productBinding = instance.bindings.find(
+    (binding) => binding.slotId === "primaryProduct" && binding.source === "product",
+  );
+  if (!productBinding || productBinding.source !== "product") {
+    throw new Error("The dynamic PDP renderer requires one canonical product binding.");
+  }
+  const product = projection.products.find(
+    (candidate) => candidate.productId === productBinding.productId,
+  );
+  if (!product) throw new Error(`Unknown PDP product: ${productBinding.productId}.`);
+
+  const relatedBinding = instance.bindings.find(
+    (binding) => binding.slotId === "relatedProducts" && binding.source === "productList",
+  );
+  if (
+    relatedBinding?.source === "productList" &&
+    !arraysEqual(relatedBinding.productIds, product.relatedProductIds)
+  ) {
+    throw new Error(
+      "Related-product bindings must exactly match the canonical product presentation context.",
+    );
+  }
+  const relatedIds =
+    relatedBinding?.source === "productList" ? relatedBinding.productIds : ([] as string[]);
+  const relatedProducts = relatedIds.map((productId) => {
+    const related = projection.products.find((candidate) => candidate.productId === productId);
+    if (!related) throw new Error(`Unknown related product: ${productId}.`);
+    return related;
+  });
+  const requiredAssets = requiredAssetRoles(product, relatedProducts);
+  const assetMetadata = validateRouteUsedAssetConformance({
+    instance,
+    projection,
+    requiredAssets,
+    boundary: "PDP",
+  });
+  return { instance, projection, product, relatedProducts, requiredAssets, assetMetadata };
+}
+
 function validateResolvedOptionPresentation(
   input: unknown,
   product: ProductPresentationContext,
@@ -290,43 +342,8 @@ function validateResolvedOptionPresentation(
 function prepareDynamicProductDetail(
   input: DynamicProductDetailRendererInput,
 ): PreparedDynamicProductDetail {
-  const instance = veskifyComponentRegistryV2.validateInstanceConformance(
-    input.instance,
-    input.projection,
-  );
-  if (instance.component !== "dynamicProductDetail") {
-    throw new Error("The dynamic PDP renderer requires a dynamicProductDetail instance.");
-  }
-  const projection = componentProjectionContextSchema.parse(input.projection);
-  const productBinding = instance.bindings.find(
-    (binding) => binding.slotId === "primaryProduct" && binding.source === "product",
-  );
-  if (!productBinding || productBinding.source !== "product") {
-    throw new Error("The dynamic PDP renderer requires one canonical product binding.");
-  }
-  const product = projection.products.find(
-    (candidate) => candidate.productId === productBinding.productId,
-  );
-  if (!product) throw new Error(`Unknown PDP product: ${productBinding.productId}.`);
-
-  const relatedBinding = instance.bindings.find(
-    (binding) => binding.slotId === "relatedProducts" && binding.source === "productList",
-  );
-  if (
-    relatedBinding?.source === "productList" &&
-    !arraysEqual(relatedBinding.productIds, product.relatedProductIds)
-  ) {
-    throw new Error(
-      "Related-product bindings must exactly match the canonical product presentation context.",
-    );
-  }
-  const relatedIds =
-    relatedBinding?.source === "productList" ? relatedBinding.productIds : ([] as string[]);
-  const relatedProducts = relatedIds.map((productId) => {
-    const related = projection.products.find((candidate) => candidate.productId === productId);
-    if (!related) throw new Error(`Unknown related product: ${productId}.`);
-    return related;
-  });
+  const { instance, product, relatedProducts, requiredAssets, assetMetadata } =
+    validateDynamicProductDetailRoutePresentation(input.instance, input.projection);
 
   const resolvedOptions = validateResolvedOptionPresentation(input.resolvedOptions, product);
   const textEntryDrafts = z.array(productTextEntryDraftSchema).parse(
@@ -353,35 +370,6 @@ function prepareDynamicProductDetail(
   ) {
     throw new Error("The PDP primary action requires a purchasable canonical configuration.");
   }
-  const requiredAssets = requiredAssetRoles(product, relatedProducts);
-  const assignedAssets = new Map(
-    instance.assetAssignments.map((assignment) => [assignment.assetId, assignment.role]),
-  );
-  const assetMetadata = new Map(projection.assets.map((asset) => [asset.assetId, asset]));
-  if (assignedAssets.size > 0) {
-    for (const [assetId, expectedRole] of requiredAssets) {
-      if (assignedAssets.get(assetId) !== expectedRole) {
-        throw new Error(`Missing canonical PDP asset assignment: ${assetId}.`);
-      }
-    }
-    for (const assetId of assignedAssets.keys()) {
-      if (!requiredAssets.has(assetId)) {
-        throw new Error(`Unused PDP asset assignment is not permitted: ${assetId}.`);
-      }
-    }
-  } else {
-    for (const [assetId, expectedRole] of requiredAssets) {
-      const metadata = assetMetadata.get(assetId);
-      if (!metadata) throw new Error(`Canonical PDP media is missing from inventory: ${assetId}.`);
-      if (metadata.approvalStatus !== "approved") {
-        throw new Error(`Canonical PDP media is not approved: ${assetId}.`);
-      }
-      if (metadata.role !== expectedRole) {
-        throw new Error(`Canonical PDP media role does not match metadata: ${assetId}.`);
-      }
-    }
-  }
-
   return {
     target: input.target,
     product,
@@ -486,12 +474,16 @@ export function DynamicProductGallery({
   layout: DynamicProductDetailProps["galleryLayout"];
   locale: LocaleContext;
 }) {
-  const mediaFingerprint = canonicalValueString(media.map((item) => item.assetId));
+  const galleryMedia = media.filter(
+    (item) =>
+      product.media.find((candidate) => candidate.assetId === item.assetId)?.role !== "editorial",
+  );
+  const mediaFingerprint = canonicalValueString(galleryMedia.map((item) => item.assetId));
   const [selection, setSelection] = useState(() => ({
     mediaFingerprint,
-    assetId: media[0]?.assetId,
+    assetId: galleryMedia[0]?.assetId,
   }));
-  if (media.length === 0) {
+  if (galleryMedia.length === 0) {
     return (
       <section
         aria-label={fallbackLabel("Product gallery", "Tuotegalleria", locale)}
@@ -505,10 +497,10 @@ export function DynamicProductGallery({
   }
   const selectedAssetId =
     selection.mediaFingerprint === mediaFingerprint &&
-    media.some((item) => item.assetId === selection.assetId)
+    galleryMedia.some((item) => item.assetId === selection.assetId)
       ? selection.assetId
-      : media[0].assetId;
-  const selected = media.find((item) => item.assetId === selectedAssetId) ?? media[0];
+      : galleryMedia[0].assetId;
+  const selected = galleryMedia.find((item) => item.assetId === selectedAssetId) ?? galleryMedia[0];
   const resolved = assetFor(selected.assetId, mediaAlt(product, selected.assetId));
   return (
     <section
@@ -523,13 +515,13 @@ export function DynamicProductGallery({
       >
         <ProductAssetImage asset={resolved.asset} className={styles.primaryImage} locale={locale} />
       </figure>
-      {media.length > 1 ? (
+      {galleryMedia.length > 1 ? (
         <div
           aria-label={fallbackLabel("Choose product image", "Valitse tuotekuva", locale)}
           className={styles.thumbnails}
           role="group"
         >
-          {media.map((mediaItem, index) => {
+          {galleryMedia.map((mediaItem, index) => {
             const item = assetFor(mediaItem.assetId, mediaAlt(product, mediaItem.assetId));
             return (
               <button
@@ -1094,12 +1086,25 @@ export function DynamicProductSpecifications({
 export function DynamicProductSupportingContent({
   content,
   locale,
+  product,
+  assetFor,
 }: {
   content: DynamicProductDetailContent;
   locale: LocaleContext;
+  product: ProductPresentationContext;
+  assetFor: PreparedDynamicProductDetail["assetFor"];
 }) {
   const headingId = useId();
-  if (!content.supportingHeading && !content.supportingBody && content.trustItems.length === 0) {
+  const supportingMedia = product.media.find((media) => media.role === "editorial");
+  const image = supportingMedia
+    ? assetFor(supportingMedia.assetId, supportingMedia.alt ?? product.title)
+    : undefined;
+  if (
+    !content.supportingHeading &&
+    !content.supportingBody &&
+    content.trustItems.length === 0 &&
+    !image
+  ) {
     return null;
   }
   return (
@@ -1110,6 +1115,15 @@ export function DynamicProductSupportingContent({
           : fallbackLabel("Service and support", "Palvelu ja tuki", locale)}
       </h2>
       {content.supportingBody ? <p>{text(content.supportingBody, locale)}</p> : null}
+      {image && supportingMedia ? (
+        <figure
+          data-asset-id={supportingMedia.assetId}
+          data-asset-provenance={image.provenance.kind}
+          data-asset-role="editorialImage"
+        >
+          <ProductAssetImage asset={image.asset} locale={locale} />
+        </figure>
+      ) : null}
       {content.trustItems.length ? (
         <div className={styles.trustItems}>
           {content.trustItems.map((item) => (
@@ -1312,7 +1326,12 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
         locale={locale}
         product={input.product}
       />
-      <DynamicProductSupportingContent content={input.content} locale={locale} />
+      <DynamicProductSupportingContent
+        assetFor={input.assetFor}
+        content={input.content}
+        locale={locale}
+        product={input.product}
+      />
       <DynamicRelatedProducts
         assetFor={input.assetFor}
         heading={input.content.relatedHeading}

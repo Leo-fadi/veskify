@@ -2,7 +2,20 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import {
+  createCatalogueStorefrontCommerceRouteAdapter,
+  type CollectionCommerceRoutePresentation,
+  type StorefrontCommerceRouteAdapter,
+} from "@/integrations/storefront-commerce-routes";
 import { createStorefrontRenderContext } from "@/components/registry";
+import {
+  validateDynamicCollectionCommerceRoutePresentation,
+  type CollectionFilterIntent,
+  type CollectionNavigationIntent,
+  type CollectionSortIntent,
+  type ProductNavigationIntent,
+} from "@/components/storefront/dynamic-collection-commerce";
+import { StorefrontCollectionCommerceRoute } from "@/components/storefront/storefront-commerce-route";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
 import { brandSystemToCssVariables } from "@/domain/design-system";
 import type { Locale } from "@/domain/shared";
@@ -31,9 +44,18 @@ type LoadState =
         | "failure"
         | "validationFailure";
     }
-  | { status: "success"; aggregate: ProjectAggregate; draft: Snapshot; page: Page };
+  | {
+      status: "success";
+      aggregate: ProjectAggregate;
+      draft: Snapshot;
+      page: Page;
+      commercePresentation: CollectionCommerceRoutePresentation | null;
+    };
 
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
+const defaultCommerceAdapter = createCatalogueStorefrontCommerceRouteAdapter();
+const ignoreFilterIntent = () => undefined;
+const ignoreSortIntent = () => undefined;
 
 function StatusPanel({
   title,
@@ -69,12 +91,22 @@ export function CollectionPreviewClient({
   repositoryFactory = defaultRepositoryFactory,
   snapshotKind = "draft",
   historicalSnapshotId,
+  commerceAdapter = defaultCommerceAdapter,
+  onNavigateProduct,
+  onNavigateCollection,
+  onFilterIntent = ignoreFilterIntent,
+  onSortIntent = ignoreSortIntent,
 }: {
   projectId: string;
   collectionSlug: string;
   repositoryFactory?: RepositoryFactory;
   snapshotKind?: SnapshotKind;
   historicalSnapshotId?: string;
+  commerceAdapter?: StorefrontCommerceRouteAdapter;
+  onNavigateProduct?: (intent: ProductNavigationIntent) => void;
+  onNavigateCollection?: (intent: CollectionNavigationIntent) => void;
+  onFilterIntent?: (intent: CollectionFilterIntent) => void;
+  onSortIntent?: (intent: CollectionSortIntent) => void;
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -111,11 +143,24 @@ export function CollectionPreviewClient({
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
           });
           void renderStorefrontPage(page, context);
+          const commercePresentation = commerceAdapter.collection({
+            aggregate,
+            snapshot: draft,
+            page,
+            collection,
+          });
+          if (commercePresentation) {
+            validateDynamicCollectionCommerceRoutePresentation(
+              commercePresentation.instance,
+              commercePresentation.projection,
+            );
+          }
+          setActiveLocale(aggregate.project.primaryLocale);
+          setState({ status: "success", aggregate, draft, page, commercePresentation });
+          return;
         } catch {
           return setState({ status: "validationFailure" });
         }
-        setActiveLocale(aggregate.project.primaryLocale);
-        setState({ status: "success", aggregate, draft, page });
       })
       .catch((error: unknown) => {
         if (!cancelled)
@@ -124,7 +169,7 @@ export function CollectionPreviewClient({
     return () => {
       cancelled = true;
     };
-  }, [attempt, collectionSlug, historicalSnapshotId, projectId, snapshotKind]);
+  }, [attempt, collectionSlug, commerceAdapter, historicalSnapshotId, projectId, snapshotKind]);
 
   const retry = () => {
     setState({ status: "loading" });
@@ -202,6 +247,34 @@ export function CollectionPreviewClient({
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
   });
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
+  const pathPrefix = previewPathPrefix(projectId, snapshotKind, historicalSnapshotId);
+  const navigateProduct =
+    onNavigateProduct ??
+    ((intent: ProductNavigationIntent) => {
+      const productPage = state.draft.pages.find(
+        (candidate) =>
+          candidate.type === "product" &&
+          candidate.sections.some(
+            (section) =>
+              section.component === "productInfo" && section.content.productId === intent.productId,
+          ),
+      );
+      if (productPage) window.location.assign(`${pathPrefix}${productPage.slug}`);
+    });
+  const navigateCollection =
+    onNavigateCollection ??
+    ((intent: CollectionNavigationIntent) => {
+      const collectionPage = state.draft.pages.find(
+        (candidate) =>
+          candidate.type === "collection" &&
+          candidate.sections.some(
+            (section) =>
+              section.component === "collectionHeader" &&
+              section.content.collectionId === intent.collectionId,
+          ),
+      );
+      if (collectionPage) window.location.assign(`${pathPrefix}${collectionPage.slug}`);
+    });
 
   return (
     <div className="project-preview" lang={locale} style={style}>
@@ -249,7 +322,22 @@ export function CollectionPreviewClient({
         }
         className="project-preview__storefront"
       >
-        {renderStorefrontPage(state.page, context)}
+        {state.commercePresentation ? (
+          <StorefrontCollectionCommerceRoute
+            activeLocale={locale}
+            context={context}
+            onFilterIntent={onFilterIntent}
+            onNavigateCollection={navigateCollection}
+            onNavigateProduct={navigateProduct}
+            onSortIntent={onSortIntent}
+            page={state.page}
+            presentation={state.commercePresentation}
+            primaryLocale={state.aggregate.project.primaryLocale}
+            target={snapshotKind === "published" ? "published" : "preview"}
+          />
+        ) : (
+          renderStorefrontPage(state.page, context)
+        )}
       </div>
     </div>
   );

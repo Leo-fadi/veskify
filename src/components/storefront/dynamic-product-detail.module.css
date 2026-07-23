@@ -131,6 +131,19 @@
   line-height: 1.7;
 }
 
+.supportingContent > figure {
+  max-width: 48rem;
+  margin: 2rem 0 0;
+}
+
+.supportingContent > figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 32rem;
+  object-fit: cover;
+}
+
 .resolutionStatus {
   margin-top: 1rem;
   border: 1px solid var(--brand-color-border);

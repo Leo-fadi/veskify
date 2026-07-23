@@ -5,7 +5,7 @@ const collectionUrl = "/projects/project_aurum_nordic/collections/rings";
 test("loads the persisted rings collection and operates bilingual demo controls by keyboard", async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.setViewportSize({ width: 768, height: 1000 });
   await page.goto(collectionUrl);
   await expect(page.getByText("Draft preview")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: "Rings" })).toBeVisible();
@@ -13,6 +13,7 @@ test("loads the persisted rings collection and operates bilingual demo controls 
   await expect(page.getByText("Lumi Halo Ring")).toBeVisible();
   await expect(page.getByText("1 290 €")).toBeVisible();
   await expect(page.getByText("1 890 €")).toBeVisible();
+  await expect(page.locator('[data-component="dynamicCollectionCommerce"]')).toBeVisible();
   await expect(
     page
       .getByRole("navigation", { name: "Primary navigation" })
@@ -25,10 +26,23 @@ test("loads the persisted rings collection and operates bilingual demo controls 
   ).toHaveAttribute("href", "/projects/project_aurum_nordic/collections/rings");
 
   const before = await page.getByRole("article").allTextContents();
-  const material = page.getByRole("button", { name: "Material" });
+  const filterRegion = page.locator('[data-layout-region="filters"]');
+  const filters = page.getByRole("button", {
+    name: "Show filters",
+    exact: true,
+  });
+  await expect(filters).toHaveCount(1);
+  await expect(filters).toBeVisible();
+  await filters.scrollIntoViewIfNeeded();
+  await filters.focus();
+  await expect(filters).toBeFocused();
+  await filters.press("Enter");
+  await expect(filterRegion).toHaveAttribute("open", "");
+  const material = page.getByRole("checkbox", { name: /Gold/ });
+  await expect(material).toBeVisible();
   await material.focus();
   await expect(material).toBeFocused();
-  await page.keyboard.press("Enter");
+  await page.keyboard.press("Space");
   expect(await page.getByRole("article").allTextContents()).toEqual(before);
 
   const finnish = page.getByRole("radio", { name: "Suomi" });
@@ -37,7 +51,10 @@ test("loads the persisted rings collection and operates bilingual demo controls 
   await expect(page.getByRole("heading", { level: 1, name: "Sormukset" })).toBeVisible();
   await expect(page.getByText("Malliston sormukset")).toBeVisible();
   await expect(page.getByText("Current locale: FI")).toBeVisible();
-  await expect(page.getByText(/Vain demoesittely/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Näytä suodattimet", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "Lajittele tuotteet", exact: true }),
+  ).toBeVisible();
   await expect(page.getByText(/puck/i)).toHaveCount(0);
   await expect(page.getByRole("button", { name: /save|publish|delete|edit/i })).toHaveCount(0);
 });
