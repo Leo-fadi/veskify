@@ -2,7 +2,12 @@ import { z } from "zod";
 import { validateComponentDefinitionV2 } from "@/domain/component-platform";
 import { localizedTextSchema } from "@/domain/shared";
 
-export const dynamicCollectionCommerceVariantSchema = z.enum(["standard", "editorial", "compact"]);
+export const dynamicCollectionCommerceVariantSchema = z.enum([
+  "standard",
+  "editorial",
+  "compact",
+  "gallery",
+]);
 
 export const dynamicCollectionCommerceContentSchema = z
   .object({
@@ -77,6 +82,7 @@ const definitionInput = {
     { id: "standard", title: { en: "Standard", fi: "Tavallinen" } },
     { id: "editorial", title: { en: "Editorial", fi: "Toimituksellinen" } },
     { id: "compact", title: { en: "Compact", fi: "Kompakti" } },
+    { id: "gallery", title: { en: "Gallery", fi: "Galleria" } },
   ],
   defaultVariant: "standard",
   industryTags: [],

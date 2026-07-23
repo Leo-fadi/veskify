@@ -134,6 +134,17 @@
 .store-header.store-variant--split .store-brand {
   justify-self: start;
 }
+.store-header.store-variant--editorial {
+  border-block: 0;
+  background: color-mix(in srgb, var(--brand-color-background) 92%, transparent);
+}
+.store-header.store-variant--editorial nav a {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.store-header.store-variant--editorial .store-brand {
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+}
 .store-variant--grid .category-card {
   border: 1px solid var(--brand-color-border);
   background: var(--brand-color-surface);
@@ -272,9 +283,54 @@
 .store-footer.store-variant--compact {
   padding-block: 2rem;
 }
+.store-footer.store-variant--expanded {
+  gap: clamp(2rem, 5vw, 5rem);
+}
+.store-footer.store-variant--dark {
+  background: var(--brand-color-text);
+  color: var(--brand-color-surface);
+}
+.store-footer.store-variant--dark .store-footer__legal {
+  color: color-mix(in srgb, var(--brand-color-surface) 72%, transparent);
+}
+
+.store-hero.store-variant--fullBleed {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--brand-color-text);
+}
+.store-hero.store-variant--fullBleed .store-hero__copy {
+  z-index: 1;
+  color: var(--brand-color-surface);
+}
+.store-hero.store-variant--fullBleed .store-hero__copy > p:not(.store-eyebrow) {
+  color: color-mix(in srgb, var(--brand-color-surface) 82%, transparent);
+}
+.store-hero.store-variant--fullBleed .store-hero__image {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  opacity: 0.52;
+}
+.store-hero.store-variant--fullBleed .store-hero__image::after {
+  content: "";
+}
+.store-hero.store-variant--asymmetric {
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+}
+.store-hero.store-variant--restrained {
+  min-height: min(34rem, 66vh);
+}
+.store-hero.store-variant--restrained .store-hero__copy {
+  padding-block: clamp(2.5rem, 5vw, 5rem);
+}
 
 @media (max-width: 47.99rem) {
   .brand-story.store-variant--imageLed {
+    grid-template-columns: 1fr;
+  }
+  .store-hero.store-variant--asymmetric {
     grid-template-columns: 1fr;
   }
   .campaign-banner.store-variant--imageOverlay {

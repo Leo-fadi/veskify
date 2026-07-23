@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const designVocabularyVariants = {
   announcementBar: ["singleLine", "rotating", "minimal", "bold"],
-  header: ["centered", "split", "compact", "transparent"],
+  header: ["centered", "split", "compact", "transparent", "editorial"],
   featuredCategories: ["grid", "editorialCards", "carousel", "imageLed"],
   productGrid: ["standard", "editorial", "compact"],
   campaignBanner: ["imageOverlay", "split", "minimal"],
@@ -10,7 +10,7 @@ export const designVocabularyVariants = {
   brandStory: ["editorial", "timeline", "founder", "minimal", "imageLed"],
   benefitIcons: ["threeColumn", "fourColumn", "minimal", "cards"],
   newsletter: ["inline", "card", "fullWidth"],
-  footer: ["columns", "editorial", "compact"],
+  footer: ["columns", "expanded", "editorial", "compact", "dark"],
 } as const;
 
 export const designVocabularyDefaults = {

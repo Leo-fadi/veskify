@@ -344,11 +344,13 @@ export function HomepageHeroSection(input: HomepageCommerceRendererInput) {
     <section
       aria-labelledby={`${instance.id}-heading`}
       className={sectionClass("hero", instance.variant, style)}
+      data-content-width={props.contentWidth}
       data-component={instance.component}
       data-media-position={props.mediaPosition}
       data-media-state={media ? "approved" : "omitted"}
       data-render-target={input.target}
       data-responsive-layout="content-driven"
+      data-overlay-contrast={props.overlayContrast}
     >
       <div className={`${styles.heroCopy} ${styles[`align_${props.textAlignment}`]}`}>
         <h1 id={`${instance.id}-heading`}>{text(content.heading, locale)}</h1>

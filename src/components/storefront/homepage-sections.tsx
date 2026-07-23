@@ -158,6 +158,7 @@ export function EditorialHero({
   media,
   mediaPosition,
   context,
+  className,
 }: {
   eyebrow: LocalizedText;
   title: LocalizedText;
@@ -166,9 +167,10 @@ export function EditorialHero({
   media: AssetRef;
   mediaPosition: "left" | "right";
   context: StorefrontRenderContext;
+  className?: string;
 }) {
   return (
-    <section className={`store-hero store-split--media-${mediaPosition}`}>
+    <section className={`store-hero store-split--media-${mediaPosition} ${className ?? ""}`}>
       <div className="store-hero__copy">
         <p className="store-eyebrow">{text(eyebrow, context)}</p>
         <h2>{text(title, context)}</h2>
