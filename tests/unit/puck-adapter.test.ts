@@ -23,7 +23,7 @@ describe("Veskify Puck adapter", () => {
       .filter((definition) => definition.allowedPageTypes.includes("home"))
       .map((definition) => definition.type);
     expect(Object.keys(veskifyPuckConfig.components)).toEqual(expected);
-    expect(veskifyPuckConfig.components.hero?.label).toBe("Aurum hero");
+    expect(veskifyPuckConfig.components.hero?.label).toBe("Hero");
     expect(veskifyPuckConfig.components).not.toHaveProperty("productGallery");
     expect(veskifyPuckConfig.components).not.toHaveProperty("collectionHeader");
     expect(Object.keys(veskifyPuckConfig.components.hero?.fields ?? {})).toEqual([

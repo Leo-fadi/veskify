@@ -21,7 +21,7 @@ export const aurumHeroPropsSchema = z.object({ mediaPosition: z.enum(["left", "r
 
 export const aurumHeroDefinition = defineComponent({
   type: "hero",
-  label: "Aurum hero",
+  label: "Hero",
   allowedPageTypes: ["home", "landing"],
   variants: ["editorial"] as const,
   defaultVariant: "editorial",

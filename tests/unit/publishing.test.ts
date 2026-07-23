@@ -261,10 +261,10 @@ describe("P2-11 publishing preparation", () => {
     const finnish = merchantPublishChanges(summary, "fi", "en").join(" ");
     expect(english).toContain("Added sections: Campaign banner (Home)");
     expect(english).toContain("Removed sections: Newsletter (Home)");
-    expect(english).toContain("Content was updated in: Aurum hero (Home)");
+    expect(english).toContain("Content was updated in: Hero (Home)");
     expect(finnish).toContain("Lisätyt osiot: Kampanjabanneri (Etusivu)");
     expect(finnish).toContain("Poistetut osiot: Uutiskirje (Etusivu)");
-    expect(finnish).toContain("Sisältöä päivitettiin osioissa: Aurum-hero (Etusivu)");
+    expect(finnish).toContain("Sisältöä päivitettiin osioissa: Hero-osio (Etusivu)");
     expect(`${english} ${finnish}`).not.toMatch(/section_publish|section_home/);
   });
 });

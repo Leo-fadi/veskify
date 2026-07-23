@@ -90,7 +90,7 @@ for (const contextChange of ["page", "locale", "section"] as const) {
       const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
       await expect(async () => {
         await canvas.getByText("Made for northern light", { exact: true }).click();
-        await expect(page.getByLabel("Design request")).toContainText("Aurum hero");
+        await expect(page.getByLabel("Design request")).toContainText("Hero");
       }).toPass({ timeout: 15_000 });
     }
     const request = page.getByLabel("Your request");

@@ -147,7 +147,7 @@ test("duplicates and hides the actual selected section with undo and redo on mob
     .getByRole("dialog", { name: "Pages & sections" })
     .getByLabel("Selected section actions");
   await openSectionActions(sectionActions);
-  await expect(sectionActions.getByText("Aurum hero", { exact: true })).toBeVisible();
+  await expect(sectionActions.getByText("Hero", { exact: true })).toBeVisible();
 
   await sectionActions.getByRole("button", { name: "Duplicate" }).click();
   await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(2);
@@ -180,7 +180,7 @@ for (const width of [375, 768]) {
 
     const sectionActions = dialog.getByLabel("Selected section actions");
     await openSectionActions(sectionActions);
-    await expect(sectionActions.getByText("Aurum hero", { exact: true })).toBeVisible();
+    await expect(sectionActions.getByText("Hero", { exact: true })).toBeVisible();
     await sectionActions.getByRole("button", { name: "Duplicate" }).click();
     await expect(canvas.getByText("Made for northern light", { exact: true })).toHaveCount(2);
     await expect(dialog.getByRole("button", { name: "Discard changes" })).toBeEnabled();
@@ -250,7 +250,7 @@ test("uses the selected Puck section and shows localized grouped proposal detail
   await activateDesignControls(page);
   await activateAiAssistant(page);
   const requestPanel = page.getByLabel("Design request");
-  await expect(requestPanel.getByText("Aurum hero", { exact: true })).toBeVisible();
+  await expect(requestPanel.getByText("Hero", { exact: true })).toBeVisible();
 
   await page.getByLabel("Your request").fill("Improve the hero.");
   await page.getByRole("button", { name: "Create proposal" }).click();
@@ -258,7 +258,7 @@ test("uses the selected Puck section and shows localized grouped proposal detail
   await expect(page.getByRole("list", { name: "Proposed changes" })).toContainText(
     /Made for northern light|supporting text/i,
   );
-  await expect(requestPanel.getByText("Aurum hero", { exact: true })).toBeVisible();
+  await expect(requestPanel.getByText("Hero", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Reject" }).click();
   await page.getByRole("button", { name: "Make the homepage feel more luxurious." }).click();

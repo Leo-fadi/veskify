@@ -63,6 +63,66 @@ describe("Karvonen canonical demo seed", () => {
     expect(urls.some((url) => /^https?:\/\//.test(url))).toBe(false);
   });
 
+  it("owns an independent Karvonen storefront tree, BrandSystem, navigation and assets", () => {
+    const karvonenSnapshot = karvonenSeed.draftSnapshot;
+    const aurumSnapshot = aurumNordicSeed.draftSnapshot;
+    const serialized = JSON.stringify(karvonenSnapshot);
+
+    expect(karvonenSnapshot.brandSystem).not.toBe(aurumSnapshot.brandSystem);
+    expect(karvonenSnapshot.navigation).not.toBe(aurumSnapshot.navigation);
+    expect(karvonenSnapshot.pages).not.toBe(aurumSnapshot.pages);
+    expect(serialized).not.toContain("Aurum Nordic");
+    expect(serialized).not.toContain("Aurora");
+    expect(serialized).not.toContain("/seed-assets/aurora-ring.svg");
+    expect(karvonenSnapshot.brandSystem).not.toEqual(aurumSnapshot.brandSystem);
+    expect(
+      karvonenSnapshot.navigation.primary.map((item) => {
+        expect(item.target.type).toBe("page");
+        return item.target.type === "page" ? item.target.pageId : item.target.url;
+      }),
+    ).toEqual(["page_karvonen_home", "page_karvonen_collection_myrskyluodon_maija"]);
+  });
+
+  it("keeps cloned draft mutations isolated from the other merchant seed", () => {
+    const karvonenDraft = structuredClone(karvonenSeed.draftSnapshot);
+    const aurumDraft = structuredClone(aurumNordicSeed.draftSnapshot);
+    const aurumBefore = structuredClone(aurumDraft);
+
+    karvonenDraft.brandSystem.colors.primary = "#000000";
+    karvonenDraft.pages[0].title.fi = "Muokattu Karvonen";
+    karvonenDraft.navigation.primary[0].label.fi = "Muokattu etusivu";
+
+    expect(aurumDraft).toEqual(aurumBefore);
+  });
+
+  it("binds Karvonen product and collection pages only to canonical Karvonen references", () => {
+    const collection = karvonenSeed.draftSnapshot.pages.find((page) => page.type === "collection")!;
+    const product = karvonenSeed.draftSnapshot.pages.find((page) => page.type === "product")!;
+
+    expect(collection.slug).toBe("/collections/myrskyluodon-maija");
+    expect(
+      collection.sections.find((section) => section.component === "collectionHeader")?.content,
+    ).toEqual({ collectionId: "collection_karvonen_myrskyluodon-maija" });
+    expect(
+      collection.sections.find((section) => section.component === "productGrid")?.content,
+    ).toEqual({
+      heading: { en: "Myrskyluodon Maija", fi: "Myrskyluodon Maija" },
+      productIds: ["product_karvonen_01"],
+    });
+    expect(product.slug).toBe("/products/guldviva-myrskyluodon-maija-sormus");
+    expect(
+      product.sections
+        .filter((section) =>
+          ["productGallery", "productInfo", "productOptions"].includes(section.component),
+        )
+        .map((section) => section.content),
+    ).toEqual([
+      { productId: "product_karvonen_01" },
+      { productId: "product_karvonen_01" },
+      { productId: "product_karvonen_01" },
+    ]);
+  });
+
   it("does not invalidate the existing Aurum Nordic seed", () => {
     expect(aurumNordicSeed.catalogue.products).toHaveLength(6);
     expect(aurumNordicSeed.catalogue.products.every((product) => product.price)).toBe(true);

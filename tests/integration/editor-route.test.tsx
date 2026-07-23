@@ -14,7 +14,7 @@ import {
 } from "@/application/ai-storefront-generation";
 import type { ProposalAnalyticsEvent } from "@/application/analytics";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
-import { aurumNordicSeed } from "@/data/seed";
+import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import type { PageModel } from "@/domain/storefront";
 import { browserProposalAnalyticsEventType } from "@/services/analytics";
 import {
@@ -148,6 +148,15 @@ const aggregate = (): ProjectAggregate => ({
   snapshots: [
     structuredClone(aurumNordicSeed.publishedSnapshot),
     structuredClone(aurumNordicSeed.draftSnapshot),
+  ],
+});
+
+const karvonenAggregate = (): ProjectAggregate => ({
+  project: structuredClone(karvonenSeed.project),
+  catalogue: structuredClone(karvonenSeed.catalogue),
+  snapshots: [
+    structuredClone(karvonenSeed.publishedSnapshot),
+    structuredClone(karvonenSeed.draftSnapshot),
   ],
 });
 
@@ -507,6 +516,19 @@ const visibleCanvasPage = () =>
   JSON.parse(screen.getByLabelText("Visual editor canvas").getAttribute("data-page")!) as PageModel;
 
 describe("P2-01 project editor route", () => {
+  it("hydrates the Karvonen editor from the isolated Karvonen page tree", async () => {
+    const value = repository(() => Promise.resolve(karvonenAggregate()));
+    render(
+      <ProjectEditorClient projectId={karvonenSeed.project.id} repositoryFactory={() => value} />,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Karvonen" })).toBeVisible();
+    expect(value.get).toHaveBeenCalledWith(karvonenSeed.project.id);
+    expect(screen.getByText("Canvas: home / fi")).toBeVisible();
+    expect(screen.getByLabelText("Kauppasivuston sivu")).toHaveValue("page_karvonen_home");
+    expect(screen.queryByText(/Aurum Nordic|Aurum-hero|Aurora/i)).not.toBeInTheDocument();
+  });
+
   it("loads the canonical draft without writing storage", async () => {
     const value = repository(() => Promise.resolve(aggregate()));
     route(value);
@@ -724,9 +746,9 @@ describe("P2-01 project editor route", () => {
     });
     expect(repo.saveDraft).not.toHaveBeenCalled();
     expect(
-      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero — Copy 2"),
+      within(screen.getByLabelText("Selected section actions")).getByText("Hero — Copy 2"),
     ).toBeVisible();
-    expect(screen.getByText(/Aurum hero — Copy 2 was created and selected/i)).toHaveAttribute(
+    expect(screen.getByText(/Hero — Copy 2 was created and selected/i)).toHaveAttribute(
       "role",
       "status",
     );
@@ -734,14 +756,14 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
     expect(visibleCanvasPage()).toEqual(before);
     expect(
-      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero", {
+      within(screen.getByLabelText("Selected section actions")).getByText("Hero", {
         exact: true,
       }),
     ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: "Redo" }));
     expect(visibleCanvasPage()).toEqual(duplicated);
     expect(
-      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero — Copy 2"),
+      within(screen.getByLabelText("Selected section actions")).getByText("Hero — Copy 2"),
     ).toBeVisible();
   });
 
@@ -752,11 +774,11 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
     fireEvent.click(screen.getByRole("button", { name: "Duplicate" }));
     expect(
-      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero — Copy 3"),
+      within(screen.getByLabelText("Selected section actions")).getByText("Hero — Copy 3"),
     ).toBeVisible();
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     expect(
-      within(screen.getByLabelText("Valitun osion toiminnot")).getByText("Aurum-hero — kopio 3"),
+      within(screen.getByLabelText("Valitun osion toiminnot")).getByText("Hero-osio — kopio 3"),
     ).toBeVisible();
   });
 
@@ -999,7 +1021,7 @@ describe("P2-01 project editor route", () => {
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Select hero section" }));
     expect(
-      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero", {
+      within(screen.getByLabelText("Selected section actions")).getByText("Hero", {
         exact: true,
       }),
     ).toBeVisible();
@@ -1009,7 +1031,7 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     expect(await screen.findByLabelText("Design proposal")).toBeVisible();
     expect(
-      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero", {
+      within(screen.getByLabelText("Selected section actions")).getByText("Hero", {
         exact: true,
       }),
     ).toBeVisible();
@@ -1043,7 +1065,7 @@ describe("P2-01 project editor route", () => {
     await screen.findByText(/accepted for draft application/i);
 
     expect(
-      within(screen.getByLabelText("Selected section actions")).getByText("Aurum hero", {
+      within(screen.getByLabelText("Selected section actions")).getByText("Hero", {
         exact: true,
       }),
     ).toBeVisible();
