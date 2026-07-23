@@ -22,6 +22,12 @@ import type {
   StorefrontAssetMetadata,
 } from "@/domain/component-platform";
 
+type JsonFixture = ComponentInstanceV2["content"][string];
+
+function jsonFixture<Value extends JsonFixture>(value: Value): Value {
+  return value;
+}
+
 const localized = (en: string, fi = en) => ({ en, fi });
 
 const watch: ProductPresentationContext = {
@@ -539,6 +545,29 @@ describe("P6-05 dynamic homepage commerce component family", () => {
     ).toThrow(/Unknown collection list binding target/i);
   });
 
+  it("rejects missing or wrong-source product-list bindings safely", () => {
+    const missing = featuredProductsInstance();
+    missing.bindings = missing.bindings.filter((binding) => binding.slotId !== "products");
+    expect(() => veskifyComponentRegistryV2.validateInstance(missing)).toThrow(
+      /Missing required commerce binding slot: products/i,
+    );
+
+    const wrongSource = featuredProductsInstance();
+    wrongSource.bindings = wrongSource.bindings.map((binding) =>
+      binding.slotId === "products"
+        ? {
+            slotId: "products",
+            source: "collectionList" as const,
+            collectionIds: [rings.collectionId],
+            revision: "collection-list-rev-home",
+          }
+        : binding,
+    );
+    expect(() => veskifyComponentRegistryV2.validateInstance(wrongSource)).toThrow(
+      /Binding slot products does not accept collectionList/i,
+    );
+  });
+
   it("rejects unknown, rejected and pending explicit hero assets", () => {
     const unknown = heroInstance();
     unknown.bindings = unknown.bindings.map((binding) =>
@@ -651,15 +680,20 @@ describe("P6-05 dynamic homepage commerce component family", () => {
     const duplicate = trustInstance();
     duplicate.content = {
       ...duplicate.content,
-      items: [
-        ...(duplicate.content.items as unknown[]),
+      items: jsonFixture([
+        {
+          id: "trust_delivery",
+          kind: "delivery",
+          title: localized("Delivery"),
+          description: localized("Review delivery details."),
+        },
         {
           id: "trust_delivery",
           kind: "returns",
           title: localized("Returns"),
           description: localized("Review returns details."),
         },
-      ],
+      ]),
     };
     expect(() => veskifyComponentRegistryV2.validateInstance(duplicate)).toThrow(
       /Trust item IDs must be unique/i,
@@ -667,7 +701,12 @@ describe("P6-05 dynamic homepage commerce component family", () => {
   });
 
   it("retains localized-content refinements in registered instance validation", () => {
-    for (const invalidHeading of [{}, { en: "   " }, { en: "English", sv: "Svenska" }]) {
+    const invalidHeadings: JsonFixture[] = [
+      jsonFixture({}),
+      jsonFixture({ en: "   " }),
+      jsonFixture({ en: "English", sv: "Svenska" }),
+    ];
+    for (const invalidHeading of invalidHeadings) {
       const invalid = heroInstance();
       invalid.content = { ...invalid.content, heading: invalidHeading };
       expect(() => veskifyComponentRegistryV2.validateInstance(invalid)).toThrow(
@@ -675,7 +714,12 @@ describe("P6-05 dynamic homepage commerce component family", () => {
       );
     }
 
-    for (const heading of [{ en: "English" }, { fi: "Suomi" }, localized("English", "Suomi")]) {
+    const validHeadings: JsonFixture[] = [
+      jsonFixture({ en: "English" }),
+      jsonFixture({ fi: "Suomi" }),
+      jsonFixture(localized("English", "Suomi")),
+    ];
+    for (const heading of validHeadings) {
       const valid = heroInstance();
       valid.content = { ...valid.content, heading };
       expect(() => veskifyComponentRegistryV2.validateInstance(valid)).not.toThrow();
@@ -745,17 +789,33 @@ describe("P6-05 dynamic homepage commerce component family", () => {
       {
         value: trustInstance(),
         mutate: (value: ComponentInstanceV2) => {
-          const items = structuredClone(value.content.items as unknown[]);
-          Object.assign(items[0]!, { title: {} });
-          value.content = { ...value.content, items };
+          value.content = {
+            ...value.content,
+            items: jsonFixture([
+              {
+                id: "trust_delivery",
+                kind: "delivery",
+                title: {},
+                description: localized("Review delivery details."),
+              },
+            ]),
+          };
         },
       },
       {
         value: trustInstance(),
         mutate: (value: ComponentInstanceV2) => {
-          const items = structuredClone(value.content.items as unknown[]);
-          Object.assign(items[0]!, { description: { en: "   " } });
-          value.content = { ...value.content, items };
+          value.content = {
+            ...value.content,
+            items: jsonFixture([
+              {
+                id: "trust_delivery",
+                kind: "delivery",
+                title: localized("Delivery"),
+                description: { en: "   " },
+              },
+            ]),
+          };
         },
       },
     ];

@@ -1005,13 +1005,26 @@ function productAssetRole(
   return "productAlternativeImage";
 }
 
+type ProductListBinding = Extract<
+  ComponentInstanceV2["bindings"][number],
+  { source: "productList" }
+>;
+
+function productListBindingFor(
+  instance: ComponentInstanceV2,
+  slotId: string,
+): ProductListBinding | undefined {
+  return instance.bindings.find(
+    (binding): binding is ProductListBinding =>
+      binding.source === "productList" && binding.slotId === slotId,
+  );
+}
+
 function validateHomepageProductMediaConformance(
   instance: ComponentInstanceV2,
   projection: ComponentProjectionContext,
 ) {
-  const productBinding = instance.bindings.find(
-    (binding) => binding.slotId === "products" && binding.source === "productList",
-  );
+  const productBinding = productListBindingFor(instance, "products");
   if (!productBinding || instance.component !== "homepageFeaturedProducts") return;
 
   const products = new Map(projection.products.map((product) => [product.productId, product]));
