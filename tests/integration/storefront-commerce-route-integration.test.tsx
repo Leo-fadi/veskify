@@ -95,6 +95,41 @@ function renderCollection(
 
 const localized = (en: string, fi = en) => ({ en, fi });
 
+function draftFor(value: ProjectAggregate) {
+  return value.snapshots.find((snapshot) => snapshot.id === value.project.draftSnapshotId)!;
+}
+
+function productPageFor(value: ProjectAggregate) {
+  return draftFor(value).pages.find((page) => page.type === "product")!;
+}
+
+function collectionPageFor(value: ProjectAggregate) {
+  return draftFor(value).pages.find((page) => page.type === "collection")!;
+}
+
+function defaultProductPresentation(value: ProjectAggregate) {
+  const page = productPageFor(value);
+  const productId = page.sections.find((section) => section.component === "productInfo")!.content
+    .productId;
+  const product = value.catalogue.products.find((candidate) => candidate.id === productId)!;
+  return createCatalogueStorefrontCommerceRouteAdapter().product({
+    aggregate: value,
+    snapshot: draftFor(value),
+    page,
+    product,
+  });
+}
+
+function defaultCollectionPresentation(value: ProjectAggregate) {
+  const collection = value.catalogue.collections[0];
+  return createCatalogueStorefrontCommerceRouteAdapter().collection({
+    aggregate: value,
+    snapshot: draftFor(value),
+    page: collectionPageFor(value),
+    collection,
+  });
+}
+
 describe("P6-06 storefront commerce route integration", () => {
   it.each([
     ["draft", "preview"],
@@ -109,6 +144,17 @@ describe("P6-06 storefront commerce route integration", () => {
       target,
     );
     expect(screen.getByText("RING-AUR-585")).toBeVisible();
+    expect(screen.getByText("Yellow gold", { exact: true })).toBeVisible();
+    expect(screen.getByText("14K", { exact: true })).toBeVisible();
+    expect(screen.getByLabelText("Price").textContent).toBe("1 290 €");
+    const supportingImage = screen.getAllByRole("img", {
+      name: "Aurora yellow-gold ring detail",
+    })[0];
+    expect(supportingImage.closest("figure")).toHaveAttribute(
+      "data-asset-provenance",
+      "merchantProvided",
+    );
+    expect(supportingImage.closest("figure")).toHaveAttribute("data-asset-role", "editorialImage");
     expect(screen.getAllByRole("main")).toHaveLength(1);
   });
 
@@ -135,6 +181,17 @@ describe("P6-06 storefront commerce route integration", () => {
     ];
     pointProductPageAt(value, watch.id, "sisu-watch");
     const before = structuredClone(watch);
+    const presentation = defaultProductPresentation(value);
+
+    expect(presentation?.productContext.optionGroups).toMatchObject([
+      {
+        label: localized("Colour", "Väri"),
+        values: [{ label: localized("Silver", "Hopea") }, { label: localized("Black", "Musta") }],
+      },
+    ]);
+    expect(JSON.stringify(presentation?.productContext.optionGroups)).not.toContain(
+      "variant_watch_silver",
+    );
 
     renderProduct(value, "sisu-watch");
     await screen.findByRole("heading", { level: 1, name: "Sisu Automatic Watch" });
@@ -144,6 +201,70 @@ describe("P6-06 storefront commerce route integration", () => {
     expect(screen.getByText(/760/)).toBeVisible();
     expect(screen.getByText("Choose a colour")).toBeVisible();
     expect(watch).toEqual(before);
+  });
+
+  it("maps canonical multidimensional variants into separate ordered groups and canonical values", () => {
+    const value = aggregate();
+    const ring = value.catalogue.products[0];
+    ring.orderOptions = [];
+    ring.variants = [
+      {
+        id: "variant_ring_16_yellow",
+        label: localized("Size 16, yellow gold"),
+        attributes: { ringSize: 16, metalColour: "yellow" },
+      },
+      {
+        id: "variant_ring_16_white",
+        label: localized("Size 16, white gold"),
+        attributes: { ringSize: 16, metalColour: "white" },
+      },
+      {
+        id: "variant_ring_17_yellow",
+        label: localized("Size 17, yellow gold"),
+        attributes: { ringSize: 17, metalColour: "yellow" },
+      },
+    ];
+
+    const presentation = defaultProductPresentation(value);
+
+    expect(presentation?.productContext.optionGroups.map((group) => group.label.en)).toEqual([
+      "Ring size",
+      "Metal colour",
+    ]);
+    expect(
+      presentation?.productContext.optionGroups.map((group) =>
+        group.values.map((option) => option.label.en),
+      ),
+    ).toEqual([
+      ["16", "17"],
+      ["Yellow gold", "White gold"],
+    ]);
+    expect(JSON.stringify(presentation?.productContext.optionGroups)).not.toContain(
+      "variant_ring_16_yellow",
+    );
+  });
+
+  it("keeps products with unsafe or incomplete variant dimensions on the legacy renderer", async () => {
+    const value = aggregate();
+    const ring = value.catalogue.products[0];
+    ring.variants = [
+      {
+        id: "variant_ring_yellow",
+        label: localized("Yellow gold"),
+        attributes: { metalColour: "yellow" },
+      },
+      {
+        id: "variant_ring_white_18",
+        label: localized("White gold, 18K"),
+        attributes: { metalColour: "white", karat: "18K" },
+      },
+    ];
+
+    expect(defaultProductPresentation(value)).toBeNull();
+    renderProduct(value);
+    await screen.findByRole("heading", { level: 1, name: "Aurora Ring 585" });
+    expect(document.querySelector('[data-component="dynamicProductDetail"]')).toBeNull();
+    expect(screen.getAllByText("Yellow gold", { exact: true }).length).toBeGreaterThan(0);
   });
 
   it("renders a complex ring in canonical option order, keeps engraving typeable, and emits intent only", async () => {
@@ -270,6 +391,118 @@ describe("P6-06 storefront commerce route integration", () => {
     expect(
       screen.getAllByText(/1.?290/).some((element) => element.textContent?.includes("€")),
     ).toBe(true);
+    const exactPrices = screen
+      .getAllByRole("article")
+      .map((article) => article.textContent)
+      .filter((text): text is string => text !== null);
+    expect(exactPrices.some((text) => text.includes("1 290 €"))).toBe(true);
+    expect(exactPrices.some((text) => text.includes("1 890 €"))).toBe(true);
+  });
+
+  it("keeps availability IDs canonical while exposing localized EN/FI terminology", () => {
+    const presentation = defaultCollectionPresentation(aggregate())!;
+    const availabilityFilter = presentation.projection.collections[0].filters.find(
+      (filter) => filter.id === "availability",
+    )!;
+
+    expect(availabilityFilter.values).toMatchObject([
+      {
+        id: "availability_instock",
+        label: { en: "In stock", fi: "Varastossa" },
+      },
+      {
+        id: "availability_lowstock",
+        label: { en: "Limited availability", fi: "Rajoitetusti saatavilla" },
+      },
+    ]);
+    expect(availabilityFilter.values.map((value) => value.label)).not.toContainEqual({
+      en: "inStock",
+      fi: "inStock",
+    });
+  });
+
+  it.each([
+    "imageText",
+    "benefitIcons",
+    "productGallery",
+    "productInfo",
+    "productOptions",
+  ] as const)("keeps a product page with repeated %s sections on the V1 fallback", (component) => {
+    const value = aggregate();
+    const page = productPageFor(value);
+    const source = page.sections.find((section) => section.component === component)!;
+    page.sections.splice(page.sections.indexOf(source) + 1, 0, {
+      ...structuredClone(source),
+      id: `${source.id}_duplicate`,
+    });
+
+    expect(defaultProductPresentation(value)).toBeNull();
+  });
+
+  it.each(["filterBar", "productGrid", "collectionHeader"] as const)(
+    "keeps a collection page with repeated %s sections on the V1 fallback",
+    (component) => {
+      const value = aggregate();
+      const page = collectionPageFor(value);
+      const source = page.sections.find((section) => section.component === component)!;
+      page.sections.splice(page.sections.indexOf(source) + 1, 0, {
+        ...structuredClone(source),
+        id: `${source.id}_duplicate`,
+      });
+
+      expect(defaultCollectionPresentation(value)).toBeNull();
+    },
+  );
+
+  it("rejects unsupported visible content and out-of-order singleton layouts from V2", () => {
+    const unsupported = aggregate();
+    const home = draftFor(unsupported).pages.find((page) => page.type === "home")!;
+    const unsupportedSection = structuredClone(
+      home.sections.find((section) => !["header", "footer"].includes(section.component))!,
+    );
+    productPageFor(unsupported).sections.splice(-1, 0, unsupportedSection);
+    expect(defaultProductPresentation(unsupported)).toBeNull();
+
+    const reordered = aggregate();
+    const page = collectionPageFor(reordered);
+    const filterIndex = page.sections.findIndex((section) => section.component === "filterBar");
+    const [filter] = page.sections.splice(filterIndex, 1);
+    page.sections.splice(
+      page.sections.findIndex((section) => section.component === "productGrid") + 1,
+      0,
+      filter,
+    );
+    expect(defaultCollectionPresentation(reordered)).toBeNull();
+  });
+
+  it("suppresses filters when no filter section or no effective canonical values exist", async () => {
+    const withoutFilterBar = aggregate();
+    withoutFilterBar.snapshots.forEach((snapshot) => {
+      const page = snapshot.pages.find((candidate) => candidate.type === "collection")!;
+      page.sections = page.sections.filter((section) => section.component !== "filterBar");
+    });
+    const first = renderCollection(withoutFilterBar);
+    await screen.findByRole("heading", { level: 1, name: "Rings" });
+    expect(screen.queryByText("Show filters")).toBeNull();
+    expect(screen.getByLabelText("Sort products")).toBeVisible();
+    first.unmount();
+
+    const emptyFilters = aggregate();
+    emptyFilters.catalogue.collections[0].productIds.forEach((productId) => {
+      const product = emptyFilters.catalogue.products.find(
+        (candidate) => candidate.id === productId,
+      )!;
+      delete product.attributes.metalColour;
+    });
+    emptyFilters.snapshots.forEach((snapshot) => {
+      const page = snapshot.pages.find((candidate) => candidate.type === "collection")!;
+      const filter = page.sections.find((section) => section.component === "filterBar")!;
+      filter.content.filters = ["metalColour"];
+    });
+    renderCollection(emptyFilters);
+    await screen.findByRole("heading", { level: 1, name: "Rings" });
+    expect(screen.queryByText("Show filters")).toBeNull();
+    expect(screen.getByLabelText("Sort products")).toBeVisible();
   });
 
   it("clamps range intents and emits only a supported canonical sort value", async () => {
@@ -333,6 +566,7 @@ describe("P6-06 storefront commerce route integration", () => {
         const base = baseAdapter.collection(input)!;
         const projection = structuredClone(base.projection);
         projection.products.forEach((product) => (product.media = []));
+        projection.collections[0].assets = [];
         projection.assets = [];
         return { ...base, projection };
       },
@@ -342,7 +576,7 @@ describe("P6-06 storefront commerce route integration", () => {
     expect(screen.getAllByText("Product image unavailable")).toHaveLength(2);
   });
 
-  it("rejects invalid V2 bindings and unapproved explicit assets before rendering", async () => {
+  it("rejects invalid V2 bindings and every unapproved route-used asset before rendering", async () => {
     const value = aggregate();
     const baseAdapter = createCatalogueStorefrontCommerceRouteAdapter();
     const invalidAdapter: StorefrontCommerceRouteAdapter = {
@@ -380,6 +614,42 @@ describe("P6-06 storefront commerce route integration", () => {
       product: (input) => baseAdapter.product(input),
     };
     renderCollection(value, { commerceAdapter: rejectedAssetAdapter });
+    expect(
+      await screen.findByRole("heading", { name: "Collection could not be displayed" }),
+    ).toBeVisible();
+  });
+
+  it("preflights implicit PDP, supporting and product-card assets before route success", async () => {
+    const value = aggregate();
+    const baseAdapter = createCatalogueStorefrontCommerceRouteAdapter();
+    const pendingProductAsset: StorefrontCommerceRouteAdapter = {
+      collection: (input) => baseAdapter.collection(input),
+      product(input) {
+        const base = baseAdapter.product(input)!;
+        const projection = structuredClone(base.projection);
+        projection.assets.find((asset) => asset.role === "editorialImage")!.approvalStatus =
+          "pending";
+        return { ...base, projection };
+      },
+    };
+    const product = renderProduct(value, "aurora-ring-585", {
+      commerceAdapter: pendingProductAsset,
+    });
+    expect(
+      await screen.findByRole("heading", { name: "Product page could not be displayed" }),
+    ).toBeVisible();
+    product.unmount();
+
+    const rejectedCardAsset: StorefrontCommerceRouteAdapter = {
+      product: (input) => baseAdapter.product(input),
+      collection(input) {
+        const base = baseAdapter.collection(input)!;
+        const projection = structuredClone(base.projection);
+        projection.assets[0].approvalStatus = "rejected";
+        return { ...base, projection };
+      },
+    };
+    renderCollection(value, { commerceAdapter: rejectedCardAsset });
     expect(
       await screen.findByRole("heading", { name: "Collection could not be displayed" }),
     ).toBeVisible();

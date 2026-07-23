@@ -600,7 +600,7 @@ describe("P6-04 dynamic collection commerce", () => {
     }
   });
 
-  it("falls back deterministically from unsupported first media to approved compatible media", () => {
+  it("rejects unsupported first canonical card media instead of silently substituting it", () => {
     const product = {
       ...structuredClone(watch),
       productId: "product_media_fallback",
@@ -614,24 +614,17 @@ describe("P6-04 dynamic collection commerce", () => {
       ],
       revision: "product-rev-media-fallback",
     };
-    const rendered = render(
+    expect(() =>
       renderDynamicCollectionCommerce(
         productMediaInput(product, [
           asset("asset_wrong_role", "iconDecorative"),
           asset("asset_approved_alternative", "productAlternativeImage"),
         ]),
       ),
-    );
-
-    expect(
-      rendered.container.querySelector('[data-asset-id="asset_approved_alternative"]'),
-    ).toHaveAttribute("data-asset-role", "productAlternativeImage");
-    expect(
-      rendered.container.querySelector('[data-asset-id="asset_wrong_role"]'),
-    ).not.toBeInTheDocument();
+    ).toThrow(/role does not match/i);
   });
 
-  it("uses the safe placeholder when no approved compatible card media exists", () => {
+  it("rejects unknown canonical media and keeps the placeholder for a documented no-media state", () => {
     const product = {
       ...structuredClone(watch),
       productId: "product_media_placeholder",
@@ -641,11 +634,19 @@ describe("P6-04 dynamic collection commerce", () => {
       ],
       revision: "product-rev-media-placeholder",
     };
-    render(
+    expect(() =>
       renderDynamicCollectionCommerce(
         productMediaInput(product, [asset("asset_rejected", "editorialImage", "rejected")]),
       ),
-    );
+    ).toThrow(/missing from inventory/i);
+
+    const noMedia = {
+      ...structuredClone(watch),
+      productId: "product_no_media_placeholder",
+      media: [],
+      revision: "product-rev-no-media-placeholder",
+    };
+    render(renderDynamicCollectionCommerce(productMediaInput(noMedia, [])));
 
     expect(screen.getByText("Product image unavailable")).toBeVisible();
     expect(screen.queryByRole("img", { name: /unknown|rejected/i })).not.toBeInTheDocument();

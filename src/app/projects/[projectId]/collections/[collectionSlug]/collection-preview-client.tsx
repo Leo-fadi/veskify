@@ -7,12 +7,13 @@ import {
   type CollectionCommerceRoutePresentation,
   type StorefrontCommerceRouteAdapter,
 } from "@/integrations/storefront-commerce-routes";
-import { createStorefrontRenderContext, veskifyComponentRegistryV2 } from "@/components/registry";
-import type {
-  CollectionFilterIntent,
-  CollectionNavigationIntent,
-  CollectionSortIntent,
-  ProductNavigationIntent,
+import { createStorefrontRenderContext } from "@/components/registry";
+import {
+  validateDynamicCollectionCommerceRoutePresentation,
+  type CollectionFilterIntent,
+  type CollectionNavigationIntent,
+  type CollectionSortIntent,
+  type ProductNavigationIntent,
 } from "@/components/storefront/dynamic-collection-commerce";
 import { StorefrontCollectionCommerceRoute } from "@/components/storefront/storefront-commerce-route";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
@@ -149,7 +150,7 @@ export function CollectionPreviewClient({
             collection,
           });
           if (commercePresentation) {
-            veskifyComponentRegistryV2.validateInstanceConformance(
+            validateDynamicCollectionCommerceRoutePresentation(
               commercePresentation.instance,
               commercePresentation.projection,
             );

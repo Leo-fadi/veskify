@@ -28,8 +28,8 @@ import type {
   CanonicalProductConfigurationInput,
   CanonicalProductConfigurationResolver,
 } from "@/domain/product-presentation";
-import type { LocalizedText } from "@/domain/shared";
-import type { PageModel } from "@/domain/storefront";
+import type { AssetRef, LocalizedText } from "@/domain/shared";
+import { canonicalValueString, type PageModel } from "@/domain/storefront";
 import type {
   CollectionCommerceRouteInput,
   CollectionCommerceRoutePresentation,
@@ -55,6 +55,89 @@ const COLLECTION_COMPONENTS = new Set([
   "productGrid",
   "footer",
 ]);
+const PRODUCT_COMPONENT_ORDER = [
+  "header",
+  "productGallery",
+  "productInfo",
+  "productOptions",
+  "benefitIcons",
+  "imageText",
+  "relatedProducts",
+  "footer",
+] as const;
+const COLLECTION_COMPONENT_ORDER = [
+  "header",
+  "collectionHeader",
+  "filterBar",
+  "productGrid",
+  "footer",
+] as const;
+
+const ATTRIBUTE_LABELS: Readonly<Record<string, LocalizedText>> = {
+  material: { en: "Material", fi: "Materiaali" },
+  fineness: { en: "Fineness", fi: "Pitoisuus" },
+  karat: { en: "Karat", fi: "Karaatti" },
+  metalColour: { en: "Metal colour", fi: "Metallin väri" },
+  stoneType: { en: "Stone", fi: "Kivi" },
+  stoneShape: { en: "Stone shape", fi: "Kiven muoto" },
+  stoneColour: { en: "Stone colour", fi: "Kiven väri" },
+  stoneClarity: { en: "Diamond quality", fi: "Timantin laatu" },
+  ringSizes: { en: "Ring sizes", fi: "Sormuskoot" },
+  ringSize: { en: "Ring size", fi: "Sormuskoko" },
+  ringWidthMm: { en: "Ring width", fi: "Sormuksen leveys" },
+  ringProfile: { en: "Profile", fi: "Profiili" },
+  engraving: { en: "Engraving", fi: "Kaiverrus" },
+  colour: { en: "Colour", fi: "Väri" },
+};
+
+const ATTRIBUTE_VALUE_LABELS: Readonly<Record<string, Readonly<Record<string, LocalizedText>>>> = {
+  material: {
+    gold: { en: "Gold", fi: "Kulta" },
+    silver: { en: "Silver", fi: "Hopea" },
+    steel: { en: "Steel", fi: "Teräs" },
+  },
+  metalColour: {
+    yellow: { en: "Yellow gold", fi: "Keltakulta" },
+    white: { en: "White gold", fi: "Valkokulta" },
+    rose: { en: "Rose gold", fi: "Rosekulta" },
+    silver: { en: "Silver", fi: "Hopea" },
+    black: { en: "Black", fi: "Musta" },
+  },
+  colour: {
+    yellow: { en: "Yellow", fi: "Keltainen" },
+    white: { en: "White", fi: "Valkoinen" },
+    rose: { en: "Rose", fi: "Roosa" },
+    silver: { en: "Silver", fi: "Hopea" },
+    black: { en: "Black", fi: "Musta" },
+  },
+  stoneType: {
+    diamond: { en: "Diamond", fi: "Timantti" },
+    sapphire: { en: "Sapphire", fi: "Safiiri" },
+    zirconia: { en: "Zirconia", fi: "Zirkonia" },
+  },
+  stoneShape: {
+    round: { en: "Round", fi: "Pyöreä" },
+  },
+  ringProfile: {
+    comfort: { en: "Comfort", fi: "Comfort" },
+  },
+  engraving: {
+    available: { en: "Available", fi: "Saatavilla" },
+  },
+};
+
+const AVAILABILITY_LABELS = {
+  inStock: { en: "In stock", fi: "Varastossa" },
+  lowStock: { en: "Limited availability", fi: "Rajoitetusti saatavilla" },
+  outOfStock: { en: "Currently unavailable", fi: "Ei tällä hetkellä saatavilla" },
+} satisfies Record<NonNullable<ProductDisplayModel["stockStatus"]>, LocalizedText>;
+
+type CanonicalVariantDimension = Readonly<{
+  key: string;
+  groupId: string;
+  valueById: ReadonlyMap<string, string>;
+  group: ProductPresentationContext["optionGroups"][number];
+}>;
 
 function presentationId(value: string, fallback: string): string {
   const normalized = value
@@ -68,15 +151,6 @@ function presentationId(value: string, fallback: string): string {
   return candidate.slice(0, 80);
 }
 
-function localizedValue(value: unknown): LocalizedText {
-  const rendered = Array.isArray(value)
-    ? value.map(String).join(", ")
-    : typeof value === "number"
-      ? String(value)
-      : String(value);
-  return { en: rendered, fi: rendered };
-}
-
 function labelForToken(value: string): LocalizedText {
   const label = value
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
@@ -85,63 +159,138 @@ function labelForToken(value: string): LocalizedText {
   return { en: label, fi: label };
 }
 
+function attributeLabel(key: string): LocalizedText {
+  return ATTRIBUTE_LABELS[key] ?? labelForToken(key);
+}
+
+function localizedAttributeScalar(key: string, value: string | number): LocalizedText {
+  const rendered = String(value);
+  return (
+    ATTRIBUTE_VALUE_LABELS[key]?.[rendered] ??
+    (/^[a-z0-9_-]+$/.test(rendered) ? labelForToken(rendered) : { en: rendered, fi: rendered })
+  );
+}
+
+function localizedAttributeValue(
+  key: string,
+  value: ProductDisplayModel["attributes"][string],
+): LocalizedText {
+  if (!Array.isArray(value)) return localizedAttributeScalar(key, value);
+  const labels = value.map((entry) => localizedAttributeScalar(key, entry));
+  return {
+    en: labels.map((label) => label.en).join(", "),
+    fi: labels.map((label) => label.fi).join(", "),
+  };
+}
+
 function money(value: ProductDisplayModel["price"]) {
   if (!value) return undefined;
+  const format = (amount: number) =>
+    new Intl.NumberFormat("fi-FI", {
+      style: "currency",
+      currency: value.currency,
+      minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
   return {
     ...value,
     formatted: {
-      en: new Intl.NumberFormat("en-FI", {
-        style: "currency",
-        currency: value.currency,
-      }).format(value.amount),
-      fi: new Intl.NumberFormat("fi-FI", {
-        style: "currency",
-        currency: value.currency,
-      }).format(value.amount),
+      en: format(value.amount),
+      fi: format(value.amount),
     },
   };
 }
 
+function availabilityForStockStatus(
+  stockStatus: ProductDisplayModel["stockStatus"],
+): LocalizedText | undefined {
+  return stockStatus === undefined ? undefined : AVAILABILITY_LABELS[stockStatus];
+}
+
 function availability(product: ProductDisplayModel): LocalizedText | undefined {
-  if (product.availabilityLabel) return product.availabilityLabel;
-  if (product.stockStatus === "inStock") return { en: "In stock", fi: "Varastossa" };
-  if (product.stockStatus === "lowStock")
-    return { en: "Limited availability", fi: "Rajoitetusti saatavilla" };
-  if (product.stockStatus === "outOfStock")
-    return { en: "Currently unavailable", fi: "Ei tällä hetkellä saatavilla" };
-  return undefined;
+  return product.availabilityLabel ?? availabilityForStockStatus(product.stockStatus);
 }
 
 function revisionFor(input: ProductCommerceRouteInput | CollectionCommerceRouteInput): string {
   return `${input.aggregate.catalogue.id}_${input.aggregate.project.revision}`.slice(0, 120);
 }
 
+function canonicalVariantDimensions(
+  product: ProductDisplayModel,
+): readonly CanonicalVariantDimension[] | null {
+  if (product.variants.length === 0) return [];
+  const keys = Object.keys(product.variants[0].attributes);
+  if (keys.length === 0) return null;
+  const canonicalCombinations = new Set<string>();
+
+  for (const variant of product.variants) {
+    const variantKeys = Object.keys(variant.attributes);
+    if (
+      variantKeys.length !== keys.length ||
+      variantKeys.some((key, index) => key !== keys[index])
+    ) {
+      return null;
+    }
+    const values = keys.map((key) => variant.attributes[key]);
+    if (values.some((value) => Array.isArray(value) || value === undefined)) return null;
+    const fingerprint = canonicalValueString(values);
+    if (canonicalCombinations.has(fingerprint)) return null;
+    canonicalCombinations.add(fingerprint);
+  }
+
+  const dimensions: CanonicalVariantDimension[] = [];
+  for (const key of keys) {
+    const groupId = presentationId(`${product.id}_variant_${key}`, "variant_dimension");
+    const seenValues = new Set<string>();
+    const seenIds = new Set<string>();
+    const valueById = new Map<string, string>();
+    const values: ProductPresentationContext["optionGroups"][number]["values"] = [];
+    for (const variant of product.variants) {
+      const rawValue = variant.attributes[key];
+      if (Array.isArray(rawValue) || rawValue === undefined) return null;
+      const canonicalValue = canonicalValueString(rawValue);
+      if (seenValues.has(canonicalValue)) continue;
+      seenValues.add(canonicalValue);
+      const id = presentationId(
+        `${product.id}_${key}_${String(rawValue)}`,
+        `variant_value_${values.length + 1}`,
+      );
+      if (seenIds.has(id)) return null;
+      seenIds.add(id);
+      valueById.set(id, canonicalValue);
+      values.push({
+        id,
+        label: localizedAttributeScalar(key, rawValue),
+        value: String(rawValue),
+        disabled: false,
+        metadata: { canonicalDimension: key, canonicalValue: rawValue },
+      });
+    }
+    dimensions.push({
+      key,
+      groupId,
+      valueById,
+      group: {
+        id: groupId,
+        label: attributeLabel(key),
+        source: "variantDimension",
+        required: true,
+        presentation: values.length > 8 ? "dropdown" : "buttonGroup",
+        values,
+        dependsOn: [],
+      },
+    });
+  }
+  return dimensions;
+}
+
 function productContext(
   product: ProductDisplayModel,
   revision: string,
+  variantDimensions: readonly CanonicalVariantDimension[] = [],
   relatedProductIds: readonly string[] = [],
+  editorialMedia?: AssetRef,
 ): ProductPresentationContext {
-  const variantGroup =
-    product.variants.length === 0
-      ? []
-      : [
-          {
-            id: presentationId(`${product.id}_variant`, "product_variant"),
-            label: { en: "Product option", fi: "Tuotevaihtoehto" },
-            source: "variantDimension" as const,
-            required: true,
-            presentation:
-              product.variants.length > 8 ? ("dropdown" as const) : ("buttonGroup" as const),
-            values: product.variants.map((variant) => ({
-              id: variant.id,
-              label: variant.label,
-              value: variant.id,
-              disabled: false,
-              metadata: {},
-            })),
-            dependsOn: [],
-          },
-        ];
   const orderOptionGroups = (product.orderOptions ?? []).map((option) =>
     option.type === "text"
       ? {
@@ -185,11 +334,16 @@ function productContext(
     compareAtPrice: money(product.compareAtPrice),
     priceUnavailableReason: product.priceUnavailableReason,
     availability: availability(product),
-    media: product.images.map((image, index) => ({
-      assetId: image.id,
-      role: index === 0 ? ("main" as const) : ("alternative" as const),
-      alt: image.alt,
-    })),
+    media: [
+      ...product.images.map((image, index) => ({
+        assetId: image.id,
+        role: index === 0 ? ("main" as const) : ("alternative" as const),
+        alt: image.alt,
+      })),
+      ...(editorialMedia
+        ? [{ assetId: editorialMedia.id, role: "editorial" as const, alt: editorialMedia.alt }]
+        : []),
+    ],
     attributeGroups:
       Object.keys(product.attributes).length === 0
         ? []
@@ -199,12 +353,12 @@ function productContext(
               title: { en: "Specifications", fi: "Tuotetiedot" },
               attributes: Object.entries(product.attributes).map(([key, value], index) => ({
                 id: presentationId(`${product.id}_${key}`, `attribute_${index + 1}`),
-                label: labelForToken(key),
-                value: localizedValue(value),
+                label: attributeLabel(key),
+                value: localizedAttributeValue(key, value),
               })),
             },
           ],
-    optionGroups: [...variantGroup, ...orderOptionGroups],
+    optionGroups: [...variantDimensions.map((dimension) => dimension.group), ...orderOptionGroups],
     selectedValues: [],
     unavailableCombinations: [],
     relatedProductIds: [...relatedProductIds],
@@ -212,7 +366,10 @@ function productContext(
   };
 }
 
-function productAssets(contexts: readonly ProductPresentationContext[]): StorefrontAssetMetadata[] {
+function productAssets(
+  contexts: readonly ProductPresentationContext[],
+  merchantProvidedAssetIds: ReadonlySet<string> = new Set(),
+): StorefrontAssetMetadata[] {
   return contexts.flatMap((product) =>
     product.media.map((media) => ({
       assetId: media.assetId,
@@ -224,7 +381,9 @@ function productAssets(contexts: readonly ProductPresentationContext[]): Storefr
             : ("productAlternativeImage" as const),
       alt: media.alt ?? product.title,
       decorative: false,
-      provenance: { kind: "canonicalProductMedia" as const, sourceId: product.productId },
+      provenance: merchantProvidedAssetIds.has(media.assetId)
+        ? { kind: "merchantProvided" as const, sourceId: media.assetId }
+        : { kind: "canonicalProductMedia" as const, sourceId: product.productId },
       approvalStatus: "approved" as const,
       usageRights: "merchantOwned" as const,
       responsiveCrops: [],
@@ -233,20 +392,21 @@ function productAssets(contexts: readonly ProductPresentationContext[]): Storefr
   );
 }
 
-function assetUrlResolver(catalogue: CatalogueDisplayModel) {
-  const urls = new Map(
-    catalogue.products.flatMap((product) =>
+function assetUrlResolver(catalogue: CatalogueDisplayModel, extraAssets: readonly AssetRef[] = []) {
+  const urls = new Map([
+    ...catalogue.products.flatMap((product) =>
       product.images.map((image) => [image.id, image.url] as const),
     ),
-  );
+    ...extraAssets.map((asset) => [asset.id, asset.url] as const),
+  ]);
   return (assetId: string) => urls.get(assetId) ?? "/images/storefront-media-unavailable.svg";
 }
 
 function productResolver(
   product: ProductDisplayModel,
   context: ProductPresentationContext,
+  variantDimensions: readonly CanonicalVariantDimension[],
 ): CanonicalProductConfigurationResolver {
-  const variantGroup = context.optionGroups.find((group) => group.source === "variantDimension");
   return {
     async resolve(input: CanonicalProductConfigurationInput) {
       await Promise.resolve();
@@ -264,11 +424,24 @@ function productResolver(
           : selected.has(group.id);
       });
       if (!complete) return { purchasable: false };
-      const selectedVariantId = variantGroup ? selected.get(variantGroup.id) : undefined;
-      const variant = selectedVariantId
-        ? product.variants.find((candidate) => candidate.id === selectedVariantId)
-        : undefined;
-      if (variantGroup && !variant) throw new Error("The selected product variant is unavailable.");
+      const variant =
+        variantDimensions.length === 0
+          ? undefined
+          : product.variants.find((candidate) =>
+              variantDimensions.every((dimension) => {
+                const selectedValueId = selected.get(dimension.groupId);
+                const canonicalSelection = selectedValueId
+                  ? dimension.valueById.get(selectedValueId)
+                  : undefined;
+                return (
+                  canonicalSelection !== undefined &&
+                  canonicalSelection === canonicalValueString(candidate.attributes[dimension.key])
+                );
+              }),
+            );
+      if (variantDimensions.length > 0 && !variant) {
+        throw new Error("The selected product variant is unavailable.");
+      }
       const resolvedConfiguration = variant
         ? { kind: "variant" as const, variantId: variant.id }
         : { kind: "baseProduct" as const };
@@ -289,16 +462,46 @@ function productResolver(
   };
 }
 
-function visibleComponentsAreSupported(page: PageModel, supported: ReadonlySet<string>): boolean {
-  return page.sections
+function hasCompatibleVisibleLayout(
+  page: PageModel,
+  supported: ReadonlySet<string>,
+  canonicalOrder: readonly string[],
+  required: readonly string[],
+): boolean {
+  const visible = page.sections
     .filter((section) => section.visible)
-    .every((section) => supported.has(section.component));
+    .map((section) => section.component);
+  if (visible.some((component) => !supported.has(component))) return false;
+  const counts = new Map<string, number>();
+  for (const component of visible) {
+    const count = (counts.get(component) ?? 0) + 1;
+    if (count > 1) return false;
+    counts.set(component, count);
+  }
+  if (required.some((component) => counts.get(component) !== 1)) return false;
+  let previousPosition = -1;
+  for (const component of visible) {
+    const position = canonicalOrder.indexOf(component);
+    if (position <= previousPosition) return false;
+    previousPosition = position;
+  }
+  return true;
 }
 
 function productPresentation(
   input: ProductCommerceRouteInput,
 ): ProductCommerceRoutePresentation | null {
-  if (!visibleComponentsAreSupported(input.page, PRODUCT_COMPONENTS)) return null;
+  if (
+    !hasCompatibleVisibleLayout(input.page, PRODUCT_COMPONENTS, PRODUCT_COMPONENT_ORDER, [
+      "productGallery",
+      "productInfo",
+      "productOptions",
+    ])
+  ) {
+    return null;
+  }
+  const variantDimensions = canonicalVariantDimensions(input.product);
+  if (variantDimensions === null) return null;
   const core = ["productGallery", "productInfo", "productOptions"].map((component) =>
     input.page.sections.find((section) => section.visible && section.component === component),
   );
@@ -322,10 +525,6 @@ function productPresentation(
     if (!product) throw new Error("A related-product binding does not resolve.");
     return product;
   });
-  const revision = revisionFor(input);
-  const primaryContext = productContext(input.product, revision, related.productIds);
-  const relatedContexts = relatedProducts.map((product) => productContext(product, revision));
-  const products = [primaryContext, ...relatedContexts];
   const benefitSection = input.page.sections.find(
     (section) => section.visible && section.component === "benefitIcons",
   );
@@ -338,10 +537,21 @@ function productPresentation(
   const supporting = supportingSection
     ? imageTextContentSchema.parse(supportingSection.content)
     : undefined;
+  const revision = revisionFor(input);
+  const primaryContext = productContext(
+    input.product,
+    revision,
+    variantDimensions,
+    related.productIds,
+    supporting?.media,
+  );
+  const relatedContexts = relatedProducts.map((product) => productContext(product, revision));
+  const products = [primaryContext, ...relatedContexts];
+  const merchantProvidedAssetIds = new Set(supporting ? [supporting.media.id] : []);
   const projection: ComponentProjectionContext = {
     products,
     collections: [],
-    assets: productAssets(products),
+    assets: productAssets(products, merchantProvidedAssetIds),
     navigation: [],
     projectBrandContexts: [],
     localizedContents: [],
@@ -389,8 +599,11 @@ function productPresentation(
     },
     projection,
     productContext: primaryContext,
-    resolver: productResolver(input.product, primaryContext),
-    resolveAssetUrl: assetUrlResolver(input.aggregate.catalogue),
+    resolver: productResolver(input.product, primaryContext, variantDimensions),
+    resolveAssetUrl: assetUrlResolver(
+      input.aggregate.catalogue,
+      supporting ? [supporting.media] : [],
+    ),
   };
 }
 
@@ -409,17 +622,11 @@ function collectionFilter(
       range: { min: Math.min(...values), max: Math.max(...values), unit: { en: "EUR", fi: "EUR" } },
     };
   }
-  const rawValues =
-    filterId === "availability"
-      ? products.flatMap((product) => (product.stockStatus ? [product.stockStatus] : []))
-      : products.flatMap((product) => {
-          const value = product.attributes[filterId];
-          return value === undefined
-            ? []
-            : Array.isArray(value)
-              ? value.map(String)
-              : [String(value)];
-        });
+  const rawValues = products.flatMap((product) => {
+    if (filterId === "availability") return product.stockStatus ? [product.stockStatus] : [];
+    const value = product.attributes[filterId];
+    return value === undefined ? [] : Array.isArray(value) ? value.map(String) : [String(value)];
+  });
   const values = [...new Set(rawValues)];
   if (values.length === 0) return null;
   return {
@@ -428,7 +635,10 @@ function collectionFilter(
     presentation: "enumerated",
     values: values.map((value, index) => ({
       id: presentationId(`${filterId}_${value}`, `filter_value_${index + 1}`),
-      label: localizedValue(value),
+      label:
+        filterId === "availability"
+          ? availabilityForStockStatus(value as NonNullable<ProductDisplayModel["stockStatus"]>)!
+          : localizedAttributeScalar(filterId, value),
       count: rawValues.filter((candidate) => candidate === value).length,
       selected: false,
       disabled: false,
@@ -441,12 +651,13 @@ function collectionContext(
   products: readonly ProductDisplayModel[],
   filters: readonly string[],
   revision: string,
+  heroAssetId?: string,
 ): CollectionPresentationContext {
   return {
     collectionId: collection.id,
     title: collection.title,
     description: collection.description,
-    assets: [],
+    assets: heroAssetId ? [{ assetId: heroAssetId, role: "hero" }] : [],
     productIds: [...collection.productIds],
     filters: filters.flatMap((filterId) => {
       const filter = collectionFilter(filterId, products);
@@ -463,7 +674,14 @@ function collectionContext(
 function collectionPresentation(
   input: CollectionCommerceRouteInput,
 ): CollectionCommerceRoutePresentation | null {
-  if (!visibleComponentsAreSupported(input.page, COLLECTION_COMPONENTS)) return null;
+  if (
+    !hasCompatibleVisibleLayout(input.page, COLLECTION_COMPONENTS, COLLECTION_COMPONENT_ORDER, [
+      "collectionHeader",
+      "productGrid",
+    ])
+  ) {
+    return null;
+  }
   const headerSection = input.page.sections.find(
     (section) => section.visible && section.component === "collectionHeader",
   );
@@ -495,7 +713,13 @@ function collectionPresentation(
   const filters = filterSection ? filterBarContentSchema.parse(filterSection.content).filters : [];
   const revision = revisionFor(input);
   const productContexts = products.map((product) => productContext(product, revision));
-  const collection = collectionContext(input.collection, products, filters, revision);
+  const collection = collectionContext(
+    input.collection,
+    products,
+    filters,
+    revision,
+    products[0]?.images[0]?.id,
+  );
   const projection: ComponentProjectionContext = {
     products: productContexts,
     collections: [collection],

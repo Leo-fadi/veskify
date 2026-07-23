@@ -31,6 +31,7 @@ import {
   type DynamicCollectionCommerceVariant,
 } from "@/components/registry";
 import styles from "./dynamic-collection-commerce.module.css";
+import { validateRouteUsedAssetConformance } from "./storefront-asset-conformance";
 
 export const collectionLoadingPresentationSchema = z
   .object({ status: z.enum(["ready", "loading"]) })
@@ -169,28 +170,15 @@ function productMediaAssetRole(role: ProductMediaPresentation["role"]): Selected
   return "productAlternativeImage";
 }
 
-function selectCardMedia(
-  product: ProductPresentationContext,
-  assetMetadata: ReadonlyMap<string, StorefrontAssetMetadata>,
-  assignedAssets?: ReadonlyMap<string, StorefrontAssetMetadata["role"]>,
-): SelectedCardMedia | undefined {
-  for (const media of product.media) {
-    const role = productMediaAssetRole(media.role);
-    const metadata = assetMetadata.get(media.assetId);
-    if (
-      metadata?.approvalStatus === "approved" &&
-      metadata.role === role &&
-      (assignedAssets === undefined || assignedAssets.get(media.assetId) === role)
-    ) {
-      return { media, role };
-    }
-  }
-  return undefined;
+function selectCardMedia(product: ProductPresentationContext): SelectedCardMedia | undefined {
+  const media = product.media[0];
+  return media ? { media, role: productMediaAssetRole(media.role) } : undefined;
 }
 
 function requiredAssetRoles(
   collection: CollectionPresentationContext,
   selectedCardMedia: ReadonlyMap<string, SelectedCardMedia>,
+  assetMetadata: ReadonlyMap<string, StorefrontAssetMetadata>,
 ) {
   const required = new Map<string, CollectionCommerceAssetRole>();
   const add = (assetId: string, role: CollectionCommerceAssetRole) => {
@@ -201,22 +189,36 @@ function requiredAssetRoles(
     required.set(assetId, role);
   };
   const hero = collection.assets.find((asset) => asset.role === "hero");
-  if (hero) add(hero.assetId, "collectionImage");
+  if (hero) {
+    const heroRole = assetMetadata.get(hero.assetId)?.role ?? "collectionImage";
+    if (
+      ![
+        "collectionImage",
+        "productMainImage",
+        "productAlternativeImage",
+        "editorialImage",
+      ].includes(heroRole)
+    ) {
+      throw new Error(`Canonical collection hero role is not supported: ${hero.assetId}.`);
+    }
+    add(hero.assetId, heroRole as CollectionCommerceAssetRole);
+  }
   selectedCardMedia.forEach(({ media, role }) => add(media.assetId, role));
   return required;
 }
 
-function prepareDynamicCollectionCommerce(
-  input: DynamicCollectionCommerceRendererInput,
-): PreparedDynamicCollectionCommerce {
+export function validateDynamicCollectionCommerceRoutePresentation(
+  instanceInput: unknown,
+  projectionInput: unknown,
+) {
   const instance = veskifyComponentRegistryV2.validateInstanceConformance(
-    input.instance,
-    input.projection,
+    instanceInput,
+    projectionInput,
   );
   if (instance.component !== "dynamicCollectionCommerce") {
     throw new Error("The collection renderer requires a dynamicCollectionCommerce instance.");
   }
-  const projection = componentProjectionContextSchema.parse(input.projection);
+  const projection = componentProjectionContextSchema.parse(projectionInput);
   const collectionBinding = instance.bindings.find(
     (binding) => binding.slotId === "primaryCollection" && binding.source === "collection",
   );
@@ -265,44 +267,44 @@ function prepareDynamicCollectionCommerce(
         })
       : [];
 
-  const assignedAssets = new Map(
-    instance.assetAssignments.map((assignment) => [assignment.assetId, assignment.role]),
-  );
   const assetMetadata = new Map(projection.assets.map((asset) => [asset.assetId, asset]));
   const selectedCardMedia = new Map(
     products.flatMap((product) => {
-      const selected = selectCardMedia(
-        product,
-        assetMetadata,
-        assignedAssets.size > 0 ? assignedAssets : undefined,
-      );
+      const selected = selectCardMedia(product);
       return selected ? [[product.productId, selected] as const] : [];
     }),
   );
-  const requiredAssets = requiredAssetRoles(collection, selectedCardMedia);
-  if (assignedAssets.size > 0) {
-    for (const [assetId, expectedRole] of requiredAssets) {
-      if (assignedAssets.get(assetId) !== expectedRole) {
-        throw new Error(`Missing canonical collection asset assignment: ${assetId}.`);
-      }
-    }
-    for (const assetId of assignedAssets.keys()) {
-      if (!requiredAssets.has(assetId)) {
-        throw new Error(`Unused collection asset assignment is not permitted: ${assetId}.`);
-      }
-    }
-  } else {
-    for (const [assetId, expectedRole] of requiredAssets) {
-      const metadata = assetMetadata.get(assetId);
-      if (!metadata) throw new Error(`Collection media is missing from inventory: ${assetId}.`);
-      if (metadata.approvalStatus !== "approved") {
-        throw new Error(`Collection media is not approved: ${assetId}.`);
-      }
-      if (metadata.role !== expectedRole) {
-        throw new Error(`Collection media role does not match metadata: ${assetId}.`);
-      }
-    }
-  }
+  const requiredAssets = requiredAssetRoles(collection, selectedCardMedia, assetMetadata);
+  validateRouteUsedAssetConformance({
+    instance,
+    projection,
+    requiredAssets,
+    boundary: "collection",
+  });
+  return {
+    instance,
+    projection,
+    collection,
+    products,
+    childCollections,
+    selectedCardMedia,
+    requiredAssets,
+    assetMetadata,
+  };
+}
+
+function prepareDynamicCollectionCommerce(
+  input: DynamicCollectionCommerceRendererInput,
+): PreparedDynamicCollectionCommerce {
+  const {
+    instance,
+    collection,
+    products,
+    childCollections,
+    selectedCardMedia,
+    requiredAssets,
+    assetMetadata,
+  } = validateDynamicCollectionCommerceRoutePresentation(input.instance, input.projection);
 
   return {
     target: input.target,
@@ -694,6 +696,7 @@ function CollectionFilters({
   input: PreparedDynamicCollectionCommerce;
   locale: LocaleContext;
 }) {
+  if (input.collection.filters.length === 0) return null;
   const hasSelected = input.collection.filters.some(
     (filter) =>
       filter.values.some((value) => value.selected) ||

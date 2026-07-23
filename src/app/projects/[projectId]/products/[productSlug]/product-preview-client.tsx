@@ -7,14 +7,13 @@ import {
   type ProductCommerceRoutePresentation,
   type StorefrontCommerceRouteAdapter,
 } from "@/integrations/storefront-commerce-routes";
-import {
-  createStorefrontRenderContext,
-  validateRegisteredPage,
-  veskifyComponentRegistryV2,
-} from "@/components/registry";
+import { createStorefrontRenderContext, validateRegisteredPage } from "@/components/registry";
 import { StorefrontProductCommerceRoute } from "@/components/storefront/storefront-commerce-route";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
-import type { ProductPrimaryActionIntentCallback } from "@/components/storefront/dynamic-product-detail";
+import {
+  validateDynamicProductDetailRoutePresentation,
+  type ProductPrimaryActionIntentCallback,
+} from "@/components/storefront/dynamic-product-detail";
 import { brandSystemToCssVariables } from "@/domain/design-system";
 import type { Locale } from "@/domain/shared";
 import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
@@ -153,7 +152,7 @@ function ProductPreviewLoader({
             product,
           });
           if (commercePresentation) {
-            veskifyComponentRegistryV2.validateInstanceConformance(
+            validateDynamicProductDetailRoutePresentation(
               commercePresentation.instance,
               commercePresentation.projection,
             );
