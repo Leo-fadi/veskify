@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AiStorefrontGenerationOrchestrator,
   buildAiStorefrontProviderRequest,
+  createApprovedGenerationAssetContextFingerprint,
   createDeterministicMockStorefrontAIProvider,
   type AiStorefrontGenerationCommand,
   type AiStorefrontGenerationEvent,
@@ -18,6 +19,7 @@ const product = snapshot.pages.find((page) => page.type === "product")!;
 
 class DeferredStorefrontProvider implements StorefrontAIProvider {
   readonly id = "deterministic-storefront-mock";
+  readonly assetReferenceCapability = "structuredApprovedAssets" as const;
   readonly calls: AiStorefrontProviderRequest[] = [];
   readonly #resolvers: Array<(value: unknown) => void> = [];
 
@@ -78,6 +80,7 @@ function identity(input: AiStorefrontGenerationCommand): AiStorefrontGenerationI
       storefront: structuredClone(input.storefront),
     },
     target: structuredClone(request.target),
+    assetContextFingerprint: request.assetContextFingerprint,
   };
 }
 
@@ -208,6 +211,49 @@ describe("P4-05B storefront generation orchestration", () => {
     expect(result.state).toBe("stale");
     expect(result.proposal).toBeNull();
     expect(fixture.orchestrator.inspect()).toMatchObject({ state: "stale", proposal: null });
+  });
+
+  it("does not activate an asynchronous proposal after approved source assets change", async () => {
+    const fixture = setup();
+    const assetContext = {
+      briefId: "brief_approved_assets",
+      briefRevision: 1,
+      approvedEvidenceFingerprint: "evidence-approved-assets",
+      assetReviewFingerprint: "asset-review-approved-assets",
+      assets: [
+        {
+          assetId: "asset_approved_source",
+          role: "logo" as const,
+          sourceReferenceId: "source_approved_assets",
+          revision: "2:asset-material",
+          materialFingerprint: "asset-material",
+          provenance: { location: "html-meta" as const, observedAt: "2026-07-23T10:00:00.000Z" },
+          alt: { en: "Merchant logo", fi: "Kauppiaan logo" },
+          presentation: { decorative: false, mediaType: "image/svg+xml", responsiveCrops: [] },
+          approval: { actorId: "merchant_owner", actorReference: "merchant-session" },
+        },
+      ],
+    };
+    const input = command(fixture.storefrontProvider, {
+      approvedAssetContext: {
+        ...assetContext,
+        fingerprint: createApprovedGenerationAssetContextFingerprint(assetContext),
+      },
+    });
+    fixture.setCurrent(identity(input));
+    const pending = fixture.orchestrator.generate(input);
+    const changed = fixture.current();
+    fixture.setCurrent({
+      ...changed,
+      assetContextFingerprint: `approved-generation-assets-${"b".repeat(64)}`,
+    });
+    await fixture.storefrontProvider.resolve(0);
+    const result = await pending;
+    expect(result).toMatchObject({
+      state: "stale",
+      proposal: null,
+      failure: { code: "staleDraft" },
+    });
   });
 
   it.each([

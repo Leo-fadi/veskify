@@ -126,12 +126,14 @@ export function createAiStorefrontProposalId(
   targetFingerprint: string,
   permissionFingerprint: string,
   operations: AiStorefrontProposal["operations"],
+  assetPlacementOperations: AiStorefrontProposal["assetPlacementOperations"] = [],
 ) {
   const digest = canonicalValueFingerprint({
     requestId,
     targetFingerprint,
     permissionFingerprint,
     operations,
+    assetPlacementOperations: assetPlacementOperations ?? [],
   });
   return `storefront_proposal_${digest.slice(-64, -56)}`;
 }
