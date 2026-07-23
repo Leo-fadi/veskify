@@ -109,6 +109,7 @@ function projectOperations(
 
 export class DeterministicMockStorefrontAIProvider implements StorefrontAIProvider {
   readonly id = "deterministic-storefront-mock";
+  readonly assetReferenceCapability = "structuredApprovedAssets" as const;
 
   proposeStorefront(requestInput: AiStorefrontProviderRequest) {
     const request = aiStorefrontProviderRequestSchema.parse(requestInput);

@@ -53,6 +53,10 @@ const messages = {
     en: "The storefront target changed while the proposal was being prepared.",
     fi: "Kaupan kohde muuttui ehdotuksen valmistelun aikana.",
   },
+  assetCapabilityUnavailable: {
+    en: "This storefront design assistant cannot use the required approved source assets.",
+    fi: "Tämä kaupan designavustaja ei voi käyttää vaadittuja hyväksyttyjä lähdeaineistoja.",
+  },
   superseded: {
     en: "A newer storefront proposal request replaced this one.",
     fi: "Uudempi kaupan ehdotuspyyntö korvasi tämän pyynnön.",
@@ -129,9 +133,12 @@ export class AiStorefrontGenerationOrchestrator {
       const code =
         error instanceof AiStorefrontRequestBuildError && error.code === "unsupported-request"
           ? "unsupportedRequest"
-          : error instanceof AiStorefrontRequestBuildError && error.code === "target-mismatch"
-            ? "staleTarget"
-            : "invalidCommand";
+          : error instanceof AiStorefrontRequestBuildError &&
+              error.code === "asset-capability-unavailable"
+            ? "assetCapabilityUnavailable"
+            : error instanceof AiStorefrontRequestBuildError && error.code === "target-mismatch"
+              ? "staleTarget"
+              : "invalidCommand";
       return Promise.resolve(this.#fail(command, code));
     }
     const key = aiStorefrontPendingRequestKey(request);
@@ -208,6 +215,7 @@ export class AiStorefrontGenerationOrchestrator {
   #staleCode(request: AiStorefrontProviderRequest): "staleDraft" | "staleTarget" | null {
     let currentContext: AiStorefrontContext;
     let currentTarget: AiStorefrontTarget;
+    let currentAssetContextFingerprint: string | null;
     try {
       const current = this.#currentIdentity();
       currentContext = {
@@ -216,6 +224,7 @@ export class AiStorefrontGenerationOrchestrator {
         storefront: structuredClone(current.context.storefront),
       };
       currentTarget = canonicalizeAiStorefrontTarget(current.target);
+      currentAssetContextFingerprint = current.assetContextFingerprint ?? null;
     } catch {
       return "staleDraft";
     }
@@ -236,7 +245,8 @@ export class AiStorefrontGenerationOrchestrator {
       );
       return currentStorefrontBaselineFingerprint === request.storefrontBaselineFingerprint &&
         currentTargetFingerprint === request.targetFingerprint &&
-        currentPermissionFingerprint === request.permissionFingerprint
+        currentPermissionFingerprint === request.permissionFingerprint &&
+        currentAssetContextFingerprint === request.assetContextFingerprint
         ? null
         : "staleDraft";
     } catch {

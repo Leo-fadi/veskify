@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   aiStorefrontPendingRequestKey,
   buildAiStorefrontProviderRequest,
+  createApprovedGenerationAssetContextFingerprint,
   createAiStorefrontGenerationPlan,
   createDeterministicMockStorefrontAIProvider,
   aiStorefrontProviderResponseSchema,
@@ -66,6 +67,29 @@ function context(input = command()) {
     activeLocale: input.activeLocale,
     storefront: structuredClone(input.storefront),
   };
+}
+
+function approvedAssetContext(role: "logo" | "collectionImage" = "logo") {
+  const value = {
+    briefId: "brief_approved_assets",
+    briefRevision: 1,
+    approvedEvidenceFingerprint: "evidence-approved-assets",
+    assetReviewFingerprint: "asset-review-approved-assets",
+    assets: [
+      {
+        assetId: "asset_approved_source",
+        role,
+        sourceReferenceId: "source_approved_assets",
+        revision: "2:asset-material",
+        materialFingerprint: "asset-material",
+        provenance: { extractionLocation: "hero metadata", observedAt: "2026-07-23T10:00:00.000Z" },
+        alt: { en: "Approved source asset", fi: "Hyväksytty lähdeaineisto" },
+        presentation: { decorative: false, mediaType: "image/jpeg", responsiveCrops: [] },
+        approval: { actorId: "merchant_owner", actorReference: "merchant-session" },
+      },
+    ],
+  };
+  return { ...value, fingerprint: createApprovedGenerationAssetContextFingerprint(value) };
 }
 
 async function requestAndResponse(input = command()) {
@@ -199,6 +223,66 @@ describe("P4-05B storefront planner and request construction", () => {
     expect(aiStorefrontPendingRequestKey(changedBaseline)).not.toBe(
       aiStorefrontPendingRequestKey(first),
     );
+  });
+
+  it("passes deterministic URL-free approved asset references only to capable providers", () => {
+    const context = approvedAssetContext();
+    const request = buildAiStorefrontProviderRequest(command({ approvedAssetContext: context }), 1);
+    expect(request.approvedAssetContext).toEqual(context);
+    expect(request.assetContextFingerprint).toBe(context.fingerprint);
+    expect(JSON.stringify(request.approvedAssetContext)).not.toMatch(/https?:|<html|base64/i);
+
+    const incapableProvider = {
+      id: "incapable-provider",
+      proposeStorefront: () => Promise.resolve({}),
+    };
+    const optional = buildAiStorefrontProviderRequest(
+      command({
+        provider: incapableProvider,
+        providerId: incapableProvider.id,
+        approvedAssetContext: context,
+      }),
+      2,
+    );
+    expect(optional.approvedAssetContext).toBeNull();
+    expect(optional.assetPlacementOperations).toEqual([]);
+  });
+
+  it("rejects required incompatible or unknown approved-asset placements before provider invocation", () => {
+    const context = approvedAssetContext("collectionImage");
+    const placement = {
+      type: "PLACE_APPROVED_SOURCE_ASSET" as const,
+      pageId: collection.id,
+      componentType: "dynamicCollectionCommerce",
+      assetSlotId: "collectionCommerceMedia",
+      assetId: context.assets[0].assetId,
+      role: "collectionImage" as const,
+      required: true,
+    };
+    const incapableProvider = {
+      id: "incapable-provider",
+      proposeStorefront: () => Promise.resolve({}),
+    };
+    expect(() =>
+      buildAiStorefrontProviderRequest(
+        command({
+          provider: incapableProvider,
+          providerId: incapableProvider.id,
+          approvedAssetContext: context,
+          assetPlacementOperations: [placement],
+        }),
+        1,
+      ),
+    ).toThrow(/cannot use required approved source assets/i);
+    expect(() =>
+      buildAiStorefrontProviderRequest(
+        command({
+          approvedAssetContext: context,
+          assetPlacementOperations: [{ ...placement, assetId: "asset_unknown" }],
+        }),
+        1,
+      ),
+    ).toThrow(/no longer approved/i);
   });
 });
 

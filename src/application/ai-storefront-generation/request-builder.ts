@@ -9,6 +9,7 @@ import {
 import type { AiOperationPermissionGrant } from "@/application/ai-provider";
 import { designSkillRegistry, protectedDesignPaths } from "@/application/design-skills";
 import { getComponentDefinition } from "@/components/registry";
+import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
 import { canonicalLocaleOrder } from "@/domain/shared";
 import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 import {
@@ -17,6 +18,7 @@ import {
   type AiStorefrontGenerationCommand,
   type AiStorefrontProviderRequest,
 } from "./contract";
+import { validateApprovedAssetPlacementOperations } from "./approved-asset-context";
 import {
   AiStorefrontPlanError,
   createAiStorefrontGenerationPlan,
@@ -25,7 +27,11 @@ import {
 
 export class AiStorefrontRequestBuildError extends Error {
   constructor(
-    readonly code: "invalid-command" | "unsupported-request" | "target-mismatch",
+    readonly code:
+      | "invalid-command"
+      | "unsupported-request"
+      | "target-mismatch"
+      | "asset-capability-unavailable",
     message: string,
   ) {
     super(message);
@@ -53,6 +59,17 @@ export function parseAiStorefrontGenerationCommand(input: unknown): AiStorefront
     ),
     enabledLocales: canonicalLocaleOrder(result.data.enabledLocales),
     importedContent: structuredClone(result.data.importedContent),
+    approvedAssetContext:
+      result.data.approvedAssetContext === undefined || result.data.approvedAssetContext === null
+        ? null
+        : structuredClone(result.data.approvedAssetContext),
+    assetPlacementOperations: [...(result.data.assetPlacementOperations ?? [])].sort(
+      (left, right) =>
+        left.pageId.localeCompare(right.pageId) ||
+        left.componentType.localeCompare(right.componentType) ||
+        left.assetSlotId.localeCompare(right.assetSlotId) ||
+        left.assetId.localeCompare(right.assetId),
+    ),
   };
 }
 
@@ -72,6 +89,33 @@ export function buildAiStorefrontProviderRequest(
   requestSequence: number,
 ): AiStorefrontProviderRequest {
   const command = parseAiStorefrontGenerationCommand(commandInput);
+  const providerAssetCapability = command.provider.assetReferenceCapability ?? "none";
+  let approvedAssetContext = command.approvedAssetContext ?? null;
+  let assetPlacementOperations = command.assetPlacementOperations ?? [];
+  if (approvedAssetContext !== null) {
+    try {
+      assetPlacementOperations = validateApprovedAssetPlacementOperations({
+        context: approvedAssetContext,
+        operations: assetPlacementOperations,
+        componentDefinitions: veskifyComponentDefinitionsV2,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new AiStorefrontRequestBuildError("unsupported-request", error.message);
+      }
+      throw error;
+    }
+    if (providerAssetCapability === "none") {
+      if (assetPlacementOperations.some((operation) => operation.required)) {
+        throw new AiStorefrontRequestBuildError(
+          "asset-capability-unavailable",
+          "This storefront design assistant cannot use required approved source assets.",
+        );
+      }
+      approvedAssetContext = null;
+      assetPlacementOperations = [];
+    }
+  }
   let plan;
   try {
     plan = createAiStorefrontGenerationPlan(command);
@@ -170,6 +214,8 @@ export function buildAiStorefrontProviderRequest(
     targetFingerprint,
     permissionFingerprint,
     importedContent: command.importedContent,
+    assetContextFingerprint: approvedAssetContext?.fingerprint ?? null,
+    assetPlacementOperations,
   }).slice(-8)}`;
   return aiStorefrontProviderRequestSchema.parse({
     requestId,
@@ -201,6 +247,10 @@ export function buildAiStorefrontProviderRequest(
       ...item,
       trust: "untrusted" as const,
     })),
+    assetReferenceCapability: providerAssetCapability,
+    approvedAssetContext,
+    assetPlacementOperations,
+    assetContextFingerprint: approvedAssetContext?.fingerprint ?? null,
     responseContract: "ai-storefront-proposal/v1",
   });
 }

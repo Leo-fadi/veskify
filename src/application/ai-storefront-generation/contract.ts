@@ -14,6 +14,11 @@ import { brandSystemSchema } from "@/domain/design-system";
 import { idSchema, localeSchema, localizedTextSchema } from "@/domain/shared";
 import { pageModelSchema, sectionInstanceSchema } from "@/domain/storefront";
 import { exactBrandPalettePlanSchema } from "./brand-palette";
+import {
+  approvedAssetPlacementOperationSchema,
+  approvedGenerationAssetContextSchema,
+  type ApprovedAssetPlacementOperation,
+} from "./approved-asset-context";
 
 export const storefrontGenerationCapabilitySchema = z.literal("approvedColorTypographyDirection");
 export const storefrontStyleDirectionSchema = z.enum([
@@ -21,9 +26,14 @@ export const storefrontStyleDirectionSchema = z.enum([
   "minimalNordic",
   "exactBrandPalette",
 ]);
+export const storefrontAssetReferenceCapabilitySchema = z.enum([
+  "structuredApprovedAssets",
+  "none",
+]);
 
 export interface StorefrontAIProvider {
   readonly id: string;
+  readonly assetReferenceCapability?: z.infer<typeof storefrontAssetReferenceCapabilitySchema>;
   proposeStorefront(request: AiStorefrontProviderRequest): Promise<unknown>;
 }
 
@@ -60,6 +70,8 @@ export const aiStorefrontGenerationCommandSchema = z
     providerId: z.string().min(1).max(120),
     provider: storefrontProviderSchema,
     importedContent: z.array(untrustedImportedContentSchema).default([]),
+    approvedAssetContext: approvedGenerationAssetContextSchema.nullable().optional(),
+    assetPlacementOperations: z.array(approvedAssetPlacementOperationSchema).optional(),
   })
   .strict()
   .superRefine((command, context) => {
@@ -136,6 +148,16 @@ export const aiStorefrontGenerationCommandSchema = z
         code: "custom",
         path: ["providerId"],
         message: "The provider identity must match the supplied provider.",
+      });
+    }
+    if (
+      (command.approvedAssetContext === null || command.approvedAssetContext === undefined) &&
+      (command.assetPlacementOperations?.length ?? 0) > 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["assetPlacementOperations"],
+        message: "Source-asset placements require an approved asset generation context.",
       });
     }
   });
@@ -244,10 +266,34 @@ export const aiStorefrontProviderRequestSchema = z
     enabledLocales: z.array(localeSchema).min(1).max(2),
     protectedPaths: z.array(z.string().min(1)).min(1),
     untrustedImportedContent: z.array(labelledUntrustedContentSchema),
+    assetReferenceCapability: storefrontAssetReferenceCapabilitySchema,
+    approvedAssetContext: approvedGenerationAssetContextSchema.nullable(),
+    assetPlacementOperations: z.array(approvedAssetPlacementOperationSchema),
+    assetContextFingerprint: z.string().trim().min(1).nullable(),
     responseContract: z.literal("ai-storefront-proposal/v1"),
   })
   .strict()
   .superRefine((request, context) => {
+    if (
+      (request.approvedAssetContext === null &&
+        (request.assetContextFingerprint !== null ||
+          request.assetPlacementOperations.length > 0)) ||
+      (request.approvedAssetContext !== null &&
+        request.assetContextFingerprint !== request.approvedAssetContext.fingerprint)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["approvedAssetContext"],
+        message: "Approved source-asset context and its fingerprint must match exactly.",
+      });
+    }
+    if (request.assetReferenceCapability === "none" && request.approvedAssetContext !== null) {
+      context.addIssue({
+        code: "custom",
+        path: ["assetReferenceCapability"],
+        message: "Providers without asset-reference capability cannot receive source assets.",
+      });
+    }
     if (request.brandPalettePlan === null) {
       if (request.affectedSections.length === 0 || request.componentContracts.length === 0) {
         context.addIssue({
@@ -256,26 +302,26 @@ export const aiStorefrontProviderRequestSchema = z
           message: "Preset storefront requests require approved section contracts.",
         });
       }
-      return;
-    }
-    const paletteGrants = request.permissionGrants.filter(
-      (grant) =>
-        grant.target.kind === "storefrontDesignSystem" &&
-        grant.operationTypes.length === 1 &&
-        grant.operationTypes[0] === "APPLY_APPROVED_BRAND_COLOURS",
-    );
-    if (
-      request.target.designSystemTarget === null ||
-      request.affectedSections.length > 0 ||
-      request.componentContracts.length > 0 ||
-      request.permissionGrants.length !== 1 ||
-      paletteGrants.length !== 1
-    ) {
-      context.addIssue({
-        code: "custom",
-        path: ["brandPalettePlan"],
-        message: "Exact palette requests may grant only one global brand-colour operation.",
-      });
+    } else {
+      const paletteGrants = request.permissionGrants.filter(
+        (grant) =>
+          grant.target.kind === "storefrontDesignSystem" &&
+          grant.operationTypes.length === 1 &&
+          grant.operationTypes[0] === "APPLY_APPROVED_BRAND_COLOURS",
+      );
+      if (
+        request.target.designSystemTarget === null ||
+        request.affectedSections.length > 0 ||
+        request.componentContracts.length > 0 ||
+        request.permissionGrants.length !== 1 ||
+        paletteGrants.length !== 1
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["brandPalettePlan"],
+          message: "Exact palette requests may grant only one global brand-colour operation.",
+        });
+      }
     }
   });
 
@@ -309,6 +355,7 @@ export const aiStorefrontGenerationFailureCodeSchema = z.enum([
   "validationFailed",
   "staleDraft",
   "staleTarget",
+  "assetCapabilityUnavailable",
   "superseded",
 ]);
 export const aiStorefrontGenerationFailureSchema = z
@@ -325,6 +372,10 @@ export type AiStorefrontProviderRequest = z.infer<typeof aiStorefrontProviderReq
 export type AiStorefrontProviderResponse = z.infer<typeof aiStorefrontProviderResponseSchema>;
 export type AiStorefrontGenerationFailure = z.infer<typeof aiStorefrontGenerationFailureSchema>;
 export type AiStorefrontGenerationState = z.infer<typeof aiStorefrontGenerationStateSchema>;
+export type StorefrontAssetReferenceCapability = z.infer<
+  typeof storefrontAssetReferenceCapabilitySchema
+>;
+export type PlannedApprovedAssetPlacementOperation = ApprovedAssetPlacementOperation;
 
 export type AiStorefrontGenerationEvent = Readonly<{
   name:
@@ -359,6 +410,7 @@ export type AiStorefrontGenerationIdentity = Readonly<{
     storefront: z.infer<typeof aiStorefrontProjectionSchema>;
   };
   target: z.infer<typeof aiStorefrontTargetSchema>;
+  assetContextFingerprint?: string | null;
 }>;
 
 export type AiStorefrontGenerationResult =
