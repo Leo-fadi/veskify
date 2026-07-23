@@ -180,9 +180,9 @@ describe("P8-01 whole-storefront generation plan", () => {
       (binding) => binding.source === "collection",
     );
 
-    expect(productBinding).toMatchObject({ productId: aurumNordicSeed.catalogue.products[0]!.id });
+    expect(productBinding).toMatchObject({ productId: aurumNordicSeed.catalogue.products[0].id });
     expect(collectionBinding).toMatchObject({
-      collectionId: aurumNordicSeed.catalogue.collections[0]!.id,
+      collectionId: aurumNordicSeed.catalogue.collections[0].id,
     });
     expect(JSON.stringify(productBinding)).not.toContain('"price"');
     expect(plan.reviewSummary.protectedFactsPreserved.join(" ")).toMatch(
@@ -192,11 +192,11 @@ describe("P8-01 whole-storefront generation plan", () => {
 
   it("rejects unknown product, collection and component references", () => {
     const missingComponent = input();
-    missingComponent.draft.pages[0]!.sections[0]!.component = "unknownComponent";
+    missingComponent.draft.pages[0].sections[0].component = "unknownComponent";
     expect(() => createWholeStorefrontGenerationPlan(missingComponent)).toThrow(/unregistered/i);
 
     const missingCommerce = input();
-    missingCommerce.catalogue.collections[0]!.productIds = ["product_unknown"];
+    missingCommerce.catalogue.collections[0].productIds = ["product_unknown"];
     expect(() => createWholeStorefrontGenerationPlan(missingCommerce)).toThrow(/resolve within/i);
   });
 
@@ -223,11 +223,11 @@ describe("P8-01 whole-storefront generation plan", () => {
       componentId: `plan_${collectionPage.id}_collection_commerce`,
       componentType: "dynamicCollectionCommerce",
       assetSlotId: "collectionCommerceMedia",
-      assetId: context.assets[0]!.assetId,
-      role: context.assets[0]!.role,
-      assetRevision: context.assets[0]!.revision,
-      materialFingerprint: context.assets[0]!.materialFingerprint,
-      sourceReferenceId: context.assets[0]!.sourceReferenceId,
+      assetId: context.assets[0].assetId,
+      role: context.assets[0].role,
+      assetRevision: context.assets[0].revision,
+      materialFingerprint: context.assets[0].materialFingerprint,
+      sourceReferenceId: context.assets[0].sourceReferenceId,
       required: true,
     };
     const plan = createWholeStorefrontGenerationPlan(
@@ -256,11 +256,11 @@ describe("P8-01 whole-storefront generation plan", () => {
       componentId: `plan_${collectionPage.id}_collection_commerce`,
       componentType: "dynamicCollectionCommerce",
       assetSlotId: "collectionCommerceMedia",
-      assetId: context.assets[0]!.assetId,
-      role: context.assets[0]!.role,
+      assetId: context.assets[0].assetId,
+      role: context.assets[0].role,
       assetRevision: "stale-revision",
-      materialFingerprint: context.assets[0]!.materialFingerprint,
-      sourceReferenceId: context.assets[0]!.sourceReferenceId,
+      materialFingerprint: context.assets[0].materialFingerprint,
+      sourceReferenceId: context.assets[0].sourceReferenceId,
       required: true,
     };
 
@@ -293,7 +293,7 @@ describe("P8-01 whole-storefront generation plan", () => {
   it("is planning-only and leaves the source draft and catalogue unchanged on failure", () => {
     const current = input();
     const before = structuredClone({ draft: current.draft, catalogue: current.catalogue });
-    current.draft.pages[0]!.sections[0]!.component = "unknownComponent";
+    current.draft.pages[0].sections[0].component = "unknownComponent";
 
     expect(() => createWholeStorefrontGenerationPlan(current)).toThrow();
     expect(aurumNordicSeed.draftSnapshot).toEqual(before.draft);
