@@ -21,6 +21,12 @@ the two demo projects have no mutable storefront object references in common.
 The shared component registry uses the merchant-neutral `Hero` / `Hero-osio`
 label rather than an Aurum-branded generic hero label.
 
+Storefront home navigation resolves the snapshot page with `type: "home"`, not
+a merchant-specific page ID. The shared render context retains all page-ID
+paths for navigation targets and supplies the resolved home path for header and
+footer brand links. A snapshot with no home page retains the existing `/` safe
+fallback.
+
 ## Existing browser data
 
 Fresh bootstrap creates the corrected Karvonen project normally. For browser

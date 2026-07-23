@@ -30,6 +30,12 @@ function repository(value: ProjectAggregate): ProjectRepository {
   };
 }
 
+function expectBrandLinks(brandName: string, href: string) {
+  const brandLinks = screen.getAllByRole("link", { name: new RegExp(`^${brandName}$`) });
+  expect(brandLinks).toHaveLength(2);
+  for (const brandLink of brandLinks) expect(brandLink).toHaveAttribute("href", href);
+}
+
 describe("Karvonen project identity isolation", () => {
   it("renders the Karvonen preview, navigation, footer and locale content from the Karvonen aggregate", async () => {
     const value = aggregate(karvonenSeed);
@@ -53,6 +59,7 @@ describe("Karvonen project identity isolation", () => {
     expect(
       within(primaryNavigation).getByRole("link", { name: "Myrskyluodon Maija" }),
     ).toHaveAttribute("href", "/projects/project_karvonen/collections/myrskyluodon-maija");
+    expectBrandLinks("Karvonen", "/projects/project_karvonen");
 
     fireEvent.click(screen.getByRole("radio", { name: "English" }));
     expect(await screen.findByRole("heading", { name: "Jewellery" })).toBeVisible();
@@ -74,6 +81,7 @@ describe("Karvonen project identity isolation", () => {
     expect(await screen.findByRole("heading", { name: "Korut" })).toBeVisible();
     expect(screen.getByText("Published storefront")).toBeVisible();
     expect(screen.queryByText(/Aurum Nordic/i)).not.toBeInTheDocument();
+    expectBrandLinks("Karvonen", `/projects/${value.project.id}/published`);
 
     rerender(
       <ProjectPreviewClient
@@ -86,6 +94,7 @@ describe("Karvonen project identity isolation", () => {
     expect(await screen.findByText("Previous version")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Korut" })).toBeVisible();
     expect(screen.queryByText(/Aurum Nordic/i)).not.toBeInTheDocument();
+    expectBrandLinks("Karvonen", `/projects/${value.project.id}/history/${historicalSnapshotId}`);
   });
 
   it("resolves the direct Karvonen product route through canonical product data", async () => {
@@ -107,6 +116,46 @@ describe("Karvonen project identity isolation", () => {
     ).toContain("129");
     expect(screen.queryByText(/Aurum Nordic|Aurora/i)).not.toBeInTheDocument();
     expect(document.querySelector('[data-component="dynamicProductDetail"]')).toBeTruthy();
+    expectBrandLinks("Karvonen", `/projects/${value.project.id}`);
+  });
+
+  it("keeps Karvonen product brand links in preview, published and historical route contexts", async () => {
+    const value = aggregate(karvonenSeed);
+    const historicalSnapshotId = value.project.publishedSnapshotId;
+    const routeRepository = repository(value);
+    const { rerender } = render(
+      <ProductPreviewClient
+        productId={value.project.id}
+        productSlug="guldviva-myrskyluodon-maija-sormus"
+        repositoryFactory={() => routeRepository}
+      />,
+    );
+
+    await screen.findByRole("heading", { level: 1, name: "Guldviva Myrskyluodon Maija sormus" });
+    expectBrandLinks("Karvonen", `/projects/${value.project.id}`);
+
+    rerender(
+      <ProductPreviewClient
+        productId={value.project.id}
+        productSlug="guldviva-myrskyluodon-maija-sormus"
+        repositoryFactory={() => routeRepository}
+        snapshotKind="published"
+      />,
+    );
+    await screen.findByText("Published storefront");
+    expectBrandLinks("Karvonen", `/projects/${value.project.id}/published`);
+
+    rerender(
+      <ProductPreviewClient
+        historicalSnapshotId={historicalSnapshotId}
+        productId={value.project.id}
+        productSlug="guldviva-myrskyluodon-maija-sormus"
+        repositoryFactory={() => routeRepository}
+        snapshotKind="history"
+      />,
+    );
+    await screen.findByText("Previous version");
+    expectBrandLinks("Karvonen", `/projects/${value.project.id}/history/${historicalSnapshotId}`);
   });
 
   it("resolves the direct Karvonen collection route through canonical collection data", async () => {
@@ -127,6 +176,7 @@ describe("Karvonen project identity isolation", () => {
     ).toBeVisible();
     expect(screen.queryByText(/Aurum Nordic|Aurora/i)).not.toBeInTheDocument();
     expect(document.querySelector('[data-component="dynamicCollectionCommerce"]')).toBeTruthy();
+    expectBrandLinks("Karvonen", `/projects/${value.project.id}`);
   });
 
   it("keeps Aurum Nordic separate and rejects unknown project IDs without a fallback", async () => {
