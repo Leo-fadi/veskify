@@ -1,7 +1,9 @@
+import { assetReviewBriefData, synchronizeAssetReviewWithBrief } from "@/application/asset-review";
 import {
   approveStorefrontDesignBrief,
   createDeterministicMockDiscoveryAdapter,
   createStorefrontDesignBrief,
+  createStorefrontDesignBriefEvidenceFingerprint,
   discoverStorefrontSource,
   proposeBrandReconstruction,
   reconcileStorefrontSources,
@@ -12,6 +14,11 @@ import {
   type SourceDiscoveryAdapter,
   type SourceDiscoveryApplicationErrorCode,
 } from "@/application/source-discovery";
+import {
+  assetReviewHasMaterialChanges,
+  createEmptyAssetReviewState,
+  registerDiscoveredAssetCandidates,
+} from "@/domain/asset-review";
 import {
   cloneUrlBriefWorkflow,
   currentUrlBrief,
@@ -26,10 +33,11 @@ import {
   type UrlBriefWorkflowSafeState,
 } from "@/domain/onboarding";
 import {
-  createStorefrontSourceEvidenceFingerprint,
   normalizeSourceUrl,
   sourceDiscoveryResultSchema,
   sourceReferenceSchema,
+  sourceWarningSchema,
+  type AssetCandidate,
   type CanonicalCommerceProjection,
   type SourceFailureCode,
   type SourceReference,
@@ -52,7 +60,6 @@ export type PrepareUrlStorefrontBriefInput = Readonly<{
   businessIdentity: unknown;
   languagePlan: unknown;
   approvedBrandDirection?: unknown;
-  approvedReusableAssetIds?: readonly string[];
   pagePlan?: unknown;
   navigationDirection?: readonly string[];
   homepageGoals?: readonly string[];
@@ -174,6 +181,50 @@ function sourceReferencesMatch(left: SourceReference, right: SourceReference): b
   );
 }
 
+function workflowEvidenceFingerprint(
+  workflow: UrlBriefWorkflow,
+  material: NonNullable<ReturnType<typeof urlBriefWorkflowMaterialEvidence>>,
+  brief?: StorefrontDesignBriefContract | null,
+): string {
+  return createStorefrontDesignBriefEvidenceFingerprint({
+    sourceReferenceIds: material.sourceReferences.map((source) => source.id),
+    sourceEvidenceIds: material.evidence.map((evidence) => evidence.id),
+    canonicalCommerceProjectionRef: material.reconciliation?.canonicalCommerceProjectionRef ?? null,
+    materialEvidence: material,
+    assetReviewFingerprint:
+      brief?.assetReviewFingerprint === null ? undefined : workflow.assetReview.materialFingerprint,
+  });
+}
+
+function assetReviewInvalidatesApprovedBrief(
+  workflow: UrlBriefWorkflow,
+  brief: StorefrontDesignBriefContract,
+): boolean {
+  return brief.assetReviewFingerprint === null
+    ? assetReviewHasMaterialChanges(workflow.assetReview)
+    : brief.assetReviewFingerprint !== workflow.assetReview.materialFingerprint;
+}
+
+function merchantUploadReviewWarning(
+  asset: AssetCandidate,
+  source: SourceReference,
+): ReturnType<typeof sourceWarningSchema.parse> | null {
+  if (asset.source.kind !== "merchant-upload") return null;
+  if (asset.provenance.sourceReferenceId !== source.id) {
+    return sourceWarningSchema.parse({
+      code: "unreusable-asset",
+      message: "A merchant-upload asset could not be linked to this storefront source.",
+    });
+  }
+  if (!asset.mediaType || !/^image\/[a-z0-9.+-]+$/i.test(asset.mediaType)) {
+    return sourceWarningSchema.parse({
+      code: "unreusable-asset",
+      message: "A merchant-upload asset has unsupported media metadata for review.",
+    });
+  }
+  return null;
+}
+
 export class UrlBriefWorkflowService {
   readonly #repository: OnboardingSessionRepository;
   readonly #adapter: SourceDiscoveryAdapter;
@@ -292,6 +343,7 @@ export class UrlBriefWorkflowService {
       sourceReferences: [source],
       currentSourceReferenceId: source.id,
       discoveryResult: null,
+      assetReview: createEmptyAssetReviewState(),
       reconciliation: null,
       merchantResolutions: [],
       unresolvedInformationIds: [],
@@ -344,25 +396,40 @@ export class UrlBriefWorkflowService {
           "The source did not provide reusable storefront evidence.",
         );
       }
+      const uploadWarnings = discovered.assetCandidates
+        .map((asset) => merchantUploadReviewWarning(asset, discoveringSource))
+        .filter((warning) => warning !== null);
+      const completedWarnings = [...discovered.warnings, ...uploadWarnings];
       const completedSource = sourceReferenceSchema.parse({
         ...discovered.source,
         status: discovered.source.status === "partial" ? "partial" : "complete",
-        warnings: discovered.warnings,
+        warnings: completedWarnings,
         failure: null,
       });
       const completedResult = sourceDiscoveryResultSchema.parse({
         ...discovered,
         source: completedSource,
+        warnings: completedWarnings,
       });
-      const next = urlBriefWorkflowSchema.parse({
+      const assetReview = registerDiscoveredAssetCandidates({
+        state: active.workflow.assetReview,
+        source: completedSource,
+        candidates: completedResult.assetCandidates.filter(
+          (asset) => asset.source.kind === "source-url",
+        ),
+        now: this.#now(),
+      });
+      const candidate = urlBriefWorkflowSchema.parse({
         ...active.workflow,
         status: "evidence-ready",
         lastSafeState: "evidence-ready",
         sourceReferences: replaceSource(active.workflow.sourceReferences, completedSource),
         discoveryResult: completedResult,
+        assetReview,
         failure: null,
         updatedAt: this.#now(),
       });
+      const next = synchronizeAssetReviewWithBrief(candidate, assetReview, this.#now());
       const persisted = await this.#persist(active.session, next, loaded.workflow);
       return cloneUrlBriefWorkflow(persisted.workflow);
     } catch (error) {
@@ -444,8 +511,11 @@ export class UrlBriefWorkflowService {
       const brief = currentUrlBrief(candidate);
       const material = urlBriefWorkflowMaterialEvidence(candidate);
       if (brief?.status === "approved" && material) {
-        const fingerprint = createStorefrontSourceEvidenceFingerprint(material);
-        if (fingerprint === brief.approvedEvidenceFingerprint) {
+        const fingerprint = workflowEvidenceFingerprint(candidate, material, brief);
+        if (
+          fingerprint === brief.approvedEvidenceFingerprint &&
+          !assetReviewInvalidatesApprovedBrief(candidate, brief)
+        ) {
           status = "approved";
           lastSafeState = "approved";
         } else {
@@ -536,6 +606,11 @@ export class UrlBriefWorkflowService {
       );
     }
     const projectionRef = loaded.workflow.reconciliation?.canonicalCommerceProjectionRef ?? null;
+    const reviewedAssets = assetReviewBriefData(loaded.workflow.assetReview);
+    const materialUnresolvedBlockers = [
+      ...(input.materialUnresolvedBlockers ?? []),
+      ...reviewedAssets.blockers,
+    ];
     const current = currentUrlBrief(loaded.workflow);
     const brief =
       current?.status === "needsReview"
@@ -546,7 +621,9 @@ export class UrlBriefWorkflowService {
             languagePlan: input.languagePlan,
             brandProposal: loaded.workflow.brandProposal,
             approvedBrandDirection: input.approvedBrandDirection,
-            approvedReusableAssetIds: input.approvedReusableAssetIds ?? [],
+            approvedReusableAssetIds: reviewedAssets.approvedReusableAssetIds,
+            approvedAssetAssignments: reviewedAssets.approvedAssetAssignments,
+            assetReviewFingerprint: reviewedAssets.assetReviewFingerprint,
             pagePlan: input.pagePlan ?? { pageTypes: ["home", "collection", "product"] },
             navigationDirection: input.navigationDirection ?? [],
             homepageGoals: input.homepageGoals ?? [],
@@ -555,7 +632,7 @@ export class UrlBriefWorkflowService {
             visualPriorities: input.visualPriorities ?? [],
             contentAssumptions: input.contentAssumptions ?? [],
             unresolvedItems: [],
-            materialUnresolvedBlockers: input.materialUnresolvedBlockers ?? [],
+            materialUnresolvedBlockers,
             excludedClaims: input.excludedClaims ?? [],
             generationPermissions: {
               allowMarketingCopy: input.generationPermissions?.allowMarketingCopy ?? true,
@@ -574,7 +651,9 @@ export class UrlBriefWorkflowService {
             canonicalCommerceProjectionRef: projectionRef,
             brandProposal: loaded.workflow.brandProposal,
             approvedBrandDirection: input.approvedBrandDirection,
-            approvedReusableAssetIds: input.approvedReusableAssetIds,
+            approvedReusableAssetIds: reviewedAssets.approvedReusableAssetIds,
+            approvedAssetAssignments: reviewedAssets.approvedAssetAssignments,
+            assetReviewFingerprint: reviewedAssets.assetReviewFingerprint,
             pagePlan: input.pagePlan,
             navigationDirection: input.navigationDirection,
             homepageGoals: input.homepageGoals,
@@ -582,7 +661,7 @@ export class UrlBriefWorkflowService {
             productPageGoals: input.productPageGoals,
             visualPriorities: input.visualPriorities,
             contentAssumptions: input.contentAssumptions,
-            materialUnresolvedBlockers: input.materialUnresolvedBlockers,
+            materialUnresolvedBlockers,
             excludedClaims: input.excludedClaims,
             generationPermissions: input.generationPermissions,
           });
@@ -778,12 +857,17 @@ export class UrlBriefWorkflowService {
     }
     const currentProjectionRef =
       loaded.workflow.reconciliation?.canonicalCommerceProjectionRef ?? null;
-    const currentEvidenceFingerprint = createStorefrontSourceEvidenceFingerprint(material);
+    const currentEvidenceFingerprint = workflowEvidenceFingerprint(
+      loaded.workflow,
+      material,
+      brief,
+    );
     if (
       projection === null ||
       projection.id !== currentProjectionRef ||
       brief.canonicalCommerceProjectionRef !== currentProjectionRef ||
-      brief.evidenceFingerprint !== currentEvidenceFingerprint
+      brief.evidenceFingerprint !== currentEvidenceFingerprint ||
+      (brief.status === "approved" && assetReviewInvalidatesApprovedBrief(loaded.workflow, brief))
     ) {
       const failureCode: SourceDiscoveryApplicationErrorCode = projection
         ? "stale-brief-approval"
@@ -860,8 +944,12 @@ export class UrlBriefWorkflowService {
       now: this.#now(),
       materialEvidence: material,
       brandProposal: loaded.workflow.brandProposal,
-      approvedReusableAssetIds: loaded.workflow.brandProposal?.reusedAssetIds ?? [],
-      materialUnresolvedBlockers: [],
+      approvedReusableAssetIds: assetReviewBriefData(loaded.workflow.assetReview)
+        .approvedReusableAssetIds,
+      approvedAssetAssignments: assetReviewBriefData(loaded.workflow.assetReview)
+        .approvedAssetAssignments,
+      assetReviewFingerprint: loaded.workflow.assetReview.materialFingerprint,
+      materialUnresolvedBlockers: assetReviewBriefData(loaded.workflow.assetReview).blockers,
     });
     const next = urlBriefWorkflowSchema.parse({
       ...loaded.workflow,
@@ -898,7 +986,7 @@ export class UrlBriefWorkflowService {
     try {
       return requireApprovedCurrentStorefrontDesignBrief(
         brief,
-        createStorefrontSourceEvidenceFingerprint(material),
+        workflowEvidenceFingerprint(loaded.workflow, material, brief),
       );
     } catch (error) {
       const code = failureCode(error);

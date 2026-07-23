@@ -1,5 +1,6 @@
 import type {
   AssetCandidate,
+  ApprovedAssetAssignment,
   BrandReconstructionProposal,
   CanonicalCommerceProjection,
   SourceDiscoveryResult,
@@ -62,6 +63,7 @@ export type StorefrontDesignBriefEvidenceFingerprintInput = Readonly<{
   sourceEvidenceIds: readonly string[];
   canonicalCommerceProjectionRef: string | null;
   materialEvidence: StorefrontSourceEvidenceMaterial;
+  assetReviewFingerprint?: string | null;
 }>;
 
 export type CreateStorefrontDesignBriefInput = Readonly<{
@@ -76,6 +78,8 @@ export type CreateStorefrontDesignBriefInput = Readonly<{
   brandProposal?: BrandReconstructionProposal | null;
   approvedBrandDirection?: unknown;
   approvedReusableAssetIds?: readonly string[];
+  approvedAssetAssignments?: readonly ApprovedAssetAssignment[];
+  assetReviewFingerprint?: string | null;
   pagePlan?: unknown;
   navigationDirection?: readonly string[];
   homepageGoals?: readonly string[];
@@ -103,6 +107,8 @@ export type UpdateStorefrontDesignBriefReviewInput = Readonly<{
   brandProposal?: BrandReconstructionProposal | null;
   approvedBrandDirection?: unknown;
   approvedReusableAssetIds?: readonly string[];
+  approvedAssetAssignments?: readonly ApprovedAssetAssignment[];
+  assetReviewFingerprint?: string | null;
   pagePlan?: unknown;
   navigationDirection?: readonly string[];
   homepageGoals?: readonly string[];
@@ -123,6 +129,8 @@ export type SupersedeStorefrontDesignBriefInput = Readonly<{
   materialEvidence: StorefrontSourceEvidenceMaterial;
   brandProposal?: BrandReconstructionProposal | null;
   approvedReusableAssetIds?: readonly string[];
+  approvedAssetAssignments?: readonly ApprovedAssetAssignment[];
+  assetReviewFingerprint?: string | null;
   unresolvedItems?: readonly string[];
   materialUnresolvedBlockers?: readonly string[];
   reason?: string;

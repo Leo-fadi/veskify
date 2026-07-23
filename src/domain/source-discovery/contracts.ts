@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assetRoleSchema as componentAssetRoleSchema } from "@/domain/component-platform";
 import {
   brandDirectionSchema,
   businessIdentitySchema,
@@ -561,6 +562,15 @@ export type StorefrontDesignBriefContractStatus = z.infer<
   typeof storefrontDesignBriefContractStatusSchema
 >;
 
+export const approvedAssetAssignmentSchema = z
+  .object({
+    assetId: idSchema,
+    role: componentAssetRoleSchema,
+    revision: z.string().trim().min(1).max(120),
+    fingerprint: z.string().trim().min(1),
+  })
+  .strict();
+
 export const storefrontDesignBriefContractSchema = z
   .object({
     id: idSchema,
@@ -576,6 +586,8 @@ export const storefrontDesignBriefContractSchema = z
     approvedBrandDirection: brandDirectionSchema.nullable(),
     brandProposal: brandReconstructionProposalSchema.nullable(),
     approvedReusableAssetIds: z.array(idSchema),
+    approvedAssetAssignments: z.array(approvedAssetAssignmentSchema).default([]),
+    assetReviewFingerprint: z.string().trim().min(1).nullable().default(null),
     pagePlan: storefrontStructureSchema,
     navigationDirection: z.array(z.string().trim().min(1).max(200)),
     homepageGoals: z.array(z.string().trim().min(1).max(500)),
@@ -608,6 +620,25 @@ export const storefrontDesignBriefContractSchema = z
         code: "custom",
         path: ["updatedAt"],
         message: "Updated time precedes creation time.",
+      });
+    }
+    const assignmentIds = brief.approvedAssetAssignments.map((assignment) => assignment.assetId);
+    if (new Set(assignmentIds).size !== assignmentIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["approvedAssetAssignments"],
+        message: "Approved asset assignments must reference unique assets.",
+      });
+    }
+    if (
+      assignmentIds.length > 0 &&
+      (assignmentIds.length !== brief.approvedReusableAssetIds.length ||
+        assignmentIds.some((assetId) => !brief.approvedReusableAssetIds.includes(assetId)))
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["approvedReusableAssetIds"],
+        message: "Approved asset IDs and role assignments must describe the same asset set.",
       });
     }
     if (brief.status === "approved" && brief.approval.status !== "approved") {
@@ -708,6 +739,7 @@ export const storefrontDesignBriefContractSchema = z
   });
 
 export type StorefrontDesignBriefContract = z.infer<typeof storefrontDesignBriefContractSchema>;
+export type ApprovedAssetAssignment = z.infer<typeof approvedAssetAssignmentSchema>;
 export type CanonicalCommerceProjection = CatalogueDisplayModel;
 export const canonicalCommerceProjectionSchema = catalogueDisplayModelSchema;
 

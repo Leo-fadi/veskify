@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assetReviewStateSchema, createEmptyAssetReviewState } from "@/domain/asset-review";
 import {
   brandReconstructionProposalSchema,
   reconciliationResultSchema,
@@ -82,6 +83,7 @@ export const urlBriefWorkflowSchema = z
     sourceReferences: z.array(sourceReferenceSchema),
     currentSourceReferenceId: idSchema.nullable(),
     discoveryResult: sourceDiscoveryResultSchema.nullable(),
+    assetReview: assetReviewStateSchema.default(createEmptyAssetReviewState()),
     reconciliation: reconciliationResultSchema.nullable(),
     merchantResolutions: z.array(merchantReconciliationResolutionSchema),
     unresolvedInformationIds: z.array(idSchema),
@@ -121,6 +123,15 @@ export const urlBriefWorkflowSchema = z
         message: "The current source reference must exist in the workflow.",
       });
     }
+    workflow.assetReview.candidates.forEach((candidate, index) => {
+      if (!sourceIds.includes(candidate.sourceReferenceId)) {
+        context.addIssue({
+          code: "custom",
+          path: ["assetReview", "candidates", index, "sourceReferenceId"],
+          message: "Asset-review candidates must reference a persisted source.",
+        });
+      }
+    });
 
     const decisionIds = new Set(
       workflow.reconciliation?.decisions.map((decision) => decision.id) ?? [],
@@ -248,6 +259,7 @@ export function createIdleUrlBriefWorkflow(input: { id: string; now: string }): 
     sourceReferences: [],
     currentSourceReferenceId: null,
     discoveryResult: null,
+    assetReview: createEmptyAssetReviewState(),
     reconciliation: null,
     merchantResolutions: [],
     unresolvedInformationIds: [],
