@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
   createDeterministicMockAIProvider,
@@ -52,7 +53,7 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     readOnly?: boolean;
     readOnlyLabel?: string;
     validationErrorMessage?: string;
-    contextualPanel?: import("react").ReactNode;
+    contextualPanel?: ReactNode;
   }) => (
     <section
       aria-label={readOnly ? (readOnlyLabel ?? "Proposal preview canvas") : "Visual editor canvas"}
@@ -1062,7 +1063,9 @@ describe("P2-01 project editor route", () => {
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Make the homepage feel more luxurious." }));
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
-    expect(await screen.findByLabelText("Design proposal")).toBeVisible();
+    const proposal = await screen.findByTestId("design-proposal");
+    expect(proposal).toBeVisible();
+    expect(proposal).toHaveAccessibleName("Design proposal");
     expect(screen.getByLabelText("Proposal preview canvas")).toHaveTextContent("Locked proposal");
     expect(screen.getByText(/current page is unchanged/i)).toBeVisible();
     expect(screen.getByLabelText("Design proposal")).toHaveTextContent("Planned changes");
@@ -2156,7 +2159,9 @@ describe("P4-04 editor AI command integration", () => {
       target: { pageId: "page_home", sectionId: "section_home_hero" },
     });
     await provider.resolve(1);
-    expect(await screen.findByLabelText("Design proposal")).toBeVisible();
+    const proposal = await screen.findByTestId("design-proposal");
+    expect(proposal).toBeVisible();
+    expect(proposal).toHaveAccessibleName("Suunnitteluehdotus");
   });
 
   it("prevents repeated retry activation while pending and after the single retry fails", async () => {

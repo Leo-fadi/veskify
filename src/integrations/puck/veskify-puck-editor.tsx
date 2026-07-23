@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Puck, Render, type Data, type OnAction } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
 import type { StorefrontRenderContext } from "@/components/registry";
@@ -37,6 +38,7 @@ export function VeskifyPuckCanvas({
   validationErrorMessage,
   contextualPanel,
   showDesignFields = false,
+  compactFieldsTargetId,
 }: {
   page: PageModel;
   context: StorefrontRenderContext;
@@ -51,6 +53,7 @@ export function VeskifyPuckCanvas({
   validationErrorMessage?: string;
   contextualPanel?: ReactNode;
   showDesignFields?: boolean;
+  compactFieldsTargetId?: string;
 }) {
   const boundaryKey = `${page.id}-${context.activeLocale}-${resetKey}-${sessionKey}`;
   return (
@@ -67,6 +70,7 @@ export function VeskifyPuckCanvas({
       validationErrorMessage={validationErrorMessage}
       contextualPanel={contextualPanel}
       showDesignFields={showDesignFields}
+      compactFieldsTargetId={compactFieldsTargetId}
     />
   );
 }
@@ -83,6 +87,7 @@ function VeskifyPuckCanvasSession({
   validationErrorMessage,
   contextualPanel,
   showDesignFields,
+  compactFieldsTargetId,
 }: Omit<Parameters<typeof VeskifyPuckCanvas>[0], "resetKey" | "sessionKey">) {
   const [recoveryVersion, setRecoveryVersion] = useState(0);
   const trustedPage = useRef(page);
@@ -158,10 +163,21 @@ function VeskifyPuckCanvasSession({
               {showDesignFields ? <Puck.Fields /> : null}
             </aside>
           ) : null}
+          {compactFieldsTargetId ? <PuckFieldsPortal targetId={compactFieldsTargetId} /> : null}
         </div>
       </Puck>
     </section>
   );
+}
+
+function PuckFieldsPortal({ targetId }: { targetId: string }) {
+  const [target, setTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    queueMicrotask(() => setTarget(document.getElementById(targetId)));
+  }, [targetId]);
+
+  return target ? createPortal(<Puck.Fields />, target) : null;
 }
 
 export function VeskifyPuckEditorProof() {

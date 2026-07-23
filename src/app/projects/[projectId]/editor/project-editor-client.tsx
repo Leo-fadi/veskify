@@ -1295,6 +1295,11 @@ export function ProjectEditorClient({
                 "active"
               }
               contextualPanel={!compactViewport && rightPanelOpen ? toolRail : undefined}
+              compactFieldsTargetId={
+                compactViewport && toolDrawerOpen && activeToolTab === "design"
+                  ? "editor-compact-design-fields"
+                  : undefined
+              }
               showDesignFields={!compactViewport && rightPanelOpen && activeToolTab === "design"}
               validationErrorMessage={text.feedback.canvasValidation}
             />
@@ -1318,7 +1323,10 @@ export function ProjectEditorClient({
           open={toolDrawerOpen}
           title={text.panels.contextual}
         >
-          <div className={styles.drawerContent}>{toolRail}</div>
+          <div className={styles.drawerContent}>
+            {toolRail}
+            {activeToolTab === "design" ? <div id="editor-compact-design-fields" /> : null}
+          </div>
         </Drawer>
       </AppShell>
     </div>

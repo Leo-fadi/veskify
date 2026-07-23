@@ -236,6 +236,30 @@ for (const width of [375, 768]) {
   });
 }
 
+test("shows selected-section design fields in the compact contextual drawer", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto(url);
+  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  await canvas.getByText("Made for northern light", { exact: true }).click();
+  await page.getByRole("button", { name: "Open AI assistant" }).click();
+  const drawer = page.getByRole("dialog", { name: "Contextual tools" });
+  await expect(drawer.getByRole("radio", { name: "Selected section" })).toBeChecked({
+    timeout: 3_000,
+  });
+  await drawer.getByRole("button", { name: "Design", exact: true }).click();
+
+  const headingField = drawer.getByRole("textbox", { name: "Main heading", exact: true });
+  await expect(headingField).toBeVisible({ timeout: 3_000 });
+  await headingField.fill("A compact merchant homepage");
+  await expect(
+    canvas.getByRole("heading", { name: "A compact merchant homepage", exact: true }),
+  ).toBeVisible();
+
+  await drawer.getByRole("button", { name: "AI assistant", exact: true }).click();
+  await expect(headingField).toHaveCount(0);
+  await expect(drawer.getByLabel("Design request")).toBeVisible();
+});
+
 test("requests, previews, rejects and accepts deterministic proposals on mobile", async ({
   page,
 }) => {
