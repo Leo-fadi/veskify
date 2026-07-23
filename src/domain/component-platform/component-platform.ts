@@ -1414,7 +1414,22 @@ export function validatePresentationBinding(input: unknown): PresentationBinding
   return presentationBindingSchema.parse(input);
 }
 
-export function createComponentRegistryV2(definitions: readonly ComponentDefinitionV2[]) {
+export type ComponentInstanceValidationContract = {
+  validateInstance?: (instance: ComponentInstanceV2) => void;
+  validateConformance?: (
+    instance: ComponentInstanceV2,
+    projection: ComponentProjectionContext,
+  ) => void;
+};
+
+export type ComponentInstanceValidationContracts = Readonly<
+  Record<string, ComponentInstanceValidationContract>
+>;
+
+export function createComponentRegistryV2(
+  definitions: readonly ComponentDefinitionV2[],
+  validationContracts: ComponentInstanceValidationContracts = {},
+) {
   const parsedDefinitions = definitions.map((definition) =>
     componentDefinitionV2Schema.parse(definition),
   );
@@ -1424,6 +1439,13 @@ export function createComponentRegistryV2(definitions: readonly ComponentDefinit
       throw new Error(`Duplicate ComponentDefinitionV2 type: ${definition.type}.`);
     }
     byType.set(definition.type, definition);
+  }
+  for (const component of Object.keys(validationContracts)) {
+    if (!byType.has(component)) {
+      throw new Error(
+        `Component instance validation contract references unknown component: ${component}.`,
+      );
+    }
   }
 
   function get(type: string): ComponentDefinitionV2 {
@@ -1450,6 +1472,7 @@ export function createComponentRegistryV2(definitions: readonly ComponentDefinit
     validateInstanceData(instance, definition);
     validateInstanceBindings(instance, definition);
     validateInstanceAssetAssignments(instance, definition);
+    validationContracts[instance.component]?.validateInstance?.(instance);
     return instance;
   }
 
@@ -1462,6 +1485,7 @@ export function createComponentRegistryV2(definitions: readonly ComponentDefinit
     const definition = get(instance.component);
     validateBindingTargets(instance, definition, projection);
     validateAssignedAssetInventory(instance, projection.assets);
+    validationContracts[instance.component]?.validateConformance?.(instance, projection);
     return instance;
   }
 

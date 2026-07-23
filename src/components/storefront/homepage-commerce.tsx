@@ -253,6 +253,7 @@ function canonicalProductMedia(
     if (
       metadata?.approvalStatus === "approved" &&
       metadata.role === expectedRole &&
+      metadata.provenance.kind === "canonicalProductMedia" &&
       (!allowed || allowed.has(media.assetId))
     ) {
       return { media, resolved: resolveAsset(metadata, input, media.alt ?? product.title) };
@@ -344,6 +345,7 @@ export function HomepageHeroSection(input: HomepageCommerceRendererInput) {
       aria-labelledby={`${instance.id}-heading`}
       className={sectionClass("hero", instance.variant, style)}
       data-component={instance.component}
+      data-media-position={props.mediaPosition}
       data-media-state={media ? "approved" : "omitted"}
       data-render-target={input.target}
       data-responsive-layout="content-driven"
@@ -546,33 +548,39 @@ export function HomepageFeaturedProductsSection(input: HomepageCommerceRendererI
         locale={locale}
         supportingCopy={content.supportingCopy}
       />
-      <div
-        className={`${styles.productGrid} ${styles[`layout_${props.layout}`]}`}
-        style={{ "--homepage-columns": props.columns } as CSSProperties}
-      >
-        {products.map((product) => {
-          const selected = canonicalProductMedia(product, projection, input, assigned);
-          return (
-            <DynamicCollectionProductCard
-              assetFor={(assetId) => {
-                if (!selected || selected.media.assetId !== assetId) {
-                  throw new Error(
-                    `Homepage product media is not selected canonically: ${assetId}.`,
-                  );
-                }
-                return selected.resolved;
-              }}
-              content={cardContent}
-              key={product.productId}
-              locale={locale}
-              media={selected?.media}
-              onNavigateProduct={(intent) => input.onNavigate(intent)}
-              product={product}
-              props={cardProps}
-            />
-          );
-        })}
-      </div>
+      {products.length === 0 ? (
+        <p className={styles.emptyState} data-empty-state="products" role="status">
+          {text(content.emptyStateMessage, locale)}
+        </p>
+      ) : (
+        <div
+          className={`${styles.productGrid} ${styles[`layout_${props.layout}`]}`}
+          style={{ "--homepage-columns": props.columns } as CSSProperties}
+        >
+          {products.map((product) => {
+            const selected = canonicalProductMedia(product, projection, input, assigned);
+            return (
+              <DynamicCollectionProductCard
+                assetFor={(assetId) => {
+                  if (!selected || selected.media.assetId !== assetId) {
+                    throw new Error(
+                      `Homepage product media is not selected canonically: ${assetId}.`,
+                    );
+                  }
+                  return selected.resolved;
+                }}
+                content={cardContent}
+                key={product.productId}
+                locale={locale}
+                media={selected?.media}
+                onNavigateProduct={(intent) => input.onNavigate(intent)}
+                product={product}
+                props={cardProps}
+              />
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
@@ -655,6 +663,7 @@ function EditorialSection({
       aria-labelledby={`${instance.id}-heading`}
       className={sectionClass(component, instance.variant, style)}
       data-component={instance.component}
+      data-media-position={mediaPosition}
       data-media-state={media ? "approved" : "omitted"}
       data-render-target={input.target}
       data-responsive-layout="content-driven"

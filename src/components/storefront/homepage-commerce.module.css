@@ -3,9 +3,11 @@
   box-sizing: border-box;
   display: grid;
   gap: clamp(1rem, 3vw, 2.5rem);
+  isolation: isolate;
   max-width: 100%;
   overflow: clip;
   padding: clamp(2rem, 6vw, 5.5rem) max(1rem, calc((100% - 76rem) / 2));
+  position: relative;
 }
 
 .root *,
@@ -16,18 +18,18 @@
 }
 
 .surface_plain {
-  background: var(--color-surface, #fff);
-  color: var(--color-text, #201d1a);
+  background: var(--brand-color-background);
+  color: var(--brand-color-text);
 }
 
 .surface_soft {
-  background: var(--color-surface-soft, #f4f0e9);
-  color: var(--color-text, #201d1a);
+  background: color-mix(in srgb, var(--brand-color-surface) 72%, var(--brand-color-background));
+  color: var(--brand-color-text);
 }
 
 .surface_contrast {
-  background: var(--color-primary, #312820);
-  color: var(--color-on-primary, #fff);
+  background: var(--brand-color-primary);
+  color: var(--brand-color-surface);
 }
 
 .hero,
@@ -40,8 +42,6 @@
 .variant_imageLed,
 .variant_overlay {
   grid-template-columns: 1fr;
-  isolation: isolate;
-  position: relative;
 }
 
 .variant_minimal {
@@ -53,7 +53,7 @@
   display: grid;
   gap: 1rem;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .heroCopy h1,
@@ -73,10 +73,17 @@
 .heroCopy p,
 .editorialCopy p,
 .sectionHeading p {
+  color: var(--brand-color-muted-text);
   font-size: clamp(1rem, 1.6vw, 1.25rem);
   line-height: 1.6;
   margin: 0;
   max-width: 42rem;
+}
+
+.surface_contrast .heroCopy p,
+.surface_contrast .editorialCopy p,
+.surface_contrast .sectionHeading p {
+  color: color-mix(in srgb, var(--brand-color-surface) 82%, var(--brand-color-primary));
 }
 
 .heroMedia,
@@ -96,9 +103,25 @@
   inset: 0;
   min-height: 100%;
   opacity: 0.72;
+  overflow: hidden;
+  pointer-events: none;
   position: absolute;
   width: 100%;
-  z-index: -1;
+  z-index: 0;
+}
+
+.media_background::after {
+  background: color-mix(in srgb, var(--brand-color-background) 28%, transparent);
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
+.media_background img {
+  position: relative;
+  z-index: 0;
 }
 
 .heroMedia img,
@@ -144,7 +167,7 @@
 
 .action {
   align-items: center;
-  border: 1px solid currentColor;
+  border: 1px solid var(--brand-color-border);
   border-radius: 999px;
   display: inline-flex;
   justify-content: center;
@@ -154,25 +177,45 @@
 }
 
 .action_primary {
-  background: var(--color-primary, #312820);
-  color: var(--color-on-primary, #fff);
+  background: var(--brand-color-primary);
+  border-color: var(--brand-color-primary);
+  color: var(--brand-color-surface);
 }
 
 .surface_contrast .action_primary {
-  background: var(--color-on-primary, #fff);
-  color: var(--color-primary, #312820);
+  background: var(--brand-color-surface);
+  border-color: var(--brand-color-surface);
+  color: var(--brand-color-primary);
+}
+
+.action_secondary {
+  background: var(--brand-color-surface);
+  border-color: var(--brand-color-primary);
+  color: var(--brand-color-primary);
 }
 
 .action_text {
   border-color: transparent;
+  color: var(--brand-color-primary);
   padding-inline: 0;
   text-decoration: underline;
   text-underline-offset: 0.25em;
 }
 
+.surface_contrast .action_secondary,
+.surface_contrast .action_text {
+  color: var(--brand-color-surface);
+}
+
+.action:hover,
+.collectionCard button:hover {
+  border-color: var(--brand-color-accent);
+  box-shadow: inset 0 0 0 1px var(--brand-color-accent);
+}
+
 .action:focus-visible,
 .collectionCard button:focus-visible {
-  outline: 3px solid var(--color-focus, #1d6fd8);
+  outline: 3px solid var(--brand-color-accent);
   outline-offset: 3px;
 }
 
@@ -205,8 +248,12 @@
 }
 
 .collectionCard {
+  background: var(--brand-color-surface);
+  border: 1px solid var(--brand-color-border);
+  color: var(--brand-color-text);
   display: grid;
   gap: 0.75rem;
+  padding: 1rem;
 }
 
 .collectionCard figure {
@@ -223,6 +270,7 @@
 }
 
 .collectionCard button {
+  color: var(--brand-color-primary);
   font-size: 1.125rem;
   font-weight: 650;
   min-height: 2.75rem;
@@ -236,7 +284,8 @@
 .placeholder {
   align-items: center;
   aspect-ratio: 4 / 3;
-  background: color-mix(in srgb, currentColor 8%, transparent);
+  background: color-mix(in srgb, var(--brand-color-border) 54%, transparent);
+  color: var(--brand-color-muted-text);
   display: flex;
   justify-content: center;
   padding: 1rem;
@@ -244,6 +293,9 @@
 }
 
 .trustGrid article {
+  background: var(--brand-color-surface);
+  border: 1px solid var(--brand-color-border);
+  color: var(--brand-color-text);
   display: grid;
   gap: 0.75rem;
   min-height: 9rem;
@@ -251,7 +303,21 @@
 }
 
 .trustGrid article > span {
+  color: var(--brand-color-accent);
   font-size: 1.5rem;
+}
+
+.trustGrid p {
+  color: var(--brand-color-muted-text);
+}
+
+.emptyState {
+  background: var(--brand-color-surface);
+  border: 1px dashed var(--brand-color-border);
+  color: var(--brand-color-muted-text);
+  margin: 0;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  text-align: center;
 }
 
 @media (max-width: 63.99rem) {

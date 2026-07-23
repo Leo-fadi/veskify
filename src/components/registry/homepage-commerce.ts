@@ -2,6 +2,11 @@ import { z } from "zod";
 import {
   validateComponentDefinitionV2,
   type ComponentDefinitionV2,
+  type ComponentInstanceV2,
+  type ComponentInstanceValidationContracts,
+  type ComponentProjectionContext,
+  type ProductPresentationContext,
+  type StorefrontAssetMetadata,
 } from "@/domain/component-platform";
 import { idSchema, localizedTextSchema } from "@/domain/shared";
 
@@ -50,6 +55,7 @@ export const homepageFeaturedProductsContentSchema = z
     heading: localizedTextSchema.optional(),
     supportingCopy: localizedTextSchema.optional(),
     mediaPlaceholderLabel: localizedTextSchema,
+    emptyStateMessage: localizedTextSchema,
   })
   .strict();
 
@@ -71,7 +77,7 @@ export const homepageCollectionNavigationContentSchema = z
 export const homepageCollectionNavigationPropsSchema = z
   .object({
     presentation: z.enum(["image", "text", "compact"]),
-    columns: z.number().int().min(2).max(6),
+    columns: z.number().int().min(2).max(4),
   })
   .strict();
 
@@ -513,6 +519,12 @@ export const homepageFeaturedProductsDefinition = commerceListDefinition({
       localized: true,
       required: false,
     },
+    {
+      id: "emptyStateMessage",
+      title: { en: "Empty-state message", fi: "Tyhjän tilan viesti" },
+      localized: true,
+      required: true,
+    },
   ],
   bindingSlot: {
     id: "products",
@@ -543,6 +555,13 @@ export const homepageFeaturedProductsDefinition = commerceListDefinition({
       label: { en: "Supporting copy", fi: "Tukiteksti" },
       source: "content",
       control: "textarea",
+      localized: true,
+    },
+    {
+      path: "content.emptyStateMessage",
+      label: { en: "Empty-state message", fi: "Tyhjän tilan viesti" },
+      source: "content",
+      control: "text",
       localized: true,
     },
     {
@@ -894,6 +913,193 @@ export const homepageCommerceDefinitions = [
   homepagePromotionDefinition,
   homepageTrustDefinition,
 ] as const;
+
+type HomepageDataSchemas = {
+  content: z.ZodType;
+  props: z.ZodType;
+};
+
+const homepageDataSchemas: Readonly<Record<string, HomepageDataSchemas>> = {
+  homepageHero: {
+    content: homepageHeroContentSchema,
+    props: homepageHeroPropsSchema,
+  },
+  homepageFeaturedCollections: {
+    content: homepageFeaturedCollectionsContentSchema,
+    props: homepageFeaturedCollectionsPropsSchema,
+  },
+  homepageFeaturedProducts: {
+    content: homepageFeaturedProductsContentSchema,
+    props: homepageFeaturedProductsPropsSchema,
+  },
+  homepageCollectionNavigation: {
+    content: homepageCollectionNavigationContentSchema,
+    props: homepageCollectionNavigationPropsSchema,
+  },
+  homepagePromotion: {
+    content: homepagePromotionContentSchema,
+    props: homepagePromotionPropsSchema,
+  },
+  homepageTrust: {
+    content: homepageTrustContentSchema,
+    props: homepageTrustPropsSchema,
+  },
+};
+
+function validateHomepageData(instance: ComponentInstanceV2) {
+  const schemas = homepageDataSchemas[instance.component];
+  if (!schemas) return;
+  for (const [label, schema, value] of [
+    ["content", schemas.content, instance.content],
+    ["props", schemas.props, instance.props],
+    ["styleOverrides", homepageSurfaceStyleSchema, instance.styleOverrides],
+  ] as const) {
+    const result = schema.safeParse(value);
+    if (!result.success) {
+      throw new Error(`Invalid component ${label}: ${z.prettifyError(result.error)}`);
+    }
+  }
+}
+
+function hasBinding(instance: ComponentInstanceV2, slotId: string): boolean {
+  return instance.bindings.some((binding) => binding.slotId === slotId);
+}
+
+function validateActionPair(instance: ComponentInstanceV2, label: unknown, bindingSlot: string) {
+  const hasLabel = label !== undefined;
+  const hasNavigation = hasBinding(instance, bindingSlot);
+  if (hasLabel !== hasNavigation) {
+    throw new Error(
+      `Homepage action label and canonical navigation binding ${bindingSlot} must be supplied together.`,
+    );
+  }
+}
+
+function validateHomepageInstance(instance: ComponentInstanceV2) {
+  validateHomepageData(instance);
+  switch (instance.component) {
+    case "homepageHero": {
+      const content = homepageHeroContentSchema.parse(instance.content);
+      validateActionPair(instance, content.primaryActionLabel, "primaryAction");
+      validateActionPair(instance, content.secondaryActionLabel, "secondaryAction");
+      break;
+    }
+    case "homepagePromotion": {
+      const content = homepagePromotionContentSchema.parse(instance.content);
+      validateActionPair(instance, content.actionLabel, "promotionAction");
+      break;
+    }
+    case "homepageTrust": {
+      const content = homepageTrustContentSchema.parse(instance.content);
+      validateActionPair(instance, content.actionLabel, "supportAction");
+      break;
+    }
+  }
+}
+
+function productAssetRole(
+  role: ProductPresentationContext["media"][number]["role"],
+): StorefrontAssetMetadata["role"] {
+  if (role === "main") return "productMainImage";
+  if (role === "editorial") return "editorialImage";
+  return "productAlternativeImage";
+}
+
+function validateHomepageProductMediaConformance(
+  instance: ComponentInstanceV2,
+  projection: ComponentProjectionContext,
+) {
+  const productBinding = instance.bindings.find(
+    (binding) => binding.slotId === "products" && binding.source === "productList",
+  );
+  if (!productBinding || instance.component !== "homepageFeaturedProducts") return;
+
+  const products = new Map(projection.products.map((product) => [product.productId, product]));
+  const assets = new Map(projection.assets.map((asset) => [asset.assetId, asset]));
+  const canonicalMedia = new Map<
+    string,
+    { productIds: Set<string>; expectedRole: StorefrontAssetMetadata["role"] }
+  >();
+  const selectedMedia = new Map<string, StorefrontAssetMetadata["role"]>();
+
+  for (const productId of productBinding.productIds) {
+    const product = products.get(productId);
+    if (!product) continue;
+    for (const media of product.media) {
+      const expectedRole = productAssetRole(media.role);
+      const existing = canonicalMedia.get(media.assetId);
+      if (existing && existing.expectedRole !== expectedRole) {
+        throw new Error(
+          `Canonical product media cannot use conflicting roles across bound products: ${media.assetId}.`,
+        );
+      }
+      if (existing) {
+        existing.productIds.add(productId);
+      } else {
+        canonicalMedia.set(media.assetId, { productIds: new Set([productId]), expectedRole });
+      }
+    }
+    const selected = product.media.find((media) => {
+      const metadata = assets.get(media.assetId);
+      return (
+        metadata?.approvalStatus === "approved" &&
+        metadata.role === productAssetRole(media.role) &&
+        metadata.provenance.kind === "canonicalProductMedia"
+      );
+    });
+    if (selected) selectedMedia.set(selected.assetId, productAssetRole(selected.role));
+  }
+
+  const assignments = instance.assetAssignments.filter(
+    (assignment) => assignment.slotId === "productMedia",
+  );
+  if (assignments.length === 0) return;
+
+  const assigned = new Map(assignments.map((assignment) => [assignment.assetId, assignment.role]));
+  for (const assignment of assignments) {
+    const relation = canonicalMedia.get(assignment.assetId);
+    if (!relation) {
+      throw new Error(
+        `Product media assignment does not belong to a product in the bound product list: ${assignment.assetId}.`,
+      );
+    }
+    if (assignment.role !== relation.expectedRole) {
+      throw new Error(
+        `Product media assignment role does not match canonical product media: ${assignment.assetId}.`,
+      );
+    }
+    const metadata = assets.get(assignment.assetId);
+    if (metadata?.provenance.kind !== "canonicalProductMedia") {
+      throw new Error(
+        `Product media assignment must preserve canonical product-media provenance: ${assignment.assetId}.`,
+      );
+    }
+    if (!selectedMedia.has(assignment.assetId)) {
+      throw new Error(
+        `Product media assignment is not the deterministic first compatible media: ${assignment.assetId}.`,
+      );
+    }
+  }
+  for (const [assetId, expectedRole] of selectedMedia) {
+    if (assigned.get(assetId) !== expectedRole) {
+      throw new Error(`Missing canonical homepage product-media assignment: ${assetId}.`);
+    }
+  }
+}
+
+export const homepageCommerceInstanceValidationContracts: ComponentInstanceValidationContracts =
+  Object.fromEntries(
+    homepageCommerceDefinitions.map((definition) => [
+      definition.type,
+      {
+        validateInstance: validateHomepageInstance,
+        validateConformance:
+          definition.type === "homepageFeaturedProducts"
+            ? validateHomepageProductMediaConformance
+            : undefined,
+      },
+    ]),
+  );
 
 export type HomepageHeroContent = z.infer<typeof homepageHeroContentSchema>;
 export type HomepageHeroProps = z.infer<typeof homepageHeroPropsSchema>;

@@ -789,29 +789,41 @@ editor, preview and published targets.
 Omitting media hides the media region safely. `homepagePromotion` uses equivalent optional
 `promotionAsset`, `promotionMedia` and `promotionAction` contracts. A visible action label and its
 canonical navigation binding must be supplied together; activation emits a typed approved-navigation
-intent and performs no routing, cart, publishing or other mutation inside the component.
+intent and performs no routing, cart, publishing or other mutation inside the component. The
+registered instance validator enforces each label/binding pair before proposal or stored-instance
+acceptance; the renderer remains only a defensive final boundary.
 
 `homepageFeaturedCollections` and `homepageCollectionNavigation` consume an ordered,
 revision-bound `collectionList` binding through the `collections` slot. Optional
 `collectionMedia` assignments may contain approved collection or editorial assets. Missing compatible
 media renders a localized placeholder for image presentations and is omitted for text-only
 presentation. Collection titles, descriptions, IDs and canonical order are resolved from the bound
-projection rather than editable content.
+projection rather than editable content. Collection-navigation layouts permit at most four columns,
+matching their mobile, tablet, desktop and wide responsive metadata.
 
 `homepageFeaturedProducts` consumes an ordered, revision-bound `productList` binding through the
 `products` slot and reuses the canonical product-card presentation shared with collection commerce.
 Its optional `productMedia` assignments accept approved product-main, product-alternative and
-editorial assets. Product identity, type, SKU, price, compare-at price, unavailable-price state,
-availability and media provenance remain read-only projection values. Grid and carousel-style
-presentation change only responsive layout and card treatment, never product facts.
+editorial assets. When assignments are present, they must exactly identify the deterministic first
+compatible canonical media of the products in the bound list, with matching role, approval and
+canonical-product-media provenance; unrelated, stale or incomplete assignments fail conformance.
+When assignments are absent, the renderer may select the same approved canonical media as a
+read-only fallback. A valid empty product list preserves its section context and renders the strict
+localized empty-state message without creating an empty grid or carousel control. Product identity,
+type, SKU, price, compare-at price, unavailable-price state, availability and media provenance remain
+read-only projection values. Grid and carousel-style presentation change only responsive layout and
+card treatment, never product facts.
 
 `homepageTrust` accepts structured localized delivery, returns, service and store-support copy plus
 an optional `supportAction` navigation binding. These items are presentation messages, not logistics,
 returns, payment, order or store-operation logic. Across the family, editable content is limited to
 localized marketing/support copy and action labels; editable props and style overrides are strict
-approved presentation enums and bounded column counts. Unknown fields, bindings and IDs fail
-validation, arbitrary CSS is not accepted, explicit unknown/rejected/unapproved assets fail
-conformance, and asset provenance remains attached to every rendered approved image.
+approved presentation enums and bounded column counts. Component-specific validation retained by the
+registry applies the original strict schemas alongside the serializable JSON Schema, so every
+localized field requires at least one non-empty EN or FI value and trust-item IDs remain unique before
+proposal, stored-instance or renderer use. Unknown fields, bindings and IDs fail validation,
+arbitrary CSS is not accepted, explicit unknown/rejected/unapproved assets fail conformance, and
+asset provenance remains attached to every rendered approved image.
 
 This family traces to FR-102, FR-107, FR-109, FR-110, FR-114 and FR-118; NFR-101, NFR-102,
 NFR-103, NFR-108 and NFR-109; and AC-105, AC-111, AC-112, AC-118, AC-119, AC-122, AC-123 and
