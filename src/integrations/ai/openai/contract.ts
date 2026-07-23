@@ -141,7 +141,7 @@ export type OpenAiResponsesRequest = Readonly<{
     verbosity: "low";
     format: Readonly<{
       type: "json_schema";
-      name: "veskify_storefront_operations";
+      name: string;
       description: string;
       strict: true;
       schema: Record<string, unknown>;
