@@ -12,6 +12,7 @@ import {
 } from "@/application/source-discovery";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
 import { aurumNordicSeed } from "@/data/seed";
+import type { ComponentDefinitionV2 } from "@/domain/component-platform";
 import { sourceEvidenceSchema, sourceReferenceSchema } from "@/domain/source-discovery";
 
 const now = "2026-07-23T10:00:00.000Z";
@@ -124,6 +125,28 @@ function input(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function requiredValue<T>(value: T | undefined, label: string): T {
+  if (value === undefined) throw new Error(`Missing ${label}.`);
+  return value;
+}
+
+function generatedComponent(
+  plan: ReturnType<typeof createWholeStorefrontGenerationPlan>,
+  role: "collection-template" | "product-template",
+) {
+  const page = requiredValue(
+    plan.pagePlans.find((candidate) => candidate.role === role),
+    role,
+  );
+  return requiredValue(
+    page.components.find(
+      (component): component is Extract<(typeof page.components)[number], { instance: unknown }> =>
+        "instance" in component,
+    ),
+    `${role} generated component`,
+  );
+}
+
 describe("P8-01 whole-storefront generation plan", () => {
   it("creates one deterministic approved-brief plan for home, collection and product families", () => {
     const first = createWholeStorefrontGenerationPlan(input());
@@ -200,27 +223,48 @@ describe("P8-01 whole-storefront generation plan", () => {
     expect(() => createWholeStorefrontGenerationPlan(missingCommerce)).toThrow(/resolve within/i);
   });
 
-  it("uses existing V2 validation for incompatible component versions and data contracts", () => {
+  it("uses the supplied V2 registry versions for generated components", () => {
     const invalidRegistry = input();
-    const dynamicProduct = invalidRegistry.componentDefinitions.find(
-      (definition) => definition.type === "dynamicProductDetail",
-    )!;
+    const dynamicCollection = requiredValue(
+      invalidRegistry.componentDefinitions.find(
+        (definition) => definition.type === "dynamicCollectionCommerce",
+      ),
+      "dynamic collection definition",
+    );
+    const dynamicProduct = requiredValue(
+      invalidRegistry.componentDefinitions.find(
+        (definition) => definition.type === "dynamicProductDetail",
+      ),
+      "dynamic product definition",
+    );
+    dynamicCollection.version = { major: 2, minor: 1, patch: 0 };
     dynamicProduct.version = { major: 3, minor: 0, patch: 0 };
 
-    expect(() => createWholeStorefrontGenerationPlan(invalidRegistry)).toThrow(
-      /registered version|invalid/i,
-    );
+    const plan = createWholeStorefrontGenerationPlan(invalidRegistry);
+    expect(generatedComponent(plan, "collection-template").instance.componentVersion).toEqual({
+      major: 2,
+      minor: 1,
+      patch: 0,
+    });
+    expect(generatedComponent(plan, "product-template").instance.componentVersion).toEqual({
+      major: 3,
+      minor: 0,
+      patch: 0,
+    });
   });
 
   it("permits only compatible current approved asset placements", () => {
     const context = approvedAssetContext(input().brief);
-    const collectionPage = aurumNordicSeed.draftSnapshot.pages.find(
-      (page) => page.type === "collection",
-    )!;
+    const baseline = createWholeStorefrontGenerationPlan(input());
+    const collectionComponent = generatedComponent(baseline, "collection-template").instance;
+    const collectionPage = requiredValue(
+      baseline.pagePlans.find((page) => page.role === "collection-template"),
+      "collection page plan",
+    );
     const placement = {
-      type: "PLACE_APPROVED_SOURCE_ASSET" as const,
-      pageId: collectionPage.id,
-      componentId: `plan_${collectionPage.id}_collection_commerce`,
+      type: "PLACE_APPROVED_SOURCE_ASSET",
+      pageId: collectionPage.pageId,
+      componentId: collectionComponent.id,
       componentType: "dynamicCollectionCommerce",
       assetSlotId: "collectionCommerceMedia",
       assetId: context.assets[0].assetId,
@@ -247,13 +291,16 @@ describe("P8-01 whole-storefront generation plan", () => {
 
   it("rejects missing or stale required approved asset placements", () => {
     const context = approvedAssetContext(input().brief);
-    const collectionPage = aurumNordicSeed.draftSnapshot.pages.find(
-      (page) => page.type === "collection",
-    )!;
+    const baseline = createWholeStorefrontGenerationPlan(input());
+    const collectionComponent = generatedComponent(baseline, "collection-template").instance;
+    const collectionPage = requiredValue(
+      baseline.pagePlans.find((page) => page.role === "collection-template"),
+      "collection page plan",
+    );
     const placement = {
-      type: "PLACE_APPROVED_SOURCE_ASSET" as const,
-      pageId: collectionPage.id,
-      componentId: `plan_${collectionPage.id}_collection_commerce`,
+      type: "PLACE_APPROVED_SOURCE_ASSET",
+      pageId: collectionPage.pageId,
+      componentId: collectionComponent.id,
       componentType: "dynamicCollectionCommerce",
       assetSlotId: "collectionCommerceMedia",
       assetId: context.assets[0].assetId,
@@ -272,6 +319,279 @@ describe("P8-01 whole-storefront generation plan", () => {
         input({ approvedAssetContext: context, requiredAssetPlacements: [placement] }),
       ),
     ).toThrow(/no longer approved/i);
+  });
+
+  it("preserves existing collection and product bindings and rejects ambiguous page commerce", () => {
+    const current = input();
+    const collection = requiredValue(current.catalogue.collections[1], "second collection");
+    const product = requiredValue(current.catalogue.products[1], "second product");
+    const collectionPage = requiredValue(
+      current.draft.pages.find((page) => page.type === "collection"),
+      "collection page",
+    );
+    const productPage = requiredValue(
+      current.draft.pages.find((page) => page.type === "product"),
+      "product page",
+    );
+    requiredValue(
+      collectionPage.sections.find((section) => section.component === "collectionHeader"),
+      "collection header",
+    ).content = { collectionId: collection.id };
+    requiredValue(
+      collectionPage.sections.find((section) => section.component === "productGrid"),
+      "collection product grid",
+    ).content = {
+      heading: { en: "Collection", fi: "Mallisto" },
+      productIds: collection.productIds,
+    };
+    productPage.sections
+      .filter((section) =>
+        ["productGallery", "productInfo", "productOptions"].includes(section.component),
+      )
+      .forEach((section) => {
+        section.content = { productId: product.id };
+      });
+
+    const plan = createWholeStorefrontGenerationPlan(current);
+    expect(plan.canonicalCommerceBindings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ source: "collection", collectionId: collection.id }),
+        expect.objectContaining({ source: "product", productId: product.id }),
+      ]),
+    );
+
+    requiredValue(
+      productPage.sections.find((section) => section.component === "productInfo"),
+      "product information",
+    ).content = { productId: aurumNordicSeed.catalogue.products[0].id };
+    expect(() => createWholeStorefrontGenerationPlan(current)).toThrow(/conflicting|ambiguous/i);
+
+    const missingBinding = input();
+    const missingCollectionPage = requiredValue(
+      missingBinding.draft.pages.find((page) => page.type === "collection"),
+      "missing collection page",
+    );
+    requiredValue(
+      missingCollectionPage.sections.find((section) => section.component === "productGrid"),
+      "missing collection product grid",
+    ).content = { heading: { en: "Collection", fi: "Mallisto" } };
+    expect(() => createWholeStorefrontGenerationPlan(missingBinding)).toThrow(/missing|ambiguous/i);
+  });
+
+  it("allows retained asset targets but rejects removed replacement targets", () => {
+    const current = input();
+    const headerDefinition = requiredValue(
+      current.componentDefinitions.find((definition) => definition.type === "header"),
+      "header definition",
+    );
+    const collectionHeaderDefinition = requiredValue(
+      current.componentDefinitions.find((definition) => definition.type === "collectionHeader"),
+      "collection header definition",
+    );
+    const slot = {
+      id: "approvedSourceMedia",
+      title: { en: "Approved source media", fi: "Hyväksytty lähdemedia" },
+      acceptedRoles: ["collectionImage"],
+      required: false,
+      minItems: 0,
+      maxItems: 1,
+    } satisfies ComponentDefinitionV2["assetSlots"][number];
+    headerDefinition.assetSlots = [slot];
+    collectionHeaderDefinition.assetSlots = [slot];
+    const context = approvedAssetContext(current.brief);
+    const homePage = requiredValue(
+      current.draft.pages.find((page) => page.type === "home"),
+      "home page",
+    );
+    const homeHeader = requiredValue(
+      homePage.sections.find((section) => section.component === "header"),
+      "home header",
+    );
+    const retainedPlacement = {
+      type: "PLACE_APPROVED_SOURCE_ASSET",
+      pageId: homePage.id,
+      componentId: homeHeader.id,
+      componentType: "header",
+      assetSlotId: slot.id,
+      assetId: context.assets[0].assetId,
+      role: context.assets[0].role,
+      assetRevision: context.assets[0].revision,
+      materialFingerprint: context.assets[0].materialFingerprint,
+      sourceReferenceId: context.assets[0].sourceReferenceId,
+      required: true,
+    };
+    expect(
+      createWholeStorefrontGenerationPlan({
+        ...current,
+        approvedAssetContext: context,
+        requiredAssetPlacements: [retainedPlacement],
+      }).approvedAssetPlacements,
+    ).toEqual([retainedPlacement]);
+
+    const collectionPage = requiredValue(
+      current.draft.pages.find((page) => page.type === "collection"),
+      "collection page",
+    );
+    const replacedHeader = requiredValue(
+      collectionPage.sections.find((section) => section.component === "collectionHeader"),
+      "replaced collection header",
+    );
+    expect(() =>
+      createWholeStorefrontGenerationPlan({
+        ...current,
+        approvedAssetContext: context,
+        requiredAssetPlacements: [
+          {
+            ...retainedPlacement,
+            pageId: collectionPage.id,
+            componentId: replacedHeader.id,
+            componentType: "collectionHeader",
+          },
+        ],
+      }),
+    ).toThrow(/unavailable component/i);
+  });
+
+  it("creates deterministic unique page and component IDs for collisions and long page IDs", () => {
+    const collidingDraft = structuredClone(aurumNordicSeed.draftSnapshot);
+    const home = requiredValue(
+      collidingDraft.pages.find((page) => page.type === "home"),
+      "home page",
+    );
+    home.id = "page_collection_template";
+    collidingDraft.pages = [home];
+    collidingDraft.navigation = { primary: [], footer: [] };
+    const collisionPlan = createWholeStorefrontGenerationPlan(input({ draft: collidingDraft }));
+    const collectionPlan = requiredValue(
+      collisionPlan.pagePlans.find((page) => page.role === "collection-template"),
+      "created collection page",
+    );
+    expect(collectionPlan.pageId).not.toBe("page_collection_template");
+    expect(new Set(collisionPlan.pagePlans.map((page) => page.pageId)).size).toBe(
+      collisionPlan.pagePlans.length,
+    );
+
+    const longDraft = structuredClone(aurumNordicSeed.draftSnapshot);
+    const longCollectionPage = requiredValue(
+      longDraft.pages.find((page) => page.type === "collection"),
+      "long collection page",
+    );
+    longCollectionPage.id = `page_${"a".repeat(75)}`;
+    longDraft.navigation = { primary: [], footer: [] };
+    const first = createWholeStorefrontGenerationPlan(input({ draft: longDraft }));
+    const second = createWholeStorefrontGenerationPlan(input({ draft: longDraft }));
+    const generated = generatedComponent(first, "collection-template").instance;
+    expect(generated.id.length).toBeLessThanOrEqual(80);
+    expect(generated.id).toBe(generatedComponent(second, "collection-template").instance.id);
+  });
+
+  it("marks retained components unsupported on their page type as compatibility review items", () => {
+    const current = input();
+    const homePage = requiredValue(
+      current.draft.pages.find((page) => page.type === "home"),
+      "home page",
+    );
+    homePage.sections.push({
+      id: "section_home_incompatible_collection_header",
+      component: "collectionHeader",
+      variant: "editorial",
+      visible: true,
+      content: { collectionId: current.catalogue.collections[0].id },
+      props: { mediaPosition: "right" },
+    });
+
+    const plan = createWholeStorefrontGenerationPlan(current);
+    expect(plan.reviewSummary.components).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          componentId: "section_home_incompatible_collection_header",
+          disposition: "fallback-retained",
+        }),
+      ]),
+    );
+    expect(plan.requiredMerchantReviewItems.map((item) => item.message).join(" ")).toMatch(
+      /compatibility/i,
+    );
+  });
+
+  it("enforces approved asset slot cardinality and duplicate placement identities", () => {
+    const current = input();
+    const headerDefinition = requiredValue(
+      current.componentDefinitions.find((definition) => definition.type === "header"),
+      "header definition",
+    );
+    headerDefinition.assetSlots = [
+      {
+        id: "approvedSourceMedia",
+        title: { en: "Approved source media", fi: "Hyväksytty lähdemedia" },
+        acceptedRoles: ["collectionImage"],
+        required: false,
+        minItems: 0,
+        maxItems: 1,
+      },
+    ];
+    const initialContext = approvedAssetContext(current.brief);
+    const firstAsset = requiredValue(initialContext.assets[0], "first approved asset");
+    const contextValue = {
+      briefId: initialContext.briefId,
+      briefRevision: initialContext.briefRevision,
+      approvedEvidenceFingerprint: initialContext.approvedEvidenceFingerprint,
+      assetReviewFingerprint: initialContext.assetReviewFingerprint,
+      assets: [
+        ...initialContext.assets,
+        {
+          ...firstAsset,
+          assetId: "asset_collection_source_second",
+          revision: "asset-revision-2",
+          materialFingerprint: "asset-material-2",
+        },
+      ],
+    };
+    const context = {
+      ...contextValue,
+      fingerprint: createApprovedGenerationAssetContextFingerprint(contextValue),
+    };
+    const homePage = requiredValue(
+      current.draft.pages.find((page) => page.type === "home"),
+      "home page",
+    );
+    const homeHeader = requiredValue(
+      homePage.sections.find((section) => section.component === "header"),
+      "home header",
+    );
+    const placement = {
+      type: "PLACE_APPROVED_SOURCE_ASSET",
+      pageId: homePage.id,
+      componentId: homeHeader.id,
+      componentType: "header",
+      assetSlotId: "approvedSourceMedia",
+      assetId: firstAsset.assetId,
+      role: firstAsset.role,
+      assetRevision: firstAsset.revision,
+      materialFingerprint: firstAsset.materialFingerprint,
+      sourceReferenceId: firstAsset.sourceReferenceId,
+      required: true,
+    };
+    const secondPlacement = {
+      ...placement,
+      assetId: context.assets[1].assetId,
+      assetRevision: context.assets[1].revision,
+      materialFingerprint: context.assets[1].materialFingerprint,
+    };
+    expect(() =>
+      createWholeStorefrontGenerationPlan({
+        ...current,
+        approvedAssetContext: context,
+        requiredAssetPlacements: [placement, secondPlacement],
+      }),
+    ).toThrow(/maximum items/i);
+    expect(() =>
+      createWholeStorefrontGenerationPlan({
+        ...current,
+        approvedAssetContext: context,
+        requiredAssetPlacements: [placement, placement],
+      }),
+    ).toThrow(/more than once/i);
   });
 
   it("rejects provider-invented plans and stale asynchronous results", async () => {

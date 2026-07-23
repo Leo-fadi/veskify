@@ -31,6 +31,8 @@ Existing sections are represented by identity and a `preservesExistingContent` c
 
 When an approved collection or product page family is absent from a newly initialized target, the planner adds one typed reusable template page plan (`page_collection_template` or `page_product_template`). Existing page IDs are retained; no existing page is silently removed or replaced.
 
+For an existing collection or product page, the replacement component derives its canonical entity from the page's protected existing bindings. Missing, conflicting or ambiguous bindings fail planning; an existing page is never redirected to a first catalogue item. New-template target selection remains deterministic. Generated page and component IDs are bounded deterministic hashes when a preferred ID is occupied or too long.
+
 ## Canonical commerce bindings
 
 Commerce is read-only. The planner creates structured `product`, `productList`, `collection` and `collectionList` bindings only for IDs in the canonical Vesko projection. Product identity, SKU, price, availability, variants, product media and collection membership are not copied into merchant-editable generated content.
@@ -42,6 +44,10 @@ The collection and product template plans use the existing dynamic commerce comp
 Only the P7-05 approved generation asset context may supply source assets. Each placement must reference a current approved asset revision and material fingerprint, a planned page and component, and a compatible registered asset slot. Non-decorative assets retain validated localized alternative text from the approved context.
 
 Public-source assets cannot replace canonical product main or alternative media. Required placements cannot be accepted when the context is absent, stale, rejected, unavailable or incompatible.
+
+The active placement-target index includes compatible retained components and generated/replacement components, but excludes compatibility-only and replaced instances. It validates unique instance IDs, registered page-type support, accepted roles, duplicate assignments and per-slot `maxItems` limits before review handoff.
+
+If a retained legacy component is registered but unsupported for its current page type, it is marked `fallback-retained`, excluded from active placement targets, and surfaced as a required merchant-review item rather than treated as safely generated-plan content.
 
 ## Determinism and stale-result protection
 

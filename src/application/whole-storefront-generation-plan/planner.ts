@@ -10,11 +10,16 @@ import {
 } from "@/components/registry/dynamic-product-detail";
 import {
   createComponentRegistryV2,
+  type ComponentDefinitionV2,
   type ComponentInstanceV2,
   type PresentationBinding,
 } from "@/domain/component-platform";
 import { canonicalLocaleOrder } from "@/domain/shared";
-import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
+import {
+  canonicalValueFingerprint,
+  canonicalValueString,
+  type PageType,
+} from "@/domain/storefront";
 import {
   wholeStorefrontGenerationPlanSchema,
   wholeStorefrontPlanningInputSchema,
@@ -50,6 +55,26 @@ const FAMILY_REQUIREMENTS = {
   ],
   other: [],
 } as const;
+
+type ActiveComponentTarget = {
+  pageId: string;
+  pageType: PageType;
+  pageRole: WholeStorefrontGenerationPlan["pagePlans"][number]["role"];
+  componentId: string;
+  componentType: string;
+  definition: ComponentDefinitionV2;
+  instance: ComponentInstanceV2;
+};
+
+type ExistingCollectionBinding = {
+  collection: WholeStorefrontPlanningInput["catalogue"]["collections"][number];
+  productIds: string[];
+};
+
+type ExistingProductBinding = {
+  productId: string;
+  relatedProductIds: string[];
+};
 
 function invalid(code: WholeStorefrontGenerationPlanErrorCode, message: string): never {
   throw new WholeStorefrontGenerationPlanError(code, message);
@@ -244,15 +269,161 @@ function retainedComponent(
   };
 }
 
+function definitionFor(
+  definitions: ReturnType<typeof normalizedDefinitions>,
+  componentType: string,
+): ComponentDefinitionV2 {
+  const definition = definitions.find((candidate) => candidate.type === componentType);
+  if (!definition) {
+    invalid("unknown-component", `The component registry does not include ${componentType}.`);
+  }
+  return definition;
+}
+
+function generatedId(prefix: string, identity: unknown): string {
+  return `${prefix}_${canonicalValueFingerprint(identity).replaceAll("_", "-").slice(-24)}`;
+}
+
+function generatedComponentId(
+  pageId: string,
+  componentType: string,
+  usedIds: ReadonlySet<string>,
+): string {
+  const kind = componentType === "dynamicCollectionCommerce" ? "collection" : "product";
+  const baseId = `component_${kind}`;
+  for (let attempt = 1; attempt <= 100; attempt += 1) {
+    const candidate = generatedId(baseId, { pageId, componentType, attempt });
+    if (!usedIds.has(candidate)) return candidate;
+  }
+  invalid(
+    "unsupported-page-family",
+    "A unique canonical component ID could not be created safely.",
+  );
+}
+
+function generatedPageId(baseId: string, usedIds: ReadonlySet<string>): string {
+  if (!usedIds.has(baseId)) return baseId;
+  const normalizedUsedIds = [...usedIds].sort();
+  for (let attempt = 1; attempt <= 100; attempt += 1) {
+    const candidate = generatedId(baseId, { baseId, normalizedUsedIds, attempt });
+    if (!usedIds.has(candidate)) return candidate;
+  }
+  invalid("unsupported-page-family", "A unique canonical page ID could not be created safely.");
+}
+
+function stringsFromProtectedContent(content: Record<string, unknown>, field: string): string[] {
+  const value = content[field];
+  if (typeof value === "string") return [value];
+  if (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every((item): item is string => typeof item === "string")
+  ) {
+    return [...value];
+  }
+  return [];
+}
+
+function protectedValuesFor(
+  page: WholeStorefrontPlanningInput["draft"]["pages"][number],
+  definitions: ReturnType<typeof normalizedDefinitions>,
+  field: string,
+): string[][] {
+  return page.sections.flatMap((section) => {
+    const definition = definitionFor(definitions, section.component);
+    if (!definition.protectedFields.readOnlyPaths.includes(field)) return [];
+    const values = stringsFromProtectedContent(section.content, field);
+    return values.length === 0 ? [] : [values];
+  });
+}
+
+function oneProtectedValue(values: readonly string[][], label: string): string {
+  const uniqueValues = [...new Set(values.flat())];
+  const value = uniqueValues[0];
+  if (uniqueValues.length !== 1 || value === undefined) {
+    invalid(
+      "unknown-commerce-binding",
+      `The existing ${label} binding is missing, conflicting or ambiguous.`,
+    );
+  }
+  return value;
+}
+
+function oneProtectedList(values: readonly string[][], label: string): string[] {
+  const value = values[0];
+  if (values.length !== 1 || value === undefined) {
+    invalid(
+      "unknown-commerce-binding",
+      `The existing ${label} binding is missing, conflicting or ambiguous.`,
+    );
+  }
+  return [...value];
+}
+
+function existingCollectionBinding(
+  page: WholeStorefrontPlanningInput["draft"]["pages"][number],
+  input: WholeStorefrontPlanningInput,
+  definitions: ReturnType<typeof normalizedDefinitions>,
+): ExistingCollectionBinding {
+  const collectionId = oneProtectedValue(
+    protectedValuesFor(page, definitions, "collectionId"),
+    "collection",
+  );
+  const collection = input.catalogue.collections.find((item) => item.id === collectionId);
+  if (!collection) {
+    invalid(
+      "unknown-commerce-binding",
+      "The existing collection binding is not in Vesko commerce.",
+    );
+  }
+  const productIds = oneProtectedList(
+    protectedValuesFor(page, definitions, "productIds"),
+    "collection product list",
+  );
+  if (canonicalValueString(productIds) !== canonicalValueString(collection.productIds)) {
+    invalid(
+      "unknown-commerce-binding",
+      "The existing collection product list conflicts with canonical collection membership.",
+    );
+  }
+  return { collection, productIds };
+}
+
+function existingProductBinding(
+  page: WholeStorefrontPlanningInput["draft"]["pages"][number],
+  definitions: ReturnType<typeof normalizedDefinitions>,
+): ExistingProductBinding {
+  const productId = oneProtectedValue(
+    protectedValuesFor(page, definitions, "productId"),
+    "product",
+  );
+  const relatedLists = protectedValuesFor(page, definitions, "productIds");
+  if (relatedLists.length > 1) {
+    invalid(
+      "unknown-commerce-binding",
+      "The existing related-product binding is conflicting or ambiguous.",
+    );
+  }
+  return { productId, relatedProductIds: relatedLists[0] ? [...relatedLists[0]] : [] };
+}
+
+function validateComponentPageType(definition: ComponentDefinitionV2, pageType: PageType): boolean {
+  return definition.supportedPageTypes.includes(pageType);
+}
+
 function dynamicCollectionComponent(
   pageId: string,
   collection: WholeStorefrontPlanningInput["catalogue"]["collections"][number],
   revision: string,
+  definition: ComponentDefinitionV2,
+  usedComponentIds: Set<string>,
 ): ComponentInstanceV2 {
+  const id = generatedComponentId(pageId, definition.type, usedComponentIds);
+  usedComponentIds.add(id);
   return {
-    id: `plan_${pageId}_collection_commerce`,
+    id,
     component: "dynamicCollectionCommerce",
-    componentVersion: { major: 2, minor: 0, patch: 0 },
+    componentVersion: definition.version,
     variant: "standard",
     content: structuredClone(dynamicCollectionCommerceDefaultContent),
     props: structuredClone(dynamicCollectionCommerceDefaultProps),
@@ -275,11 +446,15 @@ function dynamicProductComponent(
   productId: string,
   relatedProductIds: string[],
   revision: string,
+  definition: ComponentDefinitionV2,
+  usedComponentIds: Set<string>,
 ): ComponentInstanceV2 {
+  const id = generatedComponentId(pageId, definition.type, usedComponentIds);
+  usedComponentIds.add(id);
   return {
-    id: `plan_${pageId}_product_detail`,
+    id,
     component: "dynamicProductDetail",
-    componentVersion: { major: 2, minor: 0, patch: 0 },
+    componentVersion: definition.version,
     variant: "balanced",
     content: structuredClone(dynamicProductDetailDefaultContent),
     props: structuredClone(dynamicProductDetailDefaultProps),
@@ -340,8 +515,7 @@ function assertBindingsResolve(
 
 function validateAssetPlacements(
   input: WholeStorefrontPlanningInput,
-  planComponents: readonly { pageId: string; instance: ComponentInstanceV2 }[],
-  definitions: ReturnType<typeof normalizedDefinitions>,
+  activeTargets: readonly ActiveComponentTarget[],
 ) {
   const placements = [...input.requiredAssetPlacements].sort(
     (left, right) =>
@@ -355,6 +529,19 @@ function validateAssetPlacements(
     invalid("missing-required-asset-placement", "Required approved source assets are unavailable.");
   }
   const assets = new Map(input.approvedAssetContext.assets.map((asset) => [asset.assetId, asset]));
+  const targets = new Map<string, ActiveComponentTarget>();
+  activeTargets.forEach((target) => {
+    const targetKey = `${target.pageId}:${target.componentId}`;
+    if (targets.has(targetKey)) {
+      invalid(
+        "provider-invented-target",
+        "The planned storefront contains duplicate component IDs.",
+      );
+    }
+    targets.set(targetKey, target);
+  });
+  const placementIdentities = new Set<string>();
+  const slotCounts = new Map<string, number>();
   placements.forEach((placement) => {
     const asset = assets.get(placement.assetId);
     if (
@@ -380,24 +567,39 @@ function validateAssetPlacements(
         "Public source assets cannot replace canonical Vesko product media.",
       );
     }
-    const component = planComponents.find(
-      (candidate) =>
-        candidate.pageId === placement.pageId && candidate.instance.id === placement.componentId,
-    )?.instance;
-    if (!component || component.component !== placement.componentType) {
+    const target = targets.get(`${placement.pageId}:${placement.componentId}`);
+    if (!target || target.componentType !== placement.componentType) {
       invalid(
         "provider-invented-target",
         "An approved asset placement targets an unavailable component.",
       );
     }
-    const definition = definitions.find((candidate) => candidate.type === component.component);
-    const slot = definition?.assetSlots.find((candidate) => candidate.id === placement.assetSlotId);
+    const slot = target.definition.assetSlots.find(
+      (candidate) => candidate.id === placement.assetSlotId,
+    );
     if (!slot || !slot.acceptedRoles.includes(placement.role)) {
       invalid(
         "asset-role-slot-incompatible",
         "The approved source asset is not compatible with this component slot.",
       );
     }
+    const placementIdentity = `${placement.pageId}:${placement.componentId}:${placement.assetSlotId}:${placement.assetId}`;
+    if (placementIdentities.has(placementIdentity)) {
+      invalid(
+        "asset-role-slot-incompatible",
+        "The same approved asset cannot be placed in the same component slot more than once.",
+      );
+    }
+    placementIdentities.add(placementIdentity);
+    const slotKey = `${placement.pageId}:${placement.componentId}:${placement.assetSlotId}`;
+    const count = (slotCounts.get(slotKey) ?? 0) + 1;
+    if (slot.maxItems !== undefined && count > slot.maxItems) {
+      invalid(
+        "asset-role-slot-incompatible",
+        "The approved asset placements exceed this component slot's maximum items.",
+      );
+    }
+    slotCounts.set(slotKey, count);
   });
   return placements;
 }
@@ -410,32 +612,56 @@ export function createWholeStorefrontGenerationPlan(
   const definitions = normalizedDefinitions(input);
   const registry = createComponentRegistryV2(definitions);
   const commerceRevision = target.canonicalCommerceFingerprint;
-  const firstCollection = input.catalogue.collections[0];
-  const firstProduct = input.catalogue.products[0];
-  if (!firstCollection || !firstProduct) {
+  const templateCollection = input.catalogue.collections[0];
+  const templateProduct = input.catalogue.products[0];
+  if (!templateCollection || !templateProduct) {
     invalid(
       "missing-canonical-commerce-projection",
       "A storefront plan needs canonical products and collections.",
     );
   }
+  const collectionComponentDefinition = definitionFor(definitions, "dynamicCollectionCommerce");
+  const productComponentDefinition = definitionFor(definitions, "dynamicProductDetail");
+  const usedComponentIds = new Set(
+    input.draft.pages.flatMap((page) => page.sections.map((section) => section.id)),
+  );
 
   const pagePlans: WholeStorefrontGenerationPlan["pagePlans"] = target.pages.map((targetPage) => {
-    const page = input.draft.pages.find((candidate) => candidate.id === targetPage.id)!;
-    const retained = page.sections
-      .map((section) => retainedComponent(section, definitions))
-      .sort((left, right) => left.id.localeCompare(right.id));
-    try {
-      retained.forEach((instance) => registry.validateInstance(instance));
-    } catch (error) {
+    const page = input.draft.pages.find((candidate) => candidate.id === targetPage.id);
+    if (!page) {
       invalid(
-        "invalid-component-contract",
-        error instanceof Error ? error.message : "A retained component is no longer valid.",
+        "missing-canonical-project-target",
+        "A planned storefront page is no longer available.",
       );
     }
+    const collectionBinding =
+      targetPage.role === "collection-template"
+        ? existingCollectionBinding(page, input, definitions)
+        : null;
+    const productBinding =
+      targetPage.role === "product-template" ? existingProductBinding(page, definitions) : null;
+    const retained = page.sections
+      .map((section) => {
+        const instance = retainedComponent(section, definitions);
+        const definition = definitionFor(definitions, instance.component);
+        try {
+          registry.validateInstance(instance);
+        } catch (error) {
+          invalid(
+            "invalid-component-contract",
+            error instanceof Error ? error.message : "A retained component is no longer valid.",
+          );
+        }
+        return {
+          instance,
+          compatible: validateComponentPageType(definition, page.type),
+        };
+      })
+      .sort((left, right) => left.instance.id.localeCompare(right.instance.id));
     const components: Array<
       WholeStorefrontGenerationPlan["pagePlans"][number]["components"][number]
-    > = retained.map((instance) => ({
-      disposition: "retained" as const,
+    > = retained.map(({ instance, compatible }) => ({
+      disposition: compatible ? ("retained" as const) : ("fallback-retained" as const),
       componentId: instance.id,
       component: instance.component,
       componentVersion: instance.componentVersion,
@@ -443,7 +669,22 @@ export function createWholeStorefrontGenerationPlan(
       preservesExistingContent: true as const,
     }));
     if (targetPage.role === "collection-template") {
-      const instance = dynamicCollectionComponent(page.id, firstCollection, commerceRevision);
+      if (collectionBinding === null) {
+        invalid("unknown-commerce-binding", "The existing collection binding is unavailable.");
+      }
+      if (!validateComponentPageType(collectionComponentDefinition, page.type)) {
+        invalid(
+          "invalid-component-contract",
+          "The registered dynamic collection component does not support collection pages.",
+        );
+      }
+      const instance = dynamicCollectionComponent(
+        page.id,
+        collectionBinding.collection,
+        commerceRevision,
+        collectionComponentDefinition,
+        usedComponentIds,
+      );
       try {
         registry.validateInstance(instance);
       } catch (error) {
@@ -464,11 +705,22 @@ export function createWholeStorefrontGenerationPlan(
       });
     }
     if (targetPage.role === "product-template") {
+      if (productBinding === null) {
+        invalid("unknown-commerce-binding", "The existing product binding is unavailable.");
+      }
+      if (!validateComponentPageType(productComponentDefinition, page.type)) {
+        invalid(
+          "invalid-component-contract",
+          "The registered dynamic product component does not support product pages.",
+        );
+      }
       const instance = dynamicProductComponent(
         page.id,
-        firstProduct.id,
-        input.catalogue.products.slice(1, 5).map((product) => product.id),
+        productBinding.productId,
+        productBinding.relatedProductIds,
         commerceRevision,
+        productComponentDefinition,
+        usedComponentIds,
       );
       try {
         registry.validateInstance(instance);
@@ -500,20 +752,38 @@ export function createWholeStorefrontGenerationPlan(
         return leftId.localeCompare(rightId);
       }),
       compatibilityNotes: page.sections
-        .filter(
-          (section) => !definitions.some((definition) => definition.type === section.component),
-        )
-        .map((section) => `Retain unsupported existing section ${section.id} without replacement.`),
+        .filter((section) => {
+          const definition = definitionFor(definitions, section.component);
+          return !validateComponentPageType(definition, page.type);
+        })
+        .map(
+          (section) =>
+            `Existing section ${section.id} is retained as compatibility content and requires merchant review.`,
+        ),
     };
   });
 
   const plannedRoles = new Set(pagePlans.map((page) => page.role));
+  const plannedPageIds = new Set(pagePlans.map((page) => page.pageId));
   if (
     input.brief.pagePlan.pageTypes.includes("collection") &&
     !plannedRoles.has("collection-template")
   ) {
-    const pageId = "page_collection_template";
-    const instance = dynamicCollectionComponent(pageId, firstCollection, commerceRevision);
+    const pageId = generatedPageId("page_collection_template", plannedPageIds);
+    plannedPageIds.add(pageId);
+    if (!validateComponentPageType(collectionComponentDefinition, "collection")) {
+      invalid(
+        "invalid-component-contract",
+        "The registered dynamic collection component does not support collection pages.",
+      );
+    }
+    const instance = dynamicCollectionComponent(
+      pageId,
+      templateCollection,
+      commerceRevision,
+      collectionComponentDefinition,
+      usedComponentIds,
+    );
     try {
       registry.validateInstance(instance);
     } catch (error) {
@@ -533,12 +803,21 @@ export function createWholeStorefrontGenerationPlan(
     plannedRoles.add("collection-template");
   }
   if (input.brief.pagePlan.pageTypes.includes("product") && !plannedRoles.has("product-template")) {
-    const pageId = "page_product_template";
+    const pageId = generatedPageId("page_product_template", plannedPageIds);
+    plannedPageIds.add(pageId);
+    if (!validateComponentPageType(productComponentDefinition, "product")) {
+      invalid(
+        "invalid-component-contract",
+        "The registered dynamic product component does not support product pages.",
+      );
+    }
     const instance = dynamicProductComponent(
       pageId,
-      firstProduct.id,
+      templateProduct.id,
       input.catalogue.products.slice(1, 5).map((product) => product.id),
       commerceRevision,
+      productComponentDefinition,
+      usedComponentIds,
     );
     try {
       registry.validateInstance(instance);
@@ -559,16 +838,85 @@ export function createWholeStorefrontGenerationPlan(
   }
   pagePlans.sort((left, right) => left.pageId.localeCompare(right.pageId));
 
-  const componentInstances = pagePlans.flatMap((page) =>
-    page.components.flatMap((component) =>
-      "instance" in component ? [{ pageId: page.pageId, instance: component.instance }] : [],
-    ),
-  );
-  const canonicalCommerceBindings = componentInstances
+  const activeTargets: ActiveComponentTarget[] = pagePlans.flatMap((pagePlan) => {
+    const targetPage = target.pages.find((page) => page.id === pagePlan.pageId);
+    const pageType: PageType =
+      targetPage?.type ?? (pagePlan.role === "collection-template" ? "collection" : "product");
+    const replacementIds = new Set(
+      pagePlan.components.flatMap((component) =>
+        "instance" in component ? component.replacesComponentIds : [],
+      ),
+    );
+    return pagePlan.components.flatMap((component) => {
+      if ("instance" in component) {
+        const definition = definitionFor(definitions, component.instance.component);
+        if (!validateComponentPageType(definition, pageType)) {
+          invalid(
+            "invalid-component-contract",
+            `Component ${component.instance.component} is not supported on this page type.`,
+          );
+        }
+        return [
+          {
+            pageId: pagePlan.pageId,
+            pageType,
+            pageRole: pagePlan.role,
+            componentId: component.instance.id,
+            componentType: component.instance.component,
+            definition,
+            instance: component.instance,
+          },
+        ];
+      }
+      if (
+        component.disposition === "fallback-retained" ||
+        replacementIds.has(component.componentId)
+      ) {
+        return [];
+      }
+      const sourcePage = input.draft.pages.find((page) => page.id === pagePlan.pageId);
+      const sourceSection = sourcePage?.sections.find(
+        (section) => section.id === component.componentId,
+      );
+      if (!sourceSection) {
+        invalid("provider-invented-target", "A retained component target is unavailable.");
+      }
+      const instance = retainedComponent(sourceSection, definitions);
+      const definition = definitionFor(definitions, instance.component);
+      if (!validateComponentPageType(definition, pageType)) {
+        invalid(
+          "invalid-component-contract",
+          `Component ${instance.component} is not supported on this page type.`,
+        );
+      }
+      return [
+        {
+          pageId: pagePlan.pageId,
+          pageType,
+          pageRole: pagePlan.role,
+          componentId: instance.id,
+          componentType: instance.component,
+          definition,
+          instance,
+        },
+      ];
+    });
+  });
+  const activeIds = new Set<string>();
+  activeTargets.forEach((target) => {
+    if (activeIds.has(target.componentId)) {
+      invalid(
+        "provider-invented-target",
+        "The planned storefront contains duplicate component IDs.",
+      );
+    }
+    activeIds.add(target.componentId);
+  });
+  const canonicalCommerceBindings = activeTargets
     .flatMap((component) => component.instance.bindings)
     .sort((left, right) => canonicalValueString(left).localeCompare(canonicalValueString(right)));
   assertBindingsResolve(canonicalCommerceBindings, target);
-  const approvedAssetPlacements = validateAssetPlacements(input, componentInstances, definitions);
+  const approvedAssetPlacements = validateAssetPlacements(input, activeTargets);
   const brandDirection = input.brief.approvedBrandDirection;
   if (brandDirection === null) {
     invalid(
@@ -618,13 +966,24 @@ export function createWholeStorefrontGenerationPlan(
       severity: "warning" as const,
     }))
     .sort((left, right) => left.code.localeCompare(right.code));
-  const requiredMerchantReviewItems = input.brief.materialUnresolvedBlockers
-    .map((message, index) => ({
+  const retainedCompatibilityItems = allComponents.flatMap((component) => {
+    if ("instance" in component || component.disposition !== "fallback-retained") return [];
+    return [
+      {
+        code: `component-compatibility-${canonicalValueFingerprint(component.componentId).slice(-16)}`,
+        message: `Existing component ${component.componentId} is retained for compatibility and needs merchant review before use.`,
+        severity: "required-review" as const,
+      },
+    ];
+  });
+  const requiredMerchantReviewItems = [
+    ...input.brief.materialUnresolvedBlockers.map((message, index) => ({
       code: `brief-blocker-${index + 1}`,
       message,
       severity: "required-review" as const,
-    }))
-    .sort((left, right) => left.code.localeCompare(right.code));
+    })),
+    ...retainedCompatibilityItems,
+  ].sort((left, right) => left.code.localeCompare(right.code));
   const navigationChanges = target.navigation.map((item) => ({
     navigationItemId: item.id,
     disposition: "retained" as const,

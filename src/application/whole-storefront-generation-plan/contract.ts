@@ -257,7 +257,29 @@ export const wholeStorefrontGenerationPlanSchema = z
     reviewSummary: wholeStorefrontReviewSummarySchema,
     fingerprint: fingerprintSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((plan, context) => {
+    const pageIds = plan.pagePlans.map((page) => page.pageId);
+    if (new Set(pageIds).size !== pageIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["pagePlans"],
+        message: "Whole-storefront page plans must use unique page IDs.",
+      });
+    }
+    const componentIds = plan.pagePlans.flatMap((page) =>
+      page.components.map((component) =>
+        "instance" in component ? component.instance.id : component.componentId,
+      ),
+    );
+    if (new Set(componentIds).size !== componentIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["pagePlans"],
+        message: "Whole-storefront component plans must use unique component IDs.",
+      });
+    }
+  });
 
 export type WholeStorefrontPlanningInput = z.infer<typeof wholeStorefrontPlanningInputSchema>;
 export type WholeStorefrontGenerationTarget = z.infer<typeof wholeStorefrontTargetSchema>;
