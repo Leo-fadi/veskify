@@ -59,6 +59,11 @@ describe("collection route", () => {
       "href",
       "/projects/project_aurum_nordic",
     );
+    const brandLinks = screen.getAllByRole("link", { name: /^Aurum Nordic$/ });
+    expect(brandLinks).toHaveLength(2);
+    for (const brandLink of brandLinks) {
+      expect(brandLink).toHaveAttribute("href", "/projects/project_aurum_nordic");
+    }
     expect(within(primaryNavigation).getByRole("link", { name: "Rings" })).toHaveAttribute(
       "href",
       "/projects/project_aurum_nordic/collections/rings",

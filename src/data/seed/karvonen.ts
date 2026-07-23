@@ -5,14 +5,15 @@ import {
   protectedProductPaths,
   type CatalogueDisplayModel,
 } from "@/domain/catalogue";
+import { brandSystemSchema } from "@/domain/design-system";
 import { projectSchema } from "@/domain/project";
 import { storefrontSnapshotSchema } from "@/domain/storefront";
-import { aurumNordicSeed } from "./aurum-nordic";
 import { KARVONEN_PROJECT_ID } from "./identifiers";
 import type { Project } from "@/domain/project";
 import type { StorefrontSnapshot } from "@/domain/storefront";
 
 const fi = (value: string) => ({ fi: value });
+const localized = (en: string, fi: string) => ({ en, fi });
 const price = (amount: number) => ({ amount, currency: "EUR" as const });
 const image = (id: string, path: string, alt: string) => ({
   id,
@@ -359,65 +360,314 @@ const collections = [
   },
 ] as const;
 
-const referenceMap = new Map<string, string>([
-  ...aurumNordicSeed.catalogue.products.map(
-    (product, index) => [product.id, products[index]?.id ?? ""] as const,
-  ),
-  ["collection_rings", "collection_karvonen_myrskyluodon-maija"],
-  ["collection_everyday", "collection_karvonen_pihka"],
-  ["/seed-assets/aurora-ring.svg", "/seed-assets/karvonen/storefront/hero-desktop.jpg"],
-  [
-    "/seed-assets/lumi-halo-ring.svg",
-    "/seed-assets/karvonen/storefront/collection-diamond-rings.jpg",
-  ],
-  [
-    "/seed-assets/aava-necklace.svg",
-    "/seed-assets/karvonen/storefront/collection-jewellery-or-wedding-rings.jpg",
-  ],
-]);
+export const karvonenBrandSystem = brandSystemSchema.parse({
+  colors: {
+    primary: "#1E1E1C",
+    secondary: "#5F625C",
+    accent: "#8A6A45",
+    background: "#FAF9F6",
+    surface: "#FFFFFF",
+    text: "#1E1E1C",
+    mutedText: "#5F625C",
+    border: "#D7D2C8",
+  },
+  typography: {
+    headingFont: "georgia",
+    bodyFont: "inter",
+    baseSize: 16,
+    scaleRatio: 1.2,
+    headingWeight: 600,
+    bodyWeight: 400,
+  },
+  shape: { radius: "subtle" },
+  spacing: { density: "balanced" },
+  imagery: { style: "editorial" },
+  voice: {
+    formality: "balanced",
+    detail: "concise",
+    positioning: "premium",
+    warmth: "neutral",
+    energy: "balanced",
+  },
+});
 
-function replaceReferences(value: unknown): unknown {
-  if (typeof value === "string")
-    return referenceMap.get(value) ?? value.replaceAll("Aurum Nordic", "Karvonen");
-  if (Array.isArray(value)) return value.map(replaceReferences);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [key, replaceReferences(entry)]),
-    );
-  }
-  return value;
-}
+const homePage = {
+  id: "page_karvonen_home",
+  type: "home" as const,
+  slug: "/",
+  title: localized("Karvonen", "Karvonen"),
+  seo: {
+    title: localized("Karvonen jewellery", "Karvosen korut"),
+    metaDescription: localized("Karvonen jewellery selection.", "Karvosen koruvalikoima."),
+  },
+  sections: [
+    {
+      id: "section_karvonen_home_header",
+      component: "header",
+      variant: "centered",
+      visible: true,
+      content: { brandName: "Karvonen" },
+      props: { showSearch: true, showCart: true },
+    },
+    {
+      id: "section_karvonen_home_hero",
+      component: "hero",
+      variant: "editorial",
+      visible: true,
+      content: {
+        eyebrow: localized("Karvonen", "Karvonen"),
+        title: localized("Jewellery", "Korut"),
+        body: localized(
+          "Explore the Karvonen jewellery selection.",
+          "Tutustu Karvosen koruvalikoimaan.",
+        ),
+        cta: {
+          label: localized("View the collection", "Tutustu mallistoon"),
+          href: "/collections/myrskyluodon-maija",
+        },
+        media: {
+          id: "asset_karvonen_home_hero",
+          url: "/seed-assets/karvonen/storefront/hero-desktop.jpg",
+          alt: localized("Karvonen jewellery", "Karvosen koruja"),
+          decorative: false,
+        },
+      },
+      props: { mediaPosition: "right" },
+    },
+    {
+      id: "section_karvonen_home_categories",
+      component: "featuredCategories",
+      variant: "editorialCards",
+      visible: true,
+      content: {
+        heading: localized("Collections", "Mallistoja"),
+        collectionIds: ["collection_karvonen_myrskyluodon-maija", "collection_karvonen_pihka"],
+      },
+      props: { cardAspect: "portrait" },
+    },
+    {
+      id: "section_karvonen_home_products",
+      component: "productGrid",
+      variant: "editorial",
+      visible: true,
+      content: {
+        heading: localized("Karvonen selection", "Karvosen valikoima"),
+        productIds: [
+          "product_karvonen_01",
+          "product_karvonen_02",
+          "product_karvonen_03",
+          "product_karvonen_04",
+        ],
+      },
+      props: { columns: "four" },
+    },
+    {
+      id: "section_karvonen_home_footer",
+      component: "footer",
+      variant: "columns",
+      visible: true,
+      content: {
+        brandName: "Karvonen",
+        contact: localized("Karvonen · Finland", "Karvonen · Suomi"),
+        policyLabel: localized(
+          "Delivery · Returns · Privacy",
+          "Toimitus · Palautukset · Tietosuoja",
+        ),
+        copyright: localized("© 2026 Karvonen demo", "© 2026 Karvonen -demo"),
+      },
+      props: { showPolicies: true },
+    },
+  ],
+};
 
-function makeSnapshot(id: string, revision: number, createdBy: "system" | "user") {
-  const source = replaceReferences(aurumNordicSeed.draftSnapshot) as StorefrontSnapshot;
+const collectionPage = {
+  id: "page_karvonen_collection_myrskyluodon_maija",
+  type: "collection" as const,
+  slug: "/collections/myrskyluodon-maija",
+  title: localized("Myrskyluodon Maija", "Myrskyluodon Maija"),
+  seo: {
+    title: localized("Myrskyluodon Maija | Karvonen", "Myrskyluodon Maija | Karvonen"),
+    metaDescription: localized(
+      "Myrskyluodon Maija collection by Karvonen.",
+      "Karvosen Myrskyluodon Maija -mallisto.",
+    ),
+  },
+  sections: [
+    {
+      id: "section_karvonen_collection_header",
+      component: "header",
+      variant: "centered",
+      visible: true,
+      content: { brandName: "Karvonen" },
+      props: { showSearch: true, showCart: true },
+    },
+    {
+      id: "section_karvonen_collection_intro",
+      component: "collectionHeader",
+      variant: "editorial",
+      visible: true,
+      content: { collectionId: "collection_karvonen_myrskyluodon-maija" },
+      props: { mediaPosition: "right" },
+    },
+    {
+      id: "section_karvonen_collection_filters",
+      component: "filterBar",
+      variant: "horizontal",
+      visible: true,
+      content: { filters: ["material", "price", "availability"] },
+      props: { demoOnly: true },
+    },
+    {
+      id: "section_karvonen_collection_products",
+      component: "productGrid",
+      variant: "editorial",
+      visible: true,
+      content: {
+        heading: localized("Myrskyluodon Maija", "Myrskyluodon Maija"),
+        productIds: ["product_karvonen_01"],
+      },
+      props: { columns: "two" },
+    },
+    {
+      id: "section_karvonen_collection_footer",
+      component: "footer",
+      variant: "columns",
+      visible: true,
+      content: {
+        brandName: "Karvonen",
+        contact: localized("Karvonen · Finland", "Karvonen · Suomi"),
+        policyLabel: localized(
+          "Delivery · Returns · Privacy",
+          "Toimitus · Palautukset · Tietosuoja",
+        ),
+        copyright: localized("© 2026 Karvonen demo", "© 2026 Karvonen -demo"),
+      },
+      props: { showPolicies: true },
+    },
+  ],
+};
+
+const productPage = {
+  id: "page_karvonen_product_guldviva_myrskyluodon_maija",
+  type: "product" as const,
+  slug: "/products/guldviva-myrskyluodon-maija-sormus",
+  title: localized("Guldviva Myrskyluodon Maija ring", "Guldviva Myrskyluodon Maija sormus"),
+  seo: {
+    title: localized(
+      "Guldviva Myrskyluodon Maija ring | Karvonen",
+      "Guldviva Myrskyluodon Maija sormus | Karvonen",
+    ),
+    metaDescription: localized(
+      "Guldviva Myrskyluodon Maija ring from Karvonen.",
+      "Guldviva Myrskyluodon Maija -sormus Karvoselta.",
+    ),
+  },
+  sections: [
+    {
+      id: "section_karvonen_product_header",
+      component: "header",
+      variant: "centered",
+      visible: true,
+      content: { brandName: "Karvonen" },
+      props: { showSearch: true, showCart: true },
+    },
+    {
+      id: "section_karvonen_product_gallery",
+      component: "productGallery",
+      variant: "thumbnails",
+      visible: true,
+      content: { productId: "product_karvonen_01" },
+      props: { thumbnailPosition: "bottom" },
+    },
+    {
+      id: "section_karvonen_product_info",
+      component: "productInfo",
+      variant: "premium",
+      visible: true,
+      content: { productId: "product_karvonen_01" },
+      props: { showRating: true },
+    },
+    {
+      id: "section_karvonen_product_options",
+      component: "productOptions",
+      variant: "buttons",
+      visible: true,
+      content: { productId: "product_karvonen_01" },
+      props: { demoOnly: true },
+    },
+    {
+      id: "section_karvonen_product_related",
+      component: "relatedProducts",
+      variant: "grid",
+      visible: true,
+      content: {
+        heading: localized("You may also like", "Saatat myös pitää"),
+        productIds: ["product_karvonen_02", "product_karvonen_04"],
+      },
+      props: {},
+    },
+    {
+      id: "section_karvonen_product_footer",
+      component: "footer",
+      variant: "columns",
+      visible: true,
+      content: {
+        brandName: "Karvonen",
+        contact: localized("Karvonen · Finland", "Karvonen · Suomi"),
+        policyLabel: localized(
+          "Delivery · Returns · Privacy",
+          "Toimitus · Palautukset · Tietosuoja",
+        ),
+        copyright: localized("© 2026 Karvonen demo", "© 2026 Karvonen -demo"),
+      },
+      props: { showPolicies: true },
+    },
+  ],
+};
+
+const navigation = {
+  primary: [
+    {
+      id: "nav_karvonen_home",
+      label: localized("Home", "Etusivu"),
+      target: { type: "page" as const, pageId: "page_karvonen_home" },
+    },
+    {
+      id: "nav_karvonen_myrskyluodon_maija",
+      label: localized("Myrskyluodon Maija", "Myrskyluodon Maija"),
+      target: {
+        type: "page" as const,
+        pageId: "page_karvonen_collection_myrskyluodon_maija",
+      },
+    },
+  ],
+  footer: [
+    {
+      id: "nav_karvonen_guldviva_myrskyluodon_maija",
+      label: localized("Guldviva Myrskyluodon Maija ring", "Guldviva Myrskyluodon Maija sormus"),
+      target: {
+        type: "page" as const,
+        pageId: "page_karvonen_product_guldviva_myrskyluodon_maija",
+      },
+    },
+  ],
+};
+
+function makeSnapshot(
+  id: string,
+  revision: number,
+  createdBy: "system" | "user",
+): StorefrontSnapshot {
   return {
-    ...source,
     id,
     projectId: KARVONEN_PROJECT_ID,
-    catalogueRef: "catalogue_karvonen",
     revision,
+    brandSystem: structuredClone(karvonenBrandSystem),
+    navigation: structuredClone(navigation),
+    pages: structuredClone([homePage, collectionPage, productPage]),
+    catalogueRef: "catalogue_karvonen",
+    createdAt: "2026-07-21T09:00:00+03:00",
     createdBy,
-    pages: source.pages.map((page) => {
-      if (page.id === "page_home") {
-        return {
-          ...page,
-          title: fi("Karvonen"),
-          seo: { title: fi("Karvonen"), metaDescription: fi("Karvosen korut") },
-        };
-      }
-      if (page.id === "page_collection_rings") {
-        return {
-          ...page,
-          slug: "/collections/myrskyluodon-maija",
-          title: fi("Myrskyluodon Maija"),
-        };
-      }
-      return {
-        ...page,
-        slug: "/products/guldviva-myrskyluodon-maija-sormus",
-        title: products[0].title,
-      };
-    }),
   };
 }
 

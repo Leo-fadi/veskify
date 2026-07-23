@@ -116,7 +116,7 @@ export function StoreHeader({
 }) {
   return (
     <header className={`store-header ${className ?? ""}`}>
-      <a className="store-brand" href={context.pagePaths.page_home ?? "/"}>
+      <a className="store-brand" href={context.homePath ?? "/"}>
         {brandName}
       </a>
       <nav aria-label={text({ en: "Primary navigation", fi: "Päänavigaatio" }, context)}>
@@ -490,7 +490,7 @@ export function StoreFooter({
     <footer className={`store-footer ${className ?? ""}`}>
       {showPolicies ? (
         <div>
-          <a className="store-brand" href={context.pagePaths.page_home ?? "/"}>
+          <a className="store-brand" href={context.homePath ?? "/"}>
             {brandName}
           </a>
           <p>{text(contact, context)}</p>

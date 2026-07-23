@@ -5,7 +5,7 @@ import { getComponentDefinition } from "./registry";
 const finnishSectionLabels: Readonly<Record<string, string>> = {
   announcementBar: "Ilmoituspalkki",
   header: "Kaupan ylätunniste",
-  hero: "Aurum-hero",
+  hero: "Hero-osio",
   featuredCategories: "Nostetut kategoriat",
   productGrid: "Tuoteruudukko",
   campaignBanner: "Kampanjabanneri",

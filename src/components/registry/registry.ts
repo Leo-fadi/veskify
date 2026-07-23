@@ -87,16 +87,20 @@ export function createStorefrontRenderContext({
   snapshot: Pick<StorefrontSnapshot, "navigation" | "pages">;
   pagePathPrefix?: string;
 }): StorefrontRenderContext {
+  const pagePaths = Object.fromEntries(
+    snapshot.pages.map((page) => [
+      page.id,
+      pagePathPrefix ? `${pagePathPrefix}${page.slug === "/" ? "" : page.slug}` : page.slug,
+    ]),
+  );
+  const homePage = snapshot.pages.find((page) => page.type === "home");
+
   return {
     activeLocale: localeSchema.parse(activeLocale),
     primaryLocale: localeSchema.parse(primaryLocale),
     catalogue: catalogueDisplayModelSchema.parse(catalogue),
     navigation: navigationModelSchema.parse(snapshot.navigation),
-    pagePaths: Object.fromEntries(
-      snapshot.pages.map((page) => [
-        page.id,
-        pagePathPrefix ? `${pagePathPrefix}${page.slug === "/" ? "" : page.slug}` : page.slug,
-      ]),
-    ),
+    pagePaths,
+    homePath: homePage ? pagePaths[homePage.id] : undefined,
   };
 }

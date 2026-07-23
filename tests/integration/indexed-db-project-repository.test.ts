@@ -199,6 +199,93 @@ async function writeKarvonenConflict(databaseName: string, kind: KarvonenConflic
   database.close();
 }
 
+function replaceLegacyKarvonenReferences(value: unknown): unknown {
+  const references = new Map<string, string>([
+    ...aurumNordicSeed.catalogue.products.map(
+      (product, index) => [product.id, karvonenSeed.catalogue.products[index]?.id ?? ""] as const,
+    ),
+    ["collection_rings", "collection_karvonen_myrskyluodon-maija"],
+    ["collection_everyday", "collection_karvonen_pihka"],
+    ["/seed-assets/aurora-ring.svg", "/seed-assets/karvonen/storefront/hero-desktop.jpg"],
+    [
+      "/seed-assets/lumi-halo-ring.svg",
+      "/seed-assets/karvonen/storefront/collection-diamond-rings.jpg",
+    ],
+    [
+      "/seed-assets/aava-necklace.svg",
+      "/seed-assets/karvonen/storefront/collection-jewellery-or-wedding-rings.jpg",
+    ],
+  ]);
+  if (typeof value === "string")
+    return references.get(value) ?? value.replaceAll("Aurum Nordic", "Karvonen");
+  if (Array.isArray(value)) return value.map(replaceLegacyKarvonenReferences);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, replaceLegacyKarvonenReferences(entry)]),
+    );
+  }
+  return value;
+}
+
+function legacyKarvonenSnapshot(id: string, revision: number, createdBy: "system" | "user") {
+  const source = replaceLegacyKarvonenReferences(
+    aurumNordicSeed.draftSnapshot,
+  ) as typeof aurumNordicSeed.draftSnapshot;
+  return {
+    ...source,
+    id,
+    projectId: karvonenSeed.project.id,
+    catalogueRef: karvonenSeed.catalogue.id,
+    revision,
+    createdBy,
+    pages: source.pages.map((page) => {
+      if (page.id === "page_home") {
+        return {
+          ...page,
+          title: { fi: "Karvonen" },
+          seo: { title: { fi: "Karvonen" }, metaDescription: { fi: "Karvosen korut" } },
+        };
+      }
+      if (page.id === "page_collection_rings") {
+        return {
+          ...page,
+          slug: "/collections/myrskyluodon-maija",
+          title: { fi: "Myrskyluodon Maija" },
+        };
+      }
+      return {
+        ...page,
+        slug: "/products/guldviva-myrskyluodon-maija-sormus",
+        title: karvonenSeed.catalogue.products[0].title,
+      };
+    }),
+  };
+}
+
+async function writeLegacyKarvonenSeed(databaseName: string, editDraft = false) {
+  const database = await openDB(databaseName, 1, {
+    upgrade(db) {
+      db.createObjectStore("projects", { keyPath: "id" });
+      db.createObjectStore("catalogues", { keyPath: "id" });
+      const snapshots = db.createObjectStore("snapshots", { keyPath: "id" });
+      snapshots.createIndex("by-project", "projectId");
+    },
+  });
+  const transaction = database.transaction(["projects", "catalogues", "snapshots"], "readwrite");
+  const draft = legacyKarvonenSnapshot("snapshot_karvonen_draft", 2, "user");
+  if (editDraft) {
+    draft.pages[0].title = { fi: "Kauppiaan muokkaama Karvonen" };
+  }
+  await transaction.objectStore("projects").put(structuredClone(karvonenSeed.project));
+  await transaction.objectStore("catalogues").put(structuredClone(karvonenSeed.catalogue));
+  await transaction
+    .objectStore("snapshots")
+    .put(legacyKarvonenSnapshot("snapshot_karvonen_published", 1, "system"));
+  await transaction.objectStore("snapshots").put(draft);
+  await transaction.done;
+  database.close();
+}
+
 afterEach(async () => {
   await Promise.all(openRepositories.splice(0).map((repository) => repository.close()));
   await Promise.all([...databaseNames].map((name) => deleteDB(name)));
@@ -496,6 +583,37 @@ describe("IndexedDbProjectRepository persistence", () => {
       [karvonenSeed.publishedSnapshot.id, karvonenSeed.draftSnapshot.id].sort(),
     );
     expect(karvonen.snapshots).toHaveLength(2);
+  });
+
+  it("replaces only the untouched legacy Karvonen seed with the isolated storefront", async () => {
+    const databaseName = testDatabaseName("karvonen-legacy-seed");
+    await writeLegacyKarvonenSeed(databaseName);
+
+    const repository = openRepository(databaseName);
+    const karvonen = await repository.get(karvonenSeed.project.id);
+    const serializedDraft = JSON.stringify(
+      karvonen.snapshots.find((snapshot) => snapshot.id === karvonen.project.draftSnapshotId),
+    );
+
+    expect(karvonen.project.name).toBe("Karvonen");
+    expect(karvonen.catalogue.products[0]?.sku).toBe("BV012s");
+    expect(serializedDraft).not.toContain("Aurum Nordic");
+    expect(serializedDraft).not.toContain("Aurora");
+    expect(serializedDraft).toContain("Guldviva Myrskyluodon Maija");
+  });
+
+  it("does not replace a merchant-edited legacy Karvonen draft during bootstrap", async () => {
+    const databaseName = testDatabaseName("karvonen-legacy-edited");
+    await writeLegacyKarvonenSeed(databaseName, true);
+
+    const repository = openRepository(databaseName);
+    const karvonen = await repository.get(karvonenSeed.project.id);
+    const draft = karvonen.snapshots.find(
+      (snapshot) => snapshot.id === karvonen.project.draftSnapshotId,
+    )!;
+
+    expect(draft.pages[0]?.title.fi).toBe("Kauppiaan muokkaama Karvonen");
+    expect(JSON.stringify(draft)).toContain("Aurora");
   });
 
   it("adds missing Karvonen without overwriting an existing Aurum database", async () => {

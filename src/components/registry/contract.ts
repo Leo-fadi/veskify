@@ -10,6 +10,7 @@ export type StorefrontRenderContext = {
   catalogue: CatalogueDisplayModel;
   navigation: NavigationModel;
   pagePaths: Readonly<Record<string, string>>;
+  homePath?: string;
 };
 
 export type EditorFieldMetadata = {

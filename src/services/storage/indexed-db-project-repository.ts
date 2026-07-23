@@ -103,6 +103,94 @@ function sameValue(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
+const legacyKarvonenReferenceMap = new Map<string, string>([
+  ...aurumNordicSeed.catalogue.products.map(
+    (product, index) => [product.id, karvonenSeed.catalogue.products[index]?.id ?? ""] as const,
+  ),
+  ["collection_rings", "collection_karvonen_myrskyluodon-maija"],
+  ["collection_everyday", "collection_karvonen_pihka"],
+  ["/seed-assets/aurora-ring.svg", "/seed-assets/karvonen/storefront/hero-desktop.jpg"],
+  [
+    "/seed-assets/lumi-halo-ring.svg",
+    "/seed-assets/karvonen/storefront/collection-diamond-rings.jpg",
+  ],
+  [
+    "/seed-assets/aava-necklace.svg",
+    "/seed-assets/karvonen/storefront/collection-jewellery-or-wedding-rings.jpg",
+  ],
+]);
+
+function replaceLegacyKarvonenReferences(value: unknown): unknown {
+  if (typeof value === "string") {
+    return legacyKarvonenReferenceMap.get(value) ?? value.replaceAll("Aurum Nordic", "Karvonen");
+  }
+  if (Array.isArray(value)) return value.map(replaceLegacyKarvonenReferences);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, replaceLegacyKarvonenReferences(entry)]),
+    );
+  }
+  return value;
+}
+
+function legacyKarvonenSnapshot(
+  id: string,
+  revision: number,
+  createdBy: "system" | "user",
+): StorefrontSnapshot {
+  const source = replaceLegacyKarvonenReferences(
+    aurumNordicSeed.draftSnapshot,
+  ) as StorefrontSnapshot;
+  return {
+    ...source,
+    id,
+    projectId: karvonenSeed.project.id,
+    catalogueRef: karvonenSeed.catalogue.id,
+    revision,
+    createdBy,
+    pages: source.pages.map((page) => {
+      if (page.id === "page_home") {
+        return {
+          ...page,
+          title: { fi: "Karvonen" },
+          seo: { title: { fi: "Karvonen" }, metaDescription: { fi: "Karvosen korut" } },
+        };
+      }
+      if (page.id === "page_collection_rings") {
+        return {
+          ...page,
+          slug: "/collections/myrskyluodon-maija",
+          title: { fi: "Myrskyluodon Maija" },
+        };
+      }
+      return {
+        ...page,
+        slug: "/products/guldviva-myrskyluodon-maija-sormus",
+        title: karvonenSeed.catalogue.products[0].title,
+      };
+    }),
+  };
+}
+
+function isUntouchedLegacyKarvonenSeed(
+  project: Project,
+  catalogue: CatalogueDisplayModel | undefined,
+  snapshots: StorefrontSnapshot[],
+): boolean {
+  const expectedSnapshots = [
+    legacyKarvonenSnapshot("snapshot_karvonen_published", 1, "system"),
+    legacyKarvonenSnapshot("snapshot_karvonen_draft", 2, "user"),
+  ];
+  return (
+    sameValue(project, karvonenSeed.project) &&
+    sameValue(catalogue, karvonenSeed.catalogue) &&
+    snapshots.length === expectedSnapshots.length &&
+    expectedSnapshots.every((expected) =>
+      snapshots.some((stored) => stored.id === expected.id && sameValue(stored, expected)),
+    )
+  );
+}
+
 const currentHomepageHero = aurumNordicSeed.draftSnapshot.pages
   .find((page) => page.type === "home")
   ?.sections.find((section) => section.component === "hero");
@@ -827,8 +915,42 @@ export class IndexedDbProjectRepository implements ProjectRepository {
     const snapshots = transaction.objectStore("snapshots");
     const snapshotProvenance = transaction.objectStore("snapshotProvenance");
     const seedKarvonenIfSafe = async () => {
+      const storedKarvonenProject = await projects.get(karvonenSeed.project.id);
+      if (storedKarvonenProject) {
+        const storedKarvonenCatalogue = await catalogues.get(karvonenSeed.catalogue.id);
+        const storedKarvonenSnapshots = await snapshots
+          .index("by-project")
+          .getAll(karvonenSeed.project.id);
+        if (
+          !isUntouchedLegacyKarvonenSeed(
+            storedKarvonenProject,
+            storedKarvonenCatalogue,
+            storedKarvonenSnapshots,
+          )
+        ) {
+          return;
+        }
+
+        const correctedAggregate = validateProjectAggregate({
+          project: clone(karvonenSeed.project),
+          catalogue: clone(karvonenSeed.catalogue),
+          snapshots: [clone(karvonenSeed.publishedSnapshot), clone(karvonenSeed.draftSnapshot)],
+        });
+        await catalogues.put(correctedAggregate.catalogue);
+        for (const snapshot of correctedAggregate.snapshots) {
+          await snapshots.put(snapshot);
+        }
+        await snapshotProvenance.put(
+          managedDraftProvenance(
+            correctedAggregate.project.id,
+            correctedAggregate.project.draftSnapshotId,
+          ),
+        );
+        await projects.put(correctedAggregate.project);
+        return;
+      }
+
       const karvonenIdentifiersOccupied =
-        (await projects.get(karvonenSeed.project.id)) !== undefined ||
         (await catalogues.get(karvonenSeed.catalogue.id)) !== undefined ||
         (await snapshots.get(karvonenSeed.publishedSnapshot.id)) !== undefined ||
         (await snapshots.get(karvonenSeed.draftSnapshot.id)) !== undefined ||

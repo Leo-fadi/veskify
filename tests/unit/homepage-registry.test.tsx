@@ -6,6 +6,7 @@ import {
   validateRegisteredPage,
   veskifyComponentRegistry,
 } from "@/components/registry";
+import { StoreFooter, StoreHeader } from "@/components/storefront/homepage-sections";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
 import { aurumNordicSeed } from "@/data/seed";
 
@@ -121,6 +122,40 @@ describe("P1-01 homepage registry", () => {
     expect(screen.getByRole("heading", { name: "Tehty pohjoiseen valoon" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Aurora-sormus 585" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Primary fallback campaign" })).toBeVisible();
+  });
+
+  it("keeps the safe root fallback when a snapshot has no home page", () => {
+    const snapshotWithoutHome = structuredClone(aurumNordicSeed.draftSnapshot);
+    snapshotWithoutHome.pages = snapshotWithoutHome.pages.filter((page) => page.type !== "home");
+    const missingHomeContext = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot: snapshotWithoutHome,
+    });
+
+    expect(missingHomeContext.homePath).toBeUndefined();
+    render(
+      <>
+        <StoreHeader
+          brandName="Example"
+          context={missingHomeContext}
+          showCart={false}
+          showSearch={false}
+        />
+        <StoreFooter
+          brandName="Example"
+          contact={{ en: "Example" }}
+          context={missingHomeContext}
+          copyright={{ en: "Example" }}
+          policyLabel={{ en: "Example" }}
+          showPolicies
+        />
+      </>,
+    );
+    for (const brandLink of screen.getAllByRole("link", { name: /^Example$/ })) {
+      expect(brandLink).toHaveAttribute("href", "/");
+    }
   });
 
   it("renders useful catalogue-backed empty states", () => {
