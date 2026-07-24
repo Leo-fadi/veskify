@@ -1386,7 +1386,7 @@ describe("P2-01 project editor route", () => {
 
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
 
-    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("design-proposal")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Hyväksy ja käytä" })).not.toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(/sivu muuttui/i);
     expect(screen.getByLabelText("Pyyntösi")).toHaveValue("Add a campaign section.");
@@ -2069,9 +2069,9 @@ describe("P4-04 editor AI command integration", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/kieli vaihtui/i);
     expect(screen.getByLabelText("Pyyntösi")).toHaveValue("Make the homepage feel more luxurious.");
-    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("design-proposal")).not.toBeInTheDocument();
     await provider.resolve(1);
-    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("design-proposal")).not.toBeInTheDocument();
   });
 
   it("keeps a ready proposal for duplicate selection and stales it for a true target change", async () => {

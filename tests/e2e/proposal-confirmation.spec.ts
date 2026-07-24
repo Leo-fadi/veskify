@@ -8,7 +8,9 @@ async function createProposal(page: Page) {
   }
   await page.getByRole("button", { name: "Make the layout more minimal." }).click();
   await page.getByRole("button", { name: "Create proposal" }).click();
-  await expect(page.getByLabel("Design proposal")).toBeVisible();
+  const proposal = page.getByTestId("design-proposal");
+  await expect(proposal).toBeVisible();
+  await expect(proposal).toHaveAccessibleName("Design proposal");
 }
 
 test("reviews, rejects and accepts a proposal without automatic draft mutation", async ({
@@ -17,7 +19,7 @@ test("reviews, rejects and accepts a proposal without automatic draft mutation",
   await page.setViewportSize({ width: 375, height: 900 });
   await page.goto(editorUrl);
   await createProposal(page);
-  const card = page.getByLabel("Design proposal");
+  const card = page.getByTestId("design-proposal");
   await expect(card).toContainText("Affected page");
   await expect(card).toContainText("Affected scope");
   await expect(card).toContainText("Planned changes");
@@ -32,7 +34,7 @@ test("reviews, rejects and accepts a proposal without automatic draft mutation",
   await page.getByRole("button", { name: "Start over" }).click();
   await page.getByRole("button", { name: "Add a campaign section." }).click();
   await page.getByRole("button", { name: "Create proposal" }).click();
-  await expect(page.getByLabel("Design proposal")).toBeVisible();
+  await expect(page.getByTestId("design-proposal")).toBeVisible();
   await page.getByRole("button", { name: "Accept and apply" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText(/accepted for draft application/i)).toBeVisible();
@@ -48,7 +50,7 @@ test("reloading a proposal review never applies it", async ({ page }) => {
   await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
 
   await page.reload();
-  await expect(page.getByLabel("Design proposal")).toHaveCount(0);
+  await expect(page.getByTestId("design-proposal")).toHaveCount(0);
   await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
   await expect(page.getByRole("button", { name: "Save draft" })).toBeDisabled();
 });
@@ -58,7 +60,8 @@ test("renders Finnish proposal review labels", async ({ page }) => {
   await page.getByRole("radio", { name: "Suomi" }).check();
   await page.getByRole("button", { name: "Tee asettelusta pelkistetympi." }).click();
   await page.getByRole("button", { name: "Luo ehdotus" }).click();
-  const card = page.getByLabel("Design proposal");
+  const card = page.getByTestId("design-proposal");
+  await expect(card).toHaveAccessibleName("Suunnitteluehdotus");
   await expect(card).toContainText("Kohdesivu");
   await expect(card).toContainText("Suunnitellut muutokset");
   await expect(card).toContainText("Varoitukset ja diagnostiikka");

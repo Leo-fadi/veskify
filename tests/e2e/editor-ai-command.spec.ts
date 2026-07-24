@@ -102,7 +102,7 @@ for (const contextChange of ["page", "locale", "section"] as const) {
 
     await clickCreateAndChangeContext(page, contextChange);
 
-    await expect(page.getByLabel("Design proposal")).toHaveCount(0);
+    await expect(page.getByTestId("design-proposal")).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Accept and apply" })).toHaveCount(0);
     await expect(page.getByTestId("draft-status")).toContainText(
       contextChange === "locale" ? "Ei tallentamattomia muutoksia" : "No unsaved changes",
