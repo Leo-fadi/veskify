@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
 import { proposalChangeDetails, proposalDetailsHeading } from "./proposal-change-details";
 import { createStorefrontProposalReview } from "./storefront-proposal-review";
@@ -81,6 +81,22 @@ const copy = {
     affectedPages: "Affected pages",
     pageChanges: "Planned page changes",
     completeReview: "Every planned storefront change is represented below.",
+    reviewShared: "Shared design and navigation",
+    reviewBindings: "Product and collection connections",
+    reviewAssets: "Approved source assets",
+    reviewProtected: "Commerce details that stay unchanged",
+    reviewProtectedBody:
+      "Products, collections, SKUs, prices, stock and availability, variants and options, and product media stay connected to your canonical commerce data.",
+    reviewAssetsEmpty: "No approved source assets are being placed by this proposal.",
+    reviewBindingsEmpty: "No product or collection connections change in this proposal.",
+    reviewPages: "Open a proposed page",
+    proposalPage: "Proposal preview",
+    close: "Close",
+    confirmTitle: "Apply this storefront proposal?",
+    confirmBody:
+      "This will update multiple pages and the shared storefront design as one unsaved draft change. You can undo the complete change in one step.",
+    confirmApply: "Apply storefront proposal",
+    confirmCancel: "Keep reviewing",
     panel: "Design request",
     storefrontProposal: "Storefront design proposal",
     proposal: "Design proposal",
@@ -140,6 +156,22 @@ const copy = {
     affectedPages: "Kohdesivut",
     pageChanges: "Suunnitellut sivumuutokset",
     completeReview: "Kaikki suunnitellut verkkokaupan muutokset näkyvät alla.",
+    reviewShared: "Yhteinen ilme ja navigointi",
+    reviewBindings: "Tuote- ja kokoelmayhteydet",
+    reviewAssets: "Hyväksytyt lähdeaineistot",
+    reviewProtected: "Muuttumattomat kauppatiedot",
+    reviewProtectedBody:
+      "Tuotteet, kokoelmat, tuotetunnukset, hinnat, varasto ja saatavuus, variantit ja valinnat sekä tuotekuvat pysyvät kanonisissa kauppatiedoissasi.",
+    reviewAssetsEmpty: "Tähän ehdotukseen ei sijoiteta hyväksyttyjä lähdeaineistoja.",
+    reviewBindingsEmpty: "Tämä ehdotus ei muuta tuote- tai kokoelmayhteyksiä.",
+    reviewPages: "Avaa ehdotettu sivu",
+    proposalPage: "Ehdotuksen esikatselu",
+    close: "Sulje",
+    confirmTitle: "Otetaanhan tämä kauppaehdotus käyttöön?",
+    confirmBody:
+      "Tämä päivittää useita sivuja ja kaupan yhteisen ilmeen yhtenä tallentamattomana luonnosmuutoksena. Voit kumota koko muutoksen yhdellä toiminnolla.",
+    confirmApply: "Ota kauppaehdotus käyttöön",
+    confirmCancel: "Jatka tarkistusta",
     panel: "Suunnittelupyyntö",
     storefrontProposal: "Verkkokaupan suunnitteluehdotus",
     proposal: "Suunnitteluehdotus",
@@ -155,6 +187,7 @@ export function DesignAgentPanel({
   pageTitle,
   selectedSectionLabel,
   storefrontPageCount,
+  onReviewPage,
 }: {
   controller: DesignAgentSessionController;
   locale: Locale;
@@ -162,12 +195,18 @@ export function DesignAgentPanel({
   pageTitle: string;
   selectedSectionLabel?: string;
   storefrontPageCount?: number;
+  onReviewPage?: (pageId: string) => void;
 }) {
   const text = copy[locale];
   const requestRef = useRef<HTMLTextAreaElement>(null);
   const clarificationRef = useRef<HTMLTextAreaElement>(null);
   const proposalHeadingRef = useRef<HTMLHeadingElement>(null);
   const retryRef = useRef<HTMLButtonElement>(null);
+  const confirmationRef = useRef<HTMLHeadingElement>(null);
+  const acceptTriggerRef = useRef<HTMLButtonElement>(null);
+  const [confirmingStorefrontProposalId, setConfirmingStorefrontProposalId] = useState<
+    string | null
+  >(null);
   const busy = ["generating", "revising", "accepting"].includes(controller.visibleState);
   const needsClarification = controller.session?.state === "needsClarification";
 
@@ -198,22 +237,26 @@ export function DesignAgentPanel({
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    setConfirmingStorefrontProposalId(null);
     controller.submitRequest();
   };
 
   const clarify = (event: FormEvent) => {
     event.preventDefault();
+    setConfirmingStorefrontProposalId(null);
     controller.answerClarification();
   };
 
   const revise = (event: FormEvent) => {
     event.preventDefault();
+    setConfirmingStorefrontProposalId(null);
     controller.reviseProposal();
   };
 
   const submitFromKeyboard = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key !== "Enter" || (!event.ctrlKey && !event.metaKey)) return;
     event.preventDefault();
+    setConfirmingStorefrontProposalId(null);
     controller.submitRequest();
   };
 
@@ -229,6 +272,16 @@ export function DesignAgentPanel({
   const storefrontReview = storefrontProposal
     ? createStorefrontProposalReview(storefrontProposal, locale, primaryLocale)
     : null;
+  const confirmationDialogOpen = Boolean(
+    storefrontProposal &&
+    storefrontReview?.complete &&
+    session?.state === "proposalReady" &&
+    confirmingStorefrontProposalId === storefrontProposal.id,
+  );
+
+  useEffect(() => {
+    if (confirmationDialogOpen) confirmationRef.current?.focus();
+  }, [confirmationDialogOpen]);
   const examples =
     controller.targetScope === "storefront"
       ? storefrontExamplePrompts[locale]
@@ -357,7 +410,14 @@ export function DesignAgentPanel({
       </div>
 
       {controller.visibleState === "generating" || controller.visibleState === "revising" ? (
-        <button className={styles.startOver} onClick={controller.cancelSession} type="button">
+        <button
+          className={styles.startOver}
+          onClick={() => {
+            setConfirmingStorefrontProposalId(null);
+            controller.cancelSession();
+          }}
+          type="button"
+        >
           {text.cancel}
         </button>
       ) : null}
@@ -384,7 +444,10 @@ export function DesignAgentPanel({
             </button>
             <button
               disabled={controller.controlsDisabled}
-              onClick={controller.cancelSession}
+              onClick={() => {
+                setConfirmingStorefrontProposalId(null);
+                controller.cancelSession();
+              }}
               type="button"
             >
               {text.cancel}
@@ -448,9 +511,31 @@ export function DesignAgentPanel({
                       </li>
                     ))}
                   </ul>
+                  {onReviewPage ? (
+                    <button
+                      aria-label={`${text.reviewPages}: ${pageReview.title}`}
+                      className={styles.reviewPageButton}
+                      onClick={() => onReviewPage(pageReview.pageId)}
+                      type="button"
+                    >
+                      {text.reviewPages}
+                    </button>
+                  ) : null}
                 </details>
               ))}
             </div>
+          </div>
+          <div>
+            <strong>{text.reviewBindings}</strong>
+            <p>{text.reviewBindingsEmpty}</p>
+          </div>
+          <div>
+            <strong>{text.reviewAssets}</strong>
+            <p>{text.reviewAssetsEmpty}</p>
+          </div>
+          <div>
+            <strong>{text.reviewProtected}</strong>
+            <p>{text.reviewProtectedBody}</p>
           </div>
           <div>
             <strong>{text.warnings}</strong>
@@ -470,8 +555,10 @@ export function DesignAgentPanel({
           <p className={styles.boundary}>{text.unsaved}</p>
           <div className={styles.actions}>
             <button
+              aria-haspopup="dialog"
               disabled={controller.controlsDisabled || !storefrontReview.complete}
-              onClick={controller.acceptProposal}
+              onClick={() => setConfirmingStorefrontProposalId(storefrontProposal.id)}
+              ref={acceptTriggerRef}
               type="button"
             >
               {accepting ? text.accepting : applicationFailed ? text.retryAccept : text.accept}
@@ -479,7 +566,10 @@ export function DesignAgentPanel({
             {!applicationFailed ? (
               <button
                 disabled={controller.controlsDisabled}
-                onClick={controller.regenerateProposal}
+                onClick={() => {
+                  setConfirmingStorefrontProposalId(null);
+                  controller.regenerateProposal();
+                }}
                 type="button"
               >
                 {text.regenerate}
@@ -487,17 +577,23 @@ export function DesignAgentPanel({
             ) : null}
             <button
               disabled={controller.controlsDisabled}
-              onClick={controller.rejectProposal}
+              onClick={() => {
+                setConfirmingStorefrontProposalId(null);
+                controller.rejectProposal();
+              }}
               type="button"
             >
               {text.reject}
             </button>
             <button
               disabled={controller.controlsDisabled}
-              onClick={controller.cancelSession}
+              onClick={() => {
+                setConfirmingStorefrontProposalId(null);
+                controller.cancelSession();
+              }}
               type="button"
             >
-              {text.cancel}
+              {text.close}
             </button>
           </div>
           {!applicationFailed ? (
@@ -518,6 +614,47 @@ export function DesignAgentPanel({
                 {text.revise}
               </button>
             </form>
+          ) : null}
+          {confirmationDialogOpen ? (
+            <div
+              aria-describedby="storefront-acceptance-description"
+              aria-labelledby="storefront-acceptance-title"
+              className={styles.confirmation}
+              role="dialog"
+            >
+              <h4 id="storefront-acceptance-title" ref={confirmationRef} tabIndex={-1}>
+                {text.confirmTitle}
+              </h4>
+              <p id="storefront-acceptance-description">{text.confirmBody}</p>
+              <div className={styles.actions}>
+                <button
+                  disabled={controller.controlsDisabled}
+                  onClick={() => {
+                    setConfirmingStorefrontProposalId(null);
+                    if (
+                      confirmingStorefrontProposalId === storefrontProposal.id &&
+                      session.state === "proposalReady" &&
+                      storefrontReview.complete
+                    ) {
+                      controller.acceptProposal();
+                    }
+                  }}
+                  type="button"
+                >
+                  {text.confirmApply}
+                </button>
+                <button
+                  disabled={controller.controlsDisabled}
+                  onClick={() => {
+                    setConfirmingStorefrontProposalId(null);
+                    acceptTriggerRef.current?.focus();
+                  }}
+                  type="button"
+                >
+                  {text.confirmCancel}
+                </button>
+              </div>
+            </div>
           ) : null}
         </section>
       ) : null}
@@ -595,7 +732,10 @@ export function DesignAgentPanel({
             {!applicationFailed ? (
               <button
                 disabled={controller.controlsDisabled}
-                onClick={controller.regenerateProposal}
+                onClick={() => {
+                  setConfirmingStorefrontProposalId(null);
+                  controller.regenerateProposal();
+                }}
                 type="button"
               >
                 {text.regenerate}
@@ -603,14 +743,20 @@ export function DesignAgentPanel({
             ) : null}
             <button
               disabled={controller.controlsDisabled}
-              onClick={controller.rejectProposal}
+              onClick={() => {
+                setConfirmingStorefrontProposalId(null);
+                controller.rejectProposal();
+              }}
               type="button"
             >
               {text.reject}
             </button>
             <button
               disabled={controller.controlsDisabled}
-              onClick={controller.cancelSession}
+              onClick={() => {
+                setConfirmingStorefrontProposalId(null);
+                controller.cancelSession();
+              }}
               type="button"
             >
               {text.cancel}
@@ -649,7 +795,14 @@ export function DesignAgentPanel({
                 : text.unavailableGuidance}
           </p>
           {controller.generationRetryAvailable ? (
-            <button onClick={controller.retryGeneration} ref={retryRef} type="button">
+            <button
+              onClick={() => {
+                setConfirmingStorefrontProposalId(null);
+                controller.retryGeneration();
+              }}
+              ref={retryRef}
+              type="button"
+            >
               {text.retry}
             </button>
           ) : null}
@@ -663,7 +816,10 @@ export function DesignAgentPanel({
         <button
           className={styles.startOver}
           disabled={controller.controlsDisabled}
-          onClick={controller.restartSession}
+          onClick={() => {
+            setConfirmingStorefrontProposalId(null);
+            controller.restartSession();
+          }}
           type="button"
         >
           {text.startOver}

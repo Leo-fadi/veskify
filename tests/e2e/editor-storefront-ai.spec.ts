@@ -31,6 +31,12 @@ async function openStorefrontProposal(page: Page, instruction = storefrontInstru
   await expect(page.getByLabel("Storefront design proposal")).toBeVisible();
 }
 
+async function acceptStorefrontProposal(page: Page) {
+  await page.getByRole("button", { name: "Accept and apply" }).click();
+  await expect(page.getByRole("dialog", { name: "Apply this storefront proposal?" })).toBeVisible();
+  await page.getByRole("button", { name: "Apply storefront proposal" }).click();
+}
+
 test("selected-section proposal uses the existing editor flow", async ({ page }) => {
   await page.goto(editorUrl);
   await selectHomepageHero(page);
@@ -73,7 +79,7 @@ test("entire-storefront proposal shows complete merchant review", async ({ page 
 test("entire-storefront Accept, Undo and Redo remain one editor action", async ({ page }) => {
   await page.goto(editorUrl);
   await openStorefrontProposal(page);
-  await page.getByRole("button", { name: "Accept and apply" }).click();
+  await acceptStorefrontProposal(page);
   await expect(page.getByTestId("draft-status")).toContainText("Unsaved changes");
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(page.getByRole("button", { name: "Redo", exact: true })).toBeEnabled();
@@ -86,7 +92,7 @@ test("Save draft reloads the complete accepted storefront without changing Publi
 }) => {
   await page.goto(editorUrl);
   await openStorefrontProposal(page);
-  await page.getByRole("button", { name: "Accept and apply" }).click();
+  await acceptStorefrontProposal(page);
   await expect(page.getByTestId("draft-status")).toContainText("Unsaved changes");
   await page.getByRole("button", { name: "Save draft" }).click();
   await expect(page.getByText("Draft saved successfully.")).toBeVisible();
@@ -136,7 +142,7 @@ test("accepted storefront history survives a later rejected proposal", async ({ 
   await page.goto(editorUrl);
   const canvasRoot = page.frameLocator("iframe").locator("[data-veskify-canvas-root]");
   await openStorefrontProposal(page);
-  await page.getByRole("button", { name: "Accept and apply" }).click();
+  await acceptStorefrontProposal(page);
   await expect(page.getByTestId("draft-status")).toContainText("Unsaved changes");
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#7B4A2D");
 
@@ -155,7 +161,7 @@ test("multiple accepted storefront proposals undo and redo in chronological orde
   await page.goto(editorUrl);
   const canvasRoot = page.frameLocator("iframe").locator("[data-veskify-canvas-root]");
   await openStorefrontProposal(page);
-  await page.getByRole("button", { name: "Accept and apply" }).click();
+  await acceptStorefrontProposal(page);
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#7B4A2D");
 
   await page.getByRole("button", { name: "Start over" }).click();
@@ -163,7 +169,7 @@ test("multiple accepted storefront proposals undo and redo in chronological orde
     page,
     "Use a minimal Nordic colour and typography direction throughout the site.",
   );
-  await page.getByRole("button", { name: "Accept and apply" }).click();
+  await acceptStorefrontProposal(page);
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#243238");
 
   await page.getByRole("button", { name: "Undo", exact: true }).click();
@@ -183,7 +189,7 @@ test("page edits after storefront Accept are undone before the composite storefr
   const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
   const canvasRoot = page.frameLocator("iframe").locator("[data-veskify-canvas-root]");
   await openStorefrontProposal(page);
-  await page.getByRole("button", { name: "Accept and apply" }).click();
+  await acceptStorefrontProposal(page);
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#7B4A2D");
 
   await canvas.getByText("Made for northern light", { exact: true }).click();
