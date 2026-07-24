@@ -40,12 +40,34 @@
 }
 
 .variant_imageLed,
-.variant_overlay {
+.variant_overlay,
+.variant_fullBleedOverlay {
   grid-template-columns: 1fr;
 }
 
 .variant_minimal {
   min-height: auto;
+}
+
+.variant_restrained {
+  gap: clamp(1rem, 2vw, 1.5rem);
+  min-height: min(32rem, 64vh);
+}
+
+.variant_restrained .heroCopy {
+  max-width: 38rem;
+}
+
+.variant_asymmetric {
+  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+}
+
+.hero[data-content-width="narrow"] .heroCopy {
+  max-width: 34rem;
+}
+
+.hero[data-content-width="wide"] .heroCopy {
+  max-width: 54rem;
 }
 
 .heroCopy,
@@ -117,6 +139,25 @@
   pointer-events: none;
   position: absolute;
   z-index: 1;
+}
+
+.variant_fullBleedOverlay[data-copy-treatment="overlay"] .heroCopy {
+  color: var(--brand-color-surface);
+  max-width: 46rem;
+}
+
+.variant_fullBleedOverlay[data-copy-treatment="overlay"] .heroCopy p {
+  color: color-mix(in srgb, var(--brand-color-surface) 86%, transparent);
+}
+
+.variant_fullBleedOverlay[data-copy-treatment="overlay"][data-overlay-contrast="strong"]
+  .media_background {
+  opacity: 0.48;
+}
+
+.variant_fullBleedOverlay[data-copy-treatment="overlay"][data-overlay-contrast="strong"]
+  .media_background::after {
+  background: color-mix(in srgb, var(--brand-color-text) 74%, transparent);
 }
 
 .media_background img {
@@ -334,7 +375,8 @@
   }
 
   .hero,
-  .promotion {
+  .promotion,
+  .variant_asymmetric {
     grid-template-columns: 1fr;
     min-height: auto;
   }

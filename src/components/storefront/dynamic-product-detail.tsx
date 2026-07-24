@@ -466,12 +466,14 @@ export function DynamicProductGallery({
   media,
   assetFor,
   layout,
+  treatment,
   locale,
 }: {
   product: ProductPresentationContext;
   media: DynamicProductOptionPresentation["selectedMediaReferences"];
   assetFor: PreparedDynamicProductDetail["assetFor"];
   layout: DynamicProductDetailProps["galleryLayout"];
+  treatment: DynamicProductDetailProps["mediaTreatment"];
   locale: LocaleContext;
 }) {
   const galleryMedia = media.filter(
@@ -505,7 +507,7 @@ export function DynamicProductGallery({
   return (
     <section
       aria-label={fallbackLabel("Product gallery", "Tuotegalleria", locale)}
-      className={`${styles.gallery} ${styles[`gallery_${layout}`]}`}
+      className={`${styles.gallery} ${styles[`gallery_${layout}`]} ${styles[`media_${treatment}`]}`}
       data-layout={layout}
     >
       <figure
@@ -1286,6 +1288,7 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
           locale={locale}
           media={input.resolvedOptions.selectedMediaReferences}
           product={input.product}
+          treatment={input.props.mediaTreatment}
         />
         <div className={styles.productInformation}>
           <DynamicProductIdentity

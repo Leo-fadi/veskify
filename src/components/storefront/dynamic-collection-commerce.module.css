@@ -303,6 +303,29 @@
   aspect-ratio: 3 / 4;
 }
 
+.variant_gallery .collectionHeader {
+  padding-bottom: clamp(2rem, 6vw, 5rem);
+}
+
+.variant_gallery .productCard {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.variant_gallery .productCopy {
+  padding-inline: 0;
+}
+
+.variant_gallery .productCard img {
+  aspect-ratio: 3 / 4;
+}
+
+.variant_editorial .productCard,
+.variant_gallery .productCard {
+  box-shadow: none;
+}
+
 .variant_compact .productCopy {
   padding: 0.75rem;
 }

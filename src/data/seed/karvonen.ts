@@ -382,6 +382,15 @@ export const karvonenBrandSystem = brandSystemSchema.parse({
   shape: { radius: "subtle" },
   spacing: { density: "balanced" },
   imagery: { style: "editorial" },
+  visualSystem: {
+    preset: "premiumEditorial",
+    contentWidth: "wide",
+    surface: "layered",
+    divider: "subtle",
+    buttonHierarchy: "balanced",
+    imageTreatment: "editorial",
+    theme: "light",
+  },
   voice: {
     formality: "balanced",
     detail: "concise",
@@ -404,7 +413,7 @@ const homePage = {
     {
       id: "section_karvonen_home_header",
       component: "header",
-      variant: "centered",
+      variant: "editorial",
       visible: true,
       content: { brandName: "Karvonen" },
       props: { showSearch: true, showCart: true },
@@ -412,7 +421,7 @@ const homePage = {
     {
       id: "section_karvonen_home_hero",
       component: "hero",
-      variant: "editorial",
+      variant: "fullBleed",
       visible: true,
       content: {
         eyebrow: localized("Karvonen", "Karvonen"),
@@ -464,7 +473,7 @@ const homePage = {
     {
       id: "section_karvonen_home_footer",
       component: "footer",
-      variant: "columns",
+      variant: "dark",
       visible: true,
       content: {
         brandName: "Karvonen",
@@ -496,7 +505,7 @@ const collectionPage = {
     {
       id: "section_karvonen_collection_header",
       component: "header",
-      variant: "centered",
+      variant: "compact",
       visible: true,
       content: { brandName: "Karvonen" },
       props: { showSearch: true, showCart: true },
@@ -531,7 +540,7 @@ const collectionPage = {
     {
       id: "section_karvonen_collection_footer",
       component: "footer",
-      variant: "columns",
+      variant: "dark",
       visible: true,
       content: {
         brandName: "Karvonen",
@@ -566,7 +575,7 @@ const productPage = {
     {
       id: "section_karvonen_product_header",
       component: "header",
-      variant: "centered",
+      variant: "transparent",
       visible: true,
       content: { brandName: "Karvonen" },
       props: { showSearch: true, showCart: true },
@@ -609,7 +618,7 @@ const productPage = {
     {
       id: "section_karvonen_product_footer",
       component: "footer",
-      variant: "columns",
+      variant: "dark",
       visible: true,
       content: {
         brandName: "Karvonen",

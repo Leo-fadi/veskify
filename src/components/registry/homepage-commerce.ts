@@ -30,6 +30,8 @@ export const homepageHeroPropsSchema = z
     mediaPosition: z.enum(["left", "right", "background"]),
     imagePresentation: z.enum(["cover", "contain"]),
     textAlignment: z.enum(["left", "center"]),
+    contentWidth: z.enum(["narrow", "standard", "wide"]).default("standard"),
+    overlayContrast: z.enum(["soft", "strong"]).default("soft"),
   })
   .strict();
 
@@ -208,6 +210,12 @@ export const homepageHeroDefinition = define({
     { id: "editorialSplit", title: { en: "Editorial split", fi: "Toimituksellinen jako" } },
     { id: "imageLed", title: { en: "Image led", fi: "Kuvapainotteinen" } },
     { id: "minimal", title: { en: "Minimal", fi: "Minimaalinen" } },
+    {
+      id: "fullBleedOverlay",
+      title: { en: "Full-bleed overlay", fi: "Kokonainen kuva peittotekstillä" },
+    },
+    { id: "asymmetric", title: { en: "Asymmetrical", fi: "Epäsymmetrinen" } },
+    { id: "restrained", title: { en: "Restrained", fi: "Harkittu" } },
   ],
   defaultVariant: "editorialSplit",
   industryTags: [],
@@ -319,6 +327,20 @@ export const homepageHeroDefinition = define({
     {
       path: "props.textAlignment",
       label: { en: "Text alignment", fi: "Tekstin tasaus" },
+      source: "props",
+      control: "select",
+      localized: false,
+    },
+    {
+      path: "props.contentWidth",
+      label: { en: "Content width", fi: "Sisällön leveys" },
+      source: "props",
+      control: "select",
+      localized: false,
+    },
+    {
+      path: "props.overlayContrast",
+      label: { en: "Overlay contrast", fi: "Peittokuvan kontrasti" },
       source: "props",
       control: "select",
       localized: false,

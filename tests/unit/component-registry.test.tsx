@@ -55,9 +55,15 @@ describe("Veskify component registry", () => {
   });
 
   it("accepts valid variants and rejects unsupported variants", () => {
-    expect(validateRegisteredSection(validHeroSection, "home").variant).toBe("editorial");
+    const approvedVariants = ["editorial", "fullBleed", "asymmetric", "restrained"] as const;
+    expect(getComponentDefinition("hero").variants).toEqual(approvedVariants);
+    approvedVariants.forEach((variant) => {
+      expect(validateRegisteredSection({ ...validHeroSection, variant }, "home").variant).toBe(
+        variant,
+      );
+    });
     expect(() =>
-      validateRegisteredSection({ ...validHeroSection, variant: "fullBleed" }, "home"),
+      validateRegisteredSection({ ...validHeroSection, variant: "unsupported" }, "home"),
     ).toThrow(/Unsupported hero variant/i);
   });
 

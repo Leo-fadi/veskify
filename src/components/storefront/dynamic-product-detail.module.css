@@ -48,6 +48,16 @@
   background: var(--brand-color-background);
 }
 
+.media_crop .primaryImage {
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.media_editorial .primaryImage {
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+}
+
 .thumbnails {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(3.25rem, 5rem));
@@ -204,6 +214,23 @@
 
 .variant_editorial .primaryImage {
   object-fit: cover;
+}
+
+.variant_galleryDominant .gallery,
+.variant_galleryDominant .emptyGallery {
+  padding: clamp(1rem, 3vw, 2.5rem);
+}
+
+.variant_galleryDominant .primaryImage {
+  max-height: 58rem;
+}
+
+.variant_editorialSplit .identity h1 {
+  max-width: 16ch;
+}
+
+.variant_editorialSplit .productInformation {
+  border-inline-start: 1px solid var(--brand-color-border);
 }
 
 .buttonGroup,
@@ -478,6 +505,10 @@
     position: sticky;
     top: 0;
   }
+
+  .variant_galleryDominant .productCore {
+    grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.55fr);
+  }
 }
 
 @media (max-width: 47.999rem) {
@@ -494,5 +525,9 @@
   .specificationGroups dl div {
     grid-template-columns: 1fr;
     gap: 0.25rem;
+  }
+
+  .variant_editorialSplit .productInformation {
+    border-inline-start: 0;
   }
 }

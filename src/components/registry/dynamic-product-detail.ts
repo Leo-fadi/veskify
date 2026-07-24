@@ -10,7 +10,13 @@ const trustItemSchema = z
   })
   .strict();
 
-export const dynamicProductDetailVariantSchema = z.enum(["balanced", "editorial", "compact"]);
+export const dynamicProductDetailVariantSchema = z.enum([
+  "balanced",
+  "editorial",
+  "compact",
+  "galleryDominant",
+  "editorialSplit",
+]);
 
 export const dynamicProductDetailContentSchema = z
   .object({
@@ -30,6 +36,7 @@ export const dynamicProductDetailPropsSchema = z
     showDescription: z.boolean(),
     showSku: z.boolean(),
     stickyMobileAction: z.boolean(),
+    mediaTreatment: z.enum(["contained", "crop", "editorial"]).default("contained"),
   })
   .strict();
 
@@ -52,6 +59,7 @@ export const dynamicProductDetailDefaultProps = dynamicProductDetailPropsSchema.
   showDescription: true,
   showSku: true,
   stickyMobileAction: true,
+  mediaTreatment: "contained",
 });
 
 export const dynamicProductDetailDefaultStyleOverrides =
@@ -82,6 +90,16 @@ const definitionInput = {
       id: "compact",
       title: { en: "Compact", fi: "Kompakti" },
       compatibleDensity: ["compact", "standard"],
+    },
+    {
+      id: "galleryDominant",
+      title: { en: "Gallery dominant", fi: "Galleria etusijalla" },
+      compatibleDensity: ["standard", "spacious"],
+    },
+    {
+      id: "editorialSplit",
+      title: { en: "Editorial split", fi: "Toimituksellinen jako" },
+      compatibleDensity: ["standard", "spacious"],
     },
   ],
   defaultVariant: "balanced",
@@ -213,6 +231,13 @@ const definitionInput = {
       label: { en: "Sticky mobile action", fi: "Kiinteä mobiilitoiminto" },
       source: "props",
       control: "toggle",
+      localized: false,
+    },
+    {
+      path: "props.mediaTreatment",
+      label: { en: "Product media treatment", fi: "Tuotemedian käsittely" },
+      source: "props",
+      control: "select",
       localized: false,
     },
     {
