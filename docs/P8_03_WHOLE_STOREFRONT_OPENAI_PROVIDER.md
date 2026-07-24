@@ -31,13 +31,22 @@ markup-shaped plan data is rejected before a provider request is made.
 ## Structured output and validation
 
 The OpenAI adapter uses an injected Responses transport with `store: false` and
-a strict JSON Schema produced from `wholeStorefrontGenerationPlanSchema`.
-Provider-specific response parsing remains inside the OpenAI adapter. The
-returned data is parsed strictly, then P8-01 recreates the expected plan and
-requires canonical equality. Unknown fields, invented pages/components/versions,
-unsupported locales, changed bindings, protected-commerce changes, unknown
-assets and incompatible asset placements therefore fail; no provider reference
-is repaired or filtered.
+a dedicated closed provider DTO schema. Generated component `content`, `props`
+and `styleOverrides` use ordered `{ field, valueJson }` entries, so the OpenAI
+schema contains no dynamic object records or schema-valued
+`additionalProperties`. The adapter reconstructs only the expected generated
+component records and rejects missing or unknown fields before P8-01 parses the
+result. P8-01 then recreates the expected canonical plan and requires canonical
+equality. Unknown fields, invented pages/components/versions, unsupported
+locales, changed bindings, protected-commerce changes, unknown assets and
+incompatible asset placements therefore fail; no provider reference is repaired
+or filtered.
+
+Planning uses the same best-effort safe telemetry boundary as the proposal
+provider. It records provider/model identity, operation type, duration, safe
+outcome category, request ID and token usage where available. Prompts, raw
+responses, source content, URLs, credentials and canonical commerce payloads
+are never recorded, and telemetry failures cannot affect planning.
 
 Required homepage, collection-template and product-template families plus shared
 header/navigation/footer are part of that exact plan contract.

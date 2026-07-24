@@ -7,7 +7,11 @@ import {
   WholeStorefrontPlanningProviderError,
 } from "@/application/whole-storefront-generation-plan";
 import { defaultOpenAiModel, defaultOpenAiTimeoutMs } from "./openai-provider";
-import type { OpenAiResponseRequestOptions, OpenAiResponsesRequest } from "./contract";
+import type {
+  OpenAiProviderTelemetry,
+  OpenAiResponseRequestOptions,
+  OpenAiResponsesRequest,
+} from "./contract";
 import { OpenAiWholeStorefrontPlanningProvider } from "./whole-storefront-planning-provider";
 
 export type ServerWholeStorefrontPlanningProviderSelection = "mock" | "openai";
@@ -64,8 +68,10 @@ function timeoutFrom(value: string | undefined): number {
 
 export function selectServerWholeStorefrontPlanningProvider({
   environment = process.env,
+  telemetry,
 }: {
   environment?: OpenAiServerEnvironment;
+  telemetry?: OpenAiProviderTelemetry;
 } = {}): WholeStorefrontPlanningProvider {
   if (providerSelection(environment.VESKIFY_AI_PROVIDER) === "mock") {
     return createDeterministicWholeStorefrontPlanningProvider();
@@ -78,6 +84,7 @@ export function selectServerWholeStorefrontPlanningProvider({
   return new OpenAiWholeStorefrontPlanningProvider({
     model: environment.VESKIFY_OPENAI_MODEL?.trim() || defaultOpenAiModel,
     timeoutMs: timeout,
+    telemetry,
     responses: {
       create: (request: OpenAiResponsesRequest, options: OpenAiResponseRequestOptions) =>
         client.responses.create(request, options),

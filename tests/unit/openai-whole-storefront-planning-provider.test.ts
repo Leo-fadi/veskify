@@ -19,8 +19,11 @@ import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry
 import { aurumNordicSeed } from "@/data/seed";
 import { sourceEvidenceSchema, sourceReferenceSchema } from "@/domain/source-discovery";
 import {
+  assertOpenAiStrictSchemaIsClosed,
   buildOpenAiWholeStorefrontPlanningRequest,
+  openAiWholeStorefrontPlanningOutputSchema,
   OpenAiWholeStorefrontPlanningProvider,
+  wholeStorefrontPlanToOpenAiDto,
   type OpenAiResponseRequestOptions,
   type OpenAiResponsesRequest,
 } from "@/integrations/ai/openai";
@@ -135,11 +138,12 @@ class RecordingTransport {
   }
 }
 
-function provider(transport: RecordingTransport) {
+function provider(transport: RecordingTransport, telemetry?: { record: (event: unknown) => void }) {
   return new OpenAiWholeStorefrontPlanningProvider({
     responses: transport,
     model: "configured-test-model",
     timeoutMs: 1_000,
+    telemetry,
   });
 }
 
@@ -162,16 +166,17 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     expect(serialized).not.toContain("https://");
   });
 
-  it("uses a non-stored strict OpenAI response to return the validated plan", async () => {
+  it("uses a closed strict-schema DTO to return the canonically validated plan with safe telemetry", async () => {
     const input = planningInput();
     const request = buildWholeStorefrontPlanningProviderRequest(input);
+    const telemetry = { record: vi.fn() };
     const transport = new RecordingTransport(() =>
-      Promise.resolve(completedResponse(request.expectedPlan)),
+      Promise.resolve(completedResponse(wholeStorefrontPlanToOpenAiDto(request.expectedPlan))),
     );
 
     await expect(
       requestWholeStorefrontGenerationPlan({
-        provider: provider(transport),
+        provider: provider(transport, telemetry),
         input,
         currentInput: () => input,
       }),
@@ -182,74 +187,46 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
       text: { format: { type: "json_schema", strict: true } },
     });
     expect(transport.calls[0]?.request.text.format.name).toBe(
-      "veskify_whole_storefront_generation_plan",
+      "veskify_whole_storefront_planning_dto",
     );
     expect(buildOpenAiWholeStorefrontPlanningRequest(request, "configured-test-model").input).toBe(
       transport.calls[0]?.request.input,
     );
+    expect(() =>
+      assertOpenAiStrictSchemaIsClosed(openAiWholeStorefrontPlanningOutputSchema),
+    ).not.toThrow();
+    expect(JSON.stringify(openAiWholeStorefrontPlanningOutputSchema)).not.toMatch(
+      /"additionalProperties"\s*:\s*\{/,
+    );
+    expect(telemetry.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerId: "openai",
+        modelId: "configured-test-model",
+        operation: "wholeStorefrontPlanning",
+        outcome: "success",
+        providerRequestId: "resp_whole_storefront_safe",
+      }),
+    );
+    expect(JSON.stringify(telemetry.record.mock.calls)).not.toMatch(
+      /merchant\.example|Private merchant/i,
+    );
   });
 
-  it("rejects provider-invented pages, components, and commerce bindings", async () => {
+  it("rejects unknown component fields during DTO-to-canonical validation", async () => {
     const input = planningInput();
     const request = buildWholeStorefrontPlanningProviderRequest(input);
-    const plan = structuredClone(request.expectedPlan);
-    plan.pagePlans[0].pageId = "page_invented";
-    const component = plan.pagePlans
-      .flatMap((page) => page.components)
-      .find((item) => "instance" in item);
-    if (component && "instance" in component) component.instance.component = "inventedComponent";
-    const binding = plan.canonicalCommerceBindings.find((item) => item.source === "product");
-    if (binding?.source === "product") binding.productId = "product_invented";
+    const dto = wholeStorefrontPlanToOpenAiDto(request.expectedPlan);
+    const component = dto.components[0];
+    if (component === undefined) throw new Error("Expected a generated component DTO.");
+    component.content.push({ field: "inventedField", valueJson: '"invented"' });
 
     await expect(
       requestWholeStorefrontGenerationPlan({
-        provider: provider(new RecordingTransport(() => Promise.resolve(completedResponse(plan)))),
+        provider: provider(new RecordingTransport(() => Promise.resolve(completedResponse(dto)))),
         input,
         currentInput: () => input,
       }),
-    ).rejects.toMatchObject({ code: "invalid-plan" });
-  });
-
-  it("rejects invented approved-asset placements", async () => {
-    const input = planningInput();
-    const request = buildWholeStorefrontPlanningProviderRequest(input);
-    const plan = structuredClone(request.expectedPlan);
-    plan.approvedAssetPlacements.push({
-      type: "PLACE_APPROVED_SOURCE_ASSET",
-      pageId: plan.pagePlans[0].pageId,
-      componentId: "component_invented",
-      componentType: "hero",
-      assetSlotId: "media",
-      assetId: "asset_invented",
-      role: "heroDesktop",
-      assetRevision: "invented-revision",
-      materialFingerprint: "invented-fingerprint",
-      sourceReferenceId: "source_openai_whole_storefront",
-      required: true,
-    });
-
-    await expect(
-      requestWholeStorefrontGenerationPlan({
-        provider: provider(new RecordingTransport(() => Promise.resolve(completedResponse(plan)))),
-        input,
-        currentInput: () => input,
-      }),
-    ).rejects.toMatchObject({ code: "invalid-plan" });
-  });
-
-  it("rejects plans that omit a required storefront page family", async () => {
-    const input = planningInput();
-    const request = buildWholeStorefrontPlanningProviderRequest(input);
-    const plan = structuredClone(request.expectedPlan);
-    plan.pagePlans = plan.pagePlans.filter((page) => page.role !== "product-template");
-
-    await expect(
-      requestWholeStorefrontGenerationPlan({
-        provider: provider(new RecordingTransport(() => Promise.resolve(completedResponse(plan)))),
-        input,
-        currentInput: () => input,
-      }),
-    ).rejects.toMatchObject({ code: "invalid-plan" });
+    ).rejects.toMatchObject({ code: "malformed-structured-response" });
   });
 
   it("rejects a plan when current fingerprints or revisions are stale", async () => {
@@ -261,7 +238,11 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     await expect(
       requestWholeStorefrontGenerationPlan({
         provider: provider(
-          new RecordingTransport(() => Promise.resolve(completedResponse(request.expectedPlan))),
+          new RecordingTransport(() =>
+            Promise.resolve(
+              completedResponse(wholeStorefrontPlanToOpenAiDto(request.expectedPlan)),
+            ),
+          ),
         ),
         input,
         currentInput: () => current,
@@ -269,8 +250,10 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     ).rejects.toMatchObject({ code: "stale-result" });
   });
 
-  it("maps incapable, unavailable, and credential-free provider failures safely", async () => {
+  it("records safe categorized telemetry for transport, malformed-output, and validation failures", async () => {
     const input = planningInput();
+    const request = buildWholeStorefrontPlanningProviderRequest(input);
+    const telemetry = { record: vi.fn() };
     const incapable: WholeStorefrontPlanningProvider = {
       id: "incapable",
       capabilities: {
@@ -291,11 +274,64 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
       requestWholeStorefrontGenerationPlan({
         provider: provider(
           new RecordingTransport(() => Promise.reject(new Error("provider secret"))),
+          telemetry,
         ),
         input,
         currentInput: () => input,
       }),
     ).rejects.toMatchObject({ code: "provider-unavailable" });
+    await expect(
+      requestWholeStorefrontGenerationPlan({
+        provider: provider(
+          new RecordingTransport(() =>
+            Promise.resolve({
+              id: "resp_malformed",
+              status: "completed",
+              output: [],
+              output_text: "not-json",
+            }),
+          ),
+          telemetry,
+        ),
+        input,
+        currentInput: () => input,
+      }),
+    ).rejects.toMatchObject({ code: "malformed-structured-response" });
+    const invalidDto = wholeStorefrontPlanToOpenAiDto(request.expectedPlan);
+    const first = invalidDto.components[0];
+    if (first === undefined) throw new Error("Expected a generated component DTO.");
+    first.props.push({ field: "inventedField", valueJson: "true" });
+    await expect(
+      requestWholeStorefrontGenerationPlan({
+        provider: provider(
+          new RecordingTransport(() => Promise.resolve(completedResponse(invalidDto))),
+          telemetry,
+        ),
+        input,
+        currentInput: () => input,
+      }),
+    ).rejects.toMatchObject({ code: "malformed-structured-response" });
+    expect(telemetry.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "wholeStorefrontPlanning",
+        outcome: "unexpectedProviderFailure",
+      }),
+    );
+    expect(telemetry.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "wholeStorefrontPlanning",
+        outcome: "malformedResponse",
+      }),
+    );
+    expect(telemetry.record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "wholeStorefrontPlanning",
+        outcome: "validationRejected",
+      }),
+    );
+    expect(JSON.stringify(telemetry.record.mock.calls)).not.toMatch(
+      /provider secret|merchant\.example/i,
+    );
     await expect(
       requestWholeStorefrontGenerationPlan({
         provider: selectServerWholeStorefrontPlanningProvider({
