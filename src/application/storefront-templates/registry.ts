@@ -51,7 +51,7 @@ const homeSlots = {
     id: "hero",
     required: true,
     sectionType: "hero",
-    allowedVariants: ["editorial"],
+    allowedVariants: ["editorial", "fullBleed", "asymmetric", "restrained"],
     defaultVariant: "editorial",
     label: { en: "Main introduction", fi: "Pääesittely" },
     purpose: "hero",

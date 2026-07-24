@@ -51,6 +51,12 @@
   --brand-type-scale-ratio: 1.25;
   --brand-radius: 0.75rem;
   --brand-spacing-density: 1;
+  --brand-content-width: 78rem;
+  --brand-surface-treatment: layered;
+  --brand-divider-treatment: subtle;
+  --brand-button-hierarchy: balanced;
+  --brand-image-treatment: editorial;
+  --brand-theme: light;
 }
 
 * {
@@ -295,7 +301,7 @@ a {
 .campaign-banner,
 .brand-story {
   display: grid;
-  width: min(100%, 90rem);
+  width: min(100%, var(--brand-content-width));
   margin: 0 auto;
 }
 .store-hero {

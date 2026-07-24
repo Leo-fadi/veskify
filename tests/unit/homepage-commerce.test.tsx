@@ -325,10 +325,16 @@ describe("P6-05 dynamic homepage commerce component family", () => {
   });
 
   it("renders the hero safely when optional media is omitted", () => {
-    render(renderHomepageCommerce(rendererInput(heroInstance(false))));
+    const hero = heroInstance(false);
+    hero.variant = "fullBleedOverlay";
+    hero.props = { ...hero.props, mediaPosition: "background" };
+    const rendered = render(renderHomepageCommerce(rendererInput(hero)));
     expect(screen.getByRole("heading", { name: "Designed for everyday" })).toBeVisible();
     expect(screen.queryByRole("img")).toBeNull();
-    expect(document.querySelector("[data-media-state='omitted']")).toBeInTheDocument();
+    expect(rendered.container.querySelector("[data-media-state='omitted']")).toHaveAttribute(
+      "data-copy-treatment",
+      "default",
+    );
   });
 
   it("emits one typed approved hero navigation intent from keyboard activation", async () => {
@@ -913,6 +919,15 @@ describe("P6-05 dynamic homepage commerce component family", () => {
       expect(screen.getByRole("button", { name: "Shop now" })).toBeEnabled();
       rendered.unmount();
     }
+    const overlayHero = heroInstance();
+    overlayHero.variant = "fullBleedOverlay";
+    overlayHero.props = { ...overlayHero.props, mediaPosition: "background" };
+    const overlay = render(renderHomepageCommerce(rendererInput(overlayHero, { onNavigate })));
+    expect(overlay.container.querySelector("[data-media-state='approved']")).toHaveAttribute(
+      "data-copy-treatment",
+      "overlay",
+    );
+    overlay.unmount();
     for (const variant of ["split", "overlay", "minimal"] as const) {
       const promotion = promotionInstance();
       promotion.variant = variant;

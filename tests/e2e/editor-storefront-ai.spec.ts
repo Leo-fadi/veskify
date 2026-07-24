@@ -235,7 +235,7 @@ test("canonical context change makes a ready proposal stale and impossible to ac
   await page.getByRole("button", { name: "Create proposal" }).click();
   await expect(page.getByLabel("Design proposal")).toBeVisible();
   await page.getByRole("radio", { name: "Suomi" }).check();
-  await expect(page.getByLabel("Design proposal")).toHaveCount(0);
+  await expect(page.getByTestId("design-proposal")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Accept and apply" })).toHaveCount(0);
 });
 

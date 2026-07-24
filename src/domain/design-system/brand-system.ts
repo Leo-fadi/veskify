@@ -15,6 +15,67 @@ export const brandVoiceSchema = z
   })
   .strict();
 
+export const premiumVisualPresetIds = [
+  "premiumEditorial",
+  "modernMinimal",
+  "futureLuxury",
+] as const;
+export const premiumVisualPresetIdSchema = z.enum(premiumVisualPresetIds);
+
+export const visualSystemSchema = z
+  .object({
+    preset: premiumVisualPresetIdSchema,
+    contentWidth: z.enum(["narrow", "standard", "wide"]),
+    surface: z.enum(["quiet", "layered", "contrast"]),
+    divider: z.enum(["none", "subtle", "strong"]),
+    buttonHierarchy: z.enum(["quiet", "balanced", "strong"]),
+    imageTreatment: z.enum(["contained", "crop", "editorial"]),
+    theme: z.enum(["light", "dark"]),
+  })
+  .strict();
+
+export const premiumVisualPresets = {
+  premiumEditorial: {
+    preset: "premiumEditorial",
+    contentWidth: "wide",
+    surface: "layered",
+    divider: "subtle",
+    buttonHierarchy: "balanced",
+    imageTreatment: "editorial",
+    theme: "light",
+  },
+  modernMinimal: {
+    preset: "modernMinimal",
+    contentWidth: "standard",
+    surface: "quiet",
+    divider: "subtle",
+    buttonHierarchy: "quiet",
+    imageTreatment: "contained",
+    theme: "light",
+  },
+  futureLuxury: {
+    preset: "futureLuxury",
+    contentWidth: "wide",
+    surface: "contrast",
+    divider: "strong",
+    buttonHierarchy: "strong",
+    imageTreatment: "crop",
+    theme: "dark",
+  },
+} as const satisfies Record<
+  z.infer<typeof premiumVisualPresetIdSchema>,
+  z.infer<typeof visualSystemSchema>
+>;
+
+export const premiumVisualPresetLabels: Record<
+  z.infer<typeof premiumVisualPresetIdSchema>,
+  { en: string; fi: string }
+> = {
+  premiumEditorial: { en: "Premium editorial", fi: "Ensiluokkainen editorial" },
+  modernMinimal: { en: "Modern minimal", fi: "Moderni minimalismi" },
+  futureLuxury: { en: "Future luxury", fi: "Tulevaisuuden luksus" },
+};
+
 export const brandSystemSchema = z
   .object({
     colors: z
@@ -47,11 +108,13 @@ export const brandSystemSchema = z
       })
       .strict(),
     voice: brandVoiceSchema,
+    visualSystem: visualSystemSchema.optional(),
   })
   .strict();
 
 export type FontToken = z.infer<typeof fontTokenSchema>;
 export type BrandSystem = z.infer<typeof brandSystemSchema>;
+export type VisualSystem = z.infer<typeof visualSystemSchema>;
 
 const fontStacks: Record<FontToken, string> = {
   inter: '"Inter", "Arial", sans-serif',
@@ -75,6 +138,7 @@ const densityValues: Record<BrandSystem["spacing"]["density"], string> = {
 
 export function brandSystemToCssVariables(input: BrandSystem): Record<string, string> {
   const brand = brandSystemSchema.parse(input);
+  const visualSystem = brand.visualSystem ?? premiumVisualPresets.premiumEditorial;
 
   return {
     "--brand-color-primary": brand.colors.primary,
@@ -94,6 +158,17 @@ export function brandSystemToCssVariables(input: BrandSystem): Record<string, st
     "--brand-radius": radiusValues[brand.shape.radius],
     "--brand-spacing-density": densityValues[brand.spacing.density],
     "--brand-imagery-style": brand.imagery.style,
+    "--brand-content-width":
+      visualSystem.contentWidth === "narrow"
+        ? "68rem"
+        : visualSystem.contentWidth === "wide"
+          ? "92rem"
+          : "78rem",
+    "--brand-surface-treatment": visualSystem.surface,
+    "--brand-divider-treatment": visualSystem.divider,
+    "--brand-button-hierarchy": visualSystem.buttonHierarchy,
+    "--brand-image-treatment": visualSystem.imageTreatment,
+    "--brand-theme": visualSystem.theme,
   };
 }
 

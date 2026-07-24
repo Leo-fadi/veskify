@@ -162,6 +162,8 @@ describe("controlled storefront template registry", () => {
   });
 
   it("keeps every referenced section and variant aligned with the executable renderer registry", () => {
+    const approvedHeroVariants = ["editorial", "fullBleed", "asymmetric", "restrained"];
+    expect(supportedSectionManifest.hero.variants).toEqual(approvedHeroVariants);
     listTemplates().forEach((template) =>
       template.pagePlans.forEach((plan) =>
         plan.slots.forEach((slot) => {
@@ -173,6 +175,12 @@ describe("controlled storefront template registry", () => {
         }),
       ),
     );
+    listTemplates().forEach((template) => {
+      const hero = template.pagePlans
+        .find((plan) => plan.pageType === "home")
+        ?.slots.find((slot) => slot.sectionType === "hero");
+      expect(hero?.allowedVariants).toEqual(approvedHeroVariants);
+    });
     expect(Object.keys(supportedSectionManifest).sort()).toEqual(
       Object.keys(veskifyComponentRegistry).sort(),
     );

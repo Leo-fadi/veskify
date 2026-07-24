@@ -23,7 +23,7 @@ export const aurumHeroDefinition = defineComponent({
   type: "hero",
   label: "Hero",
   allowedPageTypes: ["home", "landing"],
-  variants: ["editorial"] as const,
+  variants: ["editorial", "fullBleed", "asymmetric", "restrained"] as const,
   defaultVariant: "editorial",
   contentSchema: aurumHeroContentSchema,
   propsSchema: aurumHeroPropsSchema,
@@ -58,7 +58,12 @@ export const aurumHeroDefinition = defineComponent({
     },
   },
   protectedFields: { readOnlyPaths: ["media.url"] },
-  renderer: ({ content, props, context }) => (
-    <EditorialHero {...content} {...props} context={context} />
+  renderer: ({ variant, content, props, context }) => (
+    <EditorialHero
+      {...content}
+      {...props}
+      className={`store-vocabulary store-variant--${variant}`}
+      context={context}
+    />
   ),
 });

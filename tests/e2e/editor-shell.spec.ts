@@ -104,6 +104,38 @@ test("keeps every collapsed editor rail destination visible and labelled", async
   );
 });
 
+test("uses one collapsible merchant workspace panel on each side at desktop width", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(url);
+
+  await expect(page.getByRole("complementary", { name: "Pages & sections" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Contextual tools" })).toBeVisible();
+  await expect(page.getByText("Blocks", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Outline", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Puck", { exact: true })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Collapse pages and sections" }).click();
+  await page.getByRole("button", { name: "Collapse contextual tools" }).click();
+  await expect(page.getByRole("complementary", { name: "Pages & sections" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Contextual tools" })).toHaveCount(0);
+
+  const canvas = page.getByLabel("Visual editor canvas");
+  await expect(canvas).toBeVisible();
+  expect(await canvas.evaluate((element) => element.getBoundingClientRect().width >= 900)).toBe(
+    true,
+  );
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+
+  await page.getByRole("button", { name: "Expand pages and sections" }).click();
+  await page.getByRole("button", { name: "Expand contextual tools" }).click();
+  await expect(page.getByRole("complementary", { name: "Pages & sections" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Contextual tools" })).toBeVisible();
+});
+
 test("selects and edits an approved field, then discards the session change", async ({ page }) => {
   await page.goto(url);
   const canvas = await selectHomepageHero(page);
@@ -204,6 +236,30 @@ for (const width of [375, 768]) {
   });
 }
 
+test("shows selected-section design fields in the compact contextual drawer", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto(url);
+  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  await canvas.getByText("Made for northern light", { exact: true }).click();
+  await page.getByRole("button", { name: "Open AI assistant" }).click();
+  const drawer = page.getByRole("dialog", { name: "Contextual tools" });
+  await expect(drawer.getByRole("radio", { name: "Selected section" })).toBeChecked({
+    timeout: 3_000,
+  });
+  await drawer.getByRole("button", { name: "Design", exact: true }).click();
+
+  const headingField = drawer.getByRole("textbox", { name: "Main heading", exact: true });
+  await expect(headingField).toBeVisible({ timeout: 3_000 });
+  await headingField.fill("A compact merchant homepage");
+  await expect(
+    canvas.getByRole("heading", { name: "A compact merchant homepage", exact: true }),
+  ).toBeVisible();
+
+  await drawer.getByRole("button", { name: "AI assistant", exact: true }).click();
+  await expect(headingField).toHaveCount(0);
+  await expect(drawer.getByLabel("Design request")).toBeVisible();
+});
+
 test("requests, previews, rejects and accepts deterministic proposals on mobile", async ({
   page,
 }) => {
@@ -268,7 +324,7 @@ test("uses the selected Puck section and shows localized grouped proposal detail
   expect(detailCount).toBe(10);
   await expect(details.first()).toContainText(/layout|background|typography|spacing|shapes/i);
   await page.getByRole("radio", { name: "Suomi" }).click();
-  await expect(page.getByLabel("Design proposal")).toHaveCount(0);
+  await expect(page.getByTestId("design-proposal")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Hyväksy ja käytä" })).toHaveCount(0);
   await expect(page.getByLabel("Pyyntösi")).toHaveValue("Make the homepage feel more luxurious.");
   await page.getByRole("button", { name: "Tee etusivusta ylellisempi." }).click();

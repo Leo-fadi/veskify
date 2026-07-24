@@ -213,6 +213,7 @@ export class OpenAiProvider implements AIProvider {
       this.#record({
         providerId,
         modelId: this.#model,
+        operation: "proposal",
         providerRequestId,
         durationMs: Date.now() - started,
         outcome: "success",
@@ -227,6 +228,7 @@ export class OpenAiProvider implements AIProvider {
       this.#record({
         providerId,
         modelId: this.#model,
+        operation: "proposal",
         ...(providerRequestId ? { providerRequestId } : {}),
         durationMs: Date.now() - started,
         outcome: category,
