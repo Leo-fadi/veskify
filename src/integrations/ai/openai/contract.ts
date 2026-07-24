@@ -122,6 +122,23 @@ export function createOpenAiStrictJsonSchema(schema: unknown): Record<string, un
   return sanitized;
 }
 
+export function assertOpenAiStrictSchemaIsClosed(schema: unknown): void {
+  const visit = (value: unknown) => {
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!isRecord(value)) return;
+    if (value.type === "object" && value.additionalProperties !== false) {
+      throw new Error(
+        "OpenAI structured output object schemas must set additionalProperties to false.",
+      );
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(schema);
+}
+
 export const openAiStructuredOutputJsonSchema = createOpenAiStrictJsonSchema(
   z.toJSONSchema(openAiModelOutputSchema, {
     target: "draft-7",
@@ -141,7 +158,7 @@ export type OpenAiResponsesRequest = Readonly<{
     verbosity: "low";
     format: Readonly<{
       type: "json_schema";
-      name: "veskify_storefront_operations";
+      name: string;
       description: string;
       strict: true;
       schema: Record<string, unknown>;
@@ -162,6 +179,7 @@ export interface OpenAiResponsesTransport {
 export type OpenAiProviderTelemetryEvent = Readonly<{
   providerId: "openai";
   modelId: string;
+  operation: "proposal" | "wholeStorefrontPlanning";
   durationMs: number;
   outcome:
     | "success"
