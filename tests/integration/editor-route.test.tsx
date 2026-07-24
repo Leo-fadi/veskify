@@ -175,6 +175,11 @@ describe("P4-05D editor storefront integration", () => {
     return screen.findByLabelText("Storefront design proposal");
   };
 
+  const confirmStorefrontProposal = () => {
+    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply storefront proposal" }));
+  };
+
   it("offers page and storefront targets while disabling section scope without a selection", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
@@ -266,12 +271,23 @@ describe("P4-05D editor storefront integration", () => {
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
   });
 
+  it("keeps the proposal open while previewing a referenced page", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await createWarmStorefrontProposal();
+    fireEvent.click(screen.getByRole("button", { name: "Open a proposed page: Rings" }));
+    expect(screen.getByLabelText("Storefront design proposal")).toBeVisible();
+    expect(screen.getByLabelText("Proposal preview canvas")).toHaveTextContent("collection / en");
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+  });
+
   it("accepts all storefront changes into one unsaved editor transaction", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await createWarmStorefrontProposal();
-    const accept = screen.getByRole("button", { name: "Accept and apply" });
-    expect(accept).toBeEnabled();
-    fireEvent.click(accept);
+    expect(screen.getByRole("button", { name: "Accept and apply" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+    expect(screen.getByRole("dialog", { name: "Apply this storefront proposal?" })).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    fireEvent.click(screen.getByRole("button", { name: "Apply storefront proposal" }));
     await waitFor(() =>
       expect(screen.getByLabelText("Design request")).toHaveAttribute(
         "data-agent-state",
@@ -289,9 +305,8 @@ describe("P4-05D editor storefront integration", () => {
     route(repository(() => Promise.resolve(aggregate())));
     const before = screen.queryByLabelText("Visual editor canvas")?.getAttribute("data-primary");
     await createWarmStorefrontProposal();
-    const accept = screen.getByRole("button", { name: "Accept and apply" });
-    expect(accept).toBeEnabled();
-    fireEvent.click(accept);
+    expect(screen.getByRole("button", { name: "Accept and apply" })).toBeEnabled();
+    confirmStorefrontProposal();
     await waitFor(() => expect(screen.getByRole("button", { name: "Undo" })).toBeEnabled());
     const accepted = screen.getByLabelText("Visual editor canvas").getAttribute("data-primary");
     expect(accepted).not.toBe(before);
@@ -309,10 +324,10 @@ describe("P4-05D editor storefront integration", () => {
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
   });
 
-  it("cancels a ready storefront proposal without draft mutation", async () => {
+  it("closes a ready storefront proposal without draft mutation", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await createWarmStorefrontProposal();
-    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(screen.queryByLabelText("Storefront design proposal")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
   });
@@ -427,7 +442,7 @@ describe("P4-05D editor storefront integration", () => {
     const before = await value.get(aurumNordicSeed.project.id);
     route(value);
     await createWarmStorefrontProposal();
-    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+    confirmStorefrontProposal();
     await waitFor(() =>
       expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes"),
     );

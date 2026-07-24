@@ -242,6 +242,38 @@
   overflow-wrap: anywhere;
 }
 
+.reviewPageButton {
+  min-height: 2.25rem;
+  margin-top: 0.65rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #66717d;
+  border-radius: 0.4rem;
+  background: white;
+  color: #15212c;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.confirmation {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.25rem;
+  padding: 0.9rem;
+  border: 2px solid #164b3b;
+  border-radius: 0.6rem;
+  background: white;
+}
+
+.confirmation h4,
+.confirmation p {
+  margin: 0;
+}
+
+.confirmation h4 {
+  font-size: 0.95rem;
+}
+
 .previewNotice,
 .boundary {
   padding: 0.7rem;
@@ -260,7 +292,8 @@
 .panel textarea:focus-visible,
 .panel input:focus-visible,
 .storefrontPages summary:focus-visible,
-.card h3:focus-visible {
+.card h3:focus-visible,
+.confirmation h4:focus-visible {
   outline: 3px solid #d4a72c;
   outline-offset: 2px;
 }

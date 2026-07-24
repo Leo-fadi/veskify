@@ -202,6 +202,7 @@ function EditorToolRail({
   primaryLocale,
   selectedSectionLabel,
   storefrontPageCount,
+  onReviewPage,
 }: {
   activeTab: "design" | "ai";
   controller: DesignAgentSessionController;
@@ -211,6 +212,7 @@ function EditorToolRail({
   primaryLocale: Locale;
   selectedSectionLabel?: string;
   storefrontPageCount: number;
+  onReviewPage: (pageId: string) => void;
 }) {
   const text = editorCopy[locale].tools;
 
@@ -242,6 +244,7 @@ function EditorToolRail({
           primaryLocale={primaryLocale}
           selectedSectionLabel={selectedSectionLabel}
           storefrontPageCount={storefrontPageCount}
+          onReviewPage={onReviewPage}
         />
       )}
     </section>
@@ -941,6 +944,19 @@ export function ProjectEditorClient({
         selectedSection ? merchantEditorSectionLabel(page, selectedSection, locale) : undefined
       }
       storefrontPageCount={activeDraft!.pages.length}
+      onReviewPage={(pageId) => {
+        const candidate = state.pages.find((item) => item.id === pageId);
+        if (!candidate || candidate.id === page.id) return;
+        agent.closeForPageSwitch(candidate);
+        setSelectedPageId(candidate.id);
+        setSelectedSectionId(undefined);
+        setValidationMessage("");
+        setHistoryStatus(
+          locale === "fi"
+            ? "Näytetään ehdotuksen esikatselu valitulle sivulle. Luonnosta ei ole muutettu."
+            : "Showing the proposal preview for the selected page. Your draft has not changed.",
+        );
+      }}
     />
   );
 
