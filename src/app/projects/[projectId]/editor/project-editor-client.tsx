@@ -1072,6 +1072,10 @@ export function ProjectEditorClient({
         editorMode
         headerActions={
           <div className={styles.draftActions}>
+            <hgroup className={styles.editorIdentity} title={title}>
+              <h2>{state.aggregate.project.name}</h2>
+              {title !== state.aggregate.project.name ? <h3>{title}</h3> : null}
+            </hgroup>
             <fieldset className={styles.headerLocale}>
               <legend>{locale === "fi" ? "Kieli" : "Language"}</legend>
               {state.aggregate.project.enabledLocales.map((enabledLocale) => (
@@ -1184,10 +1188,9 @@ export function ProjectEditorClient({
           </div>
         }
         locale={locale}
-        pageLabel={text.navigation.currentPage}
-        pageTitle={title}
         projectId={projectId}
-        projectName={state.aggregate.project.name}
+        showModuleNav={false}
+        showModuleIdentity={false}
       >
         <div aria-label={text.panels.contextual} className={styles.workspaceToolbar}>
           <Button

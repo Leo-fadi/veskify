@@ -591,7 +591,6 @@ describe("P2-01 project editor route", () => {
   it("shows navigation, draft status and the selected preview link", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Aurum Nordic");
-    expect(screen.getByRole("navigation", { name: "Editor navigation" })).toBeVisible();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
     expect(screen.getByRole("link", { name: "View selected page" })).toHaveAttribute(
       "href",
@@ -631,18 +630,12 @@ describe("P2-01 project editor route", () => {
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     expect(screen.getByText("Canvas: home / fi")).toBeVisible();
-    expect(screen.getByRole("navigation", { name: "Editorin navigointi" })).toBeVisible();
-    expect(screen.getByRole("navigation", { name: "Storefront Studion moduulit" })).toBeVisible();
-    for (const label of [
-      "Yleiskatsaus",
-      "Määritykset",
-      "Editori",
-      "Esikatselu",
-      "Julkaiseminen",
-      "Historia",
-    ]) {
-      expect(screen.getByRole("link", { name: label })).toBeVisible();
-    }
+    expect(
+      screen.queryByRole("navigation", { name: "Editorin navigointi" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation", { name: "Storefront Studion moduulit" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("draft-status")).toHaveAccessibleName("Luonnoksen tila");
     expect(screen.getByTestId("draft-status")).toHaveTextContent("Ei tallentamattomia muutoksia");
     expect(screen.getByRole("button", { name: "Kumoa" })).toBeVisible();
