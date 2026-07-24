@@ -40,6 +40,10 @@ export const editorCopy = {
       storefrontPageHint: "Homepage, collection and product pages use their approved sections.",
       viewSelectedPage: "View selected page",
       pagesAndSections: "Pages & sections",
+      structure: "Structure",
+      structureHelp: "Choose a page and section to work on.",
+      sections: "sections",
+      outline: "Page and section list",
     },
     status: {
       draft: "Draft status",
@@ -54,6 +58,8 @@ export const editorCopy = {
       published: "Published",
       storedDraftDiffers: "The stored draft differs from the published storefront.",
       sessionNotice: "Changes stay in this editor session until saved.",
+      draftDiffersDetail: "Draft differs from published storefront.",
+      publishedCurrent: "Published storefront is up to date.",
     },
     actions: {
       undo: "Undo",
@@ -64,6 +70,7 @@ export const editorCopy = {
       publish: "Publish changes",
       more: "More",
       openPreview: "Open preview",
+      close: "Close",
       undoTitle: "Undo (Ctrl or Command + Z)",
       redoTitle: "Redo (Ctrl or Command + Shift + Z)",
     },
@@ -72,6 +79,19 @@ export const editorCopy = {
       design: "Design",
       designControls: "Design controls",
       assistant: "AI assistant",
+      openDesign: "Open design controls",
+      openAssistant: "Open AI assistant",
+      designIntro: "Edit the selected section's content and appearance in the workspace.",
+      selectSection: "Select a section on the canvas to see its controls.",
+      groups: ["Layout", "Content", "Colour", "Typography", "Spacing", "Shape", "Visibility"],
+    },
+    panels: {
+      workspace: "Pages & sections",
+      contextual: "Contextual tools",
+      collapseWorkspace: "Collapse pages and sections",
+      expandWorkspace: "Expand pages and sections",
+      collapseContextual: "Collapse contextual tools",
+      expandContextual: "Expand contextual tools",
     },
     section: {
       actions: "Selected section actions",
@@ -82,6 +102,13 @@ export const editorCopy = {
       duplicate: "Duplicate",
       hide: "Hide",
       show: "Show",
+      empty: "Select a section on the canvas.",
+      required: "This required section must remain visible and can only appear once.",
+    },
+    canvas: {
+      editor: "Visual editor canvas",
+      proposal: "Proposal preview canvas",
+      proposalNotice: "Suggested changes preview — your current page is unchanged",
     },
     feedback: {
       saving: "Saving your draft… Please wait before making more changes.",
@@ -91,6 +118,13 @@ export const editorCopy = {
       saveStale:
         "A newer draft was saved elsewhere. Reload before saving; your current changes are still here.",
       saveAttention: "Some changes need attention before this draft can be saved.",
+      canvasValidation:
+        "That change could not be applied safely. Your last valid design is still shown.",
+      pageValidation:
+        "That page change is not valid yet, so it cannot be saved. Your last valid design is still shown.",
+      pageSaveValidation: "Fix the page issue before saving your draft.",
+      duplicateUnavailable: "That section cannot be duplicated safely.",
+      requiredVisible: "That section must remain visible on this page.",
     },
   },
   fi: {
@@ -100,6 +134,10 @@ export const editorCopy = {
       storefrontPageHint: "Etusivu-, kokoelma- ja tuotesivuilla käytetään hyväksyttyjä osioita.",
       viewSelectedPage: "Näytä valittu sivu",
       pagesAndSections: "Sivut ja osiot",
+      structure: "Rakenne",
+      structureHelp: "Valitse sivu ja sen osio työskentelyä varten.",
+      sections: "osiota",
+      outline: "Sivu- ja osioluettelo",
     },
     status: {
       draft: "Luonnoksen tila",
@@ -114,6 +152,8 @@ export const editorCopy = {
       published: "Julkaistu",
       storedDraftDiffers: "Tallennettu luonnos eroaa julkaistusta verkkokaupasta.",
       sessionNotice: "Muutokset pysyvät tässä muokkausistunnossa, kunnes ne tallennetaan.",
+      draftDiffersDetail: "Luonnos eroaa julkaistusta kaupasta.",
+      publishedCurrent: "Julkaistu tila on ajan tasalla.",
     },
     actions: {
       undo: "Kumoa",
@@ -124,6 +164,7 @@ export const editorCopy = {
       publish: "Julkaise muutokset",
       more: "Lisää",
       openPreview: "Avaa esikatselu",
+      close: "Sulje",
       undoTitle: "Kumoa (Ctrl tai Komento + Z)",
       redoTitle: "Tee uudelleen (Ctrl tai Komento + Vaihto + Z)",
     },
@@ -132,6 +173,19 @@ export const editorCopy = {
       design: "Suunnittelu",
       designControls: "Suunnittelusäätimet",
       assistant: "Suunnitteluavustaja",
+      openDesign: "Avaa suunnittelusäätimet",
+      openAssistant: "Avaa suunnitteluavustaja",
+      designIntro: "Muokkaa valitun osion sisältöä ja ulkoasua työskentelyalueella.",
+      selectSection: "Valitse osio sivulta nähdäksesi sen säätimet.",
+      groups: ["Asettelu", "Sisältö", "Väri", "Typografia", "Väljyys", "Muoto", "Näkyvyys"],
+    },
+    panels: {
+      workspace: "Sivut ja osiot",
+      contextual: "Tilannekohtaiset työkalut",
+      collapseWorkspace: "Kutista sivut ja osiot",
+      expandWorkspace: "Laajenna sivut ja osiot",
+      collapseContextual: "Kutista tilannekohtaiset työkalut",
+      expandContextual: "Laajenna tilannekohtaiset työkalut",
     },
     section: {
       actions: "Valitun osion toiminnot",
@@ -142,6 +196,13 @@ export const editorCopy = {
       duplicate: "Monista",
       hide: "Piilota",
       show: "Näytä",
+      empty: "Valitse osio sivulta.",
+      required: "Pakollinen osio pysyy näkyvissä ja voi esiintyä vain kerran.",
+    },
+    canvas: {
+      editor: "Visuaalinen muokkausalue",
+      proposal: "Ehdotuksen esikatselualue",
+      proposalNotice: "Ehdotettujen muutosten esikatselu — nykyinen sivusi ei muutu",
     },
     feedback: {
       saving: "Luonnosta tallennetaan… Odota ennen uusien muutosten tekemistä.",
@@ -152,6 +213,13 @@ export const editorCopy = {
       saveStale:
         "Uudempi luonnos tallennettiin muualla. Lataa sivu uudelleen ennen tallentamista; nykyiset muutoksesi ovat edelleen täällä.",
       saveAttention: "Jotkin muutokset vaativat huomiota ennen luonnoksen tallentamista.",
+      canvasValidation:
+        "Muutosta ei voitu käyttää turvallisesti. Viimeisin kelvollinen suunnitelmasi on edelleen näkyvissä.",
+      pageValidation:
+        "Sivumuutos ei ole vielä kelvollinen, joten sitä ei voi tallentaa. Viimeisin kelvollinen suunnitelmasi on edelleen näkyvissä.",
+      pageSaveValidation: "Korjaa sivun ongelma ennen luonnoksen tallentamista.",
+      duplicateUnavailable: "Osiota ei voi monistaa turvallisesti.",
+      requiredVisible: "Osion on pysyttävä näkyvissä tällä sivulla.",
     },
   },
 } as const satisfies Record<Locale, unknown>;

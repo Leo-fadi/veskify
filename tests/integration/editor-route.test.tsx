@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
   createDeterministicMockAIProvider,
@@ -35,6 +36,8 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     onSelectedSectionChange,
     readOnly,
     readOnlyLabel,
+    validationErrorMessage,
+    contextualPanel,
   }: {
     page: {
       id: string;
@@ -49,6 +52,8 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
     onSelectedSectionChange?: (sectionId: string | undefined) => void;
     readOnly?: boolean;
     readOnlyLabel?: string;
+    validationErrorMessage?: string;
+    contextualPanel?: ReactNode;
   }) => (
     <section
       aria-label={readOnly ? (readOnlyLabel ?? "Proposal preview canvas") : "Visual editor canvas"}
@@ -57,7 +62,8 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
       lang={context.activeLocale}
     >
       Canvas: {page.type} / {context.activeLocale}
-      {readOnlyLabel === "Proposal preview canvas" ? <span>Locked proposal</span> : null}
+      {readOnly ? <span>Locked proposal</span> : null}
+      {contextualPanel}
       <button onClick={() => onSelectedSectionChange?.(undefined)} type="button">
         Clear section selection
       </button>
@@ -83,7 +89,7 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
           ) : null}
         </div>
       ))}
-      {readOnlyLabel === "Proposal preview canvas" ? (
+      {readOnly ? (
         <button
           onClick={() =>
             onPageChange({
@@ -133,7 +139,9 @@ vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
       </button>
       <button
         disabled={readOnly}
-        onClick={() => onValidationError("That change could not be applied safely.")}
+        onClick={() =>
+          onValidationError(validationErrorMessage ?? "That change could not be applied safely.")
+        }
         type="button"
       >
         Emit invalid change
@@ -355,7 +363,7 @@ describe("P4-05D editor storefront integration", () => {
       target: { value: "Käytä lämmintä premium-ilmettä koko kaupassa." },
     });
     fireEvent.click(screen.getByRole("button", { name: "Luo ehdotus" }));
-    const review = await screen.findByLabelText("Storefront design proposal");
+    const review = await screen.findByLabelText("Verkkokaupan suunnitteluehdotus");
     expect(review).toHaveTextContent("Verkkokaupan yhteinen ilme");
     expect(review).toHaveTextContent("Etusivu");
   });
@@ -614,6 +622,62 @@ describe("P2-01 project editor route", () => {
     });
     expect(screen.getByRole("heading", { name: "Sormukset" })).toBeVisible();
     expect(screen.getByRole("option", { name: "Sormukset" })).toBeVisible();
+  });
+
+  it("consolidates desktop structure and contextual controls into collapsible panels", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+
+    const workspace = screen.getByRole("complementary", { name: "Pages & sections" });
+    const contextual = screen.getByRole("region", { name: "Contextual tools" });
+    expect(workspace).toBeVisible();
+    expect(contextual).toBeVisible();
+    expect(within(contextual).getByRole("button", { name: "Design" })).toBeVisible();
+    expect(within(contextual).getByRole("button", { name: "AI assistant" })).toBeVisible();
+    expect(screen.getByLabelText("Page and section list")).toBeVisible();
+    expect(screen.queryByText("Blocks", { exact: true })).not.toBeInTheDocument();
+    expect(screen.queryByText("Outline", { exact: true })).not.toBeInTheDocument();
+    expect(screen.queryByText("Puck", { exact: true })).not.toBeInTheDocument();
+
+    const collapseWorkspace = screen.getByRole("button", {
+      name: "Collapse pages and sections",
+    });
+    fireEvent.click(collapseWorkspace);
+    expect(screen.queryByRole("complementary", { name: "Pages & sections" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Expand pages and sections" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Collapse contextual tools" }));
+    expect(screen.queryByRole("region", { name: "Contextual tools" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Expand contextual tools" })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(screen.getByLabelText("Visual editor canvas")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Expand pages and sections" }));
+    fireEvent.click(screen.getByRole("button", { name: "Expand contextual tools" }));
+    expect(screen.getByRole("complementary", { name: "Pages & sections" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "Contextual tools" })).toBeVisible();
+  });
+
+  it("localizes contextual panels and the canvas safety error in Finnish", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+
+    expect(screen.getByRole("complementary", { name: "Sivut ja osiot" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "Tilannekohtaiset työkalut" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Suunnittelu" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Suunnitteluavustaja" })).toBeVisible();
+    expect(screen.getByLabelText("Sivu- ja osioluettelo")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Emit invalid canonical page" }));
+    expect(
+      screen.getByText(/Sivumuutos ei ole vielä kelvollinen, joten sitä ei voi tallentaa/i),
+    ).toHaveAttribute("role", "alert");
   });
 
   it.each([
@@ -895,7 +959,7 @@ describe("P2-01 project editor route", () => {
       await user.click(screen.getByRole("button", { name: "Pages & sections" }));
 
       let dialog = screen.getByRole("dialog", { name: "Pages & sections" });
-      expect(within(dialog).getByText("That change could not be applied safely.")).toHaveAttribute(
+      expect(within(dialog).getByText(/That change could not be applied safely/i)).toHaveAttribute(
         "role",
         "alert",
       );
@@ -999,7 +1063,9 @@ describe("P2-01 project editor route", () => {
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Make the homepage feel more luxurious." }));
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
-    expect(await screen.findByLabelText("Design proposal")).toBeVisible();
+    const proposal = await screen.findByTestId("design-proposal");
+    expect(proposal).toBeVisible();
+    expect(proposal).toHaveAccessibleName("Design proposal");
     expect(screen.getByLabelText("Proposal preview canvas")).toHaveTextContent("Locked proposal");
     expect(screen.getByText(/current page is unchanged/i)).toBeVisible();
     expect(screen.getByLabelText("Design proposal")).toHaveTextContent("Planned changes");
@@ -1126,7 +1192,7 @@ describe("P2-01 project editor route", () => {
       "role",
       "status",
     );
-    expect(screen.getByLabelText("Design proposal")).toBeVisible();
+    expect(screen.getByLabelText("Suunnitteluehdotus")).toBeVisible();
   });
 
   it("supports the exact Finnish selected-hero request", async () => {
@@ -1138,7 +1204,7 @@ describe("P2-01 project editor route", () => {
       target: { value: "Paranna valittua hero-osiota." },
     });
     fireEvent.click(screen.getByRole("button", { name: "Luo ehdotus" }));
-    expect(await screen.findByLabelText("Design proposal")).toBeVisible();
+    expect(await screen.findByLabelText("Suunnitteluehdotus")).toBeVisible();
     expect(screen.getByText("Etusivu · 1 osiota", { exact: true })).toBeVisible();
   });
 
@@ -1320,7 +1386,7 @@ describe("P2-01 project editor route", () => {
 
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
 
-    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("design-proposal")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Hyväksy ja käytä" })).not.toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(/sivu muuttui/i);
     expect(screen.getByLabelText("Pyyntösi")).toHaveValue("Add a campaign section.");
@@ -1884,10 +1950,10 @@ describe("P4-04 editor AI command integration", () => {
     expect(provider.calls[1].locale).toBe("fi");
 
     await provider.resolve(1);
-    expect(await screen.findByLabelText("Design proposal")).toBeVisible();
+    expect(await screen.findByLabelText("Suunnitteluehdotus")).toBeVisible();
     expect(screen.getByLabelText("Pyyntösi")).toHaveValue("");
     await provider.resolve(0);
-    expect(screen.getByLabelText("Design proposal")).toBeVisible();
+    expect(screen.getByLabelText("Suunnitteluehdotus")).toBeVisible();
   });
 
   it("immediately supersedes delayed generation after relevant page content changes", async () => {
@@ -2003,9 +2069,9 @@ describe("P4-04 editor AI command integration", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/kieli vaihtui/i);
     expect(screen.getByLabelText("Pyyntösi")).toHaveValue("Make the homepage feel more luxurious.");
-    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("design-proposal")).not.toBeInTheDocument();
     await provider.resolve(1);
-    expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("design-proposal")).not.toBeInTheDocument();
   });
 
   it("keeps a ready proposal for duplicate selection and stales it for a true target change", async () => {
@@ -2093,7 +2159,9 @@ describe("P4-04 editor AI command integration", () => {
       target: { pageId: "page_home", sectionId: "section_home_hero" },
     });
     await provider.resolve(1);
-    expect(await screen.findByLabelText("Design proposal")).toBeVisible();
+    const proposal = await screen.findByTestId("design-proposal");
+    expect(proposal).toBeVisible();
+    expect(proposal).toHaveAccessibleName("Suunnitteluehdotus");
   });
 
   it("prevents repeated retry activation while pending and after the single retry fails", async () => {

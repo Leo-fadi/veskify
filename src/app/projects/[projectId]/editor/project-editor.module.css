@@ -417,7 +417,13 @@
 }
 
 .workspaceToolbar {
-  display: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.6rem clamp(0.75rem, 2vw, 1.25rem);
+  border-bottom: 1px solid var(--vesko-app-border);
+  background: var(--vesko-app-surface);
 }
 
 .outlineHeader {
@@ -669,7 +675,19 @@
 
 @media (min-width: 64rem) {
   .workspace {
-    grid-template-columns: minmax(13rem, 15rem) minmax(0, 1fr) minmax(18rem, 21rem);
+    grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+  }
+
+  .workspace.workspaceLeftCollapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace.workspaceRightCollapsed {
+    grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+  }
+
+  .workspace.workspaceLeftCollapsed.workspaceRightCollapsed {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .toolRail {
@@ -679,18 +697,26 @@
 
 @media (min-width: 90rem) {
   .workspace {
-    grid-template-columns: 15rem minmax(0, 1fr) minmax(19rem, 22rem);
+    grid-template-columns: 16rem minmax(0, 1fr);
+  }
+
+  .workspace.workspaceLeftCollapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace.workspaceRightCollapsed {
+    grid-template-columns: 16rem minmax(0, 1fr);
+  }
+
+  .workspace.workspaceLeftCollapsed.workspaceRightCollapsed {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (max-width: 63.99rem) {
   .workspaceToolbar {
-    display: flex;
-    flex-wrap: wrap;
+    justify-content: flex-start;
     gap: 0.5rem;
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--vesko-app-border);
-    background: var(--vesko-app-surface);
   }
 
   .workspaceToolbar .drawerTrigger {
