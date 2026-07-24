@@ -13,12 +13,24 @@ BrandSystem, composition, presentation content, proposal review and draft histor
 projection, availability/options/media projection, draft persistence and publishing. Every request
 binds tenant and storefront-project identity and carries deterministic revisions or fingerprints.
 The contracts are serializable, strict, free of UI/provider dependencies and reject unknown fields.
+The option and media projection reuses the canonical PDP semantics: ordered option values,
+presentation, dependencies, text-entry constraints and canonical variant-media associations remain
+available without Studio-side enrichment.
 
 ## Protected commerce
 
 The ports expose storefront-safe read-only projections. They contain no product, price, inventory,
 availability, variant, membership or media mutation commands. Publishing accepts only a validated
-storefront presentation snapshot plus request identity and expected draft revision.
+saved-draft identity, immutable publish-preparation identity and expected published-state identity;
+the adapter loads the authoritative saved storefront presentation rather than accepting client
+snapshot content.
+
+## Draft and history integrity
+
+Draft saves carry the expected current draft ID, revision and content fingerprint in addition to
+project revision; the first-save case is explicit. History restoration accepts only an immutable
+history target ID, revision and fingerprint, never a client-supplied target snapshot. Adapters must
+load and verify those authoritative records before producing a new active draft revision.
 
 ## Capabilities and failures
 
@@ -26,7 +38,10 @@ Each environment explicitly reports availability for merchant context, catalogue
 option resolution, canonical media, draft persistence, publishing and history restoration. Typed,
 merchant-safe failures cover unavailable authentication, permissions, tenant/project mismatch,
 staleness, unavailable projections/publishing, revision conflicts, unsupported capability and
-malformed responses. Raw backend payloads and secrets are outside the contract.
+malformed responses. They also distinguish draft conflicts, stale or missing history targets,
+target fingerprint mismatches, duplicate canonical identities, broken catalogue references, saved
+draft mismatches, stale publish confirmations and published-state conflicts. Raw backend payloads
+and secrets are outside the contract.
 
 ## Standalone compatibility
 

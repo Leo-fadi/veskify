@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  productMediaPresentationSchema,
+  productOptionGroupSchema,
+} from "@/domain/component-platform";
 import { storefrontSnapshotSchema, type StorefrontSnapshot } from "@/domain/storefront";
 import { idSchema, localeSchema, localizedTextSchema } from "@/domain/shared";
 
@@ -102,21 +106,42 @@ export const categoryHierarchyNodeSchema = z
   })
   .strict();
 
+const supportedStorefrontDestinationSchema = z.enum(["home"]);
+
 export const storefrontNavigationReferenceSchema = z
   .object({
     navigationId: idSchema,
     target: z.discriminatedUnion("kind", [
+      z.object({ kind: z.literal("product"), productId: idSchema }).strict(),
       z.object({ kind: z.literal("collection"), collectionId: idSchema }).strict(),
       z.object({ kind: z.literal("category"), categoryId: categoryIdSchema }).strict(),
-      z.object({ kind: z.literal("page"), pageId: idSchema }).strict(),
+      z
+        .object({
+          kind: z.literal("storefront"),
+          destination: supportedStorefrontDestinationSchema,
+        })
+        .strict(),
     ]),
   })
   .strict();
+
+function unique(values: readonly string[]): boolean {
+  return new Set(values).size === values.length;
+}
+
+function catalogueIssue(
+  context: z.RefinementCtx,
+  path: (string | number)[],
+  message: string,
+): void {
+  context.addIssue({ code: "custom", path, message });
+}
 
 export const catalogueProjectionSchema = z
   .object({
     tenantId: tenantIdSchema,
     storeId: storeIdSchema,
+    storefrontProjectId: idSchema,
     catalogueId: idSchema,
     revision: integrationRevisionSchema,
     products: z.array(storefrontSafeProductProjectionSchema),
@@ -127,30 +152,135 @@ export const catalogueProjectionSchema = z
   .strict()
   .superRefine((value, context) => {
     const productIds = new Set(value.products.map((product) => product.productId));
-    if (productIds.size !== value.products.length) {
-      context.addIssue({
-        code: "custom",
-        path: ["products"],
-        message: "Product IDs must be unique.",
+    const collectionIds = new Set(value.collections.map((collection) => collection.collectionId));
+    const categoryIds = new Set(value.categories.map((category) => category.categoryId));
+    const identityGroups = [
+      ["products", value.products.map((product) => product.productId)],
+      ["collections", value.collections.map((collection) => collection.collectionId)],
+      ["categories", value.categories.map((category) => category.categoryId)],
+      ["navigation", value.navigation.map((item) => item.navigationId)],
+    ] as const;
+
+    identityGroups.forEach(([key, ids]) => {
+      if (!unique(ids)) catalogueIssue(context, [key], "Canonical IDs must be unique.");
+    });
+
+    const entityKinds = new Map<string, "product" | "collection" | "category">();
+    const canonicalEntityIds = [
+      ["product", productIds],
+      ["collection", collectionIds],
+      ["category", categoryIds],
+    ] as const;
+    canonicalEntityIds
+      .flatMap(([kind, ids]) => [...ids].map((id) => [kind, id] as const))
+      .forEach(([kind, id]) => {
+        const prior = entityKinds.get(id);
+        if (prior !== undefined && prior !== kind) {
+          catalogueIssue(
+            context,
+            [],
+            "Canonical entity IDs cannot resolve to multiple entity types.",
+          );
+          return;
+        }
+        entityKinds.set(id, kind);
       });
+
+    const routedSlugs = [
+      ...value.products.map((product) => product.slug),
+      ...value.collections.map((collection) => collection.slug),
+      ...value.categories.map((category) => category.slug),
+    ];
+    if (!unique(routedSlugs)) {
+      catalogueIssue(context, [], "Canonical routing slugs must be unique.");
     }
+
     value.collections.forEach((collection, index) => {
+      if (!unique(collection.productIds)) {
+        catalogueIssue(
+          context,
+          ["collections", index, "productIds"],
+          "Collection product IDs must be unique.",
+        );
+      }
       collection.productIds.forEach((productId, productIndex) => {
         if (!productIds.has(productId)) {
-          context.addIssue({
-            code: "custom",
-            path: ["collections", index, "productIds", productIndex],
-            message: "Collection membership must use canonical product IDs.",
-          });
+          catalogueIssue(
+            context,
+            ["collections", index, "productIds", productIndex],
+            "Collection membership must use canonical product IDs.",
+          );
         }
       });
+      if (collection.categoryId !== undefined && !categoryIds.has(collection.categoryId)) {
+        catalogueIssue(
+          context,
+          ["collections", index, "categoryId"],
+          "Collection categories must resolve to canonical category IDs.",
+        );
+      }
+    });
+
+    value.categories.forEach((category, index) => {
+      if (category.parentCategoryId !== null && !categoryIds.has(category.parentCategoryId)) {
+        catalogueIssue(
+          context,
+          ["categories", index, "parentCategoryId"],
+          "Category parents must resolve to canonical category IDs.",
+        );
+      }
+      if (category.parentCategoryId === category.categoryId) {
+        catalogueIssue(
+          context,
+          ["categories", index, "parentCategoryId"],
+          "Categories cannot parent themselves.",
+        );
+      }
+    });
+
+    value.navigation.forEach((item, index) => {
+      switch (item.target.kind) {
+        case "product":
+          if (!productIds.has(item.target.productId)) {
+            catalogueIssue(
+              context,
+              ["navigation", index, "target", "productId"],
+              "Navigation product targets must resolve.",
+            );
+          }
+          break;
+        case "collection":
+          if (!collectionIds.has(item.target.collectionId)) {
+            catalogueIssue(
+              context,
+              ["navigation", index, "target", "collectionId"],
+              "Navigation collection targets must resolve.",
+            );
+          }
+          break;
+        case "category":
+          if (!categoryIds.has(item.target.categoryId)) {
+            catalogueIssue(
+              context,
+              ["navigation", index, "target", "categoryId"],
+              "Navigation category targets must resolve.",
+            );
+          }
+          break;
+        case "storefront":
+          break;
+      }
     });
   });
+
+export const storefrontOptionGroupProjectionSchema = productOptionGroupSchema;
+export const canonicalProductMediaProjectionSchema = productMediaPresentationSchema;
 
 export const availabilityOptionMediaProjectionSchema = z
   .object({
     tenantId: tenantIdSchema,
     storeId: storeIdSchema,
+    storefrontProjectId: idSchema,
     productId: idSchema,
     revision: integrationRevisionSchema,
     availability: z.enum(["inStock", "lowStock", "outOfStock", "unavailable"]),
@@ -160,16 +290,7 @@ export const availabilityOptionMediaProjectionSchema = z
         .object({ attributeId: idSchema, label: localizedTextSchema, value: localizedTextSchema })
         .strict(),
     ),
-    optionGroups: z.array(
-      z
-        .object({
-          optionGroupId: idSchema,
-          label: localizedTextSchema,
-          required: z.boolean(),
-          valueIds: z.array(idSchema),
-        })
-        .strict(),
-    ),
+    optionGroups: z.array(storefrontOptionGroupProjectionSchema),
     variants: z.array(
       z
         .object({
@@ -180,28 +301,128 @@ export const availabilityOptionMediaProjectionSchema = z
         })
         .strict(),
     ),
-    media: z.array(
-      z
-        .object({
-          mediaId: idSchema,
-          role: z.enum(["main", "alternative", "editorial"]),
-          alt: localizedTextSchema.optional(),
-        })
-        .strict(),
-    ),
+    media: z.array(canonicalProductMediaProjectionSchema),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    const optionGroups = new Map(value.optionGroups.map((group) => [group.id, group]));
+    const optionValues = new Map<string, string>();
+    const variantIds = new Set(value.variants.map((variant) => variant.variantId));
+
+    if (!unique(value.optionGroups.map((group) => group.id))) {
+      catalogueIssue(context, ["optionGroups"], "Canonical option group IDs must be unique.");
+    }
+    value.optionGroups.forEach((group, groupIndex) => {
+      group.values.forEach((optionValue, valueIndex) => {
+        const owner = optionValues.get(optionValue.id);
+        if (owner !== undefined && owner !== group.id) {
+          catalogueIssue(
+            context,
+            ["optionGroups", groupIndex, "values", valueIndex, "id"],
+            "Canonical option value IDs must resolve unambiguously.",
+          );
+          return;
+        }
+        optionValues.set(optionValue.id, group.id);
+      });
+      group.dependsOn.forEach((dependency, dependencyIndex) => {
+        const target = optionGroups.get(dependency.groupId);
+        if (target === undefined || dependency.groupId === group.id) {
+          catalogueIssue(
+            context,
+            ["optionGroups", groupIndex, "dependsOn", dependencyIndex, "groupId"],
+            "Option dependencies must reference another canonical option group.",
+          );
+          return;
+        }
+        dependency.valueIds?.forEach((valueId, valueIndex) => {
+          if (!target.values.some((optionValue) => optionValue.id === valueId)) {
+            catalogueIssue(
+              context,
+              ["optionGroups", groupIndex, "dependsOn", dependencyIndex, "valueIds", valueIndex],
+              "Option dependency values must resolve within the referenced option group.",
+            );
+          }
+        });
+      });
+    });
+
+    if (!unique(value.variants.map((variant) => variant.variantId))) {
+      catalogueIssue(context, ["variants"], "Canonical variant IDs must be unique.");
+    }
+    value.variants.forEach((variant, variantIndex) => {
+      if (!unique(variant.optionValueIds)) {
+        catalogueIssue(
+          context,
+          ["variants", variantIndex, "optionValueIds"],
+          "Variant option value IDs must be unique.",
+        );
+      }
+      variant.optionValueIds.forEach((valueId, valueIndex) => {
+        if (!optionValues.has(valueId)) {
+          catalogueIssue(
+            context,
+            ["variants", variantIndex, "optionValueIds", valueIndex],
+            "Variants must reference canonical option values.",
+          );
+        }
+      });
+    });
+
+    value.media.forEach((media, mediaIndex) => {
+      if (
+        media.role === "variant" &&
+        (media.variantIds === undefined || media.variantIds.length === 0)
+      ) {
+        catalogueIssue(
+          context,
+          ["media", mediaIndex, "variantIds"],
+          "Variant media must reference canonical variants.",
+        );
+      }
+      if (media.variantIds !== undefined && !unique(media.variantIds)) {
+        catalogueIssue(
+          context,
+          ["media", mediaIndex, "variantIds"],
+          "Variant media references must be unique.",
+        );
+      }
+      media.variantIds?.forEach((variantId, variantIndex) => {
+        if (!variantIds.has(variantId)) {
+          catalogueIssue(
+            context,
+            ["media", mediaIndex, "variantIds", variantIndex],
+            "Variant media must reference a variant on this product.",
+          );
+        }
+      });
+    });
+  });
+
+export const storefrontSnapshotExpectationSchema = z
+  .object({
+    id: idSchema,
+    revision: integrationRevisionSchema,
+    contentFingerprint: z.string().trim().min(1).max(200),
   })
   .strict();
 
-const draftIdentitySchema = z
+export const authoritativeStorefrontSnapshotSchema = storefrontSnapshotExpectationSchema
+  .extend({ tenantId: tenantIdSchema, storefrontProjectId: idSchema })
+  .strict();
+
+export const immutableHistoryTargetSchema = authoritativeStorefrontSnapshotSchema
+  .extend({ immutable: z.literal(true) })
+  .strict();
+
+export const storefrontDraftSchema = z
   .object({
     tenantId: tenantIdSchema,
     storefrontProjectId: idSchema,
     revision: integrationRevisionSchema,
+    contentFingerprint: z.string().trim().min(1).max(200),
+    snapshot: storefrontSnapshotSchema,
   })
-  .strict();
-
-export const storefrontDraftSchema = draftIdentitySchema
-  .extend({ snapshot: storefrontSnapshotSchema, fingerprint: z.string().trim().min(1).max(200) })
   .strict()
   .superRefine((value, context) => {
     if (value.snapshot.projectId !== value.storefrontProjectId) {
@@ -216,7 +437,9 @@ export const storefrontDraftSchema = draftIdentitySchema
 export const saveStorefrontDraftRequestSchema = z
   .object({
     context: merchantProjectContextSchema,
-    expectedRevision: integrationRevisionSchema,
+    requestId: idSchema,
+    expectedProjectRevision: integrationRevisionSchema,
+    expectedCurrentDraft: storefrontSnapshotExpectationSchema.nullable(),
     draft: storefrontDraftSchema,
   })
   .strict()
@@ -231,11 +454,37 @@ export const saveStorefrontDraftRequestSchema = z
         message: "Draft identity must match the merchant project context.",
       });
     }
-    if (value.expectedRevision !== value.context.projectRevision) {
+    if (value.expectedProjectRevision !== value.context.projectRevision) {
       context.addIssue({
         code: "custom",
-        path: ["expectedRevision"],
+        path: ["expectedProjectRevision"],
         message: "Draft saves require the current project revision.",
+      });
+    }
+  });
+
+export const restoreStorefrontHistoryRequestSchema = z
+  .object({
+    context: merchantProjectContextSchema,
+    requestId: idSchema,
+    expectedProjectRevision: integrationRevisionSchema,
+    expectedCurrentDraft: storefrontSnapshotExpectationSchema,
+    target: storefrontSnapshotExpectationSchema,
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.expectedProjectRevision !== value.context.projectRevision) {
+      context.addIssue({
+        code: "custom",
+        path: ["expectedProjectRevision"],
+        message: "History restoration requires the current project revision.",
+      });
+    }
+    if (value.target.id === value.expectedCurrentDraft.id) {
+      context.addIssue({
+        code: "custom",
+        path: ["target", "id"],
+        message: "The current draft cannot be used as an immutable history target.",
       });
     }
   });
@@ -243,17 +492,26 @@ export const saveStorefrontDraftRequestSchema = z
 export const publishStorefrontRequestSchema = z
   .object({
     context: merchantProjectContextSchema,
-    expectedDraftRevision: integrationRevisionSchema,
     requestId: idSchema,
-    snapshot: storefrontSnapshotSchema,
+    publishPreparationId: idSchema,
+    expectedProjectRevision: integrationRevisionSchema,
+    expectedSavedDraft: storefrontSnapshotExpectationSchema,
+    expectedPublished: storefrontSnapshotExpectationSchema,
   })
   .strict()
   .superRefine((value, context) => {
-    if (value.snapshot.projectId !== value.context.storefrontProjectId) {
+    if (value.expectedProjectRevision !== value.context.projectRevision) {
       context.addIssue({
         code: "custom",
-        path: ["snapshot", "projectId"],
-        message: "Published snapshot must belong to the storefront project.",
+        path: ["expectedProjectRevision"],
+        message: "Publishing requires the current project revision.",
+      });
+    }
+    if (value.expectedSavedDraft.id === value.expectedPublished.id) {
+      context.addIssue({
+        code: "custom",
+        path: ["expectedSavedDraft", "id"],
+        message: "Saved draft and published snapshot identities must remain distinct.",
       });
     }
   });
@@ -270,12 +528,13 @@ export const publicationResultSchema = z
   })
   .strict()
   .superRefine((value, context) => {
-    if ((value.status === "rejected") !== (value.rejection !== undefined))
+    if ((value.status === "rejected") !== (value.rejection !== undefined)) {
       context.addIssue({
         code: "custom",
         path: ["rejection"],
         message: "Publication rejection must match its status.",
       });
+    }
   });
 
 export const veskoIntegrationCapabilitySchema = z.enum([
@@ -314,6 +573,14 @@ export const integrationFailureCodeSchema = z.enum([
   "staleCatalogueProjection",
   "availabilityUnavailable",
   "draftRevisionConflict",
+  "historyTargetUnavailable",
+  "staleHistoryTarget",
+  "historyTargetFingerprintMismatch",
+  "duplicateCanonicalIdentity",
+  "brokenCatalogueReference",
+  "savedDraftMismatch",
+  "stalePublishConfirmation",
+  "publishedStateConflict",
   "publishingUnavailable",
   "unsupportedCapability",
   "malformedIntegrationResponse",
@@ -331,6 +598,14 @@ const safeFailureMessages: Record<IntegrationFailureCode, string> = {
   staleCatalogueProjection: "Product information changed. Refresh and try again.",
   availabilityUnavailable: "Product availability is temporarily unavailable.",
   draftRevisionConflict: "This draft changed elsewhere. Refresh before saving.",
+  historyTargetUnavailable: "The selected storefront version is no longer available.",
+  staleHistoryTarget: "The selected storefront version changed. Refresh and try again.",
+  historyTargetFingerprintMismatch: "The selected storefront version could not be verified.",
+  duplicateCanonicalIdentity: "Vesko returned duplicate catalogue information.",
+  brokenCatalogueReference: "Vesko returned incomplete catalogue information.",
+  savedDraftMismatch: "The saved storefront draft changed. Refresh before continuing.",
+  stalePublishConfirmation: "The publish review is no longer current. Review the latest draft.",
+  publishedStateConflict: "The published storefront changed. Refresh before publishing.",
   publishingUnavailable: "Publishing is temporarily unavailable.",
   unsupportedCapability: "This Storefront Studio capability is not available in this environment.",
   malformedIntegrationResponse: "The storefront service returned an invalid response.",
@@ -340,6 +615,113 @@ export class VeskoIntegrationError extends Error {
   constructor(readonly code: IntegrationFailureCode) {
     super(safeFailureMessages[code]);
     this.name = "VeskoIntegrationError";
+  }
+}
+
+type StorefrontSnapshotExpectation = z.infer<typeof storefrontSnapshotExpectationSchema>;
+type AuthoritativeStorefrontSnapshot = z.infer<typeof authoritativeStorefrontSnapshotSchema>;
+type ImmutableHistoryTarget = z.infer<typeof immutableHistoryTargetSchema>;
+
+function matchesSnapshotExpectation(
+  expected: StorefrontSnapshotExpectation,
+  actual: StorefrontSnapshotExpectation,
+): boolean {
+  return (
+    expected.id === actual.id &&
+    expected.revision === actual.revision &&
+    expected.contentFingerprint === actual.contentFingerprint
+  );
+}
+
+function belongsToContext(
+  snapshot: AuthoritativeStorefrontSnapshot,
+  context: z.infer<typeof merchantProjectContextSchema>,
+): boolean {
+  return (
+    snapshot.tenantId === context.tenantId &&
+    snapshot.storefrontProjectId === context.storefrontProjectId
+  );
+}
+
+export function assertAuthoritativeDraftSavePreconditions(
+  request: z.infer<typeof saveStorefrontDraftRequestSchema>,
+  currentDraft: AuthoritativeStorefrontSnapshot | null,
+  currentProjectRevision: string,
+): void {
+  if (request.expectedProjectRevision !== currentProjectRevision) {
+    throw new VeskoIntegrationError("staleProjectRevision");
+  }
+  if (request.expectedCurrentDraft === null) {
+    if (currentDraft !== null) throw new VeskoIntegrationError("draftRevisionConflict");
+    return;
+  }
+  if (currentDraft !== null && !belongsToContext(currentDraft, request.context)) {
+    throw new VeskoIntegrationError("tenantMismatch");
+  }
+  if (
+    currentDraft === null ||
+    !matchesSnapshotExpectation(request.expectedCurrentDraft, currentDraft)
+  ) {
+    throw new VeskoIntegrationError("draftRevisionConflict");
+  }
+}
+
+export function assertAuthoritativeRestorePreconditions(
+  request: z.infer<typeof restoreStorefrontHistoryRequestSchema>,
+  currentDraft: AuthoritativeStorefrontSnapshot | null,
+  target: ImmutableHistoryTarget | null,
+  currentProjectRevision: string,
+): void {
+  if (request.expectedProjectRevision !== currentProjectRevision) {
+    throw new VeskoIntegrationError("staleProjectRevision");
+  }
+  if (
+    currentDraft === null ||
+    !matchesSnapshotExpectation(request.expectedCurrentDraft, currentDraft)
+  ) {
+    throw new VeskoIntegrationError("draftRevisionConflict");
+  }
+  if (!belongsToContext(currentDraft, request.context)) {
+    throw new VeskoIntegrationError("tenantMismatch");
+  }
+  if (target === null || target.id !== request.target.id) {
+    throw new VeskoIntegrationError("historyTargetUnavailable");
+  }
+  if (!belongsToContext(target, request.context)) {
+    throw new VeskoIntegrationError("tenantMismatch");
+  }
+  if (target.revision !== request.target.revision) {
+    throw new VeskoIntegrationError("staleHistoryTarget");
+  }
+  if (target.contentFingerprint !== request.target.contentFingerprint) {
+    throw new VeskoIntegrationError("historyTargetFingerprintMismatch");
+  }
+}
+
+export function assertAuthoritativePublishPreconditions(
+  request: z.infer<typeof publishStorefrontRequestSchema>,
+  savedDraft: AuthoritativeStorefrontSnapshot | null,
+  published: AuthoritativeStorefrontSnapshot | null,
+  currentProjectRevision: string,
+  currentPublishPreparationId: string | null,
+): void {
+  if (request.expectedProjectRevision !== currentProjectRevision) {
+    throw new VeskoIntegrationError("staleProjectRevision");
+  }
+  if (savedDraft === null || !matchesSnapshotExpectation(request.expectedSavedDraft, savedDraft)) {
+    throw new VeskoIntegrationError("savedDraftMismatch");
+  }
+  if (published === null || !matchesSnapshotExpectation(request.expectedPublished, published)) {
+    throw new VeskoIntegrationError("publishedStateConflict");
+  }
+  if (
+    !belongsToContext(savedDraft, request.context) ||
+    !belongsToContext(published, request.context)
+  ) {
+    throw new VeskoIntegrationError("tenantMismatch");
+  }
+  if (currentPublishPreparationId !== request.publishPreparationId) {
+    throw new VeskoIntegrationError("stalePublishConfirmation");
   }
 }
 
@@ -353,6 +735,7 @@ export interface CatalogueProjectionPort {
   load(context: {
     tenantId: string;
     storeId: string;
+    storefrontProjectId: string;
     expectedRevision?: string;
   }): Promise<z.infer<typeof catalogueProjectionSchema>>;
 }
@@ -360,6 +743,7 @@ export interface AvailabilityOptionMediaProjectionPort {
   load(context: {
     tenantId: string;
     storeId: string;
+    storefrontProjectId: string;
     productId: string;
     expectedRevision?: string;
   }): Promise<z.infer<typeof availabilityOptionMediaProjectionSchema>>;
@@ -368,12 +752,12 @@ export interface StorefrontDraftPersistencePort {
   load(context: {
     tenantId: string;
     storefrontProjectId: string;
-  }): Promise<z.infer<typeof storefrontDraftSchema>>;
+  }): Promise<z.infer<typeof storefrontDraftSchema> | null>;
   save(
     request: z.infer<typeof saveStorefrontDraftRequestSchema>,
   ): Promise<z.infer<typeof storefrontDraftSchema>>;
   restore(
-    request: z.infer<typeof saveStorefrontDraftRequestSchema>,
+    request: z.infer<typeof restoreStorefrontHistoryRequestSchema>,
   ): Promise<z.infer<typeof storefrontDraftSchema>>;
 }
 export interface StorefrontPublishingGateway {
@@ -396,6 +780,7 @@ export function createStandaloneVeskoIntegrationBoundary(
 ): VeskoIntegrationPorts {
   return ports;
 }
+
 export type StorefrontDraft = z.infer<typeof storefrontDraftSchema>;
 export type MerchantProjectContext = z.infer<typeof merchantProjectContextSchema>;
 export type CatalogueProjection = z.infer<typeof catalogueProjectionSchema>;
