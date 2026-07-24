@@ -340,12 +340,17 @@ export function HomepageHeroSection(input: HomepageCommerceRendererInput) {
   });
   const primary = bindingFor(instance, "primaryAction", "navigation");
   const secondary = bindingFor(instance, "secondaryAction", "navigation");
+  const usesOverlayCopy =
+    instance.variant === "fullBleedOverlay" &&
+    media !== undefined &&
+    props.mediaPosition === "background";
   return (
     <section
       aria-labelledby={`${instance.id}-heading`}
       className={sectionClass("hero", instance.variant, style)}
       data-content-width={props.contentWidth}
       data-component={instance.component}
+      data-copy-treatment={usesOverlayCopy ? "overlay" : "default"}
       data-media-position={props.mediaPosition}
       data-media-state={media ? "approved" : "omitted"}
       data-render-target={input.target}

@@ -16,7 +16,7 @@ export const supportedSectionManifest = {
   },
   hero: {
     allowedPageTypes: ["home", "landing"] as const satisfies readonly PageType[],
-    variants: ["editorial"] as const,
+    variants: ["editorial", "fullBleed", "asymmetric", "restrained"] as const,
   },
   featuredCategories: {
     allowedPageTypes: ["home"] as const satisfies readonly PageType[],
