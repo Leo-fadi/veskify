@@ -74,7 +74,7 @@ async function loadProject(projectRepository: Pick<ProjectRepository, "get">, pr
   return projectRepository.get(projectId);
 }
 
-function createTransport(context: MerchantProjectContext): MerchantProjectContextTransport {
+function createTransport(context: unknown): MerchantProjectContextTransport {
   return {
     fetchContext: vi.fn(() => Promise.resolve(context)),
   };
@@ -175,6 +175,30 @@ describe("P9-02 merchant project context adapter", () => {
     ).rejects.toMatchObject({
       code: "permissionDenied",
     });
+  });
+
+  it("maps P9-01 canonical permissions to legacy merchant-project permissions", async () => {
+    const repository = createAurumRepository();
+    const transport = createTransport({
+      ...baseContext(),
+      permissions: ["readStorefront", "saveDraft", "restoreDraft", "publishStorefront"],
+    } as const);
+    const adapter: MerchantProjectContextPort = createMerchantProjectContextPort({
+      transport,
+      projectRepository: repository,
+    });
+
+    const context = await resolveContext(adapter, lookup);
+
+    expect(context.permissions).toEqual(
+      expect.arrayContaining([
+        "view-storefront",
+        "edit-storefront-draft",
+        "request-ai-design",
+        "accept-design-proposal",
+        "publish-storefront",
+      ]),
+    );
   });
 
   it("rejects stale project revision", async () => {

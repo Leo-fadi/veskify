@@ -13,8 +13,22 @@ import {
   MerchantProjectContextTransportFailure,
   merchantProjectContextTransportFailureCodeSchema,
 } from "@/application/merchant-project-context/contract";
+import {
+  merchantProjectContextSchema as veskoMerchantProjectContextSchema,
+  type storefrontPermissionSchema,
+} from "@/application/vesko-integration/contract";
 import { ProjectNotFoundError, type ProjectRepository } from "@/services/storage";
 import { storefrontRoleSchema } from "./contract";
+
+const canonicalPermissionToLegacyMap: Record<
+  keyof typeof storefrontPermissionSchema.enum,
+  readonly MerchantProjectPermission[]
+> = {
+  readStorefront: ["view-storefront"],
+  saveDraft: ["edit-storefront-draft", "request-ai-design", "accept-design-proposal"],
+  restoreDraft: ["request-ai-design"],
+  publishStorefront: ["publish-storefront"],
+};
 
 const defaultStandaloneRoles = ["owner"] as const;
 const defaultStandalonePermissions = [
@@ -42,9 +56,23 @@ function parseLookup(input: MerchantProjectContextLookup): MerchantProjectContex
 
 function parseContext(input: unknown): MerchantProjectContext {
   try {
-    return merchantProjectContextSchema.parse(input);
+    const canonicalContext = veskoMerchantProjectContextSchema.parse(input);
+    return merchantProjectContextSchema.parse({
+      ...canonicalContext,
+      permissions: [
+        ...new Set(
+          canonicalContext.permissions.flatMap(
+            (permission) => canonicalPermissionToLegacyMap[permission],
+          ),
+        ),
+      ],
+    });
   } catch {
-    throw new MerchantProjectContextFailure("malformedIntegrationResponse");
+    try {
+      return merchantProjectContextSchema.parse(input);
+    } catch {
+      throw new MerchantProjectContextFailure("malformedIntegrationResponse");
+    }
   }
 }
 

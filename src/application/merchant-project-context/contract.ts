@@ -1,14 +1,22 @@
 import { z } from "zod";
+import {
+  tenantIdSchema,
+  merchantIdSchema,
+  organizationIdSchema,
+  storeIdSchema,
+  storefrontRoleSchema,
+  userIdSchema,
+  merchantProjectContextSchema as veskoMerchantProjectContextSchema,
+} from "@/application/vesko-integration/contract";
 
-import { idSchema, localeSchema } from "@/domain/shared";
-
-export const tenantIdSchema = idSchema;
-export const merchantIdSchema = idSchema;
-export const organizationIdSchema = idSchema;
-export const userIdSchema = idSchema;
-export const storeIdSchema = idSchema;
-
-export const storefrontRoleSchema = z.enum(["owner", "admin", "designer", "viewer"]);
+export {
+  tenantIdSchema,
+  merchantIdSchema,
+  organizationIdSchema,
+  storeIdSchema,
+  userIdSchema,
+  storefrontRoleSchema,
+};
 
 export const merchantProjectPermissionSchema = z.enum([
   "view-storefront",
@@ -18,52 +26,24 @@ export const merchantProjectPermissionSchema = z.enum([
   "publish-storefront",
 ]);
 
-export const merchantProjectContextSchema = z
-  .object({
-    userId: userIdSchema,
-    tenantId: tenantIdSchema,
-    merchantId: merchantIdSchema,
-    organizationId: organizationIdSchema,
-    storeId: storeIdSchema,
-    storefrontProjectId: idSchema,
-    roles: z.array(storefrontRoleSchema).min(1),
+export const merchantProjectContextSchema = veskoMerchantProjectContextSchema
+  .extend({
     permissions: z.array(merchantProjectPermissionSchema),
-    primaryLocale: localeSchema,
-    enabledLocales: z.array(localeSchema).min(1).max(3),
-    market: z.string().trim().min(2).max(80),
-    projectRevision: z.string().trim().min(1).max(120),
   })
-  .strict()
   .superRefine((context, refinement) => {
-    if (!context.enabledLocales.includes(context.primaryLocale)) {
-      refinement.addIssue({
-        code: "custom",
-        path: ["primaryLocale"],
-        message: "The primary locale must be enabled for the storefront.",
-      });
-    }
-    if (new Set(context.roles).size !== context.roles.length) {
-      refinement.addIssue({
-        code: "custom",
-        path: ["roles"],
-        message: "Merchant project roles must be unique.",
-      });
-    }
     if (new Set(context.permissions).size !== context.permissions.length) {
       refinement.addIssue({
         code: "custom",
         path: ["permissions"],
-        message: "Merchant permissions must be unique.",
+        message: "Merchant project permissions must be unique.",
       });
     }
   });
 
-export const merchantProjectContextLookupSchema = z
-  .object({
-    tenantId: tenantIdSchema,
-    storefrontProjectId: idSchema,
-  })
-  .strict();
+export const merchantProjectContextLookupSchema = veskoMerchantProjectContextSchema.pick({
+  tenantId: true,
+  storefrontProjectId: true,
+});
 
 export type MerchantProjectContext = z.infer<typeof merchantProjectContextSchema>;
 export type MerchantProjectRole = z.infer<typeof storefrontRoleSchema>;
