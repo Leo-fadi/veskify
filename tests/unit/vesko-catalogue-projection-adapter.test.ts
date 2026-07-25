@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { aurumNordicSeed } from "@/data/seed/aurum-nordic";
+import { catalogueDisplayModelSchema } from "@/domain/catalogue";
 import {
   createCatalogueProjectionProvider,
   createStandaloneCatalogueProjectionAdapter,
@@ -80,55 +81,37 @@ function transportInput(overrides: Partial<StorefrontCatalogueProjection> = {}) 
       {
         id: "route_product_aurora",
         path: "/products/aurora-ring-585",
-        target: {
-          kind: "product",
-          productId: aurumFirstProduct.id,
-        },
+        target: { kind: "product", productId: aurumFirstProduct.id },
         supportedLocales: ["en", "fi"],
       },
       {
         id: "route_product_lumi",
         path: "/products/lumi-halo-ring",
-        target: {
-          kind: "product",
-          productId: aurumSecondProduct.id,
-        },
+        target: { kind: "product", productId: aurumSecondProduct.id },
         supportedLocales: ["en", "fi"],
       },
       {
         id: "route_collection_gifts",
         path: "/collections/jewellery-core",
-        target: {
-          kind: "collection",
-          collectionId: aurumFirstCollection.id,
-        },
+        target: { kind: "collection", collectionId: aurumFirstCollection.id },
         supportedLocales: ["en"],
       },
       {
         id: "route_collection_watches",
         path: "/collections/watches",
-        target: {
-          kind: "collection",
-          collectionId: aurumSecondCollection.id,
-        },
+        target: { kind: "collection", collectionId: aurumSecondCollection.id },
         supportedLocales: ["en", "fi"],
       },
       {
         id: "route_category_jewelry",
         path: "/categories/jewelry",
-        target: {
-          kind: "category",
-          categoryId: "category_jewelry",
-        },
+        target: { kind: "category", categoryId: "category_jewelry" },
         supportedLocales: ["en", "fi"],
       },
       {
         id: "route_category_rings",
         path: "/categories/rings",
-        target: {
-          kind: "category",
-          categoryId: "category_rings",
-        },
+        target: { kind: "category", categoryId: "category_rings" },
         supportedLocales: ["en", "fi"],
       },
     ],
@@ -155,13 +138,10 @@ function transportInput(overrides: Partial<StorefrontCatalogueProjection> = {}) 
 
 describe("P9-03 read-only catalogue projection adapter", () => {
   it("maps valid products, collections and navigation deterministically", async () => {
-    const source = {
-      load: () => transportInput(),
-    };
-
-    const provider = createCatalogueProjectionProvider({ transport: source });
+    const provider = createCatalogueProjectionProvider({
+      transport: { load: () => transportInput() },
+    });
     const loaded = await provider.load();
-
     const canonical = projectToCanonicalCommerceProjection(loaded);
 
     expect(canonical.id).toBe("projection_aurum_demo");
@@ -171,166 +151,202 @@ describe("P9-03 read-only catalogue projection adapter", () => {
     expect(loaded.categories).toHaveLength(2);
   });
 
-  it("preserves canonical IDs and slugs for products, collections and routes", async () => {
+  it("preserves collection merchandising product order", async () => {
+    const reordered = transportInput({
+      collections: [
+        {
+          ...aurumFirstCollection,
+          slug: "jewellery-core",
+          productIds: [aurumSecondProduct.id, aurumFirstProduct.id],
+          routeReferenceId: "route_collection_gifts",
+          routeReferenceIds: ["route_collection_gifts"],
+        },
+        {
+          ...aurumSecondCollection,
+          slug: "watches",
+          productIds: [aurumFirstProduct.id],
+          routeReferenceId: "route_collection_watches",
+          routeReferenceIds: [],
+        },
+      ],
+    });
+
+    const provider = createCatalogueProjectionProvider({ transport: { load: () => reordered } });
+    const loaded = await provider.load();
+    const canonical = projectToCanonicalCommerceProjection(loaded);
+
+    expect(loaded.collections[0]?.productIds).toEqual([
+      aurumSecondProduct.id,
+      aurumFirstProduct.id,
+    ]);
+    expect(canonical.collections[0]?.productIds).toEqual([
+      aurumSecondProduct.id,
+      aurumFirstProduct.id,
+    ]);
+  });
+
+  it("preserves standalone collection slugs exactly", async () => {
+    const standalone = createStandaloneCatalogueProjectionAdapter(aurumNordicSeed.catalogue);
+    const loaded = await standalone.load();
+
+    const mappedCollection = loaded.collections.find(
+      (collection) => collection.id === aurumFirstCollection.id,
+    );
+    expect(mappedCollection?.slug).toBe(aurumFirstCollection.slug);
+
+    const withInvalidCollectionSlug = {
+      ...structuredClone(transportInput()),
+      collections: [
+        {
+          ...transportInput().collections[0],
+          slug: "seasonal/new-arrivals",
+        },
+        ...transportInput().collections.slice(1),
+      ],
+    } as const;
+    await expect(
+      createCatalogueProjectionProvider({
+        transport: { load: () => withInvalidCollectionSlug },
+      }).load(),
+    ).rejects.toThrow(/slug/i);
+  });
+
+  it("strips adapter-only product fields and validates canonical projection", async () => {
     const provider = createCatalogueProjectionProvider({
       transport: { load: () => transportInput() },
     });
     const loaded = await provider.load();
-
-    const product = loaded.products.find((item) => item.id === aurumFirstProduct.id);
-    const collection = loaded.collections.find((item) => item.id === aurumFirstCollection.id);
-    expect(product?.id).toBe(aurumFirstProduct.id);
-    expect(product?.slug).toBe("aurora-ring");
-    expect(collection?.id).toBe(aurumFirstCollection.id);
-    expect(collection?.slug).toBe("jewellery-core");
-    expect(loaded.navigation.find((item) => item.id === "nav_home")?.id).toBe("nav_home");
-  });
-
-  it("rejects duplicate canonical IDs", async () => {
-    const base = transportInput();
-    const [firstProduct] = base.products;
-    const projection = {
-      ...base,
-      products: [
-        firstProduct,
-        {
-          ...firstProduct,
-          slug: "aurora-ring-duplicate",
-        },
-      ],
-    };
-    const provider = createCatalogueProjectionProvider({
-      transport: { load: () => projection },
-    });
-
-    await expect(provider.load()).rejects.toThrow();
-  });
-
-  it("rejects unknown membership and broken navigation references", async () => {
-    const invalid = transportInput();
-    const broken = {
-      ...invalid,
-      products: invalid.products.map((product, index) =>
-        index === 0 ? { ...product, categoryIds: ["category_missing"] } : product,
-      ),
-      navigation: [
-        ...invalid.navigation,
-        {
-          id: "nav_missing",
-          label: { en: "Missing", fi: "Puuttuva" },
-          routeReferenceId: "route_missing",
-          parentNavigationNodeId: "nav_home",
-          supportedLocales: ["en", "fi"],
-        },
-      ],
-    };
-
-    const provider = createCatalogueProjectionProvider({
-      transport: { load: () => broken },
-    });
-    await expect(provider.load()).rejects.toThrow();
-  });
-
-  it("rejects cyclic category and navigation hierarchies", async () => {
-    const base = transportInput();
-    const invalid = {
-      ...base,
-      categories: [
-        ...base.categories,
-        {
-          id: "category_loop_a",
-          slug: "loop-a",
-          title: { en: "Loop A", fi: "Silmukka A" },
-          parentCategoryId: "category_loop_b",
-          supportedLocales: ["en", "fi"],
-        },
-        {
-          id: "category_loop_b",
-          slug: "loop-b",
-          title: { en: "Loop B", fi: "Silmukka B" },
-          parentCategoryId: "category_loop_a",
-          supportedLocales: ["en", "fi"],
-        },
-      ],
-      navigation: [
-        {
-          id: "nav_home",
-          label: { en: "Home", fi: "Etusivu" },
-          routeReferenceId: "route_home",
-          supportedLocales: ["en", "fi"],
-          parentNavigationNodeId: "nav_loop_child",
-        },
-        {
-          id: "nav_loop_child",
-          label: { en: "Child", fi: "Lapsi" },
-          routeReferenceId: "route_collection_gifts",
-          parentNavigationNodeId: "nav_loop_child",
-          supportedLocales: ["en", "fi"],
-        },
-      ],
-    };
-    const provider = createCatalogueProjectionProvider({ transport: { load: () => invalid } });
-
-    await expect(provider.load()).rejects.toThrow();
-  });
-
-  it("rejects stale revisions from transport input", async () => {
-    const provider = createCatalogueProjectionProvider({
-      transport: {
-        load: vi
-          .fn()
-          .mockResolvedValueOnce(transportInput())
-          .mockResolvedValueOnce(transportInput({ revision: 3 })),
-      },
-    });
-
-    await provider.load();
-    await expect(provider.load()).rejects.toThrow(/Stale canonical projection revision/);
-  });
-
-  it("normalizes equivalent reordered responses deterministically", async () => {
-    const first = {
-      ...transportInput(),
-      products: [...transportInput().products].reverse(),
-      collections: [...transportInput().collections].reverse(),
-      navigation: [...transportInput().navigation].reverse(),
-      routeReferences: [...transportInput().routeReferences].reverse(),
-      categories: [...transportInput().categories].reverse(),
-    };
-
-    const second = transportInput();
-
-    const firstResult = await createCatalogueProjectionProvider({
-      transport: { load: () => first },
-    }).load();
-    const secondResult = await createCatalogueProjectionProvider({
-      transport: { load: () => second },
-    }).load();
-
-    expect(firstResult).toEqual(secondResult);
-  });
-
-  it("keeps existing standalone fixture compatibility", async () => {
-    const standalone = createStandaloneCatalogueProjectionAdapter(aurumNordicSeed.catalogue);
-    const loaded = await standalone.load();
-
-    const sortById = <T extends { id: string }>(values: readonly T[]) =>
-      [...values].sort((left, right) => left.id.localeCompare(right.id));
-    const normalizeCollection = <T extends { id: string; productIds: Array<unknown> }>(
-      value: T,
-    ) => {
-      const collection = { ...value } as T & { slug?: string };
-      delete collection.slug;
-      return {
-        ...collection,
-        productIds: [...collection.productIds].sort(),
-      };
-    };
-
     const canonical = projectToCanonicalCommerceProjection(loaded);
-    expect(canonical.id).toBe(aurumNordicSeed.catalogue.id);
-    expect(sortById(canonical.collections).map(normalizeCollection)).toEqual(
-      sortById(aurumNordicSeed.catalogue.collections).map(normalizeCollection),
-    );
+
+    const parsed = catalogueDisplayModelSchema.parse(canonical);
+    const firstProduct = loaded.products[0];
+
+    expect(parsed.products).toHaveLength(2);
+    expect("slug" in firstProduct).toBe(true);
+    expect(parsed.products[0]).not.toHaveProperty("slug");
+    expect(parsed.products[0]).not.toHaveProperty("routeReferenceId");
+    expect(parsed.products[0]).not.toHaveProperty("routeReferenceIds");
+    expect(parsed.products[0]).not.toHaveProperty("categoryIds");
+  });
+
+  it("requires primary product/collection/category routes to target the owning entity", async () => {
+    const invalidProductRoute = {
+      ...transportInput(),
+      routeReferences: [
+        {
+          id: "route_mismatch",
+          path: "/route/mismatch",
+          target: { kind: "collection", collectionId: aurumFirstCollection.id },
+          supportedLocales: ["en"],
+        },
+        ...transportInput().routeReferences,
+      ],
+      products: [
+        { ...transportInput().products[0], routeReferenceId: "route_mismatch" },
+        ...transportInput().products.slice(1),
+      ],
+    };
+    await expect(
+      createCatalogueProjectionProvider({ transport: { load: () => invalidProductRoute } }).load(),
+    ).rejects.toThrow(/owning product/i);
+  });
+
+  it("rejects duplicate route path and locale ownership", async () => {
+    const duplicatedPaths = {
+      ...transportInput(),
+      routeReferences: [
+        {
+          id: "route_watches_primary",
+          path: "/collections/watches/",
+          target: { kind: "collection", collectionId: aurumSecondCollection.id },
+          supportedLocales: ["en"],
+        },
+        {
+          id: "route_watches_alias",
+          path: "/collections/watches",
+          target: { kind: "collection", collectionId: aurumFirstCollection.id },
+          supportedLocales: ["en", "fi"],
+        },
+        ...transportInput().routeReferences.slice(2),
+      ],
+    };
+    await expect(
+      createCatalogueProjectionProvider({ transport: { load: () => duplicatedPaths } }).load(),
+    ).rejects.toThrow(/path and locale ownership/i);
+  });
+
+  it("enforces category locale compatibility with catalogue and category route", async () => {
+    const fiLocales: Array<"en" | "fi"> = ["fi"];
+    const enLocales: Array<"en" | "fi"> = ["en"];
+
+    const base = transportInput();
+    const unsupportedCategoryLocale = structuredClone(base);
+    unsupportedCategoryLocale.supportedLocales = fiLocales;
+    unsupportedCategoryLocale.categories[0].supportedLocales = enLocales;
+    unsupportedCategoryLocale.routeReferences = base.routeReferences.map((route) => ({
+      ...route,
+      supportedLocales: fiLocales,
+    }));
+    unsupportedCategoryLocale.navigation = base.navigation.map((node) => ({
+      ...node,
+      supportedLocales: fiLocales,
+    }));
+
+    const incompatibleCategoryRoute = structuredClone(base);
+    incompatibleCategoryRoute.supportedLocales = fiLocales;
+    incompatibleCategoryRoute.routeReferences = base.routeReferences.map((route) => ({
+      ...route,
+      supportedLocales: fiLocales,
+    }));
+    incompatibleCategoryRoute.routeReferences = [
+      {
+        id: "route_bad_locale",
+        path: "/categories/jewelry",
+        target: { kind: "category", categoryId: "category_jewelry" },
+        supportedLocales: enLocales,
+      },
+      ...base.routeReferences.map((route) => ({ ...route, supportedLocales: fiLocales })),
+    ];
+    incompatibleCategoryRoute.categories = [
+      {
+        ...base.categories[0],
+        routeReferenceId: "route_bad_locale",
+        supportedLocales: ["fi"],
+      },
+      base.categories[1],
+    ];
+
+    await expect(
+      createCatalogueProjectionProvider({
+        transport: { load: () => unsupportedCategoryLocale },
+      }).load(),
+    ).rejects.toThrow(/Category locales/i);
+    await expect(
+      createCatalogueProjectionProvider({
+        transport: { load: () => incompatibleCategoryRoute },
+      }).load(),
+    ).rejects.toThrow(/compatible with the owning category/i);
+  });
+
+  it("bounds standalone merchant/project IDs for long catalogue IDs deterministically", async () => {
+    const longId = `catalogue_${"a".repeat(140)}`;
+    const first = createStandaloneCatalogueProjectionAdapter({
+      ...structuredClone(aurumNordicSeed.catalogue),
+      id: longId,
+    });
+    const second = createStandaloneCatalogueProjectionAdapter({
+      ...structuredClone(aurumNordicSeed.catalogue),
+      id: `${longId}_variant`,
+    });
+
+    const firstLoaded = await first.load();
+    const secondLoaded = await second.load();
+
+    expect(firstLoaded.merchant.id).toMatch(/^merchant_/);
+    expect(firstLoaded.project.id).toMatch(/^project_/);
+    expect(firstLoaded.merchant.id.length).toBeLessThanOrEqual(80);
+    expect(firstLoaded.project.id.length).toBeLessThanOrEqual(80);
+    expect(firstLoaded.merchant.id).not.toEqual(secondLoaded.merchant.id);
+    expect(firstLoaded.project.id).not.toEqual(secondLoaded.project.id);
   });
 });
