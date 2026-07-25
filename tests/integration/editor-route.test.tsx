@@ -1339,8 +1339,11 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add a campaign section." }));
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     await screen.findByLabelText("Design proposal");
-    screen.getByRole("button", { name: "Accept and apply" }).focus();
-    await user.keyboard(" ");
+    const acceptButton = screen.getByRole("button", { name: "Accept and apply" });
+    expect(acceptButton).toBeEnabled();
+    acceptButton.focus();
+    expect(acceptButton).toHaveFocus();
+    await user.keyboard("[Space]");
     expect(await screen.findByText(/accepted for draft application/i)).toBeVisible();
   });
 
