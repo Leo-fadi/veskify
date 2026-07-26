@@ -1,42 +1,42 @@
 import {
+  type MerchantProjectAuthorization,
   type MerchantProjectContext,
+  type MerchantProjectContextAction,
   type MerchantProjectContextLookup,
   type MerchantProjectContextPort,
   type MerchantProjectContextTransport,
   type MerchantProjectPermission,
   type MerchantProjectRole,
-  type MerchantProjectContextTransportFailureCode,
-  type MerchantProjectContextFailureCode,
+  MerchantProjectContextTransportFailure,
+  merchantProjectAuthorizationSchema,
   merchantProjectContextLookupSchema,
   merchantProjectContextSchema,
-  MerchantProjectContextFailure,
-  MerchantProjectContextTransportFailure,
   merchantProjectContextTransportFailureCodeSchema,
+  storefrontPermissionSchema,
+  storefrontRoleSchema,
+  toStandaloneProjectRevision,
 } from "@/application/merchant-project-context/contract";
-import {
-  merchantProjectContextSchema as veskoMerchantProjectContextSchema,
-  type storefrontPermissionSchema,
-} from "@/application/vesko-integration/contract";
+import { VeskoIntegrationError } from "@/application/vesko-integration/contract";
 import { ProjectNotFoundError, type ProjectRepository } from "@/services/storage";
-import { storefrontRoleSchema } from "./contract";
 
-const canonicalPermissionToLegacyMap: Record<
-  keyof typeof storefrontPermissionSchema.enum,
-  readonly MerchantProjectPermission[]
+const actionPermissions: Readonly<
+  Record<MerchantProjectContextAction, readonly MerchantProjectPermission[]>
 > = {
-  readStorefront: ["view-storefront"],
-  saveDraft: ["edit-storefront-draft", "request-ai-design", "accept-design-proposal"],
-  restoreDraft: ["request-ai-design"],
-  publishStorefront: ["publish-storefront"],
+  "view-storefront": ["readStorefront"],
+  "edit-storefront-draft": ["saveDraft"],
+  // Draft authority is the narrowly scoped P9-01 authority for creating or accepting a design.
+  "request-ai-design": ["saveDraft"],
+  "accept-design-proposal": ["saveDraft"],
+  "publish-storefront": ["publishStorefront"],
+  "restore-storefront-draft": ["restoreDraft"],
 };
 
 const defaultStandaloneRoles = ["owner"] as const;
 const defaultStandalonePermissions = [
-  "view-storefront",
-  "edit-storefront-draft",
-  "request-ai-design",
-  "accept-design-proposal",
-  "publish-storefront",
+  "readStorefront",
+  "saveDraft",
+  "restoreDraft",
+  "publishStorefront",
 ] as const;
 
 type StandaloneAdapterInput = {
@@ -50,42 +50,24 @@ type StandaloneAdapterInput = {
   permissions?: readonly MerchantProjectPermission[];
 };
 
-function parseLookup(input: MerchantProjectContextLookup): MerchantProjectContextLookup {
-  return merchantProjectContextLookupSchema.parse(input);
+function parseLookup(input: unknown): MerchantProjectContextLookup {
+  const parsed = merchantProjectContextLookupSchema.safeParse(input);
+  if (!parsed.success) throw new VeskoIntegrationError("malformedIntegrationResponse");
+  return parsed.data;
 }
 
 function parseContext(input: unknown): MerchantProjectContext {
-  try {
-    const canonicalContext = veskoMerchantProjectContextSchema.parse(input);
-    return merchantProjectContextSchema.parse({
-      ...canonicalContext,
-      permissions: [
-        ...new Set(
-          canonicalContext.permissions.flatMap(
-            (permission) => canonicalPermissionToLegacyMap[permission],
-          ),
-        ),
-      ],
-    });
-  } catch {
-    try {
-      return merchantProjectContextSchema.parse(input);
-    } catch {
-      throw new MerchantProjectContextFailure("malformedIntegrationResponse");
-    }
-  }
+  const parsed = merchantProjectContextSchema.safeParse(input);
+  if (!parsed.success) throw new VeskoIntegrationError("malformedIntegrationResponse");
+  return parsed.data;
 }
 
-function mapTransportFailure(error: unknown): MerchantProjectContextFailure {
-  if (error instanceof MerchantProjectContextFailure) {
-    return error;
-  }
+function mapTransportFailure(error: unknown): VeskoIntegrationError {
+  if (error instanceof VeskoIntegrationError) return error;
 
   if (error instanceof MerchantProjectContextTransportFailure) {
-    const mappedCode: Record<
-      MerchantProjectContextTransportFailureCode,
-      MerchantProjectContextFailureCode
-    > = {
+    const code = merchantProjectContextTransportFailureCodeSchema.parse(error.code);
+    const mappedCode = {
       unauthorized: "authenticationUnavailable",
       tenantMismatch: "tenantMismatch",
       projectNotFound: "projectNotFound",
@@ -93,80 +75,88 @@ function mapTransportFailure(error: unknown): MerchantProjectContextFailure {
       permissionDenied: "permissionDenied",
       unavailable: "authenticationUnavailable",
       malformedResponse: "malformedIntegrationResponse",
-    };
-
-    const code = merchantProjectContextTransportFailureCodeSchema.parse(error.code);
-    return new MerchantProjectContextFailure(mappedCode[code]);
+    } as const;
+    return new VeskoIntegrationError(mappedCode[code]);
   }
 
-  return new MerchantProjectContextFailure("authenticationUnavailable");
+  return new VeskoIntegrationError("authenticationUnavailable");
 }
 
-function assertPermission(
-  context: MerchantProjectContext,
-  permission: MerchantProjectPermission,
+function actionsFor(context: MerchantProjectContext): MerchantProjectContextAction[] {
+  return (
+    Object.entries(actionPermissions) as [
+      MerchantProjectContextAction,
+      readonly MerchantProjectPermission[],
+    ][]
+  )
+    .filter(([, requiredPermissions]) =>
+      requiredPermissions.every((permission) => context.permissions.includes(permission)),
+    )
+    .map(([action]) => action);
+}
+
+/**
+ * Derives Storefront Studio actions from a loaded P9-01 context without
+ * changing the integration-port result contract.
+ */
+export function createMerchantProjectAuthorization(
+  contextInput: unknown,
+): MerchantProjectAuthorization {
+  const context = parseContext(contextInput);
+  return merchantProjectAuthorizationSchema.parse({ context, actions: actionsFor(context) });
+}
+
+/** Enforces one explicitly named Studio action after canonical context loading. */
+export function requireMerchantProjectAction(
+  authorization: MerchantProjectAuthorization,
+  action: MerchantProjectContextAction,
+): MerchantProjectContext {
+  const parsedAuthorization = merchantProjectAuthorizationSchema.parse(authorization);
+  if (!parsedAuthorization.actions.includes(action)) {
+    throw new VeskoIntegrationError("permissionDenied");
+  }
+  return parsedAuthorization.context;
+}
+
+/**
+ * Validates a standalone context at a local repository boundary using the same
+ * opaque mapping used when that context was created.
+ */
+export function assertCurrentStandaloneProjectRevision(
+  contextInput: unknown,
+  currentRevision: number,
 ): void {
-  if (!context.permissions.includes(permission)) {
-    throw new MerchantProjectContextFailure("permissionDenied");
+  const context = parseContext(contextInput);
+  if (context.projectRevision !== toStandaloneProjectRevision(currentRevision)) {
+    throw new VeskoIntegrationError("staleProjectRevision");
   }
-}
-
-async function resolveTransportContext(
-  transport: MerchantProjectContextTransport,
-  lookup: MerchantProjectContextLookup,
-  projectRepository: ProjectRepository,
-): Promise<MerchantProjectContext> {
-  let context: MerchantProjectContext;
-
-  try {
-    context = parseContext(await transport.fetchContext(lookup));
-  } catch (error) {
-    throw mapTransportFailure(error);
-  }
-
-  if (context.tenantId !== lookup.tenantId) {
-    throw new MerchantProjectContextFailure("tenantMismatch");
-  }
-
-  if (context.storefrontProjectId !== lookup.storefrontProjectId) {
-    throw new MerchantProjectContextFailure("projectNotFound");
-  }
-
-  try {
-    const aggregate = await projectRepository.get(context.storefrontProjectId);
-    if (String(aggregate.project.revision) !== context.projectRevision) {
-      throw new MerchantProjectContextFailure("staleProjectRevision");
-    }
-  } catch (error) {
-    if (error instanceof ProjectNotFoundError) {
-      throw new MerchantProjectContextFailure("projectNotFound");
-    }
-    if (error instanceof MerchantProjectContextFailure) {
-      throw error;
-    }
-    throw new MerchantProjectContextFailure("authenticationUnavailable");
-  }
-
-  return context;
 }
 
 export function createMerchantProjectContextPort({
   transport,
-  projectRepository,
 }: {
   transport: MerchantProjectContextTransport;
-  projectRepository: ProjectRepository;
 }): MerchantProjectContextPort {
   return {
-    resolve(input) {
+    async load(input) {
       const lookup = parseLookup(input);
-      return resolveTransportContext(transport, lookup, projectRepository);
-    },
+      let context: MerchantProjectContext;
 
-    async resolveWithPermission(input, permission) {
-      const lookup = parseLookup(input);
-      const context = await resolveTransportContext(transport, lookup, projectRepository);
-      assertPermission(context, permission);
+      try {
+        context = parseContext(await transport.fetchContext(lookup));
+      } catch (error) {
+        throw mapTransportFailure(error);
+      }
+
+      if (context.tenantId !== lookup.tenantId) {
+        throw new VeskoIntegrationError("tenantMismatch");
+      }
+      if (context.storefrontProjectId !== lookup.storefrontProjectId) {
+        throw new VeskoIntegrationError("projectNotFound");
+      }
+
+      // P9-01 integration revisions are opaque and are validated by the source
+      // that issued them. Do not compare them with the standalone numeric counter.
       return context;
     },
   };
@@ -183,43 +173,36 @@ export function createStandaloneMerchantProjectContextPort({
   permissions = defaultStandalonePermissions,
 }: StandaloneAdapterInput): MerchantProjectContextPort {
   const validatedRoles = storefrontRoleSchema.array().parse([...roles]);
-  const validatedPermissions = merchantProjectContextSchema.shape.permissions.parse([
-    ...permissions,
-  ]);
-
-  async function resolveStandalone(
-    input: MerchantProjectContextLookup,
-  ): Promise<MerchantProjectContext> {
-    const lookup = parseLookup(input);
-    if (lookup.tenantId !== tenantId) {
-      throw new MerchantProjectContextFailure("tenantMismatch");
-    }
-
-    const aggregate = await projectRepository.get(lookup.storefrontProjectId);
-
-    return merchantProjectContextSchema.parse({
-      userId,
-      tenantId,
-      merchantId,
-      organizationId,
-      storeId,
-      storefrontProjectId: aggregate.project.id,
-      roles: validatedRoles,
-      permissions: validatedPermissions,
-      primaryLocale: aggregate.project.primaryLocale,
-      enabledLocales: aggregate.project.enabledLocales,
-      market: aggregate.project.businessProfile.market,
-      projectRevision: String(aggregate.project.revision),
-    });
-  }
+  const validatedPermissions = storefrontPermissionSchema.array().parse([...permissions]);
 
   return {
-    resolve: resolveStandalone,
+    async load(input) {
+      const lookup = parseLookup(input);
+      if (lookup.tenantId !== tenantId) throw new VeskoIntegrationError("tenantMismatch");
 
-    async resolveWithPermission(input, permission) {
-      const context = await resolveStandalone(input);
-      assertPermission(context, permission);
-      return context;
+      try {
+        const aggregate = await projectRepository.get(lookup.storefrontProjectId);
+        return parseContext({
+          userId,
+          tenantId,
+          merchantId,
+          organizationId,
+          storeId,
+          storefrontProjectId: aggregate.project.id,
+          roles: validatedRoles,
+          permissions: validatedPermissions,
+          primaryLocale: aggregate.project.primaryLocale,
+          enabledLocales: aggregate.project.enabledLocales,
+          market: aggregate.project.businessProfile.market,
+          projectRevision: toStandaloneProjectRevision(aggregate.project.revision),
+        });
+      } catch (error) {
+        if (error instanceof VeskoIntegrationError) throw error;
+        if (error instanceof ProjectNotFoundError) {
+          throw new VeskoIntegrationError("projectNotFound");
+        }
+        throw new VeskoIntegrationError("authenticationUnavailable");
+      }
     },
   };
 }

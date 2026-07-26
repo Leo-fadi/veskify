@@ -1,85 +1,72 @@
 import { z } from "zod";
 import {
-  tenantIdSchema,
+  merchantProjectContextSchema,
   merchantIdSchema,
   organizationIdSchema,
   storeIdSchema,
+  storefrontPermissionSchema,
   storefrontRoleSchema,
+  tenantIdSchema,
   userIdSchema,
-  merchantProjectContextSchema as veskoMerchantProjectContextSchema,
+  type VeskoIntegrationPorts,
 } from "@/application/vesko-integration/contract";
+import { idSchema } from "@/domain/shared";
 
 export {
-  tenantIdSchema,
+  merchantProjectContextSchema,
   merchantIdSchema,
   organizationIdSchema,
   storeIdSchema,
-  userIdSchema,
+  storefrontPermissionSchema,
   storefrontRoleSchema,
+  tenantIdSchema,
+  userIdSchema,
 };
 
-export const merchantProjectPermissionSchema = z.enum([
+/** The canonical P9-01 context-port request shape. */
+export const merchantProjectContextLookupSchema = z
+  .object({
+    tenantId: tenantIdSchema,
+    storefrontProjectId: idSchema,
+  })
+  .strict();
+
+export const merchantProjectContextActionSchema = z.enum([
   "view-storefront",
   "edit-storefront-draft",
   "request-ai-design",
   "accept-design-proposal",
   "publish-storefront",
+  "restore-storefront-draft",
 ]);
 
-export const merchantProjectContextSchema = veskoMerchantProjectContextSchema
-  .extend({
-    permissions: z.array(merchantProjectPermissionSchema),
+export const merchantProjectAuthorizationSchema = z
+  .object({
+    context: merchantProjectContextSchema,
+    actions: z.array(merchantProjectContextActionSchema),
   })
-  .superRefine((context, refinement) => {
-    if (new Set(context.permissions).size !== context.permissions.length) {
+  .strict()
+  .superRefine((value, refinement) => {
+    if (new Set(value.actions).size !== value.actions.length) {
       refinement.addIssue({
         code: "custom",
-        path: ["permissions"],
-        message: "Merchant project permissions must be unique.",
+        path: ["actions"],
+        message: "Merchant project actions must be unique.",
       });
     }
   });
 
-export const merchantProjectContextLookupSchema = veskoMerchantProjectContextSchema.pick({
-  tenantId: true,
-  storefrontProjectId: true,
-});
-
+export type MerchantProjectContextLookup = z.infer<typeof merchantProjectContextLookupSchema>;
 export type MerchantProjectContext = z.infer<typeof merchantProjectContextSchema>;
 export type MerchantProjectRole = z.infer<typeof storefrontRoleSchema>;
-export type MerchantProjectPermission = z.infer<typeof merchantProjectPermissionSchema>;
-export type MerchantProjectContextLookup = z.infer<typeof merchantProjectContextLookupSchema>;
+export type MerchantProjectPermission = z.infer<typeof storefrontPermissionSchema>;
+export type MerchantProjectContextAction = z.infer<typeof merchantProjectContextActionSchema>;
+export type MerchantProjectAuthorization = z.infer<typeof merchantProjectAuthorizationSchema>;
 
-export const merchantProjectContextFailureSchema = z.enum([
-  "authenticationUnavailable",
-  "tenantMismatch",
-  "projectNotFound",
-  "merchantNotFound",
-  "permissionDenied",
-  "staleProjectRevision",
-  "malformedIntegrationResponse",
-]);
-export type MerchantProjectContextFailureCode = z.infer<typeof merchantProjectContextFailureSchema>;
-
-const merchantProjectContextFailureMessage: Record<MerchantProjectContextFailureCode, string> = {
-  authenticationUnavailable:
-    "The Storefront Studio merchant context service is temporarily unavailable.",
-  tenantMismatch: "This storefront belongs to a different tenant.",
-  projectNotFound: "The storefront project could not be found.",
-  merchantNotFound: "The merchant could not be found.",
-  permissionDenied: "You do not have permission for this storefront action.",
-  staleProjectRevision: "The storefront changed. Refresh and try again.",
-  malformedIntegrationResponse:
-    "The storefront context integration returned an invalid merchant context response.",
-};
-
-export class MerchantProjectContextFailure extends Error {
-  constructor(readonly code: MerchantProjectContextFailureCode) {
-    super(merchantProjectContextFailureMessage[code]);
-    this.name = "MerchantProjectContextFailure";
-  }
-}
-
+/**
+ * Low-level injected client failure. The adapter maps this to P9-01's
+ * merchant-safe VeskoIntegrationError taxonomy before exposing it to callers.
+ */
 export const merchantProjectContextTransportFailureCodeSchema = z.enum([
   "unauthorized",
   "tenantMismatch",
@@ -89,7 +76,6 @@ export const merchantProjectContextTransportFailureCodeSchema = z.enum([
   "unavailable",
   "malformedResponse",
 ]);
-
 export type MerchantProjectContextTransportFailureCode = z.infer<
   typeof merchantProjectContextTransportFailureCodeSchema
 >;
@@ -104,14 +90,17 @@ export class MerchantProjectContextTransportFailure extends Error {
   }
 }
 
+/** An injected client boundary; it deliberately assumes no Vesko HTTP endpoint. */
 export interface MerchantProjectContextTransport {
   fetchContext(input: MerchantProjectContextLookup): Promise<unknown>;
 }
 
-export interface MerchantProjectContextPort {
-  resolve(input: MerchantProjectContextLookup): Promise<MerchantProjectContext>;
-  resolveWithPermission(
-    input: MerchantProjectContextLookup,
-    permission: MerchantProjectPermission,
-  ): Promise<MerchantProjectContext>;
+/** The P9-01 canonical port; it intentionally exposes only load(...). */
+export type MerchantProjectContextPort = VeskoIntegrationPorts["context"];
+
+export const standaloneProjectRevisionPrefix = "standalone-project-revision-";
+
+/** Converts the local numeric repository revision into P9-01's opaque revision. */
+export function toStandaloneProjectRevision(revision: number): string {
+  return `${standaloneProjectRevisionPrefix}${revision}`;
 }

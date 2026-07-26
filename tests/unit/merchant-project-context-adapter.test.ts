@@ -2,15 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 import { aurumNordicSeed } from "@/data/seed";
 import {
   MerchantProjectContextTransportFailure,
+  assertCurrentStandaloneProjectRevision,
+  createMerchantProjectAuthorization,
   createMerchantProjectContextPort,
   createStandaloneMerchantProjectContextPort,
-  type MerchantProjectContextPort,
-  type MerchantProjectContextTransport,
+  requireMerchantProjectAction,
+  toStandaloneProjectRevision,
   type MerchantProjectContext,
   type MerchantProjectContextLookup,
+  type MerchantProjectContextPort,
+  type MerchantProjectContextTransport,
 } from "@/application/merchant-project-context";
-import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
-import type { ProjectSummary } from "@/services/storage/project-repository";
+import type { ProjectRepository } from "@/services/storage";
 import { InMemoryProjectRepository } from "@/services/storage/in-memory-project-repository";
 
 const lookup: MerchantProjectContextLookup = {
@@ -18,14 +21,12 @@ const lookup: MerchantProjectContextLookup = {
   storefrontProjectId: aurumNordicSeed.project.id,
 };
 
-const allPermissions = [
-  "view-storefront",
-  "edit-storefront-draft",
-  "request-ai-design",
-  "accept-design-proposal",
-  "publish-storefront",
+const canonicalPermissions = [
+  "readStorefront",
+  "saveDraft",
+  "restoreDraft",
+  "publishStorefront",
 ] as const;
-type MerchantProjectContextPermission = (typeof allPermissions)[number];
 
 function createAurumRepository(): InMemoryProjectRepository {
   return new InMemoryProjectRepository([
@@ -46,212 +47,99 @@ function baseContext(overrides?: Partial<MerchantProjectContext>): MerchantProje
     storeId: "store_external",
     storefrontProjectId: aurumNordicSeed.project.id,
     roles: ["owner"],
-    permissions: [...allPermissions],
+    permissions: [...canonicalPermissions],
     primaryLocale: aurumNordicSeed.project.primaryLocale,
     enabledLocales: aurumNordicSeed.project.enabledLocales,
     market: aurumNordicSeed.project.businessProfile.market,
-    projectRevision: String(aurumNordicSeed.project.revision),
+    projectRevision: "project-revision-1",
     ...overrides,
   };
 }
 
-async function resolveContext(
-  adapter: Pick<MerchantProjectContextPort, "resolve">,
-  input: MerchantProjectContextLookup,
-) {
-  return adapter.resolve(input);
-}
-
-async function resolveContextWithPermission(
-  adapter: Pick<MerchantProjectContextPort, "resolveWithPermission">,
-  input: MerchantProjectContextLookup,
-  permission: MerchantProjectContextPermission,
-) {
-  return adapter.resolveWithPermission(input, permission);
-}
-
-async function loadProject(projectRepository: Pick<ProjectRepository, "get">, projectId: string) {
-  return projectRepository.get(projectId);
-}
-
 function createTransport(context: unknown): MerchantProjectContextTransport {
-  return {
-    fetchContext: vi.fn(() => Promise.resolve(context)),
-  };
-}
-
-function createStaleRepository(aggregate: ProjectAggregate): ProjectRepository {
-  return {
-    list: async () => {
-      await Promise.resolve();
-      return [] as ProjectSummary[];
-    },
-    get: async () => {
-      await Promise.resolve();
-      return {
-        ...aggregate,
-        project: { ...aggregate.project, revision: 0 },
-      };
-    },
-    create: async () => {
-      await Promise.resolve();
-      throw new Error("not expected");
-    },
-    saveDraft: async () => {
-      await Promise.resolve();
-      throw new Error("not expected");
-    },
-    publish: async () => {
-      await Promise.resolve();
-      throw new Error("not expected");
-    },
-    restore: async () => {
-      await Promise.resolve();
-      throw new Error("not expected");
-    },
-  };
+  return { fetchContext: vi.fn(() => Promise.resolve(context)) };
 }
 
 describe("P9-02 merchant project context adapter", () => {
-  it("resolves a valid transport context", async () => {
-    const repository = createAurumRepository();
-    const transport = createTransport(baseContext());
+  it("imports without evaluating a refined-schema extension", async () => {
+    await expect(import("@/application/merchant-project-context")).resolves.toBeDefined();
+  });
 
+  it("implements the canonical P9-01 load port and preserves opaque transport revisions", async () => {
     const adapter: MerchantProjectContextPort = createMerchantProjectContextPort({
-      transport,
-      projectRepository: repository,
+      transport: createTransport(baseContext()),
     });
 
-    const context = await resolveContext(adapter, lookup);
+    const context = await adapter.load(lookup);
 
     expect(context).toMatchObject({
       tenantId: lookup.tenantId,
       storefrontProjectId: lookup.storefrontProjectId,
-      projectRevision: String(aurumNordicSeed.project.revision),
-      permissions: allPermissions,
+      projectRevision: "project-revision-1",
+      permissions: canonicalPermissions,
     });
   });
 
-  it("rejects tenant mismatch", async () => {
-    const repository = createAurumRepository();
-    const transport = createTransport(baseContext({ tenantId: "tenant_other" }));
-    const adapter: MerchantProjectContextPort = createMerchantProjectContextPort({
-      transport,
-      projectRepository: repository,
+  it("rejects tenant and project mismatches before exposing a context", async () => {
+    const tenantMismatch = createMerchantProjectContextPort({
+      transport: createTransport(baseContext({ tenantId: "tenant_other" })),
+    });
+    const projectMismatch = createMerchantProjectContextPort({
+      transport: createTransport(baseContext({ storefrontProjectId: "project_other" })),
     });
 
-    await expect(resolveContext(adapter, lookup)).rejects.toMatchObject({
-      code: "tenantMismatch",
-    });
+    await expect(tenantMismatch.load(lookup)).rejects.toMatchObject({ code: "tenantMismatch" });
+    await expect(projectMismatch.load(lookup)).rejects.toMatchObject({ code: "projectNotFound" });
   });
 
-  it("rejects unknown storefront projects", async () => {
-    const repository = createAurumRepository();
-    const transport = createTransport(
-      baseContext({ storefrontProjectId: "project_unknown_storefront" }),
+  it("keeps restore-only authority least-privileged while valid draft authority enables design actions", () => {
+    const restoreOnly = createMerchantProjectAuthorization(
+      baseContext({ permissions: ["restoreDraft"] }),
     );
-    const adapter: MerchantProjectContextPort = createMerchantProjectContextPort({
-      transport,
-      projectRepository: repository,
-    });
-
-    await expect(resolveContext(adapter, lookup)).rejects.toMatchObject({
-      code: "projectNotFound",
-    });
-  });
-
-  it("enforces permission requirements", async () => {
-    const repository = createAurumRepository();
-    const transport = createTransport(
-      baseContext({ permissions: ["view-storefront", "edit-storefront-draft"] }),
+    const draftEditor = createMerchantProjectAuthorization(
+      baseContext({ permissions: ["readStorefront", "saveDraft"] }),
     );
-    const adapter: MerchantProjectContextPort = createMerchantProjectContextPort({
-      transport,
-      projectRepository: repository,
-    });
 
-    await expect(
-      resolveContextWithPermission(adapter, lookup, "publish-storefront"),
-    ).rejects.toMatchObject({
-      code: "permissionDenied",
-    });
-  });
-
-  it("maps P9-01 canonical permissions to legacy merchant-project permissions", async () => {
-    const repository = createAurumRepository();
-    const transport = createTransport({
-      ...baseContext(),
-      permissions: ["readStorefront", "saveDraft", "restoreDraft", "publishStorefront"],
-    } as const);
-    const adapter: MerchantProjectContextPort = createMerchantProjectContextPort({
-      transport,
-      projectRepository: repository,
-    });
-
-    const context = await resolveContext(adapter, lookup);
-
-    expect(context.permissions).toEqual(
-      expect.arrayContaining([
-        "view-storefront",
-        "edit-storefront-draft",
-        "request-ai-design",
-        "accept-design-proposal",
-        "publish-storefront",
-      ]),
+    expect(restoreOnly.actions).toEqual(["restore-storefront-draft"]);
+    expect(() => requireMerchantProjectAction(restoreOnly, "request-ai-design")).toThrow(
+      expect.objectContaining({ code: "permissionDenied" }),
+    );
+    expect(() => requireMerchantProjectAction(restoreOnly, "accept-design-proposal")).toThrow(
+      expect.objectContaining({ code: "permissionDenied" }),
+    );
+    expect(() => requireMerchantProjectAction(restoreOnly, "edit-storefront-draft")).toThrow(
+      expect.objectContaining({ code: "permissionDenied" }),
+    );
+    expect(requireMerchantProjectAction(draftEditor, "request-ai-design")).toStrictEqual(
+      draftEditor.context,
+    );
+    expect(requireMerchantProjectAction(draftEditor, "accept-design-proposal")).toStrictEqual(
+      draftEditor.context,
     );
   });
 
-  it("rejects stale project revision", async () => {
-    const projectRepository = createAurumRepository();
-    const staleAggregate = await loadProject(projectRepository, lookup.storefrontProjectId);
-    const staleRepository = createStaleRepository(staleAggregate);
-    const transport = createTransport(baseContext());
-    const adapter: MerchantProjectContextPort = createMerchantProjectContextPort({
-      transport,
-      projectRepository: staleRepository,
-    });
-
-    await expect(resolveContext(adapter, lookup)).rejects.toMatchObject({
-      code: "staleProjectRevision",
-    });
-  });
-
-  it("maps transport failures to typed context failures", async () => {
-    const repository = createAurumRepository();
-
-    const transportFailure: MerchantProjectContextTransport = {
-      fetchContext: () => {
-        return Promise.reject(
-          new MerchantProjectContextTransportFailure("permissionDenied", "not granted"),
-        );
+  it("maps typed and malformed transport failures into the P9-01 taxonomy", async () => {
+    const deniedAdapter = createMerchantProjectContextPort({
+      transport: {
+        fetchContext: () =>
+          Promise.reject(
+            new MerchantProjectContextTransportFailure("permissionDenied", "not granted"),
+          ),
       },
-    };
-    const transportMalformed: MerchantProjectContextTransport = {
-      fetchContext: () => Promise.resolve({ unexpected: true }),
-    };
-
-    const permissionAdapter: MerchantProjectContextPort = createMerchantProjectContextPort({
-      transport: transportFailure,
-      projectRepository: repository,
     });
-    const malformedAdapter: MerchantProjectContextPort = createMerchantProjectContextPort({
-      transport: transportMalformed,
-      projectRepository: repository,
+    const malformedAdapter = createMerchantProjectContextPort({
+      transport: createTransport({ unexpected: true }),
     });
 
-    await expect(resolveContext(permissionAdapter, lookup)).rejects.toMatchObject({
-      code: "permissionDenied",
-    });
-
-    await expect(resolveContext(malformedAdapter, lookup)).rejects.toMatchObject({
+    await expect(deniedAdapter.load(lookup)).rejects.toMatchObject({ code: "permissionDenied" });
+    await expect(malformedAdapter.load(lookup)).rejects.toMatchObject({
       code: "malformedIntegrationResponse",
     });
   });
 
-  it("supports a standalone adapter without transport credentials", async () => {
-    const repository = createAurumRepository();
+  it("keeps the standalone adapter credential-free and normalizes missing projects", async () => {
     const adapter = createStandaloneMerchantProjectContextPort({
-      projectRepository: repository,
+      projectRepository: createAurumRepository(),
       tenantId: "tenant_standalone",
       userId: "user_standalone",
       merchantId: "merchant_standalone",
@@ -259,38 +147,58 @@ describe("P9-02 merchant project context adapter", () => {
       storeId: "store_standalone",
     });
 
-    const context = await resolveContext(adapter, {
+    const context = await adapter.load({
       tenantId: "tenant_standalone",
       storefrontProjectId: aurumNordicSeed.project.id,
     });
 
-    expect(context).toMatchObject({
+    expect(context.projectRevision).toBe(
+      toStandaloneProjectRevision(aurumNordicSeed.project.revision),
+    );
+    expect("accessToken" in context).toBe(false);
+    await expect(
+      adapter.load({ tenantId: "tenant_standalone", storefrontProjectId: "project_missing" }),
+    ).rejects.toMatchObject({ code: "projectNotFound" });
+  });
+
+  it("uses one deterministic standalone revision mapping for creation and stale validation", async () => {
+    const adapter = createStandaloneMerchantProjectContextPort({
+      projectRepository: createAurumRepository(),
       tenantId: "tenant_standalone",
       userId: "user_standalone",
       merchantId: "merchant_standalone",
       organizationId: "organization_standalone",
       storeId: "store_standalone",
     });
-    expect(context.projectRevision).toBe(String(aurumNordicSeed.project.revision));
-    expect(context.permissions).toEqual(allPermissions);
-    expect("accessToken" in context).toBe(false);
-  });
-
-  it("does not mutate storefront state during context resolution", async () => {
-    const projectRepository = createAurumRepository();
-    const before = await loadProject(projectRepository, lookup.storefrontProjectId);
-    const transport = createTransport(baseContext());
-
-    const adapter: MerchantProjectContextPort = createMerchantProjectContextPort({
-      transport,
-      projectRepository,
+    const context = await adapter.load({
+      tenantId: "tenant_standalone",
+      storefrontProjectId: aurumNordicSeed.project.id,
     });
 
-    await resolveContext(adapter, lookup);
-    const after = await loadProject(projectRepository, lookup.storefrontProjectId);
+    expect(toStandaloneProjectRevision(3)).toBe("standalone-project-revision-3");
+    expect(() =>
+      assertCurrentStandaloneProjectRevision(context, aurumNordicSeed.project.revision + 1),
+    ).toThrow(expect.objectContaining({ code: "staleProjectRevision" }));
+  });
 
-    expect(before.project).toEqual(after.project);
-    expect(before.catalogue).toEqual(after.catalogue);
-    expect(before.snapshots).toEqual(after.snapshots);
+  it("does not mutate storefront or commerce state while loading context", async () => {
+    const projectRepository: ProjectRepository = createAurumRepository();
+    const before = await projectRepository.get(lookup.storefrontProjectId);
+    const adapter = createStandaloneMerchantProjectContextPort({
+      projectRepository,
+      tenantId: "tenant_standalone",
+      userId: "user_standalone",
+      merchantId: "merchant_standalone",
+      organizationId: "organization_standalone",
+      storeId: "store_standalone",
+    });
+
+    await adapter.load({
+      tenantId: "tenant_standalone",
+      storefrontProjectId: lookup.storefrontProjectId,
+    });
+    const after = await projectRepository.get(lookup.storefrontProjectId);
+
+    expect(before).toEqual(after);
   });
 });
