@@ -18,6 +18,7 @@ import {
 } from "./contract";
 import {
   AiStorefrontProviderUnavailableError,
+  AiStorefrontProviderStaleError,
   AiStorefrontProviderValidationError,
   requestAiStorefrontProposal,
 } from "./provider-boundary";
@@ -202,11 +203,13 @@ export class AiStorefrontGenerationOrchestrator {
       if (sequence !== this.#sequence) return this.#superseded(request);
       return this.#fail(
         command,
-        error instanceof AiStorefrontProviderUnavailableError
-          ? "providerUnavailable"
-          : error instanceof AiStorefrontProviderValidationError
-            ? "validationFailed"
-            : "validationFailed",
+        error instanceof AiStorefrontProviderStaleError
+          ? "staleDraft"
+          : error instanceof AiStorefrontProviderUnavailableError
+            ? "providerUnavailable"
+            : error instanceof AiStorefrontProviderValidationError
+              ? "validationFailed"
+              : "validationFailed",
         request,
       );
     }

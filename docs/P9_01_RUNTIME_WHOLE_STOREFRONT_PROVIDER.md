@@ -6,16 +6,16 @@ The editor previously created its whole-storefront provider in the browser. That
 
 ## Runtime boundary
 
-The editor now uses the browser-safe `ServerWholeStorefrontPlanningClient` for its default whole-storefront provider. It posts the existing validated proposal envelope to `/api/ai/whole-storefront-proposals`. The route selects the server-only planner, resolves authoritative planning input, verifies the canonical project action and returns the existing proposal envelope for review. No provider selection, credential or server function crosses into the client bundle.
+The editor now uses the browser-safe `ServerWholeStorefrontPlanningClient` for its default whole-storefront provider. It posts the validated proposal envelope to `/api/ai/whole-storefront-proposals`. The route resolves the server-owned project, draft, canonical merchant context, approved brief, registry and approved-asset context before selecting the planner. It reconstructs the target, grants and fingerprints from that state, verifies `request-ai-design`, and returns the existing proposal envelope for review. No provider selection, credential or server function crosses into the client bundle.
 
 ## Selection and deterministic operation
 
-The server route uses `selectServerWholeStorefrontPlanningProvider`. A configured provider failure returns the existing merchant-safe unavailable result; it never falls back to a deterministic planner. Deterministic providers remain explicit injections for standalone/demo operation and focused tests.
+`VESKIFY_RUNTIME_MODE=standalone` explicitly selects the credential-free canonical Aurum Nordic and Karvonen seed authority plus the deterministic planner. `VESKIFY_RUNTIME_MODE=integrated` requires `VESKIFY_AI_PROVIDER=openai` before the server OpenAI planner is selected. Missing or incompatible runtime configuration returns `providerUnavailable`; it never defaults to deterministic planning. A configured provider failure also returns the merchant-safe unavailable result without fallback. Deterministic providers remain explicit injections for standalone/demo operation and focused tests.
 
 ## Request, result and authorization
 
-The browser submits only the validated proposal request, including project/draft identity, target, locale, fingerprinted draft context and approved asset references. The authority supplies the approved brief, registry and canonical commerce projection, validates revision/current input, and requires `request-ai-design`. Read, restore and publish authority alone cannot request AI design.
+The browser submits its request identity, instruction and concurrency claims. The server treats target, affected pages/sections, permission grants, draft baseline and fingerprints as untrusted claims: it rebuilds and checks them from the authoritative draft and supported locale before validating the returned envelope. Read, restore and publish authority alone cannot request AI design.
 
 ## Errors and non-goals
 
-Malformed, stale, unauthorized and unavailable requests are normalized to merchant-safe route responses. The boundary does not expose credentials, raw provider failures or unrestricted repository state. It does not alter section/page proposals, commerce data, publishing, or the editor’s existing review, confirmation, undo/redo and save-draft lifecycle.
+Malformed responses and requests map to non-retryable validation failures; authorization failures remain permission failures; stale planning results map to non-retryable stale responses; and provider outages remain retryable unavailable failures. The boundary does not expose credentials, raw provider failures or unrestricted repository state. It does not alter section/page proposals, commerce data, publishing, or the editor’s existing review, confirmation, undo/redo and save-draft lifecycle.

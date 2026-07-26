@@ -9,6 +9,7 @@ import {
 import {
   createWholeStorefrontGenerationPlan,
   wholeStorefrontPlanningInputSchema,
+  WholeStorefrontPlanningProviderError,
   type WholeStorefrontPlanningInput,
   type WholeStorefrontPlanningProvider,
 } from "@/application/whole-storefront-generation-plan";
@@ -20,6 +21,7 @@ import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry
 import { aurumNordicSeed } from "@/data/seed";
 import { createServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
 import {
+  createStandaloneServerWholeStorefrontPlanningAuthority,
   createServerWholeStorefrontPlanningHandler,
   type ServerWholeStorefrontPlanningAuthority,
 } from "@/integrations/ai/whole-storefront-runtime-authority";
@@ -103,7 +105,11 @@ function planningInput(): WholeStorefrontPlanningInput {
 }
 
 function request() {
-  const provider = createDeterministicMockStorefrontAIProvider();
+  const provider = {
+    id: "server-whole-storefront-planning",
+    assetReferenceCapability: "structuredApprovedAssets" as const,
+    proposeStorefront: () => Promise.reject(new Error("server boundary")),
+  };
   const command: AiStorefrontGenerationCommand = {
     projectId: aurumNordicSeed.project.id,
     draftSnapshotId: snapshot.id,
@@ -154,8 +160,14 @@ function authority(
       authorization,
       planningInput: input,
       currentPlanningInput: () => input,
-      proposalEnvelope: (proposalRequest: ReturnType<typeof request>) =>
-        createDeterministicMockStorefrontAIProvider().proposeStorefront(proposalRequest),
+      proposalEnvelope: async (proposalRequest: ReturnType<typeof request>) => {
+        const response =
+          await createDeterministicMockStorefrontAIProvider().proposeStorefront(proposalRequest);
+        return {
+          ...response,
+          providerId: proposalRequest.providerId,
+        };
+      },
     })),
   };
 }
@@ -176,15 +188,16 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
       authority: value,
       selectProvider: () => provider,
     });
-    const fetch = vi.fn(async (_url: string, init?: RequestInit) =>
-      handler(
+    const fetch = vi.fn(async (_url: string, init?: RequestInit) => {
+      const serverResponse = await handler(
         new Request("http://localhost/api/ai/whole-storefront-proposals", {
           method: init?.method,
           body: init?.body,
           headers: init?.headers,
         }),
-      ),
-    );
+      );
+      return serverResponse;
+    });
     vi.stubGlobal("fetch", fetch);
     const body = await createServerWholeStorefrontPlanningClient().proposeStorefront(request());
     vi.unstubAllGlobals();
@@ -280,5 +293,43 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
 
     expect(provider.id).toBe("deterministic-storefront-mock");
     expect((proposal as { proposal: { status: string } }).proposal.status).toBe("pending");
+  });
+
+  it("resolves canonical standalone seed context instead of an unavailable route authority", async () => {
+    const context = await createStandaloneServerWholeStorefrontPlanningAuthority().resolve(
+      request(),
+      new Request("http://localhost"),
+    );
+
+    expect(context.planningInput.project.id).toBe(aurumNordicSeed.project.id);
+    expect(context.planningInput.draft.id).toBe(aurumNordicSeed.draftSnapshot.id);
+    expect(context.authorization.actions).toContain("request-ai-design");
+  });
+
+  it("maps a planner stale-result to a non-retryable stale response", async () => {
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: authority(),
+      selectProvider: () => ({
+        id: "stale-planner",
+        capabilities: {
+          wholeStorefrontPlanning: true,
+          structuredPlanOutput: true,
+          approvedAssetReferences: true,
+        },
+        createPlan: () =>
+          Promise.reject(
+            new WholeStorefrontPlanningProviderError("stale-result", "stale planning input"),
+          ),
+      }),
+    });
+    const response = await handler(
+      new Request("http://localhost", { method: "POST", body: JSON.stringify(request()) }),
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      failure: { category: "stale", retryable: false },
+    });
   });
 });

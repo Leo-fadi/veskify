@@ -32,6 +32,13 @@ export class AiStorefrontProviderUnavailableError extends Error {
   }
 }
 
+export class AiStorefrontProviderStaleError extends Error {
+  constructor() {
+    super("The storefront changed while the proposal was being prepared.");
+    this.name = "AiStorefrontProviderStaleError";
+  }
+}
+
 function invalid(code: string, message: string): never {
   throw new AiStorefrontProviderValidationError(code, message);
 }
@@ -218,6 +225,16 @@ export async function requestAiStorefrontProposal(
     return validateAiStorefrontProviderResponse(request, response);
   } catch (error) {
     if (error instanceof AiStorefrontProviderValidationError) throw error;
+    if (error && typeof error === "object" && "category" in error) {
+      const category = error.category;
+      if (category === "stale") throw new AiStorefrontProviderStaleError();
+      if (category === "validation" || category === "malformedResponse") {
+        throw new AiStorefrontProviderValidationError(
+          "server-validation",
+          "The storefront request is invalid.",
+        );
+      }
+    }
     throw new AiStorefrontProviderUnavailableError();
   }
 }
