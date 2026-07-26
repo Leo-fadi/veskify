@@ -39,7 +39,7 @@ These capabilities are not future work and must not be rebuilt.
 | Karvonen needed explicit bootstrap wiring.         | Add reliable load/reset demo workflows.                      |
 | Editor still looks like a development tool.        | Build the native Storefront Studio merchant shell.           |
 
-## 4. Remaining phases
+## 4. Phase status and active work
 
 ### P4.1 — Real-AI findings and hardening
 
@@ -124,60 +124,77 @@ These capabilities are not future work and must not be rebuilt.
 
 **Gate:** URL/minimal inputs → approved brief succeeds; public commerce conflicts never override Vesko.
 
-### P8 — Asset-aware initial generation
+### P8 — Whole-storefront generation and review — complete
 
-**Goal:** Generate a complete merchant-specific first storefront.
+**Completed capabilities:**
 
-**Deliverables:**
+- whole-storefront generation planning and controlled proposal lifecycle;
+- real OpenAI planner/provider integration behind the guarded design boundary;
+- AI-ready premium visual system and merchant whole-storefront generation/review;
+- the dedicated Storefront Studio editor-shell correction.
 
-- homepage, collection and dynamic PDP generation from the approved brief;
-- page-blueprint selection;
-- asset-role placement;
-- missing-asset choices: reuse, upload, continue or generate;
-- removal of seed-brand defaults;
-- source/binding/asset validation before proposal.
+**Merchant outcome:** Merchants can generate, review, accept, undo and save one coherent whole-storefront proposal through the native editor experience.
 
-**Merchant outcome:** Initial generation feels specific to the merchant and uses existing assets correctly.
+### P9 — Vesko integration foundation — complete
 
-**Gate:** AC-103 through AC-105 and AC-117 through AC-119 pass.
+**Completed capabilities:**
 
-### P9 — Whole-storefront design quality
+- P9-01 canonical Vesko integration contracts and boundaries;
+- P9-02 merchant/project context and authorization adapter;
+- P9-03 catalogue, collection, category, navigation and route adapter;
+- P9-04 availability, attributes, options, variants, SKU and canonical media adapter;
+- P9-05A authoritative draft persistence and restoration;
+- P9-05B authoritative saved-draft publishing;
+- P9-05C complete ports assembly and integration-readiness checkpoint;
+- final Phase 9 validation and manual checkpoint.
 
-**Goal:** Produce genuinely different, coherent complete storefronts.
+**Frozen ownership:** Vesko owns canonical commerce truth and sellability. Storefront Studio owns presentation and controlled design changes.
 
-**Deliverables:**
+**Deliberate Phase 10 limitations:** No real Vesko staging transport, production authentication, production credentials or live staging commerce synchronization exists yet.
 
-- exact valid brand-palette support;
-- richer hero, editorial, collection, product and trust variants;
-- coordinated navigation and footer;
-- typography, spacing, buttons and image-treatment skills;
-- coherent homepage, collection and product-page restyling;
-- responsive visual polish;
-- fixture-content cleanup.
+### P10 — Vesko staging integration and pilot readiness — active
 
-**Merchant outcome:** “Redesign this as a premium Scandinavian jewellery storefront” creates one coordinated storefront, not isolated page edits.
+**Goal:** Replace deterministic/local integration adapters with authenticated staging integrations while preserving the completed P9 contracts and ownership boundary.
 
-**Gate:** AC-113 through AC-123 pass, including atomic whole-site undo/redo.
+#### P10-01 — Vesko staging transport and authentication foundation
 
-### P10 — Vesko Storefront Studio product UX
+**Goal:** Establish the authenticated server-side staging transport boundary and credential handling.
 
-**Goal:** Turn the engine into an understandable Vesko product.
+**Dependencies:** Completed P9-01 and P9-02 contracts.
 
-**Deliverables:**
+**Acceptance:** Staging context requests authenticate safely, map merchant/project authority and keep credentials out of the client.
 
-- native Vesko application shell;
-- merchant naming and navigation;
-- focused Setup, Editor, Preview, Publishing and History workspace;
-- compact page/outline rail;
-- larger canvas;
-- tabbed Design/AI controls;
-- responsive drawers/bottom sheets;
-- first-use guidance;
-- no developer tools or internal terminology.
+#### P10-02 — Real catalogue/navigation staging projection
 
-**Merchant outcome:** A first-time retailer completes the journey without developer assistance.
+**Goal:** Load real staging catalogue, collection, category, navigation and route data through the P9-03 projection.
 
-**Gate:** AC-121, AC-123 and first-time usability acceptance pass.
+**Dependencies:** P10-01.
+
+**Acceptance:** Staging projections validate against the canonical contracts without creating competing commerce truth.
+
+#### P10-03 — Real availability/options/variants/media staging projection
+
+**Goal:** Load real sellability, attributes, options, variants, SKU and canonical media through the P9-04 projection.
+
+**Dependencies:** P10-01 and P10-02.
+
+**Acceptance:** Product presentation reflects staging commerce truth while Studio controls only presentation.
+
+#### P10-04 — Real draft persistence and publishing staging integration
+
+**Goal:** Connect authoritative staging draft save, restore and publishing operations to P9-05A and P9-05B.
+
+**Dependencies:** P10-01 and completed P9-05A/P9-05B contracts.
+
+**Acceptance:** Authenticated staging save, restore and publish preserve concurrency, history, explicit publication and merchant authority.
+
+#### P10-05 — End-to-end staging readiness and pilot checkpoint
+
+**Goal:** Validate the complete authenticated staging journey and prepare a controlled pilot handoff.
+
+**Dependencies:** P10-01 through P10-04.
+
+**Acceptance:** A merchant can complete the supported staging journey with canonical commerce truth, controlled design changes and explicit save/publish boundaries.
 
 ### P11 — Demo reliability and staging
 
@@ -218,25 +235,16 @@ These capabilities are not future work and must not be rebuilt.
 
 **Gate:** AC-124 and AC-125 pass; integration sign-off complete.
 
-## 5. Immediate parallel start
+## 5. Current execution focus
 
-After the v1.2 documentation PR merges:
+P10-01 is the active starting point. The remaining Phase 10 tasks progress in dependency order and must preserve the completed P9 ports and the frozen Vesko/Storefront Studio ownership boundary.
 
-| Window | Task                                                                | Outcome                                                                                                            | Overlap rule                                                    |
-| ------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| W1     | **P5-01 Component registry v2 and commerce-presentation contracts** | Define component, binding, product-presentation, blueprint and conformance contracts.                              | Shared contract branch; merge first.                            |
-| W2     | **P10-01 Storefront Studio shell foundation**                       | Implement native shell, workspace header and compact rails.                                                        | Presentation-only; do not alter W1 contracts.                   |
-| W3     | **P7-01 Source discovery and Storefront Design Brief contracts**    | Define source evidence, provenance, asset inventory, reconciliation and brief schemas with deterministic fixtures. | New source/onboarding modules; do not alter component registry. |
-| W4     | **Manual testing only**                                             | Preserve real-provider Karvonen environment.                                                                       | No Codex task unless explicitly assigned.                       |
+## 6. Phase 10 integration sequence
 
-## 6. Merge sequence
-
-1. Merge P5-01 shared contracts first.
-2. Update dependent branches with `git fetch origin` and `git merge origin/main`; never rebase.
-3. Start P6-01 dynamic option-group engine and P6-02 dynamic PDP components with one named registry integration owner.
-4. Continue P7 source discovery against approved brief contracts.
-5. Merge the shell independently when it does not overlap active editor files.
-6. Use W4 for one manual real-provider regression at each phase gate.
+1. Establish staging transport and authenticated merchant/project context.
+2. Map real catalogue/navigation, then availability/options/variants/media projections.
+3. Integrate authoritative staging draft persistence, restore and publishing.
+4. Complete the end-to-end staging readiness and pilot checkpoint.
 
 ## 7. Explicit non-priorities
 
