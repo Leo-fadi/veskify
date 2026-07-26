@@ -37,6 +37,7 @@ import {
   catalogueProjectionSchema,
   veskoIntegrationCapabilitiesSchema,
   VeskoIntegrationError,
+  type CatalogueProjection,
   type CatalogueProjectionPort,
   type MerchantProjectContext,
   type VeskoIntegrationPorts,
@@ -194,12 +195,20 @@ function navigationTarget(
   }
 }
 
-function projectCatalogueToP9Port(
+export type CatalogueProjectionScope = Readonly<
+  Pick<StandaloneVeskoIntegrationIdentity, "tenantId" | "storeId" | "storefrontProjectId">
+>;
+
+/**
+ * Projects a validated P9-03 catalogue/navigation projection into the canonical P9-01
+ * catalogue port. Both standalone and environment-specific adapters use this single mapping.
+ */
+export function projectStorefrontCatalogueToCanonicalProjection(
   source: StorefrontCatalogueProjection,
-  identity: StandaloneVeskoIntegrationIdentity,
+  identity: CatalogueProjectionScope,
   catalogueId: string,
   catalogueRevision: string,
-) {
+): CatalogueProjection {
   const routes = new Map(source.routeReferences.map((route) => [route.id, route]));
   const productTypeIdentityById = new Map<string, string>();
   const products = source.products.map((product) => {
@@ -287,7 +296,7 @@ function createStandaloneCataloguePort({
         ) {
           throw new VeskoIntegrationError("brokenCatalogueReference");
         }
-        return projectCatalogueToP9Port(
+        return projectStorefrontCatalogueToCanonicalProjection(
           await provider.load(),
           identity,
           catalogue.id,
