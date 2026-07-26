@@ -469,14 +469,18 @@ function awaitWithinDeadline<T>(
       cleanup();
       resolve(value);
     };
-    const settleReject = (error: unknown) => {
+    const settleReject = (error: Error) => {
       if (settled) return;
       settled = true;
       cleanup();
       reject(error);
     };
     deadline.signal.addEventListener("abort", abort, { once: true });
-    operation.then(settleResolve, settleReject);
+    operation.then(settleResolve, (error: unknown) =>
+      settleReject(
+        error instanceof Error ? error : new VeskoStagingTransportError("stagingUnavailable"),
+      ),
+    );
     if (deadline.signal.aborted) abort();
   });
 }

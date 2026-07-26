@@ -57,9 +57,9 @@ describe("P12-01 Vesko staging transport and authentication foundation", () => {
     ).toThrow("Vesko staging configuration is unavailable or invalid.");
 
     let receivedPath: string | undefined;
-    const fetch = vi.fn(async (url: URL) => {
+    const fetch = vi.fn((url: URL) => {
       receivedPath = url.pathname;
-      return new Response(JSON.stringify({ result: "ok" }), { status: 200 });
+      return Promise.resolve(new Response(JSON.stringify({ result: "ok" }), { status: 200 }));
     });
     const transport = createVeskoStagingTransport({
       configuration: configuration({ authentication: { required: false, kind: "injected" } }),
@@ -78,22 +78,24 @@ describe("P12-01 Vesko staging transport and authentication foundation", () => {
   it("attaches credentials without following redirects or logging raw paths", async () => {
     const events: unknown[] = [];
     let requestCount = 0;
-    const fetch = vi.fn(async (_url: URL, init: { headers: Headers }) => {
+    const fetch = vi.fn((_url: URL, init: { headers: Headers }) => {
       expect(init.headers.get("authorization")).toBe("opaque credential");
       expect(init.headers.get("x-correlation-id")).toBe("correlation_01");
       expect((init as { redirect?: string }).redirect).toBe("manual");
       requestCount += 1;
-      return requestCount === 1
-        ? new Response(JSON.stringify({ result: "ok" }), { status: 200 })
-        : new Response("redirect body", {
-            status: 302,
-            headers: { location: "https://other.test" },
-          });
+      return Promise.resolve(
+        requestCount === 1
+          ? new Response(JSON.stringify({ result: "ok" }), { status: 200 })
+          : new Response("redirect body", {
+              status: 302,
+              headers: { location: "https://other.test" },
+            }),
+      );
     });
     const transport = createVeskoStagingTransport({
       configuration: configuration({ correlationHeaderName: "x-correlation-id" }),
       authentication: createVeskoStagingAuthorizationProvider({
-        obtain: async () => ({ headers: { authorization: "opaque credential" } }),
+        obtain: () => Promise.resolve({ headers: { authorization: "opaque credential" } }),
       }),
       fetch,
       logger: { log: (event) => events.push(event) },
@@ -148,9 +150,7 @@ describe("P12-01 Vesko staging transport and authentication foundation", () => {
     const transport = createVeskoStagingTransport({
       configuration: configuration(),
       authentication: {
-        authorize: async () => {
-          throw new VeskoStagingAuthenticationError("permissionDenied");
-        },
+        authorize: () => Promise.reject(new VeskoStagingAuthenticationError("permissionDenied")),
       },
       fetch: vi.fn(),
       logger: {
@@ -203,11 +203,11 @@ describe("P12-01 Vesko staging transport and authentication foundation", () => {
         authentication: { required: false, kind: "injected" },
         timeoutMs: 1,
       }),
-      fetch: async (_url, init) =>
-        ({
+      fetch: (_url, init) =>
+        Promise.resolve({
           status: 200,
           headers: new Headers(),
-          body: { cancel: vi.fn(async () => undefined) },
+          body: { cancel: vi.fn(() => Promise.resolve()) },
           json: () =>
             new Promise((_, reject) =>
               init.signal.addEventListener(
@@ -218,7 +218,7 @@ describe("P12-01 Vesko staging transport and authentication foundation", () => {
                 },
               ),
             ),
-        }) as unknown as Response,
+        } as unknown as Response),
     });
     await expect(parsingTransport.request(request())).rejects.toMatchObject({ code: "timeout" });
 
@@ -249,7 +249,7 @@ describe("P12-01 Vesko staging transport and authentication foundation", () => {
     for (const [status, code] of outcomes) {
       const transport = createVeskoStagingTransport({
         configuration: configuration({ authentication: { required: false, kind: "injected" } }),
-        fetch: async () => new Response("sensitive backend error", { status }),
+        fetch: () => Promise.resolve(new Response("sensitive backend error", { status })),
         logger: {
           log: () => {
             throw new Error("logger failure");
@@ -272,7 +272,7 @@ describe("P12-01 Vesko staging transport and authentication foundation", () => {
   it("rejects malformed JSON responses", async () => {
     const transport = createVeskoStagingTransport({
       configuration: configuration({ authentication: { required: false, kind: "injected" } }),
-      fetch: async () => new Response("not-json", { status: 200 }),
+      fetch: () => Promise.resolve(new Response("not-json", { status: 200 })),
     });
 
     await expect(transport.request(request())).rejects.toMatchObject({ code: "malformedResponse" });
@@ -284,11 +284,13 @@ describe("P12-01 Vesko staging transport and authentication foundation", () => {
         authentication: { required: false, kind: "injected" },
         revisionHeaderName: "x-vesko-revision",
       }),
-      fetch: async () =>
-        new Response(JSON.stringify({ result: "ok" }), {
-          status: 200,
-          headers: { etag: 'W/"opaque-v1"', "x-vesko-revision": "revision/not-a-number" },
-        }),
+      fetch: () =>
+        Promise.resolve(
+          new Response(JSON.stringify({ result: "ok" }), {
+            status: 200,
+            headers: { etag: 'W/"opaque-v1"', "x-vesko-revision": "revision/not-a-number" },
+          }),
+        ),
       logger: {
         log: () => {
           throw new Error("logger failure");
@@ -303,10 +305,14 @@ describe("P12-01 Vesko staging transport and authentication foundation", () => {
   });
 
   it("does not retry mutations and cancels unread response bodies", async () => {
-    const body = { cancel: vi.fn(async () => undefined) };
-    const fetch = vi.fn(
-      async () =>
-        ({ status: 201, headers: new Headers(), body, json: vi.fn() }) as unknown as Response,
+    const body = { cancel: vi.fn(() => Promise.resolve()) };
+    const fetch = vi.fn(() =>
+      Promise.resolve({
+        status: 201,
+        headers: new Headers(),
+        body,
+        json: vi.fn(),
+      } as unknown as Response),
     );
     const transport = createVeskoStagingTransport({
       configuration: configuration({ authentication: { required: false, kind: "injected" } }),
@@ -350,11 +356,9 @@ describe("P12-01 Vesko staging transport and authentication foundation", () => {
         storefrontProjectId: aurumNordicSeed.project.id,
       },
       saveProvenanceSource: {
-        resolveSaveProvenance: async () => {
-          throw new Error("Not used by assembly readiness.");
-        },
+        resolveSaveProvenance: () => Promise.reject(new Error("Not used by assembly readiness.")),
       },
-      publishPreparations: { load: async () => null },
+      publishPreparations: { load: () => Promise.resolve(null) },
     });
 
     expect(integrationReadiness(ports).standaloneCredentialFree).toBe(true);
