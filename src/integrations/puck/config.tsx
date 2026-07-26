@@ -10,6 +10,7 @@ import {
   createStorefrontRenderContext,
   type StorefrontRenderContext,
 } from "@/components/registry";
+import { merchantSectionTypeLabel } from "@/components/registry/merchant-section-label";
 import { aurumNordicSeed } from "@/data/seed";
 import { brandSystemToCssVariables, type BrandSystem } from "@/domain/design-system";
 import { idSchema, localeSchema, resolveLocalizedText, type Locale } from "@/domain/shared";
@@ -176,10 +177,10 @@ function componentToPuckConfig(
             textAlign: "center",
           }}
         >
-          <strong>{definition.label}</strong>
+          <strong>{merchantSectionTypeLabel(section.component, context.activeLocale)}</strong>
           <span style={{ display: "block", marginTop: "0.25rem", fontSize: "0.875rem" }}>
             {context.activeLocale === "fi"
-              ? "Piilotettu osio — valitse se näyttääksesi sen uudelleen"
+              ? "Piilotettu osio — valitse osio näyttääksesi sen uudelleen"
               : "Hidden section — select it to show it again"}
           </span>
         </div>

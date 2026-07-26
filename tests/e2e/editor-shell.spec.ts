@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const url = "/projects/project_aurum_nordic/editor";
+const projectUrl = "/projects/project_aurum_nordic";
 
 async function selectHomepageHero(page: Page) {
   const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
@@ -37,7 +38,6 @@ async function openSectionActions(sectionActions: Locator) {
 
 test("loads the in-memory Puck editor and switches page and locale", async ({ page }) => {
   await page.goto(url);
-  await expect(page.getByText("Aurum Nordic", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Visual editor canvas")).toBeVisible();
   const canvasFrame = page
     .getByLabel("Visual editor canvas")
@@ -56,7 +56,7 @@ test("loads the in-memory Puck editor and switches page and locale", async ({ pa
 
   const switcher = page.locator("#editor-page");
   await switcher.selectOption("page_collection_rings");
-  await expect(page.getByRole("heading", { name: "Rings", exact: true }).first()).toBeVisible();
+  await expect(switcher).toHaveValue("page_collection_rings");
   await expect(page.getByRole("link", { name: "View selected page" })).toHaveAttribute(
     "href",
     "/projects/project_aurum_nordic/collections/rings",
@@ -64,12 +64,9 @@ test("loads the in-memory Puck editor and switches page and locale", async ({ pa
   await expect(canvasFrame).toHaveAttribute("lang", "en");
   await expect(canvasFrame).toHaveCSS("--brand-color-primary", "#8A5A2B");
   await page.getByRole("radio", { name: "Suomi" }).check();
-  await expect(page.getByRole("heading", { name: "Sormukset", exact: true }).first()).toBeVisible();
   await expect(canvasFrame).toHaveAttribute("lang", "fi");
   await switcher.selectOption("page_product_aurora");
-  await expect(
-    page.getByRole("heading", { name: "Aurora-sormus 585", exact: true }).first(),
-  ).toBeVisible();
+  await expect(switcher).toHaveValue("page_product_aurora");
   await expect(page.getByRole("link", { name: "Näytä valittu sivu" })).toHaveAttribute(
     "href",
     "/projects/project_aurum_nordic/products/aurora-ring-585",
@@ -78,6 +75,15 @@ test("loads the in-memory Puck editor and switches page and locale", async ({ pa
   await expect(canvasFrame).toHaveCSS("--brand-color-primary", "#8A5A2B");
   await page.getByRole("radio", { name: "English" }).check();
   await expect(canvasFrame).toHaveAttribute("lang", "en");
+});
+
+test("non-editor project routes still show the storefront preview", async ({ page }) => {
+  await page.setViewportSize({ width: 1360, height: 900 });
+  await page.goto(projectUrl);
+
+  await expect(page.getByRole("heading", { name: "Aurum Nordic", level: 1 })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Search (demo)" })).toBeVisible();
+  await expect(page.getByLabel("Visual editor canvas")).not.toBeVisible();
 });
 
 test("keeps every collapsed editor rail destination visible and labelled", async ({ page }) => {
@@ -196,7 +202,7 @@ test("duplicates and hides the actual selected section with undo and redo on mob
   await expect(page.getByRole("button", { name: "Save draft" })).toBeEnabled();
   await page.getByRole("radio", { name: "Suomi" }).click();
   await expect(
-    canvas.getByText("Piilotettu osio — valitse se näyttääksesi sen uudelleen"),
+    canvas.getByText("Piilotettu osio — valitse osio näyttääksesi sen uudelleen"),
   ).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
@@ -472,7 +478,7 @@ for (const width of [375, 768, 1024, 1440]) {
   test(`editor shell has no horizontal overflow at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(url);
-    await expect(page.getByText("Aurum Nordic", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Visual editor canvas")).toBeVisible();
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);

@@ -269,6 +269,7 @@ export function AppShell({
   homeNavigationDisabled = false,
   editorMode = false,
   showModuleNav = Boolean(projectId),
+  showModuleIdentity = true,
 }: {
   activeModule?: ModuleId;
   children: ReactNode;
@@ -283,6 +284,7 @@ export function AppShell({
   homeNavigationDisabled?: boolean;
   editorMode?: boolean;
   showModuleNav?: boolean;
+  showModuleIdentity?: boolean;
 }) {
   const labels = storefrontShellCopy[locale];
   const projectPath = projectId ? `/projects/${projectId}` : "/projects/new";
@@ -332,20 +334,24 @@ export function AppShell({
         </nav>
       </header>
       <div className={styles.shellBody}>
-        <div className={styles.moduleHeader}>
-          <div
-            aria-label={projectId ? labels.editorNavigation : undefined}
-            className={styles.moduleIdentity}
-            role={projectId ? "navigation" : undefined}
-          >
-            <span className={styles.breadcrumb}>{labels.studio}</span>
-            {projectName ? <span>{projectName}</span> : null}
-            <strong>{moduleName}</strong>
-            {pageLabel ? <span className={styles.breadcrumb}>{pageLabel}</span> : null}
-            {pageTitle ? <h1 className={styles.pageTitle}>{pageTitle}</h1> : null}
+        {(showModuleIdentity || headerActions) && (
+          <div className={styles.moduleHeader}>
+            {showModuleIdentity ? (
+              <div
+                aria-label={projectId ? labels.editorNavigation : undefined}
+                className={styles.moduleIdentity}
+                role={projectId ? "navigation" : undefined}
+              >
+                <span className={styles.breadcrumb}>{labels.studio}</span>
+                {projectName ? <span>{projectName}</span> : null}
+                <strong>{moduleName}</strong>
+                {pageLabel ? <span className={styles.breadcrumb}>{pageLabel}</span> : null}
+                {pageTitle ? <h1 className={styles.pageTitle}>{pageTitle}</h1> : null}
+              </div>
+            ) : null}
+            {headerActions ? <div className={styles.headerActions}>{headerActions}</div> : null}
           </div>
-          {headerActions ? <div className={styles.headerActions}>{headerActions}</div> : null}
-        </div>
+        )}
         {showModuleNav ? (
           <Tabs
             items={storefrontStudioModuleItems

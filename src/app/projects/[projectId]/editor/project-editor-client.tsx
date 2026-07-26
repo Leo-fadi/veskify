@@ -1071,6 +1071,7 @@ export function ProjectEditorClient({
         activeModule="editor"
         editorMode
         showModuleNav={false}
+        showModuleIdentity={false}
         headerActions={
           <div className={styles.draftActions}>
             <fieldset className={styles.headerLocale}>
@@ -1185,10 +1186,7 @@ export function ProjectEditorClient({
           </div>
         }
         locale={locale}
-        pageLabel={text.navigation.currentPage}
-        pageTitle={title}
         projectId={projectId}
-        projectName={state.aggregate.project.name}
       >
         <div aria-label={text.panels.contextual} className={styles.workspaceToolbar}>
           <Button
