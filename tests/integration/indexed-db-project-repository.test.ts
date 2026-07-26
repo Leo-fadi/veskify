@@ -297,6 +297,48 @@ runProjectRepositoryContract("IndexedDbProjectRepository", () =>
 );
 
 describe("IndexedDbProjectRepository persistence", () => {
+  it("persists the publication operation atomically with publication and survives reopen", async () => {
+    const databaseName = testDatabaseName("publication-operation-reopen");
+    const repository = openRepository(databaseName);
+    const projectId = aurumNordicSeed.project.id;
+    const aggregate = await makePublishable(repository, "durable-operation");
+    const identity = {
+      tenantId: "tenant_test",
+      merchantId: "merchant_test",
+      organizationId: "organization_test",
+      storeId: "store_test",
+      storefrontProjectId: projectId,
+      operationType: "publish" as const,
+      requestId: "publish_request_durable",
+    };
+    const requestFingerprint =
+      "v1_24_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const result = {
+      requestId: identity.requestId,
+      storefrontProjectId: projectId,
+      publishedRevision: `published-revision-${aggregate.project.revision + 1}`,
+      status: "published" as const,
+    };
+
+    const published = await repository.publish(projectId, {
+      ...publishExpectation(aggregate),
+      operation: { ...identity, requestFingerprint, result },
+    });
+    const stored = await repository.getPublicationOperation(identity);
+
+    expect(stored).toMatchObject({
+      ...identity,
+      requestFingerprint,
+      result,
+      committedProjectRevision: published.project.revision,
+      publishedSnapshotId: published.project.publishedSnapshotId,
+    });
+
+    await repository.close();
+    const reopened = openRepository(databaseName);
+    await expect(reopened.getPublicationOperation(identity)).resolves.toEqual(stored);
+  });
+
   it("creates a complete aggregate atomically, preserves provenance, and survives reopen", async () => {
     const databaseName = testDatabaseName("create-reopen");
     const repository = openRepository(databaseName);
@@ -313,9 +355,16 @@ describe("IndexedDbProjectRepository persistence", () => {
     );
     expect(loaded.snapshotHistoryMetadata).toEqual(created.snapshotHistoryMetadata);
     const database = await openDB(databaseName);
-    expect(database.version).toBe(3);
+    expect(database.version).toBe(4);
     const transaction = database.transaction(
-      ["projects", "catalogues", "snapshots", "snapshotProvenance", "snapshotHistoryMetadata"],
+      [
+        "projects",
+        "catalogues",
+        "snapshots",
+        "snapshotProvenance",
+        "snapshotHistoryMetadata",
+        "publicationOperations",
+      ],
       "readonly",
     );
     expect(await transaction.objectStore("projects").get(input.project.id)).toBeTruthy();
@@ -341,6 +390,12 @@ describe("IndexedDbProjectRepository persistence", () => {
         .index("by-project")
         .getAll(input.project.id),
     ).toEqual(input.snapshotHistoryMetadata);
+    expect(
+      await transaction
+        .objectStore("publicationOperations")
+        .index("by-project")
+        .getAll(input.project.id),
+    ).toEqual([]);
     await transaction.done;
     database.close();
   });
