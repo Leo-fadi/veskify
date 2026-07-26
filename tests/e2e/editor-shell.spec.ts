@@ -194,6 +194,10 @@ test("duplicates and hides the actual selected section with undo and redo on mob
   await page.getByRole("button", { name: "Redo" }).click();
   await expect(canvas.getByText("Hidden section — select it to show it again")).toBeVisible();
   await expect(page.getByRole("button", { name: "Save draft" })).toBeEnabled();
+  await page.getByRole("radio", { name: "Suomi" }).click();
+  await expect(
+    canvas.getByText("Piilotettu osio — valitse se näyttääksesi sen uudelleen"),
+  ).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );

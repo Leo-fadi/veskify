@@ -178,7 +178,9 @@ function componentToPuckConfig(
         >
           <strong>{definition.label}</strong>
           <span style={{ display: "block", marginTop: "0.25rem", fontSize: "0.875rem" }}>
-            Hidden section — select it to show it again
+            {context.activeLocale === "fi"
+              ? "Piilotettu osio — valitse se näyttääksesi sen uudelleen"
+              : "Hidden section — select it to show it again"}
           </span>
         </div>
       );

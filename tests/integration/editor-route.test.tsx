@@ -632,17 +632,9 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     expect(screen.getByText("Canvas: home / fi")).toBeVisible();
     expect(screen.getByRole("navigation", { name: "Editorin navigointi" })).toBeVisible();
-    expect(screen.getByRole("navigation", { name: "Storefront Studion moduulit" })).toBeVisible();
-    for (const label of [
-      "Yleiskatsaus",
-      "Määritykset",
-      "Editori",
-      "Esikatselu",
-      "Julkaiseminen",
-      "Historia",
-    ]) {
-      expect(screen.getByRole("link", { name: label })).toBeVisible();
-    }
+    expect(
+      screen.queryByRole("navigation", { name: "Storefront Studion moduulit" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByTestId("draft-status")).toHaveAccessibleName("Luonnoksen tila");
     expect(screen.getByTestId("draft-status")).toHaveTextContent("Ei tallentamattomia muutoksia");
     expect(screen.getByRole("button", { name: "Kumoa" })).toBeVisible();
@@ -652,6 +644,12 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByRole("link", { name: "Julkaise muutokset" })).toBeVisible();
     expect(screen.getByLabelText("Kauppasivuston sivu")).toBeVisible();
     expect(screen.getByRole("button", { name: "Suunnitteluavustaja" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Select productGrid section" }));
+    expect(
+      within(screen.getByLabelText("Valitun osion toiminnot")).getByText("Tuoteruudukko", {
+        exact: true,
+      }),
+    ).toBeVisible();
     expect(
       screen.queryByText(/No unsaved changes|Save draft|Overview|Storefront page/i),
     ).not.toBeInTheDocument();

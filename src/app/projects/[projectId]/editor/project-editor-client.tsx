@@ -1070,6 +1070,7 @@ export function ProjectEditorClient({
       <AppShell
         activeModule="editor"
         editorMode
+        showModuleNav={false}
         headerActions={
           <div className={styles.draftActions}>
             <fieldset className={styles.headerLocale}>
