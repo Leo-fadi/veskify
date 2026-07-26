@@ -561,6 +561,10 @@ class DeferredStorefrontProvider implements StorefrontAIProvider {
 const visibleCanvasPage = () =>
   JSON.parse(screen.getByLabelText("Visual editor canvas").getAttribute("data-page")!) as PageModel;
 
+const expectCanvasPageTitle = (title: string, locale: keyof PageModel["title"] = "en") => {
+  expect(visibleCanvasPage().title?.[locale]).toBe(title);
+};
+
 describe("P2-01 project editor route", () => {
   it("hydrates the Karvonen editor from the isolated Karvonen page tree", async () => {
     const value = repository(() => Promise.resolve(karvonenAggregate()));
@@ -568,7 +572,7 @@ describe("P2-01 project editor route", () => {
       <ProjectEditorClient projectId={karvonenSeed.project.id} repositoryFactory={() => value} />,
     );
 
-    expect(await screen.findByRole("heading", { name: "Karvonen" })).toBeVisible();
+    expect(await screen.findByText("Canvas: home / fi")).toBeVisible();
     expect(value.get).toHaveBeenCalledWith(karvonenSeed.project.id);
     expect(screen.getByText("Canvas: home / fi")).toBeVisible();
     expect(screen.getByLabelText("Kauppasivuston sivu")).toHaveValue("page_karvonen_home");
@@ -579,7 +583,7 @@ describe("P2-01 project editor route", () => {
     const value = repository(() => Promise.resolve(aggregate()));
     route(value);
     expect(screen.getByRole("heading", { name: "Loading visual editor" })).toBeVisible();
-    expect(await screen.findByText("Aurum Nordic")).toBeVisible();
+    await screen.findByText("Canvas: home / en");
     expect(value.get).toHaveBeenCalledWith("project_aurum_nordic");
     expect(value.saveDraft).not.toHaveBeenCalled();
     expect(value.publish).not.toHaveBeenCalled();
@@ -590,8 +594,8 @@ describe("P2-01 project editor route", () => {
 
   it("shows navigation, draft status and the selected preview link", async () => {
     route(repository(() => Promise.resolve(aggregate())));
-    await screen.findByText("Aurum Nordic");
-    expect(screen.getByRole("navigation", { name: "Editor navigation" })).toBeVisible();
+    await screen.findByText("Canvas: home / en");
+    expect(screen.getByRole("navigation", { name: "Editor tools" })).toBeVisible();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
     expect(screen.getByRole("link", { name: "View selected page" })).toHaveAttribute(
       "href",
@@ -612,37 +616,41 @@ describe("P2-01 project editor route", () => {
       "Rings",
       "Aurora Ring 585",
     ]);
+    const context = screen.getByTestId("editor-context");
+    expect(context).toHaveTextContent("Storefront Studio");
+    expect(context).toHaveTextContent("Aurum Nordic");
+    expect(context).toHaveTextContent("Home");
     fireEvent.change(switcher, { target: { value: "page_collection_rings" } });
     expect(screen.getByText("Canvas: collection / en")).toBeVisible();
     expect(screen.getByRole("link", { name: "View selected page" })).toHaveAttribute(
       "href",
       "/projects/project_aurum_nordic/collections/rings",
     );
+    expect(context).toHaveTextContent("Rings");
     fireEvent.change(switcher, { target: { value: "page_product_aurora" } });
     expect(screen.getByText("Canvas: product / en")).toBeVisible();
     expect(screen.getByRole("link", { name: "View selected page" })).toHaveAttribute(
       "href",
       "/projects/project_aurum_nordic/products/aurora-ring-585",
     );
+    expect(context).toHaveTextContent("Aurora Ring 585");
   });
 
   it("switches the shell and canvas to Finnish", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
+    const editorContext = screen.getByTestId("editor-context");
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     expect(screen.getByText("Canvas: home / fi")).toBeVisible();
-    expect(screen.getByRole("navigation", { name: "Editorin navigointi" })).toBeVisible();
-    expect(screen.getByRole("navigation", { name: "Storefront Studion moduulit" })).toBeVisible();
-    for (const label of [
-      "Yleiskatsaus",
-      "Määritykset",
-      "Editori",
-      "Esikatselu",
-      "Julkaiseminen",
-      "Historia",
-    ]) {
-      expect(screen.getByRole("link", { name: label })).toBeVisible();
-    }
+    expect(
+      screen.queryByRole("navigation", { name: "Editorin navigointi" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation", { name: "Storefront Studion moduulit" }),
+    ).not.toBeInTheDocument();
+    expect(within(editorContext).getByText("Storefront Studio")).toBeVisible();
+    expect(within(editorContext).getByText("Aurum Nordic")).toBeVisible();
+    expect(editorContext).toHaveTextContent("Etusivu");
     expect(screen.getByTestId("draft-status")).toHaveAccessibleName("Luonnoksen tila");
     expect(screen.getByTestId("draft-status")).toHaveTextContent("Ei tallentamattomia muutoksia");
     expect(screen.getByRole("button", { name: "Kumoa" })).toBeVisible();
@@ -652,14 +660,31 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByRole("link", { name: "Julkaise muutokset" })).toBeVisible();
     expect(screen.getByLabelText("Kauppasivuston sivu")).toBeVisible();
     expect(screen.getByRole("button", { name: "Suunnitteluavustaja" })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Select productGrid section" }));
+    expect(
+      within(screen.getByLabelText("Valitun osion toiminnot")).getByText("Tuoteruudukko", {
+        exact: true,
+      }),
+    ).toBeVisible();
     expect(
       screen.queryByText(/No unsaved changes|Save draft|Overview|Storefront page/i),
     ).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Kauppasivuston sivu"), {
       target: { value: "page_collection_rings" },
     });
-    expect(screen.getByRole("heading", { name: "Sormukset" })).toBeVisible();
+    expectCanvasPageTitle("Sormukset", "fi");
+    expect(editorContext).toHaveTextContent("Sormukset");
     expect(screen.getByRole("option", { name: "Sormukset" })).toBeVisible();
+  });
+
+  it("uses the editor workspace shell instead of the legacy project module header", async () => {
+    route(repository(() => Promise.resolve(aggregate())));
+    await screen.findByText("Canvas: home / en");
+    expect(screen.queryByRole("heading", { name: "Storefront Studio" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Aurum Nordic" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("editor-context")).toHaveTextContent("Storefront Studio");
+    expect(screen.getByTestId("editor-context")).toHaveTextContent("Aurum Nordic");
+    expect(screen.getByTestId("editor-context")).toHaveTextContent("Home");
   });
 
   it("consolidates desktop structure and contextual controls into collapsible panels", async () => {
@@ -783,7 +808,7 @@ describe("P2-01 project editor route", () => {
     await screen.findByText("Canvas: home / en");
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
     fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
     expect(screen.queryByRole("link", { name: "Publish changes" })).not.toBeInTheDocument();
     expect(screen.getByText("Publish changes")).toHaveAttribute("aria-disabled", "true");
@@ -804,13 +829,13 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
     expect(undo).toBeEnabled();
     fireEvent.click(undo);
-    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    expectCanvasPageTitle("Home");
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
     expect(screen.getByText("Undid the last change on this page.")).toBeVisible();
     expect(redo).toBeEnabled();
 
     fireEvent.click(redo);
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
     expect(repo.saveDraft).not.toHaveBeenCalled();
     expect(repo.publish).not.toHaveBeenCalled();
@@ -823,12 +848,12 @@ describe("P2-01 project editor route", () => {
     const request = screen.getByLabelText("Your request");
     request.focus();
     fireEvent.keyDown(request, { key: "z", ctrlKey: true });
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
 
     fireEvent.keyDown(window, { key: "z", ctrlKey: true });
-    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    expectCanvasPageTitle("Home");
     fireEvent.keyDown(window, { key: "y", ctrlKey: true });
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
   });
 
   it("duplicates a selected section as one undoable and redoable action", async () => {
@@ -960,10 +985,10 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
     confirm.mockReturnValueOnce(false);
     fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
     confirm.mockReturnValueOnce(true);
     fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
-    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    expectCanvasPageTitle("Home");
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
     expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Redo" })).toBeDisabled();
@@ -1047,7 +1072,7 @@ describe("P2-01 project editor route", () => {
     fireEvent.change(screen.getByLabelText("Storefront page"), {
       target: { value: "page_home" },
     });
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
     confirm.mockRestore();
   });
@@ -1062,16 +1087,16 @@ describe("P2-01 project editor route", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    expect(screen.getByRole("heading", { name: "Rings" })).toBeVisible();
+    expectCanvasPageTitle("Rings");
     expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
 
     fireEvent.change(screen.getByLabelText("Storefront page"), {
       target: { value: "page_home" },
     });
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
     expect(screen.getByRole("button", { name: "Undo" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    expectCanvasPageTitle("Home");
     confirm.mockRestore();
   });
 
@@ -1080,7 +1105,7 @@ describe("P2-01 project editor route", () => {
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Emit invalid change" }));
     expect(screen.getByRole("alert")).toHaveTextContent("could not be applied safely");
-    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    expectCanvasPageTitle("Home");
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
   });
 
@@ -1089,9 +1114,9 @@ describe("P2-01 project editor route", () => {
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Home");
     fireEvent.click(screen.getByRole("radio", { name: "English" }));
-    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    expectCanvasPageTitle("Home");
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
   });
 
@@ -1353,7 +1378,7 @@ describe("P2-01 project editor route", () => {
     route(repo);
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
     fireEvent.click(screen.getByRole("button", { name: "Make the homepage feel more luxurious." }));
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     await screen.findByLabelText("Design proposal");
@@ -1364,7 +1389,7 @@ describe("P2-01 project editor route", () => {
     expect(screen.queryByLabelText("Proposal preview canvas")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Accept and apply" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Visual editor canvas")).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    expectCanvasPageTitle("Home");
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
     expect(screen.getByRole("alert")).toHaveTextContent(/page changed after this request started/i);
     expect(repo.saveDraft).not.toHaveBeenCalled();
@@ -1385,7 +1410,7 @@ describe("P2-01 project editor route", () => {
     expect(screen.queryByLabelText("Design proposal")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Accept and apply" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Visual editor canvas")).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Newer canonical edit" })).toBeVisible();
+    expectCanvasPageTitle("Newer canonical edit");
     expect(screen.getByText(/start a new request from the current page/i)).toBeVisible();
     expect(repo.saveDraft).not.toHaveBeenCalled();
     expect(repo.publish).not.toHaveBeenCalled();
@@ -1499,7 +1524,7 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reject" }));
     expect(screen.getByText(/page remains unchanged/i)).toBeVisible();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
-    expect(screen.getByRole("heading", { name: "Home" })).toBeVisible();
+    expectCanvasPageTitle("Home");
   });
 
   it("emits proposal analytics without merchant or provider content", async () => {
@@ -1684,10 +1709,10 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
     await screen.findByText("Draft saved successfully.");
     fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
-    expect(screen.getByRole("heading", { name: "Edited again home" })).toBeVisible();
+    expectCanvasPageTitle("Edited again home");
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
     fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
     confirm.mockRestore();
   });
@@ -1730,7 +1755,7 @@ describe("P2-01 project editor route", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/could not be saved/i);
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
     failSave = false;
     fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
     await screen.findByText("Draft saved successfully.");
@@ -1750,7 +1775,7 @@ describe("P2-01 project editor route", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/newer draft was saved elsewhere/i);
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
     const after = await value.get(aurumNordicSeed.project.id);
     expect(after.project.draftSnapshotId).toBe(newer.id);
   });
@@ -1805,7 +1830,7 @@ describe("P2-01 project editor route", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
     expect(screen.getByText("Canvas: home / en")).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
     await waitFor(() => expect(capturedHomeTitle).toBe("Edited home"));
 
     releaseSave();
@@ -1813,7 +1838,7 @@ describe("P2-01 project editor route", () => {
     expect(
       screen.getByText("Draft saved successfully.").closest('[aria-busy="false"]'),
     ).not.toBeNull();
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
 
     const after = await inner.get(aurumNordicSeed.project.id);
@@ -1862,7 +1887,7 @@ describe("P2-01 project editor route", () => {
     expect(screen.getByRole("button", { name: "Edit current page" })).toBeEnabled();
     expect(screen.getByLabelText("Your request")).toBeEnabled();
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
-    expect(screen.getByRole("heading", { name: "Edited home" })).toBeVisible();
+    expectCanvasPageTitle("Edited home");
 
     const after = await inner.get(aurumNordicSeed.project.id);
     expect(after.project.draftSnapshotId).toBe(before.project.draftSnapshotId);

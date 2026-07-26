@@ -49,6 +49,7 @@ import {
   StatusPill,
   Tabs,
 } from "@/components/ui";
+import { storefrontShellCopy } from "@/components/ui/storefront-studio-copy";
 import styles from "./project-editor.module.css";
 import { DesignAgentPanel } from "./design-agent-panel";
 import {
@@ -517,6 +518,7 @@ export function ProjectEditorClient({
   const hasUnsavedChanges = changedPages.length > 0 || brandSystemChanged;
   const locale = readyLocale!;
   const title = resolveLocalizedText(page.title, locale, state.aggregate.project.primaryLocale);
+  const identity = storefrontShellCopy[locale];
   const context = readyContext!;
   const previewHref = `/projects/${projectId}${page.slug === "/" ? "" : page.slug}`;
   const previewStorefront = proposalStorefrontPreview({
@@ -1070,8 +1072,22 @@ export function ProjectEditorClient({
       <AppShell
         activeModule="editor"
         editorMode
+        showModuleNav={false}
+        showModuleIdentity={false}
         headerActions={
           <div className={styles.draftActions}>
+            <section
+              aria-label={locale === "fi" ? "Muokkaussisällön konteksti" : "Editor context"}
+              className={styles.editorContext}
+              data-testid="editor-context"
+            >
+              <p className={styles.editorContextStudio}>{identity.studio}</p>
+              <p className={styles.editorContextPage}>
+                <span>{state.aggregate.project.name}</span>
+                <span aria-hidden="true"> · </span>
+                <strong>{title}</strong>
+              </p>
+            </section>
             <fieldset className={styles.headerLocale}>
               <legend>{locale === "fi" ? "Kieli" : "Language"}</legend>
               {state.aggregate.project.enabledLocales.map((enabledLocale) => (
@@ -1184,10 +1200,7 @@ export function ProjectEditorClient({
           </div>
         }
         locale={locale}
-        pageLabel={text.navigation.currentPage}
-        pageTitle={title}
         projectId={projectId}
-        projectName={state.aggregate.project.name}
       >
         <div aria-label={text.panels.contextual} className={styles.workspaceToolbar}>
           <Button
