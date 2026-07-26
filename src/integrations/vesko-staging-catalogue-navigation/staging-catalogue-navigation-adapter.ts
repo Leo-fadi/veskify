@@ -7,12 +7,13 @@ import {
 } from "@/application/merchant-project-context";
 import {
   catalogueProjectionSchema,
+  projectStorefrontCatalogueToCanonicalProjection,
   VeskoIntegrationError,
   type CatalogueProjectionPort,
   type IntegrationFailureCode,
   type MerchantProjectContext,
 } from "@/application/vesko-integration";
-import { canonicalLocaleOrder, type Locale } from "@/domain/shared";
+import { canonicalLocaleOrder, type Locale, type LocalizedText } from "@/domain/shared";
 import {
   createCatalogueProjectionProvider,
   storefrontCatalogueProjectionSchema,
@@ -49,11 +50,6 @@ export type StagingCatalogueNavigationEnvelope = z.infer<
   typeof stagingCatalogueNavigationEnvelopeSchema
 >;
 
-export type StagingCatalogueNavigationProjection = Readonly<{
-  catalogueRevision: string;
-  projection: StorefrontCatalogueProjection;
-}>;
-
 export interface StagingCatalogueNavigationTransport {
   load(context: Readonly<StagingCatalogueNavigationLoadContext>): Promise<unknown>;
 }
@@ -62,12 +58,6 @@ export type StagingCatalogueNavigationAdapterInput = Readonly<{
   contextPort: MerchantProjectContextPort;
   transport: StagingCatalogueNavigationTransport;
 }>;
-
-export interface StagingCatalogueNavigationProjectionPort {
-  load(
-    context: Readonly<StagingCatalogueNavigationLoadContext>,
-  ): Promise<StagingCatalogueNavigationProjection>;
-}
 
 function deepFreeze<T>(value: T): T {
   if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
@@ -102,29 +92,42 @@ function assertProjectionLocales(
   projection: StorefrontCatalogueProjection,
   enabledLocales: readonly Locale[],
 ): void {
-  if (!projection.supportedLocales.every((locale) => enabledLocales.includes(locale))) {
+  const projectionLocales = new Set(projection.supportedLocales);
+  const projectLocales = new Set<string>(enabledLocales);
+  if (
+    projectionLocales.size !== projectLocales.size ||
+    [...projectionLocales].some((locale) => !projectLocales.has(locale))
+  ) {
     throw new VeskoIntegrationError("unsupportedLocale");
   }
 
-  const supported = new Set(projection.supportedLocales);
-  const visit = (value: unknown): void => {
-    if (Array.isArray(value)) {
-      value.forEach(visit);
-      return;
-    }
-    if (value === null || typeof value !== "object") return;
-
-    const entries = Object.entries(value as Record<string, unknown>);
-    const localized =
-      entries.length > 0 &&
-      entries.every(([key, item]) => (key === "en" || key === "fi") && typeof item === "string");
-    if (localized && entries.some(([locale]) => !supported.has(locale as Locale))) {
+  const assertLocalizedText = (value: LocalizedText | undefined): void => {
+    if (value !== undefined && Object.keys(value).some((locale) => !projectLocales.has(locale))) {
       throw new VeskoIntegrationError("unsupportedLocale");
     }
-    entries.forEach(([, item]) => visit(item));
   };
 
-  visit(projection);
+  assertLocalizedText(projection.catalogueSafeTitle);
+  projection.products.forEach((product) => {
+    assertLocalizedText(product.title);
+    assertLocalizedText(product.description);
+    assertLocalizedText(product.priceUnavailableReason);
+    assertLocalizedText(product.availabilityLabel);
+    product.images.forEach((image) => assertLocalizedText(image.alt));
+    product.variants.forEach((variant) => assertLocalizedText(variant.label));
+    product.orderOptions?.forEach((option) => {
+      assertLocalizedText(option.label);
+      option.values?.forEach(assertLocalizedText);
+    });
+    assertLocalizedText(product.seo?.title);
+    assertLocalizedText(product.seo?.metaDescription);
+  });
+  projection.collections.forEach((collection) => {
+    assertLocalizedText(collection.title);
+    assertLocalizedText(collection.description);
+  });
+  projection.categories.forEach((category) => assertLocalizedText(category.title));
+  projection.navigation.forEach((item) => assertLocalizedText(item.label));
 }
 
 async function authorizeRead(
@@ -136,7 +139,11 @@ async function authorizeRead(
       tenantId: context.tenantId,
       storefrontProjectId: context.storefrontProjectId,
     });
+    if (current.tenantId !== context.tenantId) throw new VeskoIntegrationError("tenantMismatch");
     if (current.storeId !== context.storeId) throw new VeskoIntegrationError("merchantNotFound");
+    if (current.storefrontProjectId !== context.storefrontProjectId) {
+      throw new VeskoIntegrationError("projectMismatch");
+    }
     return requireMerchantProjectAction(
       createMerchantProjectAuthorization(current),
       "view-storefront",
@@ -173,13 +180,12 @@ function assertEnvelopeScope(
 }
 
 /**
- * Validates a scoped staging fixture/response and returns the normalized P9-03 projection with
- * its opaque Vesko catalogue revision. This adapter intentionally owns no HTTP, credential or
- * cache implementation.
+ * Validates a scoped staging fixture/response and returns the canonical P9-01 catalogue
+ * projection. This adapter intentionally owns no HTTP, credential or cache implementation.
  */
 export function createStagingCatalogueNavigationProjectionAdapter(
   input: StagingCatalogueNavigationAdapterInput,
-): StagingCatalogueNavigationProjectionPort {
+): CatalogueProjectionPort {
   return {
     async load(contextInput) {
       const contextResult = stagingCatalogueNavigationLoadContextSchema.safeParse(contextInput);
@@ -218,7 +224,18 @@ export function createStagingCatalogueNavigationProjectionAdapter(
         const projection = await createCatalogueProjectionProvider({
           transport: { load: () => projectionResult.data },
         }).load();
-        return deepFreeze({ catalogueRevision: envelope.catalogueRevision, projection });
+        return deepFreeze(
+          projectStorefrontCatalogueToCanonicalProjection(
+            projection,
+            {
+              tenantId: authenticated.tenantId,
+              storeId: authenticated.storeId,
+              storefrontProjectId: authenticated.storefrontProjectId,
+            },
+            projection.id,
+            envelope.catalogueRevision,
+          ),
+        );
       } catch (error) {
         if (error instanceof VeskoIntegrationError) throw error;
         throw new VeskoIntegrationError("malformedIntegrationResponse");

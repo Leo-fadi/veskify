@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { MerchantProjectContextPort } from "@/application/merchant-project-context";
-import type { MerchantProjectContext } from "@/application/vesko-integration";
+import type {
+  MerchantProjectContext,
+  VeskoIntegrationPorts,
+} from "@/application/vesko-integration";
 import { aurumNordicSeed } from "@/data/seed";
 import {
   createStagingCatalogueNavigationProjectionAdapter,
@@ -184,32 +187,35 @@ function envelope(
 
 function createHarness(
   response: unknown = envelope(),
-  permissions: MerchantProjectContext["permissions"] = ["readStorefront"],
+  context: MerchantProjectContext = merchantContext(),
 ) {
+  const contextLoad = vi.fn(() => Promise.resolve(context));
+  const transportLoad = vi.fn(() => Promise.resolve(response));
   const contextPort: MerchantProjectContextPort = {
-    load: vi.fn(async () => merchantContext(permissions)),
+    load: contextLoad,
   };
-  const transport = { load: vi.fn(async () => response) };
+  const transport = { load: transportLoad };
   return {
     adapter: createStagingCatalogueNavigationProjectionAdapter({ contextPort, transport }),
-    contextPort,
-    transport,
+    contextLoad,
+    transportLoad,
   };
 }
 
-describe("P10-02 staging catalogue/navigation projection", () => {
-  it("maps a valid staging envelope to the normalized P9-03 projection", async () => {
+describe("P12-02 staging catalogue/navigation projection", () => {
+  it("implements the canonical catalogue port and returns its projection", async () => {
     const harness = createHarness();
+    const port: VeskoIntegrationPorts["catalogue"] = harness.adapter;
 
-    const result = await harness.adapter.load(loadContext);
+    const result = await port.load(loadContext);
 
-    expect(result.catalogueRevision).toBe("vesko-catalogue-etag-abc123");
-    expect(result.projection.id).toBe("catalogue_staging");
-    expect(result.projection.products.map(({ id }) => id)).toEqual([
+    expect(result.revision).toBe("vesko-catalogue-etag-abc123");
+    expect(result.catalogueId).toBe("catalogue_staging");
+    expect(result.products.map(({ productId }) => productId)).toEqual([
       firstProduct.id,
       secondProduct.id,
     ]);
-    expect(harness.contextPort.load).toHaveBeenCalledWith({
+    expect(harness.contextLoad).toHaveBeenCalledWith({
       tenantId: identity.tenantId,
       storefrontProjectId: identity.storefrontProjectId,
     });
@@ -217,15 +223,12 @@ describe("P10-02 staging catalogue/navigation projection", () => {
 
   it("preserves Vesko collection membership order", async () => {
     const projection = projectionFixture();
-    projection.collections[0]!.productIds = [secondProduct.id, firstProduct.id];
+    projection.collections[0].productIds = [secondProduct.id, firstProduct.id];
     const harness = createHarness(envelope(projection));
 
     const result = await harness.adapter.load(loadContext);
 
-    expect(result.projection.collections[0]?.productIds).toEqual([
-      secondProduct.id,
-      firstProduct.id,
-    ]);
+    expect(result.collections[0]?.productIds).toEqual([secondProduct.id, firstProduct.id]);
   });
 
   it("preserves category hierarchy and resolved navigation route references", async () => {
@@ -233,14 +236,13 @@ describe("P10-02 staging catalogue/navigation projection", () => {
 
     const result = await harness.adapter.load(loadContext);
 
-    expect(result.projection.categories[1]).toMatchObject({
-      id: "category_rings",
+    expect(result.categories[1]).toMatchObject({
+      categoryId: "category_rings",
       parentCategoryId: "category_jewellery",
-      routeReferenceId: "route_category_rings",
     });
-    expect(result.projection.navigation[1]).toMatchObject({
-      id: "navigation_jewellery",
-      routeReferenceId: "route_collection_jewellery",
+    expect(result.navigation[1]).toMatchObject({
+      navigationId: "navigation_jewellery",
+      target: { kind: "collection", collectionId: firstCollection.id },
     });
   });
 
@@ -259,7 +261,7 @@ describe("P10-02 staging catalogue/navigation projection", () => {
     });
   });
 
-  it("rejects localized values outside the projection's supported locales", async () => {
+  it("rejects a projection that omits an enabled project locale", async () => {
     const projection = projectionFixture();
     projection.supportedLocales = ["en"];
     projection.categories.forEach((category) => {
@@ -278,6 +280,37 @@ describe("P10-02 staging catalogue/navigation projection", () => {
     });
   });
 
+  it("rejects a projection with a locale that the project does not enable", async () => {
+    const harness = createHarness(envelope(), {
+      ...merchantContext(),
+      enabledLocales: ["en"],
+    });
+
+    await expect(harness.adapter.load(loadContext)).rejects.toMatchObject({
+      code: "unsupportedLocale",
+    });
+  });
+
+  it("accepts equivalent project and projection locale sets in different orders", async () => {
+    const projection = projectionFixture();
+    projection.supportedLocales = ["fi", "en"];
+    const harness = createHarness(envelope(projection));
+
+    await expect(harness.adapter.load(loadContext)).resolves.toMatchObject({
+      revision: "vesko-catalogue-etag-abc123",
+    });
+  });
+
+  it("does not interpret arbitrary attribute keys as localized text", async () => {
+    const projection = projectionFixture();
+    projection.products[0].attributes = { fi: "Made in Finland" };
+    const harness = createHarness(envelope(projection));
+
+    await expect(harness.adapter.load(loadContext)).resolves.toMatchObject({
+      catalogueId: "catalogue_staging",
+    });
+  });
+
   it("preserves the opaque catalogue revision without parsing it", async () => {
     const revision = "vesko-etag-catalogue-v4:abc123";
     const harness = createHarness(envelope(projectionFixture(), revision));
@@ -285,17 +318,17 @@ describe("P10-02 staging catalogue/navigation projection", () => {
     await expect(
       harness.adapter.load({ ...loadContext, expectedRevision: revision }),
     ).resolves.toMatchObject({
-      catalogueRevision: revision,
+      revision,
     });
   });
 
   it("requires current view storefront permission before transport access", async () => {
-    const harness = createHarness(envelope(), ["saveDraft"]);
+    const harness = createHarness(envelope(), merchantContext(["saveDraft"]));
 
     await expect(harness.adapter.load(loadContext)).rejects.toMatchObject({
       code: "permissionDenied",
     });
-    expect(harness.transport.load).not.toHaveBeenCalled();
+    expect(harness.transportLoad).not.toHaveBeenCalled();
   });
 
   it("maps malformed staging responses to a merchant-safe typed failure", async () => {
