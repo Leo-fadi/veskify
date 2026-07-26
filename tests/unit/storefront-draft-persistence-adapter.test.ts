@@ -5,10 +5,12 @@ import {
   type MerchantProjectContext,
 } from "@/application/merchant-project-context";
 import {
+  createPersistedDraftSnapshotId,
   createStorefrontDraftPersistenceAdapter,
   toStandaloneSnapshotRevision,
-  type AcceptedStorefrontDraftCandidate,
-  type AcceptedStorefrontDraftSource,
+  type DraftSaveProvenance,
+  type DraftSaveProvenanceSource,
+  type PersistedDraftSaveLineage,
 } from "@/application/storefront-draft-persistence";
 import type { StorefrontDraftPersistencePort } from "@/application/vesko-integration/contract";
 import {
@@ -20,10 +22,11 @@ import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import { InMemoryProjectRepository, type ProjectAggregate } from "@/services/storage";
 
 const tenantId = "tenant_standalone";
-const fixedDate = "2026-07-26T09:00:00.000Z";
+const fixedDate = new Date("2026-07-26T09:00:00.000Z");
 type SaveStorefrontDraftRequest = Parameters<StorefrontDraftPersistencePort["save"]>[0];
+type CanonicalSeed = typeof aurumNordicSeed | typeof karvonenSeed;
 
-function aggregate(seed: typeof aurumNordicSeed | typeof karvonenSeed): ProjectAggregate {
+function aggregate(seed: CanonicalSeed): ProjectAggregate {
   return {
     project: structuredClone(seed.project),
     catalogue: structuredClone(seed.catalogue),
@@ -31,18 +34,13 @@ function aggregate(seed: typeof aurumNordicSeed | typeof karvonenSeed): ProjectA
   };
 }
 
-type CanonicalSeed = typeof aurumNordicSeed | typeof karvonenSeed;
-
 function repository(
   seeds: readonly CanonicalSeed[] = [aurumNordicSeed],
 ): InMemoryProjectRepository {
   return new InMemoryProjectRepository(seeds.map((seed) => aggregate(seed)));
 }
 
-function contextPort(
-  projectRepository: InMemoryProjectRepository,
-  permissions = ["readStorefront", "saveDraft", "restoreDraft"] as const,
-) {
+function contextPort(projectRepository: InMemoryProjectRepository) {
   return createStandaloneMerchantProjectContextPort({
     projectRepository,
     tenantId,
@@ -50,21 +48,34 @@ function contextPort(
     merchantId: "merchant_standalone",
     organizationId: "organization_standalone",
     storeId: "store_standalone",
-    permissions,
+    permissions: ["readStorefront", "saveDraft", "restoreDraft"],
   });
 }
 
-function acceptedSource() {
-  const candidates = new Map<string, AcceptedStorefrontDraftCandidate>();
-  const source: AcceptedStorefrontDraftSource = {
-    resolveAcceptedDraft: ({ requestId }) => {
-      const candidate = candidates.get(requestId);
-      return candidate
-        ? Promise.resolve(structuredClone(candidate))
-        : Promise.reject(new Error("Accepted proposal result was not found."));
+function provenanceSource() {
+  const records = new Map<string, DraftSaveProvenance>();
+  const key = (projectId: string, requestId: string) => `${projectId}:${requestId}`;
+  const source: DraftSaveProvenanceSource = {
+    resolveSaveProvenance: ({ requestId, context }) => {
+      const record = records.get(key(context.storefrontProjectId, requestId));
+      return record
+        ? Promise.resolve(structuredClone(record))
+        : Promise.reject(new Error("Authoritative save provenance was not found."));
     },
   };
-  return { candidates, source };
+  return { records, key, source };
+}
+
+function createAdapter(
+  projectRepository: InMemoryProjectRepository,
+  source: DraftSaveProvenanceSource,
+) {
+  return createStorefrontDraftPersistenceAdapter({
+    projectRepository,
+    contextPort: contextPort(projectRepository),
+    saveProvenanceSource: source,
+    now: () => fixedDate,
+  });
 }
 
 function expectation(snapshot: StorefrontSnapshot) {
@@ -75,16 +86,12 @@ function expectation(snapshot: StorefrontSnapshot) {
   };
 }
 
-function changedSnapshot(
+function changedActiveSnapshot(
   base: StorefrontSnapshot,
-  id = "snapshot_accepted_storefront",
+  title = "Accepted storefront",
 ): StorefrontSnapshot {
   const candidate = structuredClone(base);
-  candidate.id = id;
-  candidate.revision += 1;
-  candidate.createdAt = fixedDate;
-  candidate.createdBy = "user";
-  candidate.pages[0].title.en = "Accepted storefront";
+  candidate.pages[0].title.en = title;
   return candidate;
 }
 
@@ -102,12 +109,12 @@ function saveRequest({
   context,
   base,
   candidate,
-  requestId = "request_save_accepted",
+  requestId,
 }: {
   context: MerchantProjectContext;
   base: StorefrontSnapshot;
   candidate: StorefrontSnapshot;
-  requestId?: string;
+  requestId: string;
 }): SaveStorefrontDraftRequest {
   return {
     context,
@@ -124,77 +131,147 @@ function saveRequest({
   };
 }
 
-function registerAccepted(
-  candidates: Map<string, AcceptedStorefrontDraftCandidate>,
-  request: SaveStorefrontDraftRequest,
-  candidate = request.draft.snapshot,
-): void {
-  candidates.set(request.requestId, {
-    state: "accepted",
+function baseProvenance(request: SaveStorefrontDraftRequest): Omit<DraftSaveProvenance, "origin"> {
+  return {
     requestId: request.requestId,
     tenantId: request.context.tenantId,
+    merchantId: request.context.merchantId,
+    storeId: request.context.storeId,
     storefrontProjectId: request.context.storefrontProjectId,
     expectedBase: request.expectedCurrentDraft!,
-    snapshot: structuredClone(candidate),
+  };
+}
+
+function registerManual(
+  provenance: ReturnType<typeof provenanceSource>,
+  request: SaveStorefrontDraftRequest,
+): void {
+  provenance.records.set(provenance.key(request.context.storefrontProjectId, request.requestId), {
+    ...baseProvenance(request),
+    origin: "manualEditor",
+  });
+}
+
+function registerAi(
+  provenance: ReturnType<typeof provenanceSource>,
+  request: SaveStorefrontDraftRequest,
+  proposalState: Extract<DraftSaveProvenance, { origin: "aiProposal" }>["proposalState"],
+  acceptedSnapshot = request.draft.snapshot,
+): void {
+  provenance.records.set(provenance.key(request.context.storefrontProjectId, request.requestId), {
+    ...baseProvenance(request),
+    origin: "aiProposal",
+    proposalId: "proposal_accepted_storefront",
+    proposalState,
+    acceptedSnapshot: structuredClone(acceptedSnapshot),
   });
 }
 
 describe("P9-05A canonical storefront draft persistence adapter", () => {
   it("is exactly assignable to the canonical P9-01 draft port", () => {
     const projectRepository = repository();
-    const accepted = acceptedSource();
-    const port: StorefrontDraftPersistencePort = createStorefrontDraftPersistenceAdapter({
+    const provenance = provenanceSource();
+    const port: StorefrontDraftPersistencePort = createAdapter(
       projectRepository,
-      contextPort: contextPort(projectRepository),
-      acceptedDraftSource: accepted.source,
-    });
+      provenance.source,
+    );
 
     expect(typeof port.load).toBe("function");
     expect(typeof port.save).toBe("function");
     expect(typeof port.restore).toBe("function");
   });
 
-  it("saves only the server-resolved accepted candidate with canonical identity fields", async () => {
+  it("saves a validated manual editor draft without an accepted AI proposal", async () => {
     const projectRepository = repository();
-    const accepted = acceptedSource();
-    const port = createStorefrontDraftPersistenceAdapter({
-      projectRepository,
-      contextPort: contextPort(projectRepository),
-      acceptedDraftSource: accepted.source,
-    });
+    const provenance = provenanceSource();
+    const port = createAdapter(projectRepository, provenance.source);
     const context = await contextFor(projectRepository);
-    const candidate = changedSnapshot(aurumNordicSeed.draftSnapshot);
+    const invalid = changedActiveSnapshot(aurumNordicSeed.draftSnapshot, "Unrelated navigation");
+    invalid.navigation.primary.reverse();
+    const invalidRequest = saveRequest({
+      context,
+      base: aurumNordicSeed.draftSnapshot,
+      candidate: invalid,
+      requestId: "request_manual_invalid",
+    });
+    registerManual(provenance, invalidRequest);
+    const before = await projectRepository.get(context.storefrontProjectId);
+
+    await expect(port.save(invalidRequest)).rejects.toMatchObject({
+      code: "draftRevisionConflict",
+    });
+    expect(await projectRepository.get(context.storefrontProjectId)).toEqual(before);
+
+    const candidate = changedActiveSnapshot(aurumNordicSeed.draftSnapshot, "Manual editor save");
     const request = saveRequest({
       context,
       base: aurumNordicSeed.draftSnapshot,
       candidate,
+      requestId: "request_manual_save",
     });
-    registerAccepted(accepted.candidates, request);
-
+    registerManual(provenance, request);
     const saved = await port.save(request);
-    const stored = await projectRepository.get(context.storefrontProjectId);
 
-    expect(saved).toMatchObject({
-      tenantId,
-      storefrontProjectId: context.storefrontProjectId,
-      revision: toStandaloneSnapshotRevision(candidate.revision),
-      contentFingerprint: canonicalStorefrontContentFingerprint(candidate),
-      snapshot: { id: candidate.id },
-    });
-    expect(stored.project.draftSnapshotId).toBe(candidate.id);
-    expect(stored.snapshots.find(({ id }) => id === candidate.id)).toEqual(candidate);
+    expect(saved.snapshot.id).not.toBe(aurumNordicSeed.draftSnapshot.id);
+    expect(saved.snapshot.pages[0].title.en).toBe("Manual editor save");
+    expect(canonicalStorefrontContentEqual(saved.snapshot, candidate)).toBe(true);
   });
 
-  it("rejects stale project or draft revisions and replay without mutation", async () => {
+  it("requires accepted AI provenance and mints identity from source-draft lineage", async () => {
     const projectRepository = repository();
-    const accepted = acceptedSource();
-    const port = createStorefrontDraftPersistenceAdapter({
-      projectRepository,
-      contextPort: contextPort(projectRepository),
-      acceptedDraftSource: accepted.source,
-    });
+    const provenance = provenanceSource();
+    const port = createAdapter(projectRepository, provenance.source);
     const context = await contextFor(projectRepository);
-    const candidate = changedSnapshot(aurumNordicSeed.draftSnapshot);
+    const candidate = changedActiveSnapshot(aurumNordicSeed.draftSnapshot, "Accepted AI save");
+    const request = saveRequest({
+      context,
+      base: aurumNordicSeed.draftSnapshot,
+      candidate,
+      requestId: "request_ai_save",
+    });
+    registerAi(provenance, request, "rejected");
+    const before = await projectRepository.get(context.storefrontProjectId);
+
+    await expect(port.save(request)).rejects.toMatchObject({ code: "draftRevisionConflict" });
+    expect(await projectRepository.get(context.storefrontProjectId)).toEqual(before);
+
+    registerAi(provenance, request, "accepted", candidate);
+    const acceptedRecord = structuredClone(
+      provenance.records.get(provenance.key(context.storefrontProjectId, request.requestId)),
+    );
+    const lineage: PersistedDraftSaveLineage = {
+      tenantId,
+      merchantId: context.merchantId,
+      storeId: context.storeId,
+      storefrontProjectId: context.storefrontProjectId,
+      operation: "save",
+      requestId: request.requestId,
+      origin: "aiProposal",
+      sourceDraft: expectation(aurumNordicSeed.draftSnapshot),
+      proposalId: "proposal_accepted_storefront",
+    };
+    const saved = await port.save(request);
+    const aggregateAfter = await projectRepository.get(context.storefrontProjectId);
+
+    expect(candidate.id).toBe(aurumNordicSeed.draftSnapshot.id);
+    expect(saved.snapshot.id).toBe(createPersistedDraftSnapshotId({ savedAt: fixedDate, lineage }));
+    expect(saved.snapshot.id).not.toBe(candidate.id);
+    expect(saved.contentFingerprint).toBe(canonicalStorefrontContentFingerprint(candidate));
+    expect(aggregateAfter.snapshots).toContainEqual(aurumNordicSeed.draftSnapshot);
+    expect(aggregateAfter.snapshots.find(({ id }) => id === saved.snapshot.id)).toEqual(
+      saved.snapshot,
+    );
+    expect(
+      provenance.records.get(provenance.key(context.storefrontProjectId, request.requestId)),
+    ).toEqual(acceptedRecord);
+  });
+
+  it("rejects stale revisions and fingerprints without mutation", async () => {
+    const projectRepository = repository();
+    const provenance = provenanceSource();
+    const port = createAdapter(projectRepository, provenance.source);
+    const context = await contextFor(projectRepository);
+    const candidate = changedActiveSnapshot(aurumNordicSeed.draftSnapshot);
     const stale = saveRequest({
       context: {
         ...context,
@@ -204,61 +281,28 @@ describe("P9-05A canonical storefront draft persistence adapter", () => {
       candidate,
       requestId: "request_stale_revision",
     });
-    registerAccepted(accepted.candidates, stale);
-    const before = await projectRepository.get(context.storefrontProjectId);
-
-    await expect(port.save(stale)).rejects.toMatchObject({ code: "staleProjectRevision" });
-    expect(await projectRepository.get(context.storefrontProjectId)).toEqual(before);
-
-    const valid = saveRequest({
+    registerManual(provenance, stale);
+    const badFingerprint = saveRequest({
       context,
       base: aurumNordicSeed.draftSnapshot,
       candidate,
-      requestId: "request_replay",
+      requestId: "request_stale_fingerprint",
     });
-    registerAccepted(accepted.candidates, valid);
-    await port.save(valid);
-    const afterFirstSave = await projectRepository.get(context.storefrontProjectId);
-    await expect(port.save(valid)).rejects.toMatchObject({ code: "draftRevisionConflict" });
-    expect(await projectRepository.get(context.storefrontProjectId)).toEqual(afterFirstSave);
-  });
-
-  it("rejects fingerprint and arbitrary client-snapshot mismatches without mutation", async () => {
-    const projectRepository = repository();
-    const accepted = acceptedSource();
-    const port = createStorefrontDraftPersistenceAdapter({
-      projectRepository,
-      contextPort: contextPort(projectRepository),
-      acceptedDraftSource: accepted.source,
-    });
-    const context = await contextFor(projectRepository);
-    const authoritative = changedSnapshot(aurumNordicSeed.draftSnapshot);
-    const submitted = structuredClone(authoritative);
-    submitted.pages[0].title.en = "Unapproved client change";
-    const request = saveRequest({
-      context,
-      base: aurumNordicSeed.draftSnapshot,
-      candidate: submitted,
-      requestId: "request_unapproved_snapshot",
-    });
-    registerAccepted(accepted.candidates, request, authoritative);
+    badFingerprint.expectedCurrentDraft!.contentFingerprint = "v1_stale";
+    registerManual(provenance, badFingerprint);
     const before = await projectRepository.get(context.storefrontProjectId);
 
-    await expect(port.save(request)).rejects.toMatchObject({ code: "draftRevisionConflict" });
+    await expect(port.save(stale)).rejects.toMatchObject({ code: "staleProjectRevision" });
+    await expect(port.save(badFingerprint)).rejects.toMatchObject({
+      code: "draftRevisionConflict",
+    });
     expect(await projectRepository.get(context.storefrontProjectId)).toEqual(before);
-    expect(accepted.candidates.get(request.requestId)?.state).toBe("accepted");
   });
 
-  it("rejects cross-tenant and cross-project access before repository mutation", async () => {
+  it("isolates tenant/project access and scopes identical request IDs by project", async () => {
     const projectRepository = repository([aurumNordicSeed, karvonenSeed]);
-    const accepted = acceptedSource();
-    const port = createStorefrontDraftPersistenceAdapter({
-      projectRepository,
-      contextPort: contextPort(projectRepository),
-      acceptedDraftSource: accepted.source,
-    });
-    const beforeAurum = await projectRepository.get(aurumNordicSeed.project.id);
-    const beforeKarvonen = await projectRepository.get(karvonenSeed.project.id);
+    const provenance = provenanceSource();
+    const port = createAdapter(projectRepository, provenance.source);
 
     await expect(
       port.load({
@@ -267,29 +311,105 @@ describe("P9-05A canonical storefront draft persistence adapter", () => {
       }),
     ).rejects.toMatchObject({ code: "tenantMismatch" });
 
-    const context = await contextFor(projectRepository);
+    const aurumContext = await contextFor(projectRepository, aurumNordicSeed.project.id);
     await expect(
       port.restore({
-        context,
-        requestId: "request_cross_project_restore",
-        expectedProjectRevision: context.projectRevision,
+        context: aurumContext,
+        requestId: "request_cross_project",
+        expectedProjectRevision: aurumContext.projectRevision,
         expectedCurrentDraft: expectation(aurumNordicSeed.draftSnapshot),
         target: expectation(karvonenSeed.publishedSnapshot),
       }),
     ).rejects.toMatchObject({ code: "historyTargetUnavailable" });
-    expect(await projectRepository.get(aurumNordicSeed.project.id)).toEqual(beforeAurum);
-    expect(await projectRepository.get(karvonenSeed.project.id)).toEqual(beforeKarvonen);
+
+    const karvonenContext = await contextFor(projectRepository, karvonenSeed.project.id);
+    const sharedRequestId = "request_shared_projects";
+    const aurumRequest = saveRequest({
+      context: aurumContext,
+      base: aurumNordicSeed.draftSnapshot,
+      candidate: changedActiveSnapshot(aurumNordicSeed.draftSnapshot, "Aurum scoped save"),
+      requestId: sharedRequestId,
+    });
+    const karvonenRequest = saveRequest({
+      context: karvonenContext,
+      base: karvonenSeed.draftSnapshot,
+      candidate: changedActiveSnapshot(karvonenSeed.draftSnapshot, "Karvonen scoped save"),
+      requestId: sharedRequestId,
+    });
+    registerManual(provenance, aurumRequest);
+    registerManual(provenance, karvonenRequest);
+
+    const [savedAurum, savedKarvonen] = await Promise.all([
+      port.save(aurumRequest),
+      port.save(karvonenRequest),
+    ]);
+    expect(savedAurum.snapshot.projectId).toBe(aurumNordicSeed.project.id);
+    expect(savedKarvonen.snapshot.projectId).toBe(karvonenSeed.project.id);
+    expect(savedAurum.snapshot.id).not.toBe(savedKarvonen.snapshot.id);
   });
 
-  it("restores an immutable repository target by identity into a new active draft", async () => {
+  it("separates save/restore replay keys and rejects inconsistent scoped replay", async () => {
     const projectRepository = repository();
-    const accepted = acceptedSource();
-    const port = createStorefrontDraftPersistenceAdapter({
-      projectRepository,
-      contextPort: contextPort(projectRepository),
-      acceptedDraftSource: accepted.source,
-    });
+    const provenance = provenanceSource();
+    const port = createAdapter(projectRepository, provenance.source);
     const context = await contextFor(projectRepository);
+    const requestId = "request_shared_operation";
+    const save = saveRequest({
+      context,
+      base: aurumNordicSeed.draftSnapshot,
+      candidate: changedActiveSnapshot(aurumNordicSeed.draftSnapshot, "Replay-safe save"),
+      requestId,
+    });
+    registerManual(provenance, save);
+    const saved = await port.save(save);
+
+    await expect(port.save(save)).resolves.toEqual(saved);
+    const inconsistentSave = structuredClone(save);
+    inconsistentSave.draft.contentFingerprint = "v1_inconsistent";
+    await expect(port.save(inconsistentSave)).rejects.toMatchObject({
+      code: "draftRevisionConflict",
+    });
+
+    const restore = {
+      context,
+      requestId,
+      expectedProjectRevision: context.projectRevision,
+      expectedCurrentDraft: expectation(saved.snapshot),
+      target: expectation(aurumNordicSeed.publishedSnapshot),
+    };
+    const restored = await port.restore(restore);
+    await expect(port.restore(restore)).resolves.toEqual(restored);
+
+    const inconsistentRestore = {
+      ...restore,
+      target: expectation(aurumNordicSeed.draftSnapshot),
+    };
+    await expect(port.restore(inconsistentRestore)).rejects.toMatchObject({
+      code: "staleHistoryTarget",
+    });
+  });
+
+  it("restores immutable repository identity and preserves state on failed restore", async () => {
+    const projectRepository = repository();
+    const provenance = provenanceSource();
+    const port = createAdapter(projectRepository, provenance.source);
+    const context = await contextFor(projectRepository);
+    const before = await projectRepository.get(context.storefrontProjectId);
+
+    await expect(
+      port.restore({
+        context,
+        requestId: "request_bad_restore_fingerprint",
+        expectedProjectRevision: context.projectRevision,
+        expectedCurrentDraft: expectation(aurumNordicSeed.draftSnapshot),
+        target: {
+          ...expectation(aurumNordicSeed.publishedSnapshot),
+          contentFingerprint: "v1_invalid",
+        },
+      }),
+    ).rejects.toMatchObject({ code: "historyTargetFingerprintMismatch" });
+    expect(await projectRepository.get(context.storefrontProjectId)).toEqual(before);
+
     const restored = await port.restore({
       context,
       requestId: "request_restore_published",
@@ -307,40 +427,10 @@ describe("P9-05A canonical storefront draft persistence adapter", () => {
     expect(aggregateAfter.project.publishedSnapshotId).toBe(aurumNordicSeed.publishedSnapshot.id);
   });
 
-  it("keeps draft, history and published state unchanged after a failed restore", async () => {
-    const projectRepository = repository();
-    const accepted = acceptedSource();
-    const port = createStorefrontDraftPersistenceAdapter({
-      projectRepository,
-      contextPort: contextPort(projectRepository),
-      acceptedDraftSource: accepted.source,
-    });
-    const context = await contextFor(projectRepository);
-    const before = await projectRepository.get(context.storefrontProjectId);
-
-    await expect(
-      port.restore({
-        context,
-        requestId: "request_bad_restore_fingerprint",
-        expectedProjectRevision: context.projectRevision,
-        expectedCurrentDraft: expectation(aurumNordicSeed.draftSnapshot),
-        target: {
-          ...expectation(aurumNordicSeed.publishedSnapshot),
-          contentFingerprint: "v1_invalid",
-        },
-      }),
-    ).rejects.toMatchObject({ code: "historyTargetFingerprintMismatch" });
-    expect(await projectRepository.get(context.storefrontProjectId)).toEqual(before);
-  });
-
   it("loads Aurum Nordic and Karvonen deterministically without cross-project leakage", async () => {
     const projectRepository = repository([aurumNordicSeed, karvonenSeed]);
-    const accepted = acceptedSource();
-    const port = createStorefrontDraftPersistenceAdapter({
-      projectRepository,
-      contextPort: contextPort(projectRepository),
-      acceptedDraftSource: accepted.source,
-    });
+    const provenance = provenanceSource();
+    const port = createAdapter(projectRepository, provenance.source);
 
     const [aurum, karvonen, aurumAgain] = await Promise.all([
       port.load({ tenantId, storefrontProjectId: aurumNordicSeed.project.id }),

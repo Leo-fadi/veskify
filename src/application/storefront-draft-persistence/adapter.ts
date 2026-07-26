@@ -1,5 +1,11 @@
 import { z } from "zod";
 import {
+  assembleValidatedEditorDraft,
+  EditorDraftValidationError,
+  saveValidatedEditorDraft,
+  StaleEditorDraftError,
+} from "@/application/draft-save";
+import {
   createMerchantProjectAuthorization,
   merchantProjectContextLookupSchema,
   requireMerchantProjectAction,
@@ -8,10 +14,10 @@ import {
 import {
   assertAuthoritativeDraftSavePreconditions,
   assertAuthoritativeRestorePreconditions,
+  restoreStorefrontHistoryRequestSchema,
   saveStorefrontDraftRequestSchema,
   storefrontDraftSchema,
   storefrontSnapshotExpectationSchema,
-  restoreStorefrontHistoryRequestSchema,
   tenantIdSchema,
   VeskoIntegrationError,
   type MerchantProjectContext,
@@ -22,6 +28,7 @@ import { idSchema } from "@/domain/shared";
 import {
   canonicalStorefrontContentEqual,
   canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
   canonicalValueString,
   storefrontSnapshotSchema,
   type StorefrontSnapshot,
@@ -47,45 +54,89 @@ export function toStandaloneSnapshotRevision(revision: number): string {
   return `${standaloneSnapshotRevisionPrefix}${revision}`;
 }
 
-export const acceptedStorefrontDraftCandidateSchema = z
-  .object({
-    state: z.literal("accepted"),
-    requestId: idSchema,
-    tenantId: tenantIdSchema,
-    storefrontProjectId: idSchema,
-    expectedBase: storefrontSnapshotExpectationSchema,
-    snapshot: storefrontSnapshotSchema,
+const draftSaveProvenanceBaseSchema = z.object({
+  requestId: idSchema,
+  tenantId: tenantIdSchema,
+  merchantId: z.string().trim().min(1).max(80),
+  storeId: z.string().trim().min(1).max(80),
+  storefrontProjectId: idSchema,
+  expectedBase: storefrontSnapshotExpectationSchema,
+});
+
+export const manualEditorDraftSaveProvenanceSchema = draftSaveProvenanceBaseSchema
+  .extend({ origin: z.literal("manualEditor") })
+  .strict();
+
+export const aiProposalDraftSaveProvenanceSchema = draftSaveProvenanceBaseSchema
+  .extend({
+    origin: z.literal("aiProposal"),
+    proposalId: idSchema,
+    proposalState: z.enum(["ready", "accepted", "rejected", "failed", "stale", "closed"]),
+    acceptedSnapshot: storefrontSnapshotSchema,
   })
   .strict()
   .superRefine((value, context) => {
-    if (value.snapshot.projectId !== value.storefrontProjectId) {
+    if (value.acceptedSnapshot.projectId !== value.storefrontProjectId) {
       context.addIssue({
         code: "custom",
-        path: ["snapshot", "projectId"],
+        path: ["acceptedSnapshot", "projectId"],
         message: "The accepted draft must belong to its storefront project.",
       });
     }
   });
 
-export type AcceptedStorefrontDraftCandidate = z.infer<
-  typeof acceptedStorefrontDraftCandidateSchema
->;
+export const draftSaveProvenanceSchema = z.discriminatedUnion("origin", [
+  manualEditorDraftSaveProvenanceSchema,
+  aiProposalDraftSaveProvenanceSchema,
+]);
+
+export type DraftSaveProvenance = z.infer<typeof draftSaveProvenanceSchema>;
 
 /**
- * Reads the result of the existing accepted-proposal lifecycle. This is an
- * authority resolver, not a second draft persistence boundary.
+ * Resolves the authoritative origin recorded by the editor/proposal lifecycle.
+ * The client cannot select the manual or AI path through the save request.
  */
-export interface AcceptedStorefrontDraftSource {
-  resolveAcceptedDraft(input: {
+export interface DraftSaveProvenanceSource {
+  resolveSaveProvenance(input: {
     requestId: string;
     context: MerchantProjectContext;
   }): Promise<unknown>;
 }
 
+export type PersistedDraftSaveLineage = {
+  tenantId: string;
+  merchantId: string;
+  storeId: string;
+  storefrontProjectId: string;
+  operation: "save";
+  requestId: string;
+  origin: DraftSaveProvenance["origin"];
+  sourceDraft: z.infer<typeof storefrontSnapshotExpectationSchema>;
+  proposalId?: string;
+};
+
+export function createPersistedDraftSnapshotId({
+  savedAt,
+  lineage,
+}: {
+  savedAt: Date;
+  lineage: PersistedDraftSaveLineage;
+}): string {
+  const lineageDigest = canonicalValueFingerprint(lineage).slice(-16);
+  return idSchema.parse(`snapshot_saved_${savedAt.getTime().toString(36)}_${lineageDigest}`);
+}
+
 type AdapterInput = {
   projectRepository: ProjectRepository;
   contextPort: MerchantProjectContextPort;
-  acceptedDraftSource: AcceptedStorefrontDraftSource;
+  saveProvenanceSource: DraftSaveProvenanceSource;
+  now?: () => Date;
+  createSnapshotId?: (input: { savedAt: Date; lineage: PersistedDraftSaveLineage }) => string;
+};
+
+type CompletedOperation = {
+  signature: string;
+  result: StorefrontDraft;
 };
 
 function snapshotById(aggregate: ProjectAggregate, snapshotId: string): StorefrontSnapshot | null {
@@ -149,13 +200,39 @@ function sameContextIdentity(
   );
 }
 
-function mapRepositoryFailure(error: unknown): VeskoIntegrationError {
+function sameActiveIdentity(left: StorefrontSnapshot, right: StorefrontSnapshot): boolean {
+  return (
+    left.id === right.id &&
+    left.projectId === right.projectId &&
+    left.revision === right.revision &&
+    left.catalogueRef === right.catalogueRef &&
+    left.createdAt === right.createdAt &&
+    left.createdBy === right.createdBy &&
+    canonicalValueString(left.navigation) === canonicalValueString(right.navigation) &&
+    canonicalValueString(left.pages.map(({ id }) => id)) ===
+      canonicalValueString(right.pages.map(({ id }) => id))
+  );
+}
+
+function changedPages(
+  current: StorefrontSnapshot,
+  candidate: StorefrontSnapshot,
+): StorefrontSnapshot["pages"] {
+  return candidate.pages.filter((page) => {
+    const currentPage = current.pages.find(({ id }) => id === page.id);
+    return (
+      currentPage === undefined || canonicalValueString(page) !== canonicalValueString(currentPage)
+    );
+  });
+}
+
+function mapPersistenceFailure(error: unknown): VeskoIntegrationError {
   if (error instanceof VeskoIntegrationError) return error;
   if (error instanceof ProjectNotFoundError) return new VeskoIntegrationError("projectNotFound");
   if (error instanceof RevisionConflictError) {
     return new VeskoIntegrationError("staleProjectRevision");
   }
-  if (error instanceof DraftConflictError) {
+  if (error instanceof DraftConflictError || error instanceof StaleEditorDraftError) {
     return new VeskoIntegrationError("draftRevisionConflict");
   }
   if (error instanceof SnapshotNotFoundError || error instanceof InvalidRestoreTargetError) {
@@ -169,7 +246,11 @@ function mapRepositoryFailure(error: unknown): VeskoIntegrationError {
   if (error instanceof SnapshotProjectMismatchError) {
     return new VeskoIntegrationError("projectNotFound");
   }
-  if (error instanceof RepositoryValidationError || error instanceof z.ZodError) {
+  if (
+    error instanceof RepositoryValidationError ||
+    error instanceof EditorDraftValidationError ||
+    error instanceof z.ZodError
+  ) {
     return new VeskoIntegrationError("malformedIntegrationResponse");
   }
   if (error instanceof SnapshotAlreadyExistsError) {
@@ -184,12 +265,59 @@ function parseRequest<T>(schema: z.ZodType<T>, input: unknown): T {
   return parsed.data;
 }
 
+function operationKey(
+  context: MerchantProjectContext,
+  operation: "save" | "restore",
+  requestId: string,
+): string {
+  return canonicalValueString({
+    tenantId: context.tenantId,
+    merchantId: context.merchantId,
+    storeId: context.storeId,
+    storefrontProjectId: context.storefrontProjectId,
+    operation,
+    requestId,
+  });
+}
+
+function completedResult(
+  completed: Map<string, CompletedOperation>,
+  key: string,
+  signature: string,
+  conflict: "draftRevisionConflict" | "staleHistoryTarget",
+): StorefrontDraft | null {
+  const prior = completed.get(key);
+  if (!prior) return null;
+  if (prior.signature !== signature) throw new VeskoIntegrationError(conflict);
+  return structuredClone(prior.result);
+}
+
+function saveSignature(request: z.infer<typeof saveStorefrontDraftRequestSchema>): string {
+  return canonicalValueString({
+    expectedProjectRevision: request.expectedProjectRevision,
+    expectedCurrentDraft: request.expectedCurrentDraft,
+    draft: request.draft,
+  });
+}
+
+function restoreSignature(request: z.infer<typeof restoreStorefrontHistoryRequestSchema>): string {
+  return canonicalValueString({
+    expectedProjectRevision: request.expectedProjectRevision,
+    expectedCurrentDraft: request.expectedCurrentDraft,
+    target: request.target,
+  });
+}
+
 export function createStorefrontDraftPersistenceAdapter({
   projectRepository,
   contextPort,
-  acceptedDraftSource,
+  saveProvenanceSource,
+  now = () => new Date(),
+  createSnapshotId = createPersistedDraftSnapshotId,
 }: AdapterInput): StorefrontDraftPersistencePort {
-  const completedRequestIds = new Set<string>();
+  // P9-05A standalone idempotency is process-local; durable transports may
+  // implement the same scoped key at their repository boundary.
+  const completedOperations = new Map<string, CompletedOperation>();
 
   async function loadContext(
     requested: MerchantProjectContext,
@@ -216,7 +344,7 @@ export function createStorefrontDraftPersistenceAdapter({
     try {
       return validateProjectAggregate(await projectRepository.get(projectId));
     } catch (error) {
-      throw mapRepositoryFailure(error);
+      throw mapPersistenceFailure(error);
     }
   }
 
@@ -232,18 +360,24 @@ export function createStorefrontDraftPersistenceAdapter({
         const aggregate = await loadAggregate(lookup.storefrontProjectId);
         return asDraft(context.tenantId, context.storefrontProjectId, currentDraft(aggregate));
       } catch (error) {
-        throw mapRepositoryFailure(error);
+        throw mapPersistenceFailure(error);
       }
     },
 
     async save(input) {
       const request = parseRequest(saveStorefrontDraftRequestSchema, input);
-      if (completedRequestIds.has(request.requestId)) {
-        throw new VeskoIntegrationError("draftRevisionConflict");
-      }
-
       try {
         const context = await loadContext(request.context, "edit-storefront-draft");
+        const key = operationKey(context, "save", request.requestId);
+        const signature = saveSignature(request);
+        const replay = completedResult(
+          completedOperations,
+          key,
+          signature,
+          "draftRevisionConflict",
+        );
+        if (replay) return replay;
+
         const aggregate = await loadAggregate(context.storefrontProjectId);
         const draft = currentDraft(aggregate);
         const authoritativeCurrent = authoritativeSnapshot(
@@ -256,39 +390,45 @@ export function createStorefrontDraftPersistenceAdapter({
           authoritativeCurrent,
           context.projectRevision,
         );
+        if (request.expectedCurrentDraft === null) {
+          throw new VeskoIntegrationError("draftRevisionConflict");
+        }
 
-        const accepted = acceptedStorefrontDraftCandidateSchema.parse(
-          await acceptedDraftSource.resolveAcceptedDraft({
+        const provenance = draftSaveProvenanceSchema.parse(
+          await saveProvenanceSource.resolveSaveProvenance({
             requestId: request.requestId,
             context,
           }),
         );
         if (
-          accepted.requestId !== request.requestId ||
-          accepted.tenantId !== context.tenantId ||
-          accepted.storefrontProjectId !== context.storefrontProjectId
+          provenance.requestId !== request.requestId ||
+          provenance.tenantId !== context.tenantId ||
+          provenance.merchantId !== context.merchantId ||
+          provenance.storeId !== context.storeId ||
+          provenance.storefrontProjectId !== context.storefrontProjectId
         ) {
           throw new VeskoIntegrationError(
-            accepted.tenantId !== context.tenantId ? "tenantMismatch" : "projectNotFound",
+            provenance.tenantId !== context.tenantId ? "tenantMismatch" : "permissionDenied",
           );
         }
         if (
-          request.expectedCurrentDraft === null ||
-          !sameExpectation(accepted.expectedBase, request.expectedCurrentDraft) ||
-          !sameExpectation(accepted.expectedBase, authoritativeCurrent)
+          !sameExpectation(provenance.expectedBase, request.expectedCurrentDraft) ||
+          !sameExpectation(provenance.expectedBase, authoritativeCurrent)
         ) {
           throw new VeskoIntegrationError("draftRevisionConflict");
         }
 
-        const candidate = accepted.snapshot;
-        const candidateFingerprint = canonicalStorefrontContentFingerprint(candidate);
+        const candidate =
+          provenance.origin === "aiProposal"
+            ? structuredClone(provenance.acceptedSnapshot)
+            : structuredClone(request.draft.snapshot);
+        if (provenance.origin === "aiProposal" && provenance.proposalState !== "accepted") {
+          throw new VeskoIntegrationError("draftRevisionConflict");
+        }
         if (
-          candidate.id === draft.id ||
-          aggregate.snapshots.some((snapshot) => snapshot.id === candidate.id) ||
-          candidate.projectId !== context.storefrontProjectId ||
-          candidate.catalogueRef !== aggregate.catalogue.id ||
+          !sameActiveIdentity(candidate, draft) ||
           request.draft.revision !== toStandaloneSnapshotRevision(candidate.revision) ||
-          request.draft.contentFingerprint !== candidateFingerprint ||
+          request.draft.contentFingerprint !== canonicalStorefrontContentFingerprint(candidate) ||
           request.draft.tenantId !== context.tenantId ||
           request.draft.storefrontProjectId !== context.storefrontProjectId ||
           canonicalValueString(request.draft.snapshot) !== canonicalValueString(candidate)
@@ -296,25 +436,61 @@ export function createStorefrontDraftPersistenceAdapter({
           throw new VeskoIntegrationError("draftRevisionConflict");
         }
 
-        await projectRepository.saveDraft(context.storefrontProjectId, candidate, {
-          id: draft.id,
-          revision: draft.revision,
+        const candidateChangedPages = changedPages(draft, candidate);
+        const validatedCandidate = assembleValidatedEditorDraft({
+          baseDraft: draft,
+          changedPages: candidateChangedPages,
+          aggregate,
+          primaryLocale: aggregate.project.primaryLocale,
+          brandSystem: candidate.brandSystem,
         });
-        completedRequestIds.add(request.requestId);
-        return asDraft(context.tenantId, context.storefrontProjectId, candidate);
+        if (canonicalValueString(validatedCandidate) !== canonicalValueString(candidate)) {
+          throw new VeskoIntegrationError("draftRevisionConflict");
+        }
+
+        const lineage: PersistedDraftSaveLineage = {
+          tenantId: context.tenantId,
+          merchantId: context.merchantId,
+          storeId: context.storeId,
+          storefrontProjectId: context.storefrontProjectId,
+          operation: "save",
+          requestId: request.requestId,
+          origin: provenance.origin,
+          sourceDraft: {
+            id: draft.id,
+            revision: toStandaloneSnapshotRevision(draft.revision),
+            contentFingerprint: canonicalStorefrontContentFingerprint(draft),
+          },
+          ...(provenance.origin === "aiProposal" ? { proposalId: provenance.proposalId } : {}),
+        };
+        const savedAt = now();
+        const result = await saveValidatedEditorDraft({
+          repository: projectRepository,
+          projectId: context.storefrontProjectId,
+          loadedDraft: draft,
+          changedPages: candidateChangedPages,
+          brandSystem: candidate.brandSystem,
+          primaryLocale: aggregate.project.primaryLocale,
+          now: () => savedAt,
+          createSnapshotId: () => createSnapshotId({ savedAt, lineage }),
+        });
+        const saved = asDraft(context.tenantId, context.storefrontProjectId, result.draft);
+        completedOperations.set(key, { signature, result: structuredClone(saved) });
+        return saved;
       } catch (error) {
-        throw mapRepositoryFailure(error);
+        throw mapPersistenceFailure(error);
       }
     },
 
     async restore(input) {
       const request = parseRequest(restoreStorefrontHistoryRequestSchema, input);
-      if (completedRequestIds.has(request.requestId)) {
-        throw new VeskoIntegrationError("draftRevisionConflict");
-      }
-
       try {
         const context = await loadContext(request.context, "restore-storefront-draft");
+        const key = operationKey(context, "restore", request.requestId);
+        const signature = restoreSignature(request);
+        const replay = completedResult(completedOperations, key, signature, "staleHistoryTarget");
+        if (replay) return replay;
+
         const aggregate = await loadAggregate(context.storefrontProjectId);
         const draft = currentDraft(aggregate);
         const target =
@@ -364,10 +540,11 @@ export function createStorefrontDraftPersistenceAdapter({
         ) {
           throw new VeskoIntegrationError("malformedIntegrationResponse");
         }
-        completedRequestIds.add(request.requestId);
-        return asDraft(context.tenantId, context.storefrontProjectId, restored);
+        const result = asDraft(context.tenantId, context.storefrontProjectId, restored);
+        completedOperations.set(key, { signature, result: structuredClone(result) });
+        return result;
       } catch (error) {
-        throw mapRepositoryFailure(error);
+        throw mapPersistenceFailure(error);
       }
     },
   };
