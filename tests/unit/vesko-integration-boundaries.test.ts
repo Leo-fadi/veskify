@@ -98,12 +98,39 @@ function completeAvailabilityProjection() {
     tenantId: context.tenantId,
     storeId: context.storeId,
     storefrontProjectId: context.storefrontProjectId,
+    catalogueId: "catalogue_demo",
+    catalogueRevision: "catalogue-revision-1",
     productId: "product_aurora_ring_585",
     revision: "availability-revision-1",
-    availability: "inStock",
-    stockDisplay: "show",
+    supportedLocales: ["en", "fi"],
+    fingerprint: `sha256:${"0".repeat(64)}`,
+    productAvailabilityId: "availability_product_aurora",
+    availability: [
+      {
+        availabilityId: "availability_product_aurora",
+        scope: "product",
+        status: "inStock",
+        purchasable: true,
+        stockDisplay: "show",
+        revision: "availability-revision-1",
+      },
+      {
+        availabilityId: "availability_variant_ring",
+        scope: "variant",
+        variantId: "variant_ring_16_yellow_gold",
+        status: "inStock",
+        purchasable: true,
+        stockDisplay: "show",
+        revision: "availability-revision-1",
+      },
+    ],
     attributes: [
-      { attributeId: "attribute_material", label: { en: "Material" }, value: { en: "Gold" } },
+      {
+        attributeId: "attribute_material",
+        label: { en: "Material" },
+        value: { en: "Gold" },
+        displayOrder: 0,
+      },
     ],
     optionGroups: [
       {
@@ -149,11 +176,23 @@ function completeAvailabilityProjection() {
       {
         variantId: "variant_ring_16_yellow_gold",
         optionValueIds: ["option_value_yellow_gold", "option_value_size_16"],
+        availabilityId: "availability_variant_ring",
         price: { amount: 1290, currency: "EUR" },
-        availability: "inStock",
+        mediaIds: [],
+        purchasable: true,
+        revision: "variant-revision-1",
       },
     ],
-    media: [{ assetId: "media_ring_main", role: "main", alt: { en: "Aurora ring" } }],
+    media: [
+      {
+        assetId: "media_ring_main",
+        productId: "product_aurora_ring_585",
+        role: "main",
+        alt: { en: "Aurora ring" },
+        decorative: false,
+        revision: "media-revision-1",
+      },
+    ],
   };
 }
 
@@ -219,9 +258,18 @@ describe("P9-01 Vesko integration boundaries", () => {
       media: [
         {
           assetId: "media_ring_variant",
+          productId: "product_aurora_ring_585",
           role: "variant",
           variantIds: ["variant_ring_16_yellow_gold"],
           alt: { en: "Yellow gold ring" },
+          decorative: false,
+          revision: "media-revision-1",
+        },
+      ],
+      variants: [
+        {
+          ...projection.variants[0],
+          mediaIds: ["media_ring_variant"],
         },
       ],
     };

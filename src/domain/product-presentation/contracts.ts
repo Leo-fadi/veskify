@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   moneyDisplaySchema,
+  presentationRevisionSchema,
   productMediaPresentationSchema,
   unavailableCombinationSchema,
 } from "@/domain/component-platform";
@@ -119,6 +120,7 @@ export const canonicalProductConfigurationResultSchema = z
     priceUnavailableReason: localizedTextSchema.optional(),
     compareAtPrice: moneyDisplaySchema.optional(),
     availability: localizedTextSchema.optional(),
+    sku: z.string().trim().min(1).max(120).optional(),
     mediaAssetIds: z.array(idSchema).optional(),
     disabledOptionValues: z.array(canonicalResolverDisabledValueSchema).default([]),
     warnings: z.array(z.string().trim().min(1)).default([]),
@@ -175,7 +177,7 @@ export const canonicalProductConfigurationResultSchema = z
 export const canonicalProductConfigurationInputSchema = z
   .object({
     productId: idSchema,
-    catalogueRevision: z.string().trim().min(1).max(120),
+    catalogueRevision: presentationRevisionSchema,
     selectedValues: z.array(enumeratedOptionSelectionSchema),
     textEntries: z.array(z.object({ groupId: idSchema, value: z.string().max(500) }).strict()),
   })
@@ -184,7 +186,7 @@ export const canonicalProductConfigurationInputSchema = z
 export const productOptionResolutionResultSchema = z
   .object({
     productId: idSchema,
-    catalogueRevision: z.string().trim().min(1).max(120),
+    catalogueRevision: presentationRevisionSchema,
     selectedValues: z.array(enumeratedOptionSelectionSchema),
     textEntryValues: z.array(textOptionEntrySchema),
     incompleteRequiredGroupIds: z.array(idSchema),
@@ -196,6 +198,7 @@ export const productOptionResolutionResultSchema = z
     displayedPriceUnavailableReason: localizedTextSchema.optional(),
     displayedCompareAtPrice: moneyDisplaySchema.optional(),
     displayedAvailability: localizedTextSchema.optional(),
+    displayedSku: z.string().trim().min(1).max(120).optional(),
     selectedMediaReferences: z.array(productMediaPresentationSchema),
     validationWarnings: z.array(productOptionWarningSchema),
     canAddToCart: z.boolean(),

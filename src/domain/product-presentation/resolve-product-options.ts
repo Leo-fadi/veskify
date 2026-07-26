@@ -245,6 +245,10 @@ export async function resolveProductOptions(
   const displayedCompareAtPrice = resolverControlsPriceState
     ? canonicalResult?.compareAtPrice
     : context.compareAtPrice;
+  const displayedSku =
+    canonicalResult?.resolvedConfiguration?.kind === "variant"
+      ? canonicalResult.sku
+      : (canonicalResult?.sku ?? context.sku);
   const result = productOptionResolutionResultSchema.parse({
     productId: context.productId,
     catalogueRevision: context.revision,
@@ -259,6 +263,7 @@ export async function resolveProductOptions(
     displayedPriceUnavailableReason,
     displayedCompareAtPrice,
     displayedAvailability: canonicalResult?.availability ?? context.availability,
+    displayedSku,
     selectedMediaReferences,
     validationWarnings,
     canAddToCart:

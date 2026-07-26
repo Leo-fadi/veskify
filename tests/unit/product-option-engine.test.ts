@@ -172,6 +172,7 @@ const canonicalResolver: CanonicalProductConfigurationResolver = {
         price: { amount: black ? 359 : 349, currency: "EUR" },
         compareAtPrice: { amount: black ? 419 : 399, currency: "EUR" },
         availability: localized(black ? "Low stock" : "In stock"),
+        sku: black ? "WATCH-BLACK-001" : "WATCH-SILVER-001",
         mediaAssetIds: [black ? "asset_watch_black" : "asset_watch_silver"],
       };
     }
@@ -292,6 +293,7 @@ describe("P6-01 dynamic product-option resolution engine", () => {
       variantId: "variant_watch_black",
     });
     expect(selected.displayedPrice).toEqual({ amount: 359, currency: "EUR" });
+    expect(selected.displayedSku).toBe("WATCH-BLACK-001");
   });
 
   it("rejects asynchronous invalid resolver payloads safely", async () => {

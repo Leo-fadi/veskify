@@ -274,33 +274,146 @@ export const catalogueProjectionSchema = z
   });
 
 export const storefrontOptionGroupProjectionSchema = productOptionGroupSchema;
-export const canonicalProductMediaProjectionSchema = productMediaPresentationSchema;
+export const canonicalProductMediaProjectionSchema = productMediaPresentationSchema
+  .extend({
+    productId: idSchema,
+    decorative: z.boolean().default(false),
+    revision: integrationRevisionSchema,
+  })
+  .strict()
+  .superRefine((media, context) => {
+    if (!media.decorative && media.alt === undefined) {
+      catalogueIssue(
+        context,
+        ["alt"],
+        "Non-decorative canonical product media requires localized alt text.",
+      );
+    }
+  });
+
+export const storefrontAvailabilityRecordSchema = z
+  .object({
+    availabilityId: idSchema,
+    scope: z.enum(["product", "variant"]),
+    variantId: idSchema.optional(),
+    status: z.enum(["inStock", "lowStock", "outOfStock", "unavailable"]),
+    purchasable: z.boolean(),
+    stockDisplay: z.enum(["show", "limited", "hide"]),
+    expectedAvailabilityMessage: localizedTextSchema.optional(),
+    revision: integrationRevisionSchema,
+  })
+  .strict()
+  .superRefine((record, context) => {
+    if ((record.scope === "variant") !== (record.variantId !== undefined)) {
+      catalogueIssue(
+        context,
+        ["variantId"],
+        "Variant availability must identify exactly one canonical variant.",
+      );
+    }
+  });
+
+export const storefrontDisplayAttributeSchema = z
+  .object({
+    attributeId: idSchema,
+    label: localizedTextSchema,
+    value: z.union([
+      localizedTextSchema,
+      z.string().trim().min(1).max(500),
+      z.number().finite(),
+      z.boolean(),
+      z.array(z.string().trim().min(1).max(200)).min(1),
+    ]),
+    displayOrder: z.number().int().nonnegative(),
+    unit: localizedTextSchema.optional(),
+    presentationRole: z.enum(["highlight", "specification", "technical"]).optional(),
+  })
+  .strict();
+
+export const storefrontVariantProjectionSchema = z
+  .object({
+    variantId: idSchema,
+    sku: z.string().trim().min(1).max(120).optional(),
+    optionValueIds: z.array(idSchema),
+    availabilityId: idSchema,
+    price: moneySchema.optional(),
+    compareAtPrice: moneySchema.optional(),
+    mediaIds: z.array(idSchema),
+    purchasable: z.boolean(),
+    revision: integrationRevisionSchema,
+  })
+  .strict();
+
+function hasOptionDependencyCycle(
+  groups: readonly z.infer<typeof storefrontOptionGroupProjectionSchema>[],
+): boolean {
+  const graph = new Map(
+    groups.map((group) => [group.id, group.dependsOn.map((dependency) => dependency.groupId)]),
+  );
+  const visiting = new Set<string>();
+  const visited = new Set<string>();
+  const visit = (groupId: string): boolean => {
+    if (visiting.has(groupId)) return true;
+    if (visited.has(groupId)) return false;
+    visiting.add(groupId);
+    for (const dependencyId of graph.get(groupId) ?? []) {
+      if (graph.has(dependencyId) && visit(dependencyId)) return true;
+    }
+    visiting.delete(groupId);
+    visited.add(groupId);
+    return false;
+  };
+  return groups.some((group) => visit(group.id));
+}
+
+function validateLocalizedProjectionLocales(
+  value: unknown,
+  supportedLocales: ReadonlySet<string>,
+  context: z.RefinementCtx,
+  path: (string | number)[] = [],
+): void {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) =>
+      validateLocalizedProjectionLocales(item, supportedLocales, context, [...path, index]),
+    );
+    return;
+  }
+  if (typeof value !== "object" || value === null) return;
+  const record = value as Record<string, unknown>;
+  const localeKeys = ["en", "fi"].filter((locale) => locale in record);
+  if (localeKeys.length > 0) {
+    localeKeys.forEach((locale) => {
+      if (!supportedLocales.has(locale)) {
+        catalogueIssue(
+          context,
+          [...path, locale],
+          "Localized projection data must remain within supported project locales.",
+        );
+      }
+    });
+    return;
+  }
+  Object.entries(record).forEach(([key, item]) =>
+    validateLocalizedProjectionLocales(item, supportedLocales, context, [...path, key]),
+  );
+}
 
 export const availabilityOptionMediaProjectionSchema = z
   .object({
     tenantId: tenantIdSchema,
     storeId: storeIdSchema,
     storefrontProjectId: idSchema,
+    catalogueId: idSchema,
+    catalogueRevision: integrationRevisionSchema,
     productId: idSchema,
     revision: integrationRevisionSchema,
-    availability: z.enum(["inStock", "lowStock", "outOfStock", "unavailable"]),
-    stockDisplay: z.enum(["show", "limited", "hide"]),
-    attributes: z.array(
-      z
-        .object({ attributeId: idSchema, label: localizedTextSchema, value: localizedTextSchema })
-        .strict(),
-    ),
+    supportedLocales: z.array(localeSchema).min(1).max(2),
+    fingerprint: z.string().regex(/^sha256:[a-f0-9]{64}$/),
+    productAvailabilityId: idSchema,
+    availability: z.array(storefrontAvailabilityRecordSchema),
+    attributes: z.array(storefrontDisplayAttributeSchema),
     optionGroups: z.array(storefrontOptionGroupProjectionSchema),
-    variants: z.array(
-      z
-        .object({
-          variantId: idSchema,
-          optionValueIds: z.array(idSchema),
-          price: moneySchema.optional(),
-          availability: z.enum(["inStock", "lowStock", "outOfStock", "unavailable"]),
-        })
-        .strict(),
-    ),
+    variants: z.array(storefrontVariantProjectionSchema),
     media: z.array(canonicalProductMediaProjectionSchema),
   })
   .strict()
@@ -308,14 +421,28 @@ export const availabilityOptionMediaProjectionSchema = z
     const optionGroups = new Map(value.optionGroups.map((group) => [group.id, group]));
     const optionValues = new Map<string, string>();
     const variantIds = new Set(value.variants.map((variant) => variant.variantId));
+    const availabilityById = new Map(
+      value.availability.map((record) => [record.availabilityId, record]),
+    );
+    const mediaById = new Map(value.media.map((media) => [media.assetId, media]));
 
+    if (!unique(value.supportedLocales)) {
+      catalogueIssue(context, ["supportedLocales"], "Supported locales must be unique.");
+    }
+    validateLocalizedProjectionLocales(value, new Set(value.supportedLocales), context);
+    if (!unique(value.attributes.map((attribute) => attribute.attributeId))) {
+      catalogueIssue(context, ["attributes"], "Canonical attribute IDs must be unique.");
+    }
+    if (!unique(value.attributes.map((attribute) => String(attribute.displayOrder)))) {
+      catalogueIssue(context, ["attributes"], "Canonical attribute display order must be unique.");
+    }
     if (!unique(value.optionGroups.map((group) => group.id))) {
       catalogueIssue(context, ["optionGroups"], "Canonical option group IDs must be unique.");
     }
     value.optionGroups.forEach((group, groupIndex) => {
       group.values.forEach((optionValue, valueIndex) => {
         const owner = optionValues.get(optionValue.id);
-        if (owner !== undefined && owner !== group.id) {
+        if (owner !== undefined) {
           catalogueIssue(
             context,
             ["optionGroups", groupIndex, "values", valueIndex, "id"],
@@ -345,11 +472,97 @@ export const availabilityOptionMediaProjectionSchema = z
           }
         });
       });
+      group.values.forEach((optionValue, valueIndex) => {
+        const swatchAssetId = optionValue.swatch?.assetId;
+        if (swatchAssetId !== undefined && !mediaById.has(swatchAssetId)) {
+          catalogueIssue(
+            context,
+            ["optionGroups", groupIndex, "values", valueIndex, "swatch", "assetId"],
+            "Option media references must resolve to canonical product media.",
+          );
+        }
+      });
     });
+    if (hasOptionDependencyCycle(value.optionGroups)) {
+      catalogueIssue(context, ["optionGroups"], "Option dependency graph contains a cycle.");
+    }
 
     if (!unique(value.variants.map((variant) => variant.variantId))) {
       catalogueIssue(context, ["variants"], "Canonical variant IDs must be unique.");
     }
+    const variantSkus = value.variants.flatMap((variant) =>
+      variant.sku === undefined ? [] : [variant.sku],
+    );
+    if (!unique(variantSkus)) {
+      catalogueIssue(context, ["variants"], "Canonical variant SKUs must be unique.");
+    }
+    if (!unique(value.availability.map((record) => record.availabilityId))) {
+      catalogueIssue(context, ["availability"], "Canonical availability IDs must be unique.");
+    }
+    const productAvailabilityRecords = value.availability.filter(
+      (record) => record.scope === "product",
+    );
+    if (
+      productAvailabilityRecords.length !== 1 ||
+      productAvailabilityRecords[0]?.availabilityId !== value.productAvailabilityId
+    ) {
+      catalogueIssue(
+        context,
+        ["availability"],
+        "The projection must contain exactly one canonical product availability record.",
+      );
+    }
+    const variantAvailabilityIds = value.availability.flatMap((record) =>
+      record.scope === "variant" && record.variantId !== undefined ? [record.variantId] : [],
+    );
+    if (!unique(variantAvailabilityIds)) {
+      catalogueIssue(
+        context,
+        ["availability"],
+        "Each canonical variant may have at most one scoped availability record.",
+      );
+    }
+    const productAvailability = availabilityById.get(value.productAvailabilityId);
+    if (productAvailability === undefined || productAvailability.scope !== "product") {
+      catalogueIssue(
+        context,
+        ["productAvailabilityId"],
+        "Product availability must reference a canonical product-scoped record.",
+      );
+    }
+    value.availability.forEach((record, availabilityIndex) => {
+      if (
+        record.scope === "variant" &&
+        record.variantId !== undefined &&
+        !variantIds.has(record.variantId)
+      ) {
+        catalogueIssue(
+          context,
+          ["availability", availabilityIndex, "variantId"],
+          "Variant availability must reference a variant on this product.",
+        );
+      }
+      if (
+        record.scope === "variant" &&
+        record.variantId !== undefined &&
+        !value.variants.some(
+          (variant) =>
+            variant.variantId === record.variantId &&
+            variant.availabilityId === record.availabilityId,
+        )
+      ) {
+        catalogueIssue(
+          context,
+          ["availability", availabilityIndex, "availabilityId"],
+          "Variant availability records must be referenced by their canonical variant.",
+        );
+      }
+    });
+
+    const combinationKeys = new Set<string>();
+    const variantDimensionGroups = value.optionGroups.filter(
+      (group) => group.source === "variantDimension",
+    );
     value.variants.forEach((variant, variantIndex) => {
       if (!unique(variant.optionValueIds)) {
         catalogueIssue(
@@ -367,9 +580,87 @@ export const availabilityOptionMediaProjectionSchema = z
           );
         }
       });
+      const selectedGroupIds = variant.optionValueIds.flatMap((valueId) => {
+        const groupId = optionValues.get(valueId);
+        return groupId === undefined ? [] : [groupId];
+      });
+      if (
+        !unique(selectedGroupIds) ||
+        selectedGroupIds.length !== variantDimensionGroups.length ||
+        variantDimensionGroups.some((group) => !selectedGroupIds.includes(group.id))
+      ) {
+        catalogueIssue(
+          context,
+          ["variants", variantIndex, "optionValueIds"],
+          "Variants must select exactly one value from every canonical variant dimension.",
+        );
+      }
+      const combinationKey = variantDimensionGroups
+        .map((group) => {
+          const selectedValue = variant.optionValueIds.find(
+            (valueId) => optionValues.get(valueId) === group.id,
+          );
+          return `${group.id}:${selectedValue ?? ""}`;
+        })
+        .join("|");
+      if (combinationKeys.has(combinationKey)) {
+        catalogueIssue(
+          context,
+          ["variants", variantIndex, "optionValueIds"],
+          "Canonical variant combinations must be unique.",
+        );
+      }
+      combinationKeys.add(combinationKey);
+
+      const availabilityRecord = availabilityById.get(variant.availabilityId);
+      if (
+        availabilityRecord === undefined ||
+        (availabilityRecord.scope === "variant" &&
+          availabilityRecord.variantId !== variant.variantId)
+      ) {
+        catalogueIssue(
+          context,
+          ["variants", variantIndex, "availabilityId"],
+          "Variant availability references must resolve for the same canonical variant.",
+        );
+      }
+      if (variant.purchasable && availabilityRecord?.purchasable !== true) {
+        catalogueIssue(
+          context,
+          ["variants", variantIndex, "purchasable"],
+          "Variant purchasability must match its canonical availability record.",
+        );
+      }
+      if (!unique(variant.mediaIds)) {
+        catalogueIssue(
+          context,
+          ["variants", variantIndex, "mediaIds"],
+          "Variant media references must be unique.",
+        );
+      }
+      variant.mediaIds.forEach((mediaId, mediaIndex) => {
+        const media = mediaById.get(mediaId);
+        if (media === undefined || !media.variantIds?.includes(variant.variantId)) {
+          catalogueIssue(
+            context,
+            ["variants", variantIndex, "mediaIds", mediaIndex],
+            "Variant media references must resolve for the same canonical variant.",
+          );
+        }
+      });
     });
 
+    if (!unique(value.media.map((media) => media.assetId))) {
+      catalogueIssue(context, ["media"], "Canonical media IDs must be unique.");
+    }
     value.media.forEach((media, mediaIndex) => {
+      if (media.productId !== value.productId) {
+        catalogueIssue(
+          context,
+          ["media", mediaIndex, "productId"],
+          "Canonical media must belong to the projected product.",
+        );
+      }
       if (
         media.role === "variant" &&
         (media.variantIds === undefined || media.variantIds.length === 0)
@@ -396,6 +687,19 @@ export const availabilityOptionMediaProjectionSchema = z
           );
         }
       });
+      if (
+        media.variantIds !== undefined &&
+        media.variantIds.some((variantId) => {
+          const variant = value.variants.find((item) => item.variantId === variantId);
+          return variant === undefined || !variant.mediaIds.includes(media.assetId);
+        })
+      ) {
+        catalogueIssue(
+          context,
+          ["media", mediaIndex, "variantIds"],
+          "Variant-media associations must be consistent in both directions.",
+        );
+      }
     });
   });
 
@@ -572,6 +876,15 @@ export const integrationFailureCodeSchema = z.enum([
   "catalogueUnavailable",
   "staleCatalogueProjection",
   "availabilityUnavailable",
+  "productNotFound",
+  "projectMismatch",
+  "brokenOptionReference",
+  "brokenDependency",
+  "dependencyCycle",
+  "duplicateVariantCombination",
+  "brokenAvailabilityReference",
+  "brokenMediaReference",
+  "unsupportedLocale",
   "draftRevisionConflict",
   "historyTargetUnavailable",
   "staleHistoryTarget",
@@ -597,6 +910,15 @@ const safeFailureMessages: Record<IntegrationFailureCode, string> = {
   catalogueUnavailable: "Products from Vesko are temporarily unavailable.",
   staleCatalogueProjection: "Product information changed. Refresh and try again.",
   availabilityUnavailable: "Product availability is temporarily unavailable.",
+  productNotFound: "This product is no longer available.",
+  projectMismatch: "This product information belongs to a different storefront project.",
+  brokenOptionReference: "Vesko returned incomplete product option information.",
+  brokenDependency: "Vesko returned incomplete product option dependencies.",
+  dependencyCycle: "Vesko returned an invalid product option dependency sequence.",
+  duplicateVariantCombination: "Vesko returned duplicate product variant combinations.",
+  brokenAvailabilityReference: "Vesko returned incomplete product availability information.",
+  brokenMediaReference: "Vesko returned incomplete canonical product media.",
+  unsupportedLocale: "Product information uses a language not enabled for this storefront.",
   draftRevisionConflict: "This draft changed elsewhere. Refresh before saving.",
   historyTargetUnavailable: "The selected storefront version is no longer available.",
   staleHistoryTarget: "The selected storefront version changed. Refresh and try again.",

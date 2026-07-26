@@ -5,6 +5,7 @@ import Image from "next/image";
 import { z } from "zod";
 import {
   componentProjectionContextSchema,
+  presentationRevisionSchema,
   type ProductPresentationContext,
   type StorefrontAssetMetadata,
 } from "@/domain/component-platform";
@@ -101,7 +102,7 @@ export const productPrimaryActionIntentSchema = z
     type: z.literal("activatePrimaryProductAction"),
     action: z.literal("addToCart"),
     productId: idSchema,
-    catalogueRevision: z.string().trim().min(1).max(120),
+    catalogueRevision: presentationRevisionSchema,
     resolvedConfiguration: resolvedConfigurationSchema.optional(),
     selectedValues: z.array(selectedEnumeratedValueSchema),
     textEntries: z.array(z.object({ groupId: idSchema, value: z.string().max(500) }).strict()),
@@ -147,7 +148,7 @@ type PreparedDynamicProductDetail = ProductOptionIntentCallbacks & {
   resolutionLifecycle: ProductResolutionLifecyclePresentation;
   resolvedOptions: DynamicProductOptionPresentation;
   textEntryDrafts: readonly ProductTextEntryDraft[];
-  assetFor: (assetId: string, alt?: LocalizedText) => ResolvedAsset;
+  assetFor: (assetId: string, alt?: LocalizedText, decorative?: boolean) => ResolvedAsset;
   onPrimaryAction: ProductPrimaryActionIntentCallback;
 };
 
@@ -391,7 +392,7 @@ function prepareDynamicProductDetail(
     onClearOption: input.onClearOption,
     onResetOptions: input.onResetOptions,
     onPrimaryAction: input.onPrimaryAction,
-    assetFor(assetId, alt) {
+    assetFor(assetId, alt, decorative = false) {
       const metadata = assetMetadata.get(assetId);
       if (!metadata || metadata.approvalStatus !== "approved") {
         throw new Error(`PDP media requires approved asset metadata: ${assetId}.`);
@@ -403,8 +404,8 @@ function prepareDynamicProductDetail(
       const asset = assetRefSchema.parse({
         id: assetId,
         url: input.resolveAssetUrl(assetId),
-        alt: alt ?? metadata.alt,
-        decorative: false,
+        alt: decorative ? undefined : (alt ?? metadata.alt),
+        decorative,
       });
       return { asset, provenance: metadata.provenance };
     },
@@ -457,8 +458,12 @@ function moneyLabel(
   }).format(value.amount);
 }
 
-function mediaAlt(product: ProductPresentationContext, assetId: string) {
-  return product.media.find((media) => media.assetId === assetId)?.alt ?? product.title;
+function mediaPresentation(product: ProductPresentationContext, assetId: string) {
+  const media = product.media.find((item) => item.assetId === assetId);
+  return {
+    alt: media?.decorative ? undefined : (media?.alt ?? product.title),
+    decorative: media?.decorative ?? false,
+  };
 }
 
 export function DynamicProductGallery({
@@ -503,7 +508,12 @@ export function DynamicProductGallery({
       ? selection.assetId
       : galleryMedia[0].assetId;
   const selected = galleryMedia.find((item) => item.assetId === selectedAssetId) ?? galleryMedia[0];
-  const resolved = assetFor(selected.assetId, mediaAlt(product, selected.assetId));
+  const selectedPresentation = mediaPresentation(product, selected.assetId);
+  const resolved = assetFor(
+    selected.assetId,
+    selectedPresentation.alt,
+    selectedPresentation.decorative,
+  );
   return (
     <section
       aria-label={fallbackLabel("Product gallery", "Tuotegalleria", locale)}
@@ -524,7 +534,8 @@ export function DynamicProductGallery({
           role="group"
         >
           {galleryMedia.map((mediaItem, index) => {
-            const item = assetFor(mediaItem.assetId, mediaAlt(product, mediaItem.assetId));
+            const presentation = mediaPresentation(product, mediaItem.assetId);
+            const item = assetFor(mediaItem.assetId, presentation.alt, presentation.decorative);
             return (
               <button
                 aria-label={`${fallbackLabel("View product image", "Näytä tuotekuva", locale)} ${index + 1}`}
@@ -562,9 +573,9 @@ export function DynamicProductIdentity({
   return (
     <header className={styles.identity}>
       <h1 id={titleId}>{text(product.title, locale)}</h1>
-      {showSku && product.sku ? (
+      {showSku && resolvedOptions.displayedSku ? (
         <p className={styles.sku}>
-          <span>{fallbackLabel("SKU", "Tuotetunnus", locale)}:</span> {product.sku}
+          <span>{fallbackLabel("SKU", "Tuotetunnus", locale)}:</span> {resolvedOptions.displayedSku}
         </p>
       ) : null}
       <div aria-label={fallbackLabel("Price", "Hinta", locale)} className={styles.priceRow}>
@@ -1099,7 +1110,11 @@ export function DynamicProductSupportingContent({
   const headingId = useId();
   const supportingMedia = product.media.find((media) => media.role === "editorial");
   const image = supportingMedia
-    ? assetFor(supportingMedia.assetId, supportingMedia.alt ?? product.title)
+    ? assetFor(
+        supportingMedia.assetId,
+        supportingMedia.decorative ? undefined : (supportingMedia.alt ?? product.title),
+        supportingMedia.decorative,
+      )
     : undefined;
   if (
     !content.supportingHeading &&
@@ -1159,7 +1174,13 @@ export function DynamicRelatedProducts({
       <div className={styles.relatedGrid}>
         {products.map((product) => {
           const media = product.media[0];
-          const image = media ? assetFor(media.assetId, media.alt ?? product.title) : undefined;
+          const image = media
+            ? assetFor(
+                media.assetId,
+                media.decorative ? undefined : (media.alt ?? product.title),
+                media.decorative,
+              )
+            : undefined;
           return (
             <article key={product.productId}>
               {image ? (
