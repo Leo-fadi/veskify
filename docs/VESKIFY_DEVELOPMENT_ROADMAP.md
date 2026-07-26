@@ -39,7 +39,7 @@ These capabilities are not future work and must not be rebuilt.
 | Karvonen needed explicit bootstrap wiring.         | Add reliable load/reset demo workflows.                      |
 | Editor still looks like a development tool.        | Build the native Storefront Studio merchant shell.           |
 
-## 4. Remaining phases
+## 4. Phase status and active work
 
 ### P4.1 — Real-AI findings and hardening
 
@@ -124,119 +124,145 @@ These capabilities are not future work and must not be rebuilt.
 
 **Gate:** URL/minimal inputs → approved brief succeeds; public commerce conflicts never override Vesko.
 
-### P8 — Asset-aware initial generation
+### P8 — Asset-aware initial generation — engineering foundation delivered; runtime integration outstanding
 
-**Goal:** Generate a complete merchant-specific first storefront.
+**Completed infrastructure and tested capabilities:**
 
-**Deliverables:**
+- whole-storefront generation plan and proposal lifecycle;
+- server-side OpenAI whole-storefront planner;
+- premium visual system;
+- review, Accept, Reject and Close lifecycle with controlled whole-storefront confirmation;
+- Storefront Studio editor-shell work.
 
-- homepage, collection and dynamic PDP generation from the approved brief;
-- page-blueprint selection;
-- asset-role placement;
-- missing-asset choices: reuse, upload, continue or generate;
-- removal of seed-brand defaults;
-- source/binding/asset validation before proposal.
+**Outstanding runtime integration:** The merchant editor still falls back to the deterministic/legacy storefront provider path. Wiring the canonical server planning provider, brief, component-registry and approved-asset handoff into that runtime is required before the complete merchant generation outcome is available.
 
-**Merchant outcome:** Initial generation feels specific to the merchant and uses existing assets correctly.
+### P9 — Whole-storefront design quality — active
 
-**Gate:** AC-103 through AC-105 and AC-117 through AC-119 pass.
+**Goal:** Produce genuinely different, coherent complete storefronts rather than small rearrangements.
 
-### P9 — Whole-storefront design quality
+#### P9-01 — Wire the server whole-storefront planning provider into the runtime editor
 
-**Goal:** Produce genuinely different, coherent complete storefronts.
+**Goal:** Use the canonical server planning provider in the merchant editor instead of the deterministic/legacy fallback.
 
-**Deliverables:**
+**Acceptance:** A runtime editor session reaches the controlled whole-storefront planning and review path.
 
-- exact valid brand-palette support;
-- richer hero, editorial, collection, product and trust variants;
-- coordinated navigation and footer;
-- typography, spacing, buttons and image-treatment skills;
-- coherent homepage, collection and product-page restyling;
-- responsive visual polish;
-- fixture-content cleanup.
+#### P9-02 — Complete brief, component-registry and approved-asset runtime handoff
 
-**Merchant outcome:** “Redesign this as a premium Scandinavian jewellery storefront” creates one coordinated storefront, not isolated page edits.
+**Goal:** Carry the approved brief, controlled component vocabulary and approved assets into runtime generation.
 
-**Gate:** AC-113 through AC-123 pass, including atomic whole-site undo/redo.
+**Acceptance:** Runtime proposals use the same validated brief, registry and asset context as the completed planning infrastructure.
 
-### P10 — Vesko Storefront Studio product UX
+#### P9-03 — Storefront Design System v1 quality expansion
 
-**Goal:** Turn the engine into an understandable Vesko product.
+**Goal:** Expand the approved visual vocabulary for coherent premium whole-storefront design.
 
-**Deliverables:**
+**Acceptance:** Whole-storefront proposals can make approved typography, spacing, colour, component and page-level changes without changing commerce truth.
 
-- native Vesko application shell;
-- merchant naming and navigation;
-- focused Setup, Editor, Preview, Publishing and History workspace;
-- compact page/outline rail;
-- larger canvas;
-- tabbed Design/AI controls;
-- responsive drawers/bottom sheets;
-- first-use guidance;
-- no developer tools or internal terminology.
+#### P9-04 — Whole-storefront visual-quality and responsive acceptance suite
 
-**Merchant outcome:** A first-time retailer completes the journey without developer assistance.
+**Goal:** Prove coherent visual quality, atomicity and responsive behaviour through the runtime journey.
 
-**Gate:** AC-121, AC-123 and first-time usability acceptance pass.
+**Acceptance:** Quality and protected-data checks pass across the supported editor and storefront viewports.
 
-### P11 — Demo reliability and staging
+#### P9-05 — Internal merchant-generation demo checkpoint
 
-**Goal:** Make sales/customer demonstrations repeatable and shareable.
+**Goal:** Verify the completed runtime journey with internal merchants before moving to product UX and staging work.
 
-**Deliverables:**
+**Acceptance:** The runtime journey completes without the current full-suite lifecycle timeout; no final quality/manual checkpoint is claimed until that and the open editor-quality work are resolved.
 
-- load/reset Karvonen and reference fixtures;
-- known prompt library;
-- clean-state start and restore;
-- provider failure recovery;
-- staging deployment with server-side secrets;
-- access control;
-- logging, latency and cost observability;
-- final performance and accessibility gate.
+### Completed Vesko integration foundation prework
 
-**Merchant outcome:** The same demo works repeatedly without IndexedDB preparation or developer intervention.
+The merged integration foundation provides canonical integration boundaries, merchant/project context, catalogue/navigation projection, availability/options/variants/media projection, authoritative draft persistence, authoritative publishing and complete standalone port assembly.
 
-**Gate:** AC-120 and the complete final acceptance journey pass from a clean environment.
+Historical internal task and branch labels used `P9-*` for this completed work. Those labels do not replace the authoritative SDD identity of canonical Phase 9 and do not by themselves complete canonical Phase 9 or Phase 12.
 
-### P12 — Vesko integration handoff
+**Frozen ownership:** Vesko owns canonical commerce truth and sellability. Storefront Studio owns presentation and controlled design changes.
 
-**Goal:** Hand the engine to the Vesko teammate without redesigning it.
+### P10 — Vesko Storefront Studio product UX — planned
 
-**Deliverables:**
+**Goal:** Turn the engine into an understandable Vesko product without developer terminology or confusing controls.
 
-- production adapter contracts and implementations;
-- project/authentication context mapping;
-- canonical commerce projection mapping;
-- media, persistence, publishing and source-discovery adapters;
-- component/blueprint registry package;
-- migrations and version policy;
-- conformance tests;
-- deployment and rollback runbook;
-- ownership and unresolved-decision table.
+**Outstanding work:**
 
-**Merchant outcome:** Veskify operates inside Vesko Storefront Studio against real Vesko services.
+- compact usable editor workspace with coherent toolbar and project/page identity;
+- practical desktop viewport use and responsive panels;
+- clear Design and AI workflows;
+- localization consistency;
+- removal of duplicated or confusing controls;
+- merchant usability acceptance.
 
-**Gate:** AC-124 and AC-125 pass; integration sign-off complete.
+**Gate:** The current editor UI has not passed its manual quality checkpoint; the observed layout quality remains an open P10 gate.
 
-## 5. Immediate parallel start
+### P11 — Demo reliability and staging — planned
 
-After the v1.2 documentation PR merges:
+**Goal:** Establish the prerequisites for repeatable, supportable demos and staging use.
 
-| Window | Task                                                                | Outcome                                                                                                            | Overlap rule                                                    |
-| ------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| W1     | **P5-01 Component registry v2 and commerce-presentation contracts** | Define component, binding, product-presentation, blueprint and conformance contracts.                              | Shared contract branch; merge first.                            |
-| W2     | **P10-01 Storefront Studio shell foundation**                       | Implement native shell, workspace header and compact rails.                                                        | Presentation-only; do not alter W1 contracts.                   |
-| W3     | **P7-01 Source discovery and Storefront Design Brief contracts**    | Define source evidence, provenance, asset inventory, reconciliation and brief schemas with deterministic fixtures. | New source/onboarding modules; do not alter component registry. |
-| W4     | **Manual testing only**                                             | Preserve real-provider Karvonen environment.                                                                       | No Codex task unless explicitly assigned.                       |
+**Prerequisites:**
 
-## 6. Merge sequence
+- deployable staging environment;
+- server-side secret configuration;
+- authentication and access control;
+- observability and safe logs;
+- deterministic demo data;
+- reliability and failure recovery;
+- staging health checks and a demo runbook.
 
-1. Merge P5-01 shared contracts first.
-2. Update dependent branches with `git fetch origin` and `git merge origin/main`; never rebase.
-3. Start P6-01 dynamic option-group engine and P6-02 dynamic PDP components with one named registry integration owner.
-4. Continue P7 source discovery against approved brief contracts.
-5. Merge the shell independently when it does not overlap active editor files.
-6. Use W4 for one manual real-provider regression at each phase gate.
+**Gate:** These prerequisites must exist before a pilot-readiness checkpoint can pass.
+
+### P12 — Vesko integration handoff — planned
+
+**Goal:** Connect the completed integration foundation to real Vesko staging services without redesigning the engine.
+
+#### P12-01 — Vesko staging transport and authentication foundation
+
+**Goal:** Establish the authenticated server-side staging transport boundary and credential handling.
+
+**Dependencies:** P11 staging deployment, secret configuration, authentication and access-control prerequisites.
+
+**Acceptance:** Staging context requests authenticate safely, map merchant/project authority and keep credentials out of the client.
+
+#### P12-02 — Real catalogue/navigation staging projection
+
+**Goal:** Load real staging catalogue, collection, category, navigation and route data through the canonical projection.
+
+**Dependencies:** P12-01.
+
+**Acceptance:** Staging projections validate against the canonical contracts without creating competing commerce truth.
+
+#### P12-03 — Real availability/options/variants/media staging projection
+
+**Goal:** Load real sellability, attributes, options, variants, SKU and canonical media through the canonical projection.
+
+**Dependencies:** P12-01 and P12-02.
+
+**Acceptance:** Product presentation reflects staging commerce truth while Studio controls only presentation.
+
+#### P12-04 — Real draft persistence and publishing staging integration
+
+**Goal:** Connect authoritative staging draft save, restore and publishing operations to the completed persistence and publishing boundaries.
+
+**Dependencies:** P12-01 and the completed integration foundation prework.
+
+**Acceptance:** Authenticated staging save, restore and publish preserve concurrency, history, explicit publication and merchant authority.
+
+#### P12-05 — End-to-end Vesko integration handoff and pilot checkpoint
+
+**Goal:** Validate the complete authenticated staging journey and prepare the Vesko handoff.
+
+**Dependencies:** Relevant P11 staging/deployment prerequisites and P12-01 through P12-04.
+
+**Acceptance:** Only after those dependencies are met can a merchant complete the authenticated staging journey with canonical commerce truth, controlled design changes and explicit save/publish boundaries.
+
+## 5. Current execution focus
+
+Canonical Phase 9 is active. W1, W3 and W4 may contribute parallel prework originally labelled P10-01 through P10-03 toward canonical Phase 12; that early work does not make Phase 12 active or complete.
+
+## 6. Canonical phase sequence
+
+1. Complete P9 whole-storefront runtime integration and quality work.
+2. Complete P10 merchant product UX and manual usability acceptance.
+3. Establish P11 demo reliability and staging prerequisites.
+4. Execute P12 Vesko staging integration and handoff tasks.
 
 ## 7. Explicit non-priorities
 
