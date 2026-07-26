@@ -616,23 +616,30 @@ describe("P2-01 project editor route", () => {
       "Rings",
       "Aurora Ring 585",
     ]);
+    const context = screen.getByTestId("editor-context");
+    expect(context).toHaveTextContent("Storefront Studio");
+    expect(context).toHaveTextContent("Aurum Nordic");
+    expect(context).toHaveTextContent("Home");
     fireEvent.change(switcher, { target: { value: "page_collection_rings" } });
     expect(screen.getByText("Canvas: collection / en")).toBeVisible();
     expect(screen.getByRole("link", { name: "View selected page" })).toHaveAttribute(
       "href",
       "/projects/project_aurum_nordic/collections/rings",
     );
+    expect(context).toHaveTextContent("Rings");
     fireEvent.change(switcher, { target: { value: "page_product_aurora" } });
     expect(screen.getByText("Canvas: product / en")).toBeVisible();
     expect(screen.getByRole("link", { name: "View selected page" })).toHaveAttribute(
       "href",
       "/projects/project_aurum_nordic/products/aurora-ring-585",
     );
+    expect(context).toHaveTextContent("Aurora Ring 585");
   });
 
   it("switches the shell and canvas to Finnish", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await screen.findByText("Canvas: home / en");
+    const editorContext = screen.getByTestId("editor-context");
     fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
     expect(screen.getByText("Canvas: home / fi")).toBeVisible();
     expect(
@@ -641,6 +648,9 @@ describe("P2-01 project editor route", () => {
     expect(
       screen.queryByRole("navigation", { name: "Storefront Studion moduulit" }),
     ).not.toBeInTheDocument();
+    expect(within(editorContext).getByText("Storefront Studio")).toBeVisible();
+    expect(within(editorContext).getByText("Aurum Nordic")).toBeVisible();
+    expect(editorContext).toHaveTextContent("Etusivu");
     expect(screen.getByTestId("draft-status")).toHaveAccessibleName("Luonnoksen tila");
     expect(screen.getByTestId("draft-status")).toHaveTextContent("Ei tallentamattomia muutoksia");
     expect(screen.getByRole("button", { name: "Kumoa" })).toBeVisible();
@@ -663,6 +673,7 @@ describe("P2-01 project editor route", () => {
       target: { value: "page_collection_rings" },
     });
     expectCanvasPageTitle("Sormukset", "fi");
+    expect(editorContext).toHaveTextContent("Sormukset");
     expect(screen.getByRole("option", { name: "Sormukset" })).toBeVisible();
   });
 
@@ -671,6 +682,9 @@ describe("P2-01 project editor route", () => {
     await screen.findByText("Canvas: home / en");
     expect(screen.queryByRole("heading", { name: "Storefront Studio" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Aurum Nordic" })).not.toBeInTheDocument();
+    expect(screen.getByTestId("editor-context")).toHaveTextContent("Storefront Studio");
+    expect(screen.getByTestId("editor-context")).toHaveTextContent("Aurum Nordic");
+    expect(screen.getByTestId("editor-context")).toHaveTextContent("Home");
   });
 
   it("consolidates desktop structure and contextual controls into collapsible panels", async () => {

@@ -90,6 +90,48 @@
   align-items: center;
 }
 
+.editorContext {
+  display: grid;
+  gap: 0.16rem;
+  justify-items: start;
+  color: var(--vesko-app-text);
+  min-width: 0;
+  font-size: 0.8rem;
+}
+
+.editorContextStudio {
+  margin: 0;
+  color: var(--vesko-app-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-weight: 750;
+}
+
+.editorContextPage {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0;
+  min-width: 0;
+  line-height: 1.2;
+  font-size: 0.85rem;
+  max-width: 100%;
+}
+
+.editorContextPage span {
+  min-width: 0;
+}
+
+.editorContextPage span:nth-child(1) {
+  overflow-wrap: anywhere;
+}
+
+.editorContextPage strong {
+  overflow-wrap: anywhere;
+}
+
 .historyActions {
   display: flex;
   gap: 0.45rem;
@@ -676,6 +718,10 @@
 @media (min-width: 64rem) {
   .workspace {
     grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+  }
+
+  .editorContextPage {
+    white-space: nowrap;
   }
 
   .workspace.workspaceLeftCollapsed {

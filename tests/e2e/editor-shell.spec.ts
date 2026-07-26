@@ -39,6 +39,10 @@ async function openSectionActions(sectionActions: Locator) {
 test("loads the in-memory Puck editor and switches page and locale", async ({ page }) => {
   await page.goto(url);
   await expect(page.getByLabel("Visual editor canvas")).toBeVisible();
+  const editorContext = page.getByTestId("editor-context");
+  await expect(editorContext.getByText("Storefront Studio", { exact: true })).toBeVisible();
+  await expect(editorContext.getByText("Aurum Nordic", { exact: true })).toBeVisible();
+  await expect(editorContext.getByText("Home", { exact: true })).toBeVisible();
   const canvasFrame = page
     .getByLabel("Visual editor canvas")
     .frameLocator("iframe")
@@ -61,20 +65,38 @@ test("loads the in-memory Puck editor and switches page and locale", async ({ pa
     "href",
     "/projects/project_aurum_nordic/collections/rings",
   );
+  await expect(editorContext.getByText("Rings", { exact: true })).toBeVisible();
   await expect(canvasFrame).toHaveAttribute("lang", "en");
   await expect(canvasFrame).toHaveCSS("--brand-color-primary", "#8A5A2B");
   await page.getByRole("radio", { name: "Suomi" }).check();
   await expect(canvasFrame).toHaveAttribute("lang", "fi");
+  await expect(editorContext.getByText("Sormukset", { exact: true })).toBeVisible();
   await switcher.selectOption("page_product_aurora");
   await expect(switcher).toHaveValue("page_product_aurora");
   await expect(page.getByRole("link", { name: "Näytä valittu sivu" })).toHaveAttribute(
     "href",
     "/projects/project_aurum_nordic/products/aurora-ring-585",
   );
+  await expect(editorContext.getByText(/Aurora/)).toBeVisible();
   await expect(canvasFrame).toHaveAttribute("lang", "fi");
   await expect(canvasFrame).toHaveCSS("--brand-color-primary", "#8A5A2B");
   await page.getByRole("radio", { name: "English" }).check();
   await expect(canvasFrame).toHaveAttribute("lang", "en");
+  await expect(editorContext.getByText(/Aurora/)).toBeVisible();
+});
+
+test("shows compact editor context and no legacy project tabs in editor mode", async ({ page }) => {
+  await page.goto(url);
+  const editorContext = page.getByTestId("editor-context");
+  await expect(editorContext.getByText("Storefront Studio", { exact: true })).toBeVisible();
+  await expect(editorContext.getByText("Aurum Nordic", { exact: true })).toBeVisible();
+  await expect(editorContext.getByText("Home", { exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Editor navigation" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Storefront Studion moduulit" })).toHaveCount(0);
+
+  await expect(page.getByText("Blocks", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Outline", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Puck", { exact: true })).toHaveCount(0);
 });
 
 test("non-editor project routes still show the storefront preview", async ({ page }) => {
