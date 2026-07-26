@@ -337,6 +337,7 @@ function standaloneProductProjection(
   catalogue: CatalogueDisplayModel,
   product: ProductDisplayModel,
   identity: StandaloneAvailabilityOptionMediaIdentity,
+  catalogueId: string,
   catalogueRevision: string,
 ): AvailabilityOptionMediaTransportProjection {
   const dimensions = standaloneVariantDimensions(product);
@@ -373,7 +374,7 @@ function standaloneProductProjection(
 
   return availabilityOptionMediaTransportProjectionSchema.parse({
     ...identity,
-    catalogueId: catalogue.id,
+    catalogueId,
     catalogueRevision,
     productId: product.id,
     revision,
@@ -439,18 +440,43 @@ export function standaloneAvailabilityOptionMediaIdentity(
   });
 }
 
+/**
+ * The standalone catalogue revision is shared with the P9-03-to-P9-01
+ * composition. Integrated environments inject their own opaque revision.
+ */
+export function standaloneAvailabilityOptionMediaCatalogueRevision(
+  catalogue: CatalogueDisplayModel,
+): string {
+  return `standalone-${sha256(catalogue).slice("sha256:".length, 33)}`;
+}
+
+export type StandaloneAvailabilityOptionMediaAdapterOptions = Readonly<{
+  identity?: StandaloneAvailabilityOptionMediaIdentity;
+  catalogueId?: string;
+  catalogueRevision?: string;
+}>;
+
 export function createStandaloneAvailabilityOptionMediaProjectionAdapter(
   catalogue: CatalogueDisplayModel,
+  options: StandaloneAvailabilityOptionMediaAdapterOptions = {},
 ): AvailabilityOptionMediaProjectionPort {
   const source = structuredClone(catalogue);
-  const identity = standaloneAvailabilityOptionMediaIdentity(source);
-  const catalogueRevision = `standalone-${sha256(source).slice("sha256:".length, 33)}`;
+  const identity = options.identity ?? standaloneAvailabilityOptionMediaIdentity(source);
+  const catalogueId = options.catalogueId ?? source.id;
+  const catalogueRevision =
+    options.catalogueRevision ?? standaloneAvailabilityOptionMediaCatalogueRevision(source);
   return createAvailabilityOptionMediaProjectionProvider({
     transport: {
       load(context) {
         const product = source.products.find((candidate) => candidate.id === context.productId);
         if (product === undefined) throw new VeskoIntegrationError("productNotFound");
-        return standaloneProductProjection(source, product, identity, catalogueRevision);
+        return standaloneProductProjection(
+          source,
+          product,
+          identity,
+          catalogueId,
+          catalogueRevision,
+        );
       },
     },
   });

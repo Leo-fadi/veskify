@@ -229,6 +229,26 @@ describe("P9-03 read-only catalogue projection adapter", () => {
     expect(parsed.products[0]).not.toHaveProperty("categoryIds");
   });
 
+  it("preserves an optional canonical source product type ID for downstream composition", async () => {
+    const provider = createCatalogueProjectionProvider({
+      transport: {
+        load: () =>
+          transportInput({
+            products: [
+              { ...transportInput().products[0], productTypeId: "product_type_ring" },
+              transportInput().products[1],
+            ],
+          }),
+      },
+    });
+
+    const loaded = await provider.load();
+    expect(loaded.products[0]?.productTypeId).toBe("product_type_ring");
+    expect(projectToCanonicalCommerceProjection(loaded).products[0]).not.toHaveProperty(
+      "productTypeId",
+    );
+  });
+
   it("requires primary product/collection/category routes to target the owning entity", async () => {
     const invalidProductRoute = {
       ...transportInput(),
