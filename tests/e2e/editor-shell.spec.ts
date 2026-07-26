@@ -92,7 +92,9 @@ test("shows compact editor context and no legacy project tabs in editor mode", a
   await expect(editorContext.getByText("Aurum Nordic", { exact: true })).toBeVisible();
   await expect(editorContext.getByText("Home", { exact: true })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Editor navigation" })).toHaveCount(0);
-  await expect(page.getByRole("navigation", { name: "Storefront Studion moduulit" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Storefront Studion moduulit" })).toHaveCount(
+    0,
+  );
 
   await expect(page.getByText("Blocks", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Outline", { exact: true })).toHaveCount(0);
