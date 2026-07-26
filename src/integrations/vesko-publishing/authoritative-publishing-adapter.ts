@@ -14,22 +14,32 @@ import {
   publicationResultSchema,
   publishStorefrontRequestSchema,
   VeskoIntegrationError,
+  type MerchantProjectContext,
   type MerchantProjectContextPort,
   type PublicationResult,
   type StorefrontPublishingGateway,
 } from "@/application/vesko-integration";
-import { canonicalStorefrontContentFingerprint } from "@/domain/storefront";
+import {
+  canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
+} from "@/domain/storefront";
 import {
   DraftConflictError,
   NoStorefrontChangesError,
   ProjectNotFoundError,
+  PublicationOperationConflictError,
+  PublicationOperationValidationError,
   PublishedConflictError,
   PublishContentConflictError,
   RepositoryValidationError,
   RevisionConflictError,
   SnapshotNotFoundError,
+  publicationOperationKey,
+  publicationOperationRecordSchema,
+  type AuthoritativePublishingProjectRepository,
   type ProjectAggregate,
-  type ProjectRepository,
+  type PublicationOperationIdentity,
+  type PublicationOperationWrite,
 } from "@/services/storage";
 import { validateProjectAggregate } from "@/services/storage/repository-validation";
 
@@ -43,11 +53,10 @@ export interface AuthoritativePublishingRevisionMapper {
 }
 
 export type AuthoritativePublishingAdapterInput = Readonly<{
-  projectRepository: ProjectRepository;
+  projectRepository: AuthoritativePublishingProjectRepository;
   contextPort: MerchantProjectContextPort;
   publishPreparations: AuthoritativePublishPreparationReader;
   revisionMapper: AuthoritativePublishingRevisionMapper;
-  maxCompletedReplayEntries?: number;
 }>;
 
 export type StandaloneAuthoritativePublishingAdapterInput = Omit<
@@ -56,13 +65,12 @@ export type StandaloneAuthoritativePublishingAdapterInput = Omit<
 >;
 
 type ParsedPublishRequest = Parameters<StorefrontPublishingGateway["publish"]>[0];
-type ReplayEntry = Readonly<{
+type InFlightPublication = Readonly<{
   requestFingerprint: string;
-  pending?: Promise<PublicationResult>;
-  result?: PublicationResult;
+  pending: Promise<PublicationResult>;
+  token: symbol;
 }>;
 
-export const defaultCompletedReplayEntryLimit = 256;
 export const standaloneSnapshotRevisionPrefix = "standalone-snapshot-revision-";
 
 export function toStandaloneSnapshotRevision(revision: number): string {
@@ -75,11 +83,23 @@ export const standalonePublishingRevisionMapper: AuthoritativePublishingRevision
 };
 
 function requestFingerprint(request: ParsedPublishRequest): string {
-  return JSON.stringify(request);
+  return canonicalValueFingerprint(request);
 }
 
 function cloneResult(result: PublicationResult): PublicationResult {
   return structuredClone(result);
+}
+
+function publicationOperationIdentity(request: ParsedPublishRequest): PublicationOperationIdentity {
+  return {
+    tenantId: request.context.tenantId,
+    merchantId: request.context.merchantId,
+    organizationId: request.context.organizationId,
+    storeId: request.context.storeId,
+    storefrontProjectId: request.context.storefrontProjectId,
+    operationType: "publish",
+    requestId: request.requestId,
+  };
 }
 
 function snapshotById(aggregate: ProjectAggregate, snapshotId: string) {
@@ -105,7 +125,7 @@ function authoritativeSnapshot(
 
 function assertAuthenticatedIdentityAndPermission(
   request: ParsedPublishRequest,
-  authenticated: Awaited<ReturnType<MerchantProjectContextPort["load"]>>,
+  authenticated: MerchantProjectContext,
 ): void {
   if (authenticated.tenantId !== request.context.tenantId) {
     throw new VeskoIntegrationError("tenantMismatch");
@@ -133,7 +153,7 @@ function assertAuthenticatedIdentityAndPermission(
 
 function assertCurrentProjectRevision(
   request: ParsedPublishRequest,
-  authenticated: Awaited<ReturnType<MerchantProjectContextPort["load"]>>,
+  authenticated: MerchantProjectContext,
 ): void {
   if (
     authenticated.projectRevision !== request.context.projectRevision ||
@@ -143,18 +163,17 @@ function assertCurrentProjectRevision(
   }
 }
 
-async function authenticatePublishingRequest(
+async function loadAuthorizedPublishingContext(
   request: ParsedPublishRequest,
   input: AuthoritativePublishingAdapterInput,
-  requireCurrentRevision: boolean,
-): Promise<void> {
+): Promise<MerchantProjectContext> {
   try {
     const authenticated = await input.contextPort.load({
       tenantId: request.context.tenantId,
       storefrontProjectId: request.context.storefrontProjectId,
     });
     assertAuthenticatedIdentityAndPermission(request, authenticated);
-    if (requireCurrentRevision) assertCurrentProjectRevision(request, authenticated);
+    return authenticated;
   } catch (error) {
     throw mapPublishingFailure(error);
   }
@@ -210,7 +229,10 @@ function mapPublishingFailure(error: unknown): VeskoIntegrationError {
   if (error instanceof SnapshotNotFoundError) {
     return new VeskoIntegrationError("savedDraftMismatch");
   }
-  if (error instanceof StalePublishPreparationError) {
+  if (
+    error instanceof StalePublishPreparationError ||
+    error instanceof PublicationOperationConflictError
+  ) {
     return new VeskoIntegrationError("stalePublishConfirmation");
   }
   if (error instanceof NoPublishableChangesError) {
@@ -219,6 +241,7 @@ function mapPublishingFailure(error: unknown): VeskoIntegrationError {
   if (
     error instanceof InvalidPublishPreparationError ||
     error instanceof PublishPreparationValidationError ||
+    error instanceof PublicationOperationValidationError ||
     error instanceof RepositoryValidationError
   ) {
     return new VeskoIntegrationError("malformedIntegrationResponse");
@@ -231,79 +254,93 @@ function mapPublishingFailure(error: unknown): VeskoIntegrationError {
   return new VeskoIntegrationError("publishingUnavailable");
 }
 
-async function reconcileCommittedPublication(
-  request: ParsedPublishRequest,
-  preparation: PublishPreparation,
+async function loadCompletedPublication(
+  identity: PublicationOperationIdentity,
+  fingerprint: string,
   input: AuthoritativePublishingAdapterInput,
 ): Promise<PublicationResult | null> {
+  let loaded: unknown;
   try {
-    const aggregate = validateProjectAggregate(
-      await input.projectRepository.get(request.context.storefrontProjectId),
-    );
-    const sourceDraft = snapshotById(aggregate, preparation.expectedDraft.id);
-    const priorPublished = snapshotById(aggregate, preparation.expectedPublished.id);
-    const currentPublished = snapshotById(aggregate, aggregate.project.publishedSnapshotId);
-    const currentDraft = snapshotById(aggregate, aggregate.project.draftSnapshotId);
-    const publishedHistory = aggregate.snapshotHistoryMetadata?.some(
-      ({ snapshotId, reason }) => snapshotId === currentPublished?.id && reason === "published",
-    );
-    const synchronizedHistory = aggregate.snapshotHistoryMetadata?.some(
-      ({ snapshotId, reason }) =>
-        snapshotId === currentDraft?.id && reason === "publishedDraftSynchronized",
-    );
-
-    if (
-      aggregate.project.revision !== preparation.expectedProjectRevision + 1 ||
-      sourceDraft === null ||
-      sourceDraft.revision !== preparation.expectedDraft.revision ||
-      canonicalStorefrontContentFingerprint(sourceDraft) !==
-        preparation.expectedDraft.contentFingerprint ||
-      priorPublished === null ||
-      priorPublished.revision !== preparation.expectedPublished.revision ||
-      canonicalStorefrontContentFingerprint(priorPublished) !==
-        preparation.expectedPublished.contentFingerprint ||
-      currentPublished === null ||
-      currentDraft === null ||
-      currentPublished.id === currentDraft.id ||
-      currentPublished.revision !== aggregate.project.revision ||
-      currentDraft.revision !== aggregate.project.revision ||
-      canonicalStorefrontContentFingerprint(currentPublished) !==
-        preparation.expectedDraft.contentFingerprint ||
-      canonicalStorefrontContentFingerprint(currentDraft) !==
-        preparation.expectedDraft.contentFingerprint ||
-      publishedHistory !== true ||
-      synchronizedHistory !== true
-    ) {
-      return null;
-    }
-
-    return publicationResultSchema.parse({
-      requestId: request.requestId,
-      storefrontProjectId: request.context.storefrontProjectId,
-      publishedRevision: input.revisionMapper.snapshotRevision(currentPublished.revision),
-      status: "published",
-    });
-  } catch {
-    return null;
+    loaded = await input.projectRepository.getPublicationOperation(identity);
+  } catch (error) {
+    throw mapPublishingFailure(error);
   }
+  if (loaded === null) return null;
+
+  const parsed = publicationOperationRecordSchema.safeParse(loaded);
+  if (
+    !parsed.success ||
+    parsed.data.operationKey !== publicationOperationKey(identity) ||
+    parsed.data.tenantId !== identity.tenantId ||
+    parsed.data.merchantId !== identity.merchantId ||
+    parsed.data.organizationId !== identity.organizationId ||
+    parsed.data.storeId !== identity.storeId ||
+    parsed.data.storefrontProjectId !== identity.storefrontProjectId ||
+    parsed.data.operationType !== identity.operationType ||
+    parsed.data.requestId !== identity.requestId ||
+    parsed.data.result.publishedRevision !==
+      input.revisionMapper.snapshotRevision(parsed.data.committedProjectRevision)
+  ) {
+    throw new VeskoIntegrationError("malformedIntegrationResponse");
+  }
+  if (parsed.data.requestFingerprint !== fingerprint) {
+    throw new VeskoIntegrationError("stalePublishConfirmation");
+  }
+
+  const result = publicationResultSchema.safeParse(parsed.data.result);
+  if (
+    !result.success ||
+    result.data.requestId !== identity.requestId ||
+    result.data.storefrontProjectId !== identity.storefrontProjectId ||
+    result.data.publishedRevision !==
+      input.revisionMapper.snapshotRevision(parsed.data.committedProjectRevision)
+  ) {
+    throw new VeskoIntegrationError("malformedIntegrationResponse");
+  }
+  return cloneResult(result.data);
 }
 
-async function executePublish(
+async function loadPublishPreparation(
   request: ParsedPublishRequest,
   input: AuthoritativePublishingAdapterInput,
-): Promise<PublicationResult> {
-  await authenticatePublishingRequest(request, input, true);
-
-  let preparation: PublishPreparation;
+): Promise<PublishPreparation> {
   try {
     const loaded = await input.publishPreparations.load(request.publishPreparationId);
     if (loaded === null) throw new VeskoIntegrationError("stalePublishConfirmation");
     const parsed = publishPreparationSchema.safeParse(loaded);
     if (!parsed.success) throw new VeskoIntegrationError("malformedIntegrationResponse");
-    preparation = parsed.data;
+    return parsed.data;
   } catch (error) {
     throw mapPublishingFailure(error);
   }
+}
+
+function operationWrite(
+  request: ParsedPublishRequest,
+  preparation: PublishPreparation,
+  fingerprint: string,
+  input: AuthoritativePublishingAdapterInput,
+): PublicationOperationWrite {
+  return {
+    ...publicationOperationIdentity(request),
+    requestFingerprint: fingerprint,
+    result: {
+      requestId: request.requestId,
+      storefrontProjectId: request.context.storefrontProjectId,
+      publishedRevision: input.revisionMapper.snapshotRevision(
+        preparation.expectedProjectRevision + 1,
+      ),
+      status: "published",
+    },
+  };
+}
+
+async function executePublish(
+  request: ParsedPublishRequest,
+  fingerprint: string,
+  input: AuthoritativePublishingAdapterInput,
+): Promise<PublicationResult> {
+  const preparation = await loadPublishPreparation(request, input);
   assertPreparationMatchesRequest(preparation, request, input.revisionMapper);
 
   let aggregate: ProjectAggregate;
@@ -335,46 +372,35 @@ async function executePublish(
     preparation.preparationId,
   );
 
+  const operation = operationWrite(request, preparation, fingerprint, input);
   try {
-    const confirmed = await confirmPublish(preparation, input.projectRepository);
-    return publicationResultSchema.parse({
-      requestId: request.requestId,
-      storefrontProjectId: request.context.storefrontProjectId,
-      publishedRevision: input.revisionMapper.snapshotRevision(
-        confirmed.publishedSnapshot.revision,
-      ),
-      status: "published",
+    await confirmPublish(preparation, input.projectRepository, {
+      publicationOperation: operation,
     });
+    const completed = await loadCompletedPublication(
+      publicationOperationIdentity(request),
+      fingerprint,
+      input,
+    );
+    if (completed === null) {
+      throw new VeskoIntegrationError("malformedIntegrationResponse");
+    }
+    return completed;
   } catch (error) {
-    const reconciled = await reconcileCommittedPublication(request, preparation, input);
+    const reconciled = await loadCompletedPublication(
+      publicationOperationIdentity(request),
+      fingerprint,
+      input,
+    );
     if (reconciled !== null) return reconciled;
     throw mapPublishingFailure(error);
-  }
-}
-
-function rememberSuccessfulReplay(
-  replays: Map<string, ReplayEntry>,
-  requestId: string,
-  entry: ReplayEntry,
-  completedEntryLimit: number,
-): void {
-  replays.delete(requestId);
-  replays.set(requestId, entry);
-  const completedEntries = [...replays].filter(([, replay]) => replay.result !== undefined);
-  while (completedEntries.length > completedEntryLimit) {
-    const oldest = completedEntries.shift();
-    if (oldest !== undefined) replays.delete(oldest[0]);
   }
 }
 
 export function createAuthoritativeStorefrontPublishingAdapter(
   input: AuthoritativePublishingAdapterInput,
 ): StorefrontPublishingGateway {
-  const replays = new Map<string, ReplayEntry>();
-  const completedEntryLimit = input.maxCompletedReplayEntries ?? defaultCompletedReplayEntryLimit;
-  if (!Number.isInteger(completedEntryLimit) || completedEntryLimit < 1) {
-    throw new Error("Completed publication replay retention must be a positive integer.");
-  }
+  const inFlight = new Map<string, InFlightPublication>();
 
   return {
     async publish(requestInput) {
@@ -384,40 +410,33 @@ export function createAuthoritativeStorefrontPublishingAdapter(
       }
       const request = parsed.data;
       const fingerprint = requestFingerprint(request);
-      const replay = replays.get(request.requestId);
-      if (replay !== undefined) {
-        if (replay.requestFingerprint !== fingerprint) {
+      const identity = publicationOperationIdentity(request);
+      const operationKey = publicationOperationKey(identity);
+
+      const authenticated = await loadAuthorizedPublishingContext(request, input);
+      const completed = await loadCompletedPublication(identity, fingerprint, input);
+      if (completed !== null) return completed;
+
+      const existing = inFlight.get(operationKey);
+      if (existing !== undefined) {
+        if (existing.requestFingerprint !== fingerprint) {
           throw new VeskoIntegrationError("stalePublishConfirmation");
         }
-        if (replay.result !== undefined) {
-          await authenticatePublishingRequest(request, input, false);
-          return cloneResult(replay.result);
-        }
-        if (replay.pending !== undefined) return replay.pending.then(cloneResult);
+        return existing.pending.then(cloneResult);
       }
+      assertCurrentProjectRevision(request, authenticated);
 
-      const pending = executePublish(request, input)
-        .then((result) => {
-          rememberSuccessfulReplay(
-            replays,
-            request.requestId,
-            { requestFingerprint: fingerprint, result },
-            completedEntryLimit,
-          );
-          return cloneResult(result);
-        })
+      const token = Symbol(operationKey);
+      const pending = executePublish(request, fingerprint, input)
+        .then(cloneResult)
         .catch((error: unknown) => {
-          const current = replays.get(request.requestId);
-          if (
-            current?.requestFingerprint === fingerprint &&
-            current.result === undefined &&
-            current.pending !== undefined
-          ) {
-            replays.delete(request.requestId);
-          }
           throw mapPublishingFailure(error);
+        })
+        .finally(() => {
+          const current = inFlight.get(operationKey);
+          if (current?.token === token) inFlight.delete(operationKey);
         });
-      replays.set(request.requestId, { requestFingerprint: fingerprint, pending });
+      inFlight.set(operationKey, { requestFingerprint: fingerprint, pending, token });
       return pending;
     },
   };

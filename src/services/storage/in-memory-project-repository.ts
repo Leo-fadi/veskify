@@ -18,13 +18,22 @@ import {
   SnapshotAlreadyExistsError,
   SnapshotProjectMismatchError,
   type ProjectAggregate,
-  type ProjectRepository,
+  type AuthoritativePublishingProjectRepository,
   type ProjectSummary,
   type PublishExpectation,
   type RestoreExpectation,
   projectScopedSnapshotId,
   RestoreContentConflictError,
 } from "./project-repository";
+import {
+  completePublicationOperation,
+  PublicationOperationAlreadyCompletedError,
+  PublicationOperationConflictError,
+  parsePublicationOperationWrite,
+  publicationOperationKey,
+  type PublicationOperationIdentity,
+  type PublicationOperationRecord,
+} from "./publication-operation";
 import {
   compactManagedDraftHistory,
   repositoryValidationError,
@@ -44,6 +53,7 @@ type StoredProject = {
   snapshotHistoryMetadata: Map<string, SnapshotHistoryMetadata>;
   managedDraftSnapshotIds: Set<string>;
   operationSequence: number;
+  publicationOperations: Map<string, PublicationOperationRecord>;
 };
 
 function clone<T>(value: T): T {
@@ -58,7 +68,7 @@ function freeze<T>(value: T): T {
   return value;
 }
 
-export class InMemoryProjectRepository implements ProjectRepository {
+export class InMemoryProjectRepository implements AuthoritativePublishingProjectRepository {
   readonly #projects = new Map<string, StoredProject>();
 
   constructor(initialProjects: readonly ProjectAggregate[]) {
@@ -83,6 +93,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
         ),
         managedDraftSnapshotIds: new Set([aggregate.project.draftSnapshotId]),
         operationSequence: aggregate.snapshots.length,
+        publicationOperations: new Map(),
       });
     }
   }
@@ -142,6 +153,7 @@ export class InMemoryProjectRepository implements ProjectRepository {
       ),
       managedDraftSnapshotIds: new Set([aggregate.project.draftSnapshotId]),
       operationSequence: aggregate.snapshots.length,
+      publicationOperations: new Map(),
     });
 
     return clone(aggregate);
@@ -239,6 +251,25 @@ export class InMemoryProjectRepository implements ProjectRepository {
   async publish(projectId: string, expectation: PublishExpectation): Promise<ProjectAggregate> {
     await Promise.resolve();
     const stored = this.#requireProject(projectId);
+    const operation = expectation.operation
+      ? parsePublicationOperationWrite(expectation.operation)
+      : undefined;
+    if (operation && operation.storefrontProjectId !== projectId) {
+      throw repositoryValidationError(
+        "Publication operation references a different storefront project.",
+        new Error("Publication operation project identity mismatch."),
+      );
+    }
+    if (operation) {
+      const operationKey = publicationOperationKey(operation);
+      const existingOperation = stored.publicationOperations.get(operationKey);
+      if (existingOperation) {
+        if (existingOperation.requestFingerprint !== operation.requestFingerprint) {
+          throw new PublicationOperationConflictError(operationKey);
+        }
+        throw new PublicationOperationAlreadyCompletedError(operationKey);
+      }
+    }
     const current = this.#validatedAggregate(stored);
     if (stored.project.revision !== expectation.projectRevision) {
       throw new RevisionConflictError(
@@ -343,6 +374,13 @@ export class InMemoryProjectRepository implements ProjectRepository {
       snapshots: compacted.snapshots,
       snapshotHistoryMetadata: [...nextSnapshotHistoryMetadata.values()],
     });
+    const completedOperation = operation
+      ? completePublicationOperation(operation, nextProject.revision, published.id)
+      : undefined;
+    const nextPublicationOperations = new Map(stored.publicationOperations);
+    if (completedOperation) {
+      nextPublicationOperations.set(completedOperation.operationKey, freeze(completedOperation));
+    }
 
     stored.project = freeze(aggregate.project);
     stored.snapshots = new Map(
@@ -355,7 +393,17 @@ export class InMemoryProjectRepository implements ProjectRepository {
       aggregate.snapshotHistoryMetadata?.map((metadata) => [metadata.snapshotId, freeze(metadata)]),
     );
     stored.operationSequence = sequence;
+    stored.publicationOperations = nextPublicationOperations;
     return clone(aggregate);
+  }
+
+  async getPublicationOperation(
+    identity: PublicationOperationIdentity,
+  ): Promise<PublicationOperationRecord | null> {
+    await Promise.resolve();
+    const stored = this.#requireProject(identity.storefrontProjectId);
+    const operation = stored.publicationOperations.get(publicationOperationKey(identity));
+    return operation ? clone(operation) : null;
   }
 
   async restore(

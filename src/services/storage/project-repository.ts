@@ -1,6 +1,11 @@
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { Project } from "@/domain/project";
 import type { StorefrontSnapshot } from "@/domain/storefront";
+import type {
+  PublicationOperationIdentity,
+  PublicationOperationRecord,
+  PublicationOperationWrite,
+} from "./publication-operation";
 import type { SnapshotHistoryMetadata } from "./snapshot-history-metadata";
 
 export type ProjectAggregate = {
@@ -61,6 +66,7 @@ export type PublishExpectation = {
   projectRevision: number;
   draft: PublishSnapshotExpectation;
   published: PublishSnapshotExpectation;
+  operation?: PublicationOperationWrite;
 };
 
 export type RestoreExpectation = {
@@ -84,6 +90,12 @@ export interface ProjectRepository {
     snapshotId: string,
     expectation?: RestoreExpectation,
   ): Promise<StorefrontSnapshot>;
+}
+
+export interface AuthoritativePublishingProjectRepository extends ProjectRepository {
+  getPublicationOperation(
+    identity: PublicationOperationIdentity,
+  ): Promise<PublicationOperationRecord | null>;
 }
 
 export class ProjectAlreadyExistsError extends Error {

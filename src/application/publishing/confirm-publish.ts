@@ -11,6 +11,7 @@ import {
   RevisionConflictError,
   type ProjectAggregate,
   type ProjectRepository,
+  type PublicationOperationWrite,
 } from "@/services/storage";
 import { validateProjectAggregate } from "@/services/storage/repository-validation";
 import {
@@ -27,6 +28,10 @@ export type PublishConfirmationResult = {
   publishedSnapshot: StorefrontSnapshot;
   synchronizedDraftSnapshot: StorefrontSnapshot;
 };
+
+export type PublishConfirmationOptions = Readonly<{
+  publicationOperation?: PublicationOperationWrite;
+}>;
 
 function snapshotById(aggregate: ProjectAggregate, snapshotId: string): StorefrontSnapshot {
   const snapshot = aggregate.snapshots.find(({ id }) => id === snapshotId);
@@ -75,6 +80,7 @@ function isStaleRepositoryError(cause: unknown): boolean {
 export async function confirmPublish(
   preparationInput: unknown,
   repository: ProjectRepository,
+  options: PublishConfirmationOptions = {},
 ): Promise<PublishConfirmationResult> {
   const preparation = parsePreparation(preparationInput);
   if (!preparation.publishPermitted) throw new NoPublishableChangesError();
@@ -100,6 +106,7 @@ export async function confirmPublish(
         projectRevision: preparation.expectedProjectRevision,
         draft: preparation.expectedDraft,
         published: preparation.expectedPublished,
+        ...(options.publicationOperation ? { operation: options.publicationOperation } : {}),
       }),
     );
   } catch (cause) {

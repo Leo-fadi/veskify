@@ -313,9 +313,16 @@ describe("IndexedDbProjectRepository persistence", () => {
     );
     expect(loaded.snapshotHistoryMetadata).toEqual(created.snapshotHistoryMetadata);
     const database = await openDB(databaseName);
-    expect(database.version).toBe(3);
+    expect(database.version).toBe(4);
     const transaction = database.transaction(
-      ["projects", "catalogues", "snapshots", "snapshotProvenance", "snapshotHistoryMetadata"],
+      [
+        "projects",
+        "catalogues",
+        "snapshots",
+        "snapshotProvenance",
+        "snapshotHistoryMetadata",
+        "publicationOperations",
+      ],
       "readonly",
     );
     expect(await transaction.objectStore("projects").get(input.project.id)).toBeTruthy();
@@ -341,6 +348,12 @@ describe("IndexedDbProjectRepository persistence", () => {
         .index("by-project")
         .getAll(input.project.id),
     ).toEqual(input.snapshotHistoryMetadata);
+    expect(
+      await transaction
+        .objectStore("publicationOperations")
+        .index("by-project")
+        .getAll(input.project.id),
+    ).toEqual([]);
     await transaction.done;
     database.close();
   });

@@ -20,14 +20,24 @@ import {
   SnapshotNotFoundError,
   SnapshotAlreadyExistsError,
   SnapshotProjectMismatchError,
+  type AuthoritativePublishingProjectRepository,
   type ProjectAggregate,
-  type ProjectRepository,
   type ProjectSummary,
   type PublishExpectation,
   type RestoreExpectation,
   projectScopedSnapshotId,
   RestoreContentConflictError,
 } from "./project-repository";
+import {
+  completePublicationOperation,
+  PublicationOperationAlreadyCompletedError,
+  PublicationOperationConflictError,
+  parsePublicationOperationRecord,
+  parsePublicationOperationWrite,
+  publicationOperationKey,
+  type PublicationOperationIdentity,
+  type PublicationOperationRecord,
+} from "./publication-operation";
 import {
   compactManagedDraftHistory,
   repositoryValidationError,
@@ -40,7 +50,7 @@ import {
   type SnapshotHistoryMetadata,
 } from "./snapshot-history-metadata";
 
-const DATABASE_VERSION = 3;
+const DATABASE_VERSION = 4;
 export const VESKIFY_DATABASE_NAME = "veskify";
 
 interface VeskifyDatabase extends DBSchema {
@@ -69,6 +79,11 @@ interface VeskifyDatabase extends DBSchema {
   snapshotHistoryMetadata: {
     key: string;
     value: SnapshotHistoryMetadata;
+    indexes: { "by-project": string };
+  };
+  publicationOperations: {
+    key: string;
+    value: PublicationOperationRecord;
     indexes: { "by-project": string };
   };
 }
@@ -343,7 +358,7 @@ function toSummary(project: Project): ProjectSummary {
   };
 }
 
-export class IndexedDbProjectRepository implements ProjectRepository {
+export class IndexedDbProjectRepository implements AuthoritativePublishingProjectRepository {
   readonly #databaseName: string;
   readonly #createSnapshotId: NonNullable<IndexedDbProjectRepositoryOptions["createSnapshotId"]>;
   readonly #createTimestamp: NonNullable<IndexedDbProjectRepositoryOptions["createTimestamp"]>;
@@ -400,6 +415,19 @@ export class IndexedDbProjectRepository implements ProjectRepository {
         ...(snapshotHistoryMetadata.length > 0 ? { snapshotHistoryMetadata } : {}),
       }),
     );
+  }
+
+  async getPublicationOperation(
+    identity: PublicationOperationIdentity,
+  ): Promise<PublicationOperationRecord | null> {
+    const database = await this.#database();
+    const project = await database.get("projects", identity.storefrontProjectId);
+    if (!project) throw new ProjectNotFoundError(identity.storefrontProjectId);
+    const operation = await database.get(
+      "publicationOperations",
+      publicationOperationKey(identity),
+    );
+    return operation ? clone(parsePublicationOperationRecord(operation)) : null;
   }
 
   async create(input: ProjectAggregate): Promise<ProjectAggregate> {
@@ -564,15 +592,42 @@ export class IndexedDbProjectRepository implements ProjectRepository {
   async publish(projectId: string, expectation: PublishExpectation): Promise<ProjectAggregate> {
     const database = await this.#database();
     const transaction = database.transaction(
-      ["projects", "catalogues", "snapshots", "snapshotProvenance", "snapshotHistoryMetadata"],
+      [
+        "projects",
+        "catalogues",
+        "snapshots",
+        "snapshotProvenance",
+        "snapshotHistoryMetadata",
+        "publicationOperations",
+      ],
       "readwrite",
     );
     const projects = transaction.objectStore("projects");
     const snapshotsStore = transaction.objectStore("snapshots");
     const provenanceStore = transaction.objectStore("snapshotProvenance");
     const historyMetadataStore = transaction.objectStore("snapshotHistoryMetadata");
+    const publicationOperationsStore = transaction.objectStore("publicationOperations");
 
     try {
+      const operation = expectation.operation
+        ? parsePublicationOperationWrite(expectation.operation)
+        : undefined;
+      if (operation && operation.storefrontProjectId !== projectId) {
+        throw repositoryValidationError(
+          "Publication operation references a different storefront project.",
+          new Error("Publication operation project identity mismatch."),
+        );
+      }
+      if (operation) {
+        const operationKey = publicationOperationKey(operation);
+        const existingOperation = await publicationOperationsStore.get(operationKey);
+        if (existingOperation) {
+          if (existingOperation.requestFingerprint !== operation.requestFingerprint) {
+            throw new PublicationOperationConflictError(operationKey);
+          }
+          throw new PublicationOperationAlreadyCompletedError(operationKey);
+        }
+      }
       const project = await projects.get(projectId);
       if (!project) {
         throw new ProjectNotFoundError(projectId);
@@ -701,6 +756,9 @@ export class IndexedDbProjectRepository implements ProjectRepository {
           ...publishHistoryMetadata(projectId, published.id, synchronizedDraft.id),
         ],
       });
+      const completedOperation = operation
+        ? completePublicationOperation(operation, nextProject.revision, published.id)
+        : undefined;
 
       await snapshotsStore.add(published);
       await snapshotsStore.add(synchronizedDraft);
@@ -712,6 +770,9 @@ export class IndexedDbProjectRepository implements ProjectRepository {
         synchronizedDraft.id,
       )) {
         await historyMetadataStore.add(metadata);
+      }
+      if (completedOperation) {
+        await publicationOperationsStore.add(completedOperation);
       }
       for (const removedSnapshotId of compacted.removedSnapshotIds) {
         await snapshotsStore.delete(removedSnapshotId);
@@ -898,6 +959,12 @@ export class IndexedDbProjectRepository implements ProjectRepository {
             keyPath: "snapshotId",
           });
           historyMetadata.createIndex("by-project", "projectId");
+        }
+        if (oldVersion < 4) {
+          const publicationOperations = database.createObjectStore("publicationOperations", {
+            keyPath: "operationKey",
+          });
+          publicationOperations.createIndex("by-project", "storefrontProjectId");
         }
       },
     });

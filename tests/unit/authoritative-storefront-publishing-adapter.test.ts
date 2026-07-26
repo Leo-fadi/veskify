@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { preparePublish, type PublishPreparation } from "@/application/publishing";
-import { createStandaloneMerchantProjectContextPort } from "@/application/merchant-project-context";
+import {
+  createStandaloneMerchantProjectContextPort,
+  toStandaloneProjectRevision,
+} from "@/application/merchant-project-context";
 import {
   publishStorefrontRequestSchema,
   type MerchantProjectContext,
@@ -46,7 +49,6 @@ function createHarness(
   options: {
     projects?: Array<typeof aurumNordicSeed | typeof karvonenSeed>;
     permissions?: MerchantProjectContext["permissions"];
-    maxCompletedReplayEntries?: number;
   } = {},
 ) {
   const repository = new InMemoryProjectRepository(
@@ -67,7 +69,6 @@ function createHarness(
     projectRepository: repository,
     contextPort,
     publishPreparations,
-    maxCompletedReplayEntries: options.maxCompletedReplayEntries,
   });
   return { adapter, contextPort, preparations, publishPreparations, repository };
 }
@@ -143,12 +144,21 @@ describe("P9-05B authoritative storefront publishing adapter", () => {
     expect(port).toBe(harness.adapter);
   });
 
+  it("keeps the standalone numeric-to-opaque revision authority explicit", () => {
+    expect(standalonePublishingRevisionMapper.projectRevision(42)).toBe(
+      toStandaloneProjectRevision(42),
+    );
+    expect(standalonePublishingRevisionMapper.snapshotRevision(42)).toBe(
+      toStandaloneSnapshotRevision(42),
+    );
+  });
+
   it("publishes the authoritative saved draft through the atomic repository flow", async () => {
     const harness = createHarness();
     await saveChangedDraft(harness.repository, aurumNordicSeed.project.id, "valid");
     const before = await harness.repository.get(aurumNordicSeed.project.id);
     const revisionMapper: AuthoritativePublishingRevisionMapper = {
-      projectRevision: (revision) => `vesko-project-etag-${revision}`,
+      projectRevision: () => "vesko-etag-abc123",
       snapshotRevision: (revision) => `vesko-snapshot-etag-${revision}`,
     };
     const opaqueContextPort: MerchantProjectContextPort = {
@@ -169,6 +179,19 @@ describe("P9-05B authoritative storefront publishing adapter", () => {
     const request = await canonicalRequest(harness, aurumNordicSeed.project.id, "valid", {
       contextPort: opaqueContextPort,
       revisionMapper,
+    });
+
+    const mismatchedRevisionAdapter = createAuthoritativeStorefrontPublishingAdapter({
+      projectRepository: harness.repository,
+      contextPort: opaqueContextPort,
+      publishPreparations: harness.publishPreparations,
+      revisionMapper: {
+        ...revisionMapper,
+        projectRevision: () => "vesko-etag-mismatch",
+      },
+    });
+    await expect(mismatchedRevisionAdapter.publish(request)).rejects.toMatchObject({
+      code: "stalePublishConfirmation",
     });
 
     const result = await adapter.publish(request);
@@ -265,22 +288,29 @@ describe("P9-05B authoritative storefront publishing adapter", () => {
     ).rejects.toMatchObject({ code: "projectNotFound" });
   });
 
-  it("returns one safe result for exact replays and rejects inconsistent request reuse", async () => {
+  it("uses durable scoped operations for exact, ambiguous and inconsistent replays", async () => {
     const harness = createHarness();
     await saveChangedDraft(harness.repository, aurumNordicSeed.project.id, "idempotent");
     const request = await canonicalRequest(harness, aurumNordicSeed.project.id, "idempotent");
     const before = await harness.repository.get(aurumNordicSeed.project.id);
+    const publish = vi.spyOn(harness.repository, "publish");
 
     const [first, concurrentReplay] = await Promise.all([
       harness.adapter.publish(request),
       harness.adapter.publish(request),
     ]);
     const afterFirst = await harness.repository.get(aurumNordicSeed.project.id);
-    const sequentialReplay = await harness.adapter.publish(request);
+    const reloadedAdapter = createStandaloneAuthoritativePublishingAdapter({
+      projectRepository: harness.repository,
+      contextPort: harness.contextPort,
+      publishPreparations: harness.publishPreparations,
+    });
+    const sequentialReplay = await reloadedAdapter.publish(request);
     const afterReplay = await harness.repository.get(aurumNordicSeed.project.id);
 
     expect(concurrentReplay).toEqual(first);
     expect(sequentialReplay).toEqual(first);
+    expect(publish).toHaveBeenCalledTimes(1);
     expect(afterReplay).toEqual(afterFirst);
     expect(afterFirst.snapshotHistoryMetadata).toHaveLength(
       (before.snapshotHistoryMetadata?.length ?? 0) + 2,
@@ -293,13 +323,13 @@ describe("P9-05B authoritative storefront publishing adapter", () => {
       ...currentContext,
       permissions: ["readStorefront"],
     });
-    await expect(harness.adapter.publish(request)).rejects.toMatchObject({
+    await expect(reloadedAdapter.publish(request)).rejects.toMatchObject({
       code: "permissionDenied",
     });
     contextLoad.mockRestore();
-    expect(await harness.adapter.publish(request)).toEqual(first);
+    expect(await reloadedAdapter.publish(request)).toEqual(first);
     await expect(
-      harness.adapter.publish({
+      reloadedAdapter.publish({
         ...request,
         expectedSavedDraft: {
           ...request.expectedSavedDraft,
@@ -322,37 +352,67 @@ describe("P9-05B authoritative storefront publishing adapter", () => {
         throw new Error("Response lost after the atomic commit.");
       },
     );
+    const operationLookup = vi.spyOn(ambiguous.repository, "getPublicationOperation");
     const reconciled = await ambiguous.adapter.publish(ambiguousRequest);
     const afterAmbiguousCommit = await ambiguous.repository.get(aurumNordicSeed.project.id);
+    const durableOperation = await ambiguous.repository.getPublicationOperation({
+      tenantId: standaloneIdentity.tenantId,
+      merchantId: standaloneIdentity.merchantId,
+      organizationId: standaloneIdentity.organizationId,
+      storeId: standaloneIdentity.storeId,
+      storefrontProjectId: aurumNordicSeed.project.id,
+      operationType: "publish",
+      requestId: ambiguousRequest.requestId,
+    });
     expect(reconciled.status).toBe("published");
     expect(await ambiguous.adapter.publish(ambiguousRequest)).toEqual(reconciled);
+    expect(operationLookup).toHaveBeenCalled();
+    expect(typeof durableOperation?.requestFingerprint).toBe("string");
+    expect(durableOperation?.result).toEqual(reconciled);
     expect(await ambiguous.repository.get(aurumNordicSeed.project.id)).toEqual(
       afterAmbiguousCommit,
     );
+  });
 
-    const bounded = createHarness({
-      projects: [aurumNordicSeed, karvonenSeed],
-      maxCompletedReplayEntries: 1,
+  it("reauthorizes an in-flight duplicate before joining the publication", async () => {
+    const harness = createHarness();
+    await saveChangedDraft(harness.repository, aurumNordicSeed.project.id, "in_flight");
+    const request = await canonicalRequest(harness, aurumNordicSeed.project.id, "in_flight");
+    const originalPublish = harness.repository.publish.bind(harness.repository);
+    let releasePublish!: () => void;
+    let publishStarted!: () => void;
+    const release = new Promise<void>((resolve) => {
+      releasePublish = resolve;
     });
-    await saveChangedDraft(bounded.repository, aurumNordicSeed.project.id, "bounded_aurum");
-    await saveChangedDraft(bounded.repository, karvonenSeed.project.id, "bounded_karvonen");
-    const aurumRequest = await canonicalRequest(
-      bounded,
-      aurumNordicSeed.project.id,
-      "bounded_aurum",
-    );
-    const karvonenRequest = await canonicalRequest(
-      bounded,
-      karvonenSeed.project.id,
-      "bounded_karvonen",
-    );
-    await bounded.adapter.publish(aurumRequest);
-    const afterAurumPublish = await bounded.repository.get(aurumNordicSeed.project.id);
-    await bounded.adapter.publish(karvonenRequest);
-    await expect(bounded.adapter.publish(aurumRequest)).rejects.toMatchObject({
-      code: "staleProjectRevision",
+    const started = new Promise<void>((resolve) => {
+      publishStarted = resolve;
     });
-    expect(await bounded.repository.get(aurumNordicSeed.project.id)).toEqual(afterAurumPublish);
+    const publish = vi
+      .spyOn(harness.repository, "publish")
+      .mockImplementationOnce(async (projectId, expectation) => {
+        publishStarted();
+        await release;
+        return originalPublish(projectId, expectation);
+      });
+
+    const first = harness.adapter.publish(request);
+    await started;
+    const currentContext = await harness.contextPort.load({
+      tenantId: standaloneIdentity.tenantId,
+      storefrontProjectId: aurumNordicSeed.project.id,
+    });
+    const contextLoad = vi.spyOn(harness.contextPort, "load").mockResolvedValue({
+      ...currentContext,
+      permissions: ["readStorefront"],
+    });
+
+    await expect(harness.adapter.publish(request)).rejects.toMatchObject({
+      code: "permissionDenied",
+    });
+    expect(publish).toHaveBeenCalledTimes(1);
+    contextLoad.mockRestore();
+    releasePublish();
+    await expect(first).resolves.toMatchObject({ status: "published" });
   });
 
   it("publishes Aurum and Karvonen while preserving draft separation and publication history", async () => {
@@ -363,7 +423,10 @@ describe("P9-05B authoritative storefront publishing adapter", () => {
       [karvonenSeed, "karvonen"],
     ] as const) {
       const sourceDraft = await saveChangedDraft(harness.repository, seed.project.id, label);
-      const request = await canonicalRequest(harness, seed.project.id, label);
+      const request = {
+        ...(await canonicalRequest(harness, seed.project.id, label)),
+        requestId: "publish_request_shared_across_project_scopes",
+      };
       await harness.adapter.publish(request);
       const after = await harness.repository.get(seed.project.id);
       const activeDraft = after.snapshots.find(({ id }) => id === after.project.draftSnapshotId)!;
