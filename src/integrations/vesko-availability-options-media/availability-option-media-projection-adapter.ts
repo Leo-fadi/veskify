@@ -4,14 +4,15 @@ import { z } from "zod";
 import {
   availabilityOptionMediaProjectionSchema,
   canonicalProductMediaProjectionSchema,
+  catalogueProjectionSchema,
   storefrontAvailabilityRecordSchema,
   storefrontDisplayAttributeSchema,
   storefrontOptionGroupProjectionSchema,
-  storefrontSafeProductProjectionSchema,
   storefrontVariantProjectionSchema,
   VeskoIntegrationError,
   type AvailabilityOptionMediaProjection,
   type AvailabilityOptionMediaProjectionPort,
+  type CatalogueProjection,
   type IntegrationFailureCode,
 } from "@/application/vesko-integration";
 import {
@@ -94,31 +95,23 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
-function rawContainsUnsupportedLocale(value: unknown): boolean {
-  if (Array.isArray(value)) return value.some(rawContainsUnsupportedLocale);
-  if (value === null || typeof value !== "object") return false;
-  const entries = Object.entries(value as Record<string, unknown>);
-  const supportedLocales = (value as Record<string, unknown>).supportedLocales;
-  if (
-    Array.isArray(supportedLocales) &&
-    supportedLocales.some((locale) => locale !== "en" && locale !== "fi")
-  ) {
-    return true;
-  }
-  const isLocalizedTextCandidate =
-    entries.length > 0 &&
-    entries.every(
-      ([key, item]) => key !== "id" && /^[a-z]{2}$/i.test(key) && typeof item === "string",
-    );
-  if (isLocalizedTextCandidate && entries.some(([key]) => key !== "en" && key !== "fi")) {
-    return true;
-  }
-  return entries.some(([, item]) => rawContainsUnsupportedLocale(item));
-}
-
 function failureForValidation(error: z.ZodError): IntegrationFailureCode {
   const message = error.issues.map((issue) => issue.message).join(" ");
-  if (/localized projection|supported project locales/i.test(message)) return "unsupportedLocale";
+  const localizedFieldFailure = error.issues.some((issue) => {
+    const path = issue.path;
+    return (
+      (path[0] === "availability" && path[2] === "expectedAvailabilityMessage") ||
+      (path[0] === "attributes" && ["label", "value", "unit"].includes(String(path[2]))) ||
+      (path[0] === "optionGroups" &&
+        (["label", "helpText"].includes(String(path[2])) ||
+          (path[2] === "values" && ["label", "unavailableReason"].includes(String(path[4]))) ||
+          (path[2] === "textEntryConstraints" && path[3] === "placeholder"))) ||
+      (path[0] === "media" && path[2] === "alt")
+    );
+  });
+  if (localizedFieldFailure && /unrecognized key|localized projection/i.test(message)) {
+    return "unsupportedLocale";
+  }
   if (/IDs must be unique|resolve unambiguously/i.test(message)) {
     return "duplicateCanonicalIdentity";
   }
@@ -183,7 +176,14 @@ export function createAvailabilityOptionMediaProjectionProvider(
         if (error instanceof VeskoIntegrationError) throw error;
         throw new VeskoIntegrationError("availabilityUnavailable");
       }
-      if (rawContainsUnsupportedLocale(raw)) {
+      const rawSupportedLocales =
+        raw !== null && typeof raw === "object"
+          ? (raw as Record<string, unknown>).supportedLocales
+          : undefined;
+      if (
+        Array.isArray(rawSupportedLocales) &&
+        rawSupportedLocales.some((locale) => locale !== "en" && locale !== "fi")
+      ) {
         throw new VeskoIntegrationError("unsupportedLocale");
       }
       const parsed = availabilityOptionMediaTransportProjectionSchema.safeParse(raw);
@@ -230,7 +230,8 @@ function standaloneVariantDimensions(product: ProductDisplayModel): StandaloneVa
     const candidate = Object.keys(variant.attributes).filter(
       (key) => !excludedOperationalKeys.has(key),
     );
-    return candidate.length === keys.length && candidate.every((key, index) => key === keys[index]);
+    const candidateKeys = new Set(candidate);
+    return candidateKeys.size === keys.length && keys.every((key) => candidateKeys.has(key));
   });
   if (!consistent || keys.length === 0) {
     throw new VeskoIntegrationError("brokenOptionReference");
@@ -294,19 +295,29 @@ function standaloneOrderOptionGroups(
         },
       });
     }
+    const seenValueFingerprints = new Set<string>();
+    const values = (option.values ?? []).map((label) => {
+      const fingerprint = sha256({ optionId: option.id, label });
+      if (seenValueFingerprints.has(fingerprint)) {
+        throw new VeskoIntegrationError("duplicateCanonicalIdentity");
+      }
+      seenValueFingerprints.add(fingerprint);
+      const digest = fingerprint.slice("sha256:".length);
+      return {
+        id: stableId("option_value", `${option.id}:${digest}`),
+        label,
+        value: digest,
+        disabled: false,
+        metadata: {},
+      };
+    });
     return storefrontOptionGroupProjectionSchema.parse({
       id: option.id,
       label: option.label,
       source: "orderOption",
       required: option.required,
       presentation: (option.values?.length ?? 0) > 8 ? "dropdown" : "buttonGroup",
-      values: (option.values ?? []).map((label, index) => ({
-        id: stableId("option_value", `${option.id}:${index + 1}`),
-        label,
-        value: String(index + 1),
-        disabled: false,
-        metadata: {},
-      })),
+      values,
       dependsOn: [],
     });
   });
@@ -333,6 +344,7 @@ function standaloneProductProjection(
   const productAvailabilityId = stableId("availability", product.id);
   const productPurchasable =
     product.price !== undefined && status !== "outOfStock" && status !== "unavailable";
+  const availabilityAllowsPurchase = status !== "outOfStock" && status !== "unavailable";
   const revision = `${catalogueRevision}:${product.id}`.slice(0, 160);
   const availability: AvailabilityOptionMediaTransportProjection["availability"] = [
     {
@@ -344,16 +356,19 @@ function standaloneProductProjection(
       expectedAvailabilityMessage: product.availabilityLabel,
       revision,
     },
-    ...product.variants.map((variant) => ({
-      availabilityId: stableId("availability", variant.id),
-      scope: "variant" as const,
-      variantId: variant.id,
-      status,
-      purchasable: productPurchasable,
-      stockDisplay: standaloneStockDisplay(product),
-      expectedAvailabilityMessage: product.availabilityLabel,
-      revision,
-    })),
+    ...product.variants.map((variant) => {
+      const resolvedPrice = variant.price ?? product.price;
+      return {
+        availabilityId: stableId("availability", variant.id),
+        scope: "variant" as const,
+        variantId: variant.id,
+        status,
+        purchasable: availabilityAllowsPurchase && resolvedPrice !== undefined,
+        stockDisplay: standaloneStockDisplay(product),
+        expectedAvailabilityMessage: product.availabilityLabel,
+        revision,
+      };
+    }),
   ];
 
   return availabilityOptionMediaTransportProjectionSchema.parse({
@@ -376,24 +391,27 @@ function standaloneProductProjection(
       ...dimensions.map((dimension) => dimension.group),
       ...standaloneOrderOptionGroups(product),
     ],
-    variants: product.variants.map((variant) => ({
-      variantId: variant.id,
-      optionValueIds: dimensions.map((dimension) => {
-        const rawValue = variant.attributes[dimension.key];
-        if (rawValue === undefined || Array.isArray(rawValue)) {
-          throw new VeskoIntegrationError("brokenOptionReference");
-        }
-        const valueId = dimension.valueIdByKey.get(scalarKey(rawValue));
-        if (valueId === undefined) throw new VeskoIntegrationError("brokenOptionReference");
-        return valueId;
-      }),
-      availabilityId: stableId("availability", variant.id),
-      price: variant.price ?? product.price,
-      compareAtPrice: product.compareAtPrice,
-      mediaIds: [],
-      purchasable: productPurchasable && (variant.price ?? product.price) !== undefined,
-      revision,
-    })),
+    variants: product.variants.map((variant) => {
+      const resolvedPrice = variant.price ?? product.price;
+      return {
+        variantId: variant.id,
+        optionValueIds: dimensions.map((dimension) => {
+          const rawValue = variant.attributes[dimension.key];
+          if (rawValue === undefined || Array.isArray(rawValue)) {
+            throw new VeskoIntegrationError("brokenOptionReference");
+          }
+          const valueId = dimension.valueIdByKey.get(scalarKey(rawValue));
+          if (valueId === undefined) throw new VeskoIntegrationError("brokenOptionReference");
+          return valueId;
+        }),
+        availabilityId: stableId("availability", variant.id),
+        price: resolvedPrice,
+        compareAtPrice: product.compareAtPrice,
+        mediaIds: [],
+        purchasable: availabilityAllowsPurchase && resolvedPrice !== undefined,
+        revision,
+      };
+    }),
     media: product.images.map((image, index) => ({
       assetId: image.id,
       productId: product.id,
@@ -450,22 +468,48 @@ function localizedScalar(
 function pdpMedia(
   projection: AvailabilityOptionMediaProjection,
 ): ProductPresentationContext["media"] {
-  return projection.media.map(({ assetId, role, alt, variantIds }) => ({
+  return projection.media.map(({ assetId, role, alt, decorative, variantIds }) => ({
     assetId,
     role,
     alt,
+    decorative,
     variantIds,
   }));
 }
 
+function joinedCatalogueProduct(
+  projection: AvailabilityOptionMediaProjection,
+  catalogueInput: unknown,
+): CatalogueProjection["products"][number] {
+  const catalogueResult = catalogueProjectionSchema.safeParse(catalogueInput);
+  if (!catalogueResult.success) {
+    throw new VeskoIntegrationError("malformedIntegrationResponse");
+  }
+  const catalogue = catalogueResult.data;
+  if (catalogue.tenantId !== projection.tenantId || catalogue.storeId !== projection.storeId) {
+    throw new VeskoIntegrationError("tenantMismatch");
+  }
+  if (catalogue.storefrontProjectId !== projection.storefrontProjectId) {
+    throw new VeskoIntegrationError("projectMismatch");
+  }
+  if (catalogue.catalogueId !== projection.catalogueId) {
+    throw new VeskoIntegrationError("brokenCatalogueReference");
+  }
+  if (catalogue.revision !== projection.catalogueRevision) {
+    throw new VeskoIntegrationError("staleCatalogueProjection");
+  }
+  const product = catalogue.products.find(
+    (candidate) => candidate.productId === projection.productId,
+  );
+  if (product === undefined) throw new VeskoIntegrationError("productNotFound");
+  return product;
+}
+
 export function projectAvailabilityOptionMediaToProductPresentation(
   projection: AvailabilityOptionMediaProjection,
-  productInput: unknown,
+  catalogueInput: unknown,
 ): ProductPresentationContext {
-  const product = storefrontSafeProductProjectionSchema.parse(productInput);
-  if (product.productId !== projection.productId) {
-    throw new VeskoIntegrationError("productNotFound");
-  }
+  const product = joinedCatalogueProduct(projection, catalogueInput);
   const availability = projection.availability.find(
     (record) => record.availabilityId === projection.productAvailabilityId,
   );
@@ -493,12 +537,15 @@ export function projectAvailabilityOptionMediaToProductPresentation(
                   locale === "fi" ? "Tuotetiedot" : "Product details",
                 ]),
               ),
-              attributes: projection.attributes.map((attribute) => ({
-                id: attribute.attributeId,
-                label: attribute.label,
-                value: localizedScalar(attribute.value, locales),
-                unit: attribute.unit,
-              })),
+              attributes: [...projection.attributes]
+                .sort((left, right) => left.displayOrder - right.displayOrder)
+                .map((attribute) => ({
+                  id: attribute.attributeId,
+                  label: attribute.label,
+                  value: localizedScalar(attribute.value, locales),
+                  unit: attribute.unit,
+                  displayOrder: attribute.displayOrder,
+                })),
             },
           ],
     optionGroups: projection.optionGroups,
@@ -511,7 +558,7 @@ export function projectAvailabilityOptionMediaToProductPresentation(
 
 function priceState(
   variant: AvailabilityOptionMediaProjection["variants"][number] | undefined,
-  product: z.infer<typeof storefrontSafeProductProjectionSchema>,
+  product: CatalogueProjection["products"][number],
 ) {
   const price = variant?.price ?? product.price;
   return price === undefined
@@ -524,18 +571,63 @@ function priceState(
 
 export function createAvailabilityOptionMediaResolver(
   projection: AvailabilityOptionMediaProjection,
-  productInput: unknown,
+  catalogueInput: unknown,
 ): CanonicalProductConfigurationResolver {
-  const product = storefrontSafeProductProjectionSchema.parse(productInput);
-  if (product.productId !== projection.productId) {
-    throw new VeskoIntegrationError("productNotFound");
-  }
+  const product = joinedCatalogueProduct(projection, catalogueInput);
   const dimensionGroups = projection.optionGroups.filter(
     (group) => group.source === "variantDimension",
   );
   const valueGroup = new Map(
     dimensionGroups.flatMap((group) => group.values.map((value) => [value.id, group.id] as const)),
   );
+  const availabilityById = new Map(
+    projection.availability.map((record) => [record.availabilityId, record]),
+  );
+
+  const dependenciesSatisfied = (
+    group: (typeof projection.optionGroups)[number],
+    selected: ReadonlyMap<string, string>,
+  ) =>
+    group.dependsOn.every((dependency) => {
+      const selectedValue = selected.get(dependency.groupId);
+      return (
+        selectedValue !== undefined &&
+        (dependency.valueIds === undefined || dependency.valueIds.includes(selectedValue))
+      );
+    });
+
+  const variantCanBePurchased = (variant: (typeof projection.variants)[number]): boolean => {
+    const availability = availabilityById.get(variant.availabilityId);
+    return (
+      availability?.purchasable === true &&
+      variant.purchasable &&
+      (variant.price ?? product.price) !== undefined
+    );
+  };
+
+  const disabledValuesFor = (selected: ReadonlyMap<string, string>) =>
+    dimensionGroups.flatMap((group) => {
+      if (!dependenciesSatisfied(group, selected)) return [];
+      return group.values.flatMap((value) => {
+        const candidateSelections = new Map(selected);
+        candidateSelections.set(group.id, value.id);
+        const viable = projection.variants.some(
+          (variant) =>
+            variantCanBePurchased(variant) &&
+            dimensionGroups.every((dimension) => {
+              const selectedValue = candidateSelections.get(dimension.id);
+              return (
+                selectedValue === undefined ||
+                variant.optionValueIds.some(
+                  (valueId) =>
+                    valueId === selectedValue && valueGroup.get(valueId) === dimension.id,
+                )
+              );
+            }),
+        );
+        return viable ? [] : [{ groupId: group.id, valueId: value.id }];
+      });
+    });
 
   return {
     resolve(input: CanonicalProductConfigurationInput) {
@@ -555,18 +647,32 @@ export function createAvailabilityOptionMediaResolver(
           ? (text.get(group.id)?.length ?? 0) >= (group.textEntryConstraints?.minLength ?? 0)
           : selected.has(group.id);
       });
-      if (!complete) return canonicalProductConfigurationResultSchema.parse({ purchasable: false });
+      const disabledOptionValues = disabledValuesFor(selected);
+      if (!complete) {
+        return canonicalProductConfigurationResultSchema.parse({
+          purchasable: false,
+          disabledOptionValues,
+        });
+      }
 
       const variant =
         dimensionGroups.length === 0
-          ? undefined
+          ? projection.variants.length === 1
+            ? projection.variants[0]
+            : undefined
           : projection.variants.find((candidate) =>
               candidate.optionValueIds.every(
                 (valueId) => selected.get(valueGroup.get(valueId) ?? "") === valueId,
               ),
             );
-      if (dimensionGroups.length > 0 && variant === undefined) {
-        return canonicalProductConfigurationResultSchema.parse({ purchasable: false });
+      if (
+        (dimensionGroups.length > 0 && variant === undefined) ||
+        (dimensionGroups.length === 0 && projection.variants.length > 1)
+      ) {
+        return canonicalProductConfigurationResultSchema.parse({
+          purchasable: false,
+          disabledOptionValues,
+        });
       }
       const availabilityId = variant?.availabilityId ?? projection.productAvailabilityId;
       const availability = projection.availability.find(
@@ -575,19 +681,29 @@ export function createAvailabilityOptionMediaResolver(
       if (availability === undefined) {
         throw new VeskoIntegrationError("brokenAvailabilityReference");
       }
-      const mediaAssetIds =
-        variant === undefined || variant.mediaIds.length === 0
-          ? projection.media.map((media) => media.assetId)
-          : variant.mediaIds;
+      const mediaAssetIds = variant?.mediaIds.length
+        ? variant.mediaIds
+        : projection.media
+            .filter(
+              (media) =>
+                media.variantIds === undefined ||
+                media.variantIds.length === 0 ||
+                (variant !== undefined && media.variantIds.includes(variant.variantId)),
+            )
+            .map((media) => media.assetId);
       return canonicalProductConfigurationResultSchema.parse({
         resolvedConfiguration: variant
           ? { kind: "variant", variantId: variant.variantId }
           : { kind: "baseProduct" },
-        purchasable: availability.purchasable && (variant?.purchasable ?? true),
+        purchasable:
+          availability.purchasable &&
+          (variant?.purchasable ?? true) &&
+          (variant?.price ?? product.price) !== undefined,
         ...priceState(variant, product),
         availability: availability.expectedAvailabilityMessage,
+        sku: variant?.sku,
         mediaAssetIds,
-        disabledOptionValues: [],
+        disabledOptionValues,
         warnings: [],
       });
     },

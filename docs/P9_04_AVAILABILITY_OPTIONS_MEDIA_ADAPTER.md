@@ -45,6 +45,8 @@ expose warehouse quantities.
 
 Attributes preserve source array order and explicit display order. Their canonical ID, localized
 label, localized or typed value, optional unit and optional presentation role remain read-only.
+The PDP bridge sorts a cloned attribute list by canonical `displayOrder`; transport order and the
+source projection are not mutated.
 
 Option groups reuse the dynamic PDP contract unchanged. Group order, value order, presentation,
 required state, swatches, dependencies and text-entry constraints remain source-preserved. The
@@ -57,6 +59,12 @@ authorized price state, availability reference, canonical media IDs, purchasabil
 Every variant selects exactly one value from each variant dimension. Unknown values, incomplete
 dimension selections and duplicate combinations fail; no variant or SKU is synthesized.
 
+Standalone variant-dimension keys are compared as sets while the first variant defines display
+order. Standalone selection-option value identity is derived from the canonical option ID and
+localized value fingerprint, so reordering values does not change IDs; duplicate fingerprints
+fail as duplicate canonical identity. A variant-specific price can make that variant purchasable
+even when the base product has only a price-unavailable state.
+
 ## Canonical and variant media
 
 Canonical media preserves source gallery order for main, alternative, variant and editorial roles.
@@ -66,19 +74,26 @@ variant associations and revision. Non-decorative media requires canonical alt d
 Variant-media associations are validated in both directions. A variant media reference must resolve
 to media on the same product, and that media must name the same variant. Cross-product references,
 unknown media, unknown variants, duplicates and inconsistent associations fail.
+When a resolved variant has no explicit media list, fallback media is limited to product-wide media
+and media associated with that variant; another variant's media is never included. Decorative state
+continues through PDP presentation, approved asset mapping and rendering, where decorative images
+use an empty accessible name instead of product-title fallback text.
 
 ## PDP and option-resolution compatibility
 
-`projectAvailabilityOptionMediaToProductPresentation` combines a P9-03/P9-01 storefront-safe
-product with this projection and produces the current `ProductPresentationContext`. It preserves
-canonical option/media shapes and catalogue revision identity. Typed attributes are converted only
-to display text at this presentation boundary.
+`projectAvailabilityOptionMediaToProductPresentation` joins this projection to the complete
+P9-03/P9-01 canonical catalogue projection and produces the current
+`ProductPresentationContext`. Tenant, store, storefront project, catalogue ID, catalogue revision
+and product identity must all match before product truth is consumed. It preserves canonical
+option/media shapes and revisions up to the shared 160-character integration limit. Typed
+attributes are converted only to display text at this presentation boundary.
 
 `createAvailabilityOptionMediaResolver` implements the existing
 `CanonicalProductConfigurationResolver` boundary. Complete selections resolve only an existing
-canonical variant; the selected availability, price and variant media remain read-only. Missing or
-unavailable combinations are non-purchasable. Text-entry groups use their canonical constraints and
-do not create variants.
+canonical variant; a sole variant with no variant dimensions resolves automatically. The selected
+availability, price, SKU and variant media remain read-only. Partial selections return canonical
+disabled values when no purchasable compatible variant remains. Missing or unavailable combinations
+are non-purchasable. Text-entry groups use their canonical constraints and do not create variants.
 
 This supports products without options, one- or multi-dimension watches, dependent ring options,
 canonical text-entry options, unavailable combinations and variant-driven galleries without
@@ -91,6 +106,10 @@ transport responses, stale revisions, missing products, duplicate canonical iden
 project mismatch, broken option/dependency/availability/media references, dependency cycles,
 duplicate variant combinations and unsupported locales. Raw transport errors are replaced with a
 safe availability-unavailable failure.
+
+Unsupported-locale classification is restricted to declared locale lists and known localized
+fields. Arbitrary metadata keys that resemble locale codes are preserved as metadata and are not
+misclassified.
 
 ## Standalone behavior
 

@@ -329,6 +329,7 @@ function rendererInput(
       displayedPriceUnavailableReason: product.priceUnavailableReason,
       displayedCompareAtPrice: product.compareAtPrice,
       displayedAvailability: product.availability,
+      displayedSku: product.sku,
       selectedMediaReferences: product.media,
       validationWarnings: [],
       canAddToCart: true,
@@ -457,6 +458,44 @@ describe("P6-02 dynamic product-detail component family", () => {
     expect(screen.getByText("€329")).toBeVisible();
     expect(screen.getByText("Limited availability")).toBeVisible();
     expect(screen.queryByText("€399")).not.toBeInTheDocument();
+  });
+
+  it("renders the selected variant SKU and preserves decorative media semantics", () => {
+    const product = structuredClone(watchProduct);
+    product.revision = "r".repeat(160);
+    product.media[0] = {
+      assetId: "asset_watch_main",
+      role: "main",
+      decorative: true,
+    };
+    const onPrimaryAction = vi.fn();
+    const input = rendererInput(product, { onPrimaryAction });
+    input.resolvedOptions = {
+      ...input.resolvedOptions,
+      resolvedConfiguration: { kind: "variant", variantId: "variant_watch_black" },
+      displayedSku: "WATCH-BLACK-001",
+      selectedMediaReferences: product.media,
+    };
+    input.projection = {
+      ...(input.projection as object),
+      assets: [
+        {
+          ...asset("asset_watch_main", "productMainImage"),
+          alt: undefined,
+          decorative: true,
+        },
+      ],
+    };
+
+    const { container } = render(renderDynamicProductDetail(input));
+
+    expect(screen.getByText("WATCH-BLACK-001")).toBeVisible();
+    expect(screen.queryByText("WATCH-001")).not.toBeInTheDocument();
+    expect(container.querySelector("img")).toHaveAttribute("alt", "");
+    fireEvent.click(screen.getByRole("button", { name: "Add to cart" }));
+    expect(onPrimaryAction).toHaveBeenCalledWith(
+      expect.objectContaining({ catalogueRevision: product.revision }),
+    );
   });
 
   it("selects the first canonical media item whenever the resolved media order changes", () => {

@@ -30,6 +30,7 @@ const pathSchema = z
   .regex(/^(?:\*|[a-z][A-Za-z0-9]*)(?:\.(?:\*|[a-z][A-Za-z0-9]*))*$/);
 
 const unique = (values: readonly string[]) => new Set(values).size === values.length;
+export const presentationRevisionSchema = z.string().trim().min(1).max(160);
 
 export const componentDataSchemaContractSchema = z
   .object({
@@ -437,7 +438,7 @@ export const componentDefinitionV2Schema = z
 
 const bindingBaseSchema = z.object({
   slotId: tokenSchema,
-  revision: z.string().trim().min(1).max(120).optional(),
+  revision: presentationRevisionSchema.optional(),
   locale: localeSchema.optional(),
 });
 
@@ -534,6 +535,7 @@ export const productMediaPresentationSchema = z
     assetId: idSchema,
     role: z.enum(["main", "alternative", "variant", "editorial"]),
     alt: localizedTextSchema.optional(),
+    decorative: z.boolean().optional(),
     variantIds: z.array(idSchema).optional(),
   })
   .strict();
@@ -544,6 +546,7 @@ export const productAttributeValueSchema = z
     label: localizedTextSchema,
     value: localizedTextSchema,
     unit: localizedTextSchema.optional(),
+    displayOrder: z.number().int().nonnegative().optional(),
   })
   .strict();
 
@@ -761,7 +764,7 @@ export const productPresentationContextSchema = z
     selectedValues: z.array(selectedOptionStateSchema).default([]),
     unavailableCombinations: z.array(unavailableCombinationSchema).default([]),
     relatedProductIds: z.array(idSchema).default([]),
-    revision: z.string().trim().min(1).max(120),
+    revision: presentationRevisionSchema,
   })
   .strict()
   .superRefine((product, context) => {
@@ -1081,7 +1084,7 @@ export const collectionPresentationContextSchema = z
         description: localizedTextSchema.optional(),
       })
       .strict(),
-    revision: z.string().trim().min(1).max(120),
+    revision: presentationRevisionSchema,
   })
   .strict()
   .superRefine((collection, context) => {
@@ -1159,7 +1162,7 @@ export const storefrontAssetMetadataSchema = z
     approvalStatus: z.enum(["pending", "approved", "rejected"]),
     usageRights: z.enum(["merchantOwned", "licensed", "publicSource", "generated", "unknown"]),
     responsiveCrops: z.array(assetCropSchema).default([]),
-    revision: z.string().trim().min(1).max(120).optional(),
+    revision: presentationRevisionSchema.optional(),
   })
   .strict()
   .refine((asset) => asset.decorative || asset.alt !== undefined, {
@@ -1170,7 +1173,7 @@ export const storefrontAssetMetadataSchema = z
 const navigationProjectionReferenceSchema = z
   .object({
     navigationId: idSchema,
-    revision: z.string().trim().min(1).max(120).optional(),
+    revision: presentationRevisionSchema.optional(),
   })
   .strict();
 
@@ -1178,7 +1181,7 @@ const projectBrandProjectionReferenceSchema = z
   .object({
     projectId: idSchema,
     brandSystemRefs: z.array(idSchema).default([]),
-    revision: z.string().trim().min(1).max(120).optional(),
+    revision: presentationRevisionSchema.optional(),
   })
   .strict();
 
@@ -1186,7 +1189,7 @@ const localizedContentProjectionReferenceSchema = z
   .object({
     contentId: idSchema,
     locales: z.array(localeSchema).min(1),
-    revision: z.string().trim().min(1).max(120).optional(),
+    revision: presentationRevisionSchema.optional(),
   })
   .strict();
 
@@ -1198,8 +1201,8 @@ export const componentProjectionContextSchema = z
     navigation: z.array(navigationProjectionReferenceSchema).default([]),
     projectBrandContexts: z.array(projectBrandProjectionReferenceSchema).default([]),
     localizedContents: z.array(localizedContentProjectionReferenceSchema).default([]),
-    productListRevision: z.string().trim().min(1).max(120).optional(),
-    collectionListRevision: z.string().trim().min(1).max(120).optional(),
+    productListRevision: presentationRevisionSchema.optional(),
+    collectionListRevision: presentationRevisionSchema.optional(),
   })
   .strict()
   .superRefine((projection, context) => {

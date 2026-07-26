@@ -6,6 +6,7 @@ import {
 } from "@/application/product-presentation";
 import { VeskoIntegrationError } from "@/application/vesko-integration";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
+import { canonicalProductConfigurationResultSchema } from "@/domain/product-presentation";
 import {
   createAvailabilityOptionMediaProjectionProvider,
   createAvailabilityOptionMediaResolver,
@@ -208,6 +209,31 @@ function provider(raw: unknown = canonicalProjection()) {
   });
 }
 
+function canonicalCatalogue(
+  projection: AvailabilityOptionMediaTransportProjection = canonicalProjection(),
+) {
+  return {
+    tenantId: projection.tenantId,
+    storeId: projection.storeId,
+    storefrontProjectId: projection.storefrontProjectId,
+    catalogueId: projection.catalogueId,
+    revision: projection.catalogueRevision,
+    products: [
+      {
+        productId: projection.productId,
+        slug: "ring",
+        title: { en: "Ring", fi: "Sormus" },
+        productTypeId: "ring",
+        sku: "RING-BASE",
+        price: { amount: 1290, currency: "EUR" as const },
+      },
+    ],
+    collections: [],
+    categories: [],
+    navigation: [],
+  };
+}
+
 describe("P9-04 availability, options, variants and media projection adapter", () => {
   it("maps the complete read-only projection and preserves semantic source order", async () => {
     const source = canonicalProjection();
@@ -309,6 +335,12 @@ describe("P9-04 availability, options, variants and media projection adapter", (
       code: "projectMismatch",
     });
 
+    const metadata = canonicalProjection();
+    metadata.optionGroups[0].values[0].metadata = { uk: "wide" };
+    await expect(provider(metadata).load(context)).resolves.toMatchObject({
+      productId: context.productId,
+    });
+
     const unsupported = structuredClone(canonicalProjection());
     Object.assign(unsupported.optionGroups[0].label, { sv: "Metall" });
     await expect(provider(unsupported).load(context)).rejects.toMatchObject({
@@ -369,16 +401,9 @@ describe("P9-04 availability, options, variants and media projection adapter", (
 
   it("feeds canonical option resolution and PDP presentation with variant-driven media", async () => {
     const projection = await provider().load(context);
-    const product = {
-      productId: context.productId,
-      slug: "ring",
-      title: { en: "Ring", fi: "Sormus" },
-      productTypeId: "ring",
-      sku: "RING-BASE",
-      price: { amount: 1290, currency: "EUR" as const },
-    };
-    const pdp = projectAvailabilityOptionMediaToProductPresentation(projection, product);
-    const resolver = createAvailabilityOptionMediaResolver(projection, product);
+    const catalogue = canonicalCatalogue();
+    const pdp = projectAvailabilityOptionMediaToProductPresentation(projection, catalogue);
+    const resolver = createAvailabilityOptionMediaResolver(projection, catalogue);
     const initialized = await initializeProductOptionEngine(pdp, resolver);
     if (!initialized.ok) throw new Error(initialized.error.message);
     const metal = await applyProductOptionIntent({
@@ -409,9 +434,221 @@ describe("P9-04 availability, options, variants and media projection adapter", (
       variantId: "variant_white_16",
     });
     expect(resolved.result.displayedAvailability?.en).toBe("Low stock");
+    expect(resolved.result.displayedSku).toBe("RING-WHITE-16");
     expect(resolved.result.selectedMediaReferences.map((media) => media.assetId)).toEqual([
       "media_ring_white",
     ]);
+    expect(pdp.attributeGroups[0]?.attributes.map((attribute) => attribute.id)).toEqual([
+      "attribute_material",
+      "attribute_width",
+    ]);
+    expect(pdp.attributeGroups[0]?.attributes.map((attribute) => attribute.displayOrder)).toEqual([
+      10, 20,
+    ]);
     expect(pdp.optionGroups[2]?.textEntryConstraints?.maxLength).toBe(20);
+  });
+
+  it("keeps fallback media product-wide or selected-variant scoped", async () => {
+    const source = canonicalProjection();
+    source.variants[0].mediaIds = [];
+    source.media = source.media.filter((media) => media.assetId !== "media_ring_white");
+    const projection = await provider(source).load(context);
+    const resolver = createAvailabilityOptionMediaResolver(projection, canonicalCatalogue(source));
+
+    const resolved = canonicalProductConfigurationResultSchema.parse(
+      await resolver.resolve({
+        productId: source.productId,
+        catalogueRevision: source.catalogueRevision,
+        selectedValues: [
+          { groupId: "option_metal", valueId: "value_white" },
+          { groupId: "option_size", valueId: "value_size_16" },
+        ],
+        textEntries: [],
+      }),
+    );
+
+    expect(resolved.mediaAssetIds).toEqual(["media_ring_main", "media_ring_editorial"]);
+    expect(resolved.mediaAssetIds).not.toContain("media_ring_yellow");
+  });
+
+  it("resolves a sole zero-dimension variant automatically", async () => {
+    const source = canonicalProjection();
+    source.optionGroups = source.optionGroups.filter((group) => group.source === "orderOption");
+    source.variants = [{ ...source.variants[0], optionValueIds: [] }];
+    source.availability = source.availability.filter(
+      (record) => record.scope === "product" || record.variantId === "variant_white_16",
+    );
+    source.media = source.media.filter(
+      (media) => media.variantIds === undefined || media.variantIds.includes("variant_white_16"),
+    );
+    const projection = await provider(source).load(context);
+    const resolver = createAvailabilityOptionMediaResolver(projection, canonicalCatalogue(source));
+
+    expect(
+      resolver.resolve({
+        productId: source.productId,
+        catalogueRevision: source.catalogueRevision,
+        selectedValues: [],
+        textEntries: [],
+      }),
+    ).toMatchObject({
+      resolvedConfiguration: { kind: "variant", variantId: "variant_white_16" },
+      sku: "RING-WHITE-16",
+      purchasable: true,
+    });
+  });
+
+  it("accepts 160-character revisions and rejects mismatched catalogue joins", async () => {
+    const source = canonicalProjection();
+    source.catalogueRevision = "r".repeat(160);
+    const projection = await provider(source).load(context);
+    const catalogue = canonicalCatalogue(source);
+
+    expect(
+      projectAvailabilityOptionMediaToProductPresentation(projection, catalogue).revision,
+    ).toBe(source.catalogueRevision);
+    expect(
+      createAvailabilityOptionMediaResolver(projection, catalogue).resolve({
+        productId: source.productId,
+        catalogueRevision: source.catalogueRevision,
+        selectedValues: [
+          { groupId: "option_metal", valueId: "value_white" },
+          { groupId: "option_size", valueId: "value_size_16" },
+        ],
+        textEntries: [],
+      }),
+    ).toMatchObject({
+      resolvedConfiguration: { kind: "variant", variantId: "variant_white_16" },
+    });
+    await expect(
+      Promise.resolve().then(() =>
+        createAvailabilityOptionMediaResolver(projection, {
+          ...catalogue,
+          revision: "catalogue-revision-other",
+        }),
+      ),
+    ).rejects.toMatchObject({ code: "staleCatalogueProjection" });
+  });
+
+  it("derives disabled option values from partial canonical selections", async () => {
+    const source = canonicalProjection();
+    source.optionGroups[1].values.push({
+      id: "value_size_17",
+      label: { en: "17", fi: "17" },
+      value: "17",
+      disabled: false,
+      metadata: {},
+    });
+    source.variants[1].optionValueIds = ["value_yellow", "value_size_17"];
+    const projection = await provider(source).load(context);
+    const resolver = createAvailabilityOptionMediaResolver(projection, canonicalCatalogue(source));
+
+    const result = canonicalProductConfigurationResultSchema.parse(
+      await resolver.resolve({
+        productId: source.productId,
+        catalogueRevision: source.catalogueRevision,
+        selectedValues: [{ groupId: "option_metal", valueId: "value_white" }],
+        textEntries: [],
+      }),
+    );
+
+    expect(result.purchasable).toBe(false);
+    expect(result.disabledOptionValues).toContainEqual({
+      groupId: "option_size",
+      valueId: "value_size_17",
+    });
+    expect(result.disabledOptionValues).not.toContainEqual({
+      groupId: "option_size",
+      valueId: "value_size_16",
+    });
+  });
+
+  it("allows standalone variant pricing without a base price", async () => {
+    const catalogue = structuredClone(aurumNordicSeed.catalogue);
+    const product = catalogue.products.find(
+      (candidate) => candidate.id === "product_aava_necklace_925",
+    )!;
+    product.price = undefined;
+    product.priceUnavailableReason = { en: "Choose a length", fi: "Valitse pituus" };
+    product.variants[0].price = { amount: 149, currency: "EUR" };
+    const adapter = createStandaloneAvailabilityOptionMediaProjectionAdapter(catalogue);
+    const identity = standaloneAvailabilityOptionMediaIdentity(catalogue);
+
+    const projection = await adapter.load({ ...identity, productId: product.id });
+
+    expect(projection.availability.find((record) => record.scope === "product")?.purchasable).toBe(
+      false,
+    );
+    expect(projection.variants[0]).toMatchObject({
+      price: { amount: 149, currency: "EUR" },
+      purchasable: true,
+    });
+    expect(
+      projection.availability.find(
+        (record) => record.variantId === projection.variants[0].variantId,
+      )?.purchasable,
+    ).toBe(true);
+  });
+
+  it("keeps standalone dimension keys set-consistent and option identities reorder-stable", async () => {
+    const firstCatalogue = structuredClone(aurumNordicSeed.catalogue);
+    const firstProduct = firstCatalogue.products.find(
+      (candidate) => candidate.id === "product_aava_necklace_925",
+    )!;
+    firstProduct.variants[0].attributes = { chainLengthCm: 45, finish: "polished" };
+    firstProduct.variants[1].attributes = { finish: "matte", chainLengthCm: 50 };
+    firstProduct.orderOptions = [
+      {
+        id: "option_gift_wrap",
+        type: "selection",
+        label: { en: "Gift wrap", fi: "Lahjapaketointi" },
+        required: false,
+        values: [
+          { en: "Paper", fi: "Paperi" },
+          { en: "Box", fi: "Rasia" },
+        ],
+      },
+    ];
+    const secondCatalogue = structuredClone(firstCatalogue);
+    secondCatalogue.products
+      .find((candidate) => candidate.id === firstProduct.id)!
+      .orderOptions![0].values!.reverse();
+
+    const first = await createStandaloneAvailabilityOptionMediaProjectionAdapter(
+      firstCatalogue,
+    ).load({
+      ...standaloneAvailabilityOptionMediaIdentity(firstCatalogue),
+      productId: firstProduct.id,
+    });
+    const second = await createStandaloneAvailabilityOptionMediaProjectionAdapter(
+      secondCatalogue,
+    ).load({
+      ...standaloneAvailabilityOptionMediaIdentity(secondCatalogue),
+      productId: firstProduct.id,
+    });
+    const identities = (projection: typeof first) =>
+      projection.optionGroups
+        .find((group) => group.id === "option_gift_wrap")!
+        .values.map((value) => [value.label.en, value.id, value.value])
+        .sort(([left], [right]) => left!.localeCompare(right!));
+
+    expect(first.optionGroups.filter((group) => group.source === "variantDimension")).toHaveLength(
+      2,
+    );
+    expect(identities(first)).toEqual(identities(second));
+
+    const duplicateCatalogue = structuredClone(firstCatalogue);
+    duplicateCatalogue.products.find(
+      (candidate) => candidate.id === firstProduct.id,
+    )!.orderOptions![0].values = [
+      { en: "Paper", fi: "Paperi" },
+      { en: "Paper", fi: "Paperi" },
+    ];
+    await expect(
+      createStandaloneAvailabilityOptionMediaProjectionAdapter(duplicateCatalogue).load({
+        ...standaloneAvailabilityOptionMediaIdentity(duplicateCatalogue),
+        productId: firstProduct.id,
+      }),
+    ).rejects.toMatchObject({ code: "duplicateCanonicalIdentity" });
   });
 });

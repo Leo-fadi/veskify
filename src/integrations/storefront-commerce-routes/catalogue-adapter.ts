@@ -339,9 +339,17 @@ function productContext(
         assetId: image.id,
         role: index === 0 ? ("main" as const) : ("alternative" as const),
         alt: image.alt,
+        decorative: image.decorative,
       })),
       ...(editorialMedia
-        ? [{ assetId: editorialMedia.id, role: "editorial" as const, alt: editorialMedia.alt }]
+        ? [
+            {
+              assetId: editorialMedia.id,
+              role: "editorial" as const,
+              alt: editorialMedia.alt,
+              decorative: editorialMedia.decorative,
+            },
+          ]
         : []),
     ],
     attributeGroups:
@@ -379,8 +387,8 @@ function productAssets(
           : media.role === "editorial"
             ? ("editorialImage" as const)
             : ("productAlternativeImage" as const),
-      alt: media.alt ?? product.title,
-      decorative: false,
+      alt: media.decorative ? undefined : (media.alt ?? product.title),
+      decorative: media.decorative ?? false,
       provenance: merchantProvidedAssetIds.has(media.assetId)
         ? { kind: "merchantProvided" as const, sourceId: media.assetId }
         : { kind: "canonicalProductMedia" as const, sourceId: product.productId },
