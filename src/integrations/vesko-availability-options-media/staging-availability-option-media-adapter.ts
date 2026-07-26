@@ -2,10 +2,8 @@ import { z } from "zod";
 
 import { VeskoIntegrationError } from "@/application/vesko-integration";
 import {
-  availabilityOptionMediaTransportProjectionSchema,
   createAvailabilityOptionMediaProjectionProvider,
   type AvailabilityOptionMediaLoadContext,
-  type AvailabilityOptionMediaTransportProjection,
   type CanonicalAvailabilityOptionMediaTransport,
 } from "./availability-option-media-projection-adapter";
 
@@ -24,7 +22,8 @@ export const veskoStagingAvailabilityOptionMediaResponseSchema = z
         authorityRevision: z.string(),
       })
       .strict(),
-    projection: availabilityOptionMediaTransportProjectionSchema,
+    // Canonical commerce validation belongs exclusively to the P9-04 provider.
+    projection: z.unknown(),
   })
   .strict();
 
@@ -41,13 +40,10 @@ function assertAuthorized(
   response: VeskoStagingAvailabilityOptionMediaResponse,
 ): void {
   const authority = response.authorization;
-  if (
-    authority.tenantId !== context.tenantId ||
-    authority.storeId !== context.storeId ||
-    authority.storefrontProjectId !== context.storefrontProjectId
-  ) {
+  if (authority.tenantId !== context.tenantId || authority.storeId !== context.storeId)
     throw new VeskoIntegrationError("tenantMismatch");
-  }
+  if (authority.storefrontProjectId !== context.storefrontProjectId)
+    throw new VeskoIntegrationError("projectMismatch");
 }
 
 /** Maps the strict staging response into the merged P9-04 read-only port. */
@@ -66,7 +62,7 @@ export function createVeskoStagingAvailabilityOptionMediaAdapter(input: {
       const parsed = veskoStagingAvailabilityOptionMediaResponseSchema.safeParse(raw);
       if (!parsed.success) throw new VeskoIntegrationError("malformedIntegrationResponse");
       assertAuthorized(context, parsed.data);
-      return parsed.data.projection satisfies AvailabilityOptionMediaTransportProjection;
+      return parsed.data.projection;
     },
   };
   return createAvailabilityOptionMediaProjectionProvider({ transport });

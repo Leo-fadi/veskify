@@ -63,5 +63,62 @@ describe("P10-03 staging availability/options/media boundary", () => {
     await expect(make({ ...authority, permission: "edit-storefront" })).rejects.toMatchObject({
       code: "malformedIntegrationResponse",
     });
+    await expect(make({ ...authority, tenantId: "tenant_other" })).rejects.toMatchObject({
+      code: "tenantMismatch",
+    });
+    await expect(make({ ...authority, storeId: "store_other" })).rejects.toMatchObject({
+      code: "tenantMismatch",
+    });
+  });
+
+  it("delegates unsupported locales and broken media to P9-04", async () => {
+    const projection = canonicalProjection();
+    const authority = {
+      tenantId: context.tenantId,
+      storeId: context.storeId,
+      storefrontProjectId: context.storefrontProjectId,
+      permission: "view-storefront",
+      authorityRevision: "a",
+    };
+    const load = (payload: unknown) =>
+      createVeskoStagingAvailabilityOptionMediaAdapter({
+        client: {
+          fetchProductProjection: () =>
+            Promise.resolve({ authorization: authority, projection: payload }),
+        },
+      }).load(context);
+    await expect(
+      load({
+        ...projection,
+        supportedLocales: ["en", "fi"],
+        optionGroups: [
+          {
+            id: "option_colour",
+            label: { en: "Colour", fi: "Väri", sv: "Färg" },
+            source: "variantDimension",
+            required: true,
+            presentation: "swatch",
+            values: [],
+            dependsOn: [],
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: "unsupportedLocale" });
+    await expect(
+      load({
+        ...projection,
+        media: [
+          {
+            assetId: "media_unknown",
+            productId: projection.productId,
+            role: "variant",
+            variantIds: ["variant_unknown"],
+            alt: { en: "x", fi: "x" },
+            decorative: false,
+            revision: "media-1",
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: "brokenMediaReference" });
   });
 });

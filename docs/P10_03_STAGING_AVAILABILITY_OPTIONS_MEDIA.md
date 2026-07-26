@@ -5,7 +5,7 @@
 `createVeskoStagingAvailabilityOptionMediaAdapter` accepts an injected
 `fetchProductProjection` client. It intentionally contains no URL construction, HTTP client,
 authentication-token acquisition or credential storage. The endpoint-specific response is a
-strict envelope with `authorization` and `projection` fields. The current repository contains no
+strict envelope with `authorization` and raw `projection` fields. The current repository contains no
 Vesko staging OpenAPI document or confirmed endpoint URL, so live wiring remains an environment
 handoff blocker.
 
@@ -16,9 +16,15 @@ catalogue and opaque projection revisions, supported locales, availability recor
 ordered option groups and values, dependency declarations, text-entry constraints, variants
 (`variantId`, `sku`, option-value IDs, availability ID, authorized price, media IDs and
 purchasability), and product/variant media (`assetId`, role, variant IDs, localized alt and
-`decorative`). The adapter passes these fields unchanged to the P9-04 canonical validator and
+`decorative`). The staging layer validates only envelope shape, authority identity and transport
+requirements. It passes the raw projection unchanged to the P9-04 canonical validator and
 resolver, preserving source order, stable IDs, prices, SKUs and media ownership. No options,
 variants, inventory values or media are synthesized.
+
+P9-04 remains the sole owner of canonical projection validation. Its typed failures, including
+unsupported locales and broken media/option/availability references, dependency cycles and
+duplicate variant combinations, are preserved. Only malformed staging envelopes are classified
+as `malformedIntegrationResponse`.
 
 Availability and sellability remain Vesko-owned. Storefront Studio only consumes storefront-safe
 status, stock-display, purchasability and localized expected messages; it never mutates stock or
@@ -28,7 +34,8 @@ sole zero-dimension variant rule.
 ## Identity, revision and authorization
 
 The envelope must carry current `view-storefront` authority for the same tenant, store and
-storefront project as the request. P9-04 then checks product identity and the optional expected
+storefront project as the request. Tenant or store mismatches return `tenantMismatch`; a correct
+tenant/store with a different storefront project returns `projectMismatch`. P9-04 then checks product identity and the optional expected
 projection revision. Catalogue identity/revision is retained in the projection and is joined by
 the existing P9-04 PDP bridge. Mismatches, stale revisions and malformed payloads become typed
 merchant-safe integration failures. The returned projection is validated, normalized and frozen
