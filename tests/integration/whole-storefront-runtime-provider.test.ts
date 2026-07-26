@@ -1,0 +1,284 @@
+// @vitest-environment node
+
+import { describe, expect, it, vi } from "vitest";
+import {
+  createDeterministicMockStorefrontAIProvider,
+  buildAiStorefrontProviderRequest,
+  type AiStorefrontGenerationCommand,
+} from "@/application/ai-storefront-generation";
+import {
+  createWholeStorefrontGenerationPlan,
+  wholeStorefrontPlanningInputSchema,
+  type WholeStorefrontPlanningInput,
+  type WholeStorefrontPlanningProvider,
+} from "@/application/whole-storefront-generation-plan";
+import {
+  approveStorefrontDesignBrief,
+  createStorefrontDesignBrief,
+} from "@/application/source-discovery";
+import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
+import { aurumNordicSeed } from "@/data/seed";
+import { createServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
+import {
+  createServerWholeStorefrontPlanningHandler,
+  type ServerWholeStorefrontPlanningAuthority,
+} from "@/integrations/ai/whole-storefront-runtime-authority";
+import type { MerchantProjectAuthorization } from "@/application/merchant-project-context";
+import { sourceEvidenceSchema, sourceReferenceSchema } from "@/domain/source-discovery";
+
+const now = "2026-07-26T10:00:00.000Z";
+const snapshot = aurumNordicSeed.draftSnapshot;
+
+function planningInput(): WholeStorefrontPlanningInput {
+  const source = sourceReferenceSchema.parse({
+    id: "source_runtime_planner",
+    sourceType: "deterministic-fixture",
+    url: "https://merchant.example/store",
+    normalizedOrigin: "https://merchant.example",
+    requestedLocale: "en",
+    discoveredAt: now,
+    allowedDiscoveryPolicy: {
+      mode: "deterministic",
+      maxPages: 1,
+      maxAssets: 1,
+      followSameOriginOnly: true,
+    },
+    status: "complete",
+    warnings: [],
+    failure: null,
+  });
+  const evidence = sourceEvidenceSchema.parse({
+    id: "evidence_runtime_planner",
+    kind: "page-identity",
+    provenance: { sourceReferenceId: source.id, sourceUrl: source.url, observedAt: now },
+    sourceUrl: source.url,
+    confidence: 1,
+    observedValue: { title: "Runtime merchant" },
+    extractionMethod: "deterministic-test-fixture",
+    locale: "en",
+    warnings: [],
+    uncertainty: { isUncertain: false, reason: null },
+  });
+  const brief = approveStorefrontDesignBrief(
+    createStorefrontDesignBrief({
+      id: "brief_runtime_planner",
+      now,
+      businessIdentity: { businessName: "Runtime merchant" },
+      languagePlan: { selectedLanguages: ["en", "fi"], primaryLanguage: "en" },
+      sourceReferenceIds: [source.id],
+      sourceEvidenceIds: [evidence.id],
+      materialEvidence: {
+        sourceReferences: [source],
+        evidence: [evidence],
+        assetCandidates: [],
+        reconciliation: null,
+      },
+      canonicalCommerceProjectionRef: aurumNordicSeed.catalogue.id,
+      pagePlan: { pageTypes: ["home", "collection", "product"] },
+      approvedBrandDirection: {
+        logoAssetRef: { id: "asset_runtime_logo", label: "Merchant logo" },
+        supportingImageAssetRefs: [],
+        preferredBrandColours: ["#123456"],
+        typographyDirection: "serif-led",
+        visualStyleDirection: "editorial",
+        imageryDirection: "studio",
+        toneKeywords: ["warm"],
+      },
+    }),
+    { actorId: "merchant_owner", approvedAt: now },
+  );
+  return wholeStorefrontPlanningInputSchema.parse({
+    brief,
+    project: {
+      id: aurumNordicSeed.project.id,
+      revision: aurumNordicSeed.project.revision,
+      enabledLocales: ["en", "fi"],
+    },
+    draft: structuredClone(snapshot),
+    catalogue: structuredClone(aurumNordicSeed.catalogue),
+    componentDefinitions: structuredClone(veskifyComponentDefinitionsV2),
+    approvedAssetContext: null,
+    requiredAssetPlacements: [],
+  });
+}
+
+function request() {
+  const provider = createDeterministicMockStorefrontAIProvider();
+  const command: AiStorefrontGenerationCommand = {
+    projectId: aurumNordicSeed.project.id,
+    draftSnapshotId: snapshot.id,
+    draftRevision: snapshot.revision,
+    storefront: {
+      pageOrder: snapshot.pages.map((page) => page.id),
+      pages: structuredClone(snapshot.pages),
+      navigation: structuredClone(snapshot.navigation),
+      brandSystem: structuredClone(snapshot.brandSystem),
+    },
+    affectedPageIds: snapshot.pages.map((page) => page.id),
+    affectedSectionTargets: [],
+    designSystemTarget: { kind: "storefrontDesignSystem", projectId: aurumNordicSeed.project.id },
+    merchantInstruction: "Apply a warm premium style across the storefront.",
+    activeLocale: "en",
+    enabledLocales: ["en", "fi"],
+    requestedScope: "storefront",
+    capability: "approvedColorTypographyDirection",
+    providerId: provider.id,
+    provider,
+    importedContent: [],
+  };
+  return buildAiStorefrontProviderRequest(command, 1);
+}
+
+function authority(
+  input = planningInput(),
+): ServerWholeStorefrontPlanningAuthority & { resolve: ReturnType<typeof vi.fn> } {
+  const authorization: MerchantProjectAuthorization = {
+    context: {
+      userId: "user_runtime",
+      tenantId: "tenant_runtime",
+      merchantId: "merchant_runtime",
+      organizationId: "organization_runtime",
+      storeId: "store_runtime",
+      storefrontProjectId: input.project.id,
+      roles: ["owner"],
+      permissions: ["readStorefront", "saveDraft"],
+      primaryLocale: "en",
+      enabledLocales: ["en", "fi"],
+      market: "Finland",
+      projectRevision: "standalone-project-revision-1",
+    },
+    actions: ["request-ai-design"],
+  };
+  return {
+    resolve: vi.fn(async () => ({
+      authorization,
+      planningInput: input,
+      currentPlanningInput: () => input,
+      proposalEnvelope: (proposalRequest: ReturnType<typeof request>) =>
+        createDeterministicMockStorefrontAIProvider().proposeStorefront(proposalRequest),
+    })),
+  };
+}
+
+describe("P9-01 runtime whole-storefront provider boundary", () => {
+  it("routes the editor runtime client envelope through the canonical server planner before review", async () => {
+    const value = authority();
+    const provider: WholeStorefrontPlanningProvider = {
+      id: "recording-canonical-planner",
+      capabilities: {
+        wholeStorefrontPlanning: true,
+        structuredPlanOutput: true,
+        approvedAssetReferences: true,
+      },
+      createPlan: vi.fn(async (input) => structuredClone(input.expectedPlan)),
+    };
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: value,
+      selectProvider: () => provider,
+    });
+    const fetch = vi.fn(async (_url: string, init?: RequestInit) =>
+      handler(
+        new Request("http://localhost/api/ai/whole-storefront-proposals", {
+          method: init?.method,
+          body: init?.body,
+          headers: init?.headers,
+        }),
+      ),
+    );
+    vi.stubGlobal("fetch", fetch);
+    const body = await createServerWholeStorefrontPlanningClient().proposeStorefront(request());
+    vi.unstubAllGlobals();
+
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(provider.createPlan).toHaveBeenCalledOnce();
+    expect((body as { proposal: { status: string } }).proposal.status).toBe("pending");
+  });
+
+  it("does not fall back when the configured canonical planner fails", async () => {
+    const value = authority();
+    const fallback = vi.fn();
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: value,
+      selectProvider: () => ({
+        id: "failing-canonical-planner",
+        capabilities: {
+          wholeStorefrontPlanning: true,
+          structuredPlanOutput: true,
+          approvedAssetReferences: true,
+        },
+        createPlan: async () => {
+          throw new Error("provider failure");
+        },
+      }),
+    });
+    const response = await handler(
+      new Request("http://localhost", { method: "POST", body: JSON.stringify(request()) }),
+    );
+
+    expect(response.status).toBe(503);
+    expect(fallback).not.toHaveBeenCalled();
+  });
+
+  it("requires canonical request-ai-design authority and rejects stale draft identity", async () => {
+    const denied = authority();
+    denied.resolve.mockImplementationOnce(async () => {
+      const context = await authority().resolve(request(), new Request("http://localhost"));
+      return {
+        ...context,
+        authorization: {
+          ...context.authorization,
+          context: { ...context.authorization.context, permissions: ["readStorefront"] },
+        },
+      };
+    });
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: denied,
+      selectProvider: () => ({
+        id: "unused",
+        capabilities: {
+          wholeStorefrontPlanning: true,
+          structuredPlanOutput: true,
+          approvedAssetReferences: true,
+        },
+        createPlan: async () => createWholeStorefrontGenerationPlan(planningInput()),
+      }),
+    });
+    const response = await handler(
+      new Request("http://localhost", { method: "POST", body: JSON.stringify(request()) }),
+    );
+    expect(response.status).toBe(401);
+  });
+
+  it("rejects a stale canonical draft before the planner is invoked", async () => {
+    const input = planningInput();
+    input.draft.revision += 1;
+    const provider = {
+      id: "recording-canonical-planner",
+      capabilities: {
+        wholeStorefrontPlanning: true,
+        structuredPlanOutput: true,
+        approvedAssetReferences: true,
+      },
+      createPlan: vi.fn(),
+    } satisfies WholeStorefrontPlanningProvider;
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: authority(input),
+      selectProvider: () => provider,
+    });
+
+    const response = await handler(
+      new Request("http://localhost", { method: "POST", body: JSON.stringify(request()) }),
+    );
+
+    expect(response.status).toBe(409);
+    expect(provider.createPlan).not.toHaveBeenCalled();
+  });
+
+  it("keeps deterministic storefront proposals available only through explicit standalone injection", async () => {
+    const provider = createDeterministicMockStorefrontAIProvider();
+    const proposal = await provider.proposeStorefront(request());
+
+    expect(provider.id).toBe("deterministic-storefront-mock");
+    expect((proposal as { proposal: { status: string } }).proposal.status).toBe("pending");
+  });
+});

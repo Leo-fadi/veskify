@@ -10,6 +10,7 @@ import {
 } from "@/application/draft-save";
 import type { AIProvider } from "@/application/ai-provider";
 import type { StorefrontAIProvider } from "@/application/ai-storefront-generation";
+import { createServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
 import {
   canDuplicateSection,
   canToggleSectionVisibility,
@@ -248,7 +249,7 @@ export function ProjectEditorClient({
   projectId,
   repositoryFactory = defaultRepositoryFactory,
   aiProvider,
-  storefrontAiProvider,
+  storefrontAiProvider = createServerWholeStorefrontPlanningClient(),
 }: {
   projectId: string;
   repositoryFactory?: RepositoryFactory;
