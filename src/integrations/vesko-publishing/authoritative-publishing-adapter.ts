@@ -37,11 +37,23 @@ export interface AuthoritativePublishPreparationReader {
   load(preparationId: string): Promise<PublishPreparation | null>;
 }
 
+export interface AuthoritativePublishingRevisionMapper {
+  projectRevision(revision: number): string;
+  snapshotRevision(revision: number): string;
+}
+
 export type AuthoritativePublishingAdapterInput = Readonly<{
   projectRepository: ProjectRepository;
   contextPort: MerchantProjectContextPort;
   publishPreparations: AuthoritativePublishPreparationReader;
+  revisionMapper: AuthoritativePublishingRevisionMapper;
+  maxCompletedReplayEntries?: number;
 }>;
+
+export type StandaloneAuthoritativePublishingAdapterInput = Omit<
+  AuthoritativePublishingAdapterInput,
+  "revisionMapper"
+>;
 
 type ParsedPublishRequest = Parameters<StorefrontPublishingGateway["publish"]>[0];
 type ReplayEntry = Readonly<{
@@ -50,11 +62,17 @@ type ReplayEntry = Readonly<{
   result?: PublicationResult;
 }>;
 
+export const defaultCompletedReplayEntryLimit = 256;
 export const standaloneSnapshotRevisionPrefix = "standalone-snapshot-revision-";
 
 export function toStandaloneSnapshotRevision(revision: number): string {
   return `${standaloneSnapshotRevisionPrefix}${revision}`;
 }
+
+export const standalonePublishingRevisionMapper: AuthoritativePublishingRevisionMapper = {
+  projectRevision: toStandaloneProjectRevision,
+  snapshotRevision: toStandaloneSnapshotRevision,
+};
 
 function requestFingerprint(request: ParsedPublishRequest): string {
   return JSON.stringify(request);
@@ -68,19 +86,24 @@ function snapshotById(aggregate: ProjectAggregate, snapshotId: string) {
   return aggregate.snapshots.find(({ id }) => id === snapshotId) ?? null;
 }
 
-function authoritativeSnapshot(aggregate: ProjectAggregate, snapshotId: string, tenantId: string) {
+function authoritativeSnapshot(
+  aggregate: ProjectAggregate,
+  snapshotId: string,
+  tenantId: string,
+  revisionMapper: AuthoritativePublishingRevisionMapper,
+) {
   const snapshot = snapshotById(aggregate, snapshotId);
   if (snapshot === null) return null;
   return {
     id: snapshot.id,
-    revision: toStandaloneSnapshotRevision(snapshot.revision),
+    revision: revisionMapper.snapshotRevision(snapshot.revision),
     contentFingerprint: canonicalStorefrontContentFingerprint(snapshot),
     tenantId,
     storefrontProjectId: aggregate.project.id,
   };
 }
 
-function assertAuthenticatedContext(
+function assertAuthenticatedIdentityAndPermission(
   request: ParsedPublishRequest,
   authenticated: Awaited<ReturnType<MerchantProjectContextPort["load"]>>,
 ): void {
@@ -106,6 +129,12 @@ function assertAuthenticatedContext(
   ) {
     throw new VeskoIntegrationError("permissionDenied");
   }
+}
+
+function assertCurrentProjectRevision(
+  request: ParsedPublishRequest,
+  authenticated: Awaited<ReturnType<MerchantProjectContextPort["load"]>>,
+): void {
   if (
     authenticated.projectRevision !== request.context.projectRevision ||
     authenticated.projectRevision !== request.expectedProjectRevision
@@ -114,24 +143,42 @@ function assertAuthenticatedContext(
   }
 }
 
+async function authenticatePublishingRequest(
+  request: ParsedPublishRequest,
+  input: AuthoritativePublishingAdapterInput,
+  requireCurrentRevision: boolean,
+): Promise<void> {
+  try {
+    const authenticated = await input.contextPort.load({
+      tenantId: request.context.tenantId,
+      storefrontProjectId: request.context.storefrontProjectId,
+    });
+    assertAuthenticatedIdentityAndPermission(request, authenticated);
+    if (requireCurrentRevision) assertCurrentProjectRevision(request, authenticated);
+  } catch (error) {
+    throw mapPublishingFailure(error);
+  }
+}
+
 function assertPreparationMatchesRequest(
   preparation: PublishPreparation,
   request: ParsedPublishRequest,
+  revisionMapper: AuthoritativePublishingRevisionMapper,
 ): void {
   if (preparation.projectId !== request.context.storefrontProjectId) {
     throw new VeskoIntegrationError("projectNotFound");
   }
   if (
     preparation.preparationId !== request.publishPreparationId ||
-    toStandaloneProjectRevision(preparation.expectedProjectRevision) !==
+    revisionMapper.projectRevision(preparation.expectedProjectRevision) !==
       request.expectedProjectRevision ||
     preparation.expectedDraft.id !== request.expectedSavedDraft.id ||
-    toStandaloneSnapshotRevision(preparation.expectedDraft.revision) !==
+    revisionMapper.snapshotRevision(preparation.expectedDraft.revision) !==
       request.expectedSavedDraft.revision ||
     preparation.expectedDraft.contentFingerprint !==
       request.expectedSavedDraft.contentFingerprint ||
     preparation.expectedPublished.id !== request.expectedPublished.id ||
-    toStandaloneSnapshotRevision(preparation.expectedPublished.revision) !==
+    revisionMapper.snapshotRevision(preparation.expectedPublished.revision) !==
       request.expectedPublished.revision ||
     preparation.expectedPublished.contentFingerprint !==
       request.expectedPublished.contentFingerprint
@@ -184,20 +231,68 @@ function mapPublishingFailure(error: unknown): VeskoIntegrationError {
   return new VeskoIntegrationError("publishingUnavailable");
 }
 
+async function reconcileCommittedPublication(
+  request: ParsedPublishRequest,
+  preparation: PublishPreparation,
+  input: AuthoritativePublishingAdapterInput,
+): Promise<PublicationResult | null> {
+  try {
+    const aggregate = validateProjectAggregate(
+      await input.projectRepository.get(request.context.storefrontProjectId),
+    );
+    const sourceDraft = snapshotById(aggregate, preparation.expectedDraft.id);
+    const priorPublished = snapshotById(aggregate, preparation.expectedPublished.id);
+    const currentPublished = snapshotById(aggregate, aggregate.project.publishedSnapshotId);
+    const currentDraft = snapshotById(aggregate, aggregate.project.draftSnapshotId);
+    const publishedHistory = aggregate.snapshotHistoryMetadata?.some(
+      ({ snapshotId, reason }) => snapshotId === currentPublished?.id && reason === "published",
+    );
+    const synchronizedHistory = aggregate.snapshotHistoryMetadata?.some(
+      ({ snapshotId, reason }) =>
+        snapshotId === currentDraft?.id && reason === "publishedDraftSynchronized",
+    );
+
+    if (
+      aggregate.project.revision !== preparation.expectedProjectRevision + 1 ||
+      sourceDraft === null ||
+      sourceDraft.revision !== preparation.expectedDraft.revision ||
+      canonicalStorefrontContentFingerprint(sourceDraft) !==
+        preparation.expectedDraft.contentFingerprint ||
+      priorPublished === null ||
+      priorPublished.revision !== preparation.expectedPublished.revision ||
+      canonicalStorefrontContentFingerprint(priorPublished) !==
+        preparation.expectedPublished.contentFingerprint ||
+      currentPublished === null ||
+      currentDraft === null ||
+      currentPublished.id === currentDraft.id ||
+      currentPublished.revision !== aggregate.project.revision ||
+      currentDraft.revision !== aggregate.project.revision ||
+      canonicalStorefrontContentFingerprint(currentPublished) !==
+        preparation.expectedDraft.contentFingerprint ||
+      canonicalStorefrontContentFingerprint(currentDraft) !==
+        preparation.expectedDraft.contentFingerprint ||
+      publishedHistory !== true ||
+      synchronizedHistory !== true
+    ) {
+      return null;
+    }
+
+    return publicationResultSchema.parse({
+      requestId: request.requestId,
+      storefrontProjectId: request.context.storefrontProjectId,
+      publishedRevision: input.revisionMapper.snapshotRevision(currentPublished.revision),
+      status: "published",
+    });
+  } catch {
+    return null;
+  }
+}
+
 async function executePublish(
   request: ParsedPublishRequest,
   input: AuthoritativePublishingAdapterInput,
 ): Promise<PublicationResult> {
-  let authenticated;
-  try {
-    authenticated = await input.contextPort.load({
-      tenantId: request.context.tenantId,
-      storefrontProjectId: request.context.storefrontProjectId,
-    });
-  } catch (error) {
-    throw mapPublishingFailure(error);
-  }
-  assertAuthenticatedContext(request, authenticated);
+  await authenticatePublishingRequest(request, input, true);
 
   let preparation: PublishPreparation;
   try {
@@ -209,7 +304,7 @@ async function executePublish(
   } catch (error) {
     throw mapPublishingFailure(error);
   }
-  assertPreparationMatchesRequest(preparation, request);
+  assertPreparationMatchesRequest(preparation, request, input.revisionMapper);
 
   let aggregate: ProjectAggregate;
   try {
@@ -224,17 +319,19 @@ async function executePublish(
     aggregate,
     aggregate.project.draftSnapshotId,
     request.context.tenantId,
+    input.revisionMapper,
   );
   const published = authoritativeSnapshot(
     aggregate,
     aggregate.project.publishedSnapshotId,
     request.context.tenantId,
+    input.revisionMapper,
   );
   assertAuthoritativePublishPreconditions(
     request,
     savedDraft,
     published,
-    toStandaloneProjectRevision(aggregate.project.revision),
+    input.revisionMapper.projectRevision(aggregate.project.revision),
     preparation.preparationId,
   );
 
@@ -243,11 +340,30 @@ async function executePublish(
     return publicationResultSchema.parse({
       requestId: request.requestId,
       storefrontProjectId: request.context.storefrontProjectId,
-      publishedRevision: toStandaloneSnapshotRevision(confirmed.publishedSnapshot.revision),
+      publishedRevision: input.revisionMapper.snapshotRevision(
+        confirmed.publishedSnapshot.revision,
+      ),
       status: "published",
     });
   } catch (error) {
+    const reconciled = await reconcileCommittedPublication(request, preparation, input);
+    if (reconciled !== null) return reconciled;
     throw mapPublishingFailure(error);
+  }
+}
+
+function rememberSuccessfulReplay(
+  replays: Map<string, ReplayEntry>,
+  requestId: string,
+  entry: ReplayEntry,
+  completedEntryLimit: number,
+): void {
+  replays.delete(requestId);
+  replays.set(requestId, entry);
+  const completedEntries = [...replays].filter(([, replay]) => replay.result !== undefined);
+  while (completedEntries.length > completedEntryLimit) {
+    const oldest = completedEntries.shift();
+    if (oldest !== undefined) replays.delete(oldest[0]);
   }
 }
 
@@ -255,27 +371,39 @@ export function createAuthoritativeStorefrontPublishingAdapter(
   input: AuthoritativePublishingAdapterInput,
 ): StorefrontPublishingGateway {
   const replays = new Map<string, ReplayEntry>();
+  const completedEntryLimit = input.maxCompletedReplayEntries ?? defaultCompletedReplayEntryLimit;
+  if (!Number.isInteger(completedEntryLimit) || completedEntryLimit < 1) {
+    throw new Error("Completed publication replay retention must be a positive integer.");
+  }
 
   return {
-    publish(requestInput) {
+    async publish(requestInput) {
       const parsed = publishStorefrontRequestSchema.safeParse(requestInput);
       if (!parsed.success) {
-        return Promise.reject(new VeskoIntegrationError("malformedIntegrationResponse"));
+        throw new VeskoIntegrationError("malformedIntegrationResponse");
       }
       const request = parsed.data;
       const fingerprint = requestFingerprint(request);
       const replay = replays.get(request.requestId);
       if (replay !== undefined) {
         if (replay.requestFingerprint !== fingerprint) {
-          return Promise.reject(new VeskoIntegrationError("stalePublishConfirmation"));
+          throw new VeskoIntegrationError("stalePublishConfirmation");
         }
-        if (replay.result !== undefined) return Promise.resolve(cloneResult(replay.result));
+        if (replay.result !== undefined) {
+          await authenticatePublishingRequest(request, input, false);
+          return cloneResult(replay.result);
+        }
         if (replay.pending !== undefined) return replay.pending.then(cloneResult);
       }
 
       const pending = executePublish(request, input)
         .then((result) => {
-          replays.set(request.requestId, { requestFingerprint: fingerprint, result });
+          rememberSuccessfulReplay(
+            replays,
+            request.requestId,
+            { requestFingerprint: fingerprint, result },
+            completedEntryLimit,
+          );
           return cloneResult(result);
         })
         .catch((error: unknown) => {
@@ -296,7 +424,10 @@ export function createAuthoritativeStorefrontPublishingAdapter(
 }
 
 export function createStandaloneAuthoritativePublishingAdapter(
-  input: AuthoritativePublishingAdapterInput,
+  input: StandaloneAuthoritativePublishingAdapterInput,
 ): StorefrontPublishingGateway {
-  return createAuthoritativeStorefrontPublishingAdapter(input);
+  return createAuthoritativeStorefrontPublishingAdapter({
+    ...input,
+    revisionMapper: standalonePublishingRevisionMapper,
+  });
 }

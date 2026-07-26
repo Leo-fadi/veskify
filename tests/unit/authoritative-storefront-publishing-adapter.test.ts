@@ -4,6 +4,7 @@ import { createStandaloneMerchantProjectContextPort } from "@/application/mercha
 import {
   publishStorefrontRequestSchema,
   type MerchantProjectContext,
+  type MerchantProjectContextPort,
   type StorefrontPublishingGateway,
   type VeskoIntegrationPorts,
 } from "@/application/vesko-integration";
@@ -14,9 +15,12 @@ import {
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import {
+  createAuthoritativeStorefrontPublishingAdapter,
   createStandaloneAuthoritativePublishingAdapter,
+  standalonePublishingRevisionMapper,
   toStandaloneSnapshotRevision,
   type AuthoritativePublishPreparationReader,
+  type AuthoritativePublishingRevisionMapper,
 } from "@/integrations/vesko-publishing";
 import { InMemoryProjectRepository } from "@/services/storage";
 
@@ -42,6 +46,7 @@ function createHarness(
   options: {
     projects?: Array<typeof aurumNordicSeed | typeof karvonenSeed>;
     permissions?: MerchantProjectContext["permissions"];
+    maxCompletedReplayEntries?: number;
   } = {},
 ) {
   const repository = new InMemoryProjectRepository(
@@ -62,6 +67,7 @@ function createHarness(
     projectRepository: repository,
     contextPort,
     publishPreparations,
+    maxCompletedReplayEntries: options.maxCompletedReplayEntries,
   });
   return { adapter, contextPort, preparations, publishPreparations, repository };
 }
@@ -88,12 +94,16 @@ async function canonicalRequest(
   harness: ReturnType<typeof createHarness>,
   projectId: string,
   label: string,
+  options: {
+    contextPort?: MerchantProjectContextPort;
+    revisionMapper?: AuthoritativePublishingRevisionMapper;
+  } = {},
 ): Promise<PublishRequest> {
   const preparation = await preparePublish(projectId, harness.repository, {
     createPreparationId: () => `publish_preparation_p9_05b_${label}`,
   });
   harness.preparations.set(preparation.preparationId, preparation);
-  const context = await harness.contextPort.load({
+  const context = await (options.contextPort ?? harness.contextPort).load({
     tenantId: standaloneIdentity.tenantId,
     storefrontProjectId: projectId,
   });
@@ -110,12 +120,16 @@ async function canonicalRequest(
     expectedProjectRevision: context.projectRevision,
     expectedSavedDraft: {
       id: draft.id,
-      revision: toStandaloneSnapshotRevision(draft.revision),
+      revision: (options.revisionMapper ?? standalonePublishingRevisionMapper).snapshotRevision(
+        draft.revision,
+      ),
       contentFingerprint: canonicalStorefrontContentFingerprint(draft),
     },
     expectedPublished: {
       id: published.id,
-      revision: toStandaloneSnapshotRevision(published.revision),
+      revision: (options.revisionMapper ?? standalonePublishingRevisionMapper).snapshotRevision(
+        published.revision,
+      ),
       contentFingerprint: canonicalStorefrontContentFingerprint(published),
     },
   });
@@ -132,17 +146,39 @@ describe("P9-05B authoritative storefront publishing adapter", () => {
   it("publishes the authoritative saved draft through the atomic repository flow", async () => {
     const harness = createHarness();
     await saveChangedDraft(harness.repository, aurumNordicSeed.project.id, "valid");
-    const request = await canonicalRequest(harness, aurumNordicSeed.project.id, "valid");
     const before = await harness.repository.get(aurumNordicSeed.project.id);
+    const revisionMapper: AuthoritativePublishingRevisionMapper = {
+      projectRevision: (revision) => `vesko-project-etag-${revision}`,
+      snapshotRevision: (revision) => `vesko-snapshot-etag-${revision}`,
+    };
+    const opaqueContextPort: MerchantProjectContextPort = {
+      async load(input) {
+        const context = await harness.contextPort.load(input);
+        return {
+          ...context,
+          projectRevision: revisionMapper.projectRevision(before.project.revision),
+        };
+      },
+    };
+    const adapter = createAuthoritativeStorefrontPublishingAdapter({
+      projectRepository: harness.repository,
+      contextPort: opaqueContextPort,
+      publishPreparations: harness.publishPreparations,
+      revisionMapper,
+    });
+    const request = await canonicalRequest(harness, aurumNordicSeed.project.id, "valid", {
+      contextPort: opaqueContextPort,
+      revisionMapper,
+    });
 
-    const result = await harness.adapter.publish(request);
+    const result = await adapter.publish(request);
     const after = await harness.repository.get(aurumNordicSeed.project.id);
     const published = after.snapshots.find(({ id }) => id === after.project.publishedSnapshotId)!;
 
     expect(result).toEqual({
       requestId: request.requestId,
       storefrontProjectId: aurumNordicSeed.project.id,
-      publishedRevision: toStandaloneSnapshotRevision(published.revision),
+      publishedRevision: revisionMapper.snapshotRevision(published.revision),
       status: "published",
     });
     expect(after.project.revision).toBe(before.project.revision + 1);
@@ -249,6 +285,19 @@ describe("P9-05B authoritative storefront publishing adapter", () => {
     expect(afterFirst.snapshotHistoryMetadata).toHaveLength(
       (before.snapshotHistoryMetadata?.length ?? 0) + 2,
     );
+    const currentContext = await harness.contextPort.load({
+      tenantId: standaloneIdentity.tenantId,
+      storefrontProjectId: aurumNordicSeed.project.id,
+    });
+    const contextLoad = vi.spyOn(harness.contextPort, "load").mockResolvedValue({
+      ...currentContext,
+      permissions: ["readStorefront"],
+    });
+    await expect(harness.adapter.publish(request)).rejects.toMatchObject({
+      code: "permissionDenied",
+    });
+    contextLoad.mockRestore();
+    expect(await harness.adapter.publish(request)).toEqual(first);
     await expect(
       harness.adapter.publish({
         ...request,
@@ -258,6 +307,52 @@ describe("P9-05B authoritative storefront publishing adapter", () => {
         },
       }),
     ).rejects.toMatchObject({ code: "stalePublishConfirmation" });
+
+    const ambiguous = createHarness();
+    await saveChangedDraft(ambiguous.repository, aurumNordicSeed.project.id, "ambiguous_commit");
+    const ambiguousRequest = await canonicalRequest(
+      ambiguous,
+      aurumNordicSeed.project.id,
+      "ambiguous_commit",
+    );
+    const originalPublish = ambiguous.repository.publish.bind(ambiguous.repository);
+    vi.spyOn(ambiguous.repository, "publish").mockImplementationOnce(
+      async (projectId, expectation) => {
+        await originalPublish(projectId, expectation);
+        throw new Error("Response lost after the atomic commit.");
+      },
+    );
+    const reconciled = await ambiguous.adapter.publish(ambiguousRequest);
+    const afterAmbiguousCommit = await ambiguous.repository.get(aurumNordicSeed.project.id);
+    expect(reconciled.status).toBe("published");
+    expect(await ambiguous.adapter.publish(ambiguousRequest)).toEqual(reconciled);
+    expect(await ambiguous.repository.get(aurumNordicSeed.project.id)).toEqual(
+      afterAmbiguousCommit,
+    );
+
+    const bounded = createHarness({
+      projects: [aurumNordicSeed, karvonenSeed],
+      maxCompletedReplayEntries: 1,
+    });
+    await saveChangedDraft(bounded.repository, aurumNordicSeed.project.id, "bounded_aurum");
+    await saveChangedDraft(bounded.repository, karvonenSeed.project.id, "bounded_karvonen");
+    const aurumRequest = await canonicalRequest(
+      bounded,
+      aurumNordicSeed.project.id,
+      "bounded_aurum",
+    );
+    const karvonenRequest = await canonicalRequest(
+      bounded,
+      karvonenSeed.project.id,
+      "bounded_karvonen",
+    );
+    await bounded.adapter.publish(aurumRequest);
+    const afterAurumPublish = await bounded.repository.get(aurumNordicSeed.project.id);
+    await bounded.adapter.publish(karvonenRequest);
+    await expect(bounded.adapter.publish(aurumRequest)).rejects.toMatchObject({
+      code: "staleProjectRevision",
+    });
+    expect(await bounded.repository.get(aurumNordicSeed.project.id)).toEqual(afterAurumPublish);
   });
 
   it("publishes Aurum and Karvonen while preserving draft separation and publication history", async () => {

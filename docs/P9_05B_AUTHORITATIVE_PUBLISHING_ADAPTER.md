@@ -23,10 +23,10 @@ save, restore and AI-related authority do not imply publishing authority.
 
 ## Revisions and concurrency
 
-Integrated revisions remain opaque. The repository-backed standalone adapter maps local numeric
-project and snapshot revisions to explicit opaque values and uses the same mapping for every
-precondition check. It validates the trusted preparation, current saved draft and current published
-snapshot before invoking the atomic repository operation. Changed project, draft, fingerprint,
+Integrated revisions remain opaque. The generic authoritative factory requires an injected revision
+mapper supplied by the environment that issued those revisions; it never assumes a standalone
+encoding. The repository-backed standalone factory injects its explicit project and snapshot
+revision mappings and uses them for every precondition check. Changed project, draft, fingerprint,
 published state or preparation identity fails with the corresponding P9-01 typed error.
 
 ## Atomic publication and history
@@ -40,9 +40,18 @@ unchanged; multi-page snapshots are committed as one aggregate.
 ## Idempotency and draft preservation
 
 Successful request IDs are retained by an adapter instance with a fingerprint of the complete
-canonical request. Exact sequential or concurrent replays return the same publication result and do
-not create duplicate history. Reusing a request ID with different preconditions fails as stale.
-Failed operations are not cached, so a retry can succeed after a retryable dependency failure.
+canonical request. Completed replay entries use bounded oldest-first eviction (256 by default).
+Exact sequential or concurrent replays return the same publication result and do not create
+duplicate history. A completed replay reloads current authenticated identity and explicit publish
+authority before returning its result, while intentionally omitting the revision check that changed
+as a consequence of the publication. Reusing a request ID with different preconditions fails as
+stale.
+
+If the repository commits atomically but its response is lost or rejected, the adapter reloads and
+reconciles project revision, source and prior snapshot identities, fingerprints, current published
+and synchronized draft content, and publication-history metadata. A verified commit becomes the
+successful idempotency result; only an operation with no matching authoritative commit is removed
+from the retry cache.
 
 Publishing never accepts a draft body and never overwrites the source draft in place. The existing
 repository keeps the source snapshot as history and creates a distinct synchronized active draft,
