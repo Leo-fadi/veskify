@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 
 import {
   createStandaloneMerchantProjectContextPort,
+  createMerchantProjectAuthorization,
+  requireMerchantProjectAction,
   type MerchantProjectContextPort,
   type MerchantProjectPermission,
   type MerchantProjectRole,
@@ -10,7 +12,7 @@ import {
   createStorefrontDraftPersistenceAdapter,
   type DraftSaveProvenanceSource,
 } from "@/application/storefront-draft-persistence";
-import type { CatalogueDisplayModel } from "@/domain/catalogue";
+import { catalogueDisplayModelSchema, type CatalogueDisplayModel } from "@/domain/catalogue";
 import { canonicalLocaleOrder, idSchema, type Locale } from "@/domain/shared";
 import { canonicalValueString } from "@/domain/storefront";
 import {
@@ -57,10 +59,11 @@ export type VeskoIntegrationAssemblyInput = Readonly<{
 export function createVeskoIntegrationPorts(
   input: VeskoIntegrationAssemblyInput,
 ): VeskoIntegrationPorts {
+  const projections = authorizeProjectionPorts(input.context, input.catalogue, input.availability);
   const ports: VeskoIntegrationPorts = {
     context: input.context,
-    catalogue: input.catalogue,
-    availability: input.availability,
+    catalogue: projections.catalogue,
+    availability: projections.availability,
     drafts: input.drafts,
     publishing: input.publishing,
     capabilities: veskoIntegrationCapabilitiesSchema.parse(input.capabilities),
@@ -147,13 +150,33 @@ function createProjectScopedContextPort(
   };
 }
 
-function canonicalProductTypeId(productType: string): string {
-  const normalized = productType
-    .trim()
+function deepFreeze<T>(value: T): T {
+  if (value !== null && typeof value === "object" && !Object.isFrozen(value)) {
+    Object.freeze(value);
+    Object.values(value as Record<string, unknown>).forEach((item) => deepFreeze(item));
+  }
+  return value;
+}
+
+function canonicalProductTypeId(productType: string, productTypeId?: string): string {
+  if (productTypeId !== undefined) return idSchema.parse(productTypeId);
+
+  const sourceIdentity = productType.normalize("NFC").trim();
+  const readableSlug = sourceIdentity
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-");
-  if (idSchema.safeParse(normalized).success) return normalized;
-  return `product_type_${createHash("sha256").update(productType).digest("hex").slice(0, 24)}`;
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const readable = readableSlug.length > 0 ? readableSlug : "type";
+  const prefix = "product_type_";
+  const directCandidate = `${prefix}${readable}`;
+  if (sourceIdentity === readable && directCandidate.length <= 80) {
+    return idSchema.parse(directCandidate);
+  }
+
+  const hash = createHash("sha256").update(sourceIdentity).digest("hex").slice(0, 16);
+  const readableLimit = 80 - prefix.length - hash.length - 1;
+  const shortenedReadable = readable.slice(0, readableLimit).replace(/-+$/g, "") || "type";
+  return idSchema.parse(`${prefix}${shortenedReadable}_${hash}`);
 }
 
 function navigationTarget(
@@ -178,24 +201,35 @@ function projectCatalogueToP9Port(
   catalogueRevision: string,
 ) {
   const routes = new Map(source.routeReferences.map((route) => [route.id, route]));
+  const productTypeIdentityById = new Map<string, string>();
+  const products = source.products.map((product) => {
+    const sourceIdentity = product.productType.normalize("NFC").trim();
+    const productTypeId = canonicalProductTypeId(product.productType, product.productTypeId);
+    const existingSourceIdentity = productTypeIdentityById.get(productTypeId);
+    if (existingSourceIdentity !== undefined && existingSourceIdentity !== sourceIdentity) {
+      throw new VeskoIntegrationError("duplicateCanonicalIdentity");
+    }
+    productTypeIdentityById.set(productTypeId, sourceIdentity);
+    return {
+      productId: product.id,
+      slug: product.slug,
+      title: product.title,
+      description: product.description,
+      productTypeId,
+      sku: product.sku,
+      price: product.price,
+      compareAtPrice: product.compareAtPrice,
+      priceUnavailableReason: product.priceUnavailableReason,
+      availabilityLabel: product.availabilityLabel,
+    };
+  });
   return catalogueProjectionSchema.parse({
     tenantId: identity.tenantId,
     storeId: identity.storeId,
     storefrontProjectId: identity.storefrontProjectId,
     catalogueId,
     revision: catalogueRevision,
-    products: source.products.map((product) => ({
-      productId: product.id,
-      slug: product.slug,
-      title: product.title,
-      description: product.description,
-      productTypeId: canonicalProductTypeId(product.productType),
-      sku: product.sku,
-      price: product.price,
-      compareAtPrice: product.compareAtPrice,
-      priceUnavailableReason: product.priceUnavailableReason,
-      availabilityLabel: product.availabilityLabel,
-    })),
+    products,
     collections: source.collections.map((collection) => ({
       collectionId: collection.id,
       slug: collection.slug,
@@ -269,6 +303,45 @@ function createStandaloneCataloguePort({
   };
 }
 
+function authorizeProjectionRead(
+  contextPort: MerchantProjectContextPort,
+  input: { tenantId: string; storefrontProjectId: string; storeId: string },
+): Promise<MerchantProjectContext> {
+  return contextPort
+    .load({
+      tenantId: input.tenantId,
+      storefrontProjectId: input.storefrontProjectId,
+    })
+    .then((context) => {
+      if (context.storeId !== input.storeId) throw new VeskoIntegrationError("merchantNotFound");
+      return requireMerchantProjectAction(
+        createMerchantProjectAuthorization(context),
+        "view-storefront",
+      );
+    });
+}
+
+function authorizeProjectionPorts(
+  context: MerchantProjectContextPort,
+  catalogue: CatalogueProjectionPort,
+  availability: VeskoIntegrationPorts["availability"],
+): Pick<VeskoIntegrationPorts, "catalogue" | "availability"> {
+  return {
+    catalogue: {
+      async load(input) {
+        await authorizeProjectionRead(context, input);
+        return catalogue.load(input);
+      },
+    },
+    availability: {
+      async load(input) {
+        await authorizeProjectionRead(context, input);
+        return availability.load(input);
+      },
+    },
+  };
+}
+
 /**
  * Composes the existing credential-free repository and fixture adapters into
  * one complete project-scoped P9 port set. This is intentionally separate
@@ -277,6 +350,7 @@ function createStandaloneCataloguePort({
 export function createStandaloneVeskoIntegrationAssembly(
   input: StandaloneVeskoIntegrationAssemblyInput,
 ): VeskoIntegrationPorts {
+  const catalogue = deepFreeze(structuredClone(catalogueDisplayModelSchema.parse(input.catalogue)));
   const baseContext = createStandaloneMerchantProjectContextPort({
     projectRepository: input.projectRepository,
     tenantId: input.identity.tenantId,
@@ -288,7 +362,7 @@ export function createStandaloneVeskoIntegrationAssembly(
     permissions: input.permissions,
   });
   const context = createProjectScopedContextPort(baseContext, input.identity);
-  const catalogueRevision = standaloneAvailabilityOptionMediaCatalogueRevision(input.catalogue);
+  const catalogueRevision = standaloneAvailabilityOptionMediaCatalogueRevision(catalogue);
   const availabilityIdentity: StandaloneAvailabilityOptionMediaIdentity = {
     tenantId: input.identity.tenantId,
     storeId: input.identity.storeId,
@@ -299,13 +373,13 @@ export function createStandaloneVeskoIntegrationAssembly(
     context,
     catalogue: createStandaloneCataloguePort({
       projectRepository: input.projectRepository,
-      catalogue: input.catalogue,
+      catalogue,
       identity: input.identity,
       catalogueRevision,
     }),
-    availability: createStandaloneAvailabilityOptionMediaProjectionAdapter(input.catalogue, {
+    availability: createStandaloneAvailabilityOptionMediaProjectionAdapter(catalogue, {
       identity: availabilityIdentity,
-      catalogueId: input.catalogue.id,
+      catalogueId: catalogue.id,
       catalogueRevision,
     }),
     drafts: createStorefrontDraftPersistenceAdapter({

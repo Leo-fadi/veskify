@@ -59,6 +59,11 @@ projection request. It also preserves merchant, organization, store and authenti
 through the existing P9-02/P9-05A/P9-05B authorization checks. Draft save, restore and publish
 reload the scoped context before state-changing work.
 
+Catalogue and product-projection reads also reload the P9-02 context and require its
+`view-storefront` authority on every request. The request store must match that freshly authorized
+context; neither a client-supplied permission list nor a prior successful read grants later access.
+This preserves tenant and project mismatch failures before either projection source is consulted.
+
 Least privilege remains owned by the canonical authorization adapter:
 
 - read authority does not grant draft save, restore, AI request/acceptance or publishing;
@@ -71,6 +76,14 @@ Least privilege remains owned by the canonical authorization adapter:
 The P9-03 catalogue port and P9-04 product projection share tenant, store, storefront project,
 catalogue ID and opaque catalogue revision. The P9-04 PDP bridge and resolver reject mismatched
 catalogue identity or revision before presentation truth is consumed.
+
+Standalone assembly validates, deep-clones and freezes the supplied catalogue once at composition
+time. That immutable snapshot is the only input used for catalogue revision calculation and both
+P9-03 and P9-04 adapters, so a caller mutating its original fixture afterwards cannot change a
+live projection or break their revision join. Generated product-type IDs normalize Unicode to NFC,
+retain a readable slug and append an identity hash whenever normalization would be lossy; a supplied
+canonical source product-type ID is preferred, and a duplicate final ID for different normalized
+source identities is rejected.
 
 The existing P9-04 contract tests remain the product-behaviour conformance layer for simple
 products, sole zero-dimension variants, selectable variants, dependent and text-entry options,

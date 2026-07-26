@@ -78,6 +78,7 @@ const categoryNodeSchema = z
 
 const inputProductSchema = productDisplayModelSchema
   .safeExtend({
+    productTypeId: idSchema.optional(),
     slug: z.string().trim().min(1).max(120),
     routeReferenceId: idSchema.optional(),
     routeReferenceIds: z.array(idSchema).default([]),
@@ -593,6 +594,7 @@ export function projectToCanonicalCommerceProjection(
     id: projection.id,
     products: projection.products.map((product) => {
       return omitFields(product, [
+        "productTypeId",
         "slug",
         "routeReferenceId",
         "routeReferenceIds",

@@ -23,6 +23,7 @@ import {
   projectAvailabilityOptionMediaToProductPresentation,
 } from "@/integrations/vesko-availability-options-media/availability-option-media-projection-adapter";
 import { InMemoryProjectRepository, type ProjectAggregate } from "@/services/storage";
+import type { CatalogueDisplayModel } from "@/domain/catalogue";
 
 const identity = {
   tenantId: "tenant_p9_05c",
@@ -70,16 +71,22 @@ function authoritativeSources() {
 
 function createHarness(
   seed: Seed = aurumNordicSeed,
-  options: { permissions?: MerchantProjectContext["permissions"] } = {},
+  options: {
+    permissions?: MerchantProjectContext["permissions"];
+    catalogue?: CatalogueDisplayModel;
+  } = {},
 ) {
+  const callerCatalogue = options.catalogue ?? structuredClone(seed.catalogue);
+  const primaryAggregate = aggregate(seed);
+  primaryAggregate.catalogue = structuredClone(callerCatalogue);
   const repository = new InMemoryProjectRepository([
-    aggregate(aurumNordicSeed),
-    aggregate(karvonenSeed),
+    primaryAggregate,
+    aggregate(seed === aurumNordicSeed ? karvonenSeed : aurumNordicSeed),
   ]);
   const sources = authoritativeSources();
   const ports = createStandaloneVeskoIntegrationAssembly({
     projectRepository: repository,
-    catalogue: structuredClone(seed.catalogue),
+    catalogue: callerCatalogue,
     identity: { ...identity, storefrontProjectId: seed.project.id },
     saveProvenanceSource: sources.saveProvenanceSource,
     publishPreparations: sources.publishPreparations,
@@ -267,6 +274,95 @@ describe("P9-05C Vesko integration assembly and readiness checkpoint", () => {
         storefrontProjectId: karvonenSeed.project.id,
       }),
     ).rejects.toMatchObject({ code: "projectMismatch" });
+    await expect(
+      harness.ports.availability.load({
+        tenantId: identity.tenantId,
+        storeId: identity.storeId,
+        storefrontProjectId: karvonenSeed.project.id,
+        productId: aurumNordicSeed.catalogue.products[0].id,
+      }),
+    ).rejects.toMatchObject({ code: "projectMismatch" });
+  });
+
+  it("requires view authority for each catalogue and product projection read", async () => {
+    const harness = createHarness(aurumNordicSeed, {
+      permissions: ["saveDraft", "restoreDraft"],
+    });
+    const input = {
+      tenantId: identity.tenantId,
+      storeId: identity.storeId,
+      storefrontProjectId: aurumNordicSeed.project.id,
+    };
+
+    await expect(harness.ports.catalogue.load(input)).rejects.toMatchObject({
+      code: "permissionDenied",
+    });
+    await expect(
+      harness.ports.availability.load({
+        ...input,
+        productId: aurumNordicSeed.catalogue.products[0].id,
+      }),
+    ).rejects.toMatchObject({ code: "permissionDenied" });
+  });
+
+  it("keeps product type identities stable and collision-resistant", async () => {
+    const catalogue = structuredClone(aurumNordicSeed.catalogue);
+    catalogue.products[0].productType = "älykello";
+    catalogue.products[1].productType = "lykello";
+
+    const harness = createHarness(aurumNordicSeed, { catalogue });
+    const input = {
+      tenantId: identity.tenantId,
+      storeId: identity.storeId,
+      storefrontProjectId: aurumNordicSeed.project.id,
+    };
+    const projection = await harness.ports.catalogue.load(input);
+    const byProductId = new Map(projection.products.map((product) => [product.productId, product]));
+
+    expect(byProductId.get(catalogue.products[0].id)?.productTypeId).not.toBe(
+      byProductId.get(catalogue.products[1].id)?.productTypeId,
+    );
+
+    const equivalentCatalogue = structuredClone(catalogue);
+    equivalentCatalogue.products[1].productType = "a\u0308lykello";
+    const equivalentHarness = createHarness(aurumNordicSeed, { catalogue: equivalentCatalogue });
+    const equivalentProjection = await equivalentHarness.ports.catalogue.load(input);
+    expect(equivalentProjection.products[0]?.productTypeId).toBe(
+      equivalentProjection.products[1]?.productTypeId,
+    );
+
+    const reordered = structuredClone(catalogue);
+    reordered.products.reverse();
+    const reorderedHarness = createHarness(aurumNordicSeed, { catalogue: reordered });
+    const reorderedProjection = await reorderedHarness.ports.catalogue.load(input);
+    expect(
+      new Map(
+        reorderedProjection.products.map((product) => [product.productId, product.productTypeId]),
+      ),
+    ).toEqual(
+      new Map(projection.products.map((product) => [product.productId, product.productTypeId])),
+    );
+  });
+
+  it("uses the validated assembly snapshot after caller-owned catalogue data changes", async () => {
+    const catalogue = structuredClone(aurumNordicSeed.catalogue);
+    const title = catalogue.products[0].title.en;
+    const harness = createHarness(aurumNordicSeed, { catalogue });
+    const input = {
+      tenantId: identity.tenantId,
+      storeId: identity.storeId,
+      storefrontProjectId: aurumNordicSeed.project.id,
+    };
+
+    catalogue.products[0].title.en = "Caller mutation must not leak";
+    const projection = await harness.ports.catalogue.load(input);
+    const availability = await harness.ports.availability.load({
+      ...input,
+      productId: catalogue.products[0].id,
+    });
+
+    expect(projection.products[0].title.en).toBe(title);
+    expect(availability.catalogueRevision).toBe(projection.revision);
   });
 
   it("consumes catalogue and product projections only with matching identity and revision", async () => {
