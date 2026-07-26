@@ -192,22 +192,39 @@ export function createVeskoStagingAuthorizationProvider(
   const now = source.now ?? Date.now;
   const refreshSkewMs = source.refreshSkewMs ?? authorizationRefreshSkewMs;
   let cached: VeskoStagingAuthorization | undefined;
+  let inFlight: Promise<VeskoStagingAuthorization> | undefined;
 
   return {
     async authorize(input) {
       if (cached?.expiresAt === undefined || cached.expiresAt > now() + refreshSkewMs) {
         if (cached !== undefined) return cached;
       }
-      try {
-        const authorization = await (cached !== undefined && source.refresh !== undefined
-          ? source.refresh(input)
-          : source.obtain(input));
-        cached = validatedAuthorization(authorization);
-        return cached;
-      } catch (error) {
-        if (error instanceof VeskoStagingAuthenticationError) throw error;
-        throw new VeskoStagingAuthenticationError("authenticationUnavailable");
-      }
+      if (inFlight !== undefined) return inFlight;
+
+      const acquisition = Promise.resolve()
+        .then(() =>
+          cached !== undefined && source.refresh !== undefined
+            ? source.refresh(input)
+            : source.obtain(input),
+        )
+        .then((authorization) => {
+          cached = validatedAuthorization(authorization);
+          return cached;
+        })
+        .catch((error: unknown) => {
+          if (error instanceof VeskoStagingAuthenticationError) throw error;
+          throw new VeskoStagingAuthenticationError("authenticationUnavailable");
+        });
+      inFlight = acquisition;
+      acquisition.then(
+        () => {
+          if (inFlight === acquisition) inFlight = undefined;
+        },
+        () => {
+          if (inFlight === acquisition) inFlight = undefined;
+        },
+      );
+      return acquisition;
     },
   };
 }
@@ -222,6 +239,8 @@ export type VeskoStagingTransportRequest = Readonly<{
   headers?: Readonly<Record<string, string>>;
   body?: string;
   expectedStatuses?: readonly number[];
+  /** A static, reviewed template used for logs; raw request paths are never logged. */
+  logRouteTemplate?: string;
   signal?: AbortSignal;
   correlationId?: string;
   response: "json" | "empty";
@@ -256,6 +275,7 @@ export type VeskoStagingFetch = (
     headers: Headers;
     body?: string;
     signal: AbortSignal;
+    redirect: "manual";
   }>,
 ) => Promise<Response>;
 
@@ -273,26 +293,56 @@ export type VeskoStagingTransportDependencies = Readonly<{
   createCorrelationId?: () => string;
 }>;
 
+function basePathPrefix(baseUrl: URL): string {
+  return baseUrl.pathname.endsWith("/") ? baseUrl.pathname : `${baseUrl.pathname}/`;
+}
+
+function validatedLogRouteTemplate(template: string | undefined): string {
+  if (template === undefined) return "[redacted-route]";
+  if (
+    !template.includes("/:") ||
+    !/^\/(?:[a-z][a-z0-9-]{0,39}|:[A-Za-z][A-Za-z0-9]{0,39})(?:\/(?:[a-z][a-z0-9-]{0,39}|:[A-Za-z][A-Za-z0-9]{0,39}))*$/.test(
+      template,
+    )
+  ) {
+    throw new VeskoStagingTransportError("configurationUnavailable");
+  }
+  return template;
+}
+
 function relativeUrl(baseUrl: URL, route: string): URL {
-  if (!route.startsWith("/") || route.startsWith("//") || /[\r\n]/.test(route)) {
+  if (
+    !route.startsWith("/") ||
+    route.startsWith("//") ||
+    route.includes("\\") ||
+    /[\r\n#]/.test(route)
+  ) {
+    throw new VeskoStagingTransportError("configurationUnavailable");
+  }
+  const [pathname] = route.split("?", 1);
+  if (
+    pathname === undefined ||
+    pathname.split("/").some((segment) => {
+      try {
+        const decoded = decodeURIComponent(segment);
+        return decoded === "." || decoded === ".." || decoded.includes("\\");
+      } catch {
+        return true;
+      }
+    })
+  ) {
     throw new VeskoStagingTransportError("configurationUnavailable");
   }
   try {
     const url = new URL(route.slice(1), baseUrl);
-    if (url.origin !== baseUrl.origin) throw configurationError();
+    const prefix = basePathPrefix(baseUrl);
+    if (url.origin !== baseUrl.origin || !url.pathname.startsWith(prefix))
+      throw configurationError();
     return url;
   } catch (error) {
     if (error instanceof VeskoStagingTransportError) throw error;
     throw configurationError();
   }
-}
-
-function sanitizedRoute(route: string): string {
-  const pathname = route.split("?", 1)[0] ?? "/";
-  return pathname
-    .split("/")
-    .map((segment) => (/^[a-z][a-z0-9-]{0,39}$/.test(segment) ? segment : segment ? ":id" : ""))
-    .join("/");
 }
 
 function statusFailure(status: number): VeskoStagingTransportError {
@@ -316,7 +366,7 @@ function normalizedFailure(error: unknown, timedOut: boolean, externallyAborted:
 }
 
 function expectedStatus(status: number, expectedStatuses: readonly number[] | undefined): boolean {
-  return expectedStatuses?.includes(status) ?? (status >= 200 && status < 300);
+  return status >= 200 && status < 300 && (expectedStatuses?.includes(status) ?? true);
 }
 
 function requestHeaders(
@@ -340,11 +390,95 @@ function validateRequest(input: VeskoStagingTransportRequest): void {
     input.expectedStatuses !== undefined &&
     (input.expectedStatuses.length === 0 ||
       input.expectedStatuses.some(
-        (status) => !Number.isInteger(status) || status < 100 || status > 599,
+        (status) => !Number.isInteger(status) || status < 200 || status >= 300,
       ))
   ) {
     throw new VeskoStagingTransportError("configurationUnavailable");
   }
+  validatedLogRouteTemplate(input.logRouteTemplate);
+}
+
+function logSafely(
+  logger: VeskoStagingTransportLogger | undefined,
+  event: VeskoStagingLogEvent,
+): void {
+  try {
+    logger?.log(event);
+  } catch {
+    // Observability is optional and must never alter a transport result.
+  }
+}
+
+async function cancelUnreadBody(response: Response | undefined): Promise<void> {
+  try {
+    await response?.body?.cancel();
+  } catch {
+    // Cancellation only releases a resource; it must never replace the primary result.
+  }
+}
+
+type RequestDeadline = Readonly<{
+  signal: AbortSignal;
+  failure(): VeskoStagingTransportError;
+  dispose(): void;
+}>;
+
+function createRequestDeadline(
+  timeoutMs: number,
+  callerSignal: AbortSignal | undefined,
+): RequestDeadline {
+  const controller = new AbortController();
+  let timedOut = false;
+  const abortFromCaller = () => controller.abort();
+  callerSignal?.addEventListener("abort", abortFromCaller, { once: true });
+  if (callerSignal?.aborted) controller.abort();
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+
+  return {
+    signal: controller.signal,
+    failure: () =>
+      timedOut
+        ? new VeskoStagingTransportError("timeout")
+        : new VeskoStagingTransportError("requestAborted"),
+    dispose: () => {
+      clearTimeout(timer);
+      callerSignal?.removeEventListener("abort", abortFromCaller);
+    },
+  };
+}
+
+function awaitWithinDeadline<T>(
+  operation: Promise<T>,
+  deadline: RequestDeadline,
+  onLateSuccess?: (value: T) => void,
+): Promise<T> {
+  if (deadline.signal.aborted) return Promise.reject(deadline.failure());
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const abort = () => settleReject(deadline.failure());
+    const cleanup = () => deadline.signal.removeEventListener("abort", abort);
+    const settleResolve = (value: T) => {
+      if (settled) {
+        onLateSuccess?.(value);
+        return;
+      }
+      settled = true;
+      cleanup();
+      resolve(value);
+    };
+    const settleReject = (error: unknown) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(error);
+    };
+    deadline.signal.addEventListener("abort", abort, { once: true });
+    operation.then(settleResolve, settleReject);
+    if (deadline.signal.aborted) abort();
+  });
 }
 
 /**
@@ -372,7 +506,13 @@ export function createVeskoStagingTransport(
 
   return {
     async authenticate(input = {}) {
-      await authorization(input);
+      const deadline = createRequestDeadline(dependencies.configuration.timeoutMs, input.signal);
+      try {
+        if (deadline.signal.aborted) throw deadline.failure();
+        await awaitWithinDeadline(authorization({ signal: deadline.signal }), deadline);
+      } finally {
+        deadline.dispose();
+      }
     },
 
     async request(input) {
@@ -380,24 +520,17 @@ export function createVeskoStagingTransport(
       const correlationId = input.correlationId?.trim() || createCorrelationId();
       const start = now();
       let status: number | undefined;
-      let timedOut = false;
-      const controller = new AbortController();
-      const abortFromCaller = () => controller.abort();
-      input.signal?.addEventListener("abort", abortFromCaller, { once: true });
-      if (input.signal?.aborted) controller.abort();
-      const timer = setTimeout(() => {
-        timedOut = true;
-        controller.abort();
-      }, dependencies.configuration.timeoutMs);
+      const deadline = createRequestDeadline(dependencies.configuration.timeoutMs, input.signal);
+      const logRouteTemplate = validatedLogRouteTemplate(input.logRouteTemplate);
 
       try {
-        const authenticated = await authorization({ signal: controller.signal });
-        if (controller.signal.aborted) {
-          throw normalizedFailure(undefined, timedOut, input.signal?.aborted === true);
-        }
-        const response = await fetchImplementation(
-          relativeUrl(dependencies.configuration.baseUrl, input.route),
-          {
+        if (deadline.signal.aborted) throw deadline.failure();
+        const authenticated = await awaitWithinDeadline(
+          authorization({ signal: deadline.signal }),
+          deadline,
+        );
+        const response = await awaitWithinDeadline(
+          fetchImplementation(relativeUrl(dependencies.configuration.baseUrl, input.route), {
             method: input.method,
             headers: requestHeaders(
               authenticated,
@@ -406,20 +539,28 @@ export function createVeskoStagingTransport(
               correlationId,
             ),
             body: input.body,
-            signal: controller.signal,
-          },
+            signal: deadline.signal,
+            redirect: "manual",
+          }),
+          deadline,
+          (lateResponse) => void cancelUnreadBody(lateResponse),
         );
         status = response.status;
-        if (!expectedStatus(response.status, input.expectedStatuses))
+        if (!expectedStatus(response.status, input.expectedStatuses)) {
+          await cancelUnreadBody(response);
           throw statusFailure(response.status);
+        }
 
         let data: unknown;
         if (input.response === "json") {
           try {
-            data = await response.json();
+            data = await awaitWithinDeadline(response.json(), deadline);
           } catch {
+            if (deadline.signal.aborted) throw deadline.failure();
             throw new VeskoStagingTransportError("malformedResponse", response.status);
           }
+        } else {
+          await cancelUnreadBody(response);
         }
         const result: VeskoStagingTransportResponse = {
           status: response.status,
@@ -431,21 +572,25 @@ export function createVeskoStagingTransport(
             : { revision: response.headers.get(dependencies.configuration.revisionHeaderName)! }),
           correlationId,
         };
-        dependencies.logger?.log({
+        logSafely(dependencies.logger, {
           operation: input.operation,
           method: input.method,
-          route: sanitizedRoute(input.route),
+          route: logRouteTemplate,
           status,
           durationMs: now() - start,
           correlationId,
         });
         return Object.freeze(result);
       } catch (error) {
-        const failure = normalizedFailure(error, timedOut, input.signal?.aborted === true);
-        dependencies.logger?.log({
+        const failure = normalizedFailure(
+          error,
+          deadline.failure().code === "timeout",
+          deadline.failure().code === "requestAborted",
+        );
+        logSafely(dependencies.logger, {
           operation: input.operation,
           method: input.method,
-          route: sanitizedRoute(input.route),
+          route: logRouteTemplate,
           ...(status === undefined ? {} : { status }),
           durationMs: now() - start,
           correlationId,
@@ -453,8 +598,7 @@ export function createVeskoStagingTransport(
         });
         throw failure;
       } finally {
-        clearTimeout(timer);
-        input.signal?.removeEventListener("abort", abortFromCaller);
+        deadline.dispose();
       }
     },
   };
@@ -470,7 +614,7 @@ export type VeskoStagingReadinessProbe<TReadiness> = Readonly<{
 
 /**
  * Runs a backend-owned, injected readiness probe after configuration and authentication are known
- * to be usable. P10-01 does not invent a health route or response payload.
+ * to be usable. P12-01 does not invent a health route or response payload.
  */
 export async function checkVeskoStagingReadiness<TReadiness>({
   transport,

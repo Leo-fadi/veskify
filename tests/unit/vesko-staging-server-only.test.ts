@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
 
-describe("P10-01 server-only staging boundary", () => {
+describe("P12-01 server-only staging boundary", () => {
   it("keeps staging configuration and transport code behind a server-only module", async () => {
     const transport = await readFile(
       `${root}/src/integrations/vesko-staging/transport.server.ts`,
