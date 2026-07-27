@@ -74,6 +74,36 @@ describe("P4-05D storefront proposal review projection", () => {
     expect(review.pages.every((page) => page.items.length > 0)).toBe(true);
   });
 
+  it("represents registered page compositions with bilingual merchant summaries", () => {
+    const registered = structuredClone(proposal);
+    const pageId = registered.target.affectedPageIds[0];
+    const page = registered.proposedStorefront.pages.find((candidate) => candidate.id === pageId)!;
+    registered.operations.push({
+      order: registered.operations.length,
+      target: { kind: "page", pageId },
+      operation: {
+        type: "APPLY_REGISTERED_PAGE_SECTIONS",
+        sections: structuredClone(page.sections),
+        removedSectionIds: [],
+      },
+    });
+
+    const english = createStorefrontProposalReview(registered, "en", "en");
+    const finnish = createStorefrontProposalReview(registered, "fi", "en");
+
+    expect(english.complete).toBe(true);
+    expect(
+      english.pages
+        .find((candidate) => candidate.pageId === pageId)
+        ?.items.map((item) => item.summary),
+    ).toContain(`Approved page composition with ${page.sections.length} sections.`);
+    expect(
+      finnish.pages
+        .find((candidate) => candidate.pageId === pageId)
+        ?.items.map((item) => item.summary),
+    ).toContain(`Hyväksytty ${page.sections.length} osion sivurakenne.`);
+  });
+
   it("renders Finnish merchant-readable page and section copy", () => {
     const review = createStorefrontProposalReview(proposal, "fi", "en");
     expect(review.pages[0].title).toBe("Etusivu");
