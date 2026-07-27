@@ -1,12 +1,16 @@
 import { z } from "zod";
 import {
+  type AiStorefrontProviderResponse,
   type AiStorefrontProviderRequest,
   AiStorefrontProviderValidationError,
   aiStorefrontProviderRequestSchema,
   buildAiStorefrontProviderRequest,
   validateAiStorefrontProviderResponse,
 } from "@/application/ai-storefront-generation";
-import { projectAiStorefrontSnapshot } from "@/application/ai-storefront";
+import {
+  createAiStorefrontBaselineFingerprint,
+  projectAiStorefrontSnapshot,
+} from "@/application/ai-storefront";
 import {
   requestWholeStorefrontGenerationPlan,
   WholeStorefrontPlanningProviderError,
@@ -28,6 +32,7 @@ import {
 } from "@/application/source-discovery";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
+import { storefrontSnapshotSchema, type StorefrontSnapshot } from "@/domain/storefront";
 import {
   InMemoryProjectRepository,
   ProjectNotFoundError,
@@ -49,6 +54,7 @@ export type ServerWholeStorefrontPlanningContext = Readonly<{
     request: AiStorefrontProviderRequest,
     plan: WholeStorefrontGenerationPlan,
   ) => Promise<unknown>;
+  recordValidatedProposal?: (response: AiStorefrontProviderResponse) => void;
 }>;
 
 export interface ServerWholeStorefrontPlanningAuthority {
@@ -194,6 +200,7 @@ export function createServerWholeStorefrontPlanningHandler({
         canonicalRequest,
         await context.proposalEnvelope(canonicalRequest, plan),
       );
+      context.recordValidatedProposal?.(envelope);
       return response(200, responseSchema.parse({ ok: true, proposal: envelope }));
     } catch (error) {
       return failure(error);
@@ -274,6 +281,10 @@ export function createStandaloneServerWholeStorefrontPlanningAuthority({
     storeId: string;
   };
 } = {}): ServerWholeStorefrontPlanningAuthority {
+  const validatedDraftCandidates = new Map<string, StorefrontSnapshot>();
+  const candidateKey = (projectId: string, baselineFingerprint: string) =>
+    `${projectId}:${baselineFingerprint}`;
+
   return {
     async resolve(request) {
       let aggregate: Awaited<ReturnType<ProjectRepository["get"]>>;
@@ -284,10 +295,14 @@ export function createStandaloneServerWholeStorefrontPlanningAuthority({
           throw new ServerWholeStorefrontAuthorityError("invalid");
         throw new ServerWholeStorefrontAuthorityError("unavailable");
       }
-      const draft = aggregate.snapshots.find(
+      const seededDraft = aggregate.snapshots.find(
         (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
       );
-      if (!draft) throw new ServerWholeStorefrontAuthorityError("invalid");
+      if (!seededDraft) throw new ServerWholeStorefrontAuthorityError("invalid");
+      const draft =
+        validatedDraftCandidates.get(
+          candidateKey(request.target.projectId, request.storefrontBaselineFingerprint),
+        ) ?? seededDraft;
       const context = await createStandaloneMerchantProjectContextPort({
         projectRepository: repository,
         ...identity,
@@ -319,6 +334,28 @@ export function createStandaloneServerWholeStorefrontPlanningAuthority({
             ...response,
             providerId: proposalRequest.providerId,
           };
+        },
+        recordValidatedProposal: (response) => {
+          const proposed = response.proposal.proposedStorefront;
+          const proposedPages = new Map(proposed.pages.map((page) => [page.id, page]));
+          const candidate = storefrontSnapshotSchema.parse({
+            ...draft,
+            brandSystem: proposed.brandSystem,
+            navigation: proposed.navigation,
+            pages: proposed.pageOrder.map((pageId) => proposedPages.get(pageId)),
+          });
+          const baselineFingerprint = createAiStorefrontBaselineFingerprint({
+            projectId: candidate.projectId,
+            draftSnapshotId: candidate.id,
+            draftRevision: candidate.revision,
+            enabledLocales: aggregate.project.enabledLocales,
+            activeLocale: request.activeLocale,
+            storefront: proposed,
+          });
+          validatedDraftCandidates.set(
+            candidateKey(candidate.projectId, baselineFingerprint),
+            candidate,
+          );
         },
       };
     },

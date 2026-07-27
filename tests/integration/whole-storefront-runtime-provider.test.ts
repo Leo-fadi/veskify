@@ -2,11 +2,14 @@
 
 import { describe, expect, it, vi } from "vitest";
 import {
+  aiStorefrontProviderResponseSchema,
   createDeterministicMockStorefrontAIProvider,
   buildAiStorefrontProviderRequest,
   type AiStorefrontGenerationCommand,
 } from "@/application/ai-storefront-generation";
+import type { AiStorefrontProjection } from "@/application/ai-storefront";
 import {
+  createDeterministicWholeStorefrontPlanningProvider,
   createWholeStorefrontGenerationPlan,
   wholeStorefrontPlanningInputSchema,
   WholeStorefrontPlanningProviderError,
@@ -105,7 +108,20 @@ function planningInput(): WholeStorefrontPlanningInput {
   });
 }
 
-function request() {
+function request({
+  storefront = {
+    pageOrder: snapshot.pages.map((page) => page.id),
+    pages: structuredClone(snapshot.pages),
+    navigation: structuredClone(snapshot.navigation),
+    brandSystem: structuredClone(snapshot.brandSystem),
+  },
+  instruction = "Apply a warm premium style across the storefront.",
+  sequence = 1,
+}: {
+  storefront?: AiStorefrontProjection;
+  instruction?: string;
+  sequence?: number;
+} = {}) {
   const provider = {
     id: "server-whole-storefront-planning",
     assetReferenceCapability: "structuredApprovedAssets" as const,
@@ -115,16 +131,11 @@ function request() {
     projectId: aurumNordicSeed.project.id,
     draftSnapshotId: snapshot.id,
     draftRevision: snapshot.revision,
-    storefront: {
-      pageOrder: snapshot.pages.map((page) => page.id),
-      pages: structuredClone(snapshot.pages),
-      navigation: structuredClone(snapshot.navigation),
-      brandSystem: structuredClone(snapshot.brandSystem),
-    },
-    affectedPageIds: snapshot.pages.map((page) => page.id),
+    storefront: structuredClone(storefront),
+    affectedPageIds: storefront.pageOrder,
     affectedSectionTargets: [],
     designSystemTarget: { kind: "storefrontDesignSystem", projectId: aurumNordicSeed.project.id },
-    merchantInstruction: "Apply a warm premium style across the storefront.",
+    merchantInstruction: instruction,
     activeLocale: "en",
     enabledLocales: ["en", "fi"],
     requestedScope: "storefront",
@@ -133,7 +144,7 @@ function request() {
     provider,
     importedContent: [],
   };
-  return buildAiStorefrontProviderRequest(command, 1);
+  return buildAiStorefrontProviderRequest(command, sequence);
 }
 
 function authority(input = planningInput()): ServerWholeStorefrontPlanningAuthority {
@@ -305,6 +316,41 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
     expect(context.planningInput.project.id).toBe(aurumNordicSeed.project.id);
     expect(context.planningInput.draft.id).toBe(aurumNordicSeed.draftSnapshot.id);
     expect(context.authorization.actions).toContain("request-ai-design");
+  });
+
+  it("accepts only server-validated standalone proposal baselines for repeat planning", async () => {
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: createStandaloneServerWholeStorefrontPlanningAuthority(),
+      selectProvider: () => createDeterministicWholeStorefrontPlanningProvider(),
+    });
+    const firstResponse = await handler(
+      new Request("http://localhost", { method: "POST", body: JSON.stringify(request()) }),
+    );
+    const firstBody = (await firstResponse.json()) as { proposal: unknown };
+    const firstEnvelope = aiStorefrontProviderResponseSchema.parse(firstBody.proposal);
+    const acceptedRequest = request({
+      storefront: firstEnvelope.proposal.proposedStorefront,
+      instruction: "Use a minimal Nordic colour and typography direction throughout the site.",
+      sequence: 2,
+    });
+    const acceptedResponse = await handler(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify(acceptedRequest),
+      }),
+    );
+    const unknownStorefront = structuredClone(firstEnvelope.proposal.proposedStorefront);
+    unknownStorefront.brandSystem.colors.primary = "#010101";
+    const unknownResponse = await handler(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify(request({ storefront: unknownStorefront, sequence: 3 })),
+      }),
+    );
+
+    expect(firstResponse.status).toBe(200);
+    expect(acceptedResponse.status).toBe(200);
+    expect(unknownResponse.status).toBe(409);
   });
 
   it("maps a planner stale-result to a non-retryable stale response", async () => {

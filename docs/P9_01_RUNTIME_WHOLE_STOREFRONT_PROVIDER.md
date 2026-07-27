@@ -12,6 +12,8 @@ The editor now uses the browser-safe `ServerWholeStorefrontPlanningClient` for i
 
 `VESKIFY_RUNTIME_MODE=standalone` explicitly selects the credential-free canonical Aurum Nordic and Karvonen seed authority plus the deterministic planner. `VESKIFY_RUNTIME_MODE=integrated` requires `VESKIFY_AI_PROVIDER=openai` before the server OpenAI planner is selected. Missing or incompatible runtime configuration returns `providerUnavailable`; it never defaults to deterministic planning. A configured provider failure also returns the merchant-safe unavailable result without fallback. Deterministic providers remain explicit injections for standalone/demo operation and focused tests.
 
+Standalone mode retains process-local draft candidates only from server-validated proposal results. This lets an accepted unsaved deterministic proposal become the authoritative baseline for a later proposal without trusting arbitrary browser state; unknown baselines still fail as stale.
+
 ## Request, result and authorization
 
 The browser submits its request identity, instruction and concurrency claims. The server treats target, affected pages/sections, permission grants, draft baseline and fingerprints as untrusted claims: it rebuilds and checks them from the authoritative draft and supported locale before validating the returned envelope. Read, restore and publish authority alone cannot request AI design.
