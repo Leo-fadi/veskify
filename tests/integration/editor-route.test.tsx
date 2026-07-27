@@ -507,7 +507,7 @@ const route = (
       aiProvider={aiProvider}
       projectId="project_aurum_nordic"
       repositoryFactory={() => value}
-      storefrontAiProvider={storefrontAiProvider}
+      storefrontAiProvider={storefrontAiProvider ?? createDeterministicMockStorefrontAIProvider()}
     />,
   );
 

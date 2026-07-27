@@ -27,7 +27,14 @@ async function openStorefrontProposal(page: Page, instruction = storefrontInstru
   }
   await page.getByRole("radio", { name: "Entire storefront" }).check();
   await page.getByLabel("Your request").fill(instruction);
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/ai/whole-storefront-proposals") &&
+      response.request().method() === "POST",
+  );
   await page.getByRole("button", { name: "Create proposal" }).click();
+  const response = await responsePromise;
+  expect(response.status()).toBe(200);
   await expect(page.getByLabel("Storefront design proposal")).toBeVisible();
 }
 
