@@ -1,7 +1,6 @@
 import { z } from "zod";
 import {
   type AiStorefrontProviderRequest,
-  type AiStorefrontProviderResponse,
   AiStorefrontProviderValidationError,
   aiStorefrontProviderRequestSchema,
   buildAiStorefrontProviderRequest,

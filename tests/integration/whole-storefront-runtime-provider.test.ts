@@ -12,6 +12,7 @@ import {
   WholeStorefrontPlanningProviderError,
   type WholeStorefrontPlanningInput,
   type WholeStorefrontPlanningProvider,
+  type WholeStorefrontPlanningProviderRequest,
 } from "@/application/whole-storefront-generation-plan";
 import {
   approveStorefrontDesignBrief,
@@ -135,9 +136,7 @@ function request() {
   return buildAiStorefrontProviderRequest(command, 1);
 }
 
-function authority(
-  input = planningInput(),
-): ServerWholeStorefrontPlanningAuthority & { resolve: ReturnType<typeof vi.fn> } {
+function authority(input = planningInput()): ServerWholeStorefrontPlanningAuthority {
   const authorization: MerchantProjectAuthorization = {
     context: {
       userId: "user_runtime",
@@ -156,25 +155,29 @@ function authority(
     actions: ["request-ai-design"],
   };
   return {
-    resolve: vi.fn(async () => ({
-      authorization,
-      planningInput: input,
-      currentPlanningInput: () => input,
-      proposalEnvelope: async (proposalRequest: ReturnType<typeof request>) => {
-        const response =
-          await createDeterministicMockStorefrontAIProvider().proposeStorefront(proposalRequest);
-        return {
-          ...response,
-          providerId: proposalRequest.providerId,
-        };
-      },
-    })),
+    resolve: () =>
+      Promise.resolve({
+        authorization,
+        planningInput: input,
+        currentPlanningInput: () => input,
+        proposalEnvelope: async (proposalRequest: ReturnType<typeof request>) => {
+          const response =
+            await createDeterministicMockStorefrontAIProvider().proposeStorefront(proposalRequest);
+          return {
+            ...response,
+            providerId: proposalRequest.providerId,
+          };
+        },
+      }),
   };
 }
 
 describe("P9-01 runtime whole-storefront provider boundary", () => {
   it("routes the editor runtime client envelope through the canonical server planner before review", async () => {
     const value = authority();
+    const createPlan = vi.fn((input: WholeStorefrontPlanningProviderRequest) =>
+      Promise.resolve(structuredClone(input.expectedPlan)),
+    );
     const provider: WholeStorefrontPlanningProvider = {
       id: "recording-canonical-planner",
       capabilities: {
@@ -182,7 +185,7 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
         structuredPlanOutput: true,
         approvedAssetReferences: true,
       },
-      createPlan: vi.fn(async (input) => structuredClone(input.expectedPlan)),
+      createPlan,
     };
     const handler = createServerWholeStorefrontPlanningHandler({
       authority: value,
@@ -203,7 +206,7 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
     vi.unstubAllGlobals();
 
     expect(fetch).toHaveBeenCalledOnce();
-    expect(provider.createPlan).toHaveBeenCalledOnce();
+    expect(createPlan).toHaveBeenCalledOnce();
     expect((body as { proposal: { status: string } }).proposal.status).toBe("pending");
   });
 
@@ -219,9 +222,7 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
           structuredPlanOutput: true,
           approvedAssetReferences: true,
         },
-        createPlan: async () => {
-          throw new Error("provider failure");
-        },
+        createPlan: () => Promise.reject(new Error("provider failure")),
       }),
     });
     const response = await handler(
@@ -233,17 +234,17 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
   });
 
   it("requires canonical request-ai-design authority and rejects stale draft identity", async () => {
-    const denied = authority();
-    denied.resolve.mockImplementationOnce(async () => {
-      const context = await authority().resolve(request(), new Request("http://localhost"));
-      return {
-        ...context,
-        authorization: {
-          ...context.authorization,
-          context: { ...context.authorization.context, permissions: ["readStorefront"] },
-        },
-      };
-    });
+    const canonical = authority();
+    const denied: ServerWholeStorefrontPlanningAuthority = {
+      resolve: (providerRequest, httpRequest) =>
+        canonical.resolve(providerRequest, httpRequest).then((context) => ({
+          ...context,
+          authorization: {
+            ...context.authorization,
+            context: { ...context.authorization.context, permissions: ["readStorefront"] },
+          },
+        })),
+    };
     const handler = createServerWholeStorefrontPlanningHandler({
       authority: denied,
       selectProvider: () => ({
@@ -253,7 +254,7 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
           structuredPlanOutput: true,
           approvedAssetReferences: true,
         },
-        createPlan: async () => createWholeStorefrontGenerationPlan(planningInput()),
+        createPlan: () => Promise.resolve(createWholeStorefrontGenerationPlan(planningInput())),
       }),
     });
     const response = await handler(
