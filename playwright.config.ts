@@ -6,6 +6,10 @@ export default defineConfig({
   testDir: "./tests/e2e",
   webServer: {
     command: `pnpm dev --port ${port}`,
+    env: {
+      ...process.env,
+      VESKIFY_RUNTIME_MODE: "standalone",
+    },
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
