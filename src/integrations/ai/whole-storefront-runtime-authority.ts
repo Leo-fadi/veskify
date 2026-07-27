@@ -237,7 +237,7 @@ function standalonePlanningBrief(
         typographyDirection: "serif-led",
         visualStyleDirection: "editorial",
         imageryDirection: "studio",
-        toneKeywords: ["considered"],
+        toneKeywords: ["warm"],
       },
     }),
     { actorId, approvedAt: now },
