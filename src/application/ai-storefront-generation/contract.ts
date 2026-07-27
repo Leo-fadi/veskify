@@ -69,6 +69,7 @@ export const aiStorefrontGenerationCommandSchema = z
     capability: storefrontGenerationCapabilitySchema,
     providerId: z.string().min(1).max(120),
     provider: storefrontProviderSchema,
+    correlationRequestId: idSchema.optional(),
     importedContent: z.array(untrustedImportedContentSchema).default([]),
     approvedAssetContext: approvedGenerationAssetContextSchema.nullable().optional(),
     assetPlacementOperations: z.array(approvedAssetPlacementOperationSchema).optional(),
@@ -335,6 +336,8 @@ export const aiStorefrontProviderResponseSchema = z
         operationCount: z.number().int().nonnegative(),
         durationMs: z.number().nonnegative(),
         validation: z.enum(["valid", "invalid"]),
+        authoritativePlanningFingerprint: z.string().trim().min(1).optional(),
+        wholeStorefrontProposalFingerprint: z.string().trim().min(1).optional(),
       })
       .strict(),
   })

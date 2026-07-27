@@ -11,6 +11,7 @@ import {
 } from "@/application/whole-storefront-proposal-lifecycle";
 import {
   createWholeStorefrontGenerationPlan,
+  createWholeStorefrontRecipeContext,
   wholeStorefrontPlanningInputSchema,
 } from "@/application/whole-storefront-generation-plan";
 import {
@@ -92,6 +93,7 @@ function planningInput() {
     draft: structuredClone(aurumNordicSeed.draftSnapshot),
     catalogue: structuredClone(aurumNordicSeed.catalogue),
     componentDefinitions: structuredClone(veskifyComponentDefinitionsV2),
+    recipeContext: createWholeStorefrontRecipeContext(),
     approvedAssetContext: null,
     requiredAssetPlacements: [],
   };

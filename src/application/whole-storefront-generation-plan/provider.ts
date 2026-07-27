@@ -34,6 +34,19 @@ export type WholeStorefrontPlanningProviderRequest = Readonly<{
       sourceReferenceIds: readonly string[];
       sourceEvidenceIds: readonly string[];
     }>;
+    businessContext: Readonly<{
+      businessName: string;
+      shortDescription: string;
+      industry: string | null;
+      targetCustomer: string;
+      primaryMarket: string;
+      secondaryMarkets: readonly string[];
+      homepageGoals: readonly string[];
+      collectionPageGoals: readonly string[];
+      productPageGoals: readonly string[];
+      visualPriorities: readonly string[];
+      excludedClaims: readonly string[];
+    }>;
   }>;
   target: WholeStorefrontGenerationPlan["target"];
   registry: readonly Readonly<{
@@ -58,6 +71,24 @@ export type WholeStorefrontPlanningProviderRequest = Readonly<{
       maxItems?: number;
     }>[];
   }>[];
+  recipes: Readonly<{
+    fingerprint: string;
+    templates: readonly Readonly<{
+      id: string;
+      version: string;
+      supportedPageTypes: readonly string[];
+      pagePlans: readonly Readonly<{
+        pageType: string;
+        slots: readonly Readonly<{
+          id: string;
+          sectionType: string;
+          allowedVariants: readonly string[];
+          required: boolean;
+          omitWhen: string;
+        }>[];
+      }>[];
+    }>[];
+  }>;
   canonicalCommerce: Readonly<{
     productIds: readonly string[];
     collections: readonly Readonly<{ id: string; productIds: readonly string[] }>[];
@@ -183,6 +214,19 @@ export function buildWholeStorefrontPlanningProviderRequest(
         sourceReferenceIds: sortedStrings(input.brief.sourceReferenceIds),
         sourceEvidenceIds: sortedStrings(input.brief.sourceEvidenceIds),
       },
+      businessContext: {
+        businessName: input.brief.businessIdentity.businessName,
+        shortDescription: input.brief.businessIdentity.shortDescription,
+        industry: input.brief.businessIdentity.industry,
+        targetCustomer: input.brief.businessIdentity.targetCustomer,
+        primaryMarket: input.brief.businessIdentity.primaryMarket,
+        secondaryMarkets: sortedStrings(input.brief.businessIdentity.secondaryMarkets),
+        homepageGoals: sortedStrings(input.brief.homepageGoals),
+        collectionPageGoals: sortedStrings(input.brief.collectionPageGoals),
+        productPageGoals: sortedStrings(input.brief.productPageGoals),
+        visualPriorities: sortedStrings(input.brief.visualPriorities),
+        excludedClaims: sortedStrings(input.brief.excludedClaims),
+      },
     },
     target: structuredClone(target),
     registry: [...input.componentDefinitions]
@@ -213,6 +257,28 @@ export function buildWholeStorefrontPlanningProviderRequest(
           }))
           .sort((left, right) => left.id.localeCompare(right.id)),
       })),
+    recipes: {
+      fingerprint: input.recipeContext.fingerprint,
+      templates: [...input.recipeContext.templates]
+        .sort((left, right) => left.id.localeCompare(right.id))
+        .map((template) => ({
+          id: template.id,
+          version: template.version,
+          supportedPageTypes: sortedStrings(template.supportedPageTypes),
+          pagePlans: [...template.pagePlans]
+            .sort((left, right) => left.pageType.localeCompare(right.pageType))
+            .map((pagePlan) => ({
+              pageType: pagePlan.pageType,
+              slots: pagePlan.slots.map((slot) => ({
+                id: slot.id,
+                sectionType: slot.sectionType,
+                allowedVariants: sortedStrings(slot.allowedVariants),
+                required: slot.required,
+                omitWhen: slot.omitWhen,
+              })),
+            })),
+        })),
+    },
     canonicalCommerce: {
       productIds: [...target.productIds],
       collections: target.collections.map((collection) => ({

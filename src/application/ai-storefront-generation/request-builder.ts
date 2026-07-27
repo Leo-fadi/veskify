@@ -58,6 +58,9 @@ export function parseAiStorefrontGenerationCommand(input: unknown): AiStorefront
         left.pageId.localeCompare(right.pageId) || left.sectionId.localeCompare(right.sectionId),
     ),
     enabledLocales: canonicalLocaleOrder(result.data.enabledLocales),
+    ...(result.data.correlationRequestId === undefined
+      ? {}
+      : { correlationRequestId: result.data.correlationRequestId }),
     importedContent: structuredClone(result.data.importedContent),
     approvedAssetContext:
       result.data.approvedAssetContext === undefined || result.data.approvedAssetContext === null
@@ -217,17 +220,19 @@ export function buildAiStorefrontProviderRequest(
         ],
       };
     });
-  const requestId = `storefront_request_${canonicalValueFingerprint({
-    requestSequence,
-    providerId: command.providerId,
-    normalizedInstruction: plan.normalizedInstruction,
-    storefrontBaselineFingerprint,
-    targetFingerprint,
-    permissionFingerprint,
-    importedContent: command.importedContent,
-    assetContextFingerprint: approvedAssetContext?.fingerprint ?? null,
-    assetPlacementOperations,
-  }).slice(-8)}`;
+  const requestId =
+    command.correlationRequestId ??
+    `storefront_request_${canonicalValueFingerprint({
+      requestSequence,
+      providerId: command.providerId,
+      normalizedInstruction: plan.normalizedInstruction,
+      storefrontBaselineFingerprint,
+      targetFingerprint,
+      permissionFingerprint,
+      importedContent: command.importedContent,
+      assetContextFingerprint: approvedAssetContext?.fingerprint ?? null,
+      assetPlacementOperations,
+    }).slice(-8)}`;
   return aiStorefrontProviderRequestSchema.parse({
     requestId,
     requestSequence,
