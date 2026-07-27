@@ -159,6 +159,7 @@ function operationTargets(
     });
   }
   if (operation.type === "APPLY_APPROVED_BRAND_COLOURS") return [null];
+  if (operation.type === "APPLY_REGISTERED_PAGE_SECTIONS") return [null];
   return [];
 }
 
@@ -215,6 +216,24 @@ export function merchantOperationChangePart(
       return locale === "fi"
         ? `hyväksytty bränditypografia: ${humanize(operation.typography.headingFont)} otsikoihin ja ${humanize(operation.typography.bodyFont)} leipätekstiin`
         : `approved brand typography: ${humanize(operation.typography.headingFont)} headings and ${humanize(operation.typography.bodyFont)} body text`;
+    case "APPLY_REGISTERED_PAGE_SECTIONS": {
+      const sectionCount = operation.sections.length;
+      const removedSectionCount = operation.removedSectionIds.length;
+      if (locale === "fi") {
+        return `hyväksytty ${sectionCount} osion sivurakenne${
+          removedSectionCount > 0 ? `, joka korvaa ${removedSectionCount} nykyistä osiota` : ""
+        }`;
+      }
+      return `approved page composition with ${sectionCount} ${
+        sectionCount === 1 ? "section" : "sections"
+      }${
+        removedSectionCount > 0
+          ? `, replacing ${removedSectionCount} existing ${
+              removedSectionCount === 1 ? "section" : "sections"
+            }`
+          : ""
+      }`;
+    }
     case "ADD_APPROVED_SECTION":
       return locale === "fi"
         ? `lisää tämä ${operation.variant ? `${option(operation.variant, locale)} ` : ""}osio`

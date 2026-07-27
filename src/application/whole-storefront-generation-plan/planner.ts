@@ -29,6 +29,12 @@ import {
   type WholeStorefrontPlanningInput,
   WholeStorefrontGenerationPlanError,
 } from "./contract";
+import { selectStorefrontDesignDirection } from "@/application/storefront-design-system";
+import { getComponentDefinition } from "@/components/registry";
+import {
+  dynamicCollectionCommerceBridgeContentSchema,
+  dynamicProductDetailBridgeContentSchema,
+} from "@/components/registry/dynamic-commerce-bridge";
 
 const FAMILY_REQUIREMENTS = {
   homepage: [
@@ -258,16 +264,69 @@ function retainedComponent(
       `The current storefront uses an unregistered component: ${section.component}.`,
     );
   }
-  return {
+  const base = {
     id: section.id,
     component: section.component,
     componentVersion: definition.version,
     variant: section.variant,
-    content: structuredClone(section.content) as ComponentInstanceV2["content"],
     props: structuredClone(section.props) as ComponentInstanceV2["props"],
     styleOverrides: {},
-    bindings: [],
     assetAssignments: [],
+  };
+  if (section.component === "dynamicCollectionCommerce") {
+    const { collectionId, productIds, canonicalRevision, ...content } =
+      dynamicCollectionCommerceBridgeContentSchema.parse(section.content);
+    return {
+      ...base,
+      content,
+      styleOverrides: structuredClone(dynamicCollectionCommerceDefaultStyleOverrides),
+      bindings: [
+        {
+          slotId: "primaryCollection",
+          source: "collection",
+          collectionId,
+          revision: canonicalRevision,
+        },
+        {
+          slotId: "collectionProducts",
+          source: "productList",
+          productIds,
+          revision: canonicalRevision,
+        },
+      ],
+    };
+  }
+  if (section.component === "dynamicProductDetail") {
+    const { productId, relatedProductIds, canonicalRevision, ...content } =
+      dynamicProductDetailBridgeContentSchema.parse(section.content);
+    return {
+      ...base,
+      content,
+      styleOverrides: structuredClone(dynamicProductDetailDefaultStyleOverrides),
+      bindings: [
+        {
+          slotId: "primaryProduct",
+          source: "product",
+          productId,
+          revision: canonicalRevision,
+        },
+        ...(relatedProductIds.length > 0
+          ? [
+              {
+                slotId: "relatedProducts",
+                source: "productList" as const,
+                productIds: relatedProductIds,
+                revision: canonicalRevision,
+              },
+            ]
+          : []),
+      ],
+    };
+  }
+  return {
+    ...base,
+    content: structuredClone(section.content) as ComponentInstanceV2["content"],
+    bindings: [],
   };
 }
 
@@ -301,6 +360,88 @@ function generatedComponentId(
     "unsupported-page-family",
     "A unique canonical component ID could not be created safely.",
   );
+}
+
+function requiredHomepageRecipeComponents(input: {
+  planningInput: WholeStorefrontPlanningInput;
+  page: WholeStorefrontPlanningInput["draft"]["pages"][number];
+  definitions: ReturnType<typeof normalizedDefinitions>;
+  registry: ReturnType<typeof createComponentRegistryV2>;
+  usedComponentIds: Set<string>;
+  recipeId: string;
+}): WholeStorefrontGenerationPlan["pagePlans"][number]["components"] {
+  const { planningInput, page, definitions, registry, usedComponentIds, recipeId } = input;
+  if (page.type !== "home") return [];
+  const recipe = planningInput.recipeContext.designSystem.homepageRecipes.find(
+    (candidate) => candidate.id === recipeId,
+  );
+  if (!recipe) {
+    invalid("unsupported-page-family", "The selected homepage recipe is unavailable.");
+  }
+  const existingComponents = new Set(page.sections.map((section) => section.component));
+  return recipe.sections.flatMap((recipeSection) => {
+    if (!recipeSection.required || existingComponents.has(recipeSection.component)) return [];
+    if (recipeSection.component !== "brandStory") {
+      invalid(
+        "missing-required-recipe-content",
+        `Add approved content for the required ${recipeSection.component} homepage section.`,
+      );
+    }
+    const approvedAsset = planningInput.approvedAssetContext?.assets.find((asset) =>
+      recipeSection.acceptedAssetRoles.includes(asset.role),
+    );
+    if (!approvedAsset) {
+      invalid(
+        "missing-required-recipe-asset",
+        "Approve an editorial image before using the selected brand-story homepage recipe.",
+      );
+    }
+    const description = planningInput.brief.businessIdentity.shortDescription.trim();
+    if (description.length === 0) {
+      invalid(
+        "missing-required-recipe-content",
+        "Add an approved business description before using the selected brand-story homepage recipe.",
+      );
+    }
+    const definition = definitionFor(definitions, recipeSection.component);
+    const legacyDefinition = getComponentDefinition(recipeSection.component);
+    const componentId = generatedComponentId(page.id, recipeSection.component, usedComponentIds);
+    usedComponentIds.add(componentId);
+    const instance: ComponentInstanceV2 = {
+      id: componentId,
+      component: recipeSection.component,
+      componentVersion: definition.version,
+      variant: recipeSection.variant,
+      content: {
+        heading: {
+          en: planningInput.brief.businessIdentity.businessName,
+          fi: planningInput.brief.businessIdentity.businessName,
+        },
+        body: { en: description, fi: description },
+        approvedAssetId: approvedAsset.assetId,
+        facts: [],
+      },
+      props: structuredClone(legacyDefinition.defaultProps) as ComponentInstanceV2["props"],
+      styleOverrides: {},
+      bindings: [],
+      assetAssignments: [
+        {
+          slotId: "brandStoryMedia",
+          assetId: approvedAsset.assetId,
+          role: approvedAsset.role,
+        },
+      ],
+    };
+    try {
+      registry.validateInstance(instance);
+    } catch (error) {
+      invalid(
+        "invalid-component-contract",
+        error instanceof Error ? error.message : "The required brand-story component is invalid.",
+      );
+    }
+    return [{ disposition: "added" as const, instance, replacesComponentIds: [] }];
+  });
 }
 
 function generatedPageId(baseId: string, usedIds: ReadonlySet<string>): string {
@@ -367,6 +508,26 @@ function existingCollectionBinding(
   input: WholeStorefrontPlanningInput,
   definitions: ReturnType<typeof normalizedDefinitions>,
 ): ExistingCollectionBinding {
+  const dynamicSections = page.sections.filter(
+    (section) => section.component === "dynamicCollectionCommerce",
+  );
+  if (dynamicSections.length > 1) {
+    invalid("unknown-commerce-binding", "The dynamic collection binding is ambiguous.");
+  }
+  if (dynamicSections[0]) {
+    const content = dynamicCollectionCommerceBridgeContentSchema.parse(dynamicSections[0].content);
+    const collection = input.catalogue.collections.find((item) => item.id === content.collectionId);
+    if (
+      !collection ||
+      canonicalValueString(content.productIds) !== canonicalValueString(collection.productIds)
+    ) {
+      invalid(
+        "unknown-commerce-binding",
+        "The dynamic collection binding conflicts with canonical collection membership.",
+      );
+    }
+    return { collection, productIds: [...content.productIds] };
+  }
   const collectionId = oneProtectedValue(
     protectedValuesFor(page, definitions, "collectionId"),
     "collection",
@@ -395,6 +556,19 @@ function existingProductBinding(
   page: WholeStorefrontPlanningInput["draft"]["pages"][number],
   definitions: ReturnType<typeof normalizedDefinitions>,
 ): ExistingProductBinding {
+  const dynamicSections = page.sections.filter(
+    (section) => section.component === "dynamicProductDetail",
+  );
+  if (dynamicSections.length > 1) {
+    invalid("unknown-commerce-binding", "The dynamic product binding is ambiguous.");
+  }
+  if (dynamicSections[0]) {
+    const content = dynamicProductDetailBridgeContentSchema.parse(dynamicSections[0].content);
+    return {
+      productId: content.productId,
+      relatedProductIds: [...content.relatedProductIds],
+    };
+  }
   const productId = oneProtectedValue(
     protectedValuesFor(page, definitions, "productId"),
     "product",
@@ -419,16 +593,23 @@ function dynamicCollectionComponent(
   revision: string,
   definition: ComponentDefinitionV2,
   usedComponentIds: Set<string>,
+  presentation: WholeStorefrontGenerationPlan["designSystemSelection"]["collectionPresentation"],
+  replacementId?: string,
 ): ComponentInstanceV2 {
-  const id = generatedComponentId(pageId, definition.type, usedComponentIds);
+  const id = replacementId ?? generatedComponentId(pageId, definition.type, usedComponentIds);
   usedComponentIds.add(id);
   return {
     id,
     component: "dynamicCollectionCommerce",
     componentVersion: definition.version,
-    variant: "standard",
+    variant: presentation.variant,
     content: structuredClone(dynamicCollectionCommerceDefaultContent),
-    props: structuredClone(dynamicCollectionCommerceDefaultProps),
+    props: {
+      ...structuredClone(dynamicCollectionCommerceDefaultProps),
+      gridDensity: presentation.gridDensity,
+      cardVariant: presentation.cardVariant,
+      filterLayout: presentation.filterLayout,
+    },
     styleOverrides: structuredClone(dynamicCollectionCommerceDefaultStyleOverrides),
     bindings: [
       { slotId: "primaryCollection", source: "collection", collectionId: collection.id, revision },
@@ -450,16 +631,24 @@ function dynamicProductComponent(
   revision: string,
   definition: ComponentDefinitionV2,
   usedComponentIds: Set<string>,
+  presentation: WholeStorefrontGenerationPlan["designSystemSelection"]["productPresentation"],
+  replacementId?: string,
 ): ComponentInstanceV2 {
-  const id = generatedComponentId(pageId, definition.type, usedComponentIds);
+  const id = replacementId ?? generatedComponentId(pageId, definition.type, usedComponentIds);
   usedComponentIds.add(id);
   return {
     id,
     component: "dynamicProductDetail",
     componentVersion: definition.version,
-    variant: "balanced",
+    variant: presentation.variant,
     content: structuredClone(dynamicProductDetailDefaultContent),
-    props: structuredClone(dynamicProductDetailDefaultProps),
+    props: {
+      ...structuredClone(dynamicProductDetailDefaultProps),
+      galleryLayout: presentation.galleryLayout,
+      optionDensity: presentation.optionDensity,
+      attributeLayout: presentation.attributeLayout,
+      mediaTreatment: presentation.mediaTreatment,
+    },
     styleOverrides: structuredClone(dynamicProductDetailDefaultStyleOverrides),
     bindings: [
       { slotId: "primaryProduct", source: "product", productId, revision },
@@ -622,6 +811,38 @@ export function createWholeStorefrontGenerationPlan(
       "A storefront plan needs canonical products and collections.",
     );
   }
+  const brandDirection = input.brief.approvedBrandDirection;
+  if (brandDirection === null) {
+    invalid(
+      "no-approved-brief",
+      "The approved Storefront Design Brief has no approved brand direction.",
+    );
+  }
+  const selectedDirectionId = selectStorefrontDesignDirection(brandDirection);
+  const selectedDirection = input.recipeContext.designSystem.directions.find(
+    (direction) => direction.id === selectedDirectionId,
+  );
+  if (!selectedDirection) {
+    invalid(
+      "unsupported-page-family",
+      "The approved design direction is unavailable in the active design system.",
+    );
+  }
+  const designSystemSelection = structuredClone({
+    directionId: selectedDirection.id,
+    homepageRecipeId: selectedDirection.homepageRecipeId,
+    collectionRecipeId: selectedDirection.collectionRecipeId,
+    productRecipeId: selectedDirection.productRecipeId,
+    typographyDirectionId: selectedDirection.typographyDirectionId,
+    imageTreatmentId: selectedDirection.imageTreatmentId,
+    productCardFamilyId: selectedDirection.productCardFamilyId,
+    spacingDensity: selectedDirection.spacingDensity,
+    cornerTreatment: selectedDirection.cornerTreatment,
+    surfaceDepth: selectedDirection.surfaceDepth,
+    sectionVariants: selectedDirection.sectionVariants,
+    collectionPresentation: selectedDirection.collectionPresentation,
+    productPresentation: selectedDirection.productPresentation,
+  });
   const collectionComponentDefinition = definitionFor(definitions, "dynamicCollectionCommerce");
   const productComponentDefinition = definitionFor(definitions, "dynamicProductDetail");
   const usedComponentIds = new Set(
@@ -686,6 +907,8 @@ export function createWholeStorefrontGenerationPlan(
         commerceRevision,
         collectionComponentDefinition,
         usedComponentIds,
+        designSystemSelection.collectionPresentation,
+        page.sections.find((section) => section.component === "dynamicCollectionCommerce")?.id,
       );
       try {
         registry.validateInstance(instance);
@@ -700,7 +923,9 @@ export function createWholeStorefrontGenerationPlan(
         instance,
         replacesComponentIds: page.sections
           .filter((section) =>
-            ["collectionHeader", "filterBar", "productGrid"].includes(section.component),
+            ["collectionHeader", "filterBar", "productGrid", "dynamicCollectionCommerce"].includes(
+              section.component,
+            ),
           )
           .map((section) => section.id)
           .sort(),
@@ -723,6 +948,8 @@ export function createWholeStorefrontGenerationPlan(
         commerceRevision,
         productComponentDefinition,
         usedComponentIds,
+        designSystemSelection.productPresentation,
+        page.sections.find((section) => section.component === "dynamicProductDetail")?.id,
       );
       try {
         registry.validateInstance(instance);
@@ -737,11 +964,25 @@ export function createWholeStorefrontGenerationPlan(
         instance,
         replacesComponentIds: page.sections
           .filter((section) =>
-            ["productGallery", "productInfo", "productOptions"].includes(section.component),
+            ["productGallery", "productInfo", "productOptions", "dynamicProductDetail"].includes(
+              section.component,
+            ),
           )
           .map((section) => section.id)
           .sort(),
       });
+    }
+    if (targetPage.role === "homepage") {
+      components.push(
+        ...requiredHomepageRecipeComponents({
+          planningInput: input,
+          page,
+          definitions,
+          registry,
+          usedComponentIds,
+          recipeId: designSystemSelection.homepageRecipeId,
+        }),
+      );
     }
     return {
       pageId: page.id,
@@ -785,6 +1026,7 @@ export function createWholeStorefrontGenerationPlan(
       commerceRevision,
       collectionComponentDefinition,
       usedComponentIds,
+      designSystemSelection.collectionPresentation,
     );
     try {
       registry.validateInstance(instance);
@@ -820,6 +1062,7 @@ export function createWholeStorefrontGenerationPlan(
       commerceRevision,
       productComponentDefinition,
       usedComponentIds,
+      designSystemSelection.productPresentation,
     );
     try {
       registry.validateInstance(instance);
@@ -919,13 +1162,6 @@ export function createWholeStorefrontGenerationPlan(
     .sort((left, right) => canonicalValueString(left).localeCompare(canonicalValueString(right)));
   assertBindingsResolve(canonicalCommerceBindings, target);
   const approvedAssetPlacements = validateAssetPlacements(input, activeTargets);
-  const brandDirection = input.brief.approvedBrandDirection;
-  if (brandDirection === null) {
-    invalid(
-      "no-approved-brief",
-      "The approved Storefront Design Brief has no approved brand direction.",
-    );
-  }
   const sharedDesignDirection = {
     brandSystemFingerprint: target.brandSystemFingerprint,
     preferredBrandColours: [...brandDirection.preferredBrandColours].sort(),
@@ -1038,6 +1274,7 @@ export function createWholeStorefrontGenerationPlan(
       selectedLanguages: canonicalLocaleOrder(input.brief.languagePlan.selectedLanguages),
       missingTranslationPolicy: "explicit-generation-or-merchant-review" as const,
     },
+    designSystemSelection,
     sharedDesignDirection,
     sharedChrome,
     pagePlans,

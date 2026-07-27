@@ -73,6 +73,7 @@ export type WholeStorefrontPlanningProviderRequest = Readonly<{
   }>[];
   recipes: Readonly<{
     fingerprint: string;
+    designSystem: WholeStorefrontPlanningInput["recipeContext"]["designSystem"];
     templates: readonly Readonly<{
       id: string;
       version: string;
@@ -259,6 +260,7 @@ export function buildWholeStorefrontPlanningProviderRequest(
       })),
     recipes: {
       fingerprint: input.recipeContext.fingerprint,
+      designSystem: structuredClone(input.recipeContext.designSystem),
       templates: [...input.recipeContext.templates]
         .sort((left, right) => left.id.localeCompare(right.id))
         .map((template) => ({

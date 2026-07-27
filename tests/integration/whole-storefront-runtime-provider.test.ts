@@ -321,8 +321,9 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
   });
 
   it("accepts only server-validated standalone proposal baselines for repeat planning", async () => {
+    const standaloneAuthority = createStandaloneServerWholeStorefrontPlanningAuthority();
     const handler = createServerWholeStorefrontPlanningHandler({
-      authority: createStandaloneServerWholeStorefrontPlanningAuthority(),
+      authority: standaloneAuthority,
       selectProvider: () => createDeterministicWholeStorefrontPlanningProvider(),
     });
     const firstResponse = await handler(
@@ -332,7 +333,7 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
     const firstEnvelope = aiStorefrontProviderResponseSchema.parse(firstBody.proposal);
     const acceptedRequest = request({
       storefront: firstEnvelope.proposal.proposedStorefront,
-      instruction: "Use a minimal Nordic colour and typography direction throughout the site.",
+      instruction: "Apply a warm premium style across the storefront.",
       sequence: 2,
     });
     const acceptedResponse = await handler(

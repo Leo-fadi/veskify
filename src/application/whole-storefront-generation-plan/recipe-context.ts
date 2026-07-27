@@ -1,4 +1,5 @@
 import { storefrontTemplateDefinitions } from "@/application/storefront-templates";
+import { storefrontDesignSystemV1 } from "@/application/storefront-design-system";
 import { canonicalValueFingerprint } from "@/domain/storefront";
 import { wholeStorefrontRecipeContextSchema, type WholeStorefrontRecipeContext } from "./contract";
 
@@ -10,6 +11,10 @@ export function createWholeStorefrontRecipeContext(): WholeStorefrontRecipeConte
     .sort((left, right) => left.id.localeCompare(right.id));
   return wholeStorefrontRecipeContextSchema.parse({
     templates,
-    fingerprint: `storefront-recipes-${canonicalValueFingerprint(templates)}`,
+    designSystem: structuredClone(storefrontDesignSystemV1),
+    fingerprint: `storefront-recipes-${canonicalValueFingerprint({
+      templates,
+      designSystem: storefrontDesignSystemV1,
+    })}`,
   });
 }

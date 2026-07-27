@@ -161,8 +161,11 @@ function classifyInstruction(
 function approvedStyleOperations(componentType: string) {
   const definition = getComponentDefinition(componentType);
   return [
+    "CHANGE_SECTION_VARIANT" as const,
     ...(definition.editorFields.background ? (["CHANGE_BACKGROUND"] as const) : []),
     ...(definition.editorFields.typography ? (["CHANGE_TYPOGRAPHY"] as const) : []),
+    ...(definition.editorFields.density ? (["CHANGE_DENSITY"] as const) : []),
+    ...(definition.editorFields.shape ? (["CHANGE_SHAPE"] as const) : []),
   ];
 }
 

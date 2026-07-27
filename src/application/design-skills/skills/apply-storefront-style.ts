@@ -5,7 +5,7 @@ import type { PageModel } from "@/domain/storefront";
 import type { DesignSkillDefinition } from "../contract";
 import { operationArraySchema, protectedDesignPaths, requiredValidationRules } from "./shared";
 
-export type StorefrontStyleDirection = "warmPremium" | "minimalNordic";
+export type StorefrontStyleDirection = "warmPremium" | "minimalNordic" | "warmApproachable";
 
 export const storefrontStyleComponents = [
   "announcementBar",
@@ -69,6 +69,27 @@ export const storefrontStyleDesignSystems = {
       bodyWeight: 400,
     },
     sectionTypography: "sans",
+  },
+  warmApproachable: {
+    colors: {
+      primary: "#8B573E",
+      secondary: "#5E6B4E",
+      accent: "#D69A62",
+      background: "#FFF8F0",
+      surface: "#FFFFFF",
+      text: "#2A211D",
+      mutedText: "#75645A",
+      border: "#E7D6C7",
+    },
+    typography: {
+      headingFont: "georgia",
+      bodyFont: "system-sans",
+      baseSize: 17,
+      scaleRatio: 1.25,
+      headingWeight: 600,
+      bodyWeight: 400,
+    },
+    sectionTypography: "serif",
   },
 } as const satisfies Record<
   StorefrontStyleDirection,
@@ -137,8 +158,13 @@ const sharedDefinition: Omit<
   optionalContext: [],
   allowedComponentTypes: [...storefrontStyleComponents],
   allowedOperationTypes: [
+    "CHANGE_SECTION_VARIANT",
     "CHANGE_BACKGROUND",
     "CHANGE_TYPOGRAPHY",
+    "CHANGE_DENSITY",
+    "CHANGE_SHAPE",
+    "REORDER_SECTIONS",
+    "APPLY_REGISTERED_PAGE_SECTIONS",
     "APPLY_APPROVED_BRAND_COLOURS",
     "APPLY_APPROVED_BRAND_TYPOGRAPHY",
   ],

@@ -31,6 +31,19 @@ export const visualSystemSchema = z
     buttonHierarchy: z.enum(["quiet", "balanced", "strong"]),
     imageTreatment: z.enum(["contained", "crop", "editorial"]),
     theme: z.enum(["light", "dark"]),
+    borderTreatment: z.enum(["none", "subtle", "defined"]).optional(),
+    surfaceDepth: z.enum(["flat", "subtle", "layered"]).optional(),
+    imageAspect: z.enum(["natural", "portrait", "landscape", "square"]).optional(),
+    cropTreatment: z.enum(["contain", "cover", "editorial"]).optional(),
+  })
+  .strict();
+
+export const semanticPresentationRolesSchema = z
+  .object({
+    emphasis: colorSchema,
+    success: colorSchema,
+    warning: colorSchema,
+    unavailable: colorSchema,
   })
   .strict();
 
@@ -109,6 +122,7 @@ export const brandSystemSchema = z
       .strict(),
     voice: brandVoiceSchema,
     visualSystem: visualSystemSchema.optional(),
+    semanticPresentation: semanticPresentationRolesSchema.optional(),
   })
   .strict();
 
@@ -138,7 +152,15 @@ const densityValues: Record<BrandSystem["spacing"]["density"], string> = {
 
 export function brandSystemToCssVariables(input: BrandSystem): Record<string, string> {
   const brand = brandSystemSchema.parse(input);
-  const visualSystem = brand.visualSystem ?? premiumVisualPresets.premiumEditorial;
+  const visualSystem = visualSystemSchema.parse(
+    brand.visualSystem ?? premiumVisualPresets.premiumEditorial,
+  );
+  const semanticPresentation = brand.semanticPresentation ?? {
+    emphasis: brand.colors.accent,
+    success: "#237A45",
+    warning: "#9A5B13",
+    unavailable: brand.colors.mutedText,
+  };
 
   return {
     "--brand-color-primary": brand.colors.primary,
@@ -149,6 +171,10 @@ export function brandSystemToCssVariables(input: BrandSystem): Record<string, st
     "--brand-color-text": brand.colors.text,
     "--brand-color-muted-text": brand.colors.mutedText,
     "--brand-color-border": brand.colors.border,
+    "--brand-color-emphasis": semanticPresentation.emphasis,
+    "--brand-color-success": semanticPresentation.success,
+    "--brand-color-warning": semanticPresentation.warning,
+    "--brand-color-unavailable": semanticPresentation.unavailable,
     "--brand-font-heading": fontStacks[brand.typography.headingFont],
     "--brand-font-body": fontStacks[brand.typography.bodyFont],
     "--brand-type-base-size": `${brand.typography.baseSize}px`,
@@ -169,6 +195,12 @@ export function brandSystemToCssVariables(input: BrandSystem): Record<string, st
     "--brand-button-hierarchy": visualSystem.buttonHierarchy,
     "--brand-image-treatment": visualSystem.imageTreatment,
     "--brand-theme": visualSystem.theme,
+    "--brand-border-treatment": visualSystem.borderTreatment ?? visualSystem.divider,
+    "--brand-surface-depth": visualSystem.surfaceDepth ?? visualSystem.surface,
+    "--brand-image-aspect": visualSystem.imageAspect ?? "natural",
+    "--brand-crop-treatment":
+      visualSystem.cropTreatment ??
+      (visualSystem.imageTreatment === "contained" ? "contain" : "cover"),
   };
 }
 
