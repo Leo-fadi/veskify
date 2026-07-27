@@ -14,7 +14,12 @@ import {
 } from "@/components/registry/design-vocabulary";
 import { brandSystemSchema } from "@/domain/design-system";
 import { idSchema, localeSchema, localizedTextSchema } from "@/domain/shared";
-import { pageModelSchema, type PageModel, type SectionInstance } from "@/domain/storefront";
+import {
+  pageModelSchema,
+  sectionInstanceSchema,
+  type PageModel,
+  type SectionInstance,
+} from "@/domain/storefront";
 
 const sectionTargetSchema = z.object({ sectionId: idSchema }).strict();
 
@@ -76,6 +81,13 @@ export const removeOptionalSectionOperationSchema = sectionTargetSchema
 export const reorderSectionsOperationSchema = z
   .object({ type: z.literal("REORDER_SECTIONS"), sectionIds: z.array(idSchema).min(1) })
   .strict();
+export const applyRegisteredPageSectionsOperationSchema = z
+  .object({
+    type: z.literal("APPLY_REGISTERED_PAGE_SECTIONS"),
+    sections: z.array(sectionInstanceSchema).min(1).max(200),
+    removedSectionIds: z.array(idSchema).max(200),
+  })
+  .strict();
 
 export const designOperationSchema = z.discriminatedUnion("type", [
   changeLocalizedSectionTextOperationSchema,
@@ -91,6 +103,7 @@ export const designOperationSchema = z.discriminatedUnion("type", [
   addApprovedSectionOperationSchema,
   removeOptionalSectionOperationSchema,
   reorderSectionsOperationSchema,
+  applyRegisteredPageSectionsOperationSchema,
 ]);
 
 export type DesignOperation = z.infer<typeof designOperationSchema>;
@@ -121,6 +134,21 @@ function assertGlobalComposition(original: PageModel, candidate: PageModel) {
       .some((section) => section.component !== "announcementBar")
   ) {
     throw new Error("Only announcement bars may precede the page header.");
+  }
+}
+
+function assertProtectedChromeIdentity(original: PageModel, candidate: PageModel) {
+  for (const component of ["header", "footer"] as const) {
+    const expected = original.sections.find((section) => section.component === component);
+    const actual = candidate.sections.find((section) => section.component === component);
+    if (
+      expected &&
+      (!actual ||
+        actual.id !== expected.id ||
+        JSON.stringify(actual.content) !== JSON.stringify(expected.content))
+    ) {
+      throw new Error(`Registered page composition must preserve the ${component} identity.`);
+    }
   }
 }
 
@@ -250,6 +278,27 @@ function applyDesignOperationInternal(
       }
       const byId = new Map(candidate.sections.map((section) => [section.id, section]));
       candidate.sections = operation.sectionIds.map((id) => structuredClone(byId.get(id)!));
+      break;
+    }
+    case "APPLY_REGISTERED_PAGE_SECTIONS": {
+      const originalIds = new Set(original.sections.map((section) => section.id));
+      const nextIds = new Set(operation.sections.map((section) => section.id));
+      const removedIds = original.sections
+        .filter((section) => !nextIds.has(section.id))
+        .map((section) => section.id)
+        .sort();
+      const declaredRemovedIds = [...operation.removedSectionIds].sort();
+      if (
+        new Set(declaredRemovedIds).size !== declaredRemovedIds.length ||
+        JSON.stringify(removedIds) !== JSON.stringify(declaredRemovedIds)
+      ) {
+        throw new Error("Registered page composition must declare every removed section exactly.");
+      }
+      if (operation.sections.some((section) => !originalIds.has(section.id) && !section.visible)) {
+        throw new Error("New registered sections must be visible when introduced.");
+      }
+      candidate.sections = structuredClone(operation.sections);
+      assertProtectedChromeIdentity(original, candidate);
       break;
     }
   }

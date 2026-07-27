@@ -74,6 +74,14 @@ export const supportedSectionManifest = {
     allowedPageTypes: ["product"] as const satisfies readonly PageType[],
     variants: ["grid"] as const,
   },
+  dynamicCollectionCommerce: {
+    allowedPageTypes: ["collection"] as const satisfies readonly PageType[],
+    variants: ["standard", "editorial", "compact", "gallery"] as const,
+  },
+  dynamicProductDetail: {
+    allowedPageTypes: ["product"] as const satisfies readonly PageType[],
+    variants: ["balanced", "editorial", "compact", "galleryDominant", "editorialSplit"] as const,
+  },
 } as const;
 
 export type SupportedSectionType = keyof typeof supportedSectionManifest;

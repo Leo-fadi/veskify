@@ -323,7 +323,7 @@ export function CampaignBanner({
   heading: LocalizedText;
   body: LocalizedText;
   cta: SafeLink;
-  media: AssetRef;
+  media?: AssetRef;
   mediaPosition: "left" | "right";
   ctaPresentation?: "primary" | "secondary" | "text";
   context: StorefrontRenderContext;
@@ -331,7 +331,7 @@ export function CampaignBanner({
 }) {
   return (
     <section className={`campaign-banner store-split--media-${mediaPosition} ${className ?? ""}`}>
-      <StorefrontImage asset={media} context={context} />
+      {media ? <StorefrontImage asset={media} context={context} /> : null}
       <div>
         <p className="store-eyebrow">
           {text({ en: "Aurum edit", fi: "Aurum-valikoima" }, context)}
@@ -360,7 +360,7 @@ export function BrandStory({
 }: {
   heading: LocalizedText;
   body: LocalizedText;
-  media: AssetRef;
+  media?: AssetRef;
   facts: Array<{ value: string; label: LocalizedText }>;
   imagePosition: "left" | "right";
   context: StorefrontRenderContext;
@@ -381,7 +381,7 @@ export function BrandStory({
           ))}
         </dl>
       </div>
-      <StorefrontImage asset={media} context={context} />
+      {media ? <StorefrontImage asset={media} context={context} /> : null}
     </section>
   );
 }

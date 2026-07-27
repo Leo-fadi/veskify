@@ -47,6 +47,7 @@ export const designOperationTypeSchema = z.enum([
   "ADD_APPROVED_SECTION",
   "REMOVE_OPTIONAL_SECTION",
   "REORDER_SECTIONS",
+  "APPLY_REGISTERED_PAGE_SECTIONS",
 ]);
 export const skillContextRequirementSchema = z.enum([
   "activeLocale",

@@ -319,14 +319,21 @@ export const campaignBannerDefinition = defineComponent({
   ),
 });
 
-export const brandStoryContentSchema = editorialContentSchema
-  .extend({
+export const brandStoryContentSchema = z
+  .object({
+    heading: localizedTextSchema,
+    body: localizedTextSchema,
+    media: assetRefSchema.optional(),
+    approvedAssetId: z.string().min(3).optional(),
     facts: z
       .array(z.object({ value: z.string().min(1).max(20), label: localizedTextSchema }).strict())
-      .min(1)
+      .min(0)
       .max(4),
   })
-  .strict();
+  .strict()
+  .refine((content) => content.media !== undefined || content.approvedAssetId !== undefined, {
+    message: "Brand story requires registered media or an approved asset reference.",
+  });
 export const brandStoryPropsSchema = z
   .object({
     imagePosition: z.enum(["left", "right"]),
@@ -372,7 +379,7 @@ export const brandStoryDefinition = defineComponent({
     alignment: sectionAlignmentEditorField,
     ...sectionStyleEditorFields,
   },
-  protectedFields: { readOnlyPaths: ["media.url"] },
+  protectedFields: { readOnlyPaths: ["media.url", "approvedAssetId"] },
   renderer: ({ variant, content, props, context }) => (
     <BrandStory
       {...content}
