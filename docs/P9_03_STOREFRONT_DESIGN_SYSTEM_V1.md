@@ -60,9 +60,12 @@ presentations. They select only `dynamicProductDetail` layout, gallery, option-d
 media presentation. The shared canonical option engine continues to own required groups,
 dependencies, disabled combinations, selected variant, SKU, price, availability and variant media.
 
-Every recipe begins with the protected header and ends with the protected footer. Optional content
-is explicit, accepted asset roles are listed, and responsive contracts cover mobile, tablet,
-desktop and wide breakpoints with horizontal overflow prohibited.
+Every recipe keeps the protected header as the first structural section and the protected footer
+last; an optional announcement bar is the only section allowed before the header. Campaign,
+brand-story, trust and newsletter positions are explicit in all homepage recipes, so existing
+optional sections retain stable semantic anchors instead of being bunched near the footer.
+Accepted asset roles are listed, and responsive contracts cover mobile, tablet, desktop and wide
+breakpoints with horizontal overflow prohibited.
 
 ## Registry, planner and proposal integration
 
@@ -71,15 +74,27 @@ Storefront Design System v1. The server-owned planning request carries this cont
 cannot submit, broaden or replace it.
 
 The canonical planner deterministically selects a registered direction from the approved brief's
-visual style, typography, imagery and tone signals. The plan records stable recipe, typography,
-image-treatment, product-card, collection and PDP capability IDs. Generated collection and PDP
-instances use the selected registered variants and props while retaining canonical bindings.
+visual style, typography, imagery and tone signals. That plan direction is the single authority for
+tokens, variants, spacing and recipes. A compatible merchant refinement may proceed, while a
+conflicting direction request fails with a merchant-safe validation response instead of producing a
+hybrid. The plan records stable recipe, typography, image-treatment, product-card, collection and
+PDP capability IDs. Generated collection and PDP instances use the selected registered variants and
+props while retaining canonical bindings.
 
-The plan-to-`ProposalEnvelope` path derives real bounded operations from the selection:
-component variants, semantic spacing/shape, section styling and recipe order. Therefore an
-editorial brief and a technical brief produce different registered structures and families rather
-than only different colours. All operations still pass the existing operation schema, protected
-field validation, proposal review and atomic application path.
+The plan-to-`ProposalEnvelope` path projects each validated page composition through one registered
+page operation. Collection and product legacy groups are replaced by
+`dynamicCollectionCommerce` and `dynamicProductDetail` in the actual reviewable editor snapshot,
+with only canonical IDs and projection revisions stored; Vesko remains the runtime source for
+price, SKU, availability, variants, options and media. Header/footer identity is preserved, and
+accept, undo and redo apply the complete multi-page composition atomically. Therefore an editorial
+brief and a technical brief produce different registered structures and families rather than only
+different colours.
+
+Required recipe sections reuse an existing compatible section first. When absent, the planner may
+materialize a stable registered section only from approved merchant content and a role-compatible
+approved asset. Missing content or media produces an actionable planning requirement; optional
+sections are never forced. Exact-palette requests remain a separate colour-only path with exactly
+one global colour grant and no page, section, typography, asset, order or structural authority.
 
 ## Merchant controls, EN/FI and responsive behaviour
 
@@ -88,8 +103,9 @@ no raw Puck fields, JSON, arbitrary CSS or unvalidated property path. Dynamic co
 controls remain bounded to registered enums and booleans; undo/redo continues through canonical
 design operations.
 
-All V2 component titles, descriptions, recipe names, typography/image labels and editable field
-labels carry English and Finnish values. Canonical merchant product names, descriptions and
+All V2 component titles, descriptions, variant names, recipe names, typography/image labels and
+editable field labels carry natural English and Finnish values; implementation tokens such as
+`fullBleed` are not exposed as merchant copy. Canonical merchant product names, descriptions and
 editorial content are never automatically translated.
 
 Responsive metadata requires reflow at 375, 768, 1024 and 1440 px, legible cards, bounded columns,

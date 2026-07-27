@@ -169,13 +169,13 @@ export function buildAiStorefrontProviderRequest(
       componentType: sectionTarget.componentType,
     },
   }));
-  if (target.designSystemTarget !== null) {
+  if (target.designSystemTarget !== null && plan.brandPalettePlan === null) {
     target.affectedPageIds.forEach((pageId) => {
       grants.push({
         skillId: skill.id,
         skillVersion: skill.version,
         skillScope: skill.scope,
-        operationTypes: ["REORDER_SECTIONS"],
+        operationTypes: ["APPLY_REGISTERED_PAGE_SECTIONS", "REORDER_SECTIONS"],
         target: { kind: "page", pageId },
       });
     });

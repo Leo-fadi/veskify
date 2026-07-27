@@ -340,7 +340,32 @@ export const wholeStorefrontGenerationPlanSchema = z
         "instance" in component ? component.instance.id : component.componentId,
       ),
     );
-    if (new Set(componentIds).size !== componentIds.length) {
+    const permittedReplacementIdentity = (componentId: string) => {
+      const matches = plan.pagePlans.flatMap((page) =>
+        page.components.filter((component) =>
+          "instance" in component
+            ? component.instance.id === componentId
+            : component.componentId === componentId,
+        ),
+      );
+      return (
+        matches.length === 2 &&
+        matches.some((component) => "componentId" in component) &&
+        matches.some(
+          (component) =>
+            "instance" in component &&
+            component.disposition === "replacement" &&
+            component.replacesComponentIds.includes(componentId),
+        )
+      );
+    };
+    if (
+      [...new Set(componentIds)].some(
+        (componentId) =>
+          componentIds.filter((candidate) => candidate === componentId).length > 1 &&
+          !permittedReplacementIdentity(componentId),
+      )
+    ) {
       context.addIssue({
         code: "custom",
         path: ["pagePlans"],
@@ -366,6 +391,8 @@ export type WholeStorefrontGenerationPlanErrorCode =
   | "unknown-component"
   | "incompatible-component-version"
   | "invalid-component-contract"
+  | "missing-required-recipe-content"
+  | "missing-required-recipe-asset"
   | "missing-required-asset-placement"
   | "stale-approved-asset"
   | "asset-role-slot-incompatible"

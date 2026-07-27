@@ -48,8 +48,18 @@ const pageRecipeSchema = z
         message: "Recipe slots must be unique.",
       });
     }
-    if (recipe.sections[0]?.component !== "header") {
-      context.addIssue({ code: "custom", path: ["sections", 0], message: "Header must be first." });
+    const headerIndex = recipe.sections.findIndex((section) => section.component === "header");
+    if (
+      headerIndex < 0 ||
+      recipe.sections
+        .slice(0, headerIndex)
+        .some((section) => section.component !== "announcementBar")
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["sections", Math.max(headerIndex, 0)],
+        message: "Only an announcement bar may precede the header.",
+      });
     }
     if (recipe.sections.at(-1)?.component !== "footer") {
       context.addIssue({ code: "custom", path: ["sections"], message: "Footer must be last." });

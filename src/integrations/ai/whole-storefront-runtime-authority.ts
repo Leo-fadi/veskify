@@ -13,7 +13,10 @@ import {
   createAiStorefrontProposalId,
   type AiStorefrontOperation,
 } from "@/application/ai-storefront";
-import { compileWholeStorefrontProposal } from "@/application/whole-storefront-proposal-lifecycle";
+import {
+  compileWholeStorefrontProposal,
+  type WholeStorefrontRuntimeComponent,
+} from "@/application/whole-storefront-proposal-lifecycle";
 import { validateDesignOperationAgainstPage } from "@/application/design-operations";
 import { getComponentDefinition } from "@/components/registry";
 import {
@@ -57,7 +60,12 @@ import {
   type StorefrontDesignBriefContract,
 } from "@/domain/source-discovery";
 import type { Locale } from "@/domain/shared";
-import { storefrontSnapshotSchema, type StorefrontSnapshot } from "@/domain/storefront";
+import {
+  storefrontSnapshotSchema,
+  type PageModel,
+  type SectionInstance,
+  type StorefrontSnapshot,
+} from "@/domain/storefront";
 import { canonicalValueFingerprint } from "@/domain/storefront";
 import type { ApprovedGenerationAssetContext } from "@/application/ai-storefront-generation";
 import {
@@ -265,25 +273,33 @@ function sameRequestPreconditions(
   );
 }
 
-function directionForPlan(
-  request: AiStorefrontProviderRequest,
-  plan: WholeStorefrontGenerationPlan,
-): StorefrontStyleDirection {
-  if (
-    request.permissionGrants.some((grant) => grant.skillId === "applyMinimalNordicStorefrontStyle")
-  ) {
-    return "minimalNordic";
-  }
+function directionForPlan(plan: WholeStorefrontGenerationPlan): StorefrontStyleDirection {
   if (plan.designSystemSelection.directionId === "modernTechnical") return "minimalNordic";
   if (plan.designSystemSelection.directionId === "warmApproachable") return "warmApproachable";
   return "warmPremium";
 }
 
-function recipeOrderedSectionIds(
-  page: AiStorefrontProviderRequest["affectedPages"][number],
+function assertRequestDirectionCompatible(
+  request: AiStorefrontProviderRequest,
+  plan: WholeStorefrontGenerationPlan,
+) {
+  if (request.brandPalettePlan !== null) return;
+  const skillIds = new Set(request.permissionGrants.map((grant) => grant.skillId));
+  if (
+    (skillIds.has("applyMinimalNordicStorefrontStyle") &&
+      plan.designSystemSelection.directionId !== "modernTechnical") ||
+    (skillIds.has("applyWarmPremiumStorefrontStyle") &&
+      plan.designSystemSelection.directionId === "modernTechnical")
+  ) {
+    throw new ServerWholeStorefrontAuthorityError("invalid");
+  }
+}
+
+function recipeOrderedSections(
+  page: Pick<PageModel, "type" | "sections">,
   plan: WholeStorefrontGenerationPlan,
   planningInput: WholeStorefrontPlanningInput,
-): string[] {
+): SectionInstance[] {
   const recipeId =
     page.type === "home"
       ? plan.designSystemSelection.homepageRecipeId
@@ -292,7 +308,7 @@ function recipeOrderedSectionIds(
         : page.type === "product"
           ? plan.designSystemSelection.productRecipeId
           : null;
-  if (recipeId === null) return page.sections.map((section) => section.id);
+  if (recipeId === null) return structuredClone(page.sections);
   const recipes = planningInput.recipeContext.designSystem;
   const recipe = [
     ...recipes.homepageRecipes,
@@ -301,20 +317,105 @@ function recipeOrderedSectionIds(
   ].find((candidate) => candidate.id === recipeId);
   if (!recipe) throw new ServerWholeStorefrontAuthorityError("malformed-state");
   const order = new Map(recipe.sections.map((section, index) => [section.component, index]));
-  return [...page.sections]
-    .map((section, originalIndex) => ({
-      section,
-      originalIndex,
-      recipeIndex: order.get(section.component),
-    }))
-    .sort((left, right) => {
-      if (left.section.component === "footer") return 1;
-      if (right.section.component === "footer") return -1;
-      const leftIndex = left.recipeIndex ?? recipe.sections.length + left.originalIndex;
-      const rightIndex = right.recipeIndex ?? recipe.sections.length + right.originalIndex;
-      return leftIndex - rightIndex || left.originalIndex - right.originalIndex;
-    })
-    .map(({ section }) => section.id);
+  const result = structuredClone(page.sections);
+  const mappedPositions = result.flatMap((section, index) =>
+    order.has(section.component) ? [index] : [],
+  );
+  const mappedSections = mappedPositions
+    .map((index) => ({ section: result[index], originalIndex: index }))
+    .sort(
+      (left, right) =>
+        order.get(left.section.component)! - order.get(right.section.component)! ||
+        left.originalIndex - right.originalIndex,
+    );
+  mappedPositions.forEach((position, index) => {
+    result[position] = mappedSections[index].section;
+  });
+  return result;
+}
+
+function projectedRuntimeSection(component: WholeStorefrontRuntimeComponent): SectionInstance {
+  if (component.component === "dynamicCollectionCommerce") {
+    const collection = component.bindings.find((binding) => binding.source === "collection");
+    const products = component.bindings.find((binding) => binding.source === "productList");
+    if (!collection || !products || collection.revision !== products.revision) {
+      throw new ServerWholeStorefrontAuthorityError("malformed-state");
+    }
+    return {
+      id: component.id,
+      component: component.component,
+      variant: component.variant,
+      visible: component.visible,
+      content: {
+        ...structuredClone(component.content),
+        collectionId: collection.collectionId,
+        productIds: [...products.productIds],
+        canonicalRevision: collection.revision,
+      },
+      props: structuredClone(component.props),
+    };
+  }
+  if (component.component === "dynamicProductDetail") {
+    const product = component.bindings.find((binding) => binding.source === "product");
+    const related = component.bindings.find((binding) => binding.source === "productList");
+    if (!product) throw new ServerWholeStorefrontAuthorityError("malformed-state");
+    return {
+      id: component.id,
+      component: component.component,
+      variant: component.variant,
+      visible: component.visible,
+      content: {
+        ...structuredClone(component.content),
+        productId: product.productId,
+        relatedProductIds: related ? [...related.productIds] : [],
+        canonicalRevision: product.revision,
+      },
+      props: structuredClone(component.props),
+    };
+  }
+  return {
+    id: component.id,
+    component: component.component,
+    variant: component.variant,
+    visible: component.visible,
+    content: structuredClone(component.content),
+    props: structuredClone(component.props),
+  };
+}
+
+function styledProjectedPage(
+  currentPage: PageModel,
+  components: readonly WholeStorefrontRuntimeComponent[],
+  plan: WholeStorefrontGenerationPlan,
+  planningInput: WholeStorefrontPlanningInput,
+  direction: StorefrontStyleDirection,
+): PageModel {
+  const page: PageModel = {
+    ...structuredClone(currentPage),
+    sections: components.map(projectedRuntimeSection),
+  };
+  page.sections = page.sections.map((section) => {
+    const definition = getComponentDefinition(section.component);
+    const variant = plan.designSystemSelection.sectionVariants[section.component];
+    return {
+      ...section,
+      variant: variant && definition.variants.includes(variant) ? variant : section.variant,
+      props: {
+        ...section.props,
+        ...(definition.editorFields.density
+          ? { density: plan.designSystemSelection.spacingDensity }
+          : {}),
+        ...(definition.editorFields.shape
+          ? { shape: plan.designSystemSelection.cornerTreatment }
+          : {}),
+      },
+    };
+  });
+  page.sections = recipeOrderedSections(page, plan, planningInput);
+  return createStorefrontStyleOperations(page, direction).reduce(
+    (working, operation) => validateDesignOperationAgainstPage(working, operation),
+    page,
+  );
 }
 
 function projectPlanOperations(
@@ -330,89 +431,49 @@ function projectPlanOperations(
     typography?: typeof request.storefront.brandSystem.typography;
   } | null;
 } {
-  const direction = directionForPlan(request, plan);
+  assertRequestDirectionCompatible(request, plan);
+  const direction = directionForPlan(plan);
   const operations: AiStorefrontOperation[] = [];
   const add = (
     target: AiStorefrontOperation["target"],
     operation: AiStorefrontOperation["operation"],
   ) => operations.push({ order: operations.length, target, operation });
-  if (request.target.designSystemTarget !== null) {
+  if (request.target.designSystemTarget !== null && request.brandPalettePlan !== null) {
+    add(request.target.designSystemTarget, {
+      type: "APPLY_APPROVED_BRAND_COLOURS",
+      colors: request.brandPalettePlan.colors,
+    });
+  } else if (request.target.designSystemTarget !== null) {
     createStorefrontDesignSystemOperations(direction).forEach((operation) =>
       add(request.target.designSystemTarget!, operation),
     );
   }
-  wholeStorefrontProposal.proposedStorefront.pages.forEach((plannedPage) => {
-    if (!request.target.affectedPageIds.includes(plannedPage.pageId)) return;
-    const currentPage = request.affectedPages.find((page) => page.id === plannedPage.pageId);
-    const plannedSectionIds = plannedPage.components.map((component) => component.id);
-    const currentSectionIds = currentPage?.sections.map((section) => section.id) ?? [];
-    if (
-      currentPage &&
-      plannedSectionIds.length === currentSectionIds.length &&
-      plannedSectionIds.every((sectionId) => currentSectionIds.includes(sectionId)) &&
-      plannedSectionIds.some((sectionId, index) => sectionId !== currentSectionIds[index])
-    ) {
+  if (request.brandPalettePlan === null) {
+    wholeStorefrontProposal.proposedStorefront.pages.forEach((plannedPage) => {
+      if (!request.target.affectedPageIds.includes(plannedPage.pageId)) return;
+      const currentPage = request.affectedPages.find((page) => page.id === plannedPage.pageId);
+      if (!currentPage) return;
+      const projectedPage = styledProjectedPage(
+        currentPage,
+        plannedPage.components,
+        plan,
+        planningInput,
+        direction,
+      );
+      const projectedIds = new Set(projectedPage.sections.map((section) => section.id));
+      const removedSectionIds = currentPage.sections
+        .filter((section) => !projectedIds.has(section.id))
+        .map((section) => section.id);
       add(
         { kind: "page", pageId: plannedPage.pageId },
-        { type: "REORDER_SECTIONS", sectionIds: plannedSectionIds },
+        {
+          type: "APPLY_REGISTERED_PAGE_SECTIONS",
+          sections: projectedPage.sections,
+          removedSectionIds,
+        },
       );
-    }
-  });
-  request.affectedPages.forEach((page) => {
-    if (!request.target.affectedPageIds.includes(page.id)) return;
-    page.sections.forEach((section) => {
-      const definition = getComponentDefinition(section.component);
-      const variant = plan.designSystemSelection.sectionVariants[section.component];
-      if (variant && variant !== section.variant && definition.variants.includes(variant)) {
-        add(
-          { kind: "section", pageId: page.id, sectionId: section.id },
-          { type: "CHANGE_SECTION_VARIANT", sectionId: section.id, variant },
-        );
-      }
-      if (definition.editorFields.density) {
-        add(
-          { kind: "section", pageId: page.id, sectionId: section.id },
-          {
-            type: "CHANGE_DENSITY",
-            sectionId: section.id,
-            density: plan.designSystemSelection.spacingDensity,
-          },
-        );
-      }
-      if (definition.editorFields.shape) {
-        add(
-          { kind: "section", pageId: page.id, sectionId: section.id },
-          {
-            type: "CHANGE_SHAPE",
-            sectionId: section.id,
-            shape: plan.designSystemSelection.cornerTreatment,
-          },
-        );
-      }
     });
-    const sectionIds = recipeOrderedSectionIds(page, plan, planningInput);
-    const currentIds = page.sections.map((section) => section.id);
-    if (sectionIds.some((sectionId, index) => sectionId !== currentIds[index])) {
-      add({ kind: "page", pageId: page.id }, { type: "REORDER_SECTIONS", sectionIds });
-    }
-  });
-  const planPages = new Set(plan.pagePlans.map((page) => page.pageId));
-  const sectionTargets = new Set(
-    request.target.affectedSectionTargets.map((target) => `${target.pageId}:${target.sectionId}`),
-  );
-  request.target.affectedPageIds.forEach((pageId) => {
-    if (!planPages.has(pageId)) return;
-    const page = request.affectedPages.find((candidate) => candidate.id === pageId);
-    if (!page) return;
-    createStorefrontStyleOperations(page, direction).forEach((operation) => {
-      if (
-        !("sectionId" in operation) ||
-        (sectionTargets.size > 0 && !sectionTargets.has(`${pageId}:${operation.sectionId}`))
-      )
-        return;
-      add({ kind: "section", pageId, sectionId: operation.sectionId }, operation);
-    });
-  });
+  }
   const proposedStorefront = structuredClone(request.storefront);
   let affectedDesignState: {
     colors?: typeof request.storefront.brandSystem.colors;

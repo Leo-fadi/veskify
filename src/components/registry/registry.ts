@@ -15,12 +15,14 @@ import { aurumHeroDefinition } from "./aurum-hero";
 import { collectionDefinitions } from "./collection";
 import { homepageDefinitions } from "./homepage";
 import { productDefinitions } from "./product";
+import { dynamicCommerceBridgeDefinitions } from "./dynamic-commerce-bridge";
 import type { ComponentDefinition, StorefrontRenderContext } from "./contract";
 
 export const veskifyComponentRegistry = {
   ...homepageDefinitions,
   ...collectionDefinitions,
   ...productDefinitions,
+  ...dynamicCommerceBridgeDefinitions,
   hero: aurumHeroDefinition,
 } as const satisfies Record<string, ComponentDefinition>;
 

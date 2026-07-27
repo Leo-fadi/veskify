@@ -5,9 +5,11 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import {
+  aiStorefrontProviderResponseSchema,
   buildAiStorefrontProviderRequest,
   type AiStorefrontGenerationCommand,
 } from "@/application/ai-storefront-generation";
+import { StorefrontProposalAcceptanceCoordinator } from "@/application/ai-storefront";
 import {
   createDeterministicWholeStorefrontPlanningProvider,
   createWholeStorefrontGenerationPlan,
@@ -25,6 +27,7 @@ import {
   createStandaloneServerWholeStorefrontPlanningAuthority,
 } from "@/integrations/ai/whole-storefront-runtime-authority";
 import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/route";
+import { canonicalValueFingerprint } from "@/domain/storefront";
 
 type Seed = typeof aurumNordicSeed | typeof karvonenSeed;
 
@@ -33,7 +36,7 @@ async function planningInput(
   direction?: {
     visualStyleDirection: "minimal" | "editorial" | "natural";
     typographyDirection: "sans-led" | "serif-led" | "soft";
-    imageryDirection: "studio" | "editorial" | "product-focused";
+    imageryDirection: "studio" | "editorial" | "product-focused" | "lifestyle";
     toneKeywords: ("elegant" | "modern" | "warm" | "minimal" | "technical")[];
   },
 ) {
@@ -65,7 +68,10 @@ async function planningInput(
   };
 }
 
-function requestFor(seed: Seed): ReturnType<typeof buildAiStorefrontProviderRequest> {
+function requestFor(
+  seed: Seed,
+  merchantInstruction = "Apply a warm premium style across the storefront.",
+): ReturnType<typeof buildAiStorefrontProviderRequest> {
   const snapshot = seed.draftSnapshot;
   const command: AiStorefrontGenerationCommand = {
     projectId: seed.project.id,
@@ -80,7 +86,7 @@ function requestFor(seed: Seed): ReturnType<typeof buildAiStorefrontProviderRequ
     affectedPageIds: snapshot.pages.map((page) => page.id),
     affectedSectionTargets: [],
     designSystemTarget: { kind: "storefrontDesignSystem", projectId: seed.project.id },
-    merchantInstruction: "Apply a warm premium style across the storefront.",
+    merchantInstruction,
     activeLocale: seed.project.primaryLocale,
     enabledLocales: seed.project.enabledLocales,
     requestedScope: "storefront",
@@ -126,7 +132,13 @@ describe("P9-03 Storefront Design System v1", () => {
       ...storefrontDesignSystemV1.productRecipes,
     ];
     recipes.forEach((recipe) => {
-      expect(recipe.sections[0]?.component).toBe("header");
+      const headerIndex = recipe.sections.findIndex((section) => section.component === "header");
+      expect(headerIndex).toBeGreaterThanOrEqual(0);
+      expect(
+        recipe.sections
+          .slice(0, headerIndex)
+          .every((section) => section.component === "announcementBar"),
+      ).toBe(true);
       expect(recipe.sections.at(-1)?.component).toBe("footer");
       recipe.sections.forEach((section) => {
         const definition = definitions.get(section.component);
@@ -196,7 +208,55 @@ describe("P9-03 Storefront Design System v1", () => {
     expect(technical.canonicalCommerceBindings).toEqual(premium.canonicalCommerceBindings);
   });
 
-  it("returns plan-derived structural proposal operations through the runtime authority", async () => {
+  it("materializes a missing required recipe section only from approved content and assets", async () => {
+    const missingAsset = await planningInput(aurumNordicSeed, {
+      visualStyleDirection: "natural",
+      typographyDirection: "soft",
+      imageryDirection: "lifestyle",
+      toneKeywords: ["warm"],
+    });
+    const home = missingAsset.draft.pages.find((page) => page.type === "home")!;
+    home.sections = home.sections.filter((section) => section.component !== "brandStory");
+    expect(() => createWholeStorefrontGenerationPlan(missingAsset)).toThrow(
+      /approve an editorial image/i,
+    );
+
+    const valid = structuredClone(missingAsset);
+    const warmRecipe = valid.recipeContext.designSystem.homepageRecipes.find(
+      (recipe) => recipe.id === "homeWarmStory",
+    )!;
+    const story = warmRecipe.sections.find((section) => section.component === "brandStory")!;
+    story.acceptedAssetRoles = ["logo"];
+    const designSystemMaterial: Partial<typeof valid.recipeContext.designSystem> = structuredClone(
+      valid.recipeContext.designSystem,
+    );
+    delete designSystemMaterial.fingerprint;
+    valid.recipeContext.designSystem.fingerprint = `storefront-design-system-${canonicalValueFingerprint(designSystemMaterial)}`;
+    valid.recipeContext.fingerprint = `storefront-recipes-${canonicalValueFingerprint({
+      templates: [...valid.recipeContext.templates].sort((left, right) =>
+        left.id.localeCompare(right.id),
+      ),
+      designSystem: valid.recipeContext.designSystem,
+    })}`;
+    const plan = createWholeStorefrontGenerationPlan(valid);
+    const generatedStory = plan.pagePlans
+      .find((page) => page.role === "homepage")!
+      .components.find(
+        (component) => "instance" in component && component.instance.component === "brandStory",
+      );
+    expect(generatedStory).toMatchObject({
+      disposition: "added",
+      instance: {
+        variant: "editorial",
+        content: {
+          heading: { en: aurumNordicSeed.project.name, fi: aurumNordicSeed.project.name },
+          facts: [],
+        },
+      },
+    });
+  });
+
+  it("returns an atomic registered composition with dynamic commerce through the runtime authority", async () => {
     const handler = createWholeStorefrontPlanningRouteHandler({
       authority: createStandaloneServerWholeStorefrontPlanningAuthority(),
       selectProvider: createDeterministicWholeStorefrontPlanningProvider,
@@ -207,29 +267,99 @@ describe("P9-03 Storefront Design System v1", () => {
         body: JSON.stringify(requestFor(karvonenSeed)),
       }),
     );
-    const body = (await response.json()) as {
-      proposal: {
-        proposal: {
-          operations: {
-            operation: { type: string; variant?: string; sectionIds?: string[] };
-          }[];
-          proposedStorefront: { pages: { sections: { component: string; variant: string }[] }[] };
-        };
-      };
-    };
+    const body = (await response.json()) as { proposal: unknown };
     expect(response.status, JSON.stringify(body)).toBe(200);
+    const envelope = aiStorefrontProviderResponseSchema.parse(body.proposal);
     expect(
-      body.proposal.proposal.operations.some(
-        ({ operation }) =>
-          operation.type === "CHANGE_SECTION_VARIANT" || operation.type === "REORDER_SECTIONS",
+      envelope.proposal.operations.some(
+        ({ operation }) => operation.type === "APPLY_REGISTERED_PAGE_SECTIONS",
       ),
     ).toBe(true);
-    expect(
-      body.proposal.proposal.proposedStorefront.pages.flatMap((page) => page.sections),
-    ).toEqual(
+    const proposedSections = envelope.proposal.proposedStorefront.pages.flatMap(
+      (page) => page.sections,
+    );
+    expect(proposedSections).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ component: "hero", variant: "fullBleed" }),
       ]),
+    );
+    const dynamicCollection = proposedSections.find(
+      (section) => section.component === "dynamicCollectionCommerce",
+    )!;
+    const dynamicProduct = proposedSections.find(
+      (section) => section.component === "dynamicProductDetail",
+    )!;
+    expect(typeof dynamicCollection.content.collectionId).toBe("string");
+    expect(Array.isArray(dynamicCollection.content.productIds)).toBe(true);
+    expect(typeof dynamicCollection.content.canonicalRevision).toBe("string");
+    expect(typeof dynamicProduct.content.productId).toBe("string");
+    expect(typeof dynamicProduct.content.canonicalRevision).toBe("string");
+    const dynamicContent = proposedSections
+      .filter((section) =>
+        ["dynamicCollectionCommerce", "dynamicProductDetail"].includes(section.component),
+      )
+      .map((section) => section.content);
+    expect(JSON.stringify(dynamicContent)).not.toMatch(
+      /"(?:price|sku|availability|stock|variants|media)":/i,
+    );
+    const coordinator = new StorefrontProposalAcceptanceCoordinator({
+      proposal: envelope.proposal,
+      activeDraft: structuredClone(karvonenSeed.draftSnapshot),
+      storedDraft: structuredClone(karvonenSeed.draftSnapshot),
+      publishedSnapshot: structuredClone(karvonenSeed.publishedSnapshot),
+      catalogue: structuredClone(karvonenSeed.catalogue),
+      enabledLocales: karvonenSeed.project.enabledLocales,
+      activeLocale: karvonenSeed.project.primaryLocale,
+      primaryLocale: karvonenSeed.project.primaryLocale,
+    });
+    const accepted = coordinator.accept();
+    expect(accepted.state).toBe("accepted");
+    expect(coordinator.undo()).toEqual(karvonenSeed.draftSnapshot);
+    expect(coordinator.redo()).toEqual(accepted.activeDraft);
+  });
+
+  it("rejects an incompatible request direction and accepts the matching brief direction", async () => {
+    const instruction = "Use a minimal Nordic colour and typography direction throughout the site.";
+    const incompatibleHandler = createWholeStorefrontPlanningRouteHandler({
+      authority: createStandaloneServerWholeStorefrontPlanningAuthority(),
+      selectProvider: createDeterministicWholeStorefrontPlanningProvider,
+    });
+    const incompatible = await incompatibleHandler(
+      new Request("http://localhost/api/ai/whole-storefront-proposals", {
+        method: "POST",
+        body: JSON.stringify(requestFor(aurumNordicSeed, instruction)),
+      }),
+    );
+    const baseSource = createStandaloneAuthoritativeWholeStorefrontPlanningContextSource();
+    const compatibleHandler = createWholeStorefrontPlanningRouteHandler({
+      authority: createStandaloneServerWholeStorefrontPlanningAuthority({
+        contextSource: {
+          async load(input) {
+            const context = structuredClone(await baseSource.load(input));
+            Object.assign(context.brief.approvedBrandDirection!, {
+              visualStyleDirection: "minimal",
+              typographyDirection: "sans-led",
+              imageryDirection: "product-focused",
+              toneKeywords: ["minimal", "technical"],
+            });
+            return context;
+          },
+        },
+      }),
+      selectProvider: createDeterministicWholeStorefrontPlanningProvider,
+    });
+    const compatible = await compatibleHandler(
+      new Request("http://localhost/api/ai/whole-storefront-proposals", {
+        method: "POST",
+        body: JSON.stringify(requestFor(aurumNordicSeed, instruction)),
+      }),
+    );
+    const compatibleBody = (await compatible.json()) as { proposal: unknown };
+    const compatibleEnvelope = aiStorefrontProviderResponseSchema.parse(compatibleBody.proposal);
+    expect(incompatible.status).toBe(400);
+    expect(compatible.status).toBe(200);
+    expect(compatibleEnvelope.proposal.proposedStorefront.brandSystem.typography.headingFont).toBe(
+      "system-sans",
     );
   });
 
@@ -266,6 +396,14 @@ describe("P9-03 Storefront Design System v1", () => {
       definition.editablePresentationFields.forEach((field) => {
         expect(field.label.en).toBeTruthy();
         expect(field.label.fi).toBeTruthy();
+      });
+      definition.variants.forEach((variant) => {
+        expect(variant.title.en).toBeTruthy();
+        expect(variant.title.fi).toBeTruthy();
+        if (/[A-Z]/u.test(variant.id)) {
+          expect(variant.title.en).not.toBe(variant.id);
+          expect(variant.title.fi).not.toBe(variant.id);
+        }
       });
     });
   });

@@ -14,6 +14,12 @@ import {
 } from "@/domain/component-platform";
 import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 import {
+  dynamicCollectionCommerceBridgeContentSchema,
+  dynamicProductDetailBridgeContentSchema,
+} from "@/components/registry/dynamic-commerce-bridge";
+import { dynamicCollectionCommerceDefaultStyleOverrides } from "@/components/registry/dynamic-collection-commerce";
+import { dynamicProductDetailDefaultStyleOverrides } from "@/components/registry/dynamic-product-detail";
+import {
   wholeStorefrontProposalCompilationInputSchema,
   wholeStorefrontProposalSchema,
   type WholeStorefrontProposal,
@@ -116,16 +122,62 @@ function sourceComponent(
       "The validated plan does not contain a supported V2 operation for existing section style overrides.",
     );
   }
+  let content = structuredClone(section.content);
+  let bindings: ComponentInstanceV2["bindings"] = [];
+  let styleOverrides: ComponentInstanceV2["styleOverrides"] = {};
+  if (section.component === "dynamicCollectionCommerce") {
+    const { collectionId, productIds, canonicalRevision, ...presentationContent } =
+      dynamicCollectionCommerceBridgeContentSchema.parse(content);
+    content = presentationContent;
+    styleOverrides = structuredClone(dynamicCollectionCommerceDefaultStyleOverrides);
+    bindings = [
+      {
+        slotId: "primaryCollection",
+        source: "collection",
+        collectionId,
+        revision: canonicalRevision,
+      },
+      {
+        slotId: "collectionProducts",
+        source: "productList",
+        productIds,
+        revision: canonicalRevision,
+      },
+    ];
+  } else if (section.component === "dynamicProductDetail") {
+    const { productId, relatedProductIds, canonicalRevision, ...presentationContent } =
+      dynamicProductDetailBridgeContentSchema.parse(content);
+    content = presentationContent;
+    styleOverrides = structuredClone(dynamicProductDetailDefaultStyleOverrides);
+    bindings = [
+      {
+        slotId: "primaryProduct",
+        source: "product",
+        productId,
+        revision: canonicalRevision,
+      },
+      ...(relatedProductIds.length > 0
+        ? [
+            {
+              slotId: "relatedProducts",
+              source: "productList" as const,
+              productIds: relatedProductIds,
+              revision: canonicalRevision,
+            },
+          ]
+        : []),
+    ];
+  }
   return {
     ...componentInstanceV2Schema.parse({
       id: section.id,
       component: section.component,
       componentVersion: expected.componentVersion,
       variant: section.variant,
-      content: structuredClone(section.content),
+      content,
       props: structuredClone(section.props),
-      styleOverrides: {},
-      bindings: [],
+      styleOverrides,
+      bindings,
       assetAssignments: [],
     }),
     visible: section.visible,
@@ -311,7 +363,11 @@ function plannedPage(
   }
   const removedComponentIds = originalPage
     ? originalPage.components
-        .filter((component) => replacementByTarget.has(component.id))
+        .filter(
+          (component) =>
+            replacementByTarget.has(component.id) &&
+            !components.some((candidate) => candidate.id === component.id),
+        )
         .map((component) => component.id)
     : [];
   const page = {
