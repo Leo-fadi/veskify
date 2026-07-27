@@ -264,7 +264,15 @@ function sameRequestPreconditions(
   );
 }
 
-function directionForPlan(plan: WholeStorefrontGenerationPlan): StorefrontStyleDirection {
+function directionForPlan(
+  request: AiStorefrontProviderRequest,
+  plan: WholeStorefrontGenerationPlan,
+): StorefrontStyleDirection {
+  if (
+    request.permissionGrants.some((grant) => grant.skillId === "applyMinimalNordicStorefrontStyle")
+  ) {
+    return "minimalNordic";
+  }
   return plan.sharedDesignDirection.visualStyleDirection === "minimal"
     ? "minimalNordic"
     : "warmPremium";
@@ -282,7 +290,7 @@ function projectPlanOperations(
     typography?: typeof request.storefront.brandSystem.typography;
   } | null;
 } {
-  const direction = directionForPlan(plan);
+  const direction = directionForPlan(request, plan);
   const operations: AiStorefrontOperation[] = [];
   const add = (
     target: AiStorefrontOperation["target"],
@@ -399,8 +407,8 @@ function planDerivedProposalEnvelope(input: {
       operations,
       assetPlacementOperations: structuredClone(input.plan.approvedAssetPlacements),
       summary: {
-        en: `Prepared from approved whole-storefront plan ${wholeStorefrontProposal.id}. ${input.plan.reviewSummary.sharedDesignSystemChanges.join(" ")}`,
-        fi: `Valmisteltu hyväksytystä koko kaupan suunnitelmasta ${wholeStorefrontProposal.id}. ${input.plan.reviewSummary.sharedDesignSystemChanges.join(" ")}`,
+        en: `Prepared from your approved storefront plan. ${input.plan.reviewSummary.sharedDesignSystemChanges.join(" ")}`,
+        fi: `Valmisteltu hyväksytystä kauppasi suunnitelmasta. ${input.plan.reviewSummary.sharedDesignSystemChanges.join(" ")}`,
       },
       validation: { valid: true, errors: [] },
       status: "pending",
