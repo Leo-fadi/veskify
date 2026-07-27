@@ -11,6 +11,7 @@ import type { AiStorefrontProjection } from "@/application/ai-storefront";
 import {
   createDeterministicWholeStorefrontPlanningProvider,
   createWholeStorefrontGenerationPlan,
+  createWholeStorefrontRecipeContext,
   wholeStorefrontPlanningInputSchema,
   WholeStorefrontPlanningProviderError,
   type WholeStorefrontPlanningInput,
@@ -103,6 +104,7 @@ function planningInput(): WholeStorefrontPlanningInput {
     draft: structuredClone(snapshot),
     catalogue: structuredClone(aurumNordicSeed.catalogue),
     componentDefinitions: structuredClone(veskifyComponentDefinitionsV2),
+    recipeContext: createWholeStorefrontRecipeContext(),
     approvedAssetContext: null,
     requiredAssetPlacements: [],
   });

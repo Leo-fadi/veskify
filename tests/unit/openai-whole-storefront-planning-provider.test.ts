@@ -7,6 +7,7 @@ vi.mock("server-only", () => ({}));
 import {
   buildWholeStorefrontPlanningProviderRequest,
   createDeterministicWholeStorefrontPlanningProvider,
+  createWholeStorefrontRecipeContext,
   requestWholeStorefrontGenerationPlan,
   type WholeStorefrontPlanningProvider,
 } from "@/application/whole-storefront-generation-plan";
@@ -110,6 +111,7 @@ function planningInput() {
     draft: structuredClone(aurumNordicSeed.draftSnapshot),
     catalogue: structuredClone(aurumNordicSeed.catalogue),
     componentDefinitions: structuredClone(veskifyComponentDefinitionsV2),
+    recipeContext: createWholeStorefrontRecipeContext(),
     approvedAssetContext: {
       ...assetContextValue,
       fingerprint: createApprovedGenerationAssetContextFingerprint(assetContextValue),

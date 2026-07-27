@@ -3,6 +3,7 @@ import {
   acceptWholeStorefrontPlanningResult,
   createWholeStorefrontGenerationPlan,
   createWholeStorefrontGenerationTarget,
+  createWholeStorefrontRecipeContext,
   validateWholeStorefrontGenerationPlan,
 } from "@/application/whole-storefront-generation-plan";
 import { createApprovedGenerationAssetContextFingerprint } from "@/application/ai-storefront-generation";
@@ -119,6 +120,7 @@ function input(overrides: Record<string, unknown> = {}) {
     draft: structuredClone(aurumNordicSeed.draftSnapshot),
     catalogue: structuredClone(aurumNordicSeed.catalogue),
     componentDefinitions: structuredClone(veskifyComponentDefinitionsV2),
+    recipeContext: createWholeStorefrontRecipeContext(),
     approvedAssetContext: null,
     requiredAssetPlacements: [],
     ...overrides,

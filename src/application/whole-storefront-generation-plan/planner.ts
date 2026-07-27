@@ -204,6 +204,7 @@ export function createWholeStorefrontGenerationTarget(
   }
   const activeDraftFingerprint = fingerprint(input.draft, "draft");
   const registryFingerprint = fingerprint(definitions, "component-registry");
+  const recipeFingerprint = input.recipeContext.fingerprint;
   const brandSystemFingerprint = fingerprint(input.draft.brandSystem, "brand-system");
   const canonicalCommerceFingerprint = fingerprint(input.catalogue, "canonical-commerce");
   const targetWithoutFingerprint = {
@@ -235,6 +236,7 @@ export function createWholeStorefrontGenerationTarget(
       version: definition.version,
     })),
     registryFingerprint,
+    recipeFingerprint,
     brandSystemFingerprint,
     canonicalCommerceFingerprint,
     approvedAssetContextFingerprint: input.approvedAssetContext?.fingerprint ?? null,
@@ -1019,6 +1021,7 @@ export function createWholeStorefrontGenerationPlan(
         briefFingerprint: input.brief.fingerprint,
         evidenceFingerprint: input.brief.approvedEvidenceFingerprint,
         approvedAssetContextFingerprint: input.approvedAssetContext?.fingerprint ?? null,
+        recipeContextFingerprint: input.recipeContext.fingerprint,
         requiredAssetPlacements: approvedAssetPlacements,
       },
       "whole-storefront-request",
@@ -1029,6 +1032,7 @@ export function createWholeStorefrontGenerationPlan(
     evidenceFingerprint: input.brief.approvedEvidenceFingerprint,
     approvedAssetContextFingerprint: input.approvedAssetContext?.fingerprint ?? null,
     componentRegistryFingerprint: target.registryFingerprint,
+    recipeContextFingerprint: input.recipeContext.fingerprint,
     languagePlan: {
       primaryLanguage: input.brief.languagePlan.primaryLanguage,
       selectedLanguages: canonicalLocaleOrder(input.brief.languagePlan.selectedLanguages),
@@ -1072,7 +1076,7 @@ export async function acceptWholeStorefrontPlanningResult(
 ): Promise<WholeStorefrontGenerationPlan> {
   const expected = createWholeStorefrontGenerationPlan(inputValue);
   const received = await result;
-  const current = createWholeStorefrontGenerationPlan(currentInput());
+  const current = createWholeStorefrontGenerationPlan(await currentInput());
   if (current.requestFingerprint !== expected.requestFingerprint) {
     invalid("stale-result", "The storefront changed while its generation plan was being prepared.");
   }

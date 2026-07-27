@@ -11,7 +11,8 @@ import {
 import { catalogueDisplayModelSchema } from "@/domain/catalogue";
 import { storefrontDesignBriefContractSchema } from "@/domain/source-discovery";
 import { localeSchema, idSchema } from "@/domain/shared";
-import { storefrontSnapshotSchema } from "@/domain/storefront";
+import { canonicalValueFingerprint, storefrontSnapshotSchema } from "@/domain/storefront";
+import { storefrontTemplateDefinitionSchema } from "@/application/storefront-templates";
 
 export const WHOLE_STOREFRONT_GENERATION_PLAN_SCHEMA_VERSION = 1 as const;
 
@@ -28,6 +29,28 @@ const componentVersionReferenceSchema = z
       .strict(),
   })
   .strict();
+
+/**
+ * The approved page and section recipes are owned by the storefront-template
+ * registry.  Whole-storefront planning consumes that existing contract rather
+ * than maintaining a second recipe vocabulary.
+ */
+export const wholeStorefrontRecipeContextSchema = z
+  .object({
+    templates: z.array(storefrontTemplateDefinitionSchema).min(1),
+    fingerprint: fingerprintSchema,
+  })
+  .strict()
+  .superRefine((context, refinement) => {
+    const templates = [...context.templates].sort((left, right) => left.id.localeCompare(right.id));
+    if (context.fingerprint !== `storefront-recipes-${canonicalValueFingerprint(templates)}`) {
+      refinement.addIssue({
+        code: "custom",
+        path: ["fingerprint"],
+        message: "The approved storefront recipe context fingerprint is stale.",
+      });
+    }
+  });
 
 export const wholeStorefrontProjectTargetSchema = z
   .object({
@@ -53,6 +76,7 @@ export const wholeStorefrontPlanningInputSchema = z
     draft: storefrontSnapshotSchema,
     catalogue: catalogueDisplayModelSchema,
     componentDefinitions: z.array(componentDefinitionV2Schema).min(1),
+    recipeContext: wholeStorefrontRecipeContextSchema,
     approvedAssetContext: approvedGenerationAssetContextSchema.nullable(),
     requiredAssetPlacements: z.array(approvedAssetPlacementOperationSchema).default([]),
   })
@@ -120,6 +144,7 @@ export const wholeStorefrontTargetSchema = z
     collections: z.array(z.object({ id: idSchema, productIds: z.array(idSchema) }).strict()),
     componentDefinitions: z.array(componentVersionReferenceSchema).min(1),
     registryFingerprint: fingerprintSchema,
+    recipeFingerprint: fingerprintSchema,
     brandSystemFingerprint: fingerprintSchema,
     canonicalCommerceFingerprint: fingerprintSchema,
     approvedAssetContextFingerprint: fingerprintSchema.nullable(),
@@ -237,6 +262,7 @@ export const wholeStorefrontGenerationPlanSchema = z
     evidenceFingerprint: fingerprintSchema,
     approvedAssetContextFingerprint: fingerprintSchema.nullable(),
     componentRegistryFingerprint: fingerprintSchema,
+    recipeContextFingerprint: fingerprintSchema,
     languagePlan: z
       .object({
         primaryLanguage: localeSchema,
@@ -282,6 +308,7 @@ export const wholeStorefrontGenerationPlanSchema = z
   });
 
 export type WholeStorefrontPlanningInput = z.infer<typeof wholeStorefrontPlanningInputSchema>;
+export type WholeStorefrontRecipeContext = z.infer<typeof wholeStorefrontRecipeContextSchema>;
 export type WholeStorefrontGenerationTarget = z.infer<typeof wholeStorefrontTargetSchema>;
 export type WholeStorefrontGenerationPlan = z.infer<typeof wholeStorefrontGenerationPlanSchema>;
 export type WholeStorefrontReviewSummary = z.infer<typeof wholeStorefrontReviewSummarySchema>;
