@@ -280,7 +280,46 @@ export function DesignAgentPanel({
   );
 
   useEffect(() => {
-    if (confirmationDialogOpen) confirmationRef.current?.focus();
+    if (!confirmationDialogOpen) return;
+    const dialog = confirmationRef.current?.closest<HTMLElement>('[role="dialog"]');
+    const trigger = acceptTriggerRef.current;
+    if (!dialog) return;
+    const focusable = () =>
+      Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+    confirmationRef.current?.focus();
+    const trapFocus = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setConfirmingStorefrontProposalId(null);
+        trigger?.focus();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const elements = focusable();
+      if (elements.length === 0) {
+        event.preventDefault();
+        confirmationRef.current?.focus();
+        return;
+      }
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", trapFocus, true);
+    return () => {
+      document.removeEventListener("keydown", trapFocus, true);
+      if (trigger?.isConnected) trigger.focus();
+    };
   }, [confirmationDialogOpen]);
   const examples =
     controller.targetScope === "storefront"
@@ -619,6 +658,7 @@ export function DesignAgentPanel({
             <div
               aria-describedby="storefront-acceptance-description"
               aria-labelledby="storefront-acceptance-title"
+              aria-modal="true"
               className={styles.confirmation}
               role="dialog"
             >
