@@ -6,10 +6,20 @@ import {
   aiStorefrontProviderRequestSchema,
   buildAiStorefrontProviderRequest,
   createApprovedGenerationAssetContextFingerprint,
-  createDeterministicMockStorefrontAIProvider,
   approvedGenerationAssetContextSchema,
   validateAiStorefrontProviderResponse,
 } from "@/application/ai-storefront-generation";
+import {
+  createAiStorefrontProposalId,
+  type AiStorefrontOperation,
+} from "@/application/ai-storefront";
+import { compileWholeStorefrontProposal } from "@/application/whole-storefront-proposal-lifecycle";
+import { validateDesignOperationAgainstPage } from "@/application/design-operations";
+import {
+  createStorefrontDesignSystemOperations,
+  createStorefrontStyleOperations,
+  type StorefrontStyleDirection,
+} from "@/application/design-skills";
 import {
   createAiStorefrontBaselineFingerprint,
   projectAiStorefrontSnapshot,
@@ -47,6 +57,7 @@ import {
 } from "@/domain/source-discovery";
 import type { Locale } from "@/domain/shared";
 import { storefrontSnapshotSchema, type StorefrontSnapshot } from "@/domain/storefront";
+import { canonicalValueFingerprint } from "@/domain/storefront";
 import type { ApprovedGenerationAssetContext } from "@/application/ai-storefront-generation";
 import {
   InMemoryProjectRepository,
@@ -85,6 +96,7 @@ export type ServerWholeStorefrontPlanningContext = Readonly<{
     plan: WholeStorefrontGenerationPlan,
   ) => Promise<unknown>;
   recordValidatedProposal?: (response: AiStorefrontProviderResponse) => void;
+  requiresAuthoritativePlanningFingerprint?: boolean;
 }>;
 
 export interface ServerWholeStorefrontPlanningAuthority {
@@ -158,6 +170,33 @@ function validatedAuthoritativePlanningContext(
   ) {
     throw new ServerWholeStorefrontAuthorityError("invalid-asset-reference");
   }
+  const assignments = new Map(
+    brief.data.approvedAssetAssignments.map((assignment) => [assignment.assetId, assignment]),
+  );
+  const assets = approvedAssetContext?.assets ?? [];
+  if (
+    (!brief.data.generationPermissions.allowAssetReuse && assets.length > 0) ||
+    (brief.data.generationPermissions.allowAssetReuse && assets.length !== assignments.size)
+  ) {
+    throw new ServerWholeStorefrontAuthorityError("invalid-asset-reference");
+  }
+  const seenAssetIds = new Set<string>();
+  assets.forEach((asset) => {
+    const assignment = assignments.get(asset.assetId);
+    if (
+      seenAssetIds.has(asset.assetId) ||
+      !assignment ||
+      assignment.role !== asset.role ||
+      assignment.revision !== asset.revision ||
+      assignment.fingerprint !== asset.materialFingerprint ||
+      !brief.data.sourceReferenceIds.includes(asset.sourceReferenceId) ||
+      asset.role === "productMainImage" ||
+      asset.role === "productAlternativeImage"
+    ) {
+      throw new ServerWholeStorefrontAuthorityError("invalid-asset-reference");
+    }
+    seenAssetIds.add(asset.assetId);
+  });
   return {
     brief: structuredClone(brief.data),
     componentDefinitions: structuredClone(componentDefinitions),
@@ -199,6 +238,7 @@ function authoritativeRequest(
         assetReferenceCapability: "structuredApprovedAssets",
         proposeStorefront: () => Promise.reject(new Error("Server provider only")),
       },
+      correlationRequestId: intent.requestId,
       importedContent: [],
       approvedAssetContext: planningInput.approvedAssetContext,
       assetPlacementOperations: planningInput.requiredAssetPlacements,
@@ -222,6 +262,157 @@ function sameRequestPreconditions(
     JSON.stringify(intent.target) === JSON.stringify(authoritative.target) &&
     JSON.stringify(intent.permissionGrants) === JSON.stringify(authoritative.permissionGrants)
   );
+}
+
+function directionForPlan(plan: WholeStorefrontGenerationPlan): StorefrontStyleDirection {
+  return plan.sharedDesignDirection.visualStyleDirection === "minimal"
+    ? "minimalNordic"
+    : "warmPremium";
+}
+
+function projectPlanOperations(
+  request: AiStorefrontProviderRequest,
+  plan: WholeStorefrontGenerationPlan,
+  wholeStorefrontProposal: ReturnType<typeof compileWholeStorefrontProposal>,
+): {
+  operations: AiStorefrontOperation[];
+  proposedStorefront: AiStorefrontProviderRequest["storefront"];
+  affectedDesignState: {
+    colors?: typeof request.storefront.brandSystem.colors;
+    typography?: typeof request.storefront.brandSystem.typography;
+  } | null;
+} {
+  const direction = directionForPlan(plan);
+  const operations: AiStorefrontOperation[] = [];
+  const add = (
+    target: AiStorefrontOperation["target"],
+    operation: AiStorefrontOperation["operation"],
+  ) => operations.push({ order: operations.length, target, operation });
+  if (request.target.designSystemTarget !== null) {
+    createStorefrontDesignSystemOperations(direction).forEach((operation) =>
+      add(request.target.designSystemTarget!, operation),
+    );
+  }
+  wholeStorefrontProposal.proposedStorefront.pages.forEach((plannedPage) => {
+    if (!request.target.affectedPageIds.includes(plannedPage.pageId)) return;
+    const currentPage = request.affectedPages.find((page) => page.id === plannedPage.pageId);
+    const plannedSectionIds = plannedPage.components.map((component) => component.id);
+    const currentSectionIds = currentPage?.sections.map((section) => section.id) ?? [];
+    if (
+      currentPage &&
+      plannedSectionIds.length === currentSectionIds.length &&
+      plannedSectionIds.every((sectionId) => currentSectionIds.includes(sectionId)) &&
+      plannedSectionIds.some((sectionId, index) => sectionId !== currentSectionIds[index])
+    ) {
+      add(
+        { kind: "page", pageId: plannedPage.pageId },
+        { type: "REORDER_SECTIONS", sectionIds: plannedSectionIds },
+      );
+    }
+  });
+  const planPages = new Set(plan.pagePlans.map((page) => page.pageId));
+  const sectionTargets = new Set(
+    request.target.affectedSectionTargets.map((target) => `${target.pageId}:${target.sectionId}`),
+  );
+  request.target.affectedPageIds.forEach((pageId) => {
+    if (!planPages.has(pageId)) return;
+    const page = request.affectedPages.find((candidate) => candidate.id === pageId);
+    if (!page) return;
+    createStorefrontStyleOperations(page, direction).forEach((operation) => {
+      if (!("sectionId" in operation) || !sectionTargets.has(`${pageId}:${operation.sectionId}`))
+        return;
+      add({ kind: "section", pageId, sectionId: operation.sectionId }, operation);
+    });
+  });
+  const proposedStorefront = structuredClone(request.storefront);
+  let affectedDesignState: {
+    colors?: typeof request.storefront.brandSystem.colors;
+    typography?: typeof request.storefront.brandSystem.typography;
+  } | null = null;
+  operations.forEach((envelope) => {
+    if (envelope.operation.type === "APPLY_APPROVED_BRAND_COLOURS") {
+      proposedStorefront.brandSystem.colors = structuredClone(envelope.operation.colors);
+      affectedDesignState = {
+        ...(affectedDesignState ?? {}),
+        colors: structuredClone(envelope.operation.colors),
+      };
+      return;
+    }
+    if (envelope.operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY") {
+      proposedStorefront.brandSystem.typography = structuredClone(envelope.operation.typography);
+      affectedDesignState = {
+        ...(affectedDesignState ?? {}),
+        typography: structuredClone(envelope.operation.typography),
+      };
+      return;
+    }
+    const target = envelope.target;
+    if (!("pageId" in target)) return;
+    const index = proposedStorefront.pages.findIndex((page) => page.id === target.pageId);
+    if (index < 0) throw new ServerWholeStorefrontAuthorityError("malformed-state");
+    proposedStorefront.pages[index] = validateDesignOperationAgainstPage(
+      proposedStorefront.pages[index],
+      envelope.operation,
+    );
+  });
+  return { operations, proposedStorefront, affectedDesignState };
+}
+
+function planDerivedProposalEnvelope(input: {
+  request: AiStorefrontProviderRequest;
+  plan: WholeStorefrontGenerationPlan;
+  planningInput: WholeStorefrontPlanningInput;
+}): AiStorefrontProviderResponse {
+  const wholeStorefrontProposal = compileWholeStorefrontProposal({
+    plan: input.plan,
+    planningInput: input.planningInput,
+  });
+  const { operations, proposedStorefront, affectedDesignState } = projectPlanOperations(
+    input.request,
+    input.plan,
+    wholeStorefrontProposal,
+  );
+  const proposalId = createAiStorefrontProposalId(
+    input.request.requestId,
+    input.request.targetFingerprint,
+    input.request.permissionFingerprint,
+    operations,
+    input.plan.approvedAssetPlacements,
+  );
+  return {
+    providerRequestId: input.request.requestId,
+    providerId: input.request.providerId,
+    proposal: {
+      id: proposalId,
+      requestId: input.request.requestId,
+      projectId: input.request.target.projectId,
+      draftSnapshotId: input.request.target.draftSnapshotId,
+      draftRevision: input.request.target.draftRevision,
+      target: structuredClone(input.request.target),
+      originalStorefront: structuredClone(input.request.storefront),
+      proposedStorefront,
+      affectedPages: structuredClone(input.request.affectedPages),
+      affectedDesignState,
+      permissionGrants: structuredClone(input.request.permissionGrants),
+      targetFingerprint: input.request.targetFingerprint,
+      permissionFingerprint: input.request.permissionFingerprint,
+      operations,
+      assetPlacementOperations: structuredClone(input.plan.approvedAssetPlacements),
+      summary: {
+        en: `Prepared from approved whole-storefront plan ${wholeStorefrontProposal.id}. ${input.plan.reviewSummary.sharedDesignSystemChanges.join(" ")}`,
+        fi: `Valmisteltu hyväksytystä koko kaupan suunnitelmasta ${wholeStorefrontProposal.id}. ${input.plan.reviewSummary.sharedDesignSystemChanges.join(" ")}`,
+      },
+      validation: { valid: true, errors: [] },
+      status: "pending",
+    },
+    metadata: {
+      operationCount: operations.length,
+      durationMs: 0,
+      validation: "valid",
+      authoritativePlanningFingerprint: input.plan.fingerprint,
+      wholeStorefrontProposalFingerprint: canonicalValueFingerprint(wholeStorefrontProposal),
+    },
+  };
 }
 
 function failure(error: unknown): Response {
@@ -314,6 +505,12 @@ export function createServerWholeStorefrontPlanningHandler({
         canonicalRequest,
         await context.proposalEnvelope(canonicalRequest, plan),
       );
+      if (
+        context.requiresAuthoritativePlanningFingerprint &&
+        envelope.metadata.authoritativePlanningFingerprint !== plan.fingerprint
+      ) {
+        throw new ServerWholeStorefrontAuthorityError("malformed-state");
+      }
       context.recordValidatedProposal?.(envelope);
       return response(200, responseSchema.parse({ ok: true, proposal: envelope }));
     } catch (error) {
@@ -691,15 +888,22 @@ export function createStandaloneServerWholeStorefrontPlanningAuthority({
       return {
         authorization,
         planningInput,
-        currentPlanningInput: planningInputFor,
-        proposalEnvelope: async (proposalRequest) => {
-          const response =
-            await createDeterministicMockStorefrontAIProvider().proposeStorefront(proposalRequest);
-          return {
-            ...response,
-            providerId: proposalRequest.providerId,
-          };
+        currentPlanningInput: async () => {
+          try {
+            return await planningInputFor();
+          } catch (error) {
+            if (error instanceof ServerWholeStorefrontAuthorityError) {
+              throw new WholeStorefrontPlanningProviderError(
+                "stale-result",
+                "The authoritative storefront context changed while planning was in progress.",
+              );
+            }
+            throw error;
+          }
         },
+        proposalEnvelope: (request, plan) =>
+          Promise.resolve(planDerivedProposalEnvelope({ request, plan, planningInput })),
+        requiresAuthoritativePlanningFingerprint: true,
         recordValidatedProposal: (response) => {
           const proposed = response.proposal.proposedStorefront;
           const proposedPages = new Map(proposed.pages.map((page) => [page.id, page]));

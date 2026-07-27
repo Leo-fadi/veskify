@@ -5,8 +5,10 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import {
+  aiStorefrontProviderResponseSchema,
   buildAiStorefrontProviderRequest,
   createApprovedGenerationAssetContextFingerprint,
+  validateAiStorefrontProviderResponse,
   type AiStorefrontGenerationCommand,
 } from "@/application/ai-storefront-generation";
 import type { WholeStorefrontPlanningProvider } from "@/application/whole-storefront-generation-plan";
@@ -97,7 +99,12 @@ describe("P9-02 authoritative whole-storefront runtime context", () => {
     const planningRequest = received[0] as {
       approvedBrief: { businessContext: { businessName: string; primaryMarket: string } };
       registry: readonly { type: string }[];
-      recipes: { templates: readonly { id: string }[] };
+      recipes: {
+        templates: readonly {
+          id: string;
+          pagePlans: readonly { pageType: string; slots: readonly { sectionType: string }[] }[];
+        }[];
+      };
       approvedAssets: { assets: readonly { role: string }[] };
       canonicalCommerce: { protectedFacts: readonly string[] };
     };
@@ -111,10 +118,90 @@ describe("P9-02 authoritative whole-storefront runtime context", () => {
     });
     expect(planningRequest.registry.length).toBeGreaterThan(1);
     expect(planningRequest.recipes.templates.length).toBeGreaterThan(0);
+    const homeRecipe = planningRequest.recipes.templates
+      .flatMap((template) => template.pagePlans)
+      .find((page) => page.pageType === "home");
+    expect(homeRecipe?.slots.findIndex((slot) => slot.sectionType === "header")).toBeLessThan(
+      homeRecipe?.slots.findIndex((slot) => slot.sectionType === "hero") ?? 0,
+    );
+    expect(homeRecipe?.slots.at(-1)?.sectionType).toBe("footer");
     expect(planningRequest.approvedAssets.assets).toEqual([
       expect.objectContaining({ role: "logo" }),
     ]);
     expect(planningRequest.canonicalCommerce.protectedFacts.join(" ")).toMatch(/product media/i);
+  });
+
+  it("retains the browser correlation ID while validating server-added authoritative assets", async () => {
+    const handler = createWholeStorefrontPlanningRouteHandler({
+      authority: createStandaloneServerWholeStorefrontPlanningAuthority(),
+      selectProvider: () => recordingProvider(() => undefined),
+    });
+    const browserRequest = requestFor(aurumNordicSeed);
+    const response = await handler(
+      new Request("http://localhost/api/ai/whole-storefront-proposals", {
+        method: "POST",
+        body: JSON.stringify(browserRequest),
+      }),
+    );
+    const body = (await response.json()) as { proposal: unknown };
+    const envelope = aiStorefrontProviderResponseSchema.parse(body.proposal);
+
+    expect(response.status).toBe(200);
+    expect(envelope.providerRequestId).toBe(browserRequest.requestId);
+    expect(envelope.proposal.requestId).toBe(browserRequest.requestId);
+    expect(envelope.metadata.authoritativePlanningFingerprint).toMatch(/^whole-storefront-plan-/);
+    expect(() => validateAiStorefrontProviderResponse(browserRequest, envelope)).not.toThrow();
+  });
+
+  it("rejects extra, reassigned, and reuse-disabled approved asset contexts", async () => {
+    const base = createStandaloneAuthoritativeWholeStorefrontPlanningContextSource();
+    const browserRequest = requestFor(aurumNordicSeed);
+    const responseFor = async (
+      update: (
+        context: Awaited<ReturnType<AuthoritativeWholeStorefrontPlanningContextSource["load"]>>,
+      ) => void,
+    ) => {
+      const source: AuthoritativeWholeStorefrontPlanningContextSource = {
+        load: async (input) => {
+          const context = structuredClone(await base.load(input));
+          update(context);
+          if (context.approvedAssetContext !== null) {
+            context.approvedAssetContext.fingerprint =
+              createApprovedGenerationAssetContextFingerprint(context.approvedAssetContext);
+          }
+          return context;
+        },
+      };
+      return createWholeStorefrontPlanningRouteHandler({
+        authority: createStandaloneServerWholeStorefrontPlanningAuthority({
+          contextSource: source,
+        }),
+        selectProvider: () => recordingProvider(() => undefined),
+      })(
+        new Request("http://localhost/api/ai/whole-storefront-proposals", {
+          method: "POST",
+          body: JSON.stringify(browserRequest),
+        }),
+      );
+    };
+
+    const extra = await responseFor((context) => {
+      const asset = context.approvedAssetContext?.assets[0];
+      if (!asset || !context.approvedAssetContext) throw new Error("Missing approved test asset");
+      context.approvedAssetContext.assets.push({ ...asset, assetId: "asset_unapproved" });
+    });
+    const changedRole = await responseFor((context) => {
+      const asset = context.approvedAssetContext?.assets[0];
+      if (!asset) throw new Error("Missing approved test asset");
+      asset.role = "editorialImage";
+    });
+    const reuseDisabled = await responseFor((context) => {
+      context.brief.generationPermissions.allowAssetReuse = false;
+    });
+
+    expect(extra.status).toBe(400);
+    expect(changedRole.status).toBe(400);
+    expect(reuseDisabled.status).toBe(400);
   });
 
   it("keeps Aurum and Karvonen briefs and approved assets project-isolated", async () => {

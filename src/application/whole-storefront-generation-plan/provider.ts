@@ -269,15 +269,13 @@ export function buildWholeStorefrontPlanningProviderRequest(
             .sort((left, right) => left.pageType.localeCompare(right.pageType))
             .map((pagePlan) => ({
               pageType: pagePlan.pageType,
-              slots: [...pagePlan.slots]
-                .sort((left, right) => left.id.localeCompare(right.id))
-                .map((slot) => ({
-                  id: slot.id,
-                  sectionType: slot.sectionType,
-                  allowedVariants: sortedStrings(slot.allowedVariants),
-                  required: slot.required,
-                  omitWhen: slot.omitWhen,
-                })),
+              slots: pagePlan.slots.map((slot) => ({
+                id: slot.id,
+                sectionType: slot.sectionType,
+                allowedVariants: sortedStrings(slot.allowedVariants),
+                required: slot.required,
+                omitWhen: slot.omitWhen,
+              })),
             })),
         })),
     },
