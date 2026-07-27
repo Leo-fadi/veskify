@@ -232,7 +232,9 @@ export const storefrontComponentContractSchema = z
   .object({
     componentType: z.string().min(1).max(80),
     variants: z.array(z.string().min(1).max(80)).min(1),
-    approvedStyleFields: z.array(z.enum(["background", "typography"])).min(1),
+    approvedStyleFields: z
+      .array(z.enum(["variant", "background", "typography", "density", "shape"]))
+      .min(1),
   })
   .strict();
 export const labelledUntrustedContentSchema = untrustedImportedContentSchema.extend({

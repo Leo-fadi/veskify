@@ -13,6 +13,7 @@ import { storefrontDesignBriefContractSchema } from "@/domain/source-discovery";
 import { localeSchema, idSchema } from "@/domain/shared";
 import { canonicalValueFingerprint, storefrontSnapshotSchema } from "@/domain/storefront";
 import { storefrontTemplateDefinitionSchema } from "@/application/storefront-templates";
+import { storefrontDesignSystemV1Schema } from "@/application/storefront-design-system";
 
 export const WHOLE_STOREFRONT_GENERATION_PLAN_SCHEMA_VERSION = 1 as const;
 
@@ -38,12 +39,19 @@ const componentVersionReferenceSchema = z
 export const wholeStorefrontRecipeContextSchema = z
   .object({
     templates: z.array(storefrontTemplateDefinitionSchema).min(1),
+    designSystem: storefrontDesignSystemV1Schema,
     fingerprint: fingerprintSchema,
   })
   .strict()
   .superRefine((context, refinement) => {
     const templates = [...context.templates].sort((left, right) => left.id.localeCompare(right.id));
-    if (context.fingerprint !== `storefront-recipes-${canonicalValueFingerprint(templates)}`) {
+    if (
+      context.fingerprint !==
+      `storefront-recipes-${canonicalValueFingerprint({
+        templates,
+        designSystem: context.designSystem,
+      })}`
+    ) {
       refinement.addIssue({
         code: "custom",
         path: ["fingerprint"],
@@ -215,6 +223,39 @@ export const wholeStorefrontSharedChromePlanSchema = z
   })
   .strict();
 
+export const wholeStorefrontDesignSystemSelectionSchema = z
+  .object({
+    directionId: z.enum(["premiumEditorial", "modernTechnical", "warmApproachable"]),
+    homepageRecipeId: z.string().trim().min(1).max(80),
+    collectionRecipeId: z.string().trim().min(1).max(80),
+    productRecipeId: z.string().trim().min(1).max(80),
+    typographyDirectionId: z.string().trim().min(1).max(80),
+    imageTreatmentId: z.string().trim().min(1).max(80),
+    productCardFamilyId: z.string().trim().min(1).max(80),
+    spacingDensity: z.enum(["compact", "standard", "spacious"]),
+    cornerTreatment: z.enum(["square", "soft", "rounded"]),
+    surfaceDepth: z.enum(["flat", "subtle", "layered"]),
+    sectionVariants: z.record(z.string().trim().min(1).max(80), z.string().trim().min(1).max(80)),
+    collectionPresentation: z
+      .object({
+        variant: z.enum(["standard", "editorial", "compact", "gallery"]),
+        gridDensity: z.enum(["compact", "standard", "spacious"]),
+        cardVariant: z.enum(["standard", "editorial", "compact", "imageFirst", "horizontal"]),
+        filterLayout: z.enum(["sidebar", "horizontal"]),
+      })
+      .strict(),
+    productPresentation: z
+      .object({
+        variant: z.enum(["balanced", "editorial", "compact", "galleryDominant", "editorialSplit"]),
+        galleryLayout: z.enum(["thumbnails", "grid"]),
+        optionDensity: z.enum(["compact", "comfortable"]),
+        attributeLayout: z.enum(["groups", "table"]),
+        mediaTreatment: z.enum(["contained", "crop", "editorial"]),
+      })
+      .strict(),
+  })
+  .strict();
+
 export const wholeStorefrontReviewItemSchema = z
   .object({
     code: z.string().trim().min(1).max(120),
@@ -270,6 +311,7 @@ export const wholeStorefrontGenerationPlanSchema = z
         missingTranslationPolicy: z.literal("explicit-generation-or-merchant-review"),
       })
       .strict(),
+    designSystemSelection: wholeStorefrontDesignSystemSelectionSchema,
     sharedDesignDirection: wholeStorefrontSharedDesignDirectionSchema,
     sharedChrome: wholeStorefrontSharedChromePlanSchema,
     pagePlans: z.array(wholeStorefrontPagePlanSchema).min(1),

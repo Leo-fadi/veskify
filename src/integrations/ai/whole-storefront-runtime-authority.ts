@@ -15,6 +15,7 @@ import {
 } from "@/application/ai-storefront";
 import { compileWholeStorefrontProposal } from "@/application/whole-storefront-proposal-lifecycle";
 import { validateDesignOperationAgainstPage } from "@/application/design-operations";
+import { getComponentDefinition } from "@/components/registry";
 import {
   createStorefrontDesignSystemOperations,
   createStorefrontStyleOperations,
@@ -273,15 +274,54 @@ function directionForPlan(
   ) {
     return "minimalNordic";
   }
-  return plan.sharedDesignDirection.visualStyleDirection === "minimal"
-    ? "minimalNordic"
-    : "warmPremium";
+  if (plan.designSystemSelection.directionId === "modernTechnical") return "minimalNordic";
+  if (plan.designSystemSelection.directionId === "warmApproachable") return "warmApproachable";
+  return "warmPremium";
+}
+
+function recipeOrderedSectionIds(
+  page: AiStorefrontProviderRequest["affectedPages"][number],
+  plan: WholeStorefrontGenerationPlan,
+  planningInput: WholeStorefrontPlanningInput,
+): string[] {
+  const recipeId =
+    page.type === "home"
+      ? plan.designSystemSelection.homepageRecipeId
+      : page.type === "collection"
+        ? plan.designSystemSelection.collectionRecipeId
+        : page.type === "product"
+          ? plan.designSystemSelection.productRecipeId
+          : null;
+  if (recipeId === null) return page.sections.map((section) => section.id);
+  const recipes = planningInput.recipeContext.designSystem;
+  const recipe = [
+    ...recipes.homepageRecipes,
+    ...recipes.collectionRecipes,
+    ...recipes.productRecipes,
+  ].find((candidate) => candidate.id === recipeId);
+  if (!recipe) throw new ServerWholeStorefrontAuthorityError("malformed-state");
+  const order = new Map(recipe.sections.map((section, index) => [section.component, index]));
+  return [...page.sections]
+    .map((section, originalIndex) => ({
+      section,
+      originalIndex,
+      recipeIndex: order.get(section.component),
+    }))
+    .sort((left, right) => {
+      if (left.section.component === "footer") return 1;
+      if (right.section.component === "footer") return -1;
+      const leftIndex = left.recipeIndex ?? recipe.sections.length + left.originalIndex;
+      const rightIndex = right.recipeIndex ?? recipe.sections.length + right.originalIndex;
+      return leftIndex - rightIndex || left.originalIndex - right.originalIndex;
+    })
+    .map(({ section }) => section.id);
 }
 
 function projectPlanOperations(
   request: AiStorefrontProviderRequest,
   plan: WholeStorefrontGenerationPlan,
   wholeStorefrontProposal: ReturnType<typeof compileWholeStorefrontProposal>,
+  planningInput: WholeStorefrontPlanningInput,
 ): {
   operations: AiStorefrontOperation[];
   proposedStorefront: AiStorefrontProviderRequest["storefront"];
@@ -318,6 +358,44 @@ function projectPlanOperations(
       );
     }
   });
+  request.affectedPages.forEach((page) => {
+    if (!request.target.affectedPageIds.includes(page.id)) return;
+    page.sections.forEach((section) => {
+      const definition = getComponentDefinition(section.component);
+      const variant = plan.designSystemSelection.sectionVariants[section.component];
+      if (variant && variant !== section.variant && definition.variants.includes(variant)) {
+        add(
+          { kind: "section", pageId: page.id, sectionId: section.id },
+          { type: "CHANGE_SECTION_VARIANT", sectionId: section.id, variant },
+        );
+      }
+      if (definition.editorFields.density) {
+        add(
+          { kind: "section", pageId: page.id, sectionId: section.id },
+          {
+            type: "CHANGE_DENSITY",
+            sectionId: section.id,
+            density: plan.designSystemSelection.spacingDensity,
+          },
+        );
+      }
+      if (definition.editorFields.shape) {
+        add(
+          { kind: "section", pageId: page.id, sectionId: section.id },
+          {
+            type: "CHANGE_SHAPE",
+            sectionId: section.id,
+            shape: plan.designSystemSelection.cornerTreatment,
+          },
+        );
+      }
+    });
+    const sectionIds = recipeOrderedSectionIds(page, plan, planningInput);
+    const currentIds = page.sections.map((section) => section.id);
+    if (sectionIds.some((sectionId, index) => sectionId !== currentIds[index])) {
+      add({ kind: "page", pageId: page.id }, { type: "REORDER_SECTIONS", sectionIds });
+    }
+  });
   const planPages = new Set(plan.pagePlans.map((page) => page.pageId));
   const sectionTargets = new Set(
     request.target.affectedSectionTargets.map((target) => `${target.pageId}:${target.sectionId}`),
@@ -327,7 +405,10 @@ function projectPlanOperations(
     const page = request.affectedPages.find((candidate) => candidate.id === pageId);
     if (!page) return;
     createStorefrontStyleOperations(page, direction).forEach((operation) => {
-      if (!("sectionId" in operation) || !sectionTargets.has(`${pageId}:${operation.sectionId}`))
+      if (
+        !("sectionId" in operation) ||
+        (sectionTargets.size > 0 && !sectionTargets.has(`${pageId}:${operation.sectionId}`))
+      )
         return;
       add({ kind: "section", pageId, sectionId: operation.sectionId }, operation);
     });
@@ -379,6 +460,7 @@ function planDerivedProposalEnvelope(input: {
     input.request,
     input.plan,
     wholeStorefrontProposal,
+    input.planningInput,
   );
   const proposalId = createAiStorefrontProposalId(
     input.request.requestId,

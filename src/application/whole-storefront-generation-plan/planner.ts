@@ -29,6 +29,7 @@ import {
   type WholeStorefrontPlanningInput,
   WholeStorefrontGenerationPlanError,
 } from "./contract";
+import { selectStorefrontDesignDirection } from "@/application/storefront-design-system";
 
 const FAMILY_REQUIREMENTS = {
   homepage: [
@@ -419,6 +420,7 @@ function dynamicCollectionComponent(
   revision: string,
   definition: ComponentDefinitionV2,
   usedComponentIds: Set<string>,
+  presentation: WholeStorefrontGenerationPlan["designSystemSelection"]["collectionPresentation"],
 ): ComponentInstanceV2 {
   const id = generatedComponentId(pageId, definition.type, usedComponentIds);
   usedComponentIds.add(id);
@@ -426,9 +428,14 @@ function dynamicCollectionComponent(
     id,
     component: "dynamicCollectionCommerce",
     componentVersion: definition.version,
-    variant: "standard",
+    variant: presentation.variant,
     content: structuredClone(dynamicCollectionCommerceDefaultContent),
-    props: structuredClone(dynamicCollectionCommerceDefaultProps),
+    props: {
+      ...structuredClone(dynamicCollectionCommerceDefaultProps),
+      gridDensity: presentation.gridDensity,
+      cardVariant: presentation.cardVariant,
+      filterLayout: presentation.filterLayout,
+    },
     styleOverrides: structuredClone(dynamicCollectionCommerceDefaultStyleOverrides),
     bindings: [
       { slotId: "primaryCollection", source: "collection", collectionId: collection.id, revision },
@@ -450,6 +457,7 @@ function dynamicProductComponent(
   revision: string,
   definition: ComponentDefinitionV2,
   usedComponentIds: Set<string>,
+  presentation: WholeStorefrontGenerationPlan["designSystemSelection"]["productPresentation"],
 ): ComponentInstanceV2 {
   const id = generatedComponentId(pageId, definition.type, usedComponentIds);
   usedComponentIds.add(id);
@@ -457,9 +465,15 @@ function dynamicProductComponent(
     id,
     component: "dynamicProductDetail",
     componentVersion: definition.version,
-    variant: "balanced",
+    variant: presentation.variant,
     content: structuredClone(dynamicProductDetailDefaultContent),
-    props: structuredClone(dynamicProductDetailDefaultProps),
+    props: {
+      ...structuredClone(dynamicProductDetailDefaultProps),
+      galleryLayout: presentation.galleryLayout,
+      optionDensity: presentation.optionDensity,
+      attributeLayout: presentation.attributeLayout,
+      mediaTreatment: presentation.mediaTreatment,
+    },
     styleOverrides: structuredClone(dynamicProductDetailDefaultStyleOverrides),
     bindings: [
       { slotId: "primaryProduct", source: "product", productId, revision },
@@ -622,6 +636,38 @@ export function createWholeStorefrontGenerationPlan(
       "A storefront plan needs canonical products and collections.",
     );
   }
+  const brandDirection = input.brief.approvedBrandDirection;
+  if (brandDirection === null) {
+    invalid(
+      "no-approved-brief",
+      "The approved Storefront Design Brief has no approved brand direction.",
+    );
+  }
+  const selectedDirectionId = selectStorefrontDesignDirection(brandDirection);
+  const selectedDirection = input.recipeContext.designSystem.directions.find(
+    (direction) => direction.id === selectedDirectionId,
+  );
+  if (!selectedDirection) {
+    invalid(
+      "unsupported-page-family",
+      "The approved design direction is unavailable in the active design system.",
+    );
+  }
+  const designSystemSelection = structuredClone({
+    directionId: selectedDirection.id,
+    homepageRecipeId: selectedDirection.homepageRecipeId,
+    collectionRecipeId: selectedDirection.collectionRecipeId,
+    productRecipeId: selectedDirection.productRecipeId,
+    typographyDirectionId: selectedDirection.typographyDirectionId,
+    imageTreatmentId: selectedDirection.imageTreatmentId,
+    productCardFamilyId: selectedDirection.productCardFamilyId,
+    spacingDensity: selectedDirection.spacingDensity,
+    cornerTreatment: selectedDirection.cornerTreatment,
+    surfaceDepth: selectedDirection.surfaceDepth,
+    sectionVariants: selectedDirection.sectionVariants,
+    collectionPresentation: selectedDirection.collectionPresentation,
+    productPresentation: selectedDirection.productPresentation,
+  });
   const collectionComponentDefinition = definitionFor(definitions, "dynamicCollectionCommerce");
   const productComponentDefinition = definitionFor(definitions, "dynamicProductDetail");
   const usedComponentIds = new Set(
@@ -686,6 +732,7 @@ export function createWholeStorefrontGenerationPlan(
         commerceRevision,
         collectionComponentDefinition,
         usedComponentIds,
+        designSystemSelection.collectionPresentation,
       );
       try {
         registry.validateInstance(instance);
@@ -723,6 +770,7 @@ export function createWholeStorefrontGenerationPlan(
         commerceRevision,
         productComponentDefinition,
         usedComponentIds,
+        designSystemSelection.productPresentation,
       );
       try {
         registry.validateInstance(instance);
@@ -785,6 +833,7 @@ export function createWholeStorefrontGenerationPlan(
       commerceRevision,
       collectionComponentDefinition,
       usedComponentIds,
+      designSystemSelection.collectionPresentation,
     );
     try {
       registry.validateInstance(instance);
@@ -820,6 +869,7 @@ export function createWholeStorefrontGenerationPlan(
       commerceRevision,
       productComponentDefinition,
       usedComponentIds,
+      designSystemSelection.productPresentation,
     );
     try {
       registry.validateInstance(instance);
@@ -919,13 +969,6 @@ export function createWholeStorefrontGenerationPlan(
     .sort((left, right) => canonicalValueString(left).localeCompare(canonicalValueString(right)));
   assertBindingsResolve(canonicalCommerceBindings, target);
   const approvedAssetPlacements = validateAssetPlacements(input, activeTargets);
-  const brandDirection = input.brief.approvedBrandDirection;
-  if (brandDirection === null) {
-    invalid(
-      "no-approved-brief",
-      "The approved Storefront Design Brief has no approved brand direction.",
-    );
-  }
   const sharedDesignDirection = {
     brandSystemFingerprint: target.brandSystemFingerprint,
     preferredBrandColours: [...brandDirection.preferredBrandColours].sort(),
@@ -1038,6 +1081,7 @@ export function createWholeStorefrontGenerationPlan(
       selectedLanguages: canonicalLocaleOrder(input.brief.languagePlan.selectedLanguages),
       missingTranslationPolicy: "explicit-generation-or-merchant-review" as const,
     },
+    designSystemSelection,
     sharedDesignDirection,
     sharedChrome,
     pagePlans,

@@ -25,8 +25,34 @@ export type InspectableComponentDefinitionV1 = {
   protectedFields: { readOnlyPaths: readonly string[] };
 };
 
-function localizedEnglish(value: string) {
-  return { en: value };
+const finnishLabels: Readonly<Record<string, string>> = {
+  "Announcement bar": "Ilmoituspalkki",
+  Header: "Ylätunniste",
+  Hero: "Pääosio",
+  "Featured categories": "Esitellyt kategoriat",
+  "Product grid": "Tuoteruudukko",
+  "Campaign banner": "Kampanjanosto",
+  "Brand story": "Bränditarina",
+  Benefits: "Hyödyt",
+  Newsletter: "Uutiskirje",
+  Footer: "Alatunniste",
+  "Collection header": "Malliston otsake",
+  Filters: "Suodattimet",
+  "Product gallery": "Tuotegalleria",
+  "Product information": "Tuotetiedot",
+  "Product options": "Tuotevalinnat",
+  "Image and text": "Kuva ja teksti",
+  "Related products": "Liittyvät tuotteet",
+  "Section background": "Osion tausta",
+  "Spacing density": "Väljyys",
+  "Typography preset": "Typografian tyyli",
+  "Shape treatment": "Muotojen tyyli",
+  "Content alignment": "Sisällön tasaus",
+  "CTA presentation": "Toimintopainikkeen tyyli",
+};
+
+function localizedLabel(value: string) {
+  return { en: value, fi: finnishLabels[value] ?? value };
 }
 
 function serializableObjectContract(schema: z.ZodType) {
@@ -39,7 +65,7 @@ function editableFieldFromV1(
 ): EditablePresentationField {
   return {
     path,
-    label: localizedEnglish(field.label),
+    label: localizedLabel(field.label),
     source: field.source,
     control:
       field.control === "textarea" ? "textarea" : field.control === "select" ? "select" : "text",
@@ -53,13 +79,16 @@ export function adaptV1ComponentDefinitionToV2(
   return validateComponentDefinitionV2({
     type: definition.type,
     version: { major: 1, minor: 0, patch: 0 },
-    title: localizedEnglish(definition.label),
-    merchantDescription: localizedEnglish(`${definition.label} storefront section.`),
+    title: localizedLabel(definition.label),
+    merchantDescription: {
+      en: `${definition.label} storefront section.`,
+      fi: `${localizedLabel(definition.label).fi} kaupan osio.`,
+    },
     family: "content",
     supportedPageTypes: [...definition.allowedPageTypes],
     variants: definition.variants.map((variant) => ({
       id: variant,
-      title: localizedEnglish(variant),
+      title: localizedLabel(variant),
     })),
     defaultVariant: definition.defaultVariant,
     industryTags: [],
@@ -82,7 +111,10 @@ export function adaptV1ComponentDefinitionToV2(
       {
         breakpoints: ["mobile", "tablet", "desktop", "wide"],
         allowHorizontalOverflow: false,
-        notes: localizedEnglish("Existing V1 registry definition inspected through compatibility."),
+        notes: {
+          en: "Existing registered renderer with responsive behaviour at all supported widths.",
+          fi: "Nykyinen rekisteröity renderöinti mukautuu kaikilla tuetuilla leveyksillä.",
+        },
       },
     ],
     accessibilityRequirements: {

@@ -170,6 +170,17 @@ export function buildAiStorefrontProviderRequest(
     },
   }));
   if (target.designSystemTarget !== null) {
+    target.affectedPageIds.forEach((pageId) => {
+      grants.push({
+        skillId: skill.id,
+        skillVersion: skill.version,
+        skillScope: skill.scope,
+        operationTypes: ["REORDER_SECTIONS"],
+        target: { kind: "page", pageId },
+      });
+    });
+  }
+  if (target.designSystemTarget !== null) {
     grants.push({
       skillId: skill.id,
       skillVersion: skill.version,
@@ -215,8 +226,11 @@ export function buildAiStorefrontProviderRequest(
         componentType,
         variants: [...definition.variants],
         approvedStyleFields: [
+          ...(operationTypes.includes("CHANGE_SECTION_VARIANT") ? (["variant"] as const) : []),
           ...(operationTypes.includes("CHANGE_BACKGROUND") ? (["background"] as const) : []),
           ...(operationTypes.includes("CHANGE_TYPOGRAPHY") ? (["typography"] as const) : []),
+          ...(operationTypes.includes("CHANGE_DENSITY") ? (["density"] as const) : []),
+          ...(operationTypes.includes("CHANGE_SHAPE") ? (["shape"] as const) : []),
         ],
       };
     });

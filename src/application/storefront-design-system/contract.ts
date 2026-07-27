@@ -1,0 +1,227 @@
+import { z } from "zod";
+import { canonicalValueFingerprint } from "@/domain/storefront";
+
+const tokenSchema = z.string().regex(/^[a-z][A-Za-z0-9-]*$/);
+const localizedLabelSchema = z.object({ en: z.string().min(1), fi: z.string().min(1) }).strict();
+
+export const storefrontDesignDirectionIdSchema = z.enum([
+  "premiumEditorial",
+  "modernTechnical",
+  "warmApproachable",
+]);
+
+const semanticSectionRecipeSchema = z
+  .object({
+    slot: tokenSchema,
+    component: tokenSchema,
+    variant: tokenSchema,
+    required: z.boolean(),
+    acceptedAssetRoles: z.array(tokenSchema),
+  })
+  .strict();
+
+const pageRecipeSchema = z
+  .object({
+    id: tokenSchema,
+    label: localizedLabelSchema,
+    pageType: z.enum(["home", "collection", "product"]),
+    sections: z.array(semanticSectionRecipeSchema).min(1),
+    responsive: z
+      .object({
+        breakpoints: z.tuple([
+          z.literal("mobile"),
+          z.literal("tablet"),
+          z.literal("desktop"),
+          z.literal("wide"),
+        ]),
+        allowHorizontalOverflow: z.literal(false),
+      })
+      .strict(),
+  })
+  .strict()
+  .superRefine((recipe, context) => {
+    const slots = recipe.sections.map((section) => section.slot);
+    if (new Set(slots).size !== slots.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["sections"],
+        message: "Recipe slots must be unique.",
+      });
+    }
+    if (recipe.sections[0]?.component !== "header") {
+      context.addIssue({ code: "custom", path: ["sections", 0], message: "Header must be first." });
+    }
+    if (recipe.sections.at(-1)?.component !== "footer") {
+      context.addIssue({ code: "custom", path: ["sections"], message: "Footer must be last." });
+    }
+  });
+
+const typographyDirectionSchema = z
+  .object({
+    id: tokenSchema,
+    label: localizedLabelSchema,
+    headingFont: z.enum(["inter", "georgia", "system-sans", "system-serif"]),
+    bodyFont: z.enum(["inter", "georgia", "system-sans", "system-serif"]),
+    scaleRatio: z.number().min(1.125).max(1.5),
+    readingWidth: z.enum(["narrow", "standard"]),
+  })
+  .strict();
+
+const imageTreatmentSchema = z
+  .object({
+    id: z.enum(["fullBleed", "contained", "editorialCrop", "productNeutral", "split", "softFrame"]),
+    label: localizedLabelSchema,
+    canonicalMediaImmutable: z.literal(true),
+    allowedAssetRoles: z.array(tokenSchema).min(1),
+  })
+  .strict();
+
+const productCardFamilySchema = z
+  .object({
+    id: z.enum(["minimalProduct", "editorialImage", "compactCommerce", "premiumJewellery"]),
+    label: localizedLabelSchema,
+    registryVariant: z.enum(["standard", "editorial", "compact", "imageFirst", "horizontal"]),
+    requiredCommerceFields: z.tuple([
+      z.literal("productId"),
+      z.literal("title"),
+      z.literal("priceState"),
+      z.literal("availability"),
+      z.literal("canonicalMedia"),
+      z.literal("productRoute"),
+    ]),
+  })
+  .strict();
+
+const directionSchema = z
+  .object({
+    id: storefrontDesignDirectionIdSchema,
+    label: localizedLabelSchema,
+    plannerDescription: localizedLabelSchema,
+    typographyDirectionId: tokenSchema,
+    imageTreatmentId: imageTreatmentSchema.shape.id,
+    homepageRecipeId: tokenSchema,
+    collectionRecipeId: tokenSchema,
+    productRecipeId: tokenSchema,
+    productCardFamilyId: productCardFamilySchema.shape.id,
+    spacingDensity: z.enum(["compact", "standard", "spacious"]),
+    cornerTreatment: z.enum(["square", "soft", "rounded"]),
+    surfaceDepth: z.enum(["flat", "subtle", "layered"]),
+    sectionVariants: z.record(tokenSchema, tokenSchema),
+    collectionPresentation: z
+      .object({
+        variant: z.enum(["standard", "editorial", "compact", "gallery"]),
+        gridDensity: z.enum(["compact", "standard", "spacious"]),
+        cardVariant: z.enum(["standard", "editorial", "compact", "imageFirst", "horizontal"]),
+        filterLayout: z.enum(["sidebar", "horizontal"]),
+      })
+      .strict(),
+    productPresentation: z
+      .object({
+        variant: z.enum(["balanced", "editorial", "compact", "galleryDominant", "editorialSplit"]),
+        galleryLayout: z.enum(["thumbnails", "grid"]),
+        optionDensity: z.enum(["compact", "comfortable"]),
+        attributeLayout: z.enum(["groups", "table"]),
+        mediaTreatment: z.enum(["contained", "crop", "editorial"]),
+      })
+      .strict(),
+  })
+  .strict();
+
+export const storefrontDesignSystemV1Schema = z
+  .object({
+    version: z.literal("1.0.0"),
+    semanticFoundation: z
+      .object({
+        colourRoles: z.tuple([
+          z.literal("primary"),
+          z.literal("secondary"),
+          z.literal("accent"),
+          z.literal("background"),
+          z.literal("surface"),
+          z.literal("text"),
+          z.literal("mutedText"),
+          z.literal("border"),
+          z.literal("success"),
+          z.literal("warning"),
+          z.literal("unavailable"),
+        ]),
+        layoutRoles: z.tuple([
+          z.literal("contentWidth"),
+          z.literal("spacingDensity"),
+          z.literal("cornerTreatment"),
+          z.literal("borderTreatment"),
+          z.literal("surfaceDepth"),
+        ]),
+        commerceStatusTokensProtected: z.literal(true),
+      })
+      .strict(),
+    typographyDirections: z.array(typographyDirectionSchema).min(5),
+    imageTreatments: z.array(imageTreatmentSchema).min(6),
+    productCardFamilies: z.array(productCardFamilySchema).min(3),
+    homepageRecipes: z.array(pageRecipeSchema).min(3),
+    collectionRecipes: z.array(pageRecipeSchema).min(2),
+    productRecipes: z.array(pageRecipeSchema).min(3),
+    directions: z.array(directionSchema).min(3),
+    fingerprint: z.string().min(1),
+  })
+  .strict()
+  .superRefine((system, context) => {
+    for (const [path, values] of [
+      ["typographyDirections", system.typographyDirections],
+      ["imageTreatments", system.imageTreatments],
+      ["productCardFamilies", system.productCardFamilies],
+      ["homepageRecipes", system.homepageRecipes],
+      ["collectionRecipes", system.collectionRecipes],
+      ["productRecipes", system.productRecipes],
+      ["directions", system.directions],
+    ] as const) {
+      const ids = values.map((value) => value.id);
+      if (new Set(ids).size !== ids.length) {
+        context.addIssue({ code: "custom", path: [path], message: `${path} IDs must be unique.` });
+      }
+    }
+    const material = {
+      version: system.version,
+      semanticFoundation: system.semanticFoundation,
+      typographyDirections: system.typographyDirections,
+      imageTreatments: system.imageTreatments,
+      productCardFamilies: system.productCardFamilies,
+      homepageRecipes: system.homepageRecipes,
+      collectionRecipes: system.collectionRecipes,
+      productRecipes: system.productRecipes,
+      directions: system.directions,
+    };
+    if (system.fingerprint !== `storefront-design-system-${canonicalValueFingerprint(material)}`) {
+      context.addIssue({ code: "custom", path: ["fingerprint"], message: "Fingerprint is stale." });
+    }
+    const recipeIds = new Set(
+      [...system.homepageRecipes, ...system.collectionRecipes, ...system.productRecipes].map(
+        (recipe) => recipe.id,
+      ),
+    );
+    const typographyIds = new Set(system.typographyDirections.map((item) => item.id));
+    const imageIds = new Set(system.imageTreatments.map((item) => item.id));
+    const cardIds = new Set(system.productCardFamilies.map((item) => item.id));
+    system.directions.forEach((direction, index) => {
+      const references: [string, string, ReadonlySet<string>][] = [
+        ["homepageRecipeId", direction.homepageRecipeId, recipeIds],
+        ["collectionRecipeId", direction.collectionRecipeId, recipeIds],
+        ["productRecipeId", direction.productRecipeId, recipeIds],
+        ["typographyDirectionId", direction.typographyDirectionId, typographyIds],
+        ["imageTreatmentId", direction.imageTreatmentId, imageIds],
+        ["productCardFamilyId", direction.productCardFamilyId, cardIds],
+      ];
+      for (const [field, id, ids] of references) {
+        if (!ids.has(id)) {
+          context.addIssue({
+            code: "custom",
+            path: ["directions", index, field],
+            message: "Unknown design-system reference.",
+          });
+        }
+      }
+    });
+  });
+
+export type StorefrontDesignDirectionId = z.infer<typeof storefrontDesignDirectionIdSchema>;
+export type StorefrontDesignSystemV1 = z.infer<typeof storefrontDesignSystemV1Schema>;
