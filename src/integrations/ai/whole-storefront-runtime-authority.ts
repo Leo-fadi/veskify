@@ -31,6 +31,8 @@ import {
 import {
   createWholeStorefrontRecipeContext,
   requestWholeStorefrontGenerationPlan,
+  resolveApprovedBrandStoryMedia,
+  type ApprovedAssetPresentation,
   WholeStorefrontPlanningProviderError,
   type WholeStorefrontGenerationPlan,
   type WholeStorefrontPlanningInput,
@@ -119,6 +121,7 @@ export type AuthoritativeWholeStorefrontPlanningContext = Readonly<{
   brief: StorefrontDesignBriefContract;
   componentDefinitions: readonly ComponentDefinitionV2[];
   approvedAssetContext: ApprovedGenerationAssetContext | null;
+  approvedAssetPresentations?: readonly ApprovedAssetPresentation[];
 }>;
 
 /**
@@ -206,11 +209,30 @@ function validatedAuthoritativePlanningContext(
     }
     seenAssetIds.add(asset.assetId);
   });
+  const presentations = context.approvedAssetPresentations ?? [];
+  const presentationIds = new Set<string>();
+  presentations.forEach((presentation) => {
+    const asset = assets.find((candidate) => candidate.assetId === presentation.assetId);
+    if (
+      presentationIds.has(presentation.assetId) ||
+      !asset ||
+      presentation.role !== asset.role ||
+      presentation.revision !== asset.revision ||
+      presentation.materialFingerprint !== asset.materialFingerprint ||
+      presentation.asset.id !== asset.assetId ||
+      presentation.asset.decorative !== asset.presentation.decorative ||
+      JSON.stringify(presentation.asset.alt ?? null) !== JSON.stringify(asset.alt ?? null)
+    ) {
+      throw new ServerWholeStorefrontAuthorityError("invalid-asset-reference");
+    }
+    presentationIds.add(presentation.assetId);
+  });
   return {
     brief: structuredClone(brief.data),
     componentDefinitions: structuredClone(componentDefinitions),
     approvedAssetContext:
       approvedAssetContext === null ? null : structuredClone(approvedAssetContext),
+    approvedAssetPresentations: structuredClone(presentations),
   };
 }
 
@@ -334,7 +356,17 @@ function recipeOrderedSections(
   return result;
 }
 
-function projectedRuntimeSection(component: WholeStorefrontRuntimeComponent): SectionInstance {
+function projectedRuntimeSection(
+  componentInput: WholeStorefrontRuntimeComponent,
+  planningInput: WholeStorefrontPlanningInput,
+  approvedAssetPresentations: readonly ApprovedAssetPresentation[],
+): SectionInstance {
+  const { visible, ...instance } = componentInput;
+  const component = resolveApprovedBrandStoryMedia(
+    instance,
+    planningInput.approvedAssetContext,
+    approvedAssetPresentations,
+  );
   if (component.component === "dynamicCollectionCommerce") {
     const collection = component.bindings.find((binding) => binding.source === "collection");
     const products = component.bindings.find((binding) => binding.source === "productList");
@@ -345,7 +377,7 @@ function projectedRuntimeSection(component: WholeStorefrontRuntimeComponent): Se
       id: component.id,
       component: component.component,
       variant: component.variant,
-      visible: component.visible,
+      visible,
       content: {
         ...structuredClone(component.content),
         collectionId: collection.collectionId,
@@ -363,7 +395,7 @@ function projectedRuntimeSection(component: WholeStorefrontRuntimeComponent): Se
       id: component.id,
       component: component.component,
       variant: component.variant,
-      visible: component.visible,
+      visible,
       content: {
         ...structuredClone(component.content),
         productId: product.productId,
@@ -377,7 +409,7 @@ function projectedRuntimeSection(component: WholeStorefrontRuntimeComponent): Se
     id: component.id,
     component: component.component,
     variant: component.variant,
-    visible: component.visible,
+    visible,
     content: structuredClone(component.content),
     props: structuredClone(component.props),
   };
@@ -389,10 +421,13 @@ function styledProjectedPage(
   plan: WholeStorefrontGenerationPlan,
   planningInput: WholeStorefrontPlanningInput,
   direction: StorefrontStyleDirection,
+  approvedAssetPresentations: readonly ApprovedAssetPresentation[],
 ): PageModel {
   const page: PageModel = {
     ...structuredClone(currentPage),
-    sections: components.map(projectedRuntimeSection),
+    sections: components.map((component) =>
+      projectedRuntimeSection(component, planningInput, approvedAssetPresentations),
+    ),
   };
   page.sections = page.sections.map((section) => {
     const definition = getComponentDefinition(section.component);
@@ -423,6 +458,7 @@ function projectPlanOperations(
   plan: WholeStorefrontGenerationPlan,
   wholeStorefrontProposal: ReturnType<typeof compileWholeStorefrontProposal>,
   planningInput: WholeStorefrontPlanningInput,
+  approvedAssetPresentations: readonly ApprovedAssetPresentation[],
 ): {
   operations: AiStorefrontOperation[];
   proposedStorefront: AiStorefrontProviderRequest["storefront"];
@@ -459,6 +495,7 @@ function projectPlanOperations(
         plan,
         planningInput,
         direction,
+        approvedAssetPresentations,
       );
       const projectedIds = new Set(projectedPage.sections.map((section) => section.id));
       const removedSectionIds = currentPage.sections
@@ -512,6 +549,7 @@ function planDerivedProposalEnvelope(input: {
   request: AiStorefrontProviderRequest;
   plan: WholeStorefrontGenerationPlan;
   planningInput: WholeStorefrontPlanningInput;
+  approvedAssetPresentations: readonly ApprovedAssetPresentation[];
 }): AiStorefrontProviderResponse {
   const wholeStorefrontProposal = compileWholeStorefrontProposal({
     plan: input.plan,
@@ -522,6 +560,7 @@ function planDerivedProposalEnvelope(input: {
     input.plan,
     wholeStorefrontProposal,
     input.planningInput,
+    input.approvedAssetPresentations,
   );
   const proposalId = createAiStorefrontProposalId(
     input.request.requestId,
@@ -988,6 +1027,12 @@ export function createStandaloneServerWholeStorefrontPlanningAuthority({
         ...identity,
       }).load({ tenantId: identity.tenantId, storefrontProjectId: aggregate.project.id });
       const authorization = createMerchantProjectAuthorization(context);
+      const contextRequest = {
+        projectId: aggregate.project.id,
+        catalogueId: aggregate.catalogue.id,
+        enabledLocales: aggregate.project.enabledLocales,
+        requestedLocale: request.activeLocale,
+      };
       const planningInputFor = async (): Promise<WholeStorefrontPlanningInput> => {
         let currentAggregate: Awaited<ReturnType<ProjectRepository["get"]>>;
         try {
@@ -1005,12 +1050,6 @@ export function createStandaloneServerWholeStorefrontPlanningAuthority({
           validatedDraftCandidates.get(
             candidateKey(request.target.projectId, request.storefrontBaselineFingerprint),
           ) ?? seededDraft;
-        const contextRequest = {
-          projectId: currentAggregate.project.id,
-          catalogueId: currentAggregate.catalogue.id,
-          enabledLocales: currentAggregate.project.enabledLocales,
-          requestedLocale: request.activeLocale,
-        };
         const authoritative = validatedAuthoritativePlanningContext(
           await contextSource.load(contextRequest),
           contextRequest,
@@ -1052,8 +1091,18 @@ export function createStandaloneServerWholeStorefrontPlanningAuthority({
             throw error;
           }
         },
-        proposalEnvelope: (request, plan) =>
-          Promise.resolve(planDerivedProposalEnvelope({ request, plan, planningInput })),
+        proposalEnvelope: async (request, plan) => {
+          const authoritative = validatedAuthoritativePlanningContext(
+            await contextSource.load(contextRequest),
+            contextRequest,
+          );
+          return planDerivedProposalEnvelope({
+            request,
+            plan,
+            planningInput,
+            approvedAssetPresentations: authoritative.approvedAssetPresentations ?? [],
+          });
+        },
         requiresAuthoritativePlanningFingerprint: true,
         recordValidatedProposal: (response) => {
           const proposed = response.proposal.proposedStorefront;

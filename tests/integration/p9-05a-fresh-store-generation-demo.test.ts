@@ -25,7 +25,7 @@ import {
   p905aDirectionScenarios,
   p905aProtectedCommerceBaseline,
   type P905aDirectionId,
-} from "../fixtures/p9-05a-fresh-store-generation";
+} from "@/data/demo/p9-05a-fresh-store-generation";
 import {
   createP905aAcceptanceCoordinator,
   generateP905aScenario,

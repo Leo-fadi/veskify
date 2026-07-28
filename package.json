@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "smoke:openai": "vitest run --config vitest.openai-smoke.config.ts",
+    "demo:p9-05a:load": "vitest run --config vitest.p9-05a-demo.config.ts",
     "validate": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build",
     "validate:full": "pnpm validate && pnpm test:e2e"
   },

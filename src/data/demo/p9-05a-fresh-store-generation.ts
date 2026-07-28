@@ -823,6 +823,24 @@ export function createP905aFreshMerchantFixture(directionId: P905aDirectionId) {
     published,
     brief,
     assetContext,
+    assetPresentations: assetContext.assets.map((asset) => {
+      const definition = approvedAssetDefinitions.find(
+        (candidate) => candidate.assetId === asset.assetId,
+      );
+      if (!definition) throw new Error(`Missing Lumo presentation asset: ${asset.assetId}.`);
+      return {
+        assetId: asset.assetId,
+        role: asset.role,
+        revision: asset.revision,
+        materialFingerprint: asset.materialFingerprint,
+        asset: {
+          id: asset.assetId,
+          url: definition.sourceUrl,
+          ...(asset.alt === null || asset.alt === undefined ? {} : { alt: asset.alt }),
+          decorative: asset.presentation.decorative,
+        },
+      };
+    }),
     planningInput: {
       brief,
       project: {

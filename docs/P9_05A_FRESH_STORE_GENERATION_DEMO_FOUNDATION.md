@@ -97,18 +97,32 @@ execute it.
 
 1. Start from an approved integration branch that includes P9-05A and final integrated P9-04
    acceptance. Require a clean worktree and record the commit SHA.
-2. Load a newly created `project_lumo_atelier_p9_05a` fixture aggregate. Confirm its active draft
-   has only the minimal home, collection, and product compositions described above and that
-   history is empty.
-3. Record canonical fingerprints for the active draft, stored draft, published snapshot, approved
+2. From a clean local demo database, run `pnpm demo:p9-05a:load`. It loads the stable
+   `project_lumo_fresh` aggregate through the browser `IndexedDbProjectRepository`, verifies the
+   approved brief and asset context, and exposes the editor route
+   `/projects/project_lumo_fresh/editor`. The loader refuses an existing project ID rather than
+   replacing a draft; reset the dedicated demo database explicitly before a new run.
+3. Start the local application, open that editor route, and confirm its active draft has only the
+   minimal home, collection, and product compositions described above and that history is empty.
+4. Record canonical fingerprints for the active draft, stored draft, published snapshot, approved
    brief, approved assets, and protected-commerce baseline.
-4. Configure the server-side whole-storefront provider explicitly with
-   `VESKIFY_AI_PROVIDER=openai` and a valid `OPENAI_API_KEY`. An optional
-   `VESKIFY_OPENAI_MODEL` may select an approved model. Keep credentials in the managed local
-   environment; never paste them into source, fixtures, test output, screenshots, or the PR.
-5. Confirm authenticated server project authority and the canonical repository are available.
+5. Configure these **server-side** environment variables before starting the integrated runtime:
+
+   ```bash
+   VESKIFY_RUNTIME_MODE=integrated
+   VESKIFY_AI_PROVIDER=openai
+   OPENAI_API_KEY=<managed secret>
+   ```
+
+   `VESKIFY_OPENAI_MODEL` is an optional supported model override. Credentials must remain in the
+   managed environment and must never be committed, logged, copied into fixtures, or captured in
+   evidence. Deterministic automated acceptance does not use the live provider; OpenAI is called
+   only in this controlled P9-05B demonstration.
+
+6. Confirm authenticated server project authority and the canonical repository are available.
    Missing authority or credentials is a stop condition, never a reason to fall back silently to
-   the deterministic provider.
+   the deterministic provider. `providerUnavailable` is expected when integrated runtime mode or
+   credentials are missing or incompatible.
 
 ### Merchant request
 

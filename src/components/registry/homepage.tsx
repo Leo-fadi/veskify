@@ -321,6 +321,7 @@ export const campaignBannerDefinition = defineComponent({
 
 export const brandStoryContentSchema = z
   .object({
+    eyebrow: localizedTextSchema.optional(),
     heading: localizedTextSchema,
     body: localizedTextSchema,
     media: assetRefSchema.optional(),
@@ -350,6 +351,7 @@ export const brandStoryDefinition = defineComponent({
   contentSchema: brandStoryContentSchema,
   propsSchema: brandStoryPropsSchema,
   defaultContent: {
+    eyebrow: { en: "Our story", fi: "Tarina" },
     heading: { en: "Designed in Helsinki", fi: "Suunniteltu Helsingissä" },
     body: {
       en: "Nordic clarity, made personal.",
@@ -365,6 +367,7 @@ export const brandStoryDefinition = defineComponent({
   },
   defaultProps: { imagePosition: "right" },
   editorFields: {
+    eyebrow: { source: "content", control: "text", label: "Eyebrow", localized: true },
     heading: { source: "content", control: "text", label: "Heading", localized: true },
     body: { source: "content", control: "textarea", label: "Story", localized: true },
     imagePosition: {

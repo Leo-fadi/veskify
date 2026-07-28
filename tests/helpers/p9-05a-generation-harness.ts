@@ -31,7 +31,7 @@ import {
   P9_05A_FIXED_TIME,
   type P905aDirectionId,
   createP905aFreshMerchantFixture,
-} from "../fixtures/p9-05a-fresh-store-generation";
+} from "@/data/demo/p9-05a-fresh-store-generation";
 
 const SERVER_PROVIDER_ID = "server-whole-storefront-planning";
 
@@ -43,6 +43,7 @@ function contextSource(
       brief: structuredClone(fixture.brief),
       componentDefinitions: structuredClone(fixture.planningInput.componentDefinitions),
       approvedAssetContext: structuredClone(fixture.assetContext),
+      approvedAssetPresentations: structuredClone(fixture.assetPresentations),
     }),
   };
 }
