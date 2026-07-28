@@ -690,6 +690,7 @@ export function createServerWholeStorefrontPlanningHandler({
         provider: selectProvider(),
         input: context.planningInput,
         currentInput: context.currentPlanningInput,
+        merchantInstruction: canonicalRequest.instruction,
       });
       const envelope = validateAiStorefrontProviderResponse(
         canonicalRequest,

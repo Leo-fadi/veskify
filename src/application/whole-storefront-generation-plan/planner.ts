@@ -801,6 +801,9 @@ function validateAssetPlacements(
 
 export function createWholeStorefrontGenerationPlan(
   inputValue: unknown,
+  options: {
+    directionId?: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
+  } = {},
 ): WholeStorefrontGenerationPlan {
   const input = parsePlanningInput(inputValue);
   const target = createWholeStorefrontGenerationTarget(input);
@@ -822,7 +825,8 @@ export function createWholeStorefrontGenerationPlan(
       "The approved Storefront Design Brief has no approved brand direction.",
     );
   }
-  const selectedDirectionId = selectStorefrontDesignDirection(brandDirection);
+  const selectedDirectionId =
+    options.directionId ?? selectStorefrontDesignDirection(brandDirection);
   const selectedDirection = input.recipeContext.designSystem.directions.find(
     (direction) => direction.id === selectedDirectionId,
   );
@@ -1299,8 +1303,10 @@ export function validateWholeStorefrontGenerationPlan(
   inputValue: unknown,
   planValue: unknown,
 ): WholeStorefrontGenerationPlan {
-  const expected = createWholeStorefrontGenerationPlan(inputValue);
   const plan = wholeStorefrontGenerationPlanSchema.parse(planValue);
+  const expected = createWholeStorefrontGenerationPlan(inputValue, {
+    directionId: plan.designSystemSelection.directionId,
+  });
   if (canonicalValueString(plan) !== canonicalValueString(expected)) {
     invalid(
       "provider-invented-target",

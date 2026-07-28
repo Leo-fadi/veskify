@@ -16,6 +16,7 @@ export type WholeStorefrontPlanningProviderCapability = Readonly<{
 }>;
 
 export type WholeStorefrontPlanningProviderRequest = Readonly<{
+  merchantInstruction: string;
   requestFingerprint: string;
   approvedBrief: Readonly<{
     id: string;
@@ -115,6 +116,21 @@ export type WholeStorefrontPlanningProviderRequest = Readonly<{
     requirements: readonly string[];
   }>[];
   protectedInstructions: readonly string[];
+  directionOptions: readonly Readonly<{
+    id: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
+    homepageRecipeId: string;
+    collectionRecipeId: string;
+    productRecipeId: string;
+    productCardFamilyId: string;
+    typographyDirectionId: string;
+    imageTreatmentId: string;
+    spacingDensity: "compact" | "standard" | "spacious";
+    cornerTreatment: "square" | "soft" | "rounded";
+    surfaceDepth: "flat" | "subtle" | "layered";
+  }>[];
+  planForDirection: (
+    directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
+  ) => WholeStorefrontGenerationPlan;
   expectedPlan: WholeStorefrontGenerationPlan;
 }>;
 
@@ -180,6 +196,7 @@ function sortedStrings(values: readonly string[]) {
 
 export function buildWholeStorefrontPlanningProviderRequest(
   inputValue: unknown,
+  merchantInstruction = "Prepare a coherent storefront using the approved merchant brief.",
 ): WholeStorefrontPlanningProviderRequest {
   let input: WholeStorefrontPlanningInput;
   let expectedPlan: WholeStorefrontGenerationPlan;
@@ -197,6 +214,7 @@ export function buildWholeStorefrontPlanningProviderRequest(
   if (!noUnsafeProviderContent(expectedPlan)) return fail("invalid-request");
 
   const request: WholeStorefrontPlanningProviderRequest = {
+    merchantInstruction,
     requestFingerprint: expectedPlan.requestFingerprint,
     approvedBrief: {
       id: input.brief.id,
@@ -320,6 +338,21 @@ export function buildWholeStorefrontPlanningProviderRequest(
       "Required shared chrome and homepage, collection-template, and product-template families must remain present.",
       "Do not apply, compile, publish, or otherwise mutate a storefront draft, history, or catalogue.",
     ],
+    directionOptions: input.recipeContext.designSystem.directions
+      .map((direction) => ({
+        id: direction.id,
+        homepageRecipeId: direction.homepageRecipeId,
+        collectionRecipeId: direction.collectionRecipeId,
+        productRecipeId: direction.productRecipeId,
+        productCardFamilyId: direction.productCardFamilyId,
+        typographyDirectionId: direction.typographyDirectionId,
+        imageTreatmentId: direction.imageTreatmentId,
+        spacingDensity: direction.spacingDensity,
+        cornerTreatment: direction.cornerTreatment,
+        surfaceDepth: direction.surfaceDepth,
+      }))
+      .sort((left, right) => left.id.localeCompare(right.id)),
+    planForDirection: (directionId) => createWholeStorefrontGenerationPlan(input, { directionId }),
     expectedPlan: structuredClone(expectedPlan),
   };
   if (!noUnsafeProviderContent(request)) return fail("invalid-request");
@@ -330,12 +363,14 @@ export async function requestWholeStorefrontGenerationPlan({
   provider,
   input,
   currentInput,
+  merchantInstruction,
 }: {
   provider: WholeStorefrontPlanningProvider;
   input: unknown;
   currentInput: () => unknown;
+  merchantInstruction?: string;
 }): Promise<WholeStorefrontGenerationPlan> {
-  const request = buildWholeStorefrontPlanningProviderRequest(input);
+  const request = buildWholeStorefrontPlanningProviderRequest(input, merchantInstruction);
   if (
     !provider.capabilities.wholeStorefrontPlanning ||
     !provider.capabilities.structuredPlanOutput ||
