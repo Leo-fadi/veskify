@@ -350,6 +350,7 @@ export function CampaignBanner({
 }
 
 export function BrandStory({
+  eyebrow,
   heading,
   body,
   media,
@@ -358,6 +359,7 @@ export function BrandStory({
   context,
   className,
 }: {
+  eyebrow?: LocalizedText;
   heading: LocalizedText;
   body: LocalizedText;
   media?: AssetRef;
@@ -369,7 +371,9 @@ export function BrandStory({
   return (
     <section className={`brand-story store-split--media-${imagePosition} ${className ?? ""}`}>
       <div>
-        <p className="store-eyebrow">Aurum Nordic</p>
+        <p className="store-eyebrow">
+          {text(eyebrow ?? { en: "Our story", fi: "Tarina" }, context)}
+        </p>
         <h2>{text(heading, context)}</h2>
         <p>{text(body, context)}</p>
         <dl>

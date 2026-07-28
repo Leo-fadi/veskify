@@ -413,6 +413,10 @@ function requiredHomepageRecipeComponents(input: {
       componentVersion: definition.version,
       variant: recipeSection.variant,
       content: {
+        eyebrow: {
+          en: planningInput.brief.businessIdentity.businessName,
+          fi: planningInput.brief.businessIdentity.businessName,
+        },
         heading: {
           en: planningInput.brief.businessIdentity.businessName,
           fi: planningInput.brief.businessIdentity.businessName,

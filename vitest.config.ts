@@ -14,5 +14,6 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./tests/setup/vitest.setup.ts"],
     include: ["tests/{unit,integration}/**/*.{test,spec}.{ts,tsx}"],
+    fileParallelism: false,
   },
 });

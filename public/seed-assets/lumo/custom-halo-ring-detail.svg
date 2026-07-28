@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title description">
+  <title id="title">Lumo Custom Halo Ring side profile</title>
+  <description id="description">A close side view showing the ring band and raised halo setting.</description>
+  <defs>
+    <linearGradient id="surface" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e8dfd2"/>
+      <stop offset="1" stop-color="#a99782"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9d6727"/>
+      <stop offset=".35" stop-color="#f6d47c"/>
+      <stop offset=".7" stop-color="#b2762c"/>
+      <stop offset="1" stop-color="#ffe6a0"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="24" stdDeviation="20" flood-color="#4b3f31" flood-opacity=".3"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="900" fill="url(#surface)"/>
+  <g fill="none" stroke="url(#gold)" stroke-linecap="round" filter="url(#shadow)">
+    <path d="M270 590c120-210 540-210 660 0" stroke-width="68"/>
+    <path d="M470 455h260" stroke-width="34"/>
+    <path d="M520 455l35-130M680 455l-35-130" stroke-width="24"/>
+  </g>
+  <path d="M600 190l105 118-105 84-105-84z" fill="#eef5f3" stroke="url(#gold)" stroke-width="24"/>
+</svg>

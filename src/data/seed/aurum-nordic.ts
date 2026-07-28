@@ -456,6 +456,7 @@ const homePage = {
       variant: "editorial",
       visible: true,
       content: {
+        eyebrow: enFi("Aurum Nordic", "Aurum Nordic"),
         heading: enFi("Quiet forms, lasting meaning", "Hiljaisia muotoja, kestävää merkitystä"),
         body: enFi(
           "Aurum Nordic is a fictional Helsinki jewellery house balancing clean lines, warm materials and pieces made to stay with you.",
