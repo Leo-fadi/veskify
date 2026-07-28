@@ -1,4 +1,5 @@
 .editor {
+  min-height: 100dvh;
   min-width: 0;
   background: var(--vesko-app-canvas);
   color: var(--brand-color-text);
@@ -85,13 +86,17 @@
 }
 
 .draftActions {
-  display: grid;
+  display: flex;
+  width: 100%;
   gap: 0.5rem;
   align-items: center;
+  flex-wrap: wrap;
+  padding: 0.5rem clamp(0.75rem, 1.5vw, 1.25rem);
 }
 
 .editorContext {
   display: grid;
+  flex: 1 1 12rem;
   gap: 0.16rem;
   justify-items: start;
   color: var(--vesko-app-text);
@@ -136,6 +141,12 @@
   display: flex;
   gap: 0.45rem;
   flex-wrap: wrap;
+}
+
+.workspacePanelActions {
+  display: flex;
+  gap: 0.4rem;
+  flex: 0 0 auto;
 }
 
 .historyActions button,
@@ -210,6 +221,11 @@
   display: none;
 }
 
+.saveStatus,
+.historyStatus {
+  flex: 1 0 100%;
+}
+
 .saveStatus p {
   max-width: 24rem;
   margin: 0;
@@ -230,6 +246,7 @@
 .workspace {
   display: grid;
   min-width: 0;
+  min-height: 0;
 }
 
 .sidebar {
@@ -320,6 +337,7 @@
 
 .canvas {
   min-width: 0;
+  min-height: 0;
   overflow: visible;
   padding: clamp(0.5rem, 2vw, 1.25rem);
 }
@@ -423,49 +441,6 @@
   color: var(--vesko-app-text);
   font-size: 0.76rem;
   font-weight: 700;
-}
-
-.headerOverflow {
-  position: relative;
-}
-
-.headerOverflow summary {
-  display: inline-flex;
-  min-height: 2.5rem;
-  cursor: pointer;
-  align-items: center;
-  border: 1px solid var(--vesko-app-border);
-  border-radius: 0.5rem;
-  padding: 0.55rem 0.75rem;
-  background: var(--vesko-app-surface);
-  color: var(--vesko-green-800);
-  font-size: 0.84rem;
-  font-weight: 750;
-}
-
-.headerOverflow > div {
-  position: absolute;
-  z-index: 5;
-  top: calc(100% + 0.35rem);
-  right: 0;
-  display: grid;
-  min-width: 12rem;
-  gap: 0.35rem;
-  padding: 0.4rem;
-  border: 1px solid var(--vesko-app-border);
-  border-radius: 0.6rem;
-  background: var(--vesko-app-surface);
-  box-shadow: 0 0.5rem 1.5rem rgb(0 53 21 / 14%);
-}
-
-.workspaceToolbar {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  padding: 0.6rem clamp(0.75rem, 2vw, 1.25rem);
-  border-bottom: 1px solid var(--vesko-app-border);
-  background: var(--vesko-app-surface);
 }
 
 .outlineHeader {
@@ -588,6 +563,7 @@
 .toolRail {
   display: grid;
   min-width: 0;
+  min-height: 0;
   align-content: start;
   border-left: 1px solid var(--vesko-app-border);
   background: var(--vesko-app-surface);
@@ -596,11 +572,6 @@
 .toolRail > nav {
   border-bottom: 1px solid var(--vesko-app-border);
   padding: 0.35rem 0.75rem 0;
-}
-
-.toolRail > .designTools,
-.toolRail > aside {
-  min-height: calc(100vh - 10rem);
 }
 
 .designTools {
@@ -661,10 +632,6 @@
   line-height: 1.4;
 }
 
-.drawerTrigger {
-  display: none;
-}
-
 .drawerContent {
   display: grid;
   gap: 1rem;
@@ -696,28 +663,20 @@
     justify-self: end;
   }
 
-  .draftActions {
-    justify-items: end;
-  }
-
   .historyActions {
-    justify-content: flex-end;
-  }
-
-  .workspace {
-    grid-template-columns: 15rem minmax(0, 1fr);
-  }
-
-  .sidebar {
-    min-height: calc(100vh - 5.5rem);
-    border-right: 1px solid #d6dae0;
-    border-bottom: 0;
+    justify-content: flex-start;
   }
 }
 
-@media (min-width: 64rem) {
+@media (min-width: 80rem) {
   .workspace {
-    grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+    grid-template-columns: minmax(14rem, 16rem) minmax(0, 1fr) minmax(18rem, 20rem);
+  }
+
+  .sidebar {
+    min-height: calc(100dvh - 5rem);
+    border-right: 1px solid #d6dae0;
+    border-bottom: 0;
   }
 
   .editorContextPage {
@@ -725,50 +684,20 @@
   }
 
   .workspace.workspaceLeftCollapsed {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 20rem);
   }
 
   .workspace.workspaceRightCollapsed {
-    grid-template-columns: minmax(14rem, 17rem) minmax(0, 1fr);
+    grid-template-columns: minmax(14rem, 16rem) minmax(0, 1fr);
   }
 
   .workspace.workspaceLeftCollapsed.workspaceRightCollapsed {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .toolRail {
-    min-height: calc(100vh - 9rem);
-  }
 }
 
-@media (min-width: 90rem) {
-  .workspace {
-    grid-template-columns: 16rem minmax(0, 1fr);
-  }
-
-  .workspace.workspaceLeftCollapsed {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .workspace.workspaceRightCollapsed {
-    grid-template-columns: 16rem minmax(0, 1fr);
-  }
-
-  .workspace.workspaceLeftCollapsed.workspaceRightCollapsed {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@media (max-width: 63.99rem) {
-  .workspaceToolbar {
-    justify-content: flex-start;
-    gap: 0.5rem;
-  }
-
-  .workspaceToolbar .drawerTrigger {
-    display: inline-flex;
-  }
-
+@media (max-width: 79.99rem) {
   .workspace {
     display: block;
   }
@@ -786,34 +715,20 @@
 
 @media (max-width: 48rem) {
   .draftActions {
-    width: 100%;
-    justify-items: stretch;
-  }
-
-  .statusCluster,
-  .headerLocale,
-  .historyActions {
     justify-content: flex-start;
   }
 
-  .headerLocale label,
-  .historyActions button,
-  .headerOverflow summary {
-    min-height: 2.75rem;
+  .editorContext {
+    flex-basis: 100%;
   }
 
-  .headerActions > .draftActions > .button,
-  .headerActions > .draftActions > .headerOverflow {
-    width: 100%;
+  .draftStatus span,
+  .publishStatus span {
+    display: none;
   }
 
-  .headerOverflow > div {
-    position: static;
-    margin-top: 0.35rem;
-  }
-
-  .headerOverflow > div .button {
-    width: 100%;
+  .workspacePanelActions {
+    flex-wrap: wrap;
   }
 }
 

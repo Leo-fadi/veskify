@@ -146,12 +146,27 @@ test("uses one collapsible merchant workspace panel on each side at desktop widt
   await expect(page.getByText("Outline", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Puck", { exact: true })).toHaveCount(0);
 
+  const outline = page.getByRole("complementary", { name: "Pages & sections" });
+  const canvas = page.getByLabel("Visual editor canvas");
+  const tools = page.getByRole("region", { name: "Contextual tools" });
+  const [outlineBox, canvasBox, toolsBox] = await Promise.all([
+    outline.boundingBox(),
+    canvas.boundingBox(),
+    tools.boundingBox(),
+  ]);
+  if (!outlineBox || !canvasBox || !toolsBox) {
+    throw new Error("The editor workspace panels must have measurable layout boxes.");
+  }
+  expect(outlineBox.x).toBeLessThan(canvasBox.x);
+  expect(canvasBox.x).toBeLessThan(toolsBox.x);
+  await expect(canvas.getByRole("region", { name: "Contextual tools" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Open preview" })).toHaveCount(0);
+
   await page.getByRole("button", { name: "Collapse pages and sections" }).click();
   await page.getByRole("button", { name: "Collapse contextual tools" }).click();
   await expect(page.getByRole("complementary", { name: "Pages & sections" })).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Contextual tools" })).toHaveCount(0);
 
-  const canvas = page.getByLabel("Visual editor canvas");
   await expect(canvas).toBeVisible();
   expect(await canvas.evaluate((element) => element.getBoundingClientRect().width >= 900)).toBe(
     true,
@@ -164,6 +179,36 @@ test("uses one collapsible merchant workspace panel on each side at desktop widt
   await page.getByRole("button", { name: "Expand contextual tools" }).click();
   await expect(page.getByRole("complementary", { name: "Pages & sections" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Contextual tools" })).toBeVisible();
+});
+
+test("uses drawer panels at tablet width without shrinking the editor canvas", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await page.goto(url);
+
+  await expect(page.getByRole("complementary", { name: "Pages & sections" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Contextual tools" })).toHaveCount(0);
+  const canvas = page.getByLabel("Visual editor canvas");
+  await expect(canvas).toBeVisible();
+  expect(await canvas.evaluate((element) => element.getBoundingClientRect().width >= 800)).toBe(
+    true,
+  );
+
+  await page.getByRole("button", { name: "Pages & sections" }).click();
+  await expect(page.getByRole("dialog", { name: "Pages & sections" })).toBeVisible();
+  await page
+    .getByRole("dialog", { name: "Pages & sections" })
+    .getByRole("button", { name: "Close" })
+    .click();
+
+  await page.getByRole("button", { name: "Open AI assistant" }).click();
+  await expect(page.getByRole("dialog", { name: "Contextual tools" })).toBeVisible();
+  await page
+    .getByRole("dialog", { name: "Contextual tools" })
+    .getByRole("button", { name: "Close" })
+    .click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
 });
 
 test("selects and edits an approved field, then discards the session change", async ({ page }) => {
