@@ -188,6 +188,7 @@ function EditorDesignTools({
 function EditorToolRail({
   activeTab,
   controller,
+  designFieldsTargetId,
   id,
   locale,
   onTabChange,
@@ -196,9 +197,11 @@ function EditorToolRail({
   selectedSectionLabel,
   storefrontPageCount,
   onReviewPage,
+  onConfirmationDialogOpenChange,
 }: {
   activeTab: "design" | "ai";
   controller: DesignAgentSessionController;
+  designFieldsTargetId?: string;
   id?: string;
   locale: Locale;
   onTabChange: (tab: "design" | "ai") => void;
@@ -207,6 +210,7 @@ function EditorToolRail({
   selectedSectionLabel?: string;
   storefrontPageCount: number;
   onReviewPage: (pageId: string) => void;
+  onConfirmationDialogOpenChange?: (open: boolean) => void;
 }) {
   const text = editorCopy[locale].tools;
 
@@ -229,7 +233,10 @@ function EditorToolRail({
         onSelect={(id) => onTabChange(id === "ai" ? "ai" : "design")}
       />
       {activeTab === "design" ? (
-        <EditorDesignTools locale={locale} selectedSectionLabel={selectedSectionLabel} />
+        <>
+          <EditorDesignTools locale={locale} selectedSectionLabel={selectedSectionLabel} />
+          {designFieldsTargetId ? <div id={designFieldsTargetId} /> : null}
+        </>
       ) : (
         <DesignAgentPanel
           controller={controller}
@@ -239,6 +246,7 @@ function EditorToolRail({
           selectedSectionLabel={selectedSectionLabel}
           storefrontPageCount={storefrontPageCount}
           onReviewPage={onReviewPage}
+          onConfirmationDialogOpenChange={onConfirmationDialogOpenChange}
         />
       )}
     </section>
@@ -277,13 +285,14 @@ export function ProjectEditorClient({
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [outlineDrawerOpen, setOutlineDrawerOpen] = useState(false);
   const [toolDrawerOpen, setToolDrawerOpen] = useState(false);
-  const [compactViewport, setCompactViewport] = useState(false);
+  const [toolDrawerNestedModalOpen, setToolDrawerNestedModalOpen] = useState(false);
+  const [drawerViewport, setDrawerViewport] = useState(false);
   const savePending = useRef(false);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
-    const media = window.matchMedia("(max-width: 63.99rem)");
-    const update = () => setCompactViewport(media.matches);
+    const media = window.matchMedia("(max-width: 79.99rem)");
+    const update = () => setDrawerViewport(media.matches);
     update();
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
@@ -519,6 +528,10 @@ export function ProjectEditorClient({
   const hasUnsavedChanges = changedPages.length > 0 || brandSystemChanged;
   const locale = readyLocale!;
   const title = resolveLocalizedText(page.title, locale, state.aggregate.project.primaryLocale);
+  const pageRepeatsProjectName =
+    title.trim().localeCompare(state.aggregate.project.name.trim(), locale, {
+      sensitivity: "accent",
+    }) === 0;
   const identity = storefrontShellCopy[locale];
   const context = readyContext!;
   const previewHref = `/projects/${projectId}${page.slug === "/" ? "" : page.slug}`;
@@ -898,10 +911,11 @@ export function ProjectEditorClient({
     </Card>
   );
 
-  const toolRail = (
+  const renderToolRail = (designFieldsTargetId?: string) => (
     <EditorToolRail
       activeTab={activeToolTab}
       controller={agent}
+      designFieldsTargetId={designFieldsTargetId}
       id="editor-contextual-panel"
       locale={locale}
       onTabChange={setActiveToolTab}
@@ -911,6 +925,7 @@ export function ProjectEditorClient({
         selectedSection ? merchantEditorSectionLabel(page, selectedSection, locale) : undefined
       }
       storefrontPageCount={activeDraft!.pages.length}
+      onConfirmationDialogOpenChange={setToolDrawerNestedModalOpen}
       onReviewPage={(pageId) => {
         const candidate = state.pages.find((item) => item.id === pageId);
         if (!candidate || candidate.id === page.id) return;
@@ -1085,8 +1100,12 @@ export function ProjectEditorClient({
               <p className={styles.editorContextStudio}>{identity.studio}</p>
               <p className={styles.editorContextPage}>
                 <span>{state.aggregate.project.name}</span>
-                <span aria-hidden="true"> · </span>
-                <strong>{title}</strong>
+                {!pageRepeatsProjectName ? (
+                  <>
+                    <span aria-hidden="true"> · </span>
+                    <strong>{title}</strong>
+                  </>
+                ) : null}
               </p>
             </section>
             <fieldset className={styles.headerLocale}>
@@ -1115,8 +1134,10 @@ export function ProjectEditorClient({
                 role="status"
               >
                 <StatusPill label={statusLabel} live status={status} />
-                <span>{hasUnsavedChanges ? text.status.unsaved : text.status.noUnsaved}</span>
-                <span>
+                <span className={styles.statusDetail}>
+                  {hasUnsavedChanges ? text.status.unsaved : text.status.noUnsaved}
+                </span>
+                <span className={styles.statusDetail}>
                   {draftDiffers(state.draft, state.published)
                     ? text.status.storedDraftDiffers
                     : text.status.sessionNotice}
@@ -1133,7 +1154,7 @@ export function ProjectEditorClient({
                     draftDiffers(state.draft, state.published) ? "ready-to-publish" : "published"
                   }
                 />
-                <span>
+                <span className={styles.statusDetail}>
                   {draftDiffers(state.draft, state.published)
                     ? text.status.draftDiffersDetail
                     : text.status.publishedCurrent}
@@ -1160,6 +1181,48 @@ export function ProjectEditorClient({
                 {text.actions.redo}
               </Button>
             </div>
+            <div aria-label={text.panels.contextual} className={styles.workspacePanelActions}>
+              <Button
+                aria-controls={drawerViewport ? undefined : "editor-workspace-panel"}
+                aria-expanded={drawerViewport ? outlineDrawerOpen : leftPanelOpen}
+                onClick={() => {
+                  if (drawerViewport) {
+                    setOutlineDrawerOpen(true);
+                    setToolDrawerOpen(false);
+                    return;
+                  }
+                  setLeftPanelOpen((current) => !current);
+                }}
+                variant="secondary"
+              >
+                {drawerViewport
+                  ? text.panels.workspace
+                  : leftPanelOpen
+                    ? text.panels.collapseWorkspace
+                    : text.panels.expandWorkspace}
+              </Button>
+              <Button
+                aria-controls={drawerViewport ? undefined : "editor-contextual-panel"}
+                aria-expanded={drawerViewport ? toolDrawerOpen : rightPanelOpen}
+                onClick={() => {
+                  if (drawerViewport) {
+                    setToolDrawerOpen(true);
+                    setOutlineDrawerOpen(false);
+                    return;
+                  }
+                  setRightPanelOpen((current) => !current);
+                }}
+                variant="secondary"
+              >
+                {drawerViewport
+                  ? activeToolTab === "ai"
+                    ? text.tools.openAssistant
+                    : text.tools.openDesign
+                  : rightPanelOpen
+                    ? text.panels.collapseContextual
+                    : text.panels.expandContextual}
+              </Button>
+            </div>
             <Button href={previewHref} variant="secondary">
               {text.actions.preview}
             </Button>
@@ -1175,14 +1238,6 @@ export function ProjectEditorClient({
                 {text.actions.publish}
               </Button>
             )}
-            <details className={styles.headerOverflow}>
-              <summary>{text.actions.more}</summary>
-              <div>
-                <Button href={previewHref} variant="quiet">
-                  {text.actions.openPreview}
-                </Button>
-              </div>
-            </details>
             <div aria-live="polite" aria-atomic="true" className={styles.saveStatus}>
               {saveState.status === "saving" ? <p role="status">{text.feedback.saving}</p> : null}
               {saveState.status === "success" ? <p role="status">{saveState.message}</p> : null}
@@ -1203,50 +1258,6 @@ export function ProjectEditorClient({
         locale={locale}
         projectId={projectId}
       >
-        <div aria-label={text.panels.contextual} className={styles.workspaceToolbar}>
-          <Button
-            aria-controls={compactViewport ? undefined : "editor-workspace-panel"}
-            aria-expanded={compactViewport ? outlineDrawerOpen : leftPanelOpen}
-            className={compactViewport ? styles.drawerTrigger : undefined}
-            onClick={() => {
-              if (compactViewport) {
-                setOutlineDrawerOpen(true);
-                setToolDrawerOpen(false);
-                return;
-              }
-              setLeftPanelOpen((current) => !current);
-            }}
-            variant="secondary"
-          >
-            {compactViewport
-              ? text.panels.workspace
-              : leftPanelOpen
-                ? text.panels.collapseWorkspace
-                : text.panels.expandWorkspace}
-          </Button>
-          <Button
-            aria-controls={compactViewport ? undefined : "editor-contextual-panel"}
-            aria-expanded={compactViewport ? toolDrawerOpen : rightPanelOpen}
-            className={compactViewport ? styles.drawerTrigger : undefined}
-            onClick={() => {
-              if (compactViewport) {
-                setToolDrawerOpen(true);
-                setOutlineDrawerOpen(false);
-                return;
-              }
-              setRightPanelOpen((current) => !current);
-            }}
-            variant="secondary"
-          >
-            {compactViewport
-              ? activeToolTab === "ai"
-                ? text.tools.openAssistant
-                : text.tools.openDesign
-              : rightPanelOpen
-                ? text.panels.collapseContextual
-                : text.panels.expandContextual}
-          </Button>
-        </div>
         <div
           className={[
             styles.workspace,
@@ -1256,7 +1267,7 @@ export function ProjectEditorClient({
             .filter(Boolean)
             .join(" ")}
         >
-          {!compactViewport && leftPanelOpen ? (
+          {!drawerViewport && leftPanelOpen ? (
             <aside
               aria-label={text.panels.workspace}
               className={styles.sidebar}
@@ -1324,16 +1335,20 @@ export function ProjectEditorClient({
                 agent.generatedStorefrontProposal?.id ??
                 "active"
               }
-              contextualPanel={!compactViewport && rightPanelOpen ? toolRail : undefined}
+              contextualPanel={undefined}
               compactFieldsTargetId={
-                compactViewport && toolDrawerOpen && activeToolTab === "design"
-                  ? "editor-compact-design-fields"
+                activeToolTab === "design" &&
+                ((drawerViewport && toolDrawerOpen) || (!drawerViewport && rightPanelOpen))
+                  ? drawerViewport
+                    ? "editor-compact-design-fields"
+                    : "editor-design-fields"
                   : undefined
               }
-              showDesignFields={!compactViewport && rightPanelOpen && activeToolTab === "design"}
+              showDesignFields={false}
               validationErrorMessage={text.feedback.canvasValidation}
             />
           </main>
+          {!drawerViewport && rightPanelOpen ? renderToolRail("editor-design-fields") : null}
         </div>
         <Drawer
           closeLabel={text.actions.close}
@@ -1344,18 +1359,20 @@ export function ProjectEditorClient({
           <div className={styles.drawerContent}>
             {outlineList}
             {sectionActions}
-            {compactViewport ? renderDraftSafeguards(true) : null}
+            {drawerViewport ? renderDraftSafeguards(true) : null}
           </div>
         </Drawer>
         <Drawer
           closeLabel={text.actions.close}
+          closeOnEscape={!toolDrawerNestedModalOpen}
           onClose={() => setToolDrawerOpen(false)}
           open={toolDrawerOpen}
           title={text.panels.contextual}
         >
           <div className={styles.drawerContent}>
-            {toolRail}
-            {activeToolTab === "design" ? <div id="editor-compact-design-fields" /> : null}
+            {renderToolRail(
+              activeToolTab === "design" ? "editor-compact-design-fields" : undefined,
+            )}
           </div>
         </Drawer>
       </AppShell>

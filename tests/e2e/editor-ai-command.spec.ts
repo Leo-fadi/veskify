@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openEditorAssistant } from "./editor-assistant";
 
 const editorUrl = "/projects/project_aurum_nordic/editor";
 
@@ -137,7 +138,7 @@ for (const width of [375, 768, 1024, 1440]) {
   test(`editor AI command and confirmation remain usable at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.goto(editorUrl);
-    if (width < 1024) await page.getByRole("button", { name: "Open AI assistant" }).click();
+    await openEditorAssistant(page);
     const request = page.getByLabel("Your request");
     await expect(request).toBeVisible();
     await request.fill("Add a campaign section.");
