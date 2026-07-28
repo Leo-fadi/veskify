@@ -55,6 +55,9 @@ test("loads the persisted rings collection and operates bilingual demo controls 
   await expect(
     page.getByRole("combobox", { name: "Lajittele tuotteet", exact: true }),
   ).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
   await expect(page.getByText(/puck/i)).toHaveCount(0);
   await expect(page.getByRole("button", { name: /save|publish|delete|edit/i })).toHaveCount(0);
 });

@@ -175,7 +175,7 @@ describe("P9-03 Storefront Design System v1", () => {
     ).toBe("warmApproachable");
   });
 
-  it("compiles different brief directions into different collection, card and PDP families", async () => {
+  it("compiles every registered direction into its responsive collection, card and PDP families", async () => {
     const premium = createWholeStorefrontGenerationPlan(
       await planningInput(aurumNordicSeed, {
         visualStyleDirection: "editorial",
@@ -192,9 +192,23 @@ describe("P9-03 Storefront Design System v1", () => {
         toneKeywords: ["technical"],
       }),
     );
+    const warm = createWholeStorefrontGenerationPlan(
+      await planningInput(aurumNordicSeed, {
+        visualStyleDirection: "natural",
+        typographyDirection: "soft",
+        imageryDirection: "lifestyle",
+        toneKeywords: ["warm"],
+      }),
+    );
     expect(premium.designSystemSelection).not.toEqual(technical.designSystemSelection);
     expect(premium.designSystemSelection.productCardFamilyId).toBe("premiumJewellery");
     expect(technical.designSystemSelection.productCardFamilyId).toBe("compactCommerce");
+    expect(warm.designSystemSelection).toMatchObject({
+      directionId: "warmApproachable",
+      productCardFamilyId: "minimalProduct",
+      collectionPresentation: { variant: "editorial" },
+      productPresentation: { variant: "balanced" },
+    });
     const generated = (plan: typeof premium, component: string) =>
       plan.pagePlans
         .flatMap((page) => page.components)
@@ -205,7 +219,11 @@ describe("P9-03 Storefront Design System v1", () => {
     expect(generated(technical, "dynamicProductDetail")).toMatchObject({
       instance: { variant: "compact", props: { optionDensity: "compact" } },
     });
+    expect(generated(warm, "dynamicCollectionCommerce")).toMatchObject({
+      instance: { variant: "editorial", props: { cardVariant: "standard" } },
+    });
     expect(technical.canonicalCommerceBindings).toEqual(premium.canonicalCommerceBindings);
+    expect(warm.canonicalCommerceBindings).toEqual(premium.canonicalCommerceBindings);
   });
 
   it("materializes a missing required recipe section only from approved content and assets", async () => {

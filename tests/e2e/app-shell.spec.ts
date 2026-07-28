@@ -1,4 +1,7 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+const hasNoHorizontalOverflow = (page: Page) =>
+  page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 
 test("loads the Vesko Storefront Studio entry and exposes the working journeys", async ({
   page,
@@ -42,6 +45,28 @@ test("loads the complete persisted homepage and switches locale by keyboard", as
   await expect(page.getByRole("heading", { name: "Light, held close" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Quiet forms, lasting meaning" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Notes from the north" })).toBeVisible();
+  await expect(page.locator("header.store-header")).toHaveCount(1);
+  await expect(page.locator("footer.store-footer")).toHaveCount(1);
+  expect(
+    await page
+      .locator("header.store-header")
+      .evaluate((header) =>
+        Boolean(
+          header.compareDocumentPosition(document.querySelector("main")!) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+      ),
+  ).toBe(true);
+  expect(
+    await page
+      .locator("footer.store-footer")
+      .evaluate((footer) =>
+        Boolean(
+          document.querySelector("main")!.compareDocumentPosition(footer) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+        ),
+      ),
+  ).toBe(true);
   await expect(page.getByText("1 290 €")).toBeVisible();
   const ringsLink = page
     .getByRole("navigation", { name: "Primary navigation" })
@@ -59,9 +84,7 @@ test("loads the complete persisted homepage and switches locale by keyboard", as
   await expect(page.getByRole("button", { name: /publish|save|edit|delete/i })).toHaveCount(0);
   await page.getByRole("button", { name: "Liity uutiskirjeeseen" }).click();
   await expect(page.getByText("Vain demo — sähköpostia ei lähetetä.")).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
-  );
+  expect(await hasNoHorizontalOverflow(page)).toBe(true);
 });
 
 for (const width of [375, 768, 1024, 1440]) {
@@ -71,8 +94,29 @@ for (const width of [375, 768, 1024, 1440]) {
     await expect(page.getByText("Draft preview")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Made for northern light" })).toBeVisible();
     await expect(page.getByRole("group", { name: "Storefront language" })).toBeVisible();
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-    ).toBe(true);
+    expect(await hasNoHorizontalOverflow(page)).toBe(true);
+    await expect(page.locator("header.store-header")).toBeVisible();
+    await expect(page.locator("footer.store-footer")).toBeVisible();
   });
 }
+
+test("keeps Finnish storefront navigation and calls to action inside the tablet viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 768, height: 1024 });
+  await page.goto("/projects/project_aurum_nordic");
+  await expect(page.getByRole("heading", { name: "Made for northern light" })).toBeVisible();
+
+  const finnish = page.getByRole("radio", { name: "Suomi" });
+  await finnish.focus();
+  await page.keyboard.press("Space");
+
+  await expect(page.getByRole("heading", { name: "Tehty pohjoiseen valoon" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Tutustu sormuksiin" })).toBeVisible();
+  await expect(
+    page
+      .getByRole("navigation", { name: "Päänavigaatio" })
+      .getByRole("link", { name: "Sormukset" }),
+  ).toBeVisible();
+  expect(await hasNoHorizontalOverflow(page)).toBe(true);
+});

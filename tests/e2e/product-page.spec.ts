@@ -28,7 +28,31 @@ test("loads the bilingual Aurora product draft with visual-only controls", async
   await expect(page.getByRole("heading", { level: 1, name: "Aurora-sormus 585" })).toBeVisible();
   await expect(page.getByText("Current locale: FI")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Materiaali, hoito ja toimitus" })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
   await expect(page.getByText(/Puck editor|property panel/i)).toHaveCount(0);
+});
+
+test("keeps product configuration controls reachable at 375px", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(url);
+  await expect(page.getByRole("heading", { level: 1, name: "Aurora Ring 585" })).toBeVisible();
+
+  const size = page.getByRole("button", { name: "17", exact: true });
+  await size.scrollIntoViewIfNeeded();
+  await size.focus();
+  await expect(size).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(size).toHaveAttribute("aria-pressed", "true");
+
+  const engraving = page.getByRole("textbox", { name: "Engraving Optional" });
+  await engraving.scrollIntoViewIfNeeded();
+  await engraving.fill("Aurum");
+  await expect(engraving).toHaveValue("Aurum");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
 });
 
 for (const width of [375, 768, 1024, 1440]) {
