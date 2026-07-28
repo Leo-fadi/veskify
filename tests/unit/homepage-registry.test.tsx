@@ -158,6 +158,13 @@ describe("P1-01 homepage registry", () => {
     }
   });
 
+  it("preserves a full accessible merchant brand name in the shared header", () => {
+    const longBrand = "Pohjoisen Käsityöläiskorujen Ateljee ja Muotoilustudio";
+    render(<StoreHeader brandName={longBrand} context={context()} showCart showSearch />);
+
+    expect(screen.getByRole("link", { name: longBrand })).toHaveAttribute("href", "/");
+  });
+
   it("renders useful catalogue-backed empty states", () => {
     const value = structuredClone(homepage);
     value.sections.find(
