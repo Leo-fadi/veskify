@@ -1004,7 +1004,7 @@ describe("P2-01 project editor route", () => {
         addEventListener: vi.fn(),
         addListener: vi.fn(),
         dispatchEvent: vi.fn(),
-        matches: media === "(max-width: 63.99rem)",
+        matches: media === "(max-width: 79.99rem)",
         media,
         onchange: null,
         removeEventListener: vi.fn(),

@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { openEditorAssistant } from "./editor-assistant";
 
 const url = "/projects/project_aurum_nordic/editor";
 const projectUrl = "/projects/project_aurum_nordic";
@@ -146,12 +147,27 @@ test("uses one collapsible merchant workspace panel on each side at desktop widt
   await expect(page.getByText("Outline", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Puck", { exact: true })).toHaveCount(0);
 
+  const outline = page.getByRole("complementary", { name: "Pages & sections" });
+  const canvas = page.getByLabel("Visual editor canvas");
+  const tools = page.getByRole("region", { name: "Contextual tools" });
+  const [outlineBox, canvasBox, toolsBox] = await Promise.all([
+    outline.boundingBox(),
+    canvas.boundingBox(),
+    tools.boundingBox(),
+  ]);
+  if (!outlineBox || !canvasBox || !toolsBox) {
+    throw new Error("The editor workspace panels must have measurable layout boxes.");
+  }
+  expect(outlineBox.x).toBeLessThan(canvasBox.x);
+  expect(canvasBox.x).toBeLessThan(toolsBox.x);
+  await expect(canvas.getByRole("region", { name: "Contextual tools" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Open preview" })).toHaveCount(0);
+
   await page.getByRole("button", { name: "Collapse pages and sections" }).click();
   await page.getByRole("button", { name: "Collapse contextual tools" }).click();
   await expect(page.getByRole("complementary", { name: "Pages & sections" })).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Contextual tools" })).toHaveCount(0);
 
-  const canvas = page.getByLabel("Visual editor canvas");
   await expect(canvas).toBeVisible();
   expect(await canvas.evaluate((element) => element.getBoundingClientRect().width >= 900)).toBe(
     true,
@@ -165,6 +181,113 @@ test("uses one collapsible merchant workspace panel on each side at desktop widt
   await expect(page.getByRole("complementary", { name: "Pages & sections" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Contextual tools" })).toBeVisible();
 });
+
+test("uses drawer panels at tablet width without shrinking the editor canvas", async ({ page }) => {
+  await page.setViewportSize({ width: 1024, height: 900 });
+  await page.goto(url);
+
+  await expect(page.getByRole("complementary", { name: "Pages & sections" })).toHaveCount(0);
+  await expect(page.getByRole("region", { name: "Contextual tools" })).toHaveCount(0);
+  const canvas = page.getByLabel("Visual editor canvas");
+  await expect(canvas).toBeVisible();
+  expect(await canvas.evaluate((element) => element.getBoundingClientRect().width >= 800)).toBe(
+    true,
+  );
+
+  await page.getByRole("button", { name: "Pages & sections" }).click();
+  await expect(page.getByRole("dialog", { name: "Pages & sections" })).toBeVisible();
+  await page
+    .getByRole("dialog", { name: "Pages & sections" })
+    .getByRole("button", { name: "Close" })
+    .click();
+
+  await page.getByRole("button", { name: "Open AI assistant" }).click();
+  await expect(page.getByRole("dialog", { name: "Contextual tools" })).toBeVisible();
+  await page
+    .getByRole("dialog", { name: "Contextual tools" })
+    .getByRole("button", { name: "Close" })
+    .click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
+    true,
+  );
+});
+
+for (const width of [375, 768, 1024, 1440]) {
+  test(`opens the assistant through the correct workspace surface at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(url);
+
+    const surface = await openEditorAssistant(page);
+    expect(surface).toBe(width < 1280 ? "drawer" : "toolRail");
+    await expect(page.getByLabel("Your request")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Save draft" })).toBeVisible();
+  });
+}
+
+for (const width of [375, 768]) {
+  for (const locale of ["en", "fi"] as const) {
+    test(`keeps ${locale.toUpperCase()} draft and publish status pills visible at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(url);
+      if (locale === "fi") await page.getByRole("radio", { name: "Suomi" }).check();
+
+      const draftStatus = page.getByTestId("draft-status");
+      const publishStatus = page.locator(
+        `[aria-label="${locale === "fi" ? "Julkaisun tila" : "Publish status"}"]`,
+      );
+      const draftPill = draftStatus.locator("[data-status]");
+      const publishPill = publishStatus.locator("[data-status]");
+      await expect(draftStatus).toHaveAccessibleName(
+        locale === "fi" ? "Luonnoksen tila" : "Draft status",
+      );
+      await expect(draftPill).toBeVisible();
+      await expect(draftPill).toHaveText(locale === "fi" ? "Tallennettu" : "Saved");
+      await expect(publishStatus).toHaveAccessibleName(
+        locale === "fi" ? "Julkaisun tila" : "Publish status",
+      );
+      await expect(publishPill).toBeVisible();
+      await expect(publishPill).toHaveText(locale === "fi" ? "Julkaistu" : "Published");
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+    });
+  }
+}
+
+for (const width of [375, 768, 1024, 1440]) {
+  test(`keeps the editor toolbar aligned with the actual global-bar layout at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(url);
+    const toolbar = page.getByTestId("editor-toolbar");
+    const globalBar = page.getByRole("banner");
+    await expect(toolbar).toBeVisible();
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    const [toolbarBox, globalBarBox, globalBarPosition] = await Promise.all([
+      toolbar.boundingBox(),
+      globalBar.boundingBox(),
+      globalBar.evaluate((element) => getComputedStyle(element).position),
+    ]);
+    if (!toolbarBox || !globalBarBox) {
+      throw new Error("The editor toolbar and global bar must have measurable layout boxes.");
+    }
+    expect(toolbarBox.y).toBeLessThanOrEqual(1);
+    if (width < 1024) {
+      expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+      expect(globalBarPosition).toBe("relative");
+      expect(globalBarBox.y + globalBarBox.height).toBeLessThanOrEqual(1);
+    } else {
+      expect(globalBarPosition).toBe("fixed");
+      expect(toolbarBox.x).toBeGreaterThanOrEqual(globalBarBox.x + globalBarBox.width);
+    }
+  });
+}
 
 test("selects and edits an approved field, then discards the session change", async ({ page }) => {
   await page.goto(url);
