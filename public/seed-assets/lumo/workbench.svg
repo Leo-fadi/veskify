@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-labelledby="title description">
+  <title id="title">Lumo Atelier workbench</title>
+  <description id="description">Jewellery tools, a ring and warm task light on a craftsperson's workbench.</description>
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d9d0c1"/>
+      <stop offset="1" stop-color="#7d7568"/>
+    </linearGradient>
+    <linearGradient id="bench" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#79583d"/>
+      <stop offset=".5" stop-color="#b18561"/>
+      <stop offset="1" stop-color="#674832"/>
+    </linearGradient>
+    <radialGradient id="light">
+      <stop offset="0" stop-color="#fff3bd" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#fff3bd" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="metal">
+      <stop offset="0" stop-color="#fbfaf5"/>
+      <stop offset=".5" stop-color="#969b99"/>
+      <stop offset="1" stop-color="#e9e5da"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#wall)"/>
+  <circle cx="1130" cy="260" r="430" fill="url(#light)"/>
+  <rect y="610" width="1600" height="390" fill="url(#bench)"/>
+  <g stroke="#403b35" stroke-linecap="round">
+    <path d="M260 740l280-150" stroke-width="38"/>
+    <path d="M310 800l255-115" stroke-width="22"/>
+    <path d="M1040 710l210 130" stroke-width="28"/>
+    <path d="M1090 670l195 120" stroke-width="18"/>
+  </g>
+  <g transform="translate(810 735)">
+    <ellipse rx="128" ry="105" fill="none" stroke="url(#metal)" stroke-width="34"/>
+    <circle cy="-112" r="56" fill="#e8efec" stroke="url(#metal)" stroke-width="20"/>
+  </g>
+  <rect x="610" y="815" width="390" height="42" rx="20" fill="#d7bc94" opacity=".7"/>
+</svg>

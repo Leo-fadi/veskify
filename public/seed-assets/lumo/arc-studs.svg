@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-labelledby="title description">
+  <title id="title">Lumo Arc silver studs</title>
+  <description id="description">A pair of softly curved silver stud earrings on a warm neutral surface.</description>
+  <defs>
+    <linearGradient id="surface" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f7f1e8"/>
+      <stop offset="1" stop-color="#d7c9b8"/>
+    </linearGradient>
+    <linearGradient id="silver" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".45" stop-color="#b8bbb8"/>
+      <stop offset="1" stop-color="#ece9e2"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="20" stdDeviation="18" flood-color="#5f5549" flood-opacity=".24"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="900" fill="url(#surface)"/>
+  <circle cx="600" cy="450" r="330" fill="#fff" opacity=".28"/>
+  <g fill="none" stroke="url(#silver)" stroke-linecap="round" stroke-width="78" filter="url(#shadow)">
+    <path d="M330 520c0-155 105-250 235-250"/>
+    <path d="M635 630c0-155 105-250 235-250"/>
+  </g>
+  <g fill="#f5f4f0">
+    <circle cx="565" cy="270" r="39"/>
+    <circle cx="870" cy="380" r="39"/>
+  </g>
+</svg>
