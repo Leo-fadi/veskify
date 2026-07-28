@@ -1129,8 +1129,10 @@ export function ProjectEditorClient({
                 role="status"
               >
                 <StatusPill label={statusLabel} live status={status} />
-                <span>{hasUnsavedChanges ? text.status.unsaved : text.status.noUnsaved}</span>
-                <span>
+                <span className={styles.statusDetail}>
+                  {hasUnsavedChanges ? text.status.unsaved : text.status.noUnsaved}
+                </span>
+                <span className={styles.statusDetail}>
                   {draftDiffers(state.draft, state.published)
                     ? text.status.storedDraftDiffers
                     : text.status.sessionNotice}
@@ -1147,7 +1149,7 @@ export function ProjectEditorClient({
                     draftDiffers(state.draft, state.published) ? "ready-to-publish" : "published"
                   }
                 />
-                <span>
+                <span className={styles.statusDetail}>
                   {draftDiffers(state.draft, state.published)
                     ? text.status.draftDiffersDetail
                     : text.status.publishedCurrent}
@@ -1362,7 +1364,9 @@ export function ProjectEditorClient({
           title={text.panels.contextual}
         >
           <div className={styles.drawerContent}>
-            {renderToolRail(activeToolTab === "design" ? "editor-compact-design-fields" : undefined)}
+            {renderToolRail(
+              activeToolTab === "design" ? "editor-compact-design-fields" : undefined,
+            )}
           </div>
         </Drawer>
       </AppShell>

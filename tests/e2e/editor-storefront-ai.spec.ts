@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { openEditorAssistant } from "./editor-assistant";
 
 const editorUrl = "/projects/project_aurum_nordic/editor";
 const storefrontInstruction = "Apply a warm premium style across the storefront.";
@@ -24,9 +25,7 @@ async function openSectionActions(sectionActions: Locator) {
 }
 
 async function openStorefrontProposal(page: Page, instruction = storefrontInstruction) {
-  if ((page.viewportSize()?.width ?? 1440) < 1024) {
-    await page.getByRole("button", { name: "Open AI assistant" }).click();
-  }
+  await openEditorAssistant(page);
   await page.getByRole("radio", { name: "Entire storefront" }).check();
   await page.getByLabel("Your request").fill(instruction);
   const responsePromise = page.waitForResponse(

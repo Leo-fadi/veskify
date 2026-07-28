@@ -406,8 +406,7 @@
   min-width: 0;
 }
 
-.publishStatus span,
-.draftStatus span {
+.statusDetail {
   color: var(--vesko-app-muted);
   font-size: 0.72rem;
   line-height: 1.3;
@@ -694,7 +693,6 @@
   .workspace.workspaceLeftCollapsed.workspaceRightCollapsed {
     grid-template-columns: minmax(0, 1fr);
   }
-
 }
 
 @media (max-width: 79.99rem) {
@@ -722,8 +720,7 @@
     flex-basis: 100%;
   }
 
-  .draftStatus span,
-  .publishStatus span {
+  .statusDetail {
     display: none;
   }
 
