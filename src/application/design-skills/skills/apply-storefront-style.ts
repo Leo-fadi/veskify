@@ -167,6 +167,7 @@ const sharedDefinition: Omit<
     "APPLY_REGISTERED_PAGE_SECTIONS",
     "APPLY_APPROVED_BRAND_COLOURS",
     "APPLY_APPROVED_BRAND_TYPOGRAPHY",
+    "APPLY_REGISTERED_BRAND_SYSTEM",
   ],
   protectedPaths: [...protectedDesignPaths],
   preconditions: [{ type: "pageTypeSupported" }],

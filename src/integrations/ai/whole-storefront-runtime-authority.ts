@@ -262,7 +262,7 @@ function authoritativeRequest(
       activeLocale: intent.activeLocale,
       enabledLocales: planningInput.project.enabledLocales,
       requestedScope: "storefront",
-      capability: "approvedColorTypographyDirection",
+      capability: intent.capability,
       providerId: runtimeProviderId,
       provider: {
         id: runtimeProviderId,
@@ -305,7 +305,12 @@ function assertRequestDirectionCompatible(
   request: AiStorefrontProviderRequest,
   plan: WholeStorefrontGenerationPlan,
 ) {
-  if (request.brandPalettePlan !== null) return;
+  if (
+    request.brandPalettePlan !== null ||
+    request.capability === "registeredWholeStorefrontDirection"
+  ) {
+    return;
+  }
   const skillIds = new Set(request.permissionGrants.map((grant) => grant.skillId));
   if (
     (skillIds.has("applyMinimalNordicStorefrontStyle") &&
@@ -479,10 +484,19 @@ function projectPlanOperations(
       type: "APPLY_APPROVED_BRAND_COLOURS",
       colors: request.brandPalettePlan.colors,
     });
+  } else if (
+    request.target.designSystemTarget !== null &&
+    request.capability === "registeredWholeStorefrontDirection"
+  ) {
+    add(request.target.designSystemTarget, {
+      type: "APPLY_REGISTERED_BRAND_SYSTEM",
+      directionId: plan.designSystemSelection.directionId,
+      brandSystem: structuredClone(wholeStorefrontProposal.proposedStorefront.brandSystem),
+    });
   } else if (request.target.designSystemTarget !== null) {
-    createStorefrontDesignSystemOperations(direction).forEach((operation) =>
-      add(request.target.designSystemTarget!, operation),
-    );
+    createStorefrontDesignSystemOperations(direction).forEach((operation) => {
+      add(request.target.designSystemTarget!, operation);
+    });
   }
   if (request.brandPalettePlan === null) {
     wholeStorefrontProposal.proposedStorefront.pages.forEach((plannedPage) => {
@@ -531,6 +545,11 @@ function projectPlanOperations(
         ...(affectedDesignState ?? {}),
         typography: structuredClone(envelope.operation.typography),
       };
+      return;
+    }
+    if (envelope.operation.type === "APPLY_REGISTERED_BRAND_SYSTEM") {
+      proposedStorefront.brandSystem = structuredClone(envelope.operation.brandSystem);
+      affectedDesignState = structuredClone(envelope.operation.brandSystem);
       return;
     }
     const target = envelope.target;

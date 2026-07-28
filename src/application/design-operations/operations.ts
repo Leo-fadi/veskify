@@ -66,6 +66,13 @@ export const applyApprovedBrandTypographyOperationSchema = z
     typography: brandSystemSchema.shape.typography,
   })
   .strict();
+export const applyRegisteredBrandSystemOperationSchema = z
+  .object({
+    type: z.literal("APPLY_REGISTERED_BRAND_SYSTEM"),
+    directionId: z.enum(["premiumEditorial", "modernTechnical", "warmApproachable"]),
+    brandSystem: brandSystemSchema,
+  })
+  .strict();
 export const addApprovedSectionOperationSchema = z
   .object({
     type: z.literal("ADD_APPROVED_SECTION"),
@@ -100,6 +107,7 @@ export const designOperationSchema = z.discriminatedUnion("type", [
   changeCtaStyleOperationSchema,
   applyApprovedBrandColoursOperationSchema,
   applyApprovedBrandTypographyOperationSchema,
+  applyRegisteredBrandSystemOperationSchema,
   addApprovedSectionOperationSchema,
   removeOptionalSectionOperationSchema,
   reorderSectionsOperationSchema,
@@ -237,6 +245,9 @@ function applyDesignOperationInternal(
       break;
     case "APPLY_APPROVED_BRAND_TYPOGRAPHY":
       candidate.themeOverride = { ...candidate.themeOverride, typography: operation.typography };
+      break;
+    case "APPLY_REGISTERED_BRAND_SYSTEM":
+      candidate.themeOverride = structuredClone(operation.brandSystem);
       break;
     case "ADD_APPROVED_SECTION": {
       if (candidate.sections.some((section) => section.id === operation.sectionId)) {

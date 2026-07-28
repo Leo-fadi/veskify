@@ -146,8 +146,11 @@ export function createStorefrontProposalReview(
     ),
   );
   if (
-    (proposal.affectedDesignState?.colors && !globalKeys.has("APPLY_APPROVED_BRAND_COLOURS")) ||
-    (proposal.affectedDesignState?.typography && !globalKeys.has("APPLY_APPROVED_BRAND_TYPOGRAPHY"))
+    globalKeys.has("APPLY_REGISTERED_BRAND_SYSTEM")
+      ? proposal.affectedDesignState === null
+      : (proposal.affectedDesignState?.colors && !globalKeys.has("APPLY_APPROVED_BRAND_COLOURS")) ||
+        (proposal.affectedDesignState?.typography &&
+          !globalKeys.has("APPLY_APPROVED_BRAND_TYPOGRAPHY"))
   ) {
     blockers.push(
       locale === "fi"

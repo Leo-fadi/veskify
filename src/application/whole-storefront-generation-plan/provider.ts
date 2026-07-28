@@ -194,10 +194,27 @@ function sortedStrings(values: readonly string[]) {
   return [...values].sort((left, right) => left.localeCompare(right));
 }
 
+function validatedMerchantInstruction(value: unknown): string {
+  if (typeof value !== "string") return fail("invalid-request");
+  const normalized = value.trim();
+  if (
+    normalized.length === 0 ||
+    normalized.length > 2_000 ||
+    [...normalized].some((character) => {
+      const codePoint = character.codePointAt(0) ?? 0;
+      return codePoint < 32 || codePoint === 127;
+    })
+  ) {
+    return fail("invalid-request");
+  }
+  return normalized;
+}
+
 export function buildWholeStorefrontPlanningProviderRequest(
   inputValue: unknown,
   merchantInstruction = "Prepare a coherent storefront using the approved merchant brief.",
 ): WholeStorefrontPlanningProviderRequest {
+  const instruction = validatedMerchantInstruction(merchantInstruction);
   let input: WholeStorefrontPlanningInput;
   let expectedPlan: WholeStorefrontGenerationPlan;
   try {
@@ -214,7 +231,7 @@ export function buildWholeStorefrontPlanningProviderRequest(
   if (!noUnsafeProviderContent(expectedPlan)) return fail("invalid-request");
 
   const request: WholeStorefrontPlanningProviderRequest = {
-    merchantInstruction,
+    merchantInstruction: instruction,
     requestFingerprint: expectedPlan.requestFingerprint,
     approvedBrief: {
       id: input.brief.id,
@@ -355,7 +372,10 @@ export function buildWholeStorefrontPlanningProviderRequest(
     planForDirection: (directionId) => createWholeStorefrontGenerationPlan(input, { directionId }),
     expectedPlan: structuredClone(expectedPlan),
   };
-  if (!noUnsafeProviderContent(request)) return fail("invalid-request");
+  const structuralRequest = Object.fromEntries(
+    Object.entries(request).filter(([key]) => key !== "merchantInstruction"),
+  );
+  if (!noUnsafeProviderContent(structuralRequest)) return fail("invalid-request");
   return request;
 }
 

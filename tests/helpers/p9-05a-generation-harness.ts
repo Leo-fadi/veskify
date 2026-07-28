@@ -49,11 +49,26 @@ function contextSource(
 }
 
 export async function generateP905aScenario(directionId: P905aDirectionId) {
-  const fixture = createP905aFreshMerchantFixture(directionId);
+  return generateP905aScenarioWithCapability(directionId, directionId, false);
+}
+
+export async function generateP905aScenarioFromBaseline(
+  directionId: P905aDirectionId,
+  baselineDirectionId: P905aDirectionId,
+) {
+  return generateP905aScenarioWithCapability(directionId, baselineDirectionId, true);
+}
+
+async function generateP905aScenarioWithCapability(
+  directionId: P905aDirectionId,
+  baselineDirectionId: P905aDirectionId,
+  registeredProviderSelection: boolean,
+) {
+  const fixture = createP905aFreshMerchantFixture(baselineDirectionId);
   const planningInput = wholeStorefrontPlanningInputSchema.parse(
     structuredClone(fixture.planningInput),
   );
-  const plan = createWholeStorefrontGenerationPlan(planningInput);
+  const plan = createWholeStorefrontGenerationPlan(planningInput, { directionId });
   const compiledProposal = compileWholeStorefrontProposal({ plan, planningInput });
   const repository = new InMemoryProjectRepository([structuredClone(fixture.aggregate)]);
   const authority = createStandaloneServerWholeStorefrontPlanningAuthority({
@@ -69,7 +84,19 @@ export async function generateP905aScenario(directionId: P905aDirectionId) {
   });
   const handler = createServerWholeStorefrontPlanningHandler({
     authority,
-    selectProvider: () => createDeterministicWholeStorefrontPlanningProvider(),
+    selectProvider: () =>
+      !registeredProviderSelection && directionId === baselineDirectionId
+        ? createDeterministicWholeStorefrontPlanningProvider()
+        : {
+            id: "p9-05b-mocked-direction-selector",
+            capabilities: {
+              wholeStorefrontPlanning: true,
+              structuredPlanOutput: true,
+              approvedAssetReferences: true,
+            },
+            createPlan: (providerRequest) =>
+              Promise.resolve(providerRequest.planForDirection(directionId)),
+          },
   });
   const request = buildAiStorefrontProviderRequest(
     {
@@ -87,7 +114,9 @@ export async function generateP905aScenario(directionId: P905aDirectionId) {
       activeLocale: fixture.aggregate.project.primaryLocale,
       enabledLocales: fixture.aggregate.project.enabledLocales,
       requestedScope: "storefront",
-      capability: "approvedColorTypographyDirection",
+      capability: registeredProviderSelection
+        ? "registeredWholeStorefrontDirection"
+        : "approvedColorTypographyDirection",
       providerId: SERVER_PROVIDER_ID,
       provider: {
         id: SERVER_PROVIDER_ID,

@@ -172,7 +172,10 @@ function assertActiveFingerprint(
 
 function hasGlobalGrant(
   proposal: AiStorefrontReadyProposal,
-  operationType: "APPLY_APPROVED_BRAND_COLOURS" | "APPLY_APPROVED_BRAND_TYPOGRAPHY",
+  operationType:
+    | "APPLY_APPROVED_BRAND_COLOURS"
+    | "APPLY_APPROVED_BRAND_TYPOGRAPHY"
+    | "APPLY_REGISTERED_BRAND_SYSTEM",
 ) {
   return proposal.permissionGrants.some(
     (grant) =>
@@ -185,6 +188,22 @@ function hasGlobalGrant(
 function assertAffectedDesignState(proposal: AiStorefrontReadyProposal) {
   const original = proposal.originalStorefront.brandSystem;
   const proposed = proposal.proposedStorefront.brandSystem;
+  const registered = proposal.operations.flatMap((envelope) =>
+    envelope.operation.type === "APPLY_REGISTERED_BRAND_SYSTEM" ? [envelope.operation] : [],
+  );
+  if (registered.length > 0) {
+    if (
+      registered.length !== 1 ||
+      canonicalValueString(registered[0].brandSystem) !== canonicalValueString(proposed) ||
+      canonicalValueString(proposal.affectedDesignState) !== canonicalValueString(proposed)
+    ) {
+      invalid(
+        "unsupported-design-state",
+        "The registered BrandSystem operation, affected state, and proposed storefront must match exactly.",
+      );
+    }
+    return;
+  }
   for (const key of ["shape", "spacing", "imagery", "voice"] as const) {
     if (canonicalValueString(original[key]) !== canonicalValueString(proposed[key])) {
       invalid(
@@ -210,6 +229,13 @@ function assertAffectedDesignState(proposal: AiStorefrontReadyProposal) {
 }
 
 function assertGlobalColourPayloads(proposal: AiStorefrontReadyProposal) {
+  if (
+    proposal.operations.some(
+      (envelope) => envelope.operation.type === "APPLY_REGISTERED_BRAND_SYSTEM",
+    )
+  ) {
+    return;
+  }
   const affectedColors = proposal.affectedDesignState?.colors;
   const proposedColors = proposal.proposedStorefront.brandSystem.colors;
   const operationColourPayloads = proposal.operations.flatMap((operation) =>
@@ -244,6 +270,18 @@ function assertAffectedDesignStatePermissions(proposal: AiStorefrontReadyProposa
     );
   }
   const keys = Object.keys(affected);
+  const registered = proposal.operations.some(
+    (envelope) => envelope.operation.type === "APPLY_REGISTERED_BRAND_SYSTEM",
+  );
+  if (registered) {
+    if (!hasGlobalGrant(proposal, "APPLY_REGISTERED_BRAND_SYSTEM")) {
+      invalid(
+        "design-state-permission-mismatch",
+        "A registered BrandSystem change requires an explicit global registered-direction grant.",
+      );
+    }
+    return;
+  }
   if (keys.some((key) => key !== "colors" && key !== "typography")) {
     invalid(
       "unsupported-design-state",
@@ -318,6 +356,8 @@ export function executeAiStorefrontProposal({
           candidate.brandSystem.colors = structuredClone(operation.operation.colors);
         } else if (operation.operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY") {
           candidate.brandSystem.typography = structuredClone(operation.operation.typography);
+        } else if (operation.operation.type === "APPLY_REGISTERED_BRAND_SYSTEM") {
+          candidate.brandSystem = structuredClone(operation.operation.brandSystem);
         } else {
           invalid(
             "operation-application-failed",

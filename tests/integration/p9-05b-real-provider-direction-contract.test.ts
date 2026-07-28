@@ -5,6 +5,8 @@ import {
   buildWholeStorefrontPlanningProviderRequest,
   requestWholeStorefrontGenerationPlan,
 } from "@/application/whole-storefront-generation-plan";
+import { registeredBrandSystemForDirection } from "@/application/storefront-design-system";
+import { canonicalValueString } from "@/domain/storefront";
 import {
   OpenAiWholeStorefrontPlanningProvider,
   type OpenAiResponseRequestOptions,
@@ -15,8 +17,21 @@ import {
   p905aDirectionScenarios,
   type P905aDirectionId,
 } from "@/data/demo/p9-05a-fresh-store-generation";
+import {
+  createP905aAcceptanceCoordinator,
+  generateP905aScenarioFromBaseline,
+  saveAndResolveP905aPreview,
+} from "../helpers/p9-05a-generation-harness";
 
 const directions: P905aDirectionId[] = ["premiumEditorial", "modernTechnical", "warmApproachable"];
+const sharedFixture = createP905aFreshMerchantFixture("warmApproachable");
+const sharedPlanningInput = sharedFixture.planningInput;
+const registeredPlans = directions.map((directionId) =>
+  buildWholeStorefrontPlanningProviderRequest(
+    sharedPlanningInput,
+    `Select the ${directionId} direction for the approved Lumo storefront.`,
+  ).planForDirection(directionId),
+);
 
 class DirectionTransport {
   readonly calls: Array<{
@@ -41,13 +56,9 @@ class DirectionTransport {
   }
 }
 
-function planningInput() {
-  return createP905aFreshMerchantFixture("warmApproachable").planningInput;
-}
-
 describe("P9-05B real-provider direction contract", () => {
   it("uses the merchant request to choose a registered direction without sending a final plan", async () => {
-    const input = planningInput();
+    const input = sharedPlanningInput;
     const request = buildWholeStorefrontPlanningProviderRequest(
       input,
       "Create a modern technical storefront for Lumo Atelier with efficient product comparison.",
@@ -77,43 +88,82 @@ describe("P9-05B real-provider direction contract", () => {
     expect(providerInput).not.toContain(request.expectedPlan.fingerprint);
   });
 
-  it("materializes distinct registered homepage, collection, PDP, and design-system choices", async () => {
-    const input = planningInput();
-    const plans = await Promise.all(
-      directions.map(async (directionId) => {
-        const transport = new DirectionTransport(directionId);
-        const provider = new OpenAiWholeStorefrontPlanningProvider({
-          responses: transport,
-          model: "mocked-p9-05b-model",
-          timeoutMs: 1_000,
-        });
-        return requestWholeStorefrontGenerationPlan({
-          provider,
-          input,
-          currentInput: () => input,
-          merchantInstruction: `Select the ${directionId} direction for the approved Lumo storefront.`,
-        });
-      }),
-    );
+  it.each(directions)(
+    "preserves the provider-selected %s direction through compile, accept, Undo, and Redo",
+    async (directionId) => {
+      const generated = await generateP905aScenarioFromBaseline(directionId, "warmApproachable");
+      const expectedBrandSystem = registeredBrandSystemForDirection(
+        generated.fixture.draft.brandSystem,
+        generated.planningInput.recipeContext.designSystem,
+        directionId,
+      );
 
-    expect(new Set(plans.map((plan) => plan.designSystemSelection.homepageRecipeId)).size).toBe(3);
-    expect(new Set(plans.map((plan) => plan.designSystemSelection.productCardFamilyId)).size).toBe(
-      3,
-    );
+      expect(generated.plan.designSystemSelection.directionId).toBe(directionId);
+      expect(generated.compiledProposal.preconditions.planFingerprint).toBe(
+        generated.plan.fingerprint,
+      );
+      expect(generated.compiledProposal.operations).toContainEqual(
+        expect.objectContaining({
+          operation: {
+            type: "APPLY_REGISTERED_BRAND_SYSTEM",
+            directionId,
+            brandSystem: expectedBrandSystem,
+          },
+        }),
+      );
+      expect(generated.proposal.proposedStorefront.brandSystem).toEqual(expectedBrandSystem);
+
+      const coordinator = createP905aAcceptanceCoordinator(generated);
+      const accepted = coordinator.accept();
+      expect(accepted.failure).toBeNull();
+      expect(accepted.activeDraft.brandSystem).toEqual(expectedBrandSystem);
+      expect(coordinator.undo()).toEqual(generated.fixture.draft);
+      expect(coordinator.redo()).toEqual(accepted.activeDraft);
+      const saved = await saveAndResolveP905aPreview({
+        generated,
+        accepted: accepted.activeDraft,
+      });
+      expect(saved.preview.brandSystem).toEqual(expectedBrandSystem);
+      expect(
+        saved.saved.aggregate.snapshots.find(
+          (snapshot) => snapshot.id === saved.saved.aggregate.project.publishedSnapshotId,
+        ),
+      ).toEqual(generated.fixture.published);
+      expect(canonicalValueString(accepted.activeDraft.brandSystem)).not.toBe(
+        canonicalValueString(generated.fixture.draft.brandSystem),
+      );
+    },
+    15_000,
+  );
+
+  it("materializes distinct registered homepage, collection, PDP, and design-system choices", () => {
     expect(
-      new Set(plans.map((plan) => plan.designSystemSelection.typographyDirectionId)).size,
+      new Set(registeredPlans.map((plan) => plan.designSystemSelection.homepageRecipeId)).size,
     ).toBe(3);
-    expect(new Set(plans.map((plan) => plan.designSystemSelection.spacingDensity)).size).toBe(3);
+    expect(
+      new Set(registeredPlans.map((plan) => plan.designSystemSelection.productCardFamilyId)).size,
+    ).toBe(3);
+    expect(
+      new Set(registeredPlans.map((plan) => plan.designSystemSelection.typographyDirectionId)).size,
+    ).toBe(3);
+    expect(
+      new Set(registeredPlans.map((plan) => plan.designSystemSelection.spacingDensity)).size,
+    ).toBe(3);
     expect(
       new Set(
-        plans.map((plan) => JSON.stringify(plan.designSystemSelection.collectionPresentation)),
+        registeredPlans.map((plan) =>
+          JSON.stringify(plan.designSystemSelection.collectionPresentation),
+        ),
       ).size,
     ).toBe(3);
     expect(
-      new Set(plans.map((plan) => JSON.stringify(plan.designSystemSelection.productPresentation)))
-        .size,
+      new Set(
+        registeredPlans.map((plan) =>
+          JSON.stringify(plan.designSystemSelection.productPresentation),
+        ),
+      ).size,
     ).toBe(3);
-    plans.forEach((plan) => {
+    registeredPlans.forEach((plan) => {
       const expected = p905aDirectionScenarios[plan.designSystemSelection.directionId].expected;
       expect(plan.designSystemSelection).toMatchObject({
         homepageRecipeId: expected.homepageRecipeId,

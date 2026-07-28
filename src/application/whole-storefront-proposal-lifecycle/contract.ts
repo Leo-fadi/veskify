@@ -71,6 +71,13 @@ export const wholeStorefrontProposalOperationSchema = z.discriminatedUnion("type
     .strict(),
   z
     .object({
+      type: z.literal("APPLY_REGISTERED_BRAND_SYSTEM"),
+      directionId: z.enum(["premiumEditorial", "modernTechnical", "warmApproachable"]),
+      brandSystem: brandSystemSchema,
+    })
+    .strict(),
+  z
+    .object({
       type: z.literal("RETAIN_NAVIGATION"),
       navigation: navigationModelSchema,
     })

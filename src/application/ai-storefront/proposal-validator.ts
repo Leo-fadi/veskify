@@ -1,5 +1,9 @@
 import { canonicalLocaleOrder } from "@/domain/shared";
 import { validateDesignOperationAgainstPage } from "@/application/design-operations";
+import {
+  registeredBrandSystemForDirection,
+  storefrontDesignSystemV1,
+} from "@/application/storefront-design-system";
 import { canonicalValueString } from "@/domain/storefront";
 import {
   aiStorefrontContextSchema,
@@ -182,6 +186,13 @@ function assertProjectionPreservation(
 }
 
 function assertSupportedDesignStateProjection(proposal: AiStorefrontReadyProposal) {
+  if (
+    proposal.operations.some(
+      (envelope) => envelope.operation.type === "APPLY_REGISTERED_BRAND_SYSTEM",
+    )
+  ) {
+    return;
+  }
   const original = proposal.originalStorefront.brandSystem;
   const proposed = proposal.proposedStorefront.brandSystem;
   for (const key of ["shape", "spacing", "imagery", "voice"] as const) {
@@ -215,6 +226,25 @@ function assertProjectionMatchesOperations(
         ...(affectedDesignState ?? {}),
         typography: structuredClone(envelope.operation.typography),
       };
+      continue;
+    }
+    if (envelope.operation.type === "APPLY_REGISTERED_BRAND_SYSTEM") {
+      const registeredBrandSystem = registeredBrandSystemForDirection(
+        proposal.originalStorefront.brandSystem,
+        storefrontDesignSystemV1,
+        envelope.operation.directionId,
+      );
+      if (
+        canonicalValueString(registeredBrandSystem) !==
+        canonicalValueString(envelope.operation.brandSystem)
+      ) {
+        invalid(
+          "invalid-global-operation",
+          "The complete BrandSystem must be derived from the selected server-registered direction.",
+        );
+      }
+      projected.brandSystem = structuredClone(envelope.operation.brandSystem);
+      affectedDesignState = structuredClone(envelope.operation.brandSystem);
       continue;
     }
     if (envelope.target.kind === "storefrontDesignSystem") {

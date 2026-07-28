@@ -7,17 +7,21 @@ precomputed plan to repeat, and it cannot apply, save, publish, or alter commerc
 
 ## Clean baseline and runtime
 
-Start from a clean database and branch that includes P9-05A and P9-04A/B/C. Load the fixture with
-`pnpm demo:p9-05a:load`, then verify `project_lumo_fresh` has its approved EN/FI brief, minimal
-home/collection/product draft, canonical catalogue and collection order, approved logo/hero/story/
-collection assets, and no Aurum or Karvonen state.
+The executable demo authority is a server-only, process-local repository named
+`p9-05b-lumo-local-server`. It is seeded from the canonical P9-05A fixture factory, loads only
+`project_lumo_fresh`, survives HTTP requests for the life of the local server process, and is
+unavailable unless every explicit local-demo setting is present. It is not browser IndexedDB and
+cannot activate in production.
 
-Only the local controlled run may set:
+In terminal A, configure the controlled runtime without writing a `.env` file, confirm the
+managed secret is present without printing it, and start the application:
 
 ```bash
-VESKIFY_RUNTIME_MODE=integrated
-VESKIFY_AI_PROVIDER=openai
-OPENAI_API_KEY=<managed local secret>
+export VESKIFY_RUNTIME_MODE=integrated
+export VESKIFY_AI_PROVIDER=openai
+export VESKIFY_P9_05B_LOCAL_DEMO=1
+test -n "$OPENAI_API_KEY"
+pnpm dev
 ```
 
 `VESKIFY_OPENAI_MODEL` is optional when supported by the runtime. Never commit, print, screenshot,
@@ -25,19 +29,62 @@ or store the key or raw provider payload. Automated tests use mocked transport o
 network-free. Missing runtime configuration is a merchant-safe `providerUnavailable` result; it
 must never select the deterministic provider.
 
+In terminal B, verify the server authority, reset it to the deterministic fixture, and verify it
+again:
+
+```bash
+curl --fail --silent --show-error http://localhost:3000/api/demo/p9-05b
+curl --fail --silent --show-error --request POST http://localhost:3000/api/demo/p9-05b
+curl --fail --silent --show-error http://localhost:3000/api/demo/p9-05b
+```
+
+Each successful response reports `project_lumo_fresh`, its baseline and active aggregate
+fingerprints, empty history, and `/projects/project_lumo_fresh/editor`. Stop before a provider call
+if the project ID differs, the aggregate fingerprint does not equal the baseline fingerprint, the
+history count is not zero, or the endpoint is unavailable.
+
 ## Three independent runs
 
-Reload the authoritative fixture before each exactly-once live request:
+Use the actual server proposal route through its demo-only request builder. The builder sends the
+merchant request to the selected OpenAI model; the response may choose only a registered direction,
+and the server materializes and validates the complete plan. Run premium editorial exactly once:
 
-1. Premium editorial: “Create a premium editorial storefront for Lumo Atelier. Emphasize
-   craftsmanship, approved brand photography, product discovery and refined visual hierarchy.
-   Avoid a generic all-black luxury appearance.”
-2. Modern technical: “Create a modern technical storefront for Lumo Atelier. Prioritize precise
-   product information, confident structure, clear collection navigation and efficient product
-   comparison while preserving the approved brand identity.”
-3. Warm approachable: “Create a warm and approachable storefront for Lumo Atelier. Make product
-   discovery welcoming, use the approved brand story and imagery, and guide customers naturally
-   from the homepage to collections and products.”
+```bash
+curl --fail --silent --show-error \
+  --request POST \
+  --header 'content-type: application/json' \
+  --data '{"merchantInstruction":"Create a premium editorial storefront for Lumo Atelier. Emphasize craftsmanship, approved brand photography, product discovery and refined visual hierarchy. Avoid a generic all-black luxury appearance."}' \
+  http://localhost:3000/api/demo/p9-05b/generate
+```
+
+Reset and verify the identical baseline, then run modern technical exactly once:
+
+```bash
+curl --fail --silent --show-error --request POST http://localhost:3000/api/demo/p9-05b
+curl --fail --silent --show-error http://localhost:3000/api/demo/p9-05b
+curl --fail --silent --show-error \
+  --request POST \
+  --header 'content-type: application/json' \
+  --data '{"merchantInstruction":"Create a modern technical storefront for Lumo Atelier. Prioritize precise product information, confident structure, clear collection navigation and efficient product comparison while preserving the approved brand identity."}' \
+  http://localhost:3000/api/demo/p9-05b/generate
+```
+
+Reset and verify once more, then run warm approachable exactly once:
+
+```bash
+curl --fail --silent --show-error --request POST http://localhost:3000/api/demo/p9-05b
+curl --fail --silent --show-error http://localhost:3000/api/demo/p9-05b
+curl --fail --silent --show-error \
+  --request POST \
+  --header 'content-type: application/json' \
+  --data '{"merchantInstruction":"Create a warm and approachable storefront for Lumo Atelier. Make product discovery welcoming, use the approved brand story and imagery, and guide customers naturally from the homepage to collections and products."}' \
+  http://localhost:3000/api/demo/p9-05b/generate
+```
+
+Stop a run immediately on a non-2xx response, `providerUnavailable`, stale or validation failure,
+an unregistered direction, a baseline mismatch, an unsupported component, an unapproved asset, or
+any protected-commerce difference. Do not retry a live request merely to obtain a preferred
+direction.
 
 For each, record only the model ID, start/end timestamps, normalized provider outcome, selected
 direction, affected page titles, validation outcome, component/recipe choices, approved asset IDs,
@@ -66,13 +113,25 @@ Check homepage, a canonical collection, and the complex-ring PDP at 375, 768, 10
 with the stronger clipping detector. Verify navigation, collection controls, PDP options, image
 semantics, and long Finnish labels remain usable.
 
+After the controlled work, stop the server and remove the secret from the shell:
+
+```bash
+unset OPENAI_API_KEY
+```
+
+Confirm `git status --short` contains no credential or local environment file before retaining any
+evidence. The process-local repository disappears when the server stops; resetting it never reads,
+deletes, or replaces another project.
+
 ## Deterministic protection
 
 `tests/integration/p9-05b-real-provider-direction-contract.test.ts` uses a mocked OpenAI transport
 to prove that the real-provider boundary carries the merchant request and registered options, sends
 no final expected plan, accepts only a registered direction, and materializes distinct complete
-plans server-side. P9-05A remains the deterministic lifecycle, asset, rendering, and
-commerce-preservation baseline.
+plans server-side. `tests/integration/p9-05b-local-demo-authority.test.ts` proves that the explicit
+server authority loads the project, the actual proposal route reaches a mocked provider without
+fallback, and three resets reproduce the same baseline after saved and published changes. P9-05A
+remains the deterministic lifecycle, asset, rendering, and commerce-preservation baseline.
 
 ## Current checkpoint status
 

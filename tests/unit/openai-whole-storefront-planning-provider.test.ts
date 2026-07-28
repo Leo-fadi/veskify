@@ -221,6 +221,36 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     );
   });
 
+  it("passes URL, HTML-like, and JSON-like merchant prose only through untrusted user content", async () => {
+    const input = planningInput();
+    const merchantInstruction =
+      'Use https://merchant.example/reference as visual context; keep <section>craft</section> literal and interpret {"mood":"warm"} only as prose.';
+    const request = buildWholeStorefrontPlanningProviderRequest(input, merchantInstruction);
+    const transport = new RecordingTransport(() =>
+      Promise.resolve(
+        completedResponse({
+          requestFingerprint: request.requestFingerprint,
+          directionId: "premiumEditorial",
+        }),
+      ),
+    );
+
+    await expect(
+      requestWholeStorefrontGenerationPlan({
+        provider: provider(transport),
+        input,
+        currentInput: () => input,
+        merchantInstruction,
+      }),
+    ).resolves.toEqual(request.planForDirection("premiumEditorial"));
+
+    expect(transport.calls).toHaveLength(1);
+    expect(transport.calls[0]?.request.input).toContain("https://merchant.example/reference");
+    expect(transport.calls[0]?.request.input).toContain("<section>craft</section>");
+    expect(transport.calls[0]?.request.input).toContain('{\\"mood\\":\\"warm\\"}');
+    expect(transport.calls[0]?.request.instructions).not.toContain(merchantInstruction);
+  });
+
   it("rejects an unregistered direction during DTO-to-canonical validation", async () => {
     const input = planningInput();
     const request = buildWholeStorefrontPlanningProviderRequest(input);
