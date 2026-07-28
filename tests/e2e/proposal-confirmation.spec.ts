@@ -1,11 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openEditorAssistant } from "./editor-assistant";
 
 const editorUrl = "/projects/project_aurum_nordic/editor";
 
 async function createProposal(page: Page) {
-  if ((page.viewportSize()?.width ?? 1440) < 1024) {
-    await page.getByRole("button", { name: "Open AI assistant" }).click();
-  }
+  await openEditorAssistant(page);
   await page.getByRole("button", { name: "Make the layout more minimal." }).click();
   await page.getByRole("button", { name: "Create proposal" }).click();
   const proposal = page.getByTestId("design-proposal");

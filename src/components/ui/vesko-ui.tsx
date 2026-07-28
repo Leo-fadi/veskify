@@ -335,7 +335,10 @@ export function AppShell({
       </header>
       <div className={styles.shellBody}>
         {(showModuleIdentity || headerActions) && (
-          <div className={styles.moduleHeader}>
+          <div
+            className={styles.moduleHeader}
+            data-testid={editorMode ? "editor-toolbar" : undefined}
+          >
             {showModuleIdentity ? (
               <div
                 aria-label={projectId ? labels.editorNavigation : undefined}
