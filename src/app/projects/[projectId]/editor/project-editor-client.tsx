@@ -197,6 +197,7 @@ function EditorToolRail({
   selectedSectionLabel,
   storefrontPageCount,
   onReviewPage,
+  onConfirmationDialogOpenChange,
 }: {
   activeTab: "design" | "ai";
   controller: DesignAgentSessionController;
@@ -209,6 +210,7 @@ function EditorToolRail({
   selectedSectionLabel?: string;
   storefrontPageCount: number;
   onReviewPage: (pageId: string) => void;
+  onConfirmationDialogOpenChange?: (open: boolean) => void;
 }) {
   const text = editorCopy[locale].tools;
 
@@ -244,6 +246,7 @@ function EditorToolRail({
           selectedSectionLabel={selectedSectionLabel}
           storefrontPageCount={storefrontPageCount}
           onReviewPage={onReviewPage}
+          onConfirmationDialogOpenChange={onConfirmationDialogOpenChange}
         />
       )}
     </section>
@@ -282,6 +285,7 @@ export function ProjectEditorClient({
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
   const [outlineDrawerOpen, setOutlineDrawerOpen] = useState(false);
   const [toolDrawerOpen, setToolDrawerOpen] = useState(false);
+  const [toolDrawerNestedModalOpen, setToolDrawerNestedModalOpen] = useState(false);
   const [drawerViewport, setDrawerViewport] = useState(false);
   const savePending = useRef(false);
 
@@ -921,6 +925,7 @@ export function ProjectEditorClient({
         selectedSection ? merchantEditorSectionLabel(page, selectedSection, locale) : undefined
       }
       storefrontPageCount={activeDraft!.pages.length}
+      onConfirmationDialogOpenChange={setToolDrawerNestedModalOpen}
       onReviewPage={(pageId) => {
         const candidate = state.pages.find((item) => item.id === pageId);
         if (!candidate || candidate.id === page.id) return;
@@ -1359,6 +1364,7 @@ export function ProjectEditorClient({
         </Drawer>
         <Drawer
           closeLabel={text.actions.close}
+          closeOnEscape={!toolDrawerNestedModalOpen}
           onClose={() => setToolDrawerOpen(false)}
           open={toolDrawerOpen}
           title={text.panels.contextual}
