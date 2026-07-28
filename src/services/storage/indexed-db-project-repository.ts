@@ -480,6 +480,99 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
     }
   }
 
+  /**
+   * Replaces one explicitly supplied local-demo aggregate through the same
+   * validation and IndexedDB stores as ordinary project persistence. This is
+   * intentionally not part of ProjectRepository: normal merchant flows can
+   * create, save, publish, and restore, but cannot replace a project.
+   */
+  async replaceLocalDemoAggregate(input: ProjectAggregate): Promise<ProjectAggregate> {
+    const aggregate = validateProjectAggregate(clone(input));
+    const projectId = aggregate.project.id;
+    const database = await this.#database();
+    const transaction = database.transaction(
+      [
+        "projects",
+        "catalogues",
+        "snapshots",
+        "snapshotProvenance",
+        "snapshotHistoryMetadata",
+        "publicationOperations",
+      ],
+      "readwrite",
+    );
+    const projects = transaction.objectStore("projects");
+    const catalogues = transaction.objectStore("catalogues");
+    const snapshots = transaction.objectStore("snapshots");
+    const provenance = transaction.objectStore("snapshotProvenance");
+    const historyMetadata = transaction.objectStore("snapshotHistoryMetadata");
+    const publicationOperations = transaction.objectStore("publicationOperations");
+
+    try {
+      const existingSnapshots = await snapshots.index("by-project").getAll(projectId);
+      const catalogueIds = new Set([
+        aggregate.catalogue.id,
+        ...existingSnapshots.map((snapshot) => snapshot.catalogueRef),
+      ]);
+      for (const snapshot of aggregate.snapshots) {
+        const existing = await snapshots.get(snapshot.id);
+        if (existing && existing.projectId !== projectId) {
+          throw new SnapshotAlreadyExistsError(snapshot.id);
+        }
+      }
+      const existingCatalogue = await catalogues.get(aggregate.catalogue.id);
+      if (existingCatalogue) {
+        const allSnapshots = await snapshots.getAll();
+        if (
+          allSnapshots.some(
+            (snapshot) =>
+              snapshot.catalogueRef === aggregate.catalogue.id && snapshot.projectId !== projectId,
+          )
+        ) {
+          throw new CatalogueAlreadyExistsError(aggregate.catalogue.id);
+        }
+      }
+
+      for (const snapshot of existingSnapshots) await snapshots.delete(snapshot.id);
+      for (const record of await provenance.index("by-project").getAll(projectId)) {
+        await provenance.delete(record.snapshotId);
+      }
+      for (const record of await historyMetadata.index("by-project").getAll(projectId)) {
+        await historyMetadata.delete(record.snapshotId);
+      }
+      for (const operation of await publicationOperations.index("by-project").getAll(projectId)) {
+        await publicationOperations.delete(operation.operationKey);
+      }
+      await projects.delete(projectId);
+      const remainingSnapshots = await snapshots.getAll();
+      for (const catalogueId of catalogueIds) {
+        if (!remainingSnapshots.some((snapshot) => snapshot.catalogueRef === catalogueId)) {
+          await catalogues.delete(catalogueId);
+        }
+      }
+
+      await catalogues.add(aggregate.catalogue);
+      for (const snapshot of aggregate.snapshots) await snapshots.add(snapshot);
+      await projects.add(aggregate.project);
+      await provenance.add(
+        managedDraftProvenance(aggregate.project.id, aggregate.project.draftSnapshotId),
+      );
+      for (const metadata of aggregate.snapshotHistoryMetadata ?? []) {
+        await historyMetadata.add(metadata);
+      }
+      await transaction.done;
+      return clone(aggregate);
+    } catch (cause) {
+      try {
+        transaction.abort();
+      } catch {
+        // The transaction may already have aborted.
+      }
+      await transaction.done.catch(() => undefined);
+      throw cause;
+    }
+  }
+
   async saveDraft(
     projectId: string,
     input: StorefrontSnapshot,

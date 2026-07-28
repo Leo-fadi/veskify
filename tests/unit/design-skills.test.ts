@@ -103,6 +103,7 @@ describe("controlled design skill contract and registry", () => {
       "applyExactBrandPalette",
       "applyWarmPremiumStorefrontStyle",
       "applyMinimalNordicStorefrontStyle",
+      "applyRegisteredWholeStorefrontDirection",
     ]);
   });
 });

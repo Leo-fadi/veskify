@@ -125,7 +125,7 @@ function classifyInstruction(command: AiStorefrontGenerationCommand): SupportedS
   if (command.capability === "registeredWholeStorefrontDirection") {
     return {
       direction: "registeredWholeStorefront",
-      skillId: "applyWarmPremiumStorefrontStyle",
+      skillId: "applyRegisteredWholeStorefrontDirection",
       designSystem: "required",
     };
   }

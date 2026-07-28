@@ -305,13 +305,19 @@ function assertRequestDirectionCompatible(
   request: AiStorefrontProviderRequest,
   plan: WholeStorefrontGenerationPlan,
 ) {
+  const skillIds = new Set(request.permissionGrants.map((grant) => grant.skillId));
+  if (
+    request.capability === "registeredWholeStorefrontDirection" &&
+    (skillIds.size !== 1 || !skillIds.has("applyRegisteredWholeStorefrontDirection"))
+  ) {
+    throw new ServerWholeStorefrontAuthorityError("invalid");
+  }
   if (
     request.brandPalettePlan !== null ||
     request.capability === "registeredWholeStorefrontDirection"
   ) {
     return;
   }
-  const skillIds = new Set(request.permissionGrants.map((grant) => grant.skillId));
   if (
     (skillIds.has("applyMinimalNordicStorefrontStyle") &&
       plan.designSystemSelection.directionId !== "modernTechnical") ||

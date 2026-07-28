@@ -137,6 +137,20 @@ describe("P9-05B local demo server authority", () => {
     expect(reached).not.toHaveBeenCalled();
   });
 
+  it.each([
+    "Create a premium editorial storefront for Lumo Atelier.",
+    "Create a modern technical storefront for Lumo Atelier.",
+    "Create a warm and approachable storefront for Lumo Atelier.",
+  ])(
+    "uses one direction-neutral grant before the provider selects a registered direction",
+    async (instruction) => {
+      const request = await buildP905bLocalDemoRequest(instruction, demoEnvironment);
+      expect(new Set(request.permissionGrants.map((grant) => grant.skillId))).toEqual(
+        new Set(["applyRegisteredWholeStorefrontDirection"]),
+      );
+    },
+  );
+
   it("replaces accepted, saved, published, and history state with the exact fixture baseline", async () => {
     const baseline = await inspectP905bLocalDemo(demoEnvironment);
     const repository = p905bLocalDemoRepository(demoEnvironment);

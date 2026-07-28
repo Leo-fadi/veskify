@@ -29,10 +29,12 @@ import {
 } from "@/components/registry";
 import { brandSystemToCssVariables, type BrandSystem } from "@/domain/design-system";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
+import type { AiStorefrontProposal } from "@/application/ai-storefront";
 import type { PageModel, PageType, StorefrontSnapshot } from "@/domain/storefront";
 import { VeskifyPuckCanvas } from "@/integrations/puck/veskify-puck-editor";
 import {
   createBrowserProjectRepository,
+  IndexedDbProjectRepository,
   ProjectNotFoundError,
   RepositoryValidationError,
   type ProjectAggregate,
@@ -65,6 +67,12 @@ import {
 } from "./use-design-agent-session";
 
 type RepositoryFactory = () => ProjectRepository;
+type LocalDemoBridge = {
+  aggregate: ProjectAggregate;
+  proposal: AiStorefrontProposal;
+  sessionId: string;
+  baselineFingerprint: string;
+};
 type ReadyState = {
   status: "ready";
   aggregate: ProjectAggregate;
@@ -258,11 +266,13 @@ export function ProjectEditorClient({
   repositoryFactory = defaultRepositoryFactory,
   aiProvider,
   storefrontAiProvider = createServerWholeStorefrontPlanningClient(),
+  localDemoBridge,
 }: {
   projectId: string;
   repositoryFactory?: RepositoryFactory;
   aiProvider?: AIProvider;
   storefrontAiProvider?: StorefrontAIProvider;
+  localDemoBridge?: LocalDemoBridge;
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -287,6 +297,7 @@ export function ProjectEditorClient({
   const [toolDrawerOpen, setToolDrawerOpen] = useState(false);
   const [toolDrawerNestedModalOpen, setToolDrawerNestedModalOpen] = useState(false);
   const [drawerViewport, setDrawerViewport] = useState(false);
+  const [importedDemoProposal, setImportedDemoProposal] = useState<AiStorefrontProposal>();
   const savePending = useRef(false);
 
   useEffect(() => {
@@ -321,8 +332,21 @@ export function ProjectEditorClient({
 
   useEffect(() => {
     let cancelled = false;
-    repository
-      .current!.get(projectId)
+    const load = async () => {
+      const currentRepository = repository.current!;
+      if (localDemoBridge) {
+        if (!(currentRepository instanceof IndexedDbProjectRepository)) {
+          throw new Error("The local demo bridge requires the canonical browser repository.");
+        }
+        const marker = `veskify:p9-05b:${localDemoBridge.sessionId}:${localDemoBridge.baselineFingerprint}`;
+        if (window.sessionStorage.getItem(marker) !== "seeded") {
+          await currentRepository.replaceLocalDemoAggregate(localDemoBridge.aggregate);
+          window.sessionStorage.setItem(marker, "seeded");
+        }
+      }
+      return currentRepository.get(projectId);
+    };
+    void load()
       .then((aggregate) => {
         if (cancelled) return;
         const draft = aggregate.snapshots.find(
@@ -356,6 +380,7 @@ export function ProjectEditorClient({
           setActiveLocale(aggregate.project.primaryLocale);
           setSessionPages({});
           setSessionBrandSystem(undefined);
+          setImportedDemoProposal(localDemoBridge?.proposal);
           setResetKeys({});
           setValidationMessage("");
           setHistoryStatus("");
@@ -380,7 +405,7 @@ export function ProjectEditorClient({
     return () => {
       cancelled = true;
     };
-  }, [attempt, projectId]);
+  }, [attempt, localDemoBridge, projectId]);
 
   const readyState = state.status === "ready" ? state : undefined;
   const readyOriginalPage =
@@ -425,6 +450,7 @@ export function ProjectEditorClient({
     disabled: saveState.status === "saving",
     provider: aiProvider,
     storefrontProvider: storefrontAiProvider,
+    initialStorefrontProposal: importedDemoProposal,
     analytics: proposalAnalytics,
     analyticsRoute: `/projects/${projectId}/editor`,
     onAcceptedPage: (acceptedPage) => {

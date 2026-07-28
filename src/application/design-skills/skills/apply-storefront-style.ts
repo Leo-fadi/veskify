@@ -209,3 +209,27 @@ export const applyMinimalNordicStorefrontStyleSkill: DesignSkillDefinition = {
     fi: `Käytä ${operationCount} hyväksyttyä pelkistetyn pohjoismaisen ilmeen väri- ja typografiamuutosta.`,
   }),
 };
+
+/**
+ * Grants the shared, bounded operation set for a server-selected registered
+ * storefront direction. The provider selects only a registered direction; it
+ * never chooses or supplies a skill identifier.
+ */
+export const applyRegisteredWholeStorefrontDirectionSkill: DesignSkillDefinition = {
+  ...sharedDefinition,
+  id: "applyRegisteredWholeStorefrontDirection",
+  title: {
+    en: "Apply a registered storefront direction",
+    fi: "Käytä rekisteröityä kaupan tyylisuuntaa",
+  },
+  description: {
+    en: "Authorizes the common validated operation boundary for a server-selected registered storefront direction.",
+    fi: "Valtuuttaa palvelimen valitseman rekisteröidyn kaupan tyylisuunnan yhteisen validoidun toimintorajan.",
+  },
+  supportedIntents: ["registeredWholeStorefrontDirection"],
+  execute: () => [],
+  summarize: ({ operationCount }) => ({
+    en: `Apply ${operationCount} validated operations for the selected storefront direction.`,
+    fi: `Käytä ${operationCount} validoitua toimintoa valitulle kaupan tyylisuunnalle.`,
+  }),
+};

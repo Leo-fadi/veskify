@@ -20,7 +20,9 @@ managed secret is present without printing it, and start the application:
 export VESKIFY_RUNTIME_MODE=integrated
 export VESKIFY_AI_PROVIDER=openai
 export VESKIFY_P9_05B_LOCAL_DEMO=1
+export VESKIFY_P9_05B_LOCAL_DEMO_TOKEN="$(openssl rand -hex 32)"
 test -n "$OPENAI_API_KEY"
+test "${#VESKIFY_P9_05B_LOCAL_DEMO_TOKEN}" -ge 32
 pnpm dev
 ```
 
@@ -29,12 +31,18 @@ or store the key or raw provider payload. Automated tests use mocked transport o
 network-free. Missing runtime configuration is a merchant-safe `providerUnavailable` result; it
 must never select the deterministic provider.
 
-In terminal B, verify the server authority, reset it to the deterministic fixture, and verify it
-again:
+In terminal B, verify the server authority, then reset it to the deterministic fixture. The reset
+creates one opaque, reset-scoped demo session. Keep the returned `sessionId` in this terminal only;
+it is neither persisted nor a merchant-facing value.
 
 ```bash
 curl --fail --silent --show-error http://localhost:3000/api/demo/p9-05b
-curl --fail --silent --show-error --request POST http://localhost:3000/api/demo/p9-05b
+reset="$(curl --fail --silent --show-error --request POST \
+  --header 'Origin: http://localhost:3000' \
+  --header "x-veskify-p9-05b-demo-token: $VESKIFY_P9_05B_LOCAL_DEMO_TOKEN" \
+  http://localhost:3000/api/demo/p9-05b)"
+session_id="$(printf '%s' "$reset" | jq -r '.session.sessionId')"
+test -n "$session_id" && test "$session_id" != null
 curl --fail --silent --show-error http://localhost:3000/api/demo/p9-05b
 ```
 
@@ -50,35 +58,57 @@ merchant request to the selected OpenAI model; the response may choose only a re
 and the server materializes and validates the complete plan. Run premium editorial exactly once:
 
 ```bash
-curl --fail --silent --show-error \
+generated="$(curl --fail --silent --show-error \
   --request POST \
+  --header 'Origin: http://localhost:3000' \
   --header 'content-type: application/json' \
-  --data '{"merchantInstruction":"Create a premium editorial storefront for Lumo Atelier. Emphasize craftsmanship, approved brand photography, product discovery and refined visual hierarchy. Avoid a generic all-black luxury appearance."}' \
-  http://localhost:3000/api/demo/p9-05b/generate
+  --header "x-veskify-p9-05b-demo-token: $VESKIFY_P9_05B_LOCAL_DEMO_TOKEN" \
+  --data "{\"projectId\":\"project_lumo_fresh\",\"sessionId\":\"$session_id\",\"merchantInstruction\":\"Create a premium editorial storefront for Lumo Atelier. Emphasize craftsmanship, approved brand photography, product discovery and refined visual hierarchy. Avoid a generic all-black luxury appearance.\"}" \
+  http://localhost:3000/api/demo/p9-05b/generate)"
+editor_route="$(printf '%s' "$generated" | jq -r '.editorRoute')"
+test -n "$editor_route" && test "$editor_route" != null
+printf 'Open http://localhost:3000%s\n' "$editor_route"
 ```
+
+Open the printed URL exactly. It is the normal Storefront Studio editor route, with a one-reset
+server session boundary. On its first load, the route validates and imports the authoritative
+`project_lumo_fresh` aggregate through the canonical browser repository, then validates the
+pending proposal against the active draft before showing the normal merchant review. It uses the
+existing proposal acceptance coordinator, atomic history, Save draft, Preview and Publish paths;
+it does not expose proposal JSON or require IndexedDB edits. Reloading after Save keeps the saved
+browser draft. A reset creates a new session and replaces the prior local-demo aggregate on the
+next documented editor load, clearing its generated proposal and history.
 
 Reset and verify the identical baseline, then run modern technical exactly once:
 
 ```bash
-curl --fail --silent --show-error --request POST http://localhost:3000/api/demo/p9-05b
+reset="$(curl --fail --silent --show-error --request POST --header 'Origin: http://localhost:3000' --header "x-veskify-p9-05b-demo-token: $VESKIFY_P9_05B_LOCAL_DEMO_TOKEN" http://localhost:3000/api/demo/p9-05b)"
+session_id="$(printf '%s' "$reset" | jq -r '.session.sessionId')"
 curl --fail --silent --show-error http://localhost:3000/api/demo/p9-05b
-curl --fail --silent --show-error \
+generated="$(curl --fail --silent --show-error \
   --request POST \
+  --header 'Origin: http://localhost:3000' \
   --header 'content-type: application/json' \
-  --data '{"merchantInstruction":"Create a modern technical storefront for Lumo Atelier. Prioritize precise product information, confident structure, clear collection navigation and efficient product comparison while preserving the approved brand identity."}' \
-  http://localhost:3000/api/demo/p9-05b/generate
+  --header "x-veskify-p9-05b-demo-token: $VESKIFY_P9_05B_LOCAL_DEMO_TOKEN" \
+  --data "{\"projectId\":\"project_lumo_fresh\",\"sessionId\":\"$session_id\",\"merchantInstruction\":\"Create a modern technical storefront for Lumo Atelier. Prioritize precise product information, confident structure, clear collection navigation and efficient product comparison while preserving the approved brand identity.\"}" \
+  http://localhost:3000/api/demo/p9-05b/generate)"
+printf 'Open http://localhost:3000%s\n' "$(printf '%s' "$generated" | jq -r '.editorRoute')"
 ```
 
 Reset and verify once more, then run warm approachable exactly once:
 
 ```bash
-curl --fail --silent --show-error --request POST http://localhost:3000/api/demo/p9-05b
+reset="$(curl --fail --silent --show-error --request POST --header 'Origin: http://localhost:3000' --header "x-veskify-p9-05b-demo-token: $VESKIFY_P9_05B_LOCAL_DEMO_TOKEN" http://localhost:3000/api/demo/p9-05b)"
+session_id="$(printf '%s' "$reset" | jq -r '.session.sessionId')"
 curl --fail --silent --show-error http://localhost:3000/api/demo/p9-05b
-curl --fail --silent --show-error \
+generated="$(curl --fail --silent --show-error \
   --request POST \
+  --header 'Origin: http://localhost:3000' \
   --header 'content-type: application/json' \
-  --data '{"merchantInstruction":"Create a warm and approachable storefront for Lumo Atelier. Make product discovery welcoming, use the approved brand story and imagery, and guide customers naturally from the homepage to collections and products."}' \
-  http://localhost:3000/api/demo/p9-05b/generate
+  --header "x-veskify-p9-05b-demo-token: $VESKIFY_P9_05B_LOCAL_DEMO_TOKEN" \
+  --data "{\"projectId\":\"project_lumo_fresh\",\"sessionId\":\"$session_id\",\"merchantInstruction\":\"Create a warm and approachable storefront for Lumo Atelier. Make product discovery welcoming, use the approved brand story and imagery, and guide customers naturally from the homepage to collections and products.\"}" \
+  http://localhost:3000/api/demo/p9-05b/generate)"
+printf 'Open http://localhost:3000%s\n' "$(printf '%s' "$generated" | jq -r '.editorRoute')"
 ```
 
 Stop a run immediately on a non-2xx response, `providerUnavailable`, stale or validation failure,
@@ -117,6 +147,7 @@ After the controlled work, stop the server and remove the secret from the shell:
 
 ```bash
 unset OPENAI_API_KEY
+unset VESKIFY_P9_05B_LOCAL_DEMO_TOKEN
 ```
 
 Confirm `git status --short` contains no credential or local environment file before retaining any

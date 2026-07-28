@@ -5,6 +5,7 @@ import {
   applyLuxuryStyleSkill,
   applyMinimalNordicStyleSkill,
   applyMinimalNordicStorefrontStyleSkill,
+  applyRegisteredWholeStorefrontDirectionSkill,
   applyWarmPremiumStorefrontStyleSkill,
   improveHeroSkill,
 } from "./skills";
@@ -17,4 +18,5 @@ export const designSkillRegistry = new DesignSkillRegistry([
   applyExactBrandPaletteSkill,
   applyWarmPremiumStorefrontStyleSkill,
   applyMinimalNordicStorefrontStyleSkill,
+  applyRegisteredWholeStorefrontDirectionSkill,
 ]);

@@ -1,8 +1,12 @@
 import "server-only";
 
+import { randomBytes, timingSafeEqual } from "node:crypto";
+
 import {
   buildAiStorefrontProviderRequest,
+  aiStorefrontProviderResponseSchema,
   type AiStorefrontProviderRequest,
+  type AiStorefrontProviderResponse,
 } from "@/application/ai-storefront-generation";
 import { projectAiStorefrontSnapshot } from "@/application/ai-storefront";
 import { canonicalValueFingerprint } from "@/domain/storefront";
@@ -19,6 +23,7 @@ import {
 } from "./whole-storefront-runtime-authority";
 
 export const P9_05B_LOCAL_DEMO_FLAG = "VESKIFY_P9_05B_LOCAL_DEMO";
+export const P9_05B_LOCAL_DEMO_TOKEN = "VESKIFY_P9_05B_LOCAL_DEMO_TOKEN";
 export const P9_05B_LOCAL_DEMO_NAMESPACE = "p9-05b-lumo-local-server";
 
 type DemoEnvironment = Readonly<Record<string, string | undefined>>;
@@ -26,6 +31,11 @@ type DemoEnvironment = Readonly<Record<string, string | undefined>>;
 type DemoState = {
   repository: InMemoryProjectRepository;
   baselineFingerprint: string;
+  session: {
+    id: string;
+    generationAttempted: boolean;
+    proposal: AiStorefrontProviderResponse | null;
+  };
 };
 
 declare global {
@@ -57,7 +67,25 @@ function createState(): DemoState {
   return {
     repository: new InMemoryProjectRepository([structuredClone(source.aggregate)]),
     baselineFingerprint: canonicalValueFingerprint(source.aggregate),
+    session: {
+      id: randomBytes(32).toString("base64url"),
+      generationAttempted: false,
+      proposal: null,
+    },
   };
+}
+
+export function configuredP905bLocalDemoToken(
+  environment: DemoEnvironment = process.env,
+): string | null {
+  const token = environment[P9_05B_LOCAL_DEMO_TOKEN];
+  return token && Buffer.byteLength(token) >= 32 ? token : null;
+}
+
+export function sameP905bLocalDemoSecret(left: string, right: string): boolean {
+  const leftBytes = Buffer.from(left);
+  const rightBytes = Buffer.from(right);
+  return leftBytes.length === rightBytes.length && timingSafeEqual(leftBytes, rightBytes);
 }
 
 function state(environment: DemoEnvironment): DemoState {
@@ -138,6 +166,91 @@ export async function resetP905bLocalDemoProject(
   }
   globalThis.__veskifyP905bLocalDemoState = createState();
   return inspectP905bLocalDemo(environment);
+}
+
+export function p905bLocalDemoSession(environment: DemoEnvironment = process.env): {
+  projectId: string;
+  sessionId: string;
+} {
+  const current = state(environment);
+  return { projectId: P9_05A_PROJECT_ID, sessionId: current.session.id };
+}
+
+export function claimP905bLocalDemoGeneration(input: {
+  projectId: string;
+  sessionId: string;
+  environment?: DemoEnvironment;
+}): void {
+  const current = state(input.environment ?? process.env);
+  if (
+    input.projectId !== P9_05A_PROJECT_ID ||
+    !sameP905bLocalDemoSecret(input.sessionId, current.session.id)
+  ) {
+    throw new Error("The P9-05B local demo session is unavailable.");
+  }
+  if (current.session.generationAttempted) {
+    throw new Error("The P9-05B local demo generation has already been used for this reset.");
+  }
+  current.session.generationAttempted = true;
+}
+
+export function recordP905bLocalDemoProposal(input: {
+  projectId: string;
+  sessionId: string;
+  proposal: unknown;
+  environment?: DemoEnvironment;
+}): { editorRoute: string } {
+  const current = state(input.environment ?? process.env);
+  if (
+    input.projectId !== P9_05A_PROJECT_ID ||
+    !sameP905bLocalDemoSecret(input.sessionId, current.session.id) ||
+    !current.session.generationAttempted ||
+    current.session.proposal !== null
+  ) {
+    throw new Error("The P9-05B local demo proposal cannot be recorded safely.");
+  }
+  const proposal = aiStorefrontProviderResponseSchema.parse(input.proposal);
+  if (proposal.proposal.projectId !== P9_05A_PROJECT_ID) {
+    throw new Error("The P9-05B local demo proposal targets another project.");
+  }
+  current.session.proposal = structuredClone(proposal);
+  return {
+    editorRoute: `/projects/${P9_05A_PROJECT_ID}/editor?p9-05b-session=${encodeURIComponent(current.session.id)}`,
+  };
+}
+
+export async function loadP905bLocalDemoEditorSession(input: {
+  projectId: string;
+  sessionId: string;
+  environment?: DemoEnvironment;
+}): Promise<{
+  aggregate: Awaited<ReturnType<InMemoryProjectRepository["get"]>>;
+  proposal: AiStorefrontProviderResponse["proposal"];
+  sessionId: string;
+  baselineFingerprint: string;
+} | null> {
+  const current = state(input.environment ?? process.env);
+  if (
+    input.projectId !== P9_05A_PROJECT_ID ||
+    !sameP905bLocalDemoSecret(input.sessionId, current.session.id) ||
+    current.session.proposal === null
+  ) {
+    return null;
+  }
+  const aggregate = await current.repository.get(P9_05A_PROJECT_ID);
+  const proposal = current.session.proposal.proposal;
+  if (
+    proposal.projectId !== aggregate.project.id ||
+    proposal.draftSnapshotId !== aggregate.project.draftSnapshotId
+  ) {
+    return null;
+  }
+  return {
+    aggregate: structuredClone(aggregate),
+    proposal: structuredClone(proposal),
+    sessionId: current.session.id,
+    baselineFingerprint: current.baselineFingerprint,
+  };
 }
 
 export function p905bLocalDemoRepository(

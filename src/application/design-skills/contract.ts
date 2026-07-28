@@ -23,6 +23,7 @@ export const designIntentSchema = z.enum([
   "exactBrandPalette",
   "luxuryStyle",
   "minimalNordicStyle",
+  "registeredWholeStorefrontDirection",
   "campaignSection",
   "heroImprovement",
 ]);
