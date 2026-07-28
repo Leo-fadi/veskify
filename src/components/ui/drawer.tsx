@@ -21,6 +21,7 @@ export function Drawer({
 }) {
   const drawerRef = useRef<HTMLElement>(null);
   const closeDrawer = useEffectEvent(onClose);
+  const closeOnEscapeEnabled = useEffectEvent(() => closeOnEscape);
   const titleId = useId();
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export function Drawer({
     document.body.style.overflow = "hidden";
 
     const containFocus = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && closeOnEscape) {
+      if (event.key === "Escape" && closeOnEscapeEnabled()) {
         event.preventDefault();
         event.stopPropagation();
         closeDrawer();
@@ -87,7 +88,7 @@ export function Drawer({
       document.body.style.overflow = bodyOverflow;
       if (trigger?.isConnected) trigger.focus();
     };
-  }, [closeOnEscape, open]);
+  }, [open]);
 
   if (!open) return null;
   return (

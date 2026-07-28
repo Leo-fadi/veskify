@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
 import { proposalChangeDetails, proposalDetailsHeading } from "./proposal-change-details";
 import { createStorefrontProposalReview } from "./storefront-proposal-review";
@@ -188,6 +195,7 @@ export function DesignAgentPanel({
   selectedSectionLabel,
   storefrontPageCount,
   onReviewPage,
+  onConfirmationDialogOpenChange,
 }: {
   controller: DesignAgentSessionController;
   locale: Locale;
@@ -196,6 +204,7 @@ export function DesignAgentPanel({
   selectedSectionLabel?: string;
   storefrontPageCount?: number;
   onReviewPage?: (pageId: string) => void;
+  onConfirmationDialogOpenChange?: (open: boolean) => void;
 }) {
   const text = copy[locale];
   const requestRef = useRef<HTMLTextAreaElement>(null);
@@ -280,6 +289,15 @@ export function DesignAgentPanel({
   );
 
   useEffect(() => {
+    return () => onConfirmationDialogOpenChange?.(false);
+  }, [onConfirmationDialogOpenChange]);
+
+  const closeConfirmation = useCallback(() => {
+    onConfirmationDialogOpenChange?.(false);
+    setConfirmingStorefrontProposalId(null);
+  }, [onConfirmationDialogOpenChange]);
+
+  useEffect(() => {
     if (!confirmationDialogOpen) return;
     const dialog = confirmationRef.current?.closest<HTMLElement>('[role="dialog"]');
     const trigger = acceptTriggerRef.current;
@@ -294,7 +312,7 @@ export function DesignAgentPanel({
     const trapFocus = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        setConfirmingStorefrontProposalId(null);
+        closeConfirmation();
         trigger?.focus();
         return;
       }
@@ -307,10 +325,15 @@ export function DesignAgentPanel({
       }
       const first = elements[0];
       const last = elements[elements.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      const active = document.activeElement;
+      const activeIsFocusable = active instanceof HTMLElement && elements.includes(active);
+      if (!dialog.contains(active) || !activeIsFocusable) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && active === first) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+      } else if (!event.shiftKey && active === last) {
         event.preventDefault();
         first.focus();
       }
@@ -320,7 +343,7 @@ export function DesignAgentPanel({
       document.removeEventListener("keydown", trapFocus, true);
       if (trigger?.isConnected) trigger.focus();
     };
-  }, [confirmationDialogOpen]);
+  }, [closeConfirmation, confirmationDialogOpen]);
   const examples =
     controller.targetScope === "storefront"
       ? storefrontExamplePrompts[locale]
@@ -596,7 +619,10 @@ export function DesignAgentPanel({
             <button
               aria-haspopup="dialog"
               disabled={controller.controlsDisabled || !storefrontReview.complete}
-              onClick={() => setConfirmingStorefrontProposalId(storefrontProposal.id)}
+              onClick={() => {
+                onConfirmationDialogOpenChange?.(true);
+                setConfirmingStorefrontProposalId(storefrontProposal.id);
+              }}
               ref={acceptTriggerRef}
               type="button"
             >
@@ -670,7 +696,7 @@ export function DesignAgentPanel({
                 <button
                   disabled={controller.controlsDisabled}
                   onClick={() => {
-                    setConfirmingStorefrontProposalId(null);
+                    closeConfirmation();
                     if (
                       confirmingStorefrontProposalId === storefrontProposal.id &&
                       session.state === "proposalReady" &&
@@ -686,7 +712,7 @@ export function DesignAgentPanel({
                 <button
                   disabled={controller.controlsDisabled}
                   onClick={() => {
-                    setConfirmingStorefrontProposalId(null);
+                    closeConfirmation();
                     acceptTriggerRef.current?.focus();
                   }}
                   type="button"

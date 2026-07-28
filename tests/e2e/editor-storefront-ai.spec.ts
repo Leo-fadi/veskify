@@ -259,6 +259,40 @@ test("target selector and storefront review actions are keyboard operable", asyn
   await expect(page.getByLabel("Storefront design proposal")).toHaveCount(0);
 });
 
+test("keeps compact confirmation focus and Escape ownership with the topmost modal", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto(editorUrl);
+  await openStorefrontProposal(page);
+
+  const drawer = page.getByRole("dialog", { name: "Contextual tools" });
+  const accept = drawer.getByRole("button", { name: "Accept and apply" });
+  await accept.click();
+  const confirmation = page.getByRole("dialog", { name: "Apply this storefront proposal?" });
+  const heading = confirmation.getByRole("heading");
+  const apply = confirmation.getByRole("button", { name: "Apply storefront proposal" });
+  const keepReviewing = confirmation.getByRole("button", { name: "Keep reviewing" });
+
+  await expect(heading).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(keepReviewing).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(apply).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(keepReviewing).toBeFocused();
+  await heading.focus();
+  await page.keyboard.press("Tab");
+  await expect(apply).toBeFocused();
+
+  await page.keyboard.press("Escape");
+  await expect(confirmation).toHaveCount(0);
+  await expect(drawer).toBeVisible();
+  await expect(accept).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(drawer).toHaveCount(0);
+});
+
 for (const width of [375, 768, 1024, 1440]) {
   test(`storefront target and review have no horizontal overflow at ${width}px`, async ({
     page,
