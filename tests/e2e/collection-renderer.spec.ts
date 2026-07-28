@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { expectNoStorefrontHorizontalClipping } from "./storefront-geometry";
 
 const collectionUrl = "/projects/project_aurum_nordic/collections/rings";
 
@@ -55,9 +56,7 @@ test("loads the persisted rings collection and operates bilingual demo controls 
   await expect(
     page.getByRole("combobox", { name: "Lajittele tuotteet", exact: true }),
   ).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
-  );
+  await expectNoStorefrontHorizontalClipping(page);
   await expect(page.getByText(/puck/i)).toHaveCount(0);
   await expect(page.getByRole("button", { name: /save|publish|delete|edit/i })).toHaveCount(0);
 });
@@ -67,8 +66,6 @@ for (const width of [375, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(collectionUrl);
     await expect(page.getByRole("heading", { level: 1, name: "Rings" })).toBeVisible();
-    expect(
-      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-    ).toBe(true);
+    await expectNoStorefrontHorizontalClipping(page);
   });
 }

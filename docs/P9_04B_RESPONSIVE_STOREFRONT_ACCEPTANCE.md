@@ -14,7 +14,7 @@ Dynamic collection presentation keeps canonical collection membership and mercha
 
 ## Product-detail presentation
 
-Dynamic PDP presentation preserves canonical product facts, variant selection, unavailable states, gallery media and text-entry option behaviour. At 375 px option controls, engraving input and purchase information remain reachable without horizontal page overflow. Gallery, contained, editorial and split treatments remain presentation-only.
+Dynamic PDP presentation preserves canonical product facts, variant selection, unavailable states, gallery media and text-entry option behaviour. English and Finnish PDP acceptance runs at 375 px, 768 px, 1024 px and 1440 px, including the longer Finnish option, engraving and purchase labels. At every width the canonical price, availability and SKU, gallery, specifications, selectors and engraving input remain reachable without meaningful clipping. Gallery, contained, editorial and split treatments remain presentation-only.
 
 ## Product cards and image treatments
 
@@ -22,7 +22,7 @@ Minimal product-first, editorial image-led, compact commerce and premium jewelle
 
 ## Localisation and layout boundaries
 
-Finnish navigation, calls to action, filters, sorting and PDP labels are checked at responsive widths. Storefront header navigation now uses flexible, bounded tracks so localized labels wrap rather than expanding the page width. This change is isolated to rendered storefront styling.
+Finnish navigation, calls to action, filters, sorting and PDP labels are checked at responsive widths. Responsive acceptance measures rendered descendant geometry as well as document width, so a visible child clipped by an overflow-hidden storefront boundary fails with its route, viewport, rectangle and boundary in the test output. Decorative content, visually hidden accessibility content, closed dialogs and intended horizontal scrollers are excluded. Storefront header navigation uses a bounded, intrinsic-aware brand track and safe word wrapping: normal, long multi-word and long unbroken merchant names remain readable and accessible without overlapping navigation or actions at 768 px and 1024 px, while the existing compact and wide layouts remain usable.
 
 ## Preserved boundaries and next checkpoint
 

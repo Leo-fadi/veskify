@@ -1,7 +1,8 @@
-import { expect, test, type Page } from "@playwright/test";
-
-const hasNoHorizontalOverflow = (page: Page) =>
-  page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+import { expect, test } from "@playwright/test";
+import {
+  expectNoStorefrontHorizontalClipping,
+  storefrontGeometryViolations,
+} from "./storefront-geometry";
 
 test("loads the Vesko Storefront Studio entry and exposes the working journeys", async ({
   page,
@@ -84,7 +85,7 @@ test("loads the complete persisted homepage and switches locale by keyboard", as
   await expect(page.getByRole("button", { name: /publish|save|edit|delete/i })).toHaveCount(0);
   await page.getByRole("button", { name: "Liity uutiskirjeeseen" }).click();
   await expect(page.getByText("Vain demo — sähköpostia ei lähetetä.")).toBeVisible();
-  expect(await hasNoHorizontalOverflow(page)).toBe(true);
+  await expectNoStorefrontHorizontalClipping(page);
 });
 
 for (const width of [375, 768, 1024, 1440]) {
@@ -94,7 +95,7 @@ for (const width of [375, 768, 1024, 1440]) {
     await expect(page.getByText("Draft preview")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Made for northern light" })).toBeVisible();
     await expect(page.getByRole("group", { name: "Storefront language" })).toBeVisible();
-    expect(await hasNoHorizontalOverflow(page)).toBe(true);
+    await expectNoStorefrontHorizontalClipping(page);
     await expect(page.locator("header.store-header")).toBeVisible();
     await expect(page.locator("footer.store-footer")).toBeVisible();
   });
@@ -118,5 +119,76 @@ test("keeps Finnish storefront navigation and calls to action inside the tablet 
       .getByRole("navigation", { name: "Päänavigaatio" })
       .getByRole("link", { name: "Sormukset" }),
   ).toBeVisible();
-  expect(await hasNoHorizontalOverflow(page)).toBe(true);
+  await expectNoStorefrontHorizontalClipping(page);
 });
+
+test("detects clipped storefront descendants while excluding decorative and inactive content", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 500, height: 500 });
+  await page.setContent(`
+    <style>
+      body { margin: 0; }
+      .project-preview__storefront { width: 320px; overflow: hidden; }
+      #oversized { width: 480px; }
+      .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+      .carousel { width: 240px; overflow-x: auto; }
+      .carousel button { width: 480px; }
+    </style>
+    <main class="project-preview__storefront">
+      <button id="contained">Contained action</button>
+      <div aria-hidden="true" style="width: 480px">Decorative full bleed</div>
+      <span class="visually-hidden">Screen reader helper</span>
+      <dialog><button>Closed drawer action</button></dialog>
+      <div class="carousel"><button>Scrollable carousel action</button></div>
+      <button id="oversized">Oversized visible action</button>
+    </main>
+  `);
+
+  const violations = await storefrontGeometryViolations(page);
+  expect(violations).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        element: expect.stringContaining("button#oversized"),
+        kind: "outside-boundary",
+      }),
+    ]),
+  );
+  expect(violations.map((violation) => violation.element).join("\n")).not.toMatch(
+    /Decorative full bleed|Screen reader helper|Closed drawer action|Scrollable carousel action/,
+  );
+
+  await page.locator("#oversized").evaluate((element) => element.remove());
+  await expectNoStorefrontHorizontalClipping(page);
+});
+
+for (const [name, brandName] of [
+  ["long multi-word", "Pohjoisen käsityöläiskorujen ateljee"],
+  ["long unbroken", "PohjoisenKäsityöläiskorujenAteljeeJaMuotoilustudio"],
+] as const) {
+  for (const width of [768, 1024]) {
+    test(`keeps a ${name} merchant brand contained at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto("/projects/project_aurum_nordic");
+      const brand = page.locator("header.store-header .store-brand");
+      await brand.evaluate((element, value) => {
+        element.textContent = value;
+      }, brandName);
+
+      await expect(brand).toHaveAccessibleName(brandName);
+      await expectNoStorefrontHorizontalClipping(page);
+
+      const [brandBox, navigationBox, toolsBox] = await Promise.all([
+        brand.boundingBox(),
+        page.locator("header.store-header nav").boundingBox(),
+        page.locator(".store-header__tools").boundingBox(),
+      ]);
+      expect(brandBox).not.toBeNull();
+      expect(navigationBox).not.toBeNull();
+      expect(toolsBox).not.toBeNull();
+      expect(brandBox!.x + brandBox!.width).toBeLessThanOrEqual(navigationBox!.x + 1);
+      expect(navigationBox!.x + navigationBox!.width).toBeLessThanOrEqual(toolsBox!.x + 1);
+      expect(brandBox!.height).toBeLessThanOrEqual(144);
+    });
+  }
+}
