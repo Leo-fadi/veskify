@@ -20,11 +20,15 @@ import {
   type ApprovedAssetPlacementOperation,
 } from "./approved-asset-context";
 
-export const storefrontGenerationCapabilitySchema = z.literal("approvedColorTypographyDirection");
+export const storefrontGenerationCapabilitySchema = z.enum([
+  "approvedColorTypographyDirection",
+  "registeredWholeStorefrontDirection",
+]);
 export const storefrontStyleDirectionSchema = z.enum([
   "warmPremium",
   "minimalNordic",
   "exactBrandPalette",
+  "registeredWholeStorefront",
 ]);
 export const storefrontAssetReferenceCapabilitySchema = z.enum([
   "structuredApprovedAssets",

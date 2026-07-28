@@ -98,7 +98,8 @@ function assertScope(request: AiOperationRequest, response: AiProviderResponse) 
     }
     if (
       (operation.type === "APPLY_APPROVED_BRAND_COLOURS" ||
-        operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY") &&
+        operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY" ||
+        operation.type === "APPLY_REGISTERED_BRAND_SYSTEM") &&
       request.scope !== "brand"
     ) {
       throw new AiProviderValidationError(

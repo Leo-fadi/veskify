@@ -121,10 +121,16 @@ const supportedRequests = new Map<string, SupportedStorefrontRequest>([
   ],
 ]);
 
-function classifyInstruction(
-  instruction: string,
-  currentColors: AiStorefrontGenerationCommand["storefront"]["brandSystem"]["colors"],
-): SupportedStorefrontRequest {
+function classifyInstruction(command: AiStorefrontGenerationCommand): SupportedStorefrontRequest {
+  if (command.capability === "registeredWholeStorefrontDirection") {
+    return {
+      direction: "registeredWholeStorefront",
+      skillId: "applyRegisteredWholeStorefrontDirection",
+      designSystem: "required",
+    };
+  }
+  const instruction = command.merchantInstruction;
+  const currentColors = command.storefront.brandSystem.colors;
   const normalized = normalizeStorefrontInstruction(instruction);
   const supported = supportedRequests.get(normalized);
   if (supported) return supported;
@@ -173,10 +179,7 @@ export function createAiStorefrontGenerationPlan(
   command: AiStorefrontGenerationCommand,
 ): AiStorefrontGenerationPlan {
   const normalizedInstruction = normalizeStorefrontInstruction(command.merchantInstruction);
-  const classified = classifyInstruction(
-    command.merchantInstruction,
-    command.storefront.brandSystem.colors,
-  );
+  const classified = classifyInstruction(command);
   if (classified.designSystem === "required" && command.designSystemTarget === null) {
     throw new AiStorefrontPlanError(
       "target-mismatch",
@@ -290,15 +293,20 @@ export function createAiStorefrontGenerationPlan(
             en: "Apply the merchant’s validated brand colours across the storefront while preserving typography, layout, imagery, content, products, and section structure.",
             fi: "Käytä kauppiaan validoituja brändivärejä koko kaupassa säilyttäen typografia, asettelu, kuvat, sisältö, tuotteet ja osiorakenne.",
           }
-        : classified.direction === "warmPremium"
+        : classified.direction === "registeredWholeStorefront"
           ? {
-              en: "Apply one approved warm premium colour and typography direction across the selected storefront pages.",
-              fi: "Käytä yhtä hyväksyttyä lämmintä premium-väri- ja typografiailmettä valituilla kaupan sivuilla.",
+              en: "Prepare one complete storefront proposal from a server-registered design direction selected through the authoritative planner.",
+              fi: "Valmistele yksi koko kaupan ehdotus palvelimen rekisteröidystä, valtuutetun suunnittelijan valitsemasta tyylisuunnasta.",
             }
-          : {
-              en: "Apply one approved minimal Nordic colour and typography direction across the selected storefront pages.",
-              fi: "Käytä yhtä hyväksyttyä pelkistettyä pohjoismaista väri- ja typografiailmettä valituilla kaupan sivuilla.",
-            },
+          : classified.direction === "warmPremium"
+            ? {
+                en: "Apply one approved warm premium colour and typography direction across the selected storefront pages.",
+                fi: "Käytä yhtä hyväksyttyä lämmintä premium-väri- ja typografiailmettä valituilla kaupan sivuilla.",
+              }
+            : {
+                en: "Apply one approved minimal Nordic colour and typography direction across the selected storefront pages.",
+                fi: "Käytä yhtä hyväksyttyä pelkistettyä pohjoismaista väri- ja typografiailmettä valituilla kaupan sivuilla.",
+              },
     validation: { valid: true, errors: [] as string[] },
   };
   return aiStorefrontGenerationPlanSchema.parse({

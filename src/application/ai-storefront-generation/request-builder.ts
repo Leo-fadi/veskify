@@ -186,9 +186,11 @@ export function buildAiStorefrontProviderRequest(
       skillVersion: skill.version,
       skillScope: skill.scope,
       operationTypes:
-        plan.brandPalettePlan === null
-          ? ["APPLY_APPROVED_BRAND_COLOURS", "APPLY_APPROVED_BRAND_TYPOGRAPHY"]
-          : ["APPLY_APPROVED_BRAND_COLOURS"],
+        plan.brandPalettePlan !== null
+          ? ["APPLY_APPROVED_BRAND_COLOURS"]
+          : plan.direction === "registeredWholeStorefront"
+            ? ["APPLY_REGISTERED_BRAND_SYSTEM"]
+            : ["APPLY_APPROVED_BRAND_COLOURS", "APPLY_APPROVED_BRAND_TYPOGRAPHY"],
       target: target.designSystemTarget,
     });
   }

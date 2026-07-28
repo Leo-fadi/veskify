@@ -167,6 +167,7 @@ const sharedDefinition: Omit<
     "APPLY_REGISTERED_PAGE_SECTIONS",
     "APPLY_APPROVED_BRAND_COLOURS",
     "APPLY_APPROVED_BRAND_TYPOGRAPHY",
+    "APPLY_REGISTERED_BRAND_SYSTEM",
   ],
   protectedPaths: [...protectedDesignPaths],
   preconditions: [{ type: "pageTypeSupported" }],
@@ -206,5 +207,29 @@ export const applyMinimalNordicStorefrontStyleSkill: DesignSkillDefinition = {
   summarize: ({ operationCount }) => ({
     en: `Apply ${operationCount} approved minimal Nordic colour and typography adjustments.`,
     fi: `Käytä ${operationCount} hyväksyttyä pelkistetyn pohjoismaisen ilmeen väri- ja typografiamuutosta.`,
+  }),
+};
+
+/**
+ * Grants the shared, bounded operation set for a server-selected registered
+ * storefront direction. The provider selects only a registered direction; it
+ * never chooses or supplies a skill identifier.
+ */
+export const applyRegisteredWholeStorefrontDirectionSkill: DesignSkillDefinition = {
+  ...sharedDefinition,
+  id: "applyRegisteredWholeStorefrontDirection",
+  title: {
+    en: "Apply a registered storefront direction",
+    fi: "Käytä rekisteröityä kaupan tyylisuuntaa",
+  },
+  description: {
+    en: "Authorizes the common validated operation boundary for a server-selected registered storefront direction.",
+    fi: "Valtuuttaa palvelimen valitseman rekisteröidyn kaupan tyylisuunnan yhteisen validoidun toimintorajan.",
+  },
+  supportedIntents: ["registeredWholeStorefrontDirection"],
+  execute: () => [],
+  summarize: ({ operationCount }) => ({
+    en: `Apply ${operationCount} validated operations for the selected storefront direction.`,
+    fi: `Käytä ${operationCount} validoitua toimintoa valitulle kaupan tyylisuunnalle.`,
   }),
 };

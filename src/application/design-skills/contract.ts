@@ -23,6 +23,7 @@ export const designIntentSchema = z.enum([
   "exactBrandPalette",
   "luxuryStyle",
   "minimalNordicStyle",
+  "registeredWholeStorefrontDirection",
   "campaignSection",
   "heroImprovement",
 ]);
@@ -44,6 +45,7 @@ export const designOperationTypeSchema = z.enum([
   "CHANGE_CTA_STYLE",
   "APPLY_APPROVED_BRAND_COLOURS",
   "APPLY_APPROVED_BRAND_TYPOGRAPHY",
+  "APPLY_REGISTERED_BRAND_SYSTEM",
   "ADD_APPROVED_SECTION",
   "REMOVE_OPTIONAL_SECTION",
   "REORDER_SECTIONS",

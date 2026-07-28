@@ -23,6 +23,7 @@ import {
   CanonicalStorefrontHistory,
   StorefrontProposalAcceptanceCoordinator,
   projectAiStorefrontSnapshot,
+  validateAiStorefrontProposal,
   type AiStorefrontProposal,
 } from "@/application/ai-storefront";
 import { createDeterministicMockAIProvider, type AIProvider } from "@/application/ai-provider";
@@ -128,6 +129,7 @@ type UseDesignAgentSessionInput = {
   storedDraft?: StorefrontSnapshot;
   publishedSnapshot?: StorefrontSnapshot;
   catalogue?: CatalogueDisplayModel;
+  initialStorefrontProposal?: AiStorefrontProposal;
   disabled: boolean;
   provider?: AIProvider;
   storefrontProvider?: StorefrontAIProvider;
@@ -344,6 +346,7 @@ export function useDesignAgentSession({
   storedDraft,
   publishedSnapshot,
   catalogue,
+  initialStorefrontProposal,
   disabled,
   provider,
   storefrontProvider,
@@ -387,6 +390,7 @@ export function useDesignAgentSession({
     canUndo: false,
     canRedo: false,
   });
+  const importedStorefrontProposalId = useRef<string | null>(null);
 
   const locale = activeLocale ?? primaryLocale ?? "en";
   const fallbackLocale = primaryLocale ?? locale;
@@ -441,6 +445,81 @@ export function useDesignAgentSession({
         : null,
     );
   }, [activeDraft, activeLocale, enabledLocales, projectId, runtimeBridge]);
+
+  useEffect(() => {
+    if (
+      !initialStorefrontProposal ||
+      importedStorefrontProposalId.current === initialStorefrontProposal.id ||
+      !activeDraft ||
+      !storedDraft ||
+      !publishedSnapshot ||
+      !catalogue ||
+      !activeLocale ||
+      !primaryLocale ||
+      !enabledLocales
+    ) {
+      return;
+    }
+    let cancelled = false;
+    importedStorefrontProposalId.current = initialStorefrontProposal.id;
+    try {
+      const proposal = validateAiStorefrontProposal(initialStorefrontProposal, {
+        projectId,
+        draftSnapshotId: activeDraft.id,
+        draftRevision: activeDraft.revision,
+        enabledLocales,
+        activeLocale,
+        storefront: projectAiStorefrontSnapshot(activeDraft),
+      });
+      const coordinator = new StorefrontProposalAcceptanceCoordinator({
+        proposal,
+        activeDraft,
+        storedDraft,
+        publishedSnapshot,
+        catalogue,
+        enabledLocales,
+        activeLocale,
+        primaryLocale,
+      });
+      if (coordinator.inspect().state !== "ready") return;
+      pendingStorefrontAcceptance.current = coordinator;
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setGeneratedStorefrontProposal(proposal);
+        setTargetScope("storefront");
+        setSession(
+          uiSession("proposalReady", statuses.ready, {
+            affectedSectionIds: affectedSectionIds(
+              proposal.operations.map((entry) => entry.operation),
+            ),
+          }),
+        );
+        onProposalReady?.();
+      });
+    } catch {
+      // A bridge proposal is untrusted at the browser boundary. A stale or
+      // mismatched envelope is intentionally not shown or applied.
+      queueMicrotask(() => {
+        if (cancelled) return;
+        pendingStorefrontAcceptance.current = null;
+        setGeneratedStorefrontProposal(null);
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeDraft,
+    activeLocale,
+    catalogue,
+    enabledLocales,
+    initialStorefrontProposal,
+    onProposalReady,
+    primaryLocale,
+    projectId,
+    publishedSnapshot,
+    storedDraft,
+  ]);
 
   const refreshStorefrontHistory = useCallback(() => {
     const history = acceptedStorefrontHistory.current;

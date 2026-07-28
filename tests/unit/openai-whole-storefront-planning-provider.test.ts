@@ -21,10 +21,10 @@ import { aurumNordicSeed } from "@/data/seed";
 import { sourceEvidenceSchema, sourceReferenceSchema } from "@/domain/source-discovery";
 import {
   assertOpenAiStrictSchemaIsClosed,
-  buildOpenAiWholeStorefrontPlanningRequest,
-  openAiWholeStorefrontPlanningOutputSchema,
+  buildOpenAiWholeStorefrontDirectionRequest,
+  buildOpenAiWholeStorefrontDirectionInput,
+  openAiWholeStorefrontDirectionOutputSchema,
   OpenAiWholeStorefrontPlanningProvider,
-  wholeStorefrontPlanToOpenAiDto,
   type OpenAiResponseRequestOptions,
   type OpenAiResponsesRequest,
 } from "@/integrations/ai/openai";
@@ -120,12 +120,12 @@ function planningInput() {
   };
 }
 
-function completedResponse(plan: unknown) {
+function completedResponse(direction: { requestFingerprint: string; directionId: string }) {
   return {
     id: "resp_whole_storefront_safe",
     status: "completed",
     output: [{ type: "message", content: [{ type: "output_text", text: "structured" }] }],
-    output_text: JSON.stringify(plan),
+    output_text: JSON.stringify(direction),
   };
 }
 
@@ -168,12 +168,17 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     expect(serialized).not.toContain("https://");
   });
 
-  it("uses a closed strict-schema DTO to return the canonically validated plan with safe telemetry", async () => {
+  it("uses a closed direction DTO and materializes the canonical plan only on the server", async () => {
     const input = planningInput();
     const request = buildWholeStorefrontPlanningProviderRequest(input);
     const telemetry = { record: vi.fn() };
     const transport = new RecordingTransport(() =>
-      Promise.resolve(completedResponse(wholeStorefrontPlanToOpenAiDto(request.expectedPlan))),
+      Promise.resolve(
+        completedResponse({
+          requestFingerprint: request.requestFingerprint,
+          directionId: "warmApproachable",
+        }),
+      ),
     );
 
     await expect(
@@ -182,22 +187,24 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
         input,
         currentInput: () => input,
       }),
-    ).resolves.toEqual(request.expectedPlan);
+    ).resolves.toEqual(request.planForDirection("warmApproachable"));
     expect(transport.calls[0]?.request).toMatchObject({
       model: "configured-test-model",
       store: false,
       text: { format: { type: "json_schema", strict: true } },
     });
-    expect(transport.calls[0]?.request.text.format.name).toBe(
-      "veskify_whole_storefront_planning_dto",
-    );
-    expect(buildOpenAiWholeStorefrontPlanningRequest(request, "configured-test-model").input).toBe(
+    expect(transport.calls[0]?.request.text.format.name).toBe("veskify_whole_storefront_direction");
+    expect(buildOpenAiWholeStorefrontDirectionRequest(request, "configured-test-model").input).toBe(
       transport.calls[0]?.request.input,
     );
+    expect(buildOpenAiWholeStorefrontDirectionInput(request)).not.toContain("expectedPlan");
+    expect(buildOpenAiWholeStorefrontDirectionInput(request)).not.toContain(
+      request.expectedPlan.fingerprint,
+    );
     expect(() =>
-      assertOpenAiStrictSchemaIsClosed(openAiWholeStorefrontPlanningOutputSchema),
+      assertOpenAiStrictSchemaIsClosed(openAiWholeStorefrontDirectionOutputSchema),
     ).not.toThrow();
-    expect(JSON.stringify(openAiWholeStorefrontPlanningOutputSchema)).not.toMatch(
+    expect(JSON.stringify(openAiWholeStorefrontDirectionOutputSchema)).not.toMatch(
       /"additionalProperties"\s*:\s*\{/,
     );
     expect(telemetry.record).toHaveBeenCalledWith(
@@ -214,13 +221,43 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     );
   });
 
-  it("rejects unknown component fields during DTO-to-canonical validation", async () => {
+  it("passes URL, HTML-like, and JSON-like merchant prose only through untrusted user content", async () => {
+    const input = planningInput();
+    const merchantInstruction =
+      'Use https://merchant.example/reference as visual context; keep <section>craft</section> literal and interpret {"mood":"warm"} only as prose.';
+    const request = buildWholeStorefrontPlanningProviderRequest(input, merchantInstruction);
+    const transport = new RecordingTransport(() =>
+      Promise.resolve(
+        completedResponse({
+          requestFingerprint: request.requestFingerprint,
+          directionId: "premiumEditorial",
+        }),
+      ),
+    );
+
+    await expect(
+      requestWholeStorefrontGenerationPlan({
+        provider: provider(transport),
+        input,
+        currentInput: () => input,
+        merchantInstruction,
+      }),
+    ).resolves.toEqual(request.planForDirection("premiumEditorial"));
+
+    expect(transport.calls).toHaveLength(1);
+    expect(transport.calls[0]?.request.input).toContain("https://merchant.example/reference");
+    expect(transport.calls[0]?.request.input).toContain("<section>craft</section>");
+    expect(transport.calls[0]?.request.input).toContain('{\\"mood\\":\\"warm\\"}');
+    expect(transport.calls[0]?.request.instructions).not.toContain(merchantInstruction);
+  });
+
+  it("rejects an unregistered direction during DTO-to-canonical validation", async () => {
     const input = planningInput();
     const request = buildWholeStorefrontPlanningProviderRequest(input);
-    const dto = wholeStorefrontPlanToOpenAiDto(request.expectedPlan);
-    const component = dto.components[0];
-    if (component === undefined) throw new Error("Expected a generated component DTO.");
-    component.content.push({ field: "inventedField", valueJson: '"invented"' });
+    const dto = {
+      requestFingerprint: request.requestFingerprint,
+      directionId: "inventedDirection",
+    };
 
     await expect(
       requestWholeStorefrontGenerationPlan({
@@ -242,7 +279,10 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
         provider: provider(
           new RecordingTransport(() =>
             Promise.resolve(
-              completedResponse(wholeStorefrontPlanToOpenAiDto(request.expectedPlan)),
+              completedResponse({
+                requestFingerprint: request.requestFingerprint,
+                directionId: "warmApproachable",
+              }),
             ),
           ),
         ),
@@ -299,10 +339,10 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
         currentInput: () => input,
       }),
     ).rejects.toMatchObject({ code: "malformed-structured-response" });
-    const invalidDto = wholeStorefrontPlanToOpenAiDto(request.expectedPlan);
-    const first = invalidDto.components[0];
-    if (first === undefined) throw new Error("Expected a generated component DTO.");
-    first.props.push({ field: "inventedField", valueJson: "true" });
+    const invalidDto = {
+      requestFingerprint: request.requestFingerprint,
+      directionId: "unregisteredDirection",
+    };
     await expect(
       requestWholeStorefrontGenerationPlan({
         provider: provider(

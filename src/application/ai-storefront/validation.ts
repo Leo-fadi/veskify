@@ -264,7 +264,8 @@ function operationTarget(
 ): { kind: "storefrontDesignSystem" } | { kind: "page" } | { kind: "section" } {
   if (
     operation.type === "APPLY_APPROVED_BRAND_COLOURS" ||
-    operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY"
+    operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY" ||
+    operation.type === "APPLY_REGISTERED_BRAND_SYSTEM"
   ) {
     return { kind: "storefrontDesignSystem" };
   }
@@ -452,7 +453,8 @@ export function validateAiStorefrontOperations(
     }
     const isDesignSystemOperation =
       operation.operation.type === "APPLY_APPROVED_BRAND_COLOURS" ||
-      operation.operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY";
+      operation.operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY" ||
+      operation.operation.type === "APPLY_REGISTERED_BRAND_SYSTEM";
     if (isDesignSystemOperation && declaredTarget.kind !== "storefrontDesignSystem") {
       invalid(
         "global-target-required",

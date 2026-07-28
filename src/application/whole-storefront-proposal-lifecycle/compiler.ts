@@ -7,6 +7,7 @@ import {
   wholeStorefrontGenerationPlanSchema,
   wholeStorefrontPlanningInputSchema,
 } from "@/application/whole-storefront-generation-plan/contract";
+import { registeredBrandSystemForDirection } from "@/application/storefront-design-system";
 import {
   componentInstanceV2Schema,
   createComponentRegistryV2,
@@ -85,7 +86,9 @@ function validateCurrentPlan(input: WholeStorefrontProposalCompilationInput) {
 
 function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
   try {
-    return createWholeStorefrontGenerationPlan(input.planningInput);
+    return createWholeStorefrontGenerationPlan(input.planningInput, {
+      directionId: input.plan.designSystemSelection.directionId,
+    });
   } catch (error) {
     if (error instanceof WholeStorefrontProposalError) throw error;
     return invalid(
@@ -446,6 +449,9 @@ export function replayWholeStorefrontProposalOperations(
           );
         }
         break;
+      case "APPLY_REGISTERED_BRAND_SYSTEM":
+        state.brandSystem = structuredClone(operation.brandSystem);
+        break;
       case "RETAIN_NAVIGATION":
         if (canonicalValueString(state.navigation) !== canonicalValueString(operation.navigation)) {
           invalid(
@@ -594,7 +600,16 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
       operation,
     });
   };
-  add({ type: "RETAIN_BRAND_SYSTEM", brandSystem: structuredClone(original.brandSystem) });
+  const selectedBrandSystem = registeredBrandSystemForDirection(
+    original.brandSystem,
+    input.planningInput.recipeContext.designSystem,
+    plan.designSystemSelection.directionId,
+  );
+  add({
+    type: "APPLY_REGISTERED_BRAND_SYSTEM",
+    directionId: plan.designSystemSelection.directionId,
+    brandSystem: selectedBrandSystem,
+  });
   add({ type: "RETAIN_NAVIGATION", navigation: structuredClone(original.navigation) });
   plan.pagePlans
     .slice()

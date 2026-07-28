@@ -9,25 +9,34 @@ import {
   type ServerWholeStorefrontPlanningAuthority,
 } from "@/integrations/ai/whole-storefront-runtime-authority";
 import type { WholeStorefrontPlanningProvider } from "@/application/whole-storefront-generation-plan";
+import {
+  createP905bLocalDemoAuthority,
+  isP905bLocalDemoConfigured,
+} from "@/integrations/ai/p9-05b-local-demo-authority.server";
 
 export const runtime = "nodejs";
 
 export function createWholeStorefrontPlanningRouteHandler({
   authority,
   selectProvider,
+  environment = process.env,
 }: {
   authority?: ServerWholeStorefrontPlanningAuthority;
   selectProvider?: () => WholeStorefrontPlanningProvider;
+  environment?: Readonly<Record<string, string | undefined>>;
 } = {}) {
-  const runtimeMode = process.env.VESKIFY_RUNTIME_MODE;
+  const runtimeMode = environment.VESKIFY_RUNTIME_MODE;
   const standalone = runtimeMode === "standalone";
-  const integrated = runtimeMode === "integrated" && process.env.VESKIFY_AI_PROVIDER === "openai";
+  const integrated = runtimeMode === "integrated" && environment.VESKIFY_AI_PROVIDER === "openai";
+  const localDemo = isP905bLocalDemoConfigured(environment);
   return createServerWholeStorefrontPlanningHandler({
     authority:
       authority ??
       (standalone
         ? createStandaloneServerWholeStorefrontPlanningAuthority()
-        : unavailableServerWholeStorefrontPlanningAuthority),
+        : localDemo
+          ? createP905bLocalDemoAuthority(environment)
+          : unavailableServerWholeStorefrontPlanningAuthority),
     selectProvider:
       selectProvider ??
       (() => {

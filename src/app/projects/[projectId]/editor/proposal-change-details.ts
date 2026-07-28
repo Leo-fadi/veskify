@@ -216,6 +216,10 @@ export function merchantOperationChangePart(
       return locale === "fi"
         ? `hyväksytty bränditypografia: ${humanize(operation.typography.headingFont)} otsikoihin ja ${humanize(operation.typography.bodyFont)} leipätekstiin`
         : `approved brand typography: ${humanize(operation.typography.headingFont)} headings and ${humanize(operation.typography.bodyFont)} body text`;
+    case "APPLY_REGISTERED_BRAND_SYSTEM":
+      return locale === "fi"
+        ? "hyväksytty yhteinen typografia, väljyys, muotokieli, pinnat ja kuvailme"
+        : "approved shared typography, spacing, shapes, surfaces, and image treatment";
     case "APPLY_REGISTERED_PAGE_SECTIONS": {
       const sectionCount = operation.sections.length;
       const removedSectionCount = operation.removedSectionIds.length;
