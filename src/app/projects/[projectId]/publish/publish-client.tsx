@@ -218,7 +218,7 @@ export function PublishClient({
       <header className={styles.header}>
         <div>
           <Link href={`/projects/${projectId}/editor`}>{text.editor}</Link>
-          <Link href={`/projects/${projectId}/history`}>{text.versionHistory}</Link>
+          <a href={`/projects/${projectId}/history`}>{text.versionHistory}</a>
           <h1>{text.title}</h1>
           <p>{text.savedDraftOnly}</p>
         </div>
