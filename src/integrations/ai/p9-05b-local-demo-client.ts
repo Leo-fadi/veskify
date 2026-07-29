@@ -19,6 +19,7 @@ export async function synchronizeP905bLocalDemoAggregate(input: {
   projectId: string;
   sessionId: string;
   expectedRevision: number;
+  mode?: "active" | "saved";
   aggregate: ProjectAggregate;
 }): Promise<{ authoritativeRevision: number }> {
   const response = await fetch("/api/demo/p9-05b/synchronize", {

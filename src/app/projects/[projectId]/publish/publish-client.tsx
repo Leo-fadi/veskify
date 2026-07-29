@@ -198,7 +198,6 @@ export function PublishClient({
     const preparation = publishState.preparation;
     setPublishState({ status: "confirming", preparation });
     try {
-      const result = await confirmPublish(preparation, repository.current!);
       if (localDemoSession) {
         if (authoritativeRevision === null) {
           throw new P905bLocalDemoSynchronizationClientError("stale", 409);
@@ -207,10 +206,12 @@ export function PublishClient({
           projectId,
           sessionId: localDemoSession.sessionId,
           expectedRevision: authoritativeRevision,
-          aggregate: result.aggregate,
+          mode: "saved",
+          aggregate: loadState.aggregate,
         });
         setAuthoritativeRevision(synchronization.authoritativeRevision);
       }
+      const result = await confirmPublish(preparation, repository.current!);
       setPublishState({ status: "success", result });
       setLoadState({ status: "success", aggregate: result.aggregate });
     } catch (error) {

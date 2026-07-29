@@ -107,6 +107,7 @@ export type ServerWholeStorefrontPlanningContext = Readonly<{
     plan: WholeStorefrontGenerationPlan,
   ) => Promise<unknown>;
   claimProposal?: () => void;
+  releaseProposal?: () => void;
   recordValidatedProposal?: (response: AiStorefrontProviderResponse) => void;
   requiresAuthoritativePlanningFingerprint?: boolean;
 }>;
@@ -702,8 +703,11 @@ export function createServerWholeStorefrontPlanningHandler({
       });
     }
 
+    let context: ServerWholeStorefrontPlanningContext | undefined;
+    let proposalClaimed = false;
+    let proposalRecorded = false;
     try {
-      const context = await authority.resolve(request, httpRequest);
+      context = await authority.resolve(request, httpRequest);
       requireMerchantProjectAction(
         createMerchantProjectAuthorization(context.authorization.context),
         "request-ai-design",
@@ -713,6 +717,7 @@ export function createServerWholeStorefrontPlanningHandler({
         throw new ServerWholeStorefrontAuthorityError("stale");
       }
       context.claimProposal?.();
+      proposalClaimed = Boolean(context.claimProposal);
       const plan = await requestWholeStorefrontGenerationPlan({
         provider: selectProvider(),
         input: context.planningInput,
@@ -730,8 +735,10 @@ export function createServerWholeStorefrontPlanningHandler({
         throw new ServerWholeStorefrontAuthorityError("malformed-state");
       }
       context.recordValidatedProposal?.(envelope);
+      proposalRecorded = Boolean(context.recordValidatedProposal);
       return response(200, responseSchema.parse({ ok: true, proposal: envelope }));
     } catch (error) {
+      if (proposalClaimed && !proposalRecorded) context?.releaseProposal?.();
       return failure(error);
     }
   };

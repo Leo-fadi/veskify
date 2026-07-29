@@ -286,6 +286,89 @@ describe("P9-05C authoritative local-demo synchronization", () => {
     expect(selected).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps accepted active work separate from the saved bridge aggregate across reload", async () => {
+    const session = p905bLocalDemoSession(environment);
+    const saved = await p905bLocalDemoRepository(environment).get("project_lumo_fresh");
+    const active = structuredClone(saved);
+    const activeDraft = active.snapshots.find(
+      (snapshot) => snapshot.id === active.project.draftSnapshotId,
+    );
+    if (!activeDraft) throw new Error("The local demo fixture must include its active draft.");
+    activeDraft.pages[0].title.en = "Unsaved accepted storefront";
+    const before = await inspectP905bLocalDemo(environment);
+
+    await synchronizeP905bLocalDemoAggregate({
+      projectId: saved.project.id,
+      sessionId: session.sessionId,
+      expectedRevision: before.authoritativeRevision,
+      mode: "active",
+      aggregate: active,
+      environment,
+    });
+
+    const reloaded = await loadP905bLocalDemoEditorSession({ ...session, environment });
+    expect(reloaded?.aggregate).toEqual(saved);
+    expect(reloaded?.baselineFingerprint).toBe(before.baselineFingerprint);
+    expect((await inspectP905bLocalDemo(environment)).aggregateFingerprint).not.toBe(
+      before.aggregateFingerprint,
+    );
+  });
+
+  it("serializes concurrent synchronization at one expected revision", async () => {
+    const session = p905bLocalDemoSession(environment);
+    const aggregate = await p905bLocalDemoRepository(environment).get("project_lumo_fresh");
+    const before = await inspectP905bLocalDemo(environment);
+    const results = await Promise.allSettled(
+      [0, 1].map(() =>
+        synchronizeP905bLocalDemoAggregate({
+          projectId: aggregate.project.id,
+          sessionId: session.sessionId,
+          expectedRevision: before.authoritativeRevision,
+          mode: "saved",
+          aggregate,
+          environment,
+        }),
+      ),
+    );
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((result) => result.status === "rejected")).toHaveLength(1);
+    const rejection = results.find(
+      (result): result is PromiseRejectedResult => result.status === "rejected",
+    );
+    expect(rejection?.reason).toMatchObject({ code: "stale" });
+  });
+
+  it("releases a failed proposal reservation so the same revision can be retried", async () => {
+    const session = p905bLocalDemoSession(environment);
+    const request = await buildP905bLocalDemoRequest(
+      "Use a modern technical direction.",
+      environment,
+    );
+    const requestFor = () =>
+      new Request("http://p9-05c.test/api/ai/whole-storefront-proposals", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-veskify-p9-05b-session": session.sessionId,
+        },
+        body: JSON.stringify(request),
+      });
+    const failing = createWholeStorefrontPlanningRouteHandler({
+      environment,
+      selectProvider: () => ({
+        ...provider(),
+        createPlan: () => Promise.reject(new Error("provider unavailable")),
+      }),
+    });
+    expect((await failing(requestFor())).status).toBe(503);
+
+    const retry = createWholeStorefrontPlanningRouteHandler({
+      environment,
+      selectProvider: () => provider(),
+    });
+    expect((await retry(requestFor())).status).toBe(200);
+  });
+
   it("exposes only safe synchronization failures through the session-bound route", async () => {
     const handler = createP905bLocalDemoSynchronizationHandler({ environment });
     const source = await p905bLocalDemoRepository(environment).get("project_lumo_fresh");

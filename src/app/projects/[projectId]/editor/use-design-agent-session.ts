@@ -108,8 +108,8 @@ export type DesignAgentSessionController = {
   closeForPageMutation: (nextPage: PageModel) => void;
   closeForSelectionChange: (nextSectionId?: string) => void;
   closeForLocaleChange: () => void;
-  undoStorefront: () => boolean;
-  redoStorefront: () => boolean;
+  undoStorefront: () => boolean | Promise<boolean>;
+  redoStorefront: () => boolean | Promise<boolean>;
   clearStorefrontHistory: () => void;
 };
 
@@ -139,6 +139,7 @@ type UseDesignAgentSessionInput = {
   onProposalReady?: () => void;
   onAcceptedPage: (page: PageModel) => void;
   onStorefrontAccepted?: (snapshot: StorefrontSnapshot) => Promise<void>;
+  onStorefrontHistorySnapshot?: (snapshot: StorefrontSnapshot) => Promise<void>;
   onStorefrontSnapshot: (snapshot: StorefrontSnapshot) => void;
 };
 
@@ -358,6 +359,7 @@ export function useDesignAgentSession({
   onProposalReady,
   onAcceptedPage,
   onStorefrontAccepted,
+  onStorefrontHistorySnapshot,
   onStorefrontSnapshot,
 }: UseDesignAgentSessionInput): DesignAgentSessionController {
   const actionSequence = useRef(0);
@@ -600,7 +602,6 @@ export function useDesignAgentSession({
 
   const clearWorkflow = useCallback((status?: LocalizedText) => {
     actionSequence.current += 1;
-    acceptancePending.current = false;
     generationPending.current = false;
     setGenerationRetryUsed(false);
     clarificationRequest.current = null;
@@ -1061,7 +1062,6 @@ export function useDesignAgentSession({
           }
           const beforeAcceptance = coordinator.inspect().activeDraft;
           const result = coordinator.accept();
-          acceptancePending.current = false;
           if (result.state === "accepted") {
             if (!result.transaction) {
               const message = {
@@ -1073,11 +1073,16 @@ export function useDesignAgentSession({
                   failure: { message, retryable: true },
                 }),
               );
+              acceptancePending.current = false;
               return;
             }
             let activeStorefront: StorefrontSnapshot;
             try {
               await onStorefrontAccepted?.(result.activeDraft);
+              if (actionSequence.current !== actionId) {
+                acceptancePending.current = false;
+                return;
+              }
               const history = ensureAcceptedStorefrontHistory(beforeAcceptance);
               activeStorefront = history.commit(result.transaction);
               acceptedStorefrontHistoryFingerprint.current =
@@ -1095,6 +1100,7 @@ export function useDesignAgentSession({
               pendingStorefrontAcceptance.current = null;
               setGeneratedStorefrontProposal(null);
               refreshStorefrontHistory();
+              acceptancePending.current = false;
               return;
             }
             onStorefrontSnapshot(activeStorefront);
@@ -1102,6 +1108,7 @@ export function useDesignAgentSession({
             setGeneratedStorefrontProposal(null);
             refreshStorefrontHistory();
             setSession(uiSession("accepted", statuses.storefrontAccepted));
+            acceptancePending.current = false;
             return;
           }
           const message = result.failure?.message ?? {
@@ -1117,6 +1124,7 @@ export function useDesignAgentSession({
             pendingStorefrontAcceptance.current = null;
             setGeneratedStorefrontProposal(null);
           }
+          acceptancePending.current = false;
         })();
       }, 0);
       return;
@@ -1213,7 +1221,6 @@ export function useDesignAgentSession({
   ) => {
     updateRuntimeIdentity(nextPage, nextSectionId, targetScope);
     actionSequence.current += 1;
-    acceptancePending.current = false;
     generationPending.current = false;
     clarificationRequest.current = null;
     setClarificationAnswer("");
@@ -1372,10 +1379,11 @@ export function useDesignAgentSession({
     updateRuntimeIdentity(page, selectedSectionId, nextTarget);
   };
 
-  const undoStorefront = () => {
+  const undoStorefront = async () => {
     try {
       const previous = acceptedStorefrontHistory.current?.undo();
       if (!previous) return false;
+      await onStorefrontHistorySnapshot?.(previous);
       acceptedStorefrontHistoryFingerprint.current =
         canonicalStorefrontContentFingerprint(previous);
       onStorefrontSnapshot(previous);
@@ -1383,21 +1391,24 @@ export function useDesignAgentSession({
       setSession(uiSession("accepted", statuses.storefrontUndone));
       return true;
     } catch {
+      acceptedStorefrontHistory.current?.redo();
       refreshStorefrontHistory();
       return false;
     }
   };
 
-  const redoStorefront = () => {
+  const redoStorefront = async () => {
     try {
       const next = acceptedStorefrontHistory.current?.redo();
       if (!next) return false;
+      await onStorefrontHistorySnapshot?.(next);
       acceptedStorefrontHistoryFingerprint.current = canonicalStorefrontContentFingerprint(next);
       onStorefrontSnapshot(next);
       refreshStorefrontHistory();
       setSession(uiSession("accepted", statuses.storefrontRedone));
       return true;
     } catch {
+      acceptedStorefrontHistory.current?.undo();
       refreshStorefrontHistory();
       return false;
     }

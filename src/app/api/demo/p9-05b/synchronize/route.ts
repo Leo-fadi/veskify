@@ -12,6 +12,7 @@ const bodySchema = z
     projectId: z.literal("project_lumo_fresh"),
     sessionId: z.string().min(32).max(128),
     expectedRevision: z.number().int().nonnegative(),
+    mode: z.enum(["active", "saved"]).default("saved"),
     aggregate: z.unknown(),
   })
   .strict();

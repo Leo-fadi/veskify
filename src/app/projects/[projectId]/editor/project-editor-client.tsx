@@ -38,6 +38,7 @@ import type { PageModel, PageType, StorefrontSnapshot } from "@/domain/storefron
 import { VeskifyPuckCanvas } from "@/integrations/puck/veskify-puck-editor";
 import {
   createBrowserProjectRepository,
+  InMemoryProjectRepository,
   IndexedDbProjectRepository,
   ProjectNotFoundError,
   RepositoryValidationError,
@@ -514,6 +515,21 @@ export function ProjectEditorClient({
         projectId,
         sessionId: localDemoBridge.sessionId,
         expectedRevision: authoritativeRevision,
+        mode: "active",
+        aggregate: aggregateWithActiveDraft(readyState.aggregate, snapshot),
+      });
+      setAuthoritativeRevision(synchronization.authoritativeRevision);
+    },
+    onStorefrontHistorySnapshot: async (snapshot) => {
+      if (!localDemoBridge) return;
+      if (authoritativeRevision === null || !readyState) {
+        throw new P905bLocalDemoSynchronizationClientError("stale", 409);
+      }
+      const synchronization = await synchronizeP905bLocalDemoAggregate({
+        projectId,
+        sessionId: localDemoBridge.sessionId,
+        expectedRevision: authoritativeRevision,
+        mode: "active",
         aggregate: aggregateWithActiveDraft(readyState.aggregate, snapshot),
       });
       setAuthoritativeRevision(synchronization.authoritativeRevision);
@@ -752,21 +768,21 @@ export function ProjectEditorClient({
     return true;
   };
 
-  const undoEditor = () => {
+  const undoEditor = async () => {
     if (mutationsBlocked) return false;
     if (currentPageCanUndo && pageEditsAfterStorefront > 0) return undoCurrentPage();
     if (canUndoStorefront) {
-      const undone = agent.undoStorefront();
+      const undone = await agent.undoStorefront();
       if (undone) setHistoryStatus("Undid the storefront proposal as one change.");
       return undone;
     }
     return undoCurrentPage();
   };
 
-  const redoEditor = () => {
+  const redoEditor = async () => {
     if (mutationsBlocked) return false;
     if (agent.canRedoStorefront) {
-      const redone = agent.redoStorefront();
+      const redone = await agent.redoStorefront();
       if (redone) setHistoryStatus("Redid the storefront proposal as one change.");
       return redone;
     }
@@ -1088,8 +1104,11 @@ export function ProjectEditorClient({
     savePending.current = true;
     setSaveState({ status: "saving" });
     try {
-      const result = await saveValidatedEditorDraft({
-        repository: repository.current!,
+      // Construct the exact validated saved candidate without touching browser storage.
+      // The authoritative session must accept this candidate before local persistence.
+      const stagingRepository = new InMemoryProjectRepository([state.aggregate]);
+      const prepared = await saveValidatedEditorDraft({
+        repository: stagingRepository,
         projectId,
         loadedDraft: capturedDraft,
         changedPages: capturedChangedPages,
@@ -1104,10 +1123,23 @@ export function ProjectEditorClient({
           projectId,
           sessionId: localDemoBridge.sessionId,
           expectedRevision: authoritativeRevision,
-          aggregate: result.aggregate,
+          mode: "saved",
+          aggregate: prepared.aggregate,
         });
         setAuthoritativeRevision(synchronization.authoritativeRevision);
       }
+      await repository.current!.saveDraft(projectId, prepared.draft, {
+        id: capturedDraft.id,
+        revision: capturedDraft.revision,
+      });
+      const persistedAggregate = await repository.current!.get(projectId);
+      const persistedDraft = persistedAggregate.snapshots.find(
+        (snapshot) => snapshot.id === persistedAggregate.project.draftSnapshotId,
+      );
+      if (!persistedDraft || persistedDraft.id !== prepared.draft.id) {
+        throw new StaleEditorDraftError();
+      }
+      const result = { aggregate: persistedAggregate, draft: persistedDraft };
       const published = result.aggregate.snapshots.find(
         (snapshot) => snapshot.id === result.aggregate.project.publishedSnapshotId,
       );
@@ -1257,7 +1289,7 @@ export function ProjectEditorClient({
               <Button
                 data-editor-history-action="undo"
                 disabled={!canUndo || mutationsBlocked}
-                onClick={undoEditor}
+                onClick={() => void undoEditor()}
                 variant="quiet"
                 title={text.actions.undoTitle}
               >
@@ -1266,7 +1298,7 @@ export function ProjectEditorClient({
               <Button
                 data-editor-history-action="redo"
                 disabled={!canRedo || mutationsBlocked}
-                onClick={redoEditor}
+                onClick={() => void redoEditor()}
                 variant="quiet"
                 title={text.actions.redoTitle}
               >
