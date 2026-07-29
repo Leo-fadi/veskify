@@ -19,6 +19,7 @@ import {
   buildP905bLocalDemoRequest,
   createP905bLocalDemoAuthority,
   inspectP905bLocalDemo,
+  p905bLocalDemoSession,
   p905bLocalDemoRepository,
   resetP905bLocalDemo,
   resetP905bLocalDemoProject,
@@ -53,7 +54,10 @@ async function proposalRequest(merchantInstruction: string) {
   const request = await buildP905bLocalDemoRequest(merchantInstruction, demoEnvironment);
   return new Request("http://p9-05b.test/api/ai/whole-storefront-proposals", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      "x-veskify-p9-05b-session": p905bLocalDemoSession(demoEnvironment).sessionId,
+    },
     body: JSON.stringify(request),
   });
 }
@@ -71,7 +75,9 @@ describe("P9-05B local demo server authority", () => {
     );
     const authoritativeContext = await createP905bLocalDemoAuthority(demoEnvironment).resolve(
       providerRequest,
-      new Request("http://p9-05b.test/api/ai/whole-storefront-proposals"),
+      new Request("http://p9-05b.test/api/ai/whole-storefront-proposals", {
+        headers: { "x-veskify-p9-05b-session": p905bLocalDemoSession(demoEnvironment).sessionId },
+      }),
     );
     expect(authoritativeContext.planningInput.project.id).toBe(P9_05A_PROJECT_ID);
     const directPlan = await requestWholeStorefrontGenerationPlan({
