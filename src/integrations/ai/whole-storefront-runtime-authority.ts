@@ -444,7 +444,10 @@ function styledProjectedPage(
   };
   page.sections = page.sections.map((section) => {
     const definition = getComponentDefinition(section.component);
-    const variant = plan.designSystemSelection.sectionVariants[section.component];
+    const coordinatedSelection = Object.values(plan.designSystemSelection.componentSelections).find(
+      (selection) => selection.component === section.component,
+    );
+    const variant = coordinatedSelection?.variant;
     return {
       ...section,
       variant: variant && definition.variants.includes(variant) ? variant : section.variant,

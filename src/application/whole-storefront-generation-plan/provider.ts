@@ -117,6 +117,7 @@ export type WholeStorefrontPlanningProviderRequest = Readonly<{
   }>[];
   protectedInstructions: readonly string[];
   directionOptions: readonly Readonly<{
+    directionVersion: "1.0.0";
     id: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
     homepageRecipeId: string;
     collectionRecipeId: string;
@@ -127,6 +128,7 @@ export type WholeStorefrontPlanningProviderRequest = Readonly<{
     spacingDensity: "compact" | "standard" | "spacious";
     cornerTreatment: "square" | "soft" | "rounded";
     surfaceDepth: "flat" | "subtle" | "layered";
+    componentSelections: WholeStorefrontGenerationPlan["designSystemSelection"]["componentSelections"];
   }>[];
   planForDirection: (
     directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
@@ -357,6 +359,7 @@ export function buildWholeStorefrontPlanningProviderRequest(
     ],
     directionOptions: input.recipeContext.designSystem.directions
       .map((direction) => ({
+        directionVersion: direction.version,
         id: direction.id,
         homepageRecipeId: direction.homepageRecipeId,
         collectionRecipeId: direction.collectionRecipeId,
@@ -367,6 +370,7 @@ export function buildWholeStorefrontPlanningProviderRequest(
         spacingDensity: direction.spacingDensity,
         cornerTreatment: direction.cornerTreatment,
         surfaceDepth: direction.surfaceDepth,
+        componentSelections: structuredClone(direction.componentSelections),
       }))
       .sort((left, right) => left.id.localeCompare(right.id)),
     planForDirection: (directionId) => createWholeStorefrontGenerationPlan(input, { directionId }),

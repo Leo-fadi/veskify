@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { storefrontDesignDirectionComponentSelectionsSchema } from "@/application/storefront-design-system/contract";
 import {
   approvedAssetPlacementOperationSchema,
   approvedGenerationAssetContextSchema,
@@ -225,6 +226,7 @@ export const wholeStorefrontSharedChromePlanSchema = z
 
 export const wholeStorefrontDesignSystemSelectionSchema = z
   .object({
+    directionVersion: z.literal("1.0.0"),
     directionId: z.enum(["premiumEditorial", "modernTechnical", "warmApproachable"]),
     homepageRecipeId: z.string().trim().min(1).max(80),
     collectionRecipeId: z.string().trim().min(1).max(80),
@@ -235,7 +237,7 @@ export const wholeStorefrontDesignSystemSelectionSchema = z
     spacingDensity: z.enum(["compact", "standard", "spacious"]),
     cornerTreatment: z.enum(["square", "soft", "rounded"]),
     surfaceDepth: z.enum(["flat", "subtle", "layered"]),
-    sectionVariants: z.record(z.string().trim().min(1).max(80), z.string().trim().min(1).max(80)),
+    componentSelections: storefrontDesignDirectionComponentSelectionsSchema,
     collectionPresentation: z
       .object({
         variant: z.enum(["standard", "editorial", "compact", "gallery"]),
