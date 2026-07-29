@@ -79,6 +79,7 @@ Owner: Vesko Oy · Product owner: Leo Fadi
 | 1.0         | 15 July 2026    | Initial baseline                 | Established the standalone controlled storefront-editor product.                                                                                                                                                                                                                              |
 | 1.1         | 16-17 July 2026 | Controlled design-agent baseline | Added structured skills, operations, proposal-before-apply, canonical composition ownership, validation and Puck boundaries.                                                                                                                                                                  |
 | 1.2         | 22 July 2026    | Product integration baseline     | Repositions Veskify as the Vesko design engine; makes URL-first onboarding primary; replaces catalogue/import drift with canonical Vesko projections; specifies reusable dynamic components and a schema-driven product-detail page; resets the roadmap after the verified real-AI milestone. |
+| 1.2         | 29 July 2026    | P9-04D acceptance clarification  | Incorporates the Lumo real-AI design-diversity gate for complete storefront directions, canonical-commerce protection and measured cross-page quality. |
 
 ## How implementation agents and developers must use v1.2
 1.  Read the complete affected section and named requirement IDs before modifying code.
@@ -1360,6 +1361,31 @@ complete: boolean;<br />
 | **AC-123** | Dynamic selectors, drawers, proposal actions, save and publish are keyboard operable and labelled.                                                                            | FR-111, FR-114, FR-116, NFR-102               |
 | **AC-124** | A Vesko integration adapter passes the same contract tests as the standalone fixtures for project, commerce, media, storage and publishing.                                   | FR-101, FR-110, FR-118, NFR-108, NFR-109      |
 | **AC-125** | A complete customer-ready journey succeeds: URL or minimal-input onboarding → approved brief → generation → AI edit → manual edit → save draft → preview → publish → restore. | FR-101, FR-103, FR-105, FR-108, FR-115, FR-118, NFR-105, NFR-108, NFR-109 |
+| **AC-126** | P9-04D proves Premium editorial, Modern technical and Warm approachable outputs are pairwise different in every required homepage, collection and PDP dimension, rather than by colour, typography or one rearranged section alone. | FR-108, FR-109, FR-113, FR-115, NFR-103, NFR-105 |
+| **AC-127** | The P9-04D matrix records EN/FI, 375/768/1024/1440, one/many collections, small/large catalogues and missing optional media; each result has measured no-overflow, clipping, overlap and empty-space evidence. | FR-109, FR-114, NFR-102, NFR-103 |
+| **AC-128** | Every P9-04D direction uses approved asset provenance and correct product/collection binding, and matches the canonical source-commerce baseline for protected IDs, SKU, price, availability and media truth. | FR-104, FR-107, FR-110, NFR-101 |
+
+### P9-04D objective design-diversity gate
+
+The 29 July 2026 real-AI Lumo evaluation showed that a valid generated storefront can still be
+generic. P9-04D is therefore a binding Phase 9 acceptance gate, not a palette comparison. The
+same project, canonical catalogue and approved assets must produce these registered directions:
+`premiumEditorial`, `modernTechnical` and `warmApproachable`.
+
+For every direction pair, the acceptance harness independently verifies homepage section
+structure/order, hero, navigation, collection discovery, product cards and story/trust/campaign
+presentation; collection discovery/filter, structure and product-card presentation; and PDP
+gallery, information hierarchy and option/variant presentation. Homepage, collection and PDP
+must share the selected registered recipe/token identity. Colour-only, typography-only and
+one-section-only changes fail, as do mixed-direction pages.
+
+The executable evidence matrix covers EN and FI at 375, 768, 1024 and 1440 px, plus one
+collection, multiple collections, small and large product counts and missing optional media.
+Measured results must reject overflow, clipping, overlap, invalid empty space and failed layout
+probes. Merchant-visible locale evidence must not leak fixture brands, component/recipe IDs or
+provider terminology. Asset-use evidence must preserve approved role, provenance and correct
+product/collection ownership. Each generated direction is compared directly with the canonical
+source-commerce baseline; pairwise output agreement alone is insufficient.
 
 ## 18.3 Definition of done for every implementation task
 - The merchant-visible capability is explicit and demonstrable.

@@ -162,7 +162,14 @@ These capabilities are not future work and must not be rebuilt.
 
 **Goal:** Prove coherent visual quality, atomicity and responsive behaviour through the runtime journey.
 
-**Acceptance:** Quality and protected-data checks pass across the supported editor and storefront viewports.
+**Acceptance:** P9-04D is a binding gate discovered in the 29 July 2026 Lumo real-AI test. The
+same canonical project, catalogue and approved assets must yield `premiumEditorial`,
+`modernTechnical` and `warmApproachable` directions that independently differ in required
+homepage, collection and PDP dimensions. Palette-only, typography-only and one-section-only
+variation fails. The executable matrix covers EN/FI, 375/768/1024/1440, one/many collections,
+small/large catalogues and missing optional media with measured responsive evidence. Every output
+must retain approved-asset provenance and match the canonical source-commerce baseline for all
+protected commerce truth.
 
 #### P9-05 — Internal merchant-generation demo checkpoint
 
