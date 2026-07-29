@@ -38,6 +38,7 @@ import type { PageModel, PageType, StorefrontSnapshot } from "@/domain/storefron
 import { VeskifyPuckCanvas } from "@/integrations/puck/veskify-puck-editor";
 import {
   createBrowserProjectRepository,
+  DraftConflictError,
   InMemoryProjectRepository,
   IndexedDbProjectRepository,
   ProjectNotFoundError,
@@ -1177,6 +1178,7 @@ export function ProjectEditorClient({
     } catch (error) {
       if (
         error instanceof StaleEditorDraftError ||
+        error instanceof DraftConflictError ||
         (error instanceof P905bLocalDemoSynchronizationClientError && error.category === "stale")
       ) {
         setSaveState({
