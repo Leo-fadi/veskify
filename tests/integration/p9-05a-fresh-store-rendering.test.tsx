@@ -40,7 +40,7 @@ function renderWarmHome(snapshot = acceptedResult.activeDraft) {
 
 describe("P9-05A rendered warm-store isolation", () => {
   it("renders merchant-owned BrandStory copy and the approved story media", () => {
-    renderWarmHome();
+    const rendered = renderWarmHome();
 
     expect(screen.getByRole("heading", { name: "Lumo Atelier" })).toBeVisible();
     expect(
@@ -56,6 +56,10 @@ describe("P9-05A rendered warm-store isolation", () => {
       "src",
       generated.fixture.aggregate.catalogue.products[1].images[0].url,
     );
+    const collectionGrid = rendered.container.querySelector(".category-grid");
+    expect(collectionGrid).toHaveAttribute("data-content-layout", "single");
+    expect(collectionGrid).toHaveAttribute("data-item-count", "1");
+    expect(collectionGrid?.children).toHaveLength(1);
   });
 
   it("retains the rendered approved story media in the saved draft preview", async () => {

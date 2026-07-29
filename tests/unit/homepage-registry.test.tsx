@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   createStorefrontRenderContext,
   getComponentDefinition,
+  renderRegisteredSection,
   validateRegisteredPage,
   veskifyComponentRegistry,
 } from "@/components/registry";
@@ -30,6 +31,24 @@ const expectedTypes = [
   "newsletter",
   "footer",
 ];
+
+function contentAwareCatalogue(collectionCount: number) {
+  const catalogue = structuredClone(aurumNordicSeed.catalogue);
+  const source = catalogue.collections[0];
+  while (catalogue.collections.length < collectionCount) {
+    const index = catalogue.collections.length;
+    catalogue.collections.push({
+      ...structuredClone(source),
+      id: `collection_content_aware_${index}`,
+      slug: `content-aware-${index}`,
+      title: {
+        en: `Content-aware collection ${index}`,
+        fi: `Sisältötietoinen mallisto ${index}`,
+      },
+    });
+  }
+  return catalogue;
+}
 
 describe("P1-01 homepage registry", () => {
   it("registers strict, valid defaults for every initial homepage component", () => {
@@ -174,6 +193,122 @@ describe("P1-01 homepage registry", () => {
     render(<>{renderStorefrontPage(value, context())}</>);
     expect(screen.getByText("Collections will appear here when they are available.")).toBeVisible();
     expect(screen.getByText("Products will appear here when they are available.")).toBeVisible();
+  });
+
+  it.each([
+    [0, undefined],
+    [1, "single"],
+    [2, "split"],
+    [3, "triple"],
+    [5, "many"],
+  ] as const)(
+    "derives the featured-category composition from %i canonical collections",
+    (collectionCount, expectedLayout) => {
+      const catalogue = contentAwareCatalogue(collectionCount);
+      const section = structuredClone(
+        homepage.sections.find((item) => item.component === "featuredCategories")!,
+      );
+      section.content.collectionIds = catalogue.collections
+        .slice(0, collectionCount)
+        .map((collection) => collection.id);
+      const rendered = render(
+        <>
+          {renderRegisteredSection(
+            section,
+            createStorefrontRenderContext({
+              activeLocale: "en",
+              primaryLocale: "en",
+              catalogue,
+              snapshot: aurumNordicSeed.draftSnapshot,
+            }),
+            "home",
+          )}
+        </>,
+      );
+
+      if (expectedLayout === undefined) {
+        expect(rendered.container.querySelector(".category-grid")).not.toBeInTheDocument();
+        expect(
+          screen.getByText("Collections will appear here when they are available."),
+        ).toBeVisible();
+      } else {
+        const grid = rendered.container.querySelector(".category-grid");
+        expect(grid).toHaveAttribute("data-content-layout", expectedLayout);
+        expect(grid).toHaveAttribute("data-item-count", String(collectionCount));
+        expect(grid?.children).toHaveLength(collectionCount);
+      }
+    },
+  );
+
+  it.each([
+    [1, "single", "1"],
+    [2, "split", "2"],
+    [3, "triple", "3"],
+    [5, "many", "4"],
+  ] as const)(
+    "caps a four-column product grid at %i canonical products",
+    (productCount, expectedLayout, expectedColumns) => {
+      const section = structuredClone(
+        homepage.sections.find((item) => item.component === "productGrid")!,
+      );
+      section.content.productIds = aurumNordicSeed.catalogue.products
+        .slice(0, productCount)
+        .map((product) => product.id);
+      section.props.columns = "four";
+      const rendered = render(<>{renderRegisteredSection(section, context(), "home")}</>);
+      const grid = rendered.container.querySelector(".product-grid");
+
+      expect(grid).toHaveAttribute("data-content-layout", expectedLayout);
+      expect(grid).toHaveAttribute("data-item-count", String(productCount));
+      expect(grid).toHaveStyle(`--content-item-columns: ${expectedColumns}`);
+      expect(grid?.children).toHaveLength(productCount);
+    },
+  );
+
+  it("keeps long English and Finnish collection copy intact", () => {
+    const snapshot = structuredClone(aurumNordicSeed.draftSnapshot);
+    const section = snapshot.pages
+      .find((page) => page.type === "home")!
+      .sections.find((item) => item.component === "featuredCategories")!;
+    section.content.heading = {
+      en: "A deliberately descriptive collection heading for considered everyday jewellery",
+      fi: "Tarkkaan harkittujen jokapäiväisten korujen poikkeuksellisen pitkä mallisto-otsikko",
+    };
+    const catalogue = structuredClone(aurumNordicSeed.catalogue);
+    catalogue.collections[0].description = {
+      en: "A long English collection description that remains complete instead of being clipped.",
+      fi: "Pitkä suomenkielinen mallistokuvaus säilyy kokonaisena eikä leikkaannu näkymästä.",
+    };
+    const longCopyContext = (activeLocale: "en" | "fi") =>
+      createStorefrontRenderContext({
+        activeLocale,
+        primaryLocale: "en",
+        catalogue,
+        snapshot,
+      });
+    const rendered = render(<>{renderRegisteredSection(section, longCopyContext("en"), "home")}</>);
+    expect(
+      screen.getByRole("heading", {
+        name: "A deliberately descriptive collection heading for considered everyday jewellery",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "A long English collection description that remains complete instead of being clipped.",
+      ),
+    ).toBeVisible();
+
+    rendered.rerender(<>{renderRegisteredSection(section, longCopyContext("fi"), "home")}</>);
+    expect(
+      screen.getByRole("heading", {
+        name: "Tarkkaan harkittujen jokapäiväisten korujen poikkeuksellisen pitkä mallisto-otsikko",
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        "Pitkä suomenkielinen mallistokuvaus säilyy kokonaisena eikä leikkaannu näkymästä.",
+      ),
+    ).toBeVisible();
   });
 
   it("renders local and schema-valid HTTPS catalogue images safely", () => {

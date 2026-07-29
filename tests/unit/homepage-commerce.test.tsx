@@ -351,14 +351,23 @@ describe("P6-05 dynamic homepage commerce component family", () => {
   });
 
   it("renders featured collections only in canonical collection-list binding order", () => {
-    render(renderHomepageCommerce(rendererInput(featuredCollectionsInstance())));
+    const rendered = render(renderHomepageCommerce(rendererInput(featuredCollectionsInstance())));
     const buttons = screen.getAllByRole("button").map((button) => button.textContent);
     expect(buttons).toEqual(["Watches", "Rings"]);
     expect(screen.queryByText("Unknown collection")).toBeNull();
+    expect(rendered.container.querySelector("[data-item-count]")).toHaveAttribute(
+      "data-item-count",
+      "2",
+    );
+    expect(rendered.container.querySelector("[data-item-count]")).toHaveStyle(
+      "--homepage-columns: 2",
+    );
   });
 
   it("renders reusable product cards only from canonical product-list bindings", () => {
-    render(renderHomepageCommerce(rendererInput(featuredProductsInstance())));
+    const value = featuredProductsInstance();
+    value.props = { ...value.props, columns: 4 };
+    const rendered = render(renderHomepageCommerce(rendererInput(value)));
     expect(screen.getByRole("button", { name: "Nordic watch" })).toBeVisible();
     expect(screen.getByText("€349")).toBeVisible();
     expect(screen.getByText("€399")).toBeVisible();
@@ -368,6 +377,13 @@ describe("P6-05 dynamic homepage commerce component family", () => {
     expect(document.querySelector("[data-asset-id='asset_watch']")).toHaveAttribute(
       "data-asset-provenance",
       "canonicalProductMedia",
+    );
+    expect(rendered.container.querySelector("[data-item-count]")).toHaveAttribute(
+      "data-item-count",
+      "2",
+    );
+    expect(rendered.container.querySelector("[data-item-count]")).toHaveStyle(
+      "--homepage-columns: 2",
     );
   });
 
@@ -1036,6 +1052,20 @@ describe("P6-05 dynamic homepage commerce component family", () => {
       expect(targets.editor).toBe(targets.preview);
       expect(targets.preview).toBe(targets.published);
       expect(definition.renderer.supportedTargets).toEqual(["editor", "preview", "published"]);
+    }
+    for (const target of ["editor", "preview", "published"] as const) {
+      const rendered = render(
+        renderHomepageCommerce(rendererInput(featuredCollectionsInstance(), { target })),
+      );
+      expect(rendered.container.querySelector("[data-render-target]")).toHaveAttribute(
+        "data-render-target",
+        target,
+      );
+      expect(rendered.container.querySelector("[data-item-count]")).toHaveAttribute(
+        "data-item-count",
+        "2",
+      );
+      rendered.unmount();
     }
   });
 

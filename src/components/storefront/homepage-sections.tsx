@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { CSSProperties } from "react";
 import {
   resolveLocalizedText,
   safeExternalUrlSchema,
@@ -8,6 +9,17 @@ import {
 import type { StorefrontRenderContext } from "@/components/registry/contract";
 
 export type SafeLink = { label: LocalizedText; href: string };
+
+type ContentLayout = "single" | "split" | "triple" | "many";
+
+const contentLayout = (itemCount: number): ContentLayout =>
+  itemCount === 1 ? "single" : itemCount === 2 ? "split" : itemCount === 3 ? "triple" : "many";
+
+const productColumnCount = {
+  two: 2,
+  three: 3,
+  four: 4,
+} as const;
 
 const text = (value: LocalizedText, context: StorefrontRenderContext) =>
   resolveLocalizedText(value, context.activeLocale, context.primaryLocale);
@@ -211,7 +223,11 @@ export function FeaturedCategories({
         <h2 id="featured-categories-heading">{text(heading, context)}</h2>
       </div>
       {collections.length ? (
-        <div className={`category-grid category-grid--${cardAspect}`}>
+        <div
+          className={`category-grid category-grid--${cardAspect}`}
+          data-content-layout={contentLayout(collections.length)}
+          data-item-count={collections.length}
+        >
           {collections.map((collection) => {
             const product = context.catalogue.products.find(
               (item) => item.id === collection.productIds[0],
@@ -283,7 +299,16 @@ export function ProductGrid({
         <h2 id="product-grid-heading">{text(heading, context)}</h2>
       </div>
       {products.length ? (
-        <div className={`product-grid product-grid--${columns}`}>
+        <div
+          className={`product-grid product-grid--${columns}`}
+          data-content-layout={contentLayout(products.length)}
+          data-item-count={products.length}
+          style={
+            {
+              "--content-item-columns": Math.min(products.length, productColumnCount[columns]),
+            } as CSSProperties
+          }
+        >
           {products.map((product) => (
             <article className="product-card" key={product.id}>
               <StorefrontImage asset={product.images[0]} context={context} />
