@@ -247,6 +247,16 @@ function pageTypeForRole(
   return "content";
 }
 
+function coordinatedRuntimeComponent(
+  component: WholeStorefrontRuntimeComponent,
+  plan: ReturnType<typeof validateCurrentPlan>,
+): WholeStorefrontRuntimeComponent {
+  const selection = Object.values(plan.designSystemSelection.componentSelections).find(
+    (candidate) => candidate.component === component.component,
+  );
+  return selection ? { ...component, variant: selection.variant } : component;
+}
+
 function plannedPage(
   original: WholeStorefrontRuntimeState,
   plan: ReturnType<typeof validateCurrentPlan>,
@@ -377,7 +387,7 @@ function plannedPage(
     pageId: pagePlan.pageId,
     role: pagePlan.role,
     type: originalPage?.type ?? pageTypeForRole(pagePlan.role),
-    components,
+    components: components.map((component) => coordinatedRuntimeComponent(component, plan)),
   } satisfies WholeStorefrontRuntimePage;
   return { page, removedComponentIds };
 }

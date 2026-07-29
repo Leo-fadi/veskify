@@ -341,6 +341,83 @@ function definitionFor(
   return definition;
 }
 
+function assertCoordinatedDirectionCapabilities(
+  direction: WholeStorefrontPlanningInput["recipeContext"]["designSystem"]["directions"][number],
+  designSystem: WholeStorefrontPlanningInput["recipeContext"]["designSystem"],
+  definitions: ReturnType<typeof normalizedDefinitions>,
+) {
+  const recipes = [
+    [direction.homepageRecipeId, "home", designSystem.homepageRecipes],
+    [direction.collectionRecipeId, "collection", designSystem.collectionRecipes],
+    [direction.productRecipeId, "product", designSystem.productRecipes],
+  ] as const;
+  recipes.forEach(([recipeId, pageType, availableRecipes]) => {
+    const recipe = availableRecipes.find((candidate) => candidate.id === recipeId);
+    if (!recipe || recipe.pageType !== pageType) {
+      invalid(
+        "unsupported-page-family",
+        "The selected design direction references an unavailable registered page recipe.",
+      );
+    }
+    recipe.sections.forEach((section) => {
+      const definition = definitionFor(definitions, section.component);
+      if (
+        !definition.supportedPageTypes.includes(pageType) ||
+        !definition.variants.some((variant) => variant.id === section.variant)
+      ) {
+        invalid(
+          "invalid-component-contract",
+          "The selected design direction references an unavailable or incompatible registered component.",
+        );
+      }
+    });
+  });
+  const homepage = designSystem.homepageRecipes.find(
+    (recipe) => recipe.id === direction.homepageRecipeId,
+  );
+  const collection = designSystem.collectionRecipes.find(
+    (recipe) => recipe.id === direction.collectionRecipeId,
+  );
+  const product = designSystem.productRecipes.find(
+    (recipe) => recipe.id === direction.productRecipeId,
+  );
+  const expectedSelections = [
+    ["header", homepage],
+    ["hero", homepage],
+    ["collectionDiscovery", homepage],
+    ["productCard", homepage],
+    ["storytelling", homepage],
+    ["campaign", homepage],
+    ["trust", homepage],
+    ["footer", homepage],
+    ["collectionCommerce", collection],
+    ["productDetail", product],
+  ] as const;
+  expectedSelections.forEach(([selectionName, recipe]) => {
+    const selection = direction.componentSelections[selectionName];
+    if (
+      !recipe?.sections.some(
+        (section) =>
+          section.component === selection.component && section.variant === selection.variant,
+      )
+    ) {
+      invalid(
+        "invalid-component-contract",
+        "The selected coordinated component choices do not match their registered recipes.",
+      );
+    }
+  });
+  const family = designSystem.productCardFamilies.find(
+    (candidate) => candidate.id === direction.productCardFamilyId,
+  );
+  if (!family || family.registryVariant !== direction.collectionPresentation.cardVariant) {
+    invalid(
+      "invalid-component-contract",
+      "The selected product-card family is incompatible with the collection presentation.",
+    );
+  }
+}
+
 function generatedId(prefix: string, identity: unknown): string {
   return `${prefix}_${canonicalValueFingerprint(identity).replaceAll("_", "-").slice(-24)}`;
 }
@@ -836,7 +913,13 @@ export function createWholeStorefrontGenerationPlan(
       "The approved design direction is unavailable in the active design system.",
     );
   }
+  assertCoordinatedDirectionCapabilities(
+    selectedDirection,
+    input.recipeContext.designSystem,
+    definitions,
+  );
   const designSystemSelection = structuredClone({
+    directionVersion: selectedDirection.version,
     directionId: selectedDirection.id,
     homepageRecipeId: selectedDirection.homepageRecipeId,
     collectionRecipeId: selectedDirection.collectionRecipeId,
@@ -847,7 +930,7 @@ export function createWholeStorefrontGenerationPlan(
     spacingDensity: selectedDirection.spacingDensity,
     cornerTreatment: selectedDirection.cornerTreatment,
     surfaceDepth: selectedDirection.surfaceDepth,
-    sectionVariants: selectedDirection.sectionVariants,
+    componentSelections: selectedDirection.componentSelections,
     collectionPresentation: selectedDirection.collectionPresentation,
     productPresentation: selectedDirection.productPresentation,
   });

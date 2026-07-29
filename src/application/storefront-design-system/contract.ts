@@ -10,6 +10,32 @@ export const storefrontDesignDirectionIdSchema = z.enum([
   "warmApproachable",
 ]);
 
+/**
+ * Versioned, registered selections that must remain coordinated across the
+ * homepage, collection and product-detail page. These are presentation
+ * references, never executable component definitions.
+ */
+export const storefrontDesignDirectionComponentSelectionsSchema = z
+  .object({
+    header: z.object({ component: z.literal("header"), variant: tokenSchema }).strict(),
+    hero: z.object({ component: z.literal("hero"), variant: tokenSchema }).strict(),
+    collectionDiscovery: z
+      .object({ component: z.literal("featuredCategories"), variant: tokenSchema })
+      .strict(),
+    productCard: z.object({ component: z.literal("productGrid"), variant: tokenSchema }).strict(),
+    storytelling: z.object({ component: z.literal("brandStory"), variant: tokenSchema }).strict(),
+    campaign: z.object({ component: z.literal("campaignBanner"), variant: tokenSchema }).strict(),
+    trust: z.object({ component: z.literal("benefitIcons"), variant: tokenSchema }).strict(),
+    footer: z.object({ component: z.literal("footer"), variant: tokenSchema }).strict(),
+    collectionCommerce: z
+      .object({ component: z.literal("dynamicCollectionCommerce"), variant: tokenSchema })
+      .strict(),
+    productDetail: z
+      .object({ component: z.literal("dynamicProductDetail"), variant: tokenSchema })
+      .strict(),
+  })
+  .strict();
+
 const semanticSectionRecipeSchema = z
   .object({
     slot: tokenSchema,
@@ -102,8 +128,9 @@ const productCardFamilySchema = z
   })
   .strict();
 
-const directionSchema = z
+export const storefrontDesignDirectionSchema = z
   .object({
+    version: z.literal("1.0.0"),
     id: storefrontDesignDirectionIdSchema,
     label: localizedLabelSchema,
     plannerDescription: localizedLabelSchema,
@@ -116,7 +143,7 @@ const directionSchema = z
     spacingDensity: z.enum(["compact", "standard", "spacious"]),
     cornerTreatment: z.enum(["square", "soft", "rounded"]),
     surfaceDepth: z.enum(["flat", "subtle", "layered"]),
-    sectionVariants: z.record(tokenSchema, tokenSchema),
+    componentSelections: storefrontDesignDirectionComponentSelectionsSchema,
     collectionPresentation: z
       .object({
         variant: z.enum(["standard", "editorial", "compact", "gallery"]),
@@ -171,7 +198,7 @@ export const storefrontDesignSystemV1Schema = z
     homepageRecipes: z.array(pageRecipeSchema).min(3),
     collectionRecipes: z.array(pageRecipeSchema).min(2),
     productRecipes: z.array(pageRecipeSchema).min(3),
-    directions: z.array(directionSchema).min(3),
+    directions: z.array(storefrontDesignDirectionSchema).min(3),
     fingerprint: z.string().min(1),
   })
   .strict()
@@ -204,19 +231,17 @@ export const storefrontDesignSystemV1Schema = z
     if (system.fingerprint !== `storefront-design-system-${canonicalValueFingerprint(material)}`) {
       context.addIssue({ code: "custom", path: ["fingerprint"], message: "Fingerprint is stale." });
     }
-    const recipeIds = new Set(
-      [...system.homepageRecipes, ...system.collectionRecipes, ...system.productRecipes].map(
-        (recipe) => recipe.id,
-      ),
-    );
+    const homepageRecipeIds = new Set(system.homepageRecipes.map((recipe) => recipe.id));
+    const collectionRecipeIds = new Set(system.collectionRecipes.map((recipe) => recipe.id));
+    const productRecipeIds = new Set(system.productRecipes.map((recipe) => recipe.id));
     const typographyIds = new Set(system.typographyDirections.map((item) => item.id));
     const imageIds = new Set(system.imageTreatments.map((item) => item.id));
     const cardIds = new Set(system.productCardFamilies.map((item) => item.id));
     system.directions.forEach((direction, index) => {
       const references: [string, string, ReadonlySet<string>][] = [
-        ["homepageRecipeId", direction.homepageRecipeId, recipeIds],
-        ["collectionRecipeId", direction.collectionRecipeId, recipeIds],
-        ["productRecipeId", direction.productRecipeId, recipeIds],
+        ["homepageRecipeId", direction.homepageRecipeId, homepageRecipeIds],
+        ["collectionRecipeId", direction.collectionRecipeId, collectionRecipeIds],
+        ["productRecipeId", direction.productRecipeId, productRecipeIds],
         ["typographyDirectionId", direction.typographyDirectionId, typographyIds],
         ["imageTreatmentId", direction.imageTreatmentId, imageIds],
         ["productCardFamilyId", direction.productCardFamilyId, cardIds],
@@ -230,8 +255,76 @@ export const storefrontDesignSystemV1Schema = z
           });
         }
       }
+      const homepage = system.homepageRecipes.find(
+        (recipe) => recipe.id === direction.homepageRecipeId,
+      );
+      const collection = system.collectionRecipes.find(
+        (recipe) => recipe.id === direction.collectionRecipeId,
+      );
+      const product = system.productRecipes.find(
+        (recipe) => recipe.id === direction.productRecipeId,
+      );
+      const selectedSections = [
+        ["header", homepage],
+        ["hero", homepage],
+        ["collectionDiscovery", homepage],
+        ["productCard", homepage],
+        ["storytelling", homepage],
+        ["campaign", homepage],
+        ["trust", homepage],
+        ["footer", homepage],
+        ["collectionCommerce", collection],
+        ["productDetail", product],
+      ] as const;
+      selectedSections.forEach(([selectionName, recipe]) => {
+        const selection = direction.componentSelections[selectionName];
+        if (
+          !recipe?.sections.some(
+            (section) =>
+              section.component === selection.component && section.variant === selection.variant,
+          )
+        ) {
+          context.addIssue({
+            code: "custom",
+            path: ["directions", index, "componentSelections", selectionName],
+            message: "A coordinated component selection must match its selected registered recipe.",
+          });
+        }
+      });
+      if (
+        direction.componentSelections.collectionCommerce.variant !==
+        direction.collectionPresentation.variant
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["directions", index, "componentSelections", "collectionCommerce", "variant"],
+          message: "Collection presentation must use the coordinated collection component variant.",
+        });
+      }
+      if (
+        direction.componentSelections.productDetail.variant !==
+        direction.productPresentation.variant
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["directions", index, "componentSelections", "productDetail", "variant"],
+          message:
+            "Product presentation must use the coordinated product-detail component variant.",
+        });
+      }
+      const productCard = system.productCardFamilies.find(
+        (family) => family.id === direction.productCardFamilyId,
+      );
+      if (productCard?.registryVariant !== direction.collectionPresentation.cardVariant) {
+        context.addIssue({
+          code: "custom",
+          path: ["directions", index, "collectionPresentation", "cardVariant"],
+          message: "Collection presentation must use the selected registered product-card family.",
+        });
+      }
     });
   });
 
 export type StorefrontDesignDirectionId = z.infer<typeof storefrontDesignDirectionIdSchema>;
+export type StorefrontDesignDirection = z.infer<typeof storefrontDesignDirectionSchema>;
 export type StorefrontDesignSystemV1 = z.infer<typeof storefrontDesignSystemV1Schema>;
