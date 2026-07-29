@@ -21,9 +21,9 @@ export function HistoricalPreviewActions({
       className="historical-preview-actions"
     >
       <div>
-        <Link href={`/projects/${projectId}/history`}>
+        <a href={`/projects/${projectId}/history`}>
           {fi ? "Takaisin versiohistoriaan" : "Back to version history"}
-        </Link>
+        </a>
         <Link href={`/projects/${projectId}/history/${snapshotId}/restore`}>
           {fi ? "Palauta tämä versio" : "Restore this version"}
         </Link>
