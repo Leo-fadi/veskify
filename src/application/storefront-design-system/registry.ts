@@ -247,6 +247,19 @@ const material = {
         section("footer", "footer", "compact", true),
       ],
     ),
+    recipe(
+      "collectionWarmDiscovery",
+      { en: "Warm collection discovery", fi: "Lämmin mallistojen löydettävyys" },
+      "collection",
+      [
+        section("header", "header", "centered", true),
+        section("introduction", "dynamicCollectionCommerce", "editorial", true, [
+          "collectionImage",
+          "productMainImage",
+        ]),
+        section("footer", "footer", "columns", true),
+      ],
+    ),
   ],
   productRecipes: [
     recipe("productSimple", { en: "Simple product", fi: "Yksinkertainen tuote" }, "product", [
@@ -390,7 +403,7 @@ const material = {
       typographyDirectionId: "warmApproachable",
       imageTreatmentId: "softFrame",
       homepageRecipeId: "homeWarmStory",
-      collectionRecipeId: "collectionEditorial",
+      collectionRecipeId: "collectionWarmDiscovery",
       productRecipeId: "productSimple",
       productCardFamilyId: "minimalProduct",
       spacingDensity: "standard",

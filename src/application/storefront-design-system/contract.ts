@@ -291,6 +291,23 @@ export const storefrontDesignSystemV1Schema = z
           });
         }
       });
+      [collection, product].forEach((recipe) => {
+        (["header", "footer"] as const).forEach((selectionName) => {
+          const selection = direction.componentSelections[selectionName];
+          if (
+            !recipe?.sections.some(
+              (section) =>
+                section.component === selection.component && section.variant === selection.variant,
+            )
+          ) {
+            context.addIssue({
+              code: "custom",
+              path: ["directions", index, "componentSelections", selectionName],
+              message: "Shared storefront chrome must match every selected page-family recipe.",
+            });
+          }
+        });
+      });
       if (
         direction.componentSelections.collectionCommerce.variant !==
         direction.collectionPresentation.variant
@@ -323,6 +340,62 @@ export const storefrontDesignSystemV1Schema = z
         });
       }
     });
+    const normalized = (value: unknown): unknown => {
+      if (typeof value === "string") return value.trim().toLocaleLowerCase();
+      if (Array.isArray(value)) return value.map(normalized);
+      if (value && typeof value === "object") {
+        return Object.fromEntries(
+          Object.entries(value)
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([key, entry]) => [key, normalized(entry)]),
+        );
+      }
+      return value;
+    };
+    const signature = (direction: (typeof system.directions)[number]) => ({
+      homepageRecipeId: direction.homepageRecipeId,
+      collectionRecipeId: direction.collectionRecipeId,
+      productRecipeId: direction.productRecipeId,
+      componentSelections: direction.componentSelections,
+      typographyDirectionId: direction.typographyDirectionId,
+      spacingDensity: direction.spacingDensity,
+      cornerTreatment: direction.cornerTreatment,
+      surfaceDepth: direction.surfaceDepth,
+      imageTreatmentId: direction.imageTreatmentId,
+      collectionPresentation: direction.collectionPresentation,
+      productPresentation: direction.productPresentation,
+      productCardFamilyId: direction.productCardFamilyId,
+    });
+    for (let left = 0; left < system.directions.length; left += 1) {
+      for (let right = left + 1; right < system.directions.length; right += 1) {
+        const first = system.directions[left];
+        const second = system.directions[right];
+        const firstSignature = signature(first);
+        const secondSignature = signature(second);
+        const differences = Object.keys(firstSignature).filter(
+          (key) =>
+            canonicalValueFingerprint(
+              normalized(firstSignature[key as keyof typeof firstSignature]),
+            ) !==
+            canonicalValueFingerprint(
+              normalized(secondSignature[key as keyof typeof secondSignature]),
+            ),
+        );
+        if (
+          differences.length < 2 ||
+          first.homepageRecipeId === second.homepageRecipeId ||
+          first.collectionRecipeId === second.collectionRecipeId ||
+          first.productRecipeId === second.productRecipeId
+        ) {
+          context.addIssue({
+            code: "custom",
+            path: ["directions", right],
+            message:
+              "Registered directions must differ structurally across homepage, collection and product presentation.",
+          });
+        }
+      }
+    }
   });
 
 export type StorefrontDesignDirectionId = z.infer<typeof storefrontDesignDirectionIdSchema>;

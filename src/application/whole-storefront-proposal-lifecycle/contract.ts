@@ -129,7 +129,21 @@ export const wholeStorefrontProposalReviewSummarySchema = z
         .object({
           componentId: idSchema,
           component: z.string().trim().min(1).max(80),
-          status: z.enum(["added", "retained", "replaced", "removed", "fallback-retained"]),
+          pageId: idSchema.optional(),
+          pageRole: z
+            .enum(["homepage", "collection-template", "product-template", "other"])
+            .optional(),
+          previousVariant: z.string().trim().min(1).max(80).optional(),
+          resultingVariant: z.string().trim().min(1).max(80).optional(),
+          description: z.string().trim().min(1).max(240).optional(),
+          status: z.enum([
+            "added",
+            "retained",
+            "modified",
+            "replaced",
+            "removed",
+            "fallback-retained",
+          ]),
         })
         .strict(),
     ),

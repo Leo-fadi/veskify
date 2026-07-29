@@ -250,10 +250,30 @@ function pageTypeForRole(
 function coordinatedRuntimeComponent(
   component: WholeStorefrontRuntimeComponent,
   plan: ReturnType<typeof validateCurrentPlan>,
+  pageRole: WholeStorefrontRuntimePage["role"],
 ): WholeStorefrontRuntimeComponent {
-  const selection = Object.values(plan.designSystemSelection.componentSelections).find(
-    (candidate) => candidate.component === component.component,
-  );
+  const selections = plan.designSystemSelection.componentSelections;
+  const selection =
+    component.component === "header" || component.component === "footer"
+      ? Object.values(selections).find((candidate) => candidate.component === component.component)
+      : pageRole === "homepage"
+        ? [
+            selections.hero,
+            selections.collectionDiscovery,
+            selections.productCard,
+            selections.storytelling,
+            selections.campaign,
+            selections.trust,
+          ].find((candidate) => candidate.component === component.component)
+        : pageRole === "collection-template"
+          ? [selections.collectionCommerce].find(
+              (candidate) => candidate.component === component.component,
+            )
+          : pageRole === "product-template"
+            ? [selections.productDetail].find(
+                (candidate) => candidate.component === component.component,
+              )
+            : undefined;
   return selection ? { ...component, variant: selection.variant } : component;
 }
 
@@ -387,7 +407,9 @@ function plannedPage(
     pageId: pagePlan.pageId,
     role: pagePlan.role,
     type: originalPage?.type ?? pageTypeForRole(pagePlan.role),
-    components: components.map((component) => coordinatedRuntimeComponent(component, plan)),
+    components: components.map((component) =>
+      coordinatedRuntimeComponent(component, plan, pagePlan.role),
+    ),
   } satisfies WholeStorefrontRuntimePage;
   return { page, removedComponentIds };
 }
@@ -532,6 +554,25 @@ function reviewSummary(
           ];
         }
         if (replaced.has(component.componentId)) return [];
+        const source = original.pages
+          .find((candidate) => candidate.pageId === page.pageId)
+          ?.components.find((candidate) => candidate.id === component.componentId);
+        const compiled = source ? coordinatedRuntimeComponent(source, plan, page.role) : undefined;
+        if (source && compiled && source.variant !== compiled.variant) {
+          return [
+            {
+              componentId: component.componentId,
+              component: component.component,
+              pageId: page.pageId,
+              pageRole: page.role,
+              previousVariant: source.variant,
+              resultingVariant: compiled.variant,
+              description:
+                "Updates this storefront component to the selected coordinated design direction.",
+              status: "modified" as const,
+            },
+          ];
+        }
         return [
           {
             componentId: component.componentId,
