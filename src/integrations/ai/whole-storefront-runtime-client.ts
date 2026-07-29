@@ -51,11 +51,21 @@ export class ServerWholeStorefrontPlanningClientError extends Error {
 export class ServerWholeStorefrontPlanningClient implements StorefrontAIProvider {
   readonly id = "server-whole-storefront-planning";
   readonly assetReferenceCapability = "structuredApprovedAssets" as const;
+  readonly #p905bSessionId?: string;
+
+  constructor({ p905bSessionId }: { p905bSessionId?: string } = {}) {
+    this.#p905bSessionId = p905bSessionId;
+  }
 
   async proposeStorefront(request: AiStorefrontProviderRequest): Promise<unknown> {
     const response = await fetch("/api/ai/whole-storefront-proposals", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        ...(this.#p905bSessionId === undefined
+          ? {}
+          : { "x-veskify-p9-05b-session": this.#p905bSessionId }),
+      },
       body: JSON.stringify(request),
     });
     const body: unknown = await response.json().catch(() => null);
@@ -91,6 +101,6 @@ export class ServerWholeStorefrontPlanningClient implements StorefrontAIProvider
   }
 }
 
-export function createServerWholeStorefrontPlanningClient() {
-  return new ServerWholeStorefrontPlanningClient();
+export function createServerWholeStorefrontPlanningClient(options?: { p905bSessionId?: string }) {
+  return new ServerWholeStorefrontPlanningClient(options);
 }

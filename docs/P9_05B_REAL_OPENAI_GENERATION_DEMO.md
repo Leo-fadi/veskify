@@ -79,6 +79,31 @@ it does not expose proposal JSON or require IndexedDB edits. Reloading after Sav
 browser draft. A reset creates a new session and replaces the prior local-demo aggregate on the
 next documented editor load, clearing its generated proposal and history.
 
+## Post-generation editing in the same session
+
+The normal Storefront Studio editor uses the registered whole-storefront direction capability for
+this protected bridge; it never routes a later storefront request through the legacy
+colour-and-typography-only capability. After an accepted proposal is applied, and again after Save
+draft or Publish, the browser submits the complete canonical aggregate to the server-only local
+authority. The authority accepts it only when the opaque session and expected authority revision
+match, the aggregate and registry bindings validate, and the canonical commerce projection is
+exactly unchanged. It then advances its own monotonically increasing authority revision and clears
+the previous proposal claim, allowing exactly one next proposal against that synchronized baseline.
+
+This synchronization is intentionally separate from project metadata revision: saving a draft does
+not change the latter. It stores no browser storage reference, provider payload, credential, or
+merchant-facing internal identifier. A missing, stale, invalid, or commerce-changing submission
+returns only a safe failure category and leaves the server aggregate, session revision, proposal
+claim, and history unchanged. Diagnostics contain only the event category, a redacted session
+prefix, and authority-revision values.
+
+To make a second request after accepting the first proposal, keep the same editor URL and submit a
+new whole-storefront request. For example, a merchant can ask to keep the approved structure while
+making the colour and overall tone warmer, or ask for a compact modern-technical presentation. The
+server builds the request from the synchronized current draft, not from the reset baseline. Stop
+if the editor reports a safe unavailable or stale result; do not work around it by resetting the
+project or retrying the provider call.
+
 Reset and verify the identical baseline, then run modern technical exactly once:
 
 ```bash
@@ -163,6 +188,10 @@ plans server-side. `tests/integration/p9-05b-local-demo-authority.test.ts` prove
 server authority loads the project, the actual proposal route reaches a mocked provider without
 fallback, and three resets reproduce the same baseline after saved and published changes. P9-05A
 remains the deterministic lifecycle, asset, rendering, and commerce-preservation baseline.
+`tests/integration/p9-05c-authoritative-synchronization.test.ts` covers the later-request bridge:
+accepted initial direction, atomic Undo/Redo, saved aggregate synchronization, a warm follow-up,
+a structural follow-up, duplicate proposal rejection before provider selection, and safe stale,
+invalid, unauthorized, and protected-commerce failures.
 
 ## Current checkpoint status
 
