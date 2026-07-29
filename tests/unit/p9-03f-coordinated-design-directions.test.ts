@@ -48,6 +48,16 @@ function compiledDirection(directionId: P905aDirectionId) {
   return { plan, proposal: compileWholeStorefrontProposal({ plan, planningInput: input }) };
 }
 
+const compiledDirections = new Map(
+  directionIds.map((directionId) => [directionId, compiledDirection(directionId)]),
+);
+
+function requiredCompiledDirection(directionId: P905aDirectionId) {
+  const result = compiledDirections.get(directionId);
+  if (!result) throw new Error(`Missing compiled ${directionId} direction.`);
+  return result;
+}
+
 function component(
   proposal: ReturnType<typeof compiledDirection>["proposal"],
   pageType: "home" | "collection" | "product",
@@ -120,7 +130,7 @@ describe("P9-03F coordinated storefront design directions", () => {
 
   it("preserves each coordinated direction through canonical planning and proposal compilation", () => {
     directionIds.forEach((directionId) => {
-      const { plan, proposal } = compiledDirection(directionId);
+      const { plan, proposal } = requiredCompiledDirection(directionId);
       expect(plan.designSystemSelection).toMatchObject({
         directionVersion: "1.0.0",
         directionId,
@@ -142,7 +152,7 @@ describe("P9-03F coordinated storefront design directions", () => {
 
   it("produces exact structural differences beyond colours and typography", () => {
     const signatures = directionIds.map((directionId) => {
-      const { plan, proposal } = compiledDirection(directionId);
+      const { plan, proposal } = requiredCompiledDirection(directionId);
       return {
         directionId,
         homepage: proposal.proposedStorefront.pages
