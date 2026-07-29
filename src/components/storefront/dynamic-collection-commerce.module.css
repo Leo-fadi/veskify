@@ -189,6 +189,10 @@
   gap: clamp(1rem, 3vw, 2rem);
 }
 
+.productGrid[data-product-count="1"] {
+  width: min(100%, 32rem);
+}
+
 .density_compact {
   grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
   gap: 1rem;

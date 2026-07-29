@@ -427,6 +427,7 @@ function CollectionCards({
     return (
       <article
         className={`${styles.collectionCard} ${styles[`card_${presentation}`]}`}
+        data-has-media={media ? "true" : "false"}
         key={collection.collectionId}
       >
         {media ? (
@@ -478,6 +479,7 @@ export function HomepageFeaturedCollectionsSection(input: HomepageCommerceRender
   const headingId = useId();
   const collections = collectionsFor(instance, projection, "collections");
   const assigned = assignedAssetIds(instance, "collectionMedia");
+  const columnCount = Math.min(props.columns, Math.max(collections.length, 1));
   return (
     <section
       aria-labelledby={content.heading ? headingId : undefined}
@@ -494,7 +496,9 @@ export function HomepageFeaturedCollectionsSection(input: HomepageCommerceRender
       />
       <div
         className={`${styles.collectionGrid} ${styles[`layout_${props.layout}`]}`}
-        style={{ "--homepage-columns": props.columns } as CSSProperties}
+        data-column-count={columnCount}
+        data-item-count={collections.length}
+        style={{ "--homepage-columns": columnCount } as CSSProperties}
       >
         <CollectionCards
           assigned={assigned}
@@ -531,6 +535,7 @@ export function HomepageFeaturedProductsSection(input: HomepageCommerceRendererI
     if (!product) throw new Error(`Unknown canonical product: ${productId}.`);
     return product;
   });
+  const columnCount = Math.min(props.columns, Math.max(products.length, 1));
   const assigned = assignedAssetIds(instance, "productMedia");
   const cardContent = {
     ...dynamicCollectionCommerceDefaultContent,
@@ -562,7 +567,8 @@ export function HomepageFeaturedProductsSection(input: HomepageCommerceRendererI
       ) : (
         <div
           className={`${styles.productGrid} ${styles[`layout_${props.layout}`]}`}
-          style={{ "--homepage-columns": props.columns } as CSSProperties}
+          data-item-count={products.length}
+          style={{ "--homepage-columns": columnCount } as CSSProperties}
         >
           {products.map((product) => {
             const selected = canonicalProductMedia(product, projection, input, assigned);
@@ -605,6 +611,7 @@ export function HomepageCollectionNavigationSection(input: HomepageCommerceRende
   const style = homepageSurfaceStyleSchema.parse(instance.styleOverrides);
   const headingId = useId();
   const collections = collectionsFor(instance, projection, "collections");
+  const columnCount = Math.min(props.columns, Math.max(collections.length, 1));
   return (
     <nav
       aria-labelledby={content.heading ? headingId : undefined}
@@ -619,7 +626,9 @@ export function HomepageCollectionNavigationSection(input: HomepageCommerceRende
       <SectionHeading heading={content.heading} id={headingId} locale={locale} />
       <div
         className={styles.collectionGrid}
-        style={{ "--homepage-columns": props.columns } as CSSProperties}
+        data-column-count={columnCount}
+        data-item-count={collections.length}
+        style={{ "--homepage-columns": columnCount } as CSSProperties}
       >
         <CollectionCards
           assigned={assignedAssetIds(instance, "collectionMedia")}

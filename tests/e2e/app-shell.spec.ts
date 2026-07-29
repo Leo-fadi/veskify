@@ -1,8 +1,142 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import {
   expectNoStorefrontHorizontalClipping,
   storefrontGeometryViolations,
 } from "./storefront-geometry";
+
+async function setAurumHomepageContentCount(page: Page, itemCount: number) {
+  await expect(page.getByText("Draft preview")).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(async () => {
+        const database = (await indexedDB.databases()).find(
+          (candidate) => candidate.name === "veskify",
+        );
+        return database?.version ?? 0;
+      }),
+    )
+    .toBe(4);
+  await page.evaluate(async (count) => {
+    type StoredProject = {
+      draftSnapshotId: string;
+      publishedSnapshotId: string;
+    };
+    type StoredCollection = {
+      id: string;
+      slug: string;
+      title: { en?: string; fi?: string };
+      productIds: string[];
+    };
+    type StoredCatalogue = {
+      id: string;
+      products: Array<{ id: string }>;
+      collections: StoredCollection[];
+    };
+    type StoredSection = {
+      component: string;
+      content: Record<string, unknown>;
+    };
+    type StoredSnapshot = {
+      id: string;
+      catalogueRef: string;
+      pages: Array<{ type: string; sections: StoredSection[] }>;
+    };
+    const requestValue = <Value>(request: IDBRequest<Value>) =>
+      new Promise<Value>((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () =>
+          reject(
+            new Error("Could not read the content-aware storefront fixture.", {
+              cause: request.error,
+            }),
+          );
+      });
+    const open = indexedDB.open("veskify");
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      open.onsuccess = () => resolve(open.result);
+      open.onerror = () =>
+        reject(new Error("Could not open the storefront fixture database.", { cause: open.error }));
+    });
+    const requiredStores = ["projects", "catalogues", "snapshots"];
+    const missingStores = requiredStores.filter(
+      (storeName) => !database.objectStoreNames.contains(storeName),
+    );
+    if (missingStores.length > 0) {
+      throw new Error(
+        `Missing stores ${missingStores.join(", ")}; available: ${Array.from(database.objectStoreNames).join(", ")}`,
+      );
+    }
+    const transaction = database.transaction(requiredStores, "readwrite");
+    const project = await requestValue(
+      transaction.objectStore("projects").get("project_aurum_nordic") as IDBRequest<
+        StoredProject | undefined
+      >,
+    );
+    if (!project) throw new Error("Missing Aurum project fixture.");
+    const [draft, published] = await Promise.all([
+      requestValue(
+        transaction.objectStore("snapshots").get(project.draftSnapshotId) as IDBRequest<
+          StoredSnapshot | undefined
+        >,
+      ),
+      requestValue(
+        transaction.objectStore("snapshots").get(project.publishedSnapshotId) as IDBRequest<
+          StoredSnapshot | undefined
+        >,
+      ),
+    ]);
+    if (!draft || !published) {
+      throw new Error("Missing Aurum content-aware fixture state.");
+    }
+    const catalogue = await requestValue(
+      transaction.objectStore("catalogues").get(draft.catalogueRef) as IDBRequest<
+        StoredCatalogue | undefined
+      >,
+    );
+    if (!catalogue) throw new Error("Missing Aurum catalogue fixture.");
+    const sourceCollection = catalogue.collections[0];
+    while (catalogue.collections.length < count) {
+      const index = catalogue.collections.length;
+      catalogue.collections.push({
+        ...structuredClone(sourceCollection),
+        id: `collection_content_aware_${index}`,
+        slug: `content-aware-${index}`,
+        title: {
+          en: `Content-aware collection ${index}`,
+          fi: `Sisältötietoinen mallisto ${index}`,
+        },
+      });
+    }
+    const collectionIds = catalogue.collections.slice(0, count).map((collection) => collection.id);
+    const productIds = catalogue.products.slice(0, count).map((product) => product.id);
+    for (const snapshot of [draft, published]) {
+      const home = snapshot.pages.find((candidate) => candidate.type === "home");
+      const categories = home?.sections.find(
+        (section) => section.component === "featuredCategories",
+      );
+      const products = home?.sections.find((section) => section.component === "productGrid");
+      if (!categories || !products) {
+        throw new Error("Missing content-aware homepage sections.");
+      }
+      categories.content = { ...categories.content, collectionIds };
+      products.content = { ...products.content, productIds };
+      transaction.objectStore("snapshots").put(snapshot);
+    }
+    transaction.objectStore("catalogues").put(catalogue);
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () =>
+        reject(new Error("Could not update the storefront fixture.", { cause: transaction.error }));
+      transaction.onabort = () =>
+        reject(
+          new Error("The storefront fixture update was aborted.", {
+            cause: transaction.error,
+          }),
+        );
+    });
+    database.close();
+  }, itemCount);
+}
 
 test("loads the Vesko Storefront Studio entry and exposes the working journeys", async ({
   page,
@@ -98,6 +232,60 @@ for (const width of [375, 768, 1024, 1440]) {
     await expectNoStorefrontHorizontalClipping(page);
     await expect(page.locator("header.store-header")).toBeVisible();
     await expect(page.locator("footer.store-footer")).toBeVisible();
+  });
+}
+
+for (const width of [375, 768, 1024, 1440]) {
+  test(`balances 0, 1, 2, 3 and many homepage items at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: width === 375 ? 812 : 1000 });
+    await page.goto("/projects/project_aurum_nordic");
+    for (const itemCount of [0, 1, 2, 3, 5]) {
+      await setAurumHomepageContentCount(page, itemCount);
+      await page.reload();
+      await expect(page.getByText("Draft preview")).toBeVisible();
+      if (itemCount === 0) {
+        await expect(
+          page.getByText("Collections will appear here when they are available."),
+        ).toBeVisible();
+        await expect(
+          page.getByText("Products will appear here when they are available."),
+        ).toBeVisible();
+      } else {
+        const categoryGrid = page.locator(`.category-grid[data-item-count="${itemCount}"]`);
+        const productGrid = page.locator(`.product-grid[data-item-count="${itemCount}"]`);
+        await expect(categoryGrid).toBeVisible();
+        await expect(productGrid).toBeVisible();
+        await expect(categoryGrid.locator(".category-card")).toHaveCount(itemCount);
+        await expect(productGrid.locator(".product-card")).toHaveCount(itemCount);
+        const [categoryColumns, productColumns] = await Promise.all([
+          categoryGrid.evaluate(
+            (grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length,
+          ),
+          productGrid.evaluate(
+            (grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length,
+          ),
+        ]);
+        const expectedCategoryColumns =
+          width < 640 ? 1 : itemCount === 1 ? 1 : itemCount === 3 ? 3 : 2;
+        const expectedProductColumns =
+          width < 640 ? 1 : width < 1024 ? (itemCount === 1 ? 1 : 2) : Math.min(itemCount, 4);
+        expect(categoryColumns).toBe(expectedCategoryColumns);
+        expect(productColumns).toBe(expectedProductColumns);
+      }
+      await expectNoStorefrontHorizontalClipping(page);
+      const screenshotName =
+        (width === 1440 && itemCount === 1) ||
+        (width === 1024 && itemCount === 2) ||
+        (width === 768 && itemCount === 5)
+          ? `content-aware-${itemCount === 5 ? "many" : `${itemCount}-item`}-${width}px.png`
+          : undefined;
+      if (screenshotName) {
+        await page.screenshot({
+          fullPage: true,
+          path: testInfo.outputPath(screenshotName),
+        });
+      }
+    }
   });
 }
 

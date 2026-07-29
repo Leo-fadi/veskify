@@ -160,6 +160,12 @@
   padding-block: 0.25rem 1rem;
   scroll-snap-type: x mandatory;
 }
+.store-variant--carousel .category-grid[data-content-layout="single"] {
+  grid-auto-columns: minmax(0, 1fr);
+}
+.store-variant--carousel .category-grid[data-content-layout="split"] {
+  grid-auto-columns: calc((100% - clamp(1rem, 2.5vw, 2rem)) / 2);
+}
 .store-variant--carousel .category-card {
   scroll-snap-align: start;
 }

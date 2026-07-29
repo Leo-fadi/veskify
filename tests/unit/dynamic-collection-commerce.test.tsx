@@ -786,6 +786,25 @@ describe("P6-04 dynamic collection commerce", () => {
     }
   });
 
+  it("uses auto-fit product tracks without reserving columns for absent products", () => {
+    const singleProductCollection = {
+      ...structuredClone(collection),
+      productIds: [watch.productId],
+    };
+    const rendered = render(
+      renderDynamicCollectionCommerce(rendererInput(singleProductCollection)),
+    );
+    const grid = rendered.container.querySelector("[data-product-count]");
+    const css = readFileSync(
+      "src/components/storefront/dynamic-collection-commerce.module.css",
+      "utf8",
+    );
+
+    expect(grid).toHaveAttribute("data-product-count", "1");
+    expect(grid?.children).toHaveLength(1);
+    expect(css).toMatch(/\.productGrid\s*\{[\s\S]*grid-template-columns:\s*repeat\(auto-fit,/);
+  });
+
   it("places horizontal filters and products on explicit full-width desktop rows", () => {
     const input = rendererInput();
     input.instance = instance(collection, {
