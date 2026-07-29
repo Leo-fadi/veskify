@@ -427,6 +427,7 @@ function CollectionCards({
     return (
       <article
         className={`${styles.collectionCard} ${styles[`card_${presentation}`]}`}
+        data-has-media={media ? "true" : "false"}
         key={collection.collectionId}
       >
         {media ? (
@@ -495,6 +496,7 @@ export function HomepageFeaturedCollectionsSection(input: HomepageCommerceRender
       />
       <div
         className={`${styles.collectionGrid} ${styles[`layout_${props.layout}`]}`}
+        data-column-count={columnCount}
         data-item-count={collections.length}
         style={{ "--homepage-columns": columnCount } as CSSProperties}
       >
@@ -624,6 +626,7 @@ export function HomepageCollectionNavigationSection(input: HomepageCommerceRende
       <SectionHeading heading={content.heading} id={headingId} locale={locale} />
       <div
         className={styles.collectionGrid}
+        data-column-count={columnCount}
         data-item-count={collections.length}
         style={{ "--homepage-columns": columnCount } as CSSProperties}
       >

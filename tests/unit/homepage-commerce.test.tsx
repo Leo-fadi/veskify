@@ -362,6 +362,96 @@ describe("P6-05 dynamic homepage commerce component family", () => {
     expect(rendered.container.querySelector("[data-item-count]")).toHaveStyle(
       "--homepage-columns: 2",
     );
+    expect(rendered.container.querySelector("[data-item-count]")).toHaveAttribute(
+      "data-column-count",
+      "2",
+    );
+  });
+
+  it("derives single-card media treatment and tablet collection capacity from rendered content", () => {
+    const bindCollections = (value: ComponentInstanceV2, collectionIds: string[]) => {
+      value.bindings = value.bindings.map((binding) =>
+        binding.slotId === "collections" && binding.source === "collectionList"
+          ? { ...binding, collectionIds }
+          : binding,
+      );
+    };
+
+    const textOnly = featuredCollectionsInstance();
+    textOnly.props = { ...textOnly.props, cardPresentation: "text", columns: 4 };
+    bindCollections(textOnly, [rings.collectionId]);
+    const textOnlyRendered = render(renderHomepageCommerce(rendererInput(textOnly)));
+    const textOnlyGrid = textOnlyRendered.container.querySelector("[data-item-count]");
+    expect(textOnlyGrid).toHaveAttribute("data-item-count", "1");
+    expect(textOnlyGrid).toHaveAttribute("data-column-count", "1");
+    expect(textOnlyGrid?.querySelector("article")).toHaveAttribute("data-has-media", "false");
+    expect(textOnlyGrid?.querySelector("figure, .placeholder")).toBeNull();
+    textOnlyRendered.unmount();
+
+    const image = featuredCollectionsInstance();
+    image.props = { ...image.props, cardPresentation: "image", columns: 4 };
+    bindCollections(image, [rings.collectionId]);
+    const imageRendered = render(renderHomepageCommerce(rendererInput(image)));
+    const imageGrid = imageRendered.container.querySelector("[data-item-count]");
+    expect(imageGrid).toHaveAttribute("data-item-count", "1");
+    expect(imageGrid).toHaveAttribute("data-column-count", "1");
+    expect(imageGrid?.querySelector("article")).toHaveAttribute("data-has-media", "true");
+    expect(imageGrid?.querySelector("figure")).toBeVisible();
+    imageRendered.unmount();
+
+    const thirdCollection = {
+      ...rings,
+      collectionId: "collection_bracelets",
+      revision: "collection-rev-bracelets",
+      title: localized("Bracelets", "Rannekorut"),
+    };
+    const fourthCollection = {
+      ...rings,
+      collectionId: "collection_necklaces",
+      revision: "collection-rev-necklaces",
+      title: localized("Necklaces", "Kaulakorut"),
+    };
+    const countAwareProjection = {
+      ...projection,
+      collections: [...projection.collections, thirdCollection, fourthCollection],
+    };
+    const three = featuredCollectionsInstance();
+    three.props = { ...three.props, columns: 4 };
+    bindCollections(three, [
+      watches.collectionId,
+      rings.collectionId,
+      thirdCollection.collectionId,
+    ]);
+    const threeRendered = render(
+      renderHomepageCommerce(rendererInput(three, { projection: countAwareProjection })),
+    );
+    expect(threeRendered.container.querySelector("[data-item-count]")).toHaveAttribute(
+      "data-column-count",
+      "3",
+    );
+    threeRendered.unmount();
+
+    const many = featuredCollectionsInstance();
+    many.props = { ...many.props, columns: 4 };
+    bindCollections(many, [
+      watches.collectionId,
+      rings.collectionId,
+      thirdCollection.collectionId,
+      fourthCollection.collectionId,
+    ]);
+    const manyRendered = render(
+      renderHomepageCommerce(rendererInput(many, { projection: countAwareProjection })),
+    );
+    expect(manyRendered.container.querySelector("[data-item-count]")).toHaveAttribute(
+      "data-column-count",
+      "4",
+    );
+
+    const css = readFileSync("src/components/storefront/homepage-commerce.module.css", "utf8");
+    expect(css).toContain(
+      '.collectionGrid[data-item-count="1"] .collectionCard[data-has-media="true"]',
+    );
+    expect(css).toContain('.collectionGrid[data-item-count="3"][data-column-count="3"]');
   });
 
   it("renders reusable product cards only from canonical product-list bindings", () => {

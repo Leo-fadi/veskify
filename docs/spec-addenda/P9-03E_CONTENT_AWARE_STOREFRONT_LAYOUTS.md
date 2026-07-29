@@ -26,13 +26,13 @@ ordering, prices, stock, variants, media or other commerce truth.
 
 ### Collection and category discovery
 
-| Canonical item count | Required composition                                                                                                     |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| 0                    | Render the approved localized empty state or omit the optional section. Do not render a broken or empty card container.  |
-| 1                    | Use the available content width intentionally with a single editorial card.                                              |
-| 2                    | Use a balanced split composition.                                                                                        |
-| 3                    | Use a balanced three-item composition at tablet and larger widths, while retaining a readable single-column mobile flow. |
-| 4 or more            | Preserve the registered grid or carousel behaviour and its responsive rules.                                             |
+| Canonical item count | Required composition                                                                                                                                                                                 |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0                    | Render the approved localized empty state or omit the optional section. Do not render a broken or empty card container.                                                                              |
+| 1                    | Use the available content width intentionally. A card with rendered canonical media may use a single editorial split; a text-only or media-omitted card remains a full-width one-column composition. |
+| 2                    | Use a balanced split composition.                                                                                                                                                                    |
+| 3                    | Use a balanced three-item composition at tablet and larger widths, while retaining a readable single-column mobile flow.                                                                             |
+| 4 or more            | Preserve the registered grid or carousel behaviour and its responsive rules.                                                                                                                         |
 
 Grid and carousel variants remain controlled registered variants. Count-aware behaviour is
 automatic and must not introduce a new merchant-editable or AI-generated layout value.

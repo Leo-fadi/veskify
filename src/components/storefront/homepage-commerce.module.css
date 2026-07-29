@@ -307,12 +307,11 @@
   padding: 1rem;
 }
 
-.collectionGrid[data-item-count="1"] .collectionCard {
+.collectionGrid[data-item-count="1"] .collectionCard[data-has-media="true"] {
   grid-template-columns: minmax(0, 1.35fr) minmax(14rem, 0.65fr);
 }
 
-.collectionGrid[data-item-count="1"] .collectionCard figure,
-.collectionGrid[data-item-count="1"] .collectionCard .placeholder {
+.collectionGrid[data-item-count="1"] .collectionCard[data-has-media="true"] figure {
   grid-row: 1 / span 3;
   height: 100%;
 }
@@ -393,6 +392,10 @@
   .trustGrid {
     grid-template-columns: repeat(min(2, var(--homepage-columns)), minmax(0, 1fr));
   }
+
+  .collectionGrid[data-item-count="3"][data-column-count="3"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 47.99rem) {
@@ -418,12 +421,11 @@
     grid-template-columns: 1fr;
   }
 
-  .collectionGrid[data-item-count="1"] .collectionCard {
+  .collectionGrid[data-item-count="1"] .collectionCard[data-has-media="true"] {
     grid-template-columns: 1fr;
   }
 
-  .collectionGrid[data-item-count="1"] .collectionCard figure,
-  .collectionGrid[data-item-count="1"] .collectionCard .placeholder {
+  .collectionGrid[data-item-count="1"] .collectionCard[data-has-media="true"] figure {
     grid-row: auto;
   }
 }
