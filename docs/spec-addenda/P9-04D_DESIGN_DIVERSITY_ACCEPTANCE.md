@@ -3,9 +3,9 @@
 ## Specification status
 
 This is a corrective Phase 9 addendum discovered during visual review of the 29 July 2026
-real-AI Lumo storefront. It is not yet named in the authoritative SDD or roadmap. It clarifies
-the existing P9 requirement, including AC-112 through AC-123 and especially AC-114, AC-117,
-AC-118 and AC-122. The authoritative SDD and roadmap are intentionally unchanged by this task.
+real-AI Lumo storefront. Its binding criteria are now incorporated into the authoritative SDD,
+the synchronized v1.2 export and the development roadmap as AC-126 through AC-128. This addendum
+remains the detailed test-harness and merchant-rubric reference for those requirements.
 
 ## Merchant objective
 
@@ -21,7 +21,8 @@ with palette or font substitutions.
 
 ## Objective pass standard
 
-The evaluator compares each pair of directions. Every pair passes only when all of these are true:
+The evaluator compares each required dimension for every pair of directions. Every pair passes
+only when all of these are true:
 
 - homepage structure and section order differ materially;
 - collection discovery and collection-page presentation differ;
@@ -29,8 +30,8 @@ The evaluator compares each pair of directions. Every pair passes only when all 
 - at least two non-colour design-system groups differ;
 - the homepage, collection page and PDP identify the same direction and remain internally coherent;
 - the same protected catalogue identities, SKUs, prices and other commerce truth remain unchanged;
-- only approved assets are used;
-- EN and FI presentations are present without fixture or internal-ID leakage;
+- every asset use matches its approved role, provenance and product/collection ownership;
+- EN and FI merchant-visible evidence has no fixture-brand, internal-ID, recipe or provider leakage;
 - all required content-count and responsive cases have no unexplained empty layout area.
 
 The non-colour groups are typography, spacing/density, shape/radius,
@@ -40,7 +41,8 @@ because collection and PDP presentation must also differ.
 
 ## Structural fingerprint
 
-The test harness creates an exact canonical fingerprint from normalized:
+The test harness creates exact canonical fingerprints from normalized evidence, but individual
+required page dimensions are evaluated separately; one changed label cannot satisfy a page:
 
 - homepage section structure, order, hero family and navigation treatment;
 - collection composition, discovery treatment and product-card family;
@@ -50,14 +52,15 @@ The test harness creates an exact canonical fingerprint from normalized:
 - EN and FI presentation identities.
 
 Colour remains fingerprinted for exact auditability but cannot satisfy the non-colour threshold.
-Protected commerce is fingerprinted separately and must be equal across all directions.
+Protected commerce is fingerprinted from the canonical source projection and every generated
+direction must match that baseline directly.
 
 ## Screenshot and content matrix
 
-The visual runner receives a deterministic 72-case matrix:
+The visual runner receives a deterministic 360-case matrix:
 
 ```text
-3 directions × 3 pages × 2 locales × 4 viewports = 72 screenshots
+3 directions × 5 content cases × 3 pages × 2 locales × 4 viewports = 360 screenshots
 ```
 
 Pages are homepage, collection and PDP. Viewports are 375, 768, 1024 and 1440 px. Each direction

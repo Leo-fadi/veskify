@@ -3,23 +3,64 @@ import { canonicalValueFingerprint } from "@/domain/storefront";
 export const DESIGN_DIVERSITY_VIEWPORTS = [375, 768, 1024, 1440] as const;
 export const DESIGN_DIVERSITY_LOCALES = ["en", "fi"] as const;
 export const DESIGN_DIVERSITY_PAGE_TYPES = ["home", "collection", "product"] as const;
+export const DESIGN_DIVERSITY_CONTENT_CASES = [
+  "oneCollection",
+  "multipleCollections",
+  "smallProductCount",
+  "largeProductCount",
+  "missingOptionalMedia",
+] as const;
 
 export type DesignDirectionId = "premiumEditorial" | "modernTechnical" | "warmApproachable";
 export type DiversityViewport = (typeof DESIGN_DIVERSITY_VIEWPORTS)[number];
 export type DiversityLocale = (typeof DESIGN_DIVERSITY_LOCALES)[number];
 export type DiversityPageType = (typeof DESIGN_DIVERSITY_PAGE_TYPES)[number];
+export type DiversityContentCaseId = (typeof DESIGN_DIVERSITY_CONTENT_CASES)[number];
 
-type PageStructure = {
-  directionId: DesignDirectionId;
+type DirectionIdentity = { recipeId: string; tokenIdentity: string };
+type PageStructure = DirectionIdentity & {
+  directionId: string;
   sections: readonly string[];
   composition: string;
 };
+type LocaleEvidence = { merchantVisibleText: string; leakage: readonly string[] };
+type ResponsiveResult = {
+  horizontalOverflow: boolean;
+  clipping: boolean;
+  overlap: boolean;
+  invalidEmptySpace: boolean;
+  layoutProbePassed: boolean;
+  screenshotReview: "passed" | "failed" | "notRequired";
+  manualReview: "passed" | "failed" | "notRequired";
+};
+type AssetOwner = { kind: "product" | "collection" | "storefront"; id?: string };
+type ApprovedAsset = {
+  assetId: string;
+  role: string;
+  owner: AssetOwner;
+  provenance: string;
+};
+type AssetUse = {
+  assetId: string;
+  approvedRole: string;
+  actualRole: string;
+  approvedOwner: AssetOwner;
+  bindingTarget: AssetOwner;
+  provenance: string;
+};
 
 export type DesignDiversityFixture = {
-  directionId: DesignDirectionId;
+  directionId: string;
+  selectedDirection: DirectionIdentity;
   pages: {
-    home: PageStructure & { hero: string; navigation: string };
-    collection: PageStructure & { discovery: string; productCard: string };
+    home: PageStructure & {
+      hero: string;
+      navigation: string;
+      collectionDiscovery: string;
+      productCards: string;
+      storyTrustCampaign: string;
+    };
+    collection: PageStructure & { discovery: string; structure: string; productCard: string };
     product: PageStructure & { gallery: string; information: string; options: string };
   };
   designSystem: {
@@ -30,51 +71,41 @@ export type DesignDiversityFixture = {
     borderSurfaceElevation: string;
     imageTreatment: string;
   };
-  responsive: Record<DiversityViewport, Record<DiversityPageType, string>>;
-  localePresentation: Record<DiversityLocale, Record<DiversityPageType, string>>;
+  responsive: Record<DiversityViewport, Record<DiversityPageType, ResponsiveResult>>;
+  localePresentation: Record<DiversityLocale, Record<DiversityPageType, LocaleEvidence>>;
+  forbiddenLocaleTerms: readonly string[];
   contentCases: readonly {
-    id:
-      | "oneCollection"
-      | "multipleCollections"
-      | "smallProductCount"
-      | "largeProductCount"
-      | "missingOptionalMedia";
+    id: DiversityContentCaseId;
     unexplainedEmptyAreas: number;
   }[];
   protectedCommerce: unknown;
-  approvedAssetIds: readonly string[];
-  usedAssetIds: readonly string[];
+  approvedAssets: readonly ApprovedAsset[];
+  assetUses: readonly AssetUse[];
 };
 
 export type DiversityFailure = {
-  pair?: readonly [DesignDirectionId, DesignDirectionId];
+  pair?: readonly [string, string];
   code: string;
   message: string;
+};
+
+export type ScreenshotMatrixEntry = {
+  directionId: string;
+  pageType: DiversityPageType;
+  locale: DiversityLocale;
+  viewport: DiversityViewport;
+  contentCaseId: DiversityContentCaseId;
+  snapshotName: string;
 };
 
 export type DiversityEvaluation = {
   pass: boolean;
   failures: readonly DiversityFailure[];
-  fingerprints: Readonly<Record<DesignDirectionId, string>>;
+  fingerprints: Readonly<Record<string, string>>;
   screenshotMatrix: readonly ScreenshotMatrixEntry[];
 };
 
-export type ScreenshotMatrixEntry = {
-  directionId: DesignDirectionId;
-  pageType: DiversityPageType;
-  locale: DiversityLocale;
-  viewport: DiversityViewport;
-  snapshotName: string;
-};
-
-const REQUIRED_CONTENT_CASES = [
-  "oneCollection",
-  "multipleCollections",
-  "smallProductCount",
-  "largeProductCount",
-  "missingOptionalMedia",
-] as const;
-
+const EXPECTED_DIRECTIONS = ["premiumEditorial", "modernTechnical", "warmApproachable"] as const;
 const NON_COLOUR_GROUPS = [
   "typography",
   "spacingDensity",
@@ -82,25 +113,47 @@ const NON_COLOUR_GROUPS = [
   "borderSurfaceElevation",
   "imageTreatment",
 ] as const;
+const INTERNAL_LOCALE_PATTERN =
+  /(?:puck|component|recipe|provider|fixture|[a-z]+(?:Recipe|Component)\b)/i;
+const REQUIRED_REGIONS: Record<DiversityPageType, readonly string[]> = {
+  home: ["header", "hero", "footer"],
+  collection: ["header", "productGrid", "footer"],
+  product: ["header", "productDetail", "footer"],
+};
 
-function exactFingerprint(value: unknown): string {
+function fingerprint(value: unknown): string {
   return canonicalValueFingerprint(value);
 }
 
-function structuralMaterial(fixture: DesignDiversityFixture) {
-  return {
-    pages: fixture.pages,
-    designSystem: fixture.designSystem,
-    responsive: fixture.responsive,
-    localePresentation: fixture.localePresentation,
-  };
+function normalize(value: string): string {
+  return value.trim().toLocaleLowerCase("en-US");
 }
 
-function pageFingerprint(page: PageStructure): string {
-  const presentation = Object.fromEntries(
-    Object.entries(page).filter(([key]) => key !== "directionId"),
-  );
-  return exactFingerprint(presentation);
+function sameOwner(left: AssetOwner, right: AssetOwner): boolean {
+  return left.kind === right.kind && left.id === right.id;
+}
+
+function pageDimensions(
+  pageType: DiversityPageType,
+  fixture: DesignDiversityFixture,
+): readonly string[] {
+  if (pageType === "home") {
+    const page = fixture.pages.home;
+    return [
+      fingerprint(page.sections),
+      normalize(page.hero),
+      normalize(page.navigation),
+      normalize(page.collectionDiscovery),
+      normalize(page.productCards),
+      normalize(page.storyTrustCampaign),
+    ];
+  }
+  if (pageType === "collection") {
+    const page = fixture.pages.collection;
+    return [normalize(page.discovery), normalize(page.structure), normalize(page.productCard)];
+  }
+  const page = fixture.pages.product;
+  return [normalize(page.gallery), normalize(page.information), normalize(page.options)];
 }
 
 function pairs<T>(values: readonly T[]): readonly (readonly [T, T])[] {
@@ -109,147 +162,203 @@ function pairs<T>(values: readonly T[]): readonly (readonly [T, T])[] {
   );
 }
 
+function add(
+  failures: DiversityFailure[],
+  code: string,
+  message: string,
+  pair?: readonly [string, string],
+) {
+  failures.push({ code, message, ...(pair ? { pair } : {}) });
+}
+
 export function createDesignDiversityScreenshotMatrix(
   fixtures: readonly DesignDiversityFixture[],
 ): readonly ScreenshotMatrixEntry[] {
   return fixtures.flatMap((fixture) =>
-    DESIGN_DIVERSITY_PAGE_TYPES.flatMap((pageType) =>
-      DESIGN_DIVERSITY_LOCALES.flatMap((locale) =>
-        DESIGN_DIVERSITY_VIEWPORTS.map((viewport) => ({
-          directionId: fixture.directionId,
-          pageType,
-          locale,
-          viewport,
-          snapshotName: `${fixture.directionId}-${pageType}-${locale}-${viewport}`,
-        })),
+    DESIGN_DIVERSITY_CONTENT_CASES.flatMap((contentCaseId) =>
+      DESIGN_DIVERSITY_PAGE_TYPES.flatMap((pageType) =>
+        DESIGN_DIVERSITY_LOCALES.flatMap((locale) =>
+          DESIGN_DIVERSITY_VIEWPORTS.map((viewport) => ({
+            directionId: fixture.directionId,
+            pageType,
+            locale,
+            viewport,
+            contentCaseId,
+            snapshotName: `${fixture.directionId}-${contentCaseId}-${pageType}-${locale}-${viewport}`,
+          })),
+        ),
       ),
     ),
   );
 }
 
-/**
- * Test-only acceptance evaluator. It intentionally evaluates normalized facts rather than pixels:
- * the screenshot runner supplies the same direction/page/locale/viewport matrix for visual review.
- */
+/** Test-only P9-04D acceptance gate over normalized generated-storefront evidence. */
 export function evaluateDesignDiversity(
   fixtures: readonly DesignDiversityFixture[],
+  canonicalCommerceBaseline: unknown,
 ): DiversityEvaluation {
   const failures: DiversityFailure[] = [];
-  const byId = new Map(fixtures.map((fixture) => [fixture.directionId, fixture]));
-  const expectedDirections: readonly DesignDirectionId[] = [
-    "premiumEditorial",
-    "modernTechnical",
-    "warmApproachable",
-  ];
-
-  for (const directionId of expectedDirections) {
-    const fixture = byId.get(directionId);
-    if (!fixture) {
-      failures.push({
-        code: "missing-direction",
-        message: `Missing ${directionId} acceptance fixture.`,
-      });
-      continue;
+  const byId = new Map<string, DesignDiversityFixture>();
+  for (const fixture of fixtures) {
+    if (!EXPECTED_DIRECTIONS.includes(fixture.directionId as DesignDirectionId)) {
+      add(failures, "unknown-direction", `Unknown direction ${fixture.directionId}.`);
+    } else if (byId.has(fixture.directionId)) {
+      add(failures, "duplicate-direction", `Duplicate ${fixture.directionId} acceptance fixture.`);
+    } else {
+      byId.set(fixture.directionId, fixture);
     }
+  }
+  for (const directionId of EXPECTED_DIRECTIONS) {
+    if (!byId.has(directionId))
+      add(failures, "missing-direction", `Missing ${directionId} acceptance fixture.`);
+  }
 
+  const baselineFingerprint = fingerprint(canonicalCommerceBaseline);
+  for (const fixture of byId.values()) {
+    if (fingerprint(fixture.protectedCommerce) !== baselineFingerprint) {
+      add(
+        failures,
+        "protected-commerce-changed",
+        `${fixture.directionId} differs from the canonical commerce baseline.`,
+      );
+    }
     for (const pageType of DESIGN_DIVERSITY_PAGE_TYPES) {
-      if (fixture.pages[pageType].directionId !== directionId) {
-        failures.push({
-          code: "incoherent-direction",
-          message: `${directionId} ${pageType} does not use its storefront direction.`,
-        });
+      const page = fixture.pages[pageType];
+      const requiredRegions = REQUIRED_REGIONS[pageType];
+      if (
+        !page.sections.length ||
+        requiredRegions.some((region) => !page.sections.includes(region))
+      ) {
+        add(
+          failures,
+          "incomplete-page-structure",
+          `${fixture.directionId} ${pageType} is incomplete.`,
+        );
+      }
+      if (
+        page.directionId !== fixture.directionId ||
+        page.recipeId !== fixture.selectedDirection.recipeId ||
+        page.tokenIdentity !== fixture.selectedDirection.tokenIdentity
+      ) {
+        add(
+          failures,
+          "incoherent-direction",
+          `${fixture.directionId} ${pageType} does not match its selected direction identity.`,
+        );
       }
       for (const locale of DESIGN_DIVERSITY_LOCALES) {
-        if (!fixture.localePresentation[locale][pageType].trim()) {
-          failures.push({
-            code: "missing-locale-presentation",
-            message: `${directionId} ${pageType} has no ${locale} presentation.`,
-          });
+        const evidence = fixture.localePresentation[locale][pageType];
+        if (
+          !evidence.merchantVisibleText.trim() ||
+          evidence.leakage.length > 0 ||
+          INTERNAL_LOCALE_PATTERN.test(evidence.merchantVisibleText) ||
+          fixture.forbiddenLocaleTerms.some((term) =>
+            evidence.merchantVisibleText
+              .toLocaleLowerCase("en-US")
+              .includes(term.toLocaleLowerCase("en-US")),
+          )
+        ) {
+          add(
+            failures,
+            "unsafe-locale-presentation",
+            `${fixture.directionId} ${pageType} has unsafe ${locale} content.`,
+          );
         }
       }
       for (const viewport of DESIGN_DIVERSITY_VIEWPORTS) {
-        if (!fixture.responsive[viewport][pageType].trim()) {
-          failures.push({
-            code: "missing-responsive-presentation",
-            message: `${directionId} ${pageType} has no ${viewport}px presentation.`,
-          });
+        const result = fixture.responsive[viewport][pageType];
+        if (
+          result.horizontalOverflow ||
+          result.clipping ||
+          result.overlap ||
+          result.invalidEmptySpace ||
+          !result.layoutProbePassed ||
+          result.screenshotReview === "failed" ||
+          result.manualReview === "failed"
+        ) {
+          add(
+            failures,
+            "responsive-layout-failure",
+            `${fixture.directionId} ${pageType} fails at ${viewport}px.`,
+          );
         }
       }
     }
-
     const cases = new Map(fixture.contentCases.map((contentCase) => [contentCase.id, contentCase]));
-    for (const requiredCase of REQUIRED_CONTENT_CASES) {
+    for (const requiredCase of DESIGN_DIVERSITY_CONTENT_CASES) {
       const contentCase = cases.get(requiredCase);
       if (!contentCase) {
-        failures.push({
-          code: "missing-content-count-case",
-          message: `${directionId} is missing ${requiredCase}.`,
-        });
+        add(
+          failures,
+          "missing-content-count-case",
+          `${fixture.directionId} is missing ${requiredCase}.`,
+        );
+      } else if (
+        !Number.isFinite(contentCase.unexplainedEmptyAreas) ||
+        !Number.isInteger(contentCase.unexplainedEmptyAreas) ||
+        contentCase.unexplainedEmptyAreas < 0
+      ) {
+        add(
+          failures,
+          "invalid-empty-area-measurement",
+          `${fixture.directionId} ${requiredCase} has an invalid empty-area measurement.`,
+        );
       } else if (contentCase.unexplainedEmptyAreas > 0) {
-        failures.push({
-          code: "unexplained-empty-area",
-          message: `${directionId} ${requiredCase} contains unexplained empty layout areas.`,
-        });
+        add(
+          failures,
+          "unexplained-empty-area",
+          `${fixture.directionId} ${requiredCase} contains unexplained empty layout areas.`,
+        );
       }
     }
-
-    const approved = new Set(fixture.approvedAssetIds);
-    if (fixture.usedAssetIds.some((assetId) => !approved.has(assetId))) {
-      failures.push({
-        code: "unapproved-asset",
-        message: `${directionId} uses an asset outside the approved set.`,
-      });
+    for (const use of fixture.assetUses) {
+      const approved = fixture.approvedAssets.find((asset) => asset.assetId === use.assetId);
+      if (!approved) {
+        add(failures, "unapproved-asset", `${fixture.directionId} uses an unapproved asset.`);
+      } else if (
+        approved.role !== use.approvedRole ||
+        approved.role !== use.actualRole ||
+        !sameOwner(approved.owner, use.approvedOwner) ||
+        !sameOwner(approved.owner, use.bindingTarget) ||
+        approved.provenance !== use.provenance
+      ) {
+        add(
+          failures,
+          "invalid-asset-assignment",
+          `${fixture.directionId} binds an asset outside its approved role, owner or provenance.`,
+        );
+      }
     }
   }
 
-  const available = expectedDirections.flatMap((id) => {
+  const available = EXPECTED_DIRECTIONS.flatMap((id) => {
     const fixture = byId.get(id);
     return fixture ? [fixture] : [];
   });
-  const protectedFingerprint = available[0]
-    ? exactFingerprint(available[0].protectedCommerce)
-    : undefined;
-  for (const fixture of available.slice(1)) {
-    if (exactFingerprint(fixture.protectedCommerce) !== protectedFingerprint) {
-      failures.push({
-        code: "protected-commerce-changed",
-        message: `${fixture.directionId} changed protected commerce truth.`,
-      });
-    }
-  }
-
   for (const [left, right] of pairs(available)) {
     const pair = [left.directionId, right.directionId] as const;
-    if (pageFingerprint(left.pages.home) === pageFingerprint(right.pages.home)) {
-      failures.push({
-        pair,
-        code: "homepage-structure-same",
-        message: `${pair.join(" and ")} have the same homepage structure.`,
-      });
+    for (const pageType of DESIGN_DIVERSITY_PAGE_TYPES) {
+      const dimensions = pageDimensions(pageType, left);
+      const compared = pageDimensions(pageType, right);
+      if (dimensions.some((dimension, index) => dimension === compared[index])) {
+        add(
+          failures,
+          `${pageType}-dimension-same`,
+          `${pair.join(" and ")} share a required ${pageType} dimension.`,
+          pair,
+        );
+      }
     }
-    if (pageFingerprint(left.pages.collection) === pageFingerprint(right.pages.collection)) {
-      failures.push({
-        pair,
-        code: "collection-presentation-same",
-        message: `${pair.join(" and ")} have the same collection presentation.`,
-      });
-    }
-    if (pageFingerprint(left.pages.product) === pageFingerprint(right.pages.product)) {
-      failures.push({
-        pair,
-        code: "product-presentation-same",
-        message: `${pair.join(" and ")} have the same PDP presentation.`,
-      });
-    }
-    const changedNonColourGroups = NON_COLOUR_GROUPS.filter(
-      (group) => left.designSystem[group] !== right.designSystem[group],
+    const changedGroups = NON_COLOUR_GROUPS.filter(
+      (group) => normalize(left.designSystem[group]) !== normalize(right.designSystem[group]),
     );
-    if (changedNonColourGroups.length < 2) {
-      failures.push({
+    if (changedGroups.length < 2) {
+      add(
+        failures,
+        "insufficient-non-colour-difference",
+        `${pair.join(" and ")} differ in only ${changedGroups.length} non-colour design-system groups.`,
         pair,
-        code: "insufficient-non-colour-difference",
-        message: `${pair.join(" and ")} differ in only ${changedNonColourGroups.length} non-colour design-system groups.`,
-      });
+      );
     }
   }
 
@@ -259,9 +368,14 @@ export function evaluateDesignDiversity(
     fingerprints: Object.fromEntries(
       available.map((fixture) => [
         fixture.directionId,
-        exactFingerprint(structuralMaterial(fixture)),
+        fingerprint({
+          pages: fixture.pages,
+          designSystem: fixture.designSystem,
+          responsive: fixture.responsive,
+          localePresentation: fixture.localePresentation,
+        }),
       ]),
-    ) as Record<DesignDirectionId, string>,
+    ),
     screenshotMatrix: createDesignDiversityScreenshotMatrix(available),
   };
 }
