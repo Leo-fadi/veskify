@@ -36,6 +36,11 @@ support, responsive and accessibility contracts, recipes, blueprints, directions
 declarations from current production exports. A deliberately explicit classification table makes a
 new or removed registry variant fail the audit until its reachability has been reviewed.
 
+Responsive contracts retain the complete structured `ComponentDefinitionV2` rule: breakpoints,
+horizontal-overflow prohibition, optional minimum width, optional maximum columns and localized
+notes. The audit therefore keeps distinct collection and PDP layout constraints instead of reducing
+them to one display string.
+
 The conformance suite is
 `tests/unit/p9-03d-design-capability-reachability.test.ts`. It proves inventory completeness,
 recipe resolution, real-provider exposure, proposal-compiler behavior, canonical runtime projection,
@@ -113,7 +118,9 @@ missing required `brandStory` when approved content and a compatible approved as
 - `announcementBar:singleLine` and `announcementBar:minimal` occur in homepage recipes, but there is
   no `announcementBar` entry in any direction's `sectionVariants`; the source variant survives.
 - `homeModernCommerce` requests `benefitIcons:threeColumn`, while `modernTechnical` selects
-  `benefitIcons:minimal`; the direction wins in the runtime authority.
+  `benefitIcons:minimal`. `styledProjectedPage` applies
+  `designSystemSelection.sectionVariants.benefitIcons` immediately before the canonical AI proposal
+  snapshot, so the runtime-authority override—not source retention—removes `threeColumn`.
 - Optional recipe sections are not composed merely because the recipe contains them.
 
 This is the exact recipe-to-plan boundary at which some intended visual differentiation disappears.
@@ -266,3 +273,7 @@ pnpm exec vitest run tests/unit/p9-03d-design-capability-reachability.test.ts
 The Phase 9 compatibility gate additionally runs the existing registry, recipe, planner, compiler,
 renderer parity, dynamic collection, dynamic PDP and Phase 9 suites, followed by
 `pnpm validate:full` and `git diff --check`.
+
+The responsive-evidence record derives its covered-variant count from the same generated inventory.
+The conformance suite compares that value with the count documented above, so a registry change cannot
+silently leave the audit documentation or responsive evidence stale.
