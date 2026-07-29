@@ -122,15 +122,16 @@ describe("P9-05B local demo generation authorization", () => {
   });
 
   it("rejects a duplicate controlled call without another provider invocation", async () => {
-    const providerCalls = vi.fn();
+    const routeCalls = vi.fn();
+    const providerSelections = vi.fn(() => directionProvider());
     const route = createWholeStorefrontPlanningRouteHandler({
       environment,
-      selectProvider: () => directionProvider(),
+      selectProvider: providerSelections,
     });
     const handler = createP905bLocalDemoGenerateHandler({
       environment,
       createProposalHandler: async (input) => {
-        providerCalls();
+        routeCalls();
         return route(input);
       },
     });
@@ -144,7 +145,8 @@ describe("P9-05B local demo generation authorization", () => {
 
     expect((await handler(request(input))).status).toBe(200);
     expect((await handler(request(input))).status).toBe(400);
-    expect(providerCalls).toHaveBeenCalledTimes(1);
+    expect(routeCalls).toHaveBeenCalledTimes(2);
+    expect(providerSelections).toHaveBeenCalledTimes(1);
   });
 
   it("is unavailable by default without the explicit local demo configuration", async () => {

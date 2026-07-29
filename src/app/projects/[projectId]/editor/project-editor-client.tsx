@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   assembleValidatedEditorDraft,
   EditorDraftValidationError,
@@ -11,6 +11,10 @@ import {
 import type { AIProvider } from "@/application/ai-provider";
 import type { StorefrontAIProvider } from "@/application/ai-storefront-generation";
 import { createServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
+import {
+  P905bLocalDemoSynchronizationClientError,
+  synchronizeP905bLocalDemoAggregate,
+} from "@/integrations/ai/p9-05b-local-demo-client";
 import {
   canDuplicateSection,
   canToggleSectionVisibility,
@@ -69,8 +73,9 @@ import {
 type RepositoryFactory = () => ProjectRepository;
 type LocalDemoBridge = {
   aggregate: ProjectAggregate;
-  proposal: AiStorefrontProposal;
+  proposal: AiStorefrontProposal | null;
   sessionId: string;
+  authoritativeRevision: number;
   baselineFingerprint: string;
 };
 type ReadyState = {
@@ -128,6 +133,26 @@ function snapshotDesign(snapshot: StorefrontSnapshot) {
     navigation: snapshot.navigation,
     pages: snapshot.pages,
     catalogueRef: snapshot.catalogueRef,
+  };
+}
+
+function aggregateWithActiveDraft(
+  aggregate: ProjectAggregate,
+  activeDraft: StorefrontSnapshot,
+): ProjectAggregate {
+  const hasSnapshot = aggregate.snapshots.some((snapshot) => snapshot.id === activeDraft.id);
+  return {
+    ...aggregate,
+    project: {
+      ...aggregate.project,
+      draftSnapshotId: activeDraft.id,
+      updatedAt: activeDraft.createdAt,
+    },
+    snapshots: hasSnapshot
+      ? aggregate.snapshots.map((snapshot) =>
+          snapshot.id === activeDraft.id ? structuredClone(activeDraft) : snapshot,
+        )
+      : [...aggregate.snapshots, structuredClone(activeDraft)],
   };
 }
 
@@ -265,7 +290,7 @@ export function ProjectEditorClient({
   projectId,
   repositoryFactory = defaultRepositoryFactory,
   aiProvider,
-  storefrontAiProvider = createServerWholeStorefrontPlanningClient(),
+  storefrontAiProvider,
   localDemoBridge,
 }: {
   projectId: string;
@@ -298,7 +323,18 @@ export function ProjectEditorClient({
   const [toolDrawerNestedModalOpen, setToolDrawerNestedModalOpen] = useState(false);
   const [drawerViewport, setDrawerViewport] = useState(false);
   const [importedDemoProposal, setImportedDemoProposal] = useState<AiStorefrontProposal>();
+  const [authoritativeRevision, setAuthoritativeRevision] = useState<number | null>(
+    localDemoBridge?.authoritativeRevision ?? null,
+  );
   const savePending = useRef(false);
+  const resolvedStorefrontAiProvider = useMemo(
+    () =>
+      storefrontAiProvider ??
+      createServerWholeStorefrontPlanningClient({
+        ...(localDemoBridge ? { p905bSessionId: localDemoBridge.sessionId } : {}),
+      }),
+    [localDemoBridge, storefrontAiProvider],
+  );
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -380,7 +416,8 @@ export function ProjectEditorClient({
           setActiveLocale(aggregate.project.primaryLocale);
           setSessionPages({});
           setSessionBrandSystem(undefined);
-          setImportedDemoProposal(localDemoBridge?.proposal);
+          setImportedDemoProposal(localDemoBridge?.proposal ?? undefined);
+          setAuthoritativeRevision(localDemoBridge?.authoritativeRevision ?? null);
           setResetKeys({});
           setValidationMessage("");
           setHistoryStatus("");
@@ -449,7 +486,8 @@ export function ProjectEditorClient({
     catalogue: readyState?.aggregate.catalogue,
     disabled: saveState.status === "saving",
     provider: aiProvider,
-    storefrontProvider: storefrontAiProvider,
+    storefrontProvider: resolvedStorefrontAiProvider,
+    wholeStorefrontCapability: localDemoBridge ? "registeredWholeStorefrontDirection" : undefined,
     initialStorefrontProposal: importedDemoProposal,
     analytics: proposalAnalytics,
     analyticsRoute: `/projects/${projectId}/editor`,
@@ -466,6 +504,19 @@ export function ProjectEditorClient({
         ...current,
         [acceptedPage.id]: (current[acceptedPage.id] ?? 0) + 1,
       }));
+    },
+    onStorefrontAccepted: async (snapshot) => {
+      if (!localDemoBridge) return;
+      if (authoritativeRevision === null || !readyState) {
+        throw new P905bLocalDemoSynchronizationClientError("stale", 409);
+      }
+      const synchronization = await synchronizeP905bLocalDemoAggregate({
+        projectId,
+        sessionId: localDemoBridge.sessionId,
+        expectedRevision: authoritativeRevision,
+        aggregate: aggregateWithActiveDraft(readyState.aggregate, snapshot),
+      });
+      setAuthoritativeRevision(synchronization.authoritativeRevision);
     },
     onStorefrontSnapshot: (snapshot) => {
       if (!readyState) return;
@@ -1045,6 +1096,18 @@ export function ProjectEditorClient({
         brandSystem: activeDraft!.brandSystem,
         primaryLocale: state.aggregate.project.primaryLocale,
       });
+      if (localDemoBridge) {
+        if (authoritativeRevision === null) {
+          throw new P905bLocalDemoSynchronizationClientError("stale", 409);
+        }
+        const synchronization = await synchronizeP905bLocalDemoAggregate({
+          projectId,
+          sessionId: localDemoBridge.sessionId,
+          expectedRevision: authoritativeRevision,
+          aggregate: result.aggregate,
+        });
+        setAuthoritativeRevision(synchronization.authoritativeRevision);
+      }
       const published = result.aggregate.snapshots.find(
         (snapshot) => snapshot.id === result.aggregate.project.publishedSnapshotId,
       );
@@ -1080,7 +1143,10 @@ export function ProjectEditorClient({
       );
       setSaveState({ status: "success", message: text.feedback.saved });
     } catch (error) {
-      if (error instanceof StaleEditorDraftError) {
+      if (
+        error instanceof StaleEditorDraftError ||
+        (error instanceof P905bLocalDemoSynchronizationClientError && error.category === "stale")
+      ) {
         setSaveState({
           status: "stale",
           message: text.feedback.saveStale,
@@ -1260,7 +1326,14 @@ export function ProjectEditorClient({
                 {text.actions.publish}
               </span>
             ) : (
-              <Button href={`/projects/${projectId}/publish`} variant="primary">
+              <Button
+                href={
+                  localDemoBridge
+                    ? `/projects/${projectId}/publish?p9-05b-session=${encodeURIComponent(localDemoBridge.sessionId)}`
+                    : `/projects/${projectId}/publish`
+                }
+                variant="primary"
+              >
                 {text.actions.publish}
               </Button>
             )}

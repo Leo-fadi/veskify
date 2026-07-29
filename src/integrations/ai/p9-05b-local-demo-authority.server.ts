@@ -15,9 +15,11 @@ import {
   P9_05A_PROJECT_ID,
   createP905aFreshMerchantFixture,
 } from "@/data/demo/p9-05a-fresh-store-generation";
-import { InMemoryProjectRepository } from "@/services/storage";
+import { InMemoryProjectRepository, type ProjectAggregate } from "@/services/storage";
+import { validateProjectAggregate } from "@/services/storage/repository-validation";
 import {
   createStandaloneServerWholeStorefrontPlanningAuthority,
+  ServerWholeStorefrontAuthorityError,
   type AuthoritativeWholeStorefrontPlanningContextSource,
   type ServerWholeStorefrontPlanningAuthority,
 } from "./whole-storefront-runtime-authority";
@@ -33,10 +35,21 @@ type DemoState = {
   baselineFingerprint: string;
   session: {
     id: string;
-    generationAttempted: boolean;
+    authoritativeRevision: number;
+    generationRevision: number | null;
     proposal: AiStorefrontProviderResponse | null;
   };
 };
+
+export type P905bLocalDemoSynchronizationFailure =
+  "unauthorized" | "stale" | "invalid" | "protectedCommerce";
+
+export class P905bLocalDemoSynchronizationError extends Error {
+  constructor(readonly code: P905bLocalDemoSynchronizationFailure) {
+    super("The P9-05B local demo state cannot be synchronized.");
+    this.name = "P905bLocalDemoSynchronizationError";
+  }
+}
 
 declare global {
   var __veskifyP905bLocalDemoState: DemoState | undefined;
@@ -69,10 +82,31 @@ function createState(): DemoState {
     baselineFingerprint: canonicalValueFingerprint(source.aggregate),
     session: {
       id: randomBytes(32).toString("base64url"),
-      generationAttempted: false,
+      authoritativeRevision: source.aggregate.project.revision,
+      generationRevision: null,
       proposal: null,
     },
   };
+}
+
+function redactedSessionIdentity(sessionId: string): string {
+  return `${sessionId.slice(0, 6)}…`;
+}
+
+function recordDiagnostic(input: {
+  event: "proposal_claimed" | "proposal_recorded" | "synchronized" | "synchronization_failed";
+  sessionId: string;
+  authoritativeRevision: number;
+  expectedRevision?: number;
+  category?: P905bLocalDemoSynchronizationFailure;
+}) {
+  console.info("p9-05b-local-demo", {
+    event: input.event,
+    session: redactedSessionIdentity(input.sessionId),
+    authoritativeRevision: input.authoritativeRevision,
+    ...(input.expectedRevision === undefined ? {} : { expectedRevision: input.expectedRevision }),
+    ...(input.category === undefined ? {} : { category: input.category }),
+  });
 }
 
 export function configuredP905bLocalDemoToken(
@@ -118,12 +152,44 @@ function authorityFor(current: DemoState) {
   });
 }
 
+function requestSessionId(httpRequest: Request): string | null {
+  const sessionId = httpRequest.headers.get("x-veskify-p9-05b-session");
+  return sessionId && sessionId.length >= 32 ? sessionId : null;
+}
+
+function assertCurrentSession(current: DemoState, sessionId: string | null) {
+  if (!sessionId || !sameP905bLocalDemoSecret(sessionId, current.session.id)) {
+    throw new ServerWholeStorefrontAuthorityError("unauthorized");
+  }
+}
+
 export function createP905bLocalDemoAuthority(
   environment: DemoEnvironment = process.env,
 ): ServerWholeStorefrontPlanningAuthority {
   return {
-    resolve(request, httpRequest) {
-      return authorityFor(state(environment)).resolve(request, httpRequest);
+    async resolve(request, httpRequest) {
+      const current = state(environment);
+      const sessionId = requestSessionId(httpRequest);
+      assertCurrentSession(current, sessionId);
+      const resolved = await authorityFor(current).resolve(request, httpRequest);
+      return {
+        ...resolved,
+        claimProposal: () => {
+          claimP905bLocalDemoGeneration({
+            projectId: request.target.projectId,
+            sessionId: sessionId!,
+            environment,
+          });
+        },
+        recordValidatedProposal: (proposal) => {
+          recordP905bLocalDemoProposal({
+            projectId: request.target.projectId,
+            sessionId: sessionId!,
+            proposal,
+            environment,
+          });
+        },
+      };
     },
   };
 }
@@ -147,6 +213,7 @@ export async function inspectP905bLocalDemo(environment: DemoEnvironment = proce
     draftFingerprint: canonicalValueFingerprint(draft),
     publishedFingerprint: canonicalValueFingerprint(published),
     historyCount: aggregate.snapshotHistoryMetadata?.length ?? 0,
+    authoritativeRevision: current.session.authoritativeRevision,
   };
 }
 
@@ -186,12 +253,17 @@ export function claimP905bLocalDemoGeneration(input: {
     input.projectId !== P9_05A_PROJECT_ID ||
     !sameP905bLocalDemoSecret(input.sessionId, current.session.id)
   ) {
-    throw new Error("The P9-05B local demo session is unavailable.");
+    throw new ServerWholeStorefrontAuthorityError("unauthorized");
   }
-  if (current.session.generationAttempted) {
-    throw new Error("The P9-05B local demo generation has already been used for this reset.");
+  if (current.session.generationRevision === current.session.authoritativeRevision) {
+    throw new ServerWholeStorefrontAuthorityError("stale");
   }
-  current.session.generationAttempted = true;
+  current.session.generationRevision = current.session.authoritativeRevision;
+  recordDiagnostic({
+    event: "proposal_claimed",
+    sessionId: input.sessionId,
+    authoritativeRevision: current.session.authoritativeRevision,
+  });
 }
 
 export function recordP905bLocalDemoProposal(input: {
@@ -204,19 +276,81 @@ export function recordP905bLocalDemoProposal(input: {
   if (
     input.projectId !== P9_05A_PROJECT_ID ||
     !sameP905bLocalDemoSecret(input.sessionId, current.session.id) ||
-    !current.session.generationAttempted ||
-    current.session.proposal !== null
+    current.session.generationRevision !== current.session.authoritativeRevision
   ) {
-    throw new Error("The P9-05B local demo proposal cannot be recorded safely.");
+    throw new ServerWholeStorefrontAuthorityError("stale");
   }
   const proposal = aiStorefrontProviderResponseSchema.parse(input.proposal);
   if (proposal.proposal.projectId !== P9_05A_PROJECT_ID) {
     throw new Error("The P9-05B local demo proposal targets another project.");
   }
   current.session.proposal = structuredClone(proposal);
+  recordDiagnostic({
+    event: "proposal_recorded",
+    sessionId: input.sessionId,
+    authoritativeRevision: current.session.authoritativeRevision,
+  });
   return {
     editorRoute: `/projects/${P9_05A_PROJECT_ID}/editor?p9-05b-session=${encodeURIComponent(current.session.id)}`,
   };
+}
+
+export async function synchronizeP905bLocalDemoAggregate(input: {
+  projectId: string;
+  sessionId: string;
+  expectedRevision: number;
+  aggregate: unknown;
+  environment?: DemoEnvironment;
+}): Promise<{ authoritativeRevision: number; aggregateFingerprint: string }> {
+  const current = state(input.environment ?? process.env);
+  const fail = (code: P905bLocalDemoSynchronizationFailure): never => {
+    recordDiagnostic({
+      event: "synchronization_failed",
+      sessionId: input.sessionId,
+      authoritativeRevision: current.session.authoritativeRevision,
+      expectedRevision: input.expectedRevision,
+      category: code,
+    });
+    throw new P905bLocalDemoSynchronizationError(code);
+  };
+  if (
+    input.projectId !== P9_05A_PROJECT_ID ||
+    !sameP905bLocalDemoSecret(input.sessionId, current.session.id)
+  ) {
+    return fail("unauthorized");
+  }
+  if (input.expectedRevision !== current.session.authoritativeRevision) return fail("stale");
+
+  let aggregate: ProjectAggregate;
+  try {
+    aggregate = validateProjectAggregate(structuredClone(input.aggregate) as ProjectAggregate);
+  } catch {
+    return fail("invalid");
+  }
+  if (aggregate.project.id !== P9_05A_PROJECT_ID) return fail("unauthorized");
+  const authoritative = await current.repository.get(P9_05A_PROJECT_ID);
+  if (
+    canonicalValueFingerprint(aggregate.catalogue) !==
+    canonicalValueFingerprint(authoritative.catalogue)
+  ) {
+    return fail("protectedCommerce");
+  }
+
+  current.repository = new InMemoryProjectRepository([aggregate]);
+  // Project metadata does not advance for every draft persistence operation.
+  // The local-demo authority therefore owns a separate monotonically increasing
+  // revision, used only to bind the next proposal to this exact synchronized state.
+  current.session.authoritativeRevision += 1;
+  current.session.generationRevision = null;
+  current.session.proposal = null;
+  const aggregateFingerprint = canonicalValueFingerprint(aggregate);
+  recordDiagnostic({
+    event: "synchronized",
+    sessionId: input.sessionId,
+    authoritativeRevision: current.session.authoritativeRevision,
+    expectedRevision: input.expectedRevision,
+  });
+  return { authoritativeRevision: current.session.authoritativeRevision, aggregateFingerprint };
 }
 
 export async function loadP905bLocalDemoEditorSession(input: {
@@ -225,23 +359,24 @@ export async function loadP905bLocalDemoEditorSession(input: {
   environment?: DemoEnvironment;
 }): Promise<{
   aggregate: Awaited<ReturnType<InMemoryProjectRepository["get"]>>;
-  proposal: AiStorefrontProviderResponse["proposal"];
+  proposal: AiStorefrontProviderResponse["proposal"] | null;
   sessionId: string;
+  authoritativeRevision: number;
   baselineFingerprint: string;
 } | null> {
   const current = state(input.environment ?? process.env);
   if (
     input.projectId !== P9_05A_PROJECT_ID ||
-    !sameP905bLocalDemoSecret(input.sessionId, current.session.id) ||
-    current.session.proposal === null
+    !sameP905bLocalDemoSecret(input.sessionId, current.session.id)
   ) {
     return null;
   }
   const aggregate = await current.repository.get(P9_05A_PROJECT_ID);
-  const proposal = current.session.proposal.proposal;
+  const proposal = current.session.proposal?.proposal ?? null;
   if (
-    proposal.projectId !== aggregate.project.id ||
-    proposal.draftSnapshotId !== aggregate.project.draftSnapshotId
+    proposal !== null &&
+    (proposal.projectId !== aggregate.project.id ||
+      proposal.draftSnapshotId !== aggregate.project.draftSnapshotId)
   ) {
     return null;
   }
@@ -249,7 +384,8 @@ export async function loadP905bLocalDemoEditorSession(input: {
     aggregate: structuredClone(aggregate),
     proposal: structuredClone(proposal),
     sessionId: current.session.id,
-    baselineFingerprint: current.baselineFingerprint,
+    authoritativeRevision: current.session.authoritativeRevision,
+    baselineFingerprint: canonicalValueFingerprint(aggregate),
   };
 }
 

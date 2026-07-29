@@ -133,10 +133,12 @@ type UseDesignAgentSessionInput = {
   disabled: boolean;
   provider?: AIProvider;
   storefrontProvider?: StorefrontAIProvider;
+  wholeStorefrontCapability?: "registeredWholeStorefrontDirection";
   analytics?: ProposalAnalyticsSink;
   analyticsRoute?: string;
   onProposalReady?: () => void;
   onAcceptedPage: (page: PageModel) => void;
+  onStorefrontAccepted?: (snapshot: StorefrontSnapshot) => Promise<void>;
   onStorefrontSnapshot: (snapshot: StorefrontSnapshot) => void;
 };
 
@@ -350,10 +352,12 @@ export function useDesignAgentSession({
   disabled,
   provider,
   storefrontProvider,
+  wholeStorefrontCapability,
   analytics = noopProposalAnalyticsSink,
   analyticsRoute = `/projects/${projectId}/editor`,
   onProposalReady,
   onAcceptedPage,
+  onStorefrontAccepted,
   onStorefrontSnapshot,
 }: UseDesignAgentSessionInput): DesignAgentSessionController {
   const actionSequence = useRef(0);
@@ -705,7 +709,7 @@ export function useDesignAgentSession({
       activeLocale,
       enabledLocales,
       requestedScope: "storefront" as const,
-      capability: "approvedColorTypographyDirection" as const,
+      capability: wholeStorefrontCapability ?? ("approvedColorTypographyDirection" as const),
       providerId: runtime.storefrontProvider.id,
       provider: runtime.storefrontProvider,
       importedContent: [],
@@ -1050,65 +1054,70 @@ export function useDesignAgentSession({
       const actionId = actionSequence.current + 1;
       actionSequence.current = actionId;
       window.setTimeout(() => {
-        if (actionSequence.current !== actionId) {
+        void (async () => {
+          if (actionSequence.current !== actionId) {
+            acceptancePending.current = false;
+            return;
+          }
+          const beforeAcceptance = coordinator.inspect().activeDraft;
+          const result = coordinator.accept();
           acceptancePending.current = false;
-          return;
-        }
-        const beforeAcceptance = coordinator.inspect().activeDraft;
-        const result = coordinator.accept();
-        acceptancePending.current = false;
-        if (result.state === "accepted") {
-          if (!result.transaction) {
-            const message = {
-              en: "The storefront proposal could not be recorded safely. Your draft is unchanged.",
-              fi: "Kaupan ehdotusta ei voitu kirjata turvallisesti. Luonnos säilyi ennallaan.",
-            };
-            setSession(
-              uiSession("failed", message, {
-                failure: { message, retryable: true },
-              }),
-            );
-            return;
-          }
-          let activeStorefront: StorefrontSnapshot;
-          try {
-            const history = ensureAcceptedStorefrontHistory(beforeAcceptance);
-            activeStorefront = history.commit(result.transaction);
-            acceptedStorefrontHistoryFingerprint.current =
-              canonicalStorefrontContentFingerprint(activeStorefront);
-          } catch {
-            const message = {
-              en: "The storefront proposal could not be recorded safely. Your draft is unchanged.",
-              fi: "Kaupan ehdotusta ei voitu kirjata turvallisesti. Luonnos säilyi ennallaan.",
-            };
-            setSession(
-              uiSession("failed", message, {
-                failure: { message, retryable: true },
-              }),
-            );
+          if (result.state === "accepted") {
+            if (!result.transaction) {
+              const message = {
+                en: "The storefront proposal could not be recorded safely. Your draft is unchanged.",
+                fi: "Kaupan ehdotusta ei voitu kirjata turvallisesti. Luonnos säilyi ennallaan.",
+              };
+              setSession(
+                uiSession("failed", message, {
+                  failure: { message, retryable: true },
+                }),
+              );
+              return;
+            }
+            let activeStorefront: StorefrontSnapshot;
+            try {
+              await onStorefrontAccepted?.(result.activeDraft);
+              const history = ensureAcceptedStorefrontHistory(beforeAcceptance);
+              activeStorefront = history.commit(result.transaction);
+              acceptedStorefrontHistoryFingerprint.current =
+                canonicalStorefrontContentFingerprint(activeStorefront);
+            } catch {
+              const message = {
+                en: "The storefront proposal could not be recorded safely. Your draft is unchanged.",
+                fi: "Kaupan ehdotusta ei voitu kirjata turvallisesti. Luonnos säilyi ennallaan.",
+              };
+              setSession(
+                uiSession("failed", message, {
+                  failure: { message, retryable: true },
+                }),
+              );
+              pendingStorefrontAcceptance.current = null;
+              setGeneratedStorefrontProposal(null);
+              refreshStorefrontHistory();
+              return;
+            }
+            onStorefrontSnapshot(activeStorefront);
+            pendingStorefrontAcceptance.current = null;
+            setGeneratedStorefrontProposal(null);
             refreshStorefrontHistory();
+            setSession(uiSession("accepted", statuses.storefrontAccepted));
             return;
           }
-          onStorefrontSnapshot(activeStorefront);
-          pendingStorefrontAcceptance.current = null;
-          setGeneratedStorefrontProposal(null);
-          refreshStorefrontHistory();
-          setSession(uiSession("accepted", statuses.storefrontAccepted));
-          return;
-        }
-        const message = result.failure?.message ?? {
-          en: "The storefront proposal could not be applied safely.",
-          fi: "Kaupan ehdotusta ei voitu ottaa turvallisesti käyttöön.",
-        };
-        setSession(
-          uiSession(result.state === "stale" ? "stale" : "failed", message, {
-            failure: { message, retryable: result.failure?.retryable ?? false },
-          }),
-        );
-        if (result.state === "stale") {
-          pendingStorefrontAcceptance.current = null;
-          setGeneratedStorefrontProposal(null);
-        }
+          const message = result.failure?.message ?? {
+            en: "The storefront proposal could not be applied safely.",
+            fi: "Kaupan ehdotusta ei voitu ottaa turvallisesti käyttöön.",
+          };
+          setSession(
+            uiSession(result.state === "stale" ? "stale" : "failed", message, {
+              failure: { message, retryable: result.failure?.retryable ?? false },
+            }),
+          );
+          if (result.state === "stale") {
+            pendingStorefrontAcceptance.current = null;
+            setGeneratedStorefrontProposal(null);
+          }
+        })();
       }, 0);
       return;
     }

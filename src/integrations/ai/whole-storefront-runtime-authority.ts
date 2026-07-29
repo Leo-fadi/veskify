@@ -106,6 +106,7 @@ export type ServerWholeStorefrontPlanningContext = Readonly<{
     request: AiStorefrontProviderRequest,
     plan: WholeStorefrontGenerationPlan,
   ) => Promise<unknown>;
+  claimProposal?: () => void;
   recordValidatedProposal?: (response: AiStorefrontProviderResponse) => void;
   requiresAuthoritativePlanningFingerprint?: boolean;
 }>;
@@ -711,6 +712,7 @@ export function createServerWholeStorefrontPlanningHandler({
       if (!sameRequestPreconditions(request, canonicalRequest)) {
         throw new ServerWholeStorefrontAuthorityError("stale");
       }
+      context.claimProposal?.();
       const plan = await requestWholeStorefrontGenerationPlan({
         provider: selectProvider(),
         input: context.planningInput,

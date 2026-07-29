@@ -22,6 +22,10 @@ import {
   type ProjectAggregate,
   type ProjectRepository,
 } from "@/services/storage";
+import {
+  P905bLocalDemoSynchronizationClientError,
+  synchronizeP905bLocalDemoAggregate,
+} from "@/integrations/ai/p9-05b-local-demo-client";
 import styles from "./publish.module.css";
 
 type RepositoryFactory = () => ProjectRepository;
@@ -83,9 +87,11 @@ function errorMessage(error: unknown, locale: Locale): { stale: boolean; message
 export function PublishClient({
   projectId,
   repositoryFactory = defaultRepositoryFactory,
+  localDemoSession,
 }: {
   projectId: string;
   repositoryFactory?: RepositoryFactory;
+  localDemoSession?: { sessionId: string; authoritativeRevision: number };
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -93,6 +99,9 @@ export function PublishClient({
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [publishState, setPublishState] = useState<PublishState>({ status: "idle" });
   const [locale, setLocale] = useState<Locale>();
+  const [authoritativeRevision, setAuthoritativeRevision] = useState<number | null>(
+    localDemoSession?.authoritativeRevision ?? null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -143,6 +152,9 @@ export function PublishClient({
 
   const activeLocale = locale ?? loadState.aggregate.project.primaryLocale;
   const text = publishingCopy(activeLocale);
+  const editorHref = localDemoSession
+    ? `/projects/${projectId}/editor?p9-05b-session=${encodeURIComponent(localDemoSession.sessionId)}`
+    : `/projects/${projectId}/editor`;
   const draft = loadState.aggregate.snapshots.find(
     (snapshot) => snapshot.id === loadState.aggregate.project.draftSnapshotId,
   );
@@ -187,6 +199,18 @@ export function PublishClient({
     setPublishState({ status: "confirming", preparation });
     try {
       const result = await confirmPublish(preparation, repository.current!);
+      if (localDemoSession) {
+        if (authoritativeRevision === null) {
+          throw new P905bLocalDemoSynchronizationClientError("stale", 409);
+        }
+        const synchronization = await synchronizeP905bLocalDemoAggregate({
+          projectId,
+          sessionId: localDemoSession.sessionId,
+          expectedRevision: authoritativeRevision,
+          aggregate: result.aggregate,
+        });
+        setAuthoritativeRevision(synchronization.authoritativeRevision);
+      }
       setPublishState({ status: "success", result });
       setLoadState({ status: "success", aggregate: result.aggregate });
     } catch (error) {
@@ -203,7 +227,7 @@ export function PublishClient({
     publishState.status === "ready" || publishState.status === "confirming" ? (
       <PublishConfirmation
         confirming={publishState.status === "confirming"}
-        cancelHref={`/projects/${projectId}/editor`}
+        cancelHref={editorHref}
         locale={activeLocale}
         onConfirm={() => {
           void publish();
@@ -217,7 +241,7 @@ export function PublishClient({
     <main className={styles.publish} lang={activeLocale}>
       <header className={styles.header}>
         <div>
-          <Link href={`/projects/${projectId}/editor`}>{text.editor}</Link>
+          <Link href={editorHref}>{text.editor}</Link>
           <Link href={`/projects/${projectId}/history`}>{text.versionHistory}</Link>
           <h1>{text.title}</h1>
           <p>{text.savedDraftOnly}</p>
@@ -309,7 +333,7 @@ export function PublishClient({
             <p>{text.successMessage(publishState.result.aggregate.project.revision)}</p>
             <p>{text.successDraft}</p>
             <div>
-              <Link href={`/projects/${projectId}/editor`}>{text.editor}</Link>
+              <Link href={editorHref}>{text.editor}</Link>
               <Link href={`/projects/${projectId}/published`}>{text.publishedStorefront}</Link>
             </div>
           </section>
