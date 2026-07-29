@@ -119,7 +119,7 @@ export function RestoreClient({
         <section aria-live="polite" className="project-state__panel">
           <h1>{copy.success}</h1>
           <p>{copy.successBody}</p>
-          <Link href={`/projects/${projectId}/editor`}>{copy.editor}</Link>
+          <a href={`/projects/${projectId}/editor`}>{copy.editor}</a>
           <Link href={`/projects/${projectId}/publish`}>{copy.publish}</Link>
           <Link href={historyHref}>{copy.history}</Link>
         </section>
