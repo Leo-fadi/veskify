@@ -204,9 +204,15 @@ const baseByDirection: Record<DesignDirectionId, DesignDiversityFixture> = {
 
 export const knownDistinctDesignDirections = Object.values(baseByDirection);
 
+const colourOnlyPalettes: Record<DesignDirectionId, string> = {
+  premiumEditorial: "ink-ivory",
+  modernTechnical: "blue-white",
+  warmApproachable: "clay-cream",
+};
+
 export const knownColourOnlyDesignDirections = knownDistinctDesignDirections.map(
-  (fixture, index, fixtures): DesignDiversityFixture => {
-    const reference = fixtures[0]!;
+  (fixture): DesignDiversityFixture => {
+    const reference = baseByDirection.premiumEditorial;
     return {
       ...structuredClone(reference),
       directionId: fixture.directionId,
@@ -220,7 +226,7 @@ export const knownColourOnlyDesignDirections = knownDistinctDesignDirections.map
       },
       designSystem: {
         ...structuredClone(reference.designSystem),
-        colours: ["ink-ivory", "blue-white", "clay-cream"][index]!,
+        colours: colourOnlyPalettes[fixture.directionId],
       },
     };
   },

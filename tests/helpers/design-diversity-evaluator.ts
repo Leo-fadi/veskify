@@ -97,7 +97,9 @@ function structuralMaterial(fixture: DesignDiversityFixture) {
 }
 
 function pageFingerprint(page: PageStructure): string {
-  const { directionId: _directionId, ...presentation } = page;
+  const presentation = Object.fromEntries(
+    Object.entries(page).filter(([key]) => key !== "directionId"),
+  );
   return exactFingerprint(presentation);
 }
 

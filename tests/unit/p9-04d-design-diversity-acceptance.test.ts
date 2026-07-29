@@ -56,8 +56,18 @@ describe("P9-04D objective design-diversity acceptance harness", () => {
 
   it("fails protected-commerce drift and unexplained content-count dead space", () => {
     const fixtures = structuredClone(knownDistinctDesignDirections);
-    fixtures[1]!.protectedCommerce = { changed: true };
-    fixtures[2]!.contentCases[0]!.unexplainedEmptyAreas = 1;
+    const technical = fixtures.find((fixture) => fixture.directionId === "modernTechnical");
+    const warm = fixtures.find((fixture) => fixture.directionId === "warmApproachable");
+    const oneCollection = warm?.contentCases.find(
+      (contentCase) => contentCase.id === "oneCollection",
+    );
+    expect(technical).toBeDefined();
+    expect(oneCollection).toBeDefined();
+    if (!technical || !oneCollection) {
+      throw new Error("Required diversity fixtures are missing.");
+    }
+    technical.protectedCommerce = { changed: true };
+    oneCollection.unexplainedEmptyAreas = 1;
 
     const result = evaluateDesignDiversity(fixtures);
 
