@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { createWholeStorefrontGenerationPlan } from "@/application/whole-storefront-generation-plan";
 import {
   compileWholeStorefrontProposal,
@@ -17,24 +17,70 @@ import {
   createP905aFreshMerchantFixture,
   p905aDirectionScenarios,
 } from "@/data/demo/p9-05a-fresh-store-generation";
+import { localizedTextSchema } from "@/domain/shared";
 import { canonicalValueFingerprint } from "@/domain/storefront";
 
 const directionIds = ["premiumEditorial", "modernTechnical"] as const;
+type DirectionId = (typeof directionIds)[number];
 
-function compiled(directionId: (typeof directionIds)[number]) {
+function compile(directionId: DirectionId) {
   const planningInput = structuredClone(createP905aFreshMerchantFixture(directionId).planningInput);
   const plan = createWholeStorefrontGenerationPlan(planningInput, { directionId });
   const proposal = compileWholeStorefrontProposal({ plan, planningInput });
-  const accepted = new WholeStorefrontProposalAcceptanceCoordinator({
-    proposal,
-    currentInput: () => ({ plan, planningInput }),
-  }).accept();
-  return {
-    planningInput,
-    plan,
-    proposal,
-    accepted,
-  };
+  return { planningInput, plan, proposal };
+}
+
+const compiledByDirection = new Map<DirectionId, ReturnType<typeof compile>>();
+const acceptedByDirection = new Map<
+  DirectionId,
+  ReturnType<WholeStorefrontProposalAcceptanceCoordinator["accept"]>
+>();
+let compilationCount = 0;
+let acceptanceCount = 0;
+
+function compiled(directionId: DirectionId) {
+  let result = compiledByDirection.get(directionId);
+  if (!result) {
+    result = compile(directionId);
+    compiledByDirection.set(directionId, result);
+    compilationCount += 1;
+  }
+  return structuredClone(result);
+}
+
+function accepted(directionId: DirectionId) {
+  let result = acceptedByDirection.get(directionId);
+  if (!result) {
+    const source = compiled(directionId);
+    result = new WholeStorefrontProposalAcceptanceCoordinator({
+      proposal: source.proposal,
+      currentInput: () => ({ plan: source.plan, planningInput: source.planningInput }),
+    }).accept();
+    acceptedByDirection.set(directionId, result);
+    acceptanceCount += 1;
+  }
+  return structuredClone(result);
+}
+
+beforeAll(() => {
+  directionIds.forEach((directionId) => {
+    compiled(directionId);
+    accepted(directionId);
+  });
+});
+
+function expectedPrimaryActionLabel(
+  component: ReturnType<typeof requiredComponent> | ReturnType<typeof requiredPlannedComponent>,
+) {
+  return localizedTextSchema.parse(component.content.primaryActionLabel);
+}
+
+function acceptedResult(directionId: DirectionId) {
+  const result = accepted(directionId);
+  if (result.state !== "accepted") {
+    throw new Error("Generated proposal was not accepted into the runtime storefront state.");
+  }
+  return result;
 }
 
 function requiredComponent(
@@ -63,11 +109,11 @@ function requiredPlannedComponent(
 }
 
 function requiredStoredComponent(
-  accepted: ReturnType<typeof compiled>["accepted"],
+  applied: ReturnType<typeof acceptedResult>,
   pageType: "collection" | "product",
   componentType: "dynamicCollectionCommerce" | "dynamicProductDetail",
 ) {
-  const page = accepted.activeStorefront.pages.find((candidate) => candidate.type === pageType);
+  const page = applied.activeStorefront.pages.find((candidate) => candidate.type === pageType);
   const component = page?.components.find((candidate) => candidate.component === componentType);
   if (!component) throw new Error(`Missing stored ${componentType}.`);
   return component;
@@ -75,10 +121,10 @@ function requiredStoredComponent(
 
 function generatedCommerceState(
   planningInput: ReturnType<typeof compiled>["planningInput"],
-  accepted: ReturnType<typeof compiled>["accepted"],
+  applied: ReturnType<typeof acceptedResult>,
 ) {
-  const collection = requiredStoredComponent(accepted, "collection", "dynamicCollectionCommerce");
-  const product = requiredStoredComponent(accepted, "product", "dynamicProductDetail");
+  const collection = requiredStoredComponent(applied, "collection", "dynamicCollectionCommerce");
+  const product = requiredStoredComponent(applied, "product", "dynamicProductDetail");
   const collectionBinding = collection.bindings.find(
     (binding) => binding.slotId === "primaryCollection" && binding.source === "collection",
   );
@@ -137,7 +183,7 @@ function generatedCommerceState(
         generatedProductIds: productListBinding.productIds,
       },
     ],
-    approvedAssetContextFingerprint: accepted.activeStorefront.approvedAssetContextFingerprint,
+    approvedAssetContextFingerprint: applied.activeStorefront.approvedAssetContextFingerprint,
     approvedAssetIds: planningInput.approvedAssetContext?.assets.map((asset) => ({
       id: asset.assetId,
       provenance: asset.provenance,
@@ -182,7 +228,8 @@ describe("P9R-03 collection and PDP generation depth", () => {
       ]),
     );
     directionIds.forEach((directionId) => {
-      const { plan, proposal, accepted } = compiled(directionId);
+      const { plan, proposal } = compiled(directionId);
+      const accepted = acceptedResult(directionId);
       const expected = p905aDirectionScenarios[directionId].expected;
       const plannedCollection = requiredPlannedComponent(
         plan,
@@ -235,8 +282,10 @@ describe("P9R-03 collection and PDP generation depth", () => {
             attributeLayout: expected.productPresentation.attributeLayout,
             stickyMobileAction: true,
           },
-          content: { primaryActionLabel: expect.any(Object) },
         });
+        const primaryActionLabel = expectedPrimaryActionLabel(component);
+        expect(primaryActionLabel.en).toEqual(expect.any(String));
+        expect(primaryActionLabel.fi).toEqual(expect.any(String));
       });
       expect(proposalProduct.bindings).toEqual(
         expect.arrayContaining([
@@ -319,7 +368,8 @@ describe("P9R-03 collection and PDP generation depth", () => {
 
   it("preserves generated canonical commerce, media bindings and approved-asset provenance", () => {
     const protectedFingerprints = directionIds.map((directionId) => {
-      const { planningInput, proposal, accepted } = compiled(directionId);
+      const { planningInput, proposal } = compiled(directionId);
+      const accepted = acceptedResult(directionId);
       const baseline = {
         products: planningInput.catalogue.products
           .slice()
@@ -369,5 +419,7 @@ describe("P9R-03 collection and PDP generation depth", () => {
       optionDensity: "compact",
       attributeLayout: "table",
     });
+    expect(compilationCount).toBe(directionIds.length);
+    expect(acceptanceCount).toBe(directionIds.length);
   });
 });
