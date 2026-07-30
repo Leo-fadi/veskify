@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   acceptWholeStorefrontPlanningResult,
+  buildWholeStorefrontPlanningProviderRequest,
+  createDeterministicWholeStorefrontPlanningProvider,
   createWholeStorefrontGenerationPlan,
   createWholeStorefrontGenerationTarget,
   createWholeStorefrontRecipeContext,
@@ -153,6 +155,17 @@ function generatedComponent(
 }
 
 describe("P8-01 whole-storefront generation plan", () => {
+  it("makes the deterministic provider select an explicit registered structural direction", async () => {
+    const request = buildWholeStorefrontPlanningProviderRequest(
+      input(),
+      "Redesign the whole storefront in a modern technical direction.",
+    );
+
+    await expect(
+      createDeterministicWholeStorefrontPlanningProvider().createPlan(request),
+    ).resolves.toEqual(request.planForDirection("modernTechnical"));
+  });
+
   it("plans token-only refinement without changing homepage, collection, or PDP structure", () => {
     const planningInput = input();
     const tokenRefinement = planRegisteredTokenRefinement(

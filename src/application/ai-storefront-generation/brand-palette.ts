@@ -58,14 +58,14 @@ const tokenAliases: ReadonlyArray<{
   { token: "primary", pattern: /\bprimary\b/i, normalized: ["primary"] },
   { token: "secondary", pattern: /\bsecondary\b/i, normalized: ["secondary"] },
   { token: "accent", pattern: /\baccents?\b/i, normalized: ["accent", "accents"] },
-  { token: "background", pattern: /\bbackground\b/i, normalized: ["background"] },
-  { token: "surface", pattern: /\bsurface\b/i, normalized: ["surface"] },
+  { token: "background", pattern: /\bbackgrounds?\b/i, normalized: ["background"] },
+  { token: "surface", pattern: /\bsurfaces?\b/i, normalized: ["surface"] },
   { token: "text", pattern: /\btext\b/i, normalized: ["text"] },
   { token: "border", pattern: /\bborders?\b/i, normalized: ["border", "borders"] },
 ];
 
 const roleLabelPatternSource =
-  "(?:muted[\\s_-]*text|primary|secondary|accents?|background|surface|text|borders?)";
+  "(?:muted[\\s_-]*text|primary|secondary|accents?|backgrounds?|surfaces?|text|borders?)";
 const roleConjunctionPattern = new RegExp(
   `\\band\\s+(?=${roleLabelPatternSource}\\b(?:\\s*(?::|=))?)`,
   "gi",

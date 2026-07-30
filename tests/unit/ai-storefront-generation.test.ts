@@ -27,7 +27,7 @@ const home = snapshot.pages.find((page) => page.type === "home")!;
 const collection = snapshot.pages.find((page) => page.type === "collection")!;
 const product = snapshot.pages.find((page) => page.type === "product")!;
 const exactTokenOnlyRequest =
-  "Set primary #355C4A, secondary #7A6652, accent #C58A55, background #FBF7F0, surface #FFFFFF, text #25231F, muted text #686158, and border #D8CFC2. Use Georgia for headings and Inter for body text. Preserve all layouts, sections, products, and images.";
+  "Change only the storefront colours and typography. Use #F6F1E8 for backgrounds, #2F3A32 for primary text and buttons, #A58F78 for secondary surfaces, and #D8C8B6 for borders. Use an elegant serif for headings and a clean sans-serif for body text. Preserve all layouts, sections, products and images.";
 
 function provider() {
   return createDeterministicMockStorefrontAIProvider();
@@ -285,17 +285,13 @@ describe("P4-05B storefront planner and request construction", () => {
     expect(plan.tokenRefinementPlan).toMatchObject({
       palette: {
         colors: {
-          primary: "#355C4A",
-          secondary: "#7A6652",
-          accent: "#C58A55",
-          background: "#FBF7F0",
-          surface: "#FFFFFF",
-          text: "#25231F",
-          mutedText: "#686158",
-          border: "#D8CFC2",
+          primary: "#2F3A32",
+          secondary: "#A58F78",
+          border: "#D8C8B6",
+          background: "#F6F1E8",
         },
       },
-      typography: { headingFont: "georgia", bodyFont: "inter" },
+      typography: { headingFont: "georgia", bodyFont: "system-sans" },
       preservePageStructure: true,
       preserveComponentVariants: true,
       preserveApprovedAssets: true,

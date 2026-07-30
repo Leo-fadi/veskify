@@ -456,7 +456,31 @@ export class DeterministicWholeStorefrontPlanningProvider implements WholeStoref
   createPlan(
     request: WholeStorefrontPlanningProviderRequest,
   ): Promise<WholeStorefrontGenerationPlan> {
-    return Promise.resolve(structuredClone(request.expectedPlan));
+    if (request.requestClass === "tokenOnlyRefinement") {
+      return Promise.resolve(structuredClone(request.planForTokenRefinement()));
+    }
+    const normalizedInstruction = request.merchantInstruction.toLocaleLowerCase();
+    const selectedDirection = [
+      {
+        id: "premiumEditorial" as const,
+        pattern: /\bpremium editorial\b/u,
+      },
+      {
+        id: "modernTechnical" as const,
+        pattern: /\bmodern technical\b/u,
+      },
+      {
+        id: "warmApproachable" as const,
+        pattern: /\bwarm approachable\b/u,
+      },
+    ].find(({ pattern }) => pattern.test(normalizedInstruction));
+    return Promise.resolve(
+      structuredClone(
+        selectedDirection === undefined
+          ? request.expectedPlan
+          : request.planForDirection(selectedDirection.id),
+      ),
+    );
   }
 }
 

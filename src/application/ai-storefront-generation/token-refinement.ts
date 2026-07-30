@@ -68,7 +68,7 @@ function typographyForInstruction(
 ): BrandSystem["typography"] | null {
   const normalized = instruction.normalize("NFC").toLocaleLowerCase();
   const hasTypographyIntent =
-    /\b(?:typography|fonts?|headings?|body\s+(?:font|type)|typografia|fontit?|otsikot?|leipäteksti)\b/iu.test(
+    /\b(?:typography|fonts?|headings?|body\s+(?:font|type|text)|typografia|fontit?|otsikot?|leipäteksti)\b/iu.test(
       normalized,
     );
   if (!hasTypographyIntent) return null;
@@ -78,9 +78,11 @@ function typographyForInstruction(
   if (/refined serif|hienostunut antiikva/iu.test(normalized)) {
     headingFont ??= "georgia";
     bodyFont ??= "inter";
-  } else if (/modern sans|moderni groteski/iu.test(normalized)) {
+  } else if (
+    /modern sans|clean sans(?:-serif)?|moderni groteski|selkeä groteski/iu.test(normalized)
+  ) {
     headingFont ??= "system-sans";
-    bodyFont ??= "inter";
+    bodyFont ??= "system-sans";
   } else if (/editorial contrast|toimituksellinen kontrasti/iu.test(normalized)) {
     headingFont ??= "system-serif";
     bodyFont ??= "system-sans";
@@ -90,6 +92,12 @@ function typographyForInstruction(
   } else if (/warm approachable|lämmin ja helposti lähestyttävä/iu.test(normalized)) {
     headingFont ??= "georgia";
     bodyFont ??= "system-sans";
+  }
+  if (/elegant serif|elegantti antiikva/iu.test(normalized)) {
+    headingFont = "georgia";
+  }
+  if (/clean sans(?:-serif)?|selkeä groteski/iu.test(normalized)) {
+    bodyFont = "system-sans";
   }
   if (headingFont === null && bodyFont === null) {
     throw new BrandPaletteInstructionError(
