@@ -147,9 +147,10 @@ Phase 9.
 registered capabilities, rather than a token-only, renderer-only, API-response-only or
 one-section rearrangement.
 
-**Binding order:** meaningful composition → registered capability reachability → canonical
-commerce and approved assets → atomic apply/reject/undo → persistence/preview/publish → controlled
-vocabulary expansion.
+**Binding order:** establish the smallest registered and end-to-end reachable capability set needed
+for meaningful multi-page composition → prove coordinated composition → prove canonical commerce
+and approved assets → prove atomic apply/reject/undo → prove persistence/preview/publish. Only
+after those Phase 9 proof gates pass may P10A broadly expand the controlled vocabulary.
 
 **Evidence:** `docs/PHASE_9_EVIDENCE_MATRIX.md` is the required traceability record. PR #123
 (`8174b1a6d31301b4072622e2e3ef675957479121`) is merged evidence only for exact token refinement
@@ -161,17 +162,25 @@ and preservation semantics. It does not prove this Phase 9 outcome.
 
 **Acceptance:** A runtime editor session reaches the controlled whole-storefront planning and review path.
 
-#### P9-02 — Complete brief, component-registry and approved-asset runtime handoff
+#### P9-02 — Complete approved-brief, component-registry and approved-asset runtime handoff
 
-**Goal:** Carry the approved brief, controlled component vocabulary and approved assets into runtime generation.
+**Goal:** Carry the exact merchant-approved brief revision, controlled component vocabulary and
+approved assets into runtime generation.
 
-**Acceptance:** Runtime proposals use the same validated brief, registry and asset context as the completed planning infrastructure.
+**Acceptance:** Retained evidence correlates project ID, brief ID, approved revision/fingerprint,
+approval actor/action/timestamp and runtime request/proposal so the generated storefront is proven
+to use that exact approved revision with no later unapproved mutation. A validated but unapproved
+brief or deterministic fixture alone cannot satisfy this gate.
 
-#### P9-03 — Storefront Design System v1 quality expansion
+#### P9-03 — Minimum proof-enabling design capability reachability
 
-**Goal:** Expand the approved visual vocabulary for coherent premium whole-storefront design.
+**Goal:** Repair reachability of already registered capabilities and expose only the smallest
+curated capability set required for the Phase 9 coordinated directions.
 
-**Acceptance:** Whole-storefront proposals can make approved typography, spacing, colour, component and page-level changes without changing commerce truth.
+**Acceptance:** Planner, compiler and renderer gaps are corrected so the minimum
+`premiumEditorial`, `modernTechnical` and `warmApproachable` compositions required by Phase 9 can
+be proved end to end without changing commerce truth. P9-03 is not unrestricted or broad
+controlled-vocabulary scaling.
 
 #### P9-04 — Whole-storefront visual-quality and responsive acceptance suite
 
@@ -210,16 +219,16 @@ Historical internal task and branch labels used `P9-*` for this completed work. 
 queryable and executable without creating a second storefront model or hand-maintained parallel
 registry. P10A does not deliver merchant-operable granular editing.
 
-| Task    | Deliverable                                                                                                                                 | Gate                                                                                          |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| P10A-01 | Freeze canonical vocabulary and transient-boundary aliases.                                                                                 | No new canonical `PageModel`, `StorefrontPlan`, `SectionNode`, AI graph or provider registry. |
-| P10A-02 | Audit registered components, variants, bindings, planners, compilers and renderers.                                                         | Reachability derives from live evidence and reports stale classifications.                    |
-| P10A-03 | Define executable `PageBlueprint` contracts from current template precursors.                                                               | AC-133 and the blueprint-validation portion of AC-130 pass.                                   |
-| P10A-04 | Generate the Component Knowledge Registry from canonical contracts, including the executable `PageBlueprint` contracts produced by P10A-03. | AC-129 and the capability-reference portion of AC-130 pass without a forward dependency.      |
-| P10A-05 | Define separate initial-generation and follow-up-editing Skill package contracts.                                                           | AC-131 passes at the schema, authority and validation-contract layer.                         |
-| P10A-06 | Define scoped instruction-router contracts and no-widening validation.                                                                      | AC-132 passes at the classification, authority and validation-contract layer.                 |
-| P10A-07 | Add golden-store quality gates, including a non-jewellery merchant.                                                                         | AC-134 passes with deterministic and retained real-provider evidence.                         |
-| P10A-08 | Add the deterministic publish compiler.                                                                                                     | AC-133 and AC-135 pass; publication makes no AI call.                                         |
+| Task    | Deliverable                                                                                                                                                                                                                                                       | Gate                                                                                                                                          |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| P10A-01 | Freeze canonical vocabulary and transient-boundary aliases.                                                                                                                                                                                                       | No new canonical `PageModel`, `StorefrontPlan`, `SectionNode`, AI graph or provider registry.                                                 |
+| P10A-02 | Audit registered components, variants, bindings, planners, compilers and renderers.                                                                                                                                                                               | Reachability derives from live evidence and reports stale classifications.                                                                    |
+| P10A-03 | Define executable `PageBlueprint` contracts from current template precursors.                                                                                                                                                                                     | AC-133 and the blueprint-validation portion of AC-130 pass.                                                                                   |
+| P10A-04 | Generate the Component Knowledge Registry from canonical contracts, including the executable `PageBlueprint` contracts produced by P10A-03, then broaden the controlled vocabulary only through validated canonical registrations exposed by that generated view. | AC-129 and the capability-reference portion of AC-130 pass without a forward dependency; broad scaling cannot precede the Phase 9 proof gate. |
+| P10A-05 | Define separate initial-generation and follow-up-editing Skill package contracts.                                                                                                                                                                                 | AC-131 passes at the schema, authority and validation-contract layer.                                                                         |
+| P10A-06 | Define scoped instruction-router contracts and no-widening validation.                                                                                                                                                                                            | AC-132 passes at the classification, authority and validation-contract layer.                                                                 |
+| P10A-07 | Add golden-store quality gates, including a non-jewellery merchant.                                                                                                                                                                                               | AC-134 passes with deterministic and retained real-provider evidence.                                                                         |
+| P10A-08 | Add the deterministic publish compiler.                                                                                                                                                                                                                           | AC-133 and AC-135 pass; publication makes no AI call.                                                                                         |
 
 P10A defines Skill packages, capability-query requirements, schemas, authority declarations, scope
 classification, router contracts and validation rules, including the explicit prohibition against
@@ -273,8 +282,9 @@ this ordering.
 ## 5. Current execution focus
 
 Canonical Phase 9 is active. No P10A, P10B, Phase 11 or Phase 12 foundation closes Phase 9.
-The binding sequence is composition, registered capability reachability, commerce/assets,
-atomicity, persistence/publish and only then vocabulary expansion.
+The binding sequence is minimum proof-enabling reachability, coordinated composition,
+commerce/assets, atomicity and persistence/publish. Broad controlled-vocabulary scaling belongs to
+P10A-04 after Phase 9 closes.
 
 ## 6. Canonical phase sequence
 

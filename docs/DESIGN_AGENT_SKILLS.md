@@ -237,9 +237,12 @@ When required media is missing, create a merchant choice: reuse another approved
 
 Planner, proposal, brief and component foundations exist, but a provider/API response does not make
 this Baseline. The Skill becomes Baseline only when it creates homepage, collection and product
-compositions from the approved brief, executable PageBlueprints, bindings and approved assets,
-then passes review, atomic acceptance, persistence, preview and publication through the same
-`StorefrontSnapshot`. It must not copy seed-brand defaults into another merchant.
+compositions from the exact approved brief revision, executable PageBlueprints, bindings and
+approved assets, then passes review, atomic acceptance, persistence, preview and publication
+through the same `StorefrontSnapshot`. Retained evidence must correlate project ID, brief ID,
+revision/fingerprint, approval actor/action/timestamp and runtime request/proposal, and must prove
+that no later unapproved brief mutation supplied generation. It must not copy seed-brand defaults
+into another merchant.
 
 ### 6.5 Reusable component and page skills
 
@@ -289,6 +292,11 @@ Registered direction, planner/compiler and atomic lifecycle foundations exist. T
 Baseline only when shared frame, homepage, collection and representative product pages use
 compatible registered composition capabilities, remain meaningfully different beyond tokens and
 pass the complete Phase 9 evidence gate.
+
+Phase 9 capability work is limited to repairing reachability and exposing the smallest curated set
+needed to prove its registered directions. Broad controlled-vocabulary scaling begins only after
+Phase 9 closes and belongs to P10A-04, where additions must be validated canonical registrations
+exposed by the generated Component Knowledge Registry.
 
 #### `fixResponsiveLayout`
 

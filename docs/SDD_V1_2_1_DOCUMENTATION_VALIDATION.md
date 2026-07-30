@@ -35,6 +35,9 @@ that final source.
 - Reconciled actual Skill IDs/statuses with conceptual merchant scopes.
 - Reconciled actual serialized operation codes with planned capability names.
 - Corrected Phase 9 closure, PR #123 scope and AC-119 through AC-123 ownership.
+- Limited P9-03 to minimum proof-enabling capability reachability and assigned broad
+  controlled-vocabulary scaling to P10A-04 after the Phase 9 proof gate.
+- Added the missing FR-105 approved-brief revision-to-runtime evidence requirement.
 - Added AC-129 through AC-135 because AC-126 through AC-128 are already assigned.
 - Reordered the roadmap to Phase 9 → P10A → P10B → Phase 11 → Phase 12 → later deployment.
 - Added an ADR index and explicit v1.2.1 references.
@@ -66,6 +69,9 @@ that final source.
   rewritten; the v1.2.1 SDD and roadmap own current phase status.
 - The repository has no retained complete live-provider evidence package. The Phase 9 matrix
   therefore cannot cite a closing commit, full browser matrix or provider artifact.
+- The repository has no retained artifact correlating merchant approval of an exact Storefront
+  Design Brief revision/fingerprint to the runtime request and generated proposal. The new FR-105
+  evidence row therefore remains Missing and does not fabricate closure evidence.
 
 ## Documentation validation
 

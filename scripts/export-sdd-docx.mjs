@@ -64,14 +64,14 @@ const files = {
 </w:document>`,
 };
 
-const collectArchiveFiles = (directory, prefix = "") =>
+const collectArchiveEntries = (directory, prefix = "") =>
   readdirSync(directory)
     .sort()
     .flatMap((name) => {
       const relativePath = prefix ? `${prefix}/${name}` : name;
       const absolutePath = join(directory, name);
       return statSync(absolutePath).isDirectory()
-        ? collectArchiveFiles(absolutePath, relativePath)
+        ? [`${relativePath}/`, ...collectArchiveEntries(absolutePath, relativePath)]
         : [relativePath];
     });
 
@@ -106,9 +106,10 @@ try {
   }
 
   normalizeArchiveTimestamps(stagingDirectory);
-  const archiveFiles = collectArchiveFiles(stagingDirectory);
-  execFileSync("/usr/bin/zip", ["-q", "-X", archivePath, ...archiveFiles], {
+  const archiveEntries = collectArchiveEntries(stagingDirectory);
+  execFileSync("/usr/bin/zip", ["-q", "-X", archivePath, ...archiveEntries], {
     cwd: stagingDirectory,
+    env: { ...process.env, TZ: "UTC" },
   });
 
   if (checkMode) {

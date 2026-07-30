@@ -63,8 +63,12 @@ const requiredSddText = [
   "| **AC-135**",
   "P10A defines and validates the scopes.",
   "Phase 11 implements and exposes those scopes as working merchant",
-  "P10A-04 registry generation consumes P10A-03 blueprint contracts.",
+  "P10A-04 registry generation consumes P10A-03 blueprint contracts",
   "AC-119 remains solely a Phase 9 gate.",
+  "approved Storefront Design Brief-to-runtime handoff",
+  "Broad controlled-vocabulary expansion occurs after the Phase",
+  "authoritative\nStorefront Design Brief creation → merchant review → explicit approval",
+  "later unapproved brief mutation supplied generation",
 ];
 for (const required of requiredSddText) {
   if (!sdd.includes(required)) failures.push(`SDD missing required text: ${required}`);
@@ -132,6 +136,24 @@ if (!evidenceColumns || evidenceColumns.join("\n") !== requiredEvidenceColumns.j
 }
 if (!evidence.includes("Phase 9 remains active")) {
   failures.push("Phase 9 evidence matrix must keep Phase 9 active");
+}
+for (const required of [
+  "Approved Storefront Design Brief revision used by runtime generation; FR-105",
+  "project ID, brief ID, revision/fingerprint",
+  "approval actor/action/timestamp",
+  "runtime request/proposal correlation",
+  "no later unapproved brief",
+  "merely validated/unapproved brief",
+]) {
+  if (!evidence.includes(required)) {
+    failures.push(`Phase 9 evidence matrix is missing approved-brief evidence text: ${required}`);
+  }
+}
+if (
+  !roadmap.includes("P9-03 — Minimum proof-enabling design capability reachability") ||
+  !roadmap.includes("Broad controlled-vocabulary scaling belongs to\nP10A-04 after Phase 9 closes")
+) {
+  failures.push("Roadmap does not preserve the P9-03/P10A-04 vocabulary boundary");
 }
 
 for (const [relativePath, markdown] of contents) {

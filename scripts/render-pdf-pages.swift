@@ -9,19 +9,38 @@ guard CommandLine.arguments.count == 3 else {
 
 let inputURL = URL(fileURLWithPath: CommandLine.arguments[1])
 let outputURL = URL(fileURLWithPath: CommandLine.arguments[2], isDirectory: true)
+
+func fail(_ message: String) -> Never {
+    fputs("\(message)\n", stderr)
+    exit(1)
+}
+
 guard let document = PDFDocument(url: inputURL) else {
     fputs("could not open PDF\n", stderr)
     exit(1)
 }
 
-try FileManager.default.createDirectory(
-    at: outputURL,
-    withIntermediateDirectories: true
-)
-
-func fail(_ message: String) -> Never {
-    fputs("\(message)\n", stderr)
-    exit(1)
+let fileManager = FileManager.default
+let generatedPagePattern: NSRegularExpression
+do {
+    generatedPagePattern = try NSRegularExpression(pattern: #"^page-[0-9]+\.png$"#)
+    try fileManager.createDirectory(at: outputURL, withIntermediateDirectories: true)
+    for existingURL in try fileManager.contentsOfDirectory(
+        at: outputURL,
+        includingPropertiesForKeys: [.isRegularFileKey],
+        options: [.skipsHiddenFiles]
+    ) {
+        let fileName = existingURL.lastPathComponent
+        let range = NSRange(fileName.startIndex..<fileName.endIndex, in: fileName)
+        let resourceValues = try existingURL.resourceValues(forKeys: [.isRegularFileKey])
+        if resourceValues.isRegularFile == true
+            && generatedPagePattern.firstMatch(in: fileName, range: range) != nil
+        {
+            try fileManager.removeItem(at: existingURL)
+        }
+    }
+} catch {
+    fail("could not prepare PDF output directory: \(error)")
 }
 
 var renderedPageCount = 0
@@ -78,6 +97,36 @@ for index in 0..<document.pageCount {
 
 guard renderedPageCount == document.pageCount else {
     fail("rendered \(renderedPageCount) of \(document.pageCount) PDF pages")
+}
+
+let expectedPageFiles = Set(
+    (0..<document.pageCount).map { String(format: "page-%03d.png", $0 + 1) }
+)
+let actualPageFiles: Set<String>
+do {
+    actualPageFiles = Set(
+        try fileManager.contentsOfDirectory(
+            at: outputURL,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles]
+        ).compactMap { pageURL in
+            let resourceValues = try pageURL.resourceValues(forKeys: [.isRegularFileKey])
+            guard resourceValues.isRegularFile == true else { return nil }
+            let fileName = pageURL.lastPathComponent
+            let range = NSRange(fileName.startIndex..<fileName.endIndex, in: fileName)
+            return generatedPagePattern.firstMatch(in: fileName, range: range) == nil
+                ? nil
+                : fileName
+        }
+    )
+} catch {
+    fail("could not verify rendered PDF pages: \(error)")
+}
+
+guard actualPageFiles == expectedPageFiles else {
+    let missing = expectedPageFiles.subtracting(actualPageFiles).sorted().joined(separator: ", ")
+    let unexpected = actualPageFiles.subtracting(expectedPageFiles).sorted().joined(separator: ", ")
+    fail("rendered page set mismatch; missing [\(missing)]; unexpected [\(unexpected)]")
 }
 
 print("Rendered \(renderedPageCount) pages to \(outputURL.path)")

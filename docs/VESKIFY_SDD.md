@@ -167,12 +167,26 @@ success; or a valid but visually immaterial proposal MUST fail the Phase 9 closi
 
 The binding order inside Phase 9 is:
 
-1. prove meaningful page and shared-frame composition;
-2. prove that every selected capability is registered and reachable;
+1. establish the smallest registered and end-to-end reachable capability set required to prove
+   meaningful multi-page composition;
+2. prove coordinated page and shared-frame composition;
 3. prove commerce and approved-asset preservation;
 4. prove atomic application, rejection, stale protection and undo;
-5. prove persistence, preview and explicit publication of the accepted snapshot;
-6. only then expand the controlled design vocabulary.
+5. prove persistence, preview and explicit publication of the accepted snapshot.
+
+P9-03 may repair reachability of already registered capabilities, expose the smallest curated set
+required by the Phase 9 directions, correct planner/compiler/renderer gaps and enable the minimum
+editorial, modern-technical and warm compositions needed for acceptance. It MUST NOT become broad
+or unrestricted vocabulary scaling. Broad controlled-vocabulary expansion occurs after the Phase
+9 proof gates, through P10A-04’s generated registry and canonical validation.
+
+Phase 9 retained brief-handoff evidence MUST show this complete lifecycle: authoritative
+Storefront Design Brief creation → merchant review → explicit approval → approved
+revision/fingerprint recording → runtime generation receiving that exact revision → correlated
+proposal → storefront review and acceptance. The retained package MUST include project ID, brief
+ID, approval state, actor/action/timestamp and runtime request correlation, and MUST prove that no
+later unapproved brief mutation supplied generation. A deterministic fixture or a validated but
+unapproved brief is not closing evidence.
 
 Protected commerce, history, rollback and explicit publishing are invariants throughout this order;
 they are never deferred while composition is proved.
@@ -206,7 +220,8 @@ The existing acceptance IDs retain their wording, but their phase ownership is c
 Phase 9 additionally owns exact valid token instructions, meaningful initial generation,
 coordinated multi-page composition, registered component reachability, protected-commerce and
 asset fidelity, invalid/stale rejection, atomic application and undo, output responsiveness,
-fixture leakage, real-provider evidence and the accepted snapshot’s save/preview/publish path.
+fixture leakage, real-provider evidence, the approved Storefront Design Brief-to-runtime handoff
+required by FR-105 and the accepted snapshot’s save/preview/publish path.
 
 ### Grounded capability roadmap
 
@@ -218,7 +233,9 @@ P10A establishes grounded orchestration without changing the canonical state mod
 3. **P10A-03 — Executable PageBlueprint contracts:** evolve the current template contracts into
    validated composition rules that compile to `StorefrontSnapshot`.
 4. **P10A-04 — Generated Component Knowledge Registry:** generate a queryable capability view from
-   canonical contracts, including the executable PageBlueprint contracts produced by P10A-03.
+   canonical contracts, including the executable PageBlueprint contracts produced by P10A-03,
+   and broaden the controlled vocabulary only through validated canonical registrations exposed
+   by that generated view after the Phase 9 proof gate.
 5. **P10A-05 — Separate Skill package contracts:** define instructions, schemas, authorities,
    allowed scopes, capability requirements, operations, validation and evidence for initial
    generation and follow-up editing separately.
@@ -1657,7 +1674,7 @@ Phase 12 gate.
 | **AC-122** | Primary journeys have no visible clipping or overlap at 375, 768, 1024 and 1440 px.                                                                                           | FR-114, NFR-103                               |
 | **AC-123** | Dynamic selectors, drawers, proposal actions, save and publish are keyboard operable and labelled.                                                                            | FR-111, FR-114, FR-116, NFR-102               |
 | **AC-124** | A Vesko integration adapter passes the same contract tests as the standalone fixtures for project, commerce, media, storage and publishing.                                   | FR-101, FR-110, FR-118, NFR-108, NFR-109      |
-| **AC-125** | A complete customer-ready journey succeeds: URL or minimal-input onboarding → approved brief → generation → AI edit → manual edit → save draft → preview → publish → restore. | FR-101, FR-103, FR-105, FR-108, FR-115, FR-118, NFR-105, NFR-108, NFR-109 |
+| **AC-125** | A complete customer-ready journey succeeds: URL or minimal-input onboarding → merchant-approved brief whose exact approved revision/fingerprint is correlated to runtime generation → AI edit → manual edit → save draft → preview → publish → restore. | FR-101, FR-103, FR-105, FR-108, FR-115, FR-118, NFR-105, NFR-108, NFR-109 |
 | **AC-126** | P9-04D proves Premium editorial, Modern technical and Warm approachable outputs are pairwise different in every required homepage, collection and PDP dimension, rather than by colour, typography or one rearranged section alone. | FR-108, FR-109, FR-113, FR-115, NFR-103, NFR-105 |
 | **AC-127** | The P9-04D matrix records EN/FI, 375/768/1024/1440, one/many collections, small/large catalogues and missing optional media; each result has measured no-overflow, clipping, overlap and empty-space evidence. | FR-109, FR-114, NFR-102, NFR-103 |
 | **AC-128** | Every P9-04D direction uses approved asset provenance and correct product/collection binding, and matches the canonical source-commerce baseline for protected IDs, SKU, price, availability and media truth. | FR-104, FR-107, FR-110, NFR-101 |
@@ -1742,8 +1759,8 @@ source-commerce baseline; pairwise output agreement alone is insufficient.
 | **P6 — Dynamic commerce page depth**                   | Dynamic PDP first; then product cards, collection filters, collection headers and homepage commerce sections.                 | Rings, watches and other product types render the right options and information automatically.           | Complex ring and simple watch acceptance journeys pass at all viewports.    |
 | **P7 — URL-first onboarding and brand reconstruction** | Source discovery, provenance, canonical reconciliation, brand evidence, asset inventory and approved Storefront Design Brief. | A merchant can connect an existing site or start from minimal assets without rebuilding catalogue truth. | URL → approved brief works with deterministic and real public-source modes. |
 | **P8 — Asset-aware initial generation**                | Compose homepage, collection and dynamic PDP from the brief; reuse approved assets; remove fixture defaults.                  | The first generated storefront feels specific to the merchant and catalogue.                             | Initial generation passes source/asset/binding checks and visual review.    |
-| **P9 — Meaningful grounded storefront generation** | Coordinated shared frame, homepage, collection and PDP composition from registered capabilities; commerce/assets; atomic apply/undo; persistence, preview and publish; responsive, accessibility and real-provider evidence. | A merchant receives a coherent editable storefront rather than token-only or one-section variation. | The Phase 9 evidence matrix is complete; no token-only, fixture-leaking, renderer-only or API-response-only result may pass. |
-| **P10A — Grounded orchestration** | Vocabulary freeze, repository capability audit, executable PageBlueprint contracts, generated Component Knowledge Registry, separate Skill package contracts, scoped instruction-router contracts, golden-store evaluation and deterministic publish compiler. P10A defines and validates scopes but does not deliver merchant-operable granular editing. | Generation retrieves what the product can actually build and compiles to the canonical snapshot. | AC-129 through AC-135 pass without a second registry, page graph or publish model; P10A-04 registry generation consumes P10A-03 blueprint contracts. |
+| **P9 — Meaningful grounded storefront generation** | Minimum proof-enabling registered capability reachability; coordinated shared frame, homepage, collection and PDP composition; approved-brief runtime handoff; commerce/assets; atomic apply/undo; persistence, preview and publish; responsive, accessibility and real-provider evidence. | A merchant receives a coherent editable storefront from the exact approved brief revision rather than token-only or one-section variation. | The Phase 9 evidence matrix is complete, including retained FR-105 approval-to-runtime correlation; no token-only, fixture-leaking, renderer-only, unapproved-brief or API-response-only result may pass. |
+| **P10A — Grounded orchestration** | Vocabulary freeze, repository capability audit, executable PageBlueprint contracts, generated Component Knowledge Registry and post-Phase-9 controlled vocabulary scaling, separate Skill package contracts, scoped instruction-router contracts, golden-store evaluation and deterministic publish compiler. P10A defines and validates scopes but does not deliver merchant-operable granular editing. | Generation retrieves what the product can actually build and compiles to the canonical snapshot. | AC-129 through AC-135 pass without a second registry, page graph or publish model; P10A-04 registry generation consumes P10A-03 blueprint contracts and is the only broad vocabulary-scaling activity. |
 | **P10B — Assets and Storefront Studio UX** | Upload/library, roles/provenance, generated-image lifecycle and merchant-facing Studio flows that consume P10A contracts. | Merchants can govern assets and use generation without developer concepts. | Studio-owned AC-121/122/123 evidence passes. AC-119 remains solely a Phase 9 gate. |
 | **P11 — Granular editing** | Runtime selection and execution for selected section/component, current page, shared frame, design system and complete storefront; add/remove/reorder/replace; preview, acceptance, mixed-scope history, Undo/Redo and merchant scope controls/warnings. | Merchants can make controlled local or coordinated changes without unintended scope widening. | Every merchant-operable scope passes permissions, review, atomicity, history and Undo/Redo tests against the P10A contracts. |
 | **P12 — Stable domains and reference adapters** | Consolidate canonical domain and port contracts; provide a Vesko reference adapter and conformance suite. | Vesko teams can integrate without redesigning Veskify or creating competing commerce truth. | Reference adapter passes contract tests; full staging is not required for this phase. |
