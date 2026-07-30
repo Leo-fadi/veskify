@@ -1,6 +1,7 @@
 import {
   aiStorefrontProviderResponseSchema,
   buildAiStorefrontProviderRequest,
+  classifyRegisteredWholeStorefrontDirectionRequest,
 } from "@/application/ai-storefront-generation";
 import {
   StorefrontProposalAcceptanceCoordinator,
@@ -10,9 +11,10 @@ import {
 } from "@/application/ai-storefront";
 import { saveValidatedEditorDraft } from "@/application/draft-save";
 import {
-  createDeterministicWholeStorefrontPlanningProvider,
-  createWholeStorefrontGenerationPlan,
   wholeStorefrontPlanningInputSchema,
+  type WholeStorefrontGenerationPlan,
+  type WholeStorefrontPlanningProvider,
+  type WholeStorefrontPlanningProviderRequest,
 } from "@/application/whole-storefront-generation-plan";
 import { compileWholeStorefrontProposal } from "@/application/whole-storefront-proposal-lifecycle";
 import { validateRegisteredSnapshot } from "@/components/registry";
@@ -31,9 +33,16 @@ import {
   P9_05A_FIXED_TIME,
   type P905aDirectionId,
   createP905aFreshMerchantFixture,
+  p905aDirectionScenarios,
 } from "@/data/demo/p9-05a-fresh-store-generation";
 
 const SERVER_PROVIDER_ID = "server-whole-storefront-planning";
+
+const registeredDirectionMerchantNames: Record<P905aDirectionId, string> = {
+  premiumEditorial: "premium editorial",
+  modernTechnical: "modern technical",
+  warmApproachable: "warm approachable",
+};
 
 function contextSource(
   fixture: ReturnType<typeof createP905aFreshMerchantFixture>,
@@ -49,27 +58,91 @@ function contextSource(
 }
 
 export async function generateP905aScenario(directionId: P905aDirectionId) {
-  return generateP905aScenarioWithCapability(directionId, directionId, false);
+  return generateP905aScenarioWithProvider({
+    baselineDirectionId: directionId,
+    merchantInstruction: p905aDirectionScenarios[directionId].merchantInstruction,
+    capability: "approvedColorTypographyDirection",
+    selectPlan: (providerRequest) => providerRequest.planForDirection(directionId),
+  });
 }
 
-export async function generateP905aScenarioFromBaseline(
+export async function generateP905aScenarioFromSelectedDirection(
   directionId: P905aDirectionId,
   baselineDirectionId: P905aDirectionId,
 ) {
-  return generateP905aScenarioWithCapability(directionId, baselineDirectionId, true);
+  return generateP905aScenarioWithProvider({
+    baselineDirectionId,
+    merchantInstruction: `Apply the ${registeredDirectionMerchantNames[directionId]} direction across the storefront.`,
+    capability: "registeredWholeStorefrontDirection",
+    selectPlan: (providerRequest) => providerRequest.planForDirection(directionId),
+  });
 }
 
-async function generateP905aScenarioWithCapability(
-  directionId: P905aDirectionId,
+/** Uses the received merchant instruction as the sole registered-direction selector. */
+export async function generateP905aInstructionScenarioFromBaseline(
   baselineDirectionId: P905aDirectionId,
-  registeredProviderSelection: boolean,
+  merchantInstruction: string,
 ) {
+  return generateP905aScenarioWithProvider({
+    baselineDirectionId,
+    merchantInstruction,
+    capability: "registeredWholeStorefrontDirection",
+    selectPlan: (providerRequest) => {
+      const classification = classifyRegisteredWholeStorefrontDirectionRequest(
+        providerRequest.merchantInstruction,
+      );
+      if (classification.kind === "selected") {
+        return providerRequest.planForDirection(classification.direction);
+      }
+      if (classification.kind === "token-refinement") {
+        return providerRequest.planForTokenRefinement();
+      }
+      throw new Error("The received merchant instruction is not a supported registered direction.");
+    },
+  });
+}
+
+type P905aProviderCapture = Readonly<{
+  merchantInstruction: string;
+  requestFingerprint: string;
+}>;
+
+async function generateP905aScenarioWithProvider({
+  baselineDirectionId,
+  merchantInstruction,
+  capability,
+  selectPlan,
+}: {
+  baselineDirectionId: P905aDirectionId;
+  merchantInstruction: string;
+  capability: "approvedColorTypographyDirection" | "registeredWholeStorefrontDirection";
+  selectPlan: (
+    providerRequest: WholeStorefrontPlanningProviderRequest,
+  ) => WholeStorefrontGenerationPlan;
+}) {
   const fixture = createP905aFreshMerchantFixture(baselineDirectionId);
   const planningInput = wholeStorefrontPlanningInputSchema.parse(
     structuredClone(fixture.planningInput),
   );
-  const plan = createWholeStorefrontGenerationPlan(planningInput, { directionId });
-  const compiledProposal = compileWholeStorefrontProposal({ plan, planningInput });
+  const providerRequests: P905aProviderCapture[] = [];
+  const providerPlans: WholeStorefrontGenerationPlan[] = [];
+  const provider: WholeStorefrontPlanningProvider = {
+    id: "p9-05a-captured-deterministic-provider",
+    capabilities: {
+      wholeStorefrontPlanning: true,
+      structuredPlanOutput: true,
+      approvedAssetReferences: true,
+    },
+    createPlan(providerRequest) {
+      providerRequests.push({
+        merchantInstruction: providerRequest.merchantInstruction,
+        requestFingerprint: providerRequest.requestFingerprint,
+      });
+      const plan = selectPlan(providerRequest);
+      providerPlans.push(structuredClone(plan));
+      return Promise.resolve(plan);
+    },
+  };
   const repository = new InMemoryProjectRepository([structuredClone(fixture.aggregate)]);
   const authority = createStandaloneServerWholeStorefrontPlanningAuthority({
     repository,
@@ -84,19 +157,7 @@ async function generateP905aScenarioWithCapability(
   });
   const handler = createServerWholeStorefrontPlanningHandler({
     authority,
-    selectProvider: () =>
-      !registeredProviderSelection && directionId === baselineDirectionId
-        ? createDeterministicWholeStorefrontPlanningProvider()
-        : {
-            id: "p9-05b-mocked-direction-selector",
-            capabilities: {
-              wholeStorefrontPlanning: true,
-              structuredPlanOutput: true,
-              approvedAssetReferences: true,
-            },
-            createPlan: (providerRequest) =>
-              Promise.resolve(providerRequest.planForDirection(directionId)),
-          },
+    selectProvider: () => provider,
   });
   const request = buildAiStorefrontProviderRequest(
     {
@@ -110,13 +171,11 @@ async function generateP905aScenarioWithCapability(
         kind: "storefrontDesignSystem",
         projectId: fixture.aggregate.project.id,
       },
-      merchantInstruction: fixture.direction.merchantInstruction,
+      merchantInstruction,
       activeLocale: fixture.aggregate.project.primaryLocale,
       enabledLocales: fixture.aggregate.project.enabledLocales,
       requestedScope: "storefront",
-      capability: registeredProviderSelection
-        ? "registeredWholeStorefrontDirection"
-        : "approvedColorTypographyDirection",
+      capability,
       providerId: SERVER_PROVIDER_ID,
       provider: {
         id: SERVER_PROVIDER_ID,
@@ -141,6 +200,11 @@ async function generateP905aScenarioWithCapability(
     throw new Error(`P9-05A generation failed with status ${response.status}.`);
   }
   const envelope = aiStorefrontProviderResponseSchema.parse(body.proposal);
+  const plan = providerPlans[0];
+  if (!plan || providerPlans.length !== 1) {
+    throw new Error("Expected exactly one deterministic provider plan.");
+  }
+  const compiledProposal = compileWholeStorefrontProposal({ plan, planningInput });
   const applicationContext = createAiStorefrontApplicationContext({
     activeDraft: fixture.draft,
     catalogue: fixture.aggregate.catalogue,
@@ -159,6 +223,8 @@ async function generateP905aScenarioWithCapability(
     plan,
     compiledProposal,
     request,
+    providerRequests,
+    providerPlans,
     envelope,
     proposal: confirmedProposal,
     repository,

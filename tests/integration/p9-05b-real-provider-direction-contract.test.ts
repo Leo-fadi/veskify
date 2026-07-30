@@ -19,7 +19,7 @@ import {
 } from "@/data/demo/p9-05a-fresh-store-generation";
 import {
   createP905aAcceptanceCoordinator,
-  generateP905aScenarioFromBaseline,
+  generateP905aScenarioFromSelectedDirection,
   saveAndResolveP905aPreview,
 } from "../helpers/p9-05a-generation-harness";
 
@@ -91,7 +91,10 @@ describe("P9-05B real-provider direction contract", () => {
   it.each(directions)(
     "preserves the provider-selected %s direction through compile, accept, Undo, and Redo",
     async (directionId) => {
-      const generated = await generateP905aScenarioFromBaseline(directionId, "warmApproachable");
+      const generated = await generateP905aScenarioFromSelectedDirection(
+        directionId,
+        "warmApproachable",
+      );
       const expectedBrandSystem = registeredBrandSystemForDirection(
         generated.fixture.draft.brandSystem,
         generated.planningInput.recipeContext.designSystem,
