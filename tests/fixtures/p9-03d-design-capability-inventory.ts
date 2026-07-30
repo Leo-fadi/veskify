@@ -37,10 +37,10 @@ export type P903dComponentVariantRecord = Readonly<{
   realProviderSchemaExposure: "registry-advertised" | "registry-and-direction-option";
   proposalCompilerPreservation:
     | "preserved directly"
-    | "deferred to server runtime authority"
+    | "preserved by coordinated proposal compiler"
     | "dropped by dynamic-page replacement"
     | "recipe variant is not compiled; source is retained"
-    | "overridden by server runtime authority"
+    | "overridden by coordinated component selection"
     | "not selectable";
   canonicalSnapshotBoundary: string;
   editorRendering: RenderingReachability;
@@ -141,9 +141,9 @@ function blueprintIds(type: string, variant: string): string[] {
 }
 
 function selectedDirectionVariant(direction: P903dDirection, type: string): string | undefined {
-  if (type === "dynamicCollectionCommerce") return direction.collectionPresentation.variant;
-  if (type === "dynamicProductDetail") return direction.productPresentation.variant;
-  return direction.sectionVariants[type];
+  return Object.values(direction.componentSelections).find(
+    (selection) => selection.component === type,
+  )?.variant;
 }
 
 function directionIds(
@@ -204,14 +204,14 @@ function compilerPreservation(
   ) {
     return "preserved directly";
   }
-  if (directions.length > 0) return "deferred to server runtime authority";
+  if (directions.length > 0) return "preserved by coordinated proposal compiler";
   if (recipeDirections.length === 0) return "not selectable";
   const recipeOverrides = recipeDirections.some((directionId) => {
     const direction = auditDirections(evidence).find((candidate) => candidate.id === directionId);
     return direction !== undefined && selectedDirectionVariant(direction, type) !== undefined;
   });
   return recipeOverrides
-    ? "overridden by server runtime authority"
+    ? "overridden by coordinated component selection"
     : "recipe variant is not compiled; source is retained";
 }
 
@@ -235,14 +235,14 @@ function classification(
   if (
     preservation === "dropped by dynamic-page replacement" ||
     preservation === "recipe variant is not compiled; source is retained" ||
-    preservation === "overridden by server runtime authority"
+    preservation === "overridden by coordinated component selection"
   ) {
     return "planner-visible but lost during compilation";
   }
   if (
     directions.length > 0 &&
     (preservation === "preserved directly" ||
-      preservation === "deferred to server runtime authority")
+      preservation === "preserved by coordinated proposal compiler")
   ) {
     return "fully reachable";
   }
@@ -264,13 +264,13 @@ function canonicalBoundary(
     return "createWholeStorefrontGenerationPlan replaces the legacy collection/PDP section before proposal compilation.";
   }
   if (preservation === "recipe variant is not compiled; source is retained") {
-    return "The selected recipe carries the announcement variant, but designSystemSelection.sectionVariants has no announcement mapping; the planner retains the source variant.";
+    return "The selected recipe carries the announcement variant, but componentSelections has no announcement selection; the planner retains the source variant.";
   }
-  if (preservation === "overridden by server runtime authority") {
-    return "The selected recipe carries benefitIcons:threeColumn, but styledProjectedPage applies designSystemSelection.sectionVariants.benefitIcons before the canonical AI proposal snapshot, replacing it with the direction value.";
+  if (preservation === "overridden by coordinated component selection") {
+    return "A selected recipe variant conflicts with its coordinated component selection before the canonical proposal snapshot.";
   }
-  if (preservation === "deferred to server runtime authority") {
-    return "The proposal compiler retains the source variant; styledProjectedPage applies the registered direction before the canonical AI proposal snapshot.";
+  if (preservation === "preserved by coordinated proposal compiler") {
+    return "coordinatedRuntimeComponent applies the registered componentSelections entry before the canonical proposal snapshot.";
   }
   return "The planner creates the V2 instance and the proposal compiler preserves its variant and presentation props.";
 }
@@ -364,7 +364,7 @@ export function validateP903dComponentVariantInventory(
       if (
         record.plannerExposure.directionIds.length === 0 ||
         rendererTargets.some((target) => target !== "shared renderer") ||
-        !["preserved directly", "deferred to server runtime authority"].includes(
+        !["preserved directly", "preserved by coordinated proposal compiler"].includes(
           record.proposalCompilerPreservation,
         )
       ) {
