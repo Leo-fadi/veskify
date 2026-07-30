@@ -15,7 +15,9 @@ import {
 import {
   AiStorefrontGenerationOrchestrator,
   buildAiStorefrontProviderRequestForSupportedCapability,
+  createStorefrontDiagnosticAttemptId,
   createDeterministicMockStorefrontAIProvider,
+  recordStorefrontDiagnostic,
   type AiStorefrontGenerationIdentity,
   type StorefrontAIProvider,
 } from "@/application/ai-storefront-generation";
@@ -693,7 +695,7 @@ export function useDesignAgentSession({
     };
   };
 
-  const storefrontCommandFor = (instruction: string) => {
+  const storefrontCommandFor = (instruction: string, attemptId: string) => {
     if (!activeDraft || !activeLocale || !enabledLocales) {
       throw new Error("The complete storefront is not ready for a design request.");
     }
@@ -711,6 +713,7 @@ export function useDesignAgentSession({
       enabledLocales,
       requestedScope: "storefront" as const,
       providerId: runtime.storefrontProvider.id,
+      correlationRequestId: attemptId,
       provider: runtime.storefrontProvider,
       importedContent: [],
     };
@@ -827,10 +830,43 @@ export function useDesignAgentSession({
         statuses[mode === "revision" ? "revising" : "generating"],
       ),
     );
+    const attemptId = createStorefrontDiagnosticAttemptId();
+    let failureCategory:
+      "client_command_build" | "client_acceptance_coordinator" | "unknown_client_failure" =
+      "client_command_build";
+    recordStorefrontDiagnostic({
+      attemptId,
+      projectId,
+      scope: "storefront",
+      stage: "submission_received",
+      category: "success",
+    });
     try {
-      const result = await runtime.storefrontGeneration.generate(storefrontCommandFor(instruction));
+      recordStorefrontDiagnostic({
+        attemptId,
+        projectId,
+        scope: "storefront",
+        stage: "command_build_started",
+        category: "success",
+      });
+      const command = storefrontCommandFor(instruction, attemptId);
+      recordStorefrontDiagnostic({
+        attemptId,
+        projectId,
+        scope: "storefront",
+        stage: "command_build_completed",
+        category: "success",
+      });
+      const result = await runtime.storefrontGeneration.generate(command);
       if (actionSequence.current !== actionId) return;
       if (result.state !== "ready") {
+        recordStorefrontDiagnostic({
+          attemptId,
+          projectId,
+          scope: "storefront",
+          stage: "proposal_state_completed",
+          category: "unknown_client_failure",
+        });
         setSession(
           uiSession(result.state, result.failure.message, {
             failure: { message: result.failure.message, retryable: result.failure.retryable },
@@ -849,6 +885,14 @@ export function useDesignAgentSession({
       ) {
         throw new Error("The storefront proposal cannot be opened without complete draft context.");
       }
+      failureCategory = "client_acceptance_coordinator";
+      recordStorefrontDiagnostic({
+        attemptId,
+        projectId,
+        scope: "storefront",
+        stage: "acceptance_coordinator_started",
+        category: "success",
+      });
       pendingStorefrontAcceptance.current = new StorefrontProposalAcceptanceCoordinator({
         proposal: result.proposal,
         activeDraft,
@@ -874,9 +918,26 @@ export function useDesignAgentSession({
           },
         ),
       );
+      recordStorefrontDiagnostic({
+        attemptId,
+        projectId,
+        scope: "storefront",
+        stage: "proposal_state_completed",
+        category: "success",
+      });
       onProposalReady?.();
     } catch {
       if (actionSequence.current !== actionId) return;
+      recordStorefrontDiagnostic({
+        attemptId,
+        projectId,
+        scope: "storefront",
+        stage:
+          failureCategory === "client_acceptance_coordinator"
+            ? "acceptance_coordinator_started"
+            : "command_build_started",
+        category: failureCategory,
+      });
       const message = {
         en: "That storefront request could not be completed safely. Your draft has not changed.",
         fi: "Kaupan pyyntöä ei voitu toteuttaa turvallisesti. Luonnos säilyi ennallaan.",

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { p905dExactTokenRefinementRequest } from "../fixtures/p9-05d-exact-token-refinement";
 import {
   aiStorefrontPendingRequestKey,
+  AiStorefrontRequestBuildError,
   buildAiStorefrontProviderRequest,
   buildAiStorefrontProviderRequestForSupportedCapability,
   classifyRegisteredWholeStorefrontDirectionRequest,
@@ -305,6 +307,34 @@ describe("P4-05B storefront planner and request construction", () => {
       target: { kind: "storefrontDesignSystem" },
       operationTypes: ["APPLY_REGISTERED_BRAND_SYSTEM"],
     });
+  });
+
+  it("classifies the exact P9-05D failed merchant request before provider execution", () => {
+    const storefrontProvider = registeredProvider();
+    expect(() =>
+      buildAiStorefrontProviderRequestForSupportedCapability(
+        commandWithoutCapability({
+          provider: storefrontProvider,
+          providerId: storefrontProvider.id,
+          affectedPageIds: snapshot.pages.map((page) => page.id),
+          merchantInstruction: p905dExactTokenRefinementRequest,
+        }),
+        1,
+        "registeredWholeStorefrontDirection",
+      ),
+    ).toThrow(AiStorefrontRequestBuildError);
+    expect(() =>
+      buildAiStorefrontProviderRequestForSupportedCapability(
+        commandWithoutCapability({
+          provider: storefrontProvider,
+          providerId: storefrontProvider.id,
+          affectedPageIds: snapshot.pages.map((page) => page.id),
+          merchantInstruction: p905dExactTokenRefinementRequest,
+        }),
+        1,
+        "registeredWholeStorefrontDirection",
+      ),
+    ).toThrow("Choose compact, balanced, or spacious spacing for this refinement.");
   });
 
   it.each([

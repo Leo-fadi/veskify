@@ -1,4 +1,5 @@
 export * from "./contract";
+export * from "./diagnostics";
 export * from "./approved-asset-context";
 export * from "./brand-palette";
 export * from "./token-refinement";
