@@ -2,7 +2,10 @@
 
 import { describe, expect, it } from "vitest";
 import { createWholeStorefrontGenerationPlan } from "@/application/whole-storefront-generation-plan";
-import { compileWholeStorefrontProposal } from "@/application/whole-storefront-proposal-lifecycle";
+import {
+  compileWholeStorefrontProposal,
+  WholeStorefrontProposalAcceptanceCoordinator,
+} from "@/application/whole-storefront-proposal-lifecycle";
 import {
   dynamicCollectionCommerceDefinition,
   dynamicProductDetailDefinition,
@@ -18,30 +21,19 @@ import { canonicalValueFingerprint } from "@/domain/storefront";
 
 const directionIds = ["premiumEditorial", "modernTechnical"] as const;
 
-const collectionCapabilityMatrix = {
-  collectionHeader: "dynamicCollectionCommerce variant and showDescription",
-  filteringDiscovery: "filterLayout and canonical filters",
-  collectionNavigation: "showChildCollections and collection bindings",
-  productCards: "cardVariant",
-  productGrid: "gridDensity",
-} as const;
-
-const productCapabilityMatrix = {
-  gallery: "galleryLayout and mediaTreatment",
-  information: "variant, showDescription and showSku",
-  options: "optionDensity and canonical option groups",
-  specifications: "attributeLayout",
-  purchasingArea: "primary action and stickyMobileAction",
-  recommendations: "relatedProducts binding and related heading",
-} as const;
-
 function compiled(directionId: (typeof directionIds)[number]) {
   const planningInput = structuredClone(createP905aFreshMerchantFixture(directionId).planningInput);
   const plan = createWholeStorefrontGenerationPlan(planningInput, { directionId });
+  const proposal = compileWholeStorefrontProposal({ plan, planningInput });
+  const accepted = new WholeStorefrontProposalAcceptanceCoordinator({
+    proposal,
+    currentInput: () => ({ plan, planningInput }),
+  }).accept();
   return {
     planningInput,
     plan,
-    proposal: compileWholeStorefrontProposal({ plan, planningInput }),
+    proposal,
+    accepted,
   };
 }
 
@@ -56,10 +48,105 @@ function requiredComponent(
   return component;
 }
 
+function requiredPlannedComponent(
+  plan: ReturnType<typeof compiled>["plan"],
+  role: "collection-template" | "product-template",
+  componentType: "dynamicCollectionCommerce" | "dynamicProductDetail",
+) {
+  const page = plan.pagePlans.find((candidate) => candidate.role === role);
+  const component = page?.components.find(
+    (candidate): candidate is Extract<(typeof page.components)[number], { instance: unknown }> =>
+      "instance" in candidate && candidate.instance.component === componentType,
+  );
+  if (!component) throw new Error(`Missing planned ${componentType}.`);
+  return component.instance;
+}
+
+function requiredStoredComponent(
+  accepted: ReturnType<typeof compiled>["accepted"],
+  pageType: "collection" | "product",
+  componentType: "dynamicCollectionCommerce" | "dynamicProductDetail",
+) {
+  const page = accepted.activeStorefront.pages.find((candidate) => candidate.type === pageType);
+  const component = page?.components.find((candidate) => candidate.component === componentType);
+  if (!component) throw new Error(`Missing stored ${componentType}.`);
+  return component;
+}
+
+function generatedCommerceState(
+  planningInput: ReturnType<typeof compiled>["planningInput"],
+  accepted: ReturnType<typeof compiled>["accepted"],
+) {
+  const collection = requiredStoredComponent(accepted, "collection", "dynamicCollectionCommerce");
+  const product = requiredStoredComponent(accepted, "product", "dynamicProductDetail");
+  const collectionBinding = collection.bindings.find(
+    (binding) => binding.slotId === "primaryCollection" && binding.source === "collection",
+  );
+  const productListBinding = collection.bindings.find(
+    (binding) => binding.slotId === "collectionProducts" && binding.source === "productList",
+  );
+  const primaryProductBinding = product.bindings.find(
+    (binding) => binding.slotId === "primaryProduct" && binding.source === "product",
+  );
+  const relatedProductsBinding = product.bindings.find(
+    (binding) => binding.slotId === "relatedProducts" && binding.source === "productList",
+  );
+  if (
+    collectionBinding?.source !== "collection" ||
+    productListBinding?.source !== "productList" ||
+    primaryProductBinding?.source !== "product"
+  ) {
+    throw new Error("Generated commerce components lost their canonical bindings.");
+  }
+  const generatedProductIds = [
+    ...productListBinding.productIds,
+    primaryProductBinding.productId,
+    ...(relatedProductsBinding?.source === "productList" ? relatedProductsBinding.productIds : []),
+  ];
+  const products = [...new Set(generatedProductIds)].sort().map((productId) => {
+    const canonical = planningInput.catalogue.products.find(
+      (candidate) => candidate.id === productId,
+    );
+    if (!canonical) throw new Error(`Generated state references unknown product ${productId}.`);
+    return {
+      id: canonical.id,
+      sku: canonical.sku,
+      price: canonical.price,
+      compareAtPrice: canonical.compareAtPrice,
+      stockStatus: canonical.stockStatus,
+      variants: canonical.variants,
+      attributes: canonical.attributes,
+      orderOptions: canonical.orderOptions,
+      images: canonical.images,
+    };
+  });
+  const canonicalCollection = planningInput.catalogue.collections.find(
+    (candidate) => candidate.id === collectionBinding.collectionId,
+  );
+  if (!canonicalCollection) {
+    throw new Error(
+      `Generated state references unknown collection ${collectionBinding.collectionId}.`,
+    );
+  }
+  return {
+    products,
+    collections: [
+      {
+        id: canonicalCollection.id,
+        productIds: canonicalCollection.productIds,
+        generatedProductIds: productListBinding.productIds,
+      },
+    ],
+    approvedAssetContextFingerprint: accepted.activeStorefront.approvedAssetContextFingerprint,
+    approvedAssetIds: planningInput.approvedAssetContext?.assets.map((asset) => ({
+      id: asset.assetId,
+      provenance: asset.provenance,
+    })),
+  };
+}
+
 describe("P9R-03 collection and PDP generation depth", () => {
-  it("registers every curated collection and PDP capability for all renderer targets", () => {
-    expect(Object.keys(collectionCapabilityMatrix)).toHaveLength(5);
-    expect(Object.keys(productCapabilityMatrix)).toHaveLength(6);
+  it("carries every claimed collection and PDP capability through registered, planned, compiled and stored renderer targets", () => {
     expect(dynamicCollectionCommerceDefinition.variants.map((variant) => variant.id)).toEqual(
       expect.arrayContaining(["editorial", "compact"]),
     );
@@ -69,6 +156,98 @@ describe("P9R-03 collection and PDP generation depth", () => {
     [dynamicCollectionCommerceDefinition, dynamicProductDetailDefinition].forEach((definition) => {
       expect(definition.renderer.supportedTargets).toEqual(["editor", "preview", "published"]);
       expect(veskifyComponentRegistryV2.get(definition.type)).toBeDefined();
+    });
+    expect(
+      dynamicCollectionCommerceDefinition.editablePresentationFields.map((field) => field.path),
+    ).toEqual(
+      expect.arrayContaining([
+        "props.showDescription",
+        "props.filterLayout",
+        "props.showChildCollections",
+        "props.cardVariant",
+        "props.gridDensity",
+      ]),
+    );
+    expect(
+      dynamicProductDetailDefinition.editablePresentationFields.map((field) => field.path),
+    ).toEqual(
+      expect.arrayContaining([
+        "props.galleryLayout",
+        "props.mediaTreatment",
+        "props.optionDensity",
+        "props.attributeLayout",
+        "content.primaryActionLabel",
+        "props.stickyMobileAction",
+        "content.relatedHeading",
+      ]),
+    );
+    directionIds.forEach((directionId) => {
+      const { plan, proposal, accepted } = compiled(directionId);
+      const expected = p905aDirectionScenarios[directionId].expected;
+      const plannedCollection = requiredPlannedComponent(
+        plan,
+        "collection-template",
+        "dynamicCollectionCommerce",
+      );
+      const plannedProduct = requiredPlannedComponent(
+        plan,
+        "product-template",
+        "dynamicProductDetail",
+      );
+      const proposalCollection = requiredComponent(
+        proposal,
+        "collection",
+        "dynamicCollectionCommerce",
+      );
+      const proposalProduct = requiredComponent(proposal, "product", "dynamicProductDetail");
+      const storedCollection = requiredStoredComponent(
+        accepted,
+        "collection",
+        "dynamicCollectionCommerce",
+      );
+      const storedProduct = requiredStoredComponent(accepted, "product", "dynamicProductDetail");
+
+      expect(plan.designSystemSelection.componentSelections.collectionCommerce.variant).toBe(
+        expected.collectionPresentation.variant,
+      );
+      [plannedCollection, proposalCollection, storedCollection].forEach((component) => {
+        expect(component).toMatchObject({
+          variant: expected.collectionPresentation.variant,
+          props: {
+            showDescription: true,
+            filterLayout: expected.collectionPresentation.filterLayout,
+            showChildCollections: true,
+            cardVariant: expected.collectionPresentation.cardVariant,
+            gridDensity: expected.collectionPresentation.gridDensity,
+          },
+        });
+      });
+      expect(plan.designSystemSelection.componentSelections.productDetail.variant).toBe(
+        expected.productPresentation.variant,
+      );
+      [plannedProduct, proposalProduct, storedProduct].forEach((component) => {
+        expect(component).toMatchObject({
+          variant: expected.productPresentation.variant,
+          props: {
+            galleryLayout: expected.productPresentation.galleryLayout,
+            mediaTreatment: expected.productPresentation.mediaTreatment,
+            optionDensity: expected.productPresentation.optionDensity,
+            attributeLayout: expected.productPresentation.attributeLayout,
+            stickyMobileAction: true,
+          },
+          content: { primaryActionLabel: expect.any(Object) },
+        });
+      });
+      expect(proposalProduct.bindings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ slotId: "primaryProduct", source: "product" }),
+        ]),
+      );
+      expect(dynamicProductDetailDefinition.commerceBindingSlots).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "relatedProducts", acceptedSourceTypes: ["productList"] }),
+        ]),
+      );
     });
   });
 
@@ -138,25 +317,44 @@ describe("P9R-03 collection and PDP generation depth", () => {
     });
   });
 
-  it("preserves protected commerce and approved canonical media across both compositions", () => {
+  it("preserves generated canonical commerce, media bindings and approved-asset provenance", () => {
     const protectedFingerprints = directionIds.map((directionId) => {
-      const { planningInput, proposal } = compiled(directionId);
-      const protectedCommerce = {
-        products: planningInput.catalogue.products.map((product) => ({
-          id: product.id,
-          sku: product.sku,
-          variants: product.variants,
-          images: product.images,
-        })),
+      const { planningInput, proposal, accepted } = compiled(directionId);
+      const baseline = {
+        products: planningInput.catalogue.products
+          .slice()
+          .sort((left, right) => left.id.localeCompare(right.id))
+          .map((product) => ({
+            id: product.id,
+            sku: product.sku,
+            price: product.price,
+            compareAtPrice: product.compareAtPrice,
+            stockStatus: product.stockStatus,
+            variants: product.variants,
+            attributes: product.attributes,
+            orderOptions: product.orderOptions,
+            images: product.images,
+          })),
         collections: planningInput.catalogue.collections.map((collection) => ({
           id: collection.id,
           productIds: collection.productIds,
+          generatedProductIds: collection.productIds,
+        })),
+        approvedAssetContextFingerprint: planningInput.approvedAssetContext?.fingerprint ?? null,
+        approvedAssetIds: planningInput.approvedAssetContext?.assets.map((asset) => ({
+          id: asset.assetId,
+          provenance: asset.provenance,
         })),
       };
       expect(proposal.preconditions.canonicalCommerceFingerprint).toBe(
         `canonical-commerce-${canonicalValueFingerprint(planningInput.catalogue)}`,
       );
-      return canonicalValueFingerprint(protectedCommerce);
+      expect(generatedCommerceState(planningInput, accepted)).toEqual(baseline);
+      expect(accepted.activeStorefront).toEqual(proposal.proposedStorefront);
+      return canonicalValueFingerprint({
+        products: generatedCommerceState(planningInput, accepted).products,
+        collections: generatedCommerceState(planningInput, accepted).collections,
+      });
     });
     expect(new Set(protectedFingerprints)).toHaveLength(1);
     expect(p905aDirectionScenarios.modernTechnical.expected.collectionPresentation).toMatchObject({
