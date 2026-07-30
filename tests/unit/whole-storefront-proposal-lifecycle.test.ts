@@ -24,6 +24,7 @@ import {
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
 import { aurumNordicSeed } from "@/data/seed";
 import { sourceEvidenceSchema, sourceReferenceSchema } from "@/domain/source-discovery";
+import { p905dExactTokenRefinementRequest } from "../fixtures/p9-05d-exact-token-refinement";
 
 const now = "2026-07-23T10:00:00.000Z";
 
@@ -126,6 +127,21 @@ function tokenRefinementInput(): WholeStorefrontProposalCompilationInput {
   };
 }
 
+function exactP905dTokenRefinementInput(): WholeStorefrontProposalCompilationInput {
+  const planning = wholeStorefrontPlanningInputSchema.parse(planningInput());
+  const tokenRefinement = planRegisteredTokenRefinement(
+    p905dExactTokenRefinementRequest,
+    planning.draft.brandSystem,
+  );
+  if (tokenRefinement === null) throw new Error("Missing exact P9-05D token refinement");
+  return {
+    plan: createWholeStorefrontGenerationPlan(planning, {
+      tokenRefinementPlan: tokenRefinement,
+    }),
+    planningInput: planning,
+  };
+}
+
 function errorCode(action: () => unknown) {
   try {
     action();
@@ -218,6 +234,39 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
     });
     expect(source.planningInput).toEqual(originalPlanningInput);
     expect(validateWholeStorefrontProposal(proposal, source)).toEqual(proposal);
+  });
+
+  it("compiles the exact P9-05D refinement with every explicit semantic token target", () => {
+    const source = exactP905dTokenRefinementInput();
+    const catalogueBefore = structuredClone(source.planningInput.catalogue);
+    const proposal = compileWholeStorefrontProposal(source);
+
+    expect(proposal.proposedStorefront.brandSystem).toMatchObject({
+      colors: {
+        primary: "#201A17",
+        secondary: "#C9A27A",
+        accent: "#6B2E3D",
+        background: "#FFF8F0",
+        surface: "#E7D8C8",
+        text: "#201A17",
+        border: "#E7D8C8",
+      },
+      typography: { headingFont: "system-serif", bodyFont: "system-sans" },
+      spacing: { density: "balanced" },
+    });
+    expect(proposal.proposedStorefront.pages).toEqual(proposal.originalStorefront.pages);
+    expect(proposal.proposedStorefront.navigation).toEqual(proposal.originalStorefront.navigation);
+    expect(proposal.proposedStorefront.approvedAssetPlacements).toEqual(
+      proposal.originalStorefront.approvedAssetPlacements,
+    );
+    expect(source.planningInput.catalogue).toEqual(catalogueBefore);
+
+    const accepted = new WholeStorefrontProposalAcceptanceCoordinator({
+      proposal,
+      currentInput: () => source,
+    }).accept();
+    expect(accepted.state).toBe("accepted");
+    expect(accepted.activeStorefront).toEqual(proposal.proposedStorefront);
   });
 
   it("compiles one validated plan into a deterministic replayable proposal", () => {

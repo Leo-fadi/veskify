@@ -174,12 +174,25 @@ function segmentAround(instruction: string, occurrence: ColourOccurrence) {
   return instruction.slice(left, right);
 }
 
-function roleForOccurrence(
-  instruction: string,
-  occurrence: ColourOccurrence,
-): BrandColourToken | undefined {
+function rolesForOccurrence(instruction: string, occurrence: ColourOccurrence): BrandColourToken[] {
   const segment = segmentAround(instruction, occurrence);
-  return tokenAliases.find(({ pattern }) => pattern.test(segment))?.token;
+  const sentenceEnd = instruction.indexOf(".", occurrence.end);
+  const followingClause = instruction.slice(
+    occurrence.index,
+    sentenceEnd === -1 ? instruction.length : sentenceEnd,
+  );
+  // “Primary text” names two canonical targets: the primary action token and
+  // the readable text token. Other qualified labels retain their established
+  // single-token meanings: “secondary accents” is the secondary token, and
+  // “borders and secondary surfaces” assigns the explicitly named border and
+  // surface targets together.
+  if (/\bprimary\s+text\b/i.test(segment)) return ["primary", "text"];
+  if (/\bsecondary\s+accents?\b/i.test(segment)) return ["secondary"];
+  if (/^#[0-9a-f]{6}\s+for\s+borders?\s+and\s+secondary\s+surfaces?\b/i.test(followingClause)) {
+    return ["border", "surface"];
+  }
+  const token = tokenAliases.find(({ pattern }) => pattern.test(segment))?.token;
+  return token === undefined ? [] : [token];
 }
 
 function positionalRoles(count: number): readonly BrandColourToken[] | undefined {
@@ -217,19 +230,23 @@ function requestedPalette(
   const positional = positionalRoles(occurrences.length);
   const assigned = new Map<BrandColourToken, string>();
   occurrences.forEach((occurrence, index) => {
-    const token = roleForOccurrence(instruction, occurrence) ?? positional?.[index];
-    if (!token) {
+    const tokens = rolesForOccurrence(instruction, occurrence);
+    const assignedTokens = tokens.length === 0 ? [positional?.[index]] : tokens;
+    if (assignedTokens[0] === undefined) {
       throw new BrandPaletteInstructionError(
         "Label each supplied colour with an approved role: primary, secondary, accent, background, surface, text, muted text, or border.",
       );
     }
-    const existing = assigned.get(token);
-    if (existing !== undefined) {
-      throw new BrandPaletteInstructionError(
-        `Supply only one value for the ${token} colour token.`,
-      );
-    }
-    assigned.set(token, occurrence.value);
+    assignedTokens.forEach((token) => {
+      if (token === undefined) return;
+      const existing = assigned.get(token);
+      if (existing !== undefined) {
+        throw new BrandPaletteInstructionError(
+          `Supply only one value for the ${token} colour token.`,
+        );
+      }
+      assigned.set(token, occurrence.value);
+    });
   });
   const colors = { ...current };
   assigned.forEach((value, token) => {

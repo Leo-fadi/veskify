@@ -327,11 +327,19 @@ describe("P4-05B storefront planner and request construction", () => {
       preserveApprovedAssets: true,
       preserveCanonicalCommerce: true,
       spacing: null,
-      typography: { headingFont: "system-sans", bodyFont: "system-sans" },
+      typography: { headingFont: "system-serif", bodyFont: "system-sans" },
+      palette: {
+        colors: {
+          primary: "#201A17",
+          secondary: "#C9A27A",
+          accent: "#6B2E3D",
+          background: "#FFF8F0",
+          surface: "#E7D8C8",
+          text: "#201A17",
+          border: "#E7D8C8",
+        },
+      },
     });
-    expect(Object.values(request.tokenRefinementPlan?.palette?.colors ?? {})).toEqual(
-      expect.arrayContaining(["#FFF8F0", "#201A17", "#6B2E3D", "#C9A27A", "#E7D8C8"]),
-    );
     expect(request.affectedSections).toEqual([]);
     expect(request.componentContracts).toEqual([]);
   });

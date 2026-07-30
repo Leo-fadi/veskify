@@ -75,16 +75,19 @@ function typographyForInstruction(
 
   let headingFont = fontNearRole(normalized, headingRolePattern);
   let bodyFont = fontNearRole(normalized, bodyRolePattern);
-  if (/refined serif|hienostunut antiikva/iu.test(normalized)) {
+  if (
+    /(?:high[\s-]+contrast\s+editorial\s+serif|editorial\s+contrast|toimituksellinen\s+kontrasti)/iu.test(
+      normalized,
+    )
+  ) {
+    headingFont = "system-serif";
+  } else if (/refined serif|hienostunut antiikva/iu.test(normalized)) {
     headingFont ??= "georgia";
     bodyFont ??= "inter";
   } else if (
     /modern sans|clean sans(?:-serif)?|moderni groteski|selkeä groteski/iu.test(normalized)
   ) {
     headingFont ??= "system-sans";
-    bodyFont ??= "system-sans";
-  } else if (/editorial contrast|toimituksellinen kontrasti/iu.test(normalized)) {
-    headingFont ??= "system-serif";
     bodyFont ??= "system-sans";
   } else if (/technical(?: and)? functional|tekninen ja käytännöllinen/iu.test(normalized)) {
     headingFont ??= "inter";
@@ -96,7 +99,7 @@ function typographyForInstruction(
   if (/elegant serif|elegantti antiikva/iu.test(normalized)) {
     headingFont = "georgia";
   }
-  if (/clean sans(?:-serif)?|selkeä groteski/iu.test(normalized)) {
+  if (/clean(?:\s+modern)?\s+sans(?:-serif)?|selkeä groteski/iu.test(normalized)) {
     bodyFont = "system-sans";
   }
   if (headingFont === null && bodyFont === null) {
