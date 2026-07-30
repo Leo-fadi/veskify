@@ -150,7 +150,22 @@ Status values:
 - **Research recommendation:** external pattern worth evaluating, not a repository fact or
   implementation commitment.
 
-### 6.1 Existing design-agent baseline
+### 6.1 Canonical names and migration relationships
+
+| Reported name                                          | Canonical v1.2.1 name                                              | Relationship / status                                                                                                                           |
+| ------------------------------------------------------ | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `analyseStorefrontSource`                              | `discoverExistingStorefront`                                       | Conceptual rename; Partial source-discovery foundations, not a live design-skill registry entry.                                                |
+| `generateStorefrontFromBrief`                          | `generateInitialStorefront`                                        | Conceptual rename; Partial until complete Phase 9 generation/lifecycle evidence passes.                                                         |
+| `applyBrandPalette`                                    | `applyExactBrandPalette`                                           | The registered exact-palette package is canonical for current token fidelity. A broader semantic palette package would be separate future work. |
+| `fixMobileLayout`                                      | `fixResponsiveLayout`                                              | Planned conceptual rename covering all target widths, not only mobile.                                                                          |
+| `replaceFixturePlaceholders`                           | `removeFixtureSpecificContent`                                     | Planned conceptual rename; neither name is a current registry ID.                                                                               |
+| `restyleWholeStorefront` / `coordinateWholeStorefront` | `applyRegisteredWholeStorefrontDirection` for the current registry | Merchant intent/future orchestration names over the current Partial registered direction package.                                               |
+| Uppercase serialized codes                             | camelCase Skill/application functions                              | Legitimate separate layers: persisted proposal operations versus application package/function identifiers.                                      |
+
+Temporary documentation or merchant-language aliases must resolve to one canonical package or
+operation before planning. They must not become parallel registries.
+
+### 6.2 Existing design-agent baseline
 
 | Skill                                     | Status   | Purpose                                                                                                            |
 | ----------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -168,7 +183,7 @@ labels, not current registry IDs. Future Skill packages may use those names afte
 merge. Existing proposal review, protected-field guards, stale protection, atomic acceptance and
 undo/redo must be reused.
 
-### 6.2 Source discovery and brief skills
+### 6.3 Source discovery and brief skills
 
 #### `discoverExistingStorefront`
 
@@ -202,7 +217,7 @@ undo/redo must be reused.
 **Output:** Merchant-reviewable Storefront Design Brief.
 **Rule:** Initial generation cannot proceed until the brief is approved.
 
-### 6.3 Asset-aware generation skills
+### 6.4 Asset-aware generation skills
 
 #### `classifyAssetRoles`
 
@@ -226,7 +241,7 @@ compositions from the approved brief, executable PageBlueprints, bindings and ap
 then passes review, atomic acceptance, persistence, preview and publication through the same
 `StorefrontSnapshot`. It must not copy seed-brand defaults into another merchant.
 
-### 6.4 Reusable component and page skills
+### 6.5 Reusable component and page skills
 
 #### `generateHomepageFromBlueprint`
 
@@ -248,7 +263,7 @@ May change gallery layout, information hierarchy, selector presentation, spacing
 
 May change density, card family, image treatment, columns, heading and ordering of references. It must render valid price, compare-at-price or unavailable-price states without inventing values.
 
-### 6.5 Visual-direction skills
+### 6.6 Visual-direction skills
 
 #### `applyExactBrandPalette`
 
@@ -283,7 +298,7 @@ Use approved responsive variants, content order, density, media crop and visibil
 
 Improve contrast, heading order, labels, focus-safe controls, alt-text completeness and responsive readability without hiding unresolved failures.
 
-### 6.6 Content and localisation skills
+### 6.7 Content and localisation skills
 
 - `generateSectionCopy`
 - `shortenCopy`

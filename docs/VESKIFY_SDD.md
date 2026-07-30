@@ -94,11 +94,11 @@ in force. It does not create a v1.3 architecture and does not declare Phase 9 co
 
 ### Product position and grounded workflow
 
-The useful lesson from capability-grounded storefront generators, including commercetools
-reference material, is the workflow: retrieve approved capabilities, compose within them, validate
-the result and compile it deterministically. Veskify is not a clone of another generator.
-Veskify generates, governs and persists merchant-editable design state for Vesko Storefront Studio
-while Vesko remains authoritative for commerce truth.
+commercetools uses AI primarily to help developers generate storefront software. Veskify uses AI to
+generate and continuously govern merchant-editable storefront design state. Veskify is not a
+commercetools clone. The useful lesson from capability-grounded storefront generators is the
+workflow: discover available capabilities, retrieve exact schemas, plan, validate and implement
+deterministically.
 
 The grounded workflow is:
 
@@ -114,6 +114,8 @@ Approved Storefront Design Brief + canonical commerce projection
 
 Provider output is never an executable page graph, component implementation, publication payload or
 second source of truth. It may select only capabilities supplied by the current repository.
+The AI MUST NOT invent components, component variants, props, slots, bindings, asset roles, page
+recipes, adapter capabilities, operation types or versions.
 
 ### One canonical storefront intermediate representation
 
@@ -147,6 +149,22 @@ capabilities, preserve canonical commerce, apply atomically and survive save/pre
 Token-only refinement, palette fidelity, a provider-shaped response, one changed section or
 renderer-only variety is insufficient.
 
+One merchant instruction must create a materially new coordinated storefront across the shared
+header, navigation, announcement bar where present, footer, homepage, collection and representative
+product-detail pages. Objective composition evidence includes:
+
+| Area | Material changes required |
+| --- | --- |
+| Shared storefront frame | Header, navigation, announcement-bar and footer treatment. |
+| Homepage | Hero composition; section hierarchy/order; product or collection presentation; story/campaign composition; rhythm and density. |
+| Collection | Header treatment; filtering/discovery; product-card composition; merchandising density; collection hierarchy. |
+| Product detail | Gallery; product-information hierarchy; options and specifications; purchasing-area hierarchy; related products. |
+| Whole storefront | Coherent typography, surfaces, spacing/density, image treatment and page-to-page direction. |
+
+Colour, typography, copy, spacing or density alone; one hero; homepage-only change; one changed page;
+unchanged recipes with new tokens; a generic starter theme; unrelated page designs; provider HTTP
+success; or a valid but visually immaterial proposal MUST fail the Phase 9 closing gate.
+
 The binding order inside Phase 9 is:
 
 1. prove meaningful page and shared-frame composition;
@@ -156,12 +174,22 @@ The binding order inside Phase 9 is:
 5. prove persistence, preview and explicit publication of the accepted snapshot;
 6. only then expand the controlled design vocabulary.
 
+Protected commerce, history, rollback and explicit publishing are invariants throughout this order;
+they are never deferred while composition is proved.
+
 PR #123 is merged evidence for exact valid token refinement, including preservation semantics. It
 is not evidence that `generateInitialStorefront` or `coordinateWholeStorefront` has passed this
 whole-store gate. The current repository also contains mocked provider-boundary and deterministic
 lifecycle tests, but no retained evidence proving the required live-provider journey and complete
 visual matrix. Those limitations are recorded in
 `docs/PHASE_9_EVIDENCE_MATRIX.md`.
+
+The verified PR #123 correction records `spacing: null` for preservation-only spacing, maps
+`#201A17` to primary/text, `#C9A27A` to secondary/accent, `#6B2E3D` to button/strong accent and
+`#E7D8C8` to surface/border, resolves heading/body intent to registered system serif/sans, issues
+one canonical storefront POST, advances local authority once on acceptance and preserves structure,
+navigation, assets, bindings and commerce. Automated coverage uses provider-shaped or mocked
+transport; a live network response is not retained and therefore is not claimed.
 
 ### Acceptance ownership correction
 
@@ -200,16 +228,100 @@ P10A establishes grounded orchestration without changing the canonical state mod
 8. **P10A-08 — Publish compiler:** deterministically validate and publish the accepted canonical
    snapshot with no AI at publication time.
 
-P10B follows P10A and delivers asset upload/library workflows, role and provenance review,
-generated-image candidate/approval/promotion/replacement lifecycle, and Storefront Studio UX that
-consumes the P10A contracts. Existing `AssetInventory` roles and provenance are the foundation; do
-not create a competing media system.
+The P10A-02 audit MUST produce a live gap matrix with columns Capability, Existing source,
+Runtime-queryable, Planner-visible, Compiler-preserved, Validated, Rendered and Missing work. Each
+row is classified existing-and-sufficient, existing-but-not-queryable, duplicated,
+planner-visible-but-lost, render-only or missing. Capability facts found only in prompts, tests,
+fixtures or allowlists must be identified before P10A-03 design.
 
-Phase 11 then adds granular merchant editing at selected section, current page, shared frame,
-design system and complete storefront scopes. Phase 12 consolidates stable canonical domains and
-adapter ports and supplies a Vesko reference adapter. Immediate full staging integration is not a
-Phase 12 prerequisite; authentication, tenancy, production operations and rollout remain later
-deployment work.
+P10A-03 is generated from `ComponentDefinitionV2`, PageBlueprint/template contracts,
+`DataBinding`, asset and adapter capability contracts, protected paths and migration metadata. For
+each applicable component it exposes type, version, family, variants, page types, slots and
+cardinality, props/content schemas, binding requirements, editable/protected paths,
+responsive/accessibility rules, asset requirements, compatibility and migration version. Codex and
+the live design agent query the same source. Unknown or stale capability references fail before
+preview.
+
+P10A-04 PageBlueprint metadata includes ID/version/page type, required and optional families,
+cardinality and order, binding and asset-role requirements, responsive composition and
+compatibility. A blueprint is an independent generation starting point; generated output becomes
+ordinary snapshot state and is not silently rewritten when the blueprint later changes. Dynamic
+PDP and collection composition stays stable while runtime bindings resolve different entities.
+
+P10A-05 targets versioned Skill packages for storefront orchestration, initial generation,
+selected-section editing, shared-frame editing, current-page editing, page/whole-storefront
+regeneration, brand tokens, homepage, collection, dynamic PDP, assets, image generation,
+localization and validation/publish. Each package defines its instructions, required capability
+queries, allowed operations, exact input/output schemas, examples, deterministic fixtures, negative
+and validation cases and permission scope. A whole-store generation Skill is never reused for one
+hero or page.
+
+P10A-06 uses the canonical scopes selected section/component, current page, shared storefront frame,
+design system and complete storefront. “Shared storefront frame” means navigation, header,
+announcement bar and footer. The router explains unavailable capabilities, offers valid
+alternatives and obtains approval before widening; “change this hero” cannot regenerate the site,
+“make this PDP technical” cannot modify home, “navigation and footer” may target the shared frame
+and “use this palette everywhere” may target the design system.
+
+P10A-07 golden stores include premium/minimal jewellery, editorial jewellery, a watch retailer, a
+dense hardware/general-retail catalogue, EN/FI, a simple watch PDP and a complex configurable ring
+PDP. The non-jewellery fixture is mandatory to detect luxury, jewellery, Karvonen and sparse-catalog
+assumptions. Gates cover schemas, registered capabilities, bindings/commerce, responsive behavior,
+accessibility, brand/page coherence, diversity, fixture leakage, asset provenance, performance and
+exact atomic Undo/Redo.
+
+P10A-08 compiles validated draft `StorefrontSnapshot` → publish-time validation → immutable runtime
+snapshot → published renderer. It rejects invalid bindings, unknown component versions, missing
+required fields or critical assets, protected-field violations, critical accessibility failures
+and unresolved migrations. Published storefronts require no LLM, Puck runtime, provider proposal
+object or browser-accessible Vesko/provider credentials. Cart, checkout, order, inventory and
+pricing mutation remain separate commerce operations.
+
+### P10B asset governance and Storefront Studio
+
+P10B follows P10A and consumes its capability/scope contracts:
+
+- **P10B-01 — Brand asset upload/library:** primary/alternate/light/dark logos, favicons, brand,
+  campaign, editorial and story imagery, marks/icons, approved illustrations, textures, permitted
+  fonts and supported video. Fixture/developer registration is not the merchant workflow.
+- **P10B-02 — Roles/provenance/metadata:** stable ID/domain, provenance, approval, role, dimensions,
+  focal point, crop constraints, alt text, locale/market, light/dark suitability, usage restrictions
+  and uploaded/generated origin. Canonical product/variant media, merchant brand, campaign,
+  editorial, temporary generated and accepted generated assets remain distinct.
+- **P10B-03 — Generated-image lifecycle:** merchant request → capability/policy check → temporary
+  proposal asset → technical/safety validation → merchant review → accept/reject → promotion to the
+  approved library → snapshot binding to a stable ID. Generated imagery may support hero,
+  campaign, lifestyle/editorial, decorative background or abstract brand use but never silently
+  replace canonical product/variant media.
+- **P10B-04 — Studio shell:** native Vesko shell, dominant canvas, compact page/section outline,
+  Design and AI tabs, merchant language, proposal review, preview, draft, publish, history,
+  responsive drawers/bottom sheets and keyboard/accessibility. A polished shell must not conceal an
+  ungrounded generator.
+
+Existing `AssetInventory` roles/provenance are the foundation; do not create a competing media
+system.
+
+### Phase 11 granular editing
+
+Phase 11 provides stable section identity and explicit selected section/component, current page,
+shared storefront frame, design system and complete storefront edits. It covers add/remove,
+supported duplication, variant replacement, reorder, page regeneration, mixed-scope atomic history,
+local coherence and strict no-widening. Common targets include header/navigation/announcement,
+hero, featured collections/products, brand story, campaign/trust, collection discovery/grid, PDP
+gallery/information/options/specifications and footer.
+
+### Phase 12 canonical domains and adapters
+
+Phase 12 consolidates canonical product, variant/option, collection/navigation,
+price/availability-presentation, localization, product-media, brand-asset and generated-asset
+domains. Versioned image-delivery, commerce, collection/navigation and asset adapters define
+capability negotiation, synchronization semantics, typed errors, versioning, conformance fixtures
+and integration documentation. Vesko is the first reference implementation of these canonical
+contracts, not a special case embedded through the editor.
+
+Immediate full staging integration is not a Phase 12 prerequisite. Authentication, authorization,
+tenant isolation, production persistence, hosted staging, observability, recovery, pilot operations
+and release remain later deployment work.
 
 ### Capability and recommendation status
 

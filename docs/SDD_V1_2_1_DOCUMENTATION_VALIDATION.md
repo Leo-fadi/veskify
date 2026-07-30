@@ -54,6 +54,19 @@ that final source.
 - Current storefront template contracts are a PageBlueprint precursor, not the completed executable
   P10A contract.
 
+## Remaining documentation inconsistencies
+
+- Canonical architecture uses `PageBlueprint`, while the current implementation precursor remains
+  named `StorefrontTemplateDefinition`; P10A-01/P10A-04 must resolve the implementation vocabulary
+  without adding a second system.
+- Several merchant/conceptual Skill names do not exist as registry IDs. The Skills catalogue now
+  records their canonical replacement or layer, but implementation migration aliases remain future
+  work.
+- Historical phase reports retain the task/phase names that were correct when written. They are not
+  rewritten; the v1.2.1 SDD and roadmap own current phase status.
+- The repository has no retained complete live-provider evidence package. The Phase 9 matrix
+  therefore cannot cite a closing commit, full browser matrix or provider artifact.
+
 ## Documentation validation
 
 The final branch must record actual results for:
@@ -65,7 +78,7 @@ The final branch must record actual results for:
 | SDD/DOCX source synchronization               | Passed; the DOCX embedded SHA-256 matches the authoritative Markdown.                                                               |
 | Roadmap phase/status consistency              | Passed with `pnpm docs:validate`; Phase 9 remains active and the required phase order is present.                                   |
 | Stale canonical-model/status terminology scan | Passed; deprecated names appear only in explicit prohibition/clarification text.                                                    |
-| DOCX render and visual inspection             | Passed; Quick Look parsed the DOCX and all 24 paginated preview images were inspected without clipping, overlap or missing content. |
+| DOCX render and visual inspection             | Passed; Quick Look parsed the DOCX and all 25 paginated preview images were inspected without clipping, overlap or missing content. |
 | `git diff --check`                            | Passed after final documentation and tooling edits.                                                                                 |
 
 Product typecheck, unit tests, Playwright and `pnpm validate:full` are intentionally outside this
