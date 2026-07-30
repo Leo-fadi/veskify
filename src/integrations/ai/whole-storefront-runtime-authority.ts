@@ -40,6 +40,7 @@ import {
   type WholeStorefrontPlanningProvider,
   wholeStorefrontPlanningInputSchema,
 } from "@/application/whole-storefront-generation-plan";
+import { orderSectionsForRecipe } from "@/application/storefront-design-system";
 import {
   createMerchantProjectAuthorization,
   requireMerchantProjectAction,
@@ -352,22 +353,7 @@ function recipeOrderedSections(
     ...recipes.productRecipes,
   ].find((candidate) => candidate.id === recipeId);
   if (!recipe) throw new ServerWholeStorefrontAuthorityError("malformed-state");
-  const order = new Map(recipe.sections.map((section, index) => [section.component, index]));
-  const result = structuredClone(page.sections);
-  const mappedPositions = result.flatMap((section, index) =>
-    order.has(section.component) ? [index] : [],
-  );
-  const mappedSections = mappedPositions
-    .map((index) => ({ section: result[index], originalIndex: index }))
-    .sort(
-      (left, right) =>
-        order.get(left.section.component)! - order.get(right.section.component)! ||
-        left.originalIndex - right.originalIndex,
-    );
-  mappedPositions.forEach((position, index) => {
-    result[position] = mappedSections[index].section;
-  });
-  return result;
+  return orderSectionsForRecipe(page.sections, recipe);
 }
 
 function projectedRuntimeSection(

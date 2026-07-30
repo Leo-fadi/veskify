@@ -9,6 +9,7 @@ import {
 } from "@/application/whole-storefront-generation-plan/contract";
 import {
   applyRegisteredTokenRefinement,
+  orderSectionsForRecipe,
   registeredBrandSystemForDirection,
 } from "@/application/storefront-design-system";
 import {
@@ -286,6 +287,7 @@ function plannedPage(
   original: WholeStorefrontRuntimeState,
   plan: ReturnType<typeof validateCurrentPlan>,
   pagePlan: ReturnType<typeof validateCurrentPlan>["pagePlans"][number],
+  designSystem: WholeStorefrontProposalCompilationInput["planningInput"]["recipeContext"]["designSystem"],
 ): { page: WholeStorefrontRuntimePage; removedComponentIds: string[] } {
   const originalPage = original.pages.find((page) => page.pageId === pagePlan.pageId);
   if (pagePlan.disposition !== "created" && !originalPage) {
@@ -408,13 +410,25 @@ function plannedPage(
         )
         .map((component) => component.id)
     : [];
+  const coordinatedComponents = components.map((component) =>
+    coordinatedRuntimeComponent(component, plan, pagePlan.role),
+  );
+  const homepageRecipe =
+    plan.tokenRefinementPlan === null && pagePlan.role === "homepage"
+      ? designSystem.homepageRecipes.find(
+          (recipe) => recipe.id === plan.designSystemSelection.homepageRecipeId,
+        )
+      : undefined;
+  if (plan.tokenRefinementPlan === null && pagePlan.role === "homepage" && !homepageRecipe) {
+    invalid("invalid-plan", "The selected homepage recipe is unavailable.");
+  }
   const page = {
     pageId: pagePlan.pageId,
     role: pagePlan.role,
     type: originalPage?.type ?? pageTypeForRole(pagePlan.role),
-    components: components.map((component) =>
-      coordinatedRuntimeComponent(component, plan, pagePlan.role),
-    ),
+    components: homepageRecipe
+      ? orderSectionsForRecipe(coordinatedComponents, homepageRecipe)
+      : coordinatedComponents,
   } satisfies WholeStorefrontRuntimePage;
   return { page, removedComponentIds };
 }
@@ -683,7 +697,12 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
     .slice()
     .sort((left, right) => left.pageId.localeCompare(right.pageId))
     .forEach((pagePlan) => {
-      const planned = plannedPage(original, plan, pagePlan);
+      const planned = plannedPage(
+        original,
+        plan,
+        pagePlan,
+        input.planningInput.recipeContext.designSystem,
+      );
       add({ type: "APPLY_PAGE_COMPONENTS", ...planned });
     });
   plan.approvedAssetPlacements

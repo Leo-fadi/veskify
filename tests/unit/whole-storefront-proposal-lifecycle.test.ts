@@ -17,6 +17,7 @@ import {
   createWholeStorefrontRecipeContext,
   wholeStorefrontPlanningInputSchema,
 } from "@/application/whole-storefront-generation-plan";
+import { orderSectionsForRecipe } from "@/application/storefront-design-system";
 import {
   approveStorefrontDesignBrief,
   createStorefrontDesignBrief,
@@ -318,7 +319,7 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
     expect(proposal.reviewSummary.canonicalBindings).toEqual(source.plan.canonicalCommerceBindings);
   });
 
-  it("preserves merchant section order and visibility through replacement, accept, undo and redo", () => {
+  it("applies the registered homepage composition while preserving visibility through accept, undo and redo", () => {
     const source = input();
     const home = source.planningInput.draft.pages.find((page) => page.type === "home");
     const collection = source.planningInput.draft.pages.find((page) => page.type === "collection");
@@ -351,8 +352,12 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
       throw new Error("Missing compiled storefront replacement");
     }
 
+    const homepageRecipe = source.planningInput.recipeContext.designSystem.homepageRecipes.find(
+      (recipe) => recipe.id === source.plan.designSystemSelection.homepageRecipeId,
+    );
+    if (!homepageRecipe) throw new Error("Missing selected homepage recipe");
     expect(homeRuntime.components.map((component) => component.id)).toEqual(
-      home.sections.map((section) => section.id),
+      orderSectionsForRecipe(home.sections, homepageRecipe).map((section) => section.id),
     );
     expect(
       homeRuntime.components.find((component) => component.id === home.sections[first].id)?.visible,
