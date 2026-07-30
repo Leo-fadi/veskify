@@ -18,7 +18,7 @@ export {
 };
 
 const tokenIntentPattern =
-  /#[0-9a-f]{6}\b|\b(?:palette|colou?rs?|primary|secondary|accent|background|surface|muted\s+text|border|typography|fonts?|heading|headings|body\s+(?:font|type|text)|spacing|density)\b|\b(?:väripaletti|värit?|ensisijainen|toissijainen|korostusväri|tausta|pinta|vaimennettu\s+teksti|reunus|typografia|fontit?|otsikko|leipäteksti|välistys|tiheys)\b/iu;
+  /#[0-9a-f]{6}\b|\b(?:palette|colou?rs?|primary|secondary|accent|background|surface|muted\s+text|border|typography|fonts?|heading|headings|body\s+(?:font|type|text)|spacing|density|compact|dense|spacious|airy|balanced)\b|\b(?:väripaletti|värit?|ensisijainen|toissijainen|korostusväri|tausta|pinta|vaimennettu\s+teksti|reunus|typografia|fontit?|otsikko|leipäteksti|välistys|tiheys|kompakti|tiivis|väljä|ilmava|tasapainoinen)\b/iu;
 const structuralMutationPattern =
   /\b(?:rebuild|redesign|reorder|replace|add|remove|change|modify|alter|muuta|uudista|järjestä|lisää|poista|korvaa)\b[^.!?]{0,100}\b(?:layout|page\s+structure|sections?|components?|recipes?|variants?|hero|collection\s+(?:layout|presentation)|product-detail\s+(?:layout|presentation)|asettelu|sivurakenne|osiot?|komponentit?|reseptit?|variantit?)\b/iu;
 
@@ -113,7 +113,12 @@ function typographyForInstruction(
 
 function spacingForInstruction(instruction: string): BrandSystem["spacing"] | null {
   const normalized = instruction.normalize("NFC").toLocaleLowerCase();
-  if (!/\b(?:spacing|density|välistys|tiheys)\b/iu.test(normalized)) return null;
+  const mentionsSpacing = /\b(?:spacing|density|välistys|tiheys)\b/iu.test(normalized);
+  const preservationOnly =
+    /\b(?:preserve|keep|leave)\b[^.!?]{0,160}\bspacing\b/iu.test(normalized) ||
+    /\bdo not change\b[^.!?]{0,80}\bspacing\b/iu.test(normalized) ||
+    /\b(?:säilytä|pidä|jätä)\b[^.!?]{0,160}\b(?:välistys|tiheys)\b/iu.test(normalized) ||
+    /\bälä muuta\b[^.!?]{0,80}\b(?:välistys|tiheys)\b/iu.test(normalized);
   if (/\b(?:compact|dense|kompakti|tiivis)\b/iu.test(normalized)) {
     return { density: "compact" };
   }
@@ -123,6 +128,7 @@ function spacingForInstruction(instruction: string): BrandSystem["spacing"] | nu
   if (/\b(?:balanced|standard|tasapainoinen|normaali)\b/iu.test(normalized)) {
     return { density: "balanced" };
   }
+  if (!mentionsSpacing || preservationOnly) return null;
   throw new BrandPaletteInstructionError(
     "Choose compact, balanced, or spacious spacing for this refinement.",
   );

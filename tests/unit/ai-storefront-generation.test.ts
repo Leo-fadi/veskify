@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { p905dExactTokenRefinementRequest } from "../fixtures/p9-05d-exact-token-refinement";
 import {
   aiStorefrontPendingRequestKey,
-  AiStorefrontRequestBuildError,
   buildAiStorefrontProviderRequest,
   buildAiStorefrontProviderRequestForSupportedCapability,
   classifyRegisteredWholeStorefrontDirectionRequest,
@@ -12,6 +11,7 @@ import {
   createDeterministicMockStorefrontAIProvider,
   aiStorefrontProviderResponseSchema,
   isRegisteredWholeStorefrontDirectionRequest,
+  planRegisteredTokenRefinement,
   validateAiStorefrontProviderResponse,
   type AiStorefrontGenerationCommand,
   type AiStorefrontProviderResponse,
@@ -309,33 +309,61 @@ describe("P4-05B storefront planner and request construction", () => {
     });
   });
 
-  it("classifies the exact P9-05D failed merchant request before provider execution", () => {
+  it("builds the exact P9-05D failed merchant request as one protected token-only refinement", () => {
     const storefrontProvider = registeredProvider();
-    expect(() =>
-      buildAiStorefrontProviderRequestForSupportedCapability(
-        commandWithoutCapability({
-          provider: storefrontProvider,
-          providerId: storefrontProvider.id,
-          affectedPageIds: snapshot.pages.map((page) => page.id),
-          merchantInstruction: p905dExactTokenRefinementRequest,
-        }),
-        1,
-        "registeredWholeStorefrontDirection",
-      ),
-    ).toThrow(AiStorefrontRequestBuildError);
-    expect(() =>
-      buildAiStorefrontProviderRequestForSupportedCapability(
-        commandWithoutCapability({
-          provider: storefrontProvider,
-          providerId: storefrontProvider.id,
-          affectedPageIds: snapshot.pages.map((page) => page.id),
-          merchantInstruction: p905dExactTokenRefinementRequest,
-        }),
-        1,
-        "registeredWholeStorefrontDirection",
-      ),
-    ).toThrow("Choose compact, balanced, or spacious spacing for this refinement.");
+    const { request } = buildAiStorefrontProviderRequestForSupportedCapability(
+      commandWithoutCapability({
+        provider: storefrontProvider,
+        providerId: storefrontProvider.id,
+        affectedPageIds: snapshot.pages.map((page) => page.id),
+        merchantInstruction: p905dExactTokenRefinementRequest,
+      }),
+      1,
+      "registeredWholeStorefrontDirection",
+    );
+    expect(request.tokenRefinementPlan).toMatchObject({
+      preservePageStructure: true,
+      preserveComponentVariants: true,
+      preserveApprovedAssets: true,
+      preserveCanonicalCommerce: true,
+      spacing: null,
+      typography: { headingFont: "system-sans", bodyFont: "system-sans" },
+    });
+    expect(Object.values(request.tokenRefinementPlan?.palette?.colors ?? {})).toEqual(
+      expect.arrayContaining(["#FFF8F0", "#201A17", "#6B2E3D", "#C9A27A", "#E7D8C8"]),
+    );
+    expect(request.affectedSections).toEqual([]);
+    expect(request.componentContracts).toEqual([]);
   });
+
+  it.each([
+    ["Preserve spacing.", null],
+    ["Keep the existing spacing.", null],
+    ["Do not change spacing.", null],
+    ["Leave layout and spacing unchanged.", null],
+    ["Preserve all layouts, sections, products, bindings, images, spacing and content.", null],
+    ["Use compact spacing.", "compact"],
+    ["Use balanced spacing.", "balanced"],
+    ["Use spacious spacing.", "airy"],
+    ["Make the storefront more compact.", "compact"],
+    ["Do not preserve the current spacing; make it spacious.", "airy"],
+  ])("handles spacing instruction %s", (instruction, density) => {
+    const plan = planRegisteredTokenRefinement(instruction, snapshot.brandSystem);
+    if (density === null) {
+      expect(plan).toBeNull();
+      return;
+    }
+    expect(plan?.spacing).toEqual({ density });
+  });
+
+  it.each(["Change the spacing.", "Adjust the density.", "Use different spacing."])(
+    "rejects incomplete spacing mutation %s",
+    (instruction) => {
+      expect(() => planRegisteredTokenRefinement(instruction, snapshot.brandSystem)).toThrow(
+        "Choose compact, balanced, or spacious spacing for this refinement.",
+      );
+    },
+  );
 
   it.each([
     {
