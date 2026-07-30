@@ -8,6 +8,7 @@ import {
 } from "./contract";
 import {
   BrandPaletteInstructionError,
+  containsProtectedCommerceMutation,
   planExactBrandPalette,
   type ExactBrandPalettePlan,
 } from "./brand-palette";
@@ -31,48 +32,95 @@ export function normalizeStorefrontInstruction(value: string): string {
     .replace(/\s+/g, " ");
 }
 
-const registeredDirectionSignals = [
-  /premium/,
-  /editorial/,
-  /craftsmanship/,
-  /product imagery/,
-  /ring discovery/,
-  /modern/,
-  /technical/,
-  /compact spacing/,
-  /crisp surfaces/,
-  /commerce-focused/,
-  /structured product discovery/,
-  /specification-led/,
-  /warm/,
-  /approachable/,
-  /natural colou?r/,
-  /welcoming/,
-  /soft(?:er)? (?:typography|spacing|shapes|surfaces)/,
-  /ensiluokkainen/,
-  /editoriaal/,
-  /käsityö/,
-  /tuotekuv/,
-  /sormus(?:ten|valikoiman) löyt/,
-  /moderni/,
-  /tekninen/,
-  /kompakti/,
-  /terävä/,
-  /lämmin/,
-  /lähestyttävä/,
-  /luonnollinen väri/,
-  /pehmeä(?:mpi)? (?:typografia|välistys|muoto|pinta)/,
-] as const;
+const registeredDirectionSignals = {
+  premiumEditorial: [
+    /premium/,
+    /editorial/,
+    /craftsmanship/,
+    /product imagery/,
+    /ring discovery/,
+    /ensiluokkainen/,
+    /editoriaal/,
+    /käsityö/,
+    /tuotekuv/,
+    /sormus(?:ten|valikoiman) löyt/,
+  ],
+  modernTechnical: [
+    /modern/,
+    /technical/,
+    /minimal/,
+    /nordic/,
+    /compact spacing/,
+    /crisp surfaces/,
+    /commerce-focused/,
+    /structured product discovery/,
+    /specification-led/,
+    /moderni/,
+    /tekninen/,
+    /pelkistet/,
+    /pohjois/,
+    /kompakti/,
+    /terävä/,
+  ],
+  warmApproachable: [
+    /warm/,
+    /approachable/,
+    /natural colou?r/,
+    /welcoming/,
+    /soft(?:er)? (?:typography|spacing|shapes|surfaces)/,
+    /lämmin/,
+    /lähestyttävä/,
+    /luonnollinen väri/,
+    /pehmeä(?:mpi)? (?:typografia|välistys|muoto|pinta)/,
+  ],
+} as const;
 
-const protectedCommerceMutation =
-  /(?:change|edit|set|raise|lower|replace|remove|delete|update).{0,48}(?:price|sku|stock|inventory|availability|variant|option value|order|tax|payment|shipping)|(?:muuta|aseta|nosta|laske|korvaa|poista|päivitä).{0,48}(?:hinta|sku|varasto|saatavuus|variant|valinta-arvo|tilaus|vero|maksu|toimitus)/u;
+export type RegisteredWholeStorefrontRequestClassification =
+  | {
+      kind: "selected";
+      direction: keyof typeof registeredDirectionSignals;
+    }
+  | { kind: "ambiguous" | "protected-commerce" | "unsupported" };
+
+export function classifyRegisteredWholeStorefrontDirectionRequest(
+  instruction: string,
+): RegisteredWholeStorefrontRequestClassification {
+  const normalized = normalizeStorefrontInstruction(instruction);
+  if (containsProtectedCommerceMutation(normalized)) return { kind: "protected-commerce" };
+
+  const legacyWarm = /\b(warm|premium|lämmin|premium-ilme)/iu.test(normalized);
+  const legacyMinimal = /\b(minimal|nordic|pelkistet|pohjois)/iu.test(normalized);
+  if (legacyWarm && legacyMinimal) return { kind: "ambiguous" };
+
+  const ranked = Object.entries(registeredDirectionSignals)
+    .map(([direction, signals]) => ({
+      direction: direction as keyof typeof registeredDirectionSignals,
+      score: signals.filter((signal) => signal.test(normalized)).length,
+    }))
+    .filter(({ score }) => score > 0)
+    .sort(
+      (left, right) => right.score - left.score || left.direction.localeCompare(right.direction),
+    );
+  if (ranked.length === 0) return { kind: "unsupported" };
+  if (ranked[1]?.score === ranked[0].score) {
+    const tiedDirections = ranked
+      .filter(({ score }) => score === ranked[0].score)
+      .map(({ direction }) => direction);
+    if (
+      tiedDirections.length === 2 &&
+      tiedDirections.includes("premiumEditorial") &&
+      tiedDirections.includes("warmApproachable") &&
+      /\bpremium\b/u.test(normalized)
+    ) {
+      return { kind: "selected", direction: "premiumEditorial" };
+    }
+    return { kind: "ambiguous" };
+  }
+  return { kind: "selected", direction: ranked[0].direction };
+}
 
 export function isRegisteredWholeStorefrontDirectionRequest(instruction: string): boolean {
-  const normalized = normalizeStorefrontInstruction(instruction);
-  return (
-    !protectedCommerceMutation.test(normalized) &&
-    registeredDirectionSignals.some((signal) => signal.test(normalized))
-  );
+  return classifyRegisteredWholeStorefrontDirectionRequest(instruction).kind === "selected";
 }
 
 type SupportedStorefrontRequest = {
@@ -167,6 +215,27 @@ const supportedRequests = new Map<string, SupportedStorefrontRequest>([
 
 function classifyInstruction(command: AiStorefrontGenerationCommand): SupportedStorefrontRequest {
   if (command.capability === "registeredWholeStorefrontDirection") {
+    const classification = classifyRegisteredWholeStorefrontDirectionRequest(
+      command.merchantInstruction,
+    );
+    if (classification.kind === "ambiguous") {
+      throw new AiStorefrontPlanError(
+        "ambiguous-request",
+        "Choose one registered whole-storefront design direction.",
+      );
+    }
+    if (classification.kind === "protected-commerce") {
+      throw new AiStorefrontPlanError(
+        "unsupported-request",
+        "Protected commerce data cannot be changed by a storefront design proposal.",
+      );
+    }
+    if (classification.kind === "unsupported") {
+      throw new AiStorefrontPlanError(
+        "unsupported-request",
+        "Choose a supported registered whole-storefront design direction.",
+      );
+    }
     return {
       direction: "registeredWholeStorefront",
       skillId: "applyRegisteredWholeStorefrontDirection",

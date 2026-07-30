@@ -45,14 +45,15 @@ const paletteIntentPattern = /\b(?:brand\s+)?(?:palette|colou?rs?|hex)\b|#[a-z0-
 const existingPalettePattern = /\b(?:existing|current)\s+(?:brand\s+)?palette\b/i;
 const unsupportedGradientPattern = /\b(?:linear|radial|conic)?-?gradient\b|\bgradient\s*\(/i;
 const mutationVerbPattern =
-  "(?:add|create|insert|make|simplify|compact|expand|redesign|rebuild|move|reorder|hide|show|change|update|replace|rewrite|remove|edit|set|increase|decrease)";
+  "(?:add|create|insert|make|simplify|compact|expand|redesign|rebuild|move|reorder|hide|show|change|update|replace|rewrite|remove|delete|edit|set|increase|decrease|adjust|modify|alter|raise|lower|lisää|luo|tee|muuta|päivitä|korvaa|poista|aseta|korota|nosta|vähennä|laske|säädä)";
+const wordBoundary = "[^\\p{L}\\p{N}_]";
 const protectedMutationPattern = new RegExp(
-  `\\b${mutationVerbPattern}\\b[^.!?]{0,80}\\b(?:prices?|sku|stock|inventory|products?|variants?|payments?|shipping|tax|orders?)\\b`,
-  "i",
+  `(?:^|${wordBoundary})${mutationVerbPattern}(?=$|${wordBoundary})[^.!?]{0,80}(?:^|${wordBoundary})(?:prices?|sku|stock|inventory|availability|products?(?!\\s+(?:imagery|images?|presentation|details?|discovery|cards?|grid|gallery|layout))|variants?|option\\s+values?|payments?|shipping|tax|orders?|hin(?:n|t)\\p{L}*|tuotte\\p{L}*|tuote|varasto\\p{L}*|saatavu\\p{L}*|variant\\p{L}*|valinta-arvo\\p{L}*|maksu\\p{L}*|toimitu\\p{L}*|vero\\p{L}*|tilau\\p{L}*)(?=$|${wordBoundary})`,
+  "iu",
 );
 const broaderMutationPattern = new RegExp(
-  `\\b${mutationVerbPattern}\\b[^.!?]{0,80}\\b(?:layout|typography|fonts?|images?|imagery|copy|content|sections?|structure|navigation|footer|page\\s+composition)\\b`,
-  "i",
+  `(?:^|${wordBoundary})${mutationVerbPattern}(?=$|${wordBoundary})[^.!?]{0,80}(?:^|${wordBoundary})(?:layout|typography|fonts?|images?|imagery|copy|content|sections?|structure|navigation|footer|page\\s+composition)(?=$|${wordBoundary})`,
+  "iu",
 );
 const preservationClausePatterns = [
   /\b(?:keep|preserve|leave|retain)\b[^.!?]{0,240}\b(?:unchanged|same|intact|as\s+is)\b/gi,
@@ -287,6 +288,17 @@ function ensureReadableText(colorsInput: BrandSystem["colors"]) {
   return { colors: brandSystemSchema.shape.colors.parse(colors), correctedTokens, warnings };
 }
 
+function actionableMutationInstruction(instruction: string): string {
+  return preservationClausePatterns.reduce(
+    (value, pattern) => value.replace(pattern, ""),
+    instruction,
+  );
+}
+
+export function containsProtectedCommerceMutation(instruction: string): boolean {
+  return protectedMutationPattern.test(actionableMutationInstruction(instruction));
+}
+
 function assertSafeInstruction(instruction: string) {
   try {
     assertNoExecutableContent(instruction);
@@ -305,11 +317,8 @@ function assertSafeInstruction(instruction: string) {
       "Use ordinary colour instructions rather than a style object.",
     );
   }
-  const actionable = preservationClausePatterns.reduce(
-    (value, pattern) => value.replace(pattern, ""),
-    instruction,
-  );
-  if (protectedMutationPattern.test(actionable)) {
+  const actionable = actionableMutationInstruction(instruction);
+  if (containsProtectedCommerceMutation(instruction)) {
     throw new BrandPaletteInstructionError(
       "This request mixes colour changes with protected commerce changes. Submit the colour palette separately; protected commerce data cannot be changed by a brand-palette proposal.",
     );

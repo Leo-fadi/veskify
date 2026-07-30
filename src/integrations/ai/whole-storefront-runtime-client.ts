@@ -51,6 +51,10 @@ export class ServerWholeStorefrontPlanningClientError extends Error {
 export class ServerWholeStorefrontPlanningClient implements StorefrontAIProvider {
   readonly id = "server-whole-storefront-planning";
   readonly assetReferenceCapability = "structuredApprovedAssets" as const;
+  readonly generationCapabilities = [
+    "approvedColorTypographyDirection",
+    "registeredWholeStorefrontDirection",
+  ] as const;
   readonly #p905bSessionId?: string;
 
   constructor({ p905bSessionId }: { p905bSessionId?: string } = {}) {

@@ -291,6 +291,82 @@ describe("P4-05D editor storefront integration", () => {
     },
   );
 
+  it("preserves conflicting direction language as ambiguous without invoking the registered provider", async () => {
+    const value = statefulRepository();
+    const before = await value.get(aurumNordicSeed.project.id);
+    const provider = new RejectingRegisteredStorefrontProvider();
+    route(value, undefined, provider);
+
+    await openStorefrontTarget();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Make it warm premium and minimal Nordic." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "That storefront request could not be completed safely. Your draft has not changed.",
+    );
+    expect(provider.calls).toHaveLength(0);
+    expect(await value.get(aurumNordicSeed.project.id)).toEqual(before);
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Redo" })).toBeDisabled();
+  });
+
+  it.each([
+    "Increase every price and use a modern technical design.",
+    "Adjust stock and make the storefront warm and approachable.",
+    "Korota kaikkia hintoja ja käytä modernia teknistä ilmettä.",
+    "Muuta varianttien valinta-arvoja ja käytä lämmintä lähestyttävää ilmettä.",
+  ])(
+    "rejects canonical protected-commerce language before registered provider execution: %s",
+    async (instruction) => {
+      const value = statefulRepository();
+      const before = await value.get(aurumNordicSeed.project.id);
+      const provider = new RejectingRegisteredStorefrontProvider();
+      route(value, undefined, provider);
+
+      await openStorefrontTarget();
+      fireEvent.change(screen.getByLabelText("Your request"), {
+        target: { value: instruction },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "That storefront request could not be completed safely. Your draft has not changed.",
+      );
+      expect(provider.calls).toHaveLength(0);
+      expect(await value.get(aurumNordicSeed.project.id)).toEqual(before);
+      expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+      expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Redo" })).toBeDisabled();
+    },
+  );
+
+  it("does not send a registered request to an injected provider that does not advertise support", async () => {
+    const value = statefulRepository();
+    const before = await value.get(aurumNordicSeed.project.id);
+    const provider = new UnsupportedRegisteredStorefrontProvider();
+    route(value, undefined, provider);
+
+    await openStorefrontTarget();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: {
+        value: "Apply the premium editorial direction with craftsmanship and product imagery.",
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "That storefront request could not be completed safely. Your draft has not changed.",
+    );
+    expect(provider.calls).toHaveLength(0);
+    expect(await value.get(aurumNordicSeed.project.id)).toEqual(before);
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Redo" })).toBeDisabled();
+  });
+
   it("rejects an unsupported whole-storefront request before the provider without changing commerce, draft, or history", async () => {
     const value = statefulRepository();
     const before = await value.get(aurumNordicSeed.project.id);
@@ -619,6 +695,21 @@ class DeferredStorefrontProvider implements StorefrontAIProvider {
 
 class RejectingRegisteredStorefrontProvider implements StorefrontAIProvider {
   readonly id = "registered-storefront-recording-provider";
+  readonly generationCapabilities = [
+    "approvedColorTypographyDirection",
+    "registeredWholeStorefrontDirection",
+  ] as const;
+  readonly calls: AiStorefrontProviderRequest[] = [];
+
+  proposeStorefront(request: AiStorefrontProviderRequest): Promise<unknown> {
+    this.calls.push(structuredClone(request));
+    return Promise.reject(new Error("Test provider rejection"));
+  }
+}
+
+class UnsupportedRegisteredStorefrontProvider implements StorefrontAIProvider {
+  readonly id = "legacy-storefront-recording-provider";
+  readonly generationCapabilities = ["approvedColorTypographyDirection"] as const;
   readonly calls: AiStorefrontProviderRequest[] = [];
 
   proposeStorefront(request: AiStorefrontProviderRequest): Promise<unknown> {

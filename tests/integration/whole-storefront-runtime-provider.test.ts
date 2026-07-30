@@ -306,7 +306,15 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
     const proposal = await provider.proposeStorefront(request());
 
     expect(provider.id).toBe("deterministic-storefront-mock");
+    expect(provider.generationCapabilities).toEqual(["approvedColorTypographyDirection"]);
     expect((proposal as { proposal: { status: string } }).proposal.status).toBe("pending");
+  });
+
+  it("advertises registered whole-storefront support only on the real server planning client", () => {
+    expect(createServerWholeStorefrontPlanningClient().generationCapabilities).toEqual([
+      "approvedColorTypographyDirection",
+      "registeredWholeStorefrontDirection",
+    ]);
   });
 
   it("resolves canonical standalone seed context instead of an unavailable route authority", async () => {

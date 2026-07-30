@@ -13,12 +13,9 @@ import {
   type GeneratedAiProposal,
 } from "@/application/ai-proposal-generation";
 import {
-  AiStorefrontRequestBuildError,
   AiStorefrontGenerationOrchestrator,
-  buildAiStorefrontProviderRequest,
+  buildAiStorefrontProviderRequestForSupportedCapability,
   createDeterministicMockStorefrontAIProvider,
-  isRegisteredWholeStorefrontDirectionRequest,
-  type AiStorefrontGenerationCommand,
   type AiStorefrontGenerationIdentity,
   type StorefrontAIProvider,
 } from "@/application/ai-storefront-generation";
@@ -717,28 +714,11 @@ export function useDesignAgentSession({
       provider: runtime.storefrontProvider,
       importedContent: [],
     };
-    let command: AiStorefrontGenerationCommand = {
-      ...baseCommand,
-      capability: "approvedColorTypographyDirection",
-    };
-    let request;
-    try {
-      request = buildAiStorefrontProviderRequest(command, 1);
-    } catch (error) {
-      if (
-        wholeStorefrontCapability !== "registeredWholeStorefrontDirection" ||
-        !(error instanceof AiStorefrontRequestBuildError) ||
-        error.code !== "unsupported-request" ||
-        !isRegisteredWholeStorefrontDirectionRequest(instruction)
-      ) {
-        throw error;
-      }
-      command = {
-        ...baseCommand,
-        capability: "registeredWholeStorefrontDirection",
-      };
-      request = buildAiStorefrontProviderRequest(command, 1);
-    }
+    const { command, request } = buildAiStorefrontProviderRequestForSupportedCapability(
+      baseCommand,
+      1,
+      wholeStorefrontCapability,
+    );
     runtimeBridge.bindStorefrontIdentity({
       context: {
         projectId,

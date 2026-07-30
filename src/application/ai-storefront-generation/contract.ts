@@ -24,6 +24,7 @@ export const storefrontGenerationCapabilitySchema = z.enum([
   "approvedColorTypographyDirection",
   "registeredWholeStorefrontDirection",
 ]);
+export type StorefrontGenerationCapability = z.infer<typeof storefrontGenerationCapabilitySchema>;
 export const storefrontStyleDirectionSchema = z.enum([
   "warmPremium",
   "minimalNordic",
@@ -38,7 +39,15 @@ export const storefrontAssetReferenceCapabilitySchema = z.enum([
 export interface StorefrontAIProvider {
   readonly id: string;
   readonly assetReferenceCapability?: z.infer<typeof storefrontAssetReferenceCapabilitySchema>;
+  readonly generationCapabilities?: readonly StorefrontGenerationCapability[];
   proposeStorefront(request: AiStorefrontProviderRequest): Promise<unknown>;
+}
+
+export function storefrontProviderSupportsCapability(
+  provider: StorefrontAIProvider,
+  capability: StorefrontGenerationCapability,
+): boolean {
+  return provider.generationCapabilities?.includes(capability) === true;
 }
 
 const storefrontProviderSchema = z.custom<StorefrontAIProvider>(

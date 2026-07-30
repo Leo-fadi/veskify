@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   aiStorefrontPendingRequestKey,
   buildAiStorefrontProviderRequest,
+  buildAiStorefrontProviderRequestForSupportedCapability,
+  classifyRegisteredWholeStorefrontDirectionRequest,
+  containsProtectedCommerceMutation,
   createApprovedGenerationAssetContextFingerprint,
   createAiStorefrontGenerationPlan,
   createDeterministicMockStorefrontAIProvider,
@@ -10,6 +13,7 @@ import {
   validateAiStorefrontProviderResponse,
   type AiStorefrontGenerationCommand,
   type AiStorefrontProviderResponse,
+  type StorefrontAIProvider,
 } from "@/application/ai-storefront-generation";
 import {
   createAiStorefrontProposalId,
@@ -56,6 +60,25 @@ function command(
     provider: storefrontProvider,
     importedContent: [],
     ...overrides,
+  };
+}
+
+function commandWithoutCapability(
+  overrides: Partial<AiStorefrontGenerationCommand> = {},
+): Omit<AiStorefrontGenerationCommand, "capability"> {
+  const result: Partial<AiStorefrontGenerationCommand> = command(overrides);
+  delete result.capability;
+  return result as Omit<AiStorefrontGenerationCommand, "capability">;
+}
+
+function registeredProvider(): StorefrontAIProvider {
+  return {
+    id: "registered-storefront-test-provider",
+    generationCapabilities: [
+      "approvedColorTypographyDirection",
+      "registeredWholeStorefrontDirection",
+    ],
+    proposeStorefront: () => Promise.reject(new Error("Not invoked by request-building tests.")),
   };
 }
 
@@ -178,10 +201,121 @@ describe("P4-05B storefront planner and request construction", () => {
     ).toBe(true);
     expect(
       isRegisteredWholeStorefrontDirectionRequest(
+        "Apply a warm premium style across the storefront.",
+      ),
+    ).toBe(true);
+    expect(
+      isRegisteredWholeStorefrontDirectionRequest(
         "Change the product prices and inventory to match the new design.",
       ),
     ).toBe(false);
     expect(isRegisteredWholeStorefrontDirectionRequest("Rebuild the navigation.")).toBe(false);
+  });
+
+  it("preserves ambiguous legacy classification instead of selecting a registered fallback", () => {
+    const provider = registeredProvider();
+    expect(() =>
+      buildAiStorefrontProviderRequestForSupportedCapability(
+        commandWithoutCapability({
+          provider,
+          providerId: provider.id,
+          merchantInstruction: "Make it warm premium and minimal Nordic.",
+        }),
+        1,
+      ),
+    ).toThrow(
+      expect.objectContaining({
+        code: "ambiguous-request",
+      }),
+    );
+    expect(
+      classifyRegisteredWholeStorefrontDirectionRequest("Make it warm premium and minimal Nordic."),
+    ).toEqual({ kind: "ambiguous" });
+  });
+
+  it("uses the registered capability first for protected synchronized sessions and repeat requests", () => {
+    const provider = registeredProvider();
+    const requests = [
+      "Apply the premium editorial direction with craftsmanship and product imagery.",
+      "Use a minimal Nordic direction throughout the storefront.",
+      "Redesign the storefront in a modern technical direction.",
+    ].map((merchantInstruction, index) =>
+      buildAiStorefrontProviderRequestForSupportedCapability(
+        commandWithoutCapability({
+          provider,
+          providerId: provider.id,
+          merchantInstruction,
+        }),
+        index + 1,
+        "registeredWholeStorefrontDirection",
+      ),
+    );
+
+    expect(requests.map(({ command: built }) => built.capability)).toEqual([
+      "registeredWholeStorefrontDirection",
+      "registeredWholeStorefrontDirection",
+      "registeredWholeStorefrontDirection",
+    ]);
+    expect(requests.map(({ request }) => request.capability)).toEqual([
+      "registeredWholeStorefrontDirection",
+      "registeredWholeStorefrontDirection",
+      "registeredWholeStorefrontDirection",
+    ]);
+  });
+
+  it("gates registered fallback on explicit provider capability advertisement", () => {
+    const unsupportedProvider = provider();
+    expect(unsupportedProvider.generationCapabilities).toEqual([
+      "approvedColorTypographyDirection",
+    ]);
+    expect(() =>
+      buildAiStorefrontProviderRequestForSupportedCapability(
+        commandWithoutCapability({
+          provider: unsupportedProvider,
+          providerId: unsupportedProvider.id,
+          merchantInstruction:
+            "Apply a premium editorial direction with craftsmanship and product imagery.",
+        }),
+        1,
+      ),
+    ).toThrow(
+      expect.objectContaining({
+        code: "unsupported-request",
+      }),
+    );
+  });
+
+  it.each([
+    "Increase every price and use a modern technical design.",
+    "Decrease stock and use a premium editorial design.",
+    "Adjust availability and make the storefront warm and approachable.",
+    "Modify variant option values and use a modern technical design.",
+    "Korota kaikkia hintoja ja käytä modernia teknistä ilmettä.",
+    "Vähennä varastoa ja tee ilmeestä lämmin ja lähestyttävä.",
+    "Säädä saatavuutta ja käytä ensiluokkaista editoriaalista ilmettä.",
+    "Muuta varianttien valinta-arvoja ja käytä modernia teknistä ilmettä.",
+  ])("rejects canonical protected-commerce mutation language: %s", (instruction) => {
+    expect(containsProtectedCommerceMutation(instruction)).toBe(true);
+    expect(classifyRegisteredWholeStorefrontDirectionRequest(instruction)).toEqual({
+      kind: "protected-commerce",
+    });
+
+    const registered = registeredProvider();
+    expect(() =>
+      buildAiStorefrontProviderRequestForSupportedCapability(
+        commandWithoutCapability({
+          provider: registered,
+          providerId: registered.id,
+          merchantInstruction: instruction,
+        }),
+        1,
+        "registeredWholeStorefrontDirection",
+      ),
+    ).toThrow(
+      expect.objectContaining({
+        code: "unsupported-request",
+      }),
+    );
   });
 
   it("rejects duplicate, unknown, and cross-page target identities before invocation", () => {
