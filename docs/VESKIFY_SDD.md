@@ -10,9 +10,9 @@ Dynamic storefront generation · URL-first onboarding · reusable commerce compo
 | **DOCUMENT FIELD**          | **VALUE**                                                              |
 |-----------------------------|------------------------------------------------------------------------|
 | **Document ID**             | VESKIFY-SDD-001                                                        |
-| **Version**                 | 1.2                                                                    |
-| **Status**                  | Product integration baseline — dynamic storefront design architecture  |
-| **Date**                    | 22 July 2026                                                           |
+| **Version**                 | 1.2.1                                                                  |
+| **Status**                  | Corrective grounded-generation architecture amendment; Phase 9 active  |
+| **Date**                    | 30 July 2026                                                           |
 | **Merchant-facing product** | Vesko Storefront Studio                                                |
 | **Internal engine**         | Veskify                                                                |
 | **Primary use**             | Codex implementation, teammate handoff and Vesko Retail OS integration |
@@ -26,7 +26,7 @@ Dynamic storefront generation · URL-first onboarding · reusable commerce compo
 <thead>
 <tr class="header">
 <th></th>
-<th><p><strong>v1.2 decision</strong></p>
+<th><p><strong>v1.2.1 decision</strong></p>
 <p>Veskify is no longer specified as merely a standalone demo. It is the controlled storefront-design engine that will power Vesko Storefront Studio. The standalone repository remains the implementation and validation environment, but every new capability must be integration-ready and must consume canonical Vesko commerce data through read-only adapters.</p></th>
 </tr>
 </thead>
@@ -61,13 +61,18 @@ Owner: Vesko Oy · Product owner: Leo Fadi
 | **Secondary onboarding route** | Create a new storefront from business information, logo, canonical catalogue data and guided visual choices.                                                                                             |
 | **Commerce boundary**          | Veskify consumes read-only canonical Vesko product, collection, price, variant, option and media projections. It does not become an inventory, order, payment, logistics or catalogue-management system. |
 | **Implementation authority**   | The requirement IDs, architecture boundaries, roadmap gates and acceptance criteria in this document are binding for v1.2 work.                                                                          |
-| **Source basis**               | VESKIFY SDD v1.1, the approved Vesko Storefront Studio product-design direction, the current repository baseline and the verified real-provider Karvonen test.                                           |
+| **Source basis**               | VESKIFY SDD v1.1, the approved Vesko Storefront Studio product-design direction, repository evidence at the amendment source commit and explicitly recorded evidence limitations.                       |
+| **Amendment source commit**    | `8174b1a6d31301b4072622e2e3ef675957479121` (`origin/main` at amendment start).                                                                                                                            |
+| **Amendment branch**           | `codex/sdd-v1.2.1-grounded-storefront-generator`.                                                                                                                                                         |
+| **Amendment PR**               | Pending when this branch was prepared; the Ready PR is the delivery record.                                                                                                                               |
+| **PR #123 evidence**           | Merged 30 July 2026 as `8174b1a6d31301b4072622e2e3ef675957479121`; narrowly verifies exact token-refinement preservation and does not prove a complete generated storefront.                              |
 
 
 ## Source of truth
 
 - `docs/VESKIFY_SDD.md` is the authoritative implementation baseline.
-- `docs/VESKIFY_SDD_v1.2.docx` is the synchronized human-readable export.
+- `docs/VESKIFY_SDD_v1.2.1.docx` is the synchronized human-readable export.
+- `docs/VESKIFY_SDD_v1.2.docx` is retained as the superseded v1.2 export.
 - `docs/archive/VESKIFY_SDD_v1.1.docx` is retained only as historical context and is superseded for new work.
 - ADR-001, ADR-002, ADR-003 and ADR-004 are binding architectural decisions that clarify this SDD.
 - If Markdown and DOCX differ, the Markdown specification takes precedence.
@@ -80,8 +85,289 @@ Owner: Vesko Oy · Product owner: Leo Fadi
 | 1.1         | 16-17 July 2026 | Controlled design-agent baseline | Added structured skills, operations, proposal-before-apply, canonical composition ownership, validation and Puck boundaries.                                                                                                                                                                  |
 | 1.2         | 22 July 2026    | Product integration baseline     | Repositions Veskify as the Vesko design engine; makes URL-first onboarding primary; replaces catalogue/import drift with canonical Vesko projections; specifies reusable dynamic components and a schema-driven product-detail page; resets the roadmap after the verified real-AI milestone. |
 | 1.2         | 29 July 2026    | P9-04D acceptance clarification  | Incorporates the Lumo real-AI design-diversity gate for complete storefront directions, canonical-commerce protection and measured cross-page quality. |
+| 1.2.1       | 30 July 2026    | Corrective amendment             | Defines grounded generation over the existing canonical storefront state, corrects the Phase 9 quality gate and evidence ownership, and binds the P10A/P10B/P11/P12 delivery order without rewriting the v1.2 safety architecture. |
 
-## How implementation agents and developers must use v1.2
+## v1.2.1 corrective amendment — grounded storefront generation
+
+This amendment is binding where it clarifies or corrects v1.2. Unchanged v1.2 requirements remain
+in force. It does not create a v1.3 architecture and does not declare Phase 9 complete.
+
+### Product position and grounded workflow
+
+commercetools uses AI primarily to help developers generate storefront software. Veskify uses AI to
+generate and continuously govern merchant-editable storefront design state. Veskify is not a
+commercetools clone. The useful lesson from capability-grounded storefront generators is the
+workflow: discover available capabilities, retrieve exact schemas, plan, validate and implement
+deterministically.
+
+The grounded workflow is:
+
+```text
+Approved Storefront Design Brief + canonical commerce projection
+  -> retrieve registered components, variants, bindings, blueprints and skills
+  -> route the merchant instruction to an explicit scope
+  -> create a validated Proposal over the current StorefrontSnapshot
+  -> compile through deterministic operations and guards
+  -> merchant review and atomic accept/reject
+  -> the same StorefrontSnapshot lifecycle for editor, preview, save and publish
+```
+
+Provider output is never an executable page graph, component implementation, publication payload or
+second source of truth. It may select only capabilities supplied by the current repository.
+The AI MUST NOT invent components, component variants, props, slots, bindings, asset roles, page
+recipes, adapter capabilities, operation types or versions.
+
+### One canonical storefront intermediate representation
+
+The canonical terms are:
+
+| Term | Binding meaning |
+| --- | --- |
+| `StorefrontSnapshot` | The single canonical editable storefront aggregate used by generation, editing, preview, save, history and publication. |
+| `BrandSystem` | The snapshot-owned design-token and brand-direction contract. |
+| `ComponentDefinitionV2` | The engineering-owned, versioned component capability contract. |
+| `PageBlueprint` | The approved page-composition capability; current `StorefrontTemplateDefinition` contracts are its implementation precursor and must converge rather than fork. |
+| `DataBinding` | The typed presentation binding from controlled components to canonical context. |
+| `ProductPresentationContext` | Read-only commerce presentation input for dynamic product components. |
+| `Proposal` | A transient, validated change set over a known snapshot revision; it is not canonical storefront state. |
+
+Every generation and editing path MUST compile into the same `StorefrontSnapshot`. The existing
+implementation type `PageModel` is a page member inside `StorefrontSnapshot`; it MUST NOT be treated
+as an alternate canonical root. Names such as `StorefrontPlan`, `SectionNode`, AI-native page graph
+or provider registry MUST NOT become a second canonical storefront model. Planner payloads,
+whole-storefront projections and renderer adapters are transient boundary representations only.
+
+No second component registry, binding registry, blueprint system, skill catalogue, asset inventory
+or publish graph may compete with the existing canonical contracts. New query layers MUST be
+generated from, or directly backed by, those contracts.
+
+### Corrected Phase 9 gate and delivery order
+
+Phase 9 remains active. Its outcome is a meaningful coordinated multi-page storefront: shared
+frame, homepage, collection and dynamic PDP compositions must use compatible registered
+capabilities, preserve canonical commerce, apply atomically and survive save/preview/publish.
+Token-only refinement, palette fidelity, a provider-shaped response, one changed section or
+renderer-only variety is insufficient.
+
+One merchant instruction must create a materially new coordinated storefront across the shared
+header, navigation, announcement bar where present, footer, homepage, collection and representative
+product-detail pages. Objective composition evidence includes:
+
+| Area | Material changes required |
+| --- | --- |
+| Shared storefront frame | Header, navigation, announcement-bar and footer treatment. |
+| Homepage | Hero composition; section hierarchy/order; product or collection presentation; story/campaign composition; rhythm and density. |
+| Collection | Header treatment; filtering/discovery; product-card composition; merchandising density; collection hierarchy. |
+| Product detail | Gallery; product-information hierarchy; options and specifications; purchasing-area hierarchy; related products. |
+| Whole storefront | Coherent typography, surfaces, spacing/density, image treatment and page-to-page direction. |
+
+Colour, typography, copy, spacing or density alone; one hero; homepage-only change; one changed page;
+unchanged recipes with new tokens; a generic starter theme; unrelated page designs; provider HTTP
+success; or a valid but visually immaterial proposal MUST fail the Phase 9 closing gate.
+
+The binding order inside Phase 9 is:
+
+1. establish the smallest registered and end-to-end reachable capability set required to prove
+   meaningful multi-page composition;
+2. prove coordinated page and shared-frame composition;
+3. prove commerce and approved-asset preservation;
+4. prove atomic application, rejection, stale protection and undo;
+5. prove persistence, preview and explicit publication of the accepted snapshot.
+
+P9-03 may repair reachability of already registered capabilities, expose the smallest curated set
+required by the Phase 9 directions, correct planner/compiler/renderer gaps and enable the minimum
+editorial, modern-technical and warm compositions needed for acceptance. It MUST NOT become broad
+or unrestricted vocabulary scaling. Broad controlled-vocabulary expansion occurs after the Phase
+9 proof gates, through P10A-04’s generated registry and canonical validation.
+
+Phase 9 retained brief-handoff evidence MUST show this complete lifecycle: authoritative
+Storefront Design Brief creation → merchant review → explicit approval → approved
+revision/fingerprint recording → runtime generation receiving that exact revision → correlated
+proposal → storefront review and acceptance. The retained package MUST include project ID, brief
+ID, approval state, actor/action/timestamp and runtime request correlation, and MUST prove that no
+later unapproved brief mutation supplied generation. A deterministic fixture or a validated but
+unapproved brief is not closing evidence.
+
+Protected commerce, history, rollback and explicit publishing are invariants throughout this order;
+they are never deferred while composition is proved.
+
+PR #123 is merged evidence for exact valid token refinement, including preservation semantics. It
+is not evidence that `generateInitialStorefront` or `coordinateWholeStorefront` has passed this
+whole-store gate. The current repository also contains mocked provider-boundary and deterministic
+lifecycle tests, but no retained evidence proving the required live-provider journey and complete
+visual matrix. Those limitations are recorded in
+`docs/PHASE_9_EVIDENCE_MATRIX.md`.
+
+The verified PR #123 correction records `spacing: null` for preservation-only spacing, maps
+`#201A17` to primary/text, `#C9A27A` to secondary/accent, `#6B2E3D` to button/strong accent and
+`#E7D8C8` to surface/border, resolves heading/body intent to registered system serif/sans, issues
+one canonical storefront POST, advances local authority once on acceptance and preserves structure,
+navigation, assets, bindings and commerce. Automated coverage uses provider-shaped or mocked
+transport; a live network response is not retained and therefore is not claimed.
+
+### Acceptance ownership correction
+
+The existing acceptance IDs retain their wording, but their phase ownership is clarified:
+
+| Acceptance | Binding owner |
+| --- | --- |
+| AC-119 | Phase 9 asset resolution and approved reuse/generation choice. |
+| AC-120 | Later demo-reliability work; it does not prove generation quality. |
+| AC-121 | P10B Storefront Studio merchant UX. Phase 9 still owns fixture/provider/internal-term leakage in generated storefront output. |
+| AC-122 | Split: Phase 9 owns generated storefront output at all target widths; P10B owns Storefront Studio shell and workflow responsiveness. |
+| AC-123 | Split: Phase 9 owns generated storefront semantics and interactive commerce controls; P10B owns Studio controls, proposal review, save and publish accessibility. |
+
+Phase 9 additionally owns exact valid token instructions, meaningful initial generation,
+coordinated multi-page composition, registered component reachability, protected-commerce and
+asset fidelity, invalid/stale rejection, atomic application and undo, output responsiveness,
+fixture leakage, real-provider evidence, the approved Storefront Design Brief-to-runtime handoff
+required by FR-105 and the accepted snapshot’s save/preview/publish path.
+
+### Grounded capability roadmap
+
+P10A establishes grounded orchestration without changing the canonical state model:
+
+1. **P10A-01 — Vocabulary freeze:** publish canonical names, aliases and transient-boundary rules.
+2. **P10A-02 — Repository capability audit:** map live components, variants, bindings, templates,
+   renderers and planner/compiler reachability.
+3. **P10A-03 — Executable PageBlueprint contracts:** evolve the current template contracts into
+   validated composition rules that compile to `StorefrontSnapshot`.
+4. **P10A-04 — Generated Component Knowledge Registry:** generate a queryable capability view from
+   canonical contracts, including the executable PageBlueprint contracts produced by P10A-03,
+   and broaden the controlled vocabulary only through validated canonical registrations exposed
+   by that generated view after the Phase 9 proof gate.
+5. **P10A-05 — Separate Skill package contracts:** define instructions, schemas, authorities,
+   allowed scopes, capability requirements, operations, validation and evidence for initial
+   generation and follow-up editing separately.
+6. **P10A-06 — Scoped instruction-router contracts:** define scope classification, authority
+   declarations, routing schemas and validation rules that prohibit silent authority widening.
+7. **P10A-07 — Golden-store quality gates:** deterministic and real-provider evaluation across
+   representative catalogues, including at least one non-jewellery merchant.
+8. **P10A-08 — Publish compiler:** deterministically validate and publish the accepted canonical
+   snapshot with no AI at publication time.
+
+The P10A-02 audit MUST produce a live gap matrix with columns Capability, Existing source,
+Runtime-queryable, Planner-visible, Compiler-preserved, Validated, Rendered and Missing work. Each
+row is classified existing-and-sufficient, existing-but-not-queryable, duplicated,
+planner-visible-but-lost, render-only or missing. Capability facts found only in prompts, tests,
+fixtures or allowlists must be identified before P10A-03 contract design.
+
+P10A-03 PageBlueprint metadata includes ID/version/page type, required and optional families,
+cardinality and order, binding and asset-role requirements, responsive composition and
+compatibility. A blueprint is an independent generation starting point; generated output becomes
+ordinary snapshot state and is not silently rewritten when the blueprint later changes. Dynamic
+PDP and collection composition stays stable while runtime bindings resolve different entities.
+
+P10A-04 is generated from `ComponentDefinitionV2`, the executable PageBlueprint contracts produced
+by P10A-03, `DataBinding`, renderer, asset and adapter capability contracts, protected paths and
+migration metadata. For each applicable component it exposes type, version, family, variants, page
+types, slots and cardinality, props/content schemas, binding requirements, editable/protected paths,
+responsive/accessibility rules, asset requirements, compatibility and migration version. Codex and
+the live design agent query the same source. Registry generation cannot pass without the P10A-03
+PageBlueprint contracts; unknown or stale capability references fail before preview.
+
+P10A-05 defines versioned Skill package contracts for storefront orchestration, initial generation,
+selected-section editing, shared-frame editing, current-page editing, page/whole-storefront
+regeneration, brand tokens, homepage, collection, dynamic PDP, assets, image generation,
+localization and validation/publish. Each contract declares its instructions, authority, required
+capability queries, allowed operations, exact input/output schemas, examples, deterministic
+fixtures, negative and validation cases and scope classification. A whole-store generation Skill
+contract is never reused for one hero or page. This task does not make those editing packages
+merchant-operable.
+
+P10A-06 defines router contracts over the canonical scopes selected section/component, current
+page, shared storefront frame, design system and complete storefront. “Shared storefront frame”
+means navigation, header, announcement bar and footer. The contracts classify scope, declare
+authority and require validation that rejects silent widening: “change this hero” cannot classify
+as site-wide, “make this PDP technical” cannot include home, “navigation and footer” may classify as
+shared frame and “use this palette everywhere” may classify as design system. Runtime explanations,
+approval controls and proposal execution belong to Phase 11.
+
+**Phase boundary:** P10A defines and validates the scopes. P10A does not deliver
+merchant-operable granular editing. Phase 11 implements and exposes those scopes as working merchant
+features.
+
+P10A-07 golden stores include premium/minimal jewellery, editorial jewellery, a watch retailer, a
+dense hardware/general-retail catalogue, EN/FI, a simple watch PDP and a complex configurable ring
+PDP. The non-jewellery fixture is mandatory to detect luxury, jewellery, Karvonen and sparse-catalog
+assumptions. Gates cover schemas, registered capabilities, bindings/commerce, responsive behavior,
+accessibility, brand/page coherence, diversity, fixture leakage, asset provenance, performance and
+the contract validations owned by P10A. Runtime mixed-scope history and Undo/Redo for granular
+editing are Phase 11 gates.
+
+P10A-08 compiles validated draft `StorefrontSnapshot` → publish-time validation → immutable runtime
+snapshot → published renderer. It rejects invalid bindings, unknown component versions, missing
+required fields or critical assets, protected-field violations, critical accessibility failures
+and unresolved migrations. Published storefronts require no LLM, Puck runtime, provider proposal
+object or browser-accessible Vesko/provider credentials. Cart, checkout, order, inventory and
+pricing mutation remain separate commerce operations.
+
+### P10B asset governance and Storefront Studio
+
+P10B follows P10A and consumes its capability/scope contracts:
+
+- **P10B-01 — Brand asset upload/library:** primary/alternate/light/dark logos, favicons, brand,
+  campaign, editorial and story imagery, marks/icons, approved illustrations, textures, permitted
+  fonts and supported video. Fixture/developer registration is not the merchant workflow.
+- **P10B-02 — Roles/provenance/metadata:** stable ID/domain, provenance, approval, role, dimensions,
+  focal point, crop constraints, alt text, locale/market, light/dark suitability, usage restrictions
+  and uploaded/generated origin. Canonical product/variant media, merchant brand, campaign,
+  editorial, temporary generated and accepted generated assets remain distinct.
+- **P10B-03 — Generated-image lifecycle:** merchant request → capability/policy check → temporary
+  proposal asset → technical/safety validation → merchant review → accept/reject → promotion to the
+  approved library → snapshot binding to a stable ID. Generated imagery may support hero,
+  campaign, lifestyle/editorial, decorative background or abstract brand use but never silently
+  replace canonical product/variant media.
+- **P10B-04 — Studio shell:** native Vesko shell, dominant canvas, compact page/section outline,
+  Design and AI tabs, merchant language, proposal review, preview, draft, publish, history,
+  responsive drawers/bottom sheets and keyboard/accessibility. A polished shell must not conceal an
+  ungrounded generator.
+
+Existing `AssetInventory` roles/provenance are the foundation; do not create a competing media
+system.
+
+### Phase 11 granular editing
+
+Phase 11 implements and exposes the scopes defined and validated by P10A as working merchant
+features. It owns selecting a component or section; applying a selected-section proposal;
+current-page editing; shared storefront frame editing; design-system editing; complete-storefront
+editing; add, remove, reorder and replace operations; proposal preview and acceptance; mixed-scope
+history; Undo/Redo; and merchant scope controls and warnings. It provides stable section identity,
+local coherence and runtime enforcement of the P10A prohibition against silent scope widening.
+Common targets include header/navigation/announcement, hero, featured collections/products, brand
+story, campaign/trust, collection discovery/grid, PDP gallery/information/options/specifications and
+footer.
+
+### Phase 12 canonical domains and adapters
+
+Phase 12 consolidates canonical product, variant/option, collection/navigation,
+price/availability-presentation, localization, product-media, brand-asset and generated-asset
+domains. Versioned image-delivery, commerce, collection/navigation and asset adapters define
+capability negotiation, synchronization semantics, typed errors, versioning, conformance fixtures
+and integration documentation. Vesko is the first reference implementation of these canonical
+contracts, not a special case embedded through the editor.
+
+Immediate full staging integration is not a Phase 12 prerequisite. Authentication, authorization,
+tenant isolation, production persistence, hosted staging, observability, recovery, pilot operations
+and release remain later deployment work.
+
+### Capability and recommendation status
+
+Use these status words consistently:
+
+- **Baseline:** merged and evidenced through the canonical lifecycle.
+- **Partial:** merged foundations exist but the complete merchant outcome or required evidence is
+  missing.
+- **Planned:** approved future work with no claim of current availability.
+- **Research recommendation:** an external pattern worth evaluating; it is not an implementation
+  commitment or repository fact.
+
+`applyExactBrandPalette` is Baseline only for exact token refinement proved by merged PR #123.
+`coordinateWholeStorefront` remains Partial until meaningful shared-frame/home/collection/PDP
+composition passes the Phase 9 gate. `generateInitialStorefront` remains Partial: a planner or API
+response alone does not establish editor acceptance, persistence, preview and publish.
+
+## How implementation agents and developers must use v1.2.1
 1.  Read the complete affected section and named requirement IDs before modifying code.
 
 2.  Preserve the v1.1 non-negotiables: controlled components, structured operations, validation, protected commerce truth, proposal review, reversible drafts and separate publishing.
@@ -102,8 +388,8 @@ Owner: Vesko Oy · Product owner: Leo Fadi
 | **SHOULD**   | Expected unless a documented implementation constraint justifies deferral. |
 | **MAY**      | Optional or adapter-specific.                                              |
 
-## v1.2 requirement catalogue
-The following stable v1.2 requirement IDs are binding for implementation tasks.
+## v1.2.1 requirement catalogue
+The following stable v1.2 requirement IDs and v1.2.1 additions are binding for implementation tasks.
 They replace the obsolete v1.1 roadmap identifiers for new work while preserving the
 controlled-agent, protected-commerce, reversible-draft and explicit-publishing safety model.
 
@@ -290,7 +576,9 @@ Version 1.1 correctly established the controlled-agent safety architecture. Its 
 - More industries before jewellery and watches achieve deep dynamic page quality.
 
 # 3. Current verified implementation baseline
-The v1.2 roadmap starts from the repository state verified on 22 July 2026, not from the original phase list in v1.1.
+The v1.2.1 roadmap starts from repository commit
+`8174b1a6d31301b4072622e2e3ef675957479121` on 30 July 2026, not from the original
+phase list in v1.1. “Verified” is limited to retained repository evidence.
 
 | **Capability**                                | **Current status** | **Evidence / consequence**                                                                                            |
 |-----------------------------------------------|--------------------|-----------------------------------------------------------------------------------------------------------------------|
@@ -298,12 +586,16 @@ The v1.2 roadmap starts from the repository state verified on 22 July 2026, not 
 | **Visual editor and manual editing**          | Complete baseline  | Selection, page/locale context, section operations, device modes and undo/redo exist.                                 |
 | **Proposal lifecycle**                        | Complete baseline  | Selected-section, current-page and whole-storefront proposals support review, accept, reject and stale protection.    |
 | **Atomic whole-storefront application**       | Complete baseline  | Multi-page plus brand-system changes apply as one history transaction with whole-storefront undo/redo.                |
-| **Real provider adapter**                     | Verified           | OpenAI provider runs server-side through the same structured, guarded lifecycle as the deterministic provider.        |
+| **Real provider adapter**                     | Complete baseline  | OpenAI provider runs server-side; automated contract coverage uses mocked transport and is network-free.              |
 | **Draft, save and publish**                   | Verified           | Accepted changes can be saved and published separately; history and restoration architecture exist.                   |
 | **Realistic merchant fixture**                | Verified           | Karvonen catalogue and local assets can drive the storefront without changing protected product truth.                |
-| **End-to-end real-AI proof**                  | Verified           | Karvonen → merchant prompt → real provider → validated proposal → atomic application → undo/redo → publish succeeded. |
+| **End-to-end real-AI proof**                  | Not retained       | No complete live result is recorded at the amendment baseline; deterministic/mocked lifecycle evidence cannot replace it. |
 
-## 3.1 Findings from the real-provider test
+## 3.1 Historical findings and current evidence boundary
+
+Earlier real-provider observations remain useful product input, but the current repository does
+not retain the complete provider, browser, screenshot and publication artifacts required for a
+Phase 9 pass. The following are historical observations, not closing evidence:
 | **Finding**                                                             | **Meaning for v1.2**                                                                                                              |
 |-------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
 | The safe whole-storefront pipeline works.                               | Do not rebuild Phase 4 architecture. Harden only confirmed failures.                                                              |
@@ -1021,16 +1313,29 @@ The existing proposal lifecycle, atomic application, stale protection, protected
 
 - Explicit user instruction, languages and protected-field policy.
 
-## 12.3 v1.2 design skills
-| **Skill family**        | **Required skills**                                                                                                     |
-|-------------------------|-------------------------------------------------------------------------------------------------------------------------|
-| Source and brand        | analyseStorefrontSource, reconstructBrandSystem, buildStorefrontDesignBrief, assignAssetRoles.                          |
-| Initial generation      | generateStorefrontFromBrief, composeHomepage, composeCollectionPage, composeDynamicProductPage.                         |
-| Section and page design | improveHero, addCollectionDiscovery, addProductEditorial, addTrustSection, redesignCollectionPage, redesignProductPage. |
-| Design system           | applyBrandPalette, improveTypography, improveSpacing, updateShapeSystem, applyImageTreatment.                           |
-| Whole storefront        | coordinateWholeStorefront, applyPremiumJewelleryDirection, applyMinimalNordicDirection, alignNavigationAndFooter.       |
-| Responsive and quality  | fixMobileLayout, improveProductGridDensity, improvePdpMobileAction, improveAccessibility.                               |
-| Content                 | rewriteMarketingCopy, changeTone, translateEditableContent, replaceFixturePlaceholders, generateSeoMetadata.            |
+## 12.3 v1.2.1 Skill packages and operation names
+
+Application Skill names are camelCase package identifiers. Serialized design operations use the
+registered uppercase operation codes; the two vocabularies are related but are not interchangeable.
+`docs/DESIGN_AGENT_SKILLS.md` is the status catalogue.
+
+| **Skill family** | **Canonical packages / current status** |
+| --- | --- |
+| Source and brief | `discoverExistingStorefront`, `reconcileSourceWithCommerce`, `reconstructBrandSystem`, `buildStorefrontDesignBrief` — Partial foundations. |
+| Initial generation | `generateInitialStorefront` with homepage, collection and dynamic-product blueprint composition — Partial until the complete Phase 9 path passes. |
+| Section and page editing | `improveSelectedSection`, `improveCurrentPage`, plus registered targeted skills such as `improveHero` — Baseline only where live registry and operation evidence exists. |
+| Design system | `applyExactBrandPalette` — Baseline for PR #123 token refinement; other token/image-treatment packages are capability-specific. |
+| Whole storefront | `coordinateWholeStorefront` and registered direction packages — Partial until meaningful coordinated composition passes Phase 9. |
+| Responsive and quality | Planned Skill packages backed by component responsive/accessibility contracts and deterministic gates. |
+| Content and locale | Controlled localized-content operations only; capability status must be derived from the registry and protected-field rules. |
+
+The current serialized operation vocabulary includes `CHANGE_LOCALIZED_SECTION_TEXT`,
+`CHANGE_SECTION_VARIANT`, `CHANGE_BACKGROUND`, `CHANGE_TYPOGRAPHY`, `CHANGE_DENSITY`,
+`CHANGE_SHAPE`, `CHANGE_ALIGNMENT`, `CHANGE_CTA_STYLE`,
+`APPLY_APPROVED_BRAND_COLOURS`, `APPLY_APPROVED_BRAND_TYPOGRAPHY`,
+`APPLY_REGISTERED_BRAND_SYSTEM`, `ADD_APPROVED_SECTION`, `REMOVE_OPTIONAL_SECTION`,
+`REORDER_SECTIONS` and `APPLY_REGISTERED_PAGE_SECTIONS`. Proposed future operation labels in
+this document are not Baseline until added to the registered schema and compiler.
 
 ## 12.4 Operation extensions
 | **Operation**              | **Purpose**                                                                                               |
@@ -1154,6 +1459,10 @@ does not create a second state or persistence path.
 | StorefrontSnapshot         | Immutable brand system, navigation, pages and read-only data references.                                                                   |
 
 ## 15.2 Page and section model
+
+The following TypeScript names describe members of `StorefrontSnapshot`. `PageModel` is not a
+second canonical page graph, and `SectionInstance` is not an AI-owned `SectionNode`.
+
 <table>
 <colgroup>
 <col style="width: 100%" />
@@ -1273,6 +1582,11 @@ complete: boolean;<br />
 - The handoff includes adapter conformance tests using the same fixtures and acceptance journeys.
 
 ## 16.5 Deployment stages
+
+Phase 12 supplies stable ports, contract tests and a Vesko reference adapter. The staging and
+production rows below are later deployment work; their existence does not make full staging a
+Phase 12 gate.
+
 | **Stage**                     | **Purpose**                                        | **Required gate**                                                                 |
 |-------------------------------|----------------------------------------------------|-----------------------------------------------------------------------------------|
 | Local standalone              | Fast development and deterministic/manual testing. | All domain and adapter tests; no secrets in browser.                              |
@@ -1360,10 +1674,17 @@ complete: boolean;<br />
 | **AC-122** | Primary journeys have no visible clipping or overlap at 375, 768, 1024 and 1440 px.                                                                                           | FR-114, NFR-103                               |
 | **AC-123** | Dynamic selectors, drawers, proposal actions, save and publish are keyboard operable and labelled.                                                                            | FR-111, FR-114, FR-116, NFR-102               |
 | **AC-124** | A Vesko integration adapter passes the same contract tests as the standalone fixtures for project, commerce, media, storage and publishing.                                   | FR-101, FR-110, FR-118, NFR-108, NFR-109      |
-| **AC-125** | A complete customer-ready journey succeeds: URL or minimal-input onboarding → approved brief → generation → AI edit → manual edit → save draft → preview → publish → restore. | FR-101, FR-103, FR-105, FR-108, FR-115, FR-118, NFR-105, NFR-108, NFR-109 |
+| **AC-125** | A complete customer-ready journey succeeds: URL or minimal-input onboarding → merchant-approved brief whose exact approved revision/fingerprint is correlated to runtime generation → AI edit → manual edit → save draft → preview → publish → restore. | FR-101, FR-103, FR-105, FR-108, FR-115, FR-118, NFR-105, NFR-108, NFR-109 |
 | **AC-126** | P9-04D proves Premium editorial, Modern technical and Warm approachable outputs are pairwise different in every required homepage, collection and PDP dimension, rather than by colour, typography or one rearranged section alone. | FR-108, FR-109, FR-113, FR-115, NFR-103, NFR-105 |
 | **AC-127** | The P9-04D matrix records EN/FI, 375/768/1024/1440, one/many collections, small/large catalogues and missing optional media; each result has measured no-overflow, clipping, overlap and empty-space evidence. | FR-109, FR-114, NFR-102, NFR-103 |
 | **AC-128** | Every P9-04D direction uses approved asset provenance and correct product/collection binding, and matches the canonical source-commerce baseline for protected IDs, SKU, price, availability and media truth. | FR-104, FR-107, FR-110, NFR-101 |
+| **AC-129** | After executable PageBlueprint contracts exist, capability retrieval returns only current registered components, variants, bindings, renderers, responsive/accessibility rules and executable blueprints derived from canonical repository contracts. | FR-108, FR-109, NFR-108, NFR-109 |
+| **AC-130** | Unknown, stale, incompatible or schema-invalid component, variant, binding, blueprint and skill references are rejected before a proposal can classify them as reachable or mutate a draft. | FR-108, FR-109, FR-117, NFR-101, NFR-105 |
+| **AC-131** | Initial storefront generation and follow-up editing have separately identified Skill package contracts with separate schemas, declared authority, quality gates and evidence. Runtime merchant execution remains a Phase 11 responsibility. | FR-105, FR-108, FR-113, NFR-101, NFR-108 |
+| **AC-132** | Scope-classification and instruction-router contracts reject any plan whose declared authority silently widens beyond the selected section, page, shared frame, design system or complete-storefront scope. Runtime merchant controls and execution remain Phase 11 responsibilities. | FR-108, FR-113, NFR-101, NFR-105 |
+| **AC-133** | Every executable PageBlueprint compiles through controlled operations into the same canonical StorefrontSnapshot used by editor, preview, save, history and publish. | FR-109, FR-113, FR-115, NFR-105, NFR-109 |
+| **AC-134** | Golden-store evaluation proves grounded composition, canonical-commerce preservation, accessibility and responsive quality across representative catalogue shapes and at least one non-jewellery merchant. | FR-109, FR-110, FR-114, NFR-102, NFR-103, NFR-108 |
+| **AC-135** | Publication deterministically validates and publishes the accepted StorefrontSnapshot without an AI call, provider payload or provider-owned page graph at publish time. | FR-108, FR-115, NFR-101, NFR-105, NFR-107 |
 
 ### P9-04D objective design-diversity gate
 
@@ -1411,8 +1732,8 @@ source-commerce baseline; pairwise output agreement alone is insufficient.
 <thead>
 <tr class="header">
 <th></th>
-<th><p><strong>Roadmap reset</strong></p>
-<p>Phases 0-4 from v1.1 are no longer future work. The controlled architecture, editor, proposal lifecycle, real provider, atomic whole-storefront application and publishing loop have been proven. The remaining roadmap begins with one small real-AI hardening pass and then focuses on the merchant product and integration depth.</p></th>
+<th><p><strong>v1.2.1 roadmap correction</strong></p>
+<p>The controlled lifecycle is retained, but repository infrastructure is not the same as a proven merchant outcome. Phase 9 remains active until meaningful grounded multi-page composition and its complete evidence gate pass. The binding order is Phase 9, P10A grounded orchestration, P10B assets and Studio UX, Phase 11 granular editing, Phase 12 stable domains and reference adapters, then deployment-specific authentication, tenancy, staging and operations.</p></th>
 </tr>
 </thead>
 <tbody>
@@ -1426,9 +1747,9 @@ source-commerce baseline; pairwise output agreement alone is insufficient.
 | Editor and manual design           | Canvas selection, page context, manual operations, device modes and undo/redo.                 |
 | Guided onboarding baseline         | Persisted onboarding, design brief/generation review foundations and project creation flow.    |
 | Controlled AI operations           | Intent scopes, structured proposals, validation, protected fields and confirmation lifecycle.  |
-| Real provider and whole storefront | Secure provider adapter, complete-snapshot proposal, atomic application and composite history. |
+| Provider and whole-storefront foundations | Secure provider adapter, complete-snapshot proposal, atomic application and composite history. Live complete-store quality remains unverified. |
 | Draft and publishing               | Separate draft/save/publish, history and restore architecture.                                 |
-| Realistic design-agent proof       | Karvonen fixture and live provider end-to-end test.                                            |
+| Deterministic design-agent proof   | Karvonen/Lumo fixtures, mocked provider-boundary tests and protected lifecycle tests. Retained live-provider evidence is still required. |
 
 ## 19.2 Remaining phases
 | **Phase**                                              | **Scope**                                                                                                                     | **Merchant outcome**                                                                                     | **Gate**                                                                    |
@@ -1438,31 +1759,30 @@ source-commerce baseline; pairwise output agreement alone is insufficient.
 | **P6 — Dynamic commerce page depth**                   | Dynamic PDP first; then product cards, collection filters, collection headers and homepage commerce sections.                 | Rings, watches and other product types render the right options and information automatically.           | Complex ring and simple watch acceptance journeys pass at all viewports.    |
 | **P7 — URL-first onboarding and brand reconstruction** | Source discovery, provenance, canonical reconciliation, brand evidence, asset inventory and approved Storefront Design Brief. | A merchant can connect an existing site or start from minimal assets without rebuilding catalogue truth. | URL → approved brief works with deterministic and real public-source modes. |
 | **P8 — Asset-aware initial generation**                | Compose homepage, collection and dynamic PDP from the brief; reuse approved assets; remove fixture defaults.                  | The first generated storefront feels specific to the merchant and catalogue.                             | Initial generation passes source/asset/binding checks and visual review.    |
-| **P9 — Whole-storefront design quality**               | Expand skills, exact palette support, coordinated navigation/footer/pages, responsive polish and content cleanup.             | The AI can produce genuinely different, coherent storefronts rather than small rearrangements.           | Whole-site prompts pass quality, atomicity and protected-data checks.       |
-| **P10 — Vesko Storefront Studio product UX**           | Native Vesko shell, onboarding refinement, focused editor rails, merchant language, preview/publishing/history polish.        | The product is understandable and customer-ready without developer assistance.                           | First-time user completes the journey without developer terminology.        |
-| **P11 — Demo reliability and staging**                 | Load/reset fixtures, known prompts, provider failure recovery, staging deployment, access control and observability.          | Sales and customer demos are repeatable and shareable.                                                   | Final acceptance journey passes from a clean environment.                   |
-| **P12 — Vesko integration handoff**                    | Production adapters, conformance tests, migration plan, documentation, ownership and rollout runbook.                         | The teammate can integrate Veskify into Vesko without redesigning the engine.                            | All adapter contracts mapped and integration acceptance signed off.         |
+| **P9 — Meaningful grounded storefront generation** | Minimum proof-enabling registered capability reachability; coordinated shared frame, homepage, collection and PDP composition; approved-brief runtime handoff; commerce/assets; atomic apply/undo; persistence, preview and publish; responsive, accessibility and real-provider evidence. | A merchant receives a coherent editable storefront from the exact approved brief revision rather than token-only or one-section variation. | The Phase 9 evidence matrix is complete, including retained FR-105 approval-to-runtime correlation; no token-only, fixture-leaking, renderer-only, unapproved-brief or API-response-only result may pass. |
+| **P10A — Grounded orchestration** | Vocabulary freeze, repository capability audit, executable PageBlueprint contracts, generated Component Knowledge Registry and post-Phase-9 controlled vocabulary scaling, separate Skill package contracts, scoped instruction-router contracts, golden-store evaluation and deterministic publish compiler. P10A defines and validates scopes but does not deliver merchant-operable granular editing. | Generation retrieves what the product can actually build and compiles to the canonical snapshot. | AC-129 through AC-135 pass without a second registry, page graph or publish model; P10A-04 registry generation consumes P10A-03 blueprint contracts and is the only broad vocabulary-scaling activity. |
+| **P10B — Assets and Storefront Studio UX** | Upload/library, roles/provenance, generated-image lifecycle and merchant-facing Studio flows that consume P10A contracts. | Merchants can govern assets and use generation without developer concepts. | Studio-owned AC-121/122/123 evidence passes. AC-119 remains solely a Phase 9 gate. |
+| **P11 — Granular editing** | Runtime selection and execution for selected section/component, current page, shared frame, design system and complete storefront; add/remove/reorder/replace; preview, acceptance, mixed-scope history, Undo/Redo and merchant scope controls/warnings. | Merchants can make controlled local or coordinated changes without unintended scope widening. | Every merchant-operable scope passes permissions, review, atomicity, history and Undo/Redo tests against the P10A contracts. |
+| **P12 — Stable domains and reference adapters** | Consolidate canonical domain and port contracts; provide a Vesko reference adapter and conformance suite. | Vesko teams can integrate without redesigning Veskify or creating competing commerce truth. | Reference adapter passes contract tests; full staging is not required for this phase. |
+| **Later deployment work** | Authentication, tenancy, production operations, deployment, staging transports, rollout and support runbooks. | The integrated product can be operated safely in Vesko environments. | Environment-specific security, reliability and operational gates pass. |
 
-## 19.3 Recommended immediate three-worktree start
-| **Window** | **First task**                                                  | **Owned outcome**                                                                                                           | **Dependency / overlap rule**                                                                          |
-|------------|-----------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
-| **W1**     | P5-01 Component registry v2 and commerce-presentation contracts | Define ComponentDefinitionV2, DataBinding, ProductPresentationContext, page blueprint and adapter conformance contracts.    | Shared contract branch; merge first before dynamic PDP implementation.                                 |
-| **W2**     | P10-01 Vesko Storefront Studio shell foundation                 | Implement the approved native shell, workspace header, compact rails and merchant naming without changing domain contracts. | Presentation-only; do not touch registry/domain files owned by W1.                                     |
-| **W3**     | P7-01 Source discovery and Storefront Design Brief contracts    | Create source-evidence, provenance, asset inventory, reconciliation and brief schemas plus deterministic adapter fixtures.  | New onboarding/source modules; consume existing project contracts without changing component registry. |
-| **W4**     | Manual testing only                                             | Keep the real-provider Karvonen environment available for regression and product review.                                    | No Codex task unless explicitly assigned.                                                              |
+## 19.3 Next binding task sequence
 
-## 19.4 Merge sequence after the first three tasks
-33. Merge P5-01 shared component and commerce contracts first.
+Execute P10A-01 through P10A-08 in order after Phase 9 closes. Contract owners merge vocabulary,
+capability and executable PageBlueprint foundations before generating the Component Knowledge
+Registry, then merge Skill/router contracts before evaluation and publish-compiler consumers. P10B
+consumes those merged contracts; Phase 11 subsequently implements their editing scopes as
+merchant-operable runtime features. Parallel worktree assignments must still declare owned files,
+dependencies and merge order; a worktree label never changes canonical phase ownership.
 
-34. Update dependent worktrees with git fetch and git merge origin/main; never rebase.
+## 19.4 Integration rules
 
-35. Start P6-01 dynamic option-group engine and P6-02 dynamic PDP components in separate files with one coordinated registry integration owner.
-
-36. Continue P7 URL-first onboarding against the approved brief contracts.
-
-37. Merge the shell independently when it does not conflict with active editor feature files.
-
-38. Use W4 for one real-provider regression at each phase gate, not for continuous automated work.
+1. Merge shared canonical contract work before dependent orchestration or UI work.
+2. Update dependent worktrees with `git fetch` and `git merge origin/main`; never rebase.
+3. Generate queryable knowledge from canonical contracts; do not hand-maintain a parallel registry.
+4. Keep provider planning, proposal projections and editor adapters transient.
+5. Use a controlled real-provider run only at its documented gate and retain safe evidence without
+   prompts, raw payloads or secrets.
 
 ## 19.5 Explicit non-priorities before the integration-ready design demo
 - Another catalogue-management or product-entry system.
@@ -1562,7 +1882,7 @@ The final integration-ready result is not measured by the number of schemas or c
 | **PDP composition**    | Gallery + premium summary + ordered selector groups + size help + resolved price/availability + material/stone details + care/delivery + related rings |
 | **Completion rule**    | Primary action waits for every required dimension; impossible combinations are disabled.                                                               |
 
-# Appendix C — Codex task contract for v1.2
+# Appendix C — Codex task contract for v1.2.1
 <table>
 <colgroup>
 <col style="width: 100%" />
@@ -1576,7 +1896,7 @@ OBJECTIVE<br />
 [What the merchant can do after this PR]<br />
 <br />
 SPEC REFERENCES<br />
-[v1.2 sections, requirement IDs and acceptance criteria]<br />
+[v1.2/v1.2.1 sections, requirement IDs and acceptance criteria]<br />
 <br />
 BRANCH / PR<br />
 [Exact branch; one task, one PR; never rebase]<br />
@@ -1599,6 +1919,9 @@ DATA / SCHEMAS / MIGRATIONS<br />
 TESTS<br />
 [Focused unit/component/integration/visual as required]<br />
 <br />
+EVIDENCE<br />
+[Requirement/AC, task, PR, commit, test, browser, screenshot, provider, status and limitation]<br />
+<br />
 VALIDATION<br />
 [Focused tests; typecheck, lint, formatting once; rely on CI for full gate]<br />
 <br />
@@ -1618,6 +1941,9 @@ DELIVERABLE<br />
 | Canonical commerce projection | Read-only product and collection presentation data mapped from Vesko operational truth.                                              |
 | Component family              | Reusable engineering-owned component with approved variants, slots, bindings and responsive rules.                                   |
 | Page blueprint                | Approved page-level composition rules that select compatible component families and required bindings.                               |
+| Component Knowledge Registry  | Queryable capability view generated from canonical component, binding, blueprint and renderer contracts; never a second registry.     |
+| Skill package                 | Versioned controlled capability with explicit lifecycle, scope, required capabilities, operations, validation and evidence.           |
+| Publish compiler              | Deterministic validation/publication path from an accepted StorefrontSnapshot; it makes no AI call.                                   |
 | Storefront Design Brief       | Merchant-approved generation contract containing business, sources, brand direction, asset roles, page plan and assumptions.         |
 | Source evidence               | Untrusted public website or uploaded information used to inform design, never to control permissions or override canonical commerce. |
 | Dynamic PDP                   | Product-detail page composed from product type, attributes, variant dimensions, option groups and approved presentation rules.       |

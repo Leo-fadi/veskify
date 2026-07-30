@@ -1,6 +1,6 @@
 # Veskify Design-Agent Skills
 
-**Version:** 1.2
+**Version:** 1.2.1
 **Aligned with:** `docs/VESKIFY_SDD.md`
 **Product:** Vesko Storefront Studio, powered by Veskify
 
@@ -64,25 +64,28 @@ Every skill must:
 
 ## 3. Approved operation vocabulary
 
-The operation registry may include:
+Skill package IDs use camelCase. Persisted proposal operations use the current registered uppercase
+codes:
 
-- `updateBrandTokens`
-- `updateSectionContent`
-- `updateSectionProps`
-- `updateSectionStyleTokens`
-- `changeSectionVariant`
-- `addSection`
-- `duplicateSection`
-- `removeSection`
-- `reorderSections`
-- `replacePageComposition`
-- `bindComponentData`
-- `assignAssetRole`
-- `createPageFromBlueprint`
-- `updateLocalizedContent`
-- `generateSeoMetadata`
-- `createSourceDiscoveryResult`
-- `createStorefrontDesignBrief`
+- `CHANGE_LOCALIZED_SECTION_TEXT`
+- `CHANGE_SECTION_VARIANT`
+- `CHANGE_BACKGROUND`
+- `CHANGE_TYPOGRAPHY`
+- `CHANGE_DENSITY`
+- `CHANGE_SHAPE`
+- `CHANGE_ALIGNMENT`
+- `CHANGE_CTA_STYLE`
+- `APPLY_APPROVED_BRAND_COLOURS`
+- `APPLY_APPROVED_BRAND_TYPOGRAPHY`
+- `APPLY_REGISTERED_BRAND_SYSTEM`
+- `ADD_APPROVED_SECTION`
+- `REMOVE_OPTIONAL_SECTION`
+- `REORDER_SECTIONS`
+- `APPLY_REGISTERED_PAGE_SECTIONS`
+
+Names such as `createPageFromBlueprint`, `assignAssetRole` or `generateSeoMetadata` describe
+planned capability outcomes, not registered serialized operations. They become Baseline only when
+the operation schema, validator, compiler and tests merge.
 
 Operations must identify the project, expected snapshot revision, target page/section, scope and binding context where applicable.
 
@@ -141,29 +144,50 @@ Image generation is optional and occurs only when no suitable approved asset exi
 
 Status values:
 
-- **Baseline:** capability exists in the current controlled proposal lifecycle.
-- **Next:** immediate v1.2 implementation priority.
-- **Later:** required after the underlying contracts exist.
+- **Baseline:** capability is merged and evidenced through the canonical proposal lifecycle.
+- **Partial:** foundations exist, but the complete merchant outcome or required evidence is missing.
+- **Planned:** approved future work.
+- **Research recommendation:** external pattern worth evaluating, not a repository fact or
+  implementation commitment.
 
-### 6.1 Existing design-agent baseline
+### 6.1 Canonical names and migration relationships
 
-| Skill                       | Status   | Purpose                                                                                   |
-| --------------------------- | -------- | ----------------------------------------------------------------------------------------- |
-| `improveSelectedSection`    | Baseline | Propose validated changes to one eligible section.                                        |
-| `improveCurrentPage`        | Baseline | Coordinate compatible changes across one page.                                            |
-| `restyleWholeStorefront`    | Baseline | Apply validated brand-system and multi-page design changes atomically.                    |
-| `applyExactBrandPalette`    | Baseline | Map named or exact colours to validated global tokens without changing layout or content. |
-| `applyLuxuryStyle`          | Baseline | Apply a premium direction through approved variants and tokens.                           |
-| `applyMinimalNordicStyle`   | Baseline | Simplify composition and apply restrained Nordic design direction.                        |
-| `translateLocalizedContent` | Baseline | Update eligible EN/FI presentation content without touching protected data.               |
+| Reported name                                          | Canonical v1.2.1 name                                              | Relationship / status                                                                                                                           |
+| ------------------------------------------------------ | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `analyseStorefrontSource`                              | `discoverExistingStorefront`                                       | Conceptual rename; Partial source-discovery foundations, not a live design-skill registry entry.                                                |
+| `generateStorefrontFromBrief`                          | `generateInitialStorefront`                                        | Conceptual rename; Partial until complete Phase 9 generation/lifecycle evidence passes.                                                         |
+| `applyBrandPalette`                                    | `applyExactBrandPalette`                                           | The registered exact-palette package is canonical for current token fidelity. A broader semantic palette package would be separate future work. |
+| `fixMobileLayout`                                      | `fixResponsiveLayout`                                              | Planned conceptual rename covering all target widths, not only mobile.                                                                          |
+| `replaceFixturePlaceholders`                           | `removeFixtureSpecificContent`                                     | Planned conceptual rename; neither name is a current registry ID.                                                                               |
+| `restyleWholeStorefront` / `coordinateWholeStorefront` | `applyRegisteredWholeStorefrontDirection` for the current registry | Merchant intent/future orchestration names over the current Partial registered direction package.                                               |
+| Uppercase serialized codes                             | camelCase Skill/application functions                              | Legitimate separate layers: persisted proposal operations versus application package/function identifiers.                                      |
 
-These skills already use proposal review, protected-field guards, stale protection, atomic acceptance and undo/redo. Do not rebuild their lifecycle.
+Temporary documentation or merchant-language aliases must resolve to one canonical package or
+operation before planning. They must not become parallel registries.
 
-### 6.2 Source discovery and brief skills
+### 6.2 Existing design-agent baseline
+
+| Skill                                     | Status   | Purpose                                                                                                            |
+| ----------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------ |
+| `applyLuxuryStyle`                        | Baseline | Registered section/page styling through approved variants and tokens.                                              |
+| `applyMinimalNordicStyle`                 | Baseline | Registered restrained section/page styling.                                                                        |
+| `addCampaignSection`                      | Baseline | Add one approved campaign section through registered operations.                                                   |
+| `improveHero`                             | Baseline | Improve an eligible hero through controlled operations.                                                            |
+| `applyExactBrandPalette`                  | Baseline | Apply exact validated token refinement proved by merged PR #123 while preserving unrelated composition.            |
+| `applyWarmPremiumStorefrontStyle`         | Partial  | Registered whole-storefront token/variant capability; meaningful multi-page quality remains a Phase 9 gate.        |
+| `applyMinimalNordicStorefrontStyle`       | Partial  | Registered whole-storefront token/variant capability; meaningful multi-page quality remains a Phase 9 gate.        |
+| `applyRegisteredWholeStorefrontDirection` | Partial  | Registered direction selection and atomic lifecycle exist; complete coordinated composition evidence remains open. |
+
+`improveSelectedSection`, `improveCurrentPage` and `restyleWholeStorefront` are merchant intent/scope
+labels, not current registry IDs. Future Skill packages may use those names after their contracts
+merge. Existing proposal review, protected-field guards, stale protection, atomic acceptance and
+undo/redo must be reused.
+
+### 6.3 Source discovery and brief skills
 
 #### `discoverExistingStorefront`
 
-**Status:** Next
+**Status:** Partial
 **Scope:** Source discovery
 **Input:** Public URL, crawl policy, locale and merchant context.
 **Output:** Source evidence with provenance, confidence and warnings.
@@ -171,7 +195,7 @@ These skills already use proposal review, protected-field guards, stale protecti
 
 #### `reconcileSourceWithCommerce`
 
-**Status:** Next
+**Status:** Partial
 **Scope:** Source discovery
 **Input:** Source evidence plus canonical Vesko projection.
 **Output:** Reuse candidates, conflicts, unresolved items and protected-source declaration.
@@ -179,7 +203,7 @@ These skills already use proposal review, protected-field guards, stale protecti
 
 #### `reconstructBrandSystem`
 
-**Status:** Next
+**Status:** Partial
 **Scope:** Brand
 **Input:** Logo, source evidence, business profile, assets and guided preferences.
 **Output:** Validated palette, typography, spacing, shape, imagery and voice proposals.
@@ -187,13 +211,13 @@ These skills already use proposal review, protected-field guards, stale protecti
 
 #### `buildStorefrontDesignBrief`
 
-**Status:** Next
+**Status:** Partial
 **Scope:** Storefront
 **Input:** Reconciled sources, brand proposal, asset inventory, locales and page needs.
 **Output:** Merchant-reviewable Storefront Design Brief.
 **Rule:** Initial generation cannot proceed until the brief is approved.
 
-### 6.3 Asset-aware generation skills
+### 6.4 Asset-aware generation skills
 
 #### `classifyAssetRoles`
 
@@ -209,10 +233,18 @@ When required media is missing, create a merchant choice: reuse another approved
 
 #### `generateInitialStorefront`
 
-**Status:** Later, after P5 and P7 contracts
-Creates homepage, collection and product-page compositions from the approved brief, page blueprints, bindings and approved assets. It must not copy seed-brand defaults into another merchant.
+**Status:** Partial
 
-### 6.4 Reusable component and page skills
+Planner, proposal, brief and component foundations exist, but a provider/API response does not make
+this Baseline. The Skill becomes Baseline only when it creates homepage, collection and product
+compositions from the exact approved brief revision, executable PageBlueprints, bindings and
+approved assets, then passes review, atomic acceptance, persistence, preview and publication
+through the same `StorefrontSnapshot`. Retained evidence must correlate project ID, brief ID,
+revision/fingerprint, approval actor/action/timestamp and runtime request/proposal, and must prove
+that no later unapproved brief mutation supplied generation. It must not copy seed-brand defaults
+into another merchant.
+
+### 6.5 Reusable component and page skills
 
 #### `generateHomepageFromBlueprint`
 
@@ -234,12 +266,15 @@ May change gallery layout, information hierarchy, selector presentation, spacing
 
 May change density, card family, image treatment, columns, heading and ordering of references. It must render valid price, compare-at-price or unavailable-price states without inventing values.
 
-### 6.5 Visual-direction skills
+### 6.6 Visual-direction skills
 
 #### `applyExactBrandPalette`
 
 **Status:** Baseline
-Accept named colours or valid colour values, map them to approved token roles, validate contrast and return a cross-page proposal. It must preserve layout, content and product truth unless broader changes are explicitly requested.
+
+Accept named colours or valid colour values, map them to approved token roles, validate contrast
+and preserve layout, content, bindings, assets and product truth. This status is narrowly supported
+by merged PR #123; it is not evidence of meaningful initial or coordinated storefront generation.
 
 #### `improveTypography`
 
@@ -251,8 +286,17 @@ Adjust tokenized density, section spacing and grid gaps. Do not emit arbitrary p
 
 #### `coordinateWholeStorefront`
 
-**Status:** Later
-Coordinate brand tokens, navigation, footer, homepage, collection and representative product pages as one atomic proposal. The result must feel like one designed storefront.
+**Status:** Partial
+
+Registered direction, planner/compiler and atomic lifecycle foundations exist. This becomes
+Baseline only when shared frame, homepage, collection and representative product pages use
+compatible registered composition capabilities, remain meaningfully different beyond tokens and
+pass the complete Phase 9 evidence gate.
+
+Phase 9 capability work is limited to repairing reachability and exposing the smallest curated set
+needed to prove its registered directions. Broad controlled-vocabulary scaling begins only after
+Phase 9 closes and belongs to P10A-04, where additions must be validated canonical registrations
+exposed by the generated Component Knowledge Registry.
 
 #### `fixResponsiveLayout`
 
@@ -262,7 +306,7 @@ Use approved responsive variants, content order, density, media crop and visibil
 
 Improve contrast, heading order, labels, focus-safe controls, alt-text completeness and responsive readability without hiding unresolved failures.
 
-### 6.6 Content and localisation skills
+### 6.7 Content and localisation skills
 
 - `generateSectionCopy`
 - `shortenCopy`
@@ -274,7 +318,34 @@ Improve contrast, heading order, labels, focus-safe controls, alt-text completen
 
 All factual copy must be grounded in merchant-provided facts, approved source evidence or canonical commerce data. Unsupported claims become questions or warnings.
 
-## 7. Dynamic product-page skill guardrails
+## 7. Grounded Skill package contract requirements
+
+P10A defines the contract for every planned executable Skill with:
+
+- canonical package ID and version;
+- `initialGeneration` or `followUpEditing` lifecycle;
+- exact scope classification: selected section/component, current page, shared frame, design system
+  or complete storefront;
+- an explicit authority declaration;
+- required live capabilities from the generated Component Knowledge Registry;
+- allowed registered operations and protected paths;
+- executable PageBlueprint compatibility;
+- input/output schemas and router validation rules;
+- validation, quality and evidence requirements;
+- merchant-safe proposal language.
+
+Initial generation requires an approved brief and creates a proposal over the current
+`StorefrontSnapshot`. Follow-up editing requires an existing snapshot and target scope. They MUST
+NOT share an ambiguous “generate or edit” authority. Router contracts may narrow scope but must
+reject silent widening, and unknown or stale capability references fail before proposal evaluation.
+
+P10A defines and validates the scopes. It does not deliver merchant-operable granular editing.
+Phase 11 implements and exposes those scopes as working merchant features: selecting a component or
+section, applying a selected-section proposal, current-page editing, shared-frame editing,
+design-system editing, complete-storefront editing, add/remove/reorder/replace operations, proposal
+preview and acceptance, mixed-scope history, Undo/Redo and merchant scope controls and warnings.
+
+## 8. Dynamic product-page skill guardrails
 
 A dynamic PDP skill receives, but does not own:
 
@@ -300,7 +371,7 @@ The skill may change presentation only:
 
 The skill must preserve every option group, value, dependency and protected field.
 
-## 8. Proposal summary requirements
+## 9. Proposal summary requirements
 
 Every material proposal states:
 
@@ -316,7 +387,7 @@ Every material proposal states:
 
 Acceptance applies to draft only. Publishing remains separate.
 
-## 9. Test requirements
+## 10. Test requirements
 
 Each skill requires:
 
@@ -339,6 +410,6 @@ Dynamic PDP skills additionally require:
 - selected variant price/media updates through the resolver;
 - generic unknown-product fallback.
 
-## 10. Capability policy
+## 11. Capability policy
 
 When a merchant request is valid but unsupported, Veskify must return an honest capability message and preserve the draft. The long-term goal is not to reject ordinary brand, colour, asset or dynamic-page requests merely because the initial deterministic examples were narrow. Expand approved contracts and tests instead of weakening validation.

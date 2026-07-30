@@ -43,19 +43,23 @@ The repository currently includes:
 - atomic multi-page acceptance with undo/redo;
 - separate save draft and publish flows;
 - IndexedDB persistence and realistic Aurum/Karvonen fixtures;
-- a verified real-provider Karvonen redesign and publish journey.
+- deterministic and mocked-provider generation/lifecycle evidence.
+
+Phase 9 remains active. The repository does not retain the complete live-provider, browser and
+visual evidence required to claim meaningful coordinated storefront generation.
 
 ## Next development direction
 
-The v1.2 roadmap prioritizes:
+The binding v1.2.1 sequence is:
 
-1. reusable component registry v2 and typed data bindings;
-2. dynamic product-detail pages for simple and complex product types;
-3. URL-first source discovery and brand reconstruction;
-4. asset-aware initial generation;
-5. exact brand-palette and whole-storefront design quality;
-6. native Vesko Storefront Studio product UX;
-7. reliable staging and Vesko integration handoff.
+1. complete Phase 9 meaningful grounded shared-frame/home/collection/PDP generation;
+2. build P10A contract-level grounded orchestration from live canonical capabilities, with
+   executable PageBlueprint contracts before generated capability knowledge;
+3. build P10B asset governance and Storefront Studio UX;
+4. implement Phase 11 merchant-operable granular controlled editing against the P10A scope
+   contracts;
+5. consolidate Phase 12 stable domains and Vesko reference adapters;
+6. add environment-specific authentication, tenancy, staging and operations later.
 
 Veskify is not building another catalogue/import system. Jewellery and watches remain the first deep reference industry before broader expansion.
 
@@ -64,7 +68,7 @@ Veskify is not building another catalogue/import system. Jewellery and watches r
 ```text
 Vesko / fixture commerce truth
   -> read-only commerce projection
-  -> Veskify canonical storefront contracts
+  -> one canonical StorefrontSnapshot
   -> controlled component families and page blueprints
   -> design skills and structured operations
   -> validated proposal
@@ -109,9 +113,10 @@ Full repository validation is reserved for phase/release gates, high-risk migrat
 ## Documentation
 
 - [`docs/VESKIFY_SDD.md`](docs/VESKIFY_SDD.md) — authoritative product and architecture specification.
-- [`docs/VESKIFY_SDD_v1.2.docx`](docs/VESKIFY_SDD_v1.2.docx) — synchronized human-readable export.
+- [`docs/VESKIFY_SDD_v1.2.1.docx`](docs/VESKIFY_SDD_v1.2.1.docx) — synchronized human-readable export.
 - [`AGENTS.md`](AGENTS.md) — binding Codex/developer constitution.
 - [`docs/VESKIFY_DEVELOPMENT_ROADMAP.md`](docs/VESKIFY_DEVELOPMENT_ROADMAP.md) — current phase plan.
+- [`docs/PHASE_9_EVIDENCE_MATRIX.md`](docs/PHASE_9_EVIDENCE_MATRIX.md) — current Phase 9 evidence and limitations.
 - [`docs/DESIGN_AGENT_SKILLS.md`](docs/DESIGN_AGENT_SKILLS.md) — controlled skill catalogue.
 - [`docs/DEVELOPMENT_GUIDE.md`](docs/DEVELOPMENT_GUIDE.md) — worktree, testing and PR workflow.
 - `docs/adr/` — binding architecture decisions.
