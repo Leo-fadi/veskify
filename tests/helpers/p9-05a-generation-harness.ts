@@ -55,14 +55,21 @@ export async function generateP905aScenario(directionId: P905aDirectionId) {
 export async function generateP905aScenarioFromBaseline(
   directionId: P905aDirectionId,
   baselineDirectionId: P905aDirectionId,
+  merchantInstruction?: string,
 ) {
-  return generateP905aScenarioWithCapability(directionId, baselineDirectionId, true);
+  return generateP905aScenarioWithCapability(
+    directionId,
+    baselineDirectionId,
+    true,
+    merchantInstruction,
+  );
 }
 
 async function generateP905aScenarioWithCapability(
   directionId: P905aDirectionId,
   baselineDirectionId: P905aDirectionId,
   registeredProviderSelection: boolean,
+  merchantInstruction?: string,
 ) {
   const fixture = createP905aFreshMerchantFixture(baselineDirectionId);
   const planningInput = wholeStorefrontPlanningInputSchema.parse(
@@ -110,7 +117,7 @@ async function generateP905aScenarioWithCapability(
         kind: "storefrontDesignSystem",
         projectId: fixture.aggregate.project.id,
       },
-      merchantInstruction: fixture.direction.merchantInstruction,
+      merchantInstruction: merchantInstruction ?? fixture.direction.merchantInstruction,
       activeLocale: fixture.aggregate.project.primaryLocale,
       enabledLocales: fixture.aggregate.project.enabledLocales,
       requestedScope: "storefront",
