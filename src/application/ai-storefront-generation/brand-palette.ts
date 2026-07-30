@@ -245,7 +245,7 @@ function requestedPalette(
       roles.length === 0
         ? positional?.[index] === undefined
           ? []
-          : [{ token: positional[index]!, specificity: 1 as const }]
+          : [{ token: positional[index], specificity: 1 as const }]
         : roles;
     if (assignedRoles.length === 0) {
       throw new BrandPaletteInstructionError(

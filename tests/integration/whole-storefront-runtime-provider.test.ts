@@ -189,7 +189,17 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
   it("records only canonical request and project identifiers before request validation", async () => {
     const records: Array<{ attemptId: string; projectId: string; stage: string }> = [];
     const log = vi.spyOn(console, "info").mockImplementation((_event, value) => {
-      if (typeof value === "string") records.push(JSON.parse(value));
+      if (typeof value !== "string") return;
+      const parsed: unknown = JSON.parse(value);
+      if (
+        parsed !== null &&
+        typeof parsed === "object" &&
+        typeof parsed.attemptId === "string" &&
+        typeof parsed.projectId === "string" &&
+        typeof parsed.stage === "string"
+      ) {
+        records.push(parsed);
+      }
     });
     const handler = createServerWholeStorefrontPlanningHandler({
       authority: authority(),
