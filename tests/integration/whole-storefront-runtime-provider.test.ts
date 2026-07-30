@@ -5,6 +5,7 @@ import {
   aiStorefrontProviderResponseSchema,
   createDeterministicMockStorefrontAIProvider,
   buildAiStorefrontProviderRequest,
+  recordStorefrontDiagnostic,
   type AiStorefrontGenerationCommand,
 } from "@/application/ai-storefront-generation";
 import type { AiStorefrontProjection } from "@/application/ai-storefront";
@@ -35,6 +36,68 @@ import { sourceEvidenceSchema, sourceReferenceSchema } from "@/domain/source-dis
 
 const now = "2026-07-26T10:00:00.000Z";
 const snapshot = aurumNordicSeed.draftSnapshot;
+type DiagnosticRecord = Parameters<typeof recordStorefrontDiagnostic>[0];
+
+const diagnosticStages = [
+  "submission_received",
+  "command_build_started",
+  "command_build_completed",
+  "request_started",
+  "response_received",
+  "response_decoding_started",
+  "response_decoding_completed",
+  "acceptance_coordinator_started",
+  "proposal_state_completed",
+  "request_received",
+  "request_validation_completed",
+  "provider_invocation_started",
+  "provider_invocation_completed",
+  "provider_response_parsed",
+  "normalization_completed",
+  "proposal_schema_validated",
+  "proposal_compiled",
+  "protected_state_validated",
+  "response_completed",
+] as const satisfies readonly DiagnosticRecord["stage"][];
+
+const diagnosticCategories = [
+  "success",
+  "client_command_build",
+  "client_request",
+  "client_response",
+  "client_response_decode",
+  "client_acceptance_coordinator",
+  "unknown_client_failure",
+  "validation",
+  "stale",
+  "staleDraft",
+  "staleTarget",
+  "unsupportedRequest",
+  "providerFailure",
+  "superseded",
+  "permissionDenied",
+  "projectMismatch",
+  "tenantMismatch",
+  "providerUnavailable",
+  "malformedResponse",
+  "internalFailure",
+] as const satisfies readonly DiagnosticRecord["category"][];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isDiagnosticRecord(value: unknown): value is DiagnosticRecord {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.attemptId === "string" &&
+    typeof value.projectId === "string" &&
+    value.scope === "storefront" &&
+    diagnosticStages.some((stage) => stage === value.stage) &&
+    diagnosticCategories.some((category) => category === value.category) &&
+    (value.status === undefined || typeof value.status === "number")
+  );
+}
 
 function planningInput(): WholeStorefrontPlanningInput {
   const source = sourceReferenceSchema.parse({
@@ -187,19 +250,11 @@ function authority(input = planningInput()): ServerWholeStorefrontPlanningAuthor
 
 describe("P9-01 runtime whole-storefront provider boundary", () => {
   it("records only canonical request and project identifiers before request validation", async () => {
-    const records: Array<{ attemptId: string; projectId: string; stage: string }> = [];
+    const records: DiagnosticRecord[] = [];
     const log = vi.spyOn(console, "info").mockImplementation((_event, value) => {
       if (typeof value !== "string") return;
       const parsed: unknown = JSON.parse(value);
-      if (
-        parsed !== null &&
-        typeof parsed === "object" &&
-        typeof parsed.attemptId === "string" &&
-        typeof parsed.projectId === "string" &&
-        typeof parsed.stage === "string"
-      ) {
-        records.push(parsed);
-      }
+      if (isDiagnosticRecord(parsed)) records.push(parsed);
     });
     const handler = createServerWholeStorefrontPlanningHandler({
       authority: authority(),
