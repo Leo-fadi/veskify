@@ -6,6 +6,7 @@ import {
   createAiStorefrontGenerationPlan,
   createDeterministicMockStorefrontAIProvider,
   aiStorefrontProviderResponseSchema,
+  isRegisteredWholeStorefrontDirectionRequest,
   validateAiStorefrontProviderResponse,
   type AiStorefrontGenerationCommand,
   type AiStorefrontProviderResponse,
@@ -157,6 +158,30 @@ describe("P4-05B storefront planner and request construction", () => {
     expect(() => createAiStorefrontGenerationPlan(command({ designSystemTarget: null }))).toThrow(
       /requires an explicit/i,
     );
+  });
+
+  it("recognizes natural registered directions while rejecting protected-commerce mutations", () => {
+    expect(
+      isRegisteredWholeStorefrontDirectionRequest(
+        "Apply a premium editorial direction with craftsmanship and product imagery.",
+      ),
+    ).toBe(true);
+    expect(
+      isRegisteredWholeStorefrontDirectionRequest(
+        "Use a modern technical direction with compact spacing and crisp surfaces.",
+      ),
+    ).toBe(true);
+    expect(
+      isRegisteredWholeStorefrontDirectionRequest(
+        "Make the storefront warm and approachable with softer typography.",
+      ),
+    ).toBe(true);
+    expect(
+      isRegisteredWholeStorefrontDirectionRequest(
+        "Change the product prices and inventory to match the new design.",
+      ),
+    ).toBe(false);
+    expect(isRegisteredWholeStorefrontDirectionRequest("Rebuild the navigation.")).toBe(false);
   });
 
   it("rejects duplicate, unknown, and cross-page target identities before invocation", () => {

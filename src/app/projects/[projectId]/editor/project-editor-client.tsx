@@ -489,7 +489,7 @@ export function ProjectEditorClient({
     disabled: saveState.status === "saving",
     provider: aiProvider,
     storefrontProvider: resolvedStorefrontAiProvider,
-    wholeStorefrontCapability: localDemoBridge ? "registeredWholeStorefrontDirection" : undefined,
+    wholeStorefrontCapability: "registeredWholeStorefrontDirection",
     initialStorefrontProposal: importedDemoProposal,
     analytics: proposalAnalytics,
     analyticsRoute: `/projects/${projectId}/editor`,

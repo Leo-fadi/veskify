@@ -13,9 +13,12 @@ import {
   type GeneratedAiProposal,
 } from "@/application/ai-proposal-generation";
 import {
+  AiStorefrontRequestBuildError,
   AiStorefrontGenerationOrchestrator,
   buildAiStorefrontProviderRequest,
   createDeterministicMockStorefrontAIProvider,
+  isRegisteredWholeStorefrontDirectionRequest,
+  type AiStorefrontGenerationCommand,
   type AiStorefrontGenerationIdentity,
   type StorefrontAIProvider,
 } from "@/application/ai-storefront-generation";
@@ -698,7 +701,7 @@ export function useDesignAgentSession({
       throw new Error("The complete storefront is not ready for a design request.");
     }
     const storefront = projectAiStorefrontSnapshot(activeDraft);
-    const command = {
+    const baseCommand = {
       projectId,
       draftSnapshotId: activeDraft.id,
       draftRevision: activeDraft.revision,
@@ -710,12 +713,32 @@ export function useDesignAgentSession({
       activeLocale,
       enabledLocales,
       requestedScope: "storefront" as const,
-      capability: wholeStorefrontCapability ?? ("approvedColorTypographyDirection" as const),
       providerId: runtime.storefrontProvider.id,
       provider: runtime.storefrontProvider,
       importedContent: [],
     };
-    const request = buildAiStorefrontProviderRequest(command, 1);
+    let command: AiStorefrontGenerationCommand = {
+      ...baseCommand,
+      capability: "approvedColorTypographyDirection",
+    };
+    let request;
+    try {
+      request = buildAiStorefrontProviderRequest(command, 1);
+    } catch (error) {
+      if (
+        wholeStorefrontCapability !== "registeredWholeStorefrontDirection" ||
+        !(error instanceof AiStorefrontRequestBuildError) ||
+        error.code !== "unsupported-request" ||
+        !isRegisteredWholeStorefrontDirectionRequest(instruction)
+      ) {
+        throw error;
+      }
+      command = {
+        ...baseCommand,
+        capability: "registeredWholeStorefrontDirection",
+      };
+      request = buildAiStorefrontProviderRequest(command, 1);
+    }
     runtimeBridge.bindStorefrontIdentity({
       context: {
         projectId,

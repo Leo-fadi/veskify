@@ -31,6 +31,50 @@ export function normalizeStorefrontInstruction(value: string): string {
     .replace(/\s+/g, " ");
 }
 
+const registeredDirectionSignals = [
+  /premium/,
+  /editorial/,
+  /craftsmanship/,
+  /product imagery/,
+  /ring discovery/,
+  /modern/,
+  /technical/,
+  /compact spacing/,
+  /crisp surfaces/,
+  /commerce-focused/,
+  /structured product discovery/,
+  /specification-led/,
+  /warm/,
+  /approachable/,
+  /natural colou?r/,
+  /welcoming/,
+  /soft(?:er)? (?:typography|spacing|shapes|surfaces)/,
+  /ensiluokkainen/,
+  /editoriaal/,
+  /käsityö/,
+  /tuotekuv/,
+  /sormus(?:ten|valikoiman) löyt/,
+  /moderni/,
+  /tekninen/,
+  /kompakti/,
+  /terävä/,
+  /lämmin/,
+  /lähestyttävä/,
+  /luonnollinen väri/,
+  /pehmeä(?:mpi)? (?:typografia|välistys|muoto|pinta)/,
+] as const;
+
+const protectedCommerceMutation =
+  /(?:change|edit|set|raise|lower|replace|remove|delete|update).{0,48}(?:price|sku|stock|inventory|availability|variant|option value|order|tax|payment|shipping)|(?:muuta|aseta|nosta|laske|korvaa|poista|päivitä).{0,48}(?:hinta|sku|varasto|saatavuus|variant|valinta-arvo|tilaus|vero|maksu|toimitus)/u;
+
+export function isRegisteredWholeStorefrontDirectionRequest(instruction: string): boolean {
+  const normalized = normalizeStorefrontInstruction(instruction);
+  return (
+    !protectedCommerceMutation.test(normalized) &&
+    registeredDirectionSignals.some((signal) => signal.test(normalized))
+  );
+}
+
 type SupportedStorefrontRequest = {
   direction: AiStorefrontGenerationPlan["direction"];
   skillId: string;
