@@ -15,6 +15,7 @@ import {
 } from "@/application/ai-storefront-generation";
 import type { ProposalAnalyticsEvent } from "@/application/analytics";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
+import { storefrontFailureDiagnosticCategory } from "@/app/projects/[projectId]/editor/use-design-agent-session";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import type { PageModel } from "@/domain/storefront";
 import { browserProposalAnalyticsEventType } from "@/services/analytics";
@@ -169,6 +170,20 @@ const karvonenAggregate = (): ProjectAggregate => ({
 });
 
 describe("P4-05D editor storefront integration", () => {
+  it.each([
+    ["staleDraft", "staleDraft"],
+    ["staleTarget", "staleTarget"],
+    ["unsupportedRequest", "unsupportedRequest"],
+    ["providerUnavailable", "providerUnavailable"],
+    ["validationFailed", "validation"],
+    ["superseded", "superseded"],
+  ] as const)(
+    "retains the safe storefront failure diagnostic category for %s",
+    (code, category) => {
+      expect(storefrontFailureDiagnosticCategory(code)).toBe(category);
+    },
+  );
+
   const openStorefrontTarget = async () => {
     await screen.findByText("Canvas: home / en");
     fireEvent.click(screen.getByRole("radio", { name: "Entire storefront" }));

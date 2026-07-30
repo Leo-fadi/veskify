@@ -9,6 +9,7 @@ import {
   createApprovedGenerationAssetContextFingerprint,
   createAiStorefrontGenerationPlan,
   createDeterministicMockStorefrontAIProvider,
+  planExactBrandPalette,
   aiStorefrontProviderResponseSchema,
   isRegisteredWholeStorefrontDirectionRequest,
   planRegisteredTokenRefinement,
@@ -350,6 +351,9 @@ describe("P4-05B storefront planner and request construction", () => {
     ["Do not change spacing.", null],
     ["Leave layout and spacing unchanged.", null],
     ["Preserve all layouts, sections, products, bindings, images, spacing and content.", null],
+    ["Preserve the airy layout.", null],
+    ["Keep the spacious composition.", null],
+    ["Leave the compact layout unchanged.", null],
     ["Use compact spacing.", "compact"],
     ["Use balanced spacing.", "balanced"],
     ["Use spacious spacing.", "airy"],
@@ -372,6 +376,59 @@ describe("P4-05B storefront planner and request construction", () => {
       );
     },
   );
+
+  it("keeps editorial contrast as a complete registered typography pairing", () => {
+    const current = {
+      ...snapshot.brandSystem.typography,
+      headingFont: "inter" as const,
+      bodyFont: "georgia" as const,
+    };
+    const plan = planRegisteredTokenRefinement("Use editorial contrast typography.", {
+      ...snapshot.brandSystem,
+      typography: current,
+    });
+    expect(plan?.typography).toEqual({
+      ...current,
+      headingFont: "system-serif",
+      bodyFont: "system-sans",
+    });
+  });
+
+  it.each([
+    [
+      "Use Georgia for headings.",
+      { headingFont: "georgia", bodyFont: snapshot.brandSystem.typography.bodyFont },
+    ],
+    [
+      "Use Inter for body text.",
+      { headingFont: snapshot.brandSystem.typography.headingFont, bodyFont: "inter" },
+    ],
+    [
+      "Use Georgia for headings and Inter for body text.",
+      { headingFont: "georgia", bodyFont: "inter" },
+    ],
+  ])("keeps explicit typography targets independent: %s", (instruction, expected) => {
+    const plan = planRegisteredTokenRefinement(instruction, snapshot.brandSystem);
+    expect(plan?.typography).toMatchObject(expected);
+  });
+
+  it("allows an explicit colour role to override an earlier grouped assignment", () => {
+    expect(
+      planExactBrandPalette(
+        "Use #AA0000 for primary text and buttons, and #222222 for text.",
+        snapshot.brandSystem.colors,
+      )?.colors,
+    ).toMatchObject({ primary: "#AA0000", text: "#222222" });
+  });
+
+  it("rejects conflicting equally specific colour assignments", () => {
+    expect(() =>
+      planExactBrandPalette(
+        "Use #AA0000 for text and #222222 for text.",
+        snapshot.brandSystem.colors,
+      ),
+    ).toThrow("Supply only one value for the text colour token.");
+  });
 
   it.each([
     {

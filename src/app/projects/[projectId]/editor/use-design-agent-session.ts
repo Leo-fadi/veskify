@@ -18,6 +18,7 @@ import {
   createStorefrontDiagnosticAttemptId,
   createDeterministicMockStorefrontAIProvider,
   recordStorefrontDiagnostic,
+  type AiStorefrontGenerationFailure,
   type AiStorefrontGenerationIdentity,
   type StorefrontAIProvider,
 } from "@/application/ai-storefront-generation";
@@ -75,6 +76,27 @@ export type ProposalReviewUiSession = {
   clarificationQuestion: LocalizedText | null;
   failure: { message: LocalizedText; retryable: boolean } | null;
 };
+
+export function storefrontFailureDiagnosticCategory(
+  code: AiStorefrontGenerationFailure["code"],
+): Parameters<typeof recordStorefrontDiagnostic>[0]["category"] {
+  switch (code) {
+    case "staleDraft":
+      return "staleDraft";
+    case "staleTarget":
+      return "staleTarget";
+    case "unsupportedRequest":
+      return "unsupportedRequest";
+    case "providerUnavailable":
+      return "providerUnavailable";
+    case "superseded":
+      return "superseded";
+    case "validationFailed":
+    case "invalidCommand":
+    case "assetCapabilityUnavailable":
+      return "validation";
+  }
+}
 
 export type DesignAgentSessionController = {
   targetScope: DesignAgentTargetScope;
@@ -865,7 +887,7 @@ export function useDesignAgentSession({
           projectId,
           scope: "storefront",
           stage: "proposal_state_completed",
-          category: "unknown_client_failure",
+          category: storefrontFailureDiagnosticCategory(result.failure.code),
         });
         setSession(
           uiSession(result.state, result.failure.message, {

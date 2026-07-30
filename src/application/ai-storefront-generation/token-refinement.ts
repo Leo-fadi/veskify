@@ -81,6 +81,7 @@ function typographyForInstruction(
     )
   ) {
     headingFont = "system-serif";
+    bodyFont ??= "system-sans";
   } else if (/refined serif|hienostunut antiikva/iu.test(normalized)) {
     headingFont ??= "georgia";
     bodyFont ??= "inter";
@@ -118,17 +119,30 @@ function spacingForInstruction(instruction: string): BrandSystem["spacing"] | nu
   const normalized = instruction.normalize("NFC").toLocaleLowerCase();
   const mentionsSpacing = /\b(?:spacing|density|välistys|tiheys)\b/iu.test(normalized);
   const preservationOnly =
-    /\b(?:preserve|keep|leave)\b[^.!?]{0,160}\bspacing\b/iu.test(normalized) ||
-    /\bdo not change\b[^.!?]{0,80}\bspacing\b/iu.test(normalized) ||
+    /\b(?:preserve|keep|leave)\b[^.!?]{0,160}\b(?:spacing|density)\b/iu.test(normalized) ||
+    /\bdo not change\b[^.!?]{0,80}\b(?:spacing|density)\b/iu.test(normalized) ||
     /\b(?:säilytä|pidä|jätä)\b[^.!?]{0,160}\b(?:välistys|tiheys)\b/iu.test(normalized) ||
     /\bälä muuta\b[^.!?]{0,80}\b(?:välistys|tiheys)\b/iu.test(normalized);
-  if (/\b(?:compact|dense|kompakti|tiivis)\b/iu.test(normalized)) {
-    return { density: "compact" };
-  }
-  if (/\b(?:spacious|airy|väljä|ilmava)\b/iu.test(normalized)) {
-    return { density: "airy" };
-  }
-  if (/\b(?:balanced|standard|tasapainoinen|normaali)\b/iu.test(normalized)) {
+  const densityMatches = [
+    ...normalized.matchAll(
+      /\b(compact|dense|kompakti|tiivis|spacious|airy|väljä|ilmava|balanced|standard|tasapainoinen|normaali)\b/giu,
+    ),
+  ];
+  const explicitDensity = densityMatches
+    .map((match) => {
+      const before = normalized.slice(Math.max(0, (match.index ?? 0) - 100), match.index);
+      const actionable =
+        /\b(?:use|make|set|apply|change(?:\s+to)?|adjust(?:\s+to)?|käytä|tee|aseta|muuta|säädä)\b[^.!?]{0,80}$/iu.test(
+          before,
+        );
+      return actionable ? match[1] : undefined;
+    })
+    .filter((value): value is string => value !== undefined)
+    .at(-1);
+  if (explicitDensity !== undefined) {
+    if (/^(?:compact|dense|kompakti|tiivis)$/iu.test(explicitDensity))
+      return { density: "compact" };
+    if (/^(?:spacious|airy|väljä|ilmava)$/iu.test(explicitDensity)) return { density: "airy" };
     return { density: "balanced" };
   }
   if (!mentionsSpacing || preservationOnly) return null;

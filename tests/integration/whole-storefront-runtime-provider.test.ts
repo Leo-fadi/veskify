@@ -186,6 +186,60 @@ function authority(input = planningInput()): ServerWholeStorefrontPlanningAuthor
 }
 
 describe("P9-01 runtime whole-storefront provider boundary", () => {
+  it("records only canonical request and project identifiers before request validation", async () => {
+    const records: Array<{ attemptId: string; projectId: string; stage: string }> = [];
+    const log = vi.spyOn(console, "info").mockImplementation((_event, value) => {
+      if (typeof value === "string") records.push(JSON.parse(value));
+    });
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: authority(),
+      selectProvider: () => createDeterministicWholeStorefrontPlanningProvider(),
+    });
+    const validIds = ["attempt_canonical_1", "p9_05b_local_123", "request_safe_456"];
+    for (const requestId of validIds) {
+      const body = request();
+      body.requestId = requestId;
+      await handler(
+        new Request("http://localhost", { method: "POST", body: JSON.stringify(body) }),
+      );
+    }
+    await handler(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({
+          requestId: "x".repeat(81),
+          target: { projectId: "project_bad\nidentifier" },
+        }),
+      }),
+    );
+    await handler(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({
+          requestId: "unsafe identifier",
+          target: { projectId: "x".repeat(81) },
+        }),
+      }),
+    );
+    await handler(new Request("http://localhost", { method: "POST", body: JSON.stringify({}) }));
+    log.mockRestore();
+
+    const received = records.filter((record) => record.stage === "request_received");
+    expect(received.slice(0, 3).map((record) => record.attemptId)).toEqual(validIds);
+    expect(
+      received.slice(0, 3).every((record) => record.projectId === aurumNordicSeed.project.id),
+    ).toBe(true);
+    expect(received.slice(3)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          attemptId: "attempt_unavailable",
+          projectId: "project_unavailable",
+        }),
+      ]),
+    );
+    expect(records.some((record) => record.projectId.includes("\n"))).toBe(false);
+  });
+
   it("routes the editor runtime client envelope through the canonical server planner before review", async () => {
     const value = authority();
     const createPlan = vi.fn((input: WholeStorefrontPlanningProviderRequest) =>

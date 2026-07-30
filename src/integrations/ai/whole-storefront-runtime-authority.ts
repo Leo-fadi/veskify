@@ -62,7 +62,7 @@ import {
   storefrontDesignBriefContractSchema,
   type StorefrontDesignBriefContract,
 } from "@/domain/source-discovery";
-import type { Locale } from "@/domain/shared";
+import { idSchema, type Locale } from "@/domain/shared";
 import {
   storefrontSnapshotSchema,
   type PageModel,
@@ -728,10 +728,10 @@ export function createServerWholeStorefrontPlanningHandler({
       const body: unknown = await httpRequest.json();
       if (body && typeof body === "object") {
         const candidate = body as { requestId?: unknown; target?: { projectId?: unknown } };
-        if (typeof candidate.requestId === "string" && candidate.requestId.startsWith("attempt_")) {
-          attemptId = candidate.requestId;
-        }
-        if (typeof candidate.target?.projectId === "string") projectId = candidate.target.projectId;
+        const safeRequestId = idSchema.safeParse(candidate.requestId);
+        const safeProjectId = idSchema.safeParse(candidate.target?.projectId);
+        if (safeRequestId.success) attemptId = safeRequestId.data;
+        if (safeProjectId.success) projectId = safeProjectId.data;
       }
       diagnostic("request_received", "success");
       request = aiStorefrontProviderRequestSchema.parse(body);
