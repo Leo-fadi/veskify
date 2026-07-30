@@ -25,7 +25,7 @@ ComponentDefinitionV2 registry
   -> deterministic/real-provider planning request
   -> validated whole-storefront generation plan
   -> whole-storefront proposal compiler
-  -> server runtime-authority projection
+  -> coordinated component selection
   -> canonical storefront proposal snapshot
   -> editor / preview / published renderer
 ```
@@ -59,24 +59,25 @@ renderer-bridge gaps and deterministic reruns.
 
 ## Executive result
 
-The current V2 registry contains **25 component types and 76 component variants**. Every variant is
-present exactly once in the machine inventory.
+The generated current V2 inventory contains **25 component types and 76 component variants**. The
+component-variant total is derived from the machine inventory and every variant is present exactly
+once.
 
-| Component-variant status                    | Count | Result                                                                                                 |
-| ------------------------------------------- | ----: | ------------------------------------------------------------------------------------------------------ |
-| Fully reachable                             |    34 | Direction-selected and present in the canonical proposal snapshot.                                     |
-| Registered but unreachable                  |    16 | Renderable, but absent from every current direction selection path.                                    |
-| Planner-visible but lost during compilation |     8 | Named by recipes, blueprints or legacy direction entries but not preserved as that component variant.  |
-| Render-only                                 |    18 | Six V2 homepage families and their variants have renderers but no planner/canonical/Puck route bridge. |
-| Incomplete                                  |     0 | Component variants themselves are classified at a more exact boundary.                                 |
-| Missing                                     |     0 | Missing categories are recorded in the system-capability inventory instead.                            |
+| Component-variant status                    | Count | Result                                                                                                     |
+| ------------------------------------------- | ----: | ---------------------------------------------------------------------------------------------------------- |
+| Fully reachable                             |    29 | Direction-selected and present in the canonical proposal snapshot.                                         |
+| Registered but unreachable                  |    20 | Renderable, but absent from every current direction selection path.                                        |
+| Planner-visible but lost during compilation |     9 | Named by recipes, blueprints or planner replacement contracts but not preserved as that component variant. |
+| Render-only                                 |    18 | Six V2 homepage families and their variants have renderers but no planner/canonical/Puck route bridge.     |
+| Incomplete                                  |     0 | Component variants themselves are classified at a more exact boundary.                                     |
+| Missing                                     |     0 | Missing categories are recorded in the system-capability inventory instead.                                |
 
 The additional design-system inventory contains **37 records**: 19 fully reachable, 7 registered but
 unreachable, 10 incomplete and 1 missing.
 
 The principal reason the real Lumo storefront can be valid but visually generic is therefore not a
 lack of renderer code. The planner exposes only three direction choices; those choices actively use
-34 of 76 registered variants, while the richer V2 homepage family is disconnected from the
+29 of 76 registered variants, while the richer V2 homepage family is disconnected from the
 generation and editor path.
 
 ## Boundary findings
@@ -98,16 +99,15 @@ bridge content without copying commerce facts into editable content.
 Reachable collection variants are `editorial` and `compact`. Reachable PDP variants are `balanced`,
 `compact` and `editorialSplit`.
 
-### 3. Legacy homepage direction variants are deferred beyond the proposal compiler
+### 3. Coordinated direction selections are applied by the proposal compiler
 
-For retained V1 sections, the generation plan and proposal compiler preserve the source variant.
-`styledProjectedPage` in the server runtime authority later applies
-`designSystemSelection.sectionVariants`, immediately before the canonical AI proposal snapshot is
-created. The final output is correct for the 34 reachable variants, but the intermediate proposal
-compiler alone does not prove their preservation.
+For a registered coordinated selection, `coordinatedRuntimeComponent` applies
+`designSystemSelection.componentSelections` before the canonical AI proposal snapshot is created.
+The selected component variant is therefore proven by the planner/compiler boundary itself for the
+29 fully reachable variants.
 
-This split is important for future ownership: planner/compiler conformance and runtime-authority
-conformance must both remain in the compatibility gate.
+Planner/compiler conformance must remain in the compatibility gate as the canonical selection
+boundary evolves.
 
 ### 4. Recipe variants are not uniformly authoritative
 
@@ -116,11 +116,10 @@ not generally compiled. Current homepage planning retains existing sections and 
 missing required `brandStory` when approved content and a compatible approved asset exist.
 
 - `announcementBar:singleLine` and `announcementBar:minimal` occur in homepage recipes, but there is
-  no `announcementBar` entry in any direction's `sectionVariants`; the source variant survives.
-- `homeModernCommerce` requests `benefitIcons:threeColumn`, while `modernTechnical` selects
-  `benefitIcons:minimal`. `styledProjectedPage` applies
-  `designSystemSelection.sectionVariants.benefitIcons` immediately before the canonical AI proposal
-  snapshot, so the runtime-authority override—not source retention—removes `threeColumn`.
+  no announcement component selection; the source variant survives.
+- `homeModernCommerce` and `modernTechnical.componentSelections.trust` both select
+  `benefitIcons:threeColumn`. `coordinatedRuntimeComponent` preserves that selection before the
+  canonical snapshot; this is distinct from announcement source retention.
 - Optional recipe sections are not composed merely because the recipe contains them.
 
 This is the exact recipe-to-plan boundary at which some intended visual differentiation disappears.
@@ -169,7 +168,7 @@ the three renderer targets.
 | Featured collection discovery | `grid`, `editorialCards`, `imageLed`                                                | `carousel`                     | —                                                              | `homepageFeaturedCollections`: `standard`, `editorial`; `homepageCollectionNavigation`: `standard`, `compact` |
 | Product grids/cards           | `standard`, `editorial`, `compact`                                                  | —                              | —                                                              | `homepageFeaturedProducts`: `standard`, `editorial`                                                           |
 | Story/editorial               | `editorial`, `minimal`, `imageLed`; image/text `imageLeft`, `imageRight`, `stacked` | `timeline`, `founder`          | —                                                              | —                                                                                                             |
-| Trust/service                 | `minimal`, `cards`                                                                  | `fourColumn`                   | `threeColumn`                                                  | `homepageTrust`: `row`, `cards`, `compact`                                                                    |
+| Trust/service                 | `minimal`, `cards`, `threeColumn`                                                   | `fourColumn`                   | —                                                              | `homepageTrust`: `row`, `cards`, `compact`                                                                    |
 | Campaign                      | `imageOverlay`, `split`, `minimal`                                                  | —                              | —                                                              | `homepagePromotion`: `split`, `overlay`, `minimal`                                                            |
 | Newsletter                    | `inline`, `card`                                                                    | `fullWidth`                    | —                                                              | —                                                                                                             |
 | Footer                        | `columns`, `editorial`, `compact`                                                   | `expanded`, `dark`             | —                                                              | —                                                                                                             |
@@ -180,22 +179,22 @@ the three renderer targets.
 
 ## Design-system and page-recipe matrix
 
-| Capability               | Fully reachable                                                                            | Registered but unreachable                                     | Incomplete / missing                                                                                                              |
-| ------------------------ | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Typography bundles       | `refinedSerif`, `technicalFunctional`, `warmApproachable`                                  | `modernSans`, `editorialContrast`                              | —                                                                                                                                 |
-| Spacing/density          | `compact`, `standard`, `spacious`                                                          | —                                                              | —                                                                                                                                 |
-| Shape/radius             | `square`, `soft`, `rounded`                                                                | —                                                              | —                                                                                                                                 |
-| Surface/elevation        | `flat`, `subtle`, `layered`                                                                | —                                                              | —                                                                                                                                 |
-| Border treatment         | —                                                                                          | —                                                              | **Missing:** semantic role exists, but directions carry no border value and compilation retains the baseline.                     |
-| Image treatments         | `editorialCrop`, `productNeutral`, `softFrame`                                             | `fullBleed`, `contained`, `split`                              | —                                                                                                                                 |
-| Product-card families    | `minimalProduct`, `compactCommerce`, `premiumJewellery`                                    | `editorialImage`                                               | —                                                                                                                                 |
-| Homepage recipes         | all 3 IDs are direction-selectable                                                         | —                                                              | **Incomplete:** order survives, but existing sections are mostly retained and recipe variants are not uniformly compiled.         |
-| Collection recipes       | both IDs are direction-selectable                                                          | —                                                              | **Incomplete:** dynamic presentation survives, while recipe header/footer semantics may be overridden by global section variants. |
-| PDP recipes              | `productSimple`, `productJewellery`, `productVariantLed` are direction-selectable          | `productGallery`                                               | Selected recipes are **incomplete** for the same recipe-variant reason.                                                           |
-| PDP gallery/info/options | Three dynamic presentation bundles reach the shell                                         | Gallery-dominant recipe and standalone `editorial` PDP variant | Legacy gallery/info/options identities are dropped by dynamic replacement.                                                        |
-| EN/FI                    | Language plan and localized component contracts survive to shared renderers.               | —                                                              | —                                                                                                                                 |
-| Responsive               | Four breakpoints and no-overflow contracts are registered.                                 | —                                                              | **Incomplete proof:** not every one of 76 variants has direct visual evidence at 375/768/1024/1440.                               |
-| Accessibility            | Keyboard, semantics, labels and focus contracts exist; V2 commerce contracts are specific. | —                                                              | **Incomplete proof:** adapted V1 contracts are generic and per-variant route evidence is not exhaustive.                          |
+| Capability               | Fully reachable                                                                            | Registered but unreachable                                     | Incomplete / missing                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Typography bundles       | `refinedSerif`, `technicalFunctional`, `warmApproachable`                                  | `modernSans`, `editorialContrast`                              | —                                                                                                                         |
+| Spacing/density          | `compact`, `standard`, `spacious`                                                          | —                                                              | —                                                                                                                         |
+| Shape/radius             | `square`, `soft`, `rounded`                                                                | —                                                              | —                                                                                                                         |
+| Surface/elevation        | `flat`, `subtle`, `layered`                                                                | —                                                              | —                                                                                                                         |
+| Border treatment         | —                                                                                          | —                                                              | **Missing:** semantic role exists, but directions carry no border value and compilation retains the baseline.             |
+| Image treatments         | `editorialCrop`, `productNeutral`, `softFrame`                                             | `fullBleed`, `contained`, `split`                              | —                                                                                                                         |
+| Product-card families    | `minimalProduct`, `compactCommerce`, `premiumJewellery`                                    | `editorialImage`                                               | —                                                                                                                         |
+| Homepage recipes         | all 3 IDs are direction-selectable                                                         | —                                                              | **Incomplete:** order survives, but existing sections are mostly retained and recipe variants are not uniformly compiled. |
+| Collection recipes       | both IDs are direction-selectable                                                          | —                                                              | **Incomplete:** dynamic presentation survives, while recipe header/footer semantics remain coordinated selections.        |
+| PDP recipes              | `productSimple`, `productJewellery`, `productVariantLed` are direction-selectable          | `productGallery`                                               | Selected recipes are **incomplete** for the same recipe-variant reason.                                                   |
+| PDP gallery/info/options | Three dynamic presentation bundles reach the shell                                         | Gallery-dominant recipe and standalone `editorial` PDP variant | Legacy gallery/info/options identities are dropped by dynamic replacement.                                                |
+| EN/FI                    | Language plan and localized component contracts survive to shared renderers.               | —                                                              | —                                                                                                                         |
+| Responsive               | Four breakpoints and no-overflow contracts are registered.                                 | —                                                              | **Incomplete proof:** not every one of 76 variants has direct visual evidence at 375/768/1024/1440.                       |
+| Accessibility            | Keyboard, semantics, labels and focus contracts exist; V2 commerce contracts are specific. | —                                                              | **Incomplete proof:** adapted V1 contracts are generic and per-variant route evidence is not exhaustive.                  |
 
 ## Prioritized gaps
 
