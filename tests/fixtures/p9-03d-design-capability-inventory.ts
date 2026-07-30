@@ -1,5 +1,13 @@
-import { storefrontDesignSystemV1 } from "@/application/storefront-design-system";
+import {
+  storefrontDesignSystemV1,
+  storefrontDesignSystemV1Schema,
+  type StorefrontDesignSystemV1,
+} from "@/application/storefront-design-system";
 import { storefrontTemplateDefinitions } from "@/application/storefront-templates";
+import {
+  dynamicCollectionReplacementComponentTypes,
+  dynamicProductReplacementComponentTypes,
+} from "@/application/whole-storefront-generation-plan";
 import type { ComponentDefinitionV2, ResponsiveRule } from "@/domain/component-platform";
 import { veskifyComponentRegistry } from "@/components/registry";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
@@ -37,10 +45,10 @@ export type P903dComponentVariantRecord = Readonly<{
   realProviderSchemaExposure: "registry-advertised" | "registry-and-direction-option";
   proposalCompilerPreservation:
     | "preserved directly"
-    | "deferred to server runtime authority"
+    | "preserved by coordinated proposal compiler"
     | "dropped by dynamic-page replacement"
     | "recipe variant is not compiled; source is retained"
-    | "overridden by server runtime authority"
+    | "overridden by coordinated component selection"
     | "not selectable";
   canonicalSnapshotBoundary: string;
   editorRendering: RenderingReachability;
@@ -68,23 +76,28 @@ export type P903dSystemCapabilityRecord = Readonly<{
   status: P903dCapabilityStatus;
 }>;
 
-const dynamicPageReplacementTypes = new Set([
-  "collectionHeader",
-  "filterBar",
-  "productGallery",
-  "productInfo",
-  "productOptions",
-]);
+const dynamicPageReplacementTypes = new Set<string>(
+  [
+    ...dynamicCollectionReplacementComponentTypes,
+    ...dynamicProductReplacementComponentTypes,
+  ].filter((type) => type !== "dynamicCollectionCommerce" && type !== "dynamicProductDetail"),
+);
 
-type P903dDirection = (typeof storefrontDesignSystemV1.directions)[number];
+type P903dDirection = StorefrontDesignSystemV1["directions"][number];
 
 export type P903dReachabilityEvidence = Readonly<{
-  directions?: readonly P903dDirection[];
+  designSystem?: unknown;
   canonicalRouteComponentTypes?: readonly string[];
 }>;
 
+function auditDesignSystem(evidence: P903dReachabilityEvidence): StorefrontDesignSystemV1 {
+  return evidence.designSystem === undefined
+    ? storefrontDesignSystemV1
+    : storefrontDesignSystemV1Schema.parse(evidence.designSystem);
+}
+
 function auditDirections(evidence: P903dReachabilityEvidence): readonly P903dDirection[] {
-  return evidence.directions ?? storefrontDesignSystemV1.directions;
+  return auditDesignSystem(evidence).directions;
 }
 
 function canonicalRouteComponentTypes(evidence: P903dReachabilityEvidence): ReadonlySet<string> {
@@ -114,11 +127,11 @@ function sourceFor(type: string): string {
   return "src/components/registry/registry.ts via v2-compatibility.ts";
 }
 
-function recipeIds(type: string, variant: string): string[] {
+function recipeIds(type: string, variant: string, evidence: P903dReachabilityEvidence): string[] {
   return [
-    ...storefrontDesignSystemV1.homepageRecipes,
-    ...storefrontDesignSystemV1.collectionRecipes,
-    ...storefrontDesignSystemV1.productRecipes,
+    ...auditDesignSystem(evidence).homepageRecipes,
+    ...auditDesignSystem(evidence).collectionRecipes,
+    ...auditDesignSystem(evidence).productRecipes,
   ]
     .filter((recipe) =>
       recipe.sections.some((section) => section.component === type && section.variant === variant),
@@ -141,9 +154,9 @@ function blueprintIds(type: string, variant: string): string[] {
 }
 
 function selectedDirectionVariant(direction: P903dDirection, type: string): string | undefined {
-  if (type === "dynamicCollectionCommerce") return direction.collectionPresentation.variant;
-  if (type === "dynamicProductDetail") return direction.productPresentation.variant;
-  return direction.sectionVariants[type];
+  return Object.values(direction.componentSelections).find(
+    (selection) => selection.component === type,
+  )?.variant;
 }
 
 function directionIds(
@@ -164,10 +177,11 @@ function selectedRecipeDirectionIds(
   variant: string,
   evidence: P903dReachabilityEvidence,
 ): string[] {
+  const designSystem = auditDesignSystem(evidence);
   const recipes = [
-    ...storefrontDesignSystemV1.homepageRecipes,
-    ...storefrontDesignSystemV1.collectionRecipes,
-    ...storefrontDesignSystemV1.productRecipes,
+    ...designSystem.homepageRecipes,
+    ...designSystem.collectionRecipes,
+    ...designSystem.productRecipes,
   ];
   return auditDirections(evidence)
     .filter((direction) => {
@@ -195,7 +209,11 @@ function compilerPreservation(
   recipeDirections: readonly string[],
   evidence: P903dReachabilityEvidence,
 ): P903dComponentVariantRecord["proposalCompilerPreservation"] {
-  if (directions.length > 0 && dynamicPageReplacementTypes.has(type)) {
+  if (
+    directions.length === 0 &&
+    dynamicPageReplacementTypes.has(type) &&
+    blueprintIds(type, variant).length > 0
+  ) {
     return "dropped by dynamic-page replacement";
   }
   if (
@@ -204,14 +222,14 @@ function compilerPreservation(
   ) {
     return "preserved directly";
   }
-  if (directions.length > 0) return "deferred to server runtime authority";
+  if (directions.length > 0) return "preserved by coordinated proposal compiler";
   if (recipeDirections.length === 0) return "not selectable";
   const recipeOverrides = recipeDirections.some((directionId) => {
     const direction = auditDirections(evidence).find((candidate) => candidate.id === directionId);
     return direction !== undefined && selectedDirectionVariant(direction, type) !== undefined;
   });
   return recipeOverrides
-    ? "overridden by server runtime authority"
+    ? "overridden by coordinated component selection"
     : "recipe variant is not compiled; source is retained";
 }
 
@@ -235,14 +253,14 @@ function classification(
   if (
     preservation === "dropped by dynamic-page replacement" ||
     preservation === "recipe variant is not compiled; source is retained" ||
-    preservation === "overridden by server runtime authority"
+    preservation === "overridden by coordinated component selection"
   ) {
     return "planner-visible but lost during compilation";
   }
   if (
     directions.length > 0 &&
     (preservation === "preserved directly" ||
-      preservation === "deferred to server runtime authority")
+      preservation === "preserved by coordinated proposal compiler")
   ) {
     return "fully reachable";
   }
@@ -264,13 +282,13 @@ function canonicalBoundary(
     return "createWholeStorefrontGenerationPlan replaces the legacy collection/PDP section before proposal compilation.";
   }
   if (preservation === "recipe variant is not compiled; source is retained") {
-    return "The selected recipe carries the announcement variant, but designSystemSelection.sectionVariants has no announcement mapping; the planner retains the source variant.";
+    return "The selected recipe carries the announcement variant, but componentSelections has no announcement selection; the planner retains the source variant.";
   }
-  if (preservation === "overridden by server runtime authority") {
-    return "The selected recipe carries benefitIcons:threeColumn, but styledProjectedPage applies designSystemSelection.sectionVariants.benefitIcons before the canonical AI proposal snapshot, replacing it with the direction value.";
+  if (preservation === "overridden by coordinated component selection") {
+    return "A selected recipe variant conflicts with its coordinated component selection before the canonical proposal snapshot.";
   }
-  if (preservation === "deferred to server runtime authority") {
-    return "The proposal compiler retains the source variant; styledProjectedPage applies the registered direction before the canonical AI proposal snapshot.";
+  if (preservation === "preserved by coordinated proposal compiler") {
+    return "coordinatedRuntimeComponent applies the registered componentSelections entry before the canonical proposal snapshot.";
   }
   return "The planner creates the V2 instance and the proposal compiler preserves its variant and presentation props.";
 }
@@ -313,14 +331,17 @@ export function createP903dComponentVariantInventory(
             .map(([key, value]) => `${key}: ${value}`)
             .sort(),
           plannerExposure: {
-            recipeIds: recipeIds(definition.type, variant.id),
+            recipeIds: recipeIds(definition.type, variant.id, evidence),
             blueprintIds: blueprintIds(definition.type, variant.id),
             directionIds: directions,
             advertisedToRealProvider: true as const,
           },
-          deterministicSelectionEvidence: directions.map(
-            (directionId) => `direction:${directionId}`,
-          ),
+          deterministicSelectionEvidence: [
+            ...directions.map((directionId) => `direction:${directionId}`),
+            ...(preservation === "dropped by dynamic-page replacement"
+              ? ["planner:dynamic-page-replacement"]
+              : []),
+          ],
           realProviderSchemaExposure:
             directions.length > 0
               ? ("registry-and-direction-option" as const)
@@ -364,7 +385,7 @@ export function validateP903dComponentVariantInventory(
       if (
         record.plannerExposure.directionIds.length === 0 ||
         rendererTargets.some((target) => target !== "shared renderer") ||
-        !["preserved directly", "deferred to server runtime authority"].includes(
+        !["preserved directly", "preserved by coordinated proposal compiler"].includes(
           record.proposalCompilerPreservation,
         )
       ) {

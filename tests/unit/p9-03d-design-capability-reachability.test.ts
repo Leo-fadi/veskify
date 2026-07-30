@@ -7,11 +7,14 @@ import { resolve } from "node:path";
 vi.mock("server-only", () => ({}));
 
 import { buildWholeStorefrontPlanningProviderRequest } from "@/application/whole-storefront-generation-plan";
-import { storefrontDesignSystemV1 } from "@/application/storefront-design-system";
+import {
+  storefrontDesignSystemV1,
+  storefrontDesignSystemV1Schema,
+} from "@/application/storefront-design-system";
 import { veskifyComponentRegistry } from "@/components/registry";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
 import { createP905aFreshMerchantFixture } from "@/data/demo/p9-05a-fresh-store-generation";
-import { canonicalValueString } from "@/domain/storefront";
+import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 import {
   createP903dComponentVariantInventory,
   p903dDerivedComponentVariantCount,
@@ -23,6 +26,48 @@ import {
 import { generateP905aScenarioFromBaseline } from "../helpers/p9-05a-generation-harness";
 
 const directionIds = ["premiumEditorial", "modernTechnical", "warmApproachable"] as const;
+
+const expectedComponentVariantStatusCounts = {
+  "fully reachable": 29,
+  "registered but unreachable": 20,
+  "planner-visible but lost during compilation": 9,
+  "render-only": 18,
+} as const;
+
+function componentVariantStatusCounts(
+  records: typeof p903dDesignCapabilityInventory.componentVariants,
+) {
+  return records.reduce<Record<string, number>>(
+    (counts, record) => ({
+      ...counts,
+      [record.status]: (counts[record.status] ?? 0) + 1,
+    }),
+    {},
+  );
+}
+
+function refreshDesignSystemFingerprint(designSystem: typeof storefrontDesignSystemV1) {
+  const material = Object.fromEntries(
+    Object.entries(designSystem).filter(([key]) => key !== "fingerprint"),
+  );
+  designSystem.fingerprint = `storefront-design-system-${canonicalValueFingerprint(material)}`;
+}
+
+function documentedStatusCounts(documentation: string) {
+  const rows = [
+    ["Fully reachable", "fully reachable"],
+    ["Registered but unreachable", "registered but unreachable"],
+    ["Planner-visible but lost during compilation", "planner-visible but lost during compilation"],
+    ["Render-only", "render-only"],
+  ] as const;
+  return Object.fromEntries(
+    rows.map(([label, status]) => {
+      const count = documentation.match(new RegExp(`\\| ${label}\\s+\\|\\s+(\\d+) \\|`))?.[1];
+      if (!count) throw new Error(`P9-03D documentation does not report ${label}.`);
+      return [status, Number(count)];
+    }),
+  );
+}
 
 describe("P9-03D design-capability reachability audit", () => {
   it("accounts for every registered component variant exactly once", () => {
@@ -44,7 +89,7 @@ describe("P9-03D design-capability reachability audit", () => {
     );
     const documentedCount = Number(
       documentation.match(
-        /current V2 registry contains \*\*(\d+) component types and (\d+) component variants\*\*/,
+        /V2 (?:registry|inventory) contains \*\*(\d+) component types and (\d+) component variants\*\*/,
       )?.[2],
     );
     const responsiveEvidence = p903dDesignCapabilityInventory.systemCapabilities.find(
@@ -59,31 +104,73 @@ describe("P9-03D design-capability reachability audit", () => {
     expect(new Set(audited).size).toBe(audited.length);
     expect(audited).toEqual(registered);
     validateP903dComponentVariantInventory(p903dDesignCapabilityInventory.componentVariants);
-    expect(
-      p903dDesignCapabilityInventory.componentVariants.reduce<Record<string, number>>(
-        (counts, record) => ({
-          ...counts,
-          [record.status]: (counts[record.status] ?? 0) + 1,
-        }),
-        {},
-      ),
-    ).toEqual({
-      "fully reachable": 34,
-      "planner-visible but lost during compilation": 8,
-      "registered but unreachable": 16,
-      "render-only": 18,
-    });
+    const statusCounts = componentVariantStatusCounts(
+      p903dDesignCapabilityInventory.componentVariants,
+    );
+    expect(statusCounts).toEqual(expectedComponentVariantStatusCounts);
+    expect(Object.values(statusCounts).reduce((total, count) => total + count, 0)).toBe(
+      p903dDerivedComponentVariantCount,
+    );
   });
 
-  it("derives reachability from live direction mappings and rejects stale classifications", () => {
-    const remappedDirections = structuredClone(storefrontDesignSystemV1.directions);
-    const modernTechnical = remappedDirections.find(
+  it("keeps inventory, exact regression expectations and documentation status counts synchronized", () => {
+    const documentation = readFileSync(
+      resolve(process.cwd(), "docs/spec-addenda/P9-03D_DESIGN_CAPABILITY_REACHABILITY_AUDIT.md"),
+      "utf8",
+    );
+    const inventoryCounts = componentVariantStatusCounts(
+      p903dDesignCapabilityInventory.componentVariants,
+    );
+
+    expect(inventoryCounts).toEqual(expectedComponentVariantStatusCounts);
+    expect(documentedStatusCounts(documentation)).toEqual(expectedComponentVariantStatusCounts);
+    expect(Object.values(inventoryCounts).reduce((total, count) => total + count, 0)).toBe(
+      p903dDerivedComponentVariantCount,
+    );
+  });
+
+  it("rejects invalid partial remapping before evaluating audit reachability", () => {
+    const invalidDesignSystem = structuredClone(storefrontDesignSystemV1);
+    const modernTechnical = invalidDesignSystem.directions.find(
       (direction) => direction.id === "modernTechnical",
     );
     expect(modernTechnical).toBeDefined();
-    modernTechnical!.sectionVariants.header = "editorial";
+    modernTechnical!.componentSelections.header.variant = "editorial";
+    refreshDesignSystemFingerprint(invalidDesignSystem);
 
-    const remapped = createP903dComponentVariantInventory({ directions: remappedDirections });
+    expect(() => storefrontDesignSystemV1Schema.parse(invalidDesignSystem)).toThrow(
+      /coordinated component selection/i,
+    );
+    expect(() =>
+      createP903dComponentVariantInventory({ designSystem: invalidDesignSystem }),
+    ).toThrow(/coordinated component selection/i);
+  });
+
+  it("derives reachability from schema-valid coordinated remapping and rejects stale classifications", () => {
+    const remappedDesignSystem = structuredClone(storefrontDesignSystemV1);
+    const modernTechnical = remappedDesignSystem.directions.find(
+      (direction) => direction.id === "modernTechnical",
+    );
+    expect(modernTechnical).toBeDefined();
+    modernTechnical!.componentSelections.header.variant = "editorial";
+    [
+      modernTechnical!.homepageRecipeId,
+      modernTechnical!.collectionRecipeId,
+      modernTechnical!.productRecipeId,
+    ].forEach((recipeId) => {
+      const recipe = [
+        ...remappedDesignSystem.homepageRecipes,
+        ...remappedDesignSystem.collectionRecipes,
+        ...remappedDesignSystem.productRecipes,
+      ].find((candidate) => candidate.id === recipeId);
+      const header = recipe?.sections.find((section) => section.component === "header");
+      expect(header).toBeDefined();
+      header!.variant = "editorial";
+    });
+    refreshDesignSystemFingerprint(remappedDesignSystem);
+    const parsedRemapping = storefrontDesignSystemV1Schema.parse(remappedDesignSystem);
+
+    const remapped = createP903dComponentVariantInventory({ designSystem: parsedRemapping });
     const header = (variant: string) =>
       remapped.find(
         (record) =>
@@ -92,8 +179,8 @@ describe("P9-03D design-capability reachability audit", () => {
       );
 
     expect(header("editorial")?.status).toBe("fully reachable");
-    expect(header("compact")?.status).toBe("planner-visible but lost during compilation");
-    validateP903dComponentVariantInventory(remapped, { directions: remappedDirections });
+    expect(header("compact")?.status).toBe("registered but unreachable");
+    validateP903dComponentVariantInventory(remapped, { designSystem: parsedRemapping });
 
     const stale = remapped.map((record) =>
       record.canonicalId.includes("component:header@") && record.canonicalId.endsWith("#compact")
@@ -101,8 +188,29 @@ describe("P9-03D design-capability reachability audit", () => {
         : record,
     );
     expect(() =>
-      validateP903dComponentVariantInventory(stale, { directions: remappedDirections }),
+      validateP903dComponentVariantInventory(stale, { designSystem: parsedRemapping }),
     ).toThrow(/stale|fully reachable/i);
+  });
+
+  it("keeps legacy commerce replacement evidence distinct from coordinated direction selection", () => {
+    [
+      ["collectionHeader", "editorial"],
+      ["filterBar", "horizontal"],
+      ["productGallery", "thumbnails"],
+      ["productInfo", "premium"],
+      ["productOptions", "buttons"],
+    ].forEach(([type, variant]) => {
+      const record = p903dDesignCapabilityInventory.componentVariants.find(
+        (candidate) =>
+          candidate.canonicalId.includes(`component:${type}@`) &&
+          candidate.canonicalId.endsWith(`#${variant}`),
+      );
+      expect(record?.plannerExposure.directionIds).toEqual([]);
+      expect(record?.plannerExposure.blueprintIds.length).toBeGreaterThan(0);
+      expect(record?.deterministicSelectionEvidence).toContain("planner:dynamic-page-replacement");
+      expect(record?.proposalCompilerPreservation).toBe("dropped by dynamic-page replacement");
+      expect(record?.status).toBe("planner-visible but lost during compilation");
+    });
   });
 
   it("maps every page recipe and resolves every planner-exposed component ID", () => {
@@ -118,7 +226,7 @@ describe("P9-03D design-capability reachability audit", () => {
       record.canonicalId.startsWith("page-recipe:"),
     );
 
-    expect(recipes).toHaveLength(9);
+    expect(recipeRecords).toHaveLength(recipes.length);
     expect(recipeRecords.map((record) => record.canonicalId).sort()).toEqual(
       recipes.map((recipe) => `page-recipe:${recipe.id}`).sort(),
     );
@@ -192,7 +300,7 @@ describe("P9-03D design-capability reachability audit", () => {
         (section) => section.component === "dynamicProductDetail",
       );
 
-      expect(compiledHeader?.variant).toBe("centered");
+      expect(compiledHeader?.variant).toBe(expected[directionId].header);
       expect(compiledCollection?.variant).toBe(expected[directionId].collection);
       expect(compiledProduct?.variant).toBe(expected[directionId].product);
       expect(canonicalHeader?.variant).toBe(expected[directionId].header);
@@ -202,7 +310,7 @@ describe("P9-03D design-capability reachability audit", () => {
     }
   }, 40_000);
 
-  it("distinguishes announcement source retention from the benefit-icons runtime override", () => {
+  it("distinguishes announcement source retention from coordinated benefit-icons selection", () => {
     const record = (type: string, variant: string) =>
       p903dDesignCapabilityInventory.componentVariants.find(
         (candidate) =>
@@ -221,21 +329,24 @@ describe("P9-03D design-capability reachability audit", () => {
     expect(announcement?.proposalCompilerPreservation).toBe(
       "recipe variant is not compiled; source is retained",
     );
-    expect(announcement?.canonicalSnapshotBoundary).toContain("no announcement mapping");
-    expect(modernTechnical.sectionVariants.announcementBar).toBeUndefined();
+    expect(announcement?.canonicalSnapshotBoundary).toContain("no announcement selection");
+    expect(Object.keys(modernTechnical.componentSelections)).not.toContain("announcement");
     expect(
       modernRecipe.sections.find((section) => section.component === "announcementBar")?.variant,
     ).toBe("singleLine");
     expect(benefitIcons?.proposalCompilerPreservation).toBe(
-      "overridden by server runtime authority",
+      "preserved by coordinated proposal compiler",
     );
     expect(benefitIcons?.canonicalSnapshotBoundary).toContain(
-      "styledProjectedPage applies designSystemSelection.sectionVariants.benefitIcons",
+      "coordinatedRuntimeComponent applies the registered componentSelections entry",
     );
     expect(
       modernRecipe.sections.find((section) => section.component === "benefitIcons")?.variant,
     ).toBe("threeColumn");
-    expect(modernTechnical.sectionVariants.benefitIcons).toBe("minimal");
+    expect(modernTechnical.componentSelections.trust).toEqual({
+      component: "benefitIcons",
+      variant: "threeColumn",
+    });
   });
 
   it("preserves complete responsive rules and keeps commerce contracts distinct", () => {
