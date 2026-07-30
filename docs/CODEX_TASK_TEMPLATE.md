@@ -13,7 +13,7 @@ Use this template for every Veskify implementation task.
 ## Specification references
 
 - SDD section(s):
-- v1.2 FR/NFR requirement IDs:
+- v1.2/v1.2.1 FR/NFR requirement IDs:
 - Acceptance criteria IDs:
 - Related ADR(s):
 
@@ -71,6 +71,11 @@ Use this template for every Veskify implementation task.
 ## Data, schemas and adapters
 
 - Canonical entities/contracts affected:
+- `StorefrontSnapshot` input/output and transient boundary representations:
+- Live capability sources queried:
+- `ComponentDefinitionV2` / `PageBlueprint` / `DataBinding` versions:
+- Initial-generation or follow-up-editing Skill package:
+- Explicit target scope and proof that it cannot widen:
 - Read-only commerce projection fields used:
 - Protected paths:
 - Component/binding versions:
@@ -80,6 +85,15 @@ Use this template for every Veskify implementation task.
 ## Acceptance criteria
 
 - Given ..., when ..., then ...
+
+## Evidence traceability
+
+| Requirement / AC | Task | PR  | Commit | Test | Browser | Screenshot | Provider | Status | Limitation |
+| ---------------- | ---- | --- | ------ | ---- | ------- | ---------- | -------- | ------ | ---------- |
+| ...              | ...  | ... | ...    | ...  | ...     | ...        | ...      | ...    | ...        |
+
+Do not infer missing evidence. Write `Not run`, `Not retained` or `Not observable`, and keep the
+status Partial/Missing until the required artifact exists.
 
 ## Tests required
 
@@ -110,6 +124,11 @@ Use this template for every Veskify implementation task.
 - Components must be reusable and data-bound; no merchant-specific React components.
 - The same component implementation renders in editor, preview and published routes.
 - Failed, stale, invalid or rejected proposals preserve the active draft and history.
+- Generation, editing, preview, save, history and publish use the same canonical
+  `StorefrontSnapshot`.
+- Do not add a second page graph, registry, blueprint system, asset inventory or AI-owned
+  publication model.
+- Publication is deterministic and makes no AI call.
 
 ## Validation limits
 

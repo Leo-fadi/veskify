@@ -1,6 +1,6 @@
 # Veskify Development Guide
 
-**Version:** 1.2
+**Version:** 1.2.1
 **Aligned with:** `docs/VESKIFY_SDD.md` and `AGENTS.md`
 
 ## 1. Purpose
@@ -27,9 +27,10 @@ Canonical modules must not import Puck or provider-specific types.
 
 Typical locations:
 
-- `src/registry/**`
+- `src/domain/component-platform/**`
+- `src/application/storefront-design-system/**`
+- `src/application/storefront-templates/**`
 - `src/components/storefront/**`
-- `src/page-blueprints/**`
 
 Owns component families, variants, slots, editable fields, data-binding requirements, page permissions, responsive/accessibility rules, renderer mapping and migrations.
 
@@ -46,8 +47,10 @@ Owns direct Puck imports, canonical-to-Puck mapping, transient editor configurat
 Typical locations:
 
 - `src/domain/design-agent/**`
-- `src/services/design-agent/**`
-- `src/features/design-agent/**`
+- `src/application/design-skills/**`
+- `src/application/design-operations/**`
+- `src/application/ai-storefront-generation/**`
+- `src/application/whole-storefront-generation-plan/**`
 
 Owns skills, planning contracts, structured operations, provider adapters, proposal lifecycle, merchant summaries and guarded application.
 
@@ -75,7 +78,7 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 ## 3. Current implementation baseline
 
-Verified on 22 July 2026:
+Verified at `8174b1a6d31301b4072622e2e3ef675957479121` on 30 July 2026:
 
 - controlled storefront schemas and registered components;
 - visual editor and manual section operations;
@@ -84,9 +87,14 @@ Verified on 22 July 2026:
 - atomic whole-storefront acceptance and composite undo/redo;
 - separate save draft and publish flows;
 - history and restore architecture;
-- Karvonen real-data fixture and end-to-end real-provider proof.
+- Karvonen/Lumo fixtures and deterministic or mocked-provider lifecycle coverage.
 
-Do not rebuild these systems. Harden only confirmed failures and build the remaining v1.2 product depth.
+Do not rebuild these systems. Phase 9 remains active because the repository does not retain the
+complete live-provider, browser and visual evidence required for meaningful coordinated
+shared-frame/home/collection/PDP generation.
+
+All generation and editing paths compile into the same `StorefrontSnapshot`. `PageModel` is an
+implementation type inside that aggregate, not a second canonical page graph.
 
 ## 4. Branch and PR strategy
 
@@ -95,7 +103,7 @@ Do not rebuild these systems. Harden only confirmed failures and build the remai
 - Use outcome-based branch names, for example:
   - `codex/p5-01-component-registry-v2`
   - `codex/p7-01-source-discovery-contracts`
-  - `codex/p10-01-storefront-studio-shell`
+  - `codex/p10a-03-component-knowledge-registry`
 - Use `git fetch origin` and `git merge origin/main`. Never rebase.
 - Do not force-push to rewrite history.
 - Update an existing open PR rather than creating a duplicate.
@@ -155,37 +163,32 @@ Architecture-only tasks are allowed only when they directly unlock a named merch
 
 ## 7. Development sequence
 
-### P4.1 — Real-provider hardening
+### Phase 9 — Meaningful grounded generation
 
-Fix only confirmed parsing, capability, timeout, error-summary, fixture-content and demo-reset issues. Do not redesign the proposal lifecycle.
+Complete compatible shared-frame/home/collection/PDP composition, live registered-capability
+reachability, commerce/asset preservation, atomicity, persistence/publish, responsive/accessibility
+and retained real-provider evidence. Token-only or API-response-only success does not pass.
 
-### P5 — Dynamic component and binding platform
+### P10A — Grounded orchestration
 
-Build:
+Freeze vocabulary, audit capabilities, generate the Component Knowledge Registry, evolve executable
+PageBlueprints, package initial/follow-up Skills separately, route explicit scopes, run
+golden-store gates and compile publication deterministically.
 
-- `ComponentDefinitionV2`;
-- typed data bindings;
-- `ProductPresentationContext`;
-- page blueprints;
-- asset roles;
-- component versioning and migrations;
-- standalone and Vesko adapter conformance tests.
+### P10B — Assets and Storefront Studio UX
 
-### P6 — Dynamic commerce page depth
+Add asset upload/library and generated-image lifecycle, then merchant-facing Studio workflows that
+consume the P10A contracts.
 
-Build dynamic option groups and the PDP first, then product cards, collection filters, collection headers and homepage commerce sections.
+### Phase 11 — Granular editing
 
-### P7 — URL-first onboarding
+Add selected-section, current-page, shared-frame, design-system and complete-storefront scopes
+without permission widening.
 
-Build public-source discovery, provenance, reconciliation, brand reconstruction, asset inventory and approved Storefront Design Briefs.
+### Phase 12 — Stable domains and reference adapters
 
-### P8-P10 — Generation, quality and product UX
-
-Build asset-aware initial generation, exact palette support, coordinated whole-site design, responsive quality and the native Vesko Storefront Studio shell.
-
-### P11-P12 — Staging and handoff
-
-Add reliable reset/demo flows, staging, access control, observability, production adapters, conformance tests and integration documentation.
+Consolidate stable canonical ports and a Vesko reference adapter. Authentication, tenancy, staging,
+deployment and production operations follow later.
 
 ## 8. Testing strategy
 
@@ -256,6 +259,9 @@ Do not continuously watch CI or create follow-up tasks after completion.
 
 ## 11. Integration readiness checklist
 
+- One canonical `StorefrontSnapshot` remains the generation, editor, preview, save and publish IR.
+- Capability knowledge is generated from live contracts; no parallel hand-maintained registry.
+- Initial-generation and follow-up-editing Skill packages have distinct permissions and evidence.
 - No Puck imports outside its adapter.
 - No provider-specific types in canonical modules.
 - No duplicate product, variant or option model.

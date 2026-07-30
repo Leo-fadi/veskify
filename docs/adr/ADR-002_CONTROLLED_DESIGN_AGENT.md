@@ -4,7 +4,7 @@
 - **Version:** 1.2
 - **Decision date:** 2026-07-16
 - **Decision owners:** Veskify product and engineering
-- **Related document:** `docs/VESKIFY_SDD.md` and `docs/VESKIFY_SDD_v1.2.docx`
+- **Related document:** `docs/VESKIFY_SDD.md` and `docs/VESKIFY_SDD_v1.2.1.docx`
 - **Related decisions:** ADR-001 — Puck as the embedded editor foundation; ADR-003 — URL-first discovery and reconciliation; ADR-004 — dynamic commerce-bound components
 
 ## 1. Context
@@ -205,17 +205,20 @@ The architecture complies with this decision when:
 
 ## 8. Current status and implementation consequence
 
-The controlled proposal architecture, real provider adapter, section/page/storefront scopes, atomic application, undo/redo, save and publish lifecycle have been implemented and verified through the Karvonen real-provider test.
+The controlled proposal architecture, provider adapter, section/page/storefront foundations,
+atomic application, undo/redo, save and publish lifecycle are implemented. Automated provider
+coverage is mocked and network-free; retained live-provider Phase 9 evidence remains required.
 
-This ADR therefore remains binding, but its original implementation sequence is complete. New work follows the v1.2 roadmap:
+This ADR remains binding. New work follows the v1.2.1 roadmap:
 
-1. harden only confirmed real-provider failures;
-2. establish reusable component and data-binding contracts;
-3. build dynamic product and collection page depth from canonical commerce projections;
-4. add URL-first source discovery, brand reconstruction and an approved Storefront Design Brief;
-5. generate asset-aware merchant-specific storefronts;
-6. expand exact palette and whole-storefront design quality;
-7. productize the engine as Vesko Storefront Studio;
-8. complete staging reliability and Vesko integration handoff.
+1. complete meaningful grounded Phase 9 composition and evidence;
+2. generate P10A capability knowledge from existing component, binding, template and renderer
+   contracts;
+3. evolve executable PageBlueprints and separate initial/follow-up Skill packages;
+4. route explicit scopes without permission widening;
+5. add golden-store gates and a deterministic publish compiler;
+6. build P10B assets and Storefront Studio UX on those contracts;
+7. add Phase 11 granular editing;
+8. consolidate Phase 12 stable domains and Vesko reference adapters before later deployment work.
 
 This decision does not authorize a second catalogue model, merchant-specific component code or weaker validation in order to increase generation freedom.
