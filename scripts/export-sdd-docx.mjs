@@ -1,6 +1,16 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,6 +23,8 @@ const markdown = readFileSync(sourcePath, "utf8").replace(/\r\n/g, "\n");
 const sourceHash = createHash("sha256").update(markdown).digest("hex");
 const stagingDirectory = mkdtempSync(join(tmpdir(), "veskify-sdd-docx-"));
 const archivePath = `${stagingDirectory}.docx`;
+const checkMode = process.argv.includes("--check");
+const normalizedArchiveTimestamp = new Date("2000-01-01T00:00:00Z");
 
 const escapeXml = (value) =>
   value
@@ -52,6 +64,26 @@ const files = {
 </w:document>`,
 };
 
+const collectArchiveFiles = (directory, prefix = "") =>
+  readdirSync(directory)
+    .sort()
+    .flatMap((name) => {
+      const relativePath = prefix ? `${prefix}/${name}` : name;
+      const absolutePath = join(directory, name);
+      return statSync(absolutePath).isDirectory()
+        ? collectArchiveFiles(absolutePath, relativePath)
+        : [relativePath];
+    });
+
+const normalizeArchiveTimestamps = (directory) => {
+  for (const name of readdirSync(directory).sort()) {
+    const path = join(directory, name);
+    if (statSync(path).isDirectory()) normalizeArchiveTimestamps(path);
+    utimesSync(path, normalizedArchiveTimestamp, normalizedArchiveTimestamp);
+  }
+  utimesSync(directory, normalizedArchiveTimestamp, normalizedArchiveTimestamp);
+};
+
 try {
   execFileSync("/usr/bin/unzip", ["-q", templatePath, "-d", stagingDirectory]);
   const contentTypesPath = join(stagingDirectory, "[Content_Types].xml");
@@ -73,11 +105,25 @@ try {
     writeFileSync(destination, contents);
   }
 
-  execFileSync("/usr/bin/zip", ["-q", "-X", "-r", archivePath, "."], {
+  normalizeArchiveTimestamps(stagingDirectory);
+  const archiveFiles = collectArchiveFiles(stagingDirectory);
+  execFileSync("/usr/bin/zip", ["-q", "-X", archivePath, ...archiveFiles], {
     cwd: stagingDirectory,
   });
-  cpSync(archivePath, outputPath);
-  process.stdout.write(`Exported ${outputPath}\nSource SHA-256: ${sourceHash}\n`);
+
+  if (checkMode) {
+    if (!readFileSync(archivePath).equals(readFileSync(outputPath))) {
+      process.stderr.write(
+        "Committed docs/VESKIFY_SDD_v1.2.1.docx does not match the deterministic export\n",
+      );
+      process.exitCode = 1;
+    } else {
+      process.stdout.write(`DOCX content matches deterministic export ${sourceHash}\n`);
+    }
+  } else {
+    cpSync(archivePath, outputPath);
+    process.stdout.write(`Exported ${outputPath}\nSource SHA-256: ${sourceHash}\n`);
+  }
 } finally {
   rmSync(stagingDirectory, { recursive: true, force: true });
   rmSync(archivePath, { force: true });

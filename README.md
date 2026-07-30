@@ -53,9 +53,11 @@ visual evidence required to claim meaningful coordinated storefront generation.
 The binding v1.2.1 sequence is:
 
 1. complete Phase 9 meaningful grounded shared-frame/home/collection/PDP generation;
-2. build P10A grounded orchestration from live canonical capabilities;
+2. build P10A contract-level grounded orchestration from live canonical capabilities, with
+   executable PageBlueprint contracts before generated capability knowledge;
 3. build P10B asset governance and Storefront Studio UX;
-4. add Phase 11 granular controlled editing;
+4. implement Phase 11 merchant-operable granular controlled editing against the P10A scope
+   contracts;
 5. consolidate Phase 12 stable domains and Vesko reference adapters;
 6. add environment-specific authentication, tenancy, staging and operations later.
 

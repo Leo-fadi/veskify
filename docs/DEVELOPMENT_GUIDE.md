@@ -171,9 +171,11 @@ and retained real-provider evidence. Token-only or API-response-only success doe
 
 ### P10A — Grounded orchestration
 
-Freeze vocabulary, audit capabilities, generate the Component Knowledge Registry, evolve executable
-PageBlueprints, package initial/follow-up Skills separately, route explicit scopes, run
-golden-store gates and compile publication deterministically.
+Freeze vocabulary, audit capabilities, define executable PageBlueprint contracts, generate the
+Component Knowledge Registry from those contracts, define separate initial/follow-up Skill package
+contracts, define scoped router/authority/validation contracts, run golden-store gates and compile
+publication deterministically. P10A defines and validates scopes; it does not deliver
+merchant-operable granular editing.
 
 ### P10B — Assets and Storefront Studio UX
 
@@ -182,8 +184,10 @@ consume the P10A contracts.
 
 ### Phase 11 — Granular editing
 
-Add selected-section, current-page, shared-frame, design-system and complete-storefront scopes
-without permission widening.
+Implement and expose the P10A-defined selected-section, current-page, shared-frame, design-system
+and complete-storefront scopes as working merchant features, including selection,
+add/remove/reorder/replace, preview, acceptance, mixed-scope history, Undo/Redo and merchant scope
+controls/warnings without permission widening.
 
 ### Phase 12 — Stable domains and reference adapters
 

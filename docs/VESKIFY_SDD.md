@@ -215,14 +215,15 @@ P10A establishes grounded orchestration without changing the canonical state mod
 1. **P10A-01 — Vocabulary freeze:** publish canonical names, aliases and transient-boundary rules.
 2. **P10A-02 — Repository capability audit:** map live components, variants, bindings, templates,
    renderers and planner/compiler reachability.
-3. **P10A-03 — Component Knowledge Registry:** generate a queryable view from
-   `ComponentDefinitionV2`, renderers, bindings and responsive/accessibility contracts.
-4. **P10A-04 — Executable PageBlueprints:** evolve the current template contracts into validated
-   composition rules that compile to `StorefrontSnapshot`.
-5. **P10A-05 — Skill packages:** package instructions, allowed scopes, required capabilities,
-   operations, validation and evidence for initial generation and follow-up editing separately.
-6. **P10A-06 — Instruction router:** select section, page, shared-frame, design-system or complete
-   storefront scope without widening authority.
+3. **P10A-03 — Executable PageBlueprint contracts:** evolve the current template contracts into
+   validated composition rules that compile to `StorefrontSnapshot`.
+4. **P10A-04 — Generated Component Knowledge Registry:** generate a queryable capability view from
+   canonical contracts, including the executable PageBlueprint contracts produced by P10A-03.
+5. **P10A-05 — Separate Skill package contracts:** define instructions, schemas, authorities,
+   allowed scopes, capability requirements, operations, validation and evidence for initial
+   generation and follow-up editing separately.
+6. **P10A-06 — Scoped instruction-router contracts:** define scope classification, authority
+   declarations, routing schemas and validation rules that prohibit silent authority widening.
 7. **P10A-07 — Golden-store quality gates:** deterministic and real-provider evaluation across
    representative catalogues, including at least one non-jewellery merchant.
 8. **P10A-08 — Publish compiler:** deterministically validate and publish the accepted canonical
@@ -232,43 +233,50 @@ The P10A-02 audit MUST produce a live gap matrix with columns Capability, Existi
 Runtime-queryable, Planner-visible, Compiler-preserved, Validated, Rendered and Missing work. Each
 row is classified existing-and-sufficient, existing-but-not-queryable, duplicated,
 planner-visible-but-lost, render-only or missing. Capability facts found only in prompts, tests,
-fixtures or allowlists must be identified before P10A-03 design.
+fixtures or allowlists must be identified before P10A-03 contract design.
 
-P10A-03 is generated from `ComponentDefinitionV2`, PageBlueprint/template contracts,
-`DataBinding`, asset and adapter capability contracts, protected paths and migration metadata. For
-each applicable component it exposes type, version, family, variants, page types, slots and
-cardinality, props/content schemas, binding requirements, editable/protected paths,
-responsive/accessibility rules, asset requirements, compatibility and migration version. Codex and
-the live design agent query the same source. Unknown or stale capability references fail before
-preview.
-
-P10A-04 PageBlueprint metadata includes ID/version/page type, required and optional families,
+P10A-03 PageBlueprint metadata includes ID/version/page type, required and optional families,
 cardinality and order, binding and asset-role requirements, responsive composition and
 compatibility. A blueprint is an independent generation starting point; generated output becomes
 ordinary snapshot state and is not silently rewritten when the blueprint later changes. Dynamic
 PDP and collection composition stays stable while runtime bindings resolve different entities.
 
-P10A-05 targets versioned Skill packages for storefront orchestration, initial generation,
+P10A-04 is generated from `ComponentDefinitionV2`, the executable PageBlueprint contracts produced
+by P10A-03, `DataBinding`, renderer, asset and adapter capability contracts, protected paths and
+migration metadata. For each applicable component it exposes type, version, family, variants, page
+types, slots and cardinality, props/content schemas, binding requirements, editable/protected paths,
+responsive/accessibility rules, asset requirements, compatibility and migration version. Codex and
+the live design agent query the same source. Registry generation cannot pass without the P10A-03
+PageBlueprint contracts; unknown or stale capability references fail before preview.
+
+P10A-05 defines versioned Skill package contracts for storefront orchestration, initial generation,
 selected-section editing, shared-frame editing, current-page editing, page/whole-storefront
 regeneration, brand tokens, homepage, collection, dynamic PDP, assets, image generation,
-localization and validation/publish. Each package defines its instructions, required capability
-queries, allowed operations, exact input/output schemas, examples, deterministic fixtures, negative
-and validation cases and permission scope. A whole-store generation Skill is never reused for one
-hero or page.
+localization and validation/publish. Each contract declares its instructions, authority, required
+capability queries, allowed operations, exact input/output schemas, examples, deterministic
+fixtures, negative and validation cases and scope classification. A whole-store generation Skill
+contract is never reused for one hero or page. This task does not make those editing packages
+merchant-operable.
 
-P10A-06 uses the canonical scopes selected section/component, current page, shared storefront frame,
-design system and complete storefront. “Shared storefront frame” means navigation, header,
-announcement bar and footer. The router explains unavailable capabilities, offers valid
-alternatives and obtains approval before widening; “change this hero” cannot regenerate the site,
-“make this PDP technical” cannot modify home, “navigation and footer” may target the shared frame
-and “use this palette everywhere” may target the design system.
+P10A-06 defines router contracts over the canonical scopes selected section/component, current
+page, shared storefront frame, design system and complete storefront. “Shared storefront frame”
+means navigation, header, announcement bar and footer. The contracts classify scope, declare
+authority and require validation that rejects silent widening: “change this hero” cannot classify
+as site-wide, “make this PDP technical” cannot include home, “navigation and footer” may classify as
+shared frame and “use this palette everywhere” may classify as design system. Runtime explanations,
+approval controls and proposal execution belong to Phase 11.
+
+**Phase boundary:** P10A defines and validates the scopes. P10A does not deliver
+merchant-operable granular editing. Phase 11 implements and exposes those scopes as working merchant
+features.
 
 P10A-07 golden stores include premium/minimal jewellery, editorial jewellery, a watch retailer, a
 dense hardware/general-retail catalogue, EN/FI, a simple watch PDP and a complex configurable ring
 PDP. The non-jewellery fixture is mandatory to detect luxury, jewellery, Karvonen and sparse-catalog
 assumptions. Gates cover schemas, registered capabilities, bindings/commerce, responsive behavior,
 accessibility, brand/page coherence, diversity, fixture leakage, asset provenance, performance and
-exact atomic Undo/Redo.
+the contract validations owned by P10A. Runtime mixed-scope history and Undo/Redo for granular
+editing are Phase 11 gates.
 
 P10A-08 compiles validated draft `StorefrontSnapshot` → publish-time validation → immutable runtime
 snapshot → published renderer. It rejects invalid bindings, unknown component versions, missing
@@ -303,12 +311,15 @@ system.
 
 ### Phase 11 granular editing
 
-Phase 11 provides stable section identity and explicit selected section/component, current page,
-shared storefront frame, design system and complete storefront edits. It covers add/remove,
-supported duplication, variant replacement, reorder, page regeneration, mixed-scope atomic history,
-local coherence and strict no-widening. Common targets include header/navigation/announcement,
-hero, featured collections/products, brand story, campaign/trust, collection discovery/grid, PDP
-gallery/information/options/specifications and footer.
+Phase 11 implements and exposes the scopes defined and validated by P10A as working merchant
+features. It owns selecting a component or section; applying a selected-section proposal;
+current-page editing; shared storefront frame editing; design-system editing; complete-storefront
+editing; add, remove, reorder and replace operations; proposal preview and acceptance; mixed-scope
+history; Undo/Redo; and merchant scope controls and warnings. It provides stable section identity,
+local coherence and runtime enforcement of the P10A prohibition against silent scope widening.
+Common targets include header/navigation/announcement, hero, featured collections/products, brand
+story, campaign/trust, collection discovery/grid, PDP gallery/information/options/specifications and
+footer.
 
 ### Phase 12 canonical domains and adapters
 
@@ -1650,10 +1661,10 @@ Phase 12 gate.
 | **AC-126** | P9-04D proves Premium editorial, Modern technical and Warm approachable outputs are pairwise different in every required homepage, collection and PDP dimension, rather than by colour, typography or one rearranged section alone. | FR-108, FR-109, FR-113, FR-115, NFR-103, NFR-105 |
 | **AC-127** | The P9-04D matrix records EN/FI, 375/768/1024/1440, one/many collections, small/large catalogues and missing optional media; each result has measured no-overflow, clipping, overlap and empty-space evidence. | FR-109, FR-114, NFR-102, NFR-103 |
 | **AC-128** | Every P9-04D direction uses approved asset provenance and correct product/collection binding, and matches the canonical source-commerce baseline for protected IDs, SKU, price, availability and media truth. | FR-104, FR-107, FR-110, NFR-101 |
-| **AC-129** | Capability retrieval returns only current registered components, variants, bindings, renderers, responsive/accessibility rules and executable blueprints derived from canonical repository contracts. | FR-108, FR-109, NFR-108, NFR-109 |
+| **AC-129** | After executable PageBlueprint contracts exist, capability retrieval returns only current registered components, variants, bindings, renderers, responsive/accessibility rules and executable blueprints derived from canonical repository contracts. | FR-108, FR-109, NFR-108, NFR-109 |
 | **AC-130** | Unknown, stale, incompatible or schema-invalid component, variant, binding, blueprint and skill references are rejected before a proposal can classify them as reachable or mutate a draft. | FR-108, FR-109, FR-117, NFR-101, NFR-105 |
-| **AC-131** | Initial storefront generation and follow-up editing use separately identified Skill packages with separate inputs, permissions, quality gates and evidence. | FR-105, FR-108, FR-113, NFR-101, NFR-108 |
-| **AC-132** | The instruction router never widens authority beyond the merchant-selected section, page, shared frame, design system or complete-storefront scope. | FR-108, FR-113, NFR-101, NFR-105 |
+| **AC-131** | Initial storefront generation and follow-up editing have separately identified Skill package contracts with separate schemas, declared authority, quality gates and evidence. Runtime merchant execution remains a Phase 11 responsibility. | FR-105, FR-108, FR-113, NFR-101, NFR-108 |
+| **AC-132** | Scope-classification and instruction-router contracts reject any plan whose declared authority silently widens beyond the selected section, page, shared frame, design system or complete-storefront scope. Runtime merchant controls and execution remain Phase 11 responsibilities. | FR-108, FR-113, NFR-101, NFR-105 |
 | **AC-133** | Every executable PageBlueprint compiles through controlled operations into the same canonical StorefrontSnapshot used by editor, preview, save, history and publish. | FR-109, FR-113, FR-115, NFR-105, NFR-109 |
 | **AC-134** | Golden-store evaluation proves grounded composition, canonical-commerce preservation, accessibility and responsive quality across representative catalogue shapes and at least one non-jewellery merchant. | FR-109, FR-110, FR-114, NFR-102, NFR-103, NFR-108 |
 | **AC-135** | Publication deterministically validates and publishes the accepted StorefrontSnapshot without an AI call, provider payload or provider-owned page graph at publish time. | FR-108, FR-115, NFR-101, NFR-105, NFR-107 |
@@ -1732,17 +1743,19 @@ source-commerce baseline; pairwise output agreement alone is insufficient.
 | **P7 — URL-first onboarding and brand reconstruction** | Source discovery, provenance, canonical reconciliation, brand evidence, asset inventory and approved Storefront Design Brief. | A merchant can connect an existing site or start from minimal assets without rebuilding catalogue truth. | URL → approved brief works with deterministic and real public-source modes. |
 | **P8 — Asset-aware initial generation**                | Compose homepage, collection and dynamic PDP from the brief; reuse approved assets; remove fixture defaults.                  | The first generated storefront feels specific to the merchant and catalogue.                             | Initial generation passes source/asset/binding checks and visual review.    |
 | **P9 — Meaningful grounded storefront generation** | Coordinated shared frame, homepage, collection and PDP composition from registered capabilities; commerce/assets; atomic apply/undo; persistence, preview and publish; responsive, accessibility and real-provider evidence. | A merchant receives a coherent editable storefront rather than token-only or one-section variation. | The Phase 9 evidence matrix is complete; no token-only, fixture-leaking, renderer-only or API-response-only result may pass. |
-| **P10A — Grounded orchestration** | Vocabulary freeze, repository capability audit, generated Component Knowledge Registry, executable PageBlueprints, separate Skill packages, scoped instruction router, golden-store evaluation and deterministic publish compiler. | Generation retrieves what the product can actually build and compiles to the canonical snapshot. | AC-129 through AC-135 pass without a second registry, page graph or publish model. |
-| **P10B — Assets and Storefront Studio UX** | Upload/library, roles/provenance, generated-image lifecycle and merchant-facing Studio flows that consume P10A contracts. | Merchants can govern assets and use generation without developer concepts. | AC-119 plus Studio-owned AC-121/122/123 evidence pass. |
-| **P11 — Granular editing** | Selected section, current page, shared frame, design system and complete-storefront editing scopes. | Merchants can make controlled local or coordinated changes without unintended scope widening. | Every scope passes permissions, review, atomicity and undo tests. |
+| **P10A — Grounded orchestration** | Vocabulary freeze, repository capability audit, executable PageBlueprint contracts, generated Component Knowledge Registry, separate Skill package contracts, scoped instruction-router contracts, golden-store evaluation and deterministic publish compiler. P10A defines and validates scopes but does not deliver merchant-operable granular editing. | Generation retrieves what the product can actually build and compiles to the canonical snapshot. | AC-129 through AC-135 pass without a second registry, page graph or publish model; P10A-04 registry generation consumes P10A-03 blueprint contracts. |
+| **P10B — Assets and Storefront Studio UX** | Upload/library, roles/provenance, generated-image lifecycle and merchant-facing Studio flows that consume P10A contracts. | Merchants can govern assets and use generation without developer concepts. | Studio-owned AC-121/122/123 evidence passes. AC-119 remains solely a Phase 9 gate. |
+| **P11 — Granular editing** | Runtime selection and execution for selected section/component, current page, shared frame, design system and complete storefront; add/remove/reorder/replace; preview, acceptance, mixed-scope history, Undo/Redo and merchant scope controls/warnings. | Merchants can make controlled local or coordinated changes without unintended scope widening. | Every merchant-operable scope passes permissions, review, atomicity, history and Undo/Redo tests against the P10A contracts. |
 | **P12 — Stable domains and reference adapters** | Consolidate canonical domain and port contracts; provide a Vesko reference adapter and conformance suite. | Vesko teams can integrate without redesigning Veskify or creating competing commerce truth. | Reference adapter passes contract tests; full staging is not required for this phase. |
 | **Later deployment work** | Authentication, tenancy, production operations, deployment, staging transports, rollout and support runbooks. | The integrated product can be operated safely in Vesko environments. | Environment-specific security, reliability and operational gates pass. |
 
 ## 19.3 Next binding task sequence
 
 Execute P10A-01 through P10A-08 in order after Phase 9 closes. Contract owners merge vocabulary,
-capability and blueprint foundations before router, evaluation and publish-compiler consumers.
-P10B consumes those merged contracts. Parallel worktree assignments must still declare owned files,
+capability and executable PageBlueprint foundations before generating the Component Knowledge
+Registry, then merge Skill/router contracts before evaluation and publish-compiler consumers. P10B
+consumes those merged contracts; Phase 11 subsequently implements their editing scopes as
+merchant-operable runtime features. Parallel worktree assignments must still declare owned files,
 dependencies and merge order; a worktree label never changes canonical phase ownership.
 
 ## 19.4 Integration rules

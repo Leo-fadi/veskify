@@ -206,19 +206,25 @@ Historical internal task and branch labels used `P9-*` for this completed work. 
 
 ### P10A — Grounded orchestration — planned after Phase 9
 
-**Goal:** Make repository capabilities queryable and executable without creating a second
-storefront model or hand-maintained parallel registry.
+**Goal:** Define and validate the contract-level groundwork that makes repository capabilities
+queryable and executable without creating a second storefront model or hand-maintained parallel
+registry. P10A does not deliver merchant-operable granular editing.
 
-| Task    | Deliverable                                                                         | Gate                                                                                          |
-| ------- | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| P10A-01 | Freeze canonical vocabulary and transient-boundary aliases.                         | No new canonical `PageModel`, `StorefrontPlan`, `SectionNode`, AI graph or provider registry. |
-| P10A-02 | Audit registered components, variants, bindings, planners, compilers and renderers. | Reachability derives from live evidence and reports stale classifications.                    |
-| P10A-03 | Generate a queryable Component Knowledge Registry from existing contracts.          | AC-129 and AC-130 pass.                                                                       |
-| P10A-04 | Evolve current template contracts into executable `PageBlueprint`s.                 | Blueprints validate and compile to the same `StorefrontSnapshot`.                             |
-| P10A-05 | Package initial-generation and follow-up-editing Skills separately.                 | AC-131 passes.                                                                                |
-| P10A-06 | Route instructions to explicit scopes without authority widening.                   | AC-132 passes.                                                                                |
-| P10A-07 | Add golden-store quality gates, including a non-jewellery merchant.                 | AC-134 passes with deterministic and retained real-provider evidence.                         |
-| P10A-08 | Add the deterministic publish compiler.                                             | AC-133 and AC-135 pass; publication makes no AI call.                                         |
+| Task    | Deliverable                                                                                                                                 | Gate                                                                                          |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| P10A-01 | Freeze canonical vocabulary and transient-boundary aliases.                                                                                 | No new canonical `PageModel`, `StorefrontPlan`, `SectionNode`, AI graph or provider registry. |
+| P10A-02 | Audit registered components, variants, bindings, planners, compilers and renderers.                                                         | Reachability derives from live evidence and reports stale classifications.                    |
+| P10A-03 | Define executable `PageBlueprint` contracts from current template precursors.                                                               | AC-133 and the blueprint-validation portion of AC-130 pass.                                   |
+| P10A-04 | Generate the Component Knowledge Registry from canonical contracts, including the executable `PageBlueprint` contracts produced by P10A-03. | AC-129 and the capability-reference portion of AC-130 pass without a forward dependency.      |
+| P10A-05 | Define separate initial-generation and follow-up-editing Skill package contracts.                                                           | AC-131 passes at the schema, authority and validation-contract layer.                         |
+| P10A-06 | Define scoped instruction-router contracts and no-widening validation.                                                                      | AC-132 passes at the classification, authority and validation-contract layer.                 |
+| P10A-07 | Add golden-store quality gates, including a non-jewellery merchant.                                                                         | AC-134 passes with deterministic and retained real-provider evidence.                         |
+| P10A-08 | Add the deterministic publish compiler.                                                                                                     | AC-133 and AC-135 pass; publication makes no AI call.                                         |
+
+P10A defines Skill packages, capability-query requirements, schemas, authority declarations, scope
+classification, router contracts and validation rules, including the explicit prohibition against
+silent scope widening. P10A defines and validates the scopes; Phase 11 implements and exposes those
+scopes as working merchant features.
 
 ### P10B — Assets and Vesko Storefront Studio UX — planned
 
@@ -229,16 +235,20 @@ understandable Studio that consumes P10A contracts.
 candidate/approval/promotion/replacement lifecycle, compact editor workspace, clear Design/AI
 flows, localization, responsive shell, accessible proposal review, Save draft and Publish.
 
-**Gate:** AC-119 and the Studio-owned portions of AC-121, AC-122 and AC-123 pass. The generated
-storefront portions of AC-121 through AC-123 remain Phase 9 evidence.
+**Gate:** The Studio-owned portions of AC-121, AC-122 and AC-123 pass. AC-119 remains solely a
+Phase 9 gate; P10B consumes its approved reuse/upload/generate decision rather than claiming
+ownership. The generated storefront portions of AC-121 through AC-123 also remain Phase 9 evidence.
 
 ### P11 — Granular controlled editing — planned
 
-**Goal:** Support explicit selected-section, current-page, shared-frame, design-system and
-complete-storefront edits through separate permissioned scopes.
+**Goal:** Implement and expose the P10A-defined scopes as merchant-operable runtime features:
+component/section selection, selected-section proposals, current-page, shared-frame, design-system
+and complete-storefront editing; add/remove/reorder/replace operations; proposal preview and
+acceptance; mixed-scope history; Undo/Redo; and merchant scope controls and warnings.
 
-**Gate:** Every scope proves no widening, review, atomic application where applicable, stale
-rejection and exact undo.
+**Gate:** Every merchant-operable scope proves runtime no-widening enforcement, proposal preview and
+acceptance, atomic application where applicable, stale rejection, mixed-scope history, exact
+Undo/Redo and understandable scope controls/warnings.
 
 ### P12 — Stable domains and Vesko reference adapters — planned
 

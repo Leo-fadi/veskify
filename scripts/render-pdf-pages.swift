@@ -19,8 +19,17 @@ try FileManager.default.createDirectory(
     withIntermediateDirectories: true
 )
 
+func fail(_ message: String) -> Never {
+    fputs("\(message)\n", stderr)
+    exit(1)
+}
+
+var renderedPageCount = 0
+
 for index in 0..<document.pageCount {
-    guard let page = document.page(at: index) else { continue }
+    guard let page = document.page(at: index) else {
+        fail("could not load PDF page \(index + 1)")
+    }
     let bounds = page.bounds(for: .mediaBox)
     let scale: CGFloat = 2
     let width = Int(bounds.width * scale)
@@ -37,13 +46,16 @@ for index in 0..<document.pageCount {
             colorSpaceName: .deviceRGB,
             bytesPerRow: 0,
             bitsPerPixel: 0
-        )
+    )
     else {
-        continue
+        fail("could not allocate bitmap for PDF page \(index + 1)")
     }
 
     NSGraphicsContext.saveGraphicsState()
-    guard let context = NSGraphicsContext(bitmapImageRep: bitmap) else { continue }
+    guard let context = NSGraphicsContext(bitmapImageRep: bitmap) else {
+        NSGraphicsContext.restoreGraphicsState()
+        fail("could not create graphics context for PDF page \(index + 1)")
+    }
     NSGraphicsContext.current = context
     NSColor.white.setFill()
     NSRect(x: 0, y: 0, width: width, height: height).fill()
@@ -52,9 +64,20 @@ for index in 0..<document.pageCount {
     context.flushGraphics()
     NSGraphicsContext.restoreGraphicsState()
 
-    guard let png = bitmap.representation(using: .png, properties: [:]) else { continue }
+    guard let png = bitmap.representation(using: .png, properties: [:]) else {
+        fail("could not encode PDF page \(index + 1) as PNG")
+    }
     let fileName = String(format: "page-%03d.png", index + 1)
-    try png.write(to: outputURL.appendingPathComponent(fileName))
+    do {
+        try png.write(to: outputURL.appendingPathComponent(fileName))
+        renderedPageCount += 1
+    } catch {
+        fail("could not write PDF page \(index + 1): \(error)")
+    }
 }
 
-print("Rendered \(document.pageCount) pages to \(outputURL.path)")
+guard renderedPageCount == document.pageCount else {
+    fail("rendered \(renderedPageCount) of \(document.pageCount) PDF pages")
+}
+
+print("Rendered \(renderedPageCount) pages to \(outputURL.path)")

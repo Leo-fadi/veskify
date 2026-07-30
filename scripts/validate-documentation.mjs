@@ -61,9 +61,37 @@ const requiredSddText = [
   "`Proposal`",
   "| **AC-129**",
   "| **AC-135**",
+  "P10A defines and validates the scopes.",
+  "Phase 11 implements and exposes those scopes as working merchant",
+  "P10A-04 registry generation consumes P10A-03 blueprint contracts.",
+  "AC-119 remains solely a Phase 9 gate.",
 ];
 for (const required of requiredSddText) {
   if (!sdd.includes(required)) failures.push(`SDD missing required text: ${required}`);
+}
+
+const p10aOrder = [
+  "P10A-01 — Vocabulary freeze",
+  "P10A-02 — Repository capability audit",
+  "P10A-03 — Executable PageBlueprint contracts",
+  "P10A-04 — Generated Component Knowledge Registry",
+  "P10A-05 — Separate Skill package contracts",
+  "P10A-06 — Scoped instruction-router contracts",
+  "P10A-07 — Golden-store quality gates",
+  "P10A-08 — Publish compiler",
+];
+for (const [relativePath, markdown] of [
+  ["docs/VESKIFY_SDD.md", sdd],
+  ["docs/VESKIFY_DEVELOPMENT_ROADMAP.md", roadmap],
+]) {
+  let previousTaskIndex = -1;
+  for (const task of p10aOrder) {
+    const taskNumber = task.slice(0, 8);
+    const index = markdown.indexOf(taskNumber, previousTaskIndex + 1);
+    if (index < 0) failures.push(`${relativePath}: missing ${taskNumber}`);
+    if (index <= previousTaskIndex) failures.push(`${relativePath}: invalid P10A order at ${task}`);
+    previousTaskIndex = index;
+  }
 }
 
 const phaseOrder = [
@@ -117,6 +145,18 @@ const docxPath = join(repositoryRoot, "docs", "VESKIFY_SDD_v1.2.1.docx");
 if (!existsSync(docxPath)) {
   failures.push("Missing docs/VESKIFY_SDD_v1.2.1.docx");
 } else {
+  try {
+    execFileSync(
+      process.execPath,
+      [join(repositoryRoot, "scripts", "export-sdd-docx.mjs"), "--check"],
+      {
+        encoding: "utf8",
+      },
+    );
+  } catch {
+    failures.push("DOCX content does not match the deterministic Markdown export");
+  }
+
   const customProperties = execFileSync("/usr/bin/unzip", ["-p", docxPath, "docProps/custom.xml"], {
     encoding: "utf8",
   });

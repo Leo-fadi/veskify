@@ -52,12 +52,12 @@ that final source.
 - Current asset contracts do not yet provide the complete upload/library and generated-image
   lifecycle specified for P10B.
 - Current storefront template contracts are a PageBlueprint precursor, not the completed executable
-  P10A contract.
+  P10A-03 contract.
 
 ## Remaining documentation inconsistencies
 
 - Canonical architecture uses `PageBlueprint`, while the current implementation precursor remains
-  named `StorefrontTemplateDefinition`; P10A-01/P10A-04 must resolve the implementation vocabulary
+  named `StorefrontTemplateDefinition`; P10A-01/P10A-03 must resolve the implementation vocabulary
   without adding a second system.
 - Several merchant/conceptual Skill names do not exist as registry IDs. The Skills catalogue now
   records their canonical replacement or layer, but implementation migration aliases remain future
@@ -71,16 +71,17 @@ that final source.
 
 The final branch must record actual results for:
 
-| Check                                         | Result                                                                                                                              |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Markdown formatting                           | Passed with Prettier after final documentation edits.                                                                               |
-| Relative Markdown links                       | Passed with `pnpm docs:validate`.                                                                                                   |
-| SDD/DOCX source synchronization               | Passed; the DOCX embedded SHA-256 matches the authoritative Markdown.                                                               |
-| Roadmap phase/status consistency              | Passed with `pnpm docs:validate`; Phase 9 remains active and the required phase order is present.                                   |
-| Stale canonical-model/status terminology scan | Passed; deprecated names appear only in explicit prohibition/clarification text.                                                    |
-| DOCX render and visual inspection             | Passed; Quick Look parsed the DOCX and all 25 paginated preview images were inspected without clipping, overlap or missing content. |
-| `git diff --check`                            | Passed after final documentation and tooling edits.                                                                                 |
+| Check                                         | Result                                                                                                                                    |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Markdown formatting                           | Passed with Prettier after final documentation edits.                                                                                     |
+| Relative Markdown links                       | Passed with `pnpm docs:validate`.                                                                                                         |
+| SDD/DOCX source synchronization               | Passed; deterministic regeneration matches the committed DOCX byte-for-byte, and its embedded SHA-256 matches the authoritative Markdown. |
+| Roadmap phase/status consistency              | Passed with `pnpm docs:validate`; Phase 9 remains active and the required phase order is present.                                         |
+| Stale canonical-model/status terminology scan | Passed; deprecated names appear only in explicit prohibition/clarification text.                                                          |
+| DOCX render and visual inspection             | Passed; Quick Look parsed the DOCX and all 27 paginated preview images were inspected without clipping, overlap or missing content.       |
+| `git diff --check`                            | Passed after final documentation and tooling edits.                                                                                       |
 
 Product typecheck, unit tests, Playwright and `pnpm validate:full` are intentionally outside this
 documentation-only amendment unless a documentation tool changes product code or the task owner
-explicitly expands validation.
+explicitly expands validation. The task owner requested the exact failed CI test in the final review
+pass; `tests/integration/editor-route.test.tsx` passed locally with 111 tests.

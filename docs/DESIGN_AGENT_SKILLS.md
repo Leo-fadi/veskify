@@ -310,24 +310,32 @@ Improve contrast, heading order, labels, focus-safe controls, alt-text completen
 
 All factual copy must be grounded in merchant-provided facts, approved source evidence or canonical commerce data. Unsupported claims become questions or warnings.
 
-## 7. Grounded Skill package requirements
+## 7. Grounded Skill package contract requirements
 
-P10A packages every executable Skill with:
+P10A defines the contract for every planned executable Skill with:
 
 - canonical package ID and version;
 - `initialGeneration` or `followUpEditing` lifecycle;
-- exact merchant scopes: selected section, current page, shared frame, design system or complete
-  storefront;
+- exact scope classification: selected section/component, current page, shared frame, design system
+  or complete storefront;
+- an explicit authority declaration;
 - required live capabilities from the generated Component Knowledge Registry;
 - allowed registered operations and protected paths;
 - executable PageBlueprint compatibility;
+- input/output schemas and router validation rules;
 - validation, quality and evidence requirements;
 - merchant-safe proposal language.
 
 Initial generation requires an approved brief and creates a proposal over the current
 `StorefrontSnapshot`. Follow-up editing requires an existing snapshot and target scope. They MUST
-NOT share an ambiguous “generate or edit” permission. A router may narrow scope but never widen it,
-and unknown or stale capability references fail before proposal evaluation.
+NOT share an ambiguous “generate or edit” authority. Router contracts may narrow scope but must
+reject silent widening, and unknown or stale capability references fail before proposal evaluation.
+
+P10A defines and validates the scopes. It does not deliver merchant-operable granular editing.
+Phase 11 implements and exposes those scopes as working merchant features: selecting a component or
+section, applying a selected-section proposal, current-page editing, shared-frame editing,
+design-system editing, complete-storefront editing, add/remove/reorder/replace operations, proposal
+preview and acceptance, mixed-scope history, Undo/Redo and merchant scope controls and warnings.
 
 ## 8. Dynamic product-page skill guardrails
 

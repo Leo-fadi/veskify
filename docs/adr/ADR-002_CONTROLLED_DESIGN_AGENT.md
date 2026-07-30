@@ -212,13 +212,15 @@ coverage is mocked and network-free; retained live-provider Phase 9 evidence rem
 This ADR remains binding. New work follows the v1.2.1 roadmap:
 
 1. complete meaningful grounded Phase 9 composition and evidence;
-2. generate P10A capability knowledge from existing component, binding, template and renderer
-   contracts;
-3. evolve executable PageBlueprints and separate initial/follow-up Skill packages;
-4. route explicit scopes without permission widening;
+2. define P10A executable PageBlueprint contracts from the current template precursors;
+3. generate P10A capability knowledge from canonical component, binding, executable-blueprint and
+   renderer contracts;
+4. define separate initial/follow-up Skill package and scoped router contracts, including authority
+   declarations and no-widening validation;
 5. add golden-store gates and a deterministic publish compiler;
 6. build P10B assets and Storefront Studio UX on those contracts;
-7. add Phase 11 granular editing;
+7. implement Phase 11 merchant-operable granular editing, proposal execution, history and Undo/Redo
+   against the P10A contracts;
 8. consolidate Phase 12 stable domains and Vesko reference adapters before later deployment work.
 
 This decision does not authorize a second catalogue model, merchant-specific component code or weaker validation in order to increase generation freedom.
