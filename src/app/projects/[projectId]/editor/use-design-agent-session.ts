@@ -14,7 +14,7 @@ import {
 } from "@/application/ai-proposal-generation";
 import {
   AiStorefrontGenerationOrchestrator,
-  buildAiStorefrontProviderRequest,
+  buildAiStorefrontProviderRequestForSupportedCapability,
   createDeterministicMockStorefrontAIProvider,
   type AiStorefrontGenerationIdentity,
   type StorefrontAIProvider,
@@ -698,7 +698,7 @@ export function useDesignAgentSession({
       throw new Error("The complete storefront is not ready for a design request.");
     }
     const storefront = projectAiStorefrontSnapshot(activeDraft);
-    const command = {
+    const baseCommand = {
       projectId,
       draftSnapshotId: activeDraft.id,
       draftRevision: activeDraft.revision,
@@ -710,12 +710,15 @@ export function useDesignAgentSession({
       activeLocale,
       enabledLocales,
       requestedScope: "storefront" as const,
-      capability: wholeStorefrontCapability ?? ("approvedColorTypographyDirection" as const),
       providerId: runtime.storefrontProvider.id,
       provider: runtime.storefrontProvider,
       importedContent: [],
     };
-    const request = buildAiStorefrontProviderRequest(command, 1);
+    const { command, request } = buildAiStorefrontProviderRequestForSupportedCapability(
+      baseCommand,
+      1,
+      wholeStorefrontCapability,
+    );
     runtimeBridge.bindStorefrontIdentity({
       context: {
         projectId,

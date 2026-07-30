@@ -499,17 +499,27 @@ function projectPlanOperations(
     request.target.designSystemTarget !== null &&
     request.capability === "registeredWholeStorefrontDirection"
   ) {
-    add(request.target.designSystemTarget, {
-      type: "APPLY_REGISTERED_BRAND_SYSTEM",
-      directionId: plan.designSystemSelection.directionId,
-      brandSystem: structuredClone(wholeStorefrontProposal.proposedStorefront.brandSystem),
-    });
+    add(
+      request.target.designSystemTarget,
+      plan.tokenRefinementPlan === null
+        ? {
+            type: "APPLY_REGISTERED_BRAND_SYSTEM",
+            directionId: plan.designSystemSelection.directionId,
+            brandSystem: structuredClone(wholeStorefrontProposal.proposedStorefront.brandSystem),
+          }
+        : {
+            type: "APPLY_REGISTERED_BRAND_SYSTEM",
+            refinementId: "validatedTokenRefinement",
+            tokenRefinementPlan: structuredClone(plan.tokenRefinementPlan),
+            brandSystem: structuredClone(wholeStorefrontProposal.proposedStorefront.brandSystem),
+          },
+    );
   } else if (request.target.designSystemTarget !== null) {
     createStorefrontDesignSystemOperations(direction).forEach((operation) => {
       add(request.target.designSystemTarget!, operation);
     });
   }
-  if (request.brandPalettePlan === null) {
+  if (request.brandPalettePlan === null && plan.tokenRefinementPlan === null) {
     wholeStorefrontProposal.proposedStorefront.pages.forEach((plannedPage) => {
       if (!request.target.affectedPageIds.includes(plannedPage.pageId)) return;
       const currentPage = request.affectedPages.find((page) => page.id === plannedPage.pageId);
@@ -726,6 +736,7 @@ export function createServerWholeStorefrontPlanningHandler({
         input: context.planningInput,
         currentInput: context.currentPlanningInput,
         merchantInstruction: canonicalRequest.instruction,
+        tokenRefinementPlan: canonicalRequest.tokenRefinementPlan,
       });
       const envelope = validateAiStorefrontProviderResponse(
         canonicalRequest,

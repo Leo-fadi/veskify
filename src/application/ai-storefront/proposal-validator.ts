@@ -1,6 +1,7 @@
 import { canonicalLocaleOrder } from "@/domain/shared";
 import { validateDesignOperationAgainstPage } from "@/application/design-operations";
 import {
+  applyRegisteredTokenRefinement,
   registeredBrandSystemForDirection,
   storefrontDesignSystemV1,
 } from "@/application/storefront-design-system";
@@ -229,11 +230,17 @@ function assertProjectionMatchesOperations(
       continue;
     }
     if (envelope.operation.type === "APPLY_REGISTERED_BRAND_SYSTEM") {
-      const registeredBrandSystem = registeredBrandSystemForDirection(
-        proposal.originalStorefront.brandSystem,
-        storefrontDesignSystemV1,
-        envelope.operation.directionId,
-      );
+      const registeredBrandSystem =
+        envelope.operation.refinementId === "validatedTokenRefinement"
+          ? applyRegisteredTokenRefinement(
+              proposal.originalStorefront.brandSystem,
+              envelope.operation.tokenRefinementPlan!,
+            )
+          : registeredBrandSystemForDirection(
+              proposal.originalStorefront.brandSystem,
+              storefrontDesignSystemV1,
+              envelope.operation.directionId!,
+            );
       if (
         canonicalValueString(registeredBrandSystem) !==
         canonicalValueString(envelope.operation.brandSystem)

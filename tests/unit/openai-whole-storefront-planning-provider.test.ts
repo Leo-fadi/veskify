@@ -11,7 +11,10 @@ import {
   requestWholeStorefrontGenerationPlan,
   type WholeStorefrontPlanningProvider,
 } from "@/application/whole-storefront-generation-plan";
-import { createApprovedGenerationAssetContextFingerprint } from "@/application/ai-storefront-generation";
+import {
+  createApprovedGenerationAssetContextFingerprint,
+  planRegisteredTokenRefinement,
+} from "@/application/ai-storefront-generation";
 import {
   approveStorefrontDesignBrief,
   createStorefrontDesignBrief,
@@ -120,12 +123,12 @@ function planningInput() {
   };
 }
 
-function completedResponse(direction: { requestFingerprint: string; directionId: string }) {
+function completedResponse(selection: { requestFingerprint: string; selectionId: string }) {
   return {
     id: "resp_whole_storefront_safe",
     status: "completed",
     output: [{ type: "message", content: [{ type: "output_text", text: "structured" }] }],
-    output_text: JSON.stringify(direction),
+    output_text: JSON.stringify(selection),
   };
 }
 
@@ -176,7 +179,7 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
       Promise.resolve(
         completedResponse({
           requestFingerprint: request.requestFingerprint,
-          directionId: "warmApproachable",
+          selectionId: "warmApproachable",
         }),
       ),
     );
@@ -221,6 +224,42 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     );
   });
 
+  it("selects the validated token refinement without choosing a structural archetype", async () => {
+    const input = planningInput();
+    const tokenRefinement = planRegisteredTokenRefinement(
+      "Use primary forest green, background warm off-white, and Georgia headings with Inter body text. Preserve layouts, sections, products, and images.",
+      input.draft.brandSystem,
+    );
+    expect(tokenRefinement).not.toBeNull();
+    const request = buildWholeStorefrontPlanningProviderRequest(
+      input,
+      "Use primary forest green, background warm off-white, and Georgia headings with Inter body text. Preserve layouts, sections, products, and images.",
+      tokenRefinement,
+    );
+    const transport = new RecordingTransport(() =>
+      Promise.resolve(
+        completedResponse({
+          requestFingerprint: request.requestFingerprint,
+          selectionId: "validatedTokenRefinement",
+        }),
+      ),
+    );
+
+    await expect(
+      requestWholeStorefrontGenerationPlan({
+        provider: provider(transport),
+        input,
+        currentInput: () => input,
+        tokenRefinementPlan: tokenRefinement,
+      }),
+    ).resolves.toEqual(request.planForTokenRefinement());
+    expect(request.requestClass).toBe("tokenOnlyRefinement");
+    expect(request.expectedPlan.pagePlans.every((page) => page.disposition === "retained")).toBe(
+      true,
+    );
+    expect(transport.calls).toHaveLength(1);
+  });
+
   it("passes URL, HTML-like, and JSON-like merchant prose only through untrusted user content", async () => {
     const input = planningInput();
     const merchantInstruction =
@@ -230,7 +269,7 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
       Promise.resolve(
         completedResponse({
           requestFingerprint: request.requestFingerprint,
-          directionId: "premiumEditorial",
+          selectionId: "premiumEditorial",
         }),
       ),
     );
@@ -256,7 +295,7 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     const request = buildWholeStorefrontPlanningProviderRequest(input);
     const dto = {
       requestFingerprint: request.requestFingerprint,
-      directionId: "inventedDirection",
+      selectionId: "inventedDirection",
     };
 
     await expect(
@@ -281,7 +320,7 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
             Promise.resolve(
               completedResponse({
                 requestFingerprint: request.requestFingerprint,
-                directionId: "warmApproachable",
+                selectionId: "warmApproachable",
               }),
             ),
           ),
@@ -341,7 +380,7 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     ).rejects.toMatchObject({ code: "malformed-structured-response" });
     const invalidDto = {
       requestFingerprint: request.requestFingerprint,
-      directionId: "unregisteredDirection",
+      selectionId: "unregisteredDirection",
     };
     await expect(
       requestWholeStorefrontGenerationPlan({

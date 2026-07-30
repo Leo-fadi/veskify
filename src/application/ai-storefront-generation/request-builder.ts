@@ -15,12 +15,14 @@ import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storef
 import {
   aiStorefrontGenerationCommandSchema,
   aiStorefrontProviderRequestSchema,
+  storefrontProviderSupportsCapability,
   type AiStorefrontGenerationCommand,
   type AiStorefrontProviderRequest,
 } from "./contract";
 import { validateApprovedAssetPlacementOperations } from "./approved-asset-context";
 import {
   AiStorefrontPlanError,
+  classifyRegisteredWholeStorefrontDirectionRequest,
   createAiStorefrontGenerationPlan,
   normalizeStorefrontInstruction,
 } from "./planner";
@@ -30,6 +32,7 @@ export class AiStorefrontRequestBuildError extends Error {
     readonly code:
       | "invalid-command"
       | "unsupported-request"
+      | "ambiguous-request"
       | "target-mismatch"
       | "asset-capability-unavailable",
     message: string,
@@ -101,7 +104,11 @@ export function buildAiStorefrontProviderRequest(
   } catch (error) {
     if (error instanceof AiStorefrontPlanError) {
       throw new AiStorefrontRequestBuildError(
-        error.code === "target-mismatch" ? "target-mismatch" : "unsupported-request",
+        error.code === "target-mismatch"
+          ? "target-mismatch"
+          : error.code === "ambiguous-request"
+            ? "ambiguous-request"
+            : "unsupported-request",
         error.message,
       );
     }
@@ -169,7 +176,11 @@ export function buildAiStorefrontProviderRequest(
       componentType: sectionTarget.componentType,
     },
   }));
-  if (target.designSystemTarget !== null && plan.brandPalettePlan === null) {
+  if (
+    target.designSystemTarget !== null &&
+    plan.brandPalettePlan === null &&
+    plan.tokenRefinementPlan === null
+  ) {
     target.affectedPageIds.forEach((pageId) => {
       grants.push({
         skillId: skill.id,
@@ -268,6 +279,7 @@ export function buildAiStorefrontProviderRequest(
             typography: structuredClone(command.storefront.brandSystem.typography),
           },
     brandPalettePlan: plan.brandPalettePlan,
+    tokenRefinementPlan: plan.tokenRefinementPlan,
     permissionGrants,
     storefrontBaselineFingerprint,
     targetFingerprint,
@@ -285,6 +297,90 @@ export function buildAiStorefrontProviderRequest(
     assetContextFingerprint: approvedAssetContext?.fingerprint ?? null,
     responseContract: "ai-storefront-proposal/v1",
   });
+}
+
+export type AiStorefrontCapabilitySelectionInput = Omit<
+  AiStorefrontGenerationCommand,
+  "capability"
+>;
+
+export function buildAiStorefrontProviderRequestForSupportedCapability(
+  commandInput: AiStorefrontCapabilitySelectionInput,
+  requestSequence: number,
+  requiredCapability?: "registeredWholeStorefrontDirection",
+): {
+  command: AiStorefrontGenerationCommand;
+  request: AiStorefrontProviderRequest;
+} {
+  const supportsRegistered = storefrontProviderSupportsCapability(
+    commandInput.provider,
+    "registeredWholeStorefrontDirection",
+  );
+  if (requiredCapability === "registeredWholeStorefrontDirection") {
+    if (!supportsRegistered) {
+      throw new AiStorefrontRequestBuildError(
+        "unsupported-request",
+        "This storefront design provider does not support registered whole-storefront directions.",
+      );
+    }
+    const command = {
+      ...commandInput,
+      capability: requiredCapability,
+    } satisfies AiStorefrontGenerationCommand;
+    return {
+      command,
+      request: buildAiStorefrontProviderRequest(command, requestSequence),
+    };
+  }
+
+  if (supportsRegistered) {
+    let registeredClassification;
+    try {
+      registeredClassification = classifyRegisteredWholeStorefrontDirectionRequest(
+        commandInput.merchantInstruction,
+        commandInput.storefront.brandSystem,
+      );
+    } catch {
+      registeredClassification = { kind: "token-refinement" as const };
+    }
+    if (registeredClassification.kind === "token-refinement") {
+      const registeredCommand = {
+        ...commandInput,
+        capability: "registeredWholeStorefrontDirection" as const,
+      } satisfies AiStorefrontGenerationCommand;
+      return {
+        command: registeredCommand,
+        request: buildAiStorefrontProviderRequest(registeredCommand, requestSequence),
+      };
+    }
+  }
+
+  const legacyCommand = {
+    ...commandInput,
+    capability: "approvedColorTypographyDirection" as const,
+  } satisfies AiStorefrontGenerationCommand;
+  try {
+    return {
+      command: legacyCommand,
+      request: buildAiStorefrontProviderRequest(legacyCommand, requestSequence),
+    };
+  } catch (error) {
+    if (
+      !supportsRegistered ||
+      !(error instanceof AiStorefrontRequestBuildError) ||
+      error.code !== "unsupported-request"
+    ) {
+      throw error;
+    }
+    const registeredCommand = {
+      ...commandInput,
+      capability: "registeredWholeStorefrontDirection" as const,
+    } satisfies AiStorefrontGenerationCommand;
+    return {
+      command: registeredCommand,
+      request: buildAiStorefrontProviderRequest(registeredCommand, requestSequence),
+    };
+  }
 }
 
 export function aiStorefrontPendingRequestKey(request: AiStorefrontProviderRequest): string {

@@ -2,13 +2,18 @@ import { describe, expect, it } from "vitest";
 import {
   aiStorefrontPendingRequestKey,
   buildAiStorefrontProviderRequest,
+  buildAiStorefrontProviderRequestForSupportedCapability,
+  classifyRegisteredWholeStorefrontDirectionRequest,
+  containsProtectedCommerceMutation,
   createApprovedGenerationAssetContextFingerprint,
   createAiStorefrontGenerationPlan,
   createDeterministicMockStorefrontAIProvider,
   aiStorefrontProviderResponseSchema,
+  isRegisteredWholeStorefrontDirectionRequest,
   validateAiStorefrontProviderResponse,
   type AiStorefrontGenerationCommand,
   type AiStorefrontProviderResponse,
+  type StorefrontAIProvider,
 } from "@/application/ai-storefront-generation";
 import {
   createAiStorefrontProposalId,
@@ -21,6 +26,8 @@ const snapshot = aurumNordicSeed.draftSnapshot;
 const home = snapshot.pages.find((page) => page.type === "home")!;
 const collection = snapshot.pages.find((page) => page.type === "collection")!;
 const product = snapshot.pages.find((page) => page.type === "product")!;
+const exactTokenOnlyRequest =
+  "Change only the storefront colours and typography. Use #F6F1E8 for backgrounds, #2F3A32 for primary text and buttons, #A58F78 for secondary surfaces, and #D8C8B6 for borders. Use an elegant serif for headings and a clean sans-serif for body text. Preserve all layouts, sections, products and images.";
 
 function provider() {
   return createDeterministicMockStorefrontAIProvider();
@@ -55,6 +62,25 @@ function command(
     provider: storefrontProvider,
     importedContent: [],
     ...overrides,
+  };
+}
+
+function commandWithoutCapability(
+  overrides: Partial<AiStorefrontGenerationCommand> = {},
+): Omit<AiStorefrontGenerationCommand, "capability"> {
+  const result: Partial<AiStorefrontGenerationCommand> = command(overrides);
+  delete result.capability;
+  return result as Omit<AiStorefrontGenerationCommand, "capability">;
+}
+
+function registeredProvider(): StorefrontAIProvider {
+  return {
+    id: "registered-storefront-test-provider",
+    generationCapabilities: [
+      "approvedColorTypographyDirection",
+      "registeredWholeStorefrontDirection",
+    ],
+    proposeStorefront: () => Promise.reject(new Error("Not invoked by request-building tests.")),
   };
 }
 
@@ -156,6 +182,233 @@ describe("P4-05B storefront planner and request construction", () => {
     ).toThrow(/only the approved/i);
     expect(() => createAiStorefrontGenerationPlan(command({ designSystemTarget: null }))).toThrow(
       /requires an explicit/i,
+    );
+  });
+
+  it("recognizes natural registered directions while rejecting protected-commerce mutations", () => {
+    expect(
+      isRegisteredWholeStorefrontDirectionRequest(
+        "Apply a premium editorial direction with craftsmanship and product imagery.",
+      ),
+    ).toBe(true);
+    expect(
+      isRegisteredWholeStorefrontDirectionRequest(
+        "Use a modern technical direction with compact spacing and crisp surfaces.",
+      ),
+    ).toBe(true);
+    expect(
+      isRegisteredWholeStorefrontDirectionRequest(
+        "Make the storefront warm and approachable with softer typography.",
+      ),
+    ).toBe(true);
+    expect(
+      isRegisteredWholeStorefrontDirectionRequest(
+        "Apply a warm premium style across the storefront.",
+      ),
+    ).toBe(true);
+    expect(
+      isRegisteredWholeStorefrontDirectionRequest(
+        "Change the product prices and inventory to match the new design.",
+      ),
+    ).toBe(false);
+    expect(isRegisteredWholeStorefrontDirectionRequest("Rebuild the navigation.")).toBe(false);
+  });
+
+  it("preserves ambiguous legacy classification instead of selecting a registered fallback", () => {
+    const provider = registeredProvider();
+    expect(() =>
+      buildAiStorefrontProviderRequestForSupportedCapability(
+        commandWithoutCapability({
+          provider,
+          providerId: provider.id,
+          merchantInstruction: "Make it warm premium and minimal Nordic.",
+        }),
+        1,
+      ),
+    ).toThrow(
+      expect.objectContaining({
+        code: "ambiguous-request",
+      }),
+    );
+    expect(
+      classifyRegisteredWholeStorefrontDirectionRequest("Make it warm premium and minimal Nordic."),
+    ).toEqual({ kind: "ambiguous" });
+  });
+
+  it("uses the registered capability first for protected synchronized sessions and repeat requests", () => {
+    const provider = registeredProvider();
+    const requests = [
+      "Apply the premium editorial direction with craftsmanship and product imagery.",
+      "Use a minimal Nordic direction throughout the storefront.",
+      "Redesign the storefront in a modern technical direction.",
+    ].map((merchantInstruction, index) =>
+      buildAiStorefrontProviderRequestForSupportedCapability(
+        commandWithoutCapability({
+          provider,
+          providerId: provider.id,
+          merchantInstruction,
+        }),
+        index + 1,
+        "registeredWholeStorefrontDirection",
+      ),
+    );
+
+    expect(requests.map(({ command: built }) => built.capability)).toEqual([
+      "registeredWholeStorefrontDirection",
+      "registeredWholeStorefrontDirection",
+      "registeredWholeStorefrontDirection",
+    ]);
+    expect(requests.map(({ request }) => request.capability)).toEqual([
+      "registeredWholeStorefrontDirection",
+      "registeredWholeStorefrontDirection",
+      "registeredWholeStorefrontDirection",
+    ]);
+  });
+
+  it("builds an exact palette and typography refinement on the protected registered capability", () => {
+    const storefrontProvider = registeredProvider();
+    const { request, command: built } = buildAiStorefrontProviderRequestForSupportedCapability(
+      commandWithoutCapability({
+        provider: storefrontProvider,
+        providerId: storefrontProvider.id,
+        affectedPageIds: snapshot.pages.map((page) => page.id),
+        merchantInstruction: exactTokenOnlyRequest,
+      }),
+      1,
+      "registeredWholeStorefrontDirection",
+    );
+    const plan = createAiStorefrontGenerationPlan(built);
+
+    expect(built.capability).toBe("registeredWholeStorefrontDirection");
+    expect(plan.direction).toBe("registeredWholeStorefront");
+    expect(plan.sectionTargets).toEqual([]);
+    expect(plan.tokenRefinementPlan).toMatchObject({
+      palette: {
+        colors: {
+          primary: "#2F3A32",
+          secondary: "#A58F78",
+          border: "#D8C8B6",
+          background: "#F6F1E8",
+        },
+      },
+      typography: { headingFont: "georgia", bodyFont: "system-sans" },
+      preservePageStructure: true,
+      preserveComponentVariants: true,
+      preserveApprovedAssets: true,
+      preserveCanonicalCommerce: true,
+    });
+    expect(request.capability).toBe("registeredWholeStorefrontDirection");
+    expect(request.affectedSections).toEqual([]);
+    expect(request.componentContracts).toEqual([]);
+    expect(request.permissionGrants).toHaveLength(1);
+    expect(request.permissionGrants[0]).toMatchObject({
+      target: { kind: "storefrontDesignSystem" },
+      operationTypes: ["APPLY_REGISTERED_BRAND_SYSTEM"],
+    });
+  });
+
+  it.each([
+    {
+      name: "named semantic palette with typography",
+      instruction:
+        "Use primary deep forest green, secondary muted sage, accent soft gold, background warm off-white, surface white, text charcoal, muted text charcoal, and border beige. Use refined serif typography with Georgia headings and Inter body text. Preserve layouts, sections, products, and images.",
+      expected: { palette: true, typography: true, spacing: false },
+    },
+    {
+      name: "colour only",
+      instruction:
+        "Use primary forest green, secondary sage, accent soft gold, background warm off-white, surface white, text charcoal, muted text charcoal, and border beige. Preserve every page layout, section, product, image, and component variant.",
+      expected: { palette: true, typography: false, spacing: false },
+    },
+    {
+      name: "typography only",
+      instruction:
+        "Use Georgia for headings and Inter for body text across the storefront. Preserve every page layout, section, product, image, and component variant.",
+      expected: { palette: false, typography: true, spacing: false },
+    },
+    {
+      name: "spacing only",
+      instruction:
+        "Use compact spacing and density across the storefront. Preserve every page layout, section, product, image, and component variant.",
+      expected: { palette: false, typography: false, spacing: true },
+    },
+  ])("supports $name without creating structural operations", ({ instruction, expected }) => {
+    const storefrontProvider = registeredProvider();
+    const { request, command: built } = buildAiStorefrontProviderRequestForSupportedCapability(
+      commandWithoutCapability({
+        provider: storefrontProvider,
+        providerId: storefrontProvider.id,
+        affectedPageIds: snapshot.pages.map((page) => page.id),
+        merchantInstruction: instruction,
+      }),
+      1,
+      "registeredWholeStorefrontDirection",
+    );
+    const plan = createAiStorefrontGenerationPlan(built);
+
+    expect(plan.tokenRefinementPlan).not.toBeNull();
+    expect(plan.tokenRefinementPlan?.palette !== null).toBe(expected.palette);
+    expect(plan.tokenRefinementPlan?.typography !== null).toBe(expected.typography);
+    expect(plan.tokenRefinementPlan?.spacing !== null).toBe(expected.spacing);
+    expect(plan.sectionTargets).toEqual([]);
+    expect(request.affectedPages.map((page) => page.id).sort()).toEqual(
+      snapshot.pages.map((page) => page.id).sort(),
+    );
+    expect(request.affectedSections).toEqual([]);
+  });
+
+  it("gates registered fallback on explicit provider capability advertisement", () => {
+    const unsupportedProvider = provider();
+    expect(unsupportedProvider.generationCapabilities).toEqual([
+      "approvedColorTypographyDirection",
+    ]);
+    expect(() =>
+      buildAiStorefrontProviderRequestForSupportedCapability(
+        commandWithoutCapability({
+          provider: unsupportedProvider,
+          providerId: unsupportedProvider.id,
+          merchantInstruction:
+            "Apply a premium editorial direction with craftsmanship and product imagery.",
+        }),
+        1,
+      ),
+    ).toThrow(
+      expect.objectContaining({
+        code: "unsupported-request",
+      }),
+    );
+  });
+
+  it.each([
+    "Increase every price and use a modern technical design.",
+    "Decrease stock and use a premium editorial design.",
+    "Adjust availability and make the storefront warm and approachable.",
+    "Modify variant option values and use a modern technical design.",
+    "Korota kaikkia hintoja ja käytä modernia teknistä ilmettä.",
+    "Vähennä varastoa ja tee ilmeestä lämmin ja lähestyttävä.",
+    "Säädä saatavuutta ja käytä ensiluokkaista editoriaalista ilmettä.",
+    "Muuta varianttien valinta-arvoja ja käytä modernia teknistä ilmettä.",
+  ])("rejects canonical protected-commerce mutation language: %s", (instruction) => {
+    expect(containsProtectedCommerceMutation(instruction)).toBe(true);
+    expect(classifyRegisteredWholeStorefrontDirectionRequest(instruction)).toEqual({
+      kind: "protected-commerce",
+    });
+
+    const registered = registeredProvider();
+    expect(() =>
+      buildAiStorefrontProviderRequestForSupportedCapability(
+        commandWithoutCapability({
+          provider: registered,
+          providerId: registered.id,
+          merchantInstruction: instruction,
+        }),
+        1,
+        "registeredWholeStorefrontDirection",
+      ),
+    ).toThrow(
+      expect.objectContaining({
+        code: "unsupported-request",
+      }),
     );
   });
 

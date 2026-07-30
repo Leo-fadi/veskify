@@ -50,7 +50,7 @@ class DirectionTransport {
       output: [{ type: "message", content: [{ type: "output_text", text: "structured" }] }],
       output_text: JSON.stringify({
         requestFingerprint: input.requestFingerprint,
-        directionId: this.directionId,
+        selectionId: this.directionId,
       }),
     });
   }

@@ -76,15 +76,39 @@ function assertExactPaletteResponse(
   }
 }
 
+function assertRegisteredTokenRefinementResponse(
+  request: AiStorefrontProviderRequest,
+  response: AiStorefrontProviderResponse,
+) {
+  if (request.tokenRefinementPlan === null) return;
+  const operations = response.proposal.operations.filter(
+    ({ operation }) => operation.type === "APPLY_REGISTERED_BRAND_SYSTEM",
+  );
+  if (
+    response.proposal.operations.length !== 1 ||
+    operations.length !== 1 ||
+    operations[0].operation.type !== "APPLY_REGISTERED_BRAND_SYSTEM" ||
+    operations[0].operation.refinementId !== "validatedTokenRefinement" ||
+    canonicalValueString(operations[0].operation.tokenRefinementPlan) !==
+      canonicalValueString(request.tokenRefinementPlan)
+  ) {
+    invalid(
+      "token-refinement-mismatch",
+      "The provider proposal does not match the validated whole-storefront token refinement.",
+    );
+  }
+}
+
 function appendPaletteWarnings(
   request: AiStorefrontProviderRequest,
   response: AiStorefrontProviderResponse,
 ): AiStorefrontProviderResponse {
-  if (request.brandPalettePlan === null || request.brandPalettePlan.warnings.length === 0) {
+  const palettePlan = request.brandPalettePlan ?? request.tokenRefinementPlan?.palette ?? null;
+  if (palettePlan === null || palettePlan.warnings.length === 0) {
     return response;
   }
   const summary = structuredClone(response.proposal.summary);
-  for (const warning of request.brandPalettePlan.warnings) {
+  for (const warning of palettePlan.warnings) {
     for (const locale of ["en", "fi"] as const) {
       const message = warning[locale];
       if (!message || summary[locale]?.includes(message)) continue;
@@ -122,6 +146,7 @@ export function validateAiStorefrontProviderResponse(
     );
   }
   assertExactPaletteResponse(request, response);
+  assertRegisteredTokenRefinementResponse(request, response);
   if (
     response.metadata.validation !== "valid" ||
     response.metadata.operationCount !== response.proposal.operations.length

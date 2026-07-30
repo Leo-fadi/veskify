@@ -3,8 +3,10 @@ import { openEditorAssistant } from "./editor-assistant";
 
 const editorUrl = "/projects/project_aurum_nordic/editor";
 const storefrontInstruction = "Apply a warm premium style across the storefront.";
-const exactPaletteInstruction =
-  "Apply this exact brand palette across the entire storefront: primary #173F35, secondary #82917B, accent #C2A35A, background #F7F2E8, surface #FFFFFF, text #292D2B, muted text #56615B, and border #D8D1BF. Keep typography unchanged.";
+const chronologicalTokenOnlyInstruction =
+  "Change only the storefront colours and typography. Use #F6F1E8 for backgrounds, #2F3A32 for primary text and buttons, #A58F78 for secondary surfaces, and #D8C8B6 for borders. Use an elegant serif for headings and a clean sans-serif for body text. Preserve all layouts, sections, products and images.";
+const chronologicalStructuralInstruction =
+  "Redesign the whole storefront in a modern technical direction. Use compact spacing, crisp surfaces, commerce-focused collection cards, structured product discovery and a specification-led product-detail page. Preserve all catalogue data and approved assets.";
 
 async function selectHomepageHero(page: Page) {
   const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
@@ -168,23 +170,31 @@ test("multiple accepted storefront proposals undo and redo in chronological orde
 }) => {
   await page.goto(editorUrl);
   const canvasRoot = page.frameLocator("iframe").locator("[data-veskify-canvas-root]");
-  await openStorefrontProposal(page);
+  await openStorefrontProposal(page, chronologicalTokenOnlyInstruction);
   await acceptStorefrontProposal(page);
-  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#7B4A2D");
+  await expect(page.getByTestId("draft-status")).toContainText("Unsaved changes");
+  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#2F3A32");
+  await expect(canvasRoot).toHaveCSS("--brand-spacing-density", "1");
 
   await page.getByRole("button", { name: "Start over" }).click();
-  await openStorefrontProposal(page, exactPaletteInstruction);
+  await openStorefrontProposal(page, chronologicalStructuralInstruction);
   await acceptStorefrontProposal(page);
-  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#173F35");
+  await expect(page.getByTestId("draft-status")).toContainText("Unsaved changes");
+  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#2F3A32");
+  await expect(canvasRoot).toHaveCSS("--brand-spacing-density", "0.85");
 
   await page.getByRole("button", { name: "Undo", exact: true }).click();
-  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#7B4A2D");
+  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#2F3A32");
+  await expect(canvasRoot).toHaveCSS("--brand-spacing-density", "1");
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#8A5A2B");
+  await expect(canvasRoot).toHaveCSS("--brand-spacing-density", "1");
   await page.getByRole("button", { name: "Redo", exact: true }).click();
-  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#7B4A2D");
+  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#2F3A32");
+  await expect(canvasRoot).toHaveCSS("--brand-spacing-density", "1");
   await page.getByRole("button", { name: "Redo", exact: true }).click();
-  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#173F35");
+  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#2F3A32");
+  await expect(canvasRoot).toHaveCSS("--brand-spacing-density", "0.85");
 });
 
 test("page edits after storefront Accept are undone before the composite storefront change", async ({

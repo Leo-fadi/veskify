@@ -7,7 +7,10 @@ import {
   wholeStorefrontGenerationPlanSchema,
   wholeStorefrontPlanningInputSchema,
 } from "@/application/whole-storefront-generation-plan/contract";
-import { registeredBrandSystemForDirection } from "@/application/storefront-design-system";
+import {
+  applyRegisteredTokenRefinement,
+  registeredBrandSystemForDirection,
+} from "@/application/storefront-design-system";
 import {
   componentInstanceV2Schema,
   createComponentRegistryV2,
@@ -88,6 +91,7 @@ function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
   try {
     return createWholeStorefrontGenerationPlan(input.planningInput, {
       directionId: input.plan.designSystemSelection.directionId,
+      tokenRefinementPlan: input.plan.tokenRefinementPlan,
     });
   } catch (error) {
     if (error instanceof WholeStorefrontProposalError) throw error;
@@ -252,6 +256,7 @@ function coordinatedRuntimeComponent(
   plan: ReturnType<typeof validateCurrentPlan>,
   pageRole: WholeStorefrontRuntimePage["role"],
 ): WholeStorefrontRuntimeComponent {
+  if (plan.tokenRefinementPlan !== null) return component;
   const selections = plan.designSystemSelection.componentSelections;
   const selection =
     component.component === "header" || component.component === "footer"
@@ -651,16 +656,28 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
       operation,
     });
   };
-  const selectedBrandSystem = registeredBrandSystemForDirection(
-    original.brandSystem,
-    input.planningInput.recipeContext.designSystem,
-    plan.designSystemSelection.directionId,
+  const selectedBrandSystem =
+    plan.tokenRefinementPlan === null
+      ? registeredBrandSystemForDirection(
+          original.brandSystem,
+          input.planningInput.recipeContext.designSystem,
+          plan.designSystemSelection.directionId,
+        )
+      : applyRegisteredTokenRefinement(original.brandSystem, plan.tokenRefinementPlan);
+  add(
+    plan.tokenRefinementPlan === null
+      ? {
+          type: "APPLY_REGISTERED_BRAND_SYSTEM",
+          directionId: plan.designSystemSelection.directionId,
+          brandSystem: selectedBrandSystem,
+        }
+      : {
+          type: "APPLY_REGISTERED_BRAND_SYSTEM",
+          refinementId: "validatedTokenRefinement",
+          tokenRefinementPlan: structuredClone(plan.tokenRefinementPlan),
+          brandSystem: selectedBrandSystem,
+        },
   );
-  add({
-    type: "APPLY_REGISTERED_BRAND_SYSTEM",
-    directionId: plan.designSystemSelection.directionId,
-    brandSystem: selectedBrandSystem,
-  });
   add({ type: "RETAIN_NAVIGATION", navigation: structuredClone(original.navigation) });
   plan.pagePlans
     .slice()

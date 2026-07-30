@@ -14,7 +14,10 @@ import { storefrontDesignBriefContractSchema } from "@/domain/source-discovery";
 import { localeSchema, idSchema } from "@/domain/shared";
 import { canonicalValueFingerprint, storefrontSnapshotSchema } from "@/domain/storefront";
 import { storefrontTemplateDefinitionSchema } from "@/application/storefront-templates";
-import { storefrontDesignSystemV1Schema } from "@/application/storefront-design-system";
+import {
+  registeredTokenRefinementPlanSchema,
+  storefrontDesignSystemV1Schema,
+} from "@/application/storefront-design-system";
 
 export const WHOLE_STOREFRONT_GENERATION_PLAN_SCHEMA_VERSION = 1 as const;
 
@@ -313,6 +316,8 @@ export const wholeStorefrontGenerationPlanSchema = z
         missingTranslationPolicy: z.literal("explicit-generation-or-merchant-review"),
       })
       .strict(),
+    requestClass: z.enum(["coordinatedStructuralDirection", "tokenOnlyRefinement"]),
+    tokenRefinementPlan: registeredTokenRefinementPlanSchema.nullable(),
     designSystemSelection: wholeStorefrontDesignSystemSelectionSchema,
     sharedDesignDirection: wholeStorefrontSharedDesignDirectionSchema,
     sharedChrome: wholeStorefrontSharedChromePlanSchema,
@@ -329,6 +334,13 @@ export const wholeStorefrontGenerationPlanSchema = z
   })
   .strict()
   .superRefine((plan, context) => {
+    if ((plan.requestClass === "tokenOnlyRefinement") !== (plan.tokenRefinementPlan !== null)) {
+      context.addIssue({
+        code: "custom",
+        path: ["tokenRefinementPlan"],
+        message: "Token-only plans must carry one validated token-refinement contract.",
+      });
+    }
     const pageIds = plan.pagePlans.map((page) => page.pageId);
     if (new Set(pageIds).size !== pageIds.length) {
       context.addIssue({

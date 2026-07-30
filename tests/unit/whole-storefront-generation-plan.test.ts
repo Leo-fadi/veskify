@@ -1,12 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
   acceptWholeStorefrontPlanningResult,
+  buildWholeStorefrontPlanningProviderRequest,
+  createDeterministicWholeStorefrontPlanningProvider,
   createWholeStorefrontGenerationPlan,
   createWholeStorefrontGenerationTarget,
   createWholeStorefrontRecipeContext,
   validateWholeStorefrontGenerationPlan,
 } from "@/application/whole-storefront-generation-plan";
-import { createApprovedGenerationAssetContextFingerprint } from "@/application/ai-storefront-generation";
+import {
+  createApprovedGenerationAssetContextFingerprint,
+  planRegisteredTokenRefinement,
+} from "@/application/ai-storefront-generation";
 import {
   approveStorefrontDesignBrief,
   createStorefrontDesignBrief,
@@ -150,6 +155,75 @@ function generatedComponent(
 }
 
 describe("P8-01 whole-storefront generation plan", () => {
+  it("makes the deterministic provider select an explicit registered structural direction", async () => {
+    const request = buildWholeStorefrontPlanningProviderRequest(
+      input(),
+      "Redesign the whole storefront in a modern technical direction.",
+    );
+
+    await expect(
+      createDeterministicWholeStorefrontPlanningProvider().createPlan(request),
+    ).resolves.toEqual(request.planForDirection("modernTechnical"));
+  });
+
+  it("plans token-only refinement without changing homepage, collection, or PDP structure", () => {
+    const planningInput = input();
+    const tokenRefinement = planRegisteredTokenRefinement(
+      "Use primary forest green, secondary sage, background warm off-white, and Georgia headings with Inter body text. Preserve layouts, sections, products, and images.",
+      planningInput.draft.brandSystem,
+    );
+    expect(tokenRefinement).not.toBeNull();
+    const plan = createWholeStorefrontGenerationPlan(planningInput, {
+      tokenRefinementPlan: tokenRefinement,
+    });
+
+    expect(plan.requestClass).toBe("tokenOnlyRefinement");
+    expect(plan.tokenRefinementPlan).toEqual(tokenRefinement);
+    expect(plan.approvedAssetPlacements).toEqual([]);
+    expect(
+      plan.pagePlans.map(({ pageId, role, disposition, components }) => ({
+        pageId,
+        role,
+        disposition,
+        components: components.map((componentPlan) =>
+          "instance" in componentPlan
+            ? { unexpectedInstance: componentPlan.instance.id }
+            : {
+                componentId: componentPlan.componentId,
+                component: componentPlan.component,
+                variant: componentPlan.variant,
+                disposition: componentPlan.disposition,
+                preservesExistingContent: componentPlan.preservesExistingContent,
+              },
+        ),
+      })),
+    ).toEqual(
+      [...planningInput.draft.pages]
+        .sort((left, right) => left.id.localeCompare(right.id))
+        .map((page) => ({
+          pageId: page.id,
+          role:
+            page.type === "home"
+              ? "homepage"
+              : page.type === "collection"
+                ? "collection-template"
+                : page.type === "product"
+                  ? "product-template"
+                  : "other",
+          disposition: "retained",
+          components: [...page.sections]
+            .sort((left, right) => left.id.localeCompare(right.id))
+            .map((section) => ({
+              disposition: "retained",
+              componentId: section.id,
+              component: section.component,
+              variant: section.variant,
+              preservesExistingContent: true,
+            })),
+        })),
+    );
+  });
+
   it("creates one deterministic approved-brief plan for home, collection and product families", () => {
     const first = createWholeStorefrontGenerationPlan(input());
     const second = createWholeStorefrontGenerationPlan(input());
