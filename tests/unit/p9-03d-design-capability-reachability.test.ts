@@ -23,7 +23,7 @@ import {
   validateP903dComponentVariantInventory,
   validateP903dSystemCapabilityProvenance,
 } from "../fixtures/p9-03d-design-capability-inventory";
-import { generateP905aScenarioFromBaseline } from "../helpers/p9-05a-generation-harness";
+import { generateP905aScenarioFromSelectedDirection } from "../helpers/p9-05a-generation-harness";
 
 const directionIds = ["premiumEditorial", "modernTechnical", "warmApproachable"] as const;
 
@@ -279,7 +279,10 @@ describe("P9-03D design-capability reachability audit", () => {
     } as const;
 
     for (const directionId of directionIds) {
-      const scenario = await generateP905aScenarioFromBaseline(directionId, "warmApproachable");
+      const scenario = await generateP905aScenarioFromSelectedDirection(
+        directionId,
+        "warmApproachable",
+      );
       const compiled = scenario.compiledProposal.proposedStorefront.pages.flatMap(
         (page) => page.components,
       );

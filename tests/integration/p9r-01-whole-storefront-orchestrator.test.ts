@@ -5,23 +5,23 @@ import {
   classifyRegisteredWholeStorefrontDirectionRequest,
   planRegisteredTokenRefinement,
 } from "@/application/ai-storefront-generation";
-import {
-  WholeStorefrontProposalAcceptanceCoordinator,
-  compileWholeStorefrontProposal,
-} from "@/application/whole-storefront-proposal-lifecycle";
+import { compileWholeStorefrontProposal } from "@/application/whole-storefront-proposal-lifecycle";
 import { createWholeStorefrontGenerationPlan } from "@/application/whole-storefront-generation-plan";
 import { canonicalValueString } from "@/domain/storefront";
 import { createP905aFreshMerchantFixture } from "@/data/demo/p9-05a-fresh-store-generation";
 import {
   createP905aAcceptanceCoordinator,
-  generateP905aScenarioFromBaseline,
+  generateP905aInstructionScenarioFromBaseline,
 } from "../helpers/p9-05a-generation-harness";
 
 const modernTechnicalRequest =
   "Redesign the entire storefront in a modern technical direction. Create a substantially different coordinated composition across the homepage, collection page and product-detail page. Use compact spacing, crisp surfaces, commerce-focused collection cards, structured product discovery, a specification-led product-detail page, and a coordinated shared header and footer. Preserve all catalogue data, product identities, prices, stock, options, media bindings and approved assets.";
 
+const warmApproachableRequest =
+  "Redesign the entire storefront in a warm approachable direction. Use welcoming category discovery and softer surfaces while preserving catalogue data and approved assets.";
+
 function requiredPage(
-  proposal: Awaited<ReturnType<typeof generateP905aScenarioFromBaseline>>["proposal"],
+  proposal: Awaited<ReturnType<typeof generateP905aInstructionScenarioFromBaseline>>["proposal"],
   type: "home" | "collection" | "product",
 ) {
   const page = proposal.proposedStorefront.pages.find((candidate) => candidate.type === type);
@@ -31,8 +31,7 @@ function requiredPage(
 
 describe("P9R-01 whole-storefront AI composition orchestrator", () => {
   it("materializes the exact modern-technical request into one coordinated structural proposal", async () => {
-    const generated = await generateP905aScenarioFromBaseline(
-      "modernTechnical",
+    const generated = await generateP905aInstructionScenarioFromBaseline(
       "warmApproachable",
       modernTechnicalRequest,
     );
@@ -49,14 +48,14 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
       throw new Error("Missing fresh P9-05A core storefront baseline.");
     }
 
-    expect(
-      classifyRegisteredWholeStorefrontDirectionRequest(
-        modernTechnicalRequest,
-        generated.fixture.draft.brandSystem,
-      ),
-    ).toEqual({ kind: "selected", direction: "modernTechnical" });
     expect(generated.request.instruction).toBe(modernTechnicalRequest);
     expect(generated.request.capability).toBe("registeredWholeStorefrontDirection");
+    expect(generated.providerRequests).toHaveLength(1);
+    expect(generated.providerRequests[0]?.merchantInstruction).toBe(modernTechnicalRequest);
+    expect(generated.providerRequests[0]?.merchantInstruction).not.toBe(
+      generated.fixture.direction.merchantInstruction,
+    );
+    expect(generated.providerPlans).toEqual([plan]);
     expect(plan.requestClass).toBe("coordinatedStructuralDirection");
     expect(plan.designSystemSelection).toMatchObject({
       directionId: "modernTechnical",
@@ -105,7 +104,9 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
       "dynamicCollectionCommerce",
       "footer",
     ]);
-    expect(collection.sections.find((section) => section.component === "dynamicCollectionCommerce")).toMatchObject({
+    expect(
+      collection.sections.find((section) => section.component === "dynamicCollectionCommerce"),
+    ).toMatchObject({
       variant: "compact",
       props: { gridDensity: "compact", cardVariant: "compact", filterLayout: "sidebar" },
     });
@@ -115,7 +116,9 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
       "dynamicProductDetail",
       "footer",
     ]);
-    expect(product.sections.find((section) => section.component === "dynamicProductDetail")).toMatchObject({
+    expect(
+      product.sections.find((section) => section.component === "dynamicProductDetail"),
+    ).toMatchObject({
       variant: "compact",
       props: {
         galleryLayout: "thumbnails",
@@ -125,6 +128,38 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
       },
     });
     expect(product.sections).not.toEqual(baselineProduct.sections);
+  });
+
+  it("derives the registered direction from the provider-received instruction and classifies unsafe instructions safely", async () => {
+    const warm = await generateP905aInstructionScenarioFromBaseline(
+      "modernTechnical",
+      warmApproachableRequest,
+    );
+    const repeatedWarm = await generateP905aInstructionScenarioFromBaseline(
+      "modernTechnical",
+      warmApproachableRequest,
+    );
+    const modern = await generateP905aInstructionScenarioFromBaseline(
+      "warmApproachable",
+      modernTechnicalRequest,
+    );
+
+    expect(warm.providerRequests).toEqual([
+      expect.objectContaining({ merchantInstruction: warmApproachableRequest }),
+    ]);
+    expect(warm.plan.designSystemSelection.directionId).toBe("warmApproachable");
+    expect(repeatedWarm.plan.fingerprint).toBe(warm.plan.fingerprint);
+    expect(modern.plan.designSystemSelection.directionId).toBe("modernTechnical");
+    expect(modern.plan.fingerprint).not.toBe(warm.plan.fingerprint);
+
+    expect(
+      classifyRegisteredWholeStorefrontDirectionRequest("Make it warm premium and minimal Nordic"),
+    ).toMatchObject({ kind: "ambiguous" });
+    expect(
+      classifyRegisteredWholeStorefrontDirectionRequest(
+        "Write fresh social copy for the product launch.",
+      ),
+    ).toMatchObject({ kind: "unsupported" });
   });
 
   it("keeps token-only refinement non-structural", () => {
@@ -145,8 +180,7 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
   });
 
   it("accepts the coordinated proposal as one reversible transaction without changing commerce", async () => {
-    const generated = await generateP905aScenarioFromBaseline(
-      "modernTechnical",
+    const generated = await generateP905aInstructionScenarioFromBaseline(
       "warmApproachable",
       modernTechnicalRequest,
     );
@@ -156,7 +190,11 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
 
     expect(accepted.state).toBe("accepted");
     expect(generated.proposal.operations).toHaveLength(4);
-    expect(generated.proposal.operations.filter((operation) => operation.operation.type === "APPLY_REGISTERED_PAGE_SECTIONS")).toHaveLength(3);
+    expect(
+      generated.proposal.operations.filter(
+        (operation) => operation.operation.type === "APPLY_REGISTERED_PAGE_SECTIONS",
+      ),
+    ).toHaveLength(3);
     expect(coordinator.undo()).toEqual(generated.fixture.draft);
     expect(coordinator.redo()).toEqual(accepted.activeDraft);
     expect(canonicalValueString(generated.fixture.aggregate.catalogue)).toBe(
