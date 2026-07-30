@@ -62,6 +62,25 @@ const FAMILY_REQUIREMENTS = {
   other: [],
 } as const;
 
+/**
+ * The canonical planner contract for legacy sections replaced by the typed
+ * commerce shells. Audit consumers must keep this separate from coordinated
+ * design-direction component selections.
+ */
+export const dynamicCollectionReplacementComponentTypes = [
+  "collectionHeader",
+  "filterBar",
+  "productGrid",
+  "dynamicCollectionCommerce",
+] as const;
+
+export const dynamicProductReplacementComponentTypes = [
+  "productGallery",
+  "productInfo",
+  "productOptions",
+  "dynamicProductDetail",
+] as const;
+
 type ActiveComponentTarget = {
   pageId: string;
   pageType: PageType;
@@ -1014,8 +1033,8 @@ export function createWholeStorefrontGenerationPlan(
         instance,
         replacesComponentIds: page.sections
           .filter((section) =>
-            ["collectionHeader", "filterBar", "productGrid", "dynamicCollectionCommerce"].includes(
-              section.component,
+            dynamicCollectionReplacementComponentTypes.includes(
+              section.component as (typeof dynamicCollectionReplacementComponentTypes)[number],
             ),
           )
           .map((section) => section.id)
@@ -1055,8 +1074,8 @@ export function createWholeStorefrontGenerationPlan(
         instance,
         replacesComponentIds: page.sections
           .filter((section) =>
-            ["productGallery", "productInfo", "productOptions", "dynamicProductDetail"].includes(
-              section.component,
+            dynamicProductReplacementComponentTypes.includes(
+              section.component as (typeof dynamicProductReplacementComponentTypes)[number],
             ),
           )
           .map((section) => section.id)

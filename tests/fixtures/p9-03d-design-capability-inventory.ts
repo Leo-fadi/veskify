@@ -1,5 +1,13 @@
-import { storefrontDesignSystemV1 } from "@/application/storefront-design-system";
+import {
+  storefrontDesignSystemV1,
+  storefrontDesignSystemV1Schema,
+  type StorefrontDesignSystemV1,
+} from "@/application/storefront-design-system";
 import { storefrontTemplateDefinitions } from "@/application/storefront-templates";
+import {
+  dynamicCollectionReplacementComponentTypes,
+  dynamicProductReplacementComponentTypes,
+} from "@/application/whole-storefront-generation-plan";
 import type { ComponentDefinitionV2, ResponsiveRule } from "@/domain/component-platform";
 import { veskifyComponentRegistry } from "@/components/registry";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
@@ -68,23 +76,28 @@ export type P903dSystemCapabilityRecord = Readonly<{
   status: P903dCapabilityStatus;
 }>;
 
-const dynamicPageReplacementTypes = new Set([
-  "collectionHeader",
-  "filterBar",
-  "productGallery",
-  "productInfo",
-  "productOptions",
-]);
+const dynamicPageReplacementTypes = new Set<string>(
+  [
+    ...dynamicCollectionReplacementComponentTypes,
+    ...dynamicProductReplacementComponentTypes,
+  ].filter((type) => type !== "dynamicCollectionCommerce" && type !== "dynamicProductDetail"),
+);
 
-type P903dDirection = (typeof storefrontDesignSystemV1.directions)[number];
+type P903dDirection = StorefrontDesignSystemV1["directions"][number];
 
 export type P903dReachabilityEvidence = Readonly<{
-  directions?: readonly P903dDirection[];
+  designSystem?: unknown;
   canonicalRouteComponentTypes?: readonly string[];
 }>;
 
+function auditDesignSystem(evidence: P903dReachabilityEvidence): StorefrontDesignSystemV1 {
+  return evidence.designSystem === undefined
+    ? storefrontDesignSystemV1
+    : storefrontDesignSystemV1Schema.parse(evidence.designSystem);
+}
+
 function auditDirections(evidence: P903dReachabilityEvidence): readonly P903dDirection[] {
-  return evidence.directions ?? storefrontDesignSystemV1.directions;
+  return auditDesignSystem(evidence).directions;
 }
 
 function canonicalRouteComponentTypes(evidence: P903dReachabilityEvidence): ReadonlySet<string> {
@@ -114,11 +127,11 @@ function sourceFor(type: string): string {
   return "src/components/registry/registry.ts via v2-compatibility.ts";
 }
 
-function recipeIds(type: string, variant: string): string[] {
+function recipeIds(type: string, variant: string, evidence: P903dReachabilityEvidence): string[] {
   return [
-    ...storefrontDesignSystemV1.homepageRecipes,
-    ...storefrontDesignSystemV1.collectionRecipes,
-    ...storefrontDesignSystemV1.productRecipes,
+    ...auditDesignSystem(evidence).homepageRecipes,
+    ...auditDesignSystem(evidence).collectionRecipes,
+    ...auditDesignSystem(evidence).productRecipes,
   ]
     .filter((recipe) =>
       recipe.sections.some((section) => section.component === type && section.variant === variant),
@@ -164,10 +177,11 @@ function selectedRecipeDirectionIds(
   variant: string,
   evidence: P903dReachabilityEvidence,
 ): string[] {
+  const designSystem = auditDesignSystem(evidence);
   const recipes = [
-    ...storefrontDesignSystemV1.homepageRecipes,
-    ...storefrontDesignSystemV1.collectionRecipes,
-    ...storefrontDesignSystemV1.productRecipes,
+    ...designSystem.homepageRecipes,
+    ...designSystem.collectionRecipes,
+    ...designSystem.productRecipes,
   ];
   return auditDirections(evidence)
     .filter((direction) => {
@@ -195,7 +209,11 @@ function compilerPreservation(
   recipeDirections: readonly string[],
   evidence: P903dReachabilityEvidence,
 ): P903dComponentVariantRecord["proposalCompilerPreservation"] {
-  if (directions.length > 0 && dynamicPageReplacementTypes.has(type)) {
+  if (
+    directions.length === 0 &&
+    dynamicPageReplacementTypes.has(type) &&
+    blueprintIds(type, variant).length > 0
+  ) {
     return "dropped by dynamic-page replacement";
   }
   if (
@@ -313,14 +331,17 @@ export function createP903dComponentVariantInventory(
             .map(([key, value]) => `${key}: ${value}`)
             .sort(),
           plannerExposure: {
-            recipeIds: recipeIds(definition.type, variant.id),
+            recipeIds: recipeIds(definition.type, variant.id, evidence),
             blueprintIds: blueprintIds(definition.type, variant.id),
             directionIds: directions,
             advertisedToRealProvider: true as const,
           },
-          deterministicSelectionEvidence: directions.map(
-            (directionId) => `direction:${directionId}`,
-          ),
+          deterministicSelectionEvidence: [
+            ...directions.map((directionId) => `direction:${directionId}`),
+            ...(preservation === "dropped by dynamic-page replacement"
+              ? ["planner:dynamic-page-replacement"]
+              : []),
+          ],
           realProviderSchemaExposure:
             directions.length > 0
               ? ("registry-and-direction-option" as const)
