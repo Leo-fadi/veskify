@@ -291,6 +291,40 @@ describe("P4-05D editor storefront integration", () => {
     },
   );
 
+  it("routes the failed exact palette and typography request through the protected registered provider", async () => {
+    const value = statefulRepository();
+    const before = await value.get(aurumNordicSeed.project.id);
+    const provider = new RejectingRegisteredStorefrontProvider();
+    const instruction =
+      "Set primary #355C4A, secondary #7A6652, accent #C58A55, background #FBF7F0, surface #FFFFFF, text #25231F, muted text #686158, and border #D8CFC2. Use Georgia for headings and Inter for body text. Preserve all layouts, sections, products, and images.";
+    route(value, undefined, provider);
+
+    await openStorefrontTarget();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: instruction },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+
+    await waitFor(() => expect(provider.calls).toHaveLength(1));
+    expect(provider.calls[0]).toMatchObject({
+      capability: "registeredWholeStorefrontDirection",
+      instruction,
+      affectedSections: [],
+      componentContracts: [],
+      tokenRefinementPlan: {
+        preservePageStructure: true,
+        preserveComponentVariants: true,
+        preserveApprovedAssets: true,
+        preserveCanonicalCommerce: true,
+      },
+    });
+    expect(provider.calls[0].target.affectedPageIds).toHaveLength(3);
+    expect(await value.get(aurumNordicSeed.project.id)).toEqual(before);
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Redo" })).toBeDisabled();
+  });
+
   it("preserves conflicting direction language as ambiguous without invoking the registered provider", async () => {
     const value = statefulRepository();
     const before = await value.get(aurumNordicSeed.project.id);

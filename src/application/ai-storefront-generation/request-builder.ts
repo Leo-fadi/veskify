@@ -22,6 +22,7 @@ import {
 import { validateApprovedAssetPlacementOperations } from "./approved-asset-context";
 import {
   AiStorefrontPlanError,
+  classifyRegisteredWholeStorefrontDirectionRequest,
   createAiStorefrontGenerationPlan,
   normalizeStorefrontInstruction,
 } from "./planner";
@@ -175,7 +176,11 @@ export function buildAiStorefrontProviderRequest(
       componentType: sectionTarget.componentType,
     },
   }));
-  if (target.designSystemTarget !== null && plan.brandPalettePlan === null) {
+  if (
+    target.designSystemTarget !== null &&
+    plan.brandPalettePlan === null &&
+    plan.tokenRefinementPlan === null
+  ) {
     target.affectedPageIds.forEach((pageId) => {
       grants.push({
         skillId: skill.id,
@@ -274,6 +279,7 @@ export function buildAiStorefrontProviderRequest(
             typography: structuredClone(command.storefront.brandSystem.typography),
           },
     brandPalettePlan: plan.brandPalettePlan,
+    tokenRefinementPlan: plan.tokenRefinementPlan,
     permissionGrants,
     storefrontBaselineFingerprint,
     targetFingerprint,
@@ -325,6 +331,28 @@ export function buildAiStorefrontProviderRequestForSupportedCapability(
       command,
       request: buildAiStorefrontProviderRequest(command, requestSequence),
     };
+  }
+
+  if (supportsRegistered) {
+    let registeredClassification;
+    try {
+      registeredClassification = classifyRegisteredWholeStorefrontDirectionRequest(
+        commandInput.merchantInstruction,
+        commandInput.storefront.brandSystem,
+      );
+    } catch {
+      registeredClassification = { kind: "token-refinement" as const };
+    }
+    if (registeredClassification.kind === "token-refinement") {
+      const registeredCommand = {
+        ...commandInput,
+        capability: "registeredWholeStorefrontDirection" as const,
+      } satisfies AiStorefrontGenerationCommand;
+      return {
+        command: registeredCommand,
+        request: buildAiStorefrontProviderRequest(registeredCommand, requestSequence),
+      };
+    }
   }
 
   const legacyCommand = {

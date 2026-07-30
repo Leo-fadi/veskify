@@ -1,4 +1,8 @@
 import {
+  registeredTokenRefinementPlanSchema,
+  type RegisteredTokenRefinementPlan,
+} from "@/application/storefront-design-system";
+import {
   acceptWholeStorefrontPlanningResult,
   createWholeStorefrontGenerationPlan,
   createWholeStorefrontGenerationTarget,
@@ -133,6 +137,9 @@ export type WholeStorefrontPlanningProviderRequest = Readonly<{
   planForDirection: (
     directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
   ) => WholeStorefrontGenerationPlan;
+  requestClass: WholeStorefrontGenerationPlan["requestClass"];
+  tokenRefinementPlan: RegisteredTokenRefinementPlan | null;
+  planForTokenRefinement: () => WholeStorefrontGenerationPlan;
   expectedPlan: WholeStorefrontGenerationPlan;
 }>;
 
@@ -215,12 +222,19 @@ function validatedMerchantInstruction(value: unknown): string {
 export function buildWholeStorefrontPlanningProviderRequest(
   inputValue: unknown,
   merchantInstruction = "Prepare a coherent storefront using the approved merchant brief.",
+  tokenRefinementValue: unknown = null,
 ): WholeStorefrontPlanningProviderRequest {
   const instruction = validatedMerchantInstruction(merchantInstruction);
+  const tokenRefinement =
+    tokenRefinementValue === null
+      ? null
+      : registeredTokenRefinementPlanSchema.parse(tokenRefinementValue);
   let input: WholeStorefrontPlanningInput;
   let expectedPlan: WholeStorefrontGenerationPlan;
   try {
-    expectedPlan = createWholeStorefrontGenerationPlan(inputValue);
+    expectedPlan = createWholeStorefrontGenerationPlan(inputValue, {
+      tokenRefinementPlan: tokenRefinement,
+    });
     input = structuredClone(inputValue as WholeStorefrontPlanningInput);
   } catch {
     return fail("invalid-request");
@@ -374,6 +388,12 @@ export function buildWholeStorefrontPlanningProviderRequest(
       }))
       .sort((left, right) => left.id.localeCompare(right.id)),
     planForDirection: (directionId) => createWholeStorefrontGenerationPlan(input, { directionId }),
+    requestClass: expectedPlan.requestClass,
+    tokenRefinementPlan: tokenRefinement === null ? null : structuredClone(tokenRefinement),
+    planForTokenRefinement: () =>
+      createWholeStorefrontGenerationPlan(input, {
+        tokenRefinementPlan: tokenRefinement,
+      }),
     expectedPlan: structuredClone(expectedPlan),
   };
   const structuralRequest = Object.fromEntries(
@@ -388,13 +408,19 @@ export async function requestWholeStorefrontGenerationPlan({
   input,
   currentInput,
   merchantInstruction,
+  tokenRefinementPlan,
 }: {
   provider: WholeStorefrontPlanningProvider;
   input: unknown;
   currentInput: () => unknown;
   merchantInstruction?: string;
+  tokenRefinementPlan?: RegisteredTokenRefinementPlan | null;
 }): Promise<WholeStorefrontGenerationPlan> {
-  const request = buildWholeStorefrontPlanningProviderRequest(input, merchantInstruction);
+  const request = buildWholeStorefrontPlanningProviderRequest(
+    input,
+    merchantInstruction,
+    tokenRefinementPlan,
+  );
   if (
     !provider.capabilities.wholeStorefrontPlanning ||
     !provider.capabilities.structuredPlanOutput ||
@@ -408,6 +434,7 @@ export async function requestWholeStorefrontGenerationPlan({
       input,
       provider.createPlan(request),
       currentInput,
+      tokenRefinementPlan,
     );
   } catch (error) {
     if (error instanceof WholeStorefrontPlanningProviderError) throw error;

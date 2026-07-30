@@ -46,6 +46,21 @@ function provider(
   };
 }
 
+function tokenRefinementProvider(reached: () => void): WholeStorefrontPlanningProvider {
+  return {
+    id: "p9-05c-token-refinement-provider",
+    capabilities: {
+      wholeStorefrontPlanning: true,
+      structuredPlanOutput: true,
+      approvedAssetReferences: true,
+    },
+    createPlan(request) {
+      reached();
+      return Promise.resolve(request.planForTokenRefinement());
+    },
+  };
+}
+
 async function savedBrowserAggregate() {
   const source = await p905bLocalDemoRepository(environment).get("project_lumo_fresh");
   const browser = new InMemoryProjectRepository([source]);
@@ -189,8 +204,8 @@ describe("P9-05C authoritative local-demo synchronization", () => {
     const followupHandler = createWholeStorefrontPlanningRouteHandler({
       environment,
       selectProvider: () =>
-        provider("warmApproachable", () => {
-          selectedDirections.push("warmApproachable");
+        tokenRefinementProvider(() => {
+          selectedDirections.push("validatedTokenRefinement");
         }),
     });
     expect(
@@ -207,7 +222,7 @@ describe("P9-05C authoritative local-demo synchronization", () => {
         )
       ).status,
     ).toBe(200);
-    expect(selectedDirections).toEqual(["premiumEditorial", "warmApproachable"]);
+    expect(selectedDirections).toEqual(["premiumEditorial", "validatedTokenRefinement"]);
   });
 
   it("rejects stale, unauthorized, malformed, and protected-commerce synchronization without changing authority", async () => {

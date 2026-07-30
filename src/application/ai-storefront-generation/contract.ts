@@ -14,6 +14,7 @@ import { brandSystemSchema } from "@/domain/design-system";
 import { idSchema, localeSchema, localizedTextSchema } from "@/domain/shared";
 import { pageModelSchema, sectionInstanceSchema } from "@/domain/storefront";
 import { exactBrandPalettePlanSchema } from "./brand-palette";
+import { registeredTokenRefinementPlanSchema } from "./token-refinement";
 import {
   approvedAssetPlacementOperationSchema,
   approvedGenerationAssetContextSchema,
@@ -200,12 +201,27 @@ export const aiStorefrontGenerationPlanSchema = z
       .strict()
       .nullable(),
     brandPalettePlan: exactBrandPalettePlanSchema.nullable(),
+    tokenRefinementPlan: registeredTokenRefinementPlanSchema.nullable(),
     explanation: localizedTextSchema,
     validation: proposalValidationResultSchema,
   })
   .strict()
   .superRefine((plan, context) => {
-    if (plan.direction === "exactBrandPalette") {
+    if (plan.tokenRefinementPlan !== null) {
+      if (
+        plan.direction !== "registeredWholeStorefront" ||
+        plan.brandPalettePlan !== null ||
+        plan.designSystemTarget === null ||
+        plan.sectionTargets.length > 0
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["tokenRefinementPlan"],
+          message:
+            "Registered token refinements require one global target and no structural section operations.",
+        });
+      }
+    } else if (plan.direction === "exactBrandPalette") {
       if (plan.brandPalettePlan === null) {
         context.addIssue({
           code: "custom",
@@ -274,6 +290,7 @@ export const aiStorefrontProviderRequestSchema = z
       .strict()
       .nullable(),
     brandPalettePlan: exactBrandPalettePlanSchema.nullable(),
+    tokenRefinementPlan: registeredTokenRefinementPlanSchema.nullable(),
     permissionGrants: z.array(aiOperationPermissionGrantSchema).min(1),
     storefrontBaselineFingerprint: z.string().startsWith("storefront-baseline-"),
     targetFingerprint: z.string().startsWith("storefront-target-"),
@@ -310,7 +327,30 @@ export const aiStorefrontProviderRequestSchema = z
         message: "Providers without asset-reference capability cannot receive source assets.",
       });
     }
-    if (request.brandPalettePlan === null) {
+    if (request.tokenRefinementPlan !== null) {
+      const tokenGrants = request.permissionGrants.filter(
+        (grant) =>
+          grant.target.kind === "storefrontDesignSystem" &&
+          grant.operationTypes.length === 1 &&
+          grant.operationTypes[0] === "APPLY_REGISTERED_BRAND_SYSTEM",
+      );
+      if (
+        request.capability !== "registeredWholeStorefrontDirection" ||
+        request.brandPalettePlan !== null ||
+        request.target.designSystemTarget === null ||
+        request.affectedSections.length > 0 ||
+        request.componentContracts.length > 0 ||
+        request.permissionGrants.length !== 1 ||
+        tokenGrants.length !== 1
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["tokenRefinementPlan"],
+          message:
+            "Registered token refinements may grant only one global validated BrandSystem operation.",
+        });
+      }
+    } else if (request.brandPalettePlan === null) {
       if (request.affectedSections.length === 0 || request.componentContracts.length === 0) {
         context.addIssue({
           code: "custom",

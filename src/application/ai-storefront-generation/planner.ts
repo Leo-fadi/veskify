@@ -12,6 +12,10 @@ import {
   planExactBrandPalette,
   type ExactBrandPalettePlan,
 } from "./brand-palette";
+import {
+  planRegisteredTokenRefinement,
+  type RegisteredTokenRefinementPlan,
+} from "./token-refinement";
 
 export class AiStorefrontPlanError extends Error {
   constructor(
@@ -80,10 +84,15 @@ export type RegisteredWholeStorefrontRequestClassification =
       kind: "selected";
       direction: keyof typeof registeredDirectionSignals;
     }
+  | {
+      kind: "token-refinement";
+      plan: RegisteredTokenRefinementPlan;
+    }
   | { kind: "ambiguous" | "protected-commerce" | "unsupported" };
 
 export function classifyRegisteredWholeStorefrontDirectionRequest(
   instruction: string,
+  currentBrandSystem?: AiStorefrontGenerationCommand["storefront"]["brandSystem"],
 ): RegisteredWholeStorefrontRequestClassification {
   const normalized = normalizeStorefrontInstruction(instruction);
   if (containsProtectedCommerceMutation(normalized)) return { kind: "protected-commerce" };
@@ -91,6 +100,30 @@ export function classifyRegisteredWholeStorefrontDirectionRequest(
   const legacyWarm = /\b(warm|premium|lämmin|premium-ilme)/iu.test(normalized);
   const legacyMinimal = /\b(minimal|nordic|pelkistet|pohjois)/iu.test(normalized);
   if (legacyWarm && legacyMinimal) return { kind: "ambiguous" };
+  const explicitDirections = [
+    {
+      direction: "premiumEditorial" as const,
+      pattern: /\b(?:premium editorial|ensiluokkainen editoriaalinen)\b/iu,
+    },
+    {
+      direction: "modernTechnical" as const,
+      pattern: /\b(?:modern technical|moderni tekninen)\b/iu,
+    },
+    {
+      direction: "warmApproachable" as const,
+      pattern: /\b(?:warm approachable|lämmin lähestyttävä)\b/iu,
+    },
+  ].filter(({ pattern }) => pattern.test(normalized));
+  if (explicitDirections.length > 1) return { kind: "ambiguous" };
+  if (explicitDirections[0]) {
+    return { kind: "selected", direction: explicitDirections[0].direction };
+  }
+  if (currentBrandSystem !== undefined) {
+    const tokenRefinement = planRegisteredTokenRefinement(instruction, currentBrandSystem);
+    if (tokenRefinement !== null) {
+      return { kind: "token-refinement", plan: tokenRefinement };
+    }
+  }
 
   const ranked = Object.entries(registeredDirectionSignals)
     .map(([direction, signals]) => ({
@@ -120,7 +153,8 @@ export function classifyRegisteredWholeStorefrontDirectionRequest(
 }
 
 export function isRegisteredWholeStorefrontDirectionRequest(instruction: string): boolean {
-  return classifyRegisteredWholeStorefrontDirectionRequest(instruction).kind === "selected";
+  const kind = classifyRegisteredWholeStorefrontDirectionRequest(instruction).kind;
+  return kind === "selected" || kind === "token-refinement";
 }
 
 type SupportedStorefrontRequest = {
@@ -128,6 +162,7 @@ type SupportedStorefrontRequest = {
   skillId: string;
   designSystem: "required" | "none";
   brandPalettePlan?: ExactBrandPalettePlan;
+  tokenRefinementPlan?: RegisteredTokenRefinementPlan;
 };
 
 const supportedRequests = new Map<string, SupportedStorefrontRequest>([
@@ -215,9 +250,18 @@ const supportedRequests = new Map<string, SupportedStorefrontRequest>([
 
 function classifyInstruction(command: AiStorefrontGenerationCommand): SupportedStorefrontRequest {
   if (command.capability === "registeredWholeStorefrontDirection") {
-    const classification = classifyRegisteredWholeStorefrontDirectionRequest(
-      command.merchantInstruction,
-    );
+    let classification: RegisteredWholeStorefrontRequestClassification;
+    try {
+      classification = classifyRegisteredWholeStorefrontDirectionRequest(
+        command.merchantInstruction,
+        command.storefront.brandSystem,
+      );
+    } catch (error) {
+      if (error instanceof BrandPaletteInstructionError) {
+        throw new AiStorefrontPlanError("unsupported-request", error.message);
+      }
+      throw error;
+    }
     if (classification.kind === "ambiguous") {
       throw new AiStorefrontPlanError(
         "ambiguous-request",
@@ -240,6 +284,9 @@ function classifyInstruction(command: AiStorefrontGenerationCommand): SupportedS
       direction: "registeredWholeStorefront",
       skillId: "applyRegisteredWholeStorefrontDirection",
       designSystem: "required",
+      ...(classification.kind === "token-refinement"
+        ? { tokenRefinementPlan: classification.plan }
+        : {}),
     };
   }
   const instruction = command.merchantInstruction;
@@ -320,14 +367,18 @@ export function createAiStorefrontGenerationPlan(
   const explicitTargets = new Map(
     command.affectedSectionTargets.map((target) => [target.sectionId, target]),
   );
-  if (classified.direction === "exactBrandPalette" && explicitTargets.size > 0) {
+  if (
+    (classified.direction === "exactBrandPalette" ||
+      classified.tokenRefinementPlan !== undefined) &&
+    explicitTargets.size > 0
+  ) {
     throw new AiStorefrontPlanError(
       "target-mismatch",
       "A global brand palette request cannot use selected-section targets.",
     );
   }
   const sectionTargets =
-    classified.direction === "exactBrandPalette"
+    classified.direction === "exactBrandPalette" || classified.tokenRefinementPlan !== undefined
       ? []
       : affectedPageIds.flatMap((pageId) => {
           const page = pagesById.get(pageId);
@@ -400,26 +451,32 @@ export function createAiStorefrontGenerationPlan(
     sectionTargets,
     designSystemTarget: command.designSystemTarget,
     brandPalettePlan: classified.brandPalettePlan ?? null,
+    tokenRefinementPlan: classified.tokenRefinementPlan ?? null,
     explanation:
       classified.direction === "exactBrandPalette"
         ? {
             en: "Apply the merchant’s validated brand colours across the storefront while preserving typography, layout, imagery, content, products, and section structure.",
             fi: "Käytä kauppiaan validoituja brändivärejä koko kaupassa säilyttäen typografia, asettelu, kuvat, sisältö, tuotteet ja osiorakenne.",
           }
-        : classified.direction === "registeredWholeStorefront"
+        : classified.tokenRefinementPlan !== undefined
           ? {
-              en: "Prepare one complete storefront proposal from a server-registered design direction selected through the authoritative planner.",
-              fi: "Valmistele yksi koko kaupan ehdotus palvelimen rekisteröidystä, valtuutetun suunnittelijan valitsemasta tyylisuunnasta.",
+              en: "Apply validated colour, typography, and spacing tokens across the storefront while preserving every page structure, component variant, approved asset, and commerce binding.",
+              fi: "Käytä validoituja väri-, typografia- ja välistystunnisteita koko kaupassa säilyttäen sivurakenteet, komponenttivariantit, hyväksytyt aineistot ja kaupankäynnin sidonnat.",
             }
-          : classified.direction === "warmPremium"
+          : classified.direction === "registeredWholeStorefront"
             ? {
-                en: "Apply one approved warm premium colour and typography direction across the selected storefront pages.",
-                fi: "Käytä yhtä hyväksyttyä lämmintä premium-väri- ja typografiailmettä valituilla kaupan sivuilla.",
+                en: "Prepare one complete storefront proposal from a server-registered design direction selected through the authoritative planner.",
+                fi: "Valmistele yksi koko kaupan ehdotus palvelimen rekisteröidystä, valtuutetun suunnittelijan valitsemasta tyylisuunnasta.",
               }
-            : {
-                en: "Apply one approved minimal Nordic colour and typography direction across the selected storefront pages.",
-                fi: "Käytä yhtä hyväksyttyä pelkistettyä pohjoismaista väri- ja typografiailmettä valituilla kaupan sivuilla.",
-              },
+            : classified.direction === "warmPremium"
+              ? {
+                  en: "Apply one approved warm premium colour and typography direction across the selected storefront pages.",
+                  fi: "Käytä yhtä hyväksyttyä lämmintä premium-väri- ja typografiailmettä valituilla kaupan sivuilla.",
+                }
+              : {
+                  en: "Apply one approved minimal Nordic colour and typography direction across the selected storefront pages.",
+                  fi: "Käytä yhtä hyväksyttyä pelkistettyä pohjoismaista väri- ja typografiailmettä valituilla kaupan sivuilla.",
+                },
     validation: { valid: true, errors: [] as string[] },
   };
   return aiStorefrontGenerationPlanSchema.parse({

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createApprovedGenerationAssetContextFingerprint } from "@/application/ai-storefront-generation";
+import {
+  createApprovedGenerationAssetContextFingerprint,
+  planRegisteredTokenRefinement,
+} from "@/application/ai-storefront-generation";
 import {
   WholeStorefrontProposalAcceptanceCoordinator,
   WholeStorefrontProposalError,
@@ -108,6 +111,21 @@ function input(overrides: Record<string, unknown> = {}): WholeStorefrontProposal
   };
 }
 
+function tokenRefinementInput(): WholeStorefrontProposalCompilationInput {
+  const planning = wholeStorefrontPlanningInputSchema.parse(planningInput());
+  const tokenRefinement = planRegisteredTokenRefinement(
+    "Set primary #355C4A, secondary #7A6652, accent #C58A55, background #FBF7F0, surface #FFFFFF, text #25231F, muted text #686158, and border #D8CFC2. Use Georgia for headings and Inter for body text. Preserve all layouts, sections, products, and images.",
+    planning.draft.brandSystem,
+  );
+  if (tokenRefinement === null) throw new Error("Missing token refinement");
+  return {
+    plan: createWholeStorefrontGenerationPlan(planning, {
+      tokenRefinementPlan: tokenRefinement,
+    }),
+    planningInput: planning,
+  };
+}
+
 function errorCode(action: () => unknown) {
   try {
     action();
@@ -177,6 +195,31 @@ function withApprovedPlacement(): WholeStorefrontProposalCompilationInput {
 }
 
 describe("P8-02 whole-storefront proposal lifecycle", () => {
+  it("compiles one reviewable token-only proposal while preserving every page and commerce input", () => {
+    const source = tokenRefinementInput();
+    const originalPlanningInput = structuredClone(source.planningInput);
+    const proposal = compileWholeStorefrontProposal(source);
+
+    expect(proposal.operations).toHaveLength(2 + source.plan.pagePlans.length);
+    expect(proposal.operations[0]?.operation).toMatchObject({
+      type: "APPLY_REGISTERED_BRAND_SYSTEM",
+      refinementId: "validatedTokenRefinement",
+      tokenRefinementPlan: source.plan.tokenRefinementPlan,
+    });
+    expect(proposal.proposedStorefront.pages).toEqual(proposal.originalStorefront.pages);
+    expect(proposal.proposedStorefront.navigation).toEqual(proposal.originalStorefront.navigation);
+    expect(proposal.proposedStorefront.approvedAssetPlacements).toEqual(
+      proposal.originalStorefront.approvedAssetPlacements,
+    );
+    expect(proposal.proposedStorefront.brandSystem.colors.primary).toBe("#355C4A");
+    expect(proposal.proposedStorefront.brandSystem.typography).toMatchObject({
+      headingFont: "georgia",
+      bodyFont: "inter",
+    });
+    expect(source.planningInput).toEqual(originalPlanningInput);
+    expect(validateWholeStorefrontProposal(proposal, source)).toEqual(proposal);
+  });
+
   it("compiles one validated plan into a deterministic replayable proposal", () => {
     const first = compileWholeStorefrontProposal(input());
     const second = compileWholeStorefrontProposal(input());

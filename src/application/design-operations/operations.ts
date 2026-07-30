@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { registeredTokenRefinementPlanSchema } from "@/application/storefront-design-system/token-refinement";
 import {
   getComponentDefinition,
   validateRegisteredPage,
@@ -69,10 +70,33 @@ export const applyApprovedBrandTypographyOperationSchema = z
 export const applyRegisteredBrandSystemOperationSchema = z
   .object({
     type: z.literal("APPLY_REGISTERED_BRAND_SYSTEM"),
-    directionId: z.enum(["premiumEditorial", "modernTechnical", "warmApproachable"]),
+    directionId: z.enum(["premiumEditorial", "modernTechnical", "warmApproachable"]).optional(),
+    refinementId: z.literal("validatedTokenRefinement").optional(),
+    tokenRefinementPlan: registeredTokenRefinementPlanSchema.optional(),
     brandSystem: brandSystemSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((operation, context) => {
+    if ((operation.directionId === undefined) === (operation.refinementId === undefined)) {
+      context.addIssue({
+        code: "custom",
+        path: ["directionId"],
+        message:
+          "A registered BrandSystem operation must identify one direction or validated token refinement.",
+      });
+    }
+    if (
+      (operation.refinementId === "validatedTokenRefinement") !==
+      (operation.tokenRefinementPlan !== undefined)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["tokenRefinementPlan"],
+        message:
+          "Only a validated token-refinement operation may include its canonical token plan.",
+      });
+    }
+  });
 export const addApprovedSectionOperationSchema = z
   .object({
     type: z.literal("ADD_APPROVED_SECTION"),

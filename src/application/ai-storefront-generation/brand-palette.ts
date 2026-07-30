@@ -1,4 +1,4 @@
-import { z } from "zod";
+import type { z } from "zod";
 import { assertNoExecutableContent } from "@/application/design-skills/registry";
 import {
   brandSystemSchema,
@@ -6,31 +6,20 @@ import {
   standardTextContrastMinimum,
   type BrandSystem,
 } from "@/domain/design-system";
-import { localizedTextSchema } from "@/domain/shared";
+import type { localizedTextSchema } from "@/domain/shared";
+import {
+  brandColourTokenSchema,
+  exactBrandPalettePlanSchema,
+  type BrandColourToken,
+  type ExactBrandPalettePlan,
+} from "@/application/storefront-design-system/brand-palette-contract";
 
-export const brandColourTokenSchema = z.enum([
-  "primary",
-  "secondary",
-  "accent",
-  "background",
-  "surface",
-  "text",
-  "mutedText",
-  "border",
-]);
-
-export const exactBrandPalettePlanSchema = z
-  .object({
-    colors: brandSystemSchema.shape.colors,
-    requestedTokens: z.array(brandColourTokenSchema).min(1),
-    correctedTokens: z.array(brandColourTokenSchema),
-    warnings: z.array(localizedTextSchema),
-    source: z.enum(["hex", "named", "mixed", "existing"]),
-  })
-  .strict();
-
-export type BrandColourToken = z.infer<typeof brandColourTokenSchema>;
-export type ExactBrandPalettePlan = z.infer<typeof exactBrandPalettePlanSchema>;
+export {
+  brandColourTokenSchema,
+  exactBrandPalettePlanSchema,
+  type BrandColourToken,
+  type ExactBrandPalettePlan,
+};
 
 export class BrandPaletteInstructionError extends Error {
   constructor(message: string) {
@@ -299,7 +288,10 @@ export function containsProtectedCommerceMutation(instruction: string): boolean 
   return protectedMutationPattern.test(actionableMutationInstruction(instruction));
 }
 
-function assertSafeInstruction(instruction: string) {
+function assertSafeInstruction(
+  instruction: string,
+  options: { allowTokenCompanions?: boolean } = {},
+) {
   try {
     assertNoExecutableContent(instruction);
   } catch {
@@ -317,7 +309,15 @@ function assertSafeInstruction(instruction: string) {
       "Use ordinary colour instructions rather than a style object.",
     );
   }
-  const actionable = actionableMutationInstruction(instruction);
+  const actionable = options.allowTokenCompanions
+    ? actionableMutationInstruction(instruction).replace(
+        new RegExp(
+          `(?:^|${wordBoundary})${mutationVerbPattern}(?=$|${wordBoundary})[^.!?]{0,80}(?:^|${wordBoundary})(?:typography|fonts?|spacing|density)(?=$|${wordBoundary})`,
+          "giu",
+        ),
+        "",
+      )
+    : actionableMutationInstruction(instruction);
   if (containsProtectedCommerceMutation(instruction)) {
     throw new BrandPaletteInstructionError(
       "This request mixes colour changes with protected commerce changes. Submit the colour palette separately; protected commerce data cannot be changed by a brand-palette proposal.",
@@ -333,6 +333,7 @@ function assertSafeInstruction(instruction: string) {
 export function planExactBrandPalette(
   instruction: string,
   currentColorsInput: BrandSystem["colors"],
+  options: { allowTokenCompanions?: boolean } = {},
 ): ExactBrandPalettePlan | null {
   const hex = findHexColours(instruction);
   const named = findNamedColours(instruction);
@@ -357,7 +358,7 @@ export function planExactBrandPalette(
     return null;
   }
   const current = brandSystemSchema.shape.colors.parse(structuredClone(currentColorsInput));
-  assertSafeInstruction(instruction);
+  assertSafeInstruction(instruction, options);
   assertKnownAssignments(instruction, occurrences);
   if (occurrences.length === 0) {
     if (!existingPalettePattern.test(instruction)) {

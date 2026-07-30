@@ -1,4 +1,8 @@
 import {
+  registeredTokenRefinementPlanSchema,
+  type RegisteredTokenRefinementPlan,
+} from "@/application/storefront-design-system";
+import {
   dynamicCollectionCommerceDefaultContent,
   dynamicCollectionCommerceDefaultProps,
   dynamicCollectionCommerceDefaultStyleOverrides,
@@ -880,9 +884,15 @@ export function createWholeStorefrontGenerationPlan(
   inputValue: unknown,
   options: {
     directionId?: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
+    tokenRefinementPlan?: RegisteredTokenRefinementPlan | null;
   } = {},
 ): WholeStorefrontGenerationPlan {
   const input = parsePlanningInput(inputValue);
+  const tokenRefinementPlan =
+    options.tokenRefinementPlan === undefined || options.tokenRefinementPlan === null
+      ? null
+      : registeredTokenRefinementPlanSchema.parse(options.tokenRefinementPlan);
+  const tokenOnly = tokenRefinementPlan !== null;
   const target = createWholeStorefrontGenerationTarget(input);
   const definitions = normalizedDefinitions(input);
   const registry = createComponentRegistryV2(definitions);
@@ -913,11 +923,13 @@ export function createWholeStorefrontGenerationPlan(
       "The approved design direction is unavailable in the active design system.",
     );
   }
-  assertCoordinatedDirectionCapabilities(
-    selectedDirection,
-    input.recipeContext.designSystem,
-    definitions,
-  );
+  if (!tokenOnly) {
+    assertCoordinatedDirectionCapabilities(
+      selectedDirection,
+      input.recipeContext.designSystem,
+      definitions,
+    );
+  }
   const designSystemSelection = structuredClone({
     directionVersion: selectedDirection.version,
     directionId: selectedDirection.id,
@@ -982,7 +994,7 @@ export function createWholeStorefrontGenerationPlan(
       variant: instance.variant,
       preservesExistingContent: true as const,
     }));
-    if (targetPage.role === "collection-template") {
+    if (!tokenOnly && targetPage.role === "collection-template") {
       if (collectionBinding === null) {
         invalid("unknown-commerce-binding", "The existing collection binding is unavailable.");
       }
@@ -1022,7 +1034,7 @@ export function createWholeStorefrontGenerationPlan(
           .sort(),
       });
     }
-    if (targetPage.role === "product-template") {
+    if (!tokenOnly && targetPage.role === "product-template") {
       if (productBinding === null) {
         invalid("unknown-commerce-binding", "The existing product binding is unavailable.");
       }
@@ -1063,7 +1075,7 @@ export function createWholeStorefrontGenerationPlan(
           .sort(),
       });
     }
-    if (targetPage.role === "homepage") {
+    if (!tokenOnly && targetPage.role === "homepage") {
       components.push(
         ...requiredHomepageRecipeComponents({
           planningInput: input,
@@ -1100,6 +1112,7 @@ export function createWholeStorefrontGenerationPlan(
   const plannedRoles = new Set(pagePlans.map((page) => page.role));
   const plannedPageIds = new Set(pagePlans.map((page) => page.pageId));
   if (
+    !tokenOnly &&
     input.brief.pagePlan.pageTypes.includes("collection") &&
     !plannedRoles.has("collection-template")
   ) {
@@ -1137,7 +1150,11 @@ export function createWholeStorefrontGenerationPlan(
     });
     plannedRoles.add("collection-template");
   }
-  if (input.brief.pagePlan.pageTypes.includes("product") && !plannedRoles.has("product-template")) {
+  if (
+    !tokenOnly &&
+    input.brief.pagePlan.pageTypes.includes("product") &&
+    !plannedRoles.has("product-template")
+  ) {
     const pageId = generatedPageId("page_product_template", plannedPageIds);
     plannedPageIds.add(pageId);
     if (!validateComponentPageType(productComponentDefinition, "product")) {
@@ -1252,7 +1269,7 @@ export function createWholeStorefrontGenerationPlan(
     .flatMap((component) => component.instance.bindings)
     .sort((left, right) => canonicalValueString(left).localeCompare(canonicalValueString(right)));
   assertBindingsResolve(canonicalCommerceBindings, target);
-  const approvedAssetPlacements = validateAssetPlacements(input, activeTargets);
+  const approvedAssetPlacements = tokenOnly ? [] : validateAssetPlacements(input, activeTargets);
   const sharedDesignDirection = {
     brandSystemFingerprint: target.brandSystemFingerprint,
     preferredBrandColours: [...brandDirection.preferredBrandColours].sort(),
@@ -1260,11 +1277,17 @@ export function createWholeStorefrontGenerationPlan(
     visualStyleDirection: brandDirection.visualStyleDirection,
     imageryDirection: brandDirection.imageryDirection,
     toneKeywords: [...brandDirection.toneKeywords].sort(),
-    consistencyRules: [
-      "Use the shared BrandSystem for colours, typography, spacing, radius and surfaces.",
-      "Use one shared header, navigation, footer, button hierarchy and heading hierarchy.",
-      "Use the approved language plan and shared trust messaging across page families.",
-    ],
+    consistencyRules: tokenOnly
+      ? [
+          "Apply only the validated colour, typography, and spacing tokens.",
+          "Preserve page recipes, section order, component identities, and component variants.",
+          "Preserve approved imagery, canonical bindings, navigation, content, and commerce truth.",
+        ]
+      : [
+          "Use the shared BrandSystem for colours, typography, spacing, radius and surfaces.",
+          "Use one shared header, navigation, footer, button hierarchy and heading hierarchy.",
+          "Use the approved language plan and shared trust messaging across page families.",
+        ],
   };
   const allComponents = pagePlans.flatMap((page) => page.components);
   const sharedChrome = {
@@ -1350,6 +1373,10 @@ export function createWholeStorefrontGenerationPlan(
         approvedAssetContextFingerprint: input.approvedAssetContext?.fingerprint ?? null,
         recipeContextFingerprint: input.recipeContext.fingerprint,
         requiredAssetPlacements: approvedAssetPlacements,
+        requestClass: tokenOnly
+          ? ("tokenOnlyRefinement" as const)
+          : ("coordinatedStructuralDirection" as const),
+        tokenRefinementPlan,
       },
       "whole-storefront-request",
     ),
@@ -1365,6 +1392,10 @@ export function createWholeStorefrontGenerationPlan(
       selectedLanguages: canonicalLocaleOrder(input.brief.languagePlan.selectedLanguages),
       missingTranslationPolicy: "explicit-generation-or-merchant-review" as const,
     },
+    requestClass: tokenOnly
+      ? ("tokenOnlyRefinement" as const)
+      : ("coordinatedStructuralDirection" as const),
+    tokenRefinementPlan,
     designSystemSelection,
     sharedDesignDirection,
     sharedChrome,
@@ -1389,6 +1420,7 @@ export function validateWholeStorefrontGenerationPlan(
   const plan = wholeStorefrontGenerationPlanSchema.parse(planValue);
   const expected = createWholeStorefrontGenerationPlan(inputValue, {
     directionId: plan.designSystemSelection.directionId,
+    tokenRefinementPlan: plan.tokenRefinementPlan,
   });
   if (canonicalValueString(plan) !== canonicalValueString(expected)) {
     invalid(
@@ -1403,10 +1435,15 @@ export async function acceptWholeStorefrontPlanningResult(
   inputValue: unknown,
   result: Promise<unknown>,
   currentInput: () => unknown,
+  tokenRefinementPlan: RegisteredTokenRefinementPlan | null = null,
 ): Promise<WholeStorefrontGenerationPlan> {
-  const expected = createWholeStorefrontGenerationPlan(inputValue);
+  const expected = createWholeStorefrontGenerationPlan(inputValue, {
+    tokenRefinementPlan,
+  });
   const received = await result;
-  const current = createWholeStorefrontGenerationPlan(await currentInput());
+  const current = createWholeStorefrontGenerationPlan(await currentInput(), {
+    tokenRefinementPlan,
+  });
   if (current.requestFingerprint !== expected.requestFingerprint) {
     invalid("stale-result", "The storefront changed while its generation plan was being prepared.");
   }

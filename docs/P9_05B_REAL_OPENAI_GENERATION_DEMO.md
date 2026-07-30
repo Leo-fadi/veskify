@@ -81,14 +81,19 @@ next documented editor load, clearing its generated proposal and history.
 
 ## Post-generation editing in the same session
 
-The normal Storefront Studio editor uses the registered whole-storefront direction capability for
-this protected bridge; it never routes a later storefront request through the legacy
-colour-and-typography-only capability. After an accepted proposal is applied, and again after Save
-draft or Publish, the browser submits the complete canonical aggregate to the server-only local
-authority. The authority accepts it only when the opaque session and expected authority revision
-match, the aggregate and registry bindings validate, and the canonical commerce projection is
-exactly unchanged. It then advances its own monotonically increasing authority revision and clears
-the previous proposal claim, allowing exactly one next proposal against that synchronized baseline.
+The normal Storefront Studio editor uses the registered whole-storefront capability for this
+protected bridge; it never routes a later storefront request through the legacy planner. That
+registered contract supports either one coordinated structural direction or a validated token-only
+refinement. A token-only refinement may change exact or named semantic colours, approved heading
+and body typography, and explicit spacing density while preserving homepage, collection and PDP
+recipes, section order, component variants, navigation, approved assets and canonical commerce.
+It does not require a structural direction ID. After an accepted proposal is applied, and again
+after Save draft or Publish, the browser submits the complete canonical aggregate to the
+server-only local authority. The authority accepts it only when the opaque session and expected
+authority revision match, the aggregate and registry bindings validate, and the canonical commerce
+projection is exactly unchanged. It then advances its own monotonically increasing authority
+revision and clears the previous proposal claim, allowing exactly one next proposal against that
+synchronized baseline.
 
 This synchronization is intentionally separate from project metadata revision: saving a draft does
 not change the latter. It stores no browser storage reference, provider payload, credential, or
