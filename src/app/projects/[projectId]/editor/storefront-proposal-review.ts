@@ -102,7 +102,13 @@ export function createStorefrontProposalReview(
       if (envelope.target.kind === "storefrontDesignSystem") return;
       if (envelope.target.pageId !== pageId) return;
       const sectionId = operationSectionId(envelope.operation);
-      const part = merchantOperationChangePart(envelope.operation, sectionId, locale, proposed);
+      const part = merchantOperationChangePart(
+        envelope.operation,
+        sectionId,
+        locale,
+        proposed,
+        original,
+      );
       if (!part) return;
       represented.add(operationIndex);
       const key = sectionId ?? `page:${pageId}`;

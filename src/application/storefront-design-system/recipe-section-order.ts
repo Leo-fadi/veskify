@@ -10,21 +10,29 @@ export function orderSectionsForRecipe<Section extends RecipeSection>(
   sections: readonly Section[],
   recipe: { sections: readonly RecipeSection[] },
 ): Section[] {
-  const order = new Map(recipe.sections.map((section, index) => [section.component, index]));
+  const recipePositionsByComponent = new Map<string, number[]>();
+  recipe.sections.forEach((section, index) => {
+    const positions = recipePositionsByComponent.get(section.component) ?? [];
+    positions.push(index);
+    recipePositionsByComponent.set(section.component, positions);
+  });
+  const seenOccurrences = new Map<string, number>();
   const ordered = [...sections];
-  const mappedPositions = ordered.flatMap((section, index) =>
-    order.has(section.component) ? [index] : [],
-  );
-  const mappedSections = mappedPositions
-    .map((index) => ({ section: ordered[index], originalIndex: index }))
+  const mappedSections = ordered.flatMap((section, originalIndex) => {
+    const occurrence = seenOccurrences.get(section.component) ?? 0;
+    seenOccurrences.set(section.component, occurrence + 1);
+    const recipePosition = recipePositionsByComponent.get(section.component)?.[occurrence];
+    return recipePosition === undefined ? [] : [{ section, originalIndex, recipePosition }];
+  });
+  const mappedPositions = mappedSections.map((entry) => entry.originalIndex);
+  mappedSections
     .sort(
       (left, right) =>
-        order.get(left.section.component)! - order.get(right.section.component)! ||
-        left.originalIndex - right.originalIndex,
-    );
+        left.recipePosition - right.recipePosition || left.originalIndex - right.originalIndex,
+    )
+    .forEach((entry, index) => {
+      ordered[mappedPositions[index]] = entry.section;
+    });
 
-  mappedPositions.forEach((position, index) => {
-    ordered[position] = mappedSections[index].section;
-  });
   return ordered;
 }

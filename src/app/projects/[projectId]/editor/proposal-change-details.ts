@@ -168,6 +168,7 @@ export function merchantOperationChangePart(
   sectionId: string | null,
   locale: Locale,
   proposedPage?: PageModel,
+  originalPage?: PageModel,
 ): string | undefined {
   switch (operation.type) {
     case "CHANGE_LOCALIZED_SECTION_TEXT": {
@@ -223,10 +224,23 @@ export function merchantOperationChangePart(
     case "APPLY_REGISTERED_PAGE_SECTIONS": {
       const sectionCount = operation.sections.length;
       const removedSectionCount = operation.removedSectionIds.length;
+      const originalVisibleSectionIds =
+        originalPage?.sections.filter((section) => section.visible).map((section) => section.id) ??
+        [];
+      const proposedVisibleSectionIds =
+        proposedPage?.sections.filter((section) => section.visible).map((section) => section.id) ??
+        [];
+      const originalIndexes = new Map(
+        originalVisibleSectionIds.map((sectionId, index) => [sectionId, index]),
+      );
+      const reordered = proposedVisibleSectionIds.some(
+        (sectionId, index) =>
+          originalIndexes.get(sectionId) !== undefined && originalIndexes.get(sectionId) !== index,
+      );
       if (locale === "fi") {
         return `hyväksytty ${sectionCount} osion sivurakenne${
           removedSectionCount > 0 ? `, joka korvaa ${removedSectionCount} nykyistä osiota` : ""
-        }`;
+        }${reordered ? ", jossa osiojärjestys päivittyy" : ""}`;
       }
       return `approved page composition with ${sectionCount} ${
         sectionCount === 1 ? "section" : "sections"
@@ -236,7 +250,7 @@ export function merchantOperationChangePart(
               removedSectionCount === 1 ? "section" : "sections"
             }`
           : ""
-      }`;
+      }${reordered ? ", with the section order updated" : ""}`;
     }
     case "ADD_APPROVED_SECTION":
       return locale === "fi"

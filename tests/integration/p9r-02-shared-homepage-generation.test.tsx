@@ -15,9 +15,10 @@ import { aurumNordicSeed } from "@/data/seed";
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { PageModel, StorefrontSnapshot } from "@/domain/storefront";
 import { createStandaloneAuthoritativeWholeStorefrontPlanningContextSource } from "@/integrations/ai/whole-storefront-runtime-authority";
+import { createStorefrontProposalReview } from "@/app/projects/[projectId]/editor/storefront-proposal-review";
 import {
   createP905aAcceptanceCoordinator,
-  generateP905aScenarioFromBaseline,
+  generateP905aScenario,
   saveAndResolveP905aPreview,
 } from "../helpers/p9-05a-generation-harness";
 
@@ -187,11 +188,8 @@ describe("P9R-02 shared-frame and homepage generation", () => {
   });
 
   it("preserves the selected recipe from the plan through compiler, snapshot, saved preview, and renderer", async () => {
-    const [premium, modern] = await Promise.all(
-      directions.map((directionId) =>
-        generateP905aScenarioFromBaseline(directionId, "warmApproachable"),
-      ),
-    );
+    const premium = await generateP905aScenario("premiumEditorial");
+    const modern = await generateP905aScenario("modernTechnical");
     const scenarios = { premiumEditorial: premium, modernTechnical: modern };
     const expectedOrders = {
       premiumEditorial: ["header", "hero", "featuredCategories", "productGrid", "footer"],
@@ -219,6 +217,19 @@ describe("P9R-02 shared-frame and homepage generation", () => {
       );
       expect(accepted.activeDraft.navigation).toEqual(generated.fixture.draft.navigation);
     }
+
+    const merchantReview = createStorefrontProposalReview(modern.proposal, "en", "fi");
+    const finnishMerchantReview = createStorefrontProposalReview(modern.proposal, "fi", "fi");
+    expect(
+      merchantReview.pages
+        .find((page) => page.title === "Homepage")
+        ?.items.some((item) => /section order updated/i.test(item.summary)),
+    ).toBe(true);
+    expect(
+      finnishMerchantReview.pages
+        .find((page) => page.title === "Etusivu")
+        ?.items.some((item) => /osiojärjestys päivittyy/i.test(item.summary)),
+    ).toBe(true);
 
     const saved = await saveAndResolveP905aPreview({
       generated: modern,
