@@ -846,6 +846,7 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
       className={`${styles.root} ${styles[`variant_${input.variant}`]} ${styles[`surface_${input.styleOverrides.surfaceTreatment}`]}`}
       data-component="dynamicCollectionCommerce"
       data-render-target={input.target}
+      data-variant={input.variant}
       data-responsive-layout="content-driven"
     >
       <CollectionHeader input={input} locale={locale} />
