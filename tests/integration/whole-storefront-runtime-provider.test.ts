@@ -5,8 +5,8 @@ import {
   aiStorefrontProviderResponseSchema,
   createDeterministicMockStorefrontAIProvider,
   buildAiStorefrontProviderRequest,
-  recordStorefrontDiagnostic,
   type AiStorefrontGenerationCommand,
+  type recordStorefrontDiagnostic,
 } from "@/application/ai-storefront-generation";
 import type { AiStorefrontProjection } from "@/application/ai-storefront";
 import {
