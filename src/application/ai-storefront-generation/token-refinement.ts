@@ -18,7 +18,7 @@ export {
 };
 
 const tokenIntentPattern =
-  /#[0-9a-f]{6}\b|\b(?:palette|colou?rs?|primary|secondary|accent|background|surface|muted\s+text|border|typography|fonts?|heading|headings|body\s+(?:font|type|text)|spacing|density)\b|\b(?:väripaletti|värit?|ensisijainen|toissijainen|korostusväri|tausta|pinta|vaimennettu\s+teksti|reunus|typografia|fontit?|otsikko|leipäteksti|välistys|tiheys)\b/iu;
+  /#[0-9a-f]{6}\b|\b(?:palette|colou?rs?|primary|secondary|accent|background|surface|muted\s+text|border|typography|fonts?|heading|headings|body\s+(?:font|type|text)|spacing|density|compact|dense|spacious|airy|balanced)\b|\b(?:väripaletti|värit?|ensisijainen|toissijainen|korostusväri|tausta|pinta|vaimennettu\s+teksti|reunus|typografia|fontit?|otsikko|leipäteksti|välistys|tiheys|kompakti|tiivis|väljä|ilmava|tasapainoinen)\b/iu;
 const structuralMutationPattern =
   /\b(?:rebuild|redesign|reorder|replace|add|remove|change|modify|alter|muuta|uudista|järjestä|lisää|poista|korvaa)\b[^.!?]{0,100}\b(?:layout|page\s+structure|sections?|components?|recipes?|variants?|hero|collection\s+(?:layout|presentation)|product-detail\s+(?:layout|presentation)|asettelu|sivurakenne|osiot?|komponentit?|reseptit?|variantit?)\b/iu;
 
@@ -75,16 +75,20 @@ function typographyForInstruction(
 
   let headingFont = fontNearRole(normalized, headingRolePattern);
   let bodyFont = fontNearRole(normalized, bodyRolePattern);
-  if (/refined serif|hienostunut antiikva/iu.test(normalized)) {
+  if (
+    /(?:high[\s-]+contrast\s+editorial\s+serif|editorial\s+contrast|toimituksellinen\s+kontrasti)/iu.test(
+      normalized,
+    )
+  ) {
+    headingFont = "system-serif";
+    bodyFont ??= "system-sans";
+  } else if (/refined serif|hienostunut antiikva/iu.test(normalized)) {
     headingFont ??= "georgia";
     bodyFont ??= "inter";
   } else if (
     /modern sans|clean sans(?:-serif)?|moderni groteski|selkeä groteski/iu.test(normalized)
   ) {
     headingFont ??= "system-sans";
-    bodyFont ??= "system-sans";
-  } else if (/editorial contrast|toimituksellinen kontrasti/iu.test(normalized)) {
-    headingFont ??= "system-serif";
     bodyFont ??= "system-sans";
   } else if (/technical(?: and)? functional|tekninen ja käytännöllinen/iu.test(normalized)) {
     headingFont ??= "inter";
@@ -96,7 +100,7 @@ function typographyForInstruction(
   if (/elegant serif|elegantti antiikva/iu.test(normalized)) {
     headingFont = "georgia";
   }
-  if (/clean sans(?:-serif)?|selkeä groteski/iu.test(normalized)) {
+  if (/clean(?:\s+modern)?\s+sans(?:-serif)?|selkeä groteski/iu.test(normalized)) {
     bodyFont = "system-sans";
   }
   if (headingFont === null && bodyFont === null) {
@@ -113,16 +117,35 @@ function typographyForInstruction(
 
 function spacingForInstruction(instruction: string): BrandSystem["spacing"] | null {
   const normalized = instruction.normalize("NFC").toLocaleLowerCase();
-  if (!/\b(?:spacing|density|välistys|tiheys)\b/iu.test(normalized)) return null;
-  if (/\b(?:compact|dense|kompakti|tiivis)\b/iu.test(normalized)) {
-    return { density: "compact" };
-  }
-  if (/\b(?:spacious|airy|väljä|ilmava)\b/iu.test(normalized)) {
-    return { density: "airy" };
-  }
-  if (/\b(?:balanced|standard|tasapainoinen|normaali)\b/iu.test(normalized)) {
+  const mentionsSpacing = /\b(?:spacing|density|välistys|tiheys)\b/iu.test(normalized);
+  const preservationOnly =
+    /\b(?:preserve|keep|leave)\b[^.!?]{0,160}\b(?:spacing|density)\b/iu.test(normalized) ||
+    /\bdo not change\b[^.!?]{0,80}\b(?:spacing|density)\b/iu.test(normalized) ||
+    /\b(?:säilytä|pidä|jätä)\b[^.!?]{0,160}\b(?:välistys|tiheys)\b/iu.test(normalized) ||
+    /\bälä muuta\b[^.!?]{0,80}\b(?:välistys|tiheys)\b/iu.test(normalized);
+  const densityMatches = [
+    ...normalized.matchAll(
+      /\b(compact|dense|kompakti|tiivis|spacious|airy|väljä|ilmava|balanced|standard|tasapainoinen|normaali)\b/giu,
+    ),
+  ];
+  const explicitDensity = densityMatches
+    .map((match) => {
+      const before = normalized.slice(Math.max(0, (match.index ?? 0) - 100), match.index);
+      const actionable =
+        /\b(?:use|make|set|apply|change(?:\s+to)?|adjust(?:\s+to)?|käytä|tee|aseta|muuta|säädä)\b[^.!?]{0,80}$/iu.test(
+          before,
+        );
+      return actionable ? match[1] : undefined;
+    })
+    .filter((value): value is string => value !== undefined)
+    .at(-1);
+  if (explicitDensity !== undefined) {
+    if (/^(?:compact|dense|kompakti|tiivis)$/iu.test(explicitDensity))
+      return { density: "compact" };
+    if (/^(?:spacious|airy|väljä|ilmava)$/iu.test(explicitDensity)) return { density: "airy" };
     return { density: "balanced" };
   }
+  if (!mentionsSpacing || preservationOnly) return null;
   throw new BrandPaletteInstructionError(
     "Choose compact, balanced, or spacious spacing for this refinement.",
   );

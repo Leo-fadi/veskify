@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { p905dExactTokenRefinementRequest } from "../fixtures/p9-05d-exact-token-refinement";
 import {
   aiStorefrontPendingRequestKey,
   buildAiStorefrontProviderRequest,
@@ -8,8 +9,10 @@ import {
   createApprovedGenerationAssetContextFingerprint,
   createAiStorefrontGenerationPlan,
   createDeterministicMockStorefrontAIProvider,
+  planExactBrandPalette,
   aiStorefrontProviderResponseSchema,
   isRegisteredWholeStorefrontDirectionRequest,
+  planRegisteredTokenRefinement,
   validateAiStorefrontProviderResponse,
   type AiStorefrontGenerationCommand,
   type AiStorefrontProviderResponse,
@@ -305,6 +308,126 @@ describe("P4-05B storefront planner and request construction", () => {
       target: { kind: "storefrontDesignSystem" },
       operationTypes: ["APPLY_REGISTERED_BRAND_SYSTEM"],
     });
+  });
+
+  it("builds the exact P9-05D failed merchant request as one protected token-only refinement", () => {
+    const storefrontProvider = registeredProvider();
+    const { request } = buildAiStorefrontProviderRequestForSupportedCapability(
+      commandWithoutCapability({
+        provider: storefrontProvider,
+        providerId: storefrontProvider.id,
+        affectedPageIds: snapshot.pages.map((page) => page.id),
+        merchantInstruction: p905dExactTokenRefinementRequest,
+      }),
+      1,
+      "registeredWholeStorefrontDirection",
+    );
+    expect(request.tokenRefinementPlan).toMatchObject({
+      preservePageStructure: true,
+      preserveComponentVariants: true,
+      preserveApprovedAssets: true,
+      preserveCanonicalCommerce: true,
+      spacing: null,
+      typography: { headingFont: "system-serif", bodyFont: "system-sans" },
+      palette: {
+        colors: {
+          primary: "#201A17",
+          secondary: "#C9A27A",
+          accent: "#6B2E3D",
+          background: "#FFF8F0",
+          surface: "#E7D8C8",
+          text: "#201A17",
+          border: "#E7D8C8",
+        },
+      },
+    });
+    expect(request.affectedSections).toEqual([]);
+    expect(request.componentContracts).toEqual([]);
+  });
+
+  it.each([
+    ["Preserve spacing.", null],
+    ["Keep the existing spacing.", null],
+    ["Do not change spacing.", null],
+    ["Leave layout and spacing unchanged.", null],
+    ["Preserve all layouts, sections, products, bindings, images, spacing and content.", null],
+    ["Preserve the airy layout.", null],
+    ["Keep the spacious composition.", null],
+    ["Leave the compact layout unchanged.", null],
+    ["Use compact spacing.", "compact"],
+    ["Use balanced spacing.", "balanced"],
+    ["Use spacious spacing.", "airy"],
+    ["Make the storefront more compact.", "compact"],
+    ["Do not preserve the current spacing; make it spacious.", "airy"],
+  ])("handles spacing instruction %s", (instruction, density) => {
+    const plan = planRegisteredTokenRefinement(instruction, snapshot.brandSystem);
+    if (density === null) {
+      expect(plan).toBeNull();
+      return;
+    }
+    expect(plan?.spacing).toEqual({ density });
+  });
+
+  it.each(["Change the spacing.", "Adjust the density.", "Use different spacing."])(
+    "rejects incomplete spacing mutation %s",
+    (instruction) => {
+      expect(() => planRegisteredTokenRefinement(instruction, snapshot.brandSystem)).toThrow(
+        "Choose compact, balanced, or spacious spacing for this refinement.",
+      );
+    },
+  );
+
+  it("keeps editorial contrast as a complete registered typography pairing", () => {
+    const current = {
+      ...snapshot.brandSystem.typography,
+      headingFont: "inter" as const,
+      bodyFont: "georgia" as const,
+    };
+    const plan = planRegisteredTokenRefinement("Use editorial contrast typography.", {
+      ...snapshot.brandSystem,
+      typography: current,
+    });
+    expect(plan?.typography).toEqual({
+      ...current,
+      headingFont: "system-serif",
+      bodyFont: "system-sans",
+    });
+  });
+
+  it.each([
+    [
+      "Use Georgia for headings.",
+      { headingFont: "georgia", bodyFont: snapshot.brandSystem.typography.bodyFont },
+    ],
+    [
+      "Use Inter for body text.",
+      { headingFont: snapshot.brandSystem.typography.headingFont, bodyFont: "inter" },
+    ],
+    [
+      "Use Georgia for headings and Inter for body text.",
+      { headingFont: "georgia", bodyFont: "inter" },
+    ],
+  ])("keeps explicit typography targets independent: %s", (instruction, expected) => {
+    const plan = planRegisteredTokenRefinement(instruction, snapshot.brandSystem);
+    expect(plan?.typography).toMatchObject(expected);
+  });
+
+  it("allows an explicit colour role to override an earlier grouped assignment", () => {
+    expect(
+      planExactBrandPalette(
+        "Use #AA0000 for primary text and buttons, and #222222 for text.",
+        snapshot.brandSystem.colors,
+      )?.colors,
+    ).toMatchObject({ primary: "#AA0000", text: "#222222" });
+  });
+
+  it("rejects conflicting equally specific colour assignments", () => {
+    expect(() =>
+      planExactBrandPalette(
+        "Use #AA0000 for text and #222222 for text.",
+        snapshot.brandSystem.colors,
+      ),
+    ).toThrow("Supply only one value for the text colour token.");
   });
 
   it.each([

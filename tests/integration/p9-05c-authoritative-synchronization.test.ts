@@ -18,6 +18,7 @@ import { createP905bLocalDemoSynchronizationHandler } from "@/app/api/demo/p9-05
 import { StorefrontProposalAcceptanceCoordinator } from "@/application/ai-storefront";
 import type { WholeStorefrontPlanningProvider } from "@/application/whole-storefront-generation-plan";
 import { InMemoryProjectRepository } from "@/services/storage";
+import { p905dExactTokenRefinementRequest } from "../fixtures/p9-05d-exact-token-refinement";
 
 const token = "p9-05c-authoritative-synchronization-test-token";
 const environment = {
@@ -123,6 +124,77 @@ describe("P9-05C authoritative local-demo synchronization", () => {
 
     expect(response.status).toBe(200);
     expect(reached).toHaveBeenCalledTimes(1);
+  });
+
+  it("accepts the exact P9-05D token refinement once and advances local authority once", async () => {
+    const session = p905bLocalDemoSession(environment);
+    const before = await inspectP905bLocalDemo(environment);
+    const reached = vi.fn();
+    const handler = createWholeStorefrontPlanningRouteHandler({
+      environment,
+      selectProvider: () => tokenRefinementProvider(reached),
+    });
+    const request = await buildP905bLocalDemoRequest(p905dExactTokenRefinementRequest, environment);
+    const response = await handler(
+      new Request("http://p9-05c.test/api/ai/whole-storefront-proposals", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-veskify-p9-05b-session": session.sessionId,
+        },
+        body: JSON.stringify(request),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(reached).toHaveBeenCalledTimes(1);
+    const loaded = await loadP905bLocalDemoEditorSession({ ...session, environment });
+    if (loaded === null || loaded.proposal === null)
+      throw new Error("Missing exact P9-05D proposal.");
+    const draft = loaded.aggregate.snapshots.find(
+      (snapshot) => snapshot.id === loaded.aggregate.project.draftSnapshotId,
+    );
+    const published = loaded.aggregate.snapshots.find(
+      (snapshot) => snapshot.id === loaded.aggregate.project.publishedSnapshotId,
+    );
+    if (!draft || !published) throw new Error("Missing local-demo draft or published snapshot.");
+    const accepted = new StorefrontProposalAcceptanceCoordinator({
+      proposal: loaded.proposal,
+      activeDraft: draft,
+      storedDraft: draft,
+      publishedSnapshot: published,
+      catalogue: loaded.aggregate.catalogue,
+      enabledLocales: loaded.aggregate.project.enabledLocales,
+      activeLocale: loaded.aggregate.project.primaryLocale,
+      primaryLocale: loaded.aggregate.project.primaryLocale,
+    }).accept();
+
+    expect(accepted.state).toBe("accepted");
+    expect(accepted.activeDraft.brandSystem).toMatchObject({
+      colors: { primary: "#201A17", text: "#201A17", surface: "#E7D8C8", border: "#E7D8C8" },
+      typography: { headingFont: "system-serif", bodyFont: "system-sans" },
+      spacing: { density: "balanced" },
+    });
+    expect(accepted.activeDraft.pages).toEqual(draft.pages);
+    expect(loaded.aggregate.catalogue).toEqual(
+      (await p905bLocalDemoRepository(environment).get(loaded.aggregate.project.id)).catalogue,
+    );
+
+    const active = structuredClone(loaded.aggregate);
+    const draftIndex = active.snapshots.findIndex((snapshot) => snapshot.id === draft.id);
+    active.snapshots[draftIndex] = accepted.activeDraft;
+    const synchronized = await synchronizeP905bLocalDemoAggregate({
+      projectId: active.project.id,
+      sessionId: session.sessionId,
+      expectedRevision: before.authoritativeRevision,
+      mode: "active",
+      aggregate: active,
+      environment,
+    });
+    expect(synchronized.authoritativeRevision).toBe(before.authoritativeRevision + 1);
+    expect((await inspectP905bLocalDemo(environment)).authoritativeRevision).toBe(
+      synchronized.authoritativeRevision,
+    );
   });
 
   it("synchronizes an accepted initial direction before a warm colour follow-up uses its saved baseline", async () => {

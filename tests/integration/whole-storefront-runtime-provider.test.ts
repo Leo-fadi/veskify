@@ -6,6 +6,7 @@ import {
   createDeterministicMockStorefrontAIProvider,
   buildAiStorefrontProviderRequest,
   type AiStorefrontGenerationCommand,
+  type recordStorefrontDiagnostic,
 } from "@/application/ai-storefront-generation";
 import type { AiStorefrontProjection } from "@/application/ai-storefront";
 import {
@@ -35,6 +36,68 @@ import { sourceEvidenceSchema, sourceReferenceSchema } from "@/domain/source-dis
 
 const now = "2026-07-26T10:00:00.000Z";
 const snapshot = aurumNordicSeed.draftSnapshot;
+type DiagnosticRecord = Parameters<typeof recordStorefrontDiagnostic>[0];
+
+const diagnosticStages = [
+  "submission_received",
+  "command_build_started",
+  "command_build_completed",
+  "request_started",
+  "response_received",
+  "response_decoding_started",
+  "response_decoding_completed",
+  "acceptance_coordinator_started",
+  "proposal_state_completed",
+  "request_received",
+  "request_validation_completed",
+  "provider_invocation_started",
+  "provider_invocation_completed",
+  "provider_response_parsed",
+  "normalization_completed",
+  "proposal_schema_validated",
+  "proposal_compiled",
+  "protected_state_validated",
+  "response_completed",
+] as const satisfies readonly DiagnosticRecord["stage"][];
+
+const diagnosticCategories = [
+  "success",
+  "client_command_build",
+  "client_request",
+  "client_response",
+  "client_response_decode",
+  "client_acceptance_coordinator",
+  "unknown_client_failure",
+  "validation",
+  "stale",
+  "staleDraft",
+  "staleTarget",
+  "unsupportedRequest",
+  "providerFailure",
+  "superseded",
+  "permissionDenied",
+  "projectMismatch",
+  "tenantMismatch",
+  "providerUnavailable",
+  "malformedResponse",
+  "internalFailure",
+] as const satisfies readonly DiagnosticRecord["category"][];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isDiagnosticRecord(value: unknown): value is DiagnosticRecord {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.attemptId === "string" &&
+    typeof value.projectId === "string" &&
+    value.scope === "storefront" &&
+    diagnosticStages.some((stage) => stage === value.stage) &&
+    diagnosticCategories.some((category) => category === value.category) &&
+    (value.status === undefined || typeof value.status === "number")
+  );
+}
 
 function planningInput(): WholeStorefrontPlanningInput {
   const source = sourceReferenceSchema.parse({
@@ -186,6 +249,62 @@ function authority(input = planningInput()): ServerWholeStorefrontPlanningAuthor
 }
 
 describe("P9-01 runtime whole-storefront provider boundary", () => {
+  it("records only canonical request and project identifiers before request validation", async () => {
+    const records: DiagnosticRecord[] = [];
+    const log = vi.spyOn(console, "info").mockImplementation((_event, value) => {
+      if (typeof value !== "string") return;
+      const parsed: unknown = JSON.parse(value);
+      if (isDiagnosticRecord(parsed)) records.push(parsed);
+    });
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: authority(),
+      selectProvider: () => createDeterministicWholeStorefrontPlanningProvider(),
+    });
+    const validIds = ["attempt_canonical_1", "p9_05b_local_123", "request_safe_456"];
+    for (const requestId of validIds) {
+      const body = request();
+      body.requestId = requestId;
+      await handler(
+        new Request("http://localhost", { method: "POST", body: JSON.stringify(body) }),
+      );
+    }
+    await handler(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({
+          requestId: "x".repeat(81),
+          target: { projectId: "project_bad\nidentifier" },
+        }),
+      }),
+    );
+    await handler(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify({
+          requestId: "unsafe identifier",
+          target: { projectId: "x".repeat(81) },
+        }),
+      }),
+    );
+    await handler(new Request("http://localhost", { method: "POST", body: JSON.stringify({}) }));
+    log.mockRestore();
+
+    const received = records.filter((record) => record.stage === "request_received");
+    expect(received.slice(0, 3).map((record) => record.attemptId)).toEqual(validIds);
+    expect(
+      received.slice(0, 3).every((record) => record.projectId === aurumNordicSeed.project.id),
+    ).toBe(true);
+    expect(received.slice(3)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          attemptId: "attempt_unavailable",
+          projectId: "project_unavailable",
+        }),
+      ]),
+    );
+    expect(records.some((record) => record.projectId.includes("\n"))).toBe(false);
+  });
+
   it("routes the editor runtime client envelope through the canonical server planner before review", async () => {
     const value = authority();
     const createPlan = vi.fn((input: WholeStorefrontPlanningProviderRequest) =>

@@ -13,6 +13,7 @@ import {
   createAiStorefrontProposalId,
   type AiStorefrontOperation,
 } from "@/application/ai-storefront";
+import { recordStorefrontDiagnostic } from "@/application/ai-storefront-generation";
 import {
   compileWholeStorefrontProposal,
   type WholeStorefrontRuntimeComponent,
@@ -61,7 +62,7 @@ import {
   storefrontDesignBriefContractSchema,
   type StorefrontDesignBriefContract,
 } from "@/domain/source-discovery";
-import type { Locale } from "@/domain/shared";
+import { idSchema, type Locale } from "@/domain/shared";
 import {
   storefrontSnapshotSchema,
   type PageModel,
@@ -707,9 +708,39 @@ export function createServerWholeStorefrontPlanningHandler({
 }) {
   return async function POST(httpRequest: Request): Promise<Response> {
     let request: AiStorefrontProviderRequest;
+    let attemptId = "attempt_unavailable";
+    let projectId = "project_unavailable";
+    let stage: Parameters<typeof recordStorefrontDiagnostic>[0]["stage"] = "request_received";
+    const diagnostic = (
+      nextStage: Parameters<typeof recordStorefrontDiagnostic>[0]["stage"],
+      category: Parameters<typeof recordStorefrontDiagnostic>[0]["category"],
+      status?: number,
+    ) =>
+      recordStorefrontDiagnostic({
+        attemptId,
+        projectId,
+        scope: "storefront",
+        stage: nextStage,
+        category,
+        ...(status === undefined ? {} : { status }),
+      });
     try {
-      request = aiStorefrontProviderRequestSchema.parse(await httpRequest.json());
+      const body: unknown = await httpRequest.json();
+      if (body && typeof body === "object") {
+        const candidate = body as { requestId?: unknown; target?: { projectId?: unknown } };
+        const safeRequestId = idSchema.safeParse(candidate.requestId);
+        const safeProjectId = idSchema.safeParse(candidate.target?.projectId);
+        if (safeRequestId.success) attemptId = safeRequestId.data;
+        if (safeProjectId.success) projectId = safeProjectId.data;
+      }
+      diagnostic("request_received", "success");
+      request = aiStorefrontProviderRequestSchema.parse(body);
+      attemptId = request.requestId;
+      projectId = request.target.projectId;
+      stage = "request_validation_completed";
+      diagnostic(stage, "success");
     } catch {
+      diagnostic(stage, "validation", 400);
       return response(400, {
         ok: false,
         failure: { category: "validation", retryable: false },
@@ -731,6 +762,8 @@ export function createServerWholeStorefrontPlanningHandler({
       }
       context.claimProposal?.();
       proposalClaimed = Boolean(context.claimProposal);
+      stage = "provider_invocation_started";
+      diagnostic(stage, "success");
       const plan = await requestWholeStorefrontGenerationPlan({
         provider: selectProvider(),
         input: context.planningInput,
@@ -738,22 +771,43 @@ export function createServerWholeStorefrontPlanningHandler({
         merchantInstruction: canonicalRequest.instruction,
         tokenRefinementPlan: canonicalRequest.tokenRefinementPlan,
       });
+      stage = "provider_invocation_completed";
+      diagnostic(stage, "success");
+      diagnostic("provider_response_parsed", "success");
+      diagnostic("normalization_completed", "success");
+      diagnostic("proposal_schema_validated", "success");
+      stage = "proposal_compiled";
       const envelope = validateAiStorefrontProviderResponse(
         canonicalRequest,
         await context.proposalEnvelope(canonicalRequest, plan),
       );
+      diagnostic(stage, "success");
       if (
         context.requiresAuthoritativePlanningFingerprint &&
         envelope.metadata.authoritativePlanningFingerprint !== plan.fingerprint
       ) {
         throw new ServerWholeStorefrontAuthorityError("malformed-state");
       }
+      stage = "protected_state_validated";
+      diagnostic(stage, "success");
       context.recordValidatedProposal?.(envelope);
       proposalRecorded = Boolean(context.recordValidatedProposal);
-      return response(200, responseSchema.parse({ ok: true, proposal: envelope }));
+      const completed = response(200, responseSchema.parse({ ok: true, proposal: envelope }));
+      diagnostic("response_completed", "success", completed.status);
+      return completed;
     } catch (error) {
       if (proposalClaimed && !proposalRecorded) context?.releaseProposal?.();
-      return failure(error);
+      const failed = failure(error);
+      const category =
+        failed.status === 400
+          ? "validation"
+          : failed.status === 401
+            ? "permissionDenied"
+            : failed.status === 409
+              ? "stale"
+              : "providerUnavailable";
+      diagnostic(stage, category, failed.status);
+      return failed;
     }
   };
 }

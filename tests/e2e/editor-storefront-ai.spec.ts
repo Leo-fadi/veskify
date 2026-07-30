@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { p905dExactTokenRefinementRequest } from "../fixtures/p9-05d-exact-token-refinement";
 import { openEditorAssistant } from "./editor-assistant";
 
 const editorUrl = "/projects/project_aurum_nordic/editor";
@@ -39,6 +40,7 @@ async function openStorefrontProposal(page: Page, instruction = storefrontInstru
   const response = await responsePromise;
   expect(response.status()).toBe(200);
   await expect(page.getByLabel("Storefront design proposal")).toBeVisible();
+  return response;
 }
 
 async function acceptStorefrontProposal(page: Page) {
@@ -84,6 +86,63 @@ test("entire-storefront proposal shows complete merchant review", async ({ page 
   await expect(review).toContainText("Rings");
   await expect(review).toContainText("Aurora Ring 585");
   await expect(review).not.toContainText(/page_home|APPLY_APPROVED|storefront_proposal_/);
+});
+
+test("exact P9-05D token refinement issues one canonical storefront POST", async ({ page }) => {
+  await page.goto(editorUrl);
+  const canvasRoot = page.frameLocator("iframe").locator("[data-veskify-canvas-root]");
+  let postCount = 0;
+  page.on("request", (request) => {
+    if (
+      request.url().includes("/api/ai/whole-storefront-proposals") &&
+      request.method() === "POST"
+    ) {
+      postCount += 1;
+    }
+  });
+
+  const response = await openStorefrontProposal(page, p905dExactTokenRefinementRequest);
+  const body = response.request().postDataJSON() as {
+    requestId: string;
+    capability: string;
+    tokenRefinementPlan: { spacing: unknown; preservePageStructure: boolean } | null;
+  };
+  expect(postCount).toBe(1);
+  expect(body.requestId).toMatch(/^attempt_/);
+  expect(body.capability).toBe("registeredWholeStorefrontDirection");
+  expect(body.tokenRefinementPlan).toMatchObject({
+    spacing: null,
+    preservePageStructure: true,
+    preserveComponentVariants: true,
+    preserveApprovedAssets: true,
+    preserveCanonicalCommerce: true,
+    palette: {
+      colors: {
+        primary: "#201A17",
+        secondary: "#C9A27A",
+        accent: "#6B2E3D",
+        background: "#FFF8F0",
+        surface: "#E7D8C8",
+        text: "#201A17",
+        border: "#E7D8C8",
+      },
+    },
+    typography: { headingFont: "system-serif", bodyFont: "system-sans" },
+  });
+  await acceptStorefrontProposal(page);
+  await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#201A17");
+  await expect(canvasRoot).toHaveCSS("--brand-color-text", "#201A17");
+  await expect(canvasRoot).toHaveCSS("--brand-color-surface", "#E7D8C8");
+  await expect(canvasRoot).toHaveCSS("--brand-color-border", "#E7D8C8");
+  await expect(canvasRoot).toHaveCSS(
+    "--brand-font-heading",
+    'Georgia, Cambria, "Times New Roman", serif',
+  );
+  await expect(canvasRoot).toHaveCSS(
+    "--brand-font-body",
+    'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  );
+  await expect(canvasRoot).toHaveCSS("--brand-spacing-density", "1");
 });
 
 test("entire-storefront Accept, Undo and Redo remain one editor action", async ({ page }) => {
