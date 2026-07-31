@@ -17,6 +17,7 @@ import {
   createWholeStorefrontRecipeContext,
   wholeStorefrontPlanningInputSchema,
 } from "@/application/whole-storefront-generation-plan";
+import { orderSectionsForRecipe } from "@/application/storefront-design-system";
 import {
   approveStorefrontDesignBrief,
   createStorefrontDesignBrief,
@@ -318,7 +319,117 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
     expect(proposal.reviewSummary.canonicalBindings).toEqual(source.plan.canonicalCommerceBindings);
   });
 
-  it("preserves merchant section order and visibility through replacement, accept, undo and redo", () => {
+  it("discloses visible homepage reordering in the authoritative review summary", () => {
+    const source = input();
+    const proposal = compileWholeStorefrontProposal(source);
+    const originalHome = proposal.originalStorefront.pages.find((page) => page.role === "homepage");
+    const proposedHome = proposal.proposedStorefront.pages.find((page) => page.role === "homepage");
+    if (!originalHome || !proposedHome) throw new Error("Missing homepage runtime state");
+
+    expect(originalHome.components.map((component) => component.id)).not.toEqual(
+      proposedHome.components.map((component) => component.id),
+    );
+    expect(proposal.reviewSummary.pages).toContainEqual({
+      pageId: originalHome.pageId,
+      status: "changed",
+    });
+    expect(
+      proposal.reviewSummary.components.filter(
+        (component) => component.pageId === originalHome.pageId,
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: "modified",
+          description: "Moves this section within the updated homepage order.",
+        }),
+      ]),
+    );
+
+    const tokenOnly = compileWholeStorefrontProposal(tokenRefinementInput());
+    const tokenOnlyHome = tokenOnly.originalStorefront.pages.find(
+      (page) => page.role === "homepage",
+    );
+    if (!tokenOnlyHome) throw new Error("Missing token-only homepage runtime state");
+    expect(tokenOnly.reviewSummary.pages).toContainEqual({
+      pageId: tokenOnlyHome.pageId,
+      status: "retained",
+    });
+    expect(
+      tokenOnly.reviewSummary.components.some(
+        (component) =>
+          component.description === "Moves this section within the updated homepage order.",
+      ),
+    ).toBe(false);
+
+    const coordinator = new WholeStorefrontProposalAcceptanceCoordinator({
+      proposal,
+      currentInput: () => source,
+    });
+    expect(coordinator.reject().activeStorefront).toEqual(proposal.originalStorefront);
+    expect(coordinator.inspect().proposal.status).toBe("rejected");
+
+    const acceptedCoordinator = new WholeStorefrontProposalAcceptanceCoordinator({
+      proposal,
+      currentInput: () => source,
+    });
+    expect(acceptedCoordinator.accept().activeStorefront).toEqual(proposal.proposedStorefront);
+    expect(acceptedCoordinator.undo()).toEqual(proposal.originalStorefront);
+    expect(acceptedCoordinator.redo()).toEqual(proposal.proposedStorefront);
+  });
+
+  it("keeps reorder reporting complete alongside added, removed, and retained components", () => {
+    const source = input();
+    const home = source.planningInput.draft.pages.find((page) => page.type === "home");
+    if (!home) throw new Error("Missing homepage fixture");
+    source.planningInput.brief.businessIdentity.shortDescription =
+      "A merchant-approved story for the storefront homepage.";
+    home.sections = home.sections.filter((section) => section.component !== "brandStory");
+    const assetInput = {
+      briefId: source.planningInput.brief.id,
+      briefRevision: source.planningInput.brief.revision,
+      approvedEvidenceFingerprint: source.planningInput.brief.approvedEvidenceFingerprint!,
+      assetReviewFingerprint: source.planningInput.brief.assetReviewFingerprint!,
+      assets: [
+        {
+          assetId: "asset_story_p8_02",
+          role: "editorialImage" as const,
+          sourceReferenceId: "source_p8_02",
+          revision: "asset-revision-1",
+          materialFingerprint: "asset-material-story-1",
+          provenance: { location: "html-meta" as const, observedAt: now },
+          alt: { en: "Brand story image", fi: "Bränditarinan kuva" },
+          presentation: { decorative: false, mediaType: "image/jpeg", responsiveCrops: [] },
+          approval: { actorId: "merchant_owner", actorReference: "merchant-session" },
+        },
+      ],
+    };
+    source.planningInput.approvedAssetContext = {
+      ...assetInput,
+      fingerprint: createApprovedGenerationAssetContextFingerprint(assetInput),
+    };
+    source.plan = createWholeStorefrontGenerationPlan(source.planningInput, {
+      directionId: "warmApproachable",
+    });
+
+    const proposal = compileWholeStorefrontProposal(source);
+    const homeSummary = proposal.reviewSummary.pages.find((page) => page.pageId === home.id);
+
+    expect(homeSummary?.status).toBe("changed");
+    expect(proposal.reviewSummary.components).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ component: "brandStory", status: "added" }),
+        expect.objectContaining({ status: "removed" }),
+        expect.objectContaining({ component: "header", status: "retained" }),
+        expect.objectContaining({
+          status: "modified",
+          description: "Moves this section within the updated homepage order.",
+        }),
+      ]),
+    );
+  });
+
+  it("applies the registered homepage composition while preserving visibility through accept, undo and redo", () => {
     const source = input();
     const home = source.planningInput.draft.pages.find((page) => page.type === "home");
     const collection = source.planningInput.draft.pages.find((page) => page.type === "collection");
@@ -351,8 +462,12 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
       throw new Error("Missing compiled storefront replacement");
     }
 
+    const homepageRecipe = source.planningInput.recipeContext.designSystem.homepageRecipes.find(
+      (recipe) => recipe.id === source.plan.designSystemSelection.homepageRecipeId,
+    );
+    if (!homepageRecipe) throw new Error("Missing selected homepage recipe");
     expect(homeRuntime.components.map((component) => component.id)).toEqual(
-      home.sections.map((section) => section.id),
+      orderSectionsForRecipe(home.sections, homepageRecipe).map((section) => section.id),
     );
     expect(
       homeRuntime.components.find((component) => component.id === home.sections[first].id)?.visible,

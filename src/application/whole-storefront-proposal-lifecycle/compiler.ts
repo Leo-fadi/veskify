@@ -9,6 +9,7 @@ import {
 } from "@/application/whole-storefront-generation-plan/contract";
 import {
   applyRegisteredTokenRefinement,
+  orderSectionsForRecipe,
   registeredBrandSystemForDirection,
 } from "@/application/storefront-design-system";
 import {
@@ -286,6 +287,7 @@ function plannedPage(
   original: WholeStorefrontRuntimeState,
   plan: ReturnType<typeof validateCurrentPlan>,
   pagePlan: ReturnType<typeof validateCurrentPlan>["pagePlans"][number],
+  designSystem: WholeStorefrontProposalCompilationInput["planningInput"]["recipeContext"]["designSystem"],
 ): { page: WholeStorefrontRuntimePage; removedComponentIds: string[] } {
   const originalPage = original.pages.find((page) => page.pageId === pagePlan.pageId);
   if (pagePlan.disposition !== "created" && !originalPage) {
@@ -408,13 +410,25 @@ function plannedPage(
         )
         .map((component) => component.id)
     : [];
+  const coordinatedComponents = components.map((component) =>
+    coordinatedRuntimeComponent(component, plan, pagePlan.role),
+  );
+  const homepageRecipe =
+    plan.tokenRefinementPlan === null && pagePlan.role === "homepage"
+      ? designSystem.homepageRecipes.find(
+          (recipe) => recipe.id === plan.designSystemSelection.homepageRecipeId,
+        )
+      : undefined;
+  if (plan.tokenRefinementPlan === null && pagePlan.role === "homepage" && !homepageRecipe) {
+    invalid("invalid-plan", "The selected homepage recipe is unavailable.");
+  }
   const page = {
     pageId: pagePlan.pageId,
     role: pagePlan.role,
     type: originalPage?.type ?? pageTypeForRole(pagePlan.role),
-    components: components.map((component) =>
-      coordinatedRuntimeComponent(component, plan, pagePlan.role),
-    ),
+    components: homepageRecipe
+      ? orderSectionsForRecipe(coordinatedComponents, homepageRecipe)
+      : coordinatedComponents,
   } satisfies WholeStorefrontRuntimePage;
   return { page, removedComponentIds };
 }
@@ -536,8 +550,35 @@ export function replayWholeStorefrontProposalOperations(
 function reviewSummary(
   plan: ReturnType<typeof validateCurrentPlan>,
   original: WholeStorefrontRuntimeState,
+  proposed: WholeStorefrontRuntimeState,
 ): WholeStorefrontProposalReviewSummary {
   type ReviewComponent = WholeStorefrontProposalReviewSummary["components"][number];
+  const visibleComponentIds = (page: WholeStorefrontRuntimePage | undefined) =>
+    page?.components.filter((component) => component.visible).map((component) => component.id) ??
+    [];
+  const sequenceChanged = (originalIds: readonly string[], proposedIds: readonly string[]) =>
+    originalIds.length !== proposedIds.length ||
+    originalIds.some((componentId, index) => componentId !== proposedIds[index]);
+  const movedHomepageComponentIds = new Map<string, Set<string>>(
+    plan.pagePlans
+      .filter((page) => page.role === "homepage")
+      .flatMap((page) => {
+        const originalPage = original.pages.find((candidate) => candidate.pageId === page.pageId);
+        const proposedPage = proposed.pages.find((candidate) => candidate.pageId === page.pageId);
+        const originalIds = visibleComponentIds(originalPage);
+        const proposedIds = visibleComponentIds(proposedPage);
+        if (!sequenceChanged(originalIds, proposedIds)) return [];
+        const originalIndexes = new Map(
+          originalIds.map((componentId, index) => [componentId, index]),
+        );
+        const moved = proposedIds.filter(
+          (componentId, index) =>
+            originalIndexes.get(componentId) !== undefined &&
+            originalIndexes.get(componentId) !== index,
+        );
+        return [[page.pageId, new Set(moved)] as const];
+      }),
+  );
   const components = plan.pagePlans
     .flatMap((page) => {
       const replaced = new Set(
@@ -582,6 +623,8 @@ function reviewSummary(
           {
             componentId: component.componentId,
             component: component.component,
+            pageId: page.pageId,
+            pageRole: page.role,
             status:
               component.disposition === "fallback-retained"
                 ? ("fallback-retained" as const)
@@ -602,6 +645,18 @@ function reviewSummary(
       });
       return [...planned, ...removed];
     })
+    .map((component) => {
+      const moved =
+        component.pageRole === "homepage" &&
+        component.pageId !== undefined &&
+        movedHomepageComponentIds.get(component.pageId)?.has(component.componentId);
+      if (!moved) return component;
+      return {
+        ...component,
+        status: "modified" as const,
+        description: "Moves this section within the updated homepage order.",
+      };
+    })
     .sort((left, right) => left.componentId.localeCompare(right.componentId));
   return {
     sharedDesignSystemChanges: [...plan.reviewSummary.sharedDesignSystemChanges],
@@ -611,7 +666,15 @@ function reviewSummary(
         status:
           page.disposition === "created"
             ? ("created" as const)
-            : page.components.some((component) => "instance" in component)
+            : page.components.some((component) => "instance" in component) ||
+                sequenceChanged(
+                  visibleComponentIds(
+                    original.pages.find((candidate) => candidate.pageId === page.pageId),
+                  ),
+                  visibleComponentIds(
+                    proposed.pages.find((candidate) => candidate.pageId === page.pageId),
+                  ),
+                )
               ? ("changed" as const)
               : ("retained" as const),
       }))
@@ -683,7 +746,12 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
     .slice()
     .sort((left, right) => left.pageId.localeCompare(right.pageId))
     .forEach((pagePlan) => {
-      const planned = plannedPage(original, plan, pagePlan);
+      const planned = plannedPage(
+        original,
+        plan,
+        pagePlan,
+        input.planningInput.recipeContext.designSystem,
+      );
       add({ type: "APPLY_PAGE_COMPONENTS", ...planned });
     });
   plan.approvedAssetPlacements
@@ -709,7 +777,7 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
     originalStorefront: original,
     proposedStorefront: proposed,
     operations,
-    reviewSummary: reviewSummary(plan, original),
+    reviewSummary: reviewSummary(plan, original, proposed),
     status: "pending" as const,
   };
   const id = `whole_storefront_proposal_${canonicalValueFingerprint(proposalWithoutId).slice(-8)}`;
