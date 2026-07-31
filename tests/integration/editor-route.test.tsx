@@ -339,6 +339,14 @@ describe("P4-05D editor storefront integration", () => {
       "Redid the homepage proposal as one change.",
     ],
     [
+      "English short",
+      "en",
+      "Redesign only the homepage as a modern technical landing page.",
+      "The homepage proposal was applied as one unsaved draft change.",
+      "Undid the homepage proposal as one change.",
+      "Redid the homepage proposal as one change.",
+    ],
+    [
       "Finnish",
       "fi",
       "Uudista vain etusivu moderniksi tekniseksi.",
@@ -463,6 +471,66 @@ describe("P4-05D editor storefront integration", () => {
       } finally {
         vi.unstubAllGlobals();
       }
+    },
+  );
+
+  it.each([
+    ["English", "en", "Make only the homepage hero modern technical."],
+    ["Finnish", "fi", "Tee vain etusivun hero-osio moderniksi tekniseksi."],
+  ] as const)(
+    "keeps the %s explicit homepage hero request on section-scoped authority",
+    async (_language, locale, instruction) => {
+      const legacyProvider = new RecordingProvider();
+      const storefrontProvider = new RegisteredHomepageStorefrontProvider();
+      const originalHomepage = structuredClone(
+        aurumNordicSeed.draftSnapshot.pages.find((candidate) => candidate.type === "home")!,
+      );
+      const originalHero = originalHomepage.sections.find(
+        (section) => section.component === "hero",
+      )!;
+      route(
+        repository(() => Promise.resolve(aggregate())),
+        legacyProvider,
+        storefrontProvider,
+      );
+      await screen.findByText("Canvas: home / en");
+      if (locale === "fi") fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+      fireEvent.change(screen.getByLabelText(locale === "fi" ? "Pyyntösi" : "Your request"), {
+        target: { value: instruction },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: locale === "fi" ? "Luo ehdotus" : "Create proposal" }),
+      );
+
+      await screen.findByLabelText(locale === "fi" ? "Suunnitteluehdotus" : "Design proposal");
+      expect(storefrontProvider.calls).toHaveLength(0);
+      expect(legacyProvider.calls).toHaveLength(1);
+      const request = legacyProvider.calls[0];
+      expect(request).toMatchObject({
+        scope: "section",
+        target: { pageId: originalHomepage.id, sectionId: originalHero.id },
+      });
+      expect(
+        request.permissionGrants.every(
+          (grant) =>
+            grant.target.kind === "existingSection" && grant.target.sectionId === originalHero.id,
+        ),
+      ).toBe(true);
+      expect(JSON.stringify(request)).not.toMatch(
+        /APPLY_REGISTERED_PAGE_SECTIONS|REORDER_SECTIONS/,
+      );
+
+      const proposedHomepage = JSON.parse(
+        screen
+          .getByLabelText(locale === "fi" ? "Ehdotuksen esikatselualue" : "Proposal preview canvas")
+          .getAttribute("data-page")!,
+      ) as PageModel;
+      expect(
+        proposedHomepage.sections.find((section) => section.id === originalHero.id),
+      ).not.toEqual(originalHero);
+      expect(proposedHomepage.sections.filter((section) => section.id !== originalHero.id)).toEqual(
+        originalHomepage.sections.filter((section) => section.id !== originalHero.id),
+      );
     },
   );
 

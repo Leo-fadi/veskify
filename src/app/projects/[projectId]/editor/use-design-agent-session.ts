@@ -17,6 +17,7 @@ import {
   buildAiStorefrontProviderRequestForSupportedCapability,
   createStorefrontDiagnosticAttemptId,
   createDeterministicMockStorefrontAIProvider,
+  hasExplicitStorefrontSectionIntent,
   recordStorefrontDiagnostic,
   resolveStorefrontGenerationScope,
   type AiStorefrontGenerationFailure,
@@ -1068,19 +1069,21 @@ export function useDesignAgentSession({
       return;
     }
     if (targetScope === "page" && page?.type === "home" && activeDraft) {
-      try {
-        const routedScope = resolveStorefrontGenerationScope(instruction, activeDraft.pages);
-        if (routedScope.kind === "homepage") {
-          void generateStorefront(instruction, "initial", routedScope);
+      if (!hasExplicitStorefrontSectionIntent(instruction)) {
+        try {
+          const routedScope = resolveStorefrontGenerationScope(instruction, activeDraft.pages);
+          if (routedScope.kind === "homepage") {
+            void generateStorefront(instruction, "initial", routedScope);
+            return;
+          }
+        } catch {
+          const message = {
+            en: "That page scope is not supported safely. Your draft has not changed.",
+            fi: "Sivupyynnön laajuutta ei voida toteuttaa turvallisesti. Luonnos säilyi ennallaan.",
+          };
+          setSession(uiSession("failed", message, { failure: { message, retryable: false } }));
           return;
         }
-      } catch {
-        const message = {
-          en: "That page scope is not supported safely. Your draft has not changed.",
-          fi: "Sivupyynnön laajuutta ei voida toteuttaa turvallisesti. Luonnos säilyi ennallaan.",
-        };
-        setSession(uiSession("failed", message, { failure: { message, retryable: false } }));
-        return;
       }
     }
     const classification = runtime.clarificationProvider.classifyDesignRequest(instruction, locale);

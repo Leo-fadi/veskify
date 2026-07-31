@@ -2,6 +2,7 @@ import { render } from "@testing-library/react";
 
 import { describe, expect, it } from "vitest";
 import {
+  hasExplicitStorefrontSectionIntent,
   resolveStorefrontGenerationScope,
   StorefrontGenerationScopeError,
 } from "@/application/ai-storefront-generation";
@@ -54,6 +55,28 @@ describe("P9R-05 homepage-only composition scope", () => {
         generatedPages,
       ),
     ).toMatchObject({ kind: "storefront", includesSharedFrame: true });
+  });
+
+  it.each([
+    "Make only the homepage hero modern technical.",
+    "Tee vain etusivun hero-osio moderniksi tekniseksi.",
+  ])("keeps explicit homepage section intent outside page-wide authority for %s", (request) => {
+    const generatedPages = [
+      { id: "page_home", type: "home" as const },
+      { id: "page_collection", type: "collection" as const },
+      { id: "page_product", type: "product" as const },
+    ];
+
+    expect(hasExplicitStorefrontSectionIntent(request)).toBe(true);
+    expect(() => resolveStorefrontGenerationScope(request, generatedPages)).toThrow(
+      StorefrontGenerationScopeError,
+    );
+    expect(
+      hasExplicitStorefrontSectionIntent(
+        "Redesign only the homepage as a modern technical landing page.",
+      ),
+    ).toBe(false);
+    expect(hasExplicitStorefrontSectionIntent(homepageOnlyRequest)).toBe(false);
   });
 
   it("generates, renders, reviews, accepts, undoes, and redoes a material homepage-only proposal", async () => {
