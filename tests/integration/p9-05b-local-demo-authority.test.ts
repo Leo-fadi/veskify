@@ -32,6 +32,9 @@ const demoEnvironment = {
   VESKIFY_P9_05B_LOCAL_DEMO: "1",
 } as const;
 
+const homepageOnlyInstruction =
+  "Redesign only the homepage as a bold modern technical landing page. Replace the current composition with a materially different layout: compact header, asymmetric hero, featured products near the top, structured collection discovery, specification-style brand story, three-column trust section, and compact footer. Change section order, component variants, density, surfaces, and hierarchy—not just colours or typography. Preserve all products, prices, stock, media bindings, routes, and approved assets. Do not change the collection page or product page.";
+
 function mockedDirectionProvider(
   directionId: "premiumEditorial" | "modernTechnical" | "warmApproachable",
   reached: (selectedDirectionId: string) => void,
@@ -156,6 +159,92 @@ describe("P9-05B local demo server authority", () => {
       );
     },
   );
+
+  it("builds the exact homepage-only demo request with canonical page authority and reaches the provider once", async () => {
+    const request = await buildP905bLocalDemoRequest(homepageOnlyInstruction, demoEnvironment);
+    const homepage = request.storefront.pages.find((page) => page.type === "home");
+    if (!homepage) throw new Error("The protected demo fixture is missing its homepage.");
+
+    expect(request.target).toMatchObject({
+      scope: "page",
+      affectedPageIds: [homepage.id],
+      designSystemTarget: null,
+    });
+    expect(request.target.affectedSectionTargets).not.toHaveLength(0);
+    expect(
+      request.target.affectedSectionTargets.every((target) => target.pageId === homepage.id),
+    ).toBe(true);
+    expect(request.affectedPages.map((page) => page.id)).toEqual([homepage.id]);
+    expect(
+      request.permissionGrants.every(
+        (grant) => "pageId" in grant.target && grant.target.pageId === homepage.id,
+      ),
+    ).toBe(true);
+    expect(request.permissionGrants).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          operationTypes: ["APPLY_REGISTERED_PAGE_SECTIONS", "REORDER_SECTIONS"],
+          target: { kind: "page", pageId: homepage.id },
+        }),
+      ]),
+    );
+
+    const wholeStorefrontRequest = await buildP905bLocalDemoRequest(
+      "Create a modern technical storefront for Lumo Atelier.",
+      demoEnvironment,
+    );
+    expect(wholeStorefrontRequest.target.designSystemTarget).toEqual({
+      kind: "storefrontDesignSystem",
+      projectId: P9_05A_PROJECT_ID,
+    });
+    expect(request.storefrontBaselineFingerprint).toBe(
+      wholeStorefrontRequest.storefrontBaselineFingerprint,
+    );
+    expect(request.approvedAssetContext).toEqual(wholeStorefrontRequest.approvedAssetContext);
+
+    const reached = vi.fn();
+    const handler = createWholeStorefrontPlanningRouteHandler({
+      environment: demoEnvironment,
+      selectProvider: () => mockedDirectionProvider("modernTechnical", reached),
+    });
+    const response = await handler(await proposalRequest(homepageOnlyInstruction));
+    const body = (await response.json()) as Record<string, unknown>;
+
+    expect(response.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(reached).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps stale-authority rejection before provider execution", async () => {
+    const reached = vi.fn();
+    const storefrontIntent = await buildP905bLocalDemoRequest(
+      "Create a modern technical storefront for Lumo Atelier.",
+      demoEnvironment,
+    );
+    const staleIntent = { ...storefrontIntent, instruction: homepageOnlyInstruction };
+    const handler = createWholeStorefrontPlanningRouteHandler({
+      environment: demoEnvironment,
+      selectProvider: () => mockedDirectionProvider("modernTechnical", reached),
+    });
+    const response = await handler(
+      new Request("http://p9-05b.test/api/ai/whole-storefront-proposals", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-veskify-p9-05b-session": p905bLocalDemoSession(demoEnvironment).sessionId,
+        },
+        body: JSON.stringify(staleIntent),
+      }),
+    );
+    const body = (await response.json()) as Record<string, unknown>;
+
+    expect(response.status).toBe(409);
+    expect(body).toMatchObject({
+      ok: false,
+      failure: { category: "stale", retryable: false },
+    });
+    expect(reached).not.toHaveBeenCalled();
+  });
 
   it("replaces accepted, saved, published, and history state with the exact fixture baseline", async () => {
     const baseline = await inspectP905bLocalDemo(demoEnvironment);

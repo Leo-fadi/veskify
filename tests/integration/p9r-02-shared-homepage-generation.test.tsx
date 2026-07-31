@@ -193,7 +193,15 @@ describe("P9R-02 shared-frame and homepage generation", () => {
     const scenarios = { premiumEditorial: premium, modernTechnical: modern };
     const expectedOrders = {
       premiumEditorial: ["header", "hero", "featuredCategories", "productGrid", "footer"],
-      modernTechnical: ["header", "hero", "productGrid", "featuredCategories", "footer"],
+      modernTechnical: [
+        "header",
+        "hero",
+        "productGrid",
+        "featuredCategories",
+        "brandStory",
+        "benefitIcons",
+        "footer",
+      ],
     } as const;
 
     for (const directionId of directions) {

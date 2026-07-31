@@ -5,6 +5,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import {
   buildAiStorefrontProviderRequest,
   aiStorefrontProviderResponseSchema,
+  resolveStorefrontGenerationScope,
   type AiStorefrontProviderRequest,
   type AiStorefrontProviderResponse,
 } from "@/application/ai-storefront-generation";
@@ -471,19 +472,22 @@ export async function buildP905bLocalDemoRequest(
     (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
   );
   if (!draft) throw new Error("The P9-05B local demo draft is unavailable.");
+  const scope = resolveStorefrontGenerationScope(merchantInstruction, draft.pages);
   return buildAiStorefrontProviderRequest(
     {
       projectId: aggregate.project.id,
       draftSnapshotId: draft.id,
       draftRevision: draft.revision,
       storefront: projectAiStorefrontSnapshot(draft),
-      affectedPageIds: draft.pages.map((page) => page.id),
+      affectedPageIds: scope.affectedPageIds,
       affectedSectionTargets: [],
-      designSystemTarget: { kind: "storefrontDesignSystem", projectId: aggregate.project.id },
+      designSystemTarget: scope.includesSharedFrame
+        ? { kind: "storefrontDesignSystem", projectId: aggregate.project.id }
+        : null,
       merchantInstruction,
       activeLocale: aggregate.project.primaryLocale,
       enabledLocales: aggregate.project.enabledLocales,
-      requestedScope: "storefront",
+      requestedScope: scope.kind === "homepage" ? "page" : "storefront",
       capability: "registeredWholeStorefrontDirection",
       providerId: "server-whole-storefront-planning",
       provider: {

@@ -535,6 +535,20 @@ describe("P4-05B storefront planner and request construction", () => {
     );
   });
 
+  it("permits an explicit preservation clause alongside a registered composition request", () => {
+    expect(
+      containsProtectedCommerceMutation(
+        "Redesign only the homepage as modern technical. Preserve all products, prices, stock, media bindings, routes, and approved assets.",
+      ),
+    ).toBe(false);
+    expect(containsProtectedCommerceMutation("Change the product card component variants.")).toBe(
+      false,
+    );
+    expect(containsProtectedCommerceMutation("Change variants and use a compact layout.")).toBe(
+      true,
+    );
+  });
+
   it("rejects duplicate, unknown, and cross-page target identities before invocation", () => {
     expect(() =>
       buildAiStorefrontProviderRequest(

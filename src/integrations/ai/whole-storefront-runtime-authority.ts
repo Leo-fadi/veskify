@@ -13,6 +13,7 @@ import {
   createAiStorefrontProposalId,
   type AiStorefrontOperation,
 } from "@/application/ai-storefront";
+import { resolveStorefrontGenerationScope } from "@/application/ai-storefront-generation";
 import { recordStorefrontDiagnostic } from "@/application/ai-storefront-generation";
 import {
   compileWholeStorefrontProposal,
@@ -253,19 +254,22 @@ function authoritativeRequest(
   intent: AiStorefrontProviderRequest,
 ): AiStorefrontProviderRequest {
   const draft = planningInput.draft;
+  const scope = resolveStorefrontGenerationScope(intent.instruction, draft.pages);
   return buildAiStorefrontProviderRequest(
     {
       projectId: planningInput.project.id,
       draftSnapshotId: draft.id,
       draftRevision: draft.revision,
       storefront: projectAiStorefrontSnapshot(draft),
-      affectedPageIds: draft.pages.map((page) => page.id),
+      affectedPageIds: scope.affectedPageIds,
       affectedSectionTargets: [],
-      designSystemTarget: { kind: "storefrontDesignSystem", projectId: planningInput.project.id },
+      designSystemTarget: scope.includesSharedFrame
+        ? { kind: "storefrontDesignSystem", projectId: planningInput.project.id }
+        : null,
       merchantInstruction: intent.instruction,
       activeLocale: intent.activeLocale,
       enabledLocales: planningInput.project.enabledLocales,
-      requestedScope: "storefront",
+      requestedScope: scope.kind === "homepage" ? "page" : "storefront",
       capability: intent.capability,
       providerId: runtimeProviderId,
       provider: {

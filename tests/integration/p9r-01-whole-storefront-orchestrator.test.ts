@@ -115,6 +115,7 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
       "hero",
       "productGrid",
       "featuredCategories",
+      "benefitIcons",
       "footer",
     ]);
     expect(homepage.sections.find((section) => section.component === "hero")?.variant).toBe(

@@ -20,7 +20,7 @@ export const aiStorefrontSectionTargetSchema = z
 
 export const aiStorefrontTargetSchema = z
   .object({
-    scope: z.literal("storefront"),
+    scope: z.enum(["storefront", "page"]),
     projectId: idSchema,
     draftSnapshotId: idSchema,
     draftRevision: z.number().int().nonnegative(),
@@ -32,6 +32,17 @@ export const aiStorefrontTargetSchema = z
   })
   .strict()
   .superRefine((target, context) => {
+    if (
+      target.scope === "page" &&
+      (target.affectedPageIds.length !== 1 || target.designSystemTarget !== null)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["scope"],
+        message:
+          "Page targets must affect one page and cannot include shared design-system changes.",
+      });
+    }
     if (new Set(target.affectedPageIds).size !== target.affectedPageIds.length) {
       context.addIssue({
         code: "custom",

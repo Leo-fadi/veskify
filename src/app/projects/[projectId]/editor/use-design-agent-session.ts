@@ -18,6 +18,7 @@ import {
   createStorefrontDiagnosticAttemptId,
   createDeterministicMockStorefrontAIProvider,
   recordStorefrontDiagnostic,
+  resolveStorefrontGenerationScope,
   type AiStorefrontGenerationFailure,
   type AiStorefrontGenerationIdentity,
   type StorefrontAIProvider,
@@ -722,18 +723,21 @@ export function useDesignAgentSession({
       throw new Error("The complete storefront is not ready for a design request.");
     }
     const storefront = projectAiStorefrontSnapshot(activeDraft);
+    const scope = resolveStorefrontGenerationScope(instruction, storefront.pages);
     const baseCommand = {
       projectId,
       draftSnapshotId: activeDraft.id,
       draftRevision: activeDraft.revision,
       storefront,
-      affectedPageIds: storefront.pages.map((candidate) => candidate.id),
+      affectedPageIds: [...scope.affectedPageIds],
       affectedSectionTargets: [],
-      designSystemTarget: { kind: "storefrontDesignSystem" as const, projectId },
+      designSystemTarget: scope.includesSharedFrame
+        ? { kind: "storefrontDesignSystem" as const, projectId }
+        : null,
       merchantInstruction: instruction,
       activeLocale,
       enabledLocales,
-      requestedScope: "storefront" as const,
+      requestedScope: scope.kind === "homepage" ? ("page" as const) : ("storefront" as const),
       providerId: runtime.storefrontProvider.id,
       correlationRequestId: attemptId,
       provider: runtime.storefrontProvider,
