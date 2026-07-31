@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   classifyRegisteredWholeStorefrontDirectionRequest,
   planRegisteredTokenRefinement,
@@ -29,12 +29,37 @@ function requiredPage(
   return page;
 }
 
+type InstructionScenario = Awaited<ReturnType<typeof generateP905aInstructionScenarioFromBaseline>>;
+type InstructionScenarios = Readonly<{
+  modern: InstructionScenario;
+  warm: InstructionScenario;
+}>;
+
+// The slowest measured deterministic setup was 11.88s, so this preserves a
+// narrow margin while keeping shared generation under Vitest control.
+const sharedScenarioSetupTimeoutMs = 15_000;
+let instructionScenarios: InstructionScenarios | undefined;
+
+function requiredInstructionScenarios(): InstructionScenarios {
+  if (!instructionScenarios) throw new Error("P9R-01 instruction scenarios did not initialize.");
+  return instructionScenarios;
+}
+
 describe("P9R-01 whole-storefront AI composition orchestrator", () => {
-  it("materializes the exact modern-technical request into one coordinated structural proposal", async () => {
-    const generated = await generateP905aInstructionScenarioFromBaseline(
+  beforeAll(async () => {
+    const modern = await generateP905aInstructionScenarioFromBaseline(
       "warmApproachable",
       modernTechnicalRequest,
     );
+    const warm = await generateP905aInstructionScenarioFromBaseline(
+      "modernTechnical",
+      warmApproachableRequest,
+    );
+    instructionScenarios = Object.freeze({ modern, warm });
+  }, sharedScenarioSetupTimeoutMs);
+
+  it("materializes the exact modern-technical request into one coordinated structural proposal", () => {
+    const generated = requiredInstructionScenarios().modern;
     const { plan, proposal } = generated;
     const homepage = requiredPage(proposal, "home");
     const collection = requiredPage(proposal, "collection");
@@ -130,28 +155,26 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
     expect(product.sections).not.toEqual(baselineProduct.sections);
   });
 
-  it("derives the registered direction from the provider-received instruction and classifies unsafe instructions safely", async () => {
-    const warm = await generateP905aInstructionScenarioFromBaseline(
-      "modernTechnical",
-      warmApproachableRequest,
-    );
+  it("derives the registered direction from each provider-received instruction", async () => {
+    const { modern, warm } = requiredInstructionScenarios();
     const repeatedWarm = await generateP905aInstructionScenarioFromBaseline(
       "modernTechnical",
       warmApproachableRequest,
     );
-    const modern = await generateP905aInstructionScenarioFromBaseline(
-      "warmApproachable",
-      modernTechnicalRequest,
-    );
 
     expect(warm.providerRequests).toEqual([
+      expect.objectContaining({ merchantInstruction: warmApproachableRequest }),
+    ]);
+    expect(repeatedWarm.providerRequests).toEqual([
       expect.objectContaining({ merchantInstruction: warmApproachableRequest }),
     ]);
     expect(warm.plan.designSystemSelection.directionId).toBe("warmApproachable");
     expect(repeatedWarm.plan.fingerprint).toBe(warm.plan.fingerprint);
     expect(modern.plan.designSystemSelection.directionId).toBe("modernTechnical");
     expect(modern.plan.fingerprint).not.toBe(warm.plan.fingerprint);
+  });
 
+  it("classifies ambiguous and unsupported instructions through the canonical safe path", () => {
     expect(
       classifyRegisteredWholeStorefrontDirectionRequest("Make it warm premium and minimal Nordic"),
     ).toMatchObject({ kind: "ambiguous" });
@@ -179,13 +202,14 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
     expect(proposal.proposedStorefront.navigation).toEqual(proposal.originalStorefront.navigation);
   });
 
-  it("accepts the coordinated proposal as one reversible transaction without changing commerce", async () => {
-    const generated = await generateP905aInstructionScenarioFromBaseline(
-      "warmApproachable",
-      modernTechnicalRequest,
-    );
+  it("accepts the coordinated proposal as one reversible transaction without changing commerce", () => {
+    const generated = requiredInstructionScenarios().modern;
     const commerceBefore = structuredClone(generated.fixture.aggregate.catalogue);
-    const coordinator = createP905aAcceptanceCoordinator(generated);
+    const coordinator = createP905aAcceptanceCoordinator({
+      ...generated,
+      fixture: structuredClone(generated.fixture),
+      proposal: structuredClone(generated.proposal),
+    });
     const accepted = coordinator.accept();
 
     expect(accepted.state).toBe("accepted");
