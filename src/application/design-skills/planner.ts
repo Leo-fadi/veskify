@@ -218,6 +218,18 @@ export function classifyDesignRequest(
       unsupportedReason: null,
     });
   }
+  if (possibleIntents.length === 1 && possibleIntents[0] === "heroImprovement") {
+    return designRequestClassificationSchema.parse({
+      normalizedIntent: "heroImprovement",
+      locale: fallbackLocale,
+      confidence: 0.75,
+      requestedScope: "section",
+      selectedSkillIds: ["improveHero"],
+      requiresClarification: false,
+      clarifications: [],
+      unsupportedReason: null,
+    });
+  }
 
   return designRequestClassificationSchema.parse({
     normalizedIntent: null,

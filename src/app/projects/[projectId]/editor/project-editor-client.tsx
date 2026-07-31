@@ -68,6 +68,7 @@ import {
   proposalStorefrontPreview,
 } from "./editor-draft-state";
 import {
+  storefrontProposalHistoryStatus,
   useDesignAgentSession,
   type DesignAgentSessionController,
 } from "./use-design-agent-session";
@@ -535,7 +536,7 @@ export function ProjectEditorClient({
       });
       setAuthoritativeRevision(synchronization.authoritativeRevision);
     },
-    onStorefrontSnapshot: (snapshot) => {
+    onStorefrontSnapshot: (snapshot, scope, action) => {
       if (!readyState) return;
       setSessionPages(
         Object.fromEntries(
@@ -564,7 +565,13 @@ export function ProjectEditorClient({
           : undefined,
       );
       setValidationMessage("");
-      setHistoryStatus("Storefront proposal applied as one change. You can undo it atomically.");
+      setHistoryStatus(
+        resolveLocalizedText(
+          storefrontProposalHistoryStatus(scope, action),
+          readyLocale ?? "en",
+          readyState.aggregate.project.primaryLocale,
+        ),
+      );
       setPageEditsAfterStorefront(0);
       setSaveState({ status: "idle" });
     },
@@ -774,7 +781,6 @@ export function ProjectEditorClient({
     if (currentPageCanUndo && pageEditsAfterStorefront > 0) return undoCurrentPage();
     if (canUndoStorefront) {
       const undone = await agent.undoStorefront();
-      if (undone) setHistoryStatus("Undid the storefront proposal as one change.");
       return undone;
     }
     return undoCurrentPage();
@@ -784,7 +790,6 @@ export function ProjectEditorClient({
     if (mutationsBlocked) return false;
     if (agent.canRedoStorefront) {
       const redone = await agent.redoStorefront();
-      if (redone) setHistoryStatus("Redid the storefront proposal as one change.");
       return redone;
     }
     return redoCurrentPage();
