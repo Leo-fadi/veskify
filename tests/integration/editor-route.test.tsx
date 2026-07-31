@@ -9,17 +9,23 @@ import {
   type AiOperationRequest,
 } from "@/application/ai-provider";
 import {
+  aiStorefrontProviderRequestSchema,
   aiStorefrontProviderResponseSchema,
   createDeterministicMockStorefrontAIProvider,
   type AiStorefrontProviderRequest,
   type StorefrontAIProvider,
 } from "@/application/ai-storefront-generation";
-import { createAiStorefrontProposalId } from "@/application/ai-storefront";
+import {
+  createAiStorefrontPermissionFingerprint,
+  createAiStorefrontProposalId,
+  createAiStorefrontTargetFingerprint,
+} from "@/application/ai-storefront";
 import type { ProposalAnalyticsEvent } from "@/application/analytics";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
 import { storefrontFailureDiagnosticCategory } from "@/app/projects/[projectId]/editor/use-design-agent-session";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import type { PageModel } from "@/domain/storefront";
+import { createServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
 import { browserProposalAnalyticsEventType } from "@/services/analytics";
 import {
   InMemoryProjectRepository,
@@ -171,6 +177,9 @@ const karvonenAggregate = (): ProjectAggregate => ({
   ],
 });
 
+const exactHomepageOnlyInstruction =
+  "Redesign only the homepage as a bold modern technical landing page. Replace the current composition with a materially different layout: compact header, asymmetric hero, featured products near the top, structured collection discovery, specification-style brand story, three-column trust section, and compact footer. Change section order, component variants, density, surfaces, and hierarchy—not just colours or typography. Preserve all products, prices, stock, media bindings, routes, and approved assets. Do not change the collection page or product page.";
+
 describe("P4-05D editor storefront integration", () => {
   it.each([
     ["staleDraft", "staleDraft"],
@@ -318,6 +327,162 @@ describe("P4-05D editor storefront integration", () => {
     expect(provider.calls[1].instruction).not.toMatch(/throughout the site/i);
     expect(diagnosticScopes.length).toBeGreaterThan(0);
     expect(new Set(diagnosticScopes)).toEqual(new Set(["page"]));
+  });
+
+  it.each([
+    [
+      "English",
+      "en",
+      exactHomepageOnlyInstruction,
+      "The homepage proposal was applied as one unsaved draft change.",
+      "Undid the homepage proposal as one change.",
+      "Redid the homepage proposal as one change.",
+    ],
+    [
+      "Finnish",
+      "fi",
+      "Uudista vain etusivu moderniksi tekniseksi.",
+      "Etusivuehdotus lisättiin yhtenä tallentamattomana luonnosmuutoksena.",
+      "Etusivuehdotus kumottiin yhtenä muutoksena.",
+      "Etusivuehdotus tehtiin uudelleen yhtenä muutoksena.",
+    ],
+  ] as const)(
+    "routes the %s homepage-only Current page request through the protected canonical client with scoped history status",
+    async (_language, locale, instruction, appliedStatus, undoneStatus, redoneStatus) => {
+      const legacyProvider = new RecordingProvider();
+      const authoritativeProvider = new RegisteredHomepageStorefrontProvider();
+      const capturedRequests: AiStorefrontProviderRequest[] = [];
+      const safeTestSession = "p9r-06-protected-session-test";
+      const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        const requestUrl =
+          typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        expect(requestUrl).toBe("/api/ai/whole-storefront-proposals");
+        expect(new Headers(init?.headers).get("x-veskify-p9-05b-session")).toBe(safeTestSession);
+        if (typeof init?.body !== "string") throw new Error("Expected a serialized request body.");
+        const request = aiStorefrontProviderRequestSchema.parse(JSON.parse(init.body) as unknown);
+        capturedRequests.push(request);
+        const proposal = await authoritativeProvider.proposeStorefront(request);
+        return new Response(JSON.stringify({ ok: true, proposal }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      try {
+        route(
+          repository(() => Promise.resolve(aggregate())),
+          legacyProvider,
+          createServerWholeStorefrontPlanningClient({ p905bSessionId: safeTestSession }),
+        );
+        await screen.findByText("Canvas: home / en");
+        if (locale === "fi") fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+        fireEvent.change(screen.getByLabelText(locale === "fi" ? "Pyyntösi" : "Your request"), {
+          target: { value: instruction },
+        });
+        fireEvent.click(
+          screen.getByRole("button", { name: locale === "fi" ? "Luo ehdotus" : "Create proposal" }),
+        );
+
+        expect(
+          await screen.findByLabelText(
+            locale === "fi" ? "Etusivun suunnitteluehdotus" : "Homepage design proposal",
+          ),
+        ).toBeVisible();
+        expect(legacyProvider.calls).toHaveLength(0);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(capturedRequests).toHaveLength(1);
+        const request = capturedRequests[0];
+        const homepage = request.storefront.pages.find((candidate) => candidate.type === "home")!;
+        const context = {
+          projectId: request.target.projectId,
+          draftSnapshotId: request.target.draftSnapshotId,
+          draftRevision: request.target.draftRevision,
+          enabledLocales: request.enabledLocales,
+          activeLocale: request.activeLocale,
+          storefront: request.storefront,
+        };
+        expect(request.target).toMatchObject({
+          scope: "page",
+          affectedPageIds: [homepage.id],
+          designSystemTarget: null,
+        });
+        expect(request.affectedPages.map((candidate) => candidate.id)).toEqual([homepage.id]);
+        expect(
+          request.permissionGrants.every(
+            (grant) => "pageId" in grant.target && grant.target.pageId === homepage.id,
+          ),
+        ).toBe(true);
+        expect(request.targetFingerprint).toBe(
+          createAiStorefrontTargetFingerprint(context, request.target),
+        );
+        expect(request.permissionFingerprint).toBe(
+          createAiStorefrontPermissionFingerprint(
+            request.permissionGrants,
+            request.target,
+            context,
+          ),
+        );
+        expect(request.protectedPaths).not.toHaveLength(0);
+        expect(request.assetPlacementOperations).toEqual([]);
+
+        fireEvent.click(
+          screen.getByRole("button", {
+            name: locale === "fi" ? "Hyväksy ja käytä" : "Accept and apply",
+          }),
+        );
+        fireEvent.click(
+          screen.getByRole("button", {
+            name: locale === "fi" ? "Ota etusivuehdotus käyttöön" : "Apply homepage proposal",
+          }),
+        );
+        await waitFor(() =>
+          expect(
+            screen.getByLabelText(locale === "fi" ? "Suunnittelupyyntö" : "Design request"),
+          ).toHaveTextContent(appliedStatus),
+        );
+        expect(screen.getAllByText(appliedStatus)).not.toHaveLength(0);
+
+        fireEvent.click(screen.getByRole("button", { name: locale === "fi" ? "Kumoa" : "Undo" }));
+        await waitFor(() =>
+          expect(
+            screen.getByLabelText(locale === "fi" ? "Suunnittelupyyntö" : "Design request"),
+          ).toHaveTextContent(undoneStatus),
+        );
+        expect(screen.getAllByText(undoneStatus)).not.toHaveLength(0);
+
+        fireEvent.click(
+          screen.getByRole("button", { name: locale === "fi" ? "Tee uudelleen" : "Redo" }),
+        );
+        await waitFor(() =>
+          expect(
+            screen.getByLabelText(locale === "fi" ? "Suunnittelupyyntö" : "Design request"),
+          ).toHaveTextContent(redoneStatus),
+        );
+        expect(screen.getAllByText(redoneStatus)).not.toHaveLength(0);
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+  );
+
+  it("fails a conflicting Current page scope closed before either planner is invoked", async () => {
+    const legacyProvider = new RecordingProvider();
+    const storefrontProvider = new RegisteredHomepageStorefrontProvider();
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      legacyProvider,
+      storefrontProvider,
+    );
+    await screen.findByText("Canvas: home / en");
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Redesign only the homepage and collection page." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/scope is not supported safely/i);
+    expect(legacyProvider.calls).toHaveLength(0);
+    expect(storefrontProvider.calls).toHaveLength(0);
   });
 
   it.each([
@@ -654,9 +819,11 @@ describe("P4-05D editor storefront integration", () => {
 
   it("uses the existing canonical page request path when Current page is selected", async () => {
     const provider = new RecordingProvider();
+    const storefrontProvider = new RegisteredHomepageStorefrontProvider();
     route(
       repository(() => Promise.resolve(aggregate())),
       provider,
+      storefrontProvider,
     );
     await screen.findByText("Canvas: home / en");
     fireEvent.change(screen.getByLabelText("Your request"), {
@@ -665,6 +832,7 @@ describe("P4-05D editor storefront integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
     await screen.findByLabelText("Design proposal");
     expect(provider.calls[0].target).toEqual({ pageId: "page_home" });
+    expect(storefrontProvider.calls).toHaveLength(0);
   });
 
   it("prevents duplicate storefront submission while generation is pending", async () => {
@@ -828,7 +996,7 @@ class RegisteredHomepageStorefrontProvider implements StorefrontAIProvider {
     return Promise.resolve(
       aiStorefrontProviderResponseSchema.parse({
         providerRequestId: request.requestId,
-        providerId: this.id,
+        providerId: request.providerId,
         proposal: {
           id: proposalId,
           requestId: request.requestId,

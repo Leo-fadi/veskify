@@ -55,6 +55,8 @@ import {
 
 export type DesignAgentTargetScope = "section" | "page" | "storefront";
 type ResolvedStorefrontWorkflowScope = StorefrontGenerationScope["kind"];
+export type StorefrontProposalHistoryAction = "applied" | "undone" | "redone";
+type ValidatedStorefrontProposalScope = AiStorefrontProposal["target"]["scope"];
 
 export function storefrontMinimalRevisionInstruction(
   locale: Locale,
@@ -181,7 +183,11 @@ type UseDesignAgentSessionInput = {
   onAcceptedPage: (page: PageModel) => void;
   onStorefrontAccepted?: (snapshot: StorefrontSnapshot) => Promise<void>;
   onStorefrontHistorySnapshot?: (snapshot: StorefrontSnapshot) => Promise<void>;
-  onStorefrontSnapshot: (snapshot: StorefrontSnapshot) => void;
+  onStorefrontSnapshot: (
+    snapshot: StorefrontSnapshot,
+    scope: ValidatedStorefrontProposalScope,
+    action: StorefrontProposalHistoryAction,
+  ) => void;
 };
 
 const statuses = {
@@ -242,19 +248,34 @@ const statuses = {
     en: "The previous request was replaced because you chose a different target.",
     fi: "Edellinen pyyntö korvattiin, koska valitsit toisen kohteen.",
   },
-  storefrontAccepted: {
-    en: "The entire-storefront proposal was applied as one unsaved draft change.",
-    fi: "Koko verkkokaupan ehdotus lisättiin yhtenä tallentamattomana luonnosmuutoksena.",
-  },
-  storefrontUndone: {
-    en: "Undid the entire-storefront proposal as one change.",
-    fi: "Koko verkkokaupan ehdotus kumottiin yhtenä muutoksena.",
-  },
-  storefrontRedone: {
-    en: "Redid the entire-storefront proposal as one change.",
-    fi: "Koko verkkokaupan ehdotus tehtiin uudelleen yhtenä muutoksena.",
-  },
 } satisfies Record<string, LocalizedText>;
+
+export function storefrontProposalHistoryStatus(
+  scope: ValidatedStorefrontProposalScope,
+  action: StorefrontProposalHistoryAction,
+): LocalizedText {
+  const target =
+    scope === "page"
+      ? { en: "homepage proposal", fi: "Etusivuehdotus" }
+      : { en: "entire-storefront proposal", fi: "Koko verkkokaupan ehdotus" };
+  switch (action) {
+    case "applied":
+      return {
+        en: `The ${target.en} was applied as one unsaved draft change.`,
+        fi: `${target.fi} lisättiin yhtenä tallentamattomana luonnosmuutoksena.`,
+      };
+    case "undone":
+      return {
+        en: `Undid the ${target.en} as one change.`,
+        fi: `${target.fi} kumottiin yhtenä muutoksena.`,
+      };
+    case "redone":
+      return {
+        en: `Redid the ${target.en} as one change.`,
+        fi: `${target.fi} tehtiin uudelleen yhtenä muutoksena.`,
+      };
+  }
+}
 
 type Runtime = ReturnType<typeof createRuntime>;
 
@@ -416,6 +437,9 @@ export function useDesignAgentSession({
   const pendingStorefrontAcceptance = useRef<StorefrontProposalAcceptanceCoordinator | null>(null);
   const acceptedStorefrontHistory = useRef<CanonicalStorefrontHistory | null>(null);
   const acceptedStorefrontHistoryFingerprint = useRef<string | null>(null);
+  const acceptedStorefrontProposalScopes = useRef(
+    new Map<string, ValidatedStorefrontProposalScope>(),
+  );
   const [runtimeBridge] = useState(() => createRuntimeBridge(analytics, analyticsRoute));
   const [runtime] = useState<Runtime>(() =>
     createRuntime(
@@ -655,6 +679,7 @@ export function useDesignAgentSession({
   const clearStorefrontHistory = useCallback(() => {
     acceptedStorefrontHistory.current = null;
     acceptedStorefrontHistoryFingerprint.current = null;
+    acceptedStorefrontProposalScopes.current.clear();
     setStorefrontHistoryState({ canUndo: false, canRedo: false });
   }, []);
 
@@ -861,6 +886,7 @@ export function useDesignAgentSession({
   const generateStorefront = async (
     instruction: string,
     mode: "initial" | "revision" | "regeneration" = "initial",
+    routedScope?: StorefrontGenerationScope,
   ) => {
     if (disabled || generationPending.current) return;
     generationPending.current = true;
@@ -872,9 +898,9 @@ export function useDesignAgentSession({
     lastGenerationScope.current = "storefront";
     let resolvedScope: StorefrontGenerationScope | null = null;
     try {
-      resolvedScope = activeDraft
-        ? resolveStorefrontGenerationScope(instruction, activeDraft.pages)
-        : null;
+      resolvedScope =
+        routedScope ??
+        (activeDraft ? resolveStorefrontGenerationScope(instruction, activeDraft.pages) : null);
     } catch {
       const message = {
         en: "That storefront scope is not supported safely. Your draft has not changed.",
@@ -1040,6 +1066,22 @@ export function useDesignAgentSession({
     if (targetScope === "storefront") {
       void generate(instruction, "initial", "storefront");
       return;
+    }
+    if (targetScope === "page" && page?.type === "home" && activeDraft) {
+      try {
+        const routedScope = resolveStorefrontGenerationScope(instruction, activeDraft.pages);
+        if (routedScope.kind === "homepage") {
+          void generateStorefront(instruction, "initial", routedScope);
+          return;
+        }
+      } catch {
+        const message = {
+          en: "That page scope is not supported safely. Your draft has not changed.",
+          fi: "Sivupyynnön laajuutta ei voida toteuttaa turvallisesti. Luonnos säilyi ennallaan.",
+        };
+        setSession(uiSession("failed", message, { failure: { message, retryable: false } }));
+        return;
+      }
     }
     const classification = runtime.clarificationProvider.classifyDesignRequest(instruction, locale);
     if (classification.requiresClarification && classification.clarifications[0]) {
@@ -1234,11 +1276,27 @@ export function useDesignAgentSession({
               acceptancePending.current = false;
               return;
             }
-            onStorefrontSnapshot(activeStorefront);
+            acceptedStorefrontProposalScopes.current.set(
+              result.transaction.proposalId,
+              generatedStorefrontProposal.target.scope,
+            );
+            onStorefrontSnapshot(
+              activeStorefront,
+              generatedStorefrontProposal.target.scope,
+              "applied",
+            );
             pendingStorefrontAcceptance.current = null;
             setGeneratedStorefrontProposal(null);
             refreshStorefrontHistory();
-            setSession(uiSession("accepted", statuses.storefrontAccepted));
+            setSession(
+              uiSession(
+                "accepted",
+                storefrontProposalHistoryStatus(
+                  generatedStorefrontProposal.target.scope,
+                  "applied",
+                ),
+              ),
+            );
             acceptancePending.current = false;
             return;
           }
@@ -1512,14 +1570,19 @@ export function useDesignAgentSession({
 
   const undoStorefront = async () => {
     try {
-      const previous = acceptedStorefrontHistory.current?.undo();
+      const history = acceptedStorefrontHistory.current;
+      const transaction = history?.inspectTransactions().past.at(-1);
+      const scope = transaction
+        ? (acceptedStorefrontProposalScopes.current.get(transaction.proposalId) ?? "storefront")
+        : "storefront";
+      const previous = history?.undo();
       if (!previous) return false;
       await onStorefrontHistorySnapshot?.(previous);
       acceptedStorefrontHistoryFingerprint.current =
         canonicalStorefrontContentFingerprint(previous);
-      onStorefrontSnapshot(previous);
+      onStorefrontSnapshot(previous, scope, "undone");
       refreshStorefrontHistory();
-      setSession(uiSession("accepted", statuses.storefrontUndone));
+      setSession(uiSession("accepted", storefrontProposalHistoryStatus(scope, "undone")));
       return true;
     } catch {
       acceptedStorefrontHistory.current?.redo();
@@ -1530,13 +1593,18 @@ export function useDesignAgentSession({
 
   const redoStorefront = async () => {
     try {
-      const next = acceptedStorefrontHistory.current?.redo();
+      const history = acceptedStorefrontHistory.current;
+      const transaction = history?.inspectTransactions().future[0];
+      const scope = transaction
+        ? (acceptedStorefrontProposalScopes.current.get(transaction.proposalId) ?? "storefront")
+        : "storefront";
+      const next = history?.redo();
       if (!next) return false;
       await onStorefrontHistorySnapshot?.(next);
       acceptedStorefrontHistoryFingerprint.current = canonicalStorefrontContentFingerprint(next);
-      onStorefrontSnapshot(next);
+      onStorefrontSnapshot(next, scope, "redone");
       refreshStorefrontHistory();
-      setSession(uiSession("accepted", statuses.storefrontRedone));
+      setSession(uiSession("accepted", storefrontProposalHistoryStatus(scope, "redone")));
       return true;
     } catch {
       acceptedStorefrontHistory.current?.undo();
