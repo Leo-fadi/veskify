@@ -87,6 +87,7 @@ export async function generateP905aInstructionScenarioFromBaseline(
     baselineDirectionId,
     merchantInstruction,
     capability: "registeredWholeStorefrontDirection",
+    deferCompiledProposal: true,
     selectPlan: (providerRequest) => {
       const classification = classifyRegisteredWholeStorefrontDirectionRequest(
         providerRequest.merchantInstruction,
@@ -111,11 +112,13 @@ async function generateP905aScenarioWithProvider({
   baselineDirectionId,
   merchantInstruction,
   capability,
+  deferCompiledProposal = false,
   selectPlan,
 }: {
   baselineDirectionId: P905aDirectionId;
   merchantInstruction: string;
   capability: "approvedColorTypographyDirection" | "registeredWholeStorefrontDirection";
+  deferCompiledProposal?: boolean;
   selectPlan: (
     providerRequest: WholeStorefrontPlanningProviderRequest,
   ) => WholeStorefrontGenerationPlan;
@@ -204,7 +207,8 @@ async function generateP905aScenarioWithProvider({
   if (!plan || providerPlans.length !== 1) {
     throw new Error("Expected exactly one deterministic provider plan.");
   }
-  let compiledProposal: ReturnType<typeof compileWholeStorefrontProposal> | undefined;
+  let compiledProposal: ReturnType<typeof compileWholeStorefrontProposal> | undefined =
+    deferCompiledProposal ? undefined : compileWholeStorefrontProposal({ plan, planningInput });
   const applicationContext = createAiStorefrontApplicationContext({
     activeDraft: fixture.draft,
     catalogue: fixture.aggregate.catalogue,

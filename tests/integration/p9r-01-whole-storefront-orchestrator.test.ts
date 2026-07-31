@@ -1,6 +1,6 @@
 // @vitest-environment node
 
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   classifyRegisteredWholeStorefrontDirectionRequest,
   planRegisteredTokenRefinement,
@@ -29,23 +29,37 @@ function requiredPage(
   return page;
 }
 
-// Each scenario includes exactly one captured provider request. They are
-// prepared outside Vitest's per-test and hook timers and only read below;
-// proposal acceptance clones its supplied state.
-const instructionScenarios = await (async () => ({
-  modern: await generateP905aInstructionScenarioFromBaseline(
-    "warmApproachable",
-    modernTechnicalRequest,
-  ),
-  warm: await generateP905aInstructionScenarioFromBaseline(
-    "modernTechnical",
-    warmApproachableRequest,
-  ),
-}))();
+type InstructionScenario = Awaited<ReturnType<typeof generateP905aInstructionScenarioFromBaseline>>;
+type InstructionScenarios = Readonly<{
+  modern: InstructionScenario;
+  warm: InstructionScenario;
+}>;
+
+// The slowest measured deterministic setup was 11.88s, so this preserves a
+// narrow margin while keeping shared generation under Vitest control.
+const sharedScenarioSetupTimeoutMs = 15_000;
+let instructionScenarios: InstructionScenarios | undefined;
+
+function requiredInstructionScenarios(): InstructionScenarios {
+  if (!instructionScenarios) throw new Error("P9R-01 instruction scenarios did not initialize.");
+  return instructionScenarios;
+}
 
 describe("P9R-01 whole-storefront AI composition orchestrator", () => {
-  it("materializes the exact modern-technical request into one coordinated structural proposal", async () => {
-    const generated = instructionScenarios.modern;
+  beforeAll(async () => {
+    const modern = await generateP905aInstructionScenarioFromBaseline(
+      "warmApproachable",
+      modernTechnicalRequest,
+    );
+    const warm = await generateP905aInstructionScenarioFromBaseline(
+      "modernTechnical",
+      warmApproachableRequest,
+    );
+    instructionScenarios = Object.freeze({ modern, warm });
+  }, sharedScenarioSetupTimeoutMs);
+
+  it("materializes the exact modern-technical request into one coordinated structural proposal", () => {
+    const generated = requiredInstructionScenarios().modern;
     const { plan, proposal } = generated;
     const homepage = requiredPage(proposal, "home");
     const collection = requiredPage(proposal, "collection");
@@ -142,7 +156,7 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
   });
 
   it("derives the registered direction from each provider-received instruction", async () => {
-    const { modern, warm } = instructionScenarios;
+    const { modern, warm } = requiredInstructionScenarios();
     const repeatedWarm = await generateP905aInstructionScenarioFromBaseline(
       "modernTechnical",
       warmApproachableRequest,
@@ -188,10 +202,14 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
     expect(proposal.proposedStorefront.navigation).toEqual(proposal.originalStorefront.navigation);
   });
 
-  it("accepts the coordinated proposal as one reversible transaction without changing commerce", async () => {
-    const generated = instructionScenarios.modern;
+  it("accepts the coordinated proposal as one reversible transaction without changing commerce", () => {
+    const generated = requiredInstructionScenarios().modern;
     const commerceBefore = structuredClone(generated.fixture.aggregate.catalogue);
-    const coordinator = createP905aAcceptanceCoordinator(generated);
+    const coordinator = createP905aAcceptanceCoordinator({
+      ...generated,
+      fixture: structuredClone(generated.fixture),
+      proposal: structuredClone(generated.proposal),
+    });
     const accepted = coordinator.accept();
 
     expect(accepted.state).toBe("accepted");
