@@ -29,12 +29,23 @@ function requiredPage(
   return page;
 }
 
+// Each scenario includes exactly one captured provider request. They are
+// prepared outside Vitest's per-test and hook timers and only read below;
+// proposal acceptance clones its supplied state.
+const instructionScenarios = await (async () => ({
+  modern: await generateP905aInstructionScenarioFromBaseline(
+    "warmApproachable",
+    modernTechnicalRequest,
+  ),
+  warm: await generateP905aInstructionScenarioFromBaseline(
+    "modernTechnical",
+    warmApproachableRequest,
+  ),
+}))();
+
 describe("P9R-01 whole-storefront AI composition orchestrator", () => {
   it("materializes the exact modern-technical request into one coordinated structural proposal", async () => {
-    const generated = await generateP905aInstructionScenarioFromBaseline(
-      "warmApproachable",
-      modernTechnicalRequest,
-    );
+    const generated = instructionScenarios.modern;
     const { plan, proposal } = generated;
     const homepage = requiredPage(proposal, "home");
     const collection = requiredPage(proposal, "collection");
@@ -130,28 +141,26 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
     expect(product.sections).not.toEqual(baselineProduct.sections);
   });
 
-  it("derives the registered direction from the provider-received instruction and classifies unsafe instructions safely", async () => {
-    const warm = await generateP905aInstructionScenarioFromBaseline(
-      "modernTechnical",
-      warmApproachableRequest,
-    );
+  it("derives the registered direction from each provider-received instruction", async () => {
+    const { modern, warm } = instructionScenarios;
     const repeatedWarm = await generateP905aInstructionScenarioFromBaseline(
       "modernTechnical",
       warmApproachableRequest,
     );
-    const modern = await generateP905aInstructionScenarioFromBaseline(
-      "warmApproachable",
-      modernTechnicalRequest,
-    );
 
     expect(warm.providerRequests).toEqual([
+      expect.objectContaining({ merchantInstruction: warmApproachableRequest }),
+    ]);
+    expect(repeatedWarm.providerRequests).toEqual([
       expect.objectContaining({ merchantInstruction: warmApproachableRequest }),
     ]);
     expect(warm.plan.designSystemSelection.directionId).toBe("warmApproachable");
     expect(repeatedWarm.plan.fingerprint).toBe(warm.plan.fingerprint);
     expect(modern.plan.designSystemSelection.directionId).toBe("modernTechnical");
     expect(modern.plan.fingerprint).not.toBe(warm.plan.fingerprint);
+  });
 
+  it("classifies ambiguous and unsupported instructions through the canonical safe path", () => {
     expect(
       classifyRegisteredWholeStorefrontDirectionRequest("Make it warm premium and minimal Nordic"),
     ).toMatchObject({ kind: "ambiguous" });
@@ -180,10 +189,7 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
   });
 
   it("accepts the coordinated proposal as one reversible transaction without changing commerce", async () => {
-    const generated = await generateP905aInstructionScenarioFromBaseline(
-      "warmApproachable",
-      modernTechnicalRequest,
-    );
+    const generated = instructionScenarios.modern;
     const commerceBefore = structuredClone(generated.fixture.aggregate.catalogue);
     const coordinator = createP905aAcceptanceCoordinator(generated);
     const accepted = coordinator.accept();

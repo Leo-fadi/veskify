@@ -204,7 +204,7 @@ async function generateP905aScenarioWithProvider({
   if (!plan || providerPlans.length !== 1) {
     throw new Error("Expected exactly one deterministic provider plan.");
   }
-  const compiledProposal = compileWholeStorefrontProposal({ plan, planningInput });
+  let compiledProposal: ReturnType<typeof compileWholeStorefrontProposal> | undefined;
   const applicationContext = createAiStorefrontApplicationContext({
     activeDraft: fixture.draft,
     catalogue: fixture.aggregate.catalogue,
@@ -221,7 +221,9 @@ async function generateP905aScenarioWithProvider({
     fixture,
     planningInput,
     plan,
-    compiledProposal,
+    get compiledProposal() {
+      return (compiledProposal ??= compileWholeStorefrontProposal({ plan, planningInput }));
+    },
     request,
     providerRequests,
     providerPlans,
