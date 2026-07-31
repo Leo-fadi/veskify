@@ -172,7 +172,9 @@ test("keeps review actions visible and keyboard accessible while scrolling on mo
   await create.focus();
   await expect(create).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("button", { name: "Creating project…" })).toBeDisabled();
+  await expect(page).toHaveURL(/\/projects\/project_onboarding_[a-f0-9]{8}\/editor$/, {
+    timeout: 15_000,
+  });
 });
 
 for (const width of [375, 768, 1024, 1440]) {

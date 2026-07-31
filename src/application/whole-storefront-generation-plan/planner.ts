@@ -468,6 +468,7 @@ function requiredHomepageRecipeComponents(input: {
   definitions: ReturnType<typeof normalizedDefinitions>;
   registry: ReturnType<typeof createComponentRegistryV2>;
   usedComponentIds: Set<string>;
+  directionId: "premiumEditorial" | "modernTechnical" | "warmApproachable";
   recipeId: string;
 }): WholeStorefrontGenerationPlan["pagePlans"][number]["components"] {
   const { planningInput, page, definitions, registry, usedComponentIds, recipeId } = input;
@@ -480,7 +481,10 @@ function requiredHomepageRecipeComponents(input: {
   }
   const existingComponents = new Set(page.sections.map((section) => section.component));
   return recipe.sections.flatMap((recipeSection) => {
-    if (!recipeSection.required || existingComponents.has(recipeSection.component)) return [];
+    if (existingComponents.has(recipeSection.component)) return [];
+    const requiredForModernHomepageSlice =
+      input.directionId === "modernTechnical" && recipeSection.component === "brandStory";
+    if (!recipeSection.required && !requiredForModernHomepageSlice) return [];
     if (recipeSection.component !== "brandStory") {
       invalid(
         "missing-required-recipe-content",
@@ -1102,6 +1106,7 @@ export function createWholeStorefrontGenerationPlan(
           definitions,
           registry,
           usedComponentIds,
+          directionId: designSystemSelection.directionId,
           recipeId: designSystemSelection.homepageRecipeId,
         }),
       );

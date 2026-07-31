@@ -66,6 +66,20 @@ export async function generateP905aScenario(directionId: P905aDirectionId) {
   });
 }
 
+export async function generateP905aHomepageOnlyScenarioFromBaseline(
+  baselineDirectionId: P905aDirectionId,
+  merchantInstruction: string,
+) {
+  return generateP905aScenarioWithProvider({
+    baselineDirectionId,
+    merchantInstruction,
+    capability: "registeredWholeStorefrontDirection",
+    scope: "homepage",
+    deferCompiledProposal: true,
+    selectPlan: (providerRequest) => providerRequest.planForDirection("modernTechnical"),
+  });
+}
+
 export async function generateP905aScenarioFromSelectedDirection(
   directionId: P905aDirectionId,
   baselineDirectionId: P905aDirectionId,
@@ -112,18 +126,22 @@ async function generateP905aScenarioWithProvider({
   baselineDirectionId,
   merchantInstruction,
   capability,
+  scope = "storefront",
   deferCompiledProposal = false,
   selectPlan,
 }: {
   baselineDirectionId: P905aDirectionId;
   merchantInstruction: string;
   capability: "approvedColorTypographyDirection" | "registeredWholeStorefrontDirection";
+  scope?: "storefront" | "homepage";
   deferCompiledProposal?: boolean;
   selectPlan: (
     providerRequest: WholeStorefrontPlanningProviderRequest,
   ) => WholeStorefrontGenerationPlan;
 }) {
   const fixture = createP905aFreshMerchantFixture(baselineDirectionId);
+  const homepage = fixture.draft.pages.find((page) => page.type === "home");
+  if (scope === "homepage" && !homepage) throw new Error("P9-05A requires a homepage target.");
   const planningInput = wholeStorefrontPlanningInputSchema.parse(
     structuredClone(fixture.planningInput),
   );
@@ -168,16 +186,20 @@ async function generateP905aScenarioWithProvider({
       draftSnapshotId: fixture.draft.id,
       draftRevision: fixture.draft.revision,
       storefront: projectAiStorefrontSnapshot(fixture.draft),
-      affectedPageIds: fixture.draft.pages.map((page) => page.id),
+      affectedPageIds:
+        scope === "homepage" ? [homepage!.id] : fixture.draft.pages.map((page) => page.id),
       affectedSectionTargets: [],
-      designSystemTarget: {
-        kind: "storefrontDesignSystem",
-        projectId: fixture.aggregate.project.id,
-      },
+      designSystemTarget:
+        scope === "homepage"
+          ? null
+          : {
+              kind: "storefrontDesignSystem" as const,
+              projectId: fixture.aggregate.project.id,
+            },
       merchantInstruction,
       activeLocale: fixture.aggregate.project.primaryLocale,
       enabledLocales: fixture.aggregate.project.enabledLocales,
-      requestedScope: "storefront",
+      requestedScope: scope === "homepage" ? "page" : "storefront",
       capability,
       providerId: SERVER_PROVIDER_ID,
       provider: {

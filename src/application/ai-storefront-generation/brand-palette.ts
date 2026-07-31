@@ -37,7 +37,7 @@ const mutationVerbPattern =
   "(?:add|create|insert|make|simplify|compact|expand|redesign|rebuild|move|reorder|hide|show|change|update|replace|rewrite|remove|delete|edit|set|increase|decrease|adjust|modify|alter|raise|lower|lisää|luo|tee|muuta|päivitä|korvaa|poista|aseta|korota|nosta|vähennä|laske|säädä)";
 const wordBoundary = "[^\\p{L}\\p{N}_]";
 const protectedMutationPattern = new RegExp(
-  `(?:^|${wordBoundary})${mutationVerbPattern}(?=$|${wordBoundary})[^.!?]{0,80}(?:^|${wordBoundary})(?:prices?|sku|stock|inventory|availability|products?(?!\\s+(?:imagery|images?|presentation|details?|discovery|cards?|grid|gallery|layout))|variants?|option\\s+values?|payments?|shipping|tax|orders?|hin(?:n|t)\\p{L}*|tuotte\\p{L}*|tuote|varasto\\p{L}*|saatavu\\p{L}*|variant\\p{L}*|valinta-arvo\\p{L}*|maksu\\p{L}*|toimitu\\p{L}*|vero\\p{L}*|tilau\\p{L}*)(?=$|${wordBoundary})`,
+  `(?:^|${wordBoundary})${mutationVerbPattern}(?=$|${wordBoundary})[^.!?]{0,80}(?:^|${wordBoundary})(?:prices?|sku|stock|inventory|availability|products?(?!\\s+(?:imagery|images?|presentation|details?|discovery|cards?|grid|gallery|layout|near|placement|order|hierarchy))|(?<!component\\s)(?<!section\\s)variants?|option\\s+values?|payments?|shipping|tax|orders|hin(?:n|t)\\p{L}*|tuotte\\p{L}*|tuote|varasto\\p{L}*|saatavu\\p{L}*|variant(?:t|ien)|valinta-arvo\\p{L}*|maksu\\p{L}*|toimitu\\p{L}*|vero\\p{L}*|tilau\\p{L}*)(?=$|${wordBoundary})`,
   "iu",
 );
 const broaderMutationPattern = new RegExp(
@@ -46,8 +46,12 @@ const broaderMutationPattern = new RegExp(
 );
 const preservationClausePatterns = [
   /\b(?:keep|preserve|leave|retain)\b[^.!?]{0,240}\b(?:unchanged|same|intact|as\s+is)\b/gi,
+  /\b(?:keep|preserve|leave|retain)\b[^.!?]{0,240}\b(?:products?|prices?|sku|stock|inventory|availability|variants?|option\s+values?|payments?|shipping|tax|orders?|assets?|media|routes?)\b[^.!?]*(?:[.!?]|$)/gi,
+  /\b(?:pidä|säilytä|säilyttäen)\b[^.!?]{0,240}\b(?:tuotte\p{L}*|tuote|hin(?:n|t)\p{L}*|varasto\p{L}*|saatavu\p{L}*|variant\p{L}*|valinta-arvo\p{L}*|aineisto\p{L}*|media\p{L}*|reit\p{L}*)\b[^.!?]*(?:[.!?]|$)/giu,
   /\b(?:do\s+not|don't|without)\s+(?:change|changing|update|updating|replace|replacing|edit|editing|remove|removing|reorder|reordering|alter|altering)\b[^.!?]{0,240}\b(?:layout|typography|fonts?|images?|imagery|copy|content|products?|prices?|sku|stock|inventory|variants?|sections?|structure|navigation|footer|page\s+composition)\b[^.!?]*/gi,
 ];
+const positivePreservationCuePattern =
+  /\b(?:keep|preserve|leave|retain|pidä|säilytä|säilyttäen)\b/iu;
 
 const tokenAliases: ReadonlyArray<{
   token: BrandColourToken;
@@ -318,6 +322,20 @@ function actionableMutationInstruction(instruction: string): string {
 }
 
 export function containsProtectedCommerceMutation(instruction: string): boolean {
+  for (const sentence of instruction.split(/(?<=[.!?])/u)) {
+    const preservationCue = positivePreservationCuePattern.exec(sentence);
+    if (!preservationCue || preservationCue.index === undefined) continue;
+    if (protectedMutationPattern.test(sentence.slice(0, preservationCue.index))) return true;
+    const suffix = sentence.slice(preservationCue.index + preservationCue[0].length);
+    for (const mutation of suffix.matchAll(new RegExp(mutationVerbPattern, "giu"))) {
+      if (
+        mutation.index !== undefined &&
+        protectedMutationPattern.test(suffix.slice(mutation.index))
+      ) {
+        return true;
+      }
+    }
+  }
   return protectedMutationPattern.test(actionableMutationInstruction(instruction));
 }
 

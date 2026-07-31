@@ -1,0 +1,118 @@
+{
+  "reportVersion": 1,
+  "reportId": "p9r-05-live-composition-boundary-report",
+  "sourceEvidence": {
+    "kind": "redacted-local-failure-inspection",
+    "providerPayloadRetained": false,
+    "credentialValuesRetained": false,
+    "finding": "The retained failure artifact contains only safe project and snapshot fingerprints. It contains no operation list, provider direction selection, canonical plan, compiled proposal, accepted snapshot, or rendered projection; it cannot establish a provider selection or a first composition-loss boundary by itself."
+  },
+  "authoritativeLifecycle": [
+    "merchant instruction",
+    "editor scope resolution",
+    "provider direction selection",
+    "registered direction materialization",
+    "whole-storefront plan",
+    "compiled proposal",
+    "accepted StorefrontSnapshot",
+    "page projections",
+    "preview and published renderers"
+  ],
+  "fourOperationExplanation": {
+    "operationModel": "aggregate",
+    "operations": [
+      "one registered BrandSystem operation",
+      "one complete section-replacement operation for homepage",
+      "one complete section-replacement operation for collection",
+      "one complete section-replacement operation for PDP"
+    ],
+    "conclusion": "For a three-page whole-storefront target, the server projection emits one aggregate registered BrandSystem operation and one complete page-section replacement per targeted page. Thus the reported count of four is not evidence of four shallow token changes. The redacted artifact cannot identify the direction or contents of the particular failed proposal."
+  },
+  "verifiedModernTechnicalSelections": {
+    "sharedFrame": {
+      "header": "compact",
+      "footer": "compact",
+      "surfaceDepth": "flat"
+    },
+    "homepage": {
+      "recipe": "homeModernCommerce",
+      "hero": "asymmetric",
+      "productPresentation": "compact",
+      "collectionDiscovery": "grid",
+      "story": "minimal",
+      "trust": "omitted when approved merchant trust evidence is unavailable"
+    },
+    "collection": {
+      "recipe": "collectionCommerce",
+      "variant": "compact",
+      "filterLayout": "sidebar",
+      "gridDensity": "compact",
+      "cardVariant": "compact"
+    },
+    "product": {
+      "recipe": "productVariantLed",
+      "variant": "compact",
+      "galleryLayout": "thumbnails",
+      "optionDensity": "compact",
+      "attributeLayout": "table",
+      "mediaTreatment": "contained"
+    }
+  },
+  "confirmedGapsAndRemediation": [
+    {
+      "firstAuthoritativeBoundary": "editor command contract for the separate homepage-only request",
+      "gap": "An explicit homepage-only request was rejected because the command and plan contracts required storefront scope and at least two affected pages.",
+      "remediation": "A narrow canonical homepage scope router now creates one page target with no shared-design-system target; the server independently reconstructs and validates the same target."
+    },
+    {
+      "firstAuthoritativeBoundary": "registered homepage recipe materialization",
+      "gap": "A selected trust variant could be represented by recipe metadata without a stored trust section when the baseline lacked one.",
+      "remediation": "The planner no longer materializes registry-default benefit content. It preserves an existing approved trust section when present and otherwise omits the optional section so unsupported delivery, durability, guarantee, or trust claims cannot enter the proposal."
+    },
+    {
+      "firstAuthoritativeBoundary": "registered homepage recipe materialization",
+      "gap": "The modern homepage recipe selected a minimal specification-style brand-story variant, but the optional recipe entry was not materialized when the baseline lacked a story section; the snapshot and renderer therefore had no story to render.",
+      "remediation": "The narrow modern homepage path now materializes brand-story content only from the approved editorial asset context, allowing the compiler, canonical snapshot and renderer to preserve the selected story composition."
+    }
+  ],
+  "failedLiveLossBoundary": {
+    "status": "not-identifiable-from-retained-evidence",
+    "reason": "The failure artifact proves neither the selected registered direction nor the four operation bodies. Source code proves that a count of four is aggregate for a whole-storefront target, but it cannot reconstruct the actual live selection after the session was discarded.",
+    "nextProof": "Run the deterministic homepage-only path through the authoritative editor request, proposal, canonical snapshot, and renderer boundaries before a new controlled OpenAI homepage-only retest."
+  },
+  "liveRetest": {
+    "status": "historical-controlled-homepage-response-superseded-by-trust-safety-correction",
+    "providerCallsMade": 1,
+    "providerExecution": "completed",
+    "scope": "one homepage page target with no design-system target",
+    "proposalOperation": "one APPLY_REGISTERED_PAGE_SECTIONS operation",
+    "homepageSectionSignature": [
+      "header:compact",
+      "hero:asymmetric",
+      "productGrid:compact",
+      "featuredCategories:grid",
+      "brandStory:minimal",
+      "benefitIcons:threeColumn",
+      "footer:compact"
+    ],
+    "canonicalIntegrity": "collection and product pages were byte-for-byte unchanged in the returned proposal",
+    "editorAcceptance": "the proposal was accepted and applied through the real editor journey",
+    "lifecycleProof": "the identical canonical homepage proposal path passed rendered structure, Undo, Redo, Save and reload checks with the deterministic provider after the live run's original browser assertion was corrected to inspect the canvas iframe",
+    "providerPayloadRetained": false,
+    "credentialValuesRetained": false
+  },
+  "automaticReviewCorrection": {
+    "status": "deterministic-correction-validated-for-manual-merge",
+    "finding": "The historical controlled response materialized a registry-default trust section without approved merchant evidence. That section is not acceptable publishable evidence even though the provider and editor lifecycle completed.",
+    "correctedCanonicalHomepageSignature": [
+      "header:compact",
+      "hero:asymmetric",
+      "productGrid:compact",
+      "featuredCategories:grid",
+      "brandStory:minimal",
+      "footer:compact"
+    ],
+    "providerRetestRequired": false,
+    "reason": "The correction is a deterministic safety restriction that removes unsupported optional content; no additional external provider call is authorized or necessary for this review pass."
+  }
+}

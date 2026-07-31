@@ -68,7 +68,7 @@ export const aiStorefrontGenerationCommandSchema = z
     draftSnapshotId: idSchema,
     draftRevision: z.number().int().nonnegative(),
     storefront: aiStorefrontProjectionSchema,
-    affectedPageIds: z.array(idSchema).min(2),
+    affectedPageIds: z.array(idSchema).min(1),
     affectedSectionTargets: z
       .array(z.object({ pageId: idSchema, sectionId: idSchema }).strict())
       .default([]),
@@ -79,7 +79,7 @@ export const aiStorefrontGenerationCommandSchema = z
     merchantInstruction: z.string().trim().min(1).max(2_000),
     activeLocale: localeSchema,
     enabledLocales: z.array(localeSchema).min(1).max(2),
-    requestedScope: z.literal("storefront"),
+    requestedScope: z.enum(["storefront", "page"]),
     capability: storefrontGenerationCapabilitySchema,
     providerId: z.string().min(1).max(120),
     provider: storefrontProviderSchema,
@@ -112,6 +112,30 @@ export const aiStorefrontGenerationCommandSchema = z
       });
     }
     const knownPages = new Map(command.storefront.pages.map((page) => [page.id, page]));
+    if (command.requestedScope === "page") {
+      if (command.affectedPageIds.length !== 1) {
+        context.addIssue({
+          code: "custom",
+          path: ["affectedPageIds"],
+          message: "A page-scoped storefront request must affect exactly one page.",
+        });
+      }
+      const page = knownPages.get(command.affectedPageIds[0] ?? "");
+      if (!page || page.type !== "home") {
+        context.addIssue({
+          code: "custom",
+          path: ["affectedPageIds"],
+          message: "The supported page-scoped storefront request must target the homepage.",
+        });
+      }
+      if (command.designSystemTarget !== null) {
+        context.addIssue({
+          code: "custom",
+          path: ["designSystemTarget"],
+          message: "A homepage-only request cannot silently change the shared storefront frame.",
+        });
+      }
+    }
     command.affectedPageIds.forEach((pageId, index) => {
       if (!knownPages.has(pageId)) {
         context.addIssue({
@@ -193,8 +217,8 @@ export const aiStorefrontGenerationPlanSchema = z
     direction: storefrontStyleDirectionSchema,
     skillId: z.string().min(1),
     skillVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
-    requestedScope: z.literal("storefront"),
-    affectedPageIds: z.array(idSchema).min(2),
+    requestedScope: z.enum(["storefront", "page"]),
+    affectedPageIds: z.array(idSchema).min(1),
     sectionTargets: z.array(storefrontPlanSectionTargetSchema),
     designSystemTarget: z
       .object({ kind: z.literal("storefrontDesignSystem"), projectId: idSchema })
@@ -207,6 +231,19 @@ export const aiStorefrontGenerationPlanSchema = z
   })
   .strict()
   .superRefine((plan, context) => {
+    if (
+      plan.requestedScope === "page" &&
+      (plan.direction !== "registeredWholeStorefront" ||
+        plan.affectedPageIds.length !== 1 ||
+        plan.designSystemTarget !== null)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["requestedScope"],
+        message:
+          "Homepage-only composition requires one registered direction, one homepage, and no shared design-system target.",
+      });
+    }
     if (plan.tokenRefinementPlan !== null) {
       if (
         plan.direction !== "registeredWholeStorefront" ||
@@ -279,7 +316,7 @@ export const aiStorefrontProviderRequestSchema = z
     instruction: z.string().trim().min(1).max(2_000),
     target: aiStorefrontTargetSchema,
     storefront: aiStorefrontProjectionSchema,
-    affectedPages: z.array(pageModelSchema).min(2),
+    affectedPages: z.array(pageModelSchema).min(1),
     affectedSections: z.array(storefrontAffectedSectionContextSchema),
     componentContracts: z.array(storefrontComponentContractSchema),
     designSystemContext: z

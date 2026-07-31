@@ -71,7 +71,7 @@ export class ServerWholeStorefrontPlanningClient implements StorefrontAIProvider
       recordStorefrontDiagnostic({
         attemptId: request.requestId,
         projectId: request.target.projectId,
-        scope: "storefront",
+        scope: request.target.scope,
         stage,
         category,
         ...(status === undefined ? {} : { status }),

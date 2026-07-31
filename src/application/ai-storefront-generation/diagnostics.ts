@@ -44,7 +44,7 @@ export type StorefrontDiagnosticCategory =
 export type StorefrontDiagnosticRecord = Readonly<{
   attemptId: string;
   projectId: string;
-  scope: "storefront";
+  scope: "storefront" | "page";
   stage: StorefrontDiagnosticStage;
   category: StorefrontDiagnosticCategory;
   status?: number;

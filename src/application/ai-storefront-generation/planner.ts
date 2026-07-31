@@ -340,13 +340,20 @@ export function createAiStorefrontGenerationPlan(
 ): AiStorefrontGenerationPlan {
   const normalizedInstruction = normalizeStorefrontInstruction(command.merchantInstruction);
   const classified = classifyInstruction(command);
-  if (classified.designSystem === "required" && command.designSystemTarget === null) {
+  if (
+    classified.designSystem === "required" &&
+    command.requestedScope === "storefront" &&
+    command.designSystemTarget === null
+  ) {
     throw new AiStorefrontPlanError(
       "target-mismatch",
       "This whole-storefront direction requires an explicit storefront design-system target.",
     );
   }
-  if (classified.designSystem === "none" && command.designSystemTarget !== null) {
+  if (
+    (classified.designSystem === "none" || command.requestedScope === "page") &&
+    command.designSystemTarget !== null
+  ) {
     throw new AiStorefrontPlanError(
       "target-mismatch",
       "The selected-pages direction does not authorize a global design-system change.",
@@ -446,7 +453,7 @@ export function createAiStorefrontGenerationPlan(
     direction: classified.direction,
     skillId: skill.id,
     skillVersion: skill.version,
-    requestedScope: "storefront" as const,
+    requestedScope: command.requestedScope,
     affectedPageIds,
     sectionTargets,
     designSystemTarget: command.designSystemTarget,
@@ -465,8 +472,14 @@ export function createAiStorefrontGenerationPlan(
             }
           : classified.direction === "registeredWholeStorefront"
             ? {
-                en: "Prepare one complete storefront proposal from a server-registered design direction selected through the authoritative planner.",
-                fi: "Valmistele yksi koko kaupan ehdotus palvelimen rekisteröidystä, valtuutetun suunnittelijan valitsemasta tyylisuunnasta.",
+                en:
+                  command.requestedScope === "page"
+                    ? "Prepare one homepage-only proposal from a server-registered design direction without changing the shared frame or other pages."
+                    : "Prepare one complete storefront proposal from a server-registered design direction selected through the authoritative planner.",
+                fi:
+                  command.requestedScope === "page"
+                    ? "Valmistele yksi vain etusivua koskeva ehdotus palvelimen rekisteröidystä tyylisuunnasta muuttamatta yhteistä kehystä tai muita sivuja."
+                    : "Valmistele yksi koko kaupan ehdotus palvelimen rekisteröidystä, valtuutetun suunnittelijan valitsemasta tyylisuunnasta.",
               }
             : classified.direction === "warmPremium"
               ? {

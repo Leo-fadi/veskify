@@ -22,6 +22,14 @@ export type StorefrontProposalPageReview = {
 };
 
 export type StorefrontProposalReview = {
+  scope: "homepage" | "storefront";
+  scopeLabel: string;
+  proposalLabel: string;
+  heading: string;
+  completeSummary: string;
+  confirmationTitle: string;
+  confirmationBody: string;
+  confirmationApplyLabel: string;
   affectedPageCount: number;
   operationCount: number;
   globalChanges: StorefrontProposalReviewItem[];
@@ -164,8 +172,67 @@ export function createStorefrontProposalReview(
         : "The global storefront design changes are not fully represented.",
     );
   }
+  const pageOperationCount = proposal.operations.filter(
+    ({ target }) => target.kind === "page" || target.kind === "section",
+  ).length;
+  const globalOperationCount = proposal.operations.length - pageOperationCount;
+  const homepageScope = proposal.target.scope === "page";
+  const scope = homepageScope ? ("homepage" as const) : ("storefront" as const);
+  const scopeLabel = homepageScope
+    ? locale === "fi"
+      ? "Etusivu"
+      : "Homepage"
+    : locale === "fi"
+      ? "Koko verkkokauppa"
+      : "Entire storefront";
+  const heading = homepageScope
+    ? locale === "fi"
+      ? `Etusivuehdotus · ${pageOperationCount} suunniteltua asettelumuutosta`
+      : `Homepage proposal · ${pageOperationCount} planned layout ${pageOperationCount === 1 ? "change" : "changes"}`
+    : locale === "fi"
+      ? `Verkkokauppaehdotus · ${pageOperationCount} sivumuutosta${globalOperationCount > 0 ? ` · ${globalOperationCount} yhteisen ilmeen muutosta` : ""}`
+      : `Storefront proposal · ${pageOperationCount} page ${pageOperationCount === 1 ? "change" : "changes"}${globalOperationCount > 0 ? ` · ${globalOperationCount} shared design ${globalOperationCount === 1 ? "change" : "changes"}` : ""}`;
 
   return {
+    scope,
+    scopeLabel,
+    proposalLabel:
+      homepageScope && locale === "fi"
+        ? "Etusivun suunnitteluehdotus"
+        : homepageScope
+          ? "Homepage design proposal"
+          : locale === "fi"
+            ? "Verkkokaupan suunnitteluehdotus"
+            : "Storefront design proposal",
+    heading,
+    completeSummary: homepageScope
+      ? locale === "fi"
+        ? "Kaikki suunnitellut etusivun muutokset näkyvät alla."
+        : "Every planned homepage change is represented below."
+      : locale === "fi"
+        ? "Kaikki suunnitellut verkkokaupan muutokset näkyvät alla."
+        : "Every planned storefront change is represented below.",
+    confirmationTitle: homepageScope
+      ? locale === "fi"
+        ? "Otetaanko tämä etusivuehdotus käyttöön?"
+        : "Apply this homepage proposal?"
+      : locale === "fi"
+        ? "Otetaanko tämä kauppaehdotus käyttöön?"
+        : "Apply this storefront proposal?",
+    confirmationBody: homepageScope
+      ? locale === "fi"
+        ? "Tämä päivittää vain etusivun yhtenä tallentamattomana luonnosmuutoksena. Voit kumota muutoksen yhdellä toiminnolla."
+        : "This updates only the homepage as one unsaved draft change. You can undo the change in one step."
+      : locale === "fi"
+        ? "Tämä päivittää tarkistuksessa luetellut sivut ja yhteisen ilmeen muutokset yhtenä tallentamattomana luonnosmuutoksena. Voit kumota koko muutoksen yhdellä toiminnolla."
+        : "This updates the pages and shared design changes listed in the review as one unsaved draft change. You can undo the complete change in one step.",
+    confirmationApplyLabel: homepageScope
+      ? locale === "fi"
+        ? "Ota etusivuehdotus käyttöön"
+        : "Apply homepage proposal"
+      : locale === "fi"
+        ? "Ota kauppaehdotus käyttöön"
+        : "Apply storefront proposal",
     affectedPageCount: proposal.target.affectedPageIds.length,
     operationCount: proposal.operations.length,
     globalChanges,

@@ -137,7 +137,14 @@ export const p905aDirectionScenarios = {
     },
     expected: {
       homepageRecipeId: "homeModernCommerce",
-      homepageOrder: ["header", "hero", "productGrid", "featuredCategories", "footer"],
+      homepageOrder: [
+        "header",
+        "hero",
+        "productGrid",
+        "featuredCategories",
+        "brandStory",
+        "footer",
+      ],
       heroVariant: "asymmetric",
       productCardFamilyId: "compactCommerce",
       collectionPresentation: {

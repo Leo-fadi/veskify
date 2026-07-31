@@ -520,19 +520,19 @@ export function DesignAgentPanel({
 
       {controller.previewActive && storefrontProposal && storefrontReview && session ? (
         <section
-          aria-label={text.storefrontProposal}
+          aria-label={storefrontReview.proposalLabel}
           className={styles.card}
           data-proposal-id={storefrontProposal.id}
         >
           <p className={styles.eyebrow}>{applicationFailed ? text.applyFailed : text.ready}</p>
           <h3 ref={proposalHeadingRef} tabIndex={-1}>
-            {resolveLocalizedText(storefrontProposal.summary, locale, primaryLocale)}
+            {storefrontReview.heading}
           </h3>
           <p className={styles.previewNotice}>{text.preview}</p>
           <dl className={styles.reviewFacts}>
             <div>
               <dt>{text.affected}</dt>
-              <dd>{text.storefrontTarget}</dd>
+              <dd>{storefrontReview.scopeLabel}</dd>
             </div>
             <div>
               <dt>{text.affectedPages}</dt>
@@ -608,7 +608,7 @@ export function DesignAgentPanel({
                 ))}
               </ul>
             ) : (
-              <p>{text.completeReview}</p>
+              <p>{storefrontReview.completeSummary}</p>
             )}
             {applicationFailed && session.failure ? (
               <p>{resolveLocalizedText(session.failure.message, locale, primaryLocale)}</p>
@@ -689,9 +689,9 @@ export function DesignAgentPanel({
               role="dialog"
             >
               <h4 id="storefront-acceptance-title" ref={confirmationRef} tabIndex={-1}>
-                {text.confirmTitle}
+                {storefrontReview.confirmationTitle}
               </h4>
-              <p id="storefront-acceptance-description">{text.confirmBody}</p>
+              <p id="storefront-acceptance-description">{storefrontReview.confirmationBody}</p>
               <div className={styles.actions}>
                 <button
                   disabled={controller.controlsDisabled}
@@ -707,7 +707,7 @@ export function DesignAgentPanel({
                   }}
                   type="button"
                 >
-                  {text.confirmApply}
+                  {storefrontReview.confirmationApplyLabel}
                 </button>
                 <button
                   disabled={controller.controlsDisabled}

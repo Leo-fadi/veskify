@@ -4,6 +4,7 @@ export * from "./approved-asset-context";
 export * from "./brand-palette";
 export * from "./token-refinement";
 export * from "./planner";
+export * from "./scope-router";
 export * from "./request-builder";
 export * from "./provider-boundary";
 export * from "./mock-provider";

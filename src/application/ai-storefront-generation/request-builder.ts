@@ -115,7 +115,7 @@ export function buildAiStorefrontProviderRequest(
     throw error;
   }
   const target = canonicalizeAiStorefrontTarget({
-    scope: "storefront",
+    scope: plan.requestedScope,
     projectId: command.projectId,
     draftSnapshotId: command.draftSnapshotId,
     draftRevision: command.draftRevision,
@@ -177,7 +177,7 @@ export function buildAiStorefrontProviderRequest(
     },
   }));
   if (
-    target.designSystemTarget !== null &&
+    (target.designSystemTarget !== null || plan.direction === "registeredWholeStorefront") &&
     plan.brandPalettePlan === null &&
     plan.tokenRefinementPlan === null
   ) {
