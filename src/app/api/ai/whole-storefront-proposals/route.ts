@@ -29,6 +29,7 @@ export function createWholeStorefrontPlanningRouteHandler({
   const standalone = runtimeMode === "standalone";
   const integrated = runtimeMode === "integrated" && environment.VESKIFY_AI_PROVIDER === "openai";
   const localDemo = isP905bLocalDemoConfigured(environment);
+  const localDemoDeterministic = localDemo && environment.VESKIFY_AI_PROVIDER === "deterministic";
   return createServerWholeStorefrontPlanningHandler({
     authority:
       authority ??
@@ -40,7 +41,8 @@ export function createWholeStorefrontPlanningRouteHandler({
     selectProvider:
       selectProvider ??
       (() => {
-        if (standalone) return createDeterministicWholeStorefrontPlanningProvider();
+        if (standalone || localDemoDeterministic)
+          return createDeterministicWholeStorefrontPlanningProvider();
         if (integrated) return selectServerWholeStorefrontPlanningProvider();
         throw new Error("A server whole-storefront planner is not configured.");
       }),

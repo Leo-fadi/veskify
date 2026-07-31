@@ -123,9 +123,13 @@ function ProductPreviewLoader({
           (page) => page.type === "product" && page.slug === `/products/${productSlug}`,
         );
         if (!productPage) return setState({ status: "missingProductPage" });
-        const canonicalProductId = productPage.sections.find(
-          (section) => section.component === "productInfo",
-        )?.content.productId;
+        const dynamicProduct = productPage.sections.find(
+          (section) => section.component === "dynamicProductDetail",
+        );
+        const canonicalProductId =
+          dynamicProduct?.content.productId ??
+          productPage.sections.find((section) => section.component === "productInfo")?.content
+            .productId;
         const product = aggregate.catalogue.products.find((item) => item.id === canonicalProductId);
         if (!product) return setState({ status: "productNotFound" });
         try {
@@ -137,11 +141,13 @@ function ProductPreviewLoader({
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
           });
           validateRegisteredPage(productPage, context);
-          const references = productPage.sections
-            .filter((section) =>
-              ["productGallery", "productInfo", "productOptions"].includes(section.component),
-            )
-            .map((section) => section.content.productId);
+          const references = dynamicProduct
+            ? [dynamicProduct.content.productId]
+            : productPage.sections
+                .filter((section) =>
+                  ["productGallery", "productInfo", "productOptions"].includes(section.component),
+                )
+                .map((section) => section.content.productId);
           if (!references.length || references.some((reference) => reference !== product.id))
             throw new Error("Product page references do not match the canonical product.");
           void renderStorefrontPage(productPage, context);

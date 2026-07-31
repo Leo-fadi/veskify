@@ -1,18 +1,24 @@
 import {
   benefitIconsContentSchema,
   collectionHeaderContentSchema,
+  dynamicCollectionCommerceBridgeContentSchema,
   dynamicCollectionCommerceDefaultContent,
   dynamicCollectionCommerceDefaultProps,
   dynamicCollectionCommerceDefaultStyleOverrides,
+  dynamicCollectionCommercePropsSchema,
+  dynamicProductDetailBridgeContentSchema,
   dynamicProductDetailDefaultContent,
   dynamicProductDetailDefaultProps,
   dynamicProductDetailDefaultStyleOverrides,
+  dynamicProductDetailPropsSchema,
   filterBarContentSchema,
   imageTextContentSchema,
   productGalleryContentSchema,
   productGridContentSchema,
   relatedProductsContentSchema,
 } from "@/components/registry";
+import { dynamicCollectionCommerceDefinition } from "@/components/registry/dynamic-collection-commerce";
+import { dynamicProductDetailDefinition } from "@/components/registry/dynamic-product-detail";
 import type {
   CollectionPresentationContext,
   ComponentProjectionContext,
@@ -29,7 +35,11 @@ import type {
   CanonicalProductConfigurationResolver,
 } from "@/domain/product-presentation";
 import type { AssetRef, LocalizedText } from "@/domain/shared";
-import { canonicalValueString, type PageModel } from "@/domain/storefront";
+import {
+  canonicalValueFingerprint,
+  canonicalValueString,
+  type PageModel,
+} from "@/domain/storefront";
 import type {
   CollectionCommerceRouteInput,
   CollectionCommerceRoutePresentation,
@@ -212,7 +222,7 @@ function availability(product: ProductDisplayModel): LocalizedText | undefined {
 }
 
 function revisionFor(input: ProductCommerceRouteInput | CollectionCommerceRouteInput): string {
-  return `${input.aggregate.catalogue.id}_${input.aggregate.project.revision}`.slice(0, 120);
+  return `canonical-commerce-${canonicalValueFingerprint(input.aggregate.catalogue)}`;
 }
 
 function canonicalVariantDimensions(
@@ -499,6 +509,80 @@ function hasCompatibleVisibleLayout(
 function productPresentation(
   input: ProductCommerceRouteInput,
 ): ProductCommerceRoutePresentation | null {
+  const dynamicSection = input.page.sections.find(
+    (section) => section.visible && section.component === "dynamicProductDetail",
+  );
+  if (dynamicSection) {
+    const { productId, relatedProductIds, canonicalRevision, ...content } =
+      dynamicProductDetailBridgeContentSchema.parse(dynamicSection.content);
+    if (productId !== input.product.id) {
+      throw new Error("Product route bindings do not reference one canonical product.");
+    }
+    const variantDimensions = canonicalVariantDimensions(input.product);
+    if (variantDimensions === null) return null;
+    const relatedProducts = relatedProductIds.map((relatedProductId) => {
+      const product = input.aggregate.catalogue.products.find(
+        (candidate) => candidate.id === relatedProductId,
+      );
+      if (!product) throw new Error("A related-product binding does not resolve.");
+      return product;
+    });
+    const revision = revisionFor(input);
+    if (canonicalRevision !== revision) {
+      throw new Error("Product route binding revision does not match the canonical catalogue.");
+    }
+    const primaryContext = productContext(
+      input.product,
+      revision,
+      variantDimensions,
+      relatedProductIds,
+    );
+    const relatedContexts = relatedProducts.map((product) => productContext(product, revision));
+    const products = [primaryContext, ...relatedContexts];
+    const projection: ComponentProjectionContext = {
+      products,
+      collections: [],
+      assets: productAssets(products),
+      navigation: [],
+      projectBrandContexts: [],
+      localizedContents: [],
+      productListRevision: revision,
+    };
+    return {
+      instance: {
+        id: dynamicSection.id,
+        component: "dynamicProductDetail",
+        componentVersion: dynamicProductDetailDefinition.version,
+        variant: dynamicSection.variant,
+        content,
+        props: dynamicProductDetailPropsSchema.parse(dynamicSection.props),
+        styleOverrides: dynamicProductDetailDefaultStyleOverrides,
+        bindings: [
+          {
+            slotId: "primaryProduct",
+            source: "product",
+            productId: input.product.id,
+            revision,
+          },
+          ...(relatedProductIds.length
+            ? [
+                {
+                  slotId: "relatedProducts" as const,
+                  source: "productList" as const,
+                  productIds: relatedProductIds,
+                  revision,
+                },
+              ]
+            : []),
+        ],
+        assetAssignments: [],
+      },
+      projection,
+      productContext: primaryContext,
+      resolver: productResolver(input.product, primaryContext, variantDimensions),
+      resolveAssetUrl: assetUrlResolver(input.aggregate.catalogue),
+    };
+  }
   if (
     !hasCompatibleVisibleLayout(input.page, PRODUCT_COMPONENTS, PRODUCT_COMPONENT_ORDER, [
       "productGallery",
@@ -679,9 +763,92 @@ function collectionContext(
   };
 }
 
+function canonicalCollectionFilterIds(products: readonly ProductDisplayModel[]): readonly string[] {
+  const attributeIds = new Set<string>();
+  products.forEach((product) => {
+    Object.keys(product.attributes).forEach((attributeId) => attributeIds.add(attributeId));
+  });
+  return [...attributeIds]
+    .sort((left, right) => left.localeCompare(right))
+    .concat(["price", "availability"]);
+}
+
 function collectionPresentation(
   input: CollectionCommerceRouteInput,
 ): CollectionCommerceRoutePresentation | null {
+  const dynamicSection = input.page.sections.find(
+    (section) => section.visible && section.component === "dynamicCollectionCommerce",
+  );
+  if (dynamicSection) {
+    const { collectionId, productIds, canonicalRevision, ...content } =
+      dynamicCollectionCommerceBridgeContentSchema.parse(dynamicSection.content);
+    if (collectionId !== input.collection.id) {
+      throw new Error("Collection route binding does not reference the canonical collection.");
+    }
+    if (
+      productIds.length !== input.collection.productIds.length ||
+      productIds.some((productId, index) => productId !== input.collection.productIds[index])
+    ) {
+      throw new Error("Collection route membership must preserve canonical order.");
+    }
+    const products = productIds.map((productId) => {
+      const product = input.aggregate.catalogue.products.find(
+        (candidate) => candidate.id === productId,
+      );
+      if (!product) throw new Error("A collection product binding does not resolve.");
+      return product;
+    });
+    const revision = revisionFor(input);
+    if (canonicalRevision !== revision) {
+      throw new Error("Collection route binding revision does not match the canonical catalogue.");
+    }
+    const productContexts = products.map((product) => productContext(product, revision));
+    const collection = collectionContext(
+      input.collection,
+      products,
+      canonicalCollectionFilterIds(products),
+      revision,
+      products[0]?.images[0]?.id,
+    );
+    const projection: ComponentProjectionContext = {
+      products: productContexts,
+      collections: [collection],
+      assets: productAssets(productContexts),
+      navigation: [],
+      projectBrandContexts: [],
+      localizedContents: [],
+      productListRevision: revision,
+      collectionListRevision: revision,
+    };
+    return {
+      instance: {
+        id: dynamicSection.id,
+        component: "dynamicCollectionCommerce",
+        componentVersion: dynamicCollectionCommerceDefinition.version,
+        variant: dynamicSection.variant,
+        content,
+        props: dynamicCollectionCommercePropsSchema.parse(dynamicSection.props),
+        styleOverrides: dynamicCollectionCommerceDefaultStyleOverrides,
+        bindings: [
+          {
+            slotId: "primaryCollection",
+            source: "collection",
+            collectionId: input.collection.id,
+            revision,
+          },
+          {
+            slotId: "collectionProducts",
+            source: "productList",
+            productIds,
+            revision,
+          },
+        ],
+        assetAssignments: [],
+      },
+      projection,
+      resolveAssetUrl: assetUrlResolver(input.aggregate.catalogue),
+    };
+  }
   if (
     !hasCompatibleVisibleLayout(input.page, COLLECTION_COMPONENTS, COLLECTION_COMPONENT_ORDER, [
       "collectionHeader",

@@ -256,7 +256,9 @@ export function CollectionPreviewClient({
           candidate.type === "product" &&
           candidate.sections.some(
             (section) =>
-              section.component === "productInfo" && section.content.productId === intent.productId,
+              (section.component === "productInfo" ||
+                section.component === "dynamicProductDetail") &&
+              section.content.productId === intent.productId,
           ),
       );
       if (productPage) window.location.assign(`${pathPrefix}${productPage.slug}`);
@@ -269,7 +271,8 @@ export function CollectionPreviewClient({
           candidate.type === "collection" &&
           candidate.sections.some(
             (section) =>
-              section.component === "collectionHeader" &&
+              (section.component === "collectionHeader" ||
+                section.component === "dynamicCollectionCommerce") &&
               section.content.collectionId === intent.collectionId,
           ),
       );
