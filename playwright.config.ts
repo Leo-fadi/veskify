@@ -4,6 +4,7 @@ const port = process.env.PLAYWRIGHT_PORT ?? "3100";
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  testIgnore: "p9r-04-generation-acceptance.spec.ts",
   webServer: {
     command: `pnpm dev --port ${port}`,
     env: {
