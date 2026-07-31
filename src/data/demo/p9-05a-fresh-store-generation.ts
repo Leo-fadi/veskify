@@ -143,7 +143,6 @@ export const p905aDirectionScenarios = {
         "productGrid",
         "featuredCategories",
         "brandStory",
-        "benefitIcons",
         "footer",
       ],
       heroVariant: "asymmetric",

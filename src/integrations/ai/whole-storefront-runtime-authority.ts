@@ -14,6 +14,7 @@ import {
   type AiStorefrontOperation,
 } from "@/application/ai-storefront";
 import { resolveStorefrontGenerationScope } from "@/application/ai-storefront-generation";
+import { StorefrontGenerationScopeError } from "@/application/ai-storefront-generation";
 import { recordStorefrontDiagnostic } from "@/application/ai-storefront-generation";
 import {
   compileWholeStorefrontProposal,
@@ -600,6 +601,20 @@ function planDerivedProposalEnvelope(input: {
     operations,
     input.plan.approvedAssetPlacements,
   );
+  const pageOperationCount = operations.filter(
+    ({ target }) => target.kind === "page" || target.kind === "section",
+  ).length;
+  const globalOperationCount = operations.length - pageOperationCount;
+  const summary =
+    input.request.target.scope === "page"
+      ? {
+          en: `Prepared a homepage proposal with ${pageOperationCount} validated layout ${pageOperationCount === 1 ? "change" : "changes"}.`,
+          fi: `Valmisteltiin etusivuehdotus, jossa on ${pageOperationCount} validoitua asettelumuutosta.`,
+        }
+      : {
+          en: `Prepared ${pageOperationCount} validated page ${pageOperationCount === 1 ? "change" : "changes"}${globalOperationCount > 0 ? ` and ${globalOperationCount} shared storefront design ${globalOperationCount === 1 ? "change" : "changes"}` : ""}.`,
+          fi: `Valmisteltiin ${pageOperationCount} validoitua sivumuutosta${globalOperationCount > 0 ? ` ja ${globalOperationCount} verkkokaupan yhteisen ilmeen muutosta` : ""}.`,
+        };
   return {
     providerRequestId: input.request.requestId,
     providerId: input.request.providerId,
@@ -619,10 +634,7 @@ function planDerivedProposalEnvelope(input: {
       permissionFingerprint: input.request.permissionFingerprint,
       operations,
       assetPlacementOperations: structuredClone(input.plan.approvedAssetPlacements),
-      summary: {
-        en: `Prepared from your approved storefront plan. ${input.plan.reviewSummary.sharedDesignSystemChanges.join(" ")}`,
-        fi: `Valmisteltu hyväksytystä kauppasi suunnitelmasta. ${input.plan.reviewSummary.sharedDesignSystemChanges.join(" ")}`,
-      },
+      summary,
       validation: { valid: true, errors: [] },
       status: "pending",
     },
@@ -637,6 +649,9 @@ function planDerivedProposalEnvelope(input: {
 }
 
 function failure(error: unknown): Response {
+  if (error instanceof StorefrontGenerationScopeError) {
+    return response(400, { ok: false, failure: { category: "validation", retryable: false } });
+  }
   if (error instanceof AiStorefrontProviderValidationError) {
     return response(400, { ok: false, failure: { category: "validation", retryable: false } });
   }
@@ -700,6 +715,7 @@ export function createServerWholeStorefrontPlanningHandler({
     let request: AiStorefrontProviderRequest;
     let attemptId = "attempt_unavailable";
     let projectId = "project_unavailable";
+    let diagnosticScope: Parameters<typeof recordStorefrontDiagnostic>[0]["scope"] = "storefront";
     let stage: Parameters<typeof recordStorefrontDiagnostic>[0]["stage"] = "request_received";
     const diagnostic = (
       nextStage: Parameters<typeof recordStorefrontDiagnostic>[0]["stage"],
@@ -709,7 +725,7 @@ export function createServerWholeStorefrontPlanningHandler({
       recordStorefrontDiagnostic({
         attemptId,
         projectId,
-        scope: "storefront",
+        scope: diagnosticScope,
         stage: nextStage,
         category,
         ...(status === undefined ? {} : { status }),
@@ -717,16 +733,23 @@ export function createServerWholeStorefrontPlanningHandler({
     try {
       const body: unknown = await httpRequest.json();
       if (body && typeof body === "object") {
-        const candidate = body as { requestId?: unknown; target?: { projectId?: unknown } };
+        const candidate = body as {
+          requestId?: unknown;
+          target?: { projectId?: unknown; scope?: unknown };
+        };
         const safeRequestId = idSchema.safeParse(candidate.requestId);
         const safeProjectId = idSchema.safeParse(candidate.target?.projectId);
         if (safeRequestId.success) attemptId = safeRequestId.data;
         if (safeProjectId.success) projectId = safeProjectId.data;
+        if (candidate.target?.scope === "page" || candidate.target?.scope === "storefront") {
+          diagnosticScope = candidate.target.scope;
+        }
       }
       diagnostic("request_received", "success");
       request = aiStorefrontProviderRequestSchema.parse(body);
       attemptId = request.requestId;
       projectId = request.target.projectId;
+      diagnosticScope = request.target.scope;
       stage = "request_validation_completed";
       diagnostic(stage, "success");
     } catch {

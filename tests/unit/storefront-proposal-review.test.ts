@@ -1,4 +1,6 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { AiStorefrontProposal } from "@/application/ai-storefront";
 import {
   aiStorefrontProviderResponseSchema,
@@ -7,10 +9,16 @@ import {
   type AiStorefrontGenerationCommand,
 } from "@/application/ai-storefront-generation";
 import { createStorefrontProposalReview } from "@/app/projects/[projectId]/editor/storefront-proposal-review";
+import { DesignAgentPanel } from "@/app/projects/[projectId]/editor/design-agent-panel";
+import type { DesignAgentSessionController } from "@/app/projects/[projectId]/editor/use-design-agent-session";
 import { aurumNordicSeed } from "@/data/seed";
+import { generateP905aHomepageOnlyScenarioFromBaseline } from "../helpers/p9-05a-generation-harness";
 
 const snapshot = aurumNordicSeed.draftSnapshot;
 let proposal: AiStorefrontProposal;
+let homepageProposal: AiStorefrontProposal;
+const homepageOnlyInstruction =
+  "Redesign only the homepage as a bold modern technical landing page. Replace the current composition with a materially different layout: compact header, asymmetric hero, featured products near the top, structured collection discovery, specification-style brand story, and compact footer. Change section order, component variants, density, surfaces, and hierarchy—not just colours or typography. Preserve all products, prices, stock, media bindings, routes, and approved assets. Do not change the collection page or product page.";
 
 beforeAll(async () => {
   const provider = createDeterministicMockStorefrontAIProvider();
@@ -40,9 +48,123 @@ beforeAll(async () => {
   proposal = aiStorefrontProviderResponseSchema.parse(
     await provider.proposeStorefront(request),
   ).proposal;
+  homepageProposal = (
+    await generateP905aHomepageOnlyScenarioFromBaseline("warmApproachable", homepageOnlyInstruction)
+  ).proposal;
 });
 
+function homepageController(): DesignAgentSessionController {
+  const noop = vi.fn();
+  return {
+    targetScope: "storefront",
+    selectTarget: noop,
+    selectedSectionEligible: false,
+    request: homepageOnlyInstruction,
+    setRequest: noop,
+    clarificationAnswer: "",
+    setClarificationAnswer: noop,
+    revision: "",
+    setRevision: noop,
+    session: {
+      state: "proposalReady",
+      status: { en: "Proposal ready.", fi: "Ehdotus valmis." },
+      selectedSectionId: null,
+      affectedSectionIds: homepageProposal.operations.flatMap(({ operation }) =>
+        "sectionId" in operation ? [operation.sectionId] : [],
+      ),
+      assumptions: [],
+      clarificationQuestion: null,
+      failure: null,
+    },
+    generatedProposal: null,
+    generatedStorefrontProposal: homepageProposal,
+    visibleState: "proposalReady",
+    statusMessage: "Proposal ready.",
+    previewActive: true,
+    blocksSave: true,
+    controlsDisabled: false,
+    generationRetryAvailable: false,
+    canUndoStorefront: false,
+    canRedoStorefront: false,
+    submitRequest: noop,
+    retryGeneration: noop,
+    answerClarification: noop,
+    reviseProposal: noop,
+    regenerateProposal: noop,
+    acceptProposal: noop,
+    rejectProposal: noop,
+    cancelSession: noop,
+    restartSession: noop,
+    closeForPageSwitch: noop,
+    closeForPageMutation: noop,
+    closeForSelectionChange: noop,
+    closeForLocaleChange: noop,
+    undoStorefront: () => false,
+    redoStorefront: () => false,
+    clearStorefrontHistory: noop,
+  };
+}
+
 describe("P4-05D storefront proposal review projection", () => {
+  it("presents homepage-only scope and operation-derived confirmation copy in English and Finnish", () => {
+    const englishReview = createStorefrontProposalReview(homepageProposal, "en", "en");
+    const finnishReview = createStorefrontProposalReview(homepageProposal, "fi", "fi");
+
+    expect(englishReview).toMatchObject({
+      scope: "homepage",
+      scopeLabel: "Homepage",
+      affectedPageCount: 1,
+      operationCount: 1,
+      globalChanges: [],
+    });
+    expect(englishReview.heading).toBe("Homepage proposal · 1 planned layout change");
+    expect(englishReview.confirmationBody).not.toMatch(
+      /shared|collection|product page|multiple pages/i,
+    );
+    expect(finnishReview.scopeLabel).toBe("Etusivu");
+    expect(finnishReview.heading).toContain("Etusivuehdotus");
+    expect(finnishReview.confirmationBody).toContain("vain etusivun");
+
+    const english = render(
+      createElement(DesignAgentPanel, {
+        controller: homepageController(),
+        locale: "en",
+        primaryLocale: "en",
+        pageTitle: "Homepage",
+        storefrontPageCount: 3,
+      }),
+    );
+    const panel = screen.getByLabelText("Homepage design proposal");
+    expect(panel).toHaveTextContent("Affected scopeHomepage");
+    expect(panel).toHaveTextContent("Affected pages1");
+    expect(panel).not.toHaveTextContent("Shared storefront design");
+    expect(panel).not.toHaveTextContent("Entire storefront");
+    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+    expect(screen.getByRole("dialog", { name: "Apply this homepage proposal?" })).toHaveTextContent(
+      "This updates only the homepage",
+    );
+    expect(screen.getByRole("button", { name: "Apply homepage proposal" })).toBeVisible();
+    english.unmount();
+
+    render(
+      createElement(DesignAgentPanel, {
+        controller: homepageController(),
+        locale: "fi",
+        primaryLocale: "fi",
+        pageTitle: "Etusivu",
+        storefrontPageCount: 3,
+      }),
+    );
+    expect(screen.getByLabelText("Etusivun suunnitteluehdotus")).toHaveTextContent(
+      "Muutoksen laajuusEtusivu",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Hyväksy ja käytä" }));
+    expect(
+      screen.getByRole("dialog", { name: "Otetaanko tämä etusivuehdotus käyttöön?" }),
+    ).toHaveTextContent("vain etusivun");
+    expect(screen.getByRole("button", { name: "Ota etusivuehdotus käyttöön" })).toBeVisible();
+  });
+
   it("represents every affected storefront page", () => {
     const review = createStorefrontProposalReview(proposal, "en", "en");
     expect(review.pages).toHaveLength(proposal.target.affectedPageIds.length);

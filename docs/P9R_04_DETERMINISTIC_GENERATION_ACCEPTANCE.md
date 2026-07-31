@@ -122,6 +122,8 @@ to close the remaining Phase 9 live-provider evidence gap.
 
 `P9R_05_COMPOSITION_BOUNDARY_REPORT.json` records the safe diagnosis of the redacted live failure.
 It clarifies that the reported four operations are aggregate page replacements, not a valid measure
-of composition depth, and records the narrow homepage-only scope and missing trust-section
-materialization corrections. It also records the redacted controlled homepage-provider result
-without declaring the broader Phase 9 evidence gate complete.
+of composition depth, and records the narrow homepage-only scope and trust-evidence safety
+correction. When approved trust evidence is unavailable, the optional trust section is omitted
+instead of being populated from registry-default marketing claims. The report also records the
+redacted controlled homepage-provider result without declaring the broader Phase 9 evidence gate
+complete.

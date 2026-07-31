@@ -9,10 +9,12 @@ import {
   type AiOperationRequest,
 } from "@/application/ai-provider";
 import {
+  aiStorefrontProviderResponseSchema,
   createDeterministicMockStorefrontAIProvider,
   type AiStorefrontProviderRequest,
   type StorefrontAIProvider,
 } from "@/application/ai-storefront-generation";
+import { createAiStorefrontProposalId } from "@/application/ai-storefront";
 import type { ProposalAnalyticsEvent } from "@/application/analytics";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
 import { storefrontFailureDiagnosticCategory } from "@/app/projects/[projectId]/editor/use-design-agent-session";
@@ -267,6 +269,55 @@ describe("P4-05D editor storefront integration", () => {
     expect(provider.calls[0].target.affectedSectionTargets.length).toBeGreaterThan(0);
     await provider.resolve(0);
     expect(await screen.findByLabelText("Storefront design proposal")).toBeVisible();
+  });
+
+  it("keeps a homepage-only registered proposal and its revision page-scoped", async () => {
+    const provider = new RegisteredHomepageStorefrontProvider();
+    const diagnosticScopes: string[] = [];
+    const log = vi.spyOn(console, "info").mockImplementation((event, value) => {
+      if (event !== "veskify-storefront-diagnostic" || typeof value !== "string") return;
+      const parsed = JSON.parse(value) as { scope?: unknown };
+      if (typeof parsed.scope === "string") diagnosticScopes.push(parsed.scope);
+    });
+    route(
+      repository(() => Promise.resolve(aggregate())),
+      undefined,
+      provider,
+    );
+
+    await openStorefrontTarget();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: {
+        value:
+          "Redesign only the homepage as a modern technical landing page. Preserve products, prices, stock, media bindings, routes, and approved assets. Do not change the collection page or product page.",
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(await screen.findByLabelText("Homepage design proposal")).toBeVisible();
+
+    fireEvent.change(screen.getByLabelText("How should this proposal change?"), {
+      target: { value: "Make it more minimal." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Revise" }));
+    await waitFor(() => expect(provider.calls).toHaveLength(2));
+    expect(await screen.findByLabelText("Homepage design proposal")).toBeVisible();
+    log.mockRestore();
+
+    const homepageId = aurumNordicSeed.draftSnapshot.pages.find(
+      (candidate) => candidate.type === "home",
+    )!.id;
+    provider.calls.forEach((request) => {
+      expect(request.target).toMatchObject({
+        scope: "page",
+        affectedPageIds: [homepageId],
+        designSystemTarget: null,
+      });
+      expect(request.affectedPages.map((page) => page.id)).toEqual([homepageId]);
+    });
+    expect(provider.calls[1].instruction).toMatch(/only the homepage/i);
+    expect(provider.calls[1].instruction).not.toMatch(/throughout the site/i);
+    expect(diagnosticScopes.length).toBeGreaterThan(0);
+    expect(new Set(diagnosticScopes)).toEqual(new Set(["page"]));
   });
 
   it.each([
@@ -739,6 +790,71 @@ class DeferredStorefrontProvider implements StorefrontAIProvider {
       this.calls[index],
     );
     this.#resolvers[index](response);
+  }
+}
+
+class RegisteredHomepageStorefrontProvider implements StorefrontAIProvider {
+  readonly id = "registered-homepage-test-provider";
+  readonly generationCapabilities = ["registeredWholeStorefrontDirection"] as const;
+  readonly calls: AiStorefrontProviderRequest[] = [];
+
+  proposeStorefront(request: AiStorefrontProviderRequest): Promise<unknown> {
+    this.calls.push(structuredClone(request));
+    const page = structuredClone(request.affectedPages[0]);
+    const hero = page.sections.find((section) => section.component === "hero");
+    if (!hero || request.target.scope !== "page") {
+      return Promise.reject(new Error("Expected one homepage-scoped test request."));
+    }
+    hero.variant = hero.variant === "asymmetric" ? "restrained" : "asymmetric";
+    const operation = {
+      order: 0,
+      target: { kind: "page" as const, pageId: page.id },
+      operation: {
+        type: "APPLY_REGISTERED_PAGE_SECTIONS" as const,
+        sections: structuredClone(page.sections),
+        removedSectionIds: [],
+      },
+    };
+    const proposedStorefront = structuredClone(request.storefront);
+    const pageIndex = proposedStorefront.pages.findIndex((candidate) => candidate.id === page.id);
+    proposedStorefront.pages[pageIndex] = page;
+    const proposalId = createAiStorefrontProposalId(
+      request.requestId,
+      request.targetFingerprint,
+      request.permissionFingerprint,
+      [operation],
+      request.assetPlacementOperations,
+    );
+    return Promise.resolve(
+      aiStorefrontProviderResponseSchema.parse({
+        providerRequestId: request.requestId,
+        providerId: this.id,
+        proposal: {
+          id: proposalId,
+          requestId: request.requestId,
+          projectId: request.target.projectId,
+          draftSnapshotId: request.target.draftSnapshotId,
+          draftRevision: request.target.draftRevision,
+          target: structuredClone(request.target),
+          originalStorefront: structuredClone(request.storefront),
+          proposedStorefront,
+          affectedPages: structuredClone(request.affectedPages),
+          affectedDesignState: null,
+          permissionGrants: structuredClone(request.permissionGrants),
+          targetFingerprint: request.targetFingerprint,
+          permissionFingerprint: request.permissionFingerprint,
+          operations: [operation],
+          assetPlacementOperations: structuredClone(request.assetPlacementOperations),
+          summary: {
+            en: "Prepared one homepage layout change.",
+            fi: "Valmisteltiin yksi etusivun asettelumuutos.",
+          },
+          validation: { valid: true, errors: [] },
+          status: "pending",
+        },
+        metadata: { operationCount: 1, durationMs: 0, validation: "valid" },
+      }),
+    );
   }
 }
 

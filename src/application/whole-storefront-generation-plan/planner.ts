@@ -482,32 +482,6 @@ function requiredHomepageRecipeComponents(input: {
   const existingComponents = new Set(page.sections.map((section) => section.component));
   return recipe.sections.flatMap((recipeSection) => {
     if (existingComponents.has(recipeSection.component)) return [];
-    if (recipeSection.component === "benefitIcons" && input.directionId === "modernTechnical") {
-      const definition = definitionFor(definitions, recipeSection.component);
-      const legacyDefinition = getComponentDefinition(recipeSection.component);
-      const componentId = generatedComponentId(page.id, recipeSection.component, usedComponentIds);
-      usedComponentIds.add(componentId);
-      const instance: ComponentInstanceV2 = {
-        id: componentId,
-        component: recipeSection.component,
-        componentVersion: definition.version,
-        variant: recipeSection.variant,
-        content: structuredClone(legacyDefinition.defaultContent) as ComponentInstanceV2["content"],
-        props: structuredClone(legacyDefinition.defaultProps) as ComponentInstanceV2["props"],
-        styleOverrides: {},
-        bindings: [],
-        assetAssignments: [],
-      };
-      try {
-        registry.validateInstance(instance);
-      } catch (error) {
-        invalid(
-          "invalid-component-contract",
-          error instanceof Error ? error.message : "The required trust component is invalid.",
-        );
-      }
-      return [{ disposition: "added" as const, instance, replacesComponentIds: [] }];
-    }
     const requiredForModernHomepageSlice =
       input.directionId === "modernTechnical" && recipeSection.component === "brandStory";
     if (!recipeSection.required && !requiredForModernHomepageSlice) return [];

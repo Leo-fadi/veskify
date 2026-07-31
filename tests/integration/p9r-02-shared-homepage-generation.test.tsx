@@ -199,7 +199,6 @@ describe("P9R-02 shared-frame and homepage generation", () => {
         "productGrid",
         "featuredCategories",
         "brandStory",
-        "benefitIcons",
         "footer",
       ],
     } as const;

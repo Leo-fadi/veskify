@@ -21,6 +21,7 @@ import {
   resolveStorefrontGenerationScope,
   type AiStorefrontGenerationFailure,
   type AiStorefrontGenerationIdentity,
+  type StorefrontGenerationScope,
   type StorefrontAIProvider,
 } from "@/application/ai-storefront-generation";
 import {
@@ -53,6 +54,21 @@ import {
 } from "@/domain/storefront";
 
 export type DesignAgentTargetScope = "section" | "page" | "storefront";
+type ResolvedStorefrontWorkflowScope = StorefrontGenerationScope["kind"];
+
+export function storefrontMinimalRevisionInstruction(
+  locale: Locale,
+  scope: ResolvedStorefrontWorkflowScope,
+) {
+  if (scope === "homepage") {
+    return locale === "fi"
+      ? "Uudista vain etusivu moderniksi tekniseksi ja pelkistetyksi. Säilytä tuotteet, hinnat, varasto, mediasidonnat, reitit ja hyväksytyt aineistot. Älä muuta kokoelma- tai tuotesivua."
+      : "Redesign only the homepage in a modern technical, minimal Nordic direction. Preserve products, prices, stock, media bindings, routes, and approved assets. Do not change the collection page or product page.";
+  }
+  return locale === "fi"
+    ? "Käytä pelkistettyä pohjoismaista väri- ja typografiailmettä koko sivustolla."
+    : "Use a minimal Nordic colour and typography direction throughout the site.";
+}
 
 export type ProposalReviewUiState =
   | "idle"
@@ -394,6 +410,7 @@ export function useDesignAgentSession({
   const merchantInstruction = useRef("");
   const lastGenerationInstruction = useRef("");
   const lastGenerationScope = useRef<DesignAgentTargetScope>("page");
+  const lastResolvedStorefrontScope = useRef<ResolvedStorefrontWorkflowScope | null>(null);
   const targetExplicitlySelected = useRef(false);
   const initialLifecycle = useRef(true);
   const pendingStorefrontAcceptance = useRef<StorefrontProposalAcceptanceCoordinator | null>(null);
@@ -718,12 +735,15 @@ export function useDesignAgentSession({
     };
   };
 
-  const storefrontCommandFor = (instruction: string, attemptId: string) => {
+  const storefrontCommandFor = (
+    instruction: string,
+    attemptId: string,
+    scope: StorefrontGenerationScope,
+  ) => {
     if (!activeDraft || !activeLocale || !enabledLocales) {
       throw new Error("The complete storefront is not ready for a design request.");
     }
     const storefront = projectAiStorefrontSnapshot(activeDraft);
-    const scope = resolveStorefrontGenerationScope(instruction, storefront.pages);
     const baseCommand = {
       projectId,
       draftSnapshotId: activeDraft.id,
@@ -850,6 +870,22 @@ export function useDesignAgentSession({
     actionSequence.current = actionId;
     lastGenerationInstruction.current = instruction;
     lastGenerationScope.current = "storefront";
+    let resolvedScope: StorefrontGenerationScope | null = null;
+    try {
+      resolvedScope = activeDraft
+        ? resolveStorefrontGenerationScope(instruction, activeDraft.pages)
+        : null;
+    } catch {
+      const message = {
+        en: "That storefront scope is not supported safely. Your draft has not changed.",
+        fi: "Verkkokauppapyynnön laajuutta ei voida toteuttaa turvallisesti. Luonnos säilyi ennallaan.",
+      };
+      generationPending.current = false;
+      setSession(uiSession("failed", message, { failure: { message, retryable: false } }));
+      return;
+    }
+    const diagnosticScope = resolvedScope?.kind === "homepage" ? "page" : "storefront";
+    lastResolvedStorefrontScope.current = resolvedScope?.kind ?? null;
     setSession(
       uiSession(
         mode === "revision" ? "revising" : "generating",
@@ -863,7 +899,7 @@ export function useDesignAgentSession({
     recordStorefrontDiagnostic({
       attemptId,
       projectId,
-      scope: "storefront",
+      scope: diagnosticScope,
       stage: "submission_received",
       category: "success",
     });
@@ -871,15 +907,18 @@ export function useDesignAgentSession({
       recordStorefrontDiagnostic({
         attemptId,
         projectId,
-        scope: "storefront",
+        scope: diagnosticScope,
         stage: "command_build_started",
         category: "success",
       });
-      const command = storefrontCommandFor(instruction, attemptId);
+      if (!resolvedScope) {
+        throw new Error("The complete storefront is not ready for a design request.");
+      }
+      const command = storefrontCommandFor(instruction, attemptId, resolvedScope);
       recordStorefrontDiagnostic({
         attemptId,
         projectId,
-        scope: "storefront",
+        scope: diagnosticScope,
         stage: "command_build_completed",
         category: "success",
       });
@@ -889,7 +928,7 @@ export function useDesignAgentSession({
         recordStorefrontDiagnostic({
           attemptId,
           projectId,
-          scope: "storefront",
+          scope: diagnosticScope,
           stage: "proposal_state_completed",
           category: storefrontFailureDiagnosticCategory(result.failure.code),
         });
@@ -915,7 +954,7 @@ export function useDesignAgentSession({
       recordStorefrontDiagnostic({
         attemptId,
         projectId,
-        scope: "storefront",
+        scope: diagnosticScope,
         stage: "acceptance_coordinator_started",
         category: "success",
       });
@@ -947,7 +986,7 @@ export function useDesignAgentSession({
       recordStorefrontDiagnostic({
         attemptId,
         projectId,
-        scope: "storefront",
+        scope: diagnosticScope,
         stage: "proposal_state_completed",
         category: "success",
       });
@@ -957,7 +996,7 @@ export function useDesignAgentSession({
       recordStorefrontDiagnostic({
         attemptId,
         projectId,
-        scope: "storefront",
+        scope: diagnosticScope,
         stage:
           failureCategory === "client_acceptance_coordinator"
             ? "acceptance_coordinator_started"
@@ -1047,15 +1086,17 @@ export function useDesignAgentSession({
       return;
     }
     setGenerationRetryUsed(false);
-    void generate(
-      lastGenerationScope.current === "storefront"
-        ? locale === "fi"
-          ? "Käytä pelkistettyä pohjoismaista väri- ja typografiailmettä koko sivustolla."
-          : "Use a minimal Nordic colour and typography direction throughout the site."
-        : minimalRevisionRequest(locale),
-      "revision",
-      lastGenerationScope.current,
-    );
+    if (generatedStorefrontProposal) {
+      void generateStorefront(
+        storefrontMinimalRevisionInstruction(
+          locale,
+          lastResolvedStorefrontScope.current ?? "storefront",
+        ),
+        "revision",
+      );
+      return;
+    }
+    void generate(minimalRevisionRequest(locale), "revision", lastGenerationScope.current);
   };
 
   const regenerateProposal = () => {

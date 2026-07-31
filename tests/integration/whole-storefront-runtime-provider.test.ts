@@ -92,7 +92,7 @@ function isDiagnosticRecord(value: unknown): value is DiagnosticRecord {
   return (
     typeof value.attemptId === "string" &&
     typeof value.projectId === "string" &&
-    value.scope === "storefront" &&
+    (value.scope === "storefront" || value.scope === "page") &&
     diagnosticStages.some((stage) => stage === value.stage) &&
     diagnosticCategories.some((category) => category === value.category) &&
     (value.status === undefined || typeof value.status === "number")
@@ -182,29 +182,44 @@ function request({
   },
   instruction = "Apply a warm premium style across the storefront.",
   sequence = 1,
+  scope = "storefront",
 }: {
   storefront?: AiStorefrontProjection;
   instruction?: string;
   sequence?: number;
+  scope?: "storefront" | "page";
 } = {}) {
   const provider = {
     id: "server-whole-storefront-planning",
     assetReferenceCapability: "structuredApprovedAssets" as const,
+    generationCapabilities: [
+      "approvedColorTypographyDirection",
+      "registeredWholeStorefrontDirection",
+    ] as const,
     proposeStorefront: () => Promise.reject(new Error("server boundary")),
   };
+  const homepage = storefront.pages.find((page) => page.type === "home");
+  if (scope === "page" && !homepage) throw new Error("The runtime fixture requires a homepage.");
   const command: AiStorefrontGenerationCommand = {
     projectId: aurumNordicSeed.project.id,
     draftSnapshotId: snapshot.id,
     draftRevision: snapshot.revision,
     storefront: structuredClone(storefront),
-    affectedPageIds: storefront.pageOrder,
+    affectedPageIds: scope === "page" ? [homepage!.id] : storefront.pageOrder,
     affectedSectionTargets: [],
-    designSystemTarget: { kind: "storefrontDesignSystem", projectId: aurumNordicSeed.project.id },
-    merchantInstruction: instruction,
+    designSystemTarget:
+      scope === "page"
+        ? null
+        : { kind: "storefrontDesignSystem", projectId: aurumNordicSeed.project.id },
+    merchantInstruction:
+      scope === "page"
+        ? "Redesign only the homepage as a modern technical landing page. Preserve products, prices, stock, media bindings, routes, and approved assets. Do not change the collection page or product page."
+        : instruction,
     activeLocale: "en",
     enabledLocales: ["en", "fi"],
-    requestedScope: "storefront",
-    capability: "approvedColorTypographyDirection",
+    requestedScope: scope,
+    capability:
+      scope === "page" ? "registeredWholeStorefrontDirection" : "approvedColorTypographyDirection",
     providerId: provider.id,
     provider,
     importedContent: [],
@@ -249,6 +264,38 @@ function authority(input = planningInput()): ServerWholeStorefrontPlanningAuthor
 }
 
 describe("P9-01 runtime whole-storefront provider boundary", () => {
+  it("records page scope in every runtime-client diagnostic for a homepage request", async () => {
+    const records: DiagnosticRecord[] = [];
+    const log = vi.spyOn(console, "info").mockImplementation((_event, value) => {
+      if (typeof value !== "string") return;
+      const parsed: unknown = JSON.parse(value);
+      if (isDiagnosticRecord(parsed)) records.push(parsed);
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              ok: false,
+              failure: { category: "validation", retryable: false },
+            }),
+            { status: 400 },
+          ),
+        ),
+      ),
+    );
+
+    await expect(
+      createServerWholeStorefrontPlanningClient().proposeStorefront(request({ scope: "page" })),
+    ).rejects.toMatchObject({ category: "validation", status: 400 });
+    vi.unstubAllGlobals();
+    log.mockRestore();
+
+    expect(records.length).toBeGreaterThan(0);
+    expect(new Set(records.map((record) => record.scope))).toEqual(new Set(["page"]));
+  });
+
   it("records only canonical request and project identifiers before request validation", async () => {
     const records: DiagnosticRecord[] = [];
     const log = vi.spyOn(console, "info").mockImplementation((_event, value) => {

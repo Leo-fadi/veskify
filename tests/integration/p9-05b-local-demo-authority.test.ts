@@ -161,6 +161,12 @@ describe("P9-05B local demo server authority", () => {
   );
 
   it("builds the exact homepage-only demo request with canonical page authority and reaches the provider once", async () => {
+    const diagnosticScopes: string[] = [];
+    const log = vi.spyOn(console, "info").mockImplementation((event, value) => {
+      if (event !== "veskify-storefront-diagnostic" || typeof value !== "string") return;
+      const parsed = JSON.parse(value) as { scope?: unknown };
+      if (typeof parsed.scope === "string") diagnosticScopes.push(parsed.scope);
+    });
     const request = await buildP905bLocalDemoRequest(homepageOnlyInstruction, demoEnvironment);
     const homepage = request.storefront.pages.find((page) => page.type === "home");
     if (!homepage) throw new Error("The protected demo fixture is missing its homepage.");
@@ -209,10 +215,21 @@ describe("P9-05B local demo server authority", () => {
     });
     const response = await handler(await proposalRequest(homepageOnlyInstruction));
     const body = (await response.json()) as Record<string, unknown>;
+    log.mockRestore();
 
     expect(response.status).toBe(200);
     expect(body.ok).toBe(true);
     expect(reached).toHaveBeenCalledTimes(1);
+    expect(diagnosticScopes.length).toBeGreaterThan(0);
+    expect(new Set(diagnosticScopes)).toEqual(new Set(["page"]));
+    const envelope = aiStorefrontProviderResponseSchema.parse(body.proposal);
+    expect(envelope.proposal.summary.en).toBe(
+      "Prepared a homepage proposal with 1 validated layout change.",
+    );
+    expect(envelope.proposal.summary.fi).toContain("etusivuehdotus");
+    expect(envelope.proposal.summary.en).not.toMatch(
+      /shared|brand system|collection|product page|header|footer/i,
+    );
   });
 
   it("keeps stale-authority rejection before provider execution", async () => {

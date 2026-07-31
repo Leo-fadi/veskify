@@ -1,7 +1,10 @@
 import { render } from "@testing-library/react";
 
 import { describe, expect, it } from "vitest";
-import { resolveStorefrontGenerationScope } from "@/application/ai-storefront-generation";
+import {
+  resolveStorefrontGenerationScope,
+  StorefrontGenerationScopeError,
+} from "@/application/ai-storefront-generation";
 import { createStorefrontRenderContext } from "@/components/registry";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
 import { canonicalValueString } from "@/domain/storefront";
@@ -26,6 +29,25 @@ describe("P9R-05 homepage-only composition scope", () => {
       affectedPageIds: ["page_home"],
       includesSharedFrame: false,
     });
+    expect(
+      resolveStorefrontGenerationScope(
+        "Uudista vain etusivu moderniksi tekniseksi.",
+        generatedPages,
+      ),
+    ).toEqual({
+      kind: "homepage",
+      affectedPageIds: ["page_home"],
+      includesSharedFrame: false,
+    });
+    expect(() =>
+      resolveStorefrontGenerationScope(
+        "Redesign only the homepage and product page.",
+        generatedPages,
+      ),
+    ).toThrow(StorefrontGenerationScopeError);
+    expect(() =>
+      resolveStorefrontGenerationScope("Uudista vain tuotesivu.", generatedPages),
+    ).toThrow(StorefrontGenerationScopeError);
     expect(
       resolveStorefrontGenerationScope(
         "Create a modern technical storefront with compact comparison.",
@@ -69,7 +91,7 @@ describe("P9R-05 homepage-only composition scope", () => {
         "hero:asymmetric",
         "productGrid:compact",
         "featuredCategories:grid",
-        "benefitIcons:threeColumn",
+        "brandStory:minimal",
         "footer:compact",
       ]),
     );
@@ -78,7 +100,11 @@ describe("P9R-05 homepage-only composition scope", () => {
     );
     const order = homepage.sections.map((section) => section.component);
     expect(order.indexOf("productGrid")).toBeLessThan(order.indexOf("featuredCategories"));
-    expect(order.indexOf("brandStory")).toBeLessThan(order.indexOf("benefitIcons"));
+    expect(order.indexOf("brandStory")).toBeLessThan(order.indexOf("footer"));
+    expect(homepage.sections.some((section) => section.component === "benefitIcons")).toBe(false);
+    expect(JSON.stringify(generated.proposal.proposedStorefront)).not.toMatch(
+      /complimentary delivery|materials? (?:chosen )?to last|durability|guarantee|trust/i,
+    );
 
     const rendered = render(
       <>
@@ -101,7 +127,7 @@ describe("P9R-05 homepage-only composition scope", () => {
       rendered.container.querySelector(".store-section.store-variant--compact .product-grid"),
     ).toBeTruthy();
     expect(rendered.container.querySelector(".brand-story.store-variant--minimal")).toBeTruthy();
-    expect(rendered.container.querySelector(".benefits.store-variant--threeColumn")).toBeTruthy();
+    expect(rendered.container.querySelector(".benefits")).toBeNull();
     expect(rendered.container.querySelector(".store-footer.store-variant--compact")).toBeTruthy();
     expect(accepted.activeDraft.brandSystem).toEqual(baseline.brandSystem);
     expect(

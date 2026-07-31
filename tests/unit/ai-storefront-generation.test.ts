@@ -549,6 +549,25 @@ describe("P4-05B storefront planner and request construction", () => {
     );
   });
 
+  it.each([
+    "Keep products but increase prices. Use a modern technical layout.",
+    "Preserve products and stock, but change availability. Use a modern technical layout.",
+    "Pidä tuotteet mutta korota hintoja. Käytä modernia teknistä asettelua.",
+    "Säilytä tuotteet ja varasto, mutta muuta saatavuutta. Käytä modernia teknistä asettelua.",
+  ])("rejects protected mutations hidden inside preservation language: %s", (instruction) => {
+    expect(containsProtectedCommerceMutation(instruction)).toBe(true);
+    expect(classifyRegisteredWholeStorefrontDirectionRequest(instruction)).toEqual({
+      kind: "protected-commerce",
+    });
+  });
+
+  it.each([
+    "Preserve products, prices and stock while redesigning product presentation.",
+    "Säilytä tuotteet, hinnat ja varasto, kun uudistat tuotteiden esitystapaa.",
+  ])("allows preservation-only commerce language: %s", (instruction) => {
+    expect(containsProtectedCommerceMutation(instruction)).toBe(false);
+  });
+
   it("rejects duplicate, unknown, and cross-page target identities before invocation", () => {
     expect(() =>
       buildAiStorefrontProviderRequest(

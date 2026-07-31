@@ -47,8 +47,11 @@ const broaderMutationPattern = new RegExp(
 const preservationClausePatterns = [
   /\b(?:keep|preserve|leave|retain)\b[^.!?]{0,240}\b(?:unchanged|same|intact|as\s+is)\b/gi,
   /\b(?:keep|preserve|leave|retain)\b[^.!?]{0,240}\b(?:products?|prices?|sku|stock|inventory|availability|variants?|option\s+values?|payments?|shipping|tax|orders?|assets?|media|routes?)\b[^.!?]*(?:[.!?]|$)/gi,
+  /\b(?:pidä|säilytä|säilyttäen)\b[^.!?]{0,240}\b(?:tuotte\p{L}*|tuote|hin(?:n|t)\p{L}*|varasto\p{L}*|saatavu\p{L}*|variant\p{L}*|valinta-arvo\p{L}*|aineisto\p{L}*|media\p{L}*|reit\p{L}*)\b[^.!?]*(?:[.!?]|$)/giu,
   /\b(?:do\s+not|don't|without)\s+(?:change|changing|update|updating|replace|replacing|edit|editing|remove|removing|reorder|reordering|alter|altering)\b[^.!?]{0,240}\b(?:layout|typography|fonts?|images?|imagery|copy|content|products?|prices?|sku|stock|inventory|variants?|sections?|structure|navigation|footer|page\s+composition)\b[^.!?]*/gi,
 ];
+const positivePreservationCuePattern =
+  /\b(?:keep|preserve|leave|retain|pidä|säilytä|säilyttäen)\b/iu;
 
 const tokenAliases: ReadonlyArray<{
   token: BrandColourToken;
@@ -319,6 +322,20 @@ function actionableMutationInstruction(instruction: string): string {
 }
 
 export function containsProtectedCommerceMutation(instruction: string): boolean {
+  for (const sentence of instruction.split(/(?<=[.!?])/u)) {
+    const preservationCue = positivePreservationCuePattern.exec(sentence);
+    if (!preservationCue || preservationCue.index === undefined) continue;
+    if (protectedMutationPattern.test(sentence.slice(0, preservationCue.index))) return true;
+    const suffix = sentence.slice(preservationCue.index + preservationCue[0].length);
+    for (const mutation of suffix.matchAll(new RegExp(mutationVerbPattern, "giu"))) {
+      if (
+        mutation.index !== undefined &&
+        protectedMutationPattern.test(suffix.slice(mutation.index))
+      ) {
+        return true;
+      }
+    }
+  }
   return protectedMutationPattern.test(actionableMutationInstruction(instruction));
 }
 

@@ -112,7 +112,6 @@ test.describe("P9R-05 live homepage-only acceptance", () => {
               "productGrid:compact",
               "featuredCategories:grid",
               "brandStory:minimal",
-              "benefitIcons:threeColumn",
               "footer:compact",
             ]),
           pageScope:
@@ -137,7 +136,7 @@ test.describe("P9R-05 live homepage-only acceptance", () => {
     await page.goto(result.editorRoute);
     await page.getByRole("button", { name: /Hyväksy ja käytä|Accept and apply/ }).click();
     await page
-      .getByRole("button", { name: /Ota kauppaehdotus käyttöön|Apply storefront proposal/ })
+      .getByRole("button", { name: /Ota etusivuehdotus käyttöön|Apply homepage proposal/ })
       .click();
     const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
     await expect(canvas.locator(".store-header.store-variant--compact nav")).toBeVisible();
@@ -146,7 +145,7 @@ test.describe("P9R-05 live homepage-only acceptance", () => {
       canvas.locator(".store-section.store-variant--compact .product-grid"),
     ).toBeVisible();
     await expect(canvas.locator(".brand-story.store-variant--minimal")).toBeVisible();
-    await expect(canvas.locator(".benefits.store-variant--threeColumn")).toBeVisible();
+    await expect(canvas.locator(".benefits")).toHaveCount(0);
     await expect(canvas.locator(".store-footer.store-variant--compact")).toBeVisible();
     await page.getByRole("button", { name: /Kumoa|Undo/ }).click();
     await expect(canvas.locator(".store-hero.store-variant--restrained")).toBeVisible();
