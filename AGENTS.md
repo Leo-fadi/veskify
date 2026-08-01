@@ -1,7 +1,7 @@
 # Veskify Codex Constitution
 
-**Version:** 1.2.1
-**Aligned with:** `docs/VESKIFY_SDD.md` and `docs/VESKIFY_SDD_v1.2.1.docx`
+**Version:** 1.2.2
+**Aligned with:** `docs/VESKIFY_SDD.md` and `docs/VESKIFY_SDD_v1.2.2.docx`
 **Status:** Binding repository instructions
 
 These rules apply to every Codex task and every developer working in the Veskify repository.
@@ -9,9 +9,9 @@ These rules apply to every Codex task and every developer working in the Veskify
 ## 1. Source of truth
 
 - `docs/VESKIFY_SDD.md` is the authoritative product and architecture baseline.
-- `docs/VESKIFY_SDD_v1.2.1.docx` is the synchronized human-readable export.
+- `docs/VESKIFY_SDD_v1.2.2.docx` is the synchronized human-readable export.
 - ADR-001 through ADR-004 are binding architecture decisions.
-- Read the complete affected SDD sections, v1.2/v1.2.1 FR/NFR requirement IDs and acceptance criteria before changing code.
+- Read the complete affected SDD sections, v1.2/v1.2.1/v1.2.2 FR/NFR requirement IDs and acceptance criteria before changing code.
 - Material product, architecture, schema, roadmap or integration changes require documentation updates in the same PR.
 - If a task conflicts with the SDD or an ADR, stop and report the conflict. Do not silently redefine the product.
 
@@ -70,6 +70,13 @@ Veskify owns:
 editing, preview, save, history and publishing must use it. Planner payloads, proposals, Puck data
 and renderer projections are transient; do not introduce a competing `StorefrontPlan`, page graph,
 component registry, blueprint system, asset inventory or publish model.
+
+A commercial page recipe is only a registered constrained `PageBlueprint` profile or preset of
+permitted/default values. `PageBlueprint` remains the canonical executable page-composition
+contract; recipes must not create a second page graph, template architecture, recipe engine or
+independently executable representation. Recipe selection only materializes or constrains a
+canonical `PageBlueprint`; proposals, compilation, snapshots, editor, preview, save, history and
+publish continue through `PageBlueprint` and `StorefrontSnapshot`.
 
 ### 3.3 Vesko owns commerce truth
 

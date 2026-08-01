@@ -48,9 +48,25 @@ The repository currently includes:
 Phase 9 remains active. The repository does not retain the complete live-provider, browser and
 visual evidence required to claim meaningful coordinated storefront generation.
 
+## Commercial composition contract
+
+Veskify creates commercial variety through controlled component families with meaningful variants,
+registered constrained `PageBlueprint` recipe profiles and typed bounded design parameters. A
+recipe is not a second page graph or executable model: it supplies permitted/default values to the
+canonical `PageBlueprint`. Composition inherits from the global `BrandSystem` through the selected
+PageBlueprint profile and family/variant to constrained instance overrides; AI does not generate
+arbitrary component trees, CSS or executable frontend code. Every capability must prove
+registered → planner-selectable → proposal-expressible → compiler-preserved → `StorefrontSnapshot`-
+stored → renderer-visible → editor-editable → manually live-proven.
+
+Commercial visual acceptance reviews the homepage, collection and PDP as one storefront at 375, 768,
+1024 and 1440 px with representative approved assets. Placeholder SVGs, registry counts and
+deterministic tests alone are not visual-quality evidence. Optional trust/evidence content is omitted
+when approved merchant evidence is unavailable.
+
 ## Next development direction
 
-The binding v1.2.1 sequence is:
+The binding v1.2.2 sequence is:
 
 1. complete Phase 9 meaningful grounded shared-frame/home/collection/PDP generation;
 2. build P10A contract-level grounded orchestration from live canonical capabilities, with
@@ -113,7 +129,7 @@ Full repository validation is reserved for phase/release gates, high-risk migrat
 ## Documentation
 
 - [`docs/VESKIFY_SDD.md`](docs/VESKIFY_SDD.md) — authoritative product and architecture specification.
-- [`docs/VESKIFY_SDD_v1.2.1.docx`](docs/VESKIFY_SDD_v1.2.1.docx) — synchronized human-readable export.
+- [`docs/VESKIFY_SDD_v1.2.2.docx`](docs/VESKIFY_SDD_v1.2.2.docx) — synchronized human-readable export.
 - [`AGENTS.md`](AGENTS.md) — binding Codex/developer constitution.
 - [`docs/VESKIFY_DEVELOPMENT_ROADMAP.md`](docs/VESKIFY_DEVELOPMENT_ROADMAP.md) — current phase plan.
 - [`docs/PHASE_9_EVIDENCE_MATRIX.md`](docs/PHASE_9_EVIDENCE_MATRIX.md) — current Phase 9 evidence and limitations.

@@ -14,7 +14,7 @@ const markdownFiles = [
   "docs/DEVELOPMENT_GUIDE.md",
   "docs/CODEX_TASK_TEMPLATE.md",
   "docs/PHASE_9_EVIDENCE_MATRIX.md",
-  "docs/SDD_V1_2_1_DOCUMENTATION_VALIDATION.md",
+  "docs/SDD_V1_2_2_DOCUMENTATION_VALIDATION.md",
   "docs/adr/README.md",
   "docs/adr/ADR-002_CONTROLLED_DESIGN_AGENT.md",
 ];
@@ -49,9 +49,10 @@ for (const [relativePath, markdown] of contents) {
 const sdd = contents.get("docs/VESKIFY_SDD.md");
 const roadmap = contents.get("docs/VESKIFY_DEVELOPMENT_ROADMAP.md");
 const evidence = contents.get("docs/PHASE_9_EVIDENCE_MATRIX.md");
+const validationRecord = contents.get("docs/SDD_V1_2_2_DOCUMENTATION_VALIDATION.md");
 
 const requiredSddText = [
-  "| **Version**                 | 1.2.1",
+  "| **Version**                 | 1.2.2",
   "Phase 9 remains active.",
   "`StorefrontSnapshot`",
   "`ComponentDefinitionV2`",
@@ -69,9 +70,44 @@ const requiredSddText = [
   "Broad controlled-vocabulary expansion occurs after the Phase",
   "authoritative\nStorefront Design Brief creation → merchant review → explicit approval",
   "later unapproved brief mutation supplied generation",
+  "registered → planner-selectable → proposal-expressible → compiler-preserved",
+  "Global BrandSystem",
+  "Commercial visual-quality and protected-commerce gate",
+  "4a96a5a5567b83e62306f73f7069e0e09f0c8683",
+  "bba2827e63f2027c946138f6c91362f3f989b088",
+  "codex/sdd-v1-2-2-commercial-design-vocabulary-recovery",
+  "registered, constrained `PageBlueprint` profile",
+  "Recipe selection materializes or constrains a canonical `PageBlueprint`",
+  "raw CSS, arbitrary class names",
+  "executable JavaScript/React or generated code",
+  "unrestricted font imports",
+  "semantic tokens normally flow downward",
+  "approved evidence provenance is preserved",
+  "not required to close Phase 9",
+  "P10A Task 8 implements the coordinated commercial recipes only as registered constrained",
 ];
 for (const required of requiredSddText) {
   if (!sdd.includes(required)) failures.push(`SDD missing required text: ${required}`);
+}
+if (
+  sdd.includes("| **Amendment source commit**    | `8174b1a6d31301b4072622e2e3ef675957479121`") ||
+  sdd.includes(
+    "| **Amendment branch**           | `codex/sdd-v1.2.1-grounded-storefront-generator`",
+  )
+) {
+  failures.push("SDD incorrectly uses v1.2.1 provenance as the v1.2.2 amendment source");
+}
+
+for (const required of [
+  "**Repository baseline:** `4a96a5a5567b83e62306f73f7069e0e09f0c8683`",
+  "**Branch:** `codex/sdd-v1-2-2-commercial-design-vocabulary-recovery`",
+  "**PR:** #132",
+  "**Initial delivery commit:** `bba2827e63f2027c946138f6c91362f3f989b088`",
+  "**Review-fix delivery commit:** Recorded by PR #132",
+]) {
+  if (!validationRecord.includes(required)) {
+    failures.push(`v1.2.2 validation record is missing provenance text: ${required}`);
+  }
 }
 
 const p10aOrder = [
@@ -138,6 +174,19 @@ if (!evidence.includes("Phase 9 remains active")) {
   failures.push("Phase 9 evidence matrix must keep Phase 9 active");
 }
 for (const required of [
+  "4a96a5a5567b83e62306f73f7069e0e09f0c8683",
+  "P10A owns AC-129 through AC-138 after Phase 9",
+  "AC-136–AC-138 are not required to close Phase 9",
+  "P10A Tasks 6–9",
+  "Reproducible from the stated v1.2.2 baseline",
+]) {
+  if (!evidence.includes(required)) {
+    failures.push(
+      `Phase 9 evidence matrix is missing v1.2.2 ownership/provenance text: ${required}`,
+    );
+  }
+}
+for (const required of [
   "Approved Storefront Design Brief revision used by runtime generation; FR-105",
   "project ID, brief ID, revision/fingerprint",
   "approval actor/action/timestamp",
@@ -163,9 +212,9 @@ for (const [relativePath, markdown] of contents) {
 }
 
 const sourceHash = createHash("sha256").update(sdd.replace(/\r\n/g, "\n")).digest("hex");
-const docxPath = join(repositoryRoot, "docs", "VESKIFY_SDD_v1.2.1.docx");
+const docxPath = join(repositoryRoot, "docs", "VESKIFY_SDD_v1.2.2.docx");
 if (!existsSync(docxPath)) {
-  failures.push("Missing docs/VESKIFY_SDD_v1.2.1.docx");
+  failures.push("Missing docs/VESKIFY_SDD_v1.2.2.docx");
 } else {
   try {
     execFileSync(
