@@ -177,7 +177,6 @@ type UseDesignAgentSessionInput = {
   disabled: boolean;
   provider?: AIProvider;
   storefrontProvider?: StorefrontAIProvider;
-  wholeStorefrontCapability?: "registeredWholeStorefrontDirection";
   analytics?: ProposalAnalyticsSink;
   analyticsRoute?: string;
   onProposalReady?: () => void;
@@ -416,7 +415,6 @@ export function useDesignAgentSession({
   disabled,
   provider,
   storefrontProvider,
-  wholeStorefrontCapability,
   analytics = noopProposalAnalyticsSink,
   analyticsRoute = `/projects/${projectId}/editor`,
   onProposalReady,
@@ -792,7 +790,6 @@ export function useDesignAgentSession({
     const { command, request } = buildAiStorefrontProviderRequestForSupportedCapability(
       baseCommand,
       1,
-      wholeStorefrontCapability,
     );
     runtimeBridge.bindStorefrontIdentity({
       context: {

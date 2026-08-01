@@ -107,8 +107,8 @@
   min-height: 3.25rem;
   border: 0;
   border-radius: var(--brand-radius);
-  background: var(--brand-color-primary);
-  color: var(--brand-color-surface);
+  background: var(--brand-action-primary);
+  color: var(--brand-action-primary-text);
   padding: 0.75rem;
   font: inherit;
   font-weight: 800;
@@ -160,8 +160,8 @@
   font: inherit;
 }
 .optionGroup input:checked + span {
-  background: var(--brand-color-primary);
-  color: white;
+  background: var(--brand-action-primary);
+  color: var(--brand-action-primary-text);
 }
 .optionGroup input:focus-visible + span {
   outline: 3px solid var(--brand-color-accent);

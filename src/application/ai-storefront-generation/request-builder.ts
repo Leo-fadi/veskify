@@ -26,6 +26,7 @@ import {
   createAiStorefrontGenerationPlan,
   normalizeStorefrontInstruction,
 } from "./planner";
+import { planRegisteredTokenRefinement } from "./token-refinement";
 
 export class AiStorefrontRequestBuildError extends Error {
   constructor(
@@ -199,9 +200,19 @@ export function buildAiStorefrontProviderRequest(
       operationTypes:
         plan.brandPalettePlan !== null
           ? ["APPLY_APPROVED_BRAND_COLOURS"]
-          : plan.direction === "registeredWholeStorefront"
-            ? ["APPLY_REGISTERED_BRAND_SYSTEM"]
-            : ["APPLY_APPROVED_BRAND_COLOURS", "APPLY_APPROVED_BRAND_TYPOGRAPHY"],
+          : plan.tokenRefinementPlan !== null &&
+              command.capability === "approvedColorTypographyDirection"
+            ? [
+                ...(plan.tokenRefinementPlan.palette === null
+                  ? []
+                  : (["APPLY_APPROVED_BRAND_COLOURS"] as const)),
+                ...(plan.tokenRefinementPlan.typography === null
+                  ? []
+                  : (["APPLY_APPROVED_BRAND_TYPOGRAPHY"] as const)),
+              ]
+            : plan.direction === "registeredWholeStorefront"
+              ? ["APPLY_REGISTERED_BRAND_SYSTEM"]
+              : ["APPLY_APPROVED_BRAND_COLOURS", "APPLY_APPROVED_BRAND_TYPOGRAPHY"],
       target: target.designSystemTarget,
     });
   }
@@ -301,13 +312,12 @@ export function buildAiStorefrontProviderRequest(
 
 export type AiStorefrontCapabilitySelectionInput = Omit<
   AiStorefrontGenerationCommand,
-  "capability"
+  "capability" | "canonicalTokenRefinementPlan"
 >;
 
 export function buildAiStorefrontProviderRequestForSupportedCapability(
   commandInput: AiStorefrontCapabilitySelectionInput,
   requestSequence: number,
-  requiredCapability?: "registeredWholeStorefrontDirection",
 ): {
   command: AiStorefrontGenerationCommand;
   request: AiStorefrontProviderRequest;
@@ -316,23 +326,36 @@ export function buildAiStorefrontProviderRequestForSupportedCapability(
     commandInput.provider,
     "registeredWholeStorefrontDirection",
   );
-  if (requiredCapability === "registeredWholeStorefrontDirection") {
-    if (!supportsRegistered) {
-      throw new AiStorefrontRequestBuildError(
-        "unsupported-request",
-        "This storefront design provider does not support registered whole-storefront directions.",
+  const supportsDesignSystem = storefrontProviderSupportsCapability(
+    commandInput.provider,
+    "approvedColorTypographyDirection",
+  );
+  if (!supportsRegistered && supportsDesignSystem) {
+    let tokenRefinementPlan;
+    try {
+      tokenRefinementPlan = planRegisteredTokenRefinement(
+        commandInput.merchantInstruction,
+        commandInput.storefront.brandSystem,
       );
+    } catch {
+      tokenRefinementPlan = null;
     }
-    const command = {
-      ...commandInput,
-      capability: requiredCapability,
-    } satisfies AiStorefrontGenerationCommand;
-    return {
-      command,
-      request: buildAiStorefrontProviderRequest(command, requestSequence),
-    };
+    if (
+      tokenRefinementPlan !== null &&
+      tokenRefinementPlan.spacing === null &&
+      (tokenRefinementPlan.palette !== null || tokenRefinementPlan.typography !== null)
+    ) {
+      const selectedCommand = {
+        ...commandInput,
+        capability: "approvedColorTypographyDirection" as const,
+        canonicalTokenRefinementPlan: tokenRefinementPlan,
+      } satisfies AiStorefrontGenerationCommand;
+      return {
+        command: selectedCommand,
+        request: buildAiStorefrontProviderRequest(selectedCommand, requestSequence),
+      };
+    }
   }
-
   if (supportsRegistered) {
     let registeredClassification;
     try {
@@ -340,10 +363,39 @@ export function buildAiStorefrontProviderRequestForSupportedCapability(
         commandInput.merchantInstruction,
         commandInput.storefront.brandSystem,
       );
-    } catch {
-      registeredClassification = { kind: "token-refinement" as const };
+    } catch (error) {
+      throw new AiStorefrontRequestBuildError(
+        "unsupported-request",
+        error instanceof Error ? error.message : "The storefront request is unsupported.",
+      );
     }
     if (registeredClassification.kind === "token-refinement") {
+      const designSystemOnly =
+        registeredClassification.plan.spacing === null &&
+        (registeredClassification.plan.palette !== null ||
+          registeredClassification.plan.typography !== null);
+      if (designSystemOnly && !supportsDesignSystem) {
+        throw new AiStorefrontRequestBuildError(
+          "unsupported-request",
+          "This storefront design provider does not support approved colour and typography changes.",
+        );
+      }
+      const selectedCommand = {
+        ...commandInput,
+        capability: designSystemOnly
+          ? ("approvedColorTypographyDirection" as const)
+          : ("registeredWholeStorefrontDirection" as const),
+        canonicalTokenRefinementPlan: registeredClassification.plan,
+      } satisfies AiStorefrontGenerationCommand;
+      return {
+        command: selectedCommand,
+        request: buildAiStorefrontProviderRequest(selectedCommand, requestSequence),
+      };
+    }
+    if (
+      registeredClassification.kind === "selected" ||
+      registeredClassification.kind === "structural"
+    ) {
       const registeredCommand = {
         ...commandInput,
         capability: "registeredWholeStorefrontDirection" as const,
@@ -353,34 +405,41 @@ export function buildAiStorefrontProviderRequestForSupportedCapability(
         request: buildAiStorefrontProviderRequest(registeredCommand, requestSequence),
       };
     }
+    if (registeredClassification.kind === "ambiguous") {
+      throw new AiStorefrontRequestBuildError(
+        "ambiguous-request",
+        "Choose one whole-storefront structural direction or one design-system-only change.",
+      );
+    }
+    if (registeredClassification.kind === "mixed") {
+      throw new AiStorefrontRequestBuildError(
+        "ambiguous-request",
+        "Submit the structural redesign and global colour or typography change separately.",
+      );
+    }
+    if (registeredClassification.kind === "protected-commerce") {
+      throw new AiStorefrontRequestBuildError(
+        "unsupported-request",
+        "Protected commerce data cannot be changed by a storefront design proposal.",
+      );
+    }
+  }
+
+  if (!supportsDesignSystem) {
+    throw new AiStorefrontRequestBuildError(
+      "unsupported-request",
+      "This storefront design provider does not support approved colour and typography changes.",
+    );
   }
 
   const legacyCommand = {
     ...commandInput,
     capability: "approvedColorTypographyDirection" as const,
   } satisfies AiStorefrontGenerationCommand;
-  try {
-    return {
-      command: legacyCommand,
-      request: buildAiStorefrontProviderRequest(legacyCommand, requestSequence),
-    };
-  } catch (error) {
-    if (
-      !supportsRegistered ||
-      !(error instanceof AiStorefrontRequestBuildError) ||
-      error.code !== "unsupported-request"
-    ) {
-      throw error;
-    }
-    const registeredCommand = {
-      ...commandInput,
-      capability: "registeredWholeStorefrontDirection" as const,
-    } satisfies AiStorefrontGenerationCommand;
-    return {
-      command: registeredCommand,
-      request: buildAiStorefrontProviderRequest(registeredCommand, requestSequence),
-    };
-  }
+  return {
+    command: legacyCommand,
+    request: buildAiStorefrontProviderRequest(legacyCommand, requestSequence),
+  };
 }
 
 export function aiStorefrontPendingRequestKey(request: AiStorefrontProviderRequest): string {

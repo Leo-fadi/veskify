@@ -4,7 +4,8 @@ import {
   type AiStorefrontProviderRequest,
   AiStorefrontProviderValidationError,
   aiStorefrontProviderRequestSchema,
-  buildAiStorefrontProviderRequest,
+  buildAiStorefrontProviderRequestForSupportedCapability,
+  classifyRegisteredWholeStorefrontDirectionRequest,
   createApprovedGenerationAssetContextFingerprint,
   approvedGenerationAssetContextSchema,
   validateAiStorefrontProviderResponse,
@@ -256,13 +257,13 @@ function authoritativeRequest(
 ): AiStorefrontProviderRequest {
   const draft = planningInput.draft;
   const scope = resolveStorefrontGenerationScope(intent.instruction, draft.pages);
-  return buildAiStorefrontProviderRequest(
+  return buildAiStorefrontProviderRequestForSupportedCapability(
     {
       projectId: planningInput.project.id,
       draftSnapshotId: draft.id,
       draftRevision: draft.revision,
       storefront: projectAiStorefrontSnapshot(draft),
-      affectedPageIds: scope.affectedPageIds,
+      affectedPageIds: [...scope.affectedPageIds],
       affectedSectionTargets: [],
       designSystemTarget: scope.includesSharedFrame
         ? { kind: "storefrontDesignSystem", projectId: planningInput.project.id }
@@ -271,11 +272,14 @@ function authoritativeRequest(
       activeLocale: intent.activeLocale,
       enabledLocales: planningInput.project.enabledLocales,
       requestedScope: scope.kind === "homepage" ? "page" : "storefront",
-      capability: intent.capability,
       providerId: runtimeProviderId,
       provider: {
         id: runtimeProviderId,
         assetReferenceCapability: "structuredApprovedAssets",
+        generationCapabilities: [
+          "approvedColorTypographyDirection",
+          "registeredWholeStorefrontDirection",
+        ],
         proposeStorefront: () => Promise.reject(new Error("Server provider only")),
       },
       correlationRequestId: intent.requestId,
@@ -284,7 +288,7 @@ function authoritativeRequest(
       assetPlacementOperations: planningInput.requiredAssetPlacements,
     },
     intent.requestSequence,
-  );
+  ).request;
 }
 
 function sameRequestPreconditions(
@@ -296,6 +300,10 @@ function sameRequestPreconditions(
     intent.target.draftSnapshotId === authoritative.target.draftSnapshotId &&
     intent.target.draftRevision === authoritative.target.draftRevision &&
     intent.activeLocale === authoritative.activeLocale &&
+    intent.capability === authoritative.capability &&
+    JSON.stringify(intent.brandPalettePlan) === JSON.stringify(authoritative.brandPalettePlan) &&
+    JSON.stringify(intent.tokenRefinementPlan) ===
+      JSON.stringify(authoritative.tokenRefinementPlan) &&
     intent.storefrontBaselineFingerprint === authoritative.storefrontBaselineFingerprint &&
     intent.targetFingerprint === authoritative.targetFingerprint &&
     intent.permissionFingerprint === authoritative.permissionFingerprint &&
@@ -315,16 +323,20 @@ function assertRequestDirectionCompatible(
   plan: WholeStorefrontGenerationPlan,
 ) {
   const skillIds = new Set(request.permissionGrants.map((grant) => grant.skillId));
-  if (
-    request.capability === "registeredWholeStorefrontDirection" &&
-    (skillIds.size !== 1 || !skillIds.has("applyRegisteredWholeStorefrontDirection"))
-  ) {
-    throw new ServerWholeStorefrontAuthorityError("invalid");
+  if (request.capability === "registeredWholeStorefrontDirection") {
+    if (skillIds.size !== 1 || !skillIds.has("applyRegisteredWholeStorefrontDirection")) {
+      throw new ServerWholeStorefrontAuthorityError("invalid");
+    }
+    const classification = classifyRegisteredWholeStorefrontDirectionRequest(request.instruction);
+    if (
+      classification.kind === "selected" &&
+      classification.direction !== plan.designSystemSelection.directionId
+    ) {
+      throw new ServerWholeStorefrontAuthorityError("invalid");
+    }
+    return;
   }
-  if (
-    request.brandPalettePlan !== null ||
-    request.capability === "registeredWholeStorefrontDirection"
-  ) {
+  if (request.brandPalettePlan !== null) {
     return;
   }
   if (
@@ -482,7 +494,24 @@ function projectPlanOperations(
     target: AiStorefrontOperation["target"],
     operation: AiStorefrontOperation["operation"],
   ) => operations.push({ order: operations.length, target, operation });
-  if (request.target.designSystemTarget !== null && request.brandPalettePlan !== null) {
+  if (
+    request.target.designSystemTarget !== null &&
+    request.tokenRefinementPlan !== null &&
+    request.capability === "approvedColorTypographyDirection"
+  ) {
+    if (request.tokenRefinementPlan.palette !== null) {
+      add(request.target.designSystemTarget, {
+        type: "APPLY_APPROVED_BRAND_COLOURS",
+        colors: request.tokenRefinementPlan.palette.colors,
+      });
+    }
+    if (request.tokenRefinementPlan.typography !== null) {
+      add(request.target.designSystemTarget, {
+        type: "APPLY_APPROVED_BRAND_TYPOGRAPHY",
+        typography: request.tokenRefinementPlan.typography,
+      });
+    }
+  } else if (request.target.designSystemTarget !== null && request.brandPalettePlan !== null) {
     add(request.target.designSystemTarget, {
       type: "APPLY_APPROVED_BRAND_COLOURS",
       colors: request.brandPalettePlan.colors,

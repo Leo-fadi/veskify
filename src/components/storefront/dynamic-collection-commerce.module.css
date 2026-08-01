@@ -8,7 +8,7 @@
 }
 
 .surface_soft {
-  background: color-mix(in srgb, var(--brand-color-surface) 72%, var(--brand-color-background));
+  background: var(--brand-surface-subtle);
 }
 
 .surface_plain {

@@ -3,7 +3,7 @@ import "server-only";
 import { randomBytes, timingSafeEqual } from "node:crypto";
 
 import {
-  buildAiStorefrontProviderRequest,
+  buildAiStorefrontProviderRequestForSupportedCapability,
   aiStorefrontProviderResponseSchema,
   resolveStorefrontGenerationScope,
   type AiStorefrontProviderRequest,
@@ -473,13 +473,13 @@ export async function buildP905bLocalDemoRequest(
   );
   if (!draft) throw new Error("The P9-05B local demo draft is unavailable.");
   const scope = resolveStorefrontGenerationScope(merchantInstruction, draft.pages);
-  return buildAiStorefrontProviderRequest(
+  return buildAiStorefrontProviderRequestForSupportedCapability(
     {
       projectId: aggregate.project.id,
       draftSnapshotId: draft.id,
       draftRevision: draft.revision,
       storefront: projectAiStorefrontSnapshot(draft),
-      affectedPageIds: scope.affectedPageIds,
+      affectedPageIds: [...scope.affectedPageIds],
       affectedSectionTargets: [],
       designSystemTarget: scope.includesSharedFrame
         ? { kind: "storefrontDesignSystem", projectId: aggregate.project.id }
@@ -488,11 +488,14 @@ export async function buildP905bLocalDemoRequest(
       activeLocale: aggregate.project.primaryLocale,
       enabledLocales: aggregate.project.enabledLocales,
       requestedScope: scope.kind === "homepage" ? "page" : "storefront",
-      capability: "registeredWholeStorefrontDirection",
       providerId: "server-whole-storefront-planning",
       provider: {
         id: "server-whole-storefront-planning",
         assetReferenceCapability: "structuredApprovedAssets",
+        generationCapabilities: [
+          "approvedColorTypographyDirection",
+          "registeredWholeStorefrontDirection",
+        ],
         proposeStorefront: () => Promise.reject(new Error("Server provider only")),
       },
       correlationRequestId: `p9_05b_local_${P9_05A_FIXED_TIME.replace(/[^0-9]/g, "")}`,
@@ -501,5 +504,5 @@ export async function buildP905bLocalDemoRequest(
       assetPlacementOperations: [],
     },
     1,
-  );
+  ).request;
 }

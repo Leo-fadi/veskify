@@ -211,7 +211,7 @@ function validatedMerchantInstruction(value: unknown): string {
     normalized.length > 2_000 ||
     [...normalized].some((character) => {
       const codePoint = character.codePointAt(0) ?? 0;
-      return codePoint < 32 || codePoint === 127;
+      return (codePoint < 32 && ![9, 10, 13].includes(codePoint)) || codePoint === 127;
     })
   ) {
     return fail("invalid-request");

@@ -5,6 +5,7 @@ import {
   aiStorefrontProviderResponseSchema,
   createDeterministicMockStorefrontAIProvider,
   buildAiStorefrontProviderRequest,
+  buildAiStorefrontProviderRequestForSupportedCapability,
   type AiStorefrontGenerationCommand,
   type recordStorefrontDiagnostic,
 } from "@/application/ai-storefront-generation";
@@ -33,6 +34,7 @@ import {
 } from "@/integrations/ai/whole-storefront-runtime-authority";
 import type { MerchantProjectAuthorization } from "@/application/merchant-project-context";
 import { sourceEvidenceSchema, sourceReferenceSchema } from "@/domain/source-discovery";
+import { p9r07ExactDesignSystemRequest } from "../fixtures/p9r-07-design-system";
 
 const now = "2026-07-26T10:00:00.000Z";
 const snapshot = aurumNordicSeed.draftSnapshot;
@@ -180,7 +182,7 @@ function request({
     navigation: structuredClone(snapshot.navigation),
     brandSystem: structuredClone(snapshot.brandSystem),
   },
-  instruction = "Apply a warm premium style across the storefront.",
+  instruction = p9r07ExactDesignSystemRequest,
   sequence = 1,
   scope = "storefront",
 }: {
@@ -200,7 +202,7 @@ function request({
   };
   const homepage = storefront.pages.find((page) => page.type === "home");
   if (scope === "page" && !homepage) throw new Error("The runtime fixture requires a homepage.");
-  const command: AiStorefrontGenerationCommand = {
+  const command = {
     projectId: aurumNordicSeed.project.id,
     draftSnapshotId: snapshot.id,
     draftRevision: snapshot.revision,
@@ -218,13 +220,50 @@ function request({
     activeLocale: "en",
     enabledLocales: ["en", "fi"],
     requestedScope: scope,
-    capability:
-      scope === "page" ? "registeredWholeStorefrontDirection" : "approvedColorTypographyDirection",
     providerId: provider.id,
     provider,
     importedContent: [],
+  } satisfies Omit<AiStorefrontGenerationCommand, "capability">;
+  return buildAiStorefrontProviderRequestForSupportedCapability(command, sequence).request;
+}
+
+function designSystemRequest() {
+  const provider = {
+    id: "server-whole-storefront-planning",
+    assetReferenceCapability: "structuredApprovedAssets" as const,
+    generationCapabilities: [
+      "approvedColorTypographyDirection",
+      "registeredWholeStorefrontDirection",
+    ] as const,
+    proposeStorefront: () => Promise.reject(new Error("server boundary")),
   };
-  return buildAiStorefrontProviderRequest(command, sequence);
+  return buildAiStorefrontProviderRequestForSupportedCapability(
+    {
+      projectId: aurumNordicSeed.project.id,
+      draftSnapshotId: snapshot.id,
+      draftRevision: snapshot.revision,
+      storefront: {
+        pageOrder: snapshot.pages.map((page) => page.id),
+        pages: structuredClone(snapshot.pages),
+        navigation: structuredClone(snapshot.navigation),
+        brandSystem: structuredClone(snapshot.brandSystem),
+      },
+      affectedPageIds: snapshot.pages.map((page) => page.id),
+      affectedSectionTargets: [],
+      designSystemTarget: {
+        kind: "storefrontDesignSystem",
+        projectId: aurumNordicSeed.project.id,
+      },
+      merchantInstruction: p9r07ExactDesignSystemRequest,
+      activeLocale: "en",
+      enabledLocales: ["en", "fi"],
+      requestedScope: "storefront",
+      providerId: provider.id,
+      provider,
+      importedContent: [],
+    },
+    1,
+  ).request;
 }
 
 function authority(input = planningInput()): ServerWholeStorefrontPlanningAuthority {
@@ -264,6 +303,117 @@ function authority(input = planningInput()): ServerWholeStorefrontPlanningAuthor
 }
 
 describe("P9-01 runtime whole-storefront provider boundary", () => {
+  it("keeps browser and server authority identical for the P9R-07 design-system request", async () => {
+    const browserRequest = designSystemRequest();
+    const deterministicEnvelope = aiStorefrontProviderResponseSchema.parse(
+      await createDeterministicMockStorefrontAIProvider().proposeStorefront(browserRequest),
+    );
+    expect(
+      deterministicEnvelope.proposal.operations.map(({ operation }) => operation.type),
+    ).toEqual(["APPLY_APPROVED_BRAND_COLOURS", "APPLY_APPROVED_BRAND_TYPOGRAPHY"]);
+    const createPlan = vi.fn((input: WholeStorefrontPlanningProviderRequest) =>
+      Promise.resolve(structuredClone(input.expectedPlan)),
+    );
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: authority(),
+      selectProvider: () => ({
+        id: "recording-canonical-planner",
+        capabilities: {
+          wholeStorefrontPlanning: true,
+          structuredPlanOutput: true,
+          approvedAssetReferences: true,
+        },
+        createPlan,
+      }),
+    });
+
+    const response = await handler(
+      new Request("http://localhost", {
+        method: "POST",
+        body: JSON.stringify(browserRequest),
+      }),
+    );
+    const body = (await response.json()) as { proposal: unknown };
+    const envelope = aiStorefrontProviderResponseSchema.parse(body.proposal);
+
+    expect(response.status).toBe(200);
+    expect(createPlan).toHaveBeenCalledOnce();
+    expect(createPlan.mock.calls[0][0]).toMatchObject({
+      requestClass: "tokenOnlyRefinement",
+      tokenRefinementPlan: browserRequest.tokenRefinementPlan,
+    });
+    expect(browserRequest.capability).toBe("approvedColorTypographyDirection");
+    expect(browserRequest.target.designSystemTarget).not.toBeNull();
+    expect(browserRequest.target.affectedPageIds).toEqual(
+      expect.arrayContaining(snapshot.pages.map((page) => page.id)),
+    );
+    expect(envelope.proposal.operations.map(({ operation }) => operation.type)).toEqual([
+      "APPLY_APPROVED_BRAND_COLOURS",
+      "APPLY_APPROVED_BRAND_TYPOGRAPHY",
+    ]);
+    expect(envelope.proposal.proposedStorefront.pages).toEqual(browserRequest.storefront.pages);
+    expect(envelope.proposal.proposedStorefront.pageOrder).toEqual(
+      browserRequest.storefront.pageOrder,
+    );
+    expect(envelope.proposal.proposedStorefront.navigation).toEqual(
+      browserRequest.storefront.navigation,
+    );
+    expect(envelope.proposal.proposedStorefront.brandSystem).toMatchObject({
+      colors: browserRequest.tokenRefinementPlan?.palette?.colors,
+      typography: browserRequest.tokenRefinementPlan?.typography,
+    });
+  });
+
+  it("rejects a browser capability decision that disagrees with server reconstruction", async () => {
+    const canonical = designSystemRequest();
+    const mismatched = buildAiStorefrontProviderRequest(
+      {
+        projectId: canonical.target.projectId,
+        draftSnapshotId: canonical.target.draftSnapshotId,
+        draftRevision: canonical.target.draftRevision,
+        storefront: canonical.storefront,
+        affectedPageIds: canonical.target.affectedPageIds,
+        affectedSectionTargets: [],
+        designSystemTarget: canonical.target.designSystemTarget,
+        merchantInstruction: canonical.instruction,
+        activeLocale: canonical.activeLocale,
+        enabledLocales: canonical.enabledLocales,
+        requestedScope: "storefront",
+        capability: "registeredWholeStorefrontDirection",
+        providerId: canonical.providerId,
+        provider: {
+          id: canonical.providerId,
+          generationCapabilities: [
+            "approvedColorTypographyDirection",
+            "registeredWholeStorefrontDirection",
+          ],
+          proposeStorefront: () => Promise.reject(new Error("server boundary")),
+        },
+        importedContent: [],
+      },
+      canonical.requestSequence,
+    );
+    const provider = {
+      id: "must-not-run",
+      capabilities: {
+        wholeStorefrontPlanning: true,
+        structuredPlanOutput: true,
+        approvedAssetReferences: true,
+      },
+      createPlan: vi.fn(),
+    } satisfies WholeStorefrontPlanningProvider;
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: authority(),
+      selectProvider: () => provider,
+    });
+
+    const response = await handler(
+      new Request("http://localhost", { method: "POST", body: JSON.stringify(mismatched) }),
+    );
+
+    expect(response.status).toBe(409);
+    expect(provider.createPlan).not.toHaveBeenCalled();
+  });
   it("records page scope in every runtime-client diagnostic for a homepage request", async () => {
     const records: DiagnosticRecord[] = [];
     const log = vi.spyOn(console, "info").mockImplementation((_event, value) => {

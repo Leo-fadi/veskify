@@ -81,6 +81,42 @@ function assertRegisteredTokenRefinementResponse(
   response: AiStorefrontProviderResponse,
 ) {
   if (request.tokenRefinementPlan === null) return;
+  if (request.capability === "approvedColorTypographyDirection") {
+    const expectedOperationCount =
+      Number(request.tokenRefinementPlan.palette !== null) +
+      Number(request.tokenRefinementPlan.typography !== null);
+    const paletteOperations = response.proposal.operations.filter(
+      ({ operation }) => operation.type === "APPLY_APPROVED_BRAND_COLOURS",
+    );
+    const typographyOperations = response.proposal.operations.filter(
+      ({ operation }) => operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY",
+    );
+    const paletteMatches =
+      request.tokenRefinementPlan.palette === null
+        ? paletteOperations.length === 0
+        : paletteOperations.length === 1 &&
+          paletteOperations[0].operation.type === "APPLY_APPROVED_BRAND_COLOURS" &&
+          canonicalValueString(paletteOperations[0].operation.colors) ===
+            canonicalValueString(request.tokenRefinementPlan.palette.colors);
+    const typographyMatches =
+      request.tokenRefinementPlan.typography === null
+        ? typographyOperations.length === 0
+        : typographyOperations.length === 1 &&
+          typographyOperations[0].operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY" &&
+          canonicalValueString(typographyOperations[0].operation.typography) ===
+            canonicalValueString(request.tokenRefinementPlan.typography);
+    if (
+      response.proposal.operations.length !== expectedOperationCount ||
+      !paletteMatches ||
+      !typographyMatches
+    ) {
+      invalid(
+        "token-refinement-mismatch",
+        "The provider proposal does not match the validated storefront colour and typography refinement.",
+      );
+    }
+    return;
+  }
   const operations = response.proposal.operations.filter(
     ({ operation }) => operation.type === "APPLY_REGISTERED_BRAND_SYSTEM",
   );

@@ -86,7 +86,9 @@ function typographyForInstruction(
     headingFont ??= "georgia";
     bodyFont ??= "inter";
   } else if (
-    /modern sans|clean sans(?:-serif)?|moderni groteski|selkeä groteski/iu.test(normalized)
+    /modern sans|clean sans(?:-serif)?|moderni groteski|selkeä\p{L}* groteski\p{L}*/iu.test(
+      normalized,
+    )
   ) {
     headingFont ??= "system-sans";
     bodyFont ??= "system-sans";
@@ -100,7 +102,7 @@ function typographyForInstruction(
   if (/elegant serif|elegantti antiikva/iu.test(normalized)) {
     headingFont = "georgia";
   }
-  if (/clean(?:\s+modern)?\s+sans(?:-serif)?|selkeä groteski/iu.test(normalized)) {
+  if (/clean(?:\s+modern)?\s+sans(?:-serif)?|selkeä\p{L}* groteski\p{L}*/iu.test(normalized)) {
     bodyFont = "system-sans";
   }
   if (headingFont === null && bodyFont === null) {
@@ -108,10 +110,19 @@ function typographyForInstruction(
       "Choose approved heading and body typography tokens for this refinement.",
     );
   }
+  const actionableHeadingWeight = normalized.replace(
+    /\b(?:do\s+not|don't|avoid|without|älä\s+käytä|vältä|ilman)\b[^.!?]{0,48}\b(?:bold|strong|lihavoit\p{L}*|vahvo\p{L}*)\b[^.!?]{0,32}\b(?:headings?|otsiko\p{L}*)\b/giu,
+    "",
+  );
+  const boldHeadings =
+    /\b(?:bold|strong)\b[^.!?]{0,32}\bheadings?\b|\bheadings?\b[^.!?]{0,32}\b(?:bold|strong)\b/iu.test(
+      actionableHeadingWeight,
+    );
   return {
     ...structuredClone(current),
     ...(headingFont === null ? {} : { headingFont }),
     ...(bodyFont === null ? {} : { bodyFont }),
+    ...(boldHeadings ? { headingWeight: 700 as const } : {}),
   };
 }
 
@@ -131,10 +142,16 @@ function spacingForInstruction(instruction: string): BrandSystem["spacing"] | nu
   const explicitDensity = densityMatches
     .map((match) => {
       const before = normalized.slice(Math.max(0, (match.index ?? 0) - 100), match.index);
+      const around = normalized.slice(
+        Math.max(0, (match.index ?? 0) - 40),
+        Math.min(normalized.length, (match.index ?? 0) + match[0].length + 40),
+      );
       const actionable =
         /\b(?:use|make|set|apply|change(?:\s+to)?|adjust(?:\s+to)?|käytä|tee|aseta|muuta|säädä)\b[^.!?]{0,80}$/iu.test(
           before,
-        );
+        ) &&
+        (/\b(?:spacing|density|välistys|tiheys)\b/iu.test(around) ||
+          !/\b(?:headings?|otsikot?)\b/iu.test(around));
       return actionable ? match[1] : undefined;
     })
     .filter((value): value is string => value !== undefined)
