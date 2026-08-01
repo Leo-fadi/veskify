@@ -13,7 +13,7 @@ Use this template for every Veskify implementation task.
 ## Specification references
 
 - SDD section(s):
-- v1.2/v1.2.1 FR/NFR requirement IDs:
+- v1.2/v1.2.1/v1.2.2 FR/NFR requirement IDs:
 - Acceptance criteria IDs:
 - Related ADR(s):
 

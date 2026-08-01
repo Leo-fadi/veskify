@@ -14,7 +14,7 @@ const markdownFiles = [
   "docs/DEVELOPMENT_GUIDE.md",
   "docs/CODEX_TASK_TEMPLATE.md",
   "docs/PHASE_9_EVIDENCE_MATRIX.md",
-  "docs/SDD_V1_2_1_DOCUMENTATION_VALIDATION.md",
+  "docs/SDD_V1_2_2_DOCUMENTATION_VALIDATION.md",
   "docs/adr/README.md",
   "docs/adr/ADR-002_CONTROLLED_DESIGN_AGENT.md",
 ];
@@ -51,7 +51,7 @@ const roadmap = contents.get("docs/VESKIFY_DEVELOPMENT_ROADMAP.md");
 const evidence = contents.get("docs/PHASE_9_EVIDENCE_MATRIX.md");
 
 const requiredSddText = [
-  "| **Version**                 | 1.2.1",
+  "| **Version**                 | 1.2.2",
   "Phase 9 remains active.",
   "`StorefrontSnapshot`",
   "`ComponentDefinitionV2`",
@@ -69,6 +69,9 @@ const requiredSddText = [
   "Broad controlled-vocabulary expansion occurs after the Phase",
   "authoritative\nStorefront Design Brief creation → merchant review → explicit approval",
   "later unapproved brief mutation supplied generation",
+  "registered → planner-selectable → proposal-expressible → compiler-preserved",
+  "Global BrandSystem",
+  "Commercial visual-quality and protected-commerce gate",
 ];
 for (const required of requiredSddText) {
   if (!sdd.includes(required)) failures.push(`SDD missing required text: ${required}`);
@@ -163,9 +166,9 @@ for (const [relativePath, markdown] of contents) {
 }
 
 const sourceHash = createHash("sha256").update(sdd.replace(/\r\n/g, "\n")).digest("hex");
-const docxPath = join(repositoryRoot, "docs", "VESKIFY_SDD_v1.2.1.docx");
+const docxPath = join(repositoryRoot, "docs", "VESKIFY_SDD_v1.2.2.docx");
 if (!existsSync(docxPath)) {
-  failures.push("Missing docs/VESKIFY_SDD_v1.2.1.docx");
+  failures.push("Missing docs/VESKIFY_SDD_v1.2.2.docx");
 } else {
   try {
     execFileSync(

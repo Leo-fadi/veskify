@@ -1,6 +1,6 @@
 # Veskify Design-Agent Skills
 
-**Version:** 1.2.1
+**Version:** 1.2.2
 **Aligned with:** `docs/VESKIFY_SDD.md`
 **Product:** Vesko Storefront Studio, powered by Veskify
 
@@ -338,6 +338,27 @@ Initial generation requires an approved brief and creates a proposal over the cu
 `StorefrontSnapshot`. Follow-up editing requires an existing snapshot and target scope. They MUST
 NOT share an ambiguous “generate or edit” authority. Router contracts may narrow scope but must
 reject silent widening, and unknown or stale capability references fail before proposal evaluation.
+
+### 7.1 Commercial composition selection contract
+
+When a Skill composes a page or storefront, it selects an approved recipe, only compatible controlled
+component families/meaningful variants, permitted ordering, canonical bindings, approved assets and
+typed bounded design parameters. It cannot emit a component tree, CSS, class names, executable
+frontend code, unregistered font import or arbitrary layout value.
+
+Selection resolves in this order: `BrandSystem` → coordinated page recipe → component family and
+variant → limited validated instance override. A local override is exceptional, must be explicitly
+allowed by the active recipe/family and must not establish a disconnected visual language.
+
+Skill evidence records the complete capability reachability chain: registered → planner-selectable →
+proposal-expressible → compiler-preserved → `StorefrontSnapshot`-stored → renderer-visible →
+editor-editable → manually live-proven. Schema-valid selection alone is Partial. Closing visual
+evidence reviews homepage, collection and PDP together at 375, 768, 1024 and 1440 px with real or
+representative approved assets; placeholder SVGs and deterministic-only results are insufficient.
+
+Optional evidence/trust slots are omitted when their approved merchant evidence is unavailable.
+Skills and registry defaults must not invent claims about delivery, materials, durability, guarantees,
+sustainability, popularity, performance or certifications.
 
 P10A defines and validates the scopes. It does not deliver merchant-operable granular editing.
 Phase 11 implements and exposes those scopes as working merchant features: selecting a component or

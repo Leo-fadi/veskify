@@ -1,10 +1,10 @@
 # ADR-002: Controlled Skills and Structured Design Operations
 
 - **Status:** Accepted
-- **Version:** 1.2
+- **Version:** 1.2.2
 - **Decision date:** 2026-07-16
 - **Decision owners:** Veskify product and engineering
-- **Related document:** `docs/VESKIFY_SDD.md` and `docs/VESKIFY_SDD_v1.2.1.docx`
+- **Related document:** `docs/VESKIFY_SDD.md` and `docs/VESKIFY_SDD_v1.2.2.docx`
 - **Related decisions:** ADR-001 — Puck as the embedded editor foundation; ADR-003 — URL-first discovery and reconciliation; ADR-004 — dynamic commerce-bound components
 
 ## 1. Context
@@ -80,6 +80,19 @@ AI and skills may emit approved operations such as:
 - create a separate presentation-enrichment proposal.
 
 They may not emit executable React, HTML, CSS, JavaScript, scripts, or arbitrary embeds.
+
+### 3.3.1 Controlled commercial composition
+
+For page or storefront composition, a Skill selects an approved page recipe, compatible controlled
+component families and materially meaningful variants, permitted ordering, canonical bindings,
+approved assets and typed bounded parameters. It cannot create arbitrary component trees or layout
+values. The renderer remains responsible for CSS and responsive behavior.
+
+Selection inherits `BrandSystem → recipe → family/variant → constrained validated instance override`.
+The complete capability chain is registered → planner-selectable → proposal-expressible →
+compiler-preserved → `StorefrontSnapshot`-stored → renderer-visible → editor-editable → manually
+live-proven. Registry presence or schema validity alone is not completion. Optional evidence/trust
+content is omitted without approved evidence; defaults cannot invent commercial claims.
 
 ### 3.4 Reuse before generation
 
@@ -202,6 +215,9 @@ The architecture complies with this decision when:
 - provider-specific types remain isolated in provider adapters;
 - the published snapshot changes only after explicit confirmation;
 - the same Veskify component implementations render in editor, preview, and published storefronts.
+- commercial visual acceptance includes homepage, collection and PDP browser/screenshot review at
+  375, 768, 1024 and 1440 px with representative approved assets; deterministic tests and
+  placeholder-only evidence cannot close a phase.
 
 ## 8. Current status and implementation consequence
 
@@ -209,7 +225,7 @@ The controlled proposal architecture, provider adapter, section/page/storefront 
 atomic application, undo/redo, save and publish lifecycle are implemented. Automated provider
 coverage is mocked and network-free; retained live-provider Phase 9 evidence remains required.
 
-This ADR remains binding. New work follows the v1.2.1 roadmap:
+This ADR remains binding. New work follows the v1.2.2 roadmap:
 
 1. complete meaningful grounded Phase 9 composition and evidence;
 2. define P10A executable PageBlueprint contracts from the current template precursors;

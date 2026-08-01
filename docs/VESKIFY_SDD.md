@@ -10,9 +10,9 @@ Dynamic storefront generation · URL-first onboarding · reusable commerce compo
 | **DOCUMENT FIELD**          | **VALUE**                                                              |
 |-----------------------------|------------------------------------------------------------------------|
 | **Document ID**             | VESKIFY-SDD-001                                                        |
-| **Version**                 | 1.2.1                                                                  |
+| **Version**                 | 1.2.2                                                                  |
 | **Status**                  | Corrective grounded-generation architecture amendment; Phase 9 active  |
-| **Date**                    | 30 July 2026                                                           |
+| **Date**                    | 31 July 2026                                                           |
 | **Merchant-facing product** | Vesko Storefront Studio                                                |
 | **Internal engine**         | Veskify                                                                |
 | **Primary use**             | Codex implementation, teammate handoff and Vesko Retail OS integration |
@@ -26,8 +26,8 @@ Dynamic storefront generation · URL-first onboarding · reusable commerce compo
 <thead>
 <tr class="header">
 <th></th>
-<th><p><strong>v1.2.1 decision</strong></p>
-<p>Veskify is no longer specified as merely a standalone demo. It is the controlled storefront-design engine that will power Vesko Storefront Studio. The standalone repository remains the implementation and validation environment, but every new capability must be integration-ready and must consume canonical Vesko commerce data through read-only adapters.</p></th>
+<th><p><strong>v1.2.2 decision</strong></p>
+<p>Veskify is the controlled storefront-design engine that powers Vesko Storefront Studio. It composes coordinated editable storefronts from controlled component families, approved page recipes and bounded design parameters; it never generates arbitrary page code or a competing storefront model.</p></th>
 </tr>
 </thead>
 <tbody>
@@ -71,7 +71,8 @@ Owner: Vesko Oy · Product owner: Leo Fadi
 ## Source of truth
 
 - `docs/VESKIFY_SDD.md` is the authoritative implementation baseline.
-- `docs/VESKIFY_SDD_v1.2.1.docx` is the synchronized human-readable export.
+- `docs/VESKIFY_SDD_v1.2.2.docx` is the synchronized human-readable export.
+- `docs/VESKIFY_SDD_v1.2.1.docx` is retained as the superseded synchronized export.
 - `docs/VESKIFY_SDD_v1.2.docx` is retained as the superseded v1.2 export.
 - `docs/archive/VESKIFY_SDD_v1.1.docx` is retained only as historical context and is superseded for new work.
 - ADR-001, ADR-002, ADR-003 and ADR-004 are binding architectural decisions that clarify this SDD.
@@ -86,11 +87,12 @@ Owner: Vesko Oy · Product owner: Leo Fadi
 | 1.2         | 22 July 2026    | Product integration baseline     | Repositions Veskify as the Vesko design engine; makes URL-first onboarding primary; replaces catalogue/import drift with canonical Vesko projections; specifies reusable dynamic components and a schema-driven product-detail page; resets the roadmap after the verified real-AI milestone. |
 | 1.2         | 29 July 2026    | P9-04D acceptance clarification  | Incorporates the Lumo real-AI design-diversity gate for complete storefront directions, canonical-commerce protection and measured cross-page quality. |
 | 1.2.1       | 30 July 2026    | Corrective amendment             | Defines grounded generation over the existing canonical storefront state, corrects the Phase 9 quality gate and evidence ownership, and binds the P10A/P10B/P11/P12 delivery order without rewriting the v1.2 safety architecture. |
+| 1.2.2       | 31 July 2026    | Commercial design vocabulary      | Defines controlled component families, page recipes, bounded parametric design, inheritance, reachability and visual-quality gates; it does not close Phase 9 or unblock P10A. |
 
 ## v1.2.1 corrective amendment — grounded storefront generation
 
 This amendment is binding where it clarifies or corrects v1.2. Unchanged v1.2 requirements remain
-in force. It does not create a v1.3 architecture and does not declare Phase 9 complete.
+in force. It does not create a v1.3 architecture or mark Phase 9 as closed.
 
 ### Product position and grounded workflow
 
@@ -367,7 +369,109 @@ Use these status words consistently:
 composition passes the Phase 9 gate. `generateInitialStorefront` remains Partial: a planner or API
 response alone does not establish editor acceptance, persistence, preview and publish.
 
-## How implementation agents and developers must use v1.2.1
+## v1.2.2 commercial design vocabulary and controlled composition
+
+This amendment makes the commercial design-generation model explicit. It clarifies the existing
+canonical architecture; it does not authorize product-code changes, a second registry, a second page
+tree, arbitrary renderer input or a claim that Phase 9 has closed. P9R-06 proved the real editor
+homepage-only generation path. P9R-07 whole-store global colour and typography routing is active
+work at this amendment's baseline and is not claimed complete here.
+
+### Controlled component-family contract
+
+A component family is one engineering-maintained renderer implementation with several
+professionally designed, structurally meaningful variants. A variant changes architecture or
+commercial presentation, not merely a colour, padding value or renamed identifier. Families include
+shared header/navigation and footer; hero; featured product; product card/grid; collection
+discovery; brand story; campaign; approved evidence/trust; collection header/filter/presentation;
+and PDP gallery, information, options/purchasing, specifications and recommendations.
+
+Every family MUST declare its compatible pages, slots, typed bindings, approved asset roles,
+responsive and accessibility contract, editable and protected paths, and renderer implementation.
+It MUST use the same registered implementation in editor, preview and published routes. Product-card
+families, for example, may offer image-forward editorial, compact commerce, horizontal featured,
+technical specification and minimal catalogue variants only where those variants are materially
+distinct and commercially reviewable.
+
+### Controlled page-recipe and slot contract
+
+A page recipe is an approved page-template structure, not a finished fixed theme. It defines:
+
+- required and optional section slots;
+- compatible component families and meaningful variants;
+- default order and permitted controlled reordering;
+- canonical commerce bindings and approved-asset requirements;
+- responsive behavior and shared-frame/cross-page coordination;
+- fallback and omission behavior when approved content is unavailable.
+
+The AI may select and populate a compatible recipe through structured operations. It MUST NOT
+generate arbitrary component trees, executable code or unregistered slots. A slot is satisfied only
+when its registered cardinality, family/variant compatibility, binding, asset-role and omission rules
+pass validation. Optional evidence or trust slots MUST be omitted when approved merchant evidence is
+unavailable; defaults MUST NOT introduce unsupported delivery, material, durability, guarantee,
+sustainability, popularity, performance or certification claims.
+
+### Bounded parametric design and inheritance
+
+Within an approved family/recipe structure, AI may choose only typed, validated parameters: semantic
+palette; typography system, heading scale and weight; spacing/density; radius; border treatment;
+elevation/shadows; image ratio/crop/treatment; overlay strength; button treatment; and card surface.
+It MUST NOT emit raw CSS, arbitrary class names, JavaScript/React, unrestricted font imports or
+layout values outside the registered contract. The renderer remains authoritative for CSS and
+responsive behavior.
+
+The binding inheritance order is:
+
+```text
+Global BrandSystem
+  → coordinated page recipe
+    → component family and variant
+      → limited validated instance override
+```
+
+Local values normally derive from global semantic tokens. An instance override must be explicitly
+allowed, typed and compatible with its family and recipe; it must not create an unrelated visual
+language across sections or bypass global accessibility/responsive rules.
+
+### Commercial library, compatibility and reachability
+
+The initial commercial library target is approximately 10–15 major section families, 3–5 genuinely
+distinct variants per applicable family, 3–4 coordinated recipes for each major page type, and
+strong typography, spacing, surface, shape, elevation and image-treatment controls. These are depth
+and quality targets, not registry quotas: a smaller excellent library is preferable to many visually
+equivalent variants.
+
+Recipes, family variants, optional slots, permitted ordering, design-system parameters, approved
+assets and merchant/commerce data together create hundreds of materially distinct coordinated
+storefronts and thousands of controlled variations. Not every theoretical combination is valid.
+Compatibility, recipe constraints, responsive rules, accessibility and cross-page coordination MUST
+filter invalid or low-quality combinations.
+
+A capability is not complete merely because it appears in a registry. It must be:
+
+```text
+registered → planner-selectable → proposal-expressible → compiler-preserved
+→ StorefrontSnapshot-stored → renderer-visible → editor-editable → manually live-proven
+```
+
+Documentation, task acceptance matrices and release evidence MUST use this complete reachability
+chain. `StorefrontSnapshot` remains the sole stored canonical aggregate throughout it.
+
+### Commercial visual-quality and protected-commerce gate
+
+Visual acceptance MUST include screenshot-level review at the defined mobile and desktop widths
+(375, 768, 1024 and 1440 px), reviewing homepage, collection and PDP together as one coordinated
+storefront. Final commercial acceptance uses real or representative approved assets; placeholder SVGs
+are insufficient. Review each variant for hierarchy, density, composition, spacing, typography,
+imagery and commerce usability. Schema validity, metadata, fingerprints, snapshots and registry
+counts do not establish visual quality, and no phase may close on deterministic tests without a
+merchant-visible browser result.
+
+Structural and visual composition may change only while preserving canonical product IDs, variant
+IDs, SKUs, prices, stock, availability, options, collection membership/order, routes, canonical
+media, media bindings and approved asset IDs/provenance.
+
+## How implementation agents and developers must use v1.2.2
 1.  Read the complete affected section and named requirement IDs before modifying code.
 
 2.  Preserve the v1.1 non-negotiables: controlled components, structured operations, validation, protected commerce truth, proposal review, reversible drafts and separate publishing.
@@ -388,8 +492,8 @@ response alone does not establish editor acceptance, persistence, preview and pu
 | **SHOULD**   | Expected unless a documented implementation constraint justifies deferral. |
 | **MAY**      | Optional or adapter-specific.                                              |
 
-## v1.2.1 requirement catalogue
-The following stable v1.2 requirement IDs and v1.2.1 additions are binding for implementation tasks.
+## v1.2.2 requirement catalogue
+The following stable v1.2 requirement IDs and v1.2.1/v1.2.2 additions are binding for implementation tasks.
 They replace the obsolete v1.1 roadmap identifiers for new work while preserving the
 controlled-agent, protected-commerce, reversible-draft and explicit-publishing safety model.
 
@@ -414,6 +518,12 @@ controlled-agent, protected-commerce, reversible-draft and explicit-publishing s
 | **FR-116** | Vesko Storefront Studio MUST expose a merchant-facing product shell and language that hides raw JSON, registry IDs, provider payloads, component internals and developer tooling.                        |
 | **FR-117** | Provider failure, validation failure, stale context and demo reset/load flows MUST preserve active draft/history and keep deterministic mock-provider reliability for repeatable tests and demos.         |
 | **FR-118** | Future Vesko adapters and teammate handoff MUST map project, commerce, media, storage, publishing, source discovery, AI provider and observability contracts without redesigning the Veskify engine.     |
+| **FR-119** | The component platform MUST use controlled component families with meaningful variants, typed slots, compatibility rules, approved bindings/assets and one shared editor/preview/published renderer implementation. |
+| **FR-120** | Each page recipe MUST define required/optional slots, permitted ordering, compatible families/variants, responsive behavior, commerce bindings, approved-asset requirements, cross-page coordination and omission/fallback rules. |
+| **FR-121** | AI composition MUST select only registered recipes, compatible variants, permitted ordering and typed bounded design parameters; it MUST NOT emit arbitrary trees, CSS, class names, executable code, font imports or unregistered layout values. |
+| **FR-122** | Design inheritance MUST flow from `BrandSystem` through recipe and family/variant to constrained validated instance overrides; local overrides MUST NOT create unrelated visual languages. |
+| **FR-123** | Optional evidence/trust content MUST be omitted without approved evidence, and registry defaults MUST NOT make unsupported commercial claims. |
+| **FR-124** | Commercial capability completion MUST prove the documented reachability chain and screenshot-level coordinated homepage/collection/PDP browser review with representative approved assets. |
 
 ### Non-functional requirements
 | **ID**      | **Requirement**                                                                                                                                                                                     |
@@ -427,6 +537,7 @@ controlled-agent, protected-commerce, reversible-draft and explicit-publishing s
 | **NFR-107** | Provider isolation MUST keep provider-specific formats, credentials, errors and retries behind adapters; deterministic fixtures remain the default for local and automated tests.                  |
 | **NFR-108** | Deterministic testing MUST cover schemas, bindings, source evidence, proposals, atomic application, adapter conformance, responsive/accessibility gates and the customer-ready journey.             |
 | **NFR-109** | Maintainability MUST preserve integration boundaries: Puck stays isolated, canonical domain/application modules avoid UI/provider dependencies, and historical documents remain superseded context. |
+| **NFR-110** | Commercial visual quality MUST be assessed at 375, 768, 1024 and 1440 px for hierarchy, density, composition, spacing, typography, imagery and commerce usability; deterministic/schema-only evidence is insufficient for phase closure. |
 
 # Contents
 - 1\. Executive product definition
@@ -1685,6 +1796,9 @@ Phase 12 gate.
 | **AC-133** | Every executable PageBlueprint compiles through controlled operations into the same canonical StorefrontSnapshot used by editor, preview, save, history and publish. | FR-109, FR-113, FR-115, NFR-105, NFR-109 |
 | **AC-134** | Golden-store evaluation proves grounded composition, canonical-commerce preservation, accessibility and responsive quality across representative catalogue shapes and at least one non-jewellery merchant. | FR-109, FR-110, FR-114, NFR-102, NFR-103, NFR-108 |
 | **AC-135** | Publication deterministically validates and publishes the accepted StorefrontSnapshot without an AI call, provider payload or provider-owned page graph at publish time. | FR-108, FR-115, NFR-101, NFR-105, NFR-107 |
+| **AC-136** | A selected commercial recipe permits only its registered required/optional slots, compatible meaningful variants, bindings, approved assets and controlled ordering; invalid combinations fail before proposal acceptance. | FR-119, FR-120, FR-121, FR-123, NFR-101, NFR-109 |
+| **AC-137** | Every supported commercial capability is proved through registered → planner-selectable → proposal-expressible → compiler-preserved → StorefrontSnapshot-stored → renderer-visible → editor-editable → manually live-proven. | FR-119, FR-124, NFR-108, NFR-109 |
+| **AC-138** | Screenshot-level review at 375, 768, 1024 and 1440 px proves a homepage, collection and PDP as one coordinated storefront using representative approved assets; placeholder-only, deterministic-only or schema-only evidence fails. | FR-114, FR-124, NFR-102, NFR-103, NFR-110 |
 
 ### P9-04D objective design-diversity gate
 
@@ -1760,7 +1874,7 @@ source-commerce baseline; pairwise output agreement alone is insufficient.
 | **P7 — URL-first onboarding and brand reconstruction** | Source discovery, provenance, canonical reconciliation, brand evidence, asset inventory and approved Storefront Design Brief. | A merchant can connect an existing site or start from minimal assets without rebuilding catalogue truth. | URL → approved brief works with deterministic and real public-source modes. |
 | **P8 — Asset-aware initial generation**                | Compose homepage, collection and dynamic PDP from the brief; reuse approved assets; remove fixture defaults.                  | The first generated storefront feels specific to the merchant and catalogue.                             | Initial generation passes source/asset/binding checks and visual review.    |
 | **P9 — Meaningful grounded storefront generation** | Minimum proof-enabling registered capability reachability; coordinated shared frame, homepage, collection and PDP composition; approved-brief runtime handoff; commerce/assets; atomic apply/undo; persistence, preview and publish; responsive, accessibility and real-provider evidence. | A merchant receives a coherent editable storefront from the exact approved brief revision rather than token-only or one-section variation. | The Phase 9 evidence matrix is complete, including retained FR-105 approval-to-runtime correlation; no token-only, fixture-leaking, renderer-only, unapproved-brief or API-response-only result may pass. |
-| **P10A — Grounded orchestration** | Vocabulary freeze, repository capability audit, executable PageBlueprint contracts, generated Component Knowledge Registry and post-Phase-9 controlled vocabulary scaling, separate Skill package contracts, scoped instruction-router contracts, golden-store evaluation and deterministic publish compiler. P10A defines and validates scopes but does not deliver merchant-operable granular editing. | Generation retrieves what the product can actually build and compiles to the canonical snapshot. | AC-129 through AC-135 pass without a second registry, page graph or publish model; P10A-04 registry generation consumes P10A-03 blueprint contracts and is the only broad vocabulary-scaling activity. |
+| **P10A — Grounded orchestration** | Vocabulary freeze, repository capability audit, executable PageBlueprint contracts, generated Component Knowledge Registry and post-Phase-9 controlled vocabulary scaling, separate Skill package contracts, scoped instruction-router contracts, golden-store evaluation and deterministic publish compiler. P10A defines and validates scopes but does not deliver merchant-operable granular editing. | Generation retrieves what the product can actually build and compiles to the canonical snapshot. | AC-129 through AC-138 pass without a second registry, page graph or publish model; P10A-04 registry generation consumes P10A-03 blueprint contracts and is the only broad vocabulary-scaling activity. |
 | **P10B — Assets and Storefront Studio UX** | Upload/library, roles/provenance, generated-image lifecycle and merchant-facing Studio flows that consume P10A contracts. | Merchants can govern assets and use generation without developer concepts. | Studio-owned AC-121/122/123 evidence passes. AC-119 remains solely a Phase 9 gate. |
 | **P11 — Granular editing** | Runtime selection and execution for selected section/component, current page, shared frame, design system and complete storefront; add/remove/reorder/replace; preview, acceptance, mixed-scope history, Undo/Redo and merchant scope controls/warnings. | Merchants can make controlled local or coordinated changes without unintended scope widening. | Every merchant-operable scope passes permissions, review, atomicity, history and Undo/Redo tests against the P10A contracts. |
 | **P12 — Stable domains and reference adapters** | Consolidate canonical domain and port contracts; provide a Vesko reference adapter and conformance suite. | Vesko teams can integrate without redesigning Veskify or creating competing commerce truth. | Reference adapter passes contract tests; full staging is not required for this phase. |
@@ -1940,6 +2054,8 @@ DELIVERABLE<br />
 | Veskify                       | Internal controlled design engine powering Storefront Studio.                                                                        |
 | Canonical commerce projection | Read-only product and collection presentation data mapped from Vesko operational truth.                                              |
 | Component family              | Reusable engineering-owned component with approved variants, slots, bindings and responsive rules.                                   |
+| Controlled page recipe        | Approved page-template structure with required/optional slots, compatible families/variants, controlled order, bindings, assets, responsive coordination and omission rules; it is not a fixed theme or second page tree. |
+| Bounded parametric design     | Typed validated selection of approved visual parameters inside a registered recipe/family; the renderer, not AI output, converts them to CSS. |
 | Page blueprint                | Approved page-level composition rules that select compatible component families and required bindings.                               |
 | Component Knowledge Registry  | Queryable capability view generated from canonical component, binding, blueprint and renderer contracts; never a second registry.     |
 | Skill package                 | Versioned controlled capability with explicit lifecycle, scope, required capabilities, operations, validation and evidence.           |

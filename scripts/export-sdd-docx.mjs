@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const sourcePath = join(repositoryRoot, "docs", "VESKIFY_SDD.md");
 const templatePath = join(repositoryRoot, "docs", "VESKIFY_SDD_v1.2.docx");
-const outputPath = join(repositoryRoot, "docs", "VESKIFY_SDD_v1.2.1.docx");
+const outputPath = join(repositoryRoot, "docs", "VESKIFY_SDD_v1.2.2.docx");
 const markdown = readFileSync(sourcePath, "utf8").replace(/\r\n/g, "\n");
 const sourceHash = createHash("sha256").update(markdown).digest("hex");
 const stagingDirectory = mkdtempSync(join(tmpdir(), "veskify-sdd-docx-"));
@@ -46,12 +46,12 @@ const paragraphXml = markdown
 const files = {
   "docProps/core.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <dc:title>VESKIFY Software Design Specification v1.2.1</dc:title>
+  <dc:title>VESKIFY Software Design Specification v1.2.2</dc:title>
   <dc:creator>Vesko Oy</dc:creator>
   <dc:description>Synchronized human-readable export of docs/VESKIFY_SDD.md</dc:description>
   <cp:revision>1</cp:revision>
-  <dcterms:created xsi:type="dcterms:W3CDTF">2026-07-30T00:00:00Z</dcterms:created>
-  <dcterms:modified xsi:type="dcterms:W3CDTF">2026-07-30T00:00:00Z</dcterms:modified>
+  <dcterms:created xsi:type="dcterms:W3CDTF">2026-07-31T00:00:00Z</dcterms:created>
+  <dcterms:modified xsi:type="dcterms:W3CDTF">2026-07-31T00:00:00Z</dcterms:modified>
 </cp:coreProperties>`,
   "docProps/custom.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
@@ -115,7 +115,7 @@ try {
   if (checkMode) {
     if (!readFileSync(archivePath).equals(readFileSync(outputPath))) {
       process.stderr.write(
-        "Committed docs/VESKIFY_SDD_v1.2.1.docx does not match the deterministic export\n",
+        "Committed docs/VESKIFY_SDD_v1.2.2.docx does not match the deterministic export\n",
       );
       process.exitCode = 1;
     } else {

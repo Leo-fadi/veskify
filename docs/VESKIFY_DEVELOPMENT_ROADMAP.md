@@ -1,6 +1,6 @@
 # Veskify Development Roadmap
 
-**Version:** 1.2.1
+**Version:** 1.2.2
 **Aligned with:** `docs/VESKIFY_SDD.md`
 **Merchant-facing product:** Vesko Storefront Studio
 **Internal engine:** Veskify
@@ -204,6 +204,33 @@ protected commerce truth.
 **Current status:** Active/incomplete. Repository tests document mocked provider transport and
 deterministic lifecycle coverage; the required retained live-provider result, full browser matrix
 and visual-quality evidence have not been recorded.
+
+#### P9R status
+
+P9R-06 proved the real editor homepage-only generation route. It did not prove whole-storefront
+composition and does not close Phase 9. P9R-07, whole-store global colour and typography routing,
+is active parallel work at this roadmap revision; this documentation update does not claim it has
+merged or completed.
+
+### Commercial composition delivery sequence — Tasks 6–9
+
+These tasks name the commercial-library work that follows the Phase 9 product gate. During active
+Phase 9, work remains limited to the minimum proof-enabling reachability already described in P9-03;
+it must not be relabelled as broad library scaling. Task 6 contracts require approval before Tasks
+7–9 begin.
+
+| Task                                                   | Outcome                                                                                                                                                                                                                                                                                                | Contract and evidence gate                                                                                                                                                                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Task 6 — Design vocabulary contract**                | Define controlled component-family, meaningful-variant, recipe and slot contracts; compatibility; bounded layout/style parameters; inheritance; responsive behavior; reachability; and visual evidence.                                                                                                | Canonical documentation and implementation contracts are approved without a second registry, page graph or arbitrary CSS/code boundary.                                                                                                     |
+| **Task 7 — Commercial component families**             | Implement and visually validate high-quality shared header/navigation, hero, featured products, cards/grids, collection discovery, brand story, approved evidence/trust, footer, collection header/filter/presentation, and PDP gallery/information/options/specifications/purchasing/recommendations. | Each applicable family has 3–5 materially distinct, renderer-shared variants and screenshot-level review with representative approved assets.                                                                                               |
+| **Task 8 — Coordinated page recipes**                  | Implement 3–4 recipes for each homepage, collection and product-detail page type.                                                                                                                                                                                                                      | Recipes coordinate shared frame, compatibility, optional slots, responsive behavior, commerce bindings, approved assets and omission rules while compiling into `StorefrontSnapshot`.                                                       |
+| **Task 9 — AI composition and commercial visual gate** | Allow AI to select registered recipes, compatible variants, permitted order, typed design parameters and approved data/asset bindings.                                                                                                                                                                 | Prove materially different storefronts, exact canonical state, editability, responsive rendering, protected commerce, approved content/assets, Review/Accept/Undo/Redo/Save/Reload/Preview/Publish and screenshot-level commercial quality. |
+
+Task 6 establishes the inheritance order `BrandSystem → recipe → family/variant → constrained
+instance override`. A capability counts only after the complete reachability chain: registered →
+planner-selectable → proposal-expressible → compiler-preserved → `StorefrontSnapshot`-stored →
+renderer-visible → editor-editable → manually live-proven. Recipes omit optional trust/evidence when
+the approved context is absent; defaults never invent commercial claims.
 
 ### Completed Vesko integration foundation prework
 
