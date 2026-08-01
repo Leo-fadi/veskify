@@ -169,7 +169,7 @@ export const p905aDirectionScenarios = {
   },
   warmApproachable: {
     id: "warmApproachable",
-    merchantInstruction: "Apply a warm premium style across the storefront.",
+    merchantInstruction: "Apply a warm approachable style across the storefront.",
     briefDirection: {
       typographyDirection: "soft",
       visualStyleDirection: "natural",

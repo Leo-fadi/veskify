@@ -18,18 +18,18 @@
 }
 
 .surface_plain {
-  background: var(--brand-color-background);
+  background: var(--brand-surface-page);
   color: var(--brand-color-text);
 }
 
 .surface_soft {
-  background: color-mix(in srgb, var(--brand-color-surface) 72%, var(--brand-color-background));
+  background: var(--brand-surface-subtle);
   color: var(--brand-color-text);
 }
 
 .surface_contrast {
-  background: var(--brand-color-primary);
-  color: var(--brand-color-surface);
+  background: var(--brand-surface-section);
+  color: var(--brand-color-text);
 }
 
 .hero,
@@ -105,7 +105,7 @@
 .surface_contrast .heroCopy p,
 .surface_contrast .editorialCopy p,
 .surface_contrast .sectionHeading p {
-  color: color-mix(in srgb, var(--brand-color-surface) 82%, var(--brand-color-primary));
+  color: var(--brand-color-muted-text);
 }
 
 .heroMedia,
@@ -218,26 +218,26 @@
 }
 
 .action_primary {
-  background: var(--brand-color-primary);
-  border-color: var(--brand-color-primary);
-  color: var(--brand-color-surface);
+  background: var(--brand-action-primary);
+  border-color: var(--brand-action-primary);
+  color: var(--brand-action-primary-text);
 }
 
 .surface_contrast .action_primary {
-  background: var(--brand-color-surface);
-  border-color: var(--brand-color-surface);
-  color: var(--brand-color-primary);
+  background: var(--brand-action-primary);
+  border-color: var(--brand-action-primary);
+  color: var(--brand-action-primary-text);
 }
 
 .action_secondary {
-  background: var(--brand-color-surface);
-  border-color: var(--brand-color-primary);
-  color: var(--brand-color-primary);
+  background: var(--brand-surface-section);
+  border-color: var(--brand-action-primary);
+  color: var(--brand-action-primary);
 }
 
 .action_text {
   border-color: transparent;
-  color: var(--brand-color-primary);
+  color: var(--brand-action-primary);
   padding-inline: 0;
   text-decoration: underline;
   text-underline-offset: 0.25em;
@@ -245,7 +245,7 @@
 
 .surface_contrast .action_secondary,
 .surface_contrast .action_text {
-  color: var(--brand-color-surface);
+  color: var(--brand-action-primary);
 }
 
 .action:hover,
@@ -350,7 +350,7 @@
 .placeholder {
   align-items: center;
   aspect-ratio: 4 / 3;
-  background: color-mix(in srgb, var(--brand-color-border) 54%, transparent);
+  background: var(--brand-surface-section);
   color: var(--brand-color-muted-text);
   display: flex;
   justify-content: center;

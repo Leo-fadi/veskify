@@ -18,15 +18,15 @@
   color: var(--brand-color-text);
 }
 .store-vocabulary.store-background--primary {
-  background: var(--brand-color-primary);
-  color: var(--brand-color-surface);
+  background: var(--brand-surface-section);
+  color: var(--brand-color-text);
 }
 .store-vocabulary.store-background--secondary {
-  background: var(--brand-color-secondary);
-  color: var(--brand-color-surface);
+  background: var(--brand-surface-section);
+  color: var(--brand-color-text);
 }
 .store-vocabulary.store-background--accent {
-  background: var(--brand-color-accent);
+  background: var(--brand-surface-section);
   color: var(--brand-color-text);
 }
 .store-vocabulary.store-foreground--text {
@@ -49,11 +49,11 @@
 }
 .store-vocabulary:is(.store-background--primary, .store-background--secondary)
   :is(p, .store-eyebrow, .store-footer__legal, dd) {
-  color: color-mix(in srgb, var(--brand-color-surface) 82%, transparent);
+  color: var(--brand-color-muted-text);
 }
 .store-vocabulary:is(.store-background--primary, .store-background--secondary)
   :is(h2, h3, .store-brand, label) {
-  color: var(--brand-color-surface);
+  color: var(--brand-color-text);
 }
 .store-typography--serif {
   font-family: var(--brand-font-heading);
@@ -91,8 +91,9 @@
   border-radius: var(--section-radius);
 }
 .store-vocabulary .store-button--secondary {
-  background: var(--brand-color-secondary);
-  color: var(--brand-color-surface);
+  border: 1px solid var(--brand-action-primary);
+  background: var(--brand-surface-section);
+  color: var(--brand-action-primary);
 }
 .store-vocabulary .store-button--text {
   background: transparent;
@@ -293,18 +294,18 @@
   gap: clamp(2rem, 5vw, 5rem);
 }
 .store-footer.store-variant--dark {
-  background: var(--brand-color-text);
-  color: var(--brand-color-surface);
+  background: var(--brand-surface-section);
+  color: var(--brand-color-text);
 }
 .store-footer.store-variant--dark .store-footer__legal {
-  color: color-mix(in srgb, var(--brand-color-surface) 72%, transparent);
+  color: var(--brand-color-muted-text);
 }
 
 .store-hero.store-variant--fullBleed {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background: var(--brand-color-text);
+  background: var(--brand-surface-section);
 }
 .store-hero.store-variant--fullBleed .store-hero__copy {
   z-index: 1;

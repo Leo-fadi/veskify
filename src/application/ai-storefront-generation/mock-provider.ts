@@ -16,7 +16,8 @@ import {
   type StorefrontAIProvider,
 } from "./contract";
 
-type MockStorefrontDirection = StorefrontStyleDirection | "exactBrandPalette";
+type MockStorefrontDirection =
+  StorefrontStyleDirection | "exactBrandPalette" | "validatedDesignSystem";
 
 function directionFromRequest(request: AiStorefrontProviderRequest): MockStorefrontDirection {
   const skillIds = new Set(request.permissionGrants.map((grant) => grant.skillId));
@@ -26,6 +27,13 @@ function directionFromRequest(request: AiStorefrontProviderRequest): MockStorefr
   if (skillId === "applyWarmPremiumStorefrontStyle") return "warmPremium";
   if (skillId === "applyMinimalNordicStorefrontStyle") return "minimalNordic";
   if (skillId === "applyExactBrandPalette") return "exactBrandPalette";
+  if (
+    skillId === "applyRegisteredWholeStorefrontDirection" &&
+    request.capability === "approvedColorTypographyDirection" &&
+    request.tokenRefinementPlan !== null
+  ) {
+    return "validatedDesignSystem";
+  }
   throw new Error("Unsupported storefront style skill.");
 }
 
@@ -36,11 +44,27 @@ function proposalOperations(
   const operations: AiStorefrontOperation[] = [];
   if (request.target.designSystemTarget !== null) {
     const designSystemOperations =
-      direction === "exactBrandPalette"
-        ? request.brandPalettePlan
-          ? [createExactBrandPaletteOperation(request.brandPalettePlan.colors)]
-          : []
-        : createStorefrontDesignSystemOperations(direction);
+      direction === "validatedDesignSystem"
+        ? [
+            ...(request.tokenRefinementPlan?.palette === null ||
+            request.tokenRefinementPlan?.palette === undefined
+              ? []
+              : [createExactBrandPaletteOperation(request.tokenRefinementPlan.palette.colors)]),
+            ...(request.tokenRefinementPlan?.typography === null ||
+            request.tokenRefinementPlan?.typography === undefined
+              ? []
+              : [
+                  {
+                    type: "APPLY_APPROVED_BRAND_TYPOGRAPHY" as const,
+                    typography: structuredClone(request.tokenRefinementPlan.typography),
+                  },
+                ]),
+          ]
+        : direction === "exactBrandPalette"
+          ? request.brandPalettePlan
+            ? [createExactBrandPaletteOperation(request.brandPalettePlan.colors)]
+            : []
+          : createStorefrontDesignSystemOperations(direction);
     for (const operation of designSystemOperations) {
       operations.push({
         order: operations.length,
@@ -49,7 +73,9 @@ function proposalOperations(
       });
     }
   }
-  if (direction === "exactBrandPalette") return operations;
+  if (direction === "exactBrandPalette" || direction === "validatedDesignSystem") {
+    return operations;
+  }
   const targetSections = new Set(
     request.target.affectedSectionTargets.map((target) => `${target.pageId}:${target.sectionId}`),
   );
@@ -125,26 +151,33 @@ export class DeterministicMockStorefrontAIProvider implements StorefrontAIProvid
       request.assetPlacementOperations,
     );
     const summary =
-      direction === "exactBrandPalette"
+      direction === "validatedDesignSystem"
         ? {
-            en: [
-              "Apply the validated merchant brand palette without changing typography, layout, imagery, content, products, or section structure.",
-              ...(request.brandPalettePlan?.warnings.flatMap((warning) => warning.en ?? []) ?? []),
-            ].join(" "),
-            fi: [
-              "Käytä kauppiaan validoitua brändiväripalettia muuttamatta typografiaa, asettelua, kuvia, sisältöä, tuotteita tai osiorakennetta.",
-              ...(request.brandPalettePlan?.warnings.flatMap((warning) => warning.fi ?? []) ?? []),
-            ].join(" "),
+            en: "Apply only the validated global storefront colours and typography while preserving page structure, section order, content, approved assets, and commerce data.",
+            fi: "Käytä vain validoituja koko kaupan värejä ja typografiaa säilyttäen sivurakenne, osiojärjestys, sisältö, hyväksytyt aineistot ja kaupankäynnin tiedot.",
           }
-        : direction === "warmPremium"
+        : direction === "exactBrandPalette"
           ? {
-              en: "Apply a consistent warm premium colour and typography direction across the selected storefront pages.",
-              fi: "Käytä yhtenäistä lämmintä premium-väri- ja typografiailmettä valituilla kaupan sivuilla.",
+              en: [
+                "Apply the validated merchant brand palette without changing typography, layout, imagery, content, products, or section structure.",
+                ...(request.brandPalettePlan?.warnings.flatMap((warning) => warning.en ?? []) ??
+                  []),
+              ].join(" "),
+              fi: [
+                "Käytä kauppiaan validoitua brändiväripalettia muuttamatta typografiaa, asettelua, kuvia, sisältöä, tuotteita tai osiorakennetta.",
+                ...(request.brandPalettePlan?.warnings.flatMap((warning) => warning.fi ?? []) ??
+                  []),
+              ].join(" "),
             }
-          : {
-              en: "Apply a consistent minimal Nordic colour and typography direction across the selected storefront pages.",
-              fi: "Käytä yhtenäistä pelkistettyä pohjoismaista väri- ja typografiailmettä valituilla kaupan sivuilla.",
-            };
+          : direction === "warmPremium"
+            ? {
+                en: "Apply a consistent warm premium colour and typography direction across the selected storefront pages.",
+                fi: "Käytä yhtenäistä lämmintä premium-väri- ja typografiailmettä valituilla kaupan sivuilla.",
+              }
+            : {
+                en: "Apply a consistent minimal Nordic colour and typography direction across the selected storefront pages.",
+                fi: "Käytä yhtenäistä pelkistettyä pohjoismaista väri- ja typografiailmettä valituilla kaupan sivuilla.",
+              };
     return Promise.resolve(
       aiStorefrontProviderResponseSchema.parse({
         providerRequestId: request.requestId,

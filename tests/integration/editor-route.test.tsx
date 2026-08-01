@@ -23,6 +23,9 @@ import {
 import type { ProposalAnalyticsEvent } from "@/application/analytics";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
 import { storefrontFailureDiagnosticCategory } from "@/app/projects/[projectId]/editor/use-design-agent-session";
+import { ProjectPreviewClient } from "@/app/projects/[projectId]/project-preview-client";
+import { CollectionPreviewClient } from "@/app/projects/[projectId]/collections/[collectionSlug]/collection-preview-client";
+import { ProductPreviewClient } from "@/app/projects/[projectId]/products/[productSlug]/product-preview-client";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import type { PageModel } from "@/domain/storefront";
 import { createServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
@@ -34,6 +37,7 @@ import {
   type ProjectAggregate,
   type ProjectRepository,
 } from "@/services/storage";
+import { p9r07ExactDesignSystemRequest } from "../fixtures/p9r-07-design-system";
 
 vi.mock("@/integrations/puck/veskify-puck-editor", () => ({
   VeskifyPuckCanvas: ({
@@ -590,12 +594,11 @@ describe("P4-05D editor storefront integration", () => {
     },
   );
 
-  it("routes the failed exact palette and typography request through the protected registered provider", async () => {
+  it("routes an exact palette and typography request through approved design-system authority", async () => {
     const value = statefulRepository();
     const before = await value.get(aurumNordicSeed.project.id);
     const provider = new RejectingRegisteredStorefrontProvider();
-    const instruction =
-      "Set primary #355C4A, secondary #7A6652, accent #C58A55, background #FBF7F0, surface #FFFFFF, text #25231F, muted text #686158, and border #D8CFC2. Use Georgia for headings and Inter for body text. Preserve all layouts, sections, products, and images.";
+    const instruction = p9r07ExactDesignSystemRequest;
     route(value, undefined, provider);
 
     await openStorefrontTarget();
@@ -606,7 +609,7 @@ describe("P4-05D editor storefront integration", () => {
 
     await waitFor(() => expect(provider.calls).toHaveLength(1));
     expect(provider.calls[0]).toMatchObject({
-      capability: "registeredWholeStorefrontDirection",
+      capability: "approvedColorTypographyDirection",
       instruction,
       affectedSections: [],
       componentContracts: [],
@@ -618,10 +621,170 @@ describe("P4-05D editor storefront integration", () => {
       },
     });
     expect(provider.calls[0].target.affectedPageIds).toHaveLength(3);
+    expect(provider.calls[0].permissionGrants.map((grant) => grant.operationTypes).flat()).toEqual([
+      "APPLY_APPROVED_BRAND_COLOURS",
+      "APPLY_APPROVED_BRAND_TYPOGRAPHY",
+    ]);
+    expect(JSON.stringify(provider.calls[0])).not.toMatch(
+      /APPLY_REGISTERED_PAGE_SECTIONS|REORDER_SECTIONS|APPLY_REGISTERED_BRAND_SYSTEM/,
+    );
     expect(await value.get(aurumNordicSeed.project.id)).toEqual(before);
     expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
     expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Redo" })).toBeDisabled();
+  });
+
+  it("applies, undoes, redoes, saves, and reloads the exact design-system-only proposal without changing pages or commerce", async () => {
+    const value = statefulRepository();
+    const before = await value.get(aurumNordicSeed.project.id);
+    const baselineDraft = before.snapshots.find(
+      (snapshot) => snapshot.id === before.project.draftSnapshotId,
+    )!;
+    const firstRender = route(value);
+
+    await openStorefrontTarget();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: p9r07ExactDesignSystemRequest },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+
+    const review = await screen.findByLabelText("Storefront design proposal");
+    expect(review).toHaveTextContent("Shared storefront design");
+    expect(review).toHaveTextContent(/brand colours/i);
+    expect(review).toHaveTextContent(/brand typography/i);
+    expect(review).not.toHaveTextContent(/page composition|section order/i);
+    expect(screen.getByLabelText("Proposal preview canvas")).toHaveAttribute(
+      "data-primary",
+      "#B54708",
+    );
+    expect(await value.get(aurumNordicSeed.project.id)).toEqual(before);
+
+    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply storefront proposal" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Visual editor canvas")).toHaveAttribute(
+        "data-primary",
+        "#B54708",
+      ),
+    );
+    expect(visibleCanvasPage()).toEqual(baselineDraft.pages.find((page) => page.type === "home"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Visual editor canvas")).toHaveAttribute(
+        "data-primary",
+        baselineDraft.brandSystem.colors.primary,
+      ),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Visual editor canvas")).toHaveAttribute(
+        "data-primary",
+        "#B54708",
+      ),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Save draft" }));
+    await screen.findByText("Draft saved successfully.");
+    const after = await value.get(aurumNordicSeed.project.id);
+    const savedDraft = after.snapshots.find(
+      (snapshot) => snapshot.id === after.project.draftSnapshotId,
+    )!;
+    expect(savedDraft.pages).toEqual(baselineDraft.pages);
+    expect(savedDraft.navigation).toEqual(baselineDraft.navigation);
+    expect(savedDraft.catalogueRef).toBe(baselineDraft.catalogueRef);
+    expect(after.catalogue).toEqual(before.catalogue);
+    expect(savedDraft.brandSystem.colors).toMatchObject({
+      primary: "#B54708",
+      secondary: "#111111",
+      accent: "#B54708",
+      background: "#FFFFFF",
+      surface: "#FFFFFF",
+      text: "#111111",
+      mutedText: "#111111",
+      border: "#111111",
+    });
+    expect(savedDraft.brandSystem.typography).toMatchObject({
+      headingWeight: 700,
+    });
+
+    firstRender.unmount();
+    const reloadedEditor = route(value);
+    expect(await screen.findByLabelText("Visual editor canvas")).toHaveAttribute(
+      "data-primary",
+      "#B54708",
+    );
+    expect(visibleCanvasPage()).toEqual(savedDraft.pages.find((page) => page.type === "home"));
+
+    for (const [pageId, pageType] of [
+      ["page_collection_rings", "collection"],
+      ["page_product_aurora", "product"],
+    ] as const) {
+      fireEvent.change(screen.getByLabelText("Storefront page"), { target: { value: pageId } });
+      await screen.findByText(`Canvas: ${pageType} / en`);
+      const editorRoot = screen.getByLabelText("Visual editor canvas").closest("[style]");
+      expect(editorRoot).toHaveStyle({
+        "--brand-color-primary": "#B54708",
+        "--brand-color-background": "#FFFFFF",
+        "--brand-color-surface": "#FFFFFF",
+        "--brand-color-text": "#111111",
+        "--brand-surface-page": "#FFFFFF",
+        "--brand-surface-section": "#FFFFFF",
+        "--brand-action-primary": "#B54708",
+        "--brand-action-disabled-surface": "#FFFFFF",
+      });
+    }
+
+    reloadedEditor.unmount();
+    const homepagePreview = render(
+      <ProjectPreviewClient
+        projectId={aurumNordicSeed.project.id}
+        repositoryFactory={() => value}
+      />,
+    );
+    await screen.findByLabelText("Draft storefront");
+    expect(document.querySelector(".project-preview")).toHaveStyle({
+      "--brand-color-primary": "#B54708",
+      "--brand-color-background": "#FFFFFF",
+      "--brand-color-text": "#111111",
+      "--brand-surface-section": "#FFFFFF",
+      "--brand-action-primary": "#B54708",
+    });
+    homepagePreview.unmount();
+
+    const collectionPreview = render(
+      <CollectionPreviewClient
+        collectionSlug="rings"
+        projectId={aurumNordicSeed.project.id}
+        repositoryFactory={() => value}
+      />,
+    );
+    await screen.findByRole("heading", { level: 1, name: "Rings" });
+    expect(document.querySelector(".project-preview")).toHaveStyle({
+      "--brand-color-primary": "#B54708",
+      "--brand-color-background": "#FFFFFF",
+      "--brand-color-text": "#111111",
+      "--brand-surface-section": "#FFFFFF",
+      "--brand-action-primary": "#B54708",
+    });
+    collectionPreview.unmount();
+
+    render(
+      <ProductPreviewClient
+        productId={aurumNordicSeed.project.id}
+        productSlug="aurora-ring-585"
+        repositoryFactory={() => value}
+      />,
+    );
+    await screen.findByRole("heading", { level: 1, name: "Aurora Ring 585" });
+    expect(document.querySelector(".project-preview")).toHaveStyle({
+      "--brand-color-primary": "#B54708",
+      "--brand-color-background": "#FFFFFF",
+      "--brand-color-text": "#111111",
+      "--brand-surface-section": "#FFFFFF",
+      "--brand-action-primary": "#B54708",
+      "--brand-action-disabled-surface": "#FFFFFF",
+    });
   });
 
   it("preserves conflicting direction language as ambiguous without invoking the registered provider", async () => {
@@ -1013,6 +1176,7 @@ class DeferredProvider implements AIProvider {
 
 class DeferredStorefrontProvider implements StorefrontAIProvider {
   readonly id = "deterministic-storefront-mock";
+  readonly generationCapabilities = ["approvedColorTypographyDirection"] as const;
   readonly calls: AiStorefrontProviderRequest[] = [];
   readonly #resolvers: Array<(value: unknown) => void> = [];
 

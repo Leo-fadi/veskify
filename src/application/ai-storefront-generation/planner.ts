@@ -1,5 +1,5 @@
 import { getComponentDefinition } from "@/components/registry";
-import { canonicalValueFingerprint } from "@/domain/storefront";
+import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 import { designSkillRegistry } from "@/application/design-skills";
 import {
   aiStorefrontGenerationPlanSchema,
@@ -88,7 +88,7 @@ export type RegisteredWholeStorefrontRequestClassification =
       kind: "token-refinement";
       plan: RegisteredTokenRefinementPlan;
     }
-  | { kind: "ambiguous" | "protected-commerce" | "unsupported" };
+  | { kind: "ambiguous" | "mixed" | "protected-commerce" | "structural" | "unsupported" };
 
 export function classifyRegisteredWholeStorefrontDirectionRequest(
   instruction: string,
@@ -115,16 +115,20 @@ export function classifyRegisteredWholeStorefrontDirectionRequest(
     },
   ].filter(({ pattern }) => pattern.test(normalized));
   if (explicitDirections.length > 1) return { kind: "ambiguous" };
+  const explicitGlobalDesignSystem =
+    /#[0-9a-f]{6}\b|\bglobal\b[^.!?]{0,48}\b(?:palette|colou?rs?|typography|fonts?)\b|\b(?:change|set|apply|use)\b[^.!?]{0,80}\b(?:exact\s+)?(?:palette|brand\s+colou?rs?)\b/iu.test(
+      normalized,
+    );
+  const explicitStructuralRedesign =
+    /\b(?:materially\s+)?(?:redesign|rebuild|replace|reorder)\b[^.!?]{0,100}\b(?:storefront|site|layout|page\s+structure|sections?|components?|recipes?)\b/iu.test(
+      normalized,
+    );
+  if ((explicitDirections.length > 0 || explicitStructuralRedesign) && explicitGlobalDesignSystem) {
+    return { kind: "mixed" };
+  }
   if (explicitDirections[0]) {
     return { kind: "selected", direction: explicitDirections[0].direction };
   }
-  if (currentBrandSystem !== undefined) {
-    const tokenRefinement = planRegisteredTokenRefinement(instruction, currentBrandSystem);
-    if (tokenRefinement !== null) {
-      return { kind: "token-refinement", plan: tokenRefinement };
-    }
-  }
-
   const ranked = Object.entries(registeredDirectionSignals)
     .map(([direction, signals]) => ({
       direction: direction as keyof typeof registeredDirectionSignals,
@@ -134,6 +138,17 @@ export function classifyRegisteredWholeStorefrontDirectionRequest(
     .sort(
       (left, right) => right.score - left.score || left.direction.localeCompare(right.direction),
     );
+  if (currentBrandSystem !== undefined) {
+    try {
+      const tokenRefinement = planRegisteredTokenRefinement(instruction, currentBrandSystem);
+      if (tokenRefinement !== null) {
+        return { kind: "token-refinement", plan: tokenRefinement };
+      }
+    } catch (error) {
+      if (explicitGlobalDesignSystem || ranked.length === 0) throw error;
+    }
+  }
+  if (explicitStructuralRedesign) return { kind: "structural" };
   if (ranked.length === 0) return { kind: "unsupported" };
   if (ranked[1]?.score === ranked[0].score) {
     const tiedDirections = ranked
@@ -154,7 +169,7 @@ export function classifyRegisteredWholeStorefrontDirectionRequest(
 
 export function isRegisteredWholeStorefrontDirectionRequest(instruction: string): boolean {
   const kind = classifyRegisteredWholeStorefrontDirectionRequest(instruction).kind;
-  return kind === "selected" || kind === "token-refinement";
+  return kind === "selected" || kind === "structural" || kind === "token-refinement";
 }
 
 type SupportedStorefrontRequest = {
@@ -252,10 +267,27 @@ function classifyInstruction(command: AiStorefrontGenerationCommand): SupportedS
   if (command.capability === "registeredWholeStorefrontDirection") {
     let classification: RegisteredWholeStorefrontRequestClassification;
     try {
-      classification = classifyRegisteredWholeStorefrontDirectionRequest(
-        command.merchantInstruction,
-        command.storefront.brandSystem,
-      );
+      const selectedPlan = command.canonicalTokenRefinementPlan;
+      if (selectedPlan !== undefined) {
+        const reconstructed = planRegisteredTokenRefinement(
+          command.merchantInstruction,
+          command.storefront.brandSystem,
+        );
+        if (
+          reconstructed === null ||
+          canonicalValueString(reconstructed) !== canonicalValueString(selectedPlan)
+        ) {
+          throw new BrandPaletteInstructionError(
+            "The canonical token refinement no longer matches the merchant instruction.",
+          );
+        }
+        classification = { kind: "token-refinement", plan: selectedPlan };
+      } else {
+        classification = classifyRegisteredWholeStorefrontDirectionRequest(
+          command.merchantInstruction,
+          command.storefront.brandSystem,
+        );
+      }
     } catch (error) {
       if (error instanceof BrandPaletteInstructionError) {
         throw new AiStorefrontPlanError("unsupported-request", error.message);
@@ -266,6 +298,12 @@ function classifyInstruction(command: AiStorefrontGenerationCommand): SupportedS
       throw new AiStorefrontPlanError(
         "ambiguous-request",
         "Choose one registered whole-storefront design direction.",
+      );
+    }
+    if (classification.kind === "mixed") {
+      throw new AiStorefrontPlanError(
+        "ambiguous-request",
+        "Submit the structural redesign and global colour or typography change separately.",
       );
     }
     if (classification.kind === "protected-commerce") {
@@ -294,6 +332,37 @@ function classifyInstruction(command: AiStorefrontGenerationCommand): SupportedS
   const normalized = normalizeStorefrontInstruction(instruction);
   const supported = supportedRequests.get(normalized);
   if (supported) return supported;
+  if (
+    command.capability === "approvedColorTypographyDirection" &&
+    command.canonicalTokenRefinementPlan !== undefined
+  ) {
+    try {
+      const reconstructed = planRegisteredTokenRefinement(
+        instruction,
+        command.storefront.brandSystem,
+      );
+      if (
+        reconstructed === null ||
+        canonicalValueString(reconstructed) !==
+          canonicalValueString(command.canonicalTokenRefinementPlan)
+      ) {
+        throw new BrandPaletteInstructionError(
+          "The canonical token refinement no longer matches the merchant instruction.",
+        );
+      }
+    } catch (error) {
+      if (error instanceof BrandPaletteInstructionError) {
+        throw new AiStorefrontPlanError("unsupported-request", error.message);
+      }
+      throw error;
+    }
+    return {
+      direction: "registeredWholeStorefront",
+      skillId: "applyRegisteredWholeStorefrontDirection",
+      designSystem: "required",
+      tokenRefinementPlan: command.canonicalTokenRefinementPlan,
+    };
+  }
   try {
     const brandPalettePlan = planExactBrandPalette(instruction, currentColors);
     if (brandPalettePlan) {

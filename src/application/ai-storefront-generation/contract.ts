@@ -81,6 +81,7 @@ export const aiStorefrontGenerationCommandSchema = z
     enabledLocales: z.array(localeSchema).min(1).max(2),
     requestedScope: z.enum(["storefront", "page"]),
     capability: storefrontGenerationCapabilitySchema,
+    canonicalTokenRefinementPlan: registeredTokenRefinementPlanSchema.optional(),
     providerId: z.string().min(1).max(120),
     provider: storefrontProviderSchema,
     correlationRequestId: idSchema.optional(),
@@ -181,6 +182,25 @@ export const aiStorefrontGenerationCommandSchema = z
         path: ["designSystemTarget", "projectId"],
         message: "The design-system target must use the command project identity.",
       });
+    }
+    if (command.canonicalTokenRefinementPlan !== undefined) {
+      if (command.requestedScope !== "storefront" || command.designSystemTarget === null) {
+        context.addIssue({
+          code: "custom",
+          path: ["canonicalTokenRefinementPlan"],
+          message: "A canonical token refinement requires storefront design-system authority.",
+        });
+      }
+      if (
+        command.capability === "approvedColorTypographyDirection" &&
+        command.canonicalTokenRefinementPlan.spacing !== null
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["canonicalTokenRefinementPlan", "spacing"],
+          message: "Approved colour and typography authority cannot change spacing.",
+        });
+      }
     }
     if (command.provider.id !== command.providerId) {
       context.addIssue({
@@ -365,26 +385,34 @@ export const aiStorefrontProviderRequestSchema = z
       });
     }
     if (request.tokenRefinementPlan !== null) {
-      const tokenGrants = request.permissionGrants.filter(
-        (grant) =>
-          grant.target.kind === "storefrontDesignSystem" &&
-          grant.operationTypes.length === 1 &&
-          grant.operationTypes[0] === "APPLY_REGISTERED_BRAND_SYSTEM",
-      );
+      const expectedOperationTypes =
+        request.capability === "registeredWholeStorefrontDirection"
+          ? (["APPLY_REGISTERED_BRAND_SYSTEM"] as const)
+          : ([
+              ...(request.tokenRefinementPlan.palette === null
+                ? []
+                : (["APPLY_APPROVED_BRAND_COLOURS"] as const)),
+              ...(request.tokenRefinementPlan.typography === null
+                ? []
+                : (["APPLY_APPROVED_BRAND_TYPOGRAPHY"] as const)),
+            ] as const);
+      const tokenGrant = request.permissionGrants[0];
       if (
-        request.capability !== "registeredWholeStorefrontDirection" ||
         request.brandPalettePlan !== null ||
         request.target.designSystemTarget === null ||
         request.affectedSections.length > 0 ||
         request.componentContracts.length > 0 ||
         request.permissionGrants.length !== 1 ||
-        tokenGrants.length !== 1
+        tokenGrant?.target.kind !== "storefrontDesignSystem" ||
+        JSON.stringify(tokenGrant.operationTypes) !== JSON.stringify(expectedOperationTypes) ||
+        (request.capability === "approvedColorTypographyDirection" &&
+          (request.tokenRefinementPlan.spacing !== null || expectedOperationTypes.length === 0))
       ) {
         context.addIssue({
           code: "custom",
           path: ["tokenRefinementPlan"],
           message:
-            "Registered token refinements may grant only one global validated BrandSystem operation.",
+            "Token refinements may grant only their canonical global design-system operations.",
         });
       }
     } else if (request.brandPalettePlan === null) {

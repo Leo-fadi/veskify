@@ -6,6 +6,10 @@ vi.mock("server-only", () => ({}));
 
 import { aiStorefrontProviderResponseSchema } from "@/application/ai-storefront-generation";
 import {
+  createAiStorefrontPermissionFingerprint,
+  createAiStorefrontTargetFingerprint,
+} from "@/application/ai-storefront";
+import {
   requestWholeStorefrontGenerationPlan,
   type WholeStorefrontPlanningProvider,
 } from "@/application/whole-storefront-generation-plan";
@@ -24,6 +28,7 @@ import {
   resetP905bLocalDemo,
   resetP905bLocalDemoProject,
 } from "@/integrations/ai/p9-05b-local-demo-authority.server";
+import { p9r07ExactDesignSystemRequest } from "../fixtures/p9r-07-design-system";
 
 const demoEnvironment = {
   NODE_ENV: "test",
@@ -49,6 +54,21 @@ function mockedDirectionProvider(
     createPlan(request) {
       reached(directionId);
       return Promise.resolve(request.planForDirection(directionId));
+    },
+  };
+}
+
+function mockedTokenRefinementProvider(reached: () => void): WholeStorefrontPlanningProvider {
+  return {
+    id: "mocked-openai-token-provider",
+    capabilities: {
+      wholeStorefrontPlanning: true,
+      structuredPlanOutput: true,
+      approvedAssetReferences: true,
+    },
+    createPlan(request) {
+      reached();
+      return Promise.resolve(request.planForTokenRefinement());
     },
   };
 }
@@ -159,6 +179,63 @@ describe("P9-05B local demo server authority", () => {
       );
     },
   );
+
+  it("derives the protected P9R-07 demo request from canonical design-system authority", async () => {
+    const request = await buildP905bLocalDemoRequest(
+      p9r07ExactDesignSystemRequest,
+      demoEnvironment,
+    );
+    const context = {
+      projectId: request.target.projectId,
+      draftSnapshotId: request.target.draftSnapshotId,
+      draftRevision: request.target.draftRevision,
+      enabledLocales: request.enabledLocales,
+      activeLocale: request.activeLocale,
+      storefront: request.storefront,
+    };
+
+    expect(request.capability).toBe("approvedColorTypographyDirection");
+    expect(request.target).toMatchObject({
+      scope: "storefront",
+      designSystemTarget: { kind: "storefrontDesignSystem", projectId: P9_05A_PROJECT_ID },
+    });
+    expect(request.target.affectedPageIds).toHaveLength(3);
+    expect(request.affectedSections).toEqual([]);
+    expect(request.componentContracts).toEqual([]);
+    expect(request.permissionGrants).toEqual([
+      expect.objectContaining({
+        operationTypes: ["APPLY_APPROVED_BRAND_COLOURS", "APPLY_APPROVED_BRAND_TYPOGRAPHY"],
+        target: { kind: "storefrontDesignSystem", projectId: P9_05A_PROJECT_ID },
+      }),
+    ]);
+    expect(request.targetFingerprint).toBe(
+      createAiStorefrontTargetFingerprint(context, request.target),
+    );
+    expect(request.permissionFingerprint).toBe(
+      createAiStorefrontPermissionFingerprint(request.permissionGrants, request.target, context),
+    );
+    expect(JSON.stringify(request.permissionGrants)).not.toMatch(
+      /APPLY_REGISTERED_PAGE_SECTIONS|REORDER_SECTIONS/,
+    );
+
+    const reached = vi.fn();
+    const handler = createWholeStorefrontPlanningRouteHandler({
+      environment: demoEnvironment,
+      selectProvider: () => mockedTokenRefinementProvider(reached),
+    });
+    const response = await handler(await proposalRequest(p9r07ExactDesignSystemRequest));
+    const body = (await response.json()) as Record<string, unknown>;
+    const envelope = aiStorefrontProviderResponseSchema.parse(body.proposal);
+
+    expect(response.status).toBe(200);
+    expect(reached).toHaveBeenCalledOnce();
+    expect(envelope.proposal.operations.map(({ operation }) => operation.type)).toEqual([
+      "APPLY_APPROVED_BRAND_COLOURS",
+      "APPLY_APPROVED_BRAND_TYPOGRAPHY",
+    ]);
+    expect(envelope.proposal.proposedStorefront.pages).toEqual(request.storefront.pages);
+    expect(envelope.proposal.assetPlacementOperations).toEqual([]);
+  });
 
   it("builds the exact homepage-only demo request with canonical page authority and reaches the provider once", async () => {
     const diagnosticScopes: string[] = [];

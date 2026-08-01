@@ -2,7 +2,7 @@
   display: grid;
   width: min(100%, 90rem);
   margin: 0 auto;
-  background: color-mix(in srgb, var(--brand-color-primary) 9%, var(--brand-color-background));
+  background: var(--brand-surface-subtle);
 }
 
 .collectionCopy {

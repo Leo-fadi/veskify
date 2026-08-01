@@ -87,6 +87,14 @@ a {
   font-family: var(--brand-font-body);
 }
 
+[data-veskify-canvas-root] {
+  min-height: 100%;
+  background: var(--brand-surface-page);
+  color: var(--brand-color-text);
+  font-family: var(--brand-font-body);
+  font-size: var(--brand-type-base-size);
+}
+
 .project-preview__header {
   display: grid;
   gap: 1rem;
@@ -210,9 +218,9 @@ a {
 }
 
 .locale-control input:checked + span {
-  border-color: var(--brand-color-primary);
-  background: var(--brand-color-primary);
-  color: white;
+  border-color: var(--brand-action-primary);
+  background: var(--brand-action-primary);
+  color: var(--brand-action-primary-text);
 }
 
 .locale-control input:focus-visible + span {
@@ -238,8 +246,8 @@ a {
   justify-content: center;
   gap: 0.5rem 1.5rem;
   padding: 0.65rem clamp(1rem, 4vw, 3rem);
-  background: var(--brand-color-secondary);
-  color: var(--brand-color-surface);
+  background: var(--brand-highlight);
+  color: var(--brand-color-text);
   font-size: 0.8rem;
   letter-spacing: 0.08em;
   text-align: center;
@@ -251,7 +259,7 @@ a {
   text-underline-offset: 0.2rem;
 }
 .store-announcement--accent {
-  background: var(--brand-color-accent);
+  background: var(--brand-highlight);
   color: var(--brand-color-text);
 }
 .store-header {
@@ -313,7 +321,7 @@ a {
 }
 .store-hero {
   min-height: min(44rem, 78vh);
-  background: color-mix(in srgb, var(--brand-color-primary) 10%, var(--brand-color-background));
+  background: var(--brand-surface-subtle);
 }
 .store-hero__copy {
   display: flex;
@@ -362,15 +370,16 @@ a {
   align-items: center;
   margin-top: 1.25rem;
   border-radius: var(--brand-radius);
-  background: var(--brand-color-primary);
-  color: var(--brand-color-surface);
+  background: var(--brand-action-primary);
+  color: var(--brand-action-primary-text);
   padding: 0.75rem 1.25rem;
   font-weight: 800;
   text-decoration: none;
 }
 .store-button--light {
-  background: var(--brand-color-surface);
-  color: var(--brand-color-secondary);
+  border: 1px solid var(--brand-action-primary);
+  background: var(--brand-surface-section);
+  color: var(--brand-action-primary);
 }
 .store-section {
   padding: clamp(4rem, 8vw, 8rem) clamp(1rem, 5vw, 5rem);
@@ -445,8 +454,8 @@ a {
   color: var(--brand-color-muted-text);
 }
 .campaign-banner {
-  background: var(--brand-color-secondary);
-  color: var(--brand-color-surface);
+  background: var(--brand-surface-section);
+  color: var(--brand-color-text);
 }
 .campaign-banner > div,
 .brand-story > div {
@@ -461,7 +470,7 @@ a {
   font-size: clamp(2.25rem, 5vw, 4.5rem);
 }
 .campaign-banner div > p:not(.store-eyebrow) {
-  color: color-mix(in srgb, var(--brand-color-surface) 78%, transparent);
+  color: var(--brand-color-muted-text);
 }
 .brand-story {
   background: var(--brand-color-background);
@@ -489,8 +498,8 @@ a {
   display: grid;
   gap: 2rem;
   padding: clamp(3rem, 7vw, 6rem) clamp(1rem, 5vw, 5rem);
-  background: var(--brand-color-primary);
-  color: var(--brand-color-surface);
+  background: var(--brand-surface-section);
+  color: var(--brand-color-text);
   text-align: center;
 }
 .benefits article {
@@ -498,6 +507,7 @@ a {
   margin: 0 auto;
 }
 .benefits article > span {
+  color: var(--brand-highlight);
   font-size: 2rem;
 }
 .benefits h2 {
@@ -506,7 +516,7 @@ a {
 }
 .benefits p {
   margin: 0;
-  color: color-mix(in srgb, var(--brand-color-surface) 78%, transparent);
+  color: var(--brand-color-muted-text);
   line-height: 1.6;
 }
 .newsletter {
@@ -514,7 +524,8 @@ a {
   gap: 2rem;
   align-items: end;
   padding: clamp(4rem, 8vw, 7rem) clamp(1rem, 8vw, 8rem);
-  background: var(--brand-color-accent);
+  background: var(--brand-surface-section);
+  color: var(--brand-color-text);
 }
 .newsletter h2 {
   margin: 0.75rem 0;
@@ -543,8 +554,8 @@ a {
   min-height: 3rem;
   border: 0;
   border-radius: var(--brand-radius);
-  background: var(--brand-color-secondary);
-  color: var(--brand-color-surface);
+  background: var(--brand-action-primary);
+  color: var(--brand-action-primary-text);
   padding: 0.75rem 1.25rem;
   font: inherit;
   font-weight: 800;
@@ -556,8 +567,8 @@ a {
   display: grid;
   gap: 2rem;
   padding: clamp(3rem, 7vw, 6rem) clamp(1rem, 5vw, 5rem);
-  background: var(--brand-color-secondary);
-  color: var(--brand-color-surface);
+  background: var(--brand-surface-section);
+  color: var(--brand-color-text);
 }
 .store-footer h2 {
   font-size: 1rem;
@@ -567,12 +578,12 @@ a {
 }
 .store-footer__legal {
   max-width: 22rem;
-  color: color-mix(in srgb, var(--brand-color-surface) 70%, transparent);
+  color: var(--brand-color-muted-text);
   font-size: 0.85rem;
 }
 .store-footer__copyright {
   grid-column: 1 / -1;
-  border-top: 1px solid color-mix(in srgb, var(--brand-color-surface) 25%, transparent);
+  border-top: 1px solid var(--brand-color-border);
   padding-top: 1.5rem;
   font-size: 0.8rem;
 }

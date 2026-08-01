@@ -6,10 +6,10 @@ vi.mock("server-only", () => ({}));
 
 import {
   aiStorefrontProviderResponseSchema,
-  buildAiStorefrontProviderRequest,
+  buildAiStorefrontProviderRequestForSupportedCapability,
   createApprovedGenerationAssetContextFingerprint,
+  type AiStorefrontCapabilitySelectionInput,
   validateAiStorefrontProviderResponse,
-  type AiStorefrontGenerationCommand,
 } from "@/application/ai-storefront-generation";
 import type { WholeStorefrontPlanningProvider } from "@/application/whole-storefront-generation-plan";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
@@ -25,7 +25,7 @@ function requestFor(
   activeLocale: "en" | "fi" = "en",
 ) {
   const snapshot = seed.draftSnapshot;
-  const command: AiStorefrontGenerationCommand = {
+  const command = {
     projectId: seed.project.id,
     draftSnapshotId: snapshot.id,
     draftRevision: snapshot.revision,
@@ -42,16 +42,19 @@ function requestFor(
     activeLocale,
     enabledLocales: seed.project.enabledLocales,
     requestedScope: "storefront",
-    capability: "approvedColorTypographyDirection",
     providerId: "server-whole-storefront-planning",
     provider: {
       id: "server-whole-storefront-planning",
       assetReferenceCapability: "structuredApprovedAssets",
+      generationCapabilities: [
+        "approvedColorTypographyDirection",
+        "registeredWholeStorefrontDirection",
+      ] as const,
       proposeStorefront: () => Promise.reject(new Error("Server-only provider boundary")),
     },
     importedContent: [],
-  };
-  return buildAiStorefrontProviderRequest(command, 1);
+  } satisfies AiStorefrontCapabilitySelectionInput;
+  return buildAiStorefrontProviderRequestForSupportedCapability(command, 1).request;
 }
 
 function recordingProvider(record: (request: unknown) => void): WholeStorefrontPlanningProvider {

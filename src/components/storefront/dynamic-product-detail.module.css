@@ -8,7 +8,7 @@
 }
 
 .surface_soft {
-  background: color-mix(in srgb, var(--brand-color-surface) 72%, var(--brand-color-background));
+  background: var(--brand-surface-subtle);
 }
 
 .surface_plain {
@@ -391,15 +391,15 @@
 
 .primaryAction button {
   width: 100%;
-  border-color: var(--brand-color-primary);
-  background: var(--brand-color-primary);
-  color: var(--brand-color-surface);
+  border-color: var(--brand-action-primary);
+  background: var(--brand-action-primary);
+  color: var(--brand-action-primary-text);
 }
 
 .primaryAction button:disabled {
-  border-color: var(--brand-color-border);
-  background: var(--brand-color-border);
-  color: var(--brand-color-muted-text);
+  border-color: var(--brand-action-disabled-border);
+  background: var(--brand-action-disabled-surface);
+  color: var(--brand-action-disabled-text);
   cursor: not-allowed;
 }
 

@@ -86,6 +86,9 @@ const knownAssignmentNames = new Set([
 ]);
 
 const namedColours: ReadonlyArray<{ pattern: RegExp; value: string }> = [
+  { pattern: /\bpure[\s-]+white\b/gi, value: "#FFFFFF" },
+  { pattern: /\bnear[\s-]+black\b/gi, value: "#111111" },
+  { pattern: /\bburnt[\s-]+orange\b/gi, value: "#B54708" },
   { pattern: /\bdeep[\s-]+forest[\s-]+green\b/gi, value: "#173F35" },
   { pattern: /\bforest[\s-]+green\b/gi, value: "#1F4D3B" },
   { pattern: /\bmuted[\s-]+sage\b/gi, value: "#82917B" },
@@ -109,6 +112,17 @@ const namedColours: ReadonlyArray<{ pattern: RegExp; value: string }> = [
   { pattern: /\bgreen\b/gi, value: "#2F6B4F" },
   { pattern: /\bblue\b/gi, value: "#315A7D" },
 ];
+
+function isExcludedColourOccurrence(instruction: string, index: number) {
+  const clauseStart = Math.max(
+    instruction.lastIndexOf(".", index - 1),
+    instruction.lastIndexOf("!", index - 1),
+    instruction.lastIndexOf("?", index - 1),
+  );
+  return /\b(?:do\s+not\s+use|don't\s+use|avoid|exclude|without|älä\s+käytä|vältä)\b[^.!?]*$/iu.test(
+    instruction.slice(clauseStart + 1, index),
+  );
+}
 
 type ColourOccurrence = {
   index: number;
@@ -138,12 +152,14 @@ function findHexColours(instruction: string): ColourOccurrence[] {
 
 function findNamedColours(instruction: string): ColourOccurrence[] {
   const candidates = namedColours.flatMap(({ pattern, value }) =>
-    [...instruction.matchAll(new RegExp(pattern.source, pattern.flags))].map((match) => ({
-      index: match.index,
-      end: match.index + match[0].length,
-      value,
-      source: "named" as const,
-    })),
+    [...instruction.matchAll(new RegExp(pattern.source, pattern.flags))]
+      .map((match) => ({
+        index: match.index,
+        end: match.index + match[0].length,
+        value,
+        source: "named" as const,
+      }))
+      .filter((occurrence) => !isExcludedColourOccurrence(instruction, occurrence.index)),
   );
   candidates.sort(
     (left, right) => left.index - right.index || right.end - right.index - (left.end - left.index),
@@ -198,6 +214,15 @@ function rolesForOccurrence(instruction: string, occurrence: ColourOccurrence): 
       { token: "text", specificity: 1 },
     ];
   }
+  if (/\bbody\s+text\b/i.test(segment) && /\bsecondary\s+text\b/i.test(segment)) {
+    return [
+      { token: "text", specificity: 2 },
+      { token: "mutedText", specificity: 2 },
+    ];
+  }
+  if (/\bsecondary\s+text\b/i.test(segment)) {
+    return [{ token: "mutedText", specificity: 2 }];
+  }
   if (/\bsecondary\s+accents?\b/i.test(segment)) return [{ token: "secondary", specificity: 2 }];
   if (/^#[0-9a-f]{6}\s+for\s+borders?\s+and\s+secondary\s+surfaces?\b/i.test(followingClause)) {
     return [
@@ -205,8 +230,14 @@ function rolesForOccurrence(instruction: string, occurrence: ColourOccurrence): 
       { token: "surface", specificity: 1 },
     ];
   }
-  const token = tokenAliases.find(({ pattern }) => pattern.test(segment))?.token;
-  return token === undefined ? [] : [{ token, specificity: 2 }];
+  const tokens = tokenAliases
+    .filter(({ pattern }) => pattern.test(segment))
+    .map(({ token }) => token);
+  const distinctTokens = [...new Set(tokens)];
+  const preciseTokens = distinctTokens.includes("mutedText")
+    ? distinctTokens.filter((token) => token !== "text")
+    : distinctTokens;
+  return preciseTokens.map((token) => ({ token, specificity: 2 as const }));
 }
 
 function positionalRoles(count: number): readonly BrandColourToken[] | undefined {
@@ -258,7 +289,11 @@ function requestedPalette(
     }
     assignedRoles.forEach(({ token, specificity }) => {
       const existing = assigned.get(token);
-      if (existing !== undefined && existing.specificity === specificity) {
+      if (
+        existing !== undefined &&
+        existing.specificity === specificity &&
+        existing.value !== occurrence.value
+      ) {
         throw new BrandPaletteInstructionError(
           `Supply only one value for the ${token} colour token.`,
         );
@@ -268,6 +303,31 @@ function requestedPalette(
       }
     });
   });
+  if (
+    assigned.has("accent") &&
+    /\b(?:use|apply)\b[^.!?]{0,160}\baccent\b[^.!?]{0,160}\bprimary\s+(?:buttons?|actions?)\b/iu.test(
+      instruction,
+    )
+  ) {
+    assigned.set("primary", { value: assigned.get("accent")!.value, specificity: 2 });
+  }
+  if (
+    assigned.has("text") &&
+    /\bsecondary\s+text\b[^.!?]{0,80}\b(?:dark|black|readab)/iu.test(instruction)
+  ) {
+    assigned.set("mutedText", { value: assigned.get("text")!.value, specificity: 2 });
+  }
+  if (assigned.has("accent") && assigned.has("background") && assigned.has("text")) {
+    if (!assigned.has("surface")) {
+      assigned.set("surface", { value: assigned.get("background")!.value, specificity: 1 });
+    }
+    if (!assigned.has("secondary")) {
+      assigned.set("secondary", { value: assigned.get("text")!.value, specificity: 1 });
+    }
+    if (!assigned.has("border")) {
+      assigned.set("border", { value: assigned.get("text")!.value, specificity: 1 });
+    }
+  }
   const colors = { ...current };
   assigned.forEach(({ value }, token) => {
     colors[token] = value;

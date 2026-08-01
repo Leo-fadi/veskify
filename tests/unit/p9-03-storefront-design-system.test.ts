@@ -6,8 +6,9 @@ vi.mock("server-only", () => ({}));
 
 import {
   aiStorefrontProviderResponseSchema,
-  buildAiStorefrontProviderRequest,
-  type AiStorefrontGenerationCommand,
+  buildAiStorefrontProviderRequestForSupportedCapability,
+  type AiStorefrontCapabilitySelectionInput,
+  type AiStorefrontProviderRequest,
 } from "@/application/ai-storefront-generation";
 import { StorefrontProposalAcceptanceCoordinator } from "@/application/ai-storefront";
 import {
@@ -71,9 +72,9 @@ async function planningInput(
 function requestFor(
   seed: Seed,
   merchantInstruction = "Apply a warm premium style across the storefront.",
-): ReturnType<typeof buildAiStorefrontProviderRequest> {
+): AiStorefrontProviderRequest {
   const snapshot = seed.draftSnapshot;
-  const command: AiStorefrontGenerationCommand = {
+  const command = {
     projectId: seed.project.id,
     draftSnapshotId: snapshot.id,
     draftRevision: snapshot.revision,
@@ -90,16 +91,19 @@ function requestFor(
     activeLocale: seed.project.primaryLocale,
     enabledLocales: seed.project.enabledLocales,
     requestedScope: "storefront",
-    capability: "approvedColorTypographyDirection",
     providerId: "server-whole-storefront-planning",
     provider: {
       id: "server-whole-storefront-planning",
       assetReferenceCapability: "structuredApprovedAssets",
+      generationCapabilities: [
+        "approvedColorTypographyDirection",
+        "registeredWholeStorefrontDirection",
+      ] as const,
       proposeStorefront: () => Promise.reject(new Error("Server-only provider boundary")),
     },
     importedContent: [],
-  };
-  return buildAiStorefrontProviderRequest(command, 1);
+  } satisfies AiStorefrontCapabilitySelectionInput;
+  return buildAiStorefrontProviderRequestForSupportedCapability(command, 1).request;
 }
 
 describe("P9-03 Storefront Design System v1", () => {
@@ -377,6 +381,9 @@ describe("P9-03 Storefront Design System v1", () => {
     expect(incompatible.status).toBe(400);
     expect(compatible.status).toBe(200);
     expect(compatibleEnvelope.proposal.proposedStorefront.brandSystem.typography.headingFont).toBe(
+      "inter",
+    );
+    expect(compatibleEnvelope.proposal.proposedStorefront.brandSystem.typography.bodyFont).toBe(
       "system-sans",
     );
   });

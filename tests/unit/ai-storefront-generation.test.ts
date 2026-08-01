@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { p905dExactTokenRefinementRequest } from "../fixtures/p9-05d-exact-token-refinement";
 import {
+  p9r07ExactDesignSystemRequest,
+  p9r07FinnishDesignSystemRequest,
+} from "../fixtures/p9r-07-design-system";
+import {
   aiStorefrontPendingRequestKey,
   buildAiStorefrontProviderRequest,
   buildAiStorefrontProviderRequestForSupportedCapability,
@@ -238,7 +242,27 @@ describe("P4-05B storefront planner and request construction", () => {
     ).toEqual({ kind: "ambiguous" });
   });
 
-  it("uses the registered capability first for protected synchronized sessions and repeat requests", () => {
+  it("fails a mixed structural and global design-system request closed", () => {
+    const provider = registeredProvider();
+    const instruction =
+      "Redesign the entire storefront in a modern technical direction and set the global palette to primary #B54708 and background #FFFFFF.";
+
+    expect(
+      classifyRegisteredWholeStorefrontDirectionRequest(instruction, snapshot.brandSystem),
+    ).toEqual({ kind: "mixed" });
+    expect(() =>
+      buildAiStorefrontProviderRequestForSupportedCapability(
+        commandWithoutCapability({
+          provider,
+          providerId: provider.id,
+          merchantInstruction: instruction,
+        }),
+        1,
+      ),
+    ).toThrow(expect.objectContaining({ code: "ambiguous-request" }));
+  });
+
+  it("uses the registered capability for structural storefront directions", () => {
     const provider = registeredProvider();
     const requests = [
       "Apply the premium editorial direction with craftsmanship and product imagery.",
@@ -252,7 +276,6 @@ describe("P4-05B storefront planner and request construction", () => {
           merchantInstruction,
         }),
         index + 1,
-        "registeredWholeStorefrontDirection",
       ),
     );
 
@@ -268,7 +291,7 @@ describe("P4-05B storefront planner and request construction", () => {
     ]);
   });
 
-  it("builds an exact palette and typography refinement on the protected registered capability", () => {
+  it("builds exact palette and typography through approved design-system authority", () => {
     const storefrontProvider = registeredProvider();
     const { request, command: built } = buildAiStorefrontProviderRequestForSupportedCapability(
       commandWithoutCapability({
@@ -278,11 +301,10 @@ describe("P4-05B storefront planner and request construction", () => {
         merchantInstruction: exactTokenOnlyRequest,
       }),
       1,
-      "registeredWholeStorefrontDirection",
     );
     const plan = createAiStorefrontGenerationPlan(built);
 
-    expect(built.capability).toBe("registeredWholeStorefrontDirection");
+    expect(built.capability).toBe("approvedColorTypographyDirection");
     expect(plan.direction).toBe("registeredWholeStorefront");
     expect(plan.sectionTargets).toEqual([]);
     expect(plan.tokenRefinementPlan).toMatchObject({
@@ -300,13 +322,81 @@ describe("P4-05B storefront planner and request construction", () => {
       preserveApprovedAssets: true,
       preserveCanonicalCommerce: true,
     });
-    expect(request.capability).toBe("registeredWholeStorefrontDirection");
+    expect(request.capability).toBe("approvedColorTypographyDirection");
     expect(request.affectedSections).toEqual([]);
     expect(request.componentContracts).toEqual([]);
     expect(request.permissionGrants).toHaveLength(1);
     expect(request.permissionGrants[0]).toMatchObject({
       target: { kind: "storefrontDesignSystem" },
-      operationTypes: ["APPLY_REGISTERED_BRAND_SYSTEM"],
+      operationTypes: ["APPLY_APPROVED_BRAND_COLOURS", "APPLY_APPROVED_BRAND_TYPOGRAPHY"],
+    });
+  });
+
+  it.each([
+    ["English", p9r07ExactDesignSystemRequest],
+    ["Finnish", p9r07FinnishDesignSystemRequest],
+  ])(
+    "routes the P9R-07 %s request through exact global design-system authority",
+    (_locale, instruction) => {
+      const storefrontProvider = registeredProvider();
+      const { request, command: built } = buildAiStorefrontProviderRequestForSupportedCapability(
+        commandWithoutCapability({
+          provider: storefrontProvider,
+          providerId: storefrontProvider.id,
+          affectedPageIds: snapshot.pages.map((page) => page.id),
+          merchantInstruction: instruction,
+        }),
+        1,
+      );
+      const plan = createAiStorefrontGenerationPlan(built);
+
+      expect(built.capability).toBe("approvedColorTypographyDirection");
+      expect(request.capability).toBe("approvedColorTypographyDirection");
+      expect(plan.sectionTargets).toEqual([]);
+      expect(plan.tokenRefinementPlan).toMatchObject({
+        spacing: null,
+        preservePageStructure: true,
+        preserveComponentVariants: true,
+        preserveApprovedAssets: true,
+        preserveCanonicalCommerce: true,
+        typography: { headingFont: "system-sans", bodyFont: "system-sans" },
+      });
+      expect(request.permissionGrants).toEqual([
+        expect.objectContaining({
+          target: { kind: "storefrontDesignSystem", projectId: snapshot.projectId },
+          operationTypes: ["APPLY_APPROVED_BRAND_COLOURS", "APPLY_APPROVED_BRAND_TYPOGRAPHY"],
+        }),
+      ]);
+      expect(request.affectedSections).toEqual([]);
+      expect(request.componentContracts).toEqual([]);
+      expect(JSON.stringify(request.permissionGrants)).not.toMatch(
+        /APPLY_REGISTERED_PAGE_SECTIONS|REORDER_SECTIONS/,
+      );
+    },
+  );
+
+  it("maps the live semantic palette and typography to accessible canonical tokens", () => {
+    const plan = planRegisteredTokenRefinement(p9r07ExactDesignSystemRequest, snapshot.brandSystem);
+
+    expect(plan).toMatchObject({
+      palette: {
+        colors: {
+          primary: "#B54708",
+          secondary: "#111111",
+          accent: "#B54708",
+          background: "#FFFFFF",
+          surface: "#FFFFFF",
+          text: "#111111",
+          mutedText: "#111111",
+          border: "#111111",
+        },
+      },
+      typography: {
+        headingFont: "system-sans",
+        bodyFont: "system-sans",
+        headingWeight: 700,
+      },
+      spacing: null,
     });
   });
 
@@ -320,7 +410,6 @@ describe("P4-05B storefront planner and request construction", () => {
         merchantInstruction: p905dExactTokenRefinementRequest,
       }),
       1,
-      "registeredWholeStorefrontDirection",
     );
     expect(request.tokenRefinementPlan).toMatchObject({
       preservePageStructure: true,
@@ -465,14 +554,17 @@ describe("P4-05B storefront planner and request construction", () => {
         merchantInstruction: instruction,
       }),
       1,
-      "registeredWholeStorefrontDirection",
     );
     const plan = createAiStorefrontGenerationPlan(built);
 
-    expect(plan.tokenRefinementPlan).not.toBeNull();
-    expect(plan.tokenRefinementPlan?.palette !== null).toBe(expected.palette);
-    expect(plan.tokenRefinementPlan?.typography !== null).toBe(expected.typography);
-    expect(plan.tokenRefinementPlan?.spacing !== null).toBe(expected.spacing);
+    expect(Boolean(plan.tokenRefinementPlan?.palette) || plan.brandPalettePlan !== null).toBe(
+      expected.palette,
+    );
+    expect(Boolean(plan.tokenRefinementPlan?.typography)).toBe(expected.typography);
+    expect(Boolean(plan.tokenRefinementPlan?.spacing)).toBe(expected.spacing);
+    expect(request.capability).toBe(
+      expected.spacing ? "registeredWholeStorefrontDirection" : "approvedColorTypographyDirection",
+    );
     expect(plan.sectionTargets).toEqual([]);
     expect(request.affectedPages.map((page) => page.id).sort()).toEqual(
       snapshot.pages.map((page) => page.id).sort(),
@@ -526,7 +618,6 @@ describe("P4-05B storefront planner and request construction", () => {
           merchantInstruction: instruction,
         }),
         1,
-        "registeredWholeStorefrontDirection",
       ),
     ).toThrow(
       expect.objectContaining({

@@ -1,9 +1,13 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { p905dExactTokenRefinementRequest } from "../fixtures/p9-05d-exact-token-refinement";
+import { p9r07ExactDesignSystemRequest } from "../fixtures/p9r-07-design-system";
 import { openEditorAssistant } from "./editor-assistant";
 
 const editorUrl = "/projects/project_aurum_nordic/editor";
-const storefrontInstruction = "Apply a warm premium style across the storefront.";
+const storefrontInstruction =
+  "Across the entire storefront, change only the global colour palette and typography. " +
+  "Use primary #7B4A2D, secondary #2A1F1B, accent #C7975D, background #FFF9F3, surface #FFFFFF, text #211A17, muted text #6C5B52, and border #E3D3C7. " +
+  "Use Georgia headings and Inter body text. Preserve every layout, section, product, image, route, and approved asset.";
 const chronologicalTokenOnlyInstruction =
   "Change only the storefront colours and typography. Use #F6F1E8 for backgrounds, #2F3A32 for primary text and buttons, #A58F78 for secondary surfaces, and #D8C8B6 for borders. Use an elegant serif for headings and a clean sans-serif for body text. Preserve all layouts, sections, products and images.";
 const chronologicalStructuralInstruction =
@@ -109,7 +113,7 @@ test("exact P9-05D token refinement issues one canonical storefront POST", async
   };
   expect(postCount).toBe(1);
   expect(body.requestId).toMatch(/^attempt_/);
-  expect(body.capability).toBe("registeredWholeStorefrontDirection");
+  expect(body.capability).toBe("approvedColorTypographyDirection");
   expect(body.tokenRefinementPlan).toMatchObject({
     spacing: null,
     preservePageStructure: true,
@@ -282,9 +286,19 @@ test("page edits after storefront Accept are undone before the composite storefr
 });
 
 test("retryable storefront failure requires an explicit Retry", async ({ page }) => {
+  await page.route("**/api/ai/whole-storefront-proposals", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: false,
+        failure: { category: "providerUnavailable", retryable: true },
+      }),
+    }),
+  );
   await page.goto(editorUrl);
   await page.getByRole("radio", { name: "Entire storefront" }).check();
-  await page.getByLabel("Your request").fill("Rebuild the storefront navigation.");
+  await page.getByLabel("Your request").fill(storefrontInstruction);
   await page.getByRole("button", { name: "Create proposal" }).click();
   const retry = page.getByRole("button", { name: "Retry" });
   await expect(retry).toBeVisible();
@@ -373,3 +387,80 @@ for (const width of [375, 768, 1024, 1440]) {
     ).toBe(true);
   });
 }
+
+test("P9R-07 exact design system reaches every rendered storefront surface and action", async ({
+  page,
+}) => {
+  await page.goto(editorUrl);
+  const response = await openStorefrontProposal(page, p9r07ExactDesignSystemRequest);
+  const responseBody = (await response.json()) as {
+    proposal: {
+      proposal: {
+        target: { affectedPageIds: string[]; designSystemTarget: unknown };
+        operations: Array<{ operation: { type: string } }>;
+        originalStorefront: {
+          navigation: unknown;
+          pages: unknown;
+          catalogueRef: string;
+        };
+        proposedStorefront: {
+          navigation: unknown;
+          pages: unknown;
+          catalogueRef: string;
+        };
+      };
+    };
+  };
+  const proposal = responseBody.proposal.proposal;
+
+  expect(proposal.operations.map(({ operation }) => operation.type)).toEqual([
+    "APPLY_APPROVED_BRAND_COLOURS",
+    "APPLY_APPROVED_BRAND_TYPOGRAPHY",
+  ]);
+  expect(proposal.target.affectedPageIds).toHaveLength(3);
+  expect(proposal.target.designSystemTarget).toBeTruthy();
+  expect(proposal.proposedStorefront.pages).toEqual(proposal.originalStorefront.pages);
+  expect(proposal.proposedStorefront.navigation).toEqual(proposal.originalStorefront.navigation);
+  expect(proposal.proposedStorefront.catalogueRef).toBe(proposal.originalStorefront.catalogueRef);
+
+  await acceptStorefrontProposal(page);
+  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  const hero = canvas.locator(".store-hero");
+  await expect(hero).toHaveCSS(
+    "background-color",
+    /^(?:rgb\(255, 255, 255\)|color\(srgb 1 1 1\))$/,
+  );
+  await expect(hero.getByRole("heading").first()).toHaveCSS("color", "rgb(17, 17, 17)");
+
+  await page.getByRole("button", { name: "Save draft" }).click();
+  await expect(page.getByText("Draft saved successfully.")).toBeVisible();
+
+  await page.goto("/projects/project_aurum_nordic/collections/rings");
+  await expect(page.getByRole("heading", { level: 1, name: "Rings" })).toBeVisible();
+  await expect(page.locator("footer.store-footer")).toHaveCSS(
+    "background-color",
+    "rgb(255, 255, 255)",
+  );
+  await expect(page.locator(".project-preview")).toHaveCSS("color", "rgb(17, 17, 17)");
+
+  await page.goto("/projects/project_aurum_nordic/products/aurora-ring-585");
+  await expect(page.getByRole("heading", { level: 1, name: "Aurora Ring 585" })).toBeVisible();
+  await expect(page.locator("footer.store-footer")).toHaveCSS(
+    "background-color",
+    "rgb(255, 255, 255)",
+  );
+  const purchaseAction = page.getByRole("button", { name: "Add to cart", exact: true });
+  await expect(purchaseAction).toBeDisabled();
+  await expect(purchaseAction).toHaveCSS("background-color", "rgb(255, 255, 255)");
+  await expect(purchaseAction).toHaveCSS("color", "rgb(17, 17, 17)");
+  await page.getByRole("button", { name: "17", exact: true }).click();
+  await expect(purchaseAction).toBeEnabled();
+  await expect(purchaseAction).toHaveCSS("background-color", "rgb(181, 71, 8)");
+  await expect(purchaseAction).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(page.getByText("1 290 €")).toBeVisible();
+  await expect(
+    page.locator('[data-component="dynamicProductDetail"] p[aria-live="polite"]', {
+      hasText: "In stock",
+    }),
+  ).toBeVisible();
+});

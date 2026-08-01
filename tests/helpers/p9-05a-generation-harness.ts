@@ -1,6 +1,6 @@
 import {
   aiStorefrontProviderResponseSchema,
-  buildAiStorefrontProviderRequest,
+  buildAiStorefrontProviderRequestForSupportedCapability,
   classifyRegisteredWholeStorefrontDirectionRequest,
 } from "@/application/ai-storefront-generation";
 import {
@@ -61,7 +61,6 @@ export async function generateP905aScenario(directionId: P905aDirectionId) {
   return generateP905aScenarioWithProvider({
     baselineDirectionId: directionId,
     merchantInstruction: p905aDirectionScenarios[directionId].merchantInstruction,
-    capability: "approvedColorTypographyDirection",
     selectPlan: (providerRequest) => providerRequest.planForDirection(directionId),
   });
 }
@@ -73,7 +72,6 @@ export async function generateP905aHomepageOnlyScenarioFromBaseline(
   return generateP905aScenarioWithProvider({
     baselineDirectionId,
     merchantInstruction,
-    capability: "registeredWholeStorefrontDirection",
     scope: "homepage",
     deferCompiledProposal: true,
     selectPlan: (providerRequest) => providerRequest.planForDirection("modernTechnical"),
@@ -87,7 +85,6 @@ export async function generateP905aScenarioFromSelectedDirection(
   return generateP905aScenarioWithProvider({
     baselineDirectionId,
     merchantInstruction: `Apply the ${registeredDirectionMerchantNames[directionId]} direction across the storefront.`,
-    capability: "registeredWholeStorefrontDirection",
     selectPlan: (providerRequest) => providerRequest.planForDirection(directionId),
   });
 }
@@ -100,7 +97,6 @@ export async function generateP905aInstructionScenarioFromBaseline(
   return generateP905aScenarioWithProvider({
     baselineDirectionId,
     merchantInstruction,
-    capability: "registeredWholeStorefrontDirection",
     deferCompiledProposal: true,
     selectPlan: (providerRequest) => {
       const classification = classifyRegisteredWholeStorefrontDirectionRequest(
@@ -125,14 +121,12 @@ type P905aProviderCapture = Readonly<{
 async function generateP905aScenarioWithProvider({
   baselineDirectionId,
   merchantInstruction,
-  capability,
   scope = "storefront",
   deferCompiledProposal = false,
   selectPlan,
 }: {
   baselineDirectionId: P905aDirectionId;
   merchantInstruction: string;
-  capability: "approvedColorTypographyDirection" | "registeredWholeStorefrontDirection";
   scope?: "storefront" | "homepage";
   deferCompiledProposal?: boolean;
   selectPlan: (
@@ -180,7 +174,7 @@ async function generateP905aScenarioWithProvider({
     authority,
     selectProvider: () => provider,
   });
-  const request = buildAiStorefrontProviderRequest(
+  const request = buildAiStorefrontProviderRequestForSupportedCapability(
     {
       projectId: fixture.aggregate.project.id,
       draftSnapshotId: fixture.draft.id,
@@ -200,11 +194,14 @@ async function generateP905aScenarioWithProvider({
       activeLocale: fixture.aggregate.project.primaryLocale,
       enabledLocales: fixture.aggregate.project.enabledLocales,
       requestedScope: scope === "homepage" ? "page" : "storefront",
-      capability,
       providerId: SERVER_PROVIDER_ID,
       provider: {
         id: SERVER_PROVIDER_ID,
         assetReferenceCapability: "structuredApprovedAssets",
+        generationCapabilities: [
+          "approvedColorTypographyDirection",
+          "registeredWholeStorefrontDirection",
+        ] as const,
         proposeStorefront: () => Promise.reject(new Error("Server-only deterministic harness")),
       },
       importedContent: [],
@@ -212,7 +209,7 @@ async function generateP905aScenarioWithProvider({
       assetPlacementOperations: [],
     },
     1,
-  );
+  ).request;
   const response = await handler(
     new Request("http://p9-05a.test/api/ai/whole-storefront-proposals", {
       method: "POST",
