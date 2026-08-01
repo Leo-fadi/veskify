@@ -51,9 +51,11 @@ visual evidence required to claim meaningful coordinated storefront generation.
 ## Commercial composition contract
 
 Veskify creates commercial variety through controlled component families with meaningful variants,
-approved page recipes and typed bounded design parameters. Composition inherits from the global
-`BrandSystem` through recipe and family/variant to constrained instance overrides; AI does not
-generate arbitrary component trees, CSS or executable frontend code. Every capability must prove
+registered constrained `PageBlueprint` recipe profiles and typed bounded design parameters. A
+recipe is not a second page graph or executable model: it supplies permitted/default values to the
+canonical `PageBlueprint`. Composition inherits from the global `BrandSystem` through the selected
+PageBlueprint profile and family/variant to constrained instance overrides; AI does not generate
+arbitrary component trees, CSS or executable frontend code. Every capability must prove
 registered → planner-selectable → proposal-expressible → compiler-preserved → `StorefrontSnapshot`-
 stored → renderer-visible → editor-editable → manually live-proven.
 

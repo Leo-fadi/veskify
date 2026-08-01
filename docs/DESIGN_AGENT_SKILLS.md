@@ -341,14 +341,22 @@ reject silent widening, and unknown or stale capability references fail before p
 
 ### 7.1 Commercial composition selection contract
 
-When a Skill composes a page or storefront, it selects an approved recipe, only compatible controlled
-component families/meaningful variants, permitted ordering, canonical bindings, approved assets and
-typed bounded design parameters. It cannot emit a component tree, CSS, class names, executable
-frontend code, unregistered font import or arbitrary layout value.
+When a Skill composes a page or storefront, it selects a registered constrained `PageBlueprint`
+recipe profile, only compatible controlled component families/meaningful variants, permitted
+ordering, canonical bindings, approved assets and typed bounded design parameters. The profile
+supplies permitted/default values to the canonical executable `PageBlueprint`; it is not a second
+page graph, template architecture, recipe engine or independently executable representation. Recipe
+selection materializes or constrains a canonical `PageBlueprint`, and proposal, compiler, snapshot,
+editor, preview, save, history and publish continue through `PageBlueprint` and
+`StorefrontSnapshot`. A Skill cannot emit a component tree, raw CSS, arbitrary class names,
+executable JavaScript/React or generated frontend code, unrestricted font imports or layout/style
+values outside registered typed bounds.
 
-Selection resolves in this order: `BrandSystem` → coordinated page recipe → component family and
-variant → limited validated instance override. A local override is exceptional, must be explicitly
-allowed by the active recipe/family and must not establish a disconnected visual language.
+Selection resolves in this order: `BrandSystem` → registered PageBlueprint recipe profile →
+component family and variant → limited validated instance override. Semantic tokens normally flow
+downward. A local override is exceptional, must be explicitly allowed by the active
+profile/family, must remain canonical typed state and must not establish a disconnected visual
+language. Invalid or unrelated local overrides fail validation before rendering.
 
 Skill evidence records the complete capability reachability chain: registered → planner-selectable →
 proposal-expressible → compiler-preserved → `StorefrontSnapshot`-stored → renderer-visible →
@@ -358,7 +366,8 @@ representative approved assets; placeholder SVGs and deterministic-only results 
 
 Optional evidence/trust slots are omitted when their approved merchant evidence is unavailable.
 Skills and registry defaults must not invent claims about delivery, materials, durability, guarantees,
-sustainability, popularity, performance or certifications.
+sustainability, popularity, performance or certifications, and approved evidence provenance remains
+attached to every populated evidence/trust slot.
 
 P10A defines and validates the scopes. It does not deliver merchant-operable granular editing.
 Phase 11 implements and exposes those scopes as working merchant features: selecting a component or

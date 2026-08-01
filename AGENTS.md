@@ -71,6 +71,13 @@ editing, preview, save, history and publishing must use it. Planner payloads, pr
 and renderer projections are transient; do not introduce a competing `StorefrontPlan`, page graph,
 component registry, blueprint system, asset inventory or publish model.
 
+A commercial page recipe is only a registered constrained `PageBlueprint` profile or preset of
+permitted/default values. `PageBlueprint` remains the canonical executable page-composition
+contract; recipes must not create a second page graph, template architecture, recipe engine or
+independently executable representation. Recipe selection only materializes or constrains a
+canonical `PageBlueprint`; proposals, compilation, snapshots, editor, preview, save, history and
+publish continue through `PageBlueprint` and `StorefrontSnapshot`.
+
 ### 3.3 Vesko owns commerce truth
 
 - Consume product, collection, price, compare-at-price, SKU, variant, option, stock, availability and media data through a read-only canonical commerce projection.

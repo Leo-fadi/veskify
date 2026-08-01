@@ -83,16 +83,26 @@ They may not emit executable React, HTML, CSS, JavaScript, scripts, or arbitrary
 
 ### 3.3.1 Controlled commercial composition
 
-For page or storefront composition, a Skill selects an approved page recipe, compatible controlled
-component families and materially meaningful variants, permitted ordering, canonical bindings,
-approved assets and typed bounded parameters. It cannot create arbitrary component trees or layout
-values. The renderer remains responsible for CSS and responsive behavior.
+For page or storefront composition, a Skill selects a registered constrained `PageBlueprint` recipe
+profile, compatible controlled component families and materially meaningful variants, permitted
+ordering, canonical bindings, approved assets and typed bounded parameters. A commercial recipe is
+only a profile or preset of permitted/default PageBlueprint values; it is not a second page graph,
+template architecture, recipe engine or independently executable representation. Recipe selection
+materializes or constrains the canonical `PageBlueprint`, and proposal, compiler, snapshot, editor,
+preview, save, history and publish continue through `PageBlueprint` and `StorefrontSnapshot`.
+Skills cannot create arbitrary component trees, raw CSS, arbitrary class names, executable
+JavaScript/React or generated code, unrestricted font imports or layout/style values outside
+registered typed bounds. The renderer remains responsible for CSS and responsive behavior.
 
-Selection inherits `BrandSystem → recipe → family/variant → constrained validated instance override`.
+Selection inherits `BrandSystem → registered PageBlueprint recipe profile → family/variant →
+constrained validated instance override`. Semantic tokens normally flow downward, renderer-visible
+values derive from canonical typed state, and invalid or unrelated local visual-language overrides
+fail validation.
 The complete capability chain is registered → planner-selectable → proposal-expressible →
 compiler-preserved → `StorefrontSnapshot`-stored → renderer-visible → editor-editable → manually
 live-proven. Registry presence or schema validity alone is not completion. Optional evidence/trust
-content is omitted without approved evidence; defaults cannot invent commercial claims.
+content is omitted without approved evidence; defaults cannot invent commercial claims and approved
+evidence provenance must be preserved.
 
 ### 3.4 Reuse before generation
 
