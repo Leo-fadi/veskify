@@ -1,6 +1,6 @@
 # Veskify Development Guide
 
-**Version:** 1.2.1
+**Version:** 1.2.2
 **Aligned with:** `docs/VESKIFY_SDD.md` and `AGENTS.md`
 
 ## 1. Purpose
@@ -33,6 +33,14 @@ Typical locations:
 - `src/components/storefront/**`
 
 Owns component families, variants, slots, editable fields, data-binding requirements, page permissions, responsive/accessibility rules, renderer mapping and migrations.
+
+Commercial family work uses one maintained renderer implementation with materially meaningful
+variants, not colour/padding renames. Commercial recipes are registered constrained
+`PageBlueprint` profiles that supply permitted/default slots, compatibility, order,
+bindings/assets, responsive constraints and omission/fallback rules; they are not a second template
+or executable page representation. AI can select only typed bounded parameters; it never provides
+arbitrary trees, CSS, classes, code or font imports. Design inherits
+`BrandSystem → registered PageBlueprint recipe profile → family/variant → constrained instance override`.
 
 ### Puck integration
 
@@ -78,7 +86,10 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 ## 3. Current implementation baseline
 
-Verified at `8174b1a6d31301b4072622e2e3ef675957479121` on 30 July 2026:
+The v1.2.2 baseline is `4a96a5a5567b83e62306f73f7069e0e09f0c8683` on 31 July 2026 and
+includes P9R-06 homepage routing. The earlier v1.2.1 baseline
+`8174b1a6d31301b4072622e2e3ef675957479121` remains historical PR #123 evidence. At the v1.2.2
+baseline, the following are verified:
 
 - controlled storefront schemas and registered components;
 - visual editor and manual section operations;
@@ -177,6 +188,13 @@ contracts, define scoped router/authority/validation contracts, run golden-store
 publication deterministically. P10A defines and validates scopes; it does not deliver
 merchant-operable granular editing.
 
+P10A Tasks 6–9 are the commercial-composition delivery sequence after the existing Phase 9 gate:
+Task 6 approves the vocabulary, PageBlueprint-profile, bounded-parameter, inheritance, reachability
+and visual-evidence contracts; Task 7 implements commercial families; Task 8 implements coordinated
+registered PageBlueprint recipe profiles; Task 9 proves AI composition and commercial visual
+quality. These tasks are not Phase 9 closing requirements, and Tasks 7–9 must not begin before Task 6
+is approved.
+
 ### P10B — Assets and Storefront Studio UX
 
 Add asset upload/library and generated-image lifecycle, then merchant-facing Studio workflows that
@@ -207,6 +225,12 @@ Use the smallest relevant set:
 - focused React integration tests;
 - one relevant Playwright journey only when the visible risk requires it;
 - responsive/accessibility checks for changed components.
+
+For commercial-family/PageBlueprint-profile work, P10A acceptance additionally records the full
+reachability chain (registered → planner-selectable → proposal-expressible → compiler-preserved →
+`StorefrontSnapshot`-stored → renderer-visible → editor-editable → manually live-proven) and
+screenshot-level browser review of homepage, collection and PDP at 375, 768, 1024 and 1440 px using
+representative approved assets. Schema-valid or placeholder-only evidence does not close a phase.
 
 ### Dynamic PDP minimum fixtures
 

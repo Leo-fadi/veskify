@@ -1,6 +1,6 @@
 # Veskify Development Roadmap
 
-**Version:** 1.2.1
+**Version:** 1.2.2
 **Aligned with:** `docs/VESKIFY_SDD.md`
 **Merchant-facing product:** Vesko Storefront Studio
 **Internal engine:** Veskify
@@ -13,10 +13,11 @@ Veskify remains a design engine. It consumes read-only canonical Vesko commerce 
 
 ## 2. Verified baseline — complete
 
-The roadmap begins from `origin/main` commit
-`8174b1a6d31301b4072622e2e3ef675957479121` on 30 July 2026. “Complete” below means
-the foundation is merged; it does not imply that the corrected Phase 9 merchant-quality gate has
-passed.
+The v1.2.2 roadmap begins from `origin/main` commit
+`4a96a5a5567b83e62306f73f7069e0e09f0c8683` on 31 July 2026, which includes the P9R-06 merge.
+The earlier v1.2.1 baseline was `8174b1a6d31301b4072622e2e3ef675957479121`; it remains historical
+evidence for that amendment and PR #123, not the v1.2.2 source. “Complete” below means the
+foundation is merged; it does not imply that the corrected Phase 9 merchant-quality gate has passed.
 
 | Area                          | Outcome                                                                                                                                                            |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -205,6 +206,37 @@ protected commerce truth.
 deterministic lifecycle coverage; the required retained live-provider result, full browser matrix
 and visual-quality evidence have not been recorded.
 
+#### P9R status
+
+P9R-06 is reproducible at the v1.2.2 baseline merge commit `4a96a5a`: PR #131 added the controlled
+editor homepage routing and its integration/live-acceptance tests. It proved the real editor
+homepage-only generation route, not whole-storefront composition, and does not close Phase 9.
+P9R-07, whole-store global colour and typography routing, is active parallel work at this roadmap
+revision; this documentation update does not claim it has merged or completed.
+
+### P10A commercial composition delivery sequence — Tasks 6–9
+
+These P10A tasks name the commercial-library work that follows the existing Phase 9 product gate.
+They are not Phase 9 closing requirements. During active Phase 9, work remains limited to the
+minimum proof-enabling reachability already described in P9-03; it must not be relabelled as broad
+library scaling. Task 6 contracts require approval before Tasks 7–9 begin.
+
+| Task                                                   | Outcome                                                                                                                                                                                                                                                                                                | Contract and evidence gate                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Task 6 — Design vocabulary contract**                | Define controlled component-family, meaningful-variant, registered PageBlueprint recipe-profile and slot contracts; compatibility; bounded layout/style parameters; inheritance; responsive behavior; reachability; and visual evidence.                                                               | Canonical documentation and implementation contracts are approved without a second registry, PageBlueprint representation, page graph or arbitrary CSS/code boundary.                                                                                                                                  |
+| **Task 7 — Commercial component families**             | Implement and visually validate high-quality shared header/navigation, hero, featured products, cards/grids, collection discovery, brand story, approved evidence/trust, footer, collection header/filter/presentation, and PDP gallery/information/options/specifications/purchasing/recommendations. | Each applicable family has 3–5 materially distinct, renderer-shared variants and screenshot-level review with representative approved assets.                                                                                                                                                          |
+| **Task 8 — Coordinated PageBlueprint recipe profiles** | Implement 3–4 registered constrained PageBlueprint profiles for each homepage, collection and product-detail page type.                                                                                                                                                                                | Profiles provide permitted/default PageBlueprint values for shared frame, compatibility, slots, order, responsive constraints, bindings, approved assets and omission/fallback rules; they do not create a recipe engine and compile only through canonical `PageBlueprint` into `StorefrontSnapshot`. |
+| **Task 9 — AI composition and commercial visual gate** | Allow AI to select registered PageBlueprint recipe profiles, compatible variants, permitted order, typed design parameters and approved data/asset bindings.                                                                                                                                           | Prove materially different storefronts, exact canonical state, editability, responsive rendering, protected commerce, approved content/assets, Review/Accept/Undo/Redo/Save/Reload/Preview/Publish and screenshot-level commercial quality.                                                            |
+
+Task 6 establishes the inheritance order `BrandSystem → registered PageBlueprint recipe profile →
+family/variant → constrained instance override`. Recipe selection materializes or constrains the
+canonical `PageBlueprint`; proposal, compiler, snapshot, editor, preview, save, history and publish
+do not consume a parallel recipe representation. A capability counts only after the complete
+reachability chain: registered → planner-selectable → proposal-expressible → compiler-preserved →
+`StorefrontSnapshot`-stored → renderer-visible → editor-editable → manually live-proven. Profiles
+omit optional trust/evidence when the approved context is absent; defaults never invent commercial
+claims.
+
 ### Completed Vesko integration foundation prework
 
 The merged integration foundation provides canonical integration boundaries, merchant/project context, catalogue/navigation projection, availability/options/variants/media projection, authoritative draft persistence, authoritative publishing and complete standalone port assembly.
@@ -223,11 +255,11 @@ registry. P10A does not deliver merchant-operable granular editing.
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | P10A-01 | Freeze canonical vocabulary and transient-boundary aliases.                                                                                                                                                                                                       | No new canonical `PageModel`, `StorefrontPlan`, `SectionNode`, AI graph or provider registry.                                                 |
 | P10A-02 | Audit registered components, variants, bindings, planners, compilers and renderers.                                                                                                                                                                               | Reachability derives from live evidence and reports stale classifications.                                                                    |
-| P10A-03 | Define executable `PageBlueprint` contracts from current template precursors.                                                                                                                                                                                     | AC-133 and the blueprint-validation portion of AC-130 pass.                                                                                   |
+| P10A-03 | Define executable `PageBlueprint` contracts from current template precursors, including the sole registered representation for constrained commercial recipe profiles.                                                                                            | AC-133, AC-136 and the blueprint-validation portion of AC-130 pass without a separate recipe/template representation.                         |
 | P10A-04 | Generate the Component Knowledge Registry from canonical contracts, including the executable `PageBlueprint` contracts produced by P10A-03, then broaden the controlled vocabulary only through validated canonical registrations exposed by that generated view. | AC-129 and the capability-reference portion of AC-130 pass without a forward dependency; broad scaling cannot precede the Phase 9 proof gate. |
 | P10A-05 | Define separate initial-generation and follow-up-editing Skill package contracts.                                                                                                                                                                                 | AC-131 passes at the schema, authority and validation-contract layer.                                                                         |
 | P10A-06 | Define scoped instruction-router contracts and no-widening validation.                                                                                                                                                                                            | AC-132 passes at the classification, authority and validation-contract layer.                                                                 |
-| P10A-07 | Add golden-store quality gates, including a non-jewellery merchant.                                                                                                                                                                                               | AC-134 passes with deterministic and retained real-provider evidence.                                                                         |
+| P10A-07 | Add golden-store quality gates, including inheritance, trust/evidence safety and a non-jewellery merchant.                                                                                                                                                        | AC-134, AC-137 and AC-138 pass with deterministic and retained real-provider evidence.                                                        |
 | P10A-08 | Add the deterministic publish compiler.                                                                                                                                                                                                                           | AC-133 and AC-135 pass; publication makes no AI call.                                                                                         |
 
 P10A defines Skill packages, capability-query requirements, schemas, authority declarations, scope
