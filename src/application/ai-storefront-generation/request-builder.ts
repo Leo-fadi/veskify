@@ -337,11 +337,8 @@ export function buildAiStorefrontProviderRequestForSupportedCapability(
         commandInput.merchantInstruction,
         commandInput.storefront.brandSystem,
       );
-    } catch (error) {
-      throw new AiStorefrontRequestBuildError(
-        "unsupported-request",
-        error instanceof Error ? error.message : "The storefront request is unsupported.",
-      );
+    } catch {
+      tokenRefinementPlan = null;
     }
     if (
       tokenRefinementPlan !== null &&

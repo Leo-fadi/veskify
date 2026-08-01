@@ -18,16 +18,16 @@
   color: var(--brand-color-text);
 }
 .store-vocabulary.store-background--primary {
-  background: var(--brand-surface-section);
-  color: var(--brand-color-text);
+  background: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
 }
 .store-vocabulary.store-background--secondary {
-  background: var(--brand-surface-section);
-  color: var(--brand-color-text);
+  background: var(--brand-color-secondary);
+  color: var(--brand-color-secondary-text);
 }
 .store-vocabulary.store-background--accent {
-  background: var(--brand-surface-section);
-  color: var(--brand-color-text);
+  background: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
 }
 .store-vocabulary.store-foreground--text {
   color: var(--brand-color-text);
@@ -35,11 +35,16 @@
 .store-vocabulary.store-foreground--surface {
   color: var(--brand-color-surface);
 }
-.store-vocabulary:is(
-    .store-background--background,
-    .store-background--surface,
-    .store-background--accent
-  )
+.store-vocabulary.store-background--primary.store-foreground--surface {
+  color: var(--brand-color-primary-text);
+}
+.store-vocabulary.store-background--secondary.store-foreground--surface {
+  color: var(--brand-color-secondary-text);
+}
+.store-vocabulary.store-background--accent.store-foreground--text {
+  color: var(--brand-color-accent-text);
+}
+.store-vocabulary:is(.store-background--background, .store-background--surface)
   :is(p, .store-eyebrow, .store-footer__legal) {
   color: var(--brand-color-text);
 }
@@ -47,13 +52,17 @@
   :is(.product-card__stock, dd) {
   color: var(--brand-color-muted-text);
 }
-.store-vocabulary:is(.store-background--primary, .store-background--secondary)
-  :is(p, .store-eyebrow, .store-footer__legal, dd) {
-  color: var(--brand-color-muted-text);
+.store-vocabulary.store-background--primary
+  :is(p, h2, h3, .store-brand, .store-eyebrow, .store-footer__legal, label, dd) {
+  color: var(--brand-color-primary-text);
 }
-.store-vocabulary:is(.store-background--primary, .store-background--secondary)
-  :is(h2, h3, .store-brand, label) {
-  color: var(--brand-color-text);
+.store-vocabulary.store-background--secondary
+  :is(p, h2, h3, .store-brand, .store-eyebrow, .store-footer__legal, label, dd) {
+  color: var(--brand-color-secondary-text);
+}
+.store-vocabulary.store-background--accent
+  :is(p, h2, h3, .store-brand, .store-eyebrow, .store-footer__legal, label, dd) {
+  color: var(--brand-color-accent-text);
 }
 .store-typography--serif {
   font-family: var(--brand-font-heading);
@@ -108,7 +117,7 @@
   padding-block: var(--section-space);
 }
 
-.store-variant--minimal {
+.store-variant--minimal.store-background--inherit {
   border-block: 1px solid var(--brand-color-border);
   background: transparent;
 }
@@ -135,7 +144,7 @@
 .store-header.store-variant--split .store-brand {
   justify-self: start;
 }
-.store-header.store-variant--editorial {
+.store-header.store-variant--editorial.store-background--inherit {
   border-block: 0;
   background: color-mix(in srgb, var(--brand-color-background) 92%, transparent);
 }
@@ -293,15 +302,15 @@
 .store-footer.store-variant--expanded {
   gap: clamp(2rem, 5vw, 5rem);
 }
-.store-footer.store-variant--dark {
+.store-footer.store-variant--dark.store-background--inherit {
   background: var(--brand-surface-section);
   color: var(--brand-color-text);
 }
-.store-footer.store-variant--dark .store-footer__legal {
+.store-footer.store-variant--dark.store-background--inherit .store-footer__legal {
   color: var(--brand-color-muted-text);
 }
 
-.store-hero.store-variant--fullBleed {
+.store-hero.store-variant--fullBleed.store-background--inherit {
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -309,16 +318,16 @@
 }
 .store-hero.store-variant--fullBleed .store-hero__copy {
   z-index: 1;
-  color: var(--brand-color-surface);
+  color: var(--brand-color-text);
 }
 .store-hero.store-variant--fullBleed .store-hero__copy > p:not(.store-eyebrow) {
-  color: color-mix(in srgb, var(--brand-color-surface) 82%, transparent);
+  color: var(--brand-color-text);
 }
 .store-hero.store-variant--fullBleed .store-hero__image {
   position: absolute;
   z-index: 0;
   inset: 0;
-  opacity: 0.52;
+  opacity: 0.18;
 }
 .store-hero.store-variant--fullBleed .store-hero__image::after {
   content: "";

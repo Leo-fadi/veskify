@@ -119,8 +119,10 @@ function isExcludedColourOccurrence(instruction: string, index: number) {
     instruction.lastIndexOf("!", index - 1),
     instruction.lastIndexOf("?", index - 1),
   );
-  return /\b(?:do\s+not\s+use|don't\s+use|avoid|exclude|without|älä\s+käytä|vältä)\b[^.!?]*$/iu.test(
-    instruction.slice(clauseStart + 1, index),
+  const prefix = instruction.slice(clauseStart + 1, index);
+  return (
+    /\b(?:do\s+not\s+use|don't\s+use|avoid|exclude|älä\s+käytä|vältä)\b[^.!?]*$/iu.test(prefix) ||
+    /\bwithout(?:\s+using)?(?:\s+any)?\s*$/iu.test(prefix)
   );
 }
 
@@ -316,17 +318,6 @@ function requestedPalette(
     /\bsecondary\s+text\b[^.!?]{0,80}\b(?:dark|black|readab)/iu.test(instruction)
   ) {
     assigned.set("mutedText", { value: assigned.get("text")!.value, specificity: 2 });
-  }
-  if (assigned.has("accent") && assigned.has("background") && assigned.has("text")) {
-    if (!assigned.has("surface")) {
-      assigned.set("surface", { value: assigned.get("background")!.value, specificity: 1 });
-    }
-    if (!assigned.has("secondary")) {
-      assigned.set("secondary", { value: assigned.get("text")!.value, specificity: 1 });
-    }
-    if (!assigned.has("border")) {
-      assigned.set("border", { value: assigned.get("text")!.value, specificity: 1 });
-    }
   }
   const colors = { ...current };
   assigned.forEach(({ value }, token) => {

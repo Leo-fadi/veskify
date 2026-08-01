@@ -5,6 +5,7 @@ import {
   buildAiStorefrontProviderRequest,
   createAiStorefrontGenerationPlan,
   createDeterministicMockStorefrontAIProvider,
+  planExactBrandPalette,
   validateAiStorefrontProviderResponse,
   type AiStorefrontGenerationCommand,
 } from "@/application/ai-storefront-generation";
@@ -137,6 +138,41 @@ function paletteOperation(proposal: AiStorefrontProposal) {
 }
 
 describe("P4.1-01 exact merchant brand palettes", () => {
+  it("does not treat a layout-preservation prefix as a named-colour exclusion", () => {
+    const plan = planExactBrandPalette(
+      "Without changing layout, set the palette primary to black, secondary to white, accent to burnt orange, background to white, surface to white, text to black, muted text to black, and border to black.",
+      snapshot.brandSystem.colors,
+    );
+
+    expect(plan?.colors).toMatchObject({
+      primary: "#111111",
+      secondary: "#FFFFFF",
+      accent: "#B54708",
+      background: "#FFFFFF",
+      surface: "#FFFFFF",
+      text: "#111111",
+      mutedText: "#111111",
+      border: "#111111",
+    });
+  });
+
+  it("preserves palette roles that the merchant did not target", () => {
+    const plan = planExactBrandPalette(
+      "Change only accent to burnt orange, background to pure white, and text to near-black.",
+      snapshot.brandSystem.colors,
+    );
+
+    expect(plan?.requestedTokens).toEqual(["accent", "background", "text"]);
+    expect(plan?.colors).toMatchObject({
+      accent: "#B54708",
+      background: "#FFFFFF",
+      text: "#111111",
+      secondary: snapshot.brandSystem.colors.secondary,
+      surface: snapshot.brandSystem.colors.surface,
+      border: snapshot.brandSystem.colors.border,
+    });
+  });
+
   it("turns the required descriptive multi-colour instruction into a Ready proposal", async () => {
     const input = command(regressionInstruction);
     const { identity } = proposalContext(input);

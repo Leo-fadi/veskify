@@ -48,9 +48,19 @@ describe("P2-02 storefront design vocabulary", () => {
     }
     expect(stylesheet).toContain(".store-vocabulary.store-foreground--text");
     expect(stylesheet).toContain(".store-vocabulary.store-foreground--surface");
-    expect(readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8")).toContain(
-      ":focus-visible",
+    expect(stylesheet).toContain("background: var(--brand-color-primary)");
+    expect(stylesheet).toContain("background: var(--brand-color-secondary)");
+    expect(stylesheet).toContain("background: var(--brand-color-accent)");
+    expect(stylesheet).toContain("color: var(--brand-color-primary-text)");
+    expect(stylesheet).toContain("color: var(--brand-color-secondary-text)");
+    expect(stylesheet).toContain("color: var(--brand-color-accent-text)");
+    expect(stylesheet).toMatch(
+      /store-variant--fullBleed \.store-hero__copy[\s\S]*color: var\(--brand-color-text\)/,
     );
+    const globals = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
+    expect(globals).toContain(":focus-visible");
+    expect(globals).toMatch(/\.project-preview \{[\s\S]*font-size: var\(--brand-type-base-size\)/);
+    expect(globals).toMatch(/\.store-announcement \{[\s\S]*color: var\(--brand-highlight-text\)/);
   });
   it("validates and renders every controlled variant with token classes", () => {
     for (const [component, variants] of Object.entries(contracts)) {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { contrastRatio, standardTextContrastMinimum } from "./color-contrast";
 
 const colorSchema = z.string().regex(/^#(?:[0-9a-fA-F]{6})$/, "Use six-digit hex colours.");
 
@@ -150,6 +151,16 @@ const densityValues: Record<BrandSystem["spacing"]["density"], string> = {
   airy: "1.2",
 };
 
+function contrastingForeground(background: string, preferred: readonly string[]) {
+  const candidates = [...new Set([...preferred, "#111111", "#FFFFFF"])]
+    .map((color) => ({ color, contrast: contrastRatio(color, background) }))
+    .sort((left, right) => right.contrast - left.contrast);
+  return (
+    candidates.find(({ contrast }) => contrast >= standardTextContrastMinimum)?.color ??
+    candidates[0].color
+  );
+}
+
 export function brandSystemToCssVariables(input: BrandSystem): Record<string, string> {
   const brand = brandSystemSchema.parse(input);
   const visualSystem = visualSystemSchema.parse(
@@ -161,6 +172,18 @@ export function brandSystemToCssVariables(input: BrandSystem): Record<string, st
     warning: "#9A5B13",
     unavailable: brand.colors.mutedText,
   };
+  const primaryForeground = contrastingForeground(brand.colors.primary, [
+    brand.colors.surface,
+    brand.colors.text,
+  ]);
+  const secondaryForeground = contrastingForeground(brand.colors.secondary, [
+    brand.colors.surface,
+    brand.colors.text,
+  ]);
+  const accentForeground = contrastingForeground(brand.colors.accent, [
+    brand.colors.text,
+    brand.colors.surface,
+  ]);
 
   return {
     "--brand-color-primary": brand.colors.primary,
@@ -175,11 +198,15 @@ export function brandSystemToCssVariables(input: BrandSystem): Record<string, st
     "--brand-surface-section": brand.colors.surface,
     "--brand-surface-subtle": `color-mix(in srgb, ${brand.colors.surface} 72%, ${brand.colors.background})`,
     "--brand-action-primary": brand.colors.primary,
-    "--brand-action-primary-text": brand.colors.surface,
+    "--brand-action-primary-text": primaryForeground,
+    "--brand-color-primary-text": primaryForeground,
+    "--brand-color-secondary-text": secondaryForeground,
+    "--brand-color-accent-text": accentForeground,
     "--brand-action-disabled-surface": brand.colors.surface,
     "--brand-action-disabled-text": semanticPresentation.unavailable,
     "--brand-action-disabled-border": semanticPresentation.unavailable,
     "--brand-highlight": brand.colors.accent,
+    "--brand-highlight-text": accentForeground,
     "--brand-color-emphasis": semanticPresentation.emphasis,
     "--brand-color-success": semanticPresentation.success,
     "--brand-color-warning": semanticPresentation.warning,

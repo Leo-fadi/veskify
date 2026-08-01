@@ -85,6 +85,7 @@ a {
   background: var(--brand-color-background);
   color: var(--brand-color-text);
   font-family: var(--brand-font-body);
+  font-size: var(--brand-type-base-size);
 }
 
 [data-veskify-canvas-root] {
@@ -247,7 +248,7 @@ a {
   gap: 0.5rem 1.5rem;
   padding: 0.65rem clamp(1rem, 4vw, 3rem);
   background: var(--brand-highlight);
-  color: var(--brand-color-text);
+  color: var(--brand-highlight-text);
   font-size: 0.8rem;
   letter-spacing: 0.08em;
   text-align: center;

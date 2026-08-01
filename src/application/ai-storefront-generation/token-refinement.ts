@@ -110,9 +110,13 @@ function typographyForInstruction(
       "Choose approved heading and body typography tokens for this refinement.",
     );
   }
+  const actionableHeadingWeight = normalized.replace(
+    /\b(?:do\s+not|don't|avoid|without|älä\s+käytä|vältä|ilman)\b[^.!?]{0,48}\b(?:bold|strong|lihavoit\p{L}*|vahvo\p{L}*)\b[^.!?]{0,32}\b(?:headings?|otsiko\p{L}*)\b/giu,
+    "",
+  );
   const boldHeadings =
     /\b(?:bold|strong)\b[^.!?]{0,32}\bheadings?\b|\bheadings?\b[^.!?]{0,32}\b(?:bold|strong)\b/iu.test(
-      normalized,
+      actionableHeadingWeight,
     );
   return {
     ...structuredClone(current),

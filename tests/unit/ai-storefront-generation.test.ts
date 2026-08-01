@@ -382,13 +382,13 @@ describe("P4-05B storefront planner and request construction", () => {
       palette: {
         colors: {
           primary: "#B54708",
-          secondary: "#111111",
+          secondary: "#1F2A44",
           accent: "#B54708",
           background: "#FFFFFF",
           surface: "#FFFFFF",
           text: "#111111",
           mutedText: "#111111",
-          border: "#111111",
+          border: "#DDD2C2",
         },
       },
       typography: {
@@ -398,6 +398,38 @@ describe("P4-05B storefront planner and request construction", () => {
       },
       spacing: null,
     });
+  });
+
+  it("does not interpret a negated bold-heading cue as an approved weight change", () => {
+    const plan = planRegisteredTokenRefinement(
+      "Use clean sans fonts, but do not use bold headings. Preserve layouts and commerce data.",
+      snapshot.brandSystem,
+    );
+
+    expect(plan?.typography).toMatchObject({
+      headingFont: "system-sans",
+      bodyFont: "system-sans",
+      headingWeight: snapshot.brandSystem.typography.headingWeight,
+    });
+  });
+
+  it("falls through to a supported legacy preset when approved-only refinement parsing is inapplicable", () => {
+    const approvedOnlyProvider = provider();
+    const { command: built, request } = buildAiStorefrontProviderRequestForSupportedCapability(
+      commandWithoutCapability({
+        provider: approvedOnlyProvider,
+        providerId: approvedOnlyProvider.id,
+        merchantInstruction:
+          "Use a minimal Nordic colour and typography direction throughout the site.",
+      }),
+      1,
+    );
+
+    expect(built.capability).toBe("approvedColorTypographyDirection");
+    expect(createAiStorefrontGenerationPlan(built).direction).toBe("minimalNordic");
+    expect(request.permissionGrants.map(({ skillId }) => skillId)).toContain(
+      "applyMinimalNordicStorefrontStyle",
+    );
   });
 
   it("builds the exact P9-05D failed merchant request as one protected token-only refinement", () => {

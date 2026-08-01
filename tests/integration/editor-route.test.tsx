@@ -696,13 +696,13 @@ describe("P4-05D editor storefront integration", () => {
     expect(after.catalogue).toEqual(before.catalogue);
     expect(savedDraft.brandSystem.colors).toMatchObject({
       primary: "#B54708",
-      secondary: "#111111",
+      secondary: "#1F2A44",
       accent: "#B54708",
       background: "#FFFFFF",
       surface: "#FFFFFF",
       text: "#111111",
       mutedText: "#111111",
-      border: "#111111",
+      border: "#DDD2C2",
     });
     expect(savedDraft.brandSystem.typography).toMatchObject({
       headingWeight: 700,

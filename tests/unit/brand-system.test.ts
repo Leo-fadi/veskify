@@ -3,7 +3,9 @@ import {
   aurumNordicBrandSystem,
   brandSystemSchema,
   brandSystemToCssVariables,
+  contrastRatio,
   fontTokenSchema,
+  standardTextContrastMinimum,
 } from "@/domain/design-system";
 
 describe("BrandSystem schema", () => {
@@ -42,6 +44,35 @@ describe("BrandSystem schema", () => {
       "--brand-action-disabled-border": "#111111",
       "--brand-highlight": "#B54708",
     });
+  });
+
+  it("derives readable foregrounds for actions, highlights, and controlled colour backgrounds", () => {
+    const brand = brandSystemSchema.parse({
+      ...aurumNordicBrandSystem,
+      colors: {
+        ...aurumNordicBrandSystem.colors,
+        primary: "#FFFFFF",
+        secondary: "#111111",
+        accent: "#B54708",
+        surface: "#FFFFFF",
+        text: "#111111",
+      },
+    });
+    const variables = brandSystemToCssVariables(brand);
+
+    for (const [foreground, background] of [
+      ["--brand-action-primary-text", "--brand-action-primary"],
+      ["--brand-highlight-text", "--brand-highlight"],
+      ["--brand-color-primary-text", "--brand-color-primary"],
+      ["--brand-color-secondary-text", "--brand-color-secondary"],
+      ["--brand-color-accent-text", "--brand-color-accent"],
+    ] as const) {
+      expect(contrastRatio(variables[foreground], variables[background])).toBeGreaterThanOrEqual(
+        standardTextContrastMinimum,
+      );
+    }
+    expect(variables["--brand-action-primary-text"]).toBe("#111111");
+    expect(variables["--brand-highlight-text"]).toBe("#FFFFFF");
   });
 
   it("rejects unapproved fonts, invalid colours and unsupported token values", () => {
