@@ -2,6 +2,7 @@ import { designOperationSchema, type DesignOperation } from "@/application/desig
 import { getComponentDefinition, type RegisteredComponentType } from "@/components/registry";
 import type { BrandSystem } from "@/domain/design-system";
 import type { PageModel } from "@/domain/storefront";
+import type { StorefrontDesignDirectionId } from "@/application/storefront-design-system";
 import type { DesignSkillDefinition } from "../contract";
 import { operationArraySchema, protectedDesignPaths, requiredValidationRules } from "./shared";
 
@@ -99,6 +100,14 @@ export const storefrontStyleDesignSystems = {
     sectionTypography: "serif" | "sans";
   }
 >;
+
+export function storefrontStyleDirectionForRegisteredDirection(
+  directionId: StorefrontDesignDirectionId,
+): StorefrontStyleDirection {
+  if (directionId === "modernTechnical") return "minimalNordic";
+  if (directionId === "warmApproachable") return "warmApproachable";
+  return "warmPremium";
+}
 
 export function createStorefrontStyleOperations(
   page: PageModel,

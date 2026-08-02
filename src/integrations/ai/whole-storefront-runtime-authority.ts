@@ -24,7 +24,7 @@ import {
 import { validateDesignOperationAgainstPage } from "@/application/design-operations";
 import {
   createStorefrontDesignSystemOperations,
-  type StorefrontStyleDirection,
+  storefrontStyleDirectionForRegisteredDirection,
 } from "@/application/design-skills";
 import {
   createAiStorefrontBaselineFingerprint,
@@ -309,12 +309,6 @@ function sameRequestPreconditions(
   );
 }
 
-function directionForPlan(plan: WholeStorefrontGenerationPlan): StorefrontStyleDirection {
-  if (plan.designSystemSelection.directionId === "modernTechnical") return "minimalNordic";
-  if (plan.designSystemSelection.directionId === "warmApproachable") return "warmApproachable";
-  return "warmPremium";
-}
-
 function assertRequestDirectionCompatible(
   request: AiStorefrontProviderRequest,
   plan: WholeStorefrontGenerationPlan,
@@ -434,7 +428,9 @@ function projectPlanOperations(
   } | null;
 } {
   assertRequestDirectionCompatible(request, plan);
-  const direction = directionForPlan(plan);
+  const direction = storefrontStyleDirectionForRegisteredDirection(
+    plan.designSystemSelection.directionId,
+  );
   const operations: AiStorefrontOperation[] = [];
   const add = (
     target: AiStorefrontOperation["target"],

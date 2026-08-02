@@ -29,6 +29,7 @@ import { ProductPreviewClient } from "@/app/projects/[projectId]/products/[produ
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import type { PageModel } from "@/domain/storefront";
 import { createServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
+import type { StorefrontCommerceRouteAdapter } from "@/integrations/storefront-commerce-routes";
 import { browserProposalAnalyticsEventType } from "@/services/analytics";
 import {
   InMemoryProjectRepository,
@@ -951,6 +952,30 @@ describe("P4-05D editor storefront integration", () => {
     expect(screen.getByRole("button", { name: "Accept and apply" })).toBeEnabled();
   });
 
+  it("fails closed without draft mutation when a collection commerce projection is stale", async () => {
+    const value = statefulRepository();
+    const before = await value.get(aurumNordicSeed.project.id);
+    const staleCollectionAdapter: StorefrontCommerceRouteAdapter = {
+      product: () => null,
+      collection: () => {
+        throw new Error("stale canonical collection revision");
+      },
+    };
+    route(value, undefined, undefined, staleCollectionAdapter);
+    await screen.findByText("Canvas: home / en");
+
+    fireEvent.change(screen.getByLabelText("Storefront page"), {
+      target: { value: "page_collection_rings" },
+    });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "This collection preview is unavailable because its commerce data changed.",
+    );
+    expect(screen.queryByText("Canvas: collection / en")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(await value.get(aurumNordicSeed.project.id)).toEqual(before);
+  });
+
   it("invalidates a locale-bound storefront proposal only after an actual language change", async () => {
     route(repository(() => Promise.resolve(aggregate())));
     await createWarmStorefrontProposal();
@@ -1181,6 +1206,7 @@ const route = (
   value: ProjectRepository,
   aiProvider?: AIProvider,
   storefrontAiProvider?: StorefrontAIProvider,
+  commerceRouteAdapter?: StorefrontCommerceRouteAdapter,
 ) =>
   render(
     <ProjectEditorClient
@@ -1188,6 +1214,7 @@ const route = (
       projectId="project_aurum_nordic"
       repositoryFactory={() => value}
       storefrontAiProvider={storefrontAiProvider ?? createDeterministicMockStorefrontAIProvider()}
+      commerceRouteAdapter={commerceRouteAdapter}
     />,
   );
 

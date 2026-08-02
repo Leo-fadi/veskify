@@ -155,6 +155,14 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
     expect(homepage.sections.find((section) => section.component === "productGrid")?.variant).toBe(
       "compact",
     );
+    expect(homepage.sections.find((section) => section.component === "productGrid")?.props).toEqual(
+      expect.objectContaining({
+        background: "background",
+        density: "compact",
+        shape: "square",
+        typography: "sans",
+      }),
+    );
     expect(homepage.sections).not.toEqual(baselineHomepage.sections);
     expect(collection.sections.map((section) => section.component)).toEqual([
       "header",

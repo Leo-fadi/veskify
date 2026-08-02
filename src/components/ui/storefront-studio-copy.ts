@@ -118,6 +118,8 @@ export const editorCopy = {
       saveAttention: "Some changes need attention before this draft can be saved.",
       canvasValidation:
         "That change could not be applied safely. Your last valid design is still shown.",
+      collectionProjectionUnavailable:
+        "This collection preview is unavailable because its commerce data changed. Reload the editor to use the latest saved catalogue. Nothing was changed.",
       pageValidation:
         "That page change is not valid yet, so it cannot be saved. Your last valid design is still shown.",
       pageSaveValidation: "Fix the page issue before saving your draft.",
@@ -211,6 +213,8 @@ export const editorCopy = {
       saveAttention: "Jotkin muutokset vaativat huomiota ennen luonnoksen tallentamista.",
       canvasValidation:
         "Muutosta ei voitu käyttää turvallisesti. Viimeisin kelvollinen suunnitelmasi on edelleen näkyvissä.",
+      collectionProjectionUnavailable:
+        "Malliston esikatselu ei ole käytettävissä, koska kauppatiedot muuttuivat. Lataa editori uudelleen käyttääksesi uusinta tallennettua tuoteluetteloa. Mitään ei muutettu.",
       pageValidation:
         "Sivumuutos ei ole vielä kelvollinen, joten sitä ei voi tallentaa. Viimeisin kelvollinen suunnitelmasi on edelleen näkyvissä.",
       pageSaveValidation: "Korjaa sivun ongelma ennen luonnoksen tallentamista.",

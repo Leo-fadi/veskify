@@ -13,6 +13,11 @@ import {
   registeredBrandSystemForDirection,
 } from "@/application/storefront-design-system";
 import {
+  storefrontStyleDesignSystems,
+  storefrontStyleDirectionForRegisteredDirection,
+} from "@/application/design-skills";
+import { getComponentDefinition } from "@/components/registry";
+import {
   componentInstanceV2Schema,
   createComponentRegistryV2,
   type ComponentInstanceV2,
@@ -283,6 +288,38 @@ function coordinatedRuntimeComponent(
   return selection ? { ...component, variant: selection.variant } : component;
 }
 
+function materializeRegisteredPresentation(
+  components: readonly WholeStorefrontRuntimeComponent[],
+  plan: ReturnType<typeof validateCurrentPlan>,
+): WholeStorefrontRuntimeComponent[] {
+  if (plan.tokenRefinementPlan !== null) {
+    return components.map((component) => structuredClone(component));
+  }
+  const style =
+    storefrontStyleDesignSystems[
+      storefrontStyleDirectionForRegisteredDirection(plan.designSystemSelection.directionId)
+    ];
+  return components.map((component, index) => {
+    const definition = getComponentDefinition(component.component);
+    return {
+      ...component,
+      props: {
+        ...component.props,
+        ...(definition.editorFields.density
+          ? { density: plan.designSystemSelection.spacingDensity }
+          : {}),
+        ...(definition.editorFields.shape
+          ? { shape: plan.designSystemSelection.cornerTreatment }
+          : {}),
+        ...(definition.editorFields.background
+          ? { background: index % 2 === 0 ? "background" : "surface" }
+          : {}),
+        ...(definition.editorFields.typography ? { typography: style.sectionTypography } : {}),
+      },
+    };
+  });
+}
+
 function registeredRecipeForPage(
   plan: ReturnType<typeof validateCurrentPlan>,
   pageRole: WholeStorefrontRuntimePage["role"],
@@ -437,13 +474,14 @@ function plannedPage(
     coordinatedRuntimeComponent(component, plan, pagePlan.role),
   );
   const registeredRecipe = registeredRecipeForPage(plan, pagePlan.role, designSystem);
+  const orderedComponents = registeredRecipe
+    ? orderSectionsForRecipe(coordinatedComponents, registeredRecipe)
+    : coordinatedComponents;
   const page = {
     pageId: pagePlan.pageId,
     role: pagePlan.role,
     type: originalPage?.type ?? pageTypeForRole(pagePlan.role),
-    components: registeredRecipe
-      ? orderSectionsForRecipe(coordinatedComponents, registeredRecipe)
-      : coordinatedComponents,
+    components: materializeRegisteredPresentation(orderedComponents, plan),
   } satisfies WholeStorefrontRuntimePage;
   return { page, removedComponentIds };
 }
