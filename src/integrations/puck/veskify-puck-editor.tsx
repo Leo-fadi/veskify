@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { Puck, Render, type Data, type OnAction } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
 import type { StorefrontRenderContext } from "@/components/registry";
+import type { CollectionCommerceRoutePresentation } from "@/integrations/storefront-commerce-routes";
 import type { BrandSystem } from "@/domain/design-system";
 import type { PageModel } from "@/domain/storefront";
 import {
@@ -39,6 +40,7 @@ export function VeskifyPuckCanvas({
   contextualPanel,
   showDesignFields = false,
   compactFieldsTargetId,
+  collectionPresentation,
 }: {
   page: PageModel;
   context: StorefrontRenderContext;
@@ -54,6 +56,7 @@ export function VeskifyPuckCanvas({
   contextualPanel?: ReactNode;
   showDesignFields?: boolean;
   compactFieldsTargetId?: string;
+  collectionPresentation?: CollectionCommerceRoutePresentation;
 }) {
   const boundaryKey = `${page.id}-${context.activeLocale}-${resetKey}-${sessionKey}`;
   return (
@@ -71,6 +74,7 @@ export function VeskifyPuckCanvas({
       contextualPanel={contextualPanel}
       showDesignFields={showDesignFields}
       compactFieldsTargetId={compactFieldsTargetId}
+      collectionPresentation={collectionPresentation}
     />
   );
 }
@@ -88,11 +92,12 @@ function VeskifyPuckCanvasSession({
   contextualPanel,
   showDesignFields,
   compactFieldsTargetId,
+  collectionPresentation,
 }: Omit<Parameters<typeof VeskifyPuckCanvas>[0], "resetKey" | "sessionKey">) {
   const [recoveryVersion, setRecoveryVersion] = useState(0);
   const trustedPage = useRef(page);
   const reportedSectionId = useRef<string | undefined>(undefined);
-  const config = generateVeskifyPuckConfig(context, page.type, brandSystem);
+  const config = generateVeskifyPuckConfig(context, page.type, brandSystem, collectionPresentation);
   const data = pageToPuckData(page, context);
 
   function handleChange(nextData: Data) {

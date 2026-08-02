@@ -1,6 +1,8 @@
 import type { ComponentConfig, Config, Data, Field } from "@puckeditor/core";
 import type { ReactNode } from "react";
 import { z } from "zod";
+import type { CollectionCommerceRoutePresentation } from "@/integrations/storefront-commerce-routes";
+import { renderDynamicCollectionCommerce } from "@/components/storefront/dynamic-collection-commerce";
 import {
   getComponentDefinition,
   validateRegisteredPage,
@@ -148,6 +150,7 @@ function componentToPuckConfig(
   definition: ComponentDefinition,
   context: StorefrontRenderContext,
   pageType: PageType,
+  collectionPresentation?: CollectionCommerceRoutePresentation,
 ): ComponentConfig<PuckEditorProps> {
   const fields: Record<string, Field> = { variant: variantPuckField(definition) };
   for (const [name, metadata] of Object.entries(definition.editorFields)) {
@@ -164,6 +167,29 @@ function componentToPuckConfig(
     },
     render: (editorProps) => {
       const section = editorPropsToSection(definition, editorProps, pageType, context);
+      if (section.component === "dynamicCollectionCommerce" && collectionPresentation) {
+        return section.visible ? (
+          renderDynamicCollectionCommerce({
+            target: "editor",
+            instance: {
+              ...collectionPresentation.instance,
+              id: section.id,
+              variant: section.variant,
+            },
+            projection: collectionPresentation.projection,
+            activeLocale: context.activeLocale,
+            primaryLocale: context.primaryLocale,
+            loading: { status: "ready" },
+            resolveAssetUrl: collectionPresentation.resolveAssetUrl,
+            onNavigateProduct: () => undefined,
+            onNavigateCollection: () => undefined,
+            onFilterIntent: () => undefined,
+            onSortIntent: () => undefined,
+          })
+        ) : (
+          <></>
+        );
+      }
       return section.visible ? (
         <>{definition.render(section, context, pageType)}</>
       ) : (
@@ -201,6 +227,7 @@ export function generateVeskifyPuckConfig(
   context: StorefrontRenderContext = safePuckPreviewContext,
   pageType: PageType = "home",
   brandSystem: BrandSystem = aurumNordicSeed.draftSnapshot.brandSystem,
+  collectionPresentation?: CollectionCommerceRoutePresentation,
 ): Config {
   return {
     components: Object.fromEntries(
@@ -208,7 +235,7 @@ export function generateVeskifyPuckConfig(
         .filter((definition) => definition.allowedPageTypes.includes(pageType))
         .map((definition) => [
           definition.type,
-          componentToPuckConfig(definition, context, pageType),
+          componentToPuckConfig(definition, context, pageType, collectionPresentation),
         ]),
     ),
     root: {

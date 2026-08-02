@@ -35,6 +35,37 @@ type InstructionScenarios = Readonly<{
   warm: InstructionScenario;
 }>;
 
+function executablePageProjection(
+  pages: Array<{
+    pageId?: string;
+    id?: string;
+    components?: Array<{
+      id: string;
+      component: string;
+      variant: string;
+      props: Record<string, unknown>;
+    }>;
+    sections?: Array<{
+      id: string;
+      component: string;
+      variant: string;
+      props: Record<string, unknown>;
+    }>;
+  }>,
+) {
+  return pages
+    .map((page) => ({
+      pageId: page.pageId ?? page.id,
+      components: (page.components ?? page.sections ?? []).map((component) => ({
+        id: component.id,
+        component: component.component,
+        variant: component.variant,
+        props: component.props,
+      })),
+    }))
+    .sort((left, right) => (left.pageId ?? "").localeCompare(right.pageId ?? ""));
+}
+
 // The slowest measured deterministic setup was 11.88s, so this preserves a
 // narrow margin while keeping shared generation under Vitest control.
 const sharedScenarioSetupTimeoutMs = 15_000;
@@ -124,6 +155,14 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
     expect(homepage.sections.find((section) => section.component === "productGrid")?.variant).toBe(
       "compact",
     );
+    expect(homepage.sections.find((section) => section.component === "productGrid")?.props).toEqual(
+      expect.objectContaining({
+        background: "background",
+        density: "compact",
+        shape: "square",
+        typography: "sans",
+      }),
+    );
     expect(homepage.sections).not.toEqual(baselineHomepage.sections);
     expect(collection.sections.map((section) => section.component)).toEqual([
       "header",
@@ -154,6 +193,20 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
       },
     });
     expect(product.sections).not.toEqual(baselineProduct.sections);
+  });
+
+  it("uses the compiler execution projection unchanged in the runtime-authority proposal", () => {
+    const generated = requiredInstructionScenarios().modern;
+
+    expect(executablePageProjection(generated.proposal.proposedStorefront.pages)).toEqual(
+      executablePageProjection(generated.compiledProposal.proposedStorefront.pages),
+    );
+    expect(generated.proposal.proposedStorefront.brandSystem).toEqual(
+      generated.compiledProposal.proposedStorefront.brandSystem,
+    );
+    expect(generated.proposal.proposedStorefront.navigation).toEqual(
+      generated.compiledProposal.proposedStorefront.navigation,
+    );
   });
 
   it("derives the registered direction from each provider-received instruction", async () => {

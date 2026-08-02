@@ -30,14 +30,15 @@ import {
 } from "../helpers/p9r-04-generation-acceptance";
 import {
   createP905aAcceptanceCoordinator,
-  generateP905aInstructionScenarioFromBaseline,
+  generateP905aProviderShapeScenarioFromBaseline,
   saveAndResolveP905aPreview,
 } from "../helpers/p9-05a-generation-harness";
 
 async function modernTechnicalScenario() {
-  return generateP905aInstructionScenarioFromBaseline(
+  return generateP905aProviderShapeScenarioFromBaseline(
     "warmApproachable",
     P9R_04_MODERN_TECHNICAL_REQUEST,
+    "modernTechnical",
   );
 }
 
@@ -291,6 +292,7 @@ describe("P9R-04 deterministic multi-page generation acceptance gate", () => {
   it("preserves protected commerce and approved asset identities through accepted state and registered renderers", async () => {
     const generated = await modernTechnicalScenario();
     const commerceBefore = p905aProtectedCommerceBaseline(generated.fixture.aggregate.catalogue);
+    const assetContextBefore = structuredClone(generated.fixture.assetContext);
     const approvedAssets = generated.fixture.assetContext.assets.map((asset) => ({
       assetId: asset.assetId,
       role: asset.role,
@@ -304,6 +306,10 @@ describe("P9R-04 deterministic multi-page generation acceptance gate", () => {
 
     expect(p905aProtectedCommerceBaseline(generated.fixture.aggregate.catalogue)).toEqual(
       commerceBefore,
+    );
+    expect(generated.fixture.assetContext).toEqual(assetContextBefore);
+    expect(generated.proposal.assetPlacementOperations).toEqual(
+      generated.plan.approvedAssetPlacements,
     );
     expect(canonicalValueString(accepted.activeDraft)).toContain("product_lumo_custom_ring");
     expect(canonicalValueString(accepted.activeDraft)).toContain("collection_lumo_jewellery");
@@ -329,6 +335,7 @@ describe("P9R-04 deterministic multi-page generation acceptance gate", () => {
 
   it("keeps review non-mutating and Accept, Undo, Redo, Save, Reload, Preview, and Publish exact", async () => {
     const generated = await modernTechnicalScenario();
+    expect(generated.providerRequests).toHaveLength(1);
     const baselineFingerprint = p9r04SnapshotFingerprint(generated.fixture.draft);
     const coordinator = createP905aAcceptanceCoordinator(generated);
     const reviewed = coordinator.inspect();
@@ -365,6 +372,7 @@ describe("P9R-04 deterministic multi-page generation acceptance gate", () => {
     const published = await confirmPublish(preparation, generated.repository);
     expect(p9r04ContentFingerprint(published.publishedSnapshot)).toBe(acceptedFingerprint);
     expect(p9r04ContentFingerprint(published.synchronizedDraftSnapshot)).toBe(acceptedFingerprint);
+    expect(generated.providerRequests).toHaveLength(1);
   });
 
   it("keeps rejected proposals and the viewport/locale acceptance matrix explicit and deterministic", async () => {

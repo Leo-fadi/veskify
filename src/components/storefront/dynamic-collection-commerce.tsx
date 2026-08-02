@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useId } from "react";
+import { useEffect, useId, useState } from "react";
 import { z } from "zod";
 import {
   componentProjectionContextSchema,
@@ -696,6 +696,17 @@ function CollectionFilters({
   input: PreparedDynamicCollectionCommerce;
   locale: LocaleContext;
 }) {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const expandedRail = window.matchMedia(
+      input.props.filterLayout === "horizontal" ? "(min-width: 48rem)" : "(min-width: 64rem)",
+    );
+    const syncWithViewport = () => setOpen(expandedRail.matches);
+    syncWithViewport();
+    expandedRail.addEventListener("change", syncWithViewport);
+    return () => expandedRail.removeEventListener("change", syncWithViewport);
+  }, [input.props.filterLayout]);
   if (input.collection.filters.length === 0) return null;
   const hasSelected = input.collection.filters.some(
     (filter) =>
@@ -710,6 +721,8 @@ function CollectionFilters({
     <details
       className={`${styles.filters} ${styles[`filters_${input.props.filterLayout}`]}`}
       data-layout-region="filters"
+      onToggle={(event) => setOpen(event.currentTarget.open)}
+      open={open}
     >
       <summary role="button">{text(input.content.filterTriggerLabel, locale)}</summary>
       <div className={styles.filterPanel}>

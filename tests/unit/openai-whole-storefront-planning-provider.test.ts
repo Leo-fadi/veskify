@@ -123,7 +123,7 @@ function planningInput() {
   };
 }
 
-function completedResponse(selection: { requestFingerprint: string; selectionId: string }) {
+function completedResponse(selection: Record<string, unknown>) {
   return {
     id: "resp_whole_storefront_safe",
     status: "completed",
@@ -296,6 +296,30 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     const dto = {
       requestFingerprint: request.requestFingerprint,
       selectionId: "inventedDirection",
+    };
+
+    await expect(
+      requestWholeStorefrontGenerationPlan({
+        provider: provider(new RecordingTransport(() => Promise.resolve(completedResponse(dto)))),
+        input,
+        currentInput: () => input,
+      }),
+    ).rejects.toMatchObject({ code: "malformed-structured-response" });
+  });
+
+  it.each([
+    ["components", []],
+    ["variants", {}],
+    ["props", {}],
+    ["recipes", []],
+    ["pageGraph", { pages: [] }],
+  ])("rejects provider-owned structural field %s", async (field, value) => {
+    const input = planningInput();
+    const request = buildWholeStorefrontPlanningProviderRequest(input);
+    const dto = {
+      requestFingerprint: request.requestFingerprint,
+      selectionId: "modernTechnical",
+      [field]: value,
     };
 
     await expect(

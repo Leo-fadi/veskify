@@ -67,6 +67,7 @@ function editorRoute(value: unknown): string {
 test("P9R-04 accepts one deterministic modernTechnical generation and keeps every published surface responsive in EN/FI", async ({
   page,
 }) => {
+  test.setTimeout(180_000);
   await page.goto("/");
   const reset = await page.evaluate(async (token) => {
     const response = await fetch("/api/demo/p9-05b", {
@@ -97,12 +98,60 @@ test("P9R-04 accepts one deterministic modernTechnical generation and keeps ever
     },
   );
   expect(generated.ok).toBe(true);
+  const generatedProposal = generated.body as {
+    proposal?: {
+      proposal?: { proposedStorefront?: { pages?: Array<{ id?: string; sections?: unknown[] }> } };
+    };
+  };
+  const proposedPages = generatedProposal.proposal?.proposal?.proposedStorefront?.pages;
+  expect(proposedPages?.map((candidate) => candidate.id)).toContain("page_lumo_collection");
+  const generatedCollection = proposedPages?.find(
+    (candidate) => candidate.id === "page_lumo_collection",
+  ) as { sections?: Array<{ component?: string; variant?: string }> } | undefined;
+  expect(generatedCollection?.sections).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ component: "dynamicCollectionCommerce", variant: "compact" }),
+    ]),
+  );
+  const generatedHomepage = proposedPages?.find(
+    (candidate) => candidate.id === "page_lumo_home",
+  ) as { sections?: Array<{ component?: string; variant?: string }> } | undefined;
+  expect(generatedHomepage?.sections).toEqual(
+    expect.arrayContaining([expect.objectContaining({ component: "hero", variant: "asymmetric" })]),
+  );
+  const generatedProduct = proposedPages?.find(
+    (candidate) => candidate.id === "page_lumo_product",
+  ) as { sections?: Array<{ component?: string; variant?: string }> } | undefined;
+  expect(generatedProduct?.sections).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ component: "dynamicProductDetail", variant: "compact" }),
+    ]),
+  );
   const generatedEditorRoute = editorRoute(generated.body);
   expect(generatedEditorRoute).toContain("p9-05b-session=");
 
   await page.goto(generatedEditorRoute);
   const accept = page.getByRole("button", { name: /Hyväksy ja käytä|Accept and apply/ });
   await expect(accept).toBeVisible();
+  const storefrontPage = page.getByLabel(/Storefront page|Kauppasivuston sivu/);
+  await storefrontPage.selectOption("page_lumo_collection");
+  const proposalCanvasRegion = page.getByLabel(/Proposal preview canvas|Ehdotuksen esikatselualue/);
+  await expect(proposalCanvasRegion).toBeVisible();
+  const proposalCanvas = proposalCanvasRegion.frameLocator("iframe");
+  const proposedCollection = proposalCanvas.locator('[data-component="dynamicCollectionCommerce"]');
+  await expect(proposedCollection).toHaveAttribute("data-render-target", "editor");
+  await expect(proposedCollection).toHaveAttribute("data-variant", "compact");
+  await expect(proposalCanvas.locator('[data-filter-layout="sidebar"]')).toBeVisible();
+  await expect(proposalCanvas.locator('[data-layout-region="products"]')).toBeVisible();
+
+  await storefrontPage.selectOption("page_lumo_home");
+  await expect(proposalCanvas.locator(".store-hero")).toBeVisible();
+  await storefrontPage.selectOption("page_lumo_product");
+  await expect(
+    proposalCanvas.getByRole("heading", { name: "Muokattava Halo-sormus" }).first(),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Tallenna luonnos|Save draft/ })).toBeDisabled();
+
   await accept.click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page
@@ -115,6 +164,13 @@ test("P9R-04 accepts one deterministic modernTechnical generation and keeps ever
   await page.getByRole("button", { name: /Tee uudelleen|Redo/ }).click();
   await page.getByRole("button", { name: /Tallenna luonnos|Save draft/ }).click();
   await expect(page.getByText("Luonnos tallennettiin.", { exact: true })).toBeVisible();
+
+  await page.goto(`/projects/${projectId}/collections/jewellery`);
+  const draftCollection = page.locator('[data-component="dynamicCollectionCommerce"]');
+  await expect(draftCollection).toHaveAttribute("data-render-target", "preview");
+  await expect(draftCollection).toHaveAttribute("data-variant", "compact");
+  await expect(page.locator('[data-filter-layout="sidebar"]')).toBeVisible();
+  await expect(page.locator('[data-layout-region="products"]')).toBeVisible();
 
   await page.goto(`/projects/${projectId}/publish?p9-05b-session=${encodeURIComponent(sessionId)}`);
   await page.getByRole("button", { name: /Tarkista julkaisu|Review publish/ }).click();
@@ -139,7 +195,40 @@ test("P9R-04 accepts one deterministic modernTechnical generation and keeps ever
           ).toBeVisible();
         }
         if (route.selector === '[data-component="dynamicCollectionCommerce"]') {
-          await expect(page.locator('[data-layout-region="filters"]')).toBeVisible();
+          const filters = page.locator('[data-layout-region="filters"]');
+          await expect(page.locator(route.selector)).toHaveAttribute(
+            "data-render-target",
+            "published",
+          );
+          await expect(page.locator(route.selector)).toHaveAttribute("data-variant", "compact");
+          await expect(page.locator('[data-filter-layout="sidebar"]')).toBeVisible();
+          await expect(page.locator('[data-layout-region="products"]')).toBeVisible();
+          if (width < 1024) {
+            const disclosure = filters.getByRole("button", {
+              name: locale === "en" ? "Show filters" : "Näytä suodattimet",
+            });
+            await expect(disclosure).toBeVisible();
+            await expect(filters).not.toHaveAttribute("open", "");
+
+            await disclosure.click();
+            await expect(filters).toHaveAttribute("open", "");
+            await expect(filters.locator("fieldset")).not.toHaveCount(0);
+            for (const fieldset of await filters.locator("fieldset").all()) {
+              await expect(fieldset).toBeVisible();
+            }
+            await expectNoStorefrontHorizontalClipping(page);
+
+            await disclosure.click();
+            await expect(filters).not.toHaveAttribute("open", "");
+            await disclosure.focus();
+            await page.keyboard.press("Enter");
+            await expect(filters).toHaveAttribute("open", "");
+            await expect(filters.locator("fieldset").first()).toBeVisible();
+          } else {
+            await expect(filters).toBeVisible();
+            await expect(filters.locator("summary")).toBeHidden();
+            await expect(filters.locator("fieldset").first()).toBeVisible();
+          }
         }
         const action =
           route.selector === ".store-hero"

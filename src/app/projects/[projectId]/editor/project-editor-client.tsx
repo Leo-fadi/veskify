@@ -12,6 +12,11 @@ import type { AIProvider } from "@/application/ai-provider";
 import type { StorefrontAIProvider } from "@/application/ai-storefront-generation";
 import { createServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
 import {
+  createCatalogueStorefrontCommerceRouteAdapter,
+  type CollectionCommerceRoutePresentation,
+  type StorefrontCommerceRouteAdapter,
+} from "@/integrations/storefront-commerce-routes";
+import {
   P905bLocalDemoSynchronizationClientError,
   synchronizeP905bLocalDemoAggregate,
 } from "@/integrations/ai/p9-05b-local-demo-client";
@@ -74,6 +79,7 @@ import {
 } from "./use-design-agent-session";
 
 type RepositoryFactory = () => ProjectRepository;
+const defaultCommerceRouteAdapter = createCatalogueStorefrontCommerceRouteAdapter();
 type LocalDemoBridge = {
   aggregate: ProjectAggregate;
   proposal: AiStorefrontProposal | null;
@@ -295,12 +301,14 @@ export function ProjectEditorClient({
   aiProvider,
   storefrontAiProvider,
   localDemoBridge,
+  commerceRouteAdapter = defaultCommerceRouteAdapter,
 }: {
   projectId: string;
   repositoryFactory?: RepositoryFactory;
   aiProvider?: AIProvider;
   storefrontAiProvider?: StorefrontAIProvider;
   localDemoBridge?: LocalDemoBridge;
+  commerceRouteAdapter?: StorefrontCommerceRouteAdapter;
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -650,6 +658,27 @@ export function ProjectEditorClient({
     (showingProposal ? agent.generatedProposal?.proposal.proposedPage : undefined) ??
     previewStorefront?.pages.find((item) => item.id === page.id) ??
     page;
+  const canvasCollection =
+    canvasPage.type === "collection"
+      ? state.aggregate.catalogue.collections.find(
+          (collection) => canvasPage.slug === `/collections/${collection.slug}`,
+        )
+      : undefined;
+  let canvasCollectionPresentation: CollectionCommerceRoutePresentation | undefined;
+  let canvasCollectionPresentationInvalid = false;
+  if (canvasCollection) {
+    try {
+      canvasCollectionPresentation =
+        commerceRouteAdapter.collection({
+          aggregate: state.aggregate,
+          snapshot: activeDraft!,
+          page: canvasPage,
+          collection: canvasCollection,
+        }) ?? undefined;
+    } catch {
+      canvasCollectionPresentationInvalid = true;
+    }
+  }
   const selectedSection = selectedSectionId
     ? page.sections.find((section) => section.id === selectedSectionId)
     : undefined;
@@ -1447,43 +1476,54 @@ export function ProjectEditorClient({
                 {text.canvas.proposalNotice}
               </div>
             ) : null}
-            <VeskifyPuckCanvas
-              brandSystem={displayedBrandSystem}
-              context={context}
-              onPageChange={changePage}
-              onSelectedSectionChange={(sectionId) => {
-                const nextSectionId =
-                  sectionId && page.sections.some((section) => section.id === sectionId)
-                    ? sectionId
-                    : undefined;
-                if (nextSectionId === selectedSectionId) return;
-                agent.closeForSelectionChange(nextSectionId);
-                setSelectedSectionId(nextSectionId);
-              }}
-              onValidationError={(message) => {
-                if (!savePending.current) setValidationMessage(message);
-              }}
-              page={canvasPage}
-              readOnly={agent.blocksSave || saving}
-              readOnlyLabel={showingProposal ? text.canvas.proposal : text.canvas.editor}
-              resetKey={resetKeys[canvasPage.id] ?? 0}
-              sessionKey={
-                agent.generatedProposal?.proposal.id ??
-                agent.generatedStorefrontProposal?.id ??
-                "active"
-              }
-              contextualPanel={undefined}
-              compactFieldsTargetId={
-                activeToolTab === "design" &&
-                ((drawerViewport && toolDrawerOpen) || (!drawerViewport && rightPanelOpen))
-                  ? drawerViewport
-                    ? "editor-compact-design-fields"
-                    : "editor-design-fields"
-                  : undefined
-              }
-              showDesignFields={false}
-              validationErrorMessage={text.feedback.canvasValidation}
-            />
+            {canvasCollectionPresentationInvalid ? (
+              <section
+                aria-label={text.canvas.editor}
+                className={styles.validationMessage}
+                role="alert"
+              >
+                {text.feedback.collectionProjectionUnavailable}
+              </section>
+            ) : (
+              <VeskifyPuckCanvas
+                brandSystem={displayedBrandSystem}
+                context={context}
+                onPageChange={changePage}
+                onSelectedSectionChange={(sectionId) => {
+                  const nextSectionId =
+                    sectionId && page.sections.some((section) => section.id === sectionId)
+                      ? sectionId
+                      : undefined;
+                  if (nextSectionId === selectedSectionId) return;
+                  agent.closeForSelectionChange(nextSectionId);
+                  setSelectedSectionId(nextSectionId);
+                }}
+                onValidationError={(message) => {
+                  if (!savePending.current) setValidationMessage(message);
+                }}
+                page={canvasPage}
+                readOnly={agent.blocksSave || saving}
+                readOnlyLabel={showingProposal ? text.canvas.proposal : text.canvas.editor}
+                resetKey={resetKeys[canvasPage.id] ?? 0}
+                sessionKey={
+                  agent.generatedProposal?.proposal.id ??
+                  agent.generatedStorefrontProposal?.id ??
+                  "active"
+                }
+                contextualPanel={undefined}
+                compactFieldsTargetId={
+                  activeToolTab === "design" &&
+                  ((drawerViewport && toolDrawerOpen) || (!drawerViewport && rightPanelOpen))
+                    ? drawerViewport
+                      ? "editor-compact-design-fields"
+                      : "editor-design-fields"
+                    : undefined
+                }
+                collectionPresentation={canvasCollectionPresentation}
+                showDesignFields={false}
+                validationErrorMessage={text.feedback.canvasValidation}
+              />
+            )}
           </main>
           {!drawerViewport && rightPanelOpen ? renderToolRail("editor-design-fields") : null}
         </div>
