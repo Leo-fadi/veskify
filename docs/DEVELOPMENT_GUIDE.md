@@ -195,6 +195,14 @@ registered PageBlueprint recipe profiles; Task 9 proves AI composition and comme
 quality. These tasks are not Phase 9 closing requirements, and Tasks 7–9 must not begin before Task 6
 is approved.
 
+Task 6 code belongs in the canonical component-platform vocabulary and the existing
+`application/storefront-templates` precursor, not in a new recipe engine or registry. It defines
+registered narrative roles, visual weights, adjacency/flow rules, transition intents, bounded
+parameters and non-broadening inheritance. `ComponentDefinitionV2` compatibility and PageBlueprint
+metadata are validated deterministically with stable feedback codes. Legacy components use explicit
+compatibility defaults until Task 7 adds commercial-family metadata. No Task 6 schema result alone
+proves renderer-visible commercial quality; Task 9 owns that proof.
+
 ### P10B — Assets and Storefront Studio UX
 
 Add asset upload/library and generated-image lifecycle, then merchant-facing Studio workflows that

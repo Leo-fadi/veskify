@@ -7,6 +7,10 @@ import {
   safeExternalUrlSchema,
 } from "@/domain/shared";
 import { pageTypeSchema } from "@/domain/storefront";
+import {
+  componentDesignCompatibilitySchema,
+  createLegacyComponentDesignCompatibility,
+} from "./design-vocabulary";
 
 const tokenSchema = z
   .string()
@@ -364,6 +368,9 @@ export const componentDefinitionV2Schema = z
     protectedFields: protectedFieldContractSchema,
     responsiveRules: z.array(responsiveRuleSchema).min(1),
     accessibilityRequirements: accessibilityRequirementSchema,
+    designCompatibility: componentDesignCompatibilitySchema.default(
+      createLegacyComponentDesignCompatibility(),
+    ),
     migration: componentMigrationMetadataSchema,
     renderer: rendererAdapterIdentitySchema,
   })

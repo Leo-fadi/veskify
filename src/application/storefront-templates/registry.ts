@@ -5,7 +5,9 @@ import {
 import type { PageType } from "@/domain/storefront";
 import {
   cloneTemplateDefinition,
+  defaultPageBlueprintCompositionContract,
   deepFreeze,
+  pageBlueprintCompositionContractSchema,
   storefrontTemplateDefinitionSchema,
   type StorefrontTemplateDefinition,
   type StorefrontTemplatePagePlan,
@@ -16,16 +18,114 @@ const createdAt = "2026-07-18T00:00:00.000Z";
 const allPageTypes = ["home", "collection", "product"] as const;
 
 function slot(
-  input: Omit<StorefrontTemplateSlot, "omitWhen"> & {
+  input: Omit<
+    StorefrontTemplateSlot,
+    "omitWhen" | "narrativeRole" | "visualWeight" | "boundedParameterConstraints"
+  > & {
     omitWhen?: StorefrontTemplateSlot["omitWhen"];
+    narrativeRole?: StorefrontTemplateSlot["narrativeRole"];
+    visualWeight?: StorefrontTemplateSlot["visualWeight"];
+    boundedParameterConstraints?: StorefrontTemplateSlot["boundedParameterConstraints"];
   },
 ): StorefrontTemplateSlot {
-  return { omitWhen: "never", ...input };
+  return {
+    omitWhen: "never",
+    narrativeRole: narrativeRoleForPurpose(input.purpose),
+    visualWeight: visualWeightForSection(input.sectionType),
+    boundedParameterConstraints: [],
+    ...input,
+  };
 }
 
-function pagePlan(pageType: PageType, slots: StorefrontTemplateSlot[]): StorefrontTemplatePagePlan {
-  return { pageType, slots };
+function narrativeRoleForPurpose(
+  purpose: StorefrontTemplateSlot["purpose"],
+): StorefrontTemplateSlot["narrativeRole"] {
+  const roles: Record<StorefrontTemplateSlot["purpose"], StorefrontTemplateSlot["narrativeRole"]> =
+    {
+      "announcement-or-trust": "trust",
+      navigation: "orientation",
+      hero: "orientation",
+      "featured-categories": "secondary-discovery",
+      "featured-products": "primary-discovery",
+      "editorial-story": "brand-story",
+      "brand-values": "brand-proof",
+      "social-proof": "product-proof",
+      newsletter: "continuation",
+      footer: "service",
+      "collection-introduction": "orientation",
+      "filtering-or-merchandising": "secondary-discovery",
+      "product-media": "product-focus",
+      "product-information": "product-focus",
+      "product-options": "conversion",
+      "related-products": "continuation",
+    };
+  return roles[purpose];
 }
+
+function visualWeightForSection(sectionType: string): StorefrontTemplateSlot["visualWeight"] {
+  if (["hero", "productGallery"].includes(sectionType)) return "dominant";
+  if (["productGrid", "collectionHeader", "productInfo", "productOptions"].includes(sectionType)) {
+    return "heavy";
+  }
+  if (["header", "footer", "announcementBar", "newsletter"].includes(sectionType)) return "light";
+  return "medium";
+}
+
+function pagePlan(
+  pageType: PageType,
+  slots: StorefrontTemplateSlot[],
+  pageBlueprint = defaultPageBlueprintCompositionContract,
+): StorefrontTemplatePagePlan {
+  return { pageType, slots, pageBlueprint: structuredClone(pageBlueprint) };
+}
+
+const homePageBlueprint = pageBlueprintCompositionContractSchema.parse({
+  allowedNarrativeRoles: [
+    "orientation",
+    "primary-discovery",
+    "secondary-discovery",
+    "brand-story",
+    "brand-proof",
+    "trust",
+    "continuation",
+    "service",
+  ],
+  requiredNarrativeRoles: ["orientation", "primary-discovery", "service"],
+  flowRuleIds: ["discovery-follows-orientation", "no-adjacent-dominant-sections"],
+  maxRepeatedRole: 2,
+  maxRepeatedComponentFamily: 9,
+  boundedParameterConstraints: [],
+  responsiveParameterIds: ["responsiveCollapse", "columnCount"],
+});
+
+const collectionPageBlueprint = pageBlueprintCompositionContractSchema.parse({
+  allowedNarrativeRoles: ["orientation", "primary-discovery", "secondary-discovery", "service"],
+  requiredNarrativeRoles: ["orientation", "primary-discovery", "service"],
+  flowRuleIds: ["collection-discovery-before-results", "no-adjacent-dominant-sections"],
+  maxRepeatedRole: 2,
+  maxRepeatedComponentFamily: 5,
+  boundedParameterConstraints: [],
+  responsiveParameterIds: ["filterPlacement", "responsiveCollapse", "columnCount"],
+});
+
+const productPageBlueprint = pageBlueprintCompositionContractSchema.parse({
+  allowedNarrativeRoles: [
+    "orientation",
+    "product-focus",
+    "product-proof",
+    "brand-story",
+    "brand-proof",
+    "conversion",
+    "continuation",
+    "service",
+  ],
+  requiredNarrativeRoles: ["orientation", "product-focus", "conversion", "service"],
+  flowRuleIds: ["pdp-product-focus-before-conversion", "no-adjacent-dominant-sections"],
+  maxRepeatedRole: 2,
+  maxRepeatedComponentFamily: 8,
+  boundedParameterConstraints: [],
+  responsiveParameterIds: ["galleryMode", "productInformationPlacement", "responsiveCollapse"],
+});
 
 const homeSlots = {
   announcement: slot({
@@ -246,9 +346,9 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
     supportedPageTypes: [...allPageTypes],
     supportedCatalogueContexts: ["existing", "demo", "empty"],
     pagePlans: [
-      pagePlan("home", Object.values(homeSlots)),
-      pagePlan("collection", Object.values(collectionSlots)),
-      pagePlan("product", Object.values(productSlots)),
+      pagePlan("home", Object.values(homeSlots), homePageBlueprint),
+      pagePlan("collection", Object.values(collectionSlots), collectionPageBlueprint),
+      pagePlan("product", Object.values(productSlots), productPageBlueprint),
     ],
     requiredCapabilities: ["collection-pages-requested", "product-pages-requested"],
     optionalCapabilities: ["catalogue-available", "logo-available", "supporting-imagery-available"],
@@ -274,27 +374,35 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
     supportedPageTypes: [...allPageTypes],
     supportedCatalogueContexts: ["existing", "demo", "empty"],
     pagePlans: [
-      pagePlan("home", [
-        homeSlots.announcement,
-        homeSlots.header,
-        homeSlots.hero,
-        homeSlots.categories,
-        homeSlots.products,
-        homeSlots.values,
-        homeSlots.newsletter,
-        homeSlots.footer,
-      ]),
-      pagePlan("collection", Object.values(collectionSlots)),
-      pagePlan("product", [
-        productSlots.header,
-        productSlots.gallery,
-        productSlots.information,
-        productSlots.options,
-        productSlots.values,
-        productSlots.details,
-        productSlots.related,
-        productSlots.footer,
-      ]),
+      pagePlan(
+        "home",
+        [
+          homeSlots.announcement,
+          homeSlots.header,
+          homeSlots.hero,
+          homeSlots.categories,
+          homeSlots.products,
+          homeSlots.values,
+          homeSlots.newsletter,
+          homeSlots.footer,
+        ],
+        homePageBlueprint,
+      ),
+      pagePlan("collection", Object.values(collectionSlots), collectionPageBlueprint),
+      pagePlan(
+        "product",
+        [
+          productSlots.header,
+          productSlots.gallery,
+          productSlots.information,
+          productSlots.options,
+          productSlots.values,
+          productSlots.details,
+          productSlots.related,
+          productSlots.footer,
+        ],
+        productPageBlueprint,
+      ),
     ],
     requiredCapabilities: ["collection-pages-requested", "product-pages-requested"],
     optionalCapabilities: ["catalogue-available", "logo-available"],
@@ -320,26 +428,34 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
     supportedPageTypes: [...allPageTypes],
     supportedCatalogueContexts: ["existing", "demo", "empty"],
     pagePlans: [
-      pagePlan("home", [
-        homeSlots.announcement,
-        homeSlots.header,
-        homeSlots.hero,
-        homeSlots.products,
-        homeSlots.categories,
-        homeSlots.newsletter,
-        homeSlots.footer,
-      ]),
-      pagePlan("collection", Object.values(collectionSlots)),
-      pagePlan("product", [
-        productSlots.header,
-        productSlots.gallery,
-        productSlots.information,
-        productSlots.options,
-        productSlots.values,
-        productSlots.details,
-        productSlots.related,
-        productSlots.footer,
-      ]),
+      pagePlan(
+        "home",
+        [
+          homeSlots.announcement,
+          homeSlots.header,
+          homeSlots.hero,
+          homeSlots.products,
+          homeSlots.categories,
+          homeSlots.newsletter,
+          homeSlots.footer,
+        ],
+        homePageBlueprint,
+      ),
+      pagePlan("collection", Object.values(collectionSlots), collectionPageBlueprint),
+      pagePlan(
+        "product",
+        [
+          productSlots.header,
+          productSlots.gallery,
+          productSlots.information,
+          productSlots.options,
+          productSlots.values,
+          productSlots.details,
+          productSlots.related,
+          productSlots.footer,
+        ],
+        productPageBlueprint,
+      ),
     ],
     requiredCapabilities: ["collection-pages-requested", "product-pages-requested"],
     optionalCapabilities: ["catalogue-available", "logo-available", "supporting-imagery-available"],

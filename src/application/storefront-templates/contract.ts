@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { idSchema, isoDateTimeSchema } from "@/domain/shared";
 import { pageTypeSchema } from "@/domain/storefront";
+import {
+  narrativeRoleIds,
+  narrativeRoleSchema,
+  parameterConstraintSchema,
+  transitionIntentSchema,
+  visualWeightSchema,
+} from "@/domain/component-platform";
 
 export const STOREFRONT_TEMPLATE_SCHEMA_VERSION = 1 as const;
 
@@ -44,6 +51,57 @@ export const templateSlotOmissionSchema = z.enum([
   "when-not-requested",
 ]);
 
+const pageBlueprintFlowRuleIdSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(80)
+  .regex(/^[a-z][A-Za-z0-9]*(?:[._-][a-z][A-Za-z0-9]*)*$/);
+
+export const pageBlueprintCompositionContractSchema = z
+  .object({
+    allowedNarrativeRoles: z
+      .array(narrativeRoleSchema)
+      .min(1)
+      .default([...narrativeRoleIds]),
+    requiredNarrativeRoles: z.array(narrativeRoleSchema).default([]),
+    flowRuleIds: z.array(pageBlueprintFlowRuleIdSchema).default([]),
+    maxRepeatedRole: z.number().int().positive().default(2),
+    maxRepeatedComponentFamily: z.number().int().positive().default(3),
+    boundedParameterConstraints: z.array(parameterConstraintSchema).default([]),
+    responsiveParameterIds: z.array(pageBlueprintFlowRuleIdSchema).default([]),
+  })
+  .strict()
+  .superRefine((contract, context) => {
+    if (new Set(contract.allowedNarrativeRoles).size !== contract.allowedNarrativeRoles.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["allowedNarrativeRoles"],
+        message: "Allowed narrative roles must be unique.",
+      });
+    }
+    if (new Set(contract.requiredNarrativeRoles).size !== contract.requiredNarrativeRoles.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["requiredNarrativeRoles"],
+        message: "Required narrative roles must be unique.",
+      });
+    }
+    if (
+      contract.requiredNarrativeRoles.some((role) => !contract.allowedNarrativeRoles.includes(role))
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["requiredNarrativeRoles"],
+        message: "Required narrative roles must be allowed by the PageBlueprint.",
+      });
+    }
+  });
+
+export const defaultPageBlueprintCompositionContract = pageBlueprintCompositionContractSchema.parse(
+  {},
+);
+
 const templateTokenSchema = z
   .string()
   .trim()
@@ -64,6 +122,10 @@ export const storefrontTemplateSlotSchema = z
     defaultVariant: templateTokenSchema,
     label: requiredLocalizedTextSchema,
     purpose: templateSlotPurposeSchema,
+    narrativeRole: narrativeRoleSchema.default("orientation"),
+    visualWeight: visualWeightSchema.default("medium"),
+    transitionIntent: transitionIntentSchema.optional(),
+    boundedParameterConstraints: z.array(parameterConstraintSchema).default([]),
     omitWhen: templateSlotOmissionSchema.default("never"),
   })
   .strict()
@@ -95,6 +157,9 @@ export const storefrontTemplatePagePlanSchema = z
   .object({
     pageType: pageTypeSchema,
     slots: z.array(storefrontTemplateSlotSchema).min(1),
+    pageBlueprint: pageBlueprintCompositionContractSchema.default(
+      defaultPageBlueprintCompositionContract,
+    ),
   })
   .strict()
   .superRefine((plan, context) => {
@@ -186,6 +251,9 @@ export type TemplateCapability = z.infer<typeof templateCapabilitySchema>;
 export type CatalogueContext = z.infer<typeof catalogueContextSchema>;
 export type TemplateSlotPurpose = z.infer<typeof templateSlotPurposeSchema>;
 export type TemplateSlotOmission = z.infer<typeof templateSlotOmissionSchema>;
+export type PageBlueprintCompositionContract = z.infer<
+  typeof pageBlueprintCompositionContractSchema
+>;
 export type StorefrontTemplateSlot = z.infer<typeof storefrontTemplateSlotSchema>;
 export type StorefrontTemplatePagePlan = z.infer<typeof storefrontTemplatePagePlanSchema>;
 export type StorefrontTemplateDefinition = z.infer<typeof storefrontTemplateDefinitionSchema>;
