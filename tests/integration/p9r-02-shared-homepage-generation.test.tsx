@@ -7,8 +7,15 @@ import {
   type WholeStorefrontPlanningInput,
 } from "@/application/whole-storefront-generation-plan";
 import { compileWholeStorefrontProposal } from "@/application/whole-storefront-proposal-lifecycle";
-import { storefrontDesignSystemV1 } from "@/application/storefront-design-system";
-import { createStorefrontRenderContext } from "@/components/registry";
+import {
+  storefrontStyleDesignSystems,
+  storefrontStyleDirectionForRegisteredDirection,
+} from "@/application/design-skills";
+import {
+  registeredBrandSystemForDirection,
+  storefrontDesignSystemV1,
+} from "@/application/storefront-design-system";
+import { createStorefrontRenderContext, getComponentDefinition } from "@/components/registry";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
 import { aurumNordicSeed } from "@/data/seed";
@@ -117,11 +124,12 @@ async function compiledAurumHomepage(directionId: (typeof directions)[number]) {
     approvedAssetContext: context.approvedAssetContext,
     requiredAssetPlacements: [],
   };
+  const approvedAssetContextBefore = structuredClone(planningInput.approvedAssetContext);
   const plan = createWholeStorefrontGenerationPlan(planningInput, { directionId });
   const proposal = compileWholeStorefrontProposal({ plan, planningInput });
   const page = proposal.proposedStorefront.pages.find((candidate) => candidate.role === "homepage");
   if (!page) throw new Error("Missing compiled homepage.");
-  return { plan, page };
+  return { approvedAssetContextBefore, plan, page, planningInput, proposal };
 }
 
 function selectedHomepageVariants(plan: WholeStorefrontGenerationPlan) {
@@ -136,6 +144,30 @@ function selectedHomepageVariants(plan: WholeStorefrontGenerationPlan) {
     selections.trust,
     selections.footer,
   ];
+}
+
+const compilerOwnedPresentationPropKeys = ["background", "density", "shape", "typography"] as const;
+
+function expectedCompilerOwnedPresentationProps(
+  component: { component: string },
+  index: number,
+  plan: WholeStorefrontGenerationPlan,
+) {
+  const definition = getComponentDefinition(component.component);
+  const style =
+    storefrontStyleDesignSystems[
+      storefrontStyleDirectionForRegisteredDirection(plan.designSystemSelection.directionId)
+    ];
+  return {
+    ...(definition.editorFields.background
+      ? { background: index % 2 === 0 ? "background" : "surface" }
+      : {}),
+    ...(definition.editorFields.density
+      ? { density: plan.designSystemSelection.spacingDensity }
+      : {}),
+    ...(definition.editorFields.shape ? { shape: plan.designSystemSelection.cornerTreatment } : {}),
+    ...(definition.editorFields.typography ? { typography: style.sectionTypography } : {}),
+  };
 }
 
 describe("P9R-02 shared-frame and homepage generation", () => {
@@ -280,22 +312,78 @@ describe("P9R-02 shared-frame and homepage generation", () => {
     const [premium, modern] = await Promise.all(
       directions.map((directionId) => compiledAurumHomepage(directionId)),
     );
-    const original = homepage(aurumNordicSeed.draftSnapshot);
 
     for (const generated of [premium, modern]) {
+      const originalRuntime = generated.proposal.originalStorefront.pages.find(
+        (page) => page.role === "homepage",
+      );
+      if (!originalRuntime) throw new Error("Missing original runtime homepage.");
+      expect(generated.planningInput.approvedAssetContext).toEqual(
+        generated.approvedAssetContextBefore,
+      );
+      expect(generated.proposal.preconditions.assetContextFingerprint).toBe(
+        generated.planningInput.approvedAssetContext?.fingerprint ?? null,
+      );
+      expect(generated.proposal.proposedStorefront.approvedAssetContextFingerprint).toBe(
+        generated.proposal.originalStorefront.approvedAssetContextFingerprint,
+      );
+      expect(generated.proposal.proposedStorefront.approvedAssetPlacements).toEqual(
+        generated.plan.approvedAssetPlacements,
+      );
+      expect(generated.proposal.proposedStorefront.brandSystem).toEqual(
+        registeredBrandSystemForDirection(
+          generated.proposal.originalStorefront.brandSystem,
+          storefrontDesignSystemV1,
+          generated.plan.designSystemSelection.directionId,
+        ),
+      );
       const variants = new Map(
         generated.page.components.map((component) => [component.component, component.variant]),
       );
       selectedHomepageVariants(generated.plan).forEach((selection) => {
         expect(variants.get(selection.component)).toBe(selection.variant);
       });
-      generated.page.components.forEach((component) => {
-        const source = original.sections.find((section) => section.id === component.id);
+      generated.page.components.forEach((component, index) => {
+        const source = originalRuntime.components.find((section) => section.id === component.id);
         if (!source) return;
-        expect({ content: component.content, props: component.props }).toEqual({
-          content: source.content,
-          props: source.props,
+        const expectedPresentation = expectedCompilerOwnedPresentationProps(
+          component,
+          index,
+          generated.plan,
+        );
+        const expectedAssetAssignments = [
+          ...source.assetAssignments,
+          ...generated.plan.approvedAssetPlacements
+            .filter(
+              (placement) =>
+                placement.pageId === generated.page.pageId &&
+                placement.componentId === component.id,
+            )
+            .map((placement) => ({
+              slotId: placement.assetSlotId,
+              assetId: placement.assetId,
+              role: placement.role,
+            })),
+        ];
+
+        expect(component.content).toEqual(source.content);
+        expect(component.bindings).toEqual(source.bindings);
+        expect(component.assetAssignments).toEqual(expectedAssetAssignments);
+        expect(component.styleOverrides).toEqual(source.styleOverrides);
+        Object.entries(source.props).forEach(([key, value]) => {
+          expect(component.props[key]).toEqual(value);
         });
+        expect(
+          Object.fromEntries(
+            compilerOwnedPresentationPropKeys.flatMap((key) =>
+              key in component.props ? [[key, component.props[key]]] : [],
+            ),
+          ),
+        ).toEqual(expectedPresentation);
+        expect(Object.keys(component.props).sort()).toEqual(
+          [...new Set([...Object.keys(source.props), ...Object.keys(expectedPresentation)])].sort(),
+        );
+        expect(component.props).toEqual({ ...source.props, ...expectedPresentation });
       });
     }
 
