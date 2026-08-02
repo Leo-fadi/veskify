@@ -27,6 +27,7 @@ import {
   createStandaloneServerWholeStorefrontPlanningAuthority,
   type AuthoritativeWholeStorefrontPlanningContextSource,
 } from "@/integrations/ai/whole-storefront-runtime-authority";
+import { openAiDirectionDtoToWholeStorefrontPlan } from "@/integrations/ai/openai";
 import { InMemoryProjectRepository } from "@/services/storage";
 import { previewPathPrefix, selectedSnapshotId } from "@/app/projects/[projectId]/preview-mode";
 import {
@@ -113,6 +114,27 @@ export async function generateP905aInstructionScenarioFromBaseline(
   });
 }
 
+/** Starts from the strict live-provider DTO before server-owned direction materialization. */
+export async function generateP905aProviderShapeScenarioFromBaseline(
+  baselineDirectionId: P905aDirectionId,
+  merchantInstruction: string,
+  selectionId: P905aDirectionId,
+) {
+  return generateP905aScenarioWithProvider({
+    baselineDirectionId,
+    merchantInstruction,
+    deferCompiledProposal: true,
+    selectPlan: (providerRequest) =>
+      openAiDirectionDtoToWholeStorefrontPlan(
+        {
+          requestFingerprint: providerRequest.requestFingerprint,
+          selectionId,
+        },
+        providerRequest,
+      ),
+  });
+}
+
 type P905aProviderCapture = Readonly<{
   merchantInstruction: string;
   requestFingerprint: string;
@@ -131,7 +153,7 @@ async function generateP905aScenarioWithProvider({
   deferCompiledProposal?: boolean;
   selectPlan: (
     providerRequest: WholeStorefrontPlanningProviderRequest,
-  ) => WholeStorefrontGenerationPlan;
+  ) => WholeStorefrontGenerationPlan | Promise<WholeStorefrontGenerationPlan>;
 }) {
   const fixture = createP905aFreshMerchantFixture(baselineDirectionId);
   const homepage = fixture.draft.pages.find((page) => page.type === "home");
@@ -148,14 +170,14 @@ async function generateP905aScenarioWithProvider({
       structuredPlanOutput: true,
       approvedAssetReferences: true,
     },
-    createPlan(providerRequest) {
+    async createPlan(providerRequest) {
       providerRequests.push({
         merchantInstruction: providerRequest.merchantInstruction,
         requestFingerprint: providerRequest.requestFingerprint,
       });
-      const plan = selectPlan(providerRequest);
+      const plan = await selectPlan(providerRequest);
       providerPlans.push(structuredClone(plan));
-      return Promise.resolve(plan);
+      return plan;
     },
   };
   const repository = new InMemoryProjectRepository([structuredClone(fixture.aggregate)]);

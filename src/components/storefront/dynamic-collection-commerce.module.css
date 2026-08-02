@@ -345,6 +345,18 @@
   .collectionHeaderLayout {
     grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.8fr);
   }
+
+  .filters_horizontal > summary {
+    display: none;
+  }
+
+  .filters_horizontal:not([open]) > .filterPanel {
+    display: grid;
+  }
+
+  .filters_horizontal .filterPanel {
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  }
 }
 
 @media (min-width: 64rem) {
@@ -367,10 +379,6 @@
   .layout_horizontal > .filters,
   .layout_horizontal > .productResults {
     grid-column: 1 / -1;
-  }
-
-  .filters_horizontal .filterPanel {
-    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
   }
 }
 

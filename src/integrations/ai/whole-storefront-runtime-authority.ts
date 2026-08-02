@@ -22,10 +22,8 @@ import {
   type WholeStorefrontRuntimeComponent,
 } from "@/application/whole-storefront-proposal-lifecycle";
 import { validateDesignOperationAgainstPage } from "@/application/design-operations";
-import { getComponentDefinition } from "@/components/registry";
 import {
   createStorefrontDesignSystemOperations,
-  createStorefrontStyleOperations,
   type StorefrontStyleDirection,
 } from "@/application/design-skills";
 import {
@@ -43,7 +41,6 @@ import {
   type WholeStorefrontPlanningProvider,
   wholeStorefrontPlanningInputSchema,
 } from "@/application/whole-storefront-generation-plan";
-import { orderSectionsForRecipe } from "@/application/storefront-design-system";
 import {
   createMerchantProjectAuthorization,
   requireMerchantProjectAction,
@@ -349,30 +346,6 @@ function assertRequestDirectionCompatible(
   }
 }
 
-function recipeOrderedSections(
-  page: Pick<PageModel, "type" | "sections">,
-  plan: WholeStorefrontGenerationPlan,
-  planningInput: WholeStorefrontPlanningInput,
-): SectionInstance[] {
-  const recipeId =
-    page.type === "home"
-      ? plan.designSystemSelection.homepageRecipeId
-      : page.type === "collection"
-        ? plan.designSystemSelection.collectionRecipeId
-        : page.type === "product"
-          ? plan.designSystemSelection.productRecipeId
-          : null;
-  if (recipeId === null) return structuredClone(page.sections);
-  const recipes = planningInput.recipeContext.designSystem;
-  const recipe = [
-    ...recipes.homepageRecipes,
-    ...recipes.collectionRecipes,
-    ...recipes.productRecipes,
-  ].find((candidate) => candidate.id === recipeId);
-  if (!recipe) throw new ServerWholeStorefrontAuthorityError("malformed-state");
-  return orderSectionsForRecipe(page.sections, recipe);
-}
-
 function projectedRuntimeSection(
   componentInput: WholeStorefrontRuntimeComponent,
   planningInput: WholeStorefrontPlanningInput,
@@ -432,45 +405,18 @@ function projectedRuntimeSection(
   };
 }
 
-function styledProjectedPage(
+function compiledProjectedPage(
   currentPage: PageModel,
   components: readonly WholeStorefrontRuntimeComponent[],
-  plan: WholeStorefrontGenerationPlan,
   planningInput: WholeStorefrontPlanningInput,
-  direction: StorefrontStyleDirection,
   approvedAssetPresentations: readonly ApprovedAssetPresentation[],
 ): PageModel {
-  const page: PageModel = {
+  return {
     ...structuredClone(currentPage),
     sections: components.map((component) =>
       projectedRuntimeSection(component, planningInput, approvedAssetPresentations),
     ),
   };
-  page.sections = page.sections.map((section) => {
-    const definition = getComponentDefinition(section.component);
-    const coordinatedSelection = Object.values(plan.designSystemSelection.componentSelections).find(
-      (selection) => selection.component === section.component,
-    );
-    const variant = coordinatedSelection?.variant;
-    return {
-      ...section,
-      variant: variant && definition.variants.includes(variant) ? variant : section.variant,
-      props: {
-        ...section.props,
-        ...(definition.editorFields.density
-          ? { density: plan.designSystemSelection.spacingDensity }
-          : {}),
-        ...(definition.editorFields.shape
-          ? { shape: plan.designSystemSelection.cornerTreatment }
-          : {}),
-      },
-    };
-  });
-  page.sections = recipeOrderedSections(page, plan, planningInput);
-  return createStorefrontStyleOperations(page, direction).reduce(
-    (working, operation) => validateDesignOperationAgainstPage(working, operation),
-    page,
-  );
 }
 
 function projectPlanOperations(
@@ -545,12 +491,10 @@ function projectPlanOperations(
       if (!request.target.affectedPageIds.includes(plannedPage.pageId)) return;
       const currentPage = request.affectedPages.find((page) => page.id === plannedPage.pageId);
       if (!currentPage) return;
-      const projectedPage = styledProjectedPage(
+      const projectedPage = compiledProjectedPage(
         currentPage,
         plannedPage.components,
-        plan,
         planningInput,
-        direction,
         approvedAssetPresentations,
       );
       const projectedIds = new Set(projectedPage.sections.map((section) => section.id));

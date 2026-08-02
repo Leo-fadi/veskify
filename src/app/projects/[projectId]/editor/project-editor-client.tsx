@@ -11,6 +11,7 @@ import {
 import type { AIProvider } from "@/application/ai-provider";
 import type { StorefrontAIProvider } from "@/application/ai-storefront-generation";
 import { createServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
+import { createCatalogueStorefrontCommerceRouteAdapter } from "@/integrations/storefront-commerce-routes";
 import {
   P905bLocalDemoSynchronizationClientError,
   synchronizeP905bLocalDemoAggregate,
@@ -74,6 +75,7 @@ import {
 } from "./use-design-agent-session";
 
 type RepositoryFactory = () => ProjectRepository;
+const commerceRouteAdapter = createCatalogueStorefrontCommerceRouteAdapter();
 type LocalDemoBridge = {
   aggregate: ProjectAggregate;
   proposal: AiStorefrontProposal | null;
@@ -650,6 +652,20 @@ export function ProjectEditorClient({
     (showingProposal ? agent.generatedProposal?.proposal.proposedPage : undefined) ??
     previewStorefront?.pages.find((item) => item.id === page.id) ??
     page;
+  const canvasCollection =
+    canvasPage.type === "collection"
+      ? state.aggregate.catalogue.collections.find(
+          (collection) => canvasPage.slug === `/collections/${collection.slug}`,
+        )
+      : undefined;
+  const canvasCollectionPresentation = canvasCollection
+    ? (commerceRouteAdapter.collection({
+        aggregate: state.aggregate,
+        snapshot: activeDraft!,
+        page: canvasPage,
+        collection: canvasCollection,
+      }) ?? undefined)
+    : undefined;
   const selectedSection = selectedSectionId
     ? page.sections.find((section) => section.id === selectedSectionId)
     : undefined;
@@ -1481,6 +1497,7 @@ export function ProjectEditorClient({
                     : "editor-design-fields"
                   : undefined
               }
+              collectionPresentation={canvasCollectionPresentation}
               showDesignFields={false}
               validationErrorMessage={text.feedback.canvasValidation}
             />
