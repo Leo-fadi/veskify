@@ -1,6 +1,9 @@
-import type { ApprovedGenerationAsset } from "@/application/ai-storefront-generation";
+import type {
+  ApprovedAssetPlacementOperation,
+  ApprovedGenerationAssetContext,
+} from "@/application/ai-storefront-generation";
 import type { AiStorefrontProjection } from "@/application/ai-storefront";
-import type { CatalogueDisplayModel } from "@/domain/catalogue";
+import type { CatalogueDisplayModel, ProductDisplayModel } from "@/domain/catalogue";
 import type { Locale } from "@/domain/shared";
 import {
   canonicalStorefrontContentFingerprint,
@@ -15,11 +18,19 @@ export const PHASE_10A_VIEWPORTS = [375, 768, 1024, 1440] as const;
 export const PHASE_10A_LOCALES = ["en", "fi"] as const satisfies readonly Locale[];
 export const PHASE_10A_PAGE_FAMILIES = ["home", "collection", "product"] as const;
 export const PHASE_10A_RENDER_TARGETS = ["editor", "preview", "published"] as const;
+export const PHASE_10A_LIFECYCLE_STATES = [
+  "proposal-preview",
+  "accepted-editor",
+  "saved-reloaded",
+  "preview",
+  "published",
+] as const;
 
 export type Phase10aViewport = (typeof PHASE_10A_VIEWPORTS)[number];
 export type Phase10aLocale = (typeof PHASE_10A_LOCALES)[number];
 export type Phase10aPageFamily = (typeof PHASE_10A_PAGE_FAMILIES)[number];
 export type Phase10aRenderTarget = (typeof PHASE_10A_RENDER_TARGETS)[number];
+export type Phase10aLifecycleState = (typeof PHASE_10A_LIFECYCLE_STATES)[number];
 
 type ComponentSelection = Readonly<{
   pageFamily: PageType;
@@ -47,22 +58,18 @@ export type ProposalSnapshotIntegrityEvidence = Readonly<{
 
 export type ProtectedCommerceProjection = Readonly<{
   catalogueId: string;
-  products: readonly Readonly<{
-    id: string;
-    sku: string | null;
-    price: unknown | null;
-    compareAtPrice: unknown | null;
-    stockStatus: string | null;
-    variants: readonly Readonly<{ id: string; price: unknown | null }>[];
-    options: readonly Readonly<{ id: string; values: unknown | null }>[];
-    mediaBindings: readonly string[];
-  }>[];
+  products: readonly ProductDisplayModel[];
   collections: readonly Readonly<{ id: string; productIds: readonly string[] }>[];
   routes: readonly Readonly<{ pageId: string; pageFamily: PageType; route: string }>[];
   fingerprint: string;
 }>;
 
 export type ApprovedAssetProjection = Readonly<{
+  briefId: string;
+  briefRevision: number;
+  approvedEvidenceFingerprint: string;
+  assetReviewFingerprint: string | null;
+  assetContextFingerprint: string;
   assets: readonly Readonly<{
     assetId: string;
     role: string;
@@ -70,12 +77,20 @@ export type ApprovedAssetProjection = Readonly<{
     revision: string;
     materialFingerprint: string;
     provenance: Readonly<{ location: string; observedAt: string }>;
+    approval: Readonly<{ actorId: string; actorReference: string | null }>;
+    presentation: ApprovedGenerationAssetContext["assets"][number]["presentation"];
   }>[];
+  bindings: readonly ApprovedAssetPlacementOperation[];
   fingerprint: string;
 }>;
 
 export type StorefrontRendererProjection = Readonly<{
   snapshotFingerprint: string;
+  catalogueRef: string;
+  navigation: StorefrontSnapshot["navigation"];
+  brandSystem: StorefrontSnapshot["brandSystem"];
+  canonicalPageContentFingerprint: string;
+  pageContent: StorefrontSnapshot["pages"];
   pages: readonly Readonly<{
     pageId: string;
     pageFamily: PageType;
@@ -114,11 +129,23 @@ export type ViewportPageFamilyEvidence = Readonly<{
   pageFamily: Phase10aPageFamily;
   viewport: Phase10aViewport;
   locale: Phase10aLocale;
+  lifecycleState: Phase10aLifecycleState;
   renderTarget: Phase10aRenderTarget;
   horizontalOverflow: boolean;
   basicAccessibilityPassed: boolean;
   screenshotReference: string | null;
 }>;
+
+type ViewportPageFamilyEvidenceCandidate = Omit<
+  ViewportPageFamilyEvidence,
+  "pageFamily" | "viewport" | "locale" | "lifecycleState" | "renderTarget"
+> & {
+  pageFamily: string;
+  viewport: number;
+  locale: string;
+  lifecycleState: string;
+  renderTarget: string;
+};
 
 export type CommercialReviewCriterion = "not-reviewed" | "passed" | "failed";
 
@@ -161,12 +188,6 @@ export type PublishWithoutProviderEvidence = Readonly<{
   publishedSnapshotFingerprint: string;
   providerCalledDuringPublish: boolean;
 }>;
-
-function projectionFingerprint(
-  projection: Omit<StorefrontRendererProjection, "snapshotFingerprint">,
-) {
-  return canonicalValueFingerprint(projection);
-}
 
 function sectionSequence(snapshot: StorefrontSnapshot, pageId: string) {
   const page = snapshot.pages.find((candidate) => candidate.id === pageId);
@@ -247,22 +268,9 @@ export function captureProtectedCommerceProjection(
   const projection = {
     catalogueId: catalogue.id,
     products: catalogue.products
-      .map((product) => ({
-        id: product.id,
-        sku: product.sku ?? null,
-        price: product.price ?? null,
-        compareAtPrice: product.compareAtPrice ?? null,
-        stockStatus: product.stockStatus ?? null,
-        variants: product.variants.map((variant) => ({
-          id: variant.id,
-          price: variant.price ?? null,
-        })),
-        options: (product.orderOptions ?? []).map((option) => ({
-          id: option.id,
-          values: option.values ?? null,
-        })),
-        mediaBindings: product.images.map((image) => image.id),
-      }))
+      // ProductDisplayModel is the canonical projection used by option resolution and routes.
+      // Preserve every stable field rather than selecting a partial variant shape.
+      .map((product) => structuredClone(product))
       .sort((left, right) => left.id.localeCompare(right.id)),
     collections: catalogue.collections
       .map((collection) => ({ id: collection.id, productIds: [...collection.productIds] }))
@@ -285,10 +293,16 @@ export function assertProtectedCommerceParity(
 }
 
 export function captureApprovedAssetProjection(
-  assets: readonly ApprovedGenerationAsset[],
+  context: ApprovedGenerationAssetContext,
+  bindings: readonly ApprovedAssetPlacementOperation[] = [],
 ): ApprovedAssetProjection {
   const projection = {
-    assets: assets
+    briefId: context.briefId,
+    briefRevision: context.briefRevision,
+    approvedEvidenceFingerprint: context.approvedEvidenceFingerprint,
+    assetReviewFingerprint: context.assetReviewFingerprint,
+    assetContextFingerprint: context.fingerprint,
+    assets: context.assets
       .map((asset) => ({
         assetId: asset.assetId,
         role: asset.role,
@@ -299,8 +313,13 @@ export function captureApprovedAssetProjection(
           location: asset.provenance.location,
           observedAt: asset.provenance.observedAt,
         },
+        approval: structuredClone(asset.approval),
+        presentation: structuredClone(asset.presentation),
       }))
       .sort((left, right) => left.assetId.localeCompare(right.assetId)),
+    bindings: [...bindings]
+      .map((binding) => structuredClone(binding))
+      .sort((left, right) => canonicalValueString(left).localeCompare(canonicalValueString(right))),
   };
   return { ...projection, fingerprint: canonicalValueFingerprint(projection) };
 }
@@ -319,6 +338,11 @@ export function projectStorefrontRenderer(
   snapshot: StorefrontSnapshot,
 ): StorefrontRendererProjection {
   const projection = {
+    catalogueRef: snapshot.catalogueRef,
+    navigation: structuredClone(snapshot.navigation),
+    brandSystem: structuredClone(snapshot.brandSystem),
+    canonicalPageContentFingerprint: canonicalValueFingerprint(snapshot.pages),
+    pageContent: structuredClone(snapshot.pages),
     pages: snapshot.pages.map((page) => ({
       pageId: page.id,
       pageFamily: page.type,
@@ -333,7 +357,7 @@ export function projectStorefrontRenderer(
     })),
   };
   return {
-    snapshotFingerprint: projectionFingerprint(projection),
+    snapshotFingerprint: canonicalStorefrontContentFingerprint(snapshot),
     ...projection,
   };
 }
@@ -388,27 +412,86 @@ export function createBaselineStructuralDelta(
   };
 }
 
+function isKnownString<Value extends string>(
+  values: readonly Value[],
+  value: string,
+): value is Value {
+  return values.some((candidate) => candidate === value);
+}
+
+function isKnownNumber<Value extends number>(
+  values: readonly Value[],
+  value: number,
+): value is Value {
+  return values.some((candidate) => candidate === value);
+}
+
+function parsePageFamily(value: string): Phase10aPageFamily {
+  if (isKnownString(PHASE_10A_PAGE_FAMILIES, value)) return value;
+  throw new Error(`Unsupported page family evidence: ${value}`);
+}
+
+function parseViewport(value: number): Phase10aViewport {
+  if (isKnownNumber(PHASE_10A_VIEWPORTS, value)) return value;
+  throw new Error(`Unsupported viewport evidence: ${value}`);
+}
+
+function parseLocale(value: string): Phase10aLocale {
+  if (isKnownString(PHASE_10A_LOCALES, value)) return value;
+  throw new Error(`Unsupported locale evidence: ${value}`);
+}
+
+function parseLifecycleState(value: string): Phase10aLifecycleState {
+  if (isKnownString(PHASE_10A_LIFECYCLE_STATES, value)) return value;
+  throw new Error(`Unsupported lifecycle-state evidence: ${value}`);
+}
+
+function parseRenderTarget(value: string): Phase10aRenderTarget {
+  if (isKnownString(PHASE_10A_RENDER_TARGETS, value)) return value;
+  throw new Error(`Unsupported renderer-target evidence: ${value}`);
+}
+
+function evidenceKey(
+  record: Pick<ViewportPageFamilyEvidence, "pageFamily" | "viewport" | "locale" | "lifecycleState">,
+) {
+  return `${record.lifecycleState}:${record.pageFamily}:${record.viewport}:${record.locale}`;
+}
+
 export function assertCompleteViewportPageFamilyEvidence(
-  records: readonly ViewportPageFamilyEvidence[],
-  renderTargets: readonly Phase10aRenderTarget[] = PHASE_10A_RENDER_TARGETS,
+  records: readonly ViewportPageFamilyEvidenceCandidate[],
 ): readonly ViewportPageFamilyEvidence[] {
-  const expected = PHASE_10A_PAGE_FAMILIES.flatMap((pageFamily) =>
-    PHASE_10A_VIEWPORTS.flatMap((viewport) =>
-      PHASE_10A_LOCALES.flatMap((locale) =>
-        renderTargets.map((renderTarget) => `${pageFamily}:${viewport}:${locale}:${renderTarget}`),
+  const validated = records.map((record) => ({
+    ...record,
+    pageFamily: parsePageFamily(record.pageFamily),
+    viewport: parseViewport(record.viewport),
+    locale: parseLocale(record.locale),
+    lifecycleState: parseLifecycleState(record.lifecycleState),
+    renderTarget: parseRenderTarget(record.renderTarget),
+  }));
+  const actual = new Set<string>();
+  const duplicates: string[] = [];
+  for (const record of validated) {
+    const key = evidenceKey(record);
+    if (actual.has(key)) duplicates.push(key);
+    actual.add(key);
+  }
+  if (duplicates.length > 0) {
+    throw new Error(`Viewport/page-family evidence has duplicates: ${duplicates.join(", ")}`);
+  }
+  const expected = PHASE_10A_LIFECYCLE_STATES.flatMap((lifecycleState) =>
+    PHASE_10A_PAGE_FAMILIES.flatMap((pageFamily) =>
+      PHASE_10A_VIEWPORTS.flatMap((viewport) =>
+        PHASE_10A_LOCALES.map((locale) =>
+          evidenceKey({ lifecycleState, pageFamily, viewport, locale }),
+        ),
       ),
-    ),
-  );
-  const actual = new Set(
-    records.map(
-      (record) => `${record.pageFamily}:${record.viewport}:${record.locale}:${record.renderTarget}`,
     ),
   );
   const missing = expected.filter((key) => !actual.has(key));
   if (missing.length > 0) {
     throw new Error(`Viewport/page-family evidence is incomplete: ${missing.join(", ")}`);
   }
-  return records;
+  return validated;
 }
 
 export function createPublishWithoutProviderEvidence(input: {

@@ -33,17 +33,17 @@ visual-quality pass. Screenshot references and criterion-level human review stay
 
 `tests/helpers/phase-10a-evidence.ts` is the reusable contract for Tasks 7–9.
 
-| Evidence record                     | Deterministic content                                                                                                   | Explicit boundary                                                                       |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `GenerationAuthorityEvidence`       | planner/provider identity, registered recipe/profile IDs, component family/variant sequence and bounded prop projection | Profile IDs may be `null` until Task 8; this does not introduce a recipe model.         |
-| `ProposalSnapshotIntegrityEvidence` | proposal/operation fingerprints and exact proposed-projection-to-accepted-snapshot parity                               | The proposal remains transient; only the accepted `StorefrontSnapshot` is canonical.    |
-| `ProtectedCommerceProjection`       | products, variants, prices, stock, options, collection membership/order, media bindings and snapshot routes             | Captures the read-only input; it does not create editable commerce copies.              |
-| `ApprovedAssetProjection`           | approved asset ID, role, source, revision, material fingerprint and provenance                                          | Captures current approved context only; it does not approve or place assets.            |
-| `RendererParityEvidence`            | editor/preview/published page routes and registered component/variant/parameter projection                              | This is structural renderer parity, not a screenshot similarity claim.                  |
-| `BaselineStructuralDelta`           | deterministic page-family component sequences before/after                                                              | It reports deltas only and makes no quality judgement.                                  |
-| `ViewportPageFamilyEvidence`        | page family, EN/FI, 375/768/1024/1440, target, overflow and basic accessibility result                                  | Browser/visual tests supply observations; the helper does not invent layout assertions. |
-| `CommercialQualityEvidence`         | criterion-level retained review record, screenshots, discovery/purchase/media observations and optional future metadata | No opaque visual-pass boolean; each criterion is `not-reviewed`, `passed` or `failed`.  |
-| `PublishWithoutProviderEvidence`    | provider calls before/after and published snapshot fingerprint                                                          | Represents AC-135 evidence without invoking a provider at publish time.                 |
+| Evidence record                     | Deterministic content                                                                                                                                                                  | Explicit boundary                                                                             |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `GenerationAuthorityEvidence`       | planner/provider identity, registered recipe/profile IDs, component family/variant sequence and bounded prop projection                                                                | Profile IDs may be `null` until Task 8; this does not introduce a recipe model.               |
+| `ProposalSnapshotIntegrityEvidence` | proposal/operation fingerprints and exact proposed-projection-to-accepted-snapshot parity                                                                                              | The proposal remains transient; only the accepted `StorefrontSnapshot` is canonical.          |
+| `ProtectedCommerceProjection`       | complete canonical `ProductDisplayModel` values: product/variant identity, SKU, localized labels, attributes, prices, availability, stock, media, options, collection order and routes | Captures the read-only input; it does not create editable commerce copies.                    |
+| `ApprovedAssetProjection`           | approved brief ID/revision/evidence fingerprint, asset-context fingerprint, approved assets, approval actor, provenance, presentation and placement bindings                           | Consumes the canonical full approved-generation context; it does not approve or place assets. |
+| `RendererParityEvidence`            | canonical storefront fingerprint plus catalogue ref, navigation, BrandSystem, complete page content/order and registered component projection                                          | This is structural renderer parity, not a screenshot similarity claim.                        |
+| `BaselineStructuralDelta`           | deterministic page-family component sequences before/after                                                                                                                             | It reports deltas only and makes no quality judgement.                                        |
+| `ViewportPageFamilyEvidence`        | lifecycle state, page family, EN/FI, 375/768/1024/1440, distinct renderer target, overflow and basic accessibility result                                                              | Browser/visual tests supply observations; the helper does not invent layout assertions.       |
+| `CommercialQualityEvidence`         | criterion-level retained review record, screenshots, discovery/purchase/media observations and optional future metadata                                                                | No opaque visual-pass boolean; each criterion is `not-reviewed`, `passed` or `failed`.        |
+| `PublishWithoutProviderEvidence`    | provider calls before/after and published snapshot fingerprint                                                                                                                         | Represents AC-135 evidence without invoking a provider at publish time.                       |
 
 Future Task 6 fields (`narrativeSequence`, visual weight and surface-transition sequences) are
 optional. W2 does not define narrative-role enums or require a fixture to contain them.
@@ -52,6 +52,13 @@ optional. W2 does not define narrative-role enums or require a fixture to contai
 
 Every later golden-store run records the following matrix. Deterministic assertions and manual
 commercial visual review are intentionally different columns.
+
+The mandatory page-evidence matrix has exactly **120 records**:
+`proposal-preview`, `accepted-editor`, `saved-reloaded`, `preview`, `published` × homepage,
+collection, PDP × 375/768/1024/1440 × EN/FI. Renderer target remains a distinct observation
+(`editor`, `preview` or `published`) and is not multiplied into this lifecycle completeness count.
+The deterministic assertion rejects missing combinations, duplicates and unsupported lifecycle
+states, reporting every missing key.
 
 | Surface/state         | Page families                       | Locale | Viewports            | Deterministic assertions                                                          | Commercial-review evidence                                        |
 | --------------------- | ----------------------------------- | ------ | -------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
@@ -66,7 +73,8 @@ Assertion classification:
 - Schema/contract: registered selections, bounded props, proposal operations and fingerprints.
 - Commerce preservation: product/variant IDs, SKUs, prices, stock, options, collection order,
   media and routes.
-- Renderer parity: editor, preview and published projections derive from the same canonical state.
+- Renderer parity: editor, preview and published projections derive from the same canonical state,
+  including navigation, shared header/footer page content and BrandSystem.
 - Structural quality: component family/variant/order/region deltas and responsive overflow.
 - Commercial visual review: hierarchy, coherence, repetition, spacing rhythm, surface transitions,
   media, discovery, PDP purchase clarity and mobile quality; each is retained individually rather
@@ -83,12 +91,15 @@ trace artifacts remain enabled on first retry.
 
 `tests/unit/phase-10a-evidence.test.ts` proves that:
 
-- protected-commerce, collection-order and route mutations are detected;
-- approved asset/provenance mutations are detected;
+- protected-commerce, collection-order, route, variant label, variant attributes, SKU, stock and
+  media-binding mutations are detected;
+- approved asset/provenance and approved-brief/asset-context identity mutations are detected;
 - proposal-to-accepted-snapshot parity works;
-- editor/preview/published projections are exact;
+- editor/preview/published projections are exact and reject navigation, shared-header and
+  BrandSystem drift;
 - baseline structural deltas are deterministic;
-- the full EN/FI × 375/768/1024/1440 × home/collection/PDP × renderer-target matrix is complete;
+- the complete 120-record lifecycle × EN/FI × 375/768/1024/1440 × home/collection/PDP matrix is
+  required, including proposal-preview and saved-reloaded states;
 - Finnish editor metadata survives and absent future narrative metadata is valid;
 - publication evidence represents zero provider calls;
 - current Phase 9 deterministic fixtures remain compatible.
