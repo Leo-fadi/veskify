@@ -65,10 +65,7 @@ function lifecycleByState(input: ParsedInput) {
       );
     }
   }
-  return entries as Map<
-    (typeof goldenStoreEvaluationLifecycleStates)[number],
-    GoldenStoreLifecycleEvidence
-  >;
+  return entries;
 }
 
 function assertCurrentBaseline(input: ParsedInput): void {
