@@ -286,6 +286,60 @@ Do not run, unless explicitly requested:
 
 Run full validation only at phase/release gates, high-risk migrations, staging acceptance or explicit product-owner instruction.
 
+### Production-build policy
+
+Webpack is temporarily the required production-validation bundler for local validation and GitHub CI.
+Use the following commands directly so their child-process exit status remains the reported result:
+
+```bash
+pnpm build
+pnpm build:webpack
+```
+
+`pnpm build` is the required production gate and delegates to `build:webpack`; the explicit command
+is available when the selected bundler needs to be visible in a validation record. Next.js prints
+`webpack` at the start of either build.
+
+Turbopack remains the default Next.js development technology through `pnpm dev` and is retained as
+an explicit diagnostic production build:
+
+```bash
+pnpm build:turbopack
+```
+
+Do not substitute a failed or interrupted Turbopack diagnostic for the required Webpack gate. Do
+not hide either command behind `|| true`, a pipeline, a generic timeout increase, or a wrapper that
+changes its exit status.
+
+Before comparing build modes or clearing generated output, first inspect the lock owner:
+
+```bash
+if [ -e .next/lock ]; then
+  lsof .next/lock
+else
+  echo "No .next lock is present."
+fi
+```
+
+On systems without `lsof`, use the platform-equivalent open-file inspection such as
+`fuser -v .next/lock`. Never delete `.next` while that check identifies an active build owner. Only
+after the build has exited or no lock/owner is present may the cache be cleared:
+
+```bash
+rm -rf .next
+```
+
+Silence by itself does not establish a stalled build. Preserve the last build output and collect at
+least two observations of the same lock-owning PID: its elapsed time, CPU activity, child processes,
+and whether `.next` receives new writes between observations. A build is conclusively stalled only
+when those observations show no progress as well as no active child work. After that evidence is
+recorded, a developer may recover the identified process manually; automation must not kill it.
+
+Restore Turbopack as the mandatory production gate only after repeated clean builds across the
+affected worktrees and CI complete without stalls. That restoration must change `build`, CI, and this
+policy together, while retaining `build:webpack` as a diagnostic fallback until the stability change
+is accepted.
+
 ## 10. Review workflow
 
 1. Open or update the single PR for the task.
