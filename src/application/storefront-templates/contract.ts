@@ -153,6 +153,24 @@ export const storefrontTemplateSlotSchema = z
     }
   });
 
+/**
+ * The persisted pre-Task-6 slot shape. It deliberately has no narrative defaults:
+ * a v2 resolved plan did not select Task-6 semantics and must be migrated from its
+ * registered template identity rather than silently acquiring them through parsing.
+ */
+export const legacyStorefrontTemplateSlotSchema = z
+  .object({
+    id: templateTokenSchema,
+    required: z.boolean(),
+    sectionType: templateTokenSchema,
+    allowedVariants: z.array(templateTokenSchema).min(1),
+    defaultVariant: templateTokenSchema,
+    label: requiredLocalizedTextSchema,
+    purpose: templateSlotPurposeSchema,
+    omitWhen: templateSlotOmissionSchema.default("never"),
+  })
+  .strict();
+
 export const storefrontTemplatePagePlanSchema = z
   .object({
     pageType: pageTypeSchema,
@@ -160,6 +178,23 @@ export const storefrontTemplatePagePlanSchema = z
     pageBlueprint: pageBlueprintCompositionContractSchema.default(
       defaultPageBlueprintCompositionContract,
     ),
+  })
+  .strict()
+  .superRefine((plan, context) => {
+    const ids = plan.slots.map((slot) => slot.id);
+    if (new Set(ids).size !== ids.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["slots"],
+        message: "Slot IDs must be unique within a page plan.",
+      });
+    }
+  });
+
+export const legacyStorefrontTemplatePagePlanSchema = z
+  .object({
+    pageType: pageTypeSchema,
+    slots: z.array(legacyStorefrontTemplateSlotSchema).min(1),
   })
   .strict()
   .superRefine((plan, context) => {
@@ -256,6 +291,9 @@ export type PageBlueprintCompositionContract = z.infer<
 >;
 export type StorefrontTemplateSlot = z.infer<typeof storefrontTemplateSlotSchema>;
 export type StorefrontTemplatePagePlan = z.infer<typeof storefrontTemplatePagePlanSchema>;
+export type LegacyStorefrontTemplatePagePlan = z.infer<
+  typeof legacyStorefrontTemplatePagePlanSchema
+>;
 export type StorefrontTemplateDefinition = z.infer<typeof storefrontTemplateDefinitionSchema>;
 
 export function cloneTemplateDefinition(

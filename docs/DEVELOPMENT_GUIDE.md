@@ -203,6 +203,12 @@ metadata are validated deterministically with stable feedback codes. Legacy comp
 compatibility defaults until Task 7 adds commercial-family metadata. No Task 6 schema result alone
 proves renderer-visible commercial quality; Task 9 owns that proof.
 
+Persisted pre-Task-6 template selections are a compatibility boundary: parse their v2 slot-only
+execution identity without semantic defaults, verify it against the selected registered template,
+then re-resolve it in memory as v3 metadata. Do not byte-compare a default-enriched legacy plan to a
+current semantic plan, and do not broaden a migration into project, snapshot, commerce, asset or
+route writes.
+
 ### P10B — Assets and Storefront Studio UX
 
 Add asset upload/library and generated-image lifecycle, then merchant-facing Studio workflows that

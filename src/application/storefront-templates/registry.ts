@@ -55,8 +55,8 @@ function narrativeRoleForPurpose(
       "collection-introduction": "orientation",
       "filtering-or-merchandising": "secondary-discovery",
       "product-media": "product-focus",
-      "product-information": "product-focus",
-      "product-options": "conversion",
+      "product-information": "conversion",
+      "product-options": "product-focus",
       "related-products": "continuation",
     };
   return roles[purpose];

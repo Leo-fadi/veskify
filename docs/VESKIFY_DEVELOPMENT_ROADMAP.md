@@ -246,6 +246,14 @@ storefront representation. Task 7 consumes these contracts for commercial famili
 Task 8 consumes them for executable constrained PageBlueprint profiles. Task 9 consumes both for
 AI selection, visual-quality gates and retained end-to-end proof.
 
+The Task 6 correction pass additionally requires required roles to remain satisfiable after
+registered slot omission, referenced flow rules to fail closed when unknown or page-incompatible,
+role-level visual-weight limits to remain authoritative, every conversion occurrence to retain its
+adjacent protected context, explicit empty parameter allowlists to permit nothing, and numeric bounds
+to narrow monotonically across all authority levels. New resolved selections use v3 metadata; verified
+pre-Task-6 v2 selections migrate in memory from their exact registered execution identity, while
+forged and future versions fail closed without rewriting projects or protected commerce.
+
 ### Completed Vesko integration foundation prework
 
 The merged integration foundation provides canonical integration boundaries, merchant/project context, catalogue/navigation projection, availability/options/variants/media projection, authoritative draft persistence, authoritative publishing and complete standalone port assembly.

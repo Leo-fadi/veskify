@@ -46,6 +46,37 @@ function input(templateId: string, briefInput = brief()) {
   };
 }
 
+function preTask6Selection(input: ReturnType<typeof planStorefrontTemplateSelection>) {
+  return {
+    ...structuredClone(input),
+    schemaVersion: 2 as const,
+    resolvedPagePlans: input.resolvedPagePlans.map(({ pageType, slots }) => ({
+      pageType,
+      slots: slots.map(
+        ({
+          id,
+          required,
+          sectionType,
+          allowedVariants,
+          defaultVariant,
+          label,
+          purpose,
+          omitWhen,
+        }) => ({
+          id,
+          required,
+          sectionType,
+          allowedVariants,
+          defaultVariant,
+          label,
+          purpose,
+          omitWhen,
+        }),
+      ),
+    })),
+  };
+}
+
 describe("deterministic initial storefront materializer", () => {
   it.each([
     "template_brand_led_editorial",
@@ -212,6 +243,19 @@ describe("deterministic initial storefront materializer", () => {
     });
     expect(unsupported.status).toBe("blocked");
     expect(unsupported.blockers.map((blocker) => blocker.code)).toContain("inconsistent-home-plan");
+  });
+
+  it("materializes a verified pre-Task-6 plan without changing protected execution state", () => {
+    const current = input("template_balanced_commerce");
+    const legacy = materializeInitialStorefront({
+      ...current,
+      templateSelectionPlan: preTask6Selection(current.templateSelectionPlan),
+    });
+    const modern = materializeInitialStorefront(current);
+    expect(legacy.status).toBe("ready-with-warnings");
+    expect(legacy.generatedSnapshot).toEqual(modern.generatedSnapshot);
+    expect(legacy.generatedSnapshot?.catalogueRef).toBe(current.catalogueRef);
+    expect(legacy.generatedSnapshot?.navigation).toEqual(modern.generatedSnapshot?.navigation);
   });
 
   it("keeps controlled content in the primary locale without inventing translation", () => {

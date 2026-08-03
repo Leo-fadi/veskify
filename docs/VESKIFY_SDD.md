@@ -480,8 +480,12 @@ spacing, emphasis, background role and tone). Values are enums or registered num
 reuse `BrandSystem` semantics and component-prop vocabulary; they do not permit arbitrary CSS,
 classes, fonts or raw style values. Parameter authority resolves deterministically as
 `BrandSystem → PageBlueprint profile → component variant → instance`. A lower level may only narrow
-an inherited range and may override only when that registered parameter permits it. Broadening,
-ambiguous last-write-wins resolution and prohibited instance overrides fail with stable typed errors.
+an inherited enum set or numeric minimum/maximum and may override only when that registered
+parameter permits it. The effective numeric range is accumulated at every authority level; a later
+value outside it, a restored broader range, contradictory bounds, ambiguous last-write-wins
+resolution and prohibited instance overrides fail with stable typed errors. An explicit empty
+component parameter allowlist permits no bounded parameters; legacy broad compatibility is an
+explicit adapter contract, never an empty-list fallback.
 
 `ComponentDefinitionV2` declares narrative, weight, transition, parameter, PageBlueprint-profile
 and commerce compatibility. Legacy registered components receive a deterministic broad compatibility
@@ -492,6 +496,22 @@ family/variant, binding and omission rules. Task 6 supplies contracts and determ
 only. Task 7 supplies commercial families/variants, Task 8 supplies executable constrained
 PageBlueprint profiles, and Task 9 supplies AI selection plus commercial visual-quality and
 full-chain evidence. Task 6 alone does not claim commercially strong storefront output.
+
+Every referenced flow rule must be registered for the page type; unknown or incompatible rule IDs
+fail closed. A section satisfies both its role's visual-weight allowance and its component
+compatibility; a broad component adapter cannot widen a role. Each conversion occurrence must have
+its required adjacent protected product-focus context, including repeated conversions. Required
+roles must be satisfiable by non-omittable compatible slots: the initial PDP's always-present product
+information/purchase section owns conversion, while optional product-options may be omitted without
+creating false required semantics.
+
+Resolved template selections created before Task 6 are persisted as v2 execution identities with no
+narrative metadata. Current selections are v3. A v2 selection is migrated only in memory by verifying
+each legacy homepage, collection and product plan against the registered pre-Task-6 execution
+identity, then re-resolving that exact registered plan with Task-6 metadata. Modified legacy plans
+and unknown future versions fail closed. Migration neither writes project state nor changes canonical
+commerce, bindings, assets, variants or routes; it never mistakes parser defaults for merchant
+selected semantics.
 
 ### Commercial library, compatibility and reachability
 

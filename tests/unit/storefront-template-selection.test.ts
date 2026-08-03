@@ -11,6 +11,37 @@ import {
   validateStorefrontTemplateSelectionPlan,
 } from "@/application/storefront-templates";
 
+function preTask6Selection(input: ReturnType<typeof planStorefrontTemplateSelection>) {
+  return {
+    ...structuredClone(input),
+    schemaVersion: 2 as const,
+    resolvedPagePlans: input.resolvedPagePlans.map(({ pageType, slots }) => ({
+      pageType,
+      slots: slots.map(
+        ({
+          id,
+          required,
+          sectionType,
+          allowedVariants,
+          defaultVariant,
+          label,
+          purpose,
+          omitWhen,
+        }) => ({
+          id,
+          required,
+          sectionType,
+          allowedVariants,
+          defaultVariant,
+          label,
+          purpose,
+          omitWhen,
+        }),
+      ),
+    })),
+  };
+}
+
 function brief(overrides: Record<string, unknown> = {}) {
   return normalizeBrief({
     id: "brief_selection_test",
@@ -138,9 +169,29 @@ describe("deterministic storefront template selection", () => {
     );
   });
 
-  it("rejects the previous persisted selection schema version", () => {
+  it("rejects unsupported persisted selection schema versions", () => {
     const plan = planStorefrontTemplateSelection({ brief: brief() });
     expect(() => validateStorefrontTemplateSelectionPlan({ ...plan, schemaVersion: 1 })).toThrow();
+    expect(() => validateStorefrontTemplateSelectionPlan({ ...plan, schemaVersion: 4 })).toThrow();
+  });
+
+  it("migrates verified pre-Task-6 homepage, collection and product plans from registered identity", () => {
+    const current = planStorefrontTemplateSelection({ brief: brief() });
+    const legacy = preTask6Selection(current);
+    const migrated = validateStorefrontTemplateSelectionPlan(legacy);
+    expect(migrated.schemaVersion).toBe(3);
+    expect(migrated.resolvedPagePlans).toEqual(current.resolvedPagePlans);
+    expect(migrated.resolvedPagePlans.map((plan) => plan.pageType)).toEqual([
+      "home",
+      "collection",
+      "product",
+    ]);
+
+    const changedRecipe = structuredClone(legacy);
+    changedRecipe.resolvedPagePlans[0].slots.pop();
+    expect(() => validateStorefrontTemplateSelectionPlan(changedRecipe)).toThrow(
+      /no longer matches registered template/i,
+    );
   });
 
   it("changes selection when a meaningful preference crosses the policy threshold", () => {

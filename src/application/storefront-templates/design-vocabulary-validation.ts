@@ -13,7 +13,10 @@ import type { StorefrontTemplatePagePlan } from "./contract";
 export const designVocabularyValidationCodes = [
   "UNKNOWN_NARRATIVE_ROLE",
   "UNKNOWN_TRANSITION_INTENT",
+  "UNKNOWN_FLOW_RULE",
+  "UNSUPPORTED_FLOW_RULE_PAGE_TYPE",
   "UNSUPPORTED_COMPONENT_ROLE",
+  "UNSUPPORTED_ROLE_VISUAL_WEIGHT",
   "PROHIBITED_ADJACENCY",
   "INVALID_OPENING_ROLE",
   "INVALID_CLOSING_ROLE",
@@ -21,6 +24,7 @@ export const designVocabularyValidationCodes = [
   "EXCESSIVE_REPEATED_COMPONENT_FAMILY",
   "INVALID_VISUAL_WEIGHT_SEQUENCE",
   "INVALID_BOUNDED_PARAMETER_VALUE",
+  "CONTRADICTORY_NUMERIC_RANGE",
   "INCOMPATIBLE_PARAMETER_COMBINATION",
   "ILLEGAL_INHERITANCE_BROADENING",
   "PROHIBITED_INSTANCE_OVERRIDE",
@@ -118,6 +122,14 @@ function validateSectionCompatibility(
         issue(
           "INVALID_VISUAL_WEIGHT_SEQUENCE",
           `Visual weight ${section.visualWeight} is not registered.`,
+          section.id,
+        ),
+      );
+    } else if (!role.visualWeights.includes(section.visualWeight)) {
+      issues.push(
+        issue(
+          "UNSUPPORTED_ROLE_VISUAL_WEIGHT",
+          `${role.id} does not allow ${section.visualWeight} visual weight.`,
           section.id,
         ),
       );
@@ -229,10 +241,7 @@ function validateSectionCompatibility(
         );
         return;
       }
-      if (
-        compatibility.boundedParameterIds.length > 0 &&
-        !compatibility.boundedParameterIds.includes(parameterId)
-      ) {
+      if (!compatibility.boundedParameterIds.includes(parameterId)) {
         issues.push(
           issue(
             "PAGE_BLUEPRINT_COMPONENT_INCOMPATIBLE",
@@ -275,7 +284,9 @@ function validateSectionCompatibility(
               ? "ILLEGAL_INHERITANCE_BROADENING"
               : inheritanceIssue.code === "PROHIBITED_INSTANCE_OVERRIDE"
                 ? "PROHIBITED_INSTANCE_OVERRIDE"
-                : "INVALID_BOUNDED_PARAMETER_VALUE",
+                : inheritanceIssue.code === "CONTRADICTORY_NUMERIC_RANGE"
+                  ? "CONTRADICTORY_NUMERIC_RANGE"
+                  : "INVALID_BOUNDED_PARAMETER_VALUE",
             inheritanceIssue.message,
             section.id,
             parameterId,
@@ -355,7 +366,21 @@ function validateFlowRules(
   const lastRole = sections.at(-1)?.narrativeRole;
   input.pageBlueprint.pageBlueprint.flowRuleIds.forEach((ruleId) => {
     const rule = narrativeFlowRulesById.get(ruleId);
-    if (!rule || !rule.pageTypes.includes(input.pageType)) return;
+    if (!rule) {
+      issues.push(
+        issue("UNKNOWN_FLOW_RULE", `The PageBlueprint references unknown flow rule ${ruleId}.`),
+      );
+      return;
+    }
+    if (!rule.pageTypes.includes(input.pageType)) {
+      issues.push(
+        issue(
+          "UNSUPPORTED_FLOW_RULE_PAGE_TYPE",
+          `Flow rule ${ruleId} is not registered for ${input.pageType} pages.`,
+        ),
+      );
+      return;
+    }
     if (rule.type === "openingRole" && firstRole !== rule.fromRole) {
       issues.push(issue("INVALID_OPENING_ROLE", rule.message, sections[0]?.id));
       return;
@@ -392,24 +417,23 @@ function validateFlowRules(
       });
       return;
     }
-    if (rule.type === "roleOrder" || rule.type === "commercePlacement") {
+    if (rule.type === "commercePlacement") {
+      sections.forEach((section, index) => {
+        if (section.narrativeRole !== rule.toRole) return;
+        if (sections[index - 1]?.narrativeRole !== rule.fromRole) {
+          issues.push(issue("COMMERCE_SENSITIVE_PLACEMENT", rule.message, section.id));
+        }
+      });
+      return;
+    }
+    if (rule.type === "roleOrder") {
       const fromIndex = sections.reduce<number>(
         (latest, section, index) => (section.narrativeRole === rule.fromRole ? index : latest),
         -1,
       );
       const toIndex = sections.findIndex((section) => section.narrativeRole === rule.toRole);
       if (fromIndex === -1 || toIndex === -1 || fromIndex > toIndex) {
-        issues.push(
-          issue(
-            rule.type === "commercePlacement"
-              ? "COMMERCE_SENSITIVE_PLACEMENT"
-              : "PROHIBITED_ADJACENCY",
-            rule.message,
-          ),
-        );
-      }
-      if (rule.type === "commercePlacement" && toIndex - fromIndex > 1) {
-        issues.push(issue("COMMERCE_SENSITIVE_PLACEMENT", rule.message, sections[toIndex]?.id));
+        issues.push(issue("PROHIBITED_ADJACENCY", rule.message));
       }
       return;
     }

@@ -8,8 +8,8 @@ import type { PageType } from "@/domain/storefront";
 import { canonicalValueString } from "@/domain/storefront";
 import {
   cloneStorefrontTemplateSelectionPlan,
+  currentStorefrontTemplateSelectionPlanSchema,
   STOREFRONT_TEMPLATE_SELECTION_SCHEMA_VERSION,
-  storefrontTemplateSelectionPlanSchema,
   type StorefrontTemplateCandidate,
   type StorefrontTemplateSelectionPlan,
 } from "./selection-contract";
@@ -361,5 +361,7 @@ export function planStorefrontTemplateSelection(
     blockers: [...blockers],
     resolvedPagePlans: [...resolvedPagePlans],
   };
-  return cloneStorefrontTemplateSelectionPlan(storefrontTemplateSelectionPlanSchema.parse(plan));
+  return cloneStorefrontTemplateSelectionPlan(
+    currentStorefrontTemplateSelectionPlanSchema.parse(plan),
+  );
 }

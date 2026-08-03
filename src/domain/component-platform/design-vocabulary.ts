@@ -720,6 +720,7 @@ export type ParameterInheritanceLayer = Readonly<{
 export type ParameterInheritanceIssueCode =
   | "UNKNOWN_BOUNDED_PARAMETER"
   | "INVALID_BOUNDED_PARAMETER_VALUE"
+  | "CONTRADICTORY_NUMERIC_RANGE"
   | "ILLEGAL_INHERITANCE_BROADENING"
   | "PROHIBITED_INSTANCE_OVERRIDE"
   | "PROHIBITED_PARAMETER_OVERRIDE";
@@ -735,6 +736,8 @@ export type ParameterInheritanceResult = Readonly<{
   parameterId: string;
   value: z.infer<typeof parameterValueSchema> | undefined;
   allowedValues: readonly z.infer<typeof parameterValueSchema>[] | undefined;
+  effectiveMinimum: number | undefined;
+  effectiveMaximum: number | undefined;
   issues: readonly ParameterInheritanceIssue[];
 }>;
 
@@ -749,6 +752,8 @@ function valueIsAllowed(
   value: z.infer<typeof parameterValueSchema>,
   definition: BoundedParameterDefinition,
   allowedValues: readonly z.infer<typeof parameterValueSchema>[] | undefined,
+  effectiveMinimum: number | undefined,
+  effectiveMaximum: number | undefined,
 ): boolean {
   if (definition.allowedValues) {
     return (allowedValues ?? definition.allowedValues).some((candidate) =>
@@ -756,7 +761,10 @@ function valueIsAllowed(
     );
   }
   if (typeof value !== "number" || !definition.numericRange) return false;
-  return value >= definition.numericRange.minimum && value <= definition.numericRange.maximum;
+  return (
+    value >= (effectiveMinimum ?? definition.numericRange.minimum) &&
+    value <= (effectiveMaximum ?? definition.numericRange.maximum)
+  );
 }
 
 export function resolveBoundedParameterInheritance(
@@ -769,6 +777,8 @@ export function resolveBoundedParameterInheritance(
       parameterId,
       value: undefined,
       allowedValues: undefined,
+      effectiveMinimum: undefined,
+      effectiveMaximum: undefined,
       issues: [
         {
           code: "UNKNOWN_BOUNDED_PARAMETER",
@@ -785,6 +795,8 @@ export function resolveBoundedParameterInheritance(
   );
   const issues: ParameterInheritanceIssue[] = [];
   let allowedValues = definition.allowedValues ? [...definition.allowedValues] : undefined;
+  let effectiveMinimum = definition.numericRange?.minimum;
+  let effectiveMaximum = definition.numericRange?.maximum;
   let value: z.infer<typeof parameterValueSchema> | undefined = definition.defaultValue;
 
   orderedLayers.forEach((layer) => {
@@ -804,7 +816,7 @@ export function resolveBoundedParameterInheritance(
           level: layer.level,
           message: `${layer.level} cannot narrow ${parameterId}.`,
         });
-      } else if (constraint.allowedValues) {
+      } else if (definition.allowedValues && constraint.allowedValues) {
         const parentValues = allowedValues ?? definition.allowedValues ?? [];
         const broadens = constraint.allowedValues.some(
           (candidate) => !parentValues.some((parent) => valuesEqual(parent, candidate)),
@@ -819,18 +831,42 @@ export function resolveBoundedParameterInheritance(
         } else {
           allowedValues = [...constraint.allowedValues];
         }
-      } else if (
-        definition.numericRange &&
-        ((constraint.minimum !== undefined &&
-          constraint.minimum < definition.numericRange.minimum) ||
-          (constraint.maximum !== undefined &&
-            constraint.maximum > definition.numericRange.maximum))
-      ) {
+      } else if (definition.numericRange) {
+        if (constraint.allowedValues) {
+          issues.push({
+            code: "INVALID_BOUNDED_PARAMETER_VALUE",
+            parameterId,
+            level: layer.level,
+            message: `${layer.level} must use numeric bounds for ${parameterId}.`,
+          });
+        } else {
+          const minimum = constraint.minimum ?? effectiveMinimum!;
+          const maximum = constraint.maximum ?? effectiveMaximum!;
+          if (minimum > maximum) {
+            issues.push({
+              code: "CONTRADICTORY_NUMERIC_RANGE",
+              parameterId,
+              level: layer.level,
+              message: `${layer.level} creates contradictory numeric bounds for ${parameterId}.`,
+            });
+          } else if (minimum < effectiveMinimum! || maximum > effectiveMaximum!) {
+            issues.push({
+              code: "ILLEGAL_INHERITANCE_BROADENING",
+              parameterId,
+              level: layer.level,
+              message: `${layer.level} broadens the effective range for ${parameterId}.`,
+            });
+          } else {
+            effectiveMinimum = minimum;
+            effectiveMaximum = maximum;
+          }
+        }
+      } else if (constraint.minimum !== undefined || constraint.maximum !== undefined) {
         issues.push({
-          code: "ILLEGAL_INHERITANCE_BROADENING",
+          code: "INVALID_BOUNDED_PARAMETER_VALUE",
           parameterId,
           level: layer.level,
-          message: `${layer.level} broadens the allowed range for ${parameterId}.`,
+          message: `${layer.level} must use allowed values for ${parameterId}.`,
         });
       }
     }
@@ -854,7 +890,9 @@ export function resolveBoundedParameterInheritance(
       });
       return;
     }
-    if (!valueIsAllowed(layer.value, definition, allowedValues)) {
+    if (
+      !valueIsAllowed(layer.value, definition, allowedValues, effectiveMinimum, effectiveMaximum)
+    ) {
       issues.push({
         code: "INVALID_BOUNDED_PARAMETER_VALUE",
         parameterId,
@@ -866,5 +904,5 @@ export function resolveBoundedParameterInheritance(
     value = layer.value;
   });
 
-  return { parameterId, value, allowedValues, issues };
+  return { parameterId, value, allowedValues, effectiveMinimum, effectiveMaximum, issues };
 }
