@@ -16,26 +16,26 @@ The implementation is located at `src/application/golden-store-evaluation`. Its 
 
 - evaluation ID and contract version;
 - canonical fixture and project identity;
-- baseline snapshot ID, revision, and canonical content fingerprint;
+- parsed canonical baseline snapshot and a checked canonical content fingerprint;
 - current capability-manifest version and fingerprint;
 - the canonical home, collection, and product PageBlueprint materializations, including profile identity/version, narrative roles, component/variant order, bounded parameters, binding categories, asset roles, and materialization fingerprint;
-- lifecycle evidence for `baseline`, `proposed-reviewable`, `accepted`, `saved-reloaded`, and `published`;
+- five parsed lifecycle observations: `proposal-preview`, `accepted-editor`, `preview-route`, `saved-reloaded`, and `published`;
 - EN/FI responsive and accessibility evidence for every required surface and viewport;
-- optional renderer-output and future screenshot references;
-- protected commerce, approved-asset, and navigation fingerprints for each lifecycle state.
+- parsed renderer-output evidence and future screenshot references for every scenario;
+- parsed canonical commerce and approved-asset projections for every lifecycle observation.
 
-The run fingerprint is a canonical-value fingerprint over the contract evidence. It deliberately contains no timestamp, wall-clock duration, browser-storage value, or provider output.
+The baseline is reference evidence only; it is not a substitute for the required preview-route observation. The harness parses the complete input at its runtime boundary with the canonical snapshot, catalogue, approved-asset, locale, viewport, and PageBlueprint-materialization schemas. It recomputes snapshot, navigation, commerce, approved-asset, and renderer-output fingerprints internally; supplied snapshot metadata must agree or evaluation fails closed. The run fingerprint deliberately contains no timestamp, wall-clock duration, browser-storage value, or provider output.
 
 ## Required scenario matrix
 
 The harness materializes this fixed matrix (160 scenarios):
 
-| Dimension      | Values                                                             |
-| -------------- | ------------------------------------------------------------------ |
-| Surface        | shared frame, home, collection, product                            |
-| Lifecycle      | baseline, proposed-reviewable, accepted, saved-reloaded, published |
-| Locale         | EN, FI                                                             |
-| Viewport width | 375, 768, 1024, 1440 px                                            |
+| Dimension      | Values                                                                      |
+| -------------- | --------------------------------------------------------------------------- |
+| Surface        | shared frame, home, collection, product                                     |
+| Lifecycle      | proposal preview, accepted editor, preview route, saved/reloaded, published |
+| Locale         | EN, FI                                                                      |
+| Viewport width | 375, 768, 1024, 1440 px                                                     |
 
 The matrix uses the existing canonical fixtures and projections. It does not add merchant-specific commerce entities or hidden fixture preparation. Screenshot references are nullable future evidence references; they are not canonical storefront state.
 
@@ -43,7 +43,7 @@ The matrix uses the existing canonical fixtures and projections. It does not add
 
 P10A-07A deliberately separates four kinds of evidence:
 
-1. **Deterministic correctness:** current baseline revision/fingerprint, current manifest, current PageBlueprint profiles, complete matrix, and stable run fingerprint.
+1. **Deterministic correctness:** parsed baseline reference, current manifest, current P10A-03 materializations, all five lifecycle observations, exact matrix coverage, and stable run fingerprint.
 2. **Structural quality signals:** role cardinality, required registered components, shared-frame coherence, PageBlueprint component variants/parameters/bindings, responsive/accessibility status, and editor-preview-publish lifecycle parity. These are objective structural checks, not subjective commercial scores.
 3. **Human visual evaluation:** explicit `not-reviewed` placeholder only. P10A-07A makes no claim of final screenshot-level commercial quality or a human visual approval.
 4. **Future provider evidence:** explicit `not-run` placeholder only. The harness does not invoke OpenAI or any other provider.
@@ -54,18 +54,19 @@ No subjective threshold, brand-quality score, or final visual verdict is introdu
 
 The harness rejects evidence when:
 
-- the baseline snapshot ID, revision, or canonical fingerprint is stale;
+- baseline or any lifecycle snapshot is malformed, belongs to another project, has mismatched revision metadata, or has a stale supplied fingerprint;
 - the generated component capability manifest differs from the live read-only authority;
-- a PageBlueprint profile, version, role cardinality, component/variant composition, required binding category, or asset role is stale/incompatible;
+- a PageBlueprint profile/materialization fingerprint, slot order, component, variant, narrative role, visual weight, transition intent, bounded parameter, binding category, asset role, compatibility, or cardinality diverges from the P10A-03 canonical materializer;
+- a lifecycle snapshot fails the existing executable PageBlueprint realization validator, including shared-frame/header/footer coherence;
 - any lifecycle/surface/locale/viewport record is absent, duplicated, unsupported, or records failed responsive/accessibility evidence;
-- accepted, saved/reloaded, and published canonical content or protected fingerprints lose parity;
-- commerce, approved-asset, or navigation fingerprints diverge from baseline state.
+- any proposal-preview → accepted-editor → preview-route → saved/reloaded → published canonical projection transition diverges;
+- canonical commerce, approved assets, or navigation derived from parsed objects diverge.
 
 This preserves the canonical commerce projection, navigation, media/approved-asset state, and the `StorefrontSnapshot` lifecycle. It verifies rather than mutates them.
 
 ## Existing renderer and browser evidence
 
-P10A-07A reuses the repository’s existing deterministic lifecycle and browser-test infrastructure as its source of renderer/output and responsive evidence. It captures renderer-output references when supplied, and reserves screenshot references for the existing or future Playwright evidence artifacts. It neither adds screenshot CSS nor claims page-image rendering or visual-review completion.
+P10A-07A reuses the repository’s existing deterministic lifecycle and browser-test infrastructure as its source of renderer/output and responsive evidence. Each returned scenario retains its derived renderer-output fingerprint, profile identity, evidence reference, and optional screenshot reference; renderer evidence participates in both scenario and run fingerprints. Duplicate composite evidence keys are rejected before map insertion. It neither adds screenshot CSS nor claims page-image rendering or visual-review completion.
 
 ## Deferred work
 
