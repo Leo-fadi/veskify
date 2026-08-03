@@ -3009,7 +3009,9 @@ describe("P4-04 editor AI command integration", () => {
     await user.click(screen.getByRole("button", { name: "Create proposal" }));
     provider.reject(0);
     const retry = await screen.findByRole("button", { name: "Retry" });
-    expect(retry).toHaveFocus();
+    await waitFor(() => {
+      expect(retry).toHaveFocus();
+    });
     expect(request).toHaveValue("Improve the selected hero.");
 
     await user.click(screen.getByRole("radio", { name: "Suomi" }));
