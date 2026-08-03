@@ -103,13 +103,30 @@ supports only these safe read paths:
 
 - list executable profile projections by canonical page type;
 - list compatible component projections by page type, narrative role or executable profile;
-- resolve one profile/component/variant selection; and
+- resolve one profile/**slot**/component/variant selection; and
 - produce a provider-safe capability projection for already validated selections.
 
-Profile and component references fail closed for an unknown profile, unknown component, component
-not selected by the profile, or an unregistered/profile-incompatible variant. Returned values are
-deeply frozen. They contain declared page applicability, narrative compatibility, variant IDs,
-bounded parameter IDs, and required binding/asset **categories** only.
+When a query names both a page type and an executable profile, they must be the same canonical
+page family; a conflicting `home` profile and `product` query is rejected rather than widened.
+Shared header/footer capabilities remain available only through the matching executable page
+profile that selects their slot. The generated manifest deliberately does not turn the separate
+shared-frame registry profile into a second skill capability authority.
+
+Profile and component references fail closed for an unknown profile, unknown slot, unknown
+component, a component not selected at that slot, a component prohibited by the canonical
+`pageBlueprintCompatibility` policy, or an unregistered/profile-incompatible variant. Slot ID is
+required because an executable profile may select the same component type more than once with
+different allowed variants. Returned values are deeply frozen. They contain declared page
+applicability, narrative compatibility, variant IDs, bounded parameter IDs, required binding
+categories, and the complete declared asset-slot contract: slot ID, accepted approved-asset roles,
+requiredness, and minimum/maximum cardinality. Asset slots remain capability requirements, never
+approved-asset instances or mutable asset authority.
+
+The consumer faithfully projects the P10A-03/P10A-04A `pageBlueprintCompatibility` distinction:
+`anyRegistered` permits a registered component wherever an executable profile selects it;
+`listed` permits it only for its declared executable profile IDs. A stale listed-profile reference
+is rejected while the manifest authority is generated. This gives the skill layer the same
+profile-compatibility boundary as canonical narrative validation without recreating it.
 
 The consumer never provides a registration, mutation, persistence, renderer-load, generic
 component-schema, component-tree, route, commerce-record or asset-instance operation. A manifest
@@ -137,12 +154,18 @@ construction remain the only owners of actual protected records.
 
 1. generated profile/component queries are read-only and omit renderer internals;
 2. unknown manifest versions and stale fingerprints fail closed;
-3. invented profile/component/variant references fail closed;
-4. selected profile/component/variant references remain materializable through P10A-03;
-5. consumers cannot mutate returned capability knowledge, the generated manifest fingerprint or
+3. conflicting page/profile requests, invented profiles, slots, components and variants fail
+   closed while matching profiles retain valid shared header/footer capabilities;
+4. repeated component types are resolved by their registered slot ID and slot-specific variant;
+5. `listed` and `anyRegistered` PageBlueprint compatibility agrees with P10A-03 canonical
+   narrative validation, including stale profile-reference rejection;
+6. required and optional asset slots retain roles, requiredness and cardinality without exposing
+   asset instances or allowing mutation;
+7. selected profile/component/variant references remain materializable through P10A-03;
+8. consumers cannot mutate returned capability knowledge, the generated manifest fingerprint or
    the registry-derived capability authority;
-6. provider capability context contains only approved capability projections; and
-7. the complete eight-skill legacy inventory is deterministic and immutable.
+9. provider capability context contains only approved capability projections; and
+10. the complete eight-skill legacy inventory is deterministic and immutable.
 
 This is intentionally a narrow integration. Current skills continue to execute through their
 existing registry, planner, executor, proposal and provider boundaries. P10A-05 will migrate

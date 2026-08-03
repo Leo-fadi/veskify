@@ -4,7 +4,7 @@ import type {
   ComponentCapabilityManifestEntry,
   ExecutablePageBlueprintProfileCapabilityEntry,
 } from "@/domain/component-platform";
-import type { PageType } from "@/domain/storefront";
+import { pageTypeSchema, type PageType } from "@/domain/storefront";
 import { designSkillRegistry } from "./default-registry";
 import type { DesignSkillRegistry } from "./registry";
 
@@ -14,7 +14,10 @@ export const skillCapabilityKnowledgeErrorCodes = {
   unknownManifestVersion: "unknownManifestVersion",
   staleManifestFingerprint: "staleManifestFingerprint",
   unknownProfile: "unknownProfile",
+  unknownSlot: "unknownSlot",
   unknownComponent: "unknownComponent",
+  unsupportedPageType: "unsupportedPageType",
+  incompatibleProfilePageType: "incompatibleProfilePageType",
   incompatibleProfileComponent: "incompatibleProfileComponent",
   unknownVariant: "unknownVariant",
 } as const;
@@ -65,6 +68,10 @@ export type SkillComponentCapability = Readonly<{
   allowedPageTypes: readonly PageType[];
   narrativeRoles: readonly string[];
   boundedParameterIds: readonly string[];
+  pageBlueprintCompatibility: Readonly<{
+    policy: "anyRegistered" | "listed";
+    profileIds: readonly string[];
+  }>;
   requiredBindingSlots: readonly Readonly<{
     slotId: string;
     acceptedSourceTypes: readonly string[];
@@ -73,11 +80,19 @@ export type SkillComponentCapability = Readonly<{
     slotId: string;
     acceptedRoles: readonly string[];
   }>[];
+  assetSlots: readonly Readonly<{
+    slotId: string;
+    acceptedRoles: readonly string[];
+    required: boolean;
+    minItems: number;
+    maxItems?: number;
+  }>[];
 }>;
 
 export type SkillCapabilitySelection = Readonly<{
   manifest: SkillCapabilityManifestReference;
   profileId: string;
+  slotId: string;
   componentType: string;
   variant: string;
 }>;
@@ -115,6 +130,7 @@ export type SkillCapabilityKnowledgeConsumer = Readonly<{
   ) => readonly SkillComponentCapability[];
   resolveSelection: (input: SkillCapabilitySelection) => Readonly<{
     profile: SkillProfileCapability;
+    slotId: string;
     component: SkillComponentCapability;
     variant: string;
   }>;
@@ -129,7 +145,10 @@ export type SkillCapabilityKnowledgeConsumer = Readonly<{
 function deepFreeze<T>(value: T): T {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
     Object.freeze(value);
-    Object.values(value).forEach((child) => deepFreeze(child));
+    for (const key of Object.keys(value)) {
+      const child: unknown = Reflect.get(value, key);
+      deepFreeze(child);
+    }
   }
   return value;
 }
@@ -171,6 +190,10 @@ function componentCapability(entry: ComponentCapabilityManifestEntry): SkillComp
     allowedPageTypes: immutableList(entry.allowedPageTypes),
     narrativeRoles: immutableList(entry.narrativeRoles),
     boundedParameterIds: immutableList(entry.boundedParameters.map((parameter) => parameter.id)),
+    pageBlueprintCompatibility: deepFreeze({
+      policy: entry.pageBlueprintCompatibility.policy,
+      profileIds: immutableList(entry.pageBlueprintCompatibility.profileIds),
+    }),
     requiredBindingSlots: immutableList(
       entry.requiredCommerceBindingSlots.map((slot) =>
         deepFreeze({
@@ -184,6 +207,17 @@ function componentCapability(entry: ComponentCapabilityManifestEntry): SkillComp
         deepFreeze({
           slotId: slot.slotId,
           acceptedRoles: immutableList(slot.acceptedRoles),
+        }),
+      ),
+    ),
+    assetSlots: immutableList(
+      entry.assetSlots.map((slot) =>
+        deepFreeze({
+          slotId: slot.id,
+          acceptedRoles: immutableList(slot.acceptedRoles),
+          required: slot.required,
+          minItems: slot.minItems,
+          ...(slot.maxItems === undefined ? {} : { maxItems: slot.maxItems }),
         }),
       ),
     ),
@@ -276,17 +310,48 @@ export function createSkillCapabilityKnowledgeConsumer(
     return component;
   }
 
+  function assertSupportedPageType(pageType: PageType | undefined) {
+    if (pageType !== undefined && !pageTypeSchema.safeParse(pageType).success) {
+      throw new SkillCapabilityKnowledgeError(
+        skillCapabilityKnowledgeErrorCodes.unsupportedPageType,
+        `Unsupported capability page type: ${pageType}.`,
+      );
+    }
+  }
+
+  function componentAllowsProfile(
+    component: SkillComponentCapability,
+    profile: SkillProfileCapability,
+  ) {
+    return (
+      component.pageBlueprintCompatibility.policy === "anyRegistered" ||
+      component.pageBlueprintCompatibility.profileIds.includes(profile.profileId)
+    );
+  }
+
   function resolveSelection(input: SkillCapabilitySelection) {
     assertManifestReference(input.manifest);
     const profile = getProfile(input.profileId);
     const component = getComponent(input.componentType);
     const selection = profile.componentSelections.find(
-      (candidate) => candidate.componentType === component.componentType,
+      (candidate) => candidate.slotId === input.slotId,
     );
     if (!selection) {
       throw new SkillCapabilityKnowledgeError(
+        skillCapabilityKnowledgeErrorCodes.unknownSlot,
+        `Profile ${profile.profileId} has no capability slot ${input.slotId}.`,
+      );
+    }
+    if (selection.componentType !== component.componentType) {
+      throw new SkillCapabilityKnowledgeError(
         skillCapabilityKnowledgeErrorCodes.incompatibleProfileComponent,
-        `Component ${component.componentType} is not compatible with profile ${profile.profileId}.`,
+        `Slot ${input.slotId} does not select component ${component.componentType}.`,
+      );
+    }
+    if (!componentAllowsProfile(component, profile)) {
+      throw new SkillCapabilityKnowledgeError(
+        skillCapabilityKnowledgeErrorCodes.incompatibleProfileComponent,
+        `Component ${component.componentType} is not compatible with PageBlueprint ${profile.profileId}.`,
       );
     }
     if (
@@ -298,7 +363,7 @@ export function createSkillCapabilityKnowledgeConsumer(
         `Variant ${input.variant} is not registered for ${component.componentType} in profile ${profile.profileId}.`,
       );
     }
-    return deepFreeze({ profile, component, variant: input.variant });
+    return deepFreeze({ profile, slotId: selection.slotId, component, variant: input.variant });
   }
 
   return deepFreeze({
@@ -313,7 +378,14 @@ export function createSkillCapabilityKnowledgeConsumer(
     },
     listCompatibleComponents: ({ manifest, pageType, narrativeRole, profileId }) => {
       assertManifestReference(manifest);
+      assertSupportedPageType(pageType);
       const profile = profileId === undefined ? undefined : getProfile(profileId);
+      if (profile && pageType !== undefined && profile.pageType !== pageType) {
+        throw new SkillCapabilityKnowledgeError(
+          skillCapabilityKnowledgeErrorCodes.incompatibleProfilePageType,
+          `Profile ${profile.profileId} is not compatible with ${pageType} page capability queries.`,
+        );
+      }
       return immutableList(
         [...componentsByType.values()].filter((component) => {
           if (pageType !== undefined && !component.allowedPageTypes.includes(pageType))
@@ -321,12 +393,12 @@ export function createSkillCapabilityKnowledgeConsumer(
           if (narrativeRole !== undefined && !component.narrativeRoles.includes(narrativeRole)) {
             return false;
           }
-          return (
-            profile === undefined ||
-            profile.componentSelections.some(
-              (selection) => selection.componentType === component.componentType,
-            )
-          );
+          return profile === undefined
+            ? true
+            : componentAllowsProfile(component, profile) &&
+                profile.componentSelections.some(
+                  (selection) => selection.componentType === component.componentType,
+                );
         }),
       );
     },
