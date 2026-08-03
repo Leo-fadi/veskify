@@ -24,12 +24,12 @@ import {
   dynamicCollectionCommercePropsSchema,
   dynamicCollectionCommerceStyleOverridesSchema,
   dynamicCollectionCommerceVariantSchema,
-  veskifyComponentRegistryV2,
   type DynamicCollectionCommerceContent,
   type DynamicCollectionCommerceProps,
   type DynamicCollectionCommerceStyleOverrides,
   type DynamicCollectionCommerceVariant,
-} from "@/components/registry";
+} from "@/components/registry/dynamic-collection-commerce";
+import { veskifyComponentRegistryV2 } from "@/components/registry/v2-registry";
 import styles from "./dynamic-collection-commerce.module.css";
 import { validateRouteUsedAssetConformance } from "./storefront-asset-conformance";
 
