@@ -1,6 +1,8 @@
 import { z } from "zod";
 import type { PageType } from "@/domain/storefront";
 import {
+  boundedParameterDefinitions,
+  createLegacyComponentDesignCompatibility,
   type ComponentDefinitionV2,
   type EditablePresentationField,
   validateComponentDefinitionV2,
@@ -122,6 +124,16 @@ function editableFieldFromV1(
   };
 }
 
+function legacyContentDesignCompatibility() {
+  const compatibility = createLegacyComponentDesignCompatibility();
+  return {
+    ...compatibility,
+    boundedParameterIds: boundedParameterDefinitions
+      .filter((parameter) => parameter.compatibleComponentFamilies.includes("content"))
+      .map((parameter) => parameter.id),
+  };
+}
+
 export function adaptV1ComponentDefinitionToV2(
   definition: InspectableComponentDefinitionV1,
 ): ComponentDefinitionV2 {
@@ -184,6 +196,7 @@ export function adaptV1ComponentDefinitionToV2(
       labels: "Retain the existing registered renderer labels and alt text rules.",
       focus: "Retain the existing registered renderer focus behaviour.",
     },
+    designCompatibility: legacyContentDesignCompatibility(),
     migration: {
       policy: "compatible",
       previousVersions: [],

@@ -1,5 +1,7 @@
 import { z } from "zod";
 import {
+  boundedParameterDefinitions,
+  createLegacyComponentDesignCompatibility,
   validateComponentDefinitionV2,
   type ComponentDefinitionV2,
   type ComponentInstanceV2,
@@ -196,6 +198,16 @@ function define(input: unknown): ComponentDefinitionV2 {
   return validateComponentDefinitionV2(input);
 }
 
+function designCompatibilityFor(family: "commerce" | "marketing" | "navigation" | "service") {
+  const compatibility = createLegacyComponentDesignCompatibility();
+  return {
+    ...compatibility,
+    boundedParameterIds: boundedParameterDefinitions
+      .filter((parameter) => parameter.compatibleComponentFamilies.includes(family))
+      .map((parameter) => parameter.id),
+  };
+}
+
 export const homepageHeroDefinition = define({
   type: "homepageHero",
   version: { major: 2, minor: 0, patch: 0 },
@@ -356,6 +368,7 @@ export const homepageHeroDefinition = define({
   protectedFields: { readOnlyPaths: [...commonProtectedPaths] },
   responsiveRules,
   accessibilityRequirements,
+  designCompatibility: designCompatibilityFor("marketing"),
   migration: stableMigration,
   renderer: {
     adapterId: "veskifyHomepageRenderer",
@@ -422,6 +435,7 @@ function commerceListDefinition({
     protectedFields: { readOnlyPaths: [...commonProtectedPaths] },
     responsiveRules,
     accessibilityRequirements,
+    designCompatibility: designCompatibilityFor(family),
     migration: stableMigration,
     renderer: {
       adapterId: "veskifyHomepageRenderer",
@@ -729,6 +743,7 @@ function marketingDefinition({
     protectedFields: { readOnlyPaths: [...commonProtectedPaths] },
     responsiveRules,
     accessibilityRequirements,
+    designCompatibility: designCompatibilityFor(family),
     migration: stableMigration,
     renderer: {
       adapterId: "veskifyHomepageRenderer",
