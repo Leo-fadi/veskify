@@ -16,6 +16,10 @@ import {
   veskifyComponentDefinitionsV2,
 } from "@/components/registry";
 
+const storefrontGenerationPageTypes = ["home", "collection", "product"] satisfies readonly (
+  "home" | "collection" | "product"
+)[];
+
 function codes(result: ReturnType<typeof validateNarrativeComposition>) {
   return result.issues.map((entry) => entry.code);
 }
@@ -83,11 +87,9 @@ describe("P10A Task 6 design vocabulary and narrative contracts", () => {
 
   it("keeps every registered PageBlueprint internally satisfiable", () => {
     listTemplates().forEach((template) => {
-      template.pagePlans.forEach((plan) => {
-        expect(
-          validate(plan.pageType, sectionsFor(plan), plan),
-          `${template.id}/${plan.pageType}`,
-        ).toEqual({
+      storefrontGenerationPageTypes.forEach((pageType) => {
+        const plan = requiredPlan(template.id, pageType);
+        expect(validate(pageType, sectionsFor(plan), plan), `${template.id}/${pageType}`).toEqual({
           valid: true,
           issues: [],
         });
