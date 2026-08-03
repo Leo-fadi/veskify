@@ -2,6 +2,7 @@ import {
   registeredTokenRefinementPlanSchema,
   type RegisteredTokenRefinementPlan,
 } from "@/application/storefront-design-system";
+import { getTemplatePagePlan } from "@/application/storefront-templates/registry";
 import {
   dynamicCollectionCommerceDefaultContent,
   dynamicCollectionCommerceDefaultProps,
@@ -443,6 +444,67 @@ function assertCoordinatedDirectionCapabilities(
 
 function generatedId(prefix: string, identity: unknown): string {
   return `${prefix}_${canonicalValueFingerprint(identity).replaceAll("_", "-").slice(-24)}`;
+}
+
+function templateForDirection(
+  directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
+) {
+  return {
+    premiumEditorial: "template_brand_led_editorial",
+    modernTechnical: "template_catalogue_forward_commerce",
+    warmApproachable: "template_balanced_commerce",
+  }[directionId];
+}
+
+function materializeDirectionPageBlueprints(
+  input: WholeStorefrontPlanningInput,
+  directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
+) {
+  const templateId = templateForDirection(directionId);
+  const registeredTemplate = input.recipeContext.templates.find(
+    (template) => template.id === templateId,
+  );
+  if (!registeredTemplate) {
+    invalid(
+      "unsupported-page-family",
+      "The selected direction has no registered PageBlueprint template.",
+    );
+  }
+  return (["home", "collection", "product"] as const).map((pageType) => {
+    const pagePlan =
+      registeredTemplate.pagePlans.find((plan) => plan.pageType === pageType) ??
+      getTemplatePagePlan(templateId, pageType);
+    if (!pagePlan) {
+      invalid(
+        "unsupported-page-family",
+        `The selected direction has no ${pageType} PageBlueprint.`,
+      );
+    }
+    const profile = pagePlan.profile;
+    if (!profile || profile.version !== "1.0.0") {
+      invalid(
+        "unsupported-page-family",
+        `The selected ${pageType} PageBlueprint profile is absent or uses an unsupported version.`,
+      );
+    }
+    const materialization = {
+      profileId: profile.id,
+      profileVersion: profile.version,
+      pageType,
+      roleOrder: profile.orderedNarrativeRoles,
+      slots: profile.componentSelections,
+      requiredBindingCategories: profile.requiredBindingCategories,
+      requiredAssetRoles: profile.requiredAssetRoles,
+    };
+    return {
+      pageType,
+      profileId: profile.id,
+      profileVersion: profile.version,
+      fingerprint: `page-blueprint-${canonicalValueFingerprint(
+        canonicalValueString(materialization),
+      )}`,
+    };
+  });
 }
 
 function generatedComponentId(
@@ -969,6 +1031,10 @@ export function createWholeStorefrontGenerationPlan(
     collectionPresentation: selectedDirection.collectionPresentation,
     productPresentation: selectedDirection.productPresentation,
   });
+  const pageBlueprintMaterializations = materializeDirectionPageBlueprints(
+    input,
+    designSystemSelection.directionId,
+  );
   const collectionComponentDefinition = definitionFor(definitions, "dynamicCollectionCommerce");
   const productComponentDefinition = definitionFor(definitions, "dynamicProductDetail");
   const usedComponentIds = new Set(
@@ -1421,6 +1487,7 @@ export function createWholeStorefrontGenerationPlan(
       : ("coordinatedStructuralDirection" as const),
     tokenRefinementPlan,
     designSystemSelection,
+    pageBlueprintMaterializations,
     sharedDesignDirection,
     sharedChrome,
     pagePlans,

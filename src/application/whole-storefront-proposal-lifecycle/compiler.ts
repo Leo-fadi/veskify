@@ -326,6 +326,18 @@ function registeredRecipeForPage(
   designSystem: WholeStorefrontProposalCompilationInput["planningInput"]["recipeContext"]["designSystem"],
 ) {
   if (plan.tokenRefinementPlan !== null || pageRole === "other") return undefined;
+  const pageType =
+    pageRole === "homepage"
+      ? "home"
+      : pageRole === "collection-template"
+        ? "collection"
+        : "product";
+  if (!plan.pageBlueprintMaterializations.some((entry) => entry.pageType === pageType)) {
+    invalid(
+      "invalid-plan",
+      "The validated plan is missing the canonical executable PageBlueprint materialization.",
+    );
+  }
   const recipeId =
     pageRole === "homepage"
       ? plan.designSystemSelection.homepageRecipeId

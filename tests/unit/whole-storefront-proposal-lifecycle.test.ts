@@ -279,6 +279,15 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
     expect(validateWholeStorefrontProposal(first, input())).toEqual(first);
   });
 
+  it("rejects a plan that drops its canonical executable PageBlueprint identity", () => {
+    const source = input();
+    source.plan = {
+      ...source.plan,
+      pageBlueprintMaterializations: source.plan.pageBlueprintMaterializations.slice(1),
+    } as typeof source.plan;
+    expect(errorCode(() => compileWholeStorefrontProposal(source))).toBe("invalid-plan");
+  });
+
   it("represents replacements, removals and every required approved asset placement", () => {
     const proposal = compileWholeStorefrontProposal(withApprovedPlacement());
 

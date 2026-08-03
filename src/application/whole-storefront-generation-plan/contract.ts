@@ -101,6 +101,15 @@ export const wholeStorefrontPageRoleSchema = z.enum([
   "other",
 ]);
 
+export const wholeStorefrontPageBlueprintMaterializationSchema = z
+  .object({
+    pageType: z.enum(["home", "collection", "product"]),
+    profileId: z.string().trim().min(1).max(120),
+    profileVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+    fingerprint: fingerprintSchema,
+  })
+  .strict();
+
 export const wholeStorefrontTargetSchema = z
   .object({
     projectId: idSchema,
@@ -319,6 +328,9 @@ export const wholeStorefrontGenerationPlanSchema = z
     requestClass: z.enum(["coordinatedStructuralDirection", "tokenOnlyRefinement"]),
     tokenRefinementPlan: registeredTokenRefinementPlanSchema.nullable(),
     designSystemSelection: wholeStorefrontDesignSystemSelectionSchema,
+    pageBlueprintMaterializations: z
+      .array(wholeStorefrontPageBlueprintMaterializationSchema)
+      .length(3),
     sharedDesignDirection: wholeStorefrontSharedDesignDirectionSchema,
     sharedChrome: wholeStorefrontSharedChromePlanSchema,
     pagePlans: z.array(wholeStorefrontPagePlanSchema).min(1),
@@ -347,6 +359,18 @@ export const wholeStorefrontGenerationPlanSchema = z
         code: "custom",
         path: ["pagePlans"],
         message: "Whole-storefront page plans must use unique page IDs.",
+      });
+    }
+    const profilePageTypes = plan.pageBlueprintMaterializations.map((entry) => entry.pageType);
+    if (
+      canonicalValueFingerprint([...profilePageTypes].sort()) !==
+      canonicalValueFingerprint(["collection", "home", "product"])
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["pageBlueprintMaterializations"],
+        message:
+          "Whole-storefront plans must retain one canonical executable PageBlueprint per page family.",
       });
     }
     const componentIds = plan.pagePlans.flatMap((page) =>

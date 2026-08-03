@@ -6,3 +6,4 @@ export * from "./selection-planner";
 export * from "./materializer-contract";
 export * from "./materializer";
 export * from "./design-vocabulary-validation";
+export * from "./profile-materializer";

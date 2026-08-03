@@ -238,6 +238,15 @@ describe("P8-01 whole-storefront generation plan", () => {
       first.target.brandSystemFingerprint,
     );
     expect(first.pagePlans.every((page) => page.disposition === "retained")).toBe(true);
+    expect(first.pageBlueprintMaterializations).toEqual(second.pageBlueprintMaterializations);
+    expect(first.pageBlueprintMaterializations.map((profile) => profile.pageType)).toEqual([
+      "home",
+      "collection",
+      "product",
+    ]);
+    expect(
+      first.pageBlueprintMaterializations.every((profile) => profile.profileVersion === "1.0.0"),
+    ).toBe(true);
 
     const homeOnlyDraft = structuredClone(aurumNordicSeed.draftSnapshot);
     homeOnlyDraft.pages = homeOnlyDraft.pages.filter((page) => page.type === "home");

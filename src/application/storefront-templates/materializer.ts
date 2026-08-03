@@ -11,7 +11,11 @@ import {
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import { type Locale } from "@/domain/shared";
-import { getComponentDefinition, validateRegisteredSnapshot } from "@/components/registry";
+import {
+  getComponentDefinition,
+  validateRegisteredSnapshot,
+  veskifyComponentDefinitionsV2,
+} from "@/components/registry";
 import { getTemplateById, getTemplatePagePlan } from "./registry";
 import {
   createStorefrontTemplateSelectionBriefFingerprint,
@@ -22,6 +26,7 @@ import {
   validateStorefrontTemplateSelectionPlan,
 } from "./selection-contract";
 import type { StorefrontTemplatePagePlan, StorefrontTemplateSlot } from "./contract";
+import { materializeExecutablePageBlueprint } from "./profile-materializer";
 import {
   cloneInitialStorefrontGenerationPlan,
   initialStorefrontGenerationPlanSchema,
@@ -460,6 +465,7 @@ export function materializeInitialStorefront(
     contentSource: "controlled-defaults-with-primary-locale-brief-overrides",
     brandSystemSource: "supplied-canonical-brand-system",
     omissions: [],
+    profileMaterializations: [],
   };
   const currentEvaluation = evaluateStorefrontTemplateCandidates(brief);
   const blockers = validateSelectionPreconditions(brief, selection, currentEvaluation);
@@ -475,6 +481,16 @@ export function materializeInitialStorefront(
   try {
     pages = requiredPageTypes.map((pageType) => {
       const pagePlan = selection.resolvedPagePlans.find((plan) => plan.pageType === pageType)!;
+      const profile = materializeExecutablePageBlueprint({
+        pagePlan,
+        componentDefinitions: veskifyComponentDefinitionsV2,
+      });
+      provenance.profileMaterializations.push({
+        pageType,
+        profileId: profile.profileId,
+        profileVersion: profile.profileVersion,
+        fingerprint: profile.fingerprint,
+      });
       return createPage(parsed.projectId, pagePlan, brief, provenance.omissions);
     });
     const pageIds = Object.fromEntries(pages.map((page) => [page.type, page.id])) as Record<
@@ -537,6 +553,7 @@ export function materializeInitialStorefront(
     assumptions: [
       "Registered component defaults provide controlled presentation content and references.",
       "Merchant-authored copy is applied only in the brief primary locale; no translation is invented.",
+      "Each registered PageBlueprint profile is materialized once before canonical sections are created.",
       "No project, snapshot, page, or section is persisted by this materializer.",
     ],
     warnings,
