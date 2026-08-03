@@ -5,6 +5,9 @@ const port = process.env.PLAYWRIGHT_PORT ?? "3119";
 export default defineConfig({
   testDir: "./tests/e2e",
   testMatch: "p9r-04-generation-acceptance.spec.ts",
+  // The deterministic demo reset uses one in-memory authority per browser run.
+  workers: 1,
+  fullyParallel: false,
   webServer: {
     command: `pnpm dev --port ${port}`,
     env: {
