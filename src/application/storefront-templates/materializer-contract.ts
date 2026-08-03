@@ -26,6 +26,15 @@ export const initialStorefrontOmissionSchema = z
   })
   .strict();
 
+export const initialStorefrontProfileMaterializationSchema = z
+  .object({
+    pageType: z.enum(["home", "collection", "product"]),
+    profileId: z.string().trim().min(1),
+    profileVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+    fingerprint: z.string().trim().min(1),
+  })
+  .strict();
+
 export const initialStorefrontProvenanceSchema = z
   .object({
     pageSource: z.string().trim().min(1),
@@ -33,6 +42,7 @@ export const initialStorefrontProvenanceSchema = z
     contentSource: z.string().trim().min(1),
     brandSystemSource: z.string().trim().min(1),
     omissions: z.array(initialStorefrontOmissionSchema),
+    profileMaterializations: z.array(initialStorefrontProfileMaterializationSchema),
   })
   .strict();
 

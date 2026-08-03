@@ -20,6 +20,7 @@ import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry
 import { aurumNordicSeed } from "@/data/seed";
 import type { ComponentDefinitionV2 } from "@/domain/component-platform";
 import { sourceEvidenceSchema, sourceReferenceSchema } from "@/domain/source-discovery";
+import { canonicalValueFingerprint } from "@/domain/storefront";
 
 const now = "2026-07-23T10:00:00.000Z";
 
@@ -238,12 +239,46 @@ describe("P8-01 whole-storefront generation plan", () => {
       first.target.brandSystemFingerprint,
     );
     expect(first.pagePlans.every((page) => page.disposition === "retained")).toBe(true);
+    expect(first.pageBlueprintMaterializations).toEqual(second.pageBlueprintMaterializations);
+    expect(first.pageBlueprintMaterializations.map((profile) => profile.pageType)).toEqual([
+      "home",
+      "collection",
+      "product",
+    ]);
+    expect(
+      first.pageBlueprintMaterializations.every((profile) => profile.profileVersion === "1.0.0"),
+    ).toBe(true);
 
     const homeOnlyDraft = structuredClone(aurumNordicSeed.draftSnapshot);
     homeOnlyDraft.pages = homeOnlyDraft.pages.filter((page) => page.type === "home");
     homeOnlyDraft.navigation = { primary: [], footer: [] };
     const initialized = createWholeStorefrontGenerationPlan(input({ draft: homeOnlyDraft }));
     expect(initialized.pagePlans.filter((page) => page.disposition === "created")).toHaveLength(2);
+  });
+
+  it("rejects a recomputed recipe context whose PageBlueprint profile differs from the live registry", () => {
+    const planning = input();
+    const staleContext = structuredClone(planning.recipeContext);
+    const template = requiredValue(
+      staleContext.templates.find((candidate) => candidate.id === "template_brand_led_editorial"),
+      "brand-led recipe context template",
+    );
+    const home = requiredValue(
+      template.pagePlans.find((candidate) => candidate.pageType === "home"),
+      "brand-led home PageBlueprint",
+    );
+    if (!home.profile || !home.profile.componentSelections[1]) {
+      throw new Error("Missing brand-led home profile selection");
+    }
+    home.profile.componentSelections[1].defaultVariant = "compact";
+    staleContext.fingerprint = `storefront-recipes-${canonicalValueFingerprint({
+      templates: [...staleContext.templates].sort((left, right) => left.id.localeCompare(right.id)),
+      designSystem: staleContext.designSystem,
+    })}`;
+
+    expect(() =>
+      createWholeStorefrontGenerationPlan({ ...planning, recipeContext: staleContext }),
+    ).toThrow(/live registered PageBlueprint/i);
   });
 
   it("blocks missing, unapproved and stale approved briefs", () => {

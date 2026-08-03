@@ -9,7 +9,6 @@ import {
 } from "@/application/whole-storefront-generation-plan/contract";
 import {
   applyRegisteredTokenRefinement,
-  orderSectionsForRecipe,
   registeredBrandSystemForDirection,
 } from "@/application/storefront-design-system";
 import {
@@ -263,28 +262,8 @@ function coordinatedRuntimeComponent(
   pageRole: WholeStorefrontRuntimePage["role"],
 ): WholeStorefrontRuntimeComponent {
   if (plan.tokenRefinementPlan !== null) return component;
-  const selections = plan.designSystemSelection.componentSelections;
-  const selection =
-    component.component === "header" || component.component === "footer"
-      ? Object.values(selections).find((candidate) => candidate.component === component.component)
-      : pageRole === "homepage"
-        ? [
-            selections.hero,
-            selections.collectionDiscovery,
-            selections.productCard,
-            selections.storytelling,
-            selections.campaign,
-            selections.trust,
-          ].find((candidate) => candidate.component === component.component)
-        : pageRole === "collection-template"
-          ? [selections.collectionCommerce].find(
-              (candidate) => candidate.component === component.component,
-            )
-          : pageRole === "product-template"
-            ? [selections.productDetail].find(
-                (candidate) => candidate.component === component.component,
-              )
-            : undefined;
+  const materialization = executableMaterializationForPage(plan, pageRole);
+  const selection = materialization?.slots.find((slot) => slot.component === component.component);
   return selection ? { ...component, variant: selection.variant } : component;
 }
 
@@ -320,34 +299,78 @@ function materializeRegisteredPresentation(
   });
 }
 
-function registeredRecipeForPage(
+function executableMaterializationForPage(
   plan: ReturnType<typeof validateCurrentPlan>,
   pageRole: WholeStorefrontRuntimePage["role"],
-  designSystem: WholeStorefrontProposalCompilationInput["planningInput"]["recipeContext"]["designSystem"],
 ) {
   if (plan.tokenRefinementPlan !== null || pageRole === "other") return undefined;
-  const recipeId =
+  const pageType =
     pageRole === "homepage"
-      ? plan.designSystemSelection.homepageRecipeId
+      ? "home"
       : pageRole === "collection-template"
-        ? plan.designSystemSelection.collectionRecipeId
-        : plan.designSystemSelection.productRecipeId;
-  const recipes =
-    pageRole === "homepage"
-      ? designSystem.homepageRecipes
-      : pageRole === "collection-template"
-        ? designSystem.collectionRecipes
-        : designSystem.productRecipes;
-  const recipe = recipes.find((candidate) => candidate.id === recipeId);
-  if (!recipe) invalid("invalid-plan", "The selected registered page recipe is unavailable.");
-  return recipe;
+        ? "collection"
+        : "product";
+  const materialization = plan.pageBlueprintMaterializations.find(
+    (entry) => entry.pageType === pageType,
+  );
+  if (!materialization) {
+    invalid(
+      "invalid-plan",
+      "The validated plan is missing the canonical executable PageBlueprint materialization.",
+    );
+  }
+  return materialization;
+}
+
+function orderRuntimeComponentsForMaterialization(
+  components: readonly WholeStorefrontRuntimeComponent[],
+  materialization: NonNullable<ReturnType<typeof executableMaterializationForPage>>,
+): WholeStorefrontRuntimeComponent[] {
+  const slotIndexes = new Map<string, number[]>();
+  materialization.slots.forEach((slot, index) => {
+    const indexes = slotIndexes.get(slot.component) ?? [];
+    indexes.push(index);
+    slotIndexes.set(slot.component, indexes);
+  });
+  const compositeSlotComponents = {
+    dynamicCollectionCommerce: ["collectionHeader", "filterBar", "productGrid"],
+    dynamicProductDetail: ["productGallery", "productInfo", "productOptions"],
+  } as const;
+  Object.entries(compositeSlotComponents).forEach(([component, representedSlots]) => {
+    const indexes = representedSlots.flatMap((slot) => slotIndexes.get(slot) ?? []);
+    if (indexes.length > 0) slotIndexes.set(component, indexes);
+  });
+  const footerSlotIndex = materialization.slots.findIndex((slot) => slot.component === "footer");
+  const consumed = new Map<string, number>();
+  return components
+    .map((component, originalIndex) => {
+      const index = consumed.get(component.component) ?? 0;
+      consumed.set(component.component, index + 1);
+      const slotIndex = slotIndexes.get(component.component)?.[index];
+      const isCompositeCommerceComponent = component.component in compositeSlotComponents;
+      return {
+        component:
+          slotIndex === undefined || isCompositeCommerceComponent
+            ? component
+            : { ...component, variant: materialization.slots[slotIndex].variant },
+        position:
+          slotIndex ??
+          (footerSlotIndex < 0
+            ? materialization.slots.length + originalIndex
+            : footerSlotIndex - 1 + (originalIndex + 1) / (components.length + 1)),
+        originalIndex,
+      };
+    })
+    .sort(
+      (left, right) => left.position - right.position || left.originalIndex - right.originalIndex,
+    )
+    .map(({ component }) => component);
 }
 
 function plannedPage(
   original: WholeStorefrontRuntimeState,
   plan: ReturnType<typeof validateCurrentPlan>,
   pagePlan: ReturnType<typeof validateCurrentPlan>["pagePlans"][number],
-  designSystem: WholeStorefrontProposalCompilationInput["planningInput"]["recipeContext"]["designSystem"],
 ): { page: WholeStorefrontRuntimePage; removedComponentIds: string[] } {
   const originalPage = original.pages.find((page) => page.pageId === pagePlan.pageId);
   if (pagePlan.disposition !== "created" && !originalPage) {
@@ -473,9 +496,9 @@ function plannedPage(
   const coordinatedComponents = components.map((component) =>
     coordinatedRuntimeComponent(component, plan, pagePlan.role),
   );
-  const registeredRecipe = registeredRecipeForPage(plan, pagePlan.role, designSystem);
-  const orderedComponents = registeredRecipe
-    ? orderSectionsForRecipe(coordinatedComponents, registeredRecipe)
+  const materialization = executableMaterializationForPage(plan, pagePlan.role);
+  const orderedComponents = materialization
+    ? orderRuntimeComponentsForMaterialization(coordinatedComponents, materialization)
     : coordinatedComponents;
   const page = {
     pageId: pagePlan.pageId,
@@ -799,12 +822,7 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
     .slice()
     .sort((left, right) => left.pageId.localeCompare(right.pageId))
     .forEach((pagePlan) => {
-      const planned = plannedPage(
-        original,
-        plan,
-        pagePlan,
-        input.planningInput.recipeContext.designSystem,
-      );
+      const planned = plannedPage(original, plan, pagePlan);
       add({ type: "APPLY_PAGE_COMPONENTS", ...planned });
     });
   plan.approvedAssetPlacements

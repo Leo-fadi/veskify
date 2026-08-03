@@ -2,6 +2,8 @@ import {
   registeredTokenRefinementPlanSchema,
   type RegisteredTokenRefinementPlan,
 } from "@/application/storefront-design-system";
+import { getTemplateById, getTemplatePagePlan } from "@/application/storefront-templates/registry";
+import { materializeExecutablePageBlueprint } from "@/application/storefront-templates/profile-materializer";
 import {
   dynamicCollectionCommerceDefaultContent,
   dynamicCollectionCommerceDefaultProps,
@@ -443,6 +445,71 @@ function assertCoordinatedDirectionCapabilities(
 
 function generatedId(prefix: string, identity: unknown): string {
   return `${prefix}_${canonicalValueFingerprint(identity).replaceAll("_", "-").slice(-24)}`;
+}
+
+function templateForDirection(
+  directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
+) {
+  return {
+    premiumEditorial: "template_brand_led_editorial",
+    modernTechnical: "template_catalogue_forward_commerce",
+    warmApproachable: "template_balanced_commerce",
+  }[directionId];
+}
+
+function resolvedWholeStorefrontBindingCategories(
+  input: WholeStorefrontPlanningInput,
+  pageType: "home" | "collection" | "product",
+) {
+  if (pageType === "home") return ["navigation"] as const;
+  if (pageType === "collection") {
+    return input.catalogue.collections.length > 0 && input.catalogue.products.length > 0
+      ? (["collection", "productList"] as const)
+      : ([] as const);
+  }
+  return input.catalogue.products.length > 0 ? (["product"] as const) : ([] as const);
+}
+
+function materializeDirectionPageBlueprints(
+  input: WholeStorefrontPlanningInput,
+  directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
+) {
+  const templateId = templateForDirection(directionId);
+  const contextTemplate = input.recipeContext.templates.find(
+    (template) => template.id === templateId,
+  );
+  const registeredTemplate = getTemplateById(templateId);
+  if (
+    !contextTemplate ||
+    !registeredTemplate ||
+    canonicalValueString(contextTemplate) !== canonicalValueString(registeredTemplate)
+  ) {
+    invalid(
+      "unsupported-page-family",
+      "The selected direction does not match the live registered PageBlueprint template.",
+    );
+  }
+  return (["home", "collection", "product"] as const).map((pageType) => {
+    const pagePlan = getTemplatePagePlan(templateId, pageType);
+    if (!pagePlan) {
+      invalid(
+        "unsupported-page-family",
+        `The selected direction has no ${pageType} PageBlueprint.`,
+      );
+    }
+    try {
+      return materializeExecutablePageBlueprint({
+        pagePlan,
+        componentDefinitions: input.componentDefinitions,
+        availableBindingCategories: resolvedWholeStorefrontBindingCategories(input, pageType),
+      });
+    } catch (cause) {
+      invalid(
+        "unsupported-page-family",
+        `The selected ${pageType} PageBlueprint cannot be materialized from the live registry: ${cause instanceof Error ? cause.message : "unknown failure"}`,
+      );
+    }
+  });
 }
 
 function generatedComponentId(
@@ -969,6 +1036,10 @@ export function createWholeStorefrontGenerationPlan(
     collectionPresentation: selectedDirection.collectionPresentation,
     productPresentation: selectedDirection.productPresentation,
   });
+  const pageBlueprintMaterializations = materializeDirectionPageBlueprints(
+    input,
+    designSystemSelection.directionId,
+  );
   const collectionComponentDefinition = definitionFor(definitions, "dynamicCollectionCommerce");
   const productComponentDefinition = definitionFor(definitions, "dynamicProductDetail");
   const usedComponentIds = new Set(
@@ -1421,6 +1492,7 @@ export function createWholeStorefrontGenerationPlan(
       : ("coordinatedStructuralDirection" as const),
     tokenRefinementPlan,
     designSystemSelection,
+    pageBlueprintMaterializations,
     sharedDesignDirection,
     sharedChrome,
     pagePlans,

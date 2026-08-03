@@ -5,6 +5,8 @@ import {
   approvedGenerationAssetContextSchema,
 } from "@/application/ai-storefront-generation";
 import {
+  assetRoleSchema,
+  commerceBindingSourceTypeSchema,
   componentDefinitionV2Schema,
   componentInstanceV2Schema,
   presentationBindingSchema,
@@ -100,6 +102,36 @@ export const wholeStorefrontPageRoleSchema = z.enum([
   "product-template",
   "other",
 ]);
+
+export const wholeStorefrontPageBlueprintMaterializationSchema = z
+  .object({
+    pageType: z.enum(["home", "collection", "product"]),
+    profileId: z.string().trim().min(1).max(120),
+    profileVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+    roleOrder: z.array(z.string().trim().min(1).max(80)).min(1),
+    slots: z
+      .array(
+        z
+          .object({
+            slotId: z.string().trim().min(1).max(80),
+            component: z.string().trim().min(1).max(80),
+            variant: z.string().trim().min(1).max(80),
+            narrativeRole: z.string().trim().min(1).max(80),
+            visualWeight: z.string().trim().min(1).max(80),
+            transitionIntent: z.string().trim().min(1).max(80).optional(),
+            boundedParameters: z.record(
+              z.string().trim().min(1).max(80),
+              z.union([z.string(), z.number()]),
+            ),
+          })
+          .strict(),
+      )
+      .min(1),
+    requiredBindingCategories: z.array(commerceBindingSourceTypeSchema),
+    requiredAssetRoles: z.array(assetRoleSchema),
+    fingerprint: fingerprintSchema,
+  })
+  .strict();
 
 export const wholeStorefrontTargetSchema = z
   .object({
@@ -319,6 +351,9 @@ export const wholeStorefrontGenerationPlanSchema = z
     requestClass: z.enum(["coordinatedStructuralDirection", "tokenOnlyRefinement"]),
     tokenRefinementPlan: registeredTokenRefinementPlanSchema.nullable(),
     designSystemSelection: wholeStorefrontDesignSystemSelectionSchema,
+    pageBlueprintMaterializations: z
+      .array(wholeStorefrontPageBlueprintMaterializationSchema)
+      .length(3),
     sharedDesignDirection: wholeStorefrontSharedDesignDirectionSchema,
     sharedChrome: wholeStorefrontSharedChromePlanSchema,
     pagePlans: z.array(wholeStorefrontPagePlanSchema).min(1),
@@ -347,6 +382,18 @@ export const wholeStorefrontGenerationPlanSchema = z
         code: "custom",
         path: ["pagePlans"],
         message: "Whole-storefront page plans must use unique page IDs.",
+      });
+    }
+    const profilePageTypes = plan.pageBlueprintMaterializations.map((entry) => entry.pageType);
+    if (
+      canonicalValueFingerprint([...profilePageTypes].sort()) !==
+      canonicalValueFingerprint(["collection", "home", "product"])
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["pageBlueprintMaterializations"],
+        message:
+          "Whole-storefront plans must retain one canonical executable PageBlueprint per page family.",
       });
     }
     const componentIds = plan.pagePlans.flatMap((page) =>

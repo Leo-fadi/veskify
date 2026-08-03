@@ -50,6 +50,7 @@ export type NarrativeCompositionSection = Readonly<{
   transitionIntent?: string;
   parameters?: Readonly<Record<string, string | number>>;
   parameterInheritance?: Readonly<Record<string, readonly ParameterInheritanceLayer[]>>;
+  parameterAuthority?: "pageBlueprint" | "instance";
 }>;
 
 export type ValidateNarrativeCompositionInput = Readonly<{
@@ -275,7 +276,7 @@ function validateSectionCompatibility(
             ]
           : []),
         ...(section.parameterInheritance?.[parameterId] ?? []),
-        { level: "instance", value: parameters[parameterId] },
+        { level: section.parameterAuthority ?? "instance", value: parameters[parameterId] },
       ]);
       inherited.issues.forEach((inheritanceIssue) => {
         issues.push(

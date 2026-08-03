@@ -2,6 +2,8 @@ import { z } from "zod";
 import { idSchema, isoDateTimeSchema } from "@/domain/shared";
 import { pageTypeSchema } from "@/domain/storefront";
 import {
+  assetRoleSchema,
+  commerceBindingSourceTypeSchema,
   narrativeRoleIds,
   narrativeRoleSchema,
   parameterConstraintSchema,
@@ -57,6 +59,95 @@ const pageBlueprintFlowRuleIdSchema = z
   .min(1)
   .max(80)
   .regex(/^[a-z][A-Za-z0-9]*(?:[._-][a-z][A-Za-z0-9]*)*$/);
+
+const pageBlueprintProfileVersionSchema = z.string().regex(/^\d+\.\d+\.\d+$/);
+
+const pageBlueprintComponentSelectionSchema = z
+  .object({
+    slotId: z.string().trim().min(1).max(80),
+    component: z.string().trim().min(1).max(80),
+    variants: z.array(z.string().trim().min(1).max(80)).min(1),
+    defaultVariant: z.string().trim().min(1).max(80),
+  })
+  .strict()
+  .superRefine((selection, context) => {
+    if (new Set(selection.variants).size !== selection.variants.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["variants"],
+        message: "Profile variants must be unique.",
+      });
+    }
+    if (!selection.variants.includes(selection.defaultVariant)) {
+      context.addIssue({
+        code: "custom",
+        path: ["defaultVariant"],
+        message: "The profile default variant must be registered.",
+      });
+    }
+  });
+
+/**
+ * A profile is metadata on the canonical PageBlueprint page plan. It is deliberately
+ * not a second page tree, persisted storefront shape, or renderer projection.
+ */
+export const executablePageBlueprintProfileSchema = z
+  .object({
+    id: pageBlueprintFlowRuleIdSchema,
+    version: pageBlueprintProfileVersionSchema,
+    scope: pageTypeSchema,
+    orderedNarrativeRoles: z.array(narrativeRoleSchema).min(1),
+    roleCardinality: z.array(
+      z
+        .object({
+          role: narrativeRoleSchema,
+          minimum: z.number().int().nonnegative(),
+          maximum: z.number().int().positive(),
+        })
+        .strict()
+        .superRefine((cardinality, context) => {
+          if (cardinality.maximum < cardinality.minimum) {
+            context.addIssue({
+              code: "custom",
+              path: ["maximum"],
+              message: "Role maximum cannot be lower than its minimum.",
+            });
+          }
+        }),
+    ),
+    componentSelections: z.array(pageBlueprintComponentSelectionSchema).min(1),
+    parameterDefaults: z
+      .record(z.string().trim().min(1).max(80), z.union([z.string(), z.number()]))
+      .default({}),
+    requiredBindingCategories: z.array(commerceBindingSourceTypeSchema).default([]),
+    requiredAssetRoles: z.array(assetRoleSchema).default([]),
+    responsiveBreakpoints: z.tuple([
+      z.literal("mobile"),
+      z.literal("tablet"),
+      z.literal("desktop"),
+      z.literal("wide"),
+    ]),
+    accessibilityContract: z.literal("registered-component-contracts"),
+  })
+  .strict()
+  .superRefine((profile, context) => {
+    const roles = profile.roleCardinality.map((entry) => entry.role);
+    if (new Set(roles).size !== roles.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["roleCardinality"],
+        message: "Profile role cardinalities must be unique.",
+      });
+    }
+    const slots = profile.componentSelections.map((entry) => entry.slotId);
+    if (new Set(slots).size !== slots.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["componentSelections"],
+        message: "Profile component slots must be unique.",
+      });
+    }
+  });
 
 export const pageBlueprintCompositionContractSchema = z
   .object({
@@ -178,6 +269,7 @@ export const storefrontTemplatePagePlanSchema = z
     pageBlueprint: pageBlueprintCompositionContractSchema.default(
       defaultPageBlueprintCompositionContract,
     ),
+    profile: executablePageBlueprintProfileSchema.optional(),
   })
   .strict()
   .superRefine((plan, context) => {
@@ -289,6 +381,7 @@ export type TemplateSlotOmission = z.infer<typeof templateSlotOmissionSchema>;
 export type PageBlueprintCompositionContract = z.infer<
   typeof pageBlueprintCompositionContractSchema
 >;
+export type ExecutablePageBlueprintProfile = z.infer<typeof executablePageBlueprintProfileSchema>;
 export type StorefrontTemplateSlot = z.infer<typeof storefrontTemplateSlotSchema>;
 export type StorefrontTemplatePagePlan = z.infer<typeof storefrontTemplatePagePlanSchema>;
 export type LegacyStorefrontTemplatePagePlan = z.infer<

@@ -2,13 +2,14 @@ import {
   getSupportedSectionManifest,
   type SupportedSectionType,
 } from "@/components/registry/supported-vocabulary";
-import type { PageType } from "@/domain/storefront";
+import { canonicalValueString, type PageType } from "@/domain/storefront";
 import {
   cloneTemplateDefinition,
   defaultPageBlueprintCompositionContract,
   deepFreeze,
   pageBlueprintCompositionContractSchema,
   storefrontTemplateDefinitionSchema,
+  type ExecutablePageBlueprintProfile,
   type StorefrontTemplateDefinition,
   type StorefrontTemplatePagePlan,
   type StorefrontTemplateSlot,
@@ -71,12 +72,71 @@ function visualWeightForSection(sectionType: string): StorefrontTemplateSlot["vi
   return "medium";
 }
 
+function profileFor(
+  id: string,
+  pageType: PageType,
+  slots: readonly StorefrontTemplateSlot[],
+): ExecutablePageBlueprintProfile {
+  const roleCounts = new Map<StorefrontTemplateSlot["narrativeRole"], number>();
+  slots.forEach((entry) =>
+    roleCounts.set(entry.narrativeRole, (roleCounts.get(entry.narrativeRole) ?? 0) + 1),
+  );
+  return {
+    id,
+    version: "1.0.0",
+    scope: pageType,
+    orderedNarrativeRoles: slots.map((entry) => entry.narrativeRole),
+    roleCardinality: [...roleCounts.entries()].map(([role, count]) => ({
+      role,
+      minimum: slots.filter((entry) => entry.narrativeRole === role && entry.required).length,
+      maximum: count,
+    })),
+    componentSelections: slots.map((entry) => ({
+      slotId: entry.id,
+      component: entry.sectionType,
+      variants: [...entry.allowedVariants],
+      defaultVariant: entry.defaultVariant,
+    })),
+    parameterDefaults: {},
+    requiredBindingCategories:
+      pageType === "collection"
+        ? ["collection", "productList"]
+        : pageType === "product"
+          ? ["product"]
+          : ["navigation"],
+    requiredAssetRoles: [],
+    responsiveBreakpoints: ["mobile", "tablet", "desktop", "wide"] as const,
+    accessibilityContract: "registered-component-contracts" as const,
+  };
+}
+
 function pagePlan(
+  profileId: string,
   pageType: PageType,
   slots: StorefrontTemplateSlot[],
   pageBlueprint = defaultPageBlueprintCompositionContract,
 ): StorefrontTemplatePagePlan {
-  return { pageType, slots, pageBlueprint: structuredClone(pageBlueprint) };
+  return {
+    pageType,
+    slots,
+    pageBlueprint: structuredClone(pageBlueprint),
+    profile: profileFor(profileId, pageType, slots),
+  };
+}
+
+function specializedSlots(
+  slots: readonly StorefrontTemplateSlot[],
+  variants: Readonly<Record<string, string>>,
+): StorefrontTemplateSlot[] {
+  return slots.map((slot) => {
+    const defaultVariant = variants[slot.sectionType];
+    if (!defaultVariant) return structuredClone(slot);
+    return {
+      ...structuredClone(slot),
+      allowedVariants: [...new Set([...slot.allowedVariants, defaultVariant])],
+      defaultVariant,
+    };
+  });
 }
 
 const homePageBlueprint = pageBlueprintCompositionContractSchema.parse({
@@ -346,9 +406,51 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
     supportedPageTypes: [...allPageTypes],
     supportedCatalogueContexts: ["existing", "demo", "empty"],
     pagePlans: [
-      pagePlan("home", Object.values(homeSlots), homePageBlueprint),
-      pagePlan("collection", Object.values(collectionSlots), collectionPageBlueprint),
-      pagePlan("product", Object.values(productSlots), productPageBlueprint),
+      pagePlan(
+        "blueprint-brand-led-home",
+        "home",
+        specializedSlots(
+          [
+            homeSlots.announcement,
+            homeSlots.header,
+            homeSlots.hero,
+            homeSlots.categories,
+            homeSlots.story,
+            homeSlots.products,
+            homeSlots.values,
+            homeSlots.newsletter,
+            homeSlots.footer,
+          ],
+          {
+            header: "transparent",
+            hero: "fullBleed",
+            featuredCategories: "imageLed",
+            brandStory: "imageLed",
+            benefitIcons: "minimal",
+            footer: "editorial",
+          },
+        ),
+        homePageBlueprint,
+      ),
+      pagePlan(
+        "blueprint-brand-led-collection",
+        "collection",
+        specializedSlots(Object.values(collectionSlots), {
+          header: "transparent",
+          productGrid: "editorial",
+          footer: "editorial",
+        }),
+        collectionPageBlueprint,
+      ),
+      pagePlan(
+        "blueprint-brand-led-product",
+        "product",
+        specializedSlots(Object.values(productSlots), {
+          header: "transparent",
+          footer: "editorial",
+        }),
+        productPageBlueprint,
+      ),
     ],
     requiredCapabilities: ["collection-pages-requested", "product-pages-requested"],
     optionalCapabilities: ["catalogue-available", "logo-available", "supporting-imagery-available"],
@@ -375,32 +477,58 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
     supportedCatalogueContexts: ["existing", "demo", "empty"],
     pagePlans: [
       pagePlan(
+        "blueprint-balanced-home",
         "home",
-        [
-          homeSlots.announcement,
-          homeSlots.header,
-          homeSlots.hero,
-          homeSlots.categories,
-          homeSlots.products,
-          homeSlots.values,
-          homeSlots.newsletter,
-          homeSlots.footer,
-        ],
+        specializedSlots(
+          [
+            homeSlots.announcement,
+            homeSlots.header,
+            homeSlots.hero,
+            homeSlots.story,
+            homeSlots.categories,
+            homeSlots.products,
+            homeSlots.values,
+            homeSlots.newsletter,
+            homeSlots.footer,
+          ],
+          {
+            header: "centered",
+            hero: "editorial",
+            featuredCategories: "editorialCards",
+            productGrid: "standard",
+            brandStory: "editorial",
+            benefitIcons: "cards",
+            footer: "columns",
+          },
+        ),
         homePageBlueprint,
       ),
-      pagePlan("collection", Object.values(collectionSlots), collectionPageBlueprint),
       pagePlan(
+        "blueprint-balanced-collection",
+        "collection",
+        specializedSlots(Object.values(collectionSlots), {
+          header: "centered",
+          productGrid: "standard",
+          footer: "columns",
+        }),
+        collectionPageBlueprint,
+      ),
+      pagePlan(
+        "blueprint-balanced-product",
         "product",
-        [
-          productSlots.header,
-          productSlots.gallery,
-          productSlots.information,
-          productSlots.options,
-          productSlots.values,
-          productSlots.details,
-          productSlots.related,
-          productSlots.footer,
-        ],
+        specializedSlots(
+          [
+            productSlots.header,
+            productSlots.gallery,
+            productSlots.information,
+            productSlots.options,
+            productSlots.values,
+            productSlots.details,
+            productSlots.related,
+            productSlots.footer,
+          ],
+          { header: "centered", footer: "columns" },
+        ),
         productPageBlueprint,
       ),
     ],
@@ -429,31 +557,58 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
     supportedCatalogueContexts: ["existing", "demo", "empty"],
     pagePlans: [
       pagePlan(
+        "blueprint-catalogue-forward-home",
         "home",
-        [
-          homeSlots.announcement,
-          homeSlots.header,
-          homeSlots.hero,
-          homeSlots.products,
-          homeSlots.categories,
-          homeSlots.newsletter,
-          homeSlots.footer,
-        ],
+        specializedSlots(
+          [
+            homeSlots.announcement,
+            homeSlots.header,
+            homeSlots.hero,
+            homeSlots.products,
+            homeSlots.categories,
+            homeSlots.story,
+            homeSlots.values,
+            homeSlots.newsletter,
+            homeSlots.footer,
+          ],
+          {
+            header: "compact",
+            hero: "asymmetric",
+            productGrid: "compact",
+            featuredCategories: "grid",
+            brandStory: "minimal",
+            benefitIcons: "threeColumn",
+            footer: "compact",
+          },
+        ),
         homePageBlueprint,
       ),
-      pagePlan("collection", Object.values(collectionSlots), collectionPageBlueprint),
       pagePlan(
+        "blueprint-catalogue-forward-collection",
+        "collection",
+        specializedSlots(Object.values(collectionSlots), {
+          header: "compact",
+          productGrid: "compact",
+          footer: "compact",
+        }),
+        collectionPageBlueprint,
+      ),
+      pagePlan(
+        "blueprint-catalogue-forward-product",
         "product",
-        [
-          productSlots.header,
-          productSlots.gallery,
-          productSlots.information,
-          productSlots.options,
-          productSlots.values,
-          productSlots.details,
-          productSlots.related,
-          productSlots.footer,
-        ],
+        specializedSlots(
+          [
+            productSlots.header,
+            productSlots.gallery,
+            productSlots.information,
+            productSlots.options,
+            productSlots.values,
+            productSlots.details,
+            productSlots.related,
+            productSlots.footer,
+          ],
+          { header: "compact", footer: "compact" },
+        ),
         productPageBlueprint,
       ),
     ],
@@ -467,6 +622,12 @@ function validatePagePlan(
   template: StorefrontTemplateDefinition,
   plan: StorefrontTemplatePagePlan,
 ): void {
+  if (!plan.profile) {
+    throw new Error(
+      `${template.id}/${plan.pageType} must declare an executable PageBlueprint profile.`,
+    );
+  }
+  const profile = plan.profile;
   const sectionCounts = new Map<string, number>();
   plan.slots.forEach((slotDefinition) => {
     const manifest = getSupportedSectionManifest(slotDefinition.sectionType);
@@ -555,6 +716,73 @@ function validatePagePlan(
       );
     }
   }
+  if (profile.scope !== plan.pageType) {
+    throw new Error(`${template.id}/${plan.pageType} profile scope does not match the page type.`);
+  }
+  const profileSlots = profile.componentSelections.map((selection) => selection.slotId);
+  if (
+    profileSlots.length !== plan.slots.length ||
+    profileSlots.some((slotId, index) => slotId !== plan.slots[index]?.id)
+  ) {
+    throw new Error(
+      `${template.id}/${plan.pageType} profile slots do not match canonical slot order.`,
+    );
+  }
+  if (
+    canonicalValueString(profile.orderedNarrativeRoles) !==
+    canonicalValueString(plan.slots.map((slotDefinition) => slotDefinition.narrativeRole))
+  ) {
+    throw new Error(
+      `${template.id}/${plan.pageType} profile roles do not match canonical slot order.`,
+    );
+  }
+  const expectedRoleCardinality = new Map<
+    StorefrontTemplateSlot["narrativeRole"],
+    { minimum: number; maximum: number }
+  >();
+  plan.slots.forEach((entry) => {
+    const current = expectedRoleCardinality.get(entry.narrativeRole) ?? { minimum: 0, maximum: 0 };
+    expectedRoleCardinality.set(entry.narrativeRole, {
+      minimum: current.minimum + (entry.required ? 1 : 0),
+      maximum: current.maximum + 1,
+    });
+  });
+  const registeredRoleCardinality = new Map(
+    profile.roleCardinality.map((entry) => [entry.role, entry]),
+  );
+  expectedRoleCardinality.forEach((expected, role) => {
+    const registered = registeredRoleCardinality.get(role);
+    if (
+      !registered ||
+      registered.minimum !== expected.minimum ||
+      registered.maximum !== expected.maximum
+    ) {
+      throw new Error(
+        `${template.id}/${plan.pageType} profile ${profile.id} has invalid ${role} cardinality.`,
+      );
+    }
+  });
+  if (registeredRoleCardinality.size !== expectedRoleCardinality.size) {
+    throw new Error(
+      `${template.id}/${plan.pageType} profile cardinalities do not match its slots.`,
+    );
+  }
+  plan.slots.forEach((slotDefinition) => {
+    const profileSelection = profile.componentSelections.find(
+      (selection) => selection.slotId === slotDefinition.id,
+    );
+    if (
+      !profileSelection ||
+      profileSelection.component !== slotDefinition.sectionType ||
+      profileSelection.defaultVariant !== slotDefinition.defaultVariant ||
+      canonicalValueString(profileSelection.variants) !==
+        canonicalValueString(slotDefinition.allowedVariants)
+    ) {
+      throw new Error(
+        `${template.id}/${plan.pageType} profile ${profile.id} does not match slot ${slotDefinition.id}.`,
+      );
+    }
+  });
 }
 
 export function validateTemplateRegistry(
@@ -574,6 +802,31 @@ const templatesById = new Map(
   validatedTemplates.map((templateDefinition) => [templateDefinition.id, templateDefinition]),
 );
 
+const profilesById = new Map(
+  validatedTemplates.flatMap((templateDefinition) =>
+    templateDefinition.pagePlans.flatMap((pagePlanDefinition) =>
+      pagePlanDefinition.profile
+        ? [[pagePlanDefinition.profile.id, pagePlanDefinition] as const]
+        : [],
+    ),
+  ),
+);
+
+/** Shared chrome is a constrained profile only; it has no page tree or persisted state. */
+export const sharedStorefrontFrameProfile = deepFreeze({
+  id: "blueprint-shared-storefront-frame",
+  version: "1.0.0",
+  scope: "shared-frame" as const,
+  orderedNarrativeRoles: ["orientation", "service"] as const,
+  componentSelections: [
+    { slotId: "header", component: "header", variants: ["centered", "split", "compact"] },
+    { slotId: "footer", component: "footer", variants: ["columns", "editorial", "compact"] },
+  ],
+  requiredBindingCategories: ["navigation"] as const,
+  responsiveBreakpoints: ["mobile", "tablet", "desktop", "wide"] as const,
+  accessibilityContract: "registered-component-contracts" as const,
+});
+
 export function listTemplates(): readonly StorefrontTemplateDefinition[] {
   return deepFreeze(validatedTemplates.map(cloneTemplateDefinition));
 }
@@ -592,4 +845,19 @@ export function getTemplatePagePlan(
     (pagePlanDefinition) => pagePlanDefinition.pageType === pageType,
   );
   return plan ? deepFreeze(structuredClone(plan)) : undefined;
+}
+
+export function listExecutablePageBlueprintProfiles(): readonly StorefrontTemplatePagePlan[] {
+  return deepFreeze(
+    [...profilesById.values()]
+      .sort((left, right) => left.profile!.id.localeCompare(right.profile!.id))
+      .map((pagePlanDefinition) => structuredClone(pagePlanDefinition)),
+  );
+}
+
+export function getExecutablePageBlueprintProfile(
+  profileId: string,
+): StorefrontTemplatePagePlan | undefined {
+  const pagePlanDefinition = profilesById.get(profileId);
+  return pagePlanDefinition ? deepFreeze(structuredClone(pagePlanDefinition)) : undefined;
 }

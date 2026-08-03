@@ -187,6 +187,46 @@ function migrateLegacySelectionPlan(
   });
 }
 
+/**
+ * Profile metadata was added to the existing v3 PageBlueprint plan without
+ * changing its persisted selection envelope. A v3 plan may therefore migrate
+ * only by proving its complete pre-profile execution identity still matches the
+ * registered PageBlueprint; parser defaults are never treated as merchant intent.
+ */
+function migratePreProfileSelectionPlan(
+  selection: StorefrontTemplateSelectionPlan,
+): StorefrontTemplateSelectionPlan {
+  if (selection.resolvedPagePlans.every((plan) => plan.profile !== undefined)) return selection;
+  if (!selection.selectedTemplateId) {
+    throw new StorefrontTemplateSelectionMigrationError(
+      "A pre-profile blocked selection cannot contain resolved page plans.",
+    );
+  }
+  const resolvedPagePlans = selection.resolvedPagePlans.map((plan) => {
+    if (plan.profile !== undefined) return plan;
+    const registered = getTemplatePagePlan(selection.selectedTemplateId!, plan.pageType);
+    if (
+      !registered ||
+      canonicalValueString({
+        pageType: plan.pageType,
+        slots: plan.slots,
+        pageBlueprint: plan.pageBlueprint,
+      }) !==
+        canonicalValueString({
+          pageType: registered.pageType,
+          slots: registered.slots,
+          pageBlueprint: registered.pageBlueprint,
+        })
+    ) {
+      throw new StorefrontTemplateSelectionMigrationError(
+        `Pre-profile ${plan.pageType} plan no longer matches registered template ${selection.selectedTemplateId}.`,
+      );
+    }
+    return structuredClone(registered);
+  });
+  return currentStorefrontTemplateSelectionPlanSchema.parse({ ...selection, resolvedPagePlans });
+}
+
 export function cloneStorefrontTemplateSelectionPlan(
   input: StorefrontTemplateSelectionPlan,
 ): StorefrontTemplateSelectionPlan {
@@ -202,7 +242,7 @@ export function validateStorefrontTemplateSelectionPlan(
     parsed.schemaVersion === LEGACY_STOREFRONT_TEMPLATE_SELECTION_SCHEMA_VERSION
       ? migrateLegacySelectionPlan(parsed)
       : parsed;
-  return cloneStorefrontTemplateSelectionPlan(current);
+  return cloneStorefrontTemplateSelectionPlan(migratePreProfileSelectionPlan(current));
 }
 
 function deepFreeze<T>(value: T): T {
