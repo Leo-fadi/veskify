@@ -4,8 +4,17 @@ import { dynamicProductDetailComponentByTarget } from "@/components/storefront/d
 import { homepageCommerceComponentByTarget } from "@/components/storefront/homepage-commerce";
 
 export const p10a02RendererTargets = ["editor", "preview", "published"] as const;
+export const p10a02CapabilityStatuses = [
+  "existing-and-sufficient",
+  "existing-but-not-queryable",
+  "duplicated",
+  "planner-visible-but-lost",
+  "render-only",
+  "missing",
+] as const;
 
 export type P10a02RendererTarget = (typeof p10a02RendererTargets)[number];
+export type P10a02CapabilityStatus = (typeof p10a02CapabilityStatuses)[number];
 
 export type P10a02ComponentCapabilityAudit = Readonly<{
   v1RegisteredComponentTypes: readonly string[];
@@ -15,6 +24,9 @@ export type P10a02ComponentCapabilityAudit = Readonly<{
   rendererTypesMissingV2Definition: readonly string[];
   v1TypesMissingV2Definition: readonly string[];
   v2TypesWithoutLegacyRegistryBridge: readonly string[];
+  componentFamilyCounts: Readonly<
+    Record<"content" | "commerce" | "marketing" | "navigation" | "service", number>
+  >;
   pageFamilyComponentCounts: Readonly<Record<"home" | "collection" | "product", number>>;
 }>;
 
@@ -71,6 +83,20 @@ export const p10a02ComponentCapabilityAudit: P10a02ComponentCapabilityAudit = Ob
       (type) => !veskifyComponentRegistry[type as keyof typeof veskifyComponentRegistry],
     ),
   ),
+  componentFamilyCounts: Object.freeze({
+    content: veskifyComponentDefinitionsV2.filter((definition) => definition.family === "content")
+      .length,
+    commerce: veskifyComponentDefinitionsV2.filter((definition) => definition.family === "commerce")
+      .length,
+    marketing: veskifyComponentDefinitionsV2.filter(
+      (definition) => definition.family === "marketing",
+    ).length,
+    navigation: veskifyComponentDefinitionsV2.filter(
+      (definition) => definition.family === "navigation",
+    ).length,
+    service: veskifyComponentDefinitionsV2.filter((definition) => definition.family === "service")
+      .length,
+  }),
   pageFamilyComponentCounts: Object.freeze({
     home: veskifyComponentDefinitionsV2.filter((definition) =>
       definition.supportedPageTypes.includes("home"),
