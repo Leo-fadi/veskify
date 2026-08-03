@@ -30,12 +30,12 @@ import {
   dynamicProductDetailPropsSchema,
   dynamicProductDetailStyleOverridesSchema,
   dynamicProductDetailVariantSchema,
-  veskifyComponentRegistryV2,
   type DynamicProductDetailContent,
   type DynamicProductDetailProps,
   type DynamicProductDetailStyleOverrides,
   type DynamicProductDetailVariant,
-} from "@/components/registry";
+} from "@/components/registry/dynamic-product-detail";
+import { veskifyComponentRegistryV2 } from "@/components/registry/v2-registry";
 import styles from "./dynamic-product-detail.module.css";
 import { validateRouteUsedAssetConformance } from "./storefront-asset-conformance";
 

@@ -26,8 +26,8 @@ ComponentDefinitionV2 / ComponentRegistryV2
   independent authority.
 - `collectLiveRendererRegistrations` reads the actual V1 registry render
   functions and the homepage, dynamic collection, and dynamic product renderer
-  target maps. It omits the two superseded V1 dynamic registrations so each V2
-  component has one runtime owner.
+  target maps. Each registration supplies target-specific renderer variant
+  evidence. Dynamic V1 registrations remain visible rather than being filtered.
 - `materializeExecutablePageBlueprint` remains the canonical deterministic
   realization of a selected profile. The conformance service does not create or
   persist another plan or page graph.
@@ -36,16 +36,24 @@ ComponentDefinitionV2 / ComponentRegistryV2
 
 `createRendererConformanceReport` regenerates a manifest from the supplied live
 definitions and profiles, then verifies renderer identity, targets, ownership,
-version evidence, variants, responsive/accessibility declarations, and every
-executable profile's page, role, slot, binding, asset, bounded-parameter, and
-materialization compatibility.
+version evidence, and renderer-level variant support for every target. A
+variant is conformant only when the declared renderer directly supports it on
+that target; an undeclared fallback is reported as a blocking defect.
+
+For each selected PageBlueprint component, every required commerce-binding slot
+must be satisfied by the profile's canonical binding evidence. A slot's
+alternative source types retain OR semantics; optional slots do not create a
+requirement. Profile binding categories that no selected component accepts are
+reported as stale declarations.
 
 External manifest-shaped input is compared only as drift evidence. It never
 changes the regenerated manifest used for resolution or materialization.
 
 The report sorts findings by stable identifier and fingerprints both the live
-manifest and normalized renderer registrations. It is deeply frozen before it
-is returned.
+manifest and normalized renderer registrations. Registration canonicalization
+includes identity, targets, ownership, renderer version, and per-target variant
+evidence, so duplicate registrations with differing metadata remain stable
+under permutation. It is deeply frozen before it is returned.
 
 ## Finding categories and classifications
 
@@ -68,27 +76,39 @@ commerce, asset, or PageBlueprint behaviour.
 The initial deterministic report records the following live gaps rather than
 concealing them:
 
-- 12 blocking `binding-gap` findings: each of the three home profiles requires
-  `navigation`, each collection profile requires `collection` and `productList`,
-  and each product profile requires `product`, but their selected V1-backed
-  component slots do not declare the matching canonical source type.
+- 19 blocking findings:
+  - 12 `binding-gap` findings: each of the three home profiles requires
+    `navigation`, each collection profile requires `collection` and `productList`,
+    and each product profile requires `product`, but their selected V1-backed
+    component slots do not declare the matching canonical source type.
+  - one `missing-renderer` target finding and five `incompatible-variant`
+    findings for `dynamicProductDetail`: its generated manifest declares the V2
+    renderer for editor, preview, and published targets, but the V2 route path
+    is used only for preview and published.
+  - one `metadata-or-version-drift` ownership finding: Puck editor uses the V1
+    dynamic product bridge while preview and published use V2. This is a real
+    blocking ownership drift, not an omitted registration.
 - 25 `metadata-gap` findings: renderer target maps do not currently own a
   separate renderer version. Component definition versions remain canonical;
   the report deliberately does not invent renderer-version metadata.
+- One `deliberate-future-capability` ownership finding: dynamic collection has a
+  V1 editor fallback alongside the V2 editor/preview/published route renderer.
+  It remains visible as deliberate migration work.
 - Six `commercial-gap` findings: `homepageHero`,
   `homepageFeaturedCollections`, `homepageFeaturedProducts`,
   `homepageCollectionNavigation`, `homepagePromotion`, and `homepageTrust`
   have registered renderer paths but are neither represented by the V1 bridge
   nor selected by an executable PageBlueprint profile.
 
-No missing renderer, orphan renderer, incompatible variant, asset-role,
-bounded-parameter, responsive-contract, accessibility-contract, or profile
-materialization gap is reported for the live baseline.
+No orphan renderer, stale renderer variant, asset-role, bounded-parameter,
+responsive-contract, accessibility-contract, or profile materialization gap is
+reported for the live baseline.
 
 ## Deferred P10A-04C work
 
-P10A-04C can use this report to make a scoped commercial decision for the six
-homepage renderer-backed capabilities. Closing the binding declarations or
-adding commercial components/variants is intentionally out of scope here: this
-task reports the evidence without altering components, profiles, protected
-commerce fields, renderer behaviour, or asset semantics.
+P10A-04C can use only the six verified commercial gaps to make a scoped
+commercial decision for homepage renderer-backed capabilities. The binding and
+dynamic ownership defects must be addressed by their owning conformance or
+renderer-migration work; they are not commercial-family work. This task reports
+the evidence without altering components, profiles, protected commerce fields,
+renderer behaviour, or asset semantics.

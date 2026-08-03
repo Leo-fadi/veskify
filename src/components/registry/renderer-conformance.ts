@@ -4,6 +4,7 @@ import {
   materializeExecutablePageBlueprint,
   type StorefrontTemplatePagePlan,
 } from "@/application/storefront-templates";
+import type { ReactNode } from "react";
 import {
   boundedParametersById,
   createComponentCapabilityManifestAuthority,
@@ -22,6 +23,8 @@ import { veskifyComponentRegistry } from "./registry";
 import { veskifyComponentDefinitionsV2 } from "./v2-registry";
 
 const rendererTargets = ["editor", "preview", "published"] as const;
+type RendererTarget = (typeof rendererTargets)[number];
+type RendererCallable = (input: never) => ReactNode;
 
 export const rendererConformanceFindingCategories = [
   "missing-renderer",
@@ -45,9 +48,17 @@ export type RendererConformanceClassification =
 export type RendererRegistration = Readonly<{
   adapterId: string;
   exportName: string;
-  supportedTargets: readonly (typeof rendererTargets)[number][];
+  supportedTargets: readonly RendererTarget[];
+  variantCapabilities: readonly RendererVariantCapability[];
   componentType?: string;
   version?: Readonly<ComponentVersion>;
+  ownership?: "primary" | "fallback";
+}>;
+
+export type RendererVariantCapability = Readonly<{
+  target: RendererTarget;
+  supportedVariants: readonly string[];
+  fallbackVariants?: readonly string[];
 }>;
 
 export type RendererConformanceFinding = Readonly<{
@@ -99,17 +110,53 @@ function canonicalTargets(targets: readonly string[]) {
   return [...new Set(targets)].sort(compare);
 }
 
+function canonicalVariantCapabilities(capabilities: readonly RendererVariantCapability[]) {
+  return capabilities
+    .map((capability) => ({
+      target: capability.target,
+      supportedVariants: canonicalTargets(capability.supportedVariants),
+      fallbackVariants: canonicalTargets(capability.fallbackVariants ?? []),
+    }))
+    .sort((left, right) => compare(left.target, right.target));
+}
+
+function registrationFingerprintValue(registration: RendererRegistration) {
+  return {
+    adapterId: registration.adapterId,
+    exportName: registration.exportName,
+    componentType: registration.componentType ?? null,
+    ownership: registration.ownership ?? "primary",
+    supportedTargets: canonicalTargets(registration.supportedTargets),
+    variantCapabilities: canonicalVariantCapabilities(registration.variantCapabilities),
+    version: registration.version ?? null,
+  };
+}
+
+function capabilityForTarget(registration: RendererRegistration, target: RendererTarget) {
+  return registration.variantCapabilities.find((capability) => capability.target === target);
+}
+
+function capabilitiesFor(
+  variants: readonly string[],
+  targets: readonly RendererTarget[],
+): readonly RendererVariantCapability[] {
+  return targets.map((target) => ({ target, supportedVariants: variants }));
+}
+
 function registrationFromTargetMap(
   adapterId: string,
   componentType: string | undefined,
-  targets: Readonly<Record<(typeof rendererTargets)[number], Function>>,
+  targets: Readonly<Record<RendererTarget, RendererCallable>>,
+  variants: readonly string[],
+  supportedTargets: readonly RendererTarget[] = rendererTargets,
 ): RendererRegistration {
   const exportNames = [...new Set(Object.values(targets).map((renderer) => renderer.name))];
   return {
     adapterId,
     ...(componentType === undefined ? {} : { componentType }),
     exportName: exportNames.join("|"),
-    supportedTargets: rendererTargets.filter((target) => typeof targets[target] === "function"),
+    supportedTargets: supportedTargets.filter((target) => typeof targets[target] === "function"),
+    variantCapabilities: capabilitiesFor(variants, supportedTargets),
   };
 }
 
@@ -118,33 +165,55 @@ function registrationFromTargetMap(
  * does not maintain another component or capability inventory.
  */
 export function collectLiveRendererRegistrations(): readonly RendererRegistration[] {
+  const variantsByComponentType = new Map(
+    veskifyComponentDefinitionsV2.map((definition) => [
+      definition.type,
+      definition.variants.map((variant) => variant.id),
+    ]),
+  );
+  const variantsFor = (componentType: string) => {
+    const variants = variantsByComponentType.get(componentType);
+    if (!variants) throw new Error(`Missing renderer variant evidence for ${componentType}.`);
+    return variants;
+  };
   const legacyRegistrations: RendererRegistration[] = Object.entries(veskifyComponentRegistry)
-    .filter(
-      ([componentType, definition]) =>
-        componentType !== "dynamicCollectionCommerce" &&
-        componentType !== "dynamicProductDetail" &&
-        typeof definition.render === "function",
-    )
-    .map(([componentType]) => ({
-      adapterId: "veskifyV1Registry",
-      componentType,
-      exportName: componentType,
-      supportedTargets: rendererTargets,
-    }));
+    .filter(([, definition]) => typeof definition.render === "function")
+    .map(([componentType]) => {
+      const targets: readonly RendererTarget[] =
+        componentType === "dynamicCollectionCommerce" || componentType === "dynamicProductDetail"
+          ? ["editor"]
+          : rendererTargets;
+      return {
+        adapterId: "veskifyV1Registry",
+        componentType,
+        exportName: componentType,
+        ownership: componentType === "dynamicCollectionCommerce" ? "fallback" : "primary",
+        supportedTargets: targets,
+        variantCapabilities: capabilitiesFor(variantsFor(componentType), targets),
+      };
+    });
   return freeze([
     ...legacyRegistrations,
     ...Object.entries(homepageCommerceComponentByTarget).map(([componentType, targets]) =>
-      registrationFromTargetMap("veskifyHomepageRenderer", componentType, targets),
+      registrationFromTargetMap(
+        "veskifyHomepageRenderer",
+        componentType,
+        targets,
+        variantsFor(componentType),
+      ),
     ),
     registrationFromTargetMap(
       "veskifyCommerceRenderer",
-      undefined,
+      "dynamicCollectionCommerce",
       dynamicCollectionCommerceComponentByTarget,
+      variantsFor("dynamicCollectionCommerce"),
     ),
     registrationFromTargetMap(
       "veskifyCommerceRenderer",
-      undefined,
+      "dynamicProductDetail",
       dynamicProductDetailComponentByTarget,
+      variantsFor("dynamicProductDetail"),
+      ["preview", "published"],
     ),
   ]);
 }
@@ -222,9 +291,16 @@ export function createRendererConformanceReport(
     input.componentDefinitions.map((definition) => [definition.type, definition]),
   );
   const registrationsByIdentity = new Map<string, RendererRegistration[]>();
+  const registrationsByComponentType = new Map<string, RendererRegistration[]>();
   input.rendererRegistrations.forEach((registration) => {
     const key = rendererIdentity(registration);
     registrationsByIdentity.set(key, [...(registrationsByIdentity.get(key) ?? []), registration]);
+    if (registration.componentType) {
+      registrationsByComponentType.set(registration.componentType, [
+        ...(registrationsByComponentType.get(registration.componentType) ?? []),
+        registration,
+      ]);
+    }
   });
 
   for (const entry of canonicalManifest.entries) {
@@ -331,17 +407,87 @@ export function createRendererConformanceReport(
         );
       }
     }
-    for (const variant of entry.variants) {
-      if (!definition.variants.some((registered) => registered.id === variant.id)) {
+    const componentRegistrations = registrationsByComponentType.get(entry.componentType) ?? [];
+    for (const target of entry.renderer.supportedTargets) {
+      const declaredTargetRegistrations = registrations.filter((registration) =>
+        registration.supportedTargets.includes(target),
+      );
+      const alternateTargetRegistrations = componentRegistrations.filter(
+        (registration) =>
+          rendererIdentity(registration) !== rendererIdentity(entry.renderer) &&
+          registration.supportedTargets.includes(target),
+      );
+      if (alternateTargetRegistrations.length > 0) {
+        const classification =
+          declaredTargetRegistrations.length === 0 &&
+          alternateTargetRegistrations.some(
+            (registration) => (registration.ownership ?? "primary") === "primary",
+          )
+            ? "blocking-defect"
+            : "deliberate-future-capability";
+        findings.push(
+          finding(
+            "metadata-or-version-drift",
+            classification,
+            `renderer-ownership-drift:${entry.componentType}:${target}`,
+            `Component ${entry.componentType} uses ${alternateTargetRegistrations
+              .map(rendererIdentity)
+              .sort(compare)
+              .join(
+                ", ",
+              )} for ${target}, not only its declared ${rendererIdentity(entry.renderer)} renderer.`,
+            { componentType: entry.componentType },
+          ),
+        );
+      }
+      for (const variant of entry.variants) {
+        const capabilities = declaredTargetRegistrations
+          .map((registration) => capabilityForTarget(registration, target))
+          .filter(
+            (capability): capability is RendererVariantCapability => capability !== undefined,
+          );
+        if (capabilities.some((capability) => capability.supportedVariants.includes(variant.id))) {
+          continue;
+        }
+        if (capabilities.some((capability) => capability.fallbackVariants?.includes(variant.id))) {
+          findings.push(
+            finding(
+              "incompatible-variant",
+              "blocking-defect",
+              `renderer-variant-fallback:${entry.componentType}:${variant.id}:${target}`,
+              `Renderer ${rendererIdentity(entry.renderer)} exposes ${entry.componentType}/${variant.id} on ${target} only through an undeclared fallback.`,
+              { componentType: entry.componentType, variantId: variant.id },
+            ),
+          );
+          continue;
+        }
         findings.push(
           finding(
             "incompatible-variant",
             "blocking-defect",
-            `manifest-variant:${entry.componentType}:${variant.id}`,
-            `Manifest variant ${entry.componentType}/${variant.id} is not registered.`,
+            `renderer-variant-target:${entry.componentType}:${variant.id}:${target}`,
+            `Renderer ${rendererIdentity(entry.renderer)} does not support ${entry.componentType}/${variant.id} on ${target}.`,
             { componentType: entry.componentType, variantId: variant.id },
           ),
         );
+      }
+    }
+    for (const registration of componentRegistrations) {
+      const declaredVariants = new Set(entry.variants.map((variant) => variant.id));
+      for (const capability of registration.variantCapabilities) {
+        for (const variant of capability.supportedVariants) {
+          if (!declaredVariants.has(variant)) {
+            findings.push(
+              finding(
+                "metadata-or-version-drift",
+                "metadata-gap",
+                `renderer-stale-variant:${entry.componentType}:${variant}:${capability.target}`,
+                `Renderer ${rendererIdentity(registration)} advertises stale ${entry.componentType}/${variant} support on ${capability.target}.`,
+                { componentType: entry.componentType, variantId: variant },
+              ),
+            );
+          }
+        }
       }
     }
     const responsiveBreakpoints = new Set(
@@ -381,8 +527,10 @@ export function createRendererConformanceReport(
   }
 
   for (const registration of input.rendererRegistrations) {
-    const owners = canonicalManifest.entries.filter(
-      (entry) => rendererIdentity(entry.renderer) === rendererIdentity(registration),
+    const owners = canonicalManifest.entries.filter((entry) =>
+      registration.componentType
+        ? entry.componentType === registration.componentType
+        : rendererIdentity(entry.renderer) === rendererIdentity(registration),
     );
     if (owners.length === 0) {
       findings.push(
@@ -462,6 +610,26 @@ export function createRendererConformanceReport(
         }
       }
     }
+    for (const selection of profile.componentSelections) {
+      const definition = definitionsByType.get(selection.component);
+      if (!definition) continue;
+      for (const bindingSlot of definition.commerceBindingSlots.filter((slot) => slot.required)) {
+        const supplied = profile.requiredBindingCategories.some((category) =>
+          bindingSlot.acceptedSourceTypes.includes(category),
+        );
+        if (!supplied) {
+          findings.push(
+            finding(
+              "binding-gap",
+              "blocking-defect",
+              `profile-component-binding:${profile.id}:${selection.slotId}:${bindingSlot.id}`,
+              `Profile ${profile.id} does not supply a canonical binding for required ${selection.component}/${bindingSlot.id}.`,
+              { componentType: selection.component, profileId: profile.id },
+            ),
+          );
+        }
+      }
+    }
     for (const category of profile.requiredBindingCategories) {
       const supported = profile.componentSelections.some((selection) =>
         definitionsByType
@@ -473,8 +641,8 @@ export function createRendererConformanceReport(
           finding(
             "binding-gap",
             "blocking-defect",
-            `profile-binding:${profile.id}:${category}`,
-            `Profile ${profile.id} requires ${category} binding without a compatible selected component slot.`,
+            `profile-stale-binding:${profile.id}:${category}`,
+            `Profile ${profile.id} declares ${category} without a compatible selected component binding slot.`,
             { profileId: profile.id },
           ),
         );
@@ -602,11 +770,8 @@ export function createRendererConformanceReport(
     rendererRegistrationFingerprint: `renderer-registrations-${canonicalValueFingerprint(
       canonicalValueString(
         input.rendererRegistrations
-          .map((registration) => ({
-            ...registration,
-            supportedTargets: canonicalTargets(registration.supportedTargets),
-          }))
-          .sort((left, right) => compare(rendererIdentity(left), rendererIdentity(right))),
+          .map(registrationFingerprintValue)
+          .sort((left, right) => compare(canonicalValueString(left), canonicalValueString(right))),
       ),
     )}`,
     findings: orderedFindings,

@@ -34,7 +34,6 @@ import {
   homepageSurfaceStyleSchema,
   homepageTrustContentSchema,
   homepageTrustPropsSchema,
-  veskifyComponentRegistryV2,
   type HomepageCollectionNavigationContent,
   type HomepageCollectionNavigationProps,
   type HomepageFeaturedCollectionsContent,
@@ -48,7 +47,8 @@ import {
   type HomepageSurfaceStyle,
   type HomepageTrustContent,
   type HomepageTrustProps,
-} from "@/components/registry";
+} from "@/components/registry/homepage-commerce";
+import { veskifyComponentRegistryV2 } from "@/components/registry/v2-registry";
 import {
   DynamicCollectionProductCard,
   collectionNavigationIntentSchema,

@@ -24,15 +24,40 @@ function reportFor(overrides: Partial<RendererConformanceInput> = {}) {
   return createRendererConformanceReport(liveInput(overrides));
 }
 
+function collectionPlanWithDynamicCommerce(bindingCategories: readonly string[]) {
+  const pagePlan = structuredClone(
+    listExecutablePageBlueprintProfiles().find((candidate) => candidate.pageType === "collection"),
+  );
+  if (!pagePlan?.profile) throw new Error("Expected an executable collection profile.");
+  const slot = pagePlan.slots[0];
+  const selection = pagePlan.profile.componentSelections[0];
+  Reflect.set(slot, "sectionType", "dynamicCollectionCommerce");
+  Reflect.set(slot, "allowedVariants", ["standard", "editorial", "compact", "gallery"]);
+  Reflect.set(slot, "defaultVariant", "standard");
+  Reflect.set(selection, "component", "dynamicCollectionCommerce");
+  Reflect.set(selection, "variants", ["standard", "editorial", "compact", "gallery"]);
+  Reflect.set(selection, "defaultVariant", "standard");
+  Reflect.set(pagePlan.profile, "requiredBindingCategories", bindingCategories);
+  return pagePlan;
+}
+
 describe("P10A-04B registry, manifest, and renderer conformance", () => {
-  it("traces every canonical component and variant to a live renderer registration", () => {
+  it("traces every canonical component and variant to renderer-level target evidence", () => {
     const report = createLiveRendererConformanceReport();
 
-    expect(report.findings.filter((entry) => entry.category === "missing-renderer")).toEqual([]);
-    expect(report.findings.filter((entry) => entry.category === "incompatible-variant")).toEqual(
-      [],
+    expect(report.findings.map((entry) => entry.id)).toContain(
+      "renderer-targets:dynamicProductDetail",
     );
-    expect(collectLiveRendererRegistrations()).toHaveLength(veskifyComponentDefinitionsV2.length);
+    expect(
+      report.findings.filter((entry) =>
+        entry.id.startsWith("renderer-variant-target:dynamicProductDetail:"),
+      ),
+    ).toHaveLength(5);
+    expect(report.blockingDefects).toHaveLength(19);
+    expect(report.metadataGaps).toHaveLength(25);
+    expect(report.deliberateFutureCapabilities).toHaveLength(1);
+    expect(report.commercialGaps).toHaveLength(6);
+    expect(collectLiveRendererRegistrations()).toHaveLength(27);
     expect(veskifyComponentDefinitionsV2.flatMap((definition) => definition.variants)).toHaveLength(
       veskifyComponentCapabilityManifest.manifest.entries.flatMap((entry) => entry.variants).length,
     );
@@ -45,12 +70,111 @@ describe("P10A-04B registry, manifest, and renderer conformance", () => {
     );
 
     expect(new Set(identities).size).toBe(identities.length);
-    expect(registrations.every((registration) => registration.supportedTargets.length === 3)).toBe(
+    expect(registrations.every((registration) => registration.variantCapabilities.length > 0)).toBe(
       true,
     );
     expect(
       registrations.map((registration) => registration.componentType).filter(Boolean),
-    ).toHaveLength(23);
+    ).toHaveLength(27);
+  });
+
+  it("fails closed when a definition variant has no renderer-level support", () => {
+    const registrations = collectLiveRendererRegistrations();
+    const registration = registrations.find(
+      (candidate) => candidate.componentType === "announcementBar",
+    );
+    if (!registration) throw new Error("Expected announcement bar renderer evidence.");
+    const unsupportedVariant = registration.variantCapabilities[0].supportedVariants[0];
+    const changed: RendererRegistration = {
+      ...registration,
+      variantCapabilities: registration.variantCapabilities.map((capability) => ({
+        ...capability,
+        supportedVariants: capability.supportedVariants.filter(
+          (variant) => variant !== unsupportedVariant,
+        ),
+      })),
+    };
+    const report = reportFor({
+      rendererRegistrations: registrations.map((candidate) =>
+        candidate === registration ? changed : candidate,
+      ),
+    });
+
+    expect(report.blockingDefects.map((entry) => entry.id)).toContain(
+      `renderer-variant-target:announcementBar:${unsupportedVariant}:editor`,
+    );
+  });
+
+  it("detects target-specific renderer support and undeclared variant fallback", () => {
+    const registrations = collectLiveRendererRegistrations();
+    const registration = registrations.find((candidate) => candidate.componentType === "header");
+    if (!registration) throw new Error("Expected header renderer evidence.");
+    const variant = registration.variantCapabilities[0].supportedVariants[0];
+    const changed: RendererRegistration = {
+      ...registration,
+      variantCapabilities: registration.variantCapabilities.map((capability) =>
+        capability.target === "preview"
+          ? { ...capability, supportedVariants: [], fallbackVariants: [variant] }
+          : capability,
+      ),
+    };
+    const report = reportFor({
+      rendererRegistrations: registrations.map((candidate) =>
+        candidate === registration ? changed : candidate,
+      ),
+    });
+
+    expect(report.blockingDefects.map((entry) => entry.id)).toContain(
+      `renderer-variant-fallback:header:${variant}:preview`,
+    );
+    expect(
+      report.blockingDefects
+        .map((entry) => entry.id)
+        .filter((id) => id.includes(`header:${variant}:`)),
+    ).toHaveLength(1);
+  });
+
+  it("accepts every directly declared variant on every target", () => {
+    const registration = collectLiveRendererRegistrations().find(
+      (candidate) => candidate.componentType === "announcementBar",
+    );
+    if (!registration) throw new Error("Expected announcement bar renderer evidence.");
+
+    expect(registration.variantCapabilities.map((capability) => capability.target)).toEqual([
+      "editor",
+      "preview",
+      "published",
+    ]);
+    expect(
+      registration.variantCapabilities.every(
+        (capability) =>
+          capability.supportedVariants.length === 4 && !capability.fallbackVariants?.length,
+      ),
+    ).toBe(true);
+  });
+
+  it("reports stale renderer variant metadata separately from direct support", () => {
+    const registrations = collectLiveRendererRegistrations();
+    const registration = registrations.find(
+      (candidate) => candidate.componentType === "announcementBar",
+    );
+    if (!registration) throw new Error("Expected announcement bar renderer evidence.");
+    const changed: RendererRegistration = {
+      ...registration,
+      variantCapabilities: registration.variantCapabilities.map((capability) => ({
+        ...capability,
+        supportedVariants: [...capability.supportedVariants, "retired-variant"],
+      })),
+    };
+    const report = reportFor({
+      rendererRegistrations: registrations.map((candidate) =>
+        candidate === registration ? changed : candidate,
+      ),
+    });
+
+    expect(report.metadataGaps.map((entry) => entry.id)).toContain(
+      "renderer-stale-variant:announcementBar:retired-variant:editor",
+    );
   });
 
   it("fails closed for missing, duplicate, orphan, and target-incomplete renderer registrations", () => {
@@ -61,6 +185,7 @@ describe("P10A-04B registry, manifest, and renderer conformance", () => {
       adapterId: "testRenderer",
       exportName: "OrphanRenderer",
       supportedTargets: ["editor", "preview", "published"],
+      variantCapabilities: [],
     };
     const incomplete: RendererRegistration = {
       ...registrations[1],
@@ -160,6 +285,74 @@ describe("P10A-04B registry, manifest, and renderer conformance", () => {
     }
   });
 
+  it("validates every selected component required binding, alternatives, optional slots, and stale declarations", () => {
+    const allRequired = reportFor({
+      pagePlans: [collectionPlanWithDynamicCommerce(["collection", "productList"])],
+    });
+    expect(
+      allRequired.blockingDefects.filter((entry) =>
+        entry.id.startsWith("profile-component-binding:blueprint-"),
+      ),
+    ).toEqual([]);
+
+    const missingOne = reportFor({
+      pagePlans: [collectionPlanWithDynamicCommerce(["collection"])],
+    });
+    expect(
+      missingOne.blockingDefects.some((entry) => entry.id.endsWith(":collectionProducts")),
+    ).toBe(true);
+
+    const optionalDefinitions = structuredClone(veskifyComponentDefinitionsV2);
+    const dynamicCollection = optionalDefinitions.find(
+      (definition) => definition.type === "dynamicCollectionCommerce",
+    );
+    if (!dynamicCollection) throw new Error("Expected dynamic collection definition.");
+    Reflect.set(dynamicCollection.commerceBindingSlots[0], "acceptedSourceTypes", [
+      "collection",
+      "productList",
+    ]);
+    Reflect.set(dynamicCollection.commerceBindingSlots[1], "required", false);
+    const alternativesAndOptional = reportFor({
+      componentDefinitions: optionalDefinitions,
+      pagePlans: [collectionPlanWithDynamicCommerce(["productList"])],
+    });
+    expect(
+      alternativesAndOptional.blockingDefects.filter((entry) =>
+        entry.id.startsWith("profile-component-binding:"),
+      ),
+    ).toEqual([]);
+
+    const stale = reportFor({ pagePlans: [collectionPlanWithDynamicCommerce(["navigation"])] });
+    expect(stale.blockingDefects.some((entry) => entry.id.endsWith(":navigation"))).toBe(true);
+  });
+
+  it("checks required bindings independently for multiple selected components", () => {
+    const pagePlan = collectionPlanWithDynamicCommerce(["collection", "productList"]);
+    const profile = pagePlan.profile;
+    if (!profile) throw new Error("Expected executable collection profile.");
+    const secondSlot = pagePlan.slots[1];
+    const secondSelection = profile.componentSelections[1];
+    Reflect.set(secondSlot, "sectionType", "dynamicProductDetail");
+    Reflect.set(secondSlot, "allowedVariants", ["balanced"]);
+    Reflect.set(secondSlot, "defaultVariant", "balanced");
+    Reflect.set(secondSelection, "component", "dynamicProductDetail");
+    Reflect.set(secondSelection, "variants", ["balanced"]);
+    Reflect.set(secondSelection, "defaultVariant", "balanced");
+    const definitions = structuredClone(veskifyComponentDefinitionsV2);
+    const product = definitions.find((definition) => definition.type === "dynamicProductDetail");
+    if (!product) throw new Error("Expected dynamic product definition.");
+    Reflect.set(product, "supportedPageTypes", ["collection", "product"]);
+    const report = reportFor({ componentDefinitions: definitions, pagePlans: [pagePlan] });
+
+    expect(
+      report.blockingDefects.some(
+        (entry) =>
+          entry.id.includes("profile-component-binding") &&
+          entry.componentType === "dynamicProductDetail",
+      ),
+    ).toBe(true);
+  });
+
   it("confirms responsive and accessibility contracts for every live renderer path", () => {
     const report = createLiveRendererConformanceReport();
 
@@ -193,6 +386,54 @@ describe("P10A-04B registry, manifest, and renderer conformance", () => {
     expect(reordered).toEqual(baseline);
     expect(Object.isFrozen(baseline)).toBe(true);
     expect(Object.isFrozen(baseline.findings)).toBe(true);
+  });
+
+  it("canonicalizes duplicate renderer registrations with differing metadata", () => {
+    const registrations = collectLiveRendererRegistrations();
+    const first = registrations[0];
+    const firstVariant = first.variantCapabilities[0].supportedVariants[0];
+    const duplicateEditor: RendererRegistration = {
+      ...first,
+      supportedTargets: ["editor"],
+      variantCapabilities: [{ target: "editor", supportedVariants: [firstVariant] }],
+      version: { major: 1, minor: 0, patch: 0 },
+    };
+    const duplicatePreview: RendererRegistration = {
+      ...first,
+      supportedTargets: ["preview"],
+      variantCapabilities: [{ target: "preview", supportedVariants: [firstVariant] }],
+      version: { major: 1, minor: 0, patch: 1 },
+    };
+    const forward = reportFor({
+      rendererRegistrations: [...registrations, duplicateEditor, duplicatePreview],
+    });
+    const reversed = reportFor({
+      rendererRegistrations: [...registrations, duplicatePreview, duplicateEditor].reverse(),
+    });
+    const changed = reportFor({
+      rendererRegistrations: [
+        ...registrations,
+        duplicateEditor,
+        { ...duplicatePreview, version: { major: 1, minor: 0, patch: 2 } },
+      ],
+    });
+
+    expect(reversed.rendererRegistrationFingerprint).toBe(forward.rendererRegistrationFingerprint);
+    expect(reversed.fingerprint).toBe(forward.fingerprint);
+    expect(changed.rendererRegistrationFingerprint).not.toBe(
+      forward.rendererRegistrationFingerprint,
+    );
+  });
+
+  it("reports the target-specific dynamic V1/V2 ownership drift", () => {
+    const report = createLiveRendererConformanceReport();
+
+    expect(report.blockingDefects.map((entry) => entry.id)).toContain(
+      "renderer-ownership-drift:dynamicProductDetail:editor",
+    );
+    expect(report.deliberateFutureCapabilities.map((entry) => entry.id)).toContain(
+      "renderer-ownership-drift:dynamicCollectionCommerce:editor",
+    );
   });
 
   it("changes the evidence fingerprint when renderer capability changes", () => {
