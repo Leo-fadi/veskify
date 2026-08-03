@@ -237,6 +237,23 @@ reachability chain: registered → planner-selectable → proposal-expressible �
 omit optional trust/evidence when the approved context is absent; defaults never invent commercial
 claims.
 
+Task 6 implementation freezes a controlled narrative-role vocabulary, four-level visual-weight
+vocabulary, registered adjacency/flow and transition-intent rules, bounded structural/visual
+parameters, and deterministic inheritance validation. It extends `ComponentDefinitionV2` and the
+existing PageBlueprint/template precursor with compatibility metadata and stable validation errors;
+it does not add commercial UI families, an executable recipe engine, AI composition or a parallel
+storefront representation. Task 7 consumes these contracts for commercial families and variants.
+Task 8 consumes them for executable constrained PageBlueprint profiles. Task 9 consumes both for
+AI selection, visual-quality gates and retained end-to-end proof.
+
+The Task 6 correction pass additionally requires required roles to remain satisfiable after
+registered slot omission, referenced flow rules to fail closed when unknown or page-incompatible,
+role-level visual-weight limits to remain authoritative, every conversion occurrence to retain its
+adjacent protected context, explicit empty parameter allowlists to permit nothing, and numeric bounds
+to narrow monotonically across all authority levels. New resolved selections use v3 metadata; verified
+pre-Task-6 v2 selections migrate in memory from their exact registered execution identity, while
+forged and future versions fail closed without rewriting projects or protected commerce.
+
 ### Completed Vesko integration foundation prework
 
 The merged integration foundation provides canonical integration boundaries, merchant/project context, catalogue/navigation projection, availability/options/variants/media projection, authoritative draft persistence, authoritative publishing and complete standalone port assembly.

@@ -8,6 +8,7 @@ import {
 } from "@/components/registry/v2-compatibility";
 import {
   createComponentRegistryV2,
+  createLegacyComponentDesignCompatibility,
   productBindingSchema,
   productPresentationContextSchema,
   storefrontAssetMetadataSchema,
@@ -151,6 +152,7 @@ function genericProductComponent(
       focus: "Focus remains visible when moving through option groups.",
       contrast: "Selector and price states inherit validated brand-token contrast.",
     },
+    designCompatibility: createLegacyComponentDesignCompatibility(),
     migration: {
       policy: "migrationRequired",
       previousVersions: [{ major: 1, minor: 0, patch: 0 }],
