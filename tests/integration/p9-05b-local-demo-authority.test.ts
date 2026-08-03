@@ -13,7 +13,7 @@ import {
   requestWholeStorefrontGenerationPlan,
   type WholeStorefrontPlanningProvider,
 } from "@/application/whole-storefront-generation-plan";
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/route";
+import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
 import { P9_05A_PROJECT_ID } from "@/data/demo/p9-05a-fresh-store-generation";
 import {
   canonicalStorefrontContentFingerprint,

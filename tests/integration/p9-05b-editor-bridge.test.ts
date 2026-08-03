@@ -5,8 +5,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import { StorefrontProposalAcceptanceCoordinator } from "@/application/ai-storefront";
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/route";
-import { createP905bLocalDemoGenerateHandler } from "@/app/api/demo/p9-05b/generate/route";
+import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
+import { createP905bLocalDemoGenerateHandler } from "@/app/api/demo/p9-05b/generate/handler";
 import {
   loadP905bLocalDemoEditorSession,
   p905bLocalDemoSession,

@@ -18,7 +18,7 @@ import {
   createStandaloneServerWholeStorefrontPlanningAuthority,
   type AuthoritativeWholeStorefrontPlanningContextSource,
 } from "@/integrations/ai/whole-storefront-runtime-authority";
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/route";
+import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
 
 function requestFor(
   seed: typeof aurumNordicSeed | typeof karvonenSeed,
