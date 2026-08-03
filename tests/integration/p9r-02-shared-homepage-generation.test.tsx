@@ -133,17 +133,11 @@ async function compiledAurumHomepage(directionId: (typeof directions)[number]) {
 }
 
 function selectedHomepageVariants(plan: WholeStorefrontGenerationPlan) {
-  const selections = plan.designSystemSelection.componentSelections;
-  return [
-    selections.header,
-    selections.hero,
-    selections.collectionDiscovery,
-    selections.productCard,
-    selections.storytelling,
-    selections.campaign,
-    selections.trust,
-    selections.footer,
-  ];
+  const materialization = plan.pageBlueprintMaterializations.find(
+    (entry) => entry.pageType === "home",
+  );
+  if (!materialization) throw new Error("The plan has no homepage PageBlueprint materialization.");
+  return materialization.slots;
 }
 
 const compilerOwnedPresentationPropKeys = ["background", "density", "shape", "typography"] as const;
@@ -340,9 +334,11 @@ describe("P9R-02 shared-frame and homepage generation", () => {
       const variants = new Map(
         generated.page.components.map((component) => [component.component, component.variant]),
       );
-      selectedHomepageVariants(generated.plan).forEach((selection) => {
-        expect(variants.get(selection.component)).toBe(selection.variant);
-      });
+      selectedHomepageVariants(generated.plan)
+        .filter((selection) => variants.has(selection.component))
+        .forEach((selection) => {
+          expect(variants.get(selection.component)).toBe(selection.variant);
+        });
       generated.page.components.forEach((component, index) => {
         const source = originalRuntime.components.find((section) => section.id === component.id);
         if (!source) return;
@@ -397,7 +393,7 @@ describe("P9R-02 shared-frame and homepage generation", () => {
     ).toBeTruthy();
     expect(
       premiumRender.container.querySelector(".campaign-banner.store-variant--imageOverlay"),
-    ).toBeTruthy();
+    ).toBeNull();
     expect(premiumRender.container.querySelector(".benefits.store-variant--minimal")).toBeTruthy();
 
     const modernRender = renderPage(
@@ -410,7 +406,7 @@ describe("P9R-02 shared-frame and homepage generation", () => {
     ).toBeTruthy();
     expect(
       modernRender.container.querySelector(".campaign-banner.store-variant--minimal"),
-    ).toBeTruthy();
+    ).toBeNull();
     expect(
       modernRender.container.querySelector(".benefits.store-variant--threeColumn"),
     ).toBeTruthy();

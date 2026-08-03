@@ -2,6 +2,7 @@ import { z } from "zod";
 import { idSchema, isoDateTimeSchema } from "@/domain/shared";
 import { pageTypeSchema } from "@/domain/storefront";
 import {
+  assetRoleSchema,
   commerceBindingSourceTypeSchema,
   narrativeRoleIds,
   narrativeRoleSchema,
@@ -119,7 +120,7 @@ export const executablePageBlueprintProfileSchema = z
       .record(z.string().trim().min(1).max(80), z.union([z.string(), z.number()]))
       .default({}),
     requiredBindingCategories: z.array(commerceBindingSourceTypeSchema).default([]),
-    requiredAssetRoles: z.array(z.string().trim().min(1).max(80)).default([]),
+    requiredAssetRoles: z.array(assetRoleSchema).default([]),
     responsiveBreakpoints: z.tuple([
       z.literal("mobile"),
       z.literal("tablet"),

@@ -29,13 +29,18 @@ history and publishing continue to consume their existing canonical snapshot and
   canonical slots.
 - `src/application/storefront-templates/profile-materializer.ts` resolves one renderer-independent
   execution projection. It validates P10A narrative-flow rules, registered V2 component
-  compatibility, bounded-parameter inheritance, binding categories, responsive breakpoints and
-  registered accessibility contracts. Its output is deterministic and fingerprinted.
-- The initial materializer records profile identity/fingerprint evidence while producing the same
-  canonical `StorefrontSnapshot`; it does not persist a profile projection.
-- The whole-store planner retains the three resolved profile identities/fingerprints in its
-  canonical plan. The existing proposal compiler requires those identities before consuming the
-  established direction/order authority. It does not independently reconstruct a profile.
+  compatibility, PageBlueprint-owned bounded-parameter inheritance, explicit canonical binding
+  evidence, approved asset-role compatibility, responsive breakpoints and registered accessibility
+  contracts. Its output is deterministic and fingerprinted.
+- The initial materializer validates the actual post-omission section composition before recording
+  profile identity/fingerprint evidence while producing the same canonical `StorefrontSnapshot`; it
+  does not persist a profile projection. Missing canonical commerce bindings or required final roles
+  fail closed. The supported empty-catalogue journey records its explicit canonical slot omissions
+  and no successful commerce-profile materialization.
+- The whole-store planner resolves live registered plans, rejects altered recipe-context copies and
+  retains the three full materializations in its canonical plan. The existing proposal compiler
+  consumes that materialization for component selection, variants and ordering; it does not consult
+  a legacy recipe or independently reconstruct a profile.
 
 ## Initial registered coverage
 
@@ -55,8 +60,9 @@ The initial profile set covers:
 ## Fail-closed and protected state
 
 Unknown or future profile versions, absent profiles, invalid narrative structure, incompatible
-components/variants, unknown bounded parameters, invalid inherited values and missing required
-binding categories fail before any snapshot mutation. Existing proposal lifecycle checks continue
+components/variants, unknown bounded parameters, invalid inherited values, missing explicit binding
+evidence, unsupported asset roles and component/asset incompatibility fail before any snapshot
+mutation. Existing proposal lifecycle checks continue
 to protect canonical product/variant identities, prices, stock, options, collection membership and
 order, routes/navigation, media/asset references, BrandSystem authority, revisions and proposal
 fingerprints.

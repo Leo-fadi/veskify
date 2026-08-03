@@ -2,7 +2,8 @@ import {
   registeredTokenRefinementPlanSchema,
   type RegisteredTokenRefinementPlan,
 } from "@/application/storefront-design-system";
-import { getTemplatePagePlan } from "@/application/storefront-templates/registry";
+import { getTemplateById, getTemplatePagePlan } from "@/application/storefront-templates/registry";
+import { materializeExecutablePageBlueprint } from "@/application/storefront-templates/profile-materializer";
 import {
   dynamicCollectionCommerceDefaultContent,
   dynamicCollectionCommerceDefaultProps,
@@ -456,54 +457,58 @@ function templateForDirection(
   }[directionId];
 }
 
+function resolvedWholeStorefrontBindingCategories(
+  input: WholeStorefrontPlanningInput,
+  pageType: "home" | "collection" | "product",
+) {
+  if (pageType === "home") return ["navigation"] as const;
+  if (pageType === "collection") {
+    return input.catalogue.collections.length > 0 && input.catalogue.products.length > 0
+      ? (["collection", "productList"] as const)
+      : ([] as const);
+  }
+  return input.catalogue.products.length > 0 ? (["product"] as const) : ([] as const);
+}
+
 function materializeDirectionPageBlueprints(
   input: WholeStorefrontPlanningInput,
   directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
 ) {
   const templateId = templateForDirection(directionId);
-  const registeredTemplate = input.recipeContext.templates.find(
+  const contextTemplate = input.recipeContext.templates.find(
     (template) => template.id === templateId,
   );
-  if (!registeredTemplate) {
+  const registeredTemplate = getTemplateById(templateId);
+  if (
+    !contextTemplate ||
+    !registeredTemplate ||
+    canonicalValueString(contextTemplate) !== canonicalValueString(registeredTemplate)
+  ) {
     invalid(
       "unsupported-page-family",
-      "The selected direction has no registered PageBlueprint template.",
+      "The selected direction does not match the live registered PageBlueprint template.",
     );
   }
   return (["home", "collection", "product"] as const).map((pageType) => {
-    const pagePlan =
-      registeredTemplate.pagePlans.find((plan) => plan.pageType === pageType) ??
-      getTemplatePagePlan(templateId, pageType);
+    const pagePlan = getTemplatePagePlan(templateId, pageType);
     if (!pagePlan) {
       invalid(
         "unsupported-page-family",
         `The selected direction has no ${pageType} PageBlueprint.`,
       );
     }
-    const profile = pagePlan.profile;
-    if (!profile || profile.version !== "1.0.0") {
+    try {
+      return materializeExecutablePageBlueprint({
+        pagePlan,
+        componentDefinitions: input.componentDefinitions,
+        availableBindingCategories: resolvedWholeStorefrontBindingCategories(input, pageType),
+      });
+    } catch (cause) {
       invalid(
         "unsupported-page-family",
-        `The selected ${pageType} PageBlueprint profile is absent or uses an unsupported version.`,
+        `The selected ${pageType} PageBlueprint cannot be materialized from the live registry: ${cause instanceof Error ? cause.message : "unknown failure"}`,
       );
     }
-    const materialization = {
-      profileId: profile.id,
-      profileVersion: profile.version,
-      pageType,
-      roleOrder: profile.orderedNarrativeRoles,
-      slots: profile.componentSelections,
-      requiredBindingCategories: profile.requiredBindingCategories,
-      requiredAssetRoles: profile.requiredAssetRoles,
-    };
-    return {
-      pageType,
-      profileId: profile.id,
-      profileVersion: profile.version,
-      fingerprint: `page-blueprint-${canonicalValueFingerprint(
-        canonicalValueString(materialization),
-      )}`,
-    };
   });
 }
 

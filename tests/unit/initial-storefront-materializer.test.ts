@@ -105,7 +105,11 @@ describe("deterministic initial storefront materializer", () => {
     ).toEqual(
       selection.resolvedPagePlans.map((plan) =>
         plan.slots
-          .filter((slot) => slot.omitWhen !== "when-not-requested")
+          .filter(
+            (slot) =>
+              slot.omitWhen !== "when-not-requested" &&
+              slot.omitWhen !== "when-imagery-is-unavailable",
+          )
           .map((slot) => slot.sectionType),
       ),
     );
@@ -123,19 +127,15 @@ describe("deterministic initial storefront materializer", () => {
     });
   });
 
-  it("omits optional catalogue, imagery, and not-requested slots with provenance", () => {
+  it("records an explicit empty-catalogue omission outcome without claiming commerce profiles", () => {
     const result = materializeInitialStorefront(
       input("template_brand_led_editorial", brief({ catalogueContext: "empty-catalogue" })),
     );
-    expect(result.provenance.omissions.length).toBeGreaterThan(0);
-    expect(
-      result.warnings.some((warning) => warning.code === "EMPTY_CATALOGUE_MERCHANDISING"),
-    ).toBe(true);
-    expect(
-      result.generatedSnapshot?.pages
-        .flatMap((page) => page.sections)
-        .some((section) => section.component === "brandStory"),
-    ).toBe(false);
+    expect(result.status).toBe("ready-with-warnings");
+    expect(result.generatedSnapshot).toBeDefined();
+    expect(result.provenance.profileMaterializations).toEqual([]);
+    expect(result.provenance.omissions.some((entry) => entry.pageType === "collection")).toBe(true);
+    expect(result.provenance.omissions.some((entry) => entry.pageType === "product")).toBe(true);
   });
 
   it("validates every generated section through the component registry", () => {

@@ -26,7 +26,11 @@ import {
   validateStorefrontTemplateSelectionPlan,
 } from "./selection-contract";
 import type { StorefrontTemplatePagePlan, StorefrontTemplateSlot } from "./contract";
-import { materializeExecutablePageBlueprint } from "./profile-materializer";
+import {
+  ExecutablePageBlueprintMaterializationError,
+  materializeExecutablePageBlueprint,
+  validateExecutablePageBlueprintRealization,
+} from "./profile-materializer";
 import {
   cloneInitialStorefrontGenerationPlan,
   initialStorefrontGenerationPlanSchema,
@@ -417,6 +421,14 @@ function createPage(
   });
 }
 
+function resolvedInitialBindingCategories(pageType: PageType, brief: StorefrontDesignBrief) {
+  if (pageType === "home") return ["navigation"] as const;
+  if (brief.catalogueContext === "empty-catalogue") return [] as const;
+  return pageType === "collection"
+    ? (["collection", "productList"] as const)
+    : (["product"] as const);
+}
+
 function createBlockedPlan(
   input: InitialStorefrontMaterializationInput,
   blockers: GenerationMessage[],
@@ -481,9 +493,22 @@ export function materializeInitialStorefront(
   try {
     pages = requiredPageTypes.map((pageType) => {
       const pagePlan = selection.resolvedPagePlans.find((plan) => plan.pageType === pageType)!;
+      if (brief.catalogueContext === "empty-catalogue") {
+        // The supported empty-catalogue journey records only its explicit slot
+        // omissions; it never claims a commerce PageBlueprint was materialized.
+        return createPage(parsed.projectId, pagePlan, brief, provenance.omissions);
+      }
       const profile = materializeExecutablePageBlueprint({
         pagePlan,
         componentDefinitions: veskifyComponentDefinitionsV2,
+        availableBindingCategories: resolvedInitialBindingCategories(pageType, brief),
+      });
+      const page = createPage(parsed.projectId, pagePlan, brief, provenance.omissions);
+      validateExecutablePageBlueprintRealization({
+        pagePlan,
+        materialization: profile,
+        componentDefinitions: veskifyComponentDefinitionsV2,
+        sections: page.sections,
       });
       provenance.profileMaterializations.push({
         pageType,
@@ -491,7 +516,7 @@ export function materializeInitialStorefront(
         profileVersion: profile.profileVersion,
         fingerprint: profile.fingerprint,
       });
-      return createPage(parsed.projectId, pagePlan, brief, provenance.omissions);
+      return page;
     });
     const pageIds = Object.fromEntries(pages.map((page) => [page.type, page.id])) as Record<
       "home" | "collection" | "product",
@@ -513,11 +538,17 @@ export function materializeInitialStorefront(
     const error =
       cause instanceof InitialStorefrontMaterializationError
         ? cause
-        : new InitialStorefrontMaterializationError(
-            "invalid-generated-storefront",
-            "The generated storefront failed registered-component validation.",
-            cause,
-          );
+        : cause instanceof ExecutablePageBlueprintMaterializationError
+          ? new InitialStorefrontMaterializationError(
+              "invalid-generated-storefront",
+              cause.message,
+              cause,
+            )
+          : new InitialStorefrontMaterializationError(
+              "invalid-generated-storefront",
+              "The generated storefront failed registered-component validation.",
+              cause,
+            );
     return createBlockedPlan(
       { ...parsed, brief, templateSelectionPlan: selection, brandSystem },
       [message("section-materialization-failed", error.message)],

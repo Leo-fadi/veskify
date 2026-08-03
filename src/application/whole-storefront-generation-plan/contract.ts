@@ -5,6 +5,8 @@ import {
   approvedGenerationAssetContextSchema,
 } from "@/application/ai-storefront-generation";
 import {
+  assetRoleSchema,
+  commerceBindingSourceTypeSchema,
   componentDefinitionV2Schema,
   componentInstanceV2Schema,
   presentationBindingSchema,
@@ -106,6 +108,27 @@ export const wholeStorefrontPageBlueprintMaterializationSchema = z
     pageType: z.enum(["home", "collection", "product"]),
     profileId: z.string().trim().min(1).max(120),
     profileVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+    roleOrder: z.array(z.string().trim().min(1).max(80)).min(1),
+    slots: z
+      .array(
+        z
+          .object({
+            slotId: z.string().trim().min(1).max(80),
+            component: z.string().trim().min(1).max(80),
+            variant: z.string().trim().min(1).max(80),
+            narrativeRole: z.string().trim().min(1).max(80),
+            visualWeight: z.string().trim().min(1).max(80),
+            transitionIntent: z.string().trim().min(1).max(80).optional(),
+            boundedParameters: z.record(
+              z.string().trim().min(1).max(80),
+              z.union([z.string(), z.number()]),
+            ),
+          })
+          .strict(),
+      )
+      .min(1),
+    requiredBindingCategories: z.array(commerceBindingSourceTypeSchema),
+    requiredAssetRoles: z.array(assetRoleSchema),
     fingerprint: fingerprintSchema,
   })
   .strict();

@@ -881,7 +881,10 @@ export function resolveBoundedParameterInheritance(
       });
       return;
     }
-    if (!definition.authority.overrideLevels.includes(layer.level)) {
+    if (
+      !definition.authority.overrideLevels.includes(layer.level) &&
+      !definition.authority.defaultLevels.includes(layer.level)
+    ) {
       issues.push({
         code: "PROHIBITED_PARAMETER_OVERRIDE",
         parameterId,

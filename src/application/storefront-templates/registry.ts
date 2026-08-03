@@ -124,6 +124,21 @@ function pagePlan(
   };
 }
 
+function specializedSlots(
+  slots: readonly StorefrontTemplateSlot[],
+  variants: Readonly<Record<string, string>>,
+): StorefrontTemplateSlot[] {
+  return slots.map((slot) => {
+    const defaultVariant = variants[slot.sectionType];
+    if (!defaultVariant) return structuredClone(slot);
+    return {
+      ...structuredClone(slot),
+      allowedVariants: [...new Set([...slot.allowedVariants, defaultVariant])],
+      defaultVariant,
+    };
+  });
+}
+
 const homePageBlueprint = pageBlueprintCompositionContractSchema.parse({
   allowedNarrativeRoles: [
     "orientation",
@@ -391,17 +406,49 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
     supportedPageTypes: [...allPageTypes],
     supportedCatalogueContexts: ["existing", "demo", "empty"],
     pagePlans: [
-      pagePlan("blueprint-brand-led-home", "home", Object.values(homeSlots), homePageBlueprint),
+      pagePlan(
+        "blueprint-brand-led-home",
+        "home",
+        specializedSlots(
+          [
+            homeSlots.announcement,
+            homeSlots.header,
+            homeSlots.hero,
+            homeSlots.categories,
+            homeSlots.story,
+            homeSlots.products,
+            homeSlots.values,
+            homeSlots.newsletter,
+            homeSlots.footer,
+          ],
+          {
+            header: "transparent",
+            hero: "fullBleed",
+            featuredCategories: "imageLed",
+            brandStory: "imageLed",
+            benefitIcons: "minimal",
+            footer: "editorial",
+          },
+        ),
+        homePageBlueprint,
+      ),
       pagePlan(
         "blueprint-brand-led-collection",
         "collection",
-        Object.values(collectionSlots),
+        specializedSlots(Object.values(collectionSlots), {
+          header: "transparent",
+          productGrid: "editorial",
+          footer: "editorial",
+        }),
         collectionPageBlueprint,
       ),
       pagePlan(
         "blueprint-brand-led-product",
         "product",
-        Object.values(productSlots),
+        specializedSlots(Object.values(productSlots), {
+          header: "transparent",
+          footer: "editorial",
+        }),
         productPageBlueprint,
       ),
     ],
@@ -432,37 +479,56 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
       pagePlan(
         "blueprint-balanced-home",
         "home",
-        [
-          homeSlots.announcement,
-          homeSlots.header,
-          homeSlots.hero,
-          homeSlots.categories,
-          homeSlots.products,
-          homeSlots.values,
-          homeSlots.newsletter,
-          homeSlots.footer,
-        ],
+        specializedSlots(
+          [
+            homeSlots.announcement,
+            homeSlots.header,
+            homeSlots.hero,
+            homeSlots.story,
+            homeSlots.categories,
+            homeSlots.products,
+            homeSlots.values,
+            homeSlots.newsletter,
+            homeSlots.footer,
+          ],
+          {
+            header: "centered",
+            hero: "editorial",
+            featuredCategories: "editorialCards",
+            productGrid: "standard",
+            brandStory: "editorial",
+            benefitIcons: "cards",
+            footer: "columns",
+          },
+        ),
         homePageBlueprint,
       ),
       pagePlan(
         "blueprint-balanced-collection",
         "collection",
-        Object.values(collectionSlots),
+        specializedSlots(Object.values(collectionSlots), {
+          header: "centered",
+          productGrid: "standard",
+          footer: "columns",
+        }),
         collectionPageBlueprint,
       ),
       pagePlan(
         "blueprint-balanced-product",
         "product",
-        [
-          productSlots.header,
-          productSlots.gallery,
-          productSlots.information,
-          productSlots.options,
-          productSlots.values,
-          productSlots.details,
-          productSlots.related,
-          productSlots.footer,
-        ],
+        specializedSlots(
+          [
+            productSlots.header,
+            productSlots.gallery,
+            productSlots.information,
+            productSlots.options,
+            productSlots.values,
+            productSlots.details,
+            productSlots.related,
+            productSlots.footer,
+          ],
+          { header: "centered", footer: "columns" },
+        ),
         productPageBlueprint,
       ),
     ],
@@ -493,36 +559,56 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
       pagePlan(
         "blueprint-catalogue-forward-home",
         "home",
-        [
-          homeSlots.announcement,
-          homeSlots.header,
-          homeSlots.hero,
-          homeSlots.products,
-          homeSlots.categories,
-          homeSlots.newsletter,
-          homeSlots.footer,
-        ],
+        specializedSlots(
+          [
+            homeSlots.announcement,
+            homeSlots.header,
+            homeSlots.hero,
+            homeSlots.products,
+            homeSlots.categories,
+            homeSlots.story,
+            homeSlots.values,
+            homeSlots.newsletter,
+            homeSlots.footer,
+          ],
+          {
+            header: "compact",
+            hero: "asymmetric",
+            productGrid: "compact",
+            featuredCategories: "grid",
+            brandStory: "minimal",
+            benefitIcons: "threeColumn",
+            footer: "compact",
+          },
+        ),
         homePageBlueprint,
       ),
       pagePlan(
         "blueprint-catalogue-forward-collection",
         "collection",
-        Object.values(collectionSlots),
+        specializedSlots(Object.values(collectionSlots), {
+          header: "compact",
+          productGrid: "compact",
+          footer: "compact",
+        }),
         collectionPageBlueprint,
       ),
       pagePlan(
         "blueprint-catalogue-forward-product",
         "product",
-        [
-          productSlots.header,
-          productSlots.gallery,
-          productSlots.information,
-          productSlots.options,
-          productSlots.values,
-          productSlots.details,
-          productSlots.related,
-          productSlots.footer,
-        ],
+        specializedSlots(
+          [
+            productSlots.header,
+            productSlots.gallery,
+            productSlots.information,
+            productSlots.options,
+            productSlots.values,
+            productSlots.details,
+            productSlots.related,
+            productSlots.footer,
+          ],
+          { header: "compact", footer: "compact" },
+        ),
         productPageBlueprint,
       ),
     ],

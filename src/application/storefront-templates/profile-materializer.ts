@@ -1,6 +1,7 @@
 import {
   boundedParametersById,
   resolveBoundedParameterInheritance,
+  type CommerceBindingSourceType,
   type ComponentDefinitionV2,
 } from "@/domain/component-platform";
 import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
@@ -64,10 +65,18 @@ export function materializeExecutablePageBlueprint(
   input: Readonly<{
     pagePlan: StorefrontTemplatePagePlan;
     componentDefinitions: readonly ComponentDefinitionV2[];
-    availableBindingCategories?: readonly string[];
+    availableBindingCategories: readonly CommerceBindingSourceType[];
+    brandSystemParameterValues?: Readonly<Record<string, string | number>>;
   }>,
 ): ExecutablePageBlueprintMaterialization {
-  const pagePlan = storefrontTemplatePagePlanSchema.parse(input.pagePlan);
+  const parsedPagePlan = storefrontTemplatePagePlanSchema.safeParse(input.pagePlan);
+  if (!parsedPagePlan.success) {
+    throw new ExecutablePageBlueprintMaterializationError(
+      "invalid-profile",
+      "The PageBlueprint profile is not a valid registered composition contract.",
+    );
+  }
+  const pagePlan = parsedPagePlan.data;
   const profile = pagePlan.profile;
   if (!profile) {
     throw new ExecutablePageBlueprintMaterializationError(
@@ -81,7 +90,12 @@ export function materializeExecutablePageBlueprint(
       `PageBlueprint profile ${profile.id} version ${profile.version} is unsupported.`,
     );
   }
-  executablePageBlueprintProfileSchema.parse(profile);
+  if (!executablePageBlueprintProfileSchema.safeParse(profile).success) {
+    throw new ExecutablePageBlueprintMaterializationError(
+      "invalid-profile",
+      `PageBlueprint profile ${profile.id} is invalid.`,
+    );
+  }
   if (
     profile.scope !== pagePlan.pageType ||
     canonicalValueString(profile.orderedNarrativeRoles) !==
@@ -128,7 +142,13 @@ export function materializeExecutablePageBlueprint(
       );
     }
     const boundedParameters = Object.fromEntries(
-      Object.entries(profile.parameterDefaults).map(([parameterId, value]) => {
+      [
+        ...new Set([
+          ...Object.keys(input.brandSystemParameterValues ?? {}),
+          ...Object.keys(profile.parameterDefaults),
+        ]),
+      ].map((parameterId) => {
+        const value = profile.parameterDefaults[parameterId];
         const parameter = boundedParametersById.get(parameterId);
         if (!parameter) {
           throw new ExecutablePageBlueprintMaterializationError(
@@ -137,6 +157,14 @@ export function materializeExecutablePageBlueprint(
           );
         }
         const resolved = resolveBoundedParameterInheritance(parameterId, [
+          ...(input.brandSystemParameterValues?.[parameterId] === undefined
+            ? []
+            : [
+                {
+                  level: "brandSystem" as const,
+                  value: input.brandSystemParameterValues[parameterId],
+                },
+              ]),
           ...(pagePlan.pageBlueprint.boundedParameterConstraints.some(
             (constraint) => constraint.parameterId === parameterId,
           )
@@ -149,7 +177,7 @@ export function materializeExecutablePageBlueprint(
                 },
               ]
             : []),
-          { level: "instance" as const, value },
+          ...(value === undefined ? [] : [{ level: "pageBlueprint" as const, value }]),
         ]);
         if (resolved.issues.length > 0 || resolved.value === undefined) {
           throw new ExecutablePageBlueprintMaterializationError(
@@ -192,6 +220,7 @@ export function materializeExecutablePageBlueprint(
         visualWeight,
         ...(transitionIntent === undefined ? {} : { transitionIntent }),
         ...(Object.keys(boundedParameters).length === 0 ? {} : { parameters: boundedParameters }),
+        parameterAuthority: "pageBlueprint" as const,
       }),
     ),
   });
@@ -201,7 +230,28 @@ export function materializeExecutablePageBlueprint(
       `Profile ${profile.id} fails narrative validation: ${composition.issues.map((entry) => entry.code).join(", ")}.`,
     );
   }
-  const available = new Set(input.availableBindingCategories ?? profile.requiredBindingCategories);
+  if (
+    profile.requiredAssetRoles.some(
+      (role) =>
+        !slots.some((slot) =>
+          definitions
+            .get(slot.component)
+            ?.assetSlots.some((assetSlot) => assetSlot.acceptedRoles.includes(role)),
+        ),
+    )
+  ) {
+    throw new ExecutablePageBlueprintMaterializationError(
+      "incompatible-component",
+      `Profile ${profile.id} requires an asset role that its selected components cannot accept.`,
+    );
+  }
+  if (!Array.isArray(input.availableBindingCategories)) {
+    throw new ExecutablePageBlueprintMaterializationError(
+      "missing-required-binding",
+      `Profile ${profile.id} has no explicit canonical binding evidence.`,
+    );
+  }
+  const available = new Set(input.availableBindingCategories);
   if (profile.requiredBindingCategories.some((category) => !available.has(category))) {
     throw new ExecutablePageBlueprintMaterializationError(
       "missing-required-binding",
@@ -221,4 +271,89 @@ export function materializeExecutablePageBlueprint(
     ...materialization,
     fingerprint: `page-blueprint-${canonicalValueFingerprint(canonicalValueString(materialization))}`,
   });
+}
+
+/**
+ * Confirms that the canonical sections which survived omission policy still
+ * satisfy the already-materialized PageBlueprint. This deliberately consumes
+ * the existing projection instead of materializing a second representation.
+ */
+export function validateExecutablePageBlueprintRealization(
+  input: Readonly<{
+    pagePlan: StorefrontTemplatePagePlan;
+    materialization: ExecutablePageBlueprintMaterialization;
+    componentDefinitions: readonly ComponentDefinitionV2[];
+    sections: readonly Readonly<{ component: string; variant: string }>[];
+  }>,
+): void {
+  const pagePlan = storefrontTemplatePagePlanSchema.parse(input.pagePlan);
+  const profile = pagePlan.profile;
+  if (
+    !profile ||
+    input.materialization.profileId !== profile.id ||
+    input.materialization.profileVersion !== profile.version ||
+    input.materialization.pageType !== pagePlan.pageType
+  ) {
+    throw new ExecutablePageBlueprintMaterializationError(
+      "invalid-profile",
+      "The final composition does not match its canonical executable PageBlueprint.",
+    );
+  }
+  const unmatched = input.sections.map((section) => ({ ...section, used: false }));
+  const realizedSlots = input.materialization.slots.filter((slot) => {
+    const section = unmatched.find(
+      (candidate) =>
+        !candidate.used &&
+        candidate.component === slot.component &&
+        candidate.variant === slot.variant,
+    );
+    if (!section) return false;
+    section.used = true;
+    return true;
+  });
+  if (unmatched.some((section) => !section.used)) {
+    throw new ExecutablePageBlueprintMaterializationError(
+      "invalid-composition",
+      "The final composition contains a section outside the executable PageBlueprint.",
+    );
+  }
+  const roleCounts = new Map<string, number>();
+  realizedSlots.forEach((slot) =>
+    roleCounts.set(slot.narrativeRole, (roleCounts.get(slot.narrativeRole) ?? 0) + 1),
+  );
+  if (
+    profile.roleCardinality.some((entry) => {
+      const count = roleCounts.get(entry.role) ?? 0;
+      return count < entry.minimum || count > entry.maximum;
+    })
+  ) {
+    throw new ExecutablePageBlueprintMaterializationError(
+      "invalid-composition",
+      "The final composition no longer satisfies the executable PageBlueprint role cardinality.",
+    );
+  }
+  const composition = validateNarrativeComposition({
+    pageType: pagePlan.pageType,
+    blueprintProfileId: profile.id,
+    pageBlueprint: pagePlan,
+    components: input.componentDefinitions,
+    sections: realizedSlots.map((slot) => ({
+      id: slot.slotId,
+      component: slot.component,
+      variant: slot.variant,
+      narrativeRole: slot.narrativeRole,
+      visualWeight: slot.visualWeight,
+      ...(slot.transitionIntent === undefined ? {} : { transitionIntent: slot.transitionIntent }),
+      ...(Object.keys(slot.boundedParameters).length === 0
+        ? {}
+        : { parameters: slot.boundedParameters }),
+      parameterAuthority: "pageBlueprint" as const,
+    })),
+  });
+  if (!composition.valid) {
+    throw new ExecutablePageBlueprintMaterializationError(
+      "invalid-composition",
+      `The final PageBlueprint composition fails narrative validation: ${composition.issues.map((entry) => entry.code).join(", ")}.`,
+    );
+  }
 }

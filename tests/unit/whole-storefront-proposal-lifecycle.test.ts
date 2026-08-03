@@ -17,7 +17,6 @@ import {
   createWholeStorefrontRecipeContext,
   wholeStorefrontPlanningInputSchema,
 } from "@/application/whole-storefront-generation-plan";
-import { orderSectionsForRecipe } from "@/application/storefront-design-system";
 import {
   approveStorefrontDesignBrief,
   createStorefrontDesignBrief,
@@ -284,7 +283,7 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
     source.plan = {
       ...source.plan,
       pageBlueprintMaterializations: source.plan.pageBlueprintMaterializations.slice(1),
-    } as typeof source.plan;
+    };
     expect(errorCode(() => compileWholeStorefrontProposal(source))).toBe("invalid-plan");
   });
 
@@ -471,13 +470,17 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
       throw new Error("Missing compiled storefront replacement");
     }
 
-    const homepageRecipe = source.planningInput.recipeContext.designSystem.homepageRecipes.find(
-      (recipe) => recipe.id === source.plan.designSystemSelection.homepageRecipeId,
+    const homepageProfile = source.plan.pageBlueprintMaterializations.find(
+      (profile) => profile.pageType === "home",
     );
-    if (!homepageRecipe) throw new Error("Missing selected homepage recipe");
-    expect(homeRuntime.components.map((component) => component.id)).toEqual(
-      orderSectionsForRecipe(home.sections, homepageRecipe).map((section) => section.id),
-    );
+    if (!homepageProfile) throw new Error("Missing executable homepage profile");
+    expect(
+      homeRuntime.components
+        .filter((component) =>
+          homepageProfile.slots.some((slot) => slot.component === component.component),
+        )
+        .map((component) => [component.component, component.variant]),
+    ).toEqual(homepageProfile.slots.map((slot) => [slot.component, slot.variant]));
     expect(
       homeRuntime.components.find((component) => component.id === home.sections[first].id)?.visible,
     ).toBe(false);
