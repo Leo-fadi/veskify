@@ -27,7 +27,7 @@ import {
   createStandaloneAuthoritativeWholeStorefrontPlanningContextSource,
   createStandaloneServerWholeStorefrontPlanningAuthority,
 } from "@/integrations/ai/whole-storefront-runtime-authority";
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/route";
+import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
 import { canonicalValueFingerprint } from "@/domain/storefront";
 
 type Seed = typeof aurumNordicSeed | typeof karvonenSeed;

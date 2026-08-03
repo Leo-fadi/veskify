@@ -13,8 +13,8 @@ import {
   resetP905bLocalDemo,
   synchronizeP905bLocalDemoAggregate,
 } from "@/integrations/ai/p9-05b-local-demo-authority.server";
-import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/route";
-import { createP905bLocalDemoSynchronizationHandler } from "@/app/api/demo/p9-05b/synchronize/route";
+import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
+import { createP905bLocalDemoSynchronizationHandler } from "@/app/api/demo/p9-05b/synchronize/handler";
 import { StorefrontProposalAcceptanceCoordinator } from "@/application/ai-storefront";
 import type { WholeStorefrontPlanningProvider } from "@/application/whole-storefront-generation-plan";
 import { InMemoryProjectRepository } from "@/services/storage";
