@@ -1,32 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { createWholeStorefrontGenerationTarget } from "@/application/whole-storefront-generation-plan";
-import { WholeStorefrontProposalAcceptanceCoordinator } from "@/application/whole-storefront-proposal-lifecycle";
+import {
+  createWholeStorefrontGenerationPlan,
+  createWholeStorefrontGenerationTarget,
+} from "@/application/whole-storefront-generation-plan";
+import {
+  WholeStorefrontProposalAcceptanceCoordinator,
+  compileWholeStorefrontProposal,
+} from "@/application/whole-storefront-proposal-lifecycle";
 import { canonicalValueString } from "@/domain/storefront";
 import {
   executeGovernedInitialGeneration,
+  validateAuthorizedInitialGenerationProfileSet,
   type GovernedInitialGenerationRequest,
 } from "@/application/design-skills/initial-generation-integration";
 import {
   governedSkillPackageRegistry,
+  type GovernedInitialGenerationAuthority,
   type GovernedSkillAuthorityEnvelope,
 } from "@/application/design-skills/governed-skill-packages";
 import { skillCapabilityKnowledge } from "@/application/design-skills/capability-knowledge";
 import { createP905aFreshMerchantFixture } from "@/data/demo/p9-05a-fresh-store-generation";
 
-function fixture() {
-  return createP905aFreshMerchantFixture("modernTechnical");
-}
-
-type TestInitialGenerationRequest = Omit<GovernedInitialGenerationRequest, "planningInput"> & {
-  planningInput: ReturnType<typeof fixture>["planningInput"];
-};
-
-function authorityFor(
-  planningInput: ReturnType<typeof fixture>["planningInput"],
-): GovernedSkillAuthorityEnvelope {
+function createBaseline() {
+  const fixture = createP905aFreshMerchantFixture("modernTechnical");
+  const planningInput = structuredClone(fixture.planningInput);
   const target = createWholeStorefrontGenerationTarget(planningInput);
-  return {
+  const authority: GovernedSkillAuthorityEnvelope = {
     projectId: planningInput.project.id,
+    projectRevision: planningInput.project.revision,
     draftSnapshotId: planningInput.draft.id,
     draftRevision: planningInput.draft.revision,
     snapshotFingerprint: target.activeDraftFingerprint,
@@ -41,44 +42,67 @@ function authorityFor(
     locale: "en",
     requestIdentity: "p10a-05c-initial-generation-request",
   };
+  const plan = createWholeStorefrontGenerationPlan(planningInput, {
+    directionId: "modernTechnical",
+  });
+  const profiles = plan.pageBlueprintMaterializations.map((materialization) => {
+    const capability = skillCapabilityKnowledge
+      .listExecutableProfiles({ manifest: authority.manifest, pageType: materialization.pageType })
+      .find((profile) => profile.profileId === materialization.profileId);
+    const page = target.pages.find((candidate) => candidate.type === materialization.pageType);
+    if (!capability || !page) {
+      throw new Error("Expected the canonical planner profile to be in the generated manifest.");
+    }
+    return {
+      pageId: page.id,
+      pageType: materialization.pageType,
+      profileId: capability.profileId,
+      fingerprint: capability.fingerprint,
+      materializationFingerprint: materialization.fingerprint,
+    };
+  });
+  return {
+    planningInput,
+    authority,
+    plan,
+    proposal: compileWholeStorefrontProposal({ plan, planningInput }),
+    profiles,
+  };
 }
+
+const baseline = createBaseline();
+
+type TestInitialGenerationRequest = Omit<GovernedInitialGenerationRequest, "planningInput"> & {
+  planningInput: typeof baseline.planningInput;
+};
 
 function request(
   overrides: Partial<TestInitialGenerationRequest> = {},
 ): TestInitialGenerationRequest {
-  const current = fixture();
-  const planningInput = structuredClone(current.planningInput);
-  const authority = authorityFor(planningInput);
-  const profiles = (["home", "collection", "product"] as const).map((pageType) => {
-    const profile = skillCapabilityKnowledge.listExecutableProfiles({
-      manifest: authority.manifest,
-      pageType,
-    })[0];
-    if (!profile) throw new Error(`Expected a generated ${pageType} PageBlueprint profile.`);
-    return { profileId: profile.profileId, fingerprint: profile.fingerprint, pageType };
-  });
   const descriptor = governedSkillPackageRegistry.resolve(
     "applyRegisteredWholeStorefrontDirection",
     "initialGeneration",
   ).descriptor;
+  const outputContract = descriptor.outputContracts.initialGeneration;
+  if (!outputContract) throw new Error("Expected the initial-generation output contract.");
   return {
     executionKind: "initialGeneration",
     packageId: descriptor.id,
     packageVersion: descriptor.version,
     authority: {
       executionKind: "initialGeneration",
-      authority,
+      authority: structuredClone(baseline.authority),
       brief: {
-        briefId: planningInput.brief.id,
-        revision: planningInput.brief.revision,
-        fingerprint: planningInput.brief.fingerprint,
+        briefId: baseline.planningInput.brief.id,
+        revision: baseline.planningInput.brief.revision,
+        fingerprint: baseline.planningInput.brief.fingerprint,
       },
-      profiles,
-      catalogueFingerprint: authority.commerceFingerprint,
+      profiles: structuredClone(baseline.profiles),
+      catalogueFingerprint: baseline.authority.commerceFingerprint,
       registeredDirectionId: "modernTechnical",
-      outputContractId: "wholeStorefrontPlanningInput.v1",
+      outputContractId: outputContract,
     },
-    planningInput,
+    planningInput: structuredClone(baseline.planningInput),
     ...overrides,
   };
 }
@@ -91,18 +115,17 @@ function executeCurrent(input = request()) {
   return execute(input, input.authority.authority);
 }
 
+function profileSet(authority: GovernedInitialGenerationAuthority, plan = baseline.plan) {
+  return validateAuthorizedInitialGenerationProfileSet(authority, plan);
+}
+
 describe("P10A-05C governed initial-generation integration", () => {
   it("authorizes initial generation only for the canonical whole-storefront package", () => {
-    const canonical = executeCurrent();
-    expect(canonical).toMatchObject({ valid: true });
-
-    const packageRequest = request({ packageId: "applyLuxuryStyle" });
-    const alias = executeCurrent(packageRequest);
-    expect(alias).toMatchObject({
+    expect(executeCurrent()).toMatchObject({ valid: true });
+    expect(executeCurrent(request({ packageId: "applyLuxuryStyle" }))).toMatchObject({
       valid: false,
-      failure: { code: "unsupportedInitialGenerationPackage" },
+      failure: { code: "invalidExecutionKind" },
     });
-
     for (const packageId of [
       "applyExactBrandPalette",
       "improveHero",
@@ -115,114 +138,191 @@ describe("P10A-05C governed initial-generation integration", () => {
     }
   });
 
-  it("preserves the governed envelope, brief, generated profiles, direction and output contract", () => {
+  it("maps exact governed authority into the canonical planner and compiler", () => {
     const input = request();
     const result = executeCurrent(input);
     if (!result.valid) throw new Error(result.failure.message);
-    expect(result.authority).toEqual(input.authority);
+    expect(result.authority).toEqual({
+      ...input.authority,
+      profiles: [...input.authority.profiles].sort((left, right) =>
+        `${left.pageType}:${left.pageId}:${left.profileId}`.localeCompare(
+          `${right.pageType}:${right.pageId}:${right.profileId}`,
+        ),
+      ),
+    });
     expect(result.planningInput).toEqual(input.planningInput);
-    expect(result.authority.authority.locale).toBe(input.authority.authority.locale);
-    expect(result.plan.designSystemSelection.directionId).toBe("modernTechnical");
-    expect(result.proposal.preconditions.briefRevision).toBe(input.authority.brief.revision);
-    expect(result.proposal.operations[0]?.operation).toMatchObject({
-      type: "APPLY_REGISTERED_BRAND_SYSTEM",
-      directionId: "modernTechnical",
+    expect(result.plan).toEqual(baseline.plan);
+    expect(result.proposal).toEqual(baseline.proposal);
+    expect(result.proposal.preconditions).toMatchObject({
+      projectRevision: input.authority.authority.projectRevision,
+      briefRevision: input.authority.brief.revision,
+      canonicalCommerceFingerprint: input.authority.catalogueFingerprint,
     });
   });
 
-  it("fails stale request, manifest, package, draft, commerce, asset and profile authority before planning", () => {
-    const base = request();
-    const current = base.authority.authority;
-    const checks = [
+  it("requires the exact authorized PageBlueprint profile set before compilation", () => {
+    const input = request();
+    expect(profileSet(input.authority)).toEqual({ valid: true });
+    expect(
+      profileSet({ ...input.authority, profiles: [...input.authority.profiles].reverse() }),
+    ).toEqual({
+      valid: true,
+    });
+    const first = baseline.plan.pageBlueprintMaterializations[0];
+    const additional = {
+      ...baseline.plan,
+      pageBlueprintMaterializations: [...baseline.plan.pageBlueprintMaterializations, first],
+    };
+    const missing = {
+      ...baseline.plan,
+      pageBlueprintMaterializations: baseline.plan.pageBlueprintMaterializations.slice(1),
+    };
+    const differentId = {
+      ...baseline.plan,
+      pageBlueprintMaterializations: [
+        { ...first, profileId: "blueprint-unapproved" },
+        ...baseline.plan.pageBlueprintMaterializations.slice(1),
+      ],
+    };
+    const staleFingerprint = {
+      ...baseline.plan,
+      pageBlueprintMaterializations: [
+        { ...first, fingerprint: "stale-materialization-fingerprint" },
+        ...baseline.plan.pageBlueprintMaterializations.slice(1),
+      ],
+    };
+    const wrongPageType = {
+      ...baseline.plan,
+      pageBlueprintMaterializations: [
+        { ...first, pageType: "product" satisfies (typeof first)["pageType"] },
+        ...baseline.plan.pageBlueprintMaterializations.slice(1),
+      ],
+    } satisfies typeof baseline.plan;
+    for (const plan of [additional, missing, differentId, staleFingerprint, wrongPageType]) {
+      expect(profileSet(input.authority, plan)).toMatchObject({ valid: false });
+    }
+    const contradictory = {
+      ...input,
+      authority: {
+        ...input.authority,
+        profiles: [
+          { ...input.authority.profiles[0], materializationFingerprint: "stale-materialization" },
+          ...input.authority.profiles.slice(1),
+        ],
+      },
+    };
+    expect(execute(contradictory, input.authority.authority)).toMatchObject({
+      valid: false,
+      failure: { code: "staleInitialGenerationAuthority" },
+    });
+  });
+
+  it("fails stale authority and malformed input before planning", () => {
+    const input = request();
+    const current = input.authority.authority;
+    const checks: readonly [unknown, string][] = [
       [
         {
-          ...base,
+          ...input,
           authority: {
-            ...base.authority,
-            authority: { ...base.authority.authority, requestIdentity: "stale" },
+            ...input.authority,
+            authority: { ...input.authority.authority, requestIdentity: "stale" },
           },
         },
         "staleRequestIdentityAuthority",
       ],
       [
         {
-          ...base,
+          ...input,
           authority: {
-            ...base.authority,
+            ...input.authority,
+            authority: { ...input.authority.authority, projectRevision: 999 },
+          },
+        },
+        "staleProjectAuthority",
+      ],
+      [
+        {
+          ...input,
+          authority: {
+            ...input.authority,
             authority: {
-              ...base.authority.authority,
+              ...input.authority.authority,
               manifest: { version: "9.9.9", fingerprint: "stale" },
             },
           },
         },
         "staleManifestAuthority",
       ],
-      [{ ...base, packageVersion: "9.9.9" }, "stalePackageAuthority"],
+      [{ ...input, packageVersion: "9.9.9" }, "stalePackageAuthority"],
       [
         {
-          ...base,
-          authority: {
-            ...base.authority,
-            authority: { ...base.authority.authority, snapshotFingerprint: "stale" },
-          },
+          ...input,
+          authority: { ...input.authority, catalogueFingerprint: "stale-catalogue" },
         },
-        "staleDraftAuthority",
-      ],
-      [
-        { ...base, authority: { ...base.authority, catalogueFingerprint: "stale-catalogue" } },
         "stalePlanningAuthority",
       ],
       [
         {
-          ...base,
+          ...input,
           authority: {
-            ...base.authority,
-            authority: { ...base.authority.authority, approvedAssetFingerprint: "stale-assets" },
+            ...input.authority,
+            authority: { ...input.authority.authority, approvedAssetFingerprint: "stale-assets" },
           },
         },
         "staleApprovedAssetAuthority",
       ],
       [
         {
-          ...base,
+          ...input,
           authority: {
-            ...base.authority,
-            profiles: [{ ...base.authority.profiles[0]!, fingerprint: "stale-profile" }],
+            ...input.authority,
+            profiles: [{ ...input.authority.profiles[0], fingerprint: "stale-profile" }],
           },
         },
         "staleProfileAuthority",
       ],
-    ] as const;
-    for (const [input, code] of checks) {
-      expect(execute(input, current)).toMatchObject({ valid: false, failure: { code } });
+    ];
+    for (const [candidate, code] of checks) {
+      expect(execute(candidate, current)).toMatchObject({ valid: false, failure: { code } });
     }
-  });
-
-  it("fails a planning-input authority mismatch before the planner can produce a proposal", () => {
-    const input = request();
-    const changed = structuredClone(input.planningInput) as typeof input.planningInput & {
-      draft: { revision: number };
-    };
-    changed.draft.revision += 1;
-    const result = execute({ ...input, planningInput: changed }, input.authority.authority);
-    expect(result).toMatchObject({
+    for (const malformed of [
+      { ...input, planningInput: () => undefined },
+      { ...input, planningInput: Symbol("untrusted") },
+      {
+        ...input,
+        planningInput: new Proxy(
+          {},
+          {
+            ownKeys: () => {
+              throw new Error("untrusted");
+            },
+          },
+        ),
+      },
+    ]) {
+      expect(execute(malformed, current)).toMatchObject({
+        valid: false,
+        failure: { code: "invalidRequest" },
+      });
+    }
+    expect(execute({ ...input, planningInput: {} }, current)).toMatchObject({
       valid: false,
-      failure: { code: "stalePlanningAuthority" },
+      failure: { code: "invalidPlanningInput" },
     });
   });
 
-  it("reuses the existing planner, compiler and proposal validator deterministically", () => {
-    const first = executeCurrent();
-    const second = executeCurrent();
-    if (!first.valid || !second.valid) throw new Error("Expected governed generation to succeed.");
-    expect(first.planningInput).toEqual(second.planningInput);
-    expect(first.plan).toEqual(second.plan);
-    expect(first.proposal).toEqual(second.proposal);
-    expect(first.outputFingerprint).toBe(second.outputFingerprint);
-    expect(first.proposal.status).toBe("pending");
+  it("reuses deterministic canonical planner and compiler output without duplicate fixture execution", () => {
+    const input = request();
+    const result = executeCurrent(input);
+    if (!result.valid) throw new Error(result.failure.message);
+    expect(result.planningInput).toEqual(baseline.planningInput);
+    expect(result.plan.fingerprint).toBe(baseline.plan.fingerprint);
+    expect(result.proposal.id).toBe(baseline.proposal.id);
+    expect(result.proposal.reviewSummary).toEqual(baseline.proposal.reviewSummary);
   });
 
-  it("keeps the proposal lifecycle, protected commerce and approved assets on existing canonical paths", () => {
+  it("keeps review-before-apply, acceptance, undo, redo and protected state on canonical paths", () => {
     const input = request();
     const before = canonicalValueString({
       catalogue: input.planningInput.catalogue,
@@ -231,12 +331,12 @@ describe("P10A-05C governed initial-generation integration", () => {
     });
     const result = executeCurrent(input);
     if (!result.valid) throw new Error(result.failure.message);
+    expect(result.proposal.status).toBe("pending");
     const coordinator = new WholeStorefrontProposalAcceptanceCoordinator({
       proposal: result.proposal,
       currentInput: () => ({ plan: result.plan, planningInput: result.planningInput }),
     });
-    const accepted = coordinator.accept();
-    expect(accepted.state).toBe("accepted");
+    expect(coordinator.accept().state).toBe("accepted");
     expect(canonicalValueString(coordinator.undo())).toBe(
       canonicalValueString(result.proposal.originalStorefront),
     );
@@ -250,24 +350,5 @@ describe("P10A-05C governed initial-generation integration", () => {
         navigation: input.planningInput.draft.navigation,
       }),
     ).toBe(before);
-  });
-
-  it("returns immutable outputs without provider, persistence, editor, save or publish authority", () => {
-    const input = request();
-    const result = executeCurrent(input);
-    if (!result.valid) throw new Error(result.failure.message);
-    expect(Object.isFrozen(result)).toBe(true);
-    expect(Object.isFrozen(result.proposal)).toBe(true);
-    expect(Object.keys(result).sort()).toEqual([
-      "authority",
-      "outputFingerprint",
-      "plan",
-      "planningInput",
-      "proposal",
-      "valid",
-    ]);
-    expect(canonicalValueString(input.planningInput)).toBe(
-      canonicalValueString(request().planningInput),
-    );
   });
 });

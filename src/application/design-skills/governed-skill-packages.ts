@@ -48,6 +48,17 @@ export type GovernedSkillPackageExecutionKind = z.infer<
 export type GovernedSkillPackageScope = z.infer<typeof governedSkillPackageScopeSchema>;
 export type GovernedSkillPackageId = z.infer<typeof governedSkillPackageIdSchema>;
 
+export const governedSkillPackageOutputContractsSchema = z
+  .object({
+    initialGeneration: z.literal("wholeStorefrontPlanningInput.v1").optional(),
+    followUpEditing: z.literal("governedFollowUpEditingAuthority.v1").optional(),
+  })
+  .strict();
+
+export type GovernedSkillPackageOutputContracts = z.infer<
+  typeof governedSkillPackageOutputContractsSchema
+>;
+
 export const governedSkillPackageDescriptorSchema = z
   .object({
     id: governedSkillPackageIdSchema,
@@ -72,7 +83,7 @@ export const governedSkillPackageDescriptorSchema = z
         "approvedAssetIdentityReadOnly",
       ]),
     ),
-    outputContractId: z.string().trim().min(1).max(160),
+    outputContracts: governedSkillPackageOutputContractsSchema,
   })
   .strict()
   .superRefine((descriptor, context) => {
@@ -97,6 +108,21 @@ export const governedSkillPackageDescriptorSchema = z
         message: "Slot-target packages must declare slot-selection capability access.",
       });
     }
+    const declaredExecutionKinds = descriptor.executionKinds.slice().sort();
+    const contractExecutionKinds = Object.entries(descriptor.outputContracts)
+      .filter(([, contract]) => contract !== undefined)
+      .map(([executionKind]) => executionKind)
+      .sort();
+    if (
+      declaredExecutionKinds.length !== contractExecutionKinds.length ||
+      declaredExecutionKinds.some((kind, index) => kind !== contractExecutionKinds[index])
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["outputContracts"],
+        message: "Every supported execution kind must declare exactly one output contract.",
+      });
+    }
   });
 
 export type GovernedSkillPackageDescriptor = z.infer<typeof governedSkillPackageDescriptorSchema>;
@@ -115,6 +141,7 @@ export type GovernedSkillPackageAlias = z.infer<typeof governedSkillPackageAlias
 export const governedSkillAuthorityEnvelopeSchema = z
   .object({
     projectId: idSchema,
+    projectRevision: z.number().int().nonnegative(),
     draftSnapshotId: idSchema,
     draftRevision: z.number().int().nonnegative(),
     snapshotFingerprint: fingerprintSchema,
@@ -137,6 +164,15 @@ export const governedProfileAuthoritySchema = z
     pageType: pageTypeSchema,
   })
   .strict();
+
+export const governedInitialProfileAuthoritySchema = governedProfileAuthoritySchema
+  .extend({
+    pageId: idSchema,
+    materializationFingerprint: fingerprintSchema,
+  })
+  .strict();
+
+export type GovernedInitialProfileAuthority = z.infer<typeof governedInitialProfileAuthoritySchema>;
 
 export const governedSkillSelectionSchema = z
   .object({
@@ -211,12 +247,27 @@ export const governedInitialGenerationAuthoritySchema = z
         fingerprint: fingerprintSchema,
       })
       .strict(),
-    profiles: z.array(governedProfileAuthoritySchema).min(1),
+    profiles: z.array(governedInitialProfileAuthoritySchema).min(1),
     catalogueFingerprint: fingerprintSchema,
     registeredDirectionId: storefrontDesignDirectionIdSchema,
     outputContractId: z.literal("wholeStorefrontPlanningInput.v1"),
   })
-  .strict();
+  .strict()
+  .superRefine((authority, context) => {
+    for (const [label, values] of [
+      ["pageId", authority.profiles.map((profile) => profile.pageId)],
+      ["pageType", authority.profiles.map((profile) => profile.pageType)],
+      ["profileId", authority.profiles.map((profile) => profile.profileId)],
+    ] as const) {
+      if (new Set(values).size !== values.length) {
+        context.addIssue({
+          code: "custom",
+          path: ["profiles"],
+          message: `Initial-generation profile authorities must use unique ${label} values.`,
+        });
+      }
+    }
+  });
 
 export type GovernedInitialGenerationAuthority = z.infer<
   typeof governedInitialGenerationAuthoritySchema
@@ -295,7 +346,11 @@ export class GovernedSkillPackageError extends Error {
   }
 }
 
-export const GOVERNED_SKILL_PACKAGE_REGISTRY_VERSION = "1.0.0";
+/**
+ * v2 introduces per-execution output contracts. Consumers carrying the v1
+ * authority envelope fail closed before parsing v2 descriptor metadata.
+ */
+export const GOVERNED_SKILL_PACKAGE_REGISTRY_VERSION = "2.0.0";
 
 const protectedStateRestrictions = [
   "commerceReadOnly",
@@ -307,7 +362,7 @@ const protectedStateRestrictions = [
 export const governedSkillPackageDescriptors = [
   {
     id: "applyRegisteredWholeStorefrontDirection",
-    version: "1.1.0",
+    version: "1.2.0",
     executionKinds: ["initialGeneration", "followUpEditing"],
     scope: "completeStorefront",
     compatibility: { deprecated: false },
@@ -332,7 +387,10 @@ export const governedSkillPackageDescriptors = [
     parameterAuthority: "registeredBoundedParameters",
     assetAuthority: "approvedAssetReuse",
     protectedStateRestrictions: [...protectedStateRestrictions],
-    outputContractId: "governedFollowUpEditingAuthority.v1",
+    outputContracts: {
+      initialGeneration: "wholeStorefrontPlanningInput.v1",
+      followUpEditing: "governedFollowUpEditingAuthority.v1",
+    },
   },
   {
     id: "applyExactBrandPalette",
@@ -348,7 +406,7 @@ export const governedSkillPackageDescriptors = [
     parameterAuthority: "none",
     assetAuthority: "none",
     protectedStateRestrictions: [...protectedStateRestrictions],
-    outputContractId: "governedFollowUpEditingAuthority.v1",
+    outputContracts: { followUpEditing: "governedFollowUpEditingAuthority.v1" },
   },
   {
     id: "improveHero",
@@ -364,7 +422,7 @@ export const governedSkillPackageDescriptors = [
     parameterAuthority: "none",
     assetAuthority: "none",
     protectedStateRestrictions: [...protectedStateRestrictions],
-    outputContractId: "governedFollowUpEditingAuthority.v1",
+    outputContracts: { followUpEditing: "governedFollowUpEditingAuthority.v1" },
   },
   {
     id: "addCampaignSection",
@@ -380,7 +438,7 @@ export const governedSkillPackageDescriptors = [
     parameterAuthority: "none",
     assetAuthority: "none",
     protectedStateRestrictions: [...protectedStateRestrictions],
-    outputContractId: "governedFollowUpEditingAuthority.v1",
+    outputContracts: { followUpEditing: "governedFollowUpEditingAuthority.v1" },
   },
 ] as const satisfies readonly GovernedSkillPackageDescriptor[];
 
@@ -457,7 +515,10 @@ function equivalentAuthority(
   requested: GovernedSkillAuthorityEnvelope,
   current: GovernedSkillAuthorityEnvelope,
 ): GovernedSkillPackageFailure | undefined {
-  if (requested.projectId !== current.projectId) {
+  if (
+    requested.projectId !== current.projectId ||
+    requested.projectRevision !== current.projectRevision
+  ) {
     return {
       code: "staleProjectAuthority",
       message: "The governed request targets a stale project.",
@@ -578,6 +639,20 @@ function normalizeFollowUpAuthority(
   };
 }
 
+function normalizeInitialGenerationAuthority(
+  authority: GovernedInitialGenerationAuthority,
+): GovernedInitialGenerationAuthority {
+  return {
+    ...authority,
+    profiles: [...authority.profiles].sort((left, right) =>
+      compareCanonicalStrings(
+        `${left.pageType}:${left.pageId}:${left.profileId}`,
+        `${right.pageType}:${right.pageId}:${right.profileId}`,
+      ),
+    ),
+  };
+}
+
 export type GovernedSkillPackageResolution = Readonly<{
   descriptor: GovernedSkillPackageDescriptor;
   requestedPackageId: string;
@@ -685,6 +760,12 @@ export class GovernedSkillPackageRegistry {
         `Unknown governed skill package: ${requestedPackageId}.`,
       );
     }
+    if (alias && executionKind === "initialGeneration") {
+      throw new GovernedSkillPackageError(
+        "invalidExecutionKind",
+        `Deprecated package ${requestedPackageId} does not support initial generation.`,
+      );
+    }
     if (!descriptor.executionKinds.includes(executionKind)) {
       throw new GovernedSkillPackageError(
         "invalidExecutionKind",
@@ -699,7 +780,9 @@ export class GovernedSkillPackageRegistry {
     currentAuthority: GovernedSkillAuthorityEnvelope,
   ): GovernedSkillPackageValidationResult<GovernedInitialGenerationOutput> {
     try {
-      const authority = governedInitialGenerationAuthoritySchema.parse(structuredClone(input));
+      const authority = normalizeInitialGenerationAuthority(
+        governedInitialGenerationAuthoritySchema.parse(structuredClone(input)),
+      );
       const stale = equivalentAuthority(authority.authority, currentAuthority);
       if (stale) return failure(stale.code, stale.message);
       if (

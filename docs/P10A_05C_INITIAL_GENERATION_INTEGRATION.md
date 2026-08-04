@@ -25,26 +25,38 @@ draft, write persistence, save, publish, or mutate canonical commerce or approve
 
 ## Canonical package execution
 
-Only `applyRegisteredWholeStorefrontDirection` v1.1.0 accepts the `initialGeneration` execution
+Only `applyRegisteredWholeStorefrontDirection` v1.2.0 accepts the `initialGeneration` execution
 kind. It must be requested by its canonical ID; compatibility aliases are rejected even if they
-resolve to the same descriptor. `applyExactBrandPalette`, `improveHero`, and
+resolve to the same descriptor for follow-up editing. `applyExactBrandPalette`, `improveHero`, and
 `addCampaignSection` remain follow-up-only.
 
-The request preserves the governed authority envelope, approved brief ID/revision/fingerprint,
-generated PageBlueprint profile references and fingerprints, catalogue fingerprint, registered
-direction and `wholeStorefrontPlanningInput.v1` output-contract identity. The adapter first checks
-the current authority envelope and package-registry fingerprint, then validates server-derived
-planning input against the same project, draft, component registry, commerce, approved-assets,
-locale, brief and catalogue authority.
+Registry v2 declares output contracts per execution kind: `initialGeneration` resolves to
+`wholeStorefrontPlanningInput.v1`; follow-up editing resolves to
+`governedFollowUpEditingAuthority.v1`. A stale v1 registry envelope fails closed before an adapter
+can use its incompatible descriptor representation.
+
+The request preserves the governed authority envelope, including project ID and revision, approved
+brief ID/revision/fingerprint, generated PageBlueprint capability references, catalogue fingerprint,
+registered direction and the initial output-contract identity. Each initial profile also carries its
+canonical page ID and planner materialization fingerprint. The adapter first checks the current
+authority envelope and package-registry fingerprint, then validates server-derived planning input
+against the same project/revision, draft, component registry, commerce, approved-assets, locale,
+brief and catalogue authority.
 
 Unknown packages, aliases, unsupported execution kinds, stale package versions, stale manifest or
-profile references, stale request/draft/commerce/asset authority, and planning-input mismatches all
-fail closed before planning or proposal compilation.
+profile references, stale request/project-revision/draft/commerce/asset authority, and planning-input
+mismatches all fail closed before planning or proposal compilation. Non-cloneable or malformed
+untrusted input returns a typed `invalidRequest` or `invalidPlanningInput` failure without exposing
+an internal error.
 
 The existing `WholeStorefrontPlanningInput` deliberately has no field for a skill-owned profile
 selection: its canonical recipe context chooses only its established deterministic PageBlueprint
-materializations. P10A-05C therefore validates and preserves the governed profile authority without
-substituting it into a new planner field or changing that existing selection behavior.
+materializations. P10A-05C therefore does not add a planner field or change existing selection
+behavior. Instead, after the existing planner deterministically materializes its profiles and before
+the existing compiler runs, it requires exact normalized equality of the authorized and materialized
+sets: page ID, page type, profile ID and materialization fingerprint. Additional, missing,
+duplicated, ambiguous, wrong-page or stale-fingerprint materializations fail with a typed
+`staleInitialGenerationAuthority` result rather than being silently accepted.
 
 ## Reused canonical execution and lifecycle
 
@@ -64,10 +76,12 @@ authority are not exposed as mutable skill authority.
 `tests/unit/p10a-05c-governed-initial-generation-integration.test.ts` proves:
 
 - only the canonical whole-storefront package can execute initial generation;
-- envelope, approved brief, generated profiles, registered direction and output contract are
-  preserved;
+- registry-v2 execution contracts and alias restrictions are enforced;
+- envelope, project revision, approved brief, generated capability profiles, exact materialized
+  profiles, registered direction and output contract are preserved;
 - stale request, manifest, package, draft, catalogue, asset and profile authority fail closed;
-- planning-input authority mismatches are rejected before a proposal is produced;
+- clone failures, malformed planning input and planning-input authority mismatches are rejected
+  before a proposal is produced;
 - the existing planner/compiler/proposal validator produce deterministic results; and
 - the existing acceptance, undo and redo lifecycle preserves canonical commerce, approved assets
   and navigation while the adapter exposes no provider, persistence, editor, save or publish API.

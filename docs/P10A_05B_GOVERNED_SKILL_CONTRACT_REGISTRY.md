@@ -39,7 +39,7 @@ bounded parameter intent, canonical binding references and approved asset refere
 no natural-language classification and creates no proposal operations. A supplied optional profile
 is resolved against the generated manifest even when the page has no selections.
 
-Both share the immutable authority envelope: project, draft snapshot/revision/fingerprint,
+Both share the immutable authority envelope: project ID/revision, draft snapshot/revision/fingerprint,
 generated-manifest version/fingerprint, governed-registry version/fingerprint, component registry,
 commerce and approved-asset fingerprints, locale and request identity. A stale identity fails
 closed with a typed failure. Locale and request identity are compared exactly after schema
@@ -61,7 +61,7 @@ The only P10A-05B canonical executable package IDs are:
 cannot acquire independent capability authority.
 
 There is no additional initial-generation package ID. Only the canonical
-`applyRegisteredWholeStorefrontDirection` package (v1.1.0) authorizes initial generation; deprecated
+`applyRegisteredWholeStorefrontDirection` package (v1.2.0) authorizes initial generation; deprecated
 aliases and every other package remain follow-up-only. P10A-05C connects that authority to the
 existing canonical whole-store planner rather than inventing another one.
 
@@ -78,9 +78,25 @@ only as deprecated adapters:
 | `applyWarmPremiumStorefrontStyle`   | `applyRegisteredWholeStorefrontDirection` | `premiumEditorial` |
 | `applyBrandPalette`                 | `applyExactBrandPalette`                  | none               |
 
-An adapter is marked deprecated and returns its canonical descriptor plus migration metadata. It
-cannot declare components, variants, operations, profiles or permissions of its own. Unknown
-names and deprecated IDs without a canonical migration fail closed.
+An adapter is marked deprecated and returns its canonical descriptor plus migration metadata only for
+supported follow-up execution. It cannot declare components, variants, operations, profiles or
+permissions of its own; it never inherits initial-generation authority. Unknown names and deprecated
+IDs without a canonical migration fail closed.
+
+## Registry v2 execution contracts
+
+The public descriptor changed from one `executionKind` and one output contract to explicit
+`executionKinds` and `outputContracts`. Registry version `2.0.0` signals that breaking serialized
+shape. The registry fingerprint includes that version and every output-contract mapping, so a v1
+authority envelope fails closed as `staleRegistryAuthority` before it can be used as current
+authority.
+
+Each declared execution kind has exactly one contract:
+
+| Package                                   | `initialGeneration`               | `followUpEditing`                     |
+| ----------------------------------------- | --------------------------------- | ------------------------------------- |
+| `applyRegisteredWholeStorefrontDirection` | `wholeStorefrontPlanningInput.v1` | `governedFollowUpEditingAuthority.v1` |
+| other canonical packages                  | unsupported                       | `governedFollowUpEditingAuthority.v1` |
 
 The existing eight-skill runtime registry remains historical execution support until P10A-05C/D
 migrate its callers. It is not a second authority for new governed contracts.
@@ -133,7 +149,8 @@ component/renderer work, SDD and DOCX updates remain outside this task.
 
 ## Deterministic evidence
 
-`tests/unit/p10a-05b-governed-skill-packages.test.ts` covers separate schemas, the exact canonical
+`tests/unit/p10a-05b-governed-skill-packages.test.ts` covers separate schemas, registry-v2 contract
+mapping and stale-v1 authority rejection, the exact canonical
 package inventory, immutable and deterministic registry authority, compatibility mapping, unknown
 and stale failure modes, package-version validation, PageBlueprint profile/slot/component/variant
 validation through P10A-05A, and the absence of mutable commerce/navigation/proposal authority.

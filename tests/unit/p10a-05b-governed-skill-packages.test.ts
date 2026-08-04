@@ -13,6 +13,7 @@ import {
 function currentAuthority(): GovernedSkillAuthorityEnvelope {
   return {
     projectId: "project_governed_skill",
+    projectRevision: 7,
     draftSnapshotId: "snapshot_governed_skill",
     draftRevision: 4,
     snapshotFingerprint: "snapshot-governed-skill-fingerprint",
@@ -135,12 +136,29 @@ describe("P10A-05B governed skill package registry", () => {
     expect(createGovernedSkillPackageRegistry().fingerprint).toBe(
       governedSkillPackageRegistry.fingerprint,
     );
+    expect(governedSkillPackageRegistry.version).toBe("2.0.0");
     expect(
       governedSkillPackageRegistry.resolve(
         "applyRegisteredWholeStorefrontDirection",
         "initialGeneration",
-      ).descriptor.executionKinds,
-    ).toEqual(["initialGeneration", "followUpEditing"]);
+      ).descriptor,
+    ).toMatchObject({
+      version: "1.2.0",
+      executionKinds: ["initialGeneration", "followUpEditing"],
+      outputContracts: {
+        initialGeneration: "wholeStorefrontPlanningInput.v1",
+        followUpEditing: "governedFollowUpEditingAuthority.v1",
+      },
+    });
+    expect(
+      governedSkillPackageRegistry.resolve(
+        "applyRegisteredWholeStorefrontDirection",
+        "followUpEditing",
+      ).descriptor.outputContracts.followUpEditing,
+    ).toBe("governedFollowUpEditingAuthority.v1");
+    expect(() =>
+      governedSkillPackageRegistry.resolve("applyLuxuryStyle", "initialGeneration"),
+    ).toThrow(expect.objectContaining({ code: "invalidExecutionKind" }));
     expect(
       resultCode({
         ...followUp("applyExactBrandPalette", [{ ...pageAuthority("home"), selections: [] }]),
@@ -176,7 +194,13 @@ describe("P10A-05B governed skill package registry", () => {
       executionKind: "initialGeneration",
       authority: currentAuthority(),
       brief: { briefId: "brief_governed_skill", revision: 2, fingerprint: "brief-fingerprint" },
-      profiles: [home.profile],
+      profiles: [
+        {
+          ...home.profile,
+          pageId: home.pageId,
+          materializationFingerprint: "materialized-profile-fingerprint",
+        },
+      ],
       catalogueFingerprint: "catalogue-fingerprint",
       registeredDirectionId: "modernTechnical",
       outputContractId: "wholeStorefrontPlanningInput.v1",
@@ -189,6 +213,25 @@ describe("P10A-05B governed skill package registry", () => {
     ).toMatchObject({
       valid: true,
     });
+    expect(
+      governedSkillPackageRegistry.validateInitialGeneration(initial, {
+        ...currentAuthority(),
+        packageRegistry: {
+          version: "1.0.0",
+          fingerprint: "governed-skill-packages-v1-fingerprint",
+        },
+      }),
+    ).toMatchObject({ valid: false, failure: { code: "staleRegistryAuthority" } });
+  });
+
+  it("rejects a stale project revision before governed package execution", () => {
+    const input = followUp("improveHero", [pageAuthority("home", "hero")]);
+    expect(
+      resultCode(input, {
+        ...currentAuthority(),
+        projectRevision: currentAuthority().projectRevision + 1,
+      }),
+    ).toBe("staleProjectAuthority");
   });
 
   it("validates optional supplied profiles directly even when selections are empty", () => {

@@ -51,6 +51,7 @@ export type GovernedInitialGenerationRequest = Readonly<{
 export type GovernedInitialGenerationFailureCode =
   | GovernedSkillPackageFailureCode
   | "unsupportedInitialGenerationPackage"
+  | "staleInitialGenerationAuthority"
   | "stalePlanningAuthority"
   | "invalidPlanningInput"
   | "planningFailed"
@@ -97,7 +98,10 @@ function currentPlanningAuthorityMismatch(
   currentAuthority: GovernedSkillAuthorityEnvelope,
 ): string | undefined {
   const target = createWholeStorefrontGenerationTarget(planningInput);
-  if (planningInput.project.id !== currentAuthority.projectId) {
+  if (
+    planningInput.project.id !== currentAuthority.projectId ||
+    planningInput.project.revision !== currentAuthority.projectRevision
+  ) {
     return "The server-derived planning input targets a different project.";
   }
   if (
@@ -132,6 +136,74 @@ function currentPlanningAuthorityMismatch(
   return undefined;
 }
 
+type InitialGenerationProfilePlan = Pick<
+  WholeStorefrontGenerationPlan,
+  "target" | "pageBlueprintMaterializations"
+>;
+
+/**
+ * Prevents the canonical planner from compiling a proposal with any
+ * PageBlueprint materialization that was not explicitly authorized by the
+ * governed request. This is intentionally a guard, not a second planner.
+ */
+export function validateAuthorizedInitialGenerationProfileSet(
+  authority: GovernedInitialGenerationAuthority,
+  plan: InitialGenerationProfilePlan,
+): Readonly<{ valid: true }> | Readonly<{ valid: false; message: string }> {
+  const requested = authority.profiles
+    .map((profile) => ({
+      pageId: profile.pageId,
+      pageType: profile.pageType,
+      profileId: profile.profileId,
+      materializationFingerprint: profile.materializationFingerprint,
+    }))
+    .sort((left, right) =>
+      `${left.pageType}:${left.pageId}:${left.profileId}`.localeCompare(
+        `${right.pageType}:${right.pageId}:${right.profileId}`,
+      ),
+    );
+  const materialized = plan.pageBlueprintMaterializations.map((profile) => {
+    const pages = plan.target.pages.filter((page) => page.type === profile.pageType);
+    if (pages.length !== 1) {
+      return null;
+    }
+    return {
+      pageId: pages[0].id,
+      pageType: profile.pageType,
+      profileId: profile.profileId,
+      materializationFingerprint: profile.fingerprint,
+    };
+  });
+  if (materialized.some((profile) => profile === null)) {
+    return { valid: false, message: "The planned PageBlueprint page identity is ambiguous." };
+  }
+  const planned = materialized
+    .filter((profile): profile is NonNullable<typeof profile> => profile !== null)
+    .sort((left, right) =>
+      `${left.pageType}:${left.pageId}:${left.profileId}`.localeCompare(
+        `${right.pageType}:${right.pageId}:${right.profileId}`,
+      ),
+    );
+  const requestedKeys = requested.map(
+    (profile) => `${profile.pageId}:${profile.pageType}:${profile.profileId}`,
+  );
+  const plannedKeys = planned.map(
+    (profile) => `${profile.pageId}:${profile.pageType}:${profile.profileId}`,
+  );
+  if (
+    new Set(requestedKeys).size !== requestedKeys.length ||
+    new Set(plannedKeys).size !== plannedKeys.length ||
+    canonicalValueFingerprint(requested) !== canonicalValueFingerprint(planned)
+  ) {
+    return {
+      valid: false,
+      message:
+        "The governed PageBlueprint profile set does not exactly match canonical materialization.",
+    };
+  }
+  return frozen({ valid: true as const });
+}
+
 /**
  * Validates governed initial-generation authority before invoking the existing
  * whole-storefront planner and proposal compiler. The result is an existing
@@ -142,19 +214,18 @@ export function executeGovernedInitialGeneration(
   currentAuthority: GovernedSkillAuthorityEnvelope,
   registry: GovernedSkillPackageRegistry = governedSkillPackageRegistry,
 ): GovernedInitialGenerationResult {
-  const requestResult = governedInitialGenerationRequestSchema.safeParse(
-    structuredClone(inputValue),
-  );
-  if (!requestResult.success) {
+  let requestResult: ReturnType<typeof governedInitialGenerationRequestSchema.safeParse>;
+  try {
+    requestResult = governedInitialGenerationRequestSchema.safeParse(structuredClone(inputValue));
+  } catch {
     return failure("invalidRequest", "The governed initial-generation request is invalid.");
   }
+  if (!requestResult.success)
+    return failure("invalidRequest", "The governed initial-generation request is invalid.");
   try {
     const request = requestResult.data;
     const packageResolution = registry.resolve(request.packageId, request.executionKind);
-    if (
-      packageResolution.alias !== null ||
-      packageResolution.descriptor.id !== "applyRegisteredWholeStorefrontDirection"
-    ) {
+    if (packageResolution.descriptor.id !== "applyRegisteredWholeStorefrontDirection") {
       return failure(
         "unsupportedInitialGenerationPackage",
         "Only the canonical registered whole-storefront direction package supports initial generation.",
@@ -164,6 +235,15 @@ export function executeGovernedInitialGeneration(
       return failure(
         "stalePackageAuthority",
         "The governed initial-generation package version is stale.",
+      );
+    }
+    if (
+      packageResolution.descriptor.outputContracts.initialGeneration !==
+      request.authority.outputContractId
+    ) {
+      return failure(
+        "invalidRequest",
+        "The governed package does not authorize this initial-generation output contract.",
       );
     }
     const validatedAuthority = registry.validateInitialGeneration(
@@ -194,6 +274,11 @@ export function executeGovernedInitialGeneration(
         error instanceof Error ? error.message : "Initial generation could not be planned.",
       );
     }
+    const profileSet = validateAuthorizedInitialGenerationProfileSet(
+      validatedAuthority.value.authority,
+      plan,
+    );
+    if (!profileSet.valid) return failure("staleInitialGenerationAuthority", profileSet.message);
     let proposal: WholeStorefrontProposal;
     try {
       proposal = compileWholeStorefrontProposal({ plan, planningInput: planningInput.data });
