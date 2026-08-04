@@ -39,6 +39,60 @@ export class AiStorefrontProviderStaleError extends Error {
   }
 }
 
+export type AiStorefrontProviderServerFailureCategory =
+  | "validation"
+  | "stale"
+  | "permissionDenied"
+  | "authenticationUnavailable"
+  | "projectMismatch"
+  | "tenantMismatch"
+  | "providerUnavailable"
+  | "malformedResponse"
+  | "internalFailure";
+
+const serverFailureCategories = new Set<string>([
+  "validation",
+  "stale",
+  "permissionDenied",
+  "authenticationUnavailable",
+  "projectMismatch",
+  "tenantMismatch",
+  "providerUnavailable",
+  "malformedResponse",
+  "internalFailure",
+]);
+
+export function isAiStorefrontProviderServerFailureCategory(
+  value: unknown,
+): value is AiStorefrontProviderServerFailureCategory {
+  return typeof value === "string" && serverFailureCategories.has(value);
+}
+
+const serverFailureMessages: Record<AiStorefrontProviderServerFailureCategory, string> = {
+  validation: "The storefront request is invalid.",
+  stale: "The storefront changed while the proposal was being prepared.",
+  permissionDenied: "You do not have permission to complete this storefront action.",
+  authenticationUnavailable: "Your Storefront Studio access is temporarily unavailable.",
+  projectMismatch: "This storefront request does not match the active project.",
+  tenantMismatch: "This storefront request belongs to a different merchant account.",
+  providerUnavailable:
+    "The storefront design assistant is temporarily unavailable. Please try again.",
+  malformedResponse: "The storefront request returned an invalid response.",
+  internalFailure: "The storefront request could not be completed. The draft remains unchanged.",
+};
+
+/** Preserves the safe server failure contract across the browser provider boundary. */
+export class AiStorefrontProviderServerError extends Error {
+  constructor(
+    readonly category: AiStorefrontProviderServerFailureCategory,
+    readonly retryable: boolean,
+    readonly status: number,
+  ) {
+    super(serverFailureMessages[category]);
+    this.name = "AiStorefrontProviderServerError";
+  }
+}
+
 function invalid(code: string, message: string): never {
   throw new AiStorefrontProviderValidationError(code, message);
 }
@@ -286,8 +340,8 @@ export async function requestAiStorefrontProposal(
     return validateAiStorefrontProviderResponse(request, response);
   } catch (error) {
     if (error instanceof AiStorefrontProviderValidationError) throw error;
-    if (error && typeof error === "object" && "category" in error) {
-      const category = error.category;
+    if (error instanceof AiStorefrontProviderServerError) {
+      const { category } = error;
       if (category === "stale") throw new AiStorefrontProviderStaleError();
       if (category === "validation" || category === "malformedResponse") {
         throw new AiStorefrontProviderValidationError(
@@ -295,6 +349,8 @@ export async function requestAiStorefrontProposal(
           "The storefront request is invalid.",
         );
       }
+      if (category === "providerUnavailable") throw new AiStorefrontProviderUnavailableError();
+      throw error;
     }
     throw new AiStorefrontProviderUnavailableError();
   }

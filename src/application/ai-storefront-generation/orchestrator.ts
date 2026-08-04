@@ -18,6 +18,7 @@ import {
 } from "./contract";
 import {
   AiStorefrontProviderUnavailableError,
+  AiStorefrontProviderServerError,
   AiStorefrontProviderStaleError,
   AiStorefrontProviderValidationError,
   requestAiStorefrontProposal,
@@ -58,17 +59,40 @@ const messages = {
     en: "This storefront design assistant cannot use the required approved source assets.",
     fi: "Tämä kaupan designavustaja ei voi käyttää vaadittuja hyväksyttyjä lähdeaineistoja.",
   },
+  permissionDenied: {
+    en: "You do not have permission to complete this storefront action.",
+    fi: "Sinulla ei ole oikeutta tehdä tätä kauppatoimintoa.",
+  },
+  authenticationUnavailable: {
+    en: "Your Storefront Studio access is temporarily unavailable. Try again later.",
+    fi: "Storefront Studio -käyttöoikeus ei ole juuri nyt käytettävissä. Yritä myöhemmin uudelleen.",
+  },
+  projectMismatch: {
+    en: "This storefront request does not match the active project. Refresh and try again.",
+    fi: "Tämä kauppapyyntö ei vastaa aktiivista projektia. Päivitä ja yritä uudelleen.",
+  },
+  tenantMismatch: {
+    en: "This storefront belongs to a different merchant account.",
+    fi: "Tämä kauppa kuuluu toiselle kauppiastilille.",
+  },
+  internalFailure: {
+    en: "The storefront request could not be completed. The draft remains unchanged.",
+    fi: "Kauppapyyntöä ei voitu suorittaa. Luonnos säilyi ennallaan.",
+  },
   superseded: {
     en: "A newer storefront proposal request replaced this one.",
     fi: "Uudempi kaupan ehdotuspyyntö korvasi tämän pyynnön.",
   },
 } as const;
 
-function failure(code: AiStorefrontGenerationFailure["code"]): AiStorefrontGenerationFailure {
+function failure(
+  code: AiStorefrontGenerationFailure["code"],
+  retryable = code !== "superseded",
+): AiStorefrontGenerationFailure {
   return aiStorefrontGenerationFailureSchema.parse({
     code,
     message: messages[code],
-    retryable: code !== "superseded",
+    retryable,
   });
 }
 
@@ -201,6 +225,26 @@ export class AiStorefrontGenerationOrchestrator {
       return { state: "ready", proposal: structuredClone(response.proposal), failure: null };
     } catch (error) {
       if (sequence !== this.#sequence) return this.#superseded(request);
+      if (error instanceof AiStorefrontProviderServerError) {
+        return this.#fail(
+          command,
+          error.category === "permissionDenied"
+            ? "permissionDenied"
+            : error.category === "authenticationUnavailable"
+              ? "authenticationUnavailable"
+              : error.category === "projectMismatch"
+                ? "projectMismatch"
+                : error.category === "tenantMismatch"
+                  ? "tenantMismatch"
+                  : error.category === "internalFailure"
+                    ? "internalFailure"
+                    : "validationFailed",
+          request,
+          undefined,
+          undefined,
+          error.retryable,
+        );
+      }
       return this.#fail(
         command,
         error instanceof AiStorefrontProviderStaleError
@@ -287,9 +331,10 @@ export class AiStorefrontGenerationOrchestrator {
     request?: AiStorefrontProviderRequest,
     operationCount?: number,
     durationMs?: number,
+    retryable?: boolean,
   ): AiStorefrontGenerationResult {
     const state = code === "staleDraft" || code === "staleTarget" ? "stale" : "failed";
-    const failed = failure(code);
+    const failed = failure(code, retryable);
     this.#state = state;
     this.#proposal = null;
     this.#lastFailure = failed;

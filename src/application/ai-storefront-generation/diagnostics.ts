@@ -35,6 +35,7 @@ export type StorefrontDiagnosticCategory =
   | "providerFailure"
   | "superseded"
   | "permissionDenied"
+  | "authenticationUnavailable"
   | "projectMismatch"
   | "tenantMismatch"
   | "providerUnavailable"

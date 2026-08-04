@@ -109,6 +109,16 @@ export function storefrontFailureDiagnosticCategory(
       return "unsupportedRequest";
     case "providerUnavailable":
       return "providerUnavailable";
+    case "authenticationUnavailable":
+      return "authenticationUnavailable";
+    case "permissionDenied":
+      return "permissionDenied";
+    case "projectMismatch":
+      return "projectMismatch";
+    case "tenantMismatch":
+      return "tenantMismatch";
+    case "internalFailure":
+      return "internalFailure";
     case "superseded":
       return "superseded";
     case "validationFailed":

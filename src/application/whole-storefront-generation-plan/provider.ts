@@ -1,3 +1,4 @@
+import { ZodError } from "zod";
 import {
   registeredTokenRefinementPlanSchema,
   type RegisteredTokenRefinementPlan,
@@ -183,6 +184,18 @@ const merchantSafeMessages: Record<WholeStorefrontPlanningProviderFailureCode, s
 
 function fail(code: WholeStorefrontPlanningProviderFailureCode): never {
   throw new WholeStorefrontPlanningProviderError(code, merchantSafeMessages[code]);
+}
+
+function planningFailureCode(
+  error: WholeStorefrontGenerationPlanError | ZodError,
+): "invalid-plan" | "stale-result" {
+  if (
+    error instanceof WholeStorefrontGenerationPlanError &&
+    ["stale-result", "stale-brief", "stale-approved-asset"].includes(error.code)
+  ) {
+    return "stale-result";
+  }
+  return "invalid-plan";
 }
 
 function noUnsafeProviderContent(value: unknown): boolean {
@@ -429,19 +442,34 @@ export async function requestWholeStorefrontGenerationPlan({
   ) {
     return fail("provider-incapable");
   }
+
+  let providerResult: unknown;
+  try {
+    providerResult = await provider.createPlan(request);
+  } catch (error) {
+    if (error instanceof WholeStorefrontPlanningProviderError) throw error;
+    if (error instanceof WholeStorefrontGenerationPlanError || error instanceof ZodError) {
+      return fail(planningFailureCode(error));
+    }
+    // This is the only boundary where an untyped failure is necessarily a
+    // provider failure. Validation, normalization, and stale checks happen
+    // below and retain their own typed failures.
+    return fail("provider-unavailable");
+  }
+
   try {
     return await acceptWholeStorefrontPlanningResult(
       input,
-      provider.createPlan(request),
+      Promise.resolve(providerResult),
       currentInput,
       tokenRefinementPlan,
     );
   } catch (error) {
     if (error instanceof WholeStorefrontPlanningProviderError) throw error;
-    if (error instanceof WholeStorefrontGenerationPlanError) {
-      return fail(error.code === "stale-result" ? "stale-result" : "invalid-plan");
+    if (error instanceof WholeStorefrontGenerationPlanError || error instanceof ZodError) {
+      return fail(planningFailureCode(error));
     }
-    return fail("provider-unavailable");
+    throw error;
   }
 }
 
