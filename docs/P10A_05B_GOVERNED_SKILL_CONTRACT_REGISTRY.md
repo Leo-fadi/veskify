@@ -1,6 +1,6 @@
 # P10A-05B — Governed skill contract and canonical registry
 
-**Status:** Implemented contract boundary; execution-path integration deferred
+**Status:** Implemented contract boundary; initial-generation integration delivered by P10A-05C
 
 **Scope:** P10A-05B creates one immutable package authority on top of the P10A-05A
 read-only capability-knowledge consumer. It does not alter the existing planner, provider,
@@ -17,7 +17,7 @@ the contract and registry only.
 P10A-03 executable PageBlueprints + P10A-04A generated manifest
   -> P10A-05A read-only capability knowledge
   -> P10A-05B immutable governed package registry
-  -> P10A-05C initial-generation integration (deferred)
+  -> P10A-05C initial-generation integration (implemented)
   -> P10A-05D follow-up proposal integration (deferred)
 ```
 
@@ -28,9 +28,10 @@ P10A-03 executable PageBlueprints + P10A-04A generated manifest
 `initialGeneration` represents the authority required to invoke the existing whole-storefront
 planning path: project and draft authority, approved brief revision/fingerprint, selected
 executable profile set and fingerprints, catalogue/commerce authority, approved assets, locale,
-registered direction and deterministic output-contract identity. It does not invoke
-`WholeStorefrontPlanningInput`, `WholeStorefrontGenerationPlan` or proposal compilation in this
-task.
+registered direction and deterministic output-contract identity. P10A-05C validates this authority
+against server-derived planning input before it invokes the existing `WholeStorefrontPlanningInput`,
+`WholeStorefrontGenerationPlan` and proposal compiler. It remains a single canonical package
+execution, not a second planner or proposal contract.
 
 `followUpEditing` represents already-resolved editing authority: an approved package/version,
 current snapshot and page/profile authority, registered slot/component/variant selections,
@@ -38,7 +39,7 @@ bounded parameter intent, canonical binding references and approved asset refere
 no natural-language classification and creates no proposal operations. A supplied optional profile
 is resolved against the generated manifest even when the page has no selections.
 
-Both share the immutable authority envelope: project, draft snapshot/revision/fingerprint,
+Both share the immutable authority envelope: project ID/revision, draft snapshot/revision/fingerprint,
 generated-manifest version/fingerprint, governed-registry version/fingerprint, component registry,
 commerce and approved-asset fingerprints, locale and request identity. A stale identity fails
 closed with a typed failure. Locale and request identity are compared exactly after schema
@@ -48,19 +49,21 @@ normalization, so one merchant instruction cannot be replayed under another loca
 
 The only P10A-05B canonical executable package IDs are:
 
-| Canonical package                         | Execution kind    | Governed scope      | Profile constraint                                           |
-| ----------------------------------------- | ----------------- | ------------------- | ------------------------------------------------------------ |
-| `applyRegisteredWholeStorefrontDirection` | `followUpEditing` | complete storefront | optional executable profile/slot authority                   |
-| `applyExactBrandPalette`                  | `followUpEditing` | design system       | no page profile authority                                    |
-| `improveHero`                             | `followUpEditing` | selected section    | explicit home/landing executable profile and registered slot |
-| `addCampaignSection`                      | `followUpEditing` | current page        | optional home/landing executable profile                     |
+| Canonical package                         | Execution kind                         | Governed scope      | Profile constraint                                           |
+| ----------------------------------------- | -------------------------------------- | ------------------- | ------------------------------------------------------------ |
+| `applyRegisteredWholeStorefrontDirection` | `initialGeneration`, `followUpEditing` | complete storefront | optional executable profile/slot authority                   |
+| `applyExactBrandPalette`                  | `followUpEditing`                      | design system       | no page profile authority                                    |
+| `improveHero`                             | `followUpEditing`                      | selected section    | explicit home/landing executable profile and registered slot |
+| `addCampaignSection`                      | `followUpEditing`                      | current page        | optional home/landing executable profile                     |
 
 `coordinateWholeStorefront`, `restyleWholeStorefront`, `improveSelectedSection` and
 `improveCurrentPage` remain intent or scope labels. They are deliberately not package IDs and
 cannot acquire independent capability authority.
 
-There is no initial-generation package ID in this registry. P10A-05C will connect the governed
-initial contract to the existing canonical whole-store planner rather than inventing another one.
+There is no additional initial-generation package ID. Only the canonical
+`applyRegisteredWholeStorefrontDirection` package (v1.2.0) authorizes initial generation; deprecated
+aliases and every other package remain follow-up-only. P10A-05C connects that authority to the
+existing canonical whole-store planner rather than inventing another one.
 
 ## Compatibility adapters
 
@@ -75,9 +78,25 @@ only as deprecated adapters:
 | `applyWarmPremiumStorefrontStyle`   | `applyRegisteredWholeStorefrontDirection` | `premiumEditorial` |
 | `applyBrandPalette`                 | `applyExactBrandPalette`                  | none               |
 
-An adapter is marked deprecated and returns its canonical descriptor plus migration metadata. It
-cannot declare components, variants, operations, profiles or permissions of its own. Unknown
-names and deprecated IDs without a canonical migration fail closed.
+An adapter is marked deprecated and returns its canonical descriptor plus migration metadata only for
+supported follow-up execution. It cannot declare components, variants, operations, profiles or
+permissions of its own; it never inherits initial-generation authority. Unknown names and deprecated
+IDs without a canonical migration fail closed.
+
+## Registry v2 execution contracts
+
+The public descriptor changed from one `executionKind` and one output contract to explicit
+`executionKinds` and `outputContracts`. Registry version `2.0.0` signals that breaking serialized
+shape. The registry fingerprint includes that version and every output-contract mapping, so a v1
+authority envelope fails closed as `staleRegistryAuthority` before it can be used as current
+authority.
+
+Each declared execution kind has exactly one contract:
+
+| Package                                   | `initialGeneration`               | `followUpEditing`                     |
+| ----------------------------------------- | --------------------------------- | ------------------------------------- |
+| `applyRegisteredWholeStorefrontDirection` | `wholeStorefrontPlanningInput.v1` | `governedFollowUpEditingAuthority.v1` |
+| other canonical packages                  | unsupported                       | `governedFollowUpEditingAuthority.v1` |
 
 The existing eight-skill runtime registry remains historical execution support until P10A-05C/D
 migrate its callers. It is not a second authority for new governed contracts.
@@ -118,11 +137,11 @@ navigation, canonical media and approved-asset identity are declared read-only p
 
 ## Migration map and deferred work
 
-| Follow-on task | Required work                                                                                                                       | Not provided by P10A-05B                                    |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| P10A-05C       | Feed the governed initial-generation authority into the existing whole-store planning and proposal path.                            | No planner, provider or proposal integration.               |
-| P10A-05D       | Feed governed follow-up authority into the existing proposal validation/compiler path and retire executable legacy bypasses safely. | No follow-up proposal operations or acceptance integration. |
-| P10A-06        | Classify merchant language into explicit section/page/shared-frame/storefront scope with fail-closed ambiguity handling.            | No natural-language or strict scope routing.                |
+| Follow-on task | Required work                                                                                                                       | Not provided by P10A-05B                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| P10A-05C       | Feed the governed initial-generation authority into the existing whole-store planning and proposal path.                            | Initial-generation integration is complete; provider and persistence behavior remain unchanged. |
+| P10A-05D       | Feed governed follow-up authority into the existing proposal validation/compiler path and retire executable legacy bypasses safely. | No follow-up proposal operations or acceptance integration.                                     |
+| P10A-06        | Classify merchant language into explicit section/page/shared-frame/storefront scope with fail-closed ambiguity handling.            | No natural-language or strict scope routing.                                                    |
 
 Brief/source context, approved assets and locale are execution inputs rather than standalone
 packages. Image generation, translation, provider behavior, persistence, publishing, P10A-04C,
@@ -130,7 +149,8 @@ component/renderer work, SDD and DOCX updates remain outside this task.
 
 ## Deterministic evidence
 
-`tests/unit/p10a-05b-governed-skill-packages.test.ts` covers separate schemas, the exact canonical
+`tests/unit/p10a-05b-governed-skill-packages.test.ts` covers separate schemas, registry-v2 contract
+mapping and stale-v1 authority rejection, the exact canonical
 package inventory, immutable and deterministic registry authority, compatibility mapping, unknown
 and stale failure modes, package-version validation, PageBlueprint profile/slot/component/variant
 validation through P10A-05A, and the absence of mutable commerce/navigation/proposal authority.
