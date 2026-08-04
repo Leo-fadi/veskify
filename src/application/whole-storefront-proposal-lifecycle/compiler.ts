@@ -1460,8 +1460,8 @@ function componentProjectionForCoordinatedFollowUp(
               assetId: collectionPlacements[index]!.assetId,
               role:
                 collectionPlacements[index]!.role === "editorialImage"
-                  ? ("editorial" as const)
-                  : ("card" as const),
+                  ? "editorial"
+                  : "card",
             },
           ]
         : [],
