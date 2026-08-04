@@ -95,7 +95,7 @@ async function resetAndGenerate(page: Page, instruction: string) {
     });
     return { body: (await response.json()) as unknown, ok: response.ok };
   }, demoToken);
-  expect(reset.ok).toBe(true);
+  expect(reset.ok, JSON.stringify(reset.body)).toBe(true);
   const activeSessionId = sessionId(reset.body);
   const generated = await page.evaluate(
     async ({

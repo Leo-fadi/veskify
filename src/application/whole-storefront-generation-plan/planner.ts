@@ -1288,6 +1288,15 @@ function validateAssetPlacements(
         "An approved asset placement targets an unavailable component.",
       );
     }
+    if (
+      target.componentType === "homepageFeaturedProducts" &&
+      placement.assetSlotId === "productMedia"
+    ) {
+      invalid(
+        "asset-role-slot-incompatible",
+        "Approved source assets cannot target commerce-owned homepage product media.",
+      );
+    }
     const slot = target.definition.assetSlots.find(
       (candidate) => candidate.id === placement.assetSlotId,
     );

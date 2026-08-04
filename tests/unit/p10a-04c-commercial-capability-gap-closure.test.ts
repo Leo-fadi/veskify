@@ -41,6 +41,46 @@ const approvedHeroPlacement = {
   required: true,
 };
 
+function homepageProductBridgeSection(overrides: Record<string, unknown> = {}) {
+  const source = aurumNordicSeed.draftSnapshot.pages
+    .find((page) => page.type === "home")!
+    .sections.find((section) => section.component === "productGrid")!;
+  const definition = veskifyComponentRegistry.homepageFeaturedProducts;
+  return {
+    id: source.id,
+    component: "homepageFeaturedProducts",
+    variant: definition.defaultVariant,
+    visible: true,
+    content: {
+      ...structuredClone(definition.defaultContent),
+      productIds: structuredClone(source.content.productIds),
+    },
+    props: structuredClone(definition.defaultProps),
+    ...overrides,
+  };
+}
+
+function bridgeContext(renderTarget: "preview" | "published") {
+  return createStorefrontRenderContext({
+    activeLocale: "en",
+    primaryLocale: "en",
+    catalogue: aurumNordicSeed.catalogue,
+    snapshot: aurumNordicSeed.draftSnapshot,
+    renderTarget,
+  });
+}
+
+function renderedAssetIds(renderTarget: "preview" | "published") {
+  const rendered = render(
+    renderRegisteredSection(homepageProductBridgeSection(), bridgeContext(renderTarget), "home"),
+  );
+  const assetIds = Array.from(rendered.container.querySelectorAll("[data-asset-id]")).map((node) =>
+    node.getAttribute("data-asset-id"),
+  );
+  rendered.unmount();
+  return assetIds;
+}
+
 describe("P10A-04C commercial capability gap closure", () => {
   it("uses one relocated approved-placement schema authority with unchanged parsing", () => {
     expect(legacyApprovedAssetPlacementOperationSchema).toBe(approvedAssetPlacementOperationSchema);
@@ -113,6 +153,54 @@ describe("P10A-04C commercial capability gap closure", () => {
     expect(canonicalValueFingerprint(page)).not.toBe(
       canonicalValueFingerprint({ ...page, sections: sourcePage.sections }),
     );
+  });
+
+  it("derives product media only from the persisted product subset in preview and published rendering", () => {
+    const productIds = homepageProductBridgeSection().content.productIds;
+    if (
+      !Array.isArray(productIds) ||
+      productIds.some((productId) => typeof productId !== "string")
+    ) {
+      throw new Error("The fixture homepage product list must contain canonical product IDs.");
+    }
+    const selectedProductIds = productIds;
+    const expectedAssetIds = selectedProductIds.map((productId) => {
+      const product = aurumNordicSeed.catalogue.products.find((item) => item.id === productId);
+      const firstImage = product?.images[0];
+      if (!firstImage) {
+        throw new Error(
+          "The fixture homepage product list must resolve to canonical product media.",
+        );
+      }
+      return firstImage.id;
+    });
+
+    expect(renderedAssetIds("preview")).toEqual(expectedAssetIds);
+    expect(renderedAssetIds("published")).toEqual(expectedAssetIds);
+    expect(expectedAssetIds).not.toContain("asset_lumi_ring");
+  });
+
+  it("fails closed when an approved source placement targets commerce-owned product media", () => {
+    const source = aurumNordicSeed.draftSnapshot.pages
+      .find((page) => page.type === "home")!
+      .sections.find((section) => section.component === "productGrid")!;
+    expect(() =>
+      renderRegisteredSection(
+        homepageProductBridgeSection({
+          approvedAssetPlacements: [
+            {
+              ...approvedHeroPlacement,
+              pageId: "page_home",
+              componentId: source.id,
+              componentType: "homepageFeaturedProducts",
+              assetSlotId: "productMedia",
+            },
+          ],
+        }),
+        bridgeContext("preview"),
+        "home",
+      ),
+    ).toThrow(/commerce-owned homepage product media/i);
   });
   it("registers every verified gap through the snapshot/Puck bridge and generated manifest", () => {
     for (const componentType of closedCapabilities) {

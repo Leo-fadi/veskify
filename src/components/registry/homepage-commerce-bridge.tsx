@@ -305,6 +305,15 @@ function instanceFor(
       "A persisted homepage product-list binding no longer resolves in canonical commerce.",
     );
   }
+  if (
+    component === "homepageFeaturedProducts" &&
+    componentPlacements.some((placement) => placement.assetSlotId === "productMedia")
+  ) {
+    throw new Error(
+      "Approved source asset placements cannot target commerce-owned homepage product media.",
+    );
+  }
+  const productIds = persistedProductIds ?? projection.products.map((product) => product.productId);
   const actionLabel =
     component === "homepageHero"
       ? contentRecord.primaryActionLabel
@@ -337,7 +346,7 @@ function instanceFor(
     bindings.push({
       slotId: "products",
       source: "productList",
-      productIds: persistedProductIds ?? projection.products.map((item) => item.productId),
+      productIds,
       revision,
     });
   if (actionNavigationItem && (component === "homepageHero" || component === "homepagePromotion")) {
@@ -377,7 +386,13 @@ function instanceFor(
       assetAssignments.length > 0
         ? assetAssignments
         : component === "homepageFeaturedProducts"
-          ? context.catalogue.products.flatMap((product) => {
+          ? productIds.flatMap((productId) => {
+              const product = context.catalogue.products.find((item) => item.id === productId);
+              if (!product) {
+                throw new Error(
+                  "A persisted homepage product-list binding no longer resolves in canonical commerce.",
+                );
+              }
               const firstImage = product.images[0];
               return firstImage
                 ? [

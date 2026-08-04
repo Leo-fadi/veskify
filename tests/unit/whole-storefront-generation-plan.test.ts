@@ -403,6 +403,50 @@ describe("P8-01 whole-storefront generation plan", () => {
     ).toThrow(/not compatible/i);
   });
 
+  it("rejects approved source placements targeting commerce-owned homepage product media", () => {
+    const context = approvedAssetContext(input().brief);
+    const baseline = createWholeStorefrontGenerationPlan(input());
+    const homepage = requiredValue(
+      baseline.pagePlans.find((page) => page.role === "homepage"),
+      "homepage plan",
+    );
+    const featuredProducts = requiredValue(
+      homepage.components.find(
+        (component) =>
+          ("componentId" in component ? component.component : component.instance.component) ===
+          "homepageFeaturedProducts",
+      ),
+      "homepage featured-products component",
+    );
+    const featuredProductsId =
+      "componentId" in featuredProducts
+        ? featuredProducts.componentId
+        : featuredProducts.instance.id;
+
+    expect(() =>
+      createWholeStorefrontGenerationPlan(
+        input({
+          approvedAssetContext: context,
+          requiredAssetPlacements: [
+            {
+              type: "PLACE_APPROVED_SOURCE_ASSET",
+              pageId: homepage.pageId,
+              componentId: featuredProductsId,
+              componentType: "homepageFeaturedProducts",
+              assetSlotId: "productMedia",
+              assetId: context.assets[0].assetId,
+              role: context.assets[0].role,
+              assetRevision: context.assets[0].revision,
+              materialFingerprint: context.assets[0].materialFingerprint,
+              sourceReferenceId: context.assets[0].sourceReferenceId,
+              required: true,
+            },
+          ],
+        }),
+      ),
+    ).toThrow(/commerce-owned homepage product media/i);
+  });
+
   it("rejects missing or stale required approved asset placements", () => {
     const context = approvedAssetContext(input().brief);
     const baseline = createWholeStorefrontGenerationPlan(input());
