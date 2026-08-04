@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from "vitest";
 import {
   aiStorefrontProviderResponseSchema,
   AiStorefrontGenerationOrchestrator,
-  AiStorefrontProviderServerError,
   AiStorefrontProviderValidationError,
   buildAiStorefrontProviderRequest,
   createDeterministicMockStorefrontAIProvider,
@@ -12,6 +11,7 @@ import {
   requestAiStorefrontProposal,
   type AiStorefrontGenerationCommand,
   type AiStorefrontGenerationIdentity,
+  type AiStorefrontProviderServerError,
   type recordStorefrontDiagnostic,
 } from "@/application/ai-storefront-generation";
 import type { AiStorefrontProjection } from "@/application/ai-storefront";
