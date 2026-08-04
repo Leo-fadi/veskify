@@ -66,6 +66,14 @@ export const wholeStorefrontRuntimeStateSchema = z
         message: "Whole-storefront runtime state must use unique page identities.",
       });
     }
+    const componentIds = state.pages.flatMap((page) => page.components.map((component) => component.id));
+    if (new Set(componentIds).size !== componentIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["pages"],
+        message: "Whole-storefront runtime state must use globally unique component identities.",
+      });
+    }
   });
 
 export const wholeStorefrontProposalOperationSchema = z.discriminatedUnion("type", [
@@ -133,13 +141,35 @@ export const coordinatedFollowUpPageChangeSchema = z
     profileId: z.string().trim().min(1).max(160),
     profileFingerprint: fingerprintSchema,
     pageAuthorityFingerprint: fingerprintSchema,
-    slotIds: z.array(z.string().trim().min(1).max(160)).min(1),
+    slotAuthorities: z
+      .array(
+        z
+          .object({
+            slotId: z.string().trim().min(1).max(160),
+            componentIds: z.array(idSchema).min(1),
+          })
+          .strict(),
+      )
+      .min(1),
     operations: z.array(wholeStorefrontProposalOperationSchema).min(1),
   })
   .strict()
   .superRefine((change, context) => {
-    if (new Set(change.slotIds).size !== change.slotIds.length) {
-      context.addIssue({ code: "custom", path: ["slotIds"], message: "Slot IDs must be unique." });
+    const slotIds = change.slotAuthorities.map((authority) => authority.slotId);
+    if (new Set(slotIds).size !== slotIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["slotAuthorities"],
+        message: "Slot authorities must be unique.",
+      });
+    }
+    const componentIds = change.slotAuthorities.flatMap((authority) => authority.componentIds);
+    if (new Set(componentIds).size !== componentIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["slotAuthorities"],
+        message: "A component identity may have only one declared slot authority.",
+      });
     }
     for (const operation of change.operations) {
       if (operation.type === "APPLY_PAGE_COMPONENTS" && operation.page.pageId !== change.pageId) {
@@ -202,7 +232,7 @@ export const coordinatedFollowUpPlanSchema = z
       .optional(),
     baselineGenerationPlan: wholeStorefrontGenerationPlanSchema,
     sharedOperations: z.array(wholeStorefrontProposalOperationSchema),
-    pageChanges: z.array(coordinatedFollowUpPageChangeSchema).min(1),
+    pageChanges: z.array(coordinatedFollowUpPageChangeSchema),
     explanation: z.string().trim().min(1).max(240),
   })
   .strict()
@@ -249,6 +279,19 @@ export const coordinatedFollowUpPlanSchema = z
         code: "custom",
         path: ["sharedOperations"],
         message: "A coordinated plan may contain at most one shared BrandSystem operation.",
+      });
+    }
+    if (
+      plan.pageChanges.length === 0 &&
+      !plan.sharedOperations.some(
+        (operation) => operation.type === "APPLY_REGISTERED_BRAND_SYSTEM",
+      )
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["sharedOperations"],
+        message:
+          "A shared-only coordinated plan must apply one registered BrandSystem operation.",
       });
     }
     if (
@@ -341,6 +384,10 @@ export const wholeStorefrontProposalPreconditionsSchema = z
     draftFingerprint: fingerprintSchema,
     componentRegistryFingerprint: fingerprintSchema,
     canonicalCommerceFingerprint: fingerprintSchema,
+    manifestVersion: z.string().trim().min(1).max(120).optional(),
+    manifestFingerprint: fingerprintSchema.optional(),
+    packageRegistryVersion: z.string().trim().min(1).max(120).optional(),
+    packageRegistryFingerprint: fingerprintSchema.optional(),
   })
   .strict();
 

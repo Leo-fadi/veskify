@@ -19,6 +19,8 @@ import { getComponentDefinition } from "@/components/registry";
 import {
   componentInstanceV2Schema,
   createComponentRegistryV2,
+  type ComponentProjectionContext,
+  type StorefrontAssetMetadata,
   type ComponentInstanceV2,
 } from "@/domain/component-platform";
 import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
@@ -913,6 +915,96 @@ function reviewSummary(
   };
 }
 
+/** Builds merchant review details from the actual governed follow-up projection. */
+function coordinatedFollowUpReviewSummary(
+  baseline: ReturnType<typeof validateCurrentPlan>,
+  original: WholeStorefrontRuntimeState,
+  proposed: WholeStorefrontRuntimeState,
+  explanation: string,
+): WholeStorefrontProposalReviewSummary {
+  const componentChanges: WholeStorefrontProposalReviewSummary["components"] = [];
+  const visibilityChanges: WholeStorefrontProposalReviewSummary["visibilityChanges"] = [];
+  const pages = proposed.pages
+    .map((page) => {
+      const source = original.pages.find((candidate) => candidate.pageId === page.pageId);
+      const sourceComponents = new Map(source?.components.map((component) => [component.id, component]));
+      const proposedIds = new Set(page.components.map((component) => component.id));
+      for (const component of page.components) {
+        const previous = sourceComponents.get(component.id);
+        if (!previous) {
+          componentChanges.push({
+            componentId: component.id,
+            component: component.component,
+            pageId: page.pageId,
+            pageRole: page.role,
+            status: "added",
+          });
+          continue;
+        }
+        if (previous.visible !== component.visible) {
+          visibilityChanges.push({
+            componentId: component.id,
+            previousVisible: previous.visible,
+            visible: component.visible,
+          });
+        }
+        if (canonicalValueString(previous) !== canonicalValueString(component)) {
+          componentChanges.push({
+            componentId: component.id,
+            component: component.component,
+            pageId: page.pageId,
+            pageRole: page.role,
+            ...(previous.variant === component.variant
+              ? {}
+              : { previousVariant: previous.variant, resultingVariant: component.variant }),
+            description: "Updates this component through the validated coordinated proposal.",
+            status: "modified",
+          });
+        }
+      }
+      for (const previous of source?.components ?? []) {
+        if (proposedIds.has(previous.id)) continue;
+        componentChanges.push({
+          componentId: previous.id,
+          component: previous.component,
+          pageId: page.pageId,
+          pageRole: page.role,
+          status: "removed",
+        });
+      }
+      return {
+        pageId: page.pageId,
+        status:
+          source !== undefined && canonicalValueString(source) === canonicalValueString(page)
+            ? ("retained" as const)
+            : ("changed" as const),
+      };
+    })
+    .sort((left, right) => left.pageId.localeCompare(right.pageId));
+  return {
+    sharedDesignSystemChanges:
+      canonicalValueString(original.brandSystem) === canonicalValueString(proposed.brandSystem)
+        ? []
+        : ["Applies the validated registered BrandSystem across shared storefront presentation."],
+    pages,
+    components: componentChanges.sort((left, right) => left.componentId.localeCompare(right.componentId)),
+    navigationChanges: [...original.navigation.primary, ...original.navigation.footer]
+      .map((item) => ({ navigationItemId: item.id, status: "retained" as const }))
+      .sort((left, right) => left.navigationItemId.localeCompare(right.navigationItemId)),
+    visibilityChanges: visibilityChanges.sort((left, right) =>
+      left.componentId.localeCompare(right.componentId),
+    ),
+    canonicalBindings: structuredClone(baseline.canonicalCommerceBindings),
+    approvedAssetPlacements: structuredClone(proposed.approvedAssetPlacements),
+    protectedFactsPreserved: [...baseline.reviewSummary.protectedFactsPreserved],
+    warnings: structuredClone(baseline.warnings),
+    requiredMerchantReviewItems: [
+      ...structuredClone(baseline.requiredMerchantReviewItems),
+      { code: "governed-follow-up-plan", message: explanation, severity: "required-review" },
+    ],
+  };
+}
+
 export function createWholeStorefrontRuntimeState(
   inputValue: unknown,
 ): WholeStorefrontRuntimeState {
@@ -1014,7 +1106,8 @@ function compileCoordinatedFollowUpProposal(
     canonicalValueString(input.plan.target) !== canonicalValueString(baseline.target) ||
     input.plan.componentRegistryFingerprint !== baseline.componentRegistryFingerprint ||
     input.plan.commerceFingerprint !== baseline.target.canonicalCommerceFingerprint ||
-    input.plan.approvedAssetFingerprint !== input.planningInput.approvedAssetContext?.fingerprint
+    input.plan.approvedAssetFingerprint !==
+      (input.planningInput.approvedAssetContext?.fingerprint ?? null)
   ) {
     invalid("stale-plan", "The coordinated follow-up plan no longer matches current authority.");
   }
@@ -1026,7 +1119,10 @@ function compileCoordinatedFollowUpProposal(
       !materialization ||
       materialization.profileId !== change.profileId ||
       materialization.fingerprint !== change.profileFingerprint ||
-      change.slotIds.some((slotId) => !materialization.slots.some((slot) => slot.slotId === slotId))
+      change.slotAuthorities.some(
+        (authority) =>
+          !materialization.slots.some((slot) => slot.slotId === authority.slotId),
+      )
     ) {
       invalid(
         "stale-page-authority",
@@ -1046,6 +1142,7 @@ function compileCoordinatedFollowUpProposal(
     if (
       !originalPage ||
       originalPage.type !== change.pageType ||
+      originalPage.role !== roleForPageType(change.pageType) ||
       coordinatedPageAuthorityFingerprint(originalPage) !== change.pageAuthorityFingerprint
     ) {
       invalid(
@@ -1063,6 +1160,7 @@ function compileCoordinatedFollowUpProposal(
     });
   };
   input.plan.sharedOperations.forEach((operation) => add(structuredClone(operation)));
+  validateRegisteredBrandSystemOperations(original, input);
   if (!operations.some(({ operation }) => operation.type === "RETAIN_NAVIGATION")) {
     add({ type: "RETAIN_NAVIGATION", navigation: structuredClone(original.navigation) });
   }
@@ -1072,18 +1170,12 @@ function compileCoordinatedFollowUpProposal(
     .forEach((change) => change.operations.forEach((operation) => add(structuredClone(operation))));
   const proposed = replayWholeStorefrontProposalOperations(original, operations);
   validateCoordinatedFollowUpProjection(original, proposed, input);
-  const generatedReview = reviewSummary(baseline, original, proposed);
-  const proposedReviewSummary: WholeStorefrontProposalReviewSummary = {
-    ...generatedReview,
-    requiredMerchantReviewItems: [
-      ...generatedReview.requiredMerchantReviewItems,
-      {
-        code: "governed-follow-up-plan",
-        message: input.plan.explanation,
-        severity: "required-review" as const,
-      },
-    ],
-  };
+  const proposedReviewSummary = coordinatedFollowUpReviewSummary(
+    baseline,
+    original,
+    proposed,
+    input.plan.explanation,
+  );
   const proposalWithoutId = {
     planId: input.plan.id,
     projectId: input.plan.target.projectId,
@@ -1098,6 +1190,10 @@ function compileCoordinatedFollowUpProposal(
       draftFingerprint: input.plan.target.activeDraftFingerprint,
       componentRegistryFingerprint: input.plan.componentRegistryFingerprint,
       canonicalCommerceFingerprint: input.plan.commerceFingerprint,
+      manifestVersion: input.plan.manifest.version,
+      manifestFingerprint: input.plan.manifest.fingerprint,
+      packageRegistryVersion: input.plan.packageRegistry.version,
+      packageRegistryFingerprint: input.plan.packageRegistry.fingerprint,
     },
     originalStorefront: original,
     proposedStorefront: proposed,
@@ -1128,10 +1224,11 @@ function validateCoordinatedFollowUpProjection(
       "A governed follow-up cannot mutate protected storefront authority.",
     );
   }
-  const allowedPages = new Set(input.plan.pageChanges.map((change) => change.pageId));
+  const changesByPageId = new Map(input.plan.pageChanges.map((change) => [change.pageId, change]));
+  const allowedPages = new Set(changesByPageId.keys());
   for (const page of proposed.pages) {
     const source = original.pages.find((candidate) => candidate.pageId === page.pageId);
-    if (!source || source.type !== page.type) {
+    if (!source || source.type !== page.type || source.role !== page.role) {
       invalid(
         "invalid-page-component-target",
         "A governed follow-up cannot create or replace page authority.",
@@ -1149,6 +1246,30 @@ function validateCoordinatedFollowUpProjection(
     const sourceComponents = new Map(
       source.components.map((component) => [component.id, component]),
     );
+    const change = changesByPageId.get(page.pageId);
+    const authorizedComponentIds = new Set(
+      change?.slotAuthorities.flatMap((authority) => authority.componentIds) ?? [],
+    );
+    const proposedComponents = new Map(page.components.map((component) => [component.id, component]));
+    const changedComponentIds = new Set<string>();
+    for (const sourceComponent of source.components) {
+      const component = proposedComponents.get(sourceComponent.id);
+      if (!component || canonicalValueString(component) !== canonicalValueString(sourceComponent)) {
+        changedComponentIds.add(sourceComponent.id);
+      }
+    }
+    for (const component of page.components) {
+      if (!sourceComponents.has(component.id)) changedComponentIds.add(component.id);
+    }
+    if (
+      change !== undefined &&
+      [...changedComponentIds].some((componentId) => !authorizedComponentIds.has(componentId))
+    ) {
+      invalid(
+        "undeclared-page-operation",
+        "A governed page operation may change only component identities bound to its declared blueprint slots.",
+      );
+    }
     for (const component of page.components) {
       const sourceComponent = sourceComponents.get(component.id);
       if (!sourceComponent) continue;
@@ -1156,15 +1277,27 @@ function validateCoordinatedFollowUpProjection(
         component.component !== sourceComponent.component ||
         canonicalValueString(component.componentVersion) !==
           canonicalValueString(sourceComponent.componentVersion) ||
-        canonicalValueString(component.bindings) !==
-          canonicalValueString(sourceComponent.bindings) ||
-        canonicalValueString(component.assetAssignments) !==
-          canonicalValueString(sourceComponent.assetAssignments)
+        canonicalValueString(component.bindings) !== canonicalValueString(sourceComponent.bindings)
       ) {
         invalid(
           "protected-commerce-mutation",
           "A governed follow-up cannot replace a retained component identity, canonical bindings or assets.",
         );
+      }
+      for (const assignment of sourceComponent.assetAssignments) {
+        if (
+          !component.assetAssignments.some(
+            (candidate) =>
+              candidate.slotId === assignment.slotId &&
+              candidate.assetId === assignment.assetId &&
+              candidate.role === assignment.role,
+          )
+        ) {
+          invalid(
+            "protected-commerce-mutation",
+            "A governed follow-up cannot remove an existing approved asset assignment.",
+          );
+        }
       }
     }
   }
@@ -1172,12 +1305,13 @@ function validateCoordinatedFollowUpProjection(
     (input.planningInput.approvedAssetContext?.assets ?? []).map((asset) => [asset.assetId, asset]),
   );
   const registry = createComponentRegistryV2(input.planningInput.componentDefinitions);
+  const projection = componentProjectionForCoordinatedFollowUp(input, proposed);
   for (const page of proposed.pages) {
     for (const component of page.components) {
       try {
         const { visible: _visible, ...instance } = component;
         void _visible;
-        registry.validateInstance(instance);
+        registry.validateInstanceConformance(instance, projection);
       } catch (error) {
         invalid(
           "invalid-page-component-target",
@@ -1229,6 +1363,158 @@ function validateCoordinatedFollowUpProjection(
   }
 }
 
+function validateRegisteredBrandSystemOperations(
+  original: WholeStorefrontRuntimeState,
+  input: CoordinatedFollowUpProposalCompilationInput,
+) {
+  for (const operation of input.plan.sharedOperations) {
+    if (operation.type !== "APPLY_REGISTERED_BRAND_SYSTEM") continue;
+    if (operation.directionId !== undefined) {
+      if (
+        input.plan.registeredDirectionId !== undefined &&
+        input.plan.registeredDirectionId !== operation.directionId
+      ) {
+        invalid(
+          "invalid-coordinated-plan",
+          "A governed BrandSystem operation must use the plan's registered direction.",
+        );
+      }
+      const expected = registeredBrandSystemForDirection(
+        original.brandSystem,
+        input.planningInput.recipeContext.designSystem,
+        operation.directionId,
+      );
+      if (canonicalValueString(operation.brandSystem) !== canonicalValueString(expected)) {
+        invalid(
+          "invalid-coordinated-plan",
+          "A governed BrandSystem operation must exactly match the registered direction projection.",
+        );
+      }
+      continue;
+    }
+    const expected = applyRegisteredTokenRefinement(
+      original.brandSystem,
+      operation.tokenRefinementPlan!,
+    );
+    if (canonicalValueString(operation.brandSystem) !== canonicalValueString(expected)) {
+      invalid(
+        "invalid-coordinated-plan",
+        "A governed BrandSystem operation must exactly match its validated token refinement.",
+      );
+    }
+  }
+}
+
+function componentProjectionForCoordinatedFollowUp(
+  input: CoordinatedFollowUpProposalCompilationInput,
+  proposed: WholeStorefrontRuntimeState,
+): ComponentProjectionContext {
+  const revision = input.plan.commerceFingerprint;
+  const products = input.planningInput.catalogue.products.map((product) => ({
+    productId: product.id,
+    productTypeId: product.productType,
+    sku: product.sku ?? product.id,
+    title: product.title,
+    ...(product.description === undefined ? {} : { description: product.description }),
+    ...(product.price === undefined
+      ? {
+          priceUnavailableReason: product.priceUnavailableReason ?? {
+            en: "Price unavailable",
+            fi: "Hinta ei saatavilla",
+          },
+        }
+      : { price: product.price }),
+    ...(product.compareAtPrice === undefined ? {} : { compareAtPrice: product.compareAtPrice }),
+    availability:
+      product.availabilityLabel ??
+      (product.stockStatus === "inStock"
+        ? { en: "In stock", fi: "Varastossa" }
+        : product.stockStatus === "lowStock"
+          ? { en: "Limited availability", fi: "Rajoitettu saatavuus" }
+          : product.stockStatus === "outOfStock"
+            ? { en: "Currently unavailable", fi: "Ei saatavilla" }
+            : { en: "Availability unavailable", fi: "Saatavuus ei saatavilla" }),
+    media: product.images.map((image) => ({
+      assetId: image.id,
+      role: "main" as const,
+      ...(image.alt === undefined ? {} : { alt: image.alt }),
+    })),
+    attributeGroups: [],
+    optionGroups: [],
+    selectedValues: [],
+    unavailableCombinations: [],
+    relatedProductIds: [],
+    revision,
+  }));
+  const collectionPlacements = proposed.approvedAssetPlacements.filter(
+    (placement) => placement.assetSlotId === "collectionMedia",
+  );
+  const collections = input.planningInput.catalogue.collections.map((collection, index) => ({
+    collectionId: collection.id,
+    title: collection.title,
+    ...(collection.description === undefined ? {} : { description: collection.description }),
+    assets:
+      index < collectionPlacements.length
+        ? [
+            {
+              assetId: collectionPlacements[index]!.assetId,
+              role:
+                collectionPlacements[index]!.role === "editorialImage"
+                  ? ("editorial" as const)
+                  : ("card" as const),
+            },
+          ]
+        : [],
+    productIds: collection.productIds,
+    filters: [],
+    sorting: [],
+    emptyState: { title: { en: "No products", fi: "Ei tuotteita" } },
+    revision,
+  }));
+  const assetsById = new Map<string, StorefrontAssetMetadata>();
+  for (const product of input.planningInput.catalogue.products) {
+    for (const image of product.images) {
+      assetsById.set(image.id, {
+        assetId: image.id,
+        role: "productMainImage",
+        ...(image.alt === undefined ? { decorative: true } : { alt: image.alt, decorative: false }),
+        provenance: { kind: "canonicalProductMedia", sourceId: product.id },
+        approvalStatus: "approved",
+        usageRights: "merchantOwned",
+        responsiveCrops: [],
+        revision,
+      });
+    }
+  }
+  for (const asset of input.planningInput.approvedAssetContext?.assets ?? []) {
+    if (assetsById.has(asset.assetId)) continue;
+    assetsById.set(asset.assetId, {
+      assetId: asset.assetId,
+      role: asset.role,
+      ...(asset.alt === null ? {} : { alt: asset.alt }),
+      decorative: asset.presentation.decorative,
+      provenance: { kind: "merchantProvided", sourceId: asset.sourceReferenceId },
+      approvalStatus: "approved",
+      usageRights: "merchantOwned",
+      responsiveCrops: asset.presentation.responsiveCrops,
+      revision: asset.revision,
+    });
+  }
+  return {
+    products,
+    collections,
+    assets: [...assetsById.values()],
+    navigation: [
+      ...input.planningInput.draft.navigation.primary,
+      ...input.planningInput.draft.navigation.footer,
+    ].map((item) => ({ navigationId: item.id, revision })),
+    projectBrandContexts: [{ projectId: input.planningInput.project.id, brandSystemRefs: [], revision }],
+    localizedContents: [],
+    productListRevision: revision,
+    collectionListRevision: revision,
+  };
+}
+
 export function validateWholeStorefrontProposal(
   proposalInput: unknown,
   currentInputValue: unknown,
@@ -1257,7 +1543,11 @@ export function validateWholeStorefrontProposal(
         followUp.plan.componentRegistryFingerprint ||
       proposal.preconditions.canonicalCommerceFingerprint !== followUp.plan.commerceFingerprint ||
       proposal.preconditions.assetContextFingerprint !== followUp.plan.approvedAssetFingerprint ||
-      proposal.preconditions.planFingerprint !== followUp.plan.fingerprint
+      proposal.preconditions.planFingerprint !== followUp.plan.fingerprint ||
+      proposal.preconditions.manifestVersion !== followUp.plan.manifest.version ||
+      proposal.preconditions.manifestFingerprint !== followUp.plan.manifest.fingerprint ||
+      proposal.preconditions.packageRegistryVersion !== followUp.plan.packageRegistry.version ||
+      proposal.preconditions.packageRegistryFingerprint !== followUp.plan.packageRegistry.fingerprint
     ) {
       invalid("stale-plan", "The coordinated proposal authority is stale.");
     }

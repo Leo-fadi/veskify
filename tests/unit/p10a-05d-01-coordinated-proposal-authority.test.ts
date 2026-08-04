@@ -44,7 +44,7 @@ function followUpPlan(pageTypes: readonly ("home" | "collection" | "product")[])
       profileId: materialization.profileId,
       profileFingerprint: materialization.fingerprint,
       pageAuthorityFingerprint: coordinatedPageAuthorityFingerprint(originalPage),
-      slotIds: [slot.slotId],
+      slotAuthorities: [{ slotId: slot.slotId, componentIds: [first.id] }],
       operations: [
         {
           type: "APPLY_PAGE_COMPONENTS" as const,
@@ -146,6 +146,69 @@ describe("P10A-05D-01 coordinated proposal authority", () => {
     ).toEqual(manyProposal);
   });
 
+  it("permits a registered shared-only BrandSystem plan without acquiring page authority", () => {
+    const source = followUpPlan([]);
+    const initial = compileWholeStorefrontProposal({
+      plan: source.baselineGenerationPlan,
+      planningInput: source.planningInput,
+    });
+    const brandOperation = initial.operations.find(
+      (entry) => entry.operation.type === "APPLY_REGISTERED_BRAND_SYSTEM",
+    )?.operation;
+    if (!brandOperation || brandOperation.type !== "APPLY_REGISTERED_BRAND_SYSTEM") {
+      throw new Error("Expected the registered BrandSystem operation.");
+    }
+    const plan = withFingerprint({
+      ...source.plan,
+      sharedOperations: [brandOperation],
+      pageChanges: [],
+    });
+    const proposal = compileWholeStorefrontProposal({ plan, planningInput: source.planningInput });
+    expect(proposal.reviewSummary.pages.every((page) => page.status === "retained")).toBe(true);
+    expect(proposal.reviewSummary.sharedDesignSystemChanges).toHaveLength(1);
+    expect(
+      proposal.operations.filter((entry) => entry.operation.type === "APPLY_PAGE_COMPONENTS"),
+    ).toHaveLength(0);
+  });
+
+  it("rejects arbitrary registered BrandSystem payloads and stale package authority", () => {
+    const source = followUpPlan(["home"]);
+    const arbitraryBrandSystem = withFingerprint({
+      ...source.plan,
+      sharedOperations: [
+        {
+          type: "APPLY_REGISTERED_BRAND_SYSTEM",
+          directionId: "modernTechnical",
+          brandSystem: source.original.brandSystem,
+        },
+      ],
+    });
+    expect(
+      errorCode(() =>
+        compileWholeStorefrontProposal({
+          plan: arbitraryBrandSystem,
+          planningInput: source.planningInput,
+        }),
+      ),
+    ).toBe("invalid-coordinated-plan");
+    const proposal = compileWholeStorefrontProposal({
+      plan: source.plan,
+      planningInput: source.planningInput,
+    });
+    const staleManifest = withFingerprint({
+      ...source.plan,
+      manifest: { ...source.plan.manifest, fingerprint: "manifest-stale" },
+    });
+    expect(
+      errorCode(() =>
+        validateWholeStorefrontProposal(proposal, {
+          plan: staleManifest,
+          planningInput: source.planningInput,
+        }),
+      ),
+    ).toBe("stale-plan");
+  });
+
   it("rejects duplicate, undeclared, and stale page/profile authority", () => {
     const source = followUpPlan(["home"]);
     const duplicate = withFingerprint({
@@ -178,6 +241,41 @@ describe("P10A-05D-01 coordinated proposal authority", () => {
         compileWholeStorefrontProposal({ plan: staleProfile, planningInput: source.planningInput }),
       ),
     ).toBe("stale-page-authority");
+    const unauthorizedComponent = withFingerprint({
+      ...source.plan,
+      pageChanges: source.plan.pageChanges.map((change) => {
+        const operation = change.operations[0];
+        if (!operation || operation.type !== "APPLY_PAGE_COMPONENTS") {
+          throw new Error("Expected the page component operation.");
+        }
+        const component = operation.page.components[1];
+        if (!component) throw new Error("Expected a second component.");
+        return {
+          ...change,
+          operations: [
+            {
+              ...operation,
+              page: {
+                ...operation.page,
+                components: operation.page.components.map((candidate) =>
+                  candidate.id === component.id
+                    ? { ...candidate, visible: !candidate.visible }
+                    : candidate,
+                ),
+              },
+            },
+          ],
+        };
+      }),
+    });
+    expect(
+      errorCode(() =>
+        compileWholeStorefrontProposal({
+          plan: unauthorizedComponent,
+          planningInput: source.planningInput,
+        }),
+      ),
+    ).toBe("undeclared-page-operation");
     expect(
       errorCode(() =>
         compileWholeStorefrontProposal({
@@ -203,7 +301,10 @@ describe("P10A-05D-01 coordinated proposal authority", () => {
     ).toBe("undeclared-page-operation");
     const unknownSlot = withFingerprint({
       ...source.plan,
-      pageChanges: [{ ...home, slotIds: ["unknown-slot"] }, collection],
+      pageChanges: [
+        { ...home, slotAuthorities: [{ slotId: "unknown-slot", componentIds: ["section_home_hero"] }] },
+        collection,
+      ],
     });
     expect(
       errorCode(() =>
