@@ -19,6 +19,7 @@ import { getComponentDefinition } from "@/components/registry";
 import {
   componentInstanceV2Schema,
   createComponentRegistryV2,
+  type CollectionPresentationContext,
   type ComponentProjectionContext,
   type StorefrontAssetMetadata,
   type ComponentInstanceV2,
@@ -1449,11 +1450,8 @@ function componentProjectionForCoordinatedFollowUp(
   const collectionPlacements = proposed.approvedAssetPlacements.filter(
     (placement) => placement.assetSlotId === "collectionMedia",
   );
-  const collections = input.planningInput.catalogue.collections.map((collection, index) => ({
-    collectionId: collection.id,
-    title: collection.title,
-    ...(collection.description === undefined ? {} : { description: collection.description }),
-    assets:
+  const collections = input.planningInput.catalogue.collections.map((collection, index) => {
+    const assets: CollectionPresentationContext["assets"] =
       index < collectionPlacements.length
         ? [
             {
@@ -1464,13 +1462,19 @@ function componentProjectionForCoordinatedFollowUp(
                   : "card",
             },
           ]
-        : [],
-    productIds: collection.productIds,
-    filters: [],
-    sorting: [],
-    emptyState: { title: { en: "No products", fi: "Ei tuotteita" } },
-    revision,
-  }));
+        : [];
+    return {
+      collectionId: collection.id,
+      title: collection.title,
+      ...(collection.description === undefined ? {} : { description: collection.description }),
+      assets,
+      productIds: collection.productIds,
+      filters: [],
+      sorting: [],
+      emptyState: { title: { en: "No products", fi: "Ei tuotteita" } },
+      revision,
+    };
+  });
   const assetsById = new Map<string, StorefrontAssetMetadata>();
   for (const product of input.planningInput.catalogue.products) {
     for (const image of product.images) {
