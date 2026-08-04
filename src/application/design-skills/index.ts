@@ -1,3 +1,4 @@
+export * from "./capability-knowledge";
 export * from "./contract";
 export * from "./default-registry";
 export * from "./deterministic-provider";
