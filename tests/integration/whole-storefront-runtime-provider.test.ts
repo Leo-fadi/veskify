@@ -3,6 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   aiStorefrontProviderResponseSchema,
+  AiStorefrontProviderValidationError,
   createDeterministicMockStorefrontAIProvider,
   buildAiStorefrontProviderRequest,
   buildAiStorefrontProviderRequestForSupportedCapability,
@@ -16,10 +17,12 @@ import {
   createWholeStorefrontRecipeContext,
   wholeStorefrontPlanningInputSchema,
   WholeStorefrontPlanningProviderError,
+  WholeStorefrontGenerationPlanError,
   type WholeStorefrontPlanningInput,
   type WholeStorefrontPlanningProvider,
   type WholeStorefrontPlanningProviderRequest,
 } from "@/application/whole-storefront-generation-plan";
+import { WholeStorefrontProposalError } from "@/application/whole-storefront-proposal-lifecycle";
 import {
   approveStorefrontDesignBrief,
   createStorefrontDesignBrief,
@@ -29,10 +32,12 @@ import { aurumNordicSeed } from "@/data/seed";
 import { createServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
 import {
   createStandaloneServerWholeStorefrontPlanningAuthority,
+  mapServerWholeStorefrontFailure,
   createServerWholeStorefrontPlanningHandler,
   type ServerWholeStorefrontPlanningAuthority,
 } from "@/integrations/ai/whole-storefront-runtime-authority";
 import type { MerchantProjectAuthorization } from "@/application/merchant-project-context";
+import { VeskoIntegrationError } from "@/application/vesko-integration";
 import { sourceEvidenceSchema, sourceReferenceSchema } from "@/domain/source-discovery";
 import { p9r07ExactDesignSystemRequest } from "../fixtures/p9r-07-design-system";
 
@@ -303,6 +308,195 @@ function authority(input = planningInput()): ServerWholeStorefrontPlanningAuthor
 }
 
 describe("P9-01 runtime whole-storefront provider boundary", () => {
+  it.each([
+    [
+      "provider DTO validation",
+      new WholeStorefrontPlanningProviderError(
+        "malformed-structured-response",
+        "provider response details must remain private",
+      ),
+      { status: 400, category: "validation", retryable: false },
+    ],
+    [
+      "PageBlueprint plan validation",
+      new WholeStorefrontGenerationPlanError("provider-invented-target", "invalid plan"),
+      { status: 400, category: "validation", retryable: false },
+    ],
+    [
+      "proposal compilation validation",
+      new WholeStorefrontProposalError("invalid-plan", "invalid proposal"),
+      { status: 400, category: "validation", retryable: false },
+    ],
+    [
+      "protected-state response validation",
+      new AiStorefrontProviderValidationError("protected-state", "invalid protected state"),
+      { status: 400, category: "validation", retryable: false },
+    ],
+    [
+      "stale proposal compilation",
+      new WholeStorefrontProposalError("stale-draft", "stale draft"),
+      { status: 409, category: "stale", retryable: false },
+    ],
+    [
+      "provider timeout",
+      new WholeStorefrontPlanningProviderError("provider-unavailable", "timeout"),
+      { status: 503, category: "providerUnavailable", retryable: true },
+    ],
+    [
+      "provider authentication",
+      new WholeStorefrontPlanningProviderError(
+        "credentials-unavailable",
+        "credentials unavailable",
+      ),
+      { status: 503, category: "providerUnavailable", retryable: true },
+    ],
+    [
+      "authorization",
+      new VeskoIntegrationError("permissionDenied"),
+      { status: 401, category: "permissionDenied", retryable: false },
+    ],
+    [
+      "unknown application failure",
+      new Error("internal application failure"),
+      { status: 500, category: "internalFailure", retryable: false },
+    ],
+  ])("maps %s without misrepresenting its category or retryability", (_label, error, expected) => {
+    expect(mapServerWholeStorefrontFailure(error)).toEqual(expected);
+  });
+
+  it("keeps malformed HTTP requests as non-retryable validation failures", async () => {
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: authority(),
+      selectProvider: () => createDeterministicWholeStorefrontPlanningProvider(),
+    });
+
+    const response = await handler(
+      new Request("http://localhost", { method: "POST", body: "{not json" }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      failure: { category: "validation", retryable: false },
+    });
+  });
+
+  it("maps an untyped provider transport failure to the genuine provider boundary", async () => {
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: authority(),
+      selectProvider: () => ({
+        id: "transport-failure",
+        capabilities: {
+          wholeStorefrontPlanning: true,
+          structuredPlanOutput: true,
+          approvedAssetReferences: true,
+        },
+        createPlan: () => Promise.reject(new Error("transport reset")),
+      }),
+    });
+
+    const response = await handler(
+      new Request("http://localhost", { method: "POST", body: JSON.stringify(request()) }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      failure: { category: "providerUnavailable", retryable: true },
+    });
+  });
+
+  it("does not disclose or misclassify an unknown post-provider application failure", async () => {
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: {
+        resolve: () =>
+          authority()
+            .resolve(request(), new Request("http://localhost"))
+            .then((context) => ({
+              ...context,
+              proposalEnvelope: () =>
+                Promise.reject(new Error("provider payload secret=unsafe-value\\nstack trace")),
+            })),
+      },
+      selectProvider: () => ({
+        id: "deterministic-planner",
+        capabilities: {
+          wholeStorefrontPlanning: true,
+          structuredPlanOutput: true,
+          approvedAssetReferences: true,
+        },
+        createPlan: (providerRequest) => Promise.resolve(providerRequest.expectedPlan),
+      }),
+    });
+
+    const response = await handler(
+      new Request("http://localhost", { method: "POST", body: JSON.stringify(request()) }),
+    );
+    const body: unknown = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(body).toEqual({
+      ok: false,
+      failure: { category: "internalFailure", retryable: false },
+    });
+    expect(JSON.stringify(body)).not.toContain("unsafe-value");
+    expect(JSON.stringify(body)).not.toContain("stack trace");
+  });
+
+  it("keeps a deterministic plan fingerprint rejection non-retryable", async () => {
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: authority(),
+      selectProvider: () => ({
+        id: "invalid-deterministic-planner",
+        capabilities: {
+          wholeStorefrontPlanning: true,
+          structuredPlanOutput: true,
+          approvedAssetReferences: true,
+        },
+        createPlan: (providerRequest) => {
+          const invalid = structuredClone(providerRequest.expectedPlan);
+          invalid.fingerprint = "whole-storefront-plan-invalid";
+          return Promise.resolve(invalid);
+        },
+      }),
+    });
+
+    const response = await handler(
+      new Request("http://localhost", { method: "POST", body: JSON.stringify(request()) }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      failure: { category: "validation", retryable: false },
+    });
+  });
+
+  it("keeps an invalid deterministic provider DTO non-retryable", async () => {
+    const handler = createServerWholeStorefrontPlanningHandler({
+      authority: authority(),
+      selectProvider: () => ({
+        id: "invalid-dto-planner",
+        capabilities: {
+          wholeStorefrontPlanning: true,
+          structuredPlanOutput: true,
+          approvedAssetReferences: true,
+        },
+        createPlan: () => Promise.resolve({ invalid: "provider DTO" }),
+      }),
+    });
+
+    const response = await handler(
+      new Request("http://localhost", { method: "POST", body: JSON.stringify(request()) }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      failure: { category: "validation", retryable: false },
+    });
+  });
+
   it("keeps browser and server authority identical for the P9R-07 design-system request", async () => {
     const browserRequest = designSystemRequest();
     const deterministicEnvelope = aiStorefrontProviderResponseSchema.parse(
