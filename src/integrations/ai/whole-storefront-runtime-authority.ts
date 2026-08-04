@@ -258,6 +258,7 @@ export type ServerWholeStorefrontFailure = Readonly<{
     | "validation"
     | "stale"
     | "permissionDenied"
+    | "authenticationUnavailable"
     | "projectMismatch"
     | "tenantMismatch"
     | "providerUnavailable"
@@ -755,8 +756,11 @@ export function mapServerWholeStorefrontFailure(error: unknown): ServerWholeStor
     return { status: 400, category: "validation", retryable: false };
   }
   if (error instanceof VeskoIntegrationError) {
-    if (error.code === "permissionDenied" || error.code === "authenticationUnavailable") {
+    if (error.code === "permissionDenied") {
       return { status: 401, category: "permissionDenied", retryable: false };
+    }
+    if (error.code === "authenticationUnavailable") {
+      return { status: 503, category: "authenticationUnavailable", retryable: true };
     }
     if (error.code === "tenantMismatch") {
       return { status: 403, category: "tenantMismatch", retryable: false };
@@ -784,19 +788,19 @@ export function mapServerWholeStorefrontFailure(error: unknown): ServerWholeStor
     if (error.code === "unauthorized") {
       return { status: 401, category: "permissionDenied", retryable: false };
     }
-    if (
-      [
-        "stale",
-        "invalid-brief",
-        "registry-mismatch",
-        "invalid-asset-reference",
-        "project-draft-mismatch",
-      ].includes(error.code)
-    ) {
+    if (["stale", "project-draft-mismatch"].includes(error.code)) {
       return { status: 409, category: "stale", retryable: false };
     }
     if (
-      ["invalid", "brief-unavailable", "unsupported-locale", "malformed-state"].includes(error.code)
+      [
+        "invalid",
+        "brief-unavailable",
+        "invalid-brief",
+        "registry-mismatch",
+        "invalid-asset-reference",
+        "unsupported-locale",
+        "malformed-state",
+      ].includes(error.code)
     ) {
       return { status: 400, category: "validation", retryable: false };
     }

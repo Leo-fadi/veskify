@@ -1,8 +1,11 @@
 "use client";
 
 import {
+  AiStorefrontProviderServerError,
   aiStorefrontProviderResponseSchema,
+  isAiStorefrontProviderServerFailureCategory,
   recordStorefrontDiagnostic,
+  type AiStorefrontProviderServerFailureCategory,
   type AiStorefrontProviderRequest,
   type StorefrontAIProvider,
 } from "@/application/ai-storefront-generation";
@@ -28,23 +31,15 @@ const failureSchema = {
   },
 };
 
-export type ServerWholeStorefrontFailureCategory =
-  | "validation"
-  | "stale"
-  | "permissionDenied"
-  | "projectMismatch"
-  | "tenantMismatch"
-  | "providerUnavailable"
-  | "malformedResponse"
-  | "internalFailure";
+export type ServerWholeStorefrontFailureCategory = AiStorefrontProviderServerFailureCategory;
 
-export class ServerWholeStorefrontPlanningClientError extends Error {
+export class ServerWholeStorefrontPlanningClientError extends AiStorefrontProviderServerError {
   constructor(
     readonly category: ServerWholeStorefrontFailureCategory,
     readonly retryable: boolean,
     readonly status: number,
   ) {
-    super("The storefront planning request could not be completed.");
+    super(category, retryable, status);
     this.name = "ServerWholeStorefrontPlanningClientError";
   }
 }
@@ -115,7 +110,15 @@ export class ServerWholeStorefrontPlanningClient implements StorefrontAIProvider
     if (!response.ok) {
       const failure = failureSchema.safeParse(body);
       if (failure.success) {
-        const category = failure.data.category as ServerWholeStorefrontFailureCategory;
+        if (!isAiStorefrontProviderServerFailureCategory(failure.data.category)) {
+          diagnostic("response_decoding_completed", "malformedResponse", response.status);
+          throw new ServerWholeStorefrontPlanningClientError(
+            "malformedResponse",
+            false,
+            response.status,
+          );
+        }
+        const category = failure.data.category;
         diagnostic("response_decoding_completed", category, response.status);
         throw new ServerWholeStorefrontPlanningClientError(
           category,

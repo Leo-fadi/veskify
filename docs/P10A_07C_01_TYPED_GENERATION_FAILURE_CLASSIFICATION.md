@@ -21,6 +21,7 @@ or provider responses.
 | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------ |
 | Request JSON/schema and supported scope validation                                                                       | `validation`                                                   | `400`, non-retryable                                         |
 | Merchant authorization or authentication                                                                                 | `permissionDenied`                                             | `401`, non-retryable                                         |
+| Merchant authentication transport or backing-service unavailability                                                      | `authenticationUnavailable`                                    | `503`, retryable without claiming an AI-provider outage      |
 | Project/draft, browser/server, plan, registry, commerce, asset, or proposal fingerprint staleness                        | `stale` (or existing project/tenant category where applicable) | `409` (or existing safe authorization status), non-retryable |
 | Provider DTO parsing, normalization, PageBlueprint plan validation, proposal compilation, and protected-state validation | `validation`                                                   | `400`, non-retryable                                         |
 | Known provider refusal or incapability                                                                                   | `validation`                                                   | `400`, non-retryable                                         |
@@ -41,6 +42,12 @@ authentication/access policy is therefore unchanged.
 Every other known failure keeps a non-retryable typed category. In particular, an invalid provider
 DTO, a plan that contradicts PageBlueprint authority, an invalid proposal compilation, or protected
 state validation cannot ask the merchant to retry an external provider.
+
+The browser planning client preserves the server category, status, retryability and safe message in
+the existing client error model. Only `providerUnavailable` is translated to the provider-unavailable
+exception used by the existing orchestrator; an `internalFailure` remains non-retryable through the
+editor flow. `permissionDenied` remains distinct from temporary
+`authenticationUnavailable` integration access.
 
 ## Sanitized diagnostics
 

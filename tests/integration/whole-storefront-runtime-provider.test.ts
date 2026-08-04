@@ -3,11 +3,15 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   aiStorefrontProviderResponseSchema,
+  AiStorefrontGenerationOrchestrator,
+  AiStorefrontProviderServerError,
   AiStorefrontProviderValidationError,
-  createDeterministicMockStorefrontAIProvider,
   buildAiStorefrontProviderRequest,
+  createDeterministicMockStorefrontAIProvider,
   buildAiStorefrontProviderRequestForSupportedCapability,
+  requestAiStorefrontProposal,
   type AiStorefrontGenerationCommand,
+  type AiStorefrontGenerationIdentity,
   type recordStorefrontDiagnostic,
 } from "@/application/ai-storefront-generation";
 import type { AiStorefrontProjection } from "@/application/ai-storefront";
@@ -34,6 +38,7 @@ import {
   createStandaloneServerWholeStorefrontPlanningAuthority,
   mapServerWholeStorefrontFailure,
   createServerWholeStorefrontPlanningHandler,
+  ServerWholeStorefrontAuthorityError,
   type ServerWholeStorefrontPlanningAuthority,
 } from "@/integrations/ai/whole-storefront-runtime-authority";
 import type { MerchantProjectAuthorization } from "@/application/merchant-project-context";
@@ -362,6 +367,127 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
     ],
   ])("maps %s without misrepresenting its category or retryability", (_label, error, expected) => {
     expect(mapServerWholeStorefrontFailure(error)).toEqual(expected);
+  });
+
+  it.each(["invalid-brief", "registry-mismatch", "invalid-asset-reference"] as const)(
+    "keeps the %s authority failure as non-retryable validation",
+    (code) => {
+      expect(
+        mapServerWholeStorefrontFailure(new ServerWholeStorefrontAuthorityError(code)),
+      ).toEqual({
+        status: 400,
+        category: "validation",
+        retryable: false,
+      });
+    },
+  );
+
+  it("keeps authentication unavailability distinct from permission denial", () => {
+    expect(
+      mapServerWholeStorefrontFailure(new VeskoIntegrationError("authenticationUnavailable")),
+    ).toEqual({
+      status: 503,
+      category: "authenticationUnavailable",
+      retryable: true,
+    });
+    expect(mapServerWholeStorefrontFailure(new VeskoIntegrationError("permissionDenied"))).toEqual({
+      status: 401,
+      category: "permissionDenied",
+      retryable: false,
+    });
+  });
+
+  it("preserves authenticated-service unavailability through the browser provider boundary", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              ok: false,
+              failure: { category: "authenticationUnavailable", retryable: true },
+            }),
+            { status: 503 },
+          ),
+        ),
+      ),
+    );
+
+    try {
+      await expect(
+        requestAiStorefrontProposal(createServerWholeStorefrontPlanningClient(), request()),
+      ).rejects.toMatchObject({
+        category: "authenticationUnavailable",
+        retryable: true,
+        status: 503,
+      } satisfies Partial<AiStorefrontProviderServerError>);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("preserves a server internal failure through browser translation and orchestration", async () => {
+    const client = createServerWholeStorefrontPlanningClient();
+    const serverRequest = request();
+    const command = {
+      projectId: serverRequest.target.projectId,
+      draftSnapshotId: serverRequest.target.draftSnapshotId,
+      draftRevision: serverRequest.target.draftRevision,
+      storefront: structuredClone(serverRequest.storefront),
+      affectedPageIds: [...serverRequest.target.affectedPageIds],
+      affectedSectionTargets: [],
+      designSystemTarget: serverRequest.target.designSystemTarget,
+      merchantInstruction: "Apply a warm premium style across the storefront.",
+      activeLocale: serverRequest.activeLocale,
+      enabledLocales: [...serverRequest.enabledLocales],
+      requestedScope: serverRequest.target.scope,
+      capability: "approvedColorTypographyDirection",
+      canonicalTokenRefinementPlan: serverRequest.tokenRefinementPlan ?? undefined,
+      providerId: client.id,
+      provider: client,
+      importedContent: [],
+    } satisfies AiStorefrontGenerationCommand;
+    const canonical = buildAiStorefrontProviderRequest(command, 1);
+    const currentIdentity: AiStorefrontGenerationIdentity = {
+      context: {
+        projectId: command.projectId,
+        draftSnapshotId: command.draftSnapshotId,
+        draftRevision: command.draftRevision,
+        enabledLocales: [...canonical.enabledLocales],
+        activeLocale: canonical.activeLocale,
+        storefront: structuredClone(command.storefront),
+      },
+      target: structuredClone(canonical.target),
+      assetContextFingerprint: canonical.assetContextFingerprint,
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              ok: false,
+              failure: { category: "internalFailure", retryable: false },
+            }),
+            { status: 500 },
+          ),
+        ),
+      ),
+    );
+
+    try {
+      const result = await new AiStorefrontGenerationOrchestrator({
+        currentIdentity: () => structuredClone(currentIdentity),
+      }).generate(command);
+
+      expect(result).toMatchObject({
+        state: "failed",
+        proposal: null,
+        failure: { code: "internalFailure", retryable: false },
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("keeps malformed HTTP requests as non-retryable validation failures", async () => {
