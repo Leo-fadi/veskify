@@ -12,7 +12,7 @@ import {
 
 const fingerprintSchema = z.string().trim().min(1).max(240);
 const versionSchema = z.string().regex(/^\d+\.\d+\.\d+$/);
-const requestIdentitySchema = z.string().trim().min(1).max(240);
+const requestIdentitySchema = z.string().min(1).max(240);
 
 export const governedSkillPackageExecutionKindSchema = z.enum([
   "initialGeneration",
@@ -57,6 +57,7 @@ export const governedSkillPackageDescriptorSchema = z
     compatibility: z.object({ deprecated: z.literal(false) }).strict(),
     supportedPageTypes: z.array(pageTypeSchema).min(1),
     profileRequirement: governedProfileRequirementSchema,
+    selectionConstraint: z.enum(["none", "canonicalHero"]),
     requiredCapabilityQueries: z.array(governedCapabilityQuerySchema).min(1),
     requiredAuthorityFingerprints: z.array(
       z.enum(["capabilityManifest", "componentRegistry", "commerce", "approvedAssets", "draft"]),
@@ -174,6 +175,30 @@ export const governedApprovedAssetReferenceSchema = z
   })
   .strict();
 
+export const governedEditingPageAuthoritySchema = z
+  .object({
+    pageId: idSchema,
+    pageType: pageTypeSchema,
+    profile: governedProfileAuthoritySchema.optional(),
+    selections: z.array(governedSkillSelectionSchema),
+    boundedParameters: z.array(governedBoundedParameterIntentSchema).default([]),
+    bindings: z.array(governedCanonicalBindingReferenceSchema).default([]),
+    approvedAssets: z.array(governedApprovedAssetReferenceSchema).default([]),
+  })
+  .strict()
+  .superRefine((page, context) => {
+    const slotIds = page.selections.map((selection) => selection.slotId);
+    if (new Set(slotIds).size !== slotIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["selections"],
+        message: "Page-scoped capability selections must use unique profile slot IDs.",
+      });
+    }
+  });
+
+export type GovernedEditingPageAuthority = z.infer<typeof governedEditingPageAuthoritySchema>;
+
 export const governedInitialGenerationAuthoritySchema = z
   .object({
     executionKind: z.literal("initialGeneration"),
@@ -203,26 +228,16 @@ export const governedFollowUpEditingAuthoritySchema = z
     packageVersion: versionSchema,
     scope: governedSkillPackageScopeSchema,
     authority: governedSkillAuthorityEnvelopeSchema,
-    page: z
-      .object({
-        pageId: idSchema,
-        pageType: pageTypeSchema,
-        profile: governedProfileAuthoritySchema.optional(),
-      })
-      .strict(),
-    selections: z.array(governedSkillSelectionSchema),
-    boundedParameters: z.array(governedBoundedParameterIntentSchema).default([]),
-    bindings: z.array(governedCanonicalBindingReferenceSchema).default([]),
-    approvedAssets: z.array(governedApprovedAssetReferenceSchema).default([]),
+    pages: z.array(governedEditingPageAuthoritySchema).min(1),
   })
   .strict()
   .superRefine((request, context) => {
-    const slotIds = request.selections.map((selection) => selection.slotId);
-    if (new Set(slotIds).size !== slotIds.length) {
+    const pageIds = request.pages.map((page) => page.pageId);
+    if (new Set(pageIds).size !== pageIds.length) {
       context.addIssue({
         code: "custom",
-        path: ["selections"],
-        message: "Follow-up capability selections must use unique profile slot IDs.",
+        path: ["pages"],
+        message: "Follow-up page authorities must use unique canonical page IDs.",
       });
     }
   });
@@ -237,6 +252,8 @@ export const governedSkillPackageFailureCodeSchema = z.enum([
   "invalidExecutionKind",
   "stalePackageAuthority",
   "invalidScope",
+  "staleLocaleAuthority",
+  "staleRequestIdentityAuthority",
   "unsupportedPageType",
   "staleManifestAuthority",
   "staleProfileAuthority",
@@ -295,6 +312,7 @@ export const governedSkillPackageDescriptors = [
     compatibility: { deprecated: false },
     supportedPageTypes: ["home", "collection", "product", "content", "cart", "checkout", "landing"],
     profileRequirement: "optional",
+    selectionConstraint: "none",
     requiredCapabilityQueries: [
       "capabilityManifest",
       "executableProfile",
@@ -323,6 +341,7 @@ export const governedSkillPackageDescriptors = [
     compatibility: { deprecated: false },
     supportedPageTypes: ["home", "collection", "product", "content", "cart", "checkout", "landing"],
     profileRequirement: "none",
+    selectionConstraint: "none",
     requiredCapabilityQueries: ["capabilityManifest"],
     requiredAuthorityFingerprints: ["capabilityManifest", "commerce", "approvedAssets", "draft"],
     parameterAuthority: "none",
@@ -338,6 +357,7 @@ export const governedSkillPackageDescriptors = [
     compatibility: { deprecated: false },
     supportedPageTypes: ["home", "landing"],
     profileRequirement: "slotTarget",
+    selectionConstraint: "canonicalHero",
     requiredCapabilityQueries: ["capabilityManifest", "executableProfile", "slotSelection"],
     requiredAuthorityFingerprints: ["capabilityManifest", "componentRegistry", "commerce", "draft"],
     parameterAuthority: "none",
@@ -353,6 +373,7 @@ export const governedSkillPackageDescriptors = [
     compatibility: { deprecated: false },
     supportedPageTypes: ["home", "landing"],
     profileRequirement: "optional",
+    selectionConstraint: "none",
     requiredCapabilityQueries: ["capabilityManifest", "executableProfile"],
     requiredAuthorityFingerprints: ["capabilityManifest", "commerce", "approvedAssets", "draft"],
     parameterAuthority: "none",
@@ -484,10 +505,25 @@ function equivalentAuthority(
       message: "The approved asset authority changed after the request was prepared.",
     };
   }
+  if (requested.locale !== current.locale) {
+    return {
+      code: "staleLocaleAuthority",
+      message: "The governed request was prepared for a different locale.",
+    };
+  }
+  if (requested.requestIdentity !== current.requestIdentity) {
+    return {
+      code: "staleRequestIdentityAuthority",
+      message: "The governed request identity is stale.",
+    };
+  }
   return undefined;
 }
 
 function mapCapabilityFailure(error: unknown): GovernedSkillPackageFailure {
+  if (error instanceof GovernedSkillPackageError) {
+    return { code: error.code, message: error.message };
+  }
   if (error instanceof SkillCapabilityKnowledgeError) {
     if (error.code === "unknownManifestVersion" || error.code === "staleManifestFingerprint") {
       return { code: "staleManifestAuthority", message: error.message };
@@ -500,6 +536,44 @@ function mapCapabilityFailure(error: unknown): GovernedSkillPackageFailure {
   return {
     code: "invalidRequest",
     message: error instanceof Error ? error.message : "The governed request is invalid.",
+  };
+}
+
+function compareCanonicalStrings(left: string, right: string) {
+  return left === right ? 0 : left < right ? -1 : 1;
+}
+
+function normalizeFollowUpAuthority(
+  authority: GovernedFollowUpEditingAuthority,
+): GovernedFollowUpEditingAuthority {
+  return {
+    ...authority,
+    pages: authority.pages
+      .map((page) => ({
+        ...page,
+        selections: [...page.selections].sort((left, right) =>
+          compareCanonicalStrings(left.slotId, right.slotId),
+        ),
+        boundedParameters: [...page.boundedParameters].sort((left, right) =>
+          compareCanonicalStrings(
+            `${left.targetSlotId}:${left.parameterId}`,
+            `${right.targetSlotId}:${right.parameterId}`,
+          ),
+        ),
+        bindings: [...page.bindings].sort((left, right) =>
+          compareCanonicalStrings(
+            `${left.targetSlotId}:${left.bindingSlotId}`,
+            `${right.targetSlotId}:${right.bindingSlotId}`,
+          ),
+        ),
+        approvedAssets: [...page.approvedAssets].sort((left, right) =>
+          compareCanonicalStrings(
+            `${left.targetSlotId}:${left.assetSlotId}:${left.assetId}:${left.revision}`,
+            `${right.targetSlotId}:${right.assetSlotId}:${right.assetId}:${right.revision}`,
+          ),
+        ),
+      }))
+      .sort((left, right) => compareCanonicalStrings(left.pageId, right.pageId)),
   };
 }
 
@@ -665,7 +739,9 @@ export class GovernedSkillPackageRegistry {
     currentAuthority: GovernedSkillAuthorityEnvelope,
   ): GovernedSkillPackageValidationResult<GovernedFollowUpEditingOutput> {
     try {
-      const authority = governedFollowUpEditingAuthoritySchema.parse(structuredClone(input));
+      const authority = normalizeFollowUpAuthority(
+        governedFollowUpEditingAuthoritySchema.parse(structuredClone(input)),
+      );
       const packageResolution = this.resolve(authority.packageId, authority.executionKind);
       if (authority.packageVersion !== packageResolution.descriptor.version) {
         return failure(
@@ -688,151 +764,214 @@ export class GovernedSkillPackageRegistry {
         return failure("staleRegistryAuthority", "The governed package registry is stale.");
       }
       this.#consumer.listExecutableProfiles({ manifest: authority.authority.manifest });
-      if (!packageResolution.descriptor.supportedPageTypes.includes(authority.page.pageType)) {
+      const wholeStorefront = packageResolution.descriptor.scope === "completeStorefront";
+      if (!wholeStorefront && authority.pages.length !== 1) {
         return failure(
-          "unsupportedPageType",
-          `Package ${packageResolution.descriptor.id} does not support ${authority.page.pageType}.`,
+          "invalidScope",
+          `Package ${authority.packageId} requires exactly one page-scoped authority.`,
         );
       }
       const declaredQueries = packageResolution.descriptor.requiredCapabilityQueries;
-      if (!declaredQueries.includes("slotSelection") && authority.selections.length > 0) {
-        return failure(
-          "unauthorizedCapabilityReference",
-          `Package ${authority.packageId} does not authorize component slot selections.`,
-        );
-      }
-      if (!declaredQueries.includes("boundedParameter") && authority.boundedParameters.length > 0) {
-        return failure(
-          "unauthorizedCapabilityReference",
-          `Package ${authority.packageId} does not authorize bounded parameter references.`,
-        );
-      }
-      if (!declaredQueries.includes("canonicalBinding") && authority.bindings.length > 0) {
-        return failure(
-          "unauthorizedCapabilityReference",
-          `Package ${authority.packageId} does not authorize canonical binding references.`,
-        );
-      }
-      if (!declaredQueries.includes("approvedAsset") && authority.approvedAssets.length > 0) {
-        return failure(
-          "unauthorizedCapabilityReference",
-          `Package ${authority.packageId} does not authorize approved asset references.`,
-        );
-      }
-      if (
-        packageResolution.descriptor.profileRequirement === "slotTarget" &&
-        authority.page.profile === undefined
-      ) {
-        return failure(
-          "missingProfileAuthority",
-          `Package ${packageResolution.descriptor.id} requires an explicit executable profile and slot.`,
-        );
-      }
-      const resolvedSelections = new Map<
-        string,
-        ReturnType<SkillCapabilityKnowledgeConsumer["resolveSelection"]>
-      >();
-      for (const selection of authority.selections) {
-        const resolved = this.#consumer.resolveSelection({
-          manifest: authority.authority.manifest,
-          ...selection,
-        });
-        if (resolved.profile.pageType !== authority.page.pageType) {
+      for (const page of authority.pages) {
+        if (!packageResolution.descriptor.supportedPageTypes.includes(page.pageType)) {
           return failure(
-            "staleProfileAuthority",
-            `Selection ${selection.slotId} does not belong to the requested ${authority.page.pageType} page.`,
+            "unsupportedPageType",
+            `Package ${packageResolution.descriptor.id} does not support ${page.pageType} pages.`,
+          );
+        }
+        if (!declaredQueries.includes("slotSelection") && page.selections.length > 0) {
+          return failure(
+            "unauthorizedCapabilityReference",
+            `Package ${authority.packageId} does not authorize component slot selections.`,
+          );
+        }
+        if (!declaredQueries.includes("boundedParameter") && page.boundedParameters.length > 0) {
+          return failure(
+            "unauthorizedCapabilityReference",
+            `Package ${authority.packageId} does not authorize bounded parameter references.`,
+          );
+        }
+        if (!declaredQueries.includes("canonicalBinding") && page.bindings.length > 0) {
+          return failure(
+            "unauthorizedCapabilityReference",
+            `Package ${authority.packageId} does not authorize canonical binding references.`,
+          );
+        }
+        if (!declaredQueries.includes("approvedAsset") && page.approvedAssets.length > 0) {
+          return failure(
+            "unauthorizedCapabilityReference",
+            `Package ${authority.packageId} does not authorize approved asset references.`,
           );
         }
         if (
-          authority.page.profile &&
-          (authority.page.profile.profileId !== resolved.profile.profileId ||
-            authority.page.profile.fingerprint !== resolved.profile.fingerprint ||
-            authority.page.profile.pageType !== resolved.profile.pageType)
+          packageResolution.descriptor.profileRequirement === "slotTarget" &&
+          page.profile === undefined
+        ) {
+          return failure(
+            "missingProfileAuthority",
+            `Package ${packageResolution.descriptor.id} requires an explicit executable profile and slot.`,
+          );
+        }
+        const declaredProfile = page.profile
+          ? this.#consumer
+              .listExecutableProfiles({
+                manifest: authority.authority.manifest,
+                pageType: page.pageType,
+              })
+              .find((profile) => profile.profileId === page.profile?.profileId)
+          : undefined;
+        if (
+          page.profile &&
+          (!declaredProfile ||
+            declaredProfile.fingerprint !== page.profile.fingerprint ||
+            declaredProfile.pageType !== page.profile.pageType)
         ) {
           return failure(
             "staleProfileAuthority",
-            `Selection ${selection.slotId} does not match the supplied executable profile authority.`,
+            `Executable PageBlueprint profile ${page.profile.profileId} is stale or unavailable for page ${page.pageId}.`,
           );
         }
-        resolvedSelections.set(selection.slotId, resolved);
-      }
-      if (
-        packageResolution.descriptor.profileRequirement === "slotTarget" &&
-        resolvedSelections.size === 0
-      ) {
-        return failure(
-          "missingProfileAuthority",
-          `Package ${packageResolution.descriptor.id} requires a registered target slot.`,
-        );
-      }
-      for (const parameter of authority.boundedParameters) {
-        if (packageResolution.descriptor.parameterAuthority !== "registeredBoundedParameters") {
-          return failure(
-            "unsupportedBoundedParameter",
-            `Package ${packageResolution.descriptor.id} does not authorize bounded parameters.`,
-          );
+        const resolvedSelections = new Map<
+          string,
+          ReturnType<SkillCapabilityKnowledgeConsumer["resolveSelection"]>
+        >();
+        for (const selection of page.selections) {
+          const resolved = this.#consumer.resolveSelection({
+            manifest: authority.authority.manifest,
+            ...selection,
+          });
+          if (resolved.profile.pageType !== page.pageType) {
+            return failure(
+              "staleProfileAuthority",
+              `Selection ${selection.slotId} does not belong to page ${page.pageId}.`,
+            );
+          }
+          if (
+            declaredProfile &&
+            (declaredProfile.profileId !== resolved.profile.profileId ||
+              declaredProfile.fingerprint !== resolved.profile.fingerprint)
+          ) {
+            return failure(
+              "staleProfileAuthority",
+              `Selection ${selection.slotId} does not match page ${page.pageId} profile authority.`,
+            );
+          }
+          if (
+            packageResolution.descriptor.selectionConstraint === "canonicalHero" &&
+            resolved.component.componentType !== "hero"
+          ) {
+            return failure(
+              "invalidSlotSelection",
+              `Package ${authority.packageId} can target only a registered hero slot.`,
+            );
+          }
+          resolvedSelections.set(selection.slotId, resolved);
         }
-        const selection = resolvedSelections.get(parameter.targetSlotId);
         if (
-          !selection ||
-          !selection.component.boundedParameterIds.includes(parameter.parameterId)
+          packageResolution.descriptor.profileRequirement === "slotTarget" &&
+          resolvedSelections.size === 0
         ) {
           return failure(
-            "unsupportedBoundedParameter",
-            `Bounded parameter ${parameter.parameterId} is not available for slot ${parameter.targetSlotId}.`,
+            "missingProfileAuthority",
+            `Package ${packageResolution.descriptor.id} requires a registered target slot.`,
           );
         }
-        const result = this.#consumer.validateBoundedParameter({
-          manifest: authority.authority.manifest,
-          componentType: selection.component.componentType,
-          parameterId: parameter.parameterId,
-          value: parameter.value,
-        });
-        if (!result.valid) {
-          return failure(
-            "invalidBoundedParameter",
-            `Bounded parameter ${parameter.parameterId} is not valid at instance authority.`,
-          );
+        for (const parameter of page.boundedParameters) {
+          if (packageResolution.descriptor.parameterAuthority !== "registeredBoundedParameters") {
+            return failure(
+              "unsupportedBoundedParameter",
+              `Package ${packageResolution.descriptor.id} does not authorize bounded parameters.`,
+            );
+          }
+          const selection = resolvedSelections.get(parameter.targetSlotId);
+          if (
+            !selection ||
+            !selection.component.boundedParameterIds.includes(parameter.parameterId)
+          ) {
+            return failure(
+              "unsupportedBoundedParameter",
+              `Bounded parameter ${parameter.parameterId} is not available for slot ${parameter.targetSlotId}.`,
+            );
+          }
+          const result = this.#consumer.validateBoundedParameter({
+            manifest: authority.authority.manifest,
+            componentType: selection.component.componentType,
+            parameterId: parameter.parameterId,
+            value: parameter.value,
+          });
+          if (!result.valid) {
+            return failure(
+              "invalidBoundedParameter",
+              `Bounded parameter ${parameter.parameterId} is not valid at instance authority.`,
+            );
+          }
         }
-      }
-      for (const binding of authority.bindings) {
-        const selection = resolvedSelections.get(binding.targetSlotId);
-        const bindingSlot = selection?.component.requiredBindingSlots.find(
-          (candidate) => candidate.slotId === binding.bindingSlotId,
-        );
-        if (!bindingSlot || !bindingSlot.acceptedSourceTypes.includes(binding.sourceType)) {
-          return failure(
-            "invalidCanonicalBinding",
-            `Binding ${binding.bindingSlotId} is not registered for slot ${binding.targetSlotId}.`,
+        for (const binding of page.bindings) {
+          const selection = resolvedSelections.get(binding.targetSlotId);
+          const bindingSlot = selection?.component.requiredBindingSlots.find(
+            (candidate) => candidate.slotId === binding.bindingSlotId,
           );
+          if (!bindingSlot || !bindingSlot.acceptedSourceTypes.includes(binding.sourceType)) {
+            return failure(
+              "invalidCanonicalBinding",
+              `Binding ${binding.bindingSlotId} is not registered for slot ${binding.targetSlotId}.`,
+            );
+          }
         }
-      }
-      for (const asset of authority.approvedAssets) {
-        if (packageResolution.descriptor.assetAuthority !== "approvedAssetReuse") {
-          return failure(
-            "unsupportedAssetAuthority",
-            `Package ${packageResolution.descriptor.id} does not authorize approved asset reuse.`,
+        const assetsBySlot = new Map<string, { count: number; assetIds: Set<string> }>();
+        for (const asset of page.approvedAssets) {
+          if (packageResolution.descriptor.assetAuthority !== "approvedAssetReuse") {
+            return failure(
+              "unsupportedAssetAuthority",
+              `Package ${packageResolution.descriptor.id} does not authorize approved asset reuse.`,
+            );
+          }
+          if (authority.authority.approvedAssetFingerprint === null) {
+            return failure(
+              "staleApprovedAssetAuthority",
+              "Approved asset references require current approved-asset authority.",
+            );
+          }
+          const selection = resolvedSelections.get(asset.targetSlotId);
+          const assetSlot = selection?.component.assetSlots.find(
+            (candidate) => candidate.slotId === asset.assetSlotId,
           );
+          if (
+            !assetSlot ||
+            !assetSlot.acceptedRoles.includes(asset.role) ||
+            assetSlot.required !== asset.required
+          ) {
+            return failure(
+              "invalidApprovedAssetReference",
+              `Approved asset ${asset.assetId} is not compatible with slot ${asset.assetSlotId}.`,
+            );
+          }
+          const key = `${asset.targetSlotId}:${asset.assetSlotId}`;
+          const group = assetsBySlot.get(key) ?? { count: 0, assetIds: new Set<string>() };
+          const assetIdentity = `${asset.assetId}:${asset.revision}:${asset.materialFingerprint}`;
+          if (group.assetIds.has(assetIdentity)) {
+            return failure(
+              "invalidApprovedAssetReference",
+              `Approved asset ${asset.assetId} is duplicated for slot ${asset.assetSlotId}.`,
+            );
+          }
+          group.assetIds.add(assetIdentity);
+          group.count += 1;
+          assetsBySlot.set(key, group);
         }
-        if (authority.authority.approvedAssetFingerprint === null) {
-          return failure(
-            "staleApprovedAssetAuthority",
-            "Approved asset references require current approved-asset authority.",
-          );
-        }
-        const selection = resolvedSelections.get(asset.targetSlotId);
-        const assetSlot = selection?.component.assetSlots.find(
-          (candidate) => candidate.slotId === asset.assetSlotId,
-        );
-        if (
-          !assetSlot ||
-          !assetSlot.acceptedRoles.includes(asset.role) ||
-          assetSlot.required !== asset.required
-        ) {
-          return failure(
-            "invalidApprovedAssetReference",
-            `Approved asset ${asset.assetId} is not compatible with slot ${asset.assetSlotId}.`,
-          );
+        for (const [selectionId, selection] of resolvedSelections) {
+          for (const assetSlot of selection.component.assetSlots) {
+            const count = assetsBySlot.get(`${selectionId}:${assetSlot.slotId}`)?.count ?? 0;
+            if (
+              count < assetSlot.minItems ||
+              count > (assetSlot.maxItems ?? Number.MAX_SAFE_INTEGER)
+            ) {
+              return failure(
+                "invalidApprovedAssetReference",
+                `Approved asset cardinality is invalid for slot ${assetSlot.slotId}.`,
+              );
+            }
+          }
         }
       }
       const output = deepFreeze({

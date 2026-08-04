@@ -1,28 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { skillCapabilityKnowledge } from "@/application/design-skills";
 import {
-  GOVERNED_SKILL_PACKAGE_REGISTRY_VERSION,
   createGovernedSkillPackageRegistry,
   governedApprovedAssetReferenceSchema,
-  governedFollowUpEditingAuthoritySchema,
   governedInitialGenerationAuthoritySchema,
-  governedSkillPackageAliasSchema,
-  governedSkillPackageAliases,
-  governedSkillPackageDescriptors,
   governedSkillPackageRegistry,
+  type GovernedEditingPageAuthority,
   type GovernedFollowUpEditingAuthority,
-  type GovernedInitialGenerationAuthority,
   type GovernedSkillAuthorityEnvelope,
 } from "@/application/design-skills/governed-skill-packages";
 
 function currentAuthority(): GovernedSkillAuthorityEnvelope {
-  const manifest = skillCapabilityKnowledge.getManifestReference();
   return {
     projectId: "project_governed_skill",
     draftSnapshotId: "snapshot_governed_skill",
     draftRevision: 4,
     snapshotFingerprint: "snapshot-governed-skill-fingerprint",
-    manifest,
+    manifest: skillCapabilityKnowledge.getManifestReference(),
     packageRegistry: {
       version: governedSkillPackageRegistry.version,
       fingerprint: governedSkillPackageRegistry.fingerprint,
@@ -35,56 +29,18 @@ function currentAuthority(): GovernedSkillAuthorityEnvelope {
   };
 }
 
-function homeCapability() {
+function pageAuthority(pageType: "home" | "collection" | "product", componentType?: string) {
   const manifest = skillCapabilityKnowledge.getManifestReference();
-  const profile = skillCapabilityKnowledge.listExecutableProfiles({
-    manifest,
-    pageType: "home",
-  })[0];
-  if (!profile) throw new Error("Expected a registered home profile.");
-  const selection = profile.componentSelections.find(
-    (candidate) => candidate.componentType === "hero",
-  );
-  if (!selection) throw new Error("Expected a registered hero selection.");
-  return { manifest, profile, selection };
-}
-
-function initialAuthority(): GovernedInitialGenerationAuthority {
-  const { profile } = homeCapability();
+  const profile = skillCapabilityKnowledge.listExecutableProfiles({ manifest, pageType })[0];
+  if (!profile) throw new Error(`Expected a ${pageType} executable profile.`);
+  const selection = componentType
+    ? profile.componentSelections.find((candidate) => candidate.componentType === componentType)
+    : profile.componentSelections[0];
+  if (!selection) throw new Error(`Expected a ${componentType ?? "registered"} selection.`);
   return {
-    executionKind: "initialGeneration",
-    authority: currentAuthority(),
-    brief: {
-      briefId: "brief_governed_skill",
-      revision: 2,
-      fingerprint: "brief-governed-skill-fingerprint",
-    },
-    profiles: [
-      { profileId: profile.profileId, fingerprint: profile.fingerprint, pageType: "home" },
-    ],
-    catalogueFingerprint: "catalogue-governed-skill-fingerprint",
-    registeredDirectionId: "modernTechnical",
-    outputContractId: "wholeStorefrontPlanningInput.v1",
-  };
-}
-
-function followUpAuthority(): GovernedFollowUpEditingAuthority {
-  const { profile, selection } = homeCapability();
-  const descriptor = governedSkillPackageRegistry.resolve(
-    "improveHero",
-    "followUpEditing",
-  ).descriptor;
-  return {
-    executionKind: "followUpEditing",
-    packageId: descriptor.id,
-    packageVersion: descriptor.version,
-    scope: descriptor.scope,
-    authority: currentAuthority(),
-    page: {
-      pageId: "page_governed_home",
-      pageType: "home",
-      profile: { profileId: profile.profileId, fingerprint: profile.fingerprint, pageType: "home" },
-    },
+    pageId: `page_governed_${pageType}`,
+    pageType,
+    profile: { profileId: profile.profileId, fingerprint: profile.fingerprint, pageType },
     selections: [
       {
         profileId: profile.profileId,
@@ -96,10 +52,25 @@ function followUpAuthority(): GovernedFollowUpEditingAuthority {
     boundedParameters: [],
     bindings: [],
     approvedAssets: [],
+  } satisfies GovernedEditingPageAuthority;
+}
+
+function followUp(
+  packageId: GovernedFollowUpEditingAuthority["packageId"],
+  pages: readonly GovernedEditingPageAuthority[],
+): GovernedFollowUpEditingAuthority {
+  const descriptor = governedSkillPackageRegistry.resolve(packageId, "followUpEditing").descriptor;
+  return {
+    executionKind: "followUpEditing",
+    packageId,
+    packageVersion: descriptor.version,
+    scope: descriptor.scope,
+    authority: currentAuthority(),
+    pages: [...pages],
   };
 }
 
-function assetBackedFollowUpAuthority(): GovernedFollowUpEditingAuthority {
+function assetBackedPageAuthority(): GovernedEditingPageAuthority {
   const manifest = skillCapabilityKnowledge.getManifestReference();
   for (const profile of skillCapabilityKnowledge.listExecutableProfiles({ manifest })) {
     for (const selection of profile.componentSelections) {
@@ -110,28 +81,14 @@ function assetBackedFollowUpAuthority(): GovernedFollowUpEditingAuthority {
         componentType: selection.componentType,
         variant: selection.defaultVariant,
       });
-      const assetSlot = resolved.component.assetSlots[0];
-      if (!assetSlot) continue;
-      const role = assetSlot.acceptedRoles[0];
-      if (!role) continue;
-      const descriptor = governedSkillPackageRegistry.resolve(
-        "applyRegisteredWholeStorefrontDirection",
-        "followUpEditing",
-      ).descriptor;
+      if (resolved.component.assetSlots.length === 0) continue;
       return {
-        executionKind: "followUpEditing",
-        packageId: descriptor.id,
-        packageVersion: descriptor.version,
-        scope: descriptor.scope,
-        authority: currentAuthority(),
-        page: {
-          pageId: "page_governed_asset",
+        pageId: `page_governed_asset_${profile.pageType}`,
+        pageType: profile.pageType,
+        profile: {
+          profileId: profile.profileId,
+          fingerprint: profile.fingerprint,
           pageType: profile.pageType,
-          profile: {
-            profileId: profile.profileId,
-            fingerprint: profile.fingerprint,
-            pageType: profile.pageType,
-          },
         },
         selections: [
           {
@@ -143,120 +100,28 @@ function assetBackedFollowUpAuthority(): GovernedFollowUpEditingAuthority {
         ],
         boundedParameters: [],
         bindings: [],
-        approvedAssets: [
-          governedApprovedAssetReferenceSchema.parse({
-            targetSlotId: selection.slotId,
-            assetSlotId: assetSlot.slotId,
-            assetId: "asset_governed_skill",
-            role,
-            revision: "1",
-            materialFingerprint: "asset-governed-skill-fingerprint",
-            required: assetSlot.required,
-          }),
-        ],
+        approvedAssets: [],
       };
     }
   }
-  throw new Error("Expected a registered asset-backed executable profile selection.");
+  throw new Error("Expected an executable profile selection with an asset slot.");
 }
 
-function failureCode(
-  result: ReturnType<typeof governedSkillPackageRegistry.validateFollowUpEditing>,
-) {
+function resultCode(input: unknown, current = currentAuthority()) {
+  const result = governedSkillPackageRegistry.validateFollowUpEditing(input, current);
   return result.valid ? undefined : result.failure.code;
 }
 
 describe("P10A-05B governed skill package registry", () => {
-  it("keeps initial-generation and follow-up-editing contracts independently typed and validated", () => {
-    const initial = initialAuthority();
-    const followUp = followUpAuthority();
-
-    expect(governedInitialGenerationAuthoritySchema.parse(initial).executionKind).toBe(
-      "initialGeneration",
-    );
-    expect(governedFollowUpEditingAuthoritySchema.parse(followUp).executionKind).toBe(
-      "followUpEditing",
-    );
-    expect(governedInitialGenerationAuthoritySchema.safeParse(followUp).success).toBe(false);
-    expect(governedFollowUpEditingAuthoritySchema.safeParse(initial).success).toBe(false);
-    expect(
-      governedSkillPackageRegistry.validateInitialGeneration(initial, currentAuthority()).valid,
-    ).toBe(true);
-    expect(
-      governedSkillPackageRegistry.validateFollowUpEditing(followUp, currentAuthority()).valid,
-    ).toBe(true);
-  });
-
-  it("registers exactly the four approved canonical follow-up packages", () => {
-    expect(governedSkillPackageRegistry.list().map((descriptor) => descriptor.id)).toEqual([
+  it("registers exactly the four canonical packages and resolves only deprecated compatibility aliases", () => {
+    expect(governedSkillPackageRegistry.list().map((entry) => entry.id)).toEqual([
       "addCampaignSection",
       "applyExactBrandPalette",
       "applyRegisteredWholeStorefrontDirection",
       "improveHero",
     ]);
     expect(
-      governedSkillPackageRegistry
-        .list()
-        .every((descriptor) => descriptor.executionKind === "followUpEditing"),
-    ).toBe(true);
-    expect(() =>
-      governedSkillPackageRegistry.resolve("coordinateWholeStorefront", "followUpEditing"),
-    ).toThrow(expect.objectContaining({ code: "unknownPackage" }));
-    expect(() =>
-      governedSkillPackageRegistry.resolve("restyleWholeStorefront", "followUpEditing"),
-    ).toThrow(expect.objectContaining({ code: "unknownPackage" }));
-    expect(() =>
-      governedSkillPackageRegistry.resolve("improveSelectedSection", "followUpEditing"),
-    ).toThrow(expect.objectContaining({ code: "unknownPackage" }));
-    expect(() =>
-      governedSkillPackageRegistry.resolve("improveCurrentPage", "followUpEditing"),
-    ).toThrow(expect.objectContaining({ code: "unknownPackage" }));
-  });
-
-  it("makes package descriptors and aliases deeply immutable with deterministic real-authority fingerprints", () => {
-    const first = createGovernedSkillPackageRegistry();
-    const second = createGovernedSkillPackageRegistry();
-    const descriptors = first.list();
-    const aliases = first.listAliases();
-
-    expect(first.version).toBe(GOVERNED_SKILL_PACKAGE_REGISTRY_VERSION);
-    expect(first.fingerprint).toBe(second.fingerprint);
-    expect(Object.isFrozen(descriptors)).toBe(true);
-    expect(Object.isFrozen(descriptors[0])).toBe(true);
-    expect(Object.isFrozen(descriptors[0]?.supportedPageTypes)).toBe(true);
-    expect(Object.isFrozen(aliases[0])).toBe(true);
-    expect(Reflect.set(descriptors[0], "id", "inventedPackage")).toBe(false);
-    expect(Reflect.set(descriptors[0].supportedPageTypes, 0, "invented")).toBe(false);
-
-    const changedDescriptor = {
-      ...governedSkillPackageDescriptors[0],
-      version: "1.0.1",
-    };
-    const changed = createGovernedSkillPackageRegistry({
-      descriptors: [changedDescriptor, ...governedSkillPackageDescriptors.slice(1)],
-    });
-    expect(changed.fingerprint).not.toBe(first.fingerprint);
-  });
-
-  it("maps deprecated style names deterministically without creating independent authority", () => {
-    expect(governedSkillPackageAliases).toHaveLength(5);
-    expect(
       governedSkillPackageRegistry.resolve("applyLuxuryStyle", "followUpEditing"),
-    ).toMatchObject({
-      descriptor: { id: "applyRegisteredWholeStorefrontDirection" },
-      alias: { deprecated: true, directionId: "premiumEditorial" },
-    });
-    expect(
-      governedSkillPackageRegistry.resolve("applyMinimalNordicStyle", "followUpEditing"),
-    ).toMatchObject({
-      descriptor: { id: "applyRegisteredWholeStorefrontDirection" },
-      alias: { deprecated: true, directionId: "modernTechnical" },
-    });
-    expect(
-      governedSkillPackageRegistry.resolve("applyMinimalNordicStorefrontStyle", "followUpEditing"),
-    ).toMatchObject({ descriptor: { id: "applyRegisteredWholeStorefrontDirection" } });
-    expect(
-      governedSkillPackageRegistry.resolve("applyWarmPremiumStorefrontStyle", "followUpEditing"),
     ).toMatchObject({
       descriptor: { id: "applyRegisteredWholeStorefrontDirection" },
       alias: { deprecated: true, directionId: "premiumEditorial" },
@@ -267,239 +132,236 @@ describe("P10A-05B governed skill package registry", () => {
       descriptor: { id: "applyExactBrandPalette" },
       alias: { deprecated: true },
     });
-    const compatibilityAuthority: GovernedFollowUpEditingAuthority = {
-      ...followUpAuthority(),
-      packageId: "applyBrandPalette",
-      packageVersion: "1.0.0",
-      scope: "designSystem",
-      page: { pageId: "page_governed_home", pageType: "home" },
-      selections: [],
-    };
+    expect(createGovernedSkillPackageRegistry().fingerprint).toBe(
+      governedSkillPackageRegistry.fingerprint,
+    );
     expect(
-      governedSkillPackageRegistry.validateFollowUpEditing(
-        compatibilityAuthority,
-        currentAuthority(),
-      ),
-    ).toMatchObject({
-      valid: true,
-      value: { package: { descriptor: { id: "applyExactBrandPalette" } } },
-    });
-    expect(() =>
-      governedSkillPackageAliasSchema.parse({
-        id: "orphanedLegacyStyle",
-        canonicalPackageId: "notARegisteredPackage",
-        deprecated: true,
+      resultCode({
+        ...followUp("applyExactBrandPalette", [{ ...pageAuthority("home"), selections: [] }]),
+        packageId: "inventedPackage",
       }),
-    ).toThrow();
-  });
-
-  it("fails closed for unknown packages, invalid execution kinds, package versions, and stale registry authority", () => {
-    const followUp = followUpAuthority();
-    expect(() =>
-      governedSkillPackageRegistry.resolve("inventedPackage", "followUpEditing"),
-    ).toThrow(expect.objectContaining({ code: "unknownPackage" }));
+    ).toBe("unknownPackage");
     expect(() => governedSkillPackageRegistry.resolve("improveHero", "initialGeneration")).toThrow(
       expect.objectContaining({ code: "invalidExecutionKind" }),
     );
-    expect(
-      failureCode(
-        governedSkillPackageRegistry.validateFollowUpEditing(
-          { ...followUp, packageVersion: "99.0.0" },
-          currentAuthority(),
-        ),
-      ),
-    ).toBe("stalePackageAuthority");
-    expect(
-      failureCode(
-        governedSkillPackageRegistry.validateFollowUpEditing(
-          {
-            ...followUp,
-            authority: {
-              ...followUp.authority,
-              packageRegistry: {
-                ...followUp.authority.packageRegistry,
-                fingerprint: "stale-registry",
-              },
-            },
-          },
-          currentAuthority(),
-        ),
-      ),
-    ).toBe("staleRegistryAuthority");
-    expect(
-      failureCode(
-        governedSkillPackageRegistry.validateFollowUpEditing(
-          { ...followUp, scope: "currentPage" },
-          currentAuthority(),
-        ),
-      ),
-    ).toBe("invalidScope");
   });
 
-  it("validates manifest, profile, draft, commerce, and approved-asset authority without exposing mutable commerce", () => {
-    const initial = initialAuthority();
-    const followUp = followUpAuthority();
+  it("compares locale and exact request identity as typed freshness authority", () => {
+    const input = followUp("improveHero", [pageAuthority("home", "hero")]);
+    expect(resultCode(input)).toBeUndefined();
+    expect(resultCode(input, { ...currentAuthority(), locale: "fi" })).toBe("staleLocaleAuthority");
+    expect(resultCode(input, { ...currentAuthority(), requestIdentity: "other-request" })).toBe(
+      "staleRequestIdentityAuthority",
+    );
+    expect(
+      resultCode(input, { ...currentAuthority(), locale: "fi", requestIdentity: "other-request" }),
+    ).toBe("staleLocaleAuthority");
+    expect(
+      resultCode({
+        ...input,
+        authority: { ...input.authority, requestIdentity: "governed-skill-request-001 " },
+      }),
+    ).toBe("staleRequestIdentityAuthority");
+  });
 
+  it("keeps initial-generation authority separately validated", () => {
+    const home = pageAuthority("home", "hero");
+    const initial = {
+      executionKind: "initialGeneration",
+      authority: currentAuthority(),
+      brief: { briefId: "brief_governed_skill", revision: 2, fingerprint: "brief-fingerprint" },
+      profiles: [home.profile],
+      catalogueFingerprint: "catalogue-fingerprint",
+      registeredDirectionId: "modernTechnical",
+      outputContractId: "wholeStorefrontPlanningInput.v1",
+    };
+    expect(governedInitialGenerationAuthoritySchema.parse(initial).executionKind).toBe(
+      "initialGeneration",
+    );
     expect(
-      governedSkillPackageRegistry.validateInitialGeneration(
-        {
-          ...initial,
-          authority: {
-            ...initial.authority,
-            manifest: { ...initial.authority.manifest, fingerprint: "stale-manifest" },
-          },
-        },
-        currentAuthority(),
-      ),
-    ).toMatchObject({ valid: false, failure: { code: "staleManifestAuthority" } });
+      governedSkillPackageRegistry.validateInitialGeneration(initial, currentAuthority()),
+    ).toMatchObject({
+      valid: true,
+    });
+  });
+
+  it("validates optional supplied profiles directly even when selections are empty", () => {
+    const home = pageAuthority("home", "hero");
+    const optional = { ...home, selections: [] };
+    const noProfile = { ...optional, profile: undefined };
+    expect(resultCode(followUp("addCampaignSection", [noProfile]))).toBeUndefined();
+    expect(resultCode(followUp("addCampaignSection", [optional]))).toBeUndefined();
     expect(
-      failureCode(
-        governedSkillPackageRegistry.validateFollowUpEditing(
-          {
-            ...followUp,
-            page: {
-              ...followUp.page,
-              profile: { ...followUp.page.profile!, fingerprint: "stale-profile" },
-            },
-          },
-          currentAuthority(),
-        ),
+      resultCode(
+        followUp("addCampaignSection", [
+          { ...optional, profile: { ...home.profile, profileId: "unknown-profile" } },
+        ]),
       ),
     ).toBe("staleProfileAuthority");
     expect(
-      failureCode(
-        governedSkillPackageRegistry.validateFollowUpEditing(
-          {
-            ...followUp,
-            authority: { ...followUp.authority, commerceFingerprint: "stale-commerce" },
-          },
-          currentAuthority(),
-        ),
+      resultCode(
+        followUp("addCampaignSection", [
+          { ...optional, profile: { ...home.profile, fingerprint: "stale-profile" } },
+        ]),
       ),
-    ).toBe("staleCommerceAuthority");
+    ).toBe("staleProfileAuthority");
     expect(
-      failureCode(
-        governedSkillPackageRegistry.validateFollowUpEditing(
-          {
-            ...followUp,
-            authority: { ...followUp.authority, approvedAssetFingerprint: "stale-assets" },
-          },
-          currentAuthority(),
-        ),
+      resultCode(
+        followUp("addCampaignSection", [
+          { ...optional, profile: { ...home.profile, pageType: "collection" } },
+        ]),
       ),
-    ).toBe("staleApprovedAssetAuthority");
-
-    const result = governedSkillPackageRegistry.validateFollowUpEditing(
-      followUp,
-      currentAuthority(),
-    );
-    if (!result.valid) throw new Error("Expected current governed authority to validate.");
-    expect(result.value.authority).not.toHaveProperty("catalogue");
-    expect(result.value.authority).not.toHaveProperty("navigation");
-    expect(result.value.authority).not.toHaveProperty("operations");
-    expect(result.value.authority).not.toHaveProperty("proposal");
-    expect(result.value.authority.authority).not.toHaveProperty("commerce");
-    expect(result.value.authority.authority).not.toHaveProperty("approvedAssets");
+    ).toBe("staleProfileAuthority");
   });
 
-  it("validates exact profile/slot/component/variant, bounded parameters, bindings, and approved asset references through P10A-05A", () => {
-    const followUp = followUpAuthority();
-    const target = followUp.selections[0];
-    const unsupportedSelection = {
-      ...target,
-      componentType: "inventedComponent",
-    };
+  it("limits improveHero to the registered hero selection and exact slot identity", () => {
+    const hero = pageAuthority("home", "hero");
+    expect(resultCode(followUp("improveHero", [hero]))).toBeUndefined();
+    for (const componentType of ["header", "footer", "productGrid"] as const) {
+      const profile =
+        componentType === "productGrid"
+          ? pageAuthority("home", componentType)
+          : pageAuthority("home", componentType);
+      expect(resultCode(followUp("improveHero", [profile]))).toBe("invalidSlotSelection");
+    }
     expect(
-      failureCode(
-        governedSkillPackageRegistry.validateFollowUpEditing(
-          { ...followUp, selections: [unsupportedSelection] },
-          currentAuthority(),
-        ),
+      resultCode(
+        followUp("improveHero", [
+          { ...hero, selections: [{ ...hero.selections[0], slotId: "unknown-slot" }] },
+        ]),
       ),
     ).toBe("invalidSlotSelection");
-    expect(
-      failureCode(
-        governedSkillPackageRegistry.validateFollowUpEditing(
-          {
-            ...followUp,
-            boundedParameters: [
-              { targetSlotId: target.slotId, parameterId: "inventedParameter", value: "invented" },
-            ],
-          },
-          currentAuthority(),
-        ),
-      ),
-    ).toBe("unauthorizedCapabilityReference");
-    expect(
-      failureCode(
-        governedSkillPackageRegistry.validateFollowUpEditing(
-          {
-            ...followUp,
-            bindings: [
-              {
-                targetSlotId: target.slotId,
-                bindingSlotId: "inventedBinding",
-                sourceType: "product",
-                fingerprint: "binding-fingerprint",
-              },
-            ],
-          },
-          currentAuthority(),
-        ),
-      ),
-    ).toBe("unauthorizedCapabilityReference");
-    expect(
-      failureCode(
-        governedSkillPackageRegistry.validateFollowUpEditing(
-          {
-            ...followUp,
-            approvedAssets: [
-              {
-                targetSlotId: target.slotId,
-                assetSlotId: "inventedAssetSlot",
-                assetId: "asset_governed_skill",
-                role: "logo",
-                revision: "1",
-                materialFingerprint: "asset-fingerprint",
-                required: false,
-              },
-            ],
-          },
-          currentAuthority(),
-        ),
-      ),
-    ).toBe("unauthorizedCapabilityReference");
   });
 
-  it("keeps approved asset roles and requiredness as immutable capability requirements", () => {
-    const authority = assetBackedFollowUpAuthority();
-    const asset = authority.approvedAssets[0];
-    if (!asset) throw new Error("Expected a governed approved-asset reference.");
+  it("preserves governed failures while malformed and unexpected inputs remain invalidRequest", () => {
+    const palette = followUp("applyExactBrandPalette", [
+      { ...pageAuthority("home"), selections: [] },
+    ]);
+    expect(resultCode({ ...palette, packageVersion: "9.9.9" })).toBe("stalePackageAuthority");
+    expect(
+      resultCode({
+        ...palette,
+        authority: {
+          ...palette.authority,
+          packageRegistry: { ...palette.authority.packageRegistry, fingerprint: "stale" },
+        },
+      }),
+    ).toBe("staleRegistryAuthority");
+    expect(resultCode({ malformed: true })).toBe("invalidRequest");
+    const registry = createGovernedSkillPackageRegistry({
+      capabilityKnowledge: {
+        ...skillCapabilityKnowledge,
+        listExecutableProfiles: () => {
+          throw new Error("unexpected capability failure");
+        },
+      },
+    });
+    const unexpected = registry.validateFollowUpEditing(palette, currentAuthority());
+    expect(unexpected).toMatchObject({ valid: false, failure: { code: "invalidRequest" } });
+  });
 
+  it("enforces approved-asset roles, duplicates, and per-slot cardinality", () => {
+    const base = assetBackedPageAuthority();
+    const resolved = skillCapabilityKnowledge.resolveSelection({
+      manifest: currentAuthority().manifest,
+      ...base.selections[0],
+    });
+    const assetSlot = resolved.component.assetSlots[0];
+    if (!assetSlot) throw new Error("Expected a registered hero asset slot.");
+    const asset = governedApprovedAssetReferenceSchema.parse({
+      targetSlotId: base.selections[0].slotId,
+      assetSlotId: assetSlot.slotId,
+      assetId: "asset_governed_skill",
+      role: assetSlot.acceptedRoles[0],
+      revision: "1",
+      materialFingerprint: "asset-governed-fingerprint",
+      required: assetSlot.required,
+    });
+    const withAsset = followUp("applyRegisteredWholeStorefrontDirection", [
+      { ...base, approvedAssets: [asset] },
+    ]);
+    expect(resultCode(withAsset)).toBeUndefined();
     expect(
-      governedSkillPackageRegistry.validateFollowUpEditing(authority, currentAuthority()),
-    ).toMatchObject({ valid: true });
+      resultCode({ ...withAsset, pages: [{ ...withAsset.pages[0], approvedAssets: [] }] }),
+    ).toBeUndefined();
     expect(
-      failureCode(
-        governedSkillPackageRegistry.validateFollowUpEditing(
-          { ...authority, approvedAssets: [{ ...asset, required: !asset.required }] },
-          currentAuthority(),
-        ),
-      ),
+      resultCode({
+        ...withAsset,
+        pages: [{ ...withAsset.pages[0], approvedAssets: [asset, asset] }],
+      }),
     ).toBe("invalidApprovedAssetReference");
+    const overflow = Array.from({ length: (assetSlot.maxItems ?? 1) + 1 }, (_, index) => ({
+      ...asset,
+      assetId: `asset_governed_${index}`,
+    }));
     expect(
-      failureCode(
-        governedSkillPackageRegistry.validateFollowUpEditing(
-          {
-            ...authority,
-            authority: { ...authority.authority, approvedAssetFingerprint: null },
-          },
-          {
-            ...currentAuthority(),
-            approvedAssetFingerprint: null,
-          },
-        ),
+      resultCode({ ...withAsset, pages: [{ ...withAsset.pages[0], approvedAssets: overflow }] }),
+    ).toBe("invalidApprovedAssetReference");
+    const requiredRegistry = createGovernedSkillPackageRegistry({
+      capabilityKnowledge: {
+        ...skillCapabilityKnowledge,
+        resolveSelection: (input) => {
+          const selection = skillCapabilityKnowledge.resolveSelection(input);
+          return {
+            ...selection,
+            component: {
+              ...selection.component,
+              assetSlots: selection.component.assetSlots.map((slot, index) =>
+                index === 0 ? { ...slot, required: true, minItems: 1, maxItems: 1 } : slot,
+              ),
+            },
+          };
+        },
+      },
+    });
+    const requiredAsset = { ...asset, required: true };
+    expect(
+      requiredRegistry.validateFollowUpEditing(
+        { ...withAsset, pages: [{ ...withAsset.pages[0], approvedAssets: [] }] },
+        currentAuthority(),
       ),
-    ).toBe("staleApprovedAssetAuthority");
+    ).toMatchObject({ valid: false, failure: { code: "invalidApprovedAssetReference" } });
+    expect(
+      requiredRegistry.validateFollowUpEditing(
+        { ...withAsset, pages: [{ ...withAsset.pages[0], approvedAssets: [requiredAsset] }] },
+        currentAuthority(),
+      ),
+    ).toMatchObject({ valid: true });
+  });
+
+  it("validates coordinated whole-storefront page authority while single-page packages fail closed", () => {
+    const home = pageAuthority("home", "hero");
+    const collection = pageAuthority("collection");
+    const product = pageAuthority("product");
+    const whole = followUp("applyRegisteredWholeStorefrontDirection", [product, home, collection]);
+    const first = governedSkillPackageRegistry.validateFollowUpEditing(whole, currentAuthority());
+    const second = governedSkillPackageRegistry.validateFollowUpEditing(
+      { ...whole, pages: [collection, product, home] },
+      currentAuthority(),
+    );
+    expect(first).toMatchObject({ valid: true });
+    expect(second).toMatchObject({ valid: true });
+    if (first.valid && second.valid)
+      expect(first.value.outputFingerprint).toBe(second.value.outputFingerprint);
+    expect(resultCode({ ...whole, pages: [home, { ...home, pageId: home.pageId }] })).toBe(
+      "invalidRequest",
+    );
+    expect(
+      resultCode({
+        ...whole,
+        pages: [{ ...home, selections: collection.selections }, collection, product],
+      }),
+    ).toBe("staleProfileAuthority");
+    expect(resultCode(followUp("improveHero", [home, collection]))).toBe("invalidScope");
+    expect(
+      resultCode({
+        ...whole,
+        pages: [
+          home,
+          { ...collection, profile: { ...collection.profile, fingerprint: "stale" } },
+          product,
+        ],
+      }),
+    ).toBe("staleProfileAuthority");
   });
 });

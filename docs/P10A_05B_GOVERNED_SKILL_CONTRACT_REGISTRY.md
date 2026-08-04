@@ -35,12 +35,14 @@ task.
 `followUpEditing` represents already-resolved editing authority: an approved package/version,
 current snapshot and page/profile authority, registered slot/component/variant selections,
 bounded parameter intent, canonical binding references and approved asset references. It performs
-no natural-language classification and creates no proposal operations.
+no natural-language classification and creates no proposal operations. A supplied optional profile
+is resolved against the generated manifest even when the page has no selections.
 
 Both share the immutable authority envelope: project, draft snapshot/revision/fingerprint,
 generated-manifest version/fingerprint, governed-registry version/fingerprint, component registry,
 commerce and approved-asset fingerprints, locale and request identity. A stale identity fails
-closed with a typed failure.
+closed with a typed failure. Locale and request identity are compared exactly after schema
+normalization, so one merchant instruction cannot be replayed under another localized context.
 
 ## Canonical package inventory
 
@@ -93,6 +95,21 @@ asset slot/role/requiredness are validated only after the capability consumer re
 slot. Packages that do not declare an authority reject those references. Asset references require
 the current approved-asset fingerprint; the contract never accepts an asset instance as mutable
 skill authority.
+
+`improveHero` carries a `canonicalHero` selection constraint: its exact profile slot must resolve
+to the registered hero component. Header, footer, product-grid and unknown-slot selections fail
+closed rather than widening hero editing into generic section editing.
+
+Follow-up authority is page-scoped. Section, page and design-system packages carry exactly one
+page authority; `applyRegisteredWholeStorefrontDirection` carries a non-empty, canonical-ID-unique
+set of page authorities. Each page validates its own profile and owns its selections, bindings and
+asset references, allowing coordinated home, collection and product authority without selections
+floating across undeclared pages.
+
+Approved asset references are grouped by page, component selection and asset slot. Role,
+requiredness, duplicate identity and canonical minimum/maximum cardinality are validated before
+authority is returned. Governed errors preserve typed failure codes; only malformed or
+unclassified input becomes `invalidRequest`.
 
 The registry outputs only immutable package metadata and validated authority references. It has no
 commerce records, prices, stock, product/variant IDs, media bindings, navigation tree, page content,
