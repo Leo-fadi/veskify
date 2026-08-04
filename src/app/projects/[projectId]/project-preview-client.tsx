@@ -110,6 +110,7 @@ export function ProjectPreviewClient({
             catalogue: aggregate.catalogue,
             snapshot: draft,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+            renderTarget: snapshotKind === "published" ? "published" : "preview",
           });
           void renderStorefrontPage(homepage, context);
         } catch {
@@ -203,6 +204,7 @@ export function ProjectPreviewClient({
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+    renderTarget: snapshotKind === "published" ? "published" : "preview",
   });
 
   return (

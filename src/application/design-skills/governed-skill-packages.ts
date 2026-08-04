@@ -942,7 +942,7 @@ export class GovernedSkillPackageRegistry {
           }
           if (
             packageResolution.descriptor.selectionConstraint === "canonicalHero" &&
-            resolved.component.componentType !== "hero"
+            !(resolved.slotId === "hero" && resolved.component.componentType === "homepageHero")
           ) {
             return failure(
               "invalidSlotSelection",

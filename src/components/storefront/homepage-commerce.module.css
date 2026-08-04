@@ -62,6 +62,27 @@
   grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
 }
 
+.variant_fullBleed,
+.variant_editorial {
+  grid-template-columns: 1fr;
+}
+
+.variant_editorialCards .collectionCard {
+  gap: 1.25rem;
+}
+
+.variant_compact .collectionGrid,
+.variant_compact .productGrid {
+  gap: 1rem;
+}
+
+.variant_standard .productGrid,
+.variant_grid .collectionGrid,
+.variant_threeColumn .trustGrid,
+.variant_cards .trustGrid {
+  grid-template-columns: repeat(var(--homepage-columns), minmax(0, 1fr));
+}
+
 .hero[data-content-width="narrow"] .heroCopy {
   max-width: 34rem;
 }

@@ -5,14 +5,17 @@ import {
   homepageCommerceDefinitions,
   homepageCommerceInstanceValidationContracts,
 } from "./homepage-commerce";
-import { veskifyComponentRegistry } from "./registry";
+import { veskifyLegacyComponentRegistry } from "./legacy-registry";
 import { adaptV1ComponentRegistryToV2 } from "./v2-compatibility";
 
 export const veskifyComponentDefinitionsV2 = [
   ...adaptV1ComponentRegistryToV2(
     Object.fromEntries(
-      Object.entries(veskifyComponentRegistry).filter(
-        ([type]) => type !== "dynamicCollectionCommerce" && type !== "dynamicProductDetail",
+      Object.entries(veskifyLegacyComponentRegistry).filter(
+        ([type]) =>
+          type !== "dynamicCollectionCommerce" &&
+          type !== "dynamicProductDetail" &&
+          !homepageCommerceDefinitions.some((definition) => definition.type === type),
       ),
     ),
   ),

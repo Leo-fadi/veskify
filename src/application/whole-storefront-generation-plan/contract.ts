@@ -221,9 +221,26 @@ const wholeStorefrontGeneratedComponentPlanSchema = z
   })
   .strict();
 
+const wholeStorefrontRemovedComponentPlanSchema = z
+  .object({
+    disposition: z.literal("removed"),
+    componentId: idSchema,
+    component: z.string().trim().min(1).max(80),
+    componentVersion: z
+      .object({
+        major: z.number().int().positive(),
+        minor: z.number().int().nonnegative(),
+        patch: z.number().int().nonnegative(),
+      })
+      .strict(),
+    variant: z.string().trim().min(1).max(80),
+  })
+  .strict();
+
 export const wholeStorefrontComponentPlanSchema = z.union([
   wholeStorefrontRetainedComponentPlanSchema,
   wholeStorefrontGeneratedComponentPlanSchema,
+  wholeStorefrontRemovedComponentPlanSchema,
 ]);
 
 export const wholeStorefrontPagePlanSchema = z

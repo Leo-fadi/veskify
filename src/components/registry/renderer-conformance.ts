@@ -177,7 +177,18 @@ export function collectLiveRendererRegistrations(): readonly RendererRegistratio
     return variants;
   };
   const legacyRegistrations: RendererRegistration[] = Object.entries(veskifyComponentRegistry)
-    .filter(([, definition]) => typeof definition.render === "function")
+    .filter(
+      ([componentType, definition]) =>
+        typeof definition.render === "function" &&
+        ![
+          "homepageHero",
+          "homepageFeaturedCollections",
+          "homepageFeaturedProducts",
+          "homepageCollectionNavigation",
+          "homepagePromotion",
+          "homepageTrust",
+        ].includes(componentType),
+    )
     .map(([componentType]) => {
       const targets: readonly RendererTarget[] =
         componentType === "dynamicCollectionCommerce" || componentType === "dynamicProductDetail"

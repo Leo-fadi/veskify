@@ -340,7 +340,9 @@ export function p905aScenarioSignature({
   const homepage = accepted.pages.find((page) => page.type === "home");
   const collection = accepted.pages.find((page) => page.type === "collection");
   const product = accepted.pages.find((page) => page.type === "product");
-  const hero = homepage?.sections.find((section) => section.component === "hero");
+  const hero = homepage?.sections.find((section) =>
+    ["homepageHero", "hero"].includes(section.component),
+  );
   const collectionCommerce = collection?.sections.find(
     (section) => section.component === "dynamicCollectionCommerce",
   );

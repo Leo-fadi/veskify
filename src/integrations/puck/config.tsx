@@ -16,7 +16,13 @@ import { merchantSectionTypeLabel } from "@/components/registry/merchant-section
 import { aurumNordicSeed } from "@/data/seed";
 import { brandSystemToCssVariables, type BrandSystem } from "@/domain/design-system";
 import { idSchema, localeSchema, resolveLocalizedText, type Locale } from "@/domain/shared";
-import type { PageModel, PageType, SectionInstance } from "@/domain/storefront";
+import {
+  approvedAssetPlacementOperationSchema,
+  approvedAssetPresentationSchema,
+  type PageModel,
+  type PageType,
+  type SectionInstance,
+} from "@/domain/storefront";
 
 type PuckEditorProps = Record<string, unknown>;
 
@@ -141,6 +147,12 @@ export function editorPropsToSection(
     editorProps.__veskifyStyleOverrides !== null
       ? { styleOverrides: structuredClone(editorProps.__veskifyStyleOverrides) }
       : {}),
+    approvedAssetPlacements: z
+      .array(approvedAssetPlacementOperationSchema)
+      .parse(editorProps.__veskifyApprovedAssetPlacements ?? []),
+    approvedAssetPresentations: z
+      .array(approvedAssetPresentationSchema)
+      .parse(editorProps.__veskifyApprovedAssetPresentations ?? []),
   };
   if (pageType) definition.validate(section, pageType, context);
   return section;
@@ -269,6 +281,10 @@ export function pageToPuckData(page: PageModel, context: StorefrontRenderContext
           __veskifyProps: structuredClone(section.props),
           __veskifyVariant: section.variant,
           __veskifyVisible: section.visible,
+          __veskifyApprovedAssetPlacements: structuredClone(section.approvedAssetPlacements ?? []),
+          __veskifyApprovedAssetPresentations: structuredClone(
+            section.approvedAssetPresentations ?? [],
+          ),
           ...(section.styleOverrides
             ? { __veskifyStyleOverrides: structuredClone(section.styleOverrides) }
             : {}),
@@ -291,6 +307,8 @@ const protectedPayloadKeys = [
   "__veskifyVariant",
   "__veskifyVisible",
   "__veskifyStyleOverrides",
+  "__veskifyApprovedAssetPlacements",
+  "__veskifyApprovedAssetPresentations",
 ] as const;
 
 function assertProtectedPayload(editorProps: Record<string, unknown>, original: SectionInstance) {
@@ -300,6 +318,8 @@ function assertProtectedPayload(editorProps: Record<string, unknown>, original: 
     __veskifyVariant: original.variant,
     __veskifyVisible: original.visible,
     __veskifyStyleOverrides: original.styleOverrides,
+    __veskifyApprovedAssetPlacements: original.approvedAssetPlacements ?? [],
+    __veskifyApprovedAssetPresentations: original.approvedAssetPresentations ?? [],
   };
   for (const key of protectedPayloadKeys) {
     if (!sameValue(editorProps[key], expected[key])) {
@@ -383,6 +403,8 @@ export function puckDataToPage(
       __veskifyProps: original?.props ?? definition.defaultProps,
       __veskifyVariant: item.props.variant ?? original?.variant ?? definition.defaultVariant,
       __veskifyVisible: original?.visible ?? true,
+      __veskifyApprovedAssetPlacements: original?.approvedAssetPlacements ?? [],
+      __veskifyApprovedAssetPresentations: original?.approvedAssetPresentations ?? [],
       ...(original?.styleOverrides
         ? { __veskifyStyleOverrides: original.styleOverrides }
         : { __veskifyStyleOverrides: undefined }),

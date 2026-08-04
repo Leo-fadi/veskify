@@ -108,25 +108,26 @@ describe("P9R-05 homepage-only composition scope", () => {
       throw new Error("P9R-05 homepage proposal was not accepted.");
     }
     const homepage = accepted.activeDraft.pages.find((page) => page.type === "home")!;
+    const homepageProfile = generated.plan.pageBlueprintMaterializations.find(
+      (materialization) => materialization.pageType === "home",
+    );
+    if (!homepageProfile) throw new Error("Missing authoritative homepage profile.");
     expect(homepage.sections.map((section) => `${section.component}:${section.variant}`)).toEqual(
-      expect.arrayContaining([
-        "header:compact",
-        "hero:asymmetric",
-        "productGrid:compact",
-        "featuredCategories:grid",
-        "brandStory:minimal",
-        "footer:compact",
-      ]),
+      homepageProfile.slots
+        .filter((slot) => homepage.sections.some((section) => section.component === slot.component))
+        .map((slot) => `${slot.component}:${slot.variant}`),
     );
     expect(homepage.sections.map((section) => section.id)).not.toEqual(
       home.sections.map((section) => section.id),
     );
     const order = homepage.sections.map((section) => section.component);
-    expect(order.indexOf("productGrid")).toBeLessThan(order.indexOf("featuredCategories"));
+    expect(order.indexOf("homepageFeaturedProducts")).toBeLessThan(
+      order.indexOf("homepageCollectionNavigation"),
+    );
     expect(order.indexOf("brandStory")).toBeLessThan(order.indexOf("footer"));
     expect(homepage.sections.some((section) => section.component === "benefitIcons")).toBe(false);
     expect(JSON.stringify(generated.proposal.proposedStorefront)).not.toMatch(
-      /complimentary delivery|materials? (?:chosen )?to last|durability|guarantee|trust/i,
+      /complimentary delivery|materials? (?:chosen )?to last|durability|guarantee/i,
     );
 
     const rendered = render(
@@ -145,12 +146,12 @@ describe("P9R-05 homepage-only composition scope", () => {
     expect(
       rendered.container.querySelector(".store-header.store-variant--compact nav"),
     ).toBeTruthy();
-    expect(rendered.container.querySelector(".store-hero.store-variant--asymmetric")).toBeTruthy();
+    expect(rendered.container.querySelector('[data-component="homepageHero"]')).toBeTruthy();
     expect(
-      rendered.container.querySelector(".store-section.store-variant--compact .product-grid"),
+      rendered.container.querySelector('[data-component="homepageFeaturedProducts"]'),
     ).toBeTruthy();
     expect(rendered.container.querySelector(".brand-story.store-variant--minimal")).toBeTruthy();
-    expect(rendered.container.querySelector(".benefits")).toBeNull();
+    expect(rendered.container.querySelector('[data-component="homepageTrust"]')).toBeTruthy();
     expect(rendered.container.querySelector(".store-footer.store-variant--compact")).toBeTruthy();
     expect(accepted.activeDraft.brandSystem).toEqual(baseline.brandSystem);
     expect(

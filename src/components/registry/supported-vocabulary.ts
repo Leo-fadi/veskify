@@ -1,4 +1,16 @@
 import type { PageType } from "@/domain/storefront";
+import {
+  homepageCollectionNavigationDefinition,
+  homepageFeaturedCollectionsDefinition,
+  homepageFeaturedProductsDefinition,
+  homepageHeroDefinition,
+  homepagePromotionDefinition,
+  homepageTrustDefinition,
+} from "./homepage-commerce";
+
+function registeredVariants(definition: Readonly<{ variants: readonly { id: string }[] }>) {
+  return definition.variants.map(({ id }) => id);
+}
 
 /**
  * Pure, renderer-independent vocabulary metadata for bounded composition layers.
@@ -81,6 +93,30 @@ export const supportedSectionManifest = {
   dynamicProductDetail: {
     allowedPageTypes: ["product"] as const satisfies readonly PageType[],
     variants: ["balanced", "editorial", "compact", "galleryDominant", "editorialSplit"] as const,
+  },
+  homepageHero: {
+    allowedPageTypes: ["home"] as const satisfies readonly PageType[],
+    variants: registeredVariants(homepageHeroDefinition),
+  },
+  homepageFeaturedCollections: {
+    allowedPageTypes: ["home"] as const satisfies readonly PageType[],
+    variants: registeredVariants(homepageFeaturedCollectionsDefinition),
+  },
+  homepageFeaturedProducts: {
+    allowedPageTypes: ["home"] as const satisfies readonly PageType[],
+    variants: registeredVariants(homepageFeaturedProductsDefinition),
+  },
+  homepageCollectionNavigation: {
+    allowedPageTypes: ["home"] as const satisfies readonly PageType[],
+    variants: registeredVariants(homepageCollectionNavigationDefinition),
+  },
+  homepagePromotion: {
+    allowedPageTypes: ["home"] as const satisfies readonly PageType[],
+    variants: registeredVariants(homepagePromotionDefinition),
+  },
+  homepageTrust: {
+    allowedPageTypes: ["home"] as const satisfies readonly PageType[],
+    variants: registeredVariants(homepageTrustDefinition),
   },
 } as const;
 

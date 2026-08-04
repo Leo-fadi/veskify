@@ -178,8 +178,13 @@ describe("controlled storefront template registry", () => {
     listTemplates().forEach((template) => {
       const hero = template.pagePlans
         .find((plan) => plan.pageType === "home")
-        ?.slots.find((slot) => slot.sectionType === "hero");
-      expect(hero?.allowedVariants).toEqual(approvedHeroVariants);
+        ?.slots.find((slot) => slot.id === "hero");
+      expect(hero).toBeDefined();
+      if (!hero) return;
+      const definition =
+        veskifyComponentRegistry[hero.sectionType as keyof typeof veskifyComponentRegistry];
+      expect(hero.allowedVariants).toEqual(definition.variants);
+      approvedHeroVariants.forEach((variant) => expect(hero.allowedVariants).toContain(variant));
     });
     expect(Object.keys(supportedSectionManifest).sort()).toEqual(
       Object.keys(veskifyComponentRegistry).sort(),

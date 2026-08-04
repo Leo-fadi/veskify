@@ -2,6 +2,7 @@ import {
   storefrontDesignSystemV1,
   type StorefrontDesignDirectionId,
 } from "@/application/storefront-design-system";
+import { listExecutablePageBlueprintProfiles } from "@/application/storefront-templates";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
 import {
   canonicalStorefrontContentFingerprint,
@@ -109,6 +110,14 @@ function requiredSection(page: PageModel, component: string) {
   return section;
 }
 
+function requiredSectionFrom(page: PageModel, components: readonly string[]) {
+  const section = page.sections.find((candidate) => components.includes(candidate.component));
+  if (!section) {
+    throw new Error(`P9R-04 requires one of ${components.join(", ")} on ${page.type}.`);
+  }
+  return section;
+}
+
 function stringProp(value: Record<string, unknown>, key: string): string {
   const item = value[key];
   if (typeof item !== "string" || item.length === 0) {
@@ -130,6 +139,25 @@ function stringArrayProp(value: Record<string, unknown>, key: string): readonly 
 }
 
 function recipeIdFor(page: PageModel): string {
+  if (page.type === "home") {
+    const actualSelections = new Set(
+      page.sections.map((section) => `${section.component}:${section.variant}`),
+    );
+    const executableMatches = listExecutablePageBlueprintProfiles().filter(
+      (plan) =>
+        plan.pageType === "home" &&
+        plan.profile?.componentSelections.every((selection) => {
+          if (actualSelections.has(`${selection.component}:${selection.defaultVariant}`)) {
+            return true;
+          }
+          const slot = plan.slots.find((candidate) => candidate.id === selection.slotId);
+          return slot?.required === false && slot.omitWhen !== "never";
+        }),
+    );
+    if (executableMatches.length === 1) {
+      return executableMatches[0]?.profile?.id ?? "uncoordinated-home-baseline";
+    }
+  }
   const recipes =
     page.type === "home"
       ? storefrontDesignSystemV1.homepageRecipes
@@ -195,12 +223,19 @@ export function projectP9r04Storefront(snapshot: StorefrontSnapshot): P9r04Struc
     throw new Error("P9R-04 requires a registered product composition.");
   }
   const announcement = homepage.sections.find((section) => section.component === "announcementBar");
-  const hero = requiredSection(homepage, "hero");
-  const productGrid = requiredSection(homepage, "productGrid");
-  const discovery = requiredSection(homepage, "featuredCategories");
+  const hero = requiredSectionFrom(homepage, ["homepageHero", "hero"]);
+  const productGrid = requiredSectionFrom(homepage, ["homepageFeaturedProducts", "productGrid"]);
+  const discovery = requiredSectionFrom(homepage, [
+    "homepageFeaturedCollections",
+    "homepageCollectionNavigation",
+    "featuredCategories",
+  ]);
+  const promotion = homepage.sections.find((section) => section.component === "homepagePromotion");
   const brandStory = homepage.sections.find((section) => section.component === "brandStory");
   const campaign = homepage.sections.find((section) => section.component === "campaignBanner");
-  const trust = homepage.sections.find((section) => section.component === "benefitIcons");
+  const trust = homepage.sections.find((section) =>
+    ["homepageTrust", "benefitIcons"].includes(section.component),
+  );
 
   return {
     sharedFrame: {
@@ -226,7 +261,7 @@ export function projectP9r04Storefront(snapshot: StorefrontSnapshot): P9r04Struc
       hero: `${hero.component}:${hero.variant}`,
       featuredProducts: `${productGrid.component}:${productGrid.variant}`,
       featuredCollections: `${discovery.component}:${discovery.variant}`,
-      campaignOrStory: [brandStory, campaign]
+      campaignOrStory: [promotion, brandStory, campaign]
         .filter((section): section is NonNullable<typeof section> => section !== undefined)
         .map((section) => `${section.component}:${section.variant}`),
       trust: trust ? `${trust.component}:${trust.variant}` : null,
@@ -359,13 +394,24 @@ export function p9r04CapabilityPathEvidence({
   accepted: StorefrontSnapshot;
 }) {
   const direction = matchingDirection(plan);
+  const homepageMaterialization = plan.pageBlueprintMaterializations.find(
+    (entry) => entry.pageType === "home",
+  );
+  if (!homepageMaterialization) {
+    throw new Error("P9R-04 requires the authoritative homepage PageBlueprint materialization.");
+  }
+  const homepageSelection = (component: string) => {
+    const selection = homepageMaterialization.slots.find((slot) => slot.component === component);
+    if (!selection) throw new Error(`P9R-04 requires ${component} in the homepage profile.`);
+    return selection;
+  };
   const required = [
-    plan.designSystemSelection.componentSelections.header,
-    plan.designSystemSelection.componentSelections.hero,
-    plan.designSystemSelection.componentSelections.productCard,
+    homepageSelection("header"),
+    homepageSelection("homepageHero"),
+    homepageSelection("homepageFeaturedProducts"),
     plan.designSystemSelection.componentSelections.collectionCommerce,
     plan.designSystemSelection.componentSelections.productDetail,
-    plan.designSystemSelection.componentSelections.footer,
+    homepageSelection("footer"),
   ];
   return required.map((selection) => {
     const registry = veskifyComponentDefinitionsV2.find(
@@ -381,10 +427,15 @@ export function p9r04CapabilityPathEvidence({
         `P9R-04 selection ${selection.component}:${selection.variant} is unregistered.`,
       );
     }
-    const planned = Object.values(plan.designSystemSelection.componentSelections).some(
-      (candidate) =>
-        candidate.component === selection.component && candidate.variant === selection.variant,
-    );
+    const planned =
+      homepageMaterialization.slots.some(
+        (candidate) =>
+          candidate.component === selection.component && candidate.variant === selection.variant,
+      ) ||
+      Object.values(plan.designSystemSelection.componentSelections).some(
+        (candidate) =>
+          candidate.component === selection.component && candidate.variant === selection.variant,
+      );
     const compiledPresent = compiled.proposedStorefront.pages.some((page) =>
       page.components.some(
         (component) =>

@@ -20,7 +20,9 @@ import { adaptV1ComponentDefinitionToV2 } from "@/components/registry/v2-compati
 import { veskifyComponentRegistry } from "@/components/registry/registry";
 
 function bindingCategoriesFor(pageType: string) {
-  if (pageType === "home") return ["navigation"] as const;
+  if (pageType === "home") {
+    return ["navigation", "projectBrandContext", "collectionList", "productList"] as const;
+  }
   if (pageType === "collection") return ["collection", "productList"] as const;
   if (pageType === "product") return ["product"] as const;
   return [] as const;

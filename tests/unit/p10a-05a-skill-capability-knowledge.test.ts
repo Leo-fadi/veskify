@@ -74,7 +74,12 @@ function errorCode(action: () => unknown) {
 }
 
 function bindingsFor(pageType: string): BindingCategory[] {
-  if (pageType === "home") return ["navigation"];
+  if (pageType === "home") {
+    const profile = getExecutablePageBlueprintProfile("blueprint-balanced-home");
+    if (!profile) throw new Error("Expected the balanced-home profile.");
+    if (!profile.profile) throw new Error("Expected the balanced-home executable profile.");
+    return [...profile.profile.requiredBindingCategories] as BindingCategory[];
+  }
   if (pageType === "collection") return ["collection", "productList"];
   if (pageType === "product") return ["product"];
   return [];
@@ -363,12 +368,12 @@ describe("P10A-05A skill capability knowledge boundary", () => {
     const definitions = cloneDefinitions();
     const profiles = cloneProfiles();
     const homeProfile = profiles.find((profile) => profile.scope === "home");
-    const heroDefinition = definitions.find((definition) => definition.type === "hero");
+    const heroDefinition = definitions.find((definition) => definition.type === "homepageHero");
     const heroSelection = homeProfile?.componentSelections.find(
-      (selection) => selection.component === "hero",
+      (selection) => selection.slotId === "hero" && selection.component === "homepageHero",
     );
     const repeatedHeroSlot = homeProfile?.componentSelections.find(
-      (selection) => selection.component !== "hero",
+      (selection) => selection.slotId !== "hero",
     );
     const alternateVariant = heroDefinition?.variants.find(
       (variant) => variant.id !== heroSelection?.defaultVariant,
@@ -376,7 +381,7 @@ describe("P10A-05A skill capability knowledge boundary", () => {
     if (!homeProfile || !heroSelection || !repeatedHeroSlot || !alternateVariant) {
       throw new Error("Expected registered home hero selections and variants.");
     }
-    Reflect.set(repeatedHeroSlot, "component", "hero");
+    Reflect.set(repeatedHeroSlot, "component", "homepageHero");
     Reflect.set(repeatedHeroSlot, "variants", [alternateVariant]);
     Reflect.set(repeatedHeroSlot, "defaultVariant", alternateVariant);
 
@@ -386,14 +391,14 @@ describe("P10A-05A skill capability knowledge boundary", () => {
       manifest: reference,
       profileId: homeProfile.id,
       slotId: heroSelection.slotId,
-      componentType: "hero",
+      componentType: "homepageHero",
       variant: heroSelection.defaultVariant,
     });
     const repeated = consumer.resolveSelection({
       manifest: reference,
       profileId: homeProfile.id,
       slotId: repeatedHeroSlot.slotId,
-      componentType: "hero",
+      componentType: "homepageHero",
       variant: alternateVariant,
     });
 

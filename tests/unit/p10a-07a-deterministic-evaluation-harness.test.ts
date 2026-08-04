@@ -12,7 +12,10 @@ import {
 import { createWholeStorefrontGenerationPlan } from "@/application/whole-storefront-generation-plan";
 import { veskifyComponentCapabilityManifest } from "@/components/registry/capability-manifest";
 import { createP905aFreshMerchantFixture } from "@/data/demo/p9-05a-fresh-store-generation";
-import { canonicalStorefrontContentFingerprint } from "@/domain/storefront";
+import {
+  canonicalStorefrontContentFingerprint,
+  storefrontSnapshotSchema,
+} from "@/domain/storefront";
 
 function snapshotRealizing(
   snapshot: ReturnType<typeof createP905aFreshMerchantFixture>["draft"],
@@ -33,7 +36,7 @@ function snapshotRealizing(
       props: {},
     }));
   }
-  return realized;
+  return storefrontSnapshotSchema.parse(realized);
 }
 
 function evaluationInput() {

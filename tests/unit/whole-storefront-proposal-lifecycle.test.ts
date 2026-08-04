@@ -474,13 +474,18 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
       (profile) => profile.pageType === "home",
     );
     if (!homepageProfile) throw new Error("Missing executable homepage profile");
-    expect(
-      homeRuntime.components
-        .filter((component) =>
-          homepageProfile.slots.some((slot) => slot.component === component.component),
+    const realizedHomepageSelections = homeRuntime.components
+      .filter((component) =>
+        homepageProfile.slots.some((slot) => slot.component === component.component),
+      )
+      .map((component) => [component.component, component.variant]);
+    expect(realizedHomepageSelections).toEqual(
+      homepageProfile.slots
+        .filter((slot) =>
+          homeRuntime.components.some((component) => component.component === slot.component),
         )
-        .map((component) => [component.component, component.variant]),
-    ).toEqual(homepageProfile.slots.map((slot) => [slot.component, slot.variant]));
+        .map((slot) => [slot.component, slot.variant]),
+    );
     expect(
       homeRuntime.components.find((component) => component.id === home.sections[first].id)?.visible,
     ).toBe(false);

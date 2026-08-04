@@ -125,7 +125,7 @@ describe("P9-02 authoritative whole-storefront runtime context", () => {
       .flatMap((template) => template.pagePlans)
       .find((page) => page.pageType === "home");
     expect(homeRecipe?.slots.findIndex((slot) => slot.sectionType === "header")).toBeLessThan(
-      homeRecipe?.slots.findIndex((slot) => slot.sectionType === "hero") ?? 0,
+      homeRecipe?.slots.findIndex((slot) => slot.sectionType === "homepageHero") ?? 0,
     );
     expect(homeRecipe?.slots.at(-1)?.sectionType).toBe("footer");
     expect(planningRequest.approvedAssets.assets).toEqual([

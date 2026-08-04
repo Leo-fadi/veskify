@@ -206,6 +206,26 @@ function applyInitialContentPolicy(
       content.body = localizedWithPrimary(content.body, shortDescription, locale);
     content.cta = { ...content.cta, href: collectionSlug };
   }
+  if (next.component === "homepageHero") {
+    const content = next.content as {
+      heading: { en?: string; fi?: string };
+      supportingCopy?: { en?: string; fi?: string };
+      primaryActionLabel?: { en?: string; fi?: string };
+    };
+    if (businessName) content.heading = localizedWithPrimary(content.heading, businessName, locale);
+    if (shortDescription)
+      content.supportingCopy = localizedWithPrimary(
+        content.supportingCopy ?? {},
+        shortDescription,
+        locale,
+      );
+    if (collectionSlug && content.primaryActionLabel)
+      content.primaryActionLabel = localizedWithPrimary(
+        content.primaryActionLabel,
+        "Shop collection",
+        locale,
+      );
+  }
   if (next.component === "brandStory") {
     const content = next.content as {
       heading: { en?: string; fi?: string };
@@ -422,7 +442,9 @@ function createPage(
 }
 
 function resolvedInitialBindingCategories(pageType: PageType, brief: StorefrontDesignBrief) {
-  if (pageType === "home") return ["navigation"] as const;
+  if (pageType === "home") {
+    return ["navigation", "projectBrandContext", "collectionList", "productList"] as const;
+  }
   if (brief.catalogueContext === "empty-catalogue") return [] as const;
   return pageType === "collection"
     ? (["collection", "productList"] as const)

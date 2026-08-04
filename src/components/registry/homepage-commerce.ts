@@ -60,6 +60,10 @@ export const homepageFeaturedProductsContentSchema = z
     supportingCopy: localizedTextSchema.optional(),
     mediaPlaceholderLabel: localizedTextSchema,
     emptyStateMessage: localizedTextSchema,
+    // The snapshot carries the approved product-list selection as references,
+    // not as copied commerce data. This preserves merchandising order at every
+    // runtime surface while the catalogue remains the only product authority.
+    productIds: z.array(idSchema).min(1).optional(),
   })
   .strict();
 
@@ -219,6 +223,8 @@ export const homepageHeroDefinition = define({
   family: "marketing",
   supportedPageTypes: ["home"],
   variants: [
+    { id: "editorial", title: { en: "Editorial", fi: "Toimituksellinen" } },
+    { id: "fullBleed", title: { en: "Full bleed", fi: "Koko pinnan kuva" } },
     { id: "editorialSplit", title: { en: "Editorial split", fi: "Toimituksellinen jako" } },
     { id: "imageLed", title: { en: "Image led", fi: "Kuvapainotteinen" } },
     { id: "minimal", title: { en: "Minimal", fi: "Minimaalinen" } },
@@ -456,6 +462,10 @@ export const homepageFeaturedCollectionsDefinition = commerceListDefinition({
   variants: [
     { id: "standard", title: { en: "Standard", fi: "Tavallinen" } },
     { id: "editorial", title: { en: "Editorial", fi: "Toimituksellinen" } },
+    { id: "editorialCards", title: { en: "Editorial cards", fi: "Toimitukselliset kortit" } },
+    { id: "grid", title: { en: "Grid", fi: "Ruudukko" } },
+    { id: "carousel", title: { en: "Carousel", fi: "Karuselli" } },
+    { id: "imageLed", title: { en: "Image led", fi: "Kuvapainotteinen" } },
   ],
   defaultVariant: "standard",
   contentSchema: homepageFeaturedCollectionsContentSchema,
@@ -543,6 +553,7 @@ export const homepageFeaturedProductsDefinition = commerceListDefinition({
   variants: [
     { id: "standard", title: { en: "Standard", fi: "Tavallinen" } },
     { id: "editorial", title: { en: "Editorial", fi: "Toimituksellinen" } },
+    { id: "compact", title: { en: "Compact", fi: "Kompakti" } },
   ],
   defaultVariant: "standard",
   contentSchema: homepageFeaturedProductsContentSchema,
@@ -573,7 +584,7 @@ export const homepageFeaturedProductsDefinition = commerceListDefinition({
   assetSlot: {
     id: "productMedia",
     title: { en: "Product media", fi: "Tuotemedia" },
-    acceptedRoles: ["productMainImage", "productAlternativeImage", "editorialImage"],
+    acceptedRoles: ["productMainImage", "productAlternativeImage"],
     required: false,
     minItems: 0,
     maxItems: 64,
@@ -636,6 +647,10 @@ export const homepageCollectionNavigationDefinition = commerceListDefinition({
   variants: [
     { id: "standard", title: { en: "Standard", fi: "Tavallinen" } },
     { id: "compact", title: { en: "Compact", fi: "Kompakti" } },
+    { id: "editorialCards", title: { en: "Editorial cards", fi: "Toimitukselliset kortit" } },
+    { id: "grid", title: { en: "Grid", fi: "Ruudukko" } },
+    { id: "carousel", title: { en: "Carousel", fi: "Karuselli" } },
+    { id: "imageLed", title: { en: "Image led", fi: "Kuvapainotteinen" } },
   ],
   defaultVariant: "standard",
   contentSchema: homepageCollectionNavigationContentSchema,
@@ -765,6 +780,8 @@ export const homepagePromotionDefinition = marketingDefinition({
     { id: "split", title: { en: "Split", fi: "Jaettu" } },
     { id: "overlay", title: { en: "Overlay", fi: "Päällekkäinen" } },
     { id: "minimal", title: { en: "Minimal", fi: "Minimaalinen" } },
+    { id: "editorial", title: { en: "Editorial", fi: "Toimituksellinen" } },
+    { id: "imageLed", title: { en: "Image led", fi: "Kuvapainotteinen" } },
   ],
   defaultVariant: "split",
   contentSchema: homepagePromotionContentSchema,
@@ -871,6 +888,8 @@ export const homepageTrustDefinition = marketingDefinition({
     { id: "row", title: { en: "Row", fi: "Rivi" } },
     { id: "cards", title: { en: "Cards", fi: "Kortit" } },
     { id: "compact", title: { en: "Compact", fi: "Kompakti" } },
+    { id: "threeColumn", title: { en: "Three columns", fi: "Kolme palstaa" } },
+    { id: "minimal", title: { en: "Minimal", fi: "Minimaalinen" } },
   ],
   defaultVariant: "row",
   contentSchema: homepageTrustContentSchema,

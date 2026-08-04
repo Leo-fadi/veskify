@@ -56,8 +56,9 @@ describe("P9-05A rendered warm-store isolation", () => {
       "src",
       generated.fixture.aggregate.catalogue.products[1].images[0].url,
     );
-    const collectionGrid = rendered.container.querySelector(".category-grid");
-    expect(collectionGrid).toHaveAttribute("data-content-layout", "single");
+    const collectionGrid = rendered.container.querySelector(
+      "[data-component='homepageFeaturedCollections'] [data-item-count]",
+    );
     expect(collectionGrid).toHaveAttribute("data-item-count", "1");
     expect(collectionGrid?.children).toHaveLength(1);
   });

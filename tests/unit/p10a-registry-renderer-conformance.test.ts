@@ -53,10 +53,10 @@ describe("P10A-04B registry, manifest, and renderer conformance", () => {
         entry.id.startsWith("renderer-variant-target:dynamicProductDetail:"),
       ),
     ).toHaveLength(5);
-    expect(report.blockingDefects).toHaveLength(19);
+    expect(report.blockingDefects).toHaveLength(16);
     expect(report.metadataGaps).toHaveLength(25);
     expect(report.deliberateFutureCapabilities).toHaveLength(1);
-    expect(report.commercialGaps).toHaveLength(6);
+    expect(report.commercialGaps).toHaveLength(0);
     expect(collectLiveRendererRegistrations()).toHaveLength(27);
     expect(veskifyComponentDefinitionsV2.flatMap((definition) => definition.variants)).toHaveLength(
       veskifyComponentCapabilityManifest.manifest.entries.flatMap((entry) => entry.variants).length,
@@ -255,7 +255,7 @@ describe("P10A-04B registry, manifest, and renderer conformance", () => {
       ),
     ).toEqual([]);
     expect(report.blockingDefects.filter((entry) => entry.category === "binding-gap")).toHaveLength(
-      12,
+      9,
     );
     expect(report.blockingDefects.filter((entry) => entry.category === "asset-role-gap")).toEqual(
       [],
@@ -364,17 +364,25 @@ describe("P10A-04B registry, manifest, and renderer conformance", () => {
     ).toEqual([]);
   });
 
-  it("classifies intentionally unbridged registered homepage capabilities as commercial gaps", () => {
+  it("closes every verified homepage commercial gap through a canonical bridge and profile", () => {
     const report = createLiveRendererConformanceReport();
 
-    expect(report.commercialGaps.map((entry) => entry.componentType)).toEqual([
-      "homepageCollectionNavigation",
-      "homepageFeaturedCollections",
-      "homepageFeaturedProducts",
-      "homepageHero",
-      "homepagePromotion",
-      "homepageTrust",
-    ]);
+    expect(report.commercialGaps).toEqual([]);
+    const profileComponents = listExecutablePageBlueprintProfiles()
+      .filter((plan) => plan.pageType === "home")
+      .flatMap(
+        (plan) => plan.profile?.componentSelections.map((selection) => selection.component) ?? [],
+      );
+    expect(profileComponents).toEqual(
+      expect.arrayContaining([
+        "homepageHero",
+        "homepageFeaturedCollections",
+        "homepageFeaturedProducts",
+        "homepageCollectionNavigation",
+        "homepagePromotion",
+        "homepageTrust",
+      ]),
+    );
   });
 
   it("produces stable, immutable report evidence regardless of registration order", () => {

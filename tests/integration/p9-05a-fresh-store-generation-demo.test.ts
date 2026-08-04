@@ -273,7 +273,7 @@ describe("P9-05A fresh-store generation demo foundation", () => {
       expect(review.complete).toBe(true);
       expect(review.blockers).toEqual([]);
       expect(review.affectedPageCount).toBe(3);
-      expect(homepage.sections.some((section) => section.component === "hero")).toBe(true);
+      expect(homepage.sections.some((section) => section.component === "homepageHero")).toBe(true);
       expect(collectionCommerce?.content).toMatchObject({
         collectionId: "collection_lumo_jewellery",
         productIds: [P9_05A_SIMPLE_PRODUCT_ID, P9_05A_COMPLEX_PRODUCT_ID],
@@ -316,7 +316,7 @@ describe("P9-05A fresh-store generation demo foundation", () => {
         "media_lumo_ring_main",
         "media_lumo_ring_detail",
       ]);
-      expect(value.proposal.assetPlacementOperations).toEqual([]);
+      expect(value.proposal.assetPlacementOperations).toEqual(value.plan.approvedAssetPlacements);
       expect(value.proposal.targetFingerprint).toBe(value.request.targetFingerprint);
       expect(value.proposal.permissionFingerprint).toBe(value.request.permissionFingerprint);
     });

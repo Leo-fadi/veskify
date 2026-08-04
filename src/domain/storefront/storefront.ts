@@ -7,6 +7,10 @@ import {
   localizedTextSchema,
   safeExternalUrlSchema,
 } from "@/domain/shared";
+import {
+  approvedAssetPlacementOperationSchema,
+  approvedAssetPresentationSchema,
+} from "./approved-asset-placement";
 
 const recordSchema = z.record(z.string(), z.unknown());
 const componentTokenSchema = z
@@ -25,7 +29,7 @@ export const allowedSectionOverridesSchema = z
   })
   .strict();
 
-export const sectionInstanceSchema = z
+const sectionInstanceInputSchema = z
   .object({
     id: idSchema,
     component: componentTokenSchema,
@@ -34,8 +38,21 @@ export const sectionInstanceSchema = z
     content: recordSchema,
     props: recordSchema,
     styleOverrides: allowedSectionOverridesSchema.optional(),
+    // Older snapshots predate approved source asset transport. Normalizing to
+    // an explicit empty list keeps their serialized and fingerprinted shape
+    // deterministic without assigning them new asset authority.
+    approvedAssetPlacements: z.array(approvedAssetPlacementOperationSchema).optional(),
+    approvedAssetPresentations: z.array(approvedAssetPresentationSchema).optional(),
   })
   .strict();
+
+export const sectionInstanceSchema = sectionInstanceInputSchema.transform(
+  (section): z.output<typeof sectionInstanceInputSchema> => ({
+    ...section,
+    approvedAssetPlacements: section.approvedAssetPlacements ?? [],
+    approvedAssetPresentations: section.approvedAssetPresentations ?? [],
+  }),
+);
 
 export const pageTypeSchema = z.enum([
   "home",
@@ -79,6 +96,58 @@ export const pageModelSchema = z
         });
       }
     }
+    page.sections.forEach((section, sectionIndex) => {
+      const placementIdentities = new Set<string>();
+      (section.approvedAssetPlacements ?? []).forEach((placement, placementIndex) => {
+        if (placement.pageId !== page.id) {
+          context.addIssue({
+            code: "custom",
+            path: ["sections", sectionIndex, "approvedAssetPlacements", placementIndex, "pageId"],
+            message: "Approved asset placements must belong to their containing page.",
+          });
+        }
+        if (placement.componentId !== section.id || placement.componentType !== section.component) {
+          context.addIssue({
+            code: "custom",
+            path: ["sections", sectionIndex, "approvedAssetPlacements", placementIndex],
+            message: "Approved asset placements must target their containing component.",
+          });
+        }
+        const identity = `${placement.pageId}:${placement.componentId}:${placement.assetSlotId}:${placement.assetId}`;
+        if (placementIdentities.has(identity)) {
+          context.addIssue({
+            code: "custom",
+            path: [
+              "sections",
+              sectionIndex,
+              "approvedAssetPlacements",
+              placementIndex,
+              "assetSlotId",
+            ],
+            message:
+              "A component cannot contain an identical approved asset placement more than once.",
+          });
+        }
+        placementIdentities.add(identity);
+      });
+      (section.approvedAssetPresentations ?? []).forEach((presentation, presentationIndex) => {
+        const placement = (section.approvedAssetPlacements ?? []).find(
+          (candidate) => candidate.assetId === presentation.assetId,
+        );
+        if (
+          !placement ||
+          placement.role !== presentation.role ||
+          placement.assetRevision !== presentation.revision ||
+          placement.materialFingerprint !== presentation.materialFingerprint
+        ) {
+          context.addIssue({
+            code: "custom",
+            path: ["sections", sectionIndex, "approvedAssetPresentations", presentationIndex],
+            message: "Approved asset presentations must match a containing approved placement.",
+          });
+        }
+      });
+    });
   });
 
 const internalNavigationTargetSchema = z

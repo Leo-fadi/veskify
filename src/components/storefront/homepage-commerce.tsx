@@ -350,6 +350,7 @@ export function HomepageHeroSection(input: HomepageCommerceRendererInput) {
       className={sectionClass("hero", instance.variant, style)}
       data-content-width={props.contentWidth}
       data-component={instance.component}
+      data-variant={instance.variant}
       data-copy-treatment={usesOverlayCopy ? "overlay" : "default"}
       data-media-position={props.mediaPosition}
       data-media-state={media ? "approved" : "omitted"}
@@ -485,6 +486,7 @@ export function HomepageFeaturedCollectionsSection(input: HomepageCommerceRender
       aria-labelledby={content.heading ? headingId : undefined}
       className={sectionClass("featuredCollections", instance.variant, style)}
       data-component={instance.component}
+      data-variant={instance.variant}
       data-render-target={input.target}
       data-responsive-layout="content-driven"
     >
@@ -551,6 +553,7 @@ export function HomepageFeaturedProductsSection(input: HomepageCommerceRendererI
       aria-labelledby={content.heading ? headingId : undefined}
       className={sectionClass("featuredProducts", instance.variant, style)}
       data-component={instance.component}
+      data-variant={instance.variant}
       data-render-target={input.target}
       data-responsive-layout="product-type-independent"
     >
@@ -620,6 +623,7 @@ export function HomepageCollectionNavigationSection(input: HomepageCommerceRende
       }
       className={sectionClass("collectionNavigation", instance.variant, style)}
       data-component={instance.component}
+      data-variant={instance.variant}
       data-render-target={input.target}
       data-responsive-layout="content-driven"
     >
@@ -679,6 +683,7 @@ function EditorialSection({
       aria-labelledby={`${instance.id}-heading`}
       className={sectionClass(component, instance.variant, style)}
       data-component={instance.component}
+      data-variant={instance.variant}
       data-media-position={mediaPosition}
       data-media-state={media ? "approved" : "omitted"}
       data-render-target={input.target}
@@ -766,6 +771,7 @@ export function HomepageTrustSection(input: HomepageCommerceRendererInput) {
       }
       className={sectionClass("trust", instance.variant, style)}
       data-component={instance.component}
+      data-variant={instance.variant}
       data-render-target={input.target}
       data-responsive-layout="content-driven"
     >

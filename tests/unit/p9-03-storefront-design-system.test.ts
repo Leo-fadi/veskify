@@ -21,6 +21,7 @@ import {
   storefrontDesignSystemV1,
 } from "@/application/storefront-design-system";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
+import { createP905aFreshMerchantFixture } from "@/data/demo/p9-05a-fresh-store-generation";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import { brandSystemToCssVariables } from "@/domain/design-system";
 import {
@@ -28,7 +29,6 @@ import {
   createStandaloneServerWholeStorefrontPlanningAuthority,
 } from "@/integrations/ai/whole-storefront-runtime-authority";
 import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
-import { canonicalValueFingerprint } from "@/domain/storefront";
 
 type Seed = typeof aurumNordicSeed | typeof karvonenSeed;
 
@@ -226,11 +226,20 @@ describe("P9-03 Storefront Design System v1", () => {
     expect(generated(warm, "dynamicCollectionCommerce")).toMatchObject({
       instance: { variant: "editorial", props: { cardVariant: "standard" } },
     });
-    expect(technical.canonicalCommerceBindings).toEqual(premium.canonicalCommerceBindings);
-    expect(warm.canonicalCommerceBindings).toEqual(premium.canonicalCommerceBindings);
+    const protectedCommerceBindings = (plan: typeof premium) =>
+      plan.canonicalCommerceBindings.filter(
+        (binding) => binding.source !== "navigation" && binding.source !== "projectBrandContext",
+      );
+    expect(protectedCommerceBindings(technical)).toEqual(protectedCommerceBindings(premium));
+    expect(protectedCommerceBindings(warm)).toEqual(protectedCommerceBindings(premium));
+    [premium, technical, warm].forEach((plan) => {
+      expect(plan.canonicalCommerceBindings).toEqual(
+        expect.arrayContaining([expect.objectContaining({ source: "projectBrandContext" })]),
+      );
+    });
   });
 
-  it("materializes a missing required recipe section only from approved content and assets", async () => {
+  it("applies profile-authorized story omission and materializes selected story from approved content and assets", async () => {
     const missingAsset = await planningInput(aurumNordicSeed, {
       visualStyleDirection: "natural",
       typographyDirection: "soft",
@@ -239,27 +248,18 @@ describe("P9-03 Storefront Design System v1", () => {
     });
     const home = missingAsset.draft.pages.find((page) => page.type === "home")!;
     home.sections = home.sections.filter((section) => section.component !== "brandStory");
-    expect(() => createWholeStorefrontGenerationPlan(missingAsset)).toThrow(
-      /approve an editorial image/i,
-    );
+    const omittedPlan = createWholeStorefrontGenerationPlan(missingAsset);
+    expect(
+      omittedPlan.pagePlans
+        .find((page) => page.role === "homepage")
+        ?.components.some(
+          (component) => "instance" in component && component.instance.component === "brandStory",
+        ),
+    ).toBe(false);
 
-    const valid = structuredClone(missingAsset);
-    const warmRecipe = valid.recipeContext.designSystem.homepageRecipes.find(
-      (recipe) => recipe.id === "homeWarmStory",
-    )!;
-    const story = warmRecipe.sections.find((section) => section.component === "brandStory")!;
-    story.acceptedAssetRoles = ["logo"];
-    const designSystemMaterial: Partial<typeof valid.recipeContext.designSystem> = structuredClone(
-      valid.recipeContext.designSystem,
+    const valid = structuredClone(
+      createP905aFreshMerchantFixture("warmApproachable").planningInput,
     );
-    delete designSystemMaterial.fingerprint;
-    valid.recipeContext.designSystem.fingerprint = `storefront-design-system-${canonicalValueFingerprint(designSystemMaterial)}`;
-    valid.recipeContext.fingerprint = `storefront-recipes-${canonicalValueFingerprint({
-      templates: [...valid.recipeContext.templates].sort((left, right) =>
-        left.id.localeCompare(right.id),
-      ),
-      designSystem: valid.recipeContext.designSystem,
-    })}`;
     const plan = createWholeStorefrontGenerationPlan(valid);
     const generatedStory = plan.pagePlans
       .find((page) => page.role === "homepage")!
@@ -271,9 +271,17 @@ describe("P9-03 Storefront Design System v1", () => {
       instance: {
         variant: "editorial",
         content: {
-          heading: { en: aurumNordicSeed.project.name, fi: aurumNordicSeed.project.name },
+          heading: { fi: "Lumo Atelier" },
+          approvedAssetId: "asset_lumo_story",
           facts: [],
         },
+        assetAssignments: [
+          expect.objectContaining({
+            slotId: "brandStoryMedia",
+            assetId: "asset_lumo_story",
+            role: "editorialImage",
+          }),
+        ],
       },
     });
   });
@@ -302,7 +310,7 @@ describe("P9-03 Storefront Design System v1", () => {
     );
     expect(proposedSections).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ component: "hero", variant: "fullBleed" }),
+        expect.objectContaining({ component: "homepageHero", variant: "fullBleed" }),
       ]),
     );
     const dynamicCollection = proposedSections.find(

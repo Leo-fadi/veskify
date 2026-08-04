@@ -29,6 +29,10 @@ import {
 import { dynamicCollectionCommerceDefaultStyleOverrides } from "@/components/registry/dynamic-collection-commerce";
 import { dynamicProductDetailDefaultStyleOverrides } from "@/components/registry/dynamic-product-detail";
 import {
+  homepageCommerceBridgeComponentNames,
+  type HomepageCommerceBridgeComponent,
+} from "@/components/registry/homepage-commerce-bridge";
+import {
   wholeStorefrontProposalCompilationInputSchema,
   wholeStorefrontProposalSchema,
   type WholeStorefrontProposal,
@@ -137,6 +141,9 @@ function sourceComponent(
   let content = structuredClone(section.content);
   let bindings: ComponentInstanceV2["bindings"] = [];
   let styleOverrides: ComponentInstanceV2["styleOverrides"] = {};
+  const homepageBridgeComponent = homepageCommerceBridgeComponentNames.find(
+    (component): component is HomepageCommerceBridgeComponent => component === section.component,
+  );
   if (section.component === "dynamicCollectionCommerce") {
     const { collectionId, productIds, canonicalRevision, ...presentationContent } =
       dynamicCollectionCommerceBridgeContentSchema.parse(content);
@@ -175,6 +182,38 @@ function sourceComponent(
               source: "productList" as const,
               productIds: relatedProductIds,
               revision: canonicalRevision,
+            },
+          ]
+        : []),
+    ];
+  } else if (homepageBridgeComponent) {
+    const revision = plan.target.canonicalCommerceFingerprint;
+    styleOverrides = { surface: "plain" };
+    bindings = [
+      {
+        slotId: "presentationContext",
+        source: "projectBrandContext",
+        projectId: plan.target.projectId,
+        revision,
+      },
+      ...(homepageBridgeComponent === "homepageFeaturedCollections" ||
+      homepageBridgeComponent === "homepageCollectionNavigation"
+        ? [
+            {
+              slotId: "collections",
+              source: "collectionList" as const,
+              collectionIds: plan.target.collections.map((collection) => collection.id),
+              revision,
+            },
+          ]
+        : []),
+      ...(homepageBridgeComponent === "homepageFeaturedProducts"
+        ? [
+            {
+              slotId: "products",
+              source: "productList" as const,
+              productIds: [...plan.target.productIds],
+              revision,
             },
           ]
         : []),
@@ -263,7 +302,10 @@ function coordinatedRuntimeComponent(
 ): WholeStorefrontRuntimeComponent {
   if (plan.tokenRefinementPlan !== null) return component;
   const materialization = executableMaterializationForPage(plan, pageRole);
-  const selection = materialization?.slots.find((slot) => slot.component === component.component);
+  const selection =
+    component.component === "header" || component.component === "footer"
+      ? undefined
+      : materialization?.slots.find((slot) => slot.component === component.component);
   return selection ? { ...component, variant: selection.variant } : component;
 }
 
@@ -384,7 +426,14 @@ function plannedPage(
   );
   const retainedById = new Map(
     pagePlan.components.flatMap((component) =>
-      "instance" in component ? [] : [[component.componentId, component] as const],
+      "instance" in component || component.disposition === "removed"
+        ? []
+        : [[component.componentId, component] as const],
+    ),
+  );
+  const removedById = new Set(
+    pagePlan.components.flatMap((component) =>
+      "instance" in component || component.disposition !== "removed" ? [] : [component.componentId],
     ),
   );
   const replacements = pagePlan.components.filter(
@@ -428,6 +477,7 @@ function plannedPage(
   const insertedReplacements = new Set<string>();
   if (originalPage) {
     for (const source of originalPage.components) {
+      if (removedById.has(source.id)) continue;
       const replacement = replacementByTarget.get(source.id);
       if (replacement) {
         if (!insertedReplacements.has(replacement.instance.id)) {
@@ -488,7 +538,7 @@ function plannedPage(
     ? originalPage.components
         .filter(
           (component) =>
-            replacementByTarget.has(component.id) &&
+            (replacementByTarget.has(component.id) || removedById.has(component.id)) &&
             !components.some((candidate) => candidate.id === component.id),
         )
         .map((component) => component.id)
@@ -521,19 +571,34 @@ function withPlacement(
       "An approved source asset targets a component that is not present in the proposed storefront.",
     );
   }
+  const existing = component.assetAssignments.find(
+    (assignment) =>
+      assignment.slotId === placement.assetSlotId && assignment.assetId === placement.assetId,
+  );
+  if (existing && existing.role !== placement.role) {
+    invalid(
+      "duplicate-operation-identity",
+      "An approved source asset placement conflicts with its component assignment.",
+    );
+  }
+  if (!existing) {
+    component.assetAssignments.push({
+      slotId: placement.assetSlotId,
+      assetId: placement.assetId,
+      role: placement.role,
+    });
+  }
   if (
-    component.assetAssignments.some(
-      (assignment) =>
-        assignment.slotId === placement.assetSlotId && assignment.assetId === placement.assetId,
+    state.approvedAssetPlacements.some(
+      (candidate) =>
+        candidate.pageId === placement.pageId &&
+        candidate.componentId === placement.componentId &&
+        candidate.assetSlotId === placement.assetSlotId &&
+        candidate.assetId === placement.assetId,
     )
   ) {
     invalid("duplicate-operation-identity", "An approved source asset placement is duplicated.");
   }
-  component.assetAssignments.push({
-    slotId: placement.assetSlotId,
-    assetId: placement.assetId,
-    role: placement.role,
-  });
   state.approvedAssetPlacements.push(structuredClone(placement));
 }
 

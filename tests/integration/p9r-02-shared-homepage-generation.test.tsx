@@ -45,9 +45,14 @@ function retainedHomepageContent(snapshot: Pick<StorefrontSnapshot, "pages">) {
   const page = homepage(snapshot);
   const section = (component: string) => page.sections.find((item) => item.component === component);
   return {
-    heroMedia: section("hero")?.content.media,
-    collectionIds: section("featuredCategories")?.content.collectionIds,
-    productIds: section("productGrid")?.content.productIds,
+    heroHeading: section("homepageHero")?.content.heading ?? section("hero")?.content.title,
+    collectionHeading:
+      section("homepageFeaturedCollections")?.content.heading ??
+      section("homepageCollectionNavigation")?.content.heading ??
+      section("featuredCategories")?.content.heading,
+    productHeading:
+      section("homepageFeaturedProducts")?.content.heading ??
+      section("productGrid")?.content.heading,
   };
 }
 
@@ -96,7 +101,9 @@ function runtimeHomepage(
       visible: component.visible,
       content: component.content,
       props: component.props,
-      styleOverrides: component.styleOverrides,
+      ...(["plain", "soft", "contrast"].includes(String(component.styleOverrides.surface))
+        ? {}
+        : { styleOverrides: component.styleOverrides }),
     })),
   };
 }
@@ -217,18 +224,6 @@ describe("P9R-02 shared-frame and homepage generation", () => {
     const premium = await generateP905aScenario("premiumEditorial");
     const modern = await generateP905aScenario("modernTechnical");
     const scenarios = { premiumEditorial: premium, modernTechnical: modern };
-    const expectedOrders = {
-      premiumEditorial: ["header", "hero", "featuredCategories", "productGrid", "footer"],
-      modernTechnical: [
-        "header",
-        "hero",
-        "productGrid",
-        "featuredCategories",
-        "brandStory",
-        "footer",
-      ],
-    } as const;
-
     for (const directionId of directions) {
       const generated = scenarios[directionId];
       const accepted = createP905aAcceptanceCoordinator(generated).accept();
@@ -237,14 +232,17 @@ describe("P9R-02 shared-frame and homepage generation", () => {
       const compiledHome = generated.compiledProposal.proposedStorefront.pages.find(
         (page) => page.role === "homepage",
       );
+      const expectedOrder = selectedHomepageVariants(generated.plan)
+        .filter((selection) =>
+          compiledHome?.components.some((component) => component.component === selection.component),
+        )
+        .map((selection) => selection.component);
       expect(generated.plan.designSystemSelection.directionId).toBe(directionId);
       expect(compiledHome?.components.map((component) => component.component)).toEqual(
-        expectedOrders[directionId],
+        expectedOrder,
       );
-      expect(componentOrder(generated.proposal.proposedStorefront)).toEqual(
-        expectedOrders[directionId],
-      );
-      expect(componentOrder(accepted.activeDraft)).toEqual(expectedOrders[directionId]);
+      expect(componentOrder(generated.proposal.proposedStorefront)).toEqual(expectedOrder);
+      expect(componentOrder(accepted.activeDraft)).toEqual(expectedOrder);
       expect(retainedHomepageContent(accepted.activeDraft)).toEqual(
         retainedHomepageContent(generated.fixture.draft),
       );
@@ -268,7 +266,11 @@ describe("P9R-02 shared-frame and homepage generation", () => {
       generated: modern,
       accepted: createP905aAcceptanceCoordinator(modern).accept().activeDraft,
     });
-    expect(componentOrder(saved.preview)).toEqual(expectedOrders.modernTechnical);
+    expect(componentOrder(saved.preview)).toEqual(
+      selectedHomepageVariants(modern.plan)
+        .filter((selection) => componentOrder(saved.preview).includes(selection.component))
+        .map((selection) => selection.component),
+    );
 
     const premiumRender = renderHomepage(
       createP905aAcceptanceCoordinator(premium).accept().activeDraft,
@@ -277,9 +279,7 @@ describe("P9R-02 shared-frame and homepage generation", () => {
     expect(
       premiumRender.container.querySelector(".store-header.store-variant--transparent nav"),
     ).toBeTruthy();
-    expect(
-      premiumRender.container.querySelector(".store-hero.store-variant--fullBleed"),
-    ).toBeTruthy();
+    expect(premiumRender.container.querySelector('[data-component="homepageHero"]')).toBeTruthy();
     expect(
       premiumRender.container.querySelector(".store-footer.store-variant--editorial"),
     ).toBeTruthy();
@@ -288,11 +288,9 @@ describe("P9R-02 shared-frame and homepage generation", () => {
     expect(
       modernRender.container.querySelector(".store-header.store-variant--compact nav"),
     ).toBeTruthy();
+    expect(modernRender.container.querySelector('[data-component="homepageHero"]')).toBeTruthy();
     expect(
-      modernRender.container.querySelector(".store-hero.store-variant--asymmetric"),
-    ).toBeTruthy();
-    expect(
-      modernRender.container.querySelector(".store-section.store-variant--compact .product-grid"),
+      modernRender.container.querySelector('[data-component="homepageFeaturedProducts"]'),
     ).toBeTruthy();
     expect(
       modernRender.container.querySelector(".store-footer.store-variant--compact"),
@@ -342,6 +340,53 @@ describe("P9R-02 shared-frame and homepage generation", () => {
       generated.page.components.forEach((component, index) => {
         const source = originalRuntime.components.find((section) => section.id === component.id);
         if (!source) return;
+        if (source.component !== component.component) {
+          expect([
+            "homepageHero",
+            "homepageFeaturedCollections",
+            "homepageFeaturedProducts",
+            "homepageCollectionNavigation",
+            "homepagePromotion",
+            "homepageTrust",
+          ]).toContain(component.component);
+          expect(component.bindings).toEqual(
+            expect.arrayContaining([expect.objectContaining({ source: "projectBrandContext" })]),
+          );
+          if (component.component === "homepageHero") {
+            expect(component.content.heading).toEqual(source.content.title);
+            expect(component.content.supportingCopy).toEqual(source.content.body);
+          }
+          if (
+            component.component === "homepageFeaturedCollections" ||
+            component.component === "homepageCollectionNavigation"
+          ) {
+            expect(component.content.heading).toEqual(source.content.heading);
+            expect(component.bindings).toContainEqual(
+              expect.objectContaining({
+                source: "collectionList",
+                collectionIds: source.content.collectionIds,
+              }),
+            );
+          }
+          if (component.component === "homepageFeaturedProducts") {
+            expect(component.content.heading).toEqual(source.content.heading);
+            expect(component.bindings).toContainEqual(
+              expect.objectContaining({
+                source: "productList",
+                productIds: source.content.productIds,
+              }),
+            );
+          }
+          component.assetAssignments.forEach((assignment) => {
+            expect(
+              generated.planningInput.approvedAssetContext?.assets.some(
+                (asset) => asset.assetId === assignment.assetId && asset.role === assignment.role,
+              ),
+            ).toBe(true);
+          });
+          expect(component.styleOverrides).toEqual({ surface: "plain" });
+          return;
+        }
         const expectedPresentation = expectedCompilerOwnedPresentationProps(
           component,
           index,
@@ -389,12 +434,12 @@ describe("P9R-02 shared-frame and homepage generation", () => {
       aurumNordicSeed.catalogue,
     );
     expect(
-      premiumRender.container.querySelector(".store-variant--imageLed.brand-story"),
+      premiumRender.container.querySelector('[data-component="homepagePromotion"]'),
     ).toBeTruthy();
     expect(
       premiumRender.container.querySelector(".campaign-banner.store-variant--imageOverlay"),
     ).toBeNull();
-    expect(premiumRender.container.querySelector(".benefits.store-variant--minimal")).toBeTruthy();
+    expect(premiumRender.container.querySelector('[data-component="homepageTrust"]')).toBeTruthy();
 
     const modernRender = renderPage(
       runtimeHomepage(aurumNordicSeed.draftSnapshot, modern.page.components),
@@ -407,8 +452,6 @@ describe("P9R-02 shared-frame and homepage generation", () => {
     expect(
       modernRender.container.querySelector(".campaign-banner.store-variant--minimal"),
     ).toBeNull();
-    expect(
-      modernRender.container.querySelector(".benefits.store-variant--threeColumn"),
-    ).toBeTruthy();
+    expect(modernRender.container.querySelector('[data-component="homepageTrust"]')).toBeTruthy();
   });
 });

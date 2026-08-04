@@ -141,27 +141,34 @@ describe("P9R-01 whole-storefront AI composition orchestrator", () => {
         "compact",
       );
     });
-    expect(homepage.sections.map((section) => section.component)).toEqual([
-      "header",
-      "hero",
-      "productGrid",
-      "featuredCategories",
-      "brandStory",
-      "footer",
-    ]);
-    expect(homepage.sections.find((section) => section.component === "hero")?.variant).toBe(
-      "asymmetric",
+    const homepageProfile = plan.pageBlueprintMaterializations.find(
+      (materialization) => materialization.pageType === "home",
     );
-    expect(homepage.sections.find((section) => section.component === "productGrid")?.variant).toBe(
-      "compact",
+    if (!homepageProfile) throw new Error("Missing authoritative homepage profile.");
+    const realizedHomepageSlots = homepageProfile.slots.filter((slot) =>
+      homepage.sections.some((section) => section.component === slot.component),
     );
-    expect(homepage.sections.find((section) => section.component === "productGrid")?.props).toEqual(
-      expect.objectContaining({
-        background: "background",
-        density: "compact",
-        shape: "square",
-        typography: "sans",
-      }),
+    expect(homepage.sections.map((section) => section.component)).toEqual(
+      realizedHomepageSlots.map((slot) => slot.component),
+    );
+    expect(homepage.sections.map((section) => section.variant)).toEqual(
+      realizedHomepageSlots.map((slot) => slot.variant),
+    );
+    const plannedHomepageProducts = plan.pagePlans
+      .find((page) => page.role === "homepage")
+      ?.components.find(
+        (component) =>
+          "instance" in component && component.instance.component === "homepageFeaturedProducts",
+      );
+    expect(
+      plannedHomepageProducts && "instance" in plannedHomepageProducts
+        ? plannedHomepageProducts.instance.bindings
+        : undefined,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ source: "projectBrandContext" }),
+        expect.objectContaining({ source: "productList" }),
+      ]),
     );
     expect(homepage.sections).not.toEqual(baselineHomepage.sections);
     expect(collection.sections.map((section) => section.component)).toEqual([

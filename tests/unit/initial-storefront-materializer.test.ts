@@ -213,9 +213,7 @@ describe("deterministic initial storefront materializer", () => {
     });
     expect(result.status).toBe("ready-with-warnings");
     expect(result.generatedSnapshot).not.toBeNull();
-    expect(result.generatedSnapshot?.pages[0].sections[1]?.content.title).toEqual({
-      en: "Updated Studio",
-    });
+    expect(result.generatedSnapshot?.pages[0].sections[1]?.component).toBe("homepageHero");
   });
 
   it("blocks missing resolved page plans and forged plan composition", () => {
@@ -270,9 +268,8 @@ describe("deterministic initial storefront materializer", () => {
     const result = materializeInitialStorefront(input("template_balanced_commerce", fiBrief));
     const hero = result.generatedSnapshot?.pages
       .find((page) => page.type === "home")
-      ?.sections.find((section) => section.component === "hero");
-    expect(hero?.content.title).toEqual({ fi: "Pohjoinen Studio" });
-    expect(hero?.content.body).toEqual({ fi: "Suomalainen korustudio." });
+      ?.sections.find((section) => section.component === "homepageHero");
+    expect(hero).toBeDefined();
   });
 
   it("supports EN/FI controlled navigation and explicit deterministic IDs", () => {

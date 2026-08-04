@@ -34,9 +34,14 @@ function pageAuthority(pageType: "home" | "collection" | "product", componentTyp
   const manifest = skillCapabilityKnowledge.getManifestReference();
   const profile = skillCapabilityKnowledge.listExecutableProfiles({ manifest, pageType })[0];
   if (!profile) throw new Error(`Expected a ${pageType} executable profile.`);
-  const selection = componentType
-    ? profile.componentSelections.find((candidate) => candidate.componentType === componentType)
-    : profile.componentSelections[0];
+  const selection =
+    componentType === "hero"
+      ? profile.componentSelections.find(
+          (candidate) => candidate.slotId === "hero" && candidate.componentType === "homepageHero",
+        )
+      : componentType
+        ? profile.componentSelections.find((candidate) => candidate.componentType === componentType)
+        : profile.componentSelections[0];
   if (!selection) throw new Error(`Expected a ${componentType ?? "registered"} selection.`);
   return {
     pageId: `page_governed_${pageType}`,
@@ -266,11 +271,8 @@ describe("P10A-05B governed skill package registry", () => {
   it("limits improveHero to the registered hero selection and exact slot identity", () => {
     const hero = pageAuthority("home", "hero");
     expect(resultCode(followUp("improveHero", [hero]))).toBeUndefined();
-    for (const componentType of ["header", "footer", "productGrid"] as const) {
-      const profile =
-        componentType === "productGrid"
-          ? pageAuthority("home", componentType)
-          : pageAuthority("home", componentType);
+    for (const componentType of ["header", "footer", "homepageFeaturedProducts"] as const) {
+      const profile = pageAuthority("home", componentType);
       expect(resultCode(followUp("improveHero", [profile]))).toBe("invalidSlotSelection");
     }
     expect(
