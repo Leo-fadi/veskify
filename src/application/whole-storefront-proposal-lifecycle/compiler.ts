@@ -1455,9 +1455,9 @@ function componentProjectionForCoordinatedFollowUp(
       index < collectionPlacements.length
         ? [
             {
-              assetId: collectionPlacements[index]!.assetId,
+              assetId: collectionPlacements[index].assetId,
               role:
-                collectionPlacements[index]!.role === "editorialImage"
+                collectionPlacements[index].role === "editorialImage"
                   ? "editorial"
                   : "card",
             },
