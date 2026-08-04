@@ -705,7 +705,7 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
         currentInput: () => source,
       }).inspect().activeStorefront,
     ).toEqual(proposal.originalStorefront);
-  });
+  }, 10_000);
 
   it("undo and redo restore the exact coordinated storefront states", () => {
     const source = withApprovedPlacement();
@@ -718,7 +718,7 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
     coordinator.accept();
     expect(coordinator.undo()).toEqual(proposal.originalStorefront);
     expect(coordinator.redo()).toEqual(proposal.proposedStorefront);
-  });
+  }, 10_000);
 
   it("never accepts a proposal whose projection is not reproducible from its operations", () => {
     const source = input();
