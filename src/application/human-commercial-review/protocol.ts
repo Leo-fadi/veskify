@@ -5,7 +5,7 @@ import {
   goldenStoreEvaluationSurfaces,
   goldenStoreEvaluationViewports,
 } from "@/application/golden-store-evaluation";
-import { canonicalValueFingerprint } from "@/domain/storefront";
+import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 import {
   HUMAN_COMMERCIAL_REVIEW_PROTOCOL_VERSION,
   HumanCommercialReviewProtocolError,
@@ -34,6 +34,41 @@ function coverageKey(value: {
   return [value.lifecycle, value.surface, value.locale, value.viewport].join(":");
 }
 
+type AuthorityFingerprintPayload = Omit<HumanCommercialReviewAuthority, "fingerprint">;
+
+/**
+ * Keeps authority hashing deterministic even when independently supplied lifecycle
+ * or profile arrays arrive in a different, but equivalent, order.
+ */
+function normalizedAuthorityFingerprintPayload(
+  authority: AuthorityFingerprintPayload,
+): AuthorityFingerprintPayload {
+  return {
+    evaluationId: authority.evaluationId,
+    evaluationFingerprint: authority.evaluationFingerprint,
+    fixture: structuredClone(authority.fixture),
+    canonicalSnapshot: structuredClone(authority.canonicalSnapshot),
+    proposalPreviewSnapshotFingerprint: authority.proposalPreviewSnapshotFingerprint,
+    manifest: structuredClone(authority.manifest),
+    pageBlueprintProfiles: authority.pageBlueprintProfiles
+      .map((profile) => structuredClone(profile))
+      .sort((left, right) =>
+        `${left.profileId}:${left.profileVersion}`.localeCompare(
+          `${right.profileId}:${right.profileVersion}`,
+        ),
+      ),
+    lifecycle: authority.lifecycle
+      .map((entry) => structuredClone(entry))
+      .sort((left, right) => left.state.localeCompare(right.state)),
+    rendererScenarioFingerprint: authority.rendererScenarioFingerprint,
+    brandSystemFingerprint: authority.brandSystemFingerprint,
+  };
+}
+
+function authorityFingerprint(authority: AuthorityFingerprintPayload): string {
+  return canonicalValueFingerprint(normalizedAuthorityFingerprintPayload(authority));
+}
+
 /** Derives review authority from P10A-07A rather than accepting a parallel authority model. */
 export function createHumanCommercialReviewAuthority(
   evaluation: GoldenStoreEvaluationRun,
@@ -53,7 +88,7 @@ export function createHumanCommercialReviewAuthority(
       materializationFingerprint: entry.fingerprint,
     }))
     .sort((left, right) => left.profileId.localeCompare(right.profileId));
-  const authority = {
+  const authority: AuthorityFingerprintPayload = {
     evaluationId: evaluation.evaluationId,
     evaluationFingerprint: evaluation.fingerprint,
     fixture: structuredClone(evaluation.fixture),
@@ -80,7 +115,7 @@ export function createHumanCommercialReviewAuthority(
     ),
     brandSystemFingerprint: evaluation.structuralQualitySignals.brandSystemFingerprint,
   };
-  return deepFreeze({ ...authority, fingerprint: canonicalValueFingerprint(authority) });
+  return deepFreeze({ ...authority, fingerprint: authorityFingerprint(authority) });
 }
 
 function parseInput(input: unknown): HumanCommercialReviewInput {
@@ -111,10 +146,38 @@ function assertAuthority(
   supplied: HumanCommercialReviewAuthority,
   current: HumanCommercialReviewAuthority,
 ): void {
-  if (supplied.fingerprint !== current.fingerprint) {
+  assertAuthorityFingerprintIntegrity(supplied);
+  assertAuthorityFingerprintIntegrity(current);
+  if (
+    canonicalValueString(normalizedAuthorityFingerprintPayload(supplied)) !==
+    canonicalValueString(normalizedAuthorityFingerprintPayload(current))
+  ) {
     throw new HumanCommercialReviewProtocolError(
       "stale-authority",
       "Human commercial review authority is stale against the current deterministic evaluation.",
+    );
+  }
+}
+
+function assertAuthorityFingerprintIntegrity(authority: HumanCommercialReviewAuthority): void {
+  if (authority.fingerprint !== authorityFingerprint(authority)) {
+    throw new HumanCommercialReviewProtocolError(
+      "invalid-input",
+      "Human commercial review authority fingerprint must match every retained authority field.",
+    );
+  }
+}
+
+function assertChronology(input: HumanCommercialReviewInput): void {
+  const reviewedAt = Date.parse(input.reviewer.reviewedAt);
+  const capturedAt = input.reviewer.evidenceCapturedAt;
+  const evidenceAfterReview = input.evidence.some(
+    (reference) => reference.capturedAt !== null && Date.parse(reference.capturedAt) > reviewedAt,
+  );
+  if ((capturedAt !== null && Date.parse(capturedAt) > reviewedAt) || evidenceAfterReview) {
+    throw new HumanCommercialReviewProtocolError(
+      "invalid-input",
+      "Human commercial review evidence cannot be captured after the retained review time.",
     );
   }
 }
@@ -218,6 +281,44 @@ function assertReferences(input: HumanCommercialReviewInput): void {
   }
 }
 
+function isQualifyingVisualEvidence(
+  reference: HumanCommercialReviewInput["evidence"][number],
+  coverage: HumanCommercialReviewInput["coverage"][number],
+): boolean {
+  return (
+    (reference.kind === "screenshot" || reference.kind === "browser-route") &&
+    reference.lifecycle === coverage.lifecycle &&
+    reference.surface === coverage.surface &&
+    reference.locale === coverage.locale &&
+    reference.viewport === coverage.viewport &&
+    reference.fingerprint === coverage.rendererOutputFingerprint
+  );
+}
+
+function assertVisualEvidence(input: HumanCommercialReviewInput): boolean {
+  const evidenceById = new Map(input.evidence.map((reference) => [reference.id, reference]));
+  for (const reference of input.evidence) {
+    if (reference.kind !== "screenshot" && reference.kind !== "browser-route") continue;
+    const bindsCurrentCoverage = input.coverage.some(
+      (coverage) =>
+        coverage.evidenceReferenceIds.includes(reference.id) &&
+        isQualifyingVisualEvidence(reference, coverage),
+    );
+    if (!bindsCurrentCoverage) {
+      throw new HumanCommercialReviewProtocolError(
+        "invalid-decision",
+        "Screenshot and browser evidence must bind to a current reviewed scenario.",
+      );
+    }
+  }
+  return input.coverage.every((coverage) =>
+    coverage.evidenceReferenceIds.some((id) => {
+      const reference = evidenceById.get(id);
+      return reference !== undefined && isQualifyingVisualEvidence(reference, coverage);
+    }),
+  );
+}
+
 function assertDecisions(
   input: HumanCommercialReviewInput,
 ): "passed" | "failed" | "blocked" | "incomplete" {
@@ -239,6 +340,18 @@ function assertDecisions(
   return "passed";
 }
 
+function findingIsResolvedOrAccepted(
+  finding: HumanCommercialReviewInput["findings"][number],
+): boolean {
+  return finding.status === "resolved" || finding.disposition === "accepted-risk";
+}
+
+function hasUnresolvedBlocker(input: HumanCommercialReviewInput): boolean {
+  return input.findings.some(
+    (finding) => finding.severity === "blocker" && !findingIsResolvedOrAccepted(finding),
+  );
+}
+
 function assertFindings(input: HumanCommercialReviewInput): void {
   const ids = new Set<string>();
   const decisions = new Map(input.decisions.map((decision) => [decision.criterionId, decision]));
@@ -250,6 +363,30 @@ function assertFindings(input: HumanCommercialReviewInput): void {
       );
     }
     ids.add(finding.id);
+    if (
+      (finding.disposition === "needs-correction" &&
+        finding.status !== "open" &&
+        finding.status !== "resolved") ||
+      (finding.disposition === "accepted-risk" && finding.status !== "acknowledged") ||
+      (finding.disposition === "not-reproducible" && finding.status !== "resolved") ||
+      (finding.disposition === "deferred" && finding.status !== "deferred")
+    ) {
+      throw new HumanCommercialReviewProtocolError(
+        "invalid-finding",
+        "Finding disposition and status must use the retained review vocabulary consistently.",
+      );
+    }
+    const decision = decisions.get(finding.criterionId);
+    if (
+      decision?.decision === "passed" &&
+      ((finding.disposition === "needs-correction" && finding.status === "open") ||
+        (finding.severity === "blocker" && !findingIsResolvedOrAccepted(finding)))
+    ) {
+      throw new HumanCommercialReviewProtocolError(
+        "invalid-finding",
+        "Passed criteria cannot retain unresolved corrections or blocker findings.",
+      );
+    }
   }
   for (const decision of decisions.values()) {
     if (
@@ -264,6 +401,18 @@ function assertFindings(input: HumanCommercialReviewInput): void {
   }
 }
 
+function deriveOverallDecision(
+  input: HumanCommercialReviewInput,
+  hasCompleteVisualEvidence: boolean,
+): "passed" | "failed" | "blocked" | "incomplete" {
+  const decisionState = assertDecisions(input);
+  if (decisionState === "incomplete") return "incomplete";
+  if (hasUnresolvedBlocker(input)) return "blocked";
+  if (decisionState === "blocked") return "blocked";
+  if (decisionState === "failed") return "failed";
+  return hasCompleteVisualEvidence ? "passed" : "blocked";
+}
+
 /**
  * Creates an immutable human-review record. A protocol disposition has no ability
  * to mutate a draft, accept a proposal, publish a storefront, or contact a provider.
@@ -273,12 +422,14 @@ export function createHumanCommercialReviewRecord(
   evaluation: GoldenStoreEvaluationRun,
 ): HumanCommercialReviewRecord {
   const input = parseInput(inputValue);
+  assertChronology(input);
   const currentAuthority = createHumanCommercialReviewAuthority(evaluation);
   assertAuthority(input.authority, currentAuthority);
   assertReferences(input);
   assertCoverage(input, evaluation);
-  const overallDecision = assertDecisions(input);
   assertFindings(input);
+  const hasCompleteVisualEvidence = assertVisualEvidence(input);
+  const overallDecision = deriveOverallDecision(input, hasCompleteVisualEvidence);
   const record = {
     ...structuredClone(input),
     overallDecision,
@@ -306,9 +457,13 @@ export function assessHumanCommercialReviewStaleness(
   reviewedAuthorityFingerprint: string;
 }> {
   const record = parseRecord(recordValue);
+  assertChronology(record);
+  assertAuthorityFingerprintIntegrity(record.authority);
   const current = createHumanCommercialReviewAuthority(evaluation);
   return deepFreeze({
-    stale: record.authority.fingerprint !== current.fingerprint,
+    stale:
+      canonicalValueString(normalizedAuthorityFingerprintPayload(record.authority)) !==
+      canonicalValueString(normalizedAuthorityFingerprintPayload(current)),
     currentAuthorityFingerprint: current.fingerprint,
     reviewedAuthorityFingerprint: record.authority.fingerprint,
   });

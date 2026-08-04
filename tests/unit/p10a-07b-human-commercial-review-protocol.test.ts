@@ -102,14 +102,14 @@ function reviewInput(overrides: Record<string, unknown> = {}) {
   const run = evaluationRun();
   const evidence: HumanCommercialReviewInput["evidence"] = run.scenarios.map((scenario, index) => ({
     id: `evidence-${index}`,
-    kind: "renderer-output" as const,
-    reference: scenario.evidenceReference,
+    kind: "screenshot" as const,
+    reference: `artifacts/${scenario.evidenceReference}.png`,
     lifecycle: scenario.lifecycle,
     surface: scenario.surface,
     locale: scenario.locale,
     viewport: scenario.viewport,
     fingerprint: scenario.rendererOutputFingerprint,
-    capturedAt: null,
+    capturedAt: "2026-08-04T09:30:00.000Z",
   }));
   const coverage: HumanCommercialReviewInput["coverage"] = run.scenarios.map((scenario, index) => ({
     id: coverageId(index),
@@ -130,7 +130,7 @@ function reviewInput(overrides: Record<string, unknown> = {}) {
       reviewerId: "reviewer-merchant-team",
       reviewedAt: "2026-08-04T10:00:00.000Z",
       evidenceCapturedAt: "2026-08-04T09:30:00.000Z",
-      method: "retained-evidence-review" as const,
+      method: "manual-browser-review" as const,
     },
     evidence,
     coverage,
@@ -217,10 +217,18 @@ describe("P10A-07B human commercial review protocol", () => {
     );
   });
 
-  it("rejects a stale evaluation fingerprint before a record is created", () => {
+  it("rejects a self-inconsistent authority before a record is created", () => {
     const { run, input } = reviewInput();
     input.authority = { ...input.authority, evaluationFingerprint: "stale" };
     input.authority.fingerprint = "stale";
+    expect(errorCode(() => createHumanCommercialReviewRecord(input, run))).toBe("invalid-input");
+  });
+
+  it("rejects a valid but stale authority before a record is created", () => {
+    const { run, input } = reviewInput();
+    const changed = structuredClone(run);
+    changed.manifest.fingerprint = "changed-manifest";
+    input.authority = createHumanCommercialReviewAuthority(changed);
     expect(errorCode(() => createHumanCommercialReviewRecord(input, run))).toBe("stale-authority");
   });
 
@@ -268,6 +276,52 @@ describe("P10A-07B human commercial review protocol", () => {
     const { run, input } = reviewInput();
     const record = createHumanCommercialReviewRecord(input, run);
     expect(assessHumanCommercialReviewStaleness(record, run)).toMatchObject({ stale: false });
+  });
+
+  it("rejects a changed snapshot field retained with an old authority fingerprint", () => {
+    const { run, input } = reviewInput();
+    input.authority = {
+      ...input.authority,
+      canonicalSnapshot: { ...input.authority.canonicalSnapshot, revision: 99 },
+    };
+    expect(errorCode(() => createHumanCommercialReviewRecord(input, run))).toBe("invalid-input");
+  });
+
+  it("rejects changed manifest and protected-state fields retained with an old authority fingerprint", () => {
+    const { run, input } = reviewInput();
+    input.authority = {
+      ...input.authority,
+      manifest: { ...input.authority.manifest, fingerprint: "changed-manifest" },
+      lifecycle: input.authority.lifecycle.map((entry, index) =>
+        index === 0
+          ? {
+              ...entry,
+              protectedCommerceFingerprint: "changed-commerce",
+              approvedAssetFingerprint: "changed-assets",
+            }
+          : entry,
+      ),
+    };
+    expect(errorCode(() => createHumanCommercialReviewRecord(input, run))).toBe("invalid-input");
+  });
+
+  it("accepts equivalent authority arrays in a different order", () => {
+    const { run, input } = reviewInput();
+    input.authority = {
+      ...input.authority,
+      pageBlueprintProfiles: [...input.authority.pageBlueprintProfiles].reverse(),
+      lifecycle: [...input.authority.lifecycle].reverse(),
+    };
+    expect(createHumanCommercialReviewRecord(input, run).overallDecision).toBe("passed");
+  });
+
+  it("rejects a self-inconsistent retained authority during staleness assessment", () => {
+    const { run, input } = reviewInput();
+    const record = structuredClone(createHumanCommercialReviewRecord(input, run));
+    record.authority.manifest.fingerprint = "self-inconsistent";
+    expect(errorCode(() => assessHumanCommercialReviewStaleness(record, run))).toBe(
+      "invalid-input",
+    );
   });
 
   it("rejects duplicate coverage for one scenario", () => {
@@ -322,6 +376,49 @@ describe("P10A-07B human commercial review protocol", () => {
     expect(createHumanCommercialReviewRecord(input, run).overallDecision).toBe("incomplete");
   });
 
+  it("blocks deterministic-only evidence from producing a passed human review", () => {
+    const { run, input } = reviewInput();
+    input.evidence = input.evidence.map((reference) => ({
+      ...reference,
+      kind: "renderer-output",
+    }));
+    expect(createHumanCommercialReviewRecord(input, run).overallDecision).toBe("blocked");
+  });
+
+  it("blocks a passed review when a required mobile visual observation is missing", () => {
+    const { run, input } = reviewInput();
+    const mobileEvidence = input.evidence.find((reference) => reference.viewport === 375);
+    if (!mobileEvidence) throw new Error("Expected a mobile evidence row.");
+    mobileEvidence.kind = "renderer-output";
+    expect(createHumanCommercialReviewRecord(input, run).overallDecision).toBe("blocked");
+  });
+
+  it("blocks a passed review when a required desktop visual observation is missing", () => {
+    const { run, input } = reviewInput();
+    const desktopEvidence = input.evidence.find((reference) => reference.viewport === 1440);
+    if (!desktopEvidence) throw new Error("Expected a desktop evidence row.");
+    desktopEvidence.kind = "renderer-output";
+    expect(createHumanCommercialReviewRecord(input, run).overallDecision).toBe("blocked");
+  });
+
+  it("accepts current screenshot and browser observations for every reviewed scenario", () => {
+    const { run, input } = reviewInput();
+    input.evidence[0] = { ...input.evidence[0], kind: "browser-route" };
+    expect(createHumanCommercialReviewRecord(input, run).overallDecision).toBe("passed");
+  });
+
+  it("rejects screenshot evidence that is unrelated to its retained scenario", () => {
+    const { run, input } = reviewInput();
+    input.evidence[0] = { ...input.evidence[0], fingerprint: "unrelated-screenshot" };
+    expect(errorCode(() => createHumanCommercialReviewRecord(input, run))).toBe("invalid-decision");
+  });
+
+  it("requires a runtime-valid human reviewer provenance before accepting a pass", () => {
+    const { run, input } = reviewInput();
+    input.reviewer.reviewerId = "";
+    expect(errorCode(() => createHumanCommercialReviewRecord(input, run))).toBe("invalid-input");
+  });
+
   it("requires an auditable finding for a failed criterion", () => {
     const { run, input } = reviewInput();
     input.decisions[0].decision = "failed";
@@ -372,6 +469,79 @@ describe("P10A-07B human commercial review protocol", () => {
     expect(createHumanCommercialReviewRecord(input, run).overallDecision).toBe("blocked");
   });
 
+  it("rejects a passed criterion with an open blocker requiring correction", () => {
+    const { run, input } = reviewInput();
+    input.findings = [
+      {
+        id: "finding-open-blocker",
+        criterionId: input.decisions[0].criterionId,
+        affectedCoverageIds: ["coverage-0"],
+        severity: "blocker",
+        description: "A required correction remains open.",
+        evidenceReferenceIds: ["evidence-0"],
+        suggestedCorrection: "Apply the scoped correction before passing this criterion.",
+        disposition: "needs-correction",
+        status: "open",
+      },
+    ];
+    expect(errorCode(() => createHumanCommercialReviewRecord(input, run))).toBe("invalid-finding");
+  });
+
+  it("rejects a passed criterion with an unresolved correction finding", () => {
+    const { run, input } = reviewInput();
+    input.findings = [
+      {
+        id: "finding-open-correction",
+        criterionId: input.decisions[0].criterionId,
+        affectedCoverageIds: ["coverage-0"],
+        severity: "warning",
+        description: "A correction remains open for this passed criterion.",
+        evidenceReferenceIds: ["evidence-0"],
+        suggestedCorrection: "Correct the retained issue.",
+        disposition: "needs-correction",
+        status: "open",
+      },
+    ];
+    expect(errorCode(() => createHumanCommercialReviewRecord(input, run))).toBe("invalid-finding");
+  });
+
+  it("allows a blocked criterion with a retained open blocker", () => {
+    const { run, input } = reviewInput();
+    input.decisions[0].decision = "blocked";
+    input.findings = [
+      {
+        id: "finding-blocked",
+        criterionId: input.decisions[0].criterionId,
+        affectedCoverageIds: ["coverage-0"],
+        severity: "blocker",
+        description: "A retained blocker prevents this criterion from being decided.",
+        evidenceReferenceIds: ["evidence-0"],
+        suggestedCorrection: "Retain the required observation.",
+        disposition: "needs-correction",
+        status: "open",
+      },
+    ];
+    expect(createHumanCommercialReviewRecord(input, run).overallDecision).toBe("blocked");
+  });
+
+  it("allows a resolved historical blocker with a subsequently passed criterion", () => {
+    const { run, input } = reviewInput();
+    input.findings = [
+      {
+        id: "finding-resolved",
+        criterionId: input.decisions[0].criterionId,
+        affectedCoverageIds: ["coverage-0"],
+        severity: "blocker",
+        description: "A historical blocker was corrected before the final decision.",
+        evidenceReferenceIds: ["evidence-0"],
+        suggestedCorrection: "Retain the historical correction record.",
+        disposition: "needs-correction",
+        status: "resolved",
+      },
+    ];
+    expect(createHumanCommercialReviewRecord(input, run).overallDecision).toBe("passed");
+  });
+
   it("rejects a finding with unknown coverage", () => {
     const { run, input } = reviewInput();
     input.decisions[0].decision = "failed";
@@ -412,6 +582,45 @@ describe("P10A-07B human commercial review protocol", () => {
       disposition: "deferred",
       status: "deferred",
     });
+  });
+
+  it("accepts evidence captured before or exactly at the review time", () => {
+    const before = reviewInput();
+    expect(createHumanCommercialReviewRecord(before.input, before.run).overallDecision).toBe(
+      "passed",
+    );
+    const equal = reviewInput();
+    equal.input.reviewer.evidenceCapturedAt = equal.input.reviewer.reviewedAt;
+    equal.input.evidence[0].capturedAt = equal.input.reviewer.reviewedAt;
+    expect(createHumanCommercialReviewRecord(equal.input, equal.run).overallDecision).toBe(
+      "passed",
+    );
+  });
+
+  it("rejects reviewer evidence timestamps after the review time", () => {
+    const { run, input } = reviewInput();
+    input.reviewer.evidenceCapturedAt = "2026-08-04T10:00:00.001Z";
+    expect(errorCode(() => createHumanCommercialReviewRecord(input, run))).toBe("invalid-input");
+  });
+
+  it("rejects evidence references captured after the review time", () => {
+    const { run, input } = reviewInput();
+    input.evidence[0].capturedAt = "2026-08-04T10:00:00.001Z";
+    expect(errorCode(() => createHumanCommercialReviewRecord(input, run))).toBe("invalid-input");
+  });
+
+  it("accepts null evidence capture timestamps and rejects malformed timestamps", () => {
+    const nullCapturedAt = reviewInput();
+    nullCapturedAt.input.reviewer.evidenceCapturedAt = null;
+    nullCapturedAt.input.evidence[0].capturedAt = null;
+    expect(
+      createHumanCommercialReviewRecord(nullCapturedAt.input, nullCapturedAt.run).overallDecision,
+    ).toBe("passed");
+    const malformed = reviewInput();
+    malformed.input.reviewer.evidenceCapturedAt = "not-a-timestamp";
+    expect(errorCode(() => createHumanCommercialReviewRecord(malformed.input, malformed.run))).toBe(
+      "invalid-input",
+    );
   });
 
   it("does not invoke a provider to create a protocol record", () => {
