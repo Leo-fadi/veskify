@@ -18,9 +18,12 @@ import {
 import { createWholeStorefrontGenerationPlan } from "@/application/whole-storefront-generation-plan";
 import { veskifyComponentCapabilityManifest } from "@/components/registry/capability-manifest";
 import { createP905aFreshMerchantFixture } from "@/data/demo/p9-05a-fresh-store-generation";
-import { canonicalStorefrontContentFingerprint } from "@/domain/storefront";
+import {
+  canonicalStorefrontContentFingerprint,
+  storefrontSnapshotSchema,
+} from "@/domain/storefront";
 
-function snapshotRealizing(
+function snapshotRealizingSource(
   snapshot: ReturnType<typeof createP905aFreshMerchantFixture>["draft"],
   materializations: ReturnType<
     typeof createWholeStorefrontGenerationPlan
@@ -40,6 +43,15 @@ function snapshotRealizing(
     }));
   }
   return realized;
+}
+
+function snapshotRealizing(
+  snapshot: ReturnType<typeof createP905aFreshMerchantFixture>["draft"],
+  materializations: ReturnType<
+    typeof createWholeStorefrontGenerationPlan
+  >["pageBlueprintMaterializations"],
+) {
+  return storefrontSnapshotSchema.parse(snapshotRealizingSource(snapshot, materializations));
 }
 
 function evaluationRun() {
@@ -157,6 +169,26 @@ function errorCode(action: () => unknown) {
 }
 
 describe("P10A-07B human commercial review protocol", () => {
+  it("refreshes the golden baseline after canonical snapshot normalization", () => {
+    const fixture = createP905aFreshMerchantFixture("modernTechnical");
+    const plan = createWholeStorefrontGenerationPlan(fixture.planningInput);
+    const source = snapshotRealizingSource(fixture.draft, plan.pageBlueprintMaterializations);
+    const refreshed = snapshotRealizing(fixture.draft, plan.pageBlueprintMaterializations);
+    const sourceFingerprint = canonicalStorefrontContentFingerprint(source);
+    const firstFingerprint = canonicalStorefrontContentFingerprint(refreshed);
+    const secondFingerprint = canonicalStorefrontContentFingerprint(
+      storefrontSnapshotSchema.parse(structuredClone(refreshed)),
+    );
+
+    expect(sourceFingerprint).toBe(
+      "v1_4962_d866e2417e7a3fd4d25d8c5d6962685b33a835730bbd02ce16bb36bdb48d089f",
+    );
+    expect(firstFingerprint).toBe(
+      "v1_6304_dd5bc46ca93498c6f749f736c86dab6e30b3e9079950b67a521671455ac7753b",
+    );
+    expect(secondFingerprint).toBe(firstFingerprint);
+  });
+
   it("derives authority from the current P10A-07A run", () => {
     const run = evaluationRun();
     const authority = createHumanCommercialReviewAuthority(run);
