@@ -138,9 +138,19 @@ describe("P9-03F coordinated storefront design directions", () => {
           (direction) => direction.id === directionId,
         )!.componentSelections,
       });
-      expect(component(proposal, "home", "hero").variant).toBe(
-        plan.designSystemSelection.componentSelections.hero.variant,
+      const homepageProfile = plan.pageBlueprintMaterializations.find(
+        (materialization) => materialization.pageType === "home",
       );
+      expect(homepageProfile).toBeDefined();
+      homepageProfile?.slots
+        .filter((selection) =>
+          proposal.proposedStorefront.pages
+            .find((page) => page.type === "home")
+            ?.components.some((candidate) => candidate.component === selection.component),
+        )
+        .forEach((selection) => {
+          expect(component(proposal, "home", selection.component).variant).toBe(selection.variant);
+        });
       expect(component(proposal, "collection", "dynamicCollectionCommerce").variant).toBe(
         plan.designSystemSelection.componentSelections.collectionCommerce.variant,
       );

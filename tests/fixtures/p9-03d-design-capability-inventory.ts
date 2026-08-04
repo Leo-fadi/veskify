@@ -164,10 +164,25 @@ function directionIds(
   variant: string,
   evidence: P903dReachabilityEvidence,
 ): string[] {
+  if (type === "dynamicCollectionCommerce" || type === "dynamicProductDetail") {
+    return auditDirections(evidence)
+      .filter((direction) => selectedDirectionVariant(direction, type) === variant)
+      .map((direction) => direction.id)
+      .sort();
+  }
+  const templateIdByDirection = {
+    premiumEditorial: "template_brand_led_editorial",
+    modernTechnical: "template_catalogue_forward_commerce",
+    warmApproachable: "template_balanced_commerce",
+  } as const;
   return auditDirections(evidence)
-    .filter((direction) => {
-      return selectedDirectionVariant(direction, type) === variant;
-    })
+    .filter((direction) =>
+      storefrontTemplateDefinitions
+        .find((template) => template.id === templateIdByDirection[direction.id])
+        ?.pagePlans.some((page) =>
+          page.slots.some((slot) => slot.sectionType === type && slot.defaultVariant === variant),
+        ),
+    )
     .map((direction) => direction.id)
     .sort();
 }
@@ -209,11 +224,7 @@ function compilerPreservation(
   recipeDirections: readonly string[],
   evidence: P903dReachabilityEvidence,
 ): P903dComponentVariantRecord["proposalCompilerPreservation"] {
-  if (
-    directions.length === 0 &&
-    dynamicPageReplacementTypes.has(type) &&
-    blueprintIds(type, variant).length > 0
-  ) {
+  if (dynamicPageReplacementTypes.has(type) && blueprintIds(type, variant).length > 0) {
     return "dropped by dynamic-page replacement";
   }
   if (
@@ -288,7 +299,7 @@ function canonicalBoundary(
     return "A selected recipe variant conflicts with its coordinated component selection before the canonical proposal snapshot.";
   }
   if (preservation === "preserved by coordinated proposal compiler") {
-    return "coordinatedRuntimeComponent applies the registered componentSelections entry before the canonical proposal snapshot.";
+    return "The executable PageBlueprint selection is preserved by the coordinated proposal compiler before the canonical proposal snapshot.";
   }
   return "The planner creates the V2 instance and the proposal compiler preserves its variant and presentation props.";
 }

@@ -280,20 +280,18 @@ describe("P9-05C authoritative local-demo synchronization", () => {
           selectedDirections.push("validatedTokenRefinement");
         }),
     });
-    expect(
-      (
-        await followupHandler(
-          new Request("http://p9-05c.test/api/ai/whole-storefront-proposals", {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              "x-veskify-p9-05b-session": session.sessionId,
-            },
-            body: JSON.stringify(warmFollowup),
-          }),
-        )
-      ).status,
-    ).toBe(200);
+    const followupResponse = await followupHandler(
+      new Request("http://p9-05c.test/api/ai/whole-storefront-proposals", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-veskify-p9-05b-session": session.sessionId,
+        },
+        body: JSON.stringify(warmFollowup),
+      }),
+    );
+    const followupDiagnostic = await followupResponse.clone().text();
+    expect(followupResponse.status, followupDiagnostic).toBe(200);
     expect(selectedDirections).toEqual(["premiumEditorial", "validatedTokenRefinement"]);
   });
 

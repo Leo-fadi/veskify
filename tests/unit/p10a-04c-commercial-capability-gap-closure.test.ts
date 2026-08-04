@@ -1,0 +1,179 @@
+import { describe, expect, it } from "vitest";
+import { render } from "@testing-library/react";
+import { listExecutablePageBlueprintProfiles } from "@/application/storefront-templates";
+import {
+  createLiveRendererConformanceReport,
+  veskifyComponentCapabilityManifest,
+  veskifyComponentRegistry,
+  createStorefrontRenderContext,
+  renderRegisteredSection,
+} from "@/components/registry";
+import { aurumNordicSeed } from "@/data/seed";
+import { approvedAssetPlacementOperationSchema as legacyApprovedAssetPlacementOperationSchema } from "@/application/ai-storefront-generation/approved-asset-context";
+import {
+  approvedAssetPlacementOperationSchema,
+  canonicalValueFingerprint,
+  pageModelSchema,
+  sectionInstanceSchema,
+} from "@/domain/storefront";
+import { pageToPuckData, puckDataToPage } from "@/integrations/puck/config";
+
+const closedCapabilities = [
+  "homepageHero",
+  "homepageFeaturedCollections",
+  "homepageFeaturedProducts",
+  "homepageCollectionNavigation",
+  "homepagePromotion",
+  "homepageTrust",
+] as const;
+
+const approvedHeroPlacement = {
+  type: "PLACE_APPROVED_SOURCE_ASSET" as const,
+  pageId: "page_transport_home",
+  componentId: "section_transport_hero",
+  componentType: "homepageHero",
+  assetSlotId: "heroMedia",
+  assetId: "asset_transport_hero",
+  role: "heroDesktop" as const,
+  assetRevision: "revision-1",
+  materialFingerprint: "material-transport-hero",
+  sourceReferenceId: "source_transport",
+  required: true,
+};
+
+describe("P10A-04C commercial capability gap closure", () => {
+  it("uses one relocated approved-placement schema authority with unchanged parsing", () => {
+    expect(legacyApprovedAssetPlacementOperationSchema).toBe(approvedAssetPlacementOperationSchema);
+    expect(legacyApprovedAssetPlacementOperationSchema.parse(approvedHeroPlacement)).toEqual(
+      approvedAssetPlacementOperationSchema.parse(approvedHeroPlacement),
+    );
+  });
+
+  it("normalizes legacy sections and rejects placements outside their page or component", () => {
+    expect(
+      sectionInstanceSchema.parse({
+        id: "section_legacy",
+        component: "hero",
+        variant: "split",
+        visible: true,
+        content: {},
+        props: {},
+      }).approvedAssetPlacements,
+    ).toEqual([]);
+    expect(() =>
+      pageModelSchema.parse({
+        id: approvedHeroPlacement.pageId,
+        type: "home",
+        slug: "/",
+        title: { en: "Transport", fi: "Siirto" },
+        seo: { title: { en: "Transport", fi: "Siirto" }, metaDescription: { en: "x", fi: "x" } },
+        sections: [
+          {
+            id: approvedHeroPlacement.componentId,
+            component: approvedHeroPlacement.componentType,
+            variant: "fullBleed",
+            visible: true,
+            content: homepageCommerceContent("homepageHero"),
+            props: homepageCommerceProps("homepageHero"),
+            approvedAssetPlacements: [{ ...approvedHeroPlacement, pageId: "page_other" }],
+          },
+        ],
+      }),
+    ).toThrow(/containing page/);
+  });
+
+  it("preserves the full placement record through Puck and includes it in canonical fingerprints", () => {
+    const sourcePage = aurumNordicSeed.draftSnapshot.pages.find((page) => page.type === "home")!;
+    const sourceHero = sourcePage.sections.find((section) => section.component === "hero")!;
+    const placement = {
+      ...approvedHeroPlacement,
+      pageId: sourcePage.id,
+      componentId: sourceHero.id,
+      componentType: "hero",
+    };
+    const page = {
+      ...structuredClone(sourcePage),
+      sections: sourcePage.sections.map((section) =>
+        section.id === sourceHero.id
+          ? { ...structuredClone(section), approvedAssetPlacements: [placement] }
+          : section,
+      ),
+    };
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot: { ...aurumNordicSeed.draftSnapshot, pages: [page] },
+    });
+    const roundTripped = puckDataToPage(pageToPuckData(page, context), page, context);
+    expect(
+      roundTripped.sections.find((section) => section.id === sourceHero.id)
+        ?.approvedAssetPlacements,
+    ).toEqual([placement]);
+    expect(canonicalValueFingerprint(page)).not.toBe(
+      canonicalValueFingerprint({ ...page, sections: sourcePage.sections }),
+    );
+  });
+  it("registers every verified gap through the snapshot/Puck bridge and generated manifest", () => {
+    for (const componentType of closedCapabilities) {
+      expect(veskifyComponentRegistry[componentType]).toBeDefined();
+      const entry = veskifyComponentCapabilityManifest.getByComponentType(componentType);
+      expect(entry?.renderer.supportedTargets).toEqual(["editor", "preview", "published"]);
+      expect(entry?.fingerprint).toMatch(/^component-capability-/);
+    }
+  });
+
+  it("selects each closed capability from a deterministic executable home profile", () => {
+    const selected = listExecutablePageBlueprintProfiles()
+      .filter((plan) => plan.pageType === "home")
+      .flatMap((plan) => plan.profile?.componentSelections.map((selection) => selection.component));
+    expect(selected).toEqual(expect.arrayContaining([...closedCapabilities]));
+    expect(
+      new Set(selected.filter((component) => closedCapabilities.includes(component as never))),
+    ).toEqual(new Set(closedCapabilities));
+  });
+
+  it("closes only commercial gaps without hiding the independently reported defects", () => {
+    const report = createLiveRendererConformanceReport();
+    expect(report.commercialGaps).toEqual([]);
+    expect(report.blockingDefects).toHaveLength(16);
+    expect(report.metadataGaps).toHaveLength(25);
+    expect(report.deliberateFutureCapabilities).toHaveLength(1);
+  });
+
+  it("renders every bridged profile capability through the registered editor/preview boundary", () => {
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot: aurumNordicSeed.draftSnapshot,
+    });
+    for (const componentType of closedCapabilities) {
+      const definition = veskifyComponentRegistry[componentType];
+      expect(() =>
+        render(
+          renderRegisteredSection(
+            {
+              id: `section_${componentType.replaceAll(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)}`,
+              component: componentType,
+              variant: definition.defaultVariant,
+              visible: true,
+              content: definition.defaultContent,
+              props: definition.defaultProps,
+            },
+            context,
+            "home",
+          ),
+        ),
+      ).not.toThrow();
+    }
+  });
+});
+
+function homepageCommerceContent(component: (typeof closedCapabilities)[number]) {
+  return structuredClone(veskifyComponentRegistry[component].defaultContent);
+}
+
+function homepageCommerceProps(component: (typeof closedCapabilities)[number]) {
+  return structuredClone(veskifyComponentRegistry[component].defaultProps);
+}

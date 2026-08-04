@@ -11,6 +11,7 @@ export type StorefrontRenderContext = {
   navigation: NavigationModel;
   pagePaths: Readonly<Record<string, string>>;
   homePath?: string;
+  renderTarget?: "editor" | "preview" | "published";
 };
 
 export type EditorFieldMetadata = {
@@ -31,6 +32,8 @@ export type ComponentRenderInput<TContent, TProps, TVariant extends string> = {
   variant: TVariant;
   content: TContent;
   props: TProps;
+  approvedAssetPlacements: NonNullable<SectionInstance["approvedAssetPlacements"]>;
+  approvedAssetPresentations: NonNullable<SectionInstance["approvedAssetPresentations"]>;
   context: StorefrontRenderContext;
 };
 
@@ -114,6 +117,8 @@ export function defineComponent<
       content: input.contentSchema.parse(section.content),
       props: input.propsSchema.parse(section.props),
       variant: section.variant as TVariants[number],
+      approvedAssetPlacements: structuredClone(section.approvedAssetPlacements ?? []),
+      approvedAssetPresentations: structuredClone(section.approvedAssetPresentations ?? []),
       context: context as StorefrontRenderContext,
     };
     if (context) input.validateContext?.(parsed);

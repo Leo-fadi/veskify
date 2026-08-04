@@ -84,12 +84,31 @@ describe("Phase 10A deterministic evidence helpers", () => {
         collection: generated.plan.designSystemSelection.collectionRecipeId,
         product: generated.plan.designSystemSelection.productRecipeId,
       },
-      pageBlueprintProfileIds: { home: null, collection: null, product: null },
+      pageBlueprintProfileIds: {
+        home: required(
+          generated.plan.pageBlueprintMaterializations.find((entry) => entry.pageType === "home")
+            ?.profileId,
+          "Expected an executable homepage profile.",
+        ),
+        collection: required(
+          generated.plan.pageBlueprintMaterializations.find(
+            (entry) => entry.pageType === "collection",
+          )?.profileId,
+          "Expected an executable collection profile.",
+        ),
+        product: required(
+          generated.plan.pageBlueprintMaterializations.find((entry) => entry.pageType === "product")
+            ?.profileId,
+          "Expected an executable product profile.",
+        ),
+      },
       snapshot: accepted.activeDraft,
     });
 
     const hero = required(
-      evidence.componentSelections.find((selection) => selection.componentFamily === "hero"),
+      evidence.componentSelections.find(
+        (selection) => selection.componentFamily === "homepageHero",
+      ),
       "Expected a registered hero selection.",
     );
     expect(hero.variant.length).toBeGreaterThan(0);

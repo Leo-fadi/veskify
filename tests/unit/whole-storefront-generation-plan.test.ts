@@ -389,7 +389,7 @@ describe("P8-01 whole-storefront generation plan", () => {
       input({ approvedAssetContext: context, requiredAssetPlacements: [placement] }),
     );
 
-    expect(plan.approvedAssetPlacements).toEqual([placement]);
+    expect(plan.approvedAssetPlacements).toContainEqual(placement);
     expect(() =>
       createWholeStorefrontGenerationPlan(
         input({
@@ -537,7 +537,7 @@ describe("P8-01 whole-storefront generation plan", () => {
         approvedAssetContext: context,
         requiredAssetPlacements: [retainedPlacement],
       }).approvedAssetPlacements,
-    ).toEqual([retainedPlacement]);
+    ).toContainEqual(retainedPlacement);
 
     const collectionPage = requiredValue(
       current.draft.pages.find((page) => page.type === "collection"),

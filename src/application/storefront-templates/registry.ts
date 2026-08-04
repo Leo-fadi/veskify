@@ -2,6 +2,14 @@ import {
   getSupportedSectionManifest,
   type SupportedSectionType,
 } from "@/components/registry/supported-vocabulary";
+import {
+  homepageCollectionNavigationDefinition,
+  homepageFeaturedCollectionsDefinition,
+  homepageFeaturedProductsDefinition,
+  homepageHeroDefinition,
+  homepagePromotionDefinition,
+  homepageTrustDefinition,
+} from "@/components/registry/homepage-commerce";
 import { canonicalValueString, type PageType } from "@/domain/storefront";
 import {
   cloneTemplateDefinition,
@@ -17,6 +25,10 @@ import {
 
 const createdAt = "2026-07-18T00:00:00.000Z";
 const allPageTypes = ["home", "collection", "product"] as const;
+
+function registeredVariants(definition: Readonly<{ variants: readonly { id: string }[] }>) {
+  return definition.variants.map(({ id }) => id);
+}
 
 function slot(
   input: Omit<
@@ -103,7 +115,7 @@ function profileFor(
         ? ["collection", "productList"]
         : pageType === "product"
           ? ["product"]
-          : ["navigation"],
+          : ["navigation", "projectBrandContext", "collectionList", "productList"],
     requiredAssetRoles: [],
     responsiveBreakpoints: ["mobile", "tablet", "desktop", "wide"] as const,
     accessibilityContract: "registered-component-contracts" as const,
@@ -210,8 +222,8 @@ const homeSlots = {
   hero: slot({
     id: "hero",
     required: true,
-    sectionType: "hero",
-    allowedVariants: ["editorial", "fullBleed", "asymmetric", "restrained"],
+    sectionType: "homepageHero",
+    allowedVariants: registeredVariants(homepageHeroDefinition),
     defaultVariant: "editorial",
     label: { en: "Main introduction", fi: "Pääesittely" },
     purpose: "hero",
@@ -219,8 +231,8 @@ const homeSlots = {
   categories: slot({
     id: "featured-categories",
     required: false,
-    sectionType: "featuredCategories",
-    allowedVariants: ["editorialCards", "grid", "carousel"],
+    sectionType: "homepageFeaturedCollections",
+    allowedVariants: registeredVariants(homepageFeaturedCollectionsDefinition),
     defaultVariant: "editorialCards",
     label: { en: "Featured categories", fi: "Esitellyt kategoriat" },
     purpose: "featured-categories",
@@ -229,8 +241,8 @@ const homeSlots = {
   products: slot({
     id: "featured-products",
     required: true,
-    sectionType: "productGrid",
-    allowedVariants: ["editorial", "standard", "compact"],
+    sectionType: "homepageFeaturedProducts",
+    allowedVariants: registeredVariants(homepageFeaturedProductsDefinition),
     defaultVariant: "editorial",
     label: { en: "Featured products", fi: "Esitellyt tuotteet" },
     purpose: "featured-products",
@@ -248,8 +260,8 @@ const homeSlots = {
   values: slot({
     id: "brand-values",
     required: false,
-    sectionType: "benefitIcons",
-    allowedVariants: ["threeColumn", "minimal"],
+    sectionType: "homepageTrust",
+    allowedVariants: registeredVariants(homepageTrustDefinition),
     defaultVariant: "threeColumn",
     label: { en: "Brand values", fi: "Brändin arvot" },
     purpose: "brand-values",
@@ -263,6 +275,26 @@ const homeSlots = {
     label: { en: "Newsletter", fi: "Uutiskirje" },
     purpose: "newsletter",
     omitWhen: "when-not-requested",
+  }),
+  promotion: slot({
+    id: "promotion",
+    required: false,
+    sectionType: "homepagePromotion",
+    allowedVariants: registeredVariants(homepagePromotionDefinition),
+    defaultVariant: "imageLed",
+    label: { en: "Promotional content", fi: "Kampanjasisältö" },
+    purpose: "editorial-story",
+    omitWhen: "when-not-requested",
+  }),
+  collectionNavigation: slot({
+    id: "collection-navigation",
+    required: false,
+    sectionType: "homepageCollectionNavigation",
+    allowedVariants: registeredVariants(homepageCollectionNavigationDefinition),
+    defaultVariant: "grid",
+    label: { en: "Collection navigation", fi: "Mallistonavigointi" },
+    purpose: "featured-categories",
+    omitWhen: "when-catalogue-is-empty",
   }),
   footer: slot({
     id: "footer",
@@ -415,7 +447,7 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
             homeSlots.header,
             homeSlots.hero,
             homeSlots.categories,
-            homeSlots.story,
+            homeSlots.promotion,
             homeSlots.products,
             homeSlots.values,
             homeSlots.newsletter,
@@ -423,10 +455,11 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
           ],
           {
             header: "transparent",
-            hero: "fullBleed",
-            featuredCategories: "imageLed",
-            brandStory: "imageLed",
-            benefitIcons: "minimal",
+            homepageHero: "fullBleed",
+            homepageFeaturedCollections: "imageLed",
+            homepageFeaturedProducts: "editorial",
+            homepagePromotion: "imageLed",
+            homepageTrust: "minimal",
             footer: "editorial",
           },
         ),
@@ -493,11 +526,11 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
           ],
           {
             header: "centered",
-            hero: "editorial",
-            featuredCategories: "editorialCards",
-            productGrid: "standard",
+            homepageHero: "editorial",
+            homepageFeaturedCollections: "editorialCards",
+            homepageFeaturedProducts: "standard",
             brandStory: "editorial",
-            benefitIcons: "cards",
+            homepageTrust: "cards",
             footer: "columns",
           },
         ),
@@ -565,7 +598,7 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
             homeSlots.header,
             homeSlots.hero,
             homeSlots.products,
-            homeSlots.categories,
+            homeSlots.collectionNavigation,
             homeSlots.story,
             homeSlots.values,
             homeSlots.newsletter,
@@ -573,11 +606,11 @@ export const storefrontTemplateDefinitions: readonly StorefrontTemplateDefinitio
           ],
           {
             header: "compact",
-            hero: "asymmetric",
-            productGrid: "compact",
-            featuredCategories: "grid",
+            homepageHero: "asymmetric",
+            homepageFeaturedProducts: "compact",
+            homepageCollectionNavigation: "grid",
             brandStory: "minimal",
-            benefitIcons: "threeColumn",
+            homepageTrust: "threeColumn",
             footer: "compact",
           },
         ),
@@ -681,10 +714,15 @@ function validatePagePlan(
       throw new Error(`${template.id}/${plan.pageType} requires ${sectionType}.`);
   };
   if (plan.pageType === "home") {
-    requireSection("hero");
-    const heroIndex = indices.get("hero");
-    if (heroIndex === undefined) throw new Error(`${template.id}/home must contain a hero.`);
-    for (const merchandising of ["featuredCategories", "productGrid"] as const) {
+    requireSection("homepageHero");
+    const heroIndex = indices.get("homepageHero");
+    if (heroIndex === undefined)
+      throw new Error(`${template.id}/home must contain a homepage hero.`);
+    for (const merchandising of [
+      "homepageFeaturedCollections",
+      "homepageFeaturedProducts",
+      "homepageCollectionNavigation",
+    ] as const) {
       const merchandisingIndex = indices.get(merchandising);
       if (merchandisingIndex !== undefined && heroIndex > merchandisingIndex) {
         throw new Error(`${template.id}/home hero must precede ${merchandising}.`);

@@ -2,8 +2,15 @@ import {
   registeredTokenRefinementPlanSchema,
   type RegisteredTokenRefinementPlan,
 } from "@/application/storefront-design-system";
-import { getTemplateById, getTemplatePagePlan } from "@/application/storefront-templates/registry";
-import { materializeExecutablePageBlueprint } from "@/application/storefront-templates/profile-materializer";
+import {
+  getExecutablePageBlueprintProfile,
+  getTemplateById,
+  getTemplatePagePlan,
+} from "@/application/storefront-templates/registry";
+import {
+  materializeExecutablePageBlueprint,
+  type ExecutablePageBlueprintMaterialization,
+} from "@/application/storefront-templates/profile-materializer";
 import {
   dynamicCollectionCommerceDefaultContent,
   dynamicCollectionCommerceDefaultProps,
@@ -15,6 +22,7 @@ import {
   dynamicProductDetailDefaultStyleOverrides,
 } from "@/components/registry/dynamic-product-detail";
 import {
+  componentInstanceV2Schema,
   createComponentRegistryV2,
   type ComponentDefinitionV2,
   type ComponentInstanceV2,
@@ -41,6 +49,11 @@ import {
   dynamicCollectionCommerceBridgeContentSchema,
   dynamicProductDetailBridgeContentSchema,
 } from "@/components/registry/dynamic-commerce-bridge";
+import {
+  homepageCommerceBridgeComponentNames,
+  homepageCommerceBridgeDefaults,
+  type HomepageCommerceBridgeComponent,
+} from "@/components/registry/homepage-commerce-bridge";
 
 const FAMILY_REQUIREMENTS = {
   homepage: [
@@ -281,6 +294,8 @@ export function createWholeStorefrontGenerationTarget(
 function retainedComponent(
   section: WholeStorefrontPlanningInput["draft"]["pages"][number]["sections"][number],
   definitions: ReturnType<typeof normalizedDefinitions>,
+  input: WholeStorefrontPlanningInput,
+  revision: string,
 ): ComponentInstanceV2 {
   const definition = definitions.find((candidate) => candidate.type === section.component);
   if (!definition) {
@@ -346,6 +361,38 @@ function retainedComponent(
             ]
           : []),
       ],
+    };
+  }
+  const homepageBridgeComponent = homepageCommerceBridgeComponentNames.find(
+    (component): component is HomepageCommerceBridgeComponent => component === section.component,
+  );
+  if (homepageBridgeComponent) {
+    return {
+      ...base,
+      content: structuredClone(section.content) as ComponentInstanceV2["content"],
+      styleOverrides: { surface: "plain" },
+      bindings: homepageBindings(homepageBridgeComponent, input, revision, section),
+    };
+  }
+  if (section.component === "brandStory") {
+    const approvedAssetId = section.content.approvedAssetId;
+    const approvedAsset =
+      typeof approvedAssetId === "string"
+        ? input.approvedAssetContext?.assets.find((asset) => asset.assetId === approvedAssetId)
+        : undefined;
+    return {
+      ...base,
+      content: structuredClone(section.content) as ComponentInstanceV2["content"],
+      bindings: [],
+      assetAssignments: approvedAsset
+        ? [
+            {
+              slotId: "brandStoryMedia",
+              assetId: approvedAsset.assetId,
+              role: approvedAsset.role,
+            },
+          ]
+        : [],
     };
   }
   return {
@@ -461,7 +508,9 @@ function resolvedWholeStorefrontBindingCategories(
   input: WholeStorefrontPlanningInput,
   pageType: "home" | "collection" | "product",
 ) {
-  if (pageType === "home") return ["navigation"] as const;
+  if (pageType === "home") {
+    return ["navigation", "projectBrandContext", "collectionList", "productList"] as const;
+  }
   if (pageType === "collection") {
     return input.catalogue.collections.length > 0 && input.catalogue.products.length > 0
       ? (["collection", "productList"] as const)
@@ -529,93 +578,314 @@ function generatedComponentId(
   );
 }
 
-function requiredHomepageRecipeComponents(input: {
+const legacyHomepageComponentForBridge: Readonly<
+  Record<HomepageCommerceBridgeComponent, readonly string[]>
+> = {
+  homepageHero: ["hero"],
+  homepageFeaturedCollections: ["featuredCategories"],
+  homepageFeaturedProducts: ["productGrid"],
+  homepageCollectionNavigation: ["featuredCategories"],
+  homepagePromotion: ["brandStory", "campaignBanner"],
+  homepageTrust: ["benefitIcons"],
+};
+
+function homepageBindings(
+  component: HomepageCommerceBridgeComponent,
+  input: WholeStorefrontPlanningInput,
+  revision: string,
+  source?: WholeStorefrontPlanningInput["draft"]["pages"][number]["sections"][number],
+): ComponentInstanceV2["bindings"] {
+  const sourceCollectionIds = Array.isArray(source?.content.collectionIds)
+    ? source.content.collectionIds.filter(
+        (id): id is string =>
+          typeof id === "string" &&
+          input.catalogue.collections.some((collection) => collection.id === id),
+      )
+    : [];
+  const sourceProductIds = Array.isArray(source?.content.productIds)
+    ? source.content.productIds.filter(
+        (id): id is string =>
+          typeof id === "string" && input.catalogue.products.some((product) => product.id === id),
+      )
+    : [];
+  const actionHref = objectValue(source?.content.cta)?.href;
+  const actionNavigationItem =
+    typeof actionHref === "string"
+      ? [...input.draft.navigation.primary, ...input.draft.navigation.footer].find((item) => {
+          if (item.target.type !== "page") return false;
+          const pageId = item.target.pageId;
+          return input.draft.pages.find((page) => page.id === pageId)?.slug === actionHref;
+        })
+      : undefined;
+  return [
+    {
+      slotId: "presentationContext",
+      source: "projectBrandContext",
+      projectId: input.project.id,
+      revision,
+    },
+    ...(component === "homepageFeaturedCollections" || component === "homepageCollectionNavigation"
+      ? [
+          {
+            slotId: "collections",
+            source: "collectionList" as const,
+            collectionIds:
+              sourceCollectionIds.length > 0
+                ? sourceCollectionIds
+                : input.catalogue.collections.map((collection) => collection.id),
+            revision,
+          },
+        ]
+      : []),
+    ...(component === "homepageFeaturedProducts"
+      ? [
+          {
+            slotId: "products",
+            source: "productList" as const,
+            productIds:
+              sourceProductIds.length > 0
+                ? sourceProductIds
+                : input.catalogue.products.map((product) => product.id),
+            revision,
+          },
+        ]
+      : []),
+    ...((component === "homepageHero" || component === "homepagePromotion") && actionNavigationItem
+      ? [
+          {
+            slotId: component === "homepageHero" ? "primaryAction" : "promotionAction",
+            source: "navigation" as const,
+            navigationId: actionNavigationItem.id,
+            revision,
+          },
+        ]
+      : []),
+  ];
+}
+
+function objectValue(value: unknown): Record<string, unknown> | undefined {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? Object.fromEntries(Object.entries(value))
+    : undefined;
+}
+
+function mappedHomepageBridgePresentation(
+  component: HomepageCommerceBridgeComponent,
+  source: WholeStorefrontPlanningInput["draft"]["pages"][number]["sections"][number] | undefined,
+  planningInput: WholeStorefrontPlanningInput,
+) {
+  const defaults = homepageCommerceBridgeDefaults[component];
+  const content: Record<string, unknown> = structuredClone(defaults.content);
+  const props: Record<string, unknown> = structuredClone(defaults.props);
+  if (source) {
+    if (component === "homepageHero") {
+      content.heading = source.content.title ?? content.heading;
+      if (source.content.body !== undefined) content.supportingCopy = source.content.body;
+      const cta = objectValue(source.content.cta);
+      if (cta?.label !== undefined) content.primaryActionLabel = cta.label;
+      if (source.props.mediaPosition !== undefined) {
+        props.mediaPosition = source.props.mediaPosition;
+      }
+    } else if (
+      component === "homepageFeaturedCollections" ||
+      component === "homepageCollectionNavigation" ||
+      component === "homepageFeaturedProducts"
+    ) {
+      if (source.content.heading !== undefined) content.heading = source.content.heading;
+      if (component === "homepageFeaturedProducts") {
+        const columns = { two: 2, three: 3, four: 4 }[String(source.props.columns)];
+        if (columns !== undefined) props.columns = columns;
+      }
+    } else if (component === "homepagePromotion") {
+      if (source.content.heading !== undefined) content.heading = source.content.heading;
+      if (source.content.body !== undefined) content.description = source.content.body;
+      const cta = objectValue(source.content.cta);
+      if (cta?.label !== undefined) content.actionLabel = cta.label;
+      const mediaPosition = source.props.mediaPosition ?? source.props.imagePosition;
+      if (mediaPosition !== undefined) props.mediaPosition = mediaPosition;
+    } else if (component === "homepageTrust" && Array.isArray(source.content.benefits)) {
+      const items = source.content.benefits.flatMap((benefit, index) => {
+        const value = objectValue(benefit);
+        const icon = value?.icon;
+        if (!value || value.title === undefined || value.text === undefined) return [];
+        return [
+          {
+            id: `benefit_${index + 1}`,
+            kind: icon === "delivery" ? "delivery" : icon === "care" ? "service" : "storeSupport",
+            title: value.title,
+            description: value.text,
+          },
+        ];
+      });
+      if (items.length > 0) content.items = items;
+    }
+  }
+
+  const preferredAssetId =
+    objectValue(source?.content.media)?.id ?? source?.content.approvedAssetId;
+  const acceptedRoles =
+    component === "homepageHero"
+      ? ["heroDesktop", "heroMobile", "editorialImage"]
+      : component === "homepagePromotion"
+        ? ["editorialImage", "heroDesktop", "heroMobile"]
+        : component === "homepageFeaturedCollections" ||
+            component === "homepageCollectionNavigation"
+          ? ["collectionImage", "editorialImage"]
+          : [];
+  const approvedAsset = planningInput.approvedAssetContext?.assets.find(
+    (asset) =>
+      acceptedRoles.includes(asset.role) &&
+      (preferredAssetId === undefined || asset.assetId === preferredAssetId),
+  );
+  const assetSlotId =
+    component === "homepageHero"
+      ? "heroMedia"
+      : component === "homepagePromotion"
+        ? "promotionMedia"
+        : "collectionMedia";
+  return {
+    content,
+    props,
+    assetAssignments: approvedAsset
+      ? [{ slotId: assetSlotId, assetId: approvedAsset.assetId, role: approvedAsset.role }]
+      : [],
+  };
+}
+
+function mappedBrandStoryPresentation(planningInput: WholeStorefrontPlanningInput) {
+  const approvedAsset = planningInput.approvedAssetContext?.assets.find(
+    (asset) => asset.role === "editorialImage",
+  );
+  if (!approvedAsset) {
+    invalid(
+      "missing-required-recipe-asset",
+      "Approve an editorial image before using the selected brand-story homepage profile.",
+    );
+  }
+  const description = planningInput.brief.businessIdentity.shortDescription.trim();
+  if (description.length === 0) {
+    invalid(
+      "missing-required-recipe-content",
+      "Add an approved business description before using the selected brand-story homepage profile.",
+    );
+  }
+  const businessName = planningInput.brief.businessIdentity.businessName;
+  return {
+    content: {
+      eyebrow: { en: businessName, fi: businessName },
+      heading: { en: businessName, fi: businessName },
+      body: { en: description, fi: description },
+      approvedAssetId: approvedAsset.assetId,
+      facts: [],
+    },
+    props: structuredClone(getComponentDefinition("brandStory").defaultProps),
+    assetAssignments: [
+      {
+        slotId: "brandStoryMedia",
+        assetId: approvedAsset.assetId,
+        role: approvedAsset.role,
+      },
+    ],
+  };
+}
+
+function authoritativeHomepageProfileComponents(input: {
   planningInput: WholeStorefrontPlanningInput;
   page: WholeStorefrontPlanningInput["draft"]["pages"][number];
   definitions: ReturnType<typeof normalizedDefinitions>;
   registry: ReturnType<typeof createComponentRegistryV2>;
   usedComponentIds: Set<string>;
-  directionId: "premiumEditorial" | "modernTechnical" | "warmApproachable";
-  recipeId: string;
+  materialization: ExecutablePageBlueprintMaterialization;
+  revision: string;
 }): WholeStorefrontGenerationPlan["pagePlans"][number]["components"] {
-  const { planningInput, page, definitions, registry, usedComponentIds, recipeId } = input;
+  const {
+    planningInput,
+    page,
+    definitions,
+    registry,
+    usedComponentIds,
+    materialization,
+    revision,
+  } = input;
   if (page.type !== "home") return [];
-  const recipe = planningInput.recipeContext.designSystem.homepageRecipes.find(
-    (candidate) => candidate.id === recipeId,
-  );
-  if (!recipe) {
-    invalid("unsupported-page-family", "The selected homepage recipe is unavailable.");
+  const pagePlan = getExecutablePageBlueprintProfile(materialization.profileId);
+  if (!pagePlan) {
+    invalid("unsupported-page-family", "The authoritative homepage profile is unavailable.");
   }
-  const existingComponents = new Set(page.sections.map((section) => section.component));
-  return recipe.sections.flatMap((recipeSection) => {
-    if (existingComponents.has(recipeSection.component)) return [];
-    const requiredForModernHomepageSlice =
-      input.directionId === "modernTechnical" && recipeSection.component === "brandStory";
-    if (!recipeSection.required && !requiredForModernHomepageSlice) return [];
-    if (recipeSection.component !== "brandStory") {
-      invalid(
-        "missing-required-recipe-content",
-        `Add approved content for the required ${recipeSection.component} homepage section.`,
-      );
-    }
-    const approvedAsset = planningInput.approvedAssetContext?.assets.find((asset) =>
-      recipeSection.acceptedAssetRoles.includes(asset.role),
+  const consumedSourceIds = new Set<string>();
+  return materialization.slots.flatMap((slot) => {
+    if (page.sections.some((section) => section.component === slot.component)) return [];
+    const definition = definitionFor(definitions, slot.component);
+    const legacyDefinition = getComponentDefinition(slot.component);
+    const bridgeComponent = homepageCommerceBridgeComponentNames.find(
+      (component): component is HomepageCommerceBridgeComponent => component === slot.component,
     );
-    if (!approvedAsset) {
+    const replacementSource = bridgeComponent
+      ? page.sections.find(
+          (section) =>
+            !consumedSourceIds.has(section.id) &&
+            legacyHomepageComponentForBridge[bridgeComponent].includes(section.component),
+        )
+      : undefined;
+    const profileSlot = pagePlan.slots.find((candidate) => candidate.id === slot.slotId);
+    if (!profileSlot) {
       invalid(
-        "missing-required-recipe-asset",
-        "Approve an editorial image before using the selected brand-story homepage recipe.",
+        "unsupported-page-family",
+        `The authoritative homepage profile is missing slot ${slot.slotId}.`,
       );
     }
-    const description = planningInput.brief.businessIdentity.shortDescription.trim();
-    if (description.length === 0) {
-      invalid(
-        "missing-required-recipe-content",
-        "Add an approved business description before using the selected brand-story homepage recipe.",
-      );
+    if (!replacementSource && !profileSlot.required) {
+      if (profileSlot.omitWhen === "when-not-requested") return [];
+      if (
+        profileSlot.omitWhen === "when-imagery-is-unavailable" &&
+        !planningInput.approvedAssetContext?.assets.some((asset) => asset.role === "editorialImage")
+      ) {
+        return [];
+      }
     }
-    const definition = definitionFor(definitions, recipeSection.component);
-    const legacyDefinition = getComponentDefinition(recipeSection.component);
-    const componentId = generatedComponentId(page.id, recipeSection.component, usedComponentIds);
+    if (replacementSource) consumedSourceIds.add(replacementSource.id);
+    const componentId =
+      replacementSource?.id ?? generatedComponentId(page.id, slot.component, usedComponentIds);
     usedComponentIds.add(componentId);
-    const instance: ComponentInstanceV2 = {
+    const mappedPresentation = bridgeComponent
+      ? mappedHomepageBridgePresentation(bridgeComponent, replacementSource, planningInput)
+      : slot.component === "brandStory"
+        ? mappedBrandStoryPresentation(planningInput)
+        : {
+            content: legacyDefinition.defaultContent,
+            props: legacyDefinition.defaultProps,
+            assetAssignments: [],
+          };
+    const instance = componentInstanceV2Schema.parse({
       id: componentId,
-      component: recipeSection.component,
+      component: slot.component,
       componentVersion: definition.version,
-      variant: recipeSection.variant,
-      content: {
-        eyebrow: {
-          en: planningInput.brief.businessIdentity.businessName,
-          fi: planningInput.brief.businessIdentity.businessName,
-        },
-        heading: {
-          en: planningInput.brief.businessIdentity.businessName,
-          fi: planningInput.brief.businessIdentity.businessName,
-        },
-        body: { en: description, fi: description },
-        approvedAssetId: approvedAsset.assetId,
-        facts: [],
-      },
-      props: structuredClone(legacyDefinition.defaultProps) as ComponentInstanceV2["props"],
-      styleOverrides: {},
-      bindings: [],
-      assetAssignments: [
-        {
-          slotId: "brandStoryMedia",
-          assetId: approvedAsset.assetId,
-          role: approvedAsset.role,
-        },
-      ],
-    };
+      variant: slot.variant,
+      content: structuredClone(mappedPresentation.content),
+      props: structuredClone(mappedPresentation.props),
+      styleOverrides: bridgeComponent ? { surface: "plain" } : {},
+      bindings: bridgeComponent
+        ? homepageBindings(bridgeComponent, planningInput, revision, replacementSource)
+        : [],
+      assetAssignments: mappedPresentation.assetAssignments,
+    });
     try {
       registry.validateInstance(instance);
     } catch (error) {
       invalid(
         "invalid-component-contract",
-        error instanceof Error ? error.message : "The required brand-story component is invalid.",
+        error instanceof Error
+          ? error.message
+          : `The authoritative ${slot.component} profile component is invalid.`,
       );
     }
-    return [{ disposition: "added" as const, instance, replacesComponentIds: [] }];
+    return [
+      {
+        disposition: replacementSource ? ("replacement" as const) : ("added" as const),
+        instance,
+        replacesComponentIds: replacementSource ? [replacementSource.id] : [],
+      },
+    ];
   });
 }
 
@@ -883,7 +1153,52 @@ function validateAssetPlacements(
   input: WholeStorefrontPlanningInput,
   activeTargets: readonly ActiveComponentTarget[],
 ) {
-  const placements = [...input.requiredAssetPlacements].sort(
+  const explicitIdentities = new Set<string>();
+  input.requiredAssetPlacements.forEach((placement) => {
+    const identity = `${placement.pageId}:${placement.componentId}:${placement.assetSlotId}:${placement.assetId}`;
+    if (explicitIdentities.has(identity)) {
+      invalid(
+        "asset-role-slot-incompatible",
+        "The same approved asset cannot be placed in the same component slot more than once.",
+      );
+    }
+    explicitIdentities.add(identity);
+  });
+  const explicit = new Map(
+    input.requiredAssetPlacements.map((placement) => [
+      `${placement.pageId}:${placement.componentId}:${placement.assetSlotId}:${placement.assetId}`,
+      placement,
+    ]),
+  );
+  const approvedAssets = new Map(
+    (input.approvedAssetContext?.assets ?? []).map((asset) => [asset.assetId, asset]),
+  );
+  activeTargets.forEach((target) => {
+    target.instance.assetAssignments.forEach((assignment) => {
+      const asset = approvedAssets.get(assignment.assetId);
+      if (!asset) return;
+      const identity = `${target.pageId}:${target.componentId}:${assignment.slotId}:${assignment.assetId}`;
+      if (explicit.has(identity)) return;
+      const slot = target.definition.assetSlots.find(
+        (candidate) => candidate.id === assignment.slotId,
+      );
+      if (!slot) return;
+      explicit.set(identity, {
+        type: "PLACE_APPROVED_SOURCE_ASSET",
+        pageId: target.pageId,
+        componentId: target.componentId,
+        componentType: target.componentType,
+        assetSlotId: assignment.slotId,
+        assetId: assignment.assetId,
+        role: assignment.role,
+        assetRevision: asset.revision,
+        materialFingerprint: asset.materialFingerprint,
+        sourceReferenceId: asset.sourceReferenceId,
+        required: slot.required,
+      });
+    });
+  });
+  const placements = [...explicit.values()].sort(
     (left, right) =>
       left.pageId.localeCompare(right.pageId) ||
       left.componentId.localeCompare(right.componentId) ||
@@ -1062,7 +1377,7 @@ export function createWholeStorefrontGenerationPlan(
       targetPage.role === "product-template" ? existingProductBinding(page, definitions) : null;
     const retained = page.sections
       .map((section) => {
-        const instance = retainedComponent(section, definitions);
+        const instance = retainedComponent(section, definitions, input, commerceRevision);
         const definition = definitionFor(definitions, instance.component);
         try {
           registry.validateInstance(instance);
@@ -1170,15 +1485,24 @@ export function createWholeStorefrontGenerationPlan(
       });
     }
     if (!tokenOnly && targetPage.role === "homepage") {
+      const homepageMaterialization = pageBlueprintMaterializations.find(
+        (entry) => entry.pageType === "home",
+      );
+      if (!homepageMaterialization) {
+        invalid(
+          "unsupported-page-family",
+          "The selected direction has no authoritative homepage PageBlueprint materialization.",
+        );
+      }
       components.push(
-        ...requiredHomepageRecipeComponents({
+        ...authoritativeHomepageProfileComponents({
           planningInput: input,
           page,
           definitions,
           registry,
           usedComponentIds,
-          directionId: designSystemSelection.directionId,
-          recipeId: designSystemSelection.homepageRecipeId,
+          materialization: homepageMaterialization,
+          revision: commerceRevision,
         }),
       );
     }
@@ -1329,7 +1653,7 @@ export function createWholeStorefrontGenerationPlan(
       if (!sourceSection) {
         invalid("provider-invented-target", "A retained component target is unavailable.");
       }
-      const instance = retainedComponent(sourceSection, definitions);
+      const instance = retainedComponent(sourceSection, definitions, input, commerceRevision);
       const definition = definitionFor(definitions, instance.component);
       if (!validateComponentPageType(definition, pageType)) {
         invalid(
@@ -1467,7 +1791,17 @@ export function createWholeStorefrontGenerationPlan(
         evidenceFingerprint: input.brief.approvedEvidenceFingerprint,
         approvedAssetContextFingerprint: input.approvedAssetContext?.fingerprint ?? null,
         recipeContextFingerprint: input.recipeContext.fingerprint,
-        requiredAssetPlacements: approvedAssetPlacements,
+        // Only caller-supplied requirements belong to the provider request identity.
+        // The full, direction-specific placement projection remains fingerprinted by
+        // the resulting plan below; including it here would make a valid selected
+        // direction appear to answer a different request.
+        requiredAssetPlacements: [...input.requiredAssetPlacements].sort(
+          (left, right) =>
+            left.pageId.localeCompare(right.pageId) ||
+            left.componentId.localeCompare(right.componentId) ||
+            left.assetSlotId.localeCompare(right.assetSlotId) ||
+            left.assetId.localeCompare(right.assetId),
+        ),
         requestClass: tokenOnly
           ? ("tokenOnlyRefinement" as const)
           : ("coordinatedStructuralDirection" as const),

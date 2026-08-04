@@ -16,6 +16,7 @@ import {
   P9_05A_PROJECT_ID,
   createP905aFreshMerchantFixture,
 } from "@/data/demo/p9-05a-fresh-store-generation";
+import { brandStoryDefinition } from "@/components/registry/homepage";
 import { InMemoryProjectRepository, type ProjectAggregate } from "@/services/storage";
 import { validateProjectAggregate } from "@/services/storage/repository-validation";
 import {
@@ -28,6 +29,7 @@ import {
 export const P9_05B_LOCAL_DEMO_FLAG = "VESKIFY_P9_05B_LOCAL_DEMO";
 export const P9_05B_LOCAL_DEMO_TOKEN = "VESKIFY_P9_05B_LOCAL_DEMO_TOKEN";
 export const P9_05B_LOCAL_DEMO_NAMESPACE = "p9-05b-lumo-local-server";
+const P10A_04C_LOCAL_DEMO_FLAG = "VESKIFY_P10A_04C_LOCAL_DEMO";
 
 type DemoEnvironment = Readonly<Record<string, string | undefined>>;
 
@@ -74,12 +76,50 @@ export function isP905bLocalDemoConfigured(environment: DemoEnvironment = proces
   );
 }
 
-function fixture() {
-  return createP905aFreshMerchantFixture("warmApproachable");
+function fixture(environment: DemoEnvironment = process.env) {
+  const source = createP905aFreshMerchantFixture("warmApproachable");
+  if (environment[P10A_04C_LOCAL_DEMO_FLAG] !== "1") return source;
+  const approvedEditorialAsset = source.assetContext.assets.find(
+    (asset) => asset.role === "editorialImage",
+  );
+  if (!approvedEditorialAsset)
+    throw new Error("P10A-04C requires an approved editorial fixture asset.");
+  const approvedBrandStoryContent = Object.fromEntries(
+    Object.entries(brandStoryDefinition.defaultContent).filter(([key]) => key !== "media"),
+  );
+  source.aggregate = validateProjectAggregate({
+    ...source.aggregate,
+    snapshots: source.aggregate.snapshots.map((snapshot) => ({
+      ...snapshot,
+      pages: snapshot.pages.map((page) =>
+        page.type !== "home"
+          ? page
+          : {
+              ...page,
+              sections: [
+                ...page.sections.slice(0, -1),
+                {
+                  id: "section_lumo_p10a_04c_campaign_story",
+                  component: "brandStory",
+                  variant: brandStoryDefinition.defaultVariant,
+                  visible: true,
+                  content: {
+                    ...structuredClone(approvedBrandStoryContent),
+                    approvedAssetId: approvedEditorialAsset.assetId,
+                  },
+                  props: structuredClone(brandStoryDefinition.defaultProps),
+                },
+                page.sections.at(-1)!,
+              ],
+            },
+      ),
+    })),
+  });
+  return source;
 }
 
-function createState(): DemoState {
-  const source = fixture();
+function createState(environment: DemoEnvironment): DemoState {
+  const source = fixture(environment);
   return {
     repository: new InMemoryProjectRepository([structuredClone(source.aggregate)]),
     savedAggregate: structuredClone(source.aggregate),
@@ -136,14 +176,16 @@ function state(environment: DemoEnvironment): DemoState {
   if (!isP905bLocalDemoConfigured(environment)) {
     throw new Error("The P9-05B local demo authority is not configured.");
   }
-  globalThis.__veskifyP905bLocalDemoState ??= createState();
+  globalThis.__veskifyP905bLocalDemoState ??= createState(environment);
   return globalThis.__veskifyP905bLocalDemoState;
 }
 
-function contextSource(): AuthoritativeWholeStorefrontPlanningContextSource {
+function contextSource(
+  environment: DemoEnvironment,
+): AuthoritativeWholeStorefrontPlanningContextSource {
   return {
     load: () => {
-      const source = fixture();
+      const source = fixture(environment);
       return {
         brief: structuredClone(source.brief),
         componentDefinitions: structuredClone(source.planningInput.componentDefinitions),
@@ -154,11 +196,11 @@ function contextSource(): AuthoritativeWholeStorefrontPlanningContextSource {
   };
 }
 
-function authorityFor(current: DemoState) {
+function authorityFor(current: DemoState, environment: DemoEnvironment) {
   return createStandaloneServerWholeStorefrontPlanningAuthority({
     repository: current.repository,
     identity,
-    contextSource: contextSource(),
+    contextSource: contextSource(environment),
   });
 }
 
@@ -181,7 +223,7 @@ export function createP905bLocalDemoAuthority(
       const current = state(environment);
       const sessionId = requestSessionId(httpRequest);
       assertCurrentSession(current, sessionId);
-      const resolved = await authorityFor(current).resolve(request, httpRequest);
+      const resolved = await authorityFor(current, environment).resolve(request, httpRequest);
       return {
         ...resolved,
         claimProposal: () => {
@@ -248,7 +290,7 @@ export async function resetP905bLocalDemoProject(
   if (projectId !== P9_05A_PROJECT_ID) {
     throw new Error("The P9-05B local demo reset cannot target another project.");
   }
-  globalThis.__veskifyP905bLocalDemoState = createState();
+  globalThis.__veskifyP905bLocalDemoState = createState(environment);
   return inspectP905bLocalDemo(environment);
 }
 

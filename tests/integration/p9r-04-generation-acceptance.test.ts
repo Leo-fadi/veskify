@@ -130,7 +130,7 @@ describe("P9R-04 deterministic multi-page generation acceptance gate", () => {
       expect.arrayContaining(["header", "footer", "surface"]),
     );
     expect(comparison.changed.homepage).toEqual(
-      expect.arrayContaining(["recipeId", "sectionOrder", "hero"]),
+      expect.arrayContaining(["sectionOrder", "hero", "featuredProducts", "featuredCollections"]),
     );
     expect(comparison.changed.collection).toEqual(
       expect.arrayContaining(["recipeId", "header", "commerce"]),
@@ -141,7 +141,10 @@ describe("P9R-04 deterministic multi-page generation acceptance gate", () => {
     expect(comparison.changed.designSystem.length).toBeGreaterThanOrEqual(2);
     expect(projectP9r04Storefront(accepted.activeDraft)).toMatchObject({
       sharedFrame: { header: "header:compact", footer: "footer:compact" },
-      homepage: { recipeId: "homeModernCommerce", hero: "hero:asymmetric" },
+      homepage: {
+        recipeId: "blueprint-catalogue-forward-home",
+        hero: "homepageHero:asymmetric",
+      },
       collection: {
         recipeId: "collectionCommerce",
         commerce: { variant: "compact", filterLayout: "sidebar", gridDensity: "compact" },
@@ -186,10 +189,10 @@ describe("P9R-04 deterministic multi-page generation acceptance gate", () => {
       const rendererMarker =
         entry.component === "header"
           ? "store-header"
-          : entry.component === "hero"
-            ? "store-hero"
-            : entry.component === "productGrid"
-              ? "product-grid"
+          : entry.component === "homepageHero"
+            ? 'data-component="homepageHero"'
+            : entry.component === "homepageFeaturedProducts"
+              ? 'data-component="homepageFeaturedProducts"'
               : entry.component === "footer"
                 ? "store-footer"
                 : null;

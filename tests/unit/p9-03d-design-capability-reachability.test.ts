@@ -28,10 +28,10 @@ import { generateP905aScenarioFromSelectedDirection } from "../helpers/p9-05a-ge
 const directionIds = ["premiumEditorial", "modernTechnical", "warmApproachable"] as const;
 
 const expectedComponentVariantStatusCounts = {
-  "fully reachable": 29,
-  "registered but unreachable": 20,
-  "planner-visible but lost during compilation": 9,
-  "render-only": 18,
+  "fully reachable": 31,
+  "registered but unreachable": 37,
+  "planner-visible but lost during compilation": 23,
+  "render-only": 0,
 } as const;
 
 function componentVariantStatusCounts(
@@ -42,7 +42,12 @@ function componentVariantStatusCounts(
       ...counts,
       [record.status]: (counts[record.status] ?? 0) + 1,
     }),
-    {},
+    {
+      "fully reachable": 0,
+      "registered but unreachable": 0,
+      "planner-visible but lost during compilation": 0,
+      "render-only": 0,
+    },
   );
 }
 
@@ -178,12 +183,12 @@ describe("P9-03D design-capability reachability audit", () => {
           record.canonicalId.endsWith(`#${variant}`),
       );
 
-    expect(header("editorial")?.status).toBe("fully reachable");
-    expect(header("compact")?.status).toBe("registered but unreachable");
+    expect(header("editorial")?.status).toBe("planner-visible but lost during compilation");
+    expect(header("compact")?.status).toBe("fully reachable");
     validateP903dComponentVariantInventory(remapped, { designSystem: parsedRemapping });
 
     const stale = remapped.map((record) =>
-      record.canonicalId.includes("component:header@") && record.canonicalId.endsWith("#compact")
+      record.canonicalId.includes("component:header@") && record.canonicalId.endsWith("#editorial")
         ? { ...record, status: "fully reachable" as const }
         : record,
     );
@@ -205,7 +210,7 @@ describe("P9-03D design-capability reachability audit", () => {
           candidate.canonicalId.includes(`component:${type}@`) &&
           candidate.canonicalId.endsWith(`#${variant}`),
       );
-      expect(record?.plannerExposure.directionIds).toEqual([]);
+      expect(record?.plannerExposure.directionIds.length).toBeGreaterThan(0);
       expect(record?.plannerExposure.blueprintIds.length).toBeGreaterThan(0);
       expect(record?.deterministicSelectionEvidence).toContain("planner:dynamic-page-replacement");
       expect(record?.proposalCompilerPreservation).toBe("dropped by dynamic-page replacement");
@@ -248,7 +253,7 @@ describe("P9-03D design-capability reachability audit", () => {
       request.registry.flatMap((definition) =>
         definition.variants.map((variant) => `${definition.type}:${variant}`),
       ),
-    ).toHaveLength(76);
+    ).toHaveLength(91);
     expect(request.directionOptions.map((direction) => direction.id)).toEqual(
       [...directionIds].sort(),
     );
@@ -295,7 +300,7 @@ describe("P9-03D design-capability reachability audit", () => {
         (component) => component.component === "dynamicProductDetail",
       );
       const canonicalHeader = canonical.find((section) => section.component === "header");
-      const canonicalHero = canonical.find((section) => section.component === "hero");
+      const canonicalHero = canonical.find((section) => section.component === "homepageHero");
       const canonicalCollection = canonical.find(
         (section) => section.component === "dynamicCollectionCommerce",
       );
@@ -313,7 +318,7 @@ describe("P9-03D design-capability reachability audit", () => {
     }
   }, 40_000);
 
-  it("distinguishes announcement source retention from coordinated benefit-icons selection", () => {
+  it("distinguishes PageBlueprint-preserved homepage selections from replaced legacy choices", () => {
     const record = (type: string, variant: string) =>
       p903dDesignCapabilityInventory.componentVariants.find(
         (candidate) =>
@@ -321,7 +326,7 @@ describe("P9-03D design-capability reachability audit", () => {
           candidate.canonicalId.endsWith(`#${variant}`),
       );
     const announcement = record("announcementBar", "singleLine");
-    const benefitIcons = record("benefitIcons", "threeColumn");
+    const homepageTrust = record("homepageTrust", "threeColumn");
     const modernTechnical = storefrontDesignSystemV1.directions.find(
       (direction) => direction.id === "modernTechnical",
     )!;
@@ -330,19 +335,17 @@ describe("P9-03D design-capability reachability audit", () => {
     )!;
 
     expect(announcement?.proposalCompilerPreservation).toBe(
-      "recipe variant is not compiled; source is retained",
+      "preserved by coordinated proposal compiler",
     );
-    expect(announcement?.canonicalSnapshotBoundary).toContain("no announcement selection");
+    expect(announcement?.canonicalSnapshotBoundary).toContain("executable PageBlueprint");
     expect(Object.keys(modernTechnical.componentSelections)).not.toContain("announcement");
     expect(
       modernRecipe.sections.find((section) => section.component === "announcementBar")?.variant,
     ).toBe("singleLine");
-    expect(benefitIcons?.proposalCompilerPreservation).toBe(
+    expect(homepageTrust?.proposalCompilerPreservation).toBe(
       "preserved by coordinated proposal compiler",
     );
-    expect(benefitIcons?.canonicalSnapshotBoundary).toContain(
-      "coordinatedRuntimeComponent applies the registered componentSelections entry",
-    );
+    expect(homepageTrust?.canonicalSnapshotBoundary).toContain("executable PageBlueprint");
     expect(
       modernRecipe.sections.find((section) => section.component === "benefitIcons")?.variant,
     ).toBe("threeColumn");
@@ -385,28 +388,31 @@ describe("P9-03D design-capability reachability audit", () => {
     });
   });
 
-  it("identifies V2 homepage families as declared renderers without planner or Puck reachability", () => {
+  it("identifies every V2 homepage family as bridged and PageBlueprint reachable", () => {
     const canonicalTypes = new Set(Object.keys(veskifyComponentRegistry));
     const routeBridgeGaps = p903dDesignCapabilityInventory.componentVariants.filter(
       (record) => record.status === "render-only",
     );
-
-    expect(new Set(routeBridgeGaps.map((record) => record.canonicalId.split("@")[0]))).toEqual(
-      new Set([
-        "component:homepageHero",
-        "component:homepageFeaturedCollections",
-        "component:homepageFeaturedProducts",
-        "component:homepageCollectionNavigation",
-        "component:homepagePromotion",
-        "component:homepageTrust",
-      ]),
-    );
-    routeBridgeGaps.forEach((record) => {
-      const type = record.canonicalId.slice("component:".length).split("@")[0];
-      expect(canonicalTypes.has(type)).toBe(false);
-      expect(record.editorRendering).toBe("declared renderer without route bridge");
-      expect(record.previewRendering).toBe("declared renderer without route bridge");
-      expect(record.publishedRendering).toBe("declared renderer without route bridge");
+    expect(routeBridgeGaps).toEqual([]);
+    const bridgedTypes = [
+      "homepageHero",
+      "homepageFeaturedCollections",
+      "homepageFeaturedProducts",
+      "homepageCollectionNavigation",
+      "homepagePromotion",
+      "homepageTrust",
+    ];
+    bridgedTypes.forEach((type) => {
+      expect(canonicalTypes.has(type)).toBe(true);
+      const records = p903dDesignCapabilityInventory.componentVariants.filter((record) =>
+        record.canonicalId.startsWith(`component:${type}@`),
+      );
+      expect(records.some((record) => record.status === "fully reachable")).toBe(true);
+      records.forEach((record) => {
+        expect(record.editorRendering).toBe("shared renderer");
+        expect(record.previewRendering).toBe("shared renderer");
+        expect(record.publishedRendering).toBe("shared renderer");
+      });
     });
   });
 

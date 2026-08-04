@@ -422,7 +422,9 @@ function createPage(
 }
 
 function resolvedInitialBindingCategories(pageType: PageType, brief: StorefrontDesignBrief) {
-  if (pageType === "home") return ["navigation"] as const;
+  if (pageType === "home") {
+    return ["navigation", "projectBrandContext", "collectionList", "productList"] as const;
+  }
   if (brief.catalogueContext === "empty-catalogue") return [] as const;
   return pageType === "collection"
     ? (["collection", "productList"] as const)

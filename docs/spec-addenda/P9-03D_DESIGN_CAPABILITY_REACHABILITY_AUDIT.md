@@ -59,32 +59,32 @@ renderer-bridge gaps and deterministic reruns.
 
 ## Executive result
 
-The generated current V2 inventory contains **25 component types and 76 component variants**. The
+The generated current V2 inventory contains **25 component types and 91 component variants**. The
 component-variant total is derived from the machine inventory and every variant is present exactly
 once.
 
-| Component-variant status                    | Count | Result                                                                                                     |
-| ------------------------------------------- | ----: | ---------------------------------------------------------------------------------------------------------- |
-| Fully reachable                             |    29 | Direction-selected and present in the canonical proposal snapshot.                                         |
-| Registered but unreachable                  |    20 | Renderable, but absent from every current direction selection path.                                        |
-| Planner-visible but lost during compilation |     9 | Named by recipes, blueprints or planner replacement contracts but not preserved as that component variant. |
-| Render-only                                 |    18 | Six V2 homepage families and their variants have renderers but no planner/canonical/Puck route bridge.     |
-| Incomplete                                  |     0 | Component variants themselves are classified at a more exact boundary.                                     |
-| Missing                                     |     0 | Missing categories are recorded in the system-capability inventory instead.                                |
+| Component-variant status                    | Count | Result                                                                                                    |
+| ------------------------------------------- | ----: | --------------------------------------------------------------------------------------------------------- |
+| Fully reachable                             |    31 | PageBlueprint- or direction-selected and present in the canonical proposal snapshot.                      |
+| Registered but unreachable                  |    37 | Renderable, but absent from every current executable profile selection path.                              |
+| Planner-visible but lost during compilation |    23 | Named by legacy recipes, blueprints or replacement contracts but not preserved as that component variant. |
+| Render-only                                 |     0 | Every registered renderer family now has a canonical registry route.                                      |
+| Incomplete                                  |     0 | Component variants themselves are classified at a more exact boundary.                                    |
+| Missing                                     |     0 | Missing categories are recorded in the system-capability inventory instead.                               |
 
 The additional design-system inventory contains **37 records**: 19 fully reachable, 7 registered but
 unreachable, 10 incomplete and 1 missing.
 
 The principal reason the real Lumo storefront can be valid but visually generic is therefore not a
-lack of renderer code. The planner exposes only three direction choices; those choices actively use
-29 of 76 registered variants, while the richer V2 homepage family is disconnected from the
-generation and editor path.
+lack of renderer code. The executable PageBlueprints and dynamic commerce selections actively use
+31 of 91 registered variants. Legacy recipe variants that are replaced by those authoritative
+profiles remain visible as planner evidence, but are classified at their actual compiler boundary.
 
 ## Boundary findings
 
 ### 1. Provider exposure is broader than provider authority
 
-`buildWholeStorefrontPlanningProviderRequest` advertises all 25 component definitions and all 76
+`buildWholeStorefrontPlanningProviderRequest` advertises all 25 component definitions and all 91
 variants to a real provider. The provider may nevertheless choose only one of three registered
 direction IDs. Returned output must equal `planForDirection(directionId)` exactly. This is a strong
 safety boundary, but registry presence in the provider schema is not evidence of reachability.
@@ -104,7 +104,7 @@ Reachable collection variants are `editorial` and `compact`. Reachable PDP varia
 For a registered coordinated selection, `coordinatedRuntimeComponent` applies
 `designSystemSelection.componentSelections` before the canonical AI proposal snapshot is created.
 The selected component variant is therefore proven by the planner/compiler boundary itself for the
-29 fully reachable variants.
+31 fully reachable variants.
 
 Planner/compiler conformance must remain in the compatibility gate as the canonical selection
 boundary evolves.
@@ -134,24 +134,25 @@ legacy component variants do not survive as registered section identities.
 
 ### 6. Renderer parity is complete only for canonical-route components
 
-The 19 types in `veskifyComponentRegistry`, including the dynamic commerce bridge types, use the
+The 25 types in `veskifyComponentRegistry`, including the dynamic commerce and homepage bridge
+types, use the
 same registered implementation in the Puck editor, preview and published paths. Published routes
 reuse the preview clients with the published snapshot, and dynamic collection/PDP routes use the
 same commerce components with a target flag.
 
-The following V2-only homepage components declare editor, preview and published renderer targets and
-have tested renderer implementations, but are absent from `veskifyComponentRegistry`, Puck config,
-page recipes and whole-storefront planner composition:
+The following formerly V2-only homepage components now also have canonical snapshot/Puck bridge
+registrations and executable PageBlueprint selections:
 
-- `homepageHero` — 6 variants;
-- `homepageFeaturedCollections` — 2 variants;
-- `homepageFeaturedProducts` — 2 variants;
-- `homepageCollectionNavigation` — 2 variants;
-- `homepagePromotion` — 3 variants;
-- `homepageTrust` — 3 variants.
+- `homepageHero` — 8 variants;
+- `homepageFeaturedCollections` — 6 variants;
+- `homepageFeaturedProducts` — 3 variants;
+- `homepageCollectionNavigation` — 6 variants;
+- `homepagePromotion` — 5 variants;
+- `homepageTrust` — 5 variants.
 
-They are `render-only`, not shared-route reachable. Their metadata must not be reported as renderer
-parity until a canonical bridge exists.
+They are now shared-route reachable through the canonical homepage bridge. Variants not selected by
+an executable PageBlueprint remain registered but unreachable rather than being misclassified as
+renderer-only capabilities.
 
 ## Component capability matrix
 
@@ -160,22 +161,22 @@ source, required bindings, supported page types, responsive/accessibility contra
 blueprint references, deterministic direction evidence, provider exposure, compiler boundary and
 the three renderer targets.
 
-| Family / component            | Fully reachable                                                                     | Registered but unreachable     | Planner-visible but lost                                       | Render-only                                                                                                   |
-| ----------------------------- | ----------------------------------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Announcement                  | —                                                                                   | `rotating`, `bold`             | `singleLine`, `minimal`                                        | —                                                                                                             |
-| Header/navigation             | `centered`, `compact`, `transparent`                                                | `split`, `editorial`           | —                                                              | —                                                                                                             |
-| Hero                          | `editorial`, `fullBleed`, `asymmetric`                                              | `restrained`                   | —                                                              | `homepageHero`: `editorialSplit`, `imageLed`, `minimal`, `fullBleedOverlay`, `asymmetric`, `restrained`       |
-| Featured collection discovery | `grid`, `editorialCards`, `imageLed`                                                | `carousel`                     | —                                                              | `homepageFeaturedCollections`: `standard`, `editorial`; `homepageCollectionNavigation`: `standard`, `compact` |
-| Product grids/cards           | `standard`, `editorial`, `compact`                                                  | —                              | —                                                              | `homepageFeaturedProducts`: `standard`, `editorial`                                                           |
-| Story/editorial               | `editorial`, `minimal`, `imageLed`; image/text `imageLeft`, `imageRight`, `stacked` | `timeline`, `founder`          | —                                                              | —                                                                                                             |
-| Trust/service                 | `minimal`, `cards`, `threeColumn`                                                   | `fourColumn`                   | —                                                              | `homepageTrust`: `row`, `cards`, `compact`                                                                    |
-| Campaign                      | `imageOverlay`, `split`, `minimal`                                                  | —                              | —                                                              | `homepagePromotion`: `split`, `overlay`, `minimal`                                                            |
-| Newsletter                    | `inline`, `card`                                                                    | `fullWidth`                    | —                                                              | —                                                                                                             |
-| Footer                        | `columns`, `editorial`, `compact`                                                   | `expanded`, `dark`             | —                                                              | —                                                                                                             |
-| Legacy collection sections    | —                                                                                   | —                              | collection header `editorial`; filter bar `horizontal`         | —                                                                                                             |
-| Dynamic collection shell      | `editorial`, `compact`                                                              | `standard`, `gallery`          | —                                                              | —                                                                                                             |
-| Legacy PDP sections           | related products `grid`                                                             | —                              | gallery `thumbnails`; information `premium`; options `buttons` | —                                                                                                             |
-| Dynamic PDP shell             | `balanced`, `compact`, `editorialSplit`                                             | `editorial`, `galleryDominant` | —                                                              | —                                                                                                             |
+| Family / component            | Fully reachable                                                                                     | Registered but unreachable                                                                                     | Planner-visible but lost                                       | Render-only |
+| ----------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ----------- |
+| Announcement                  | —                                                                                                   | `rotating`, `bold`                                                                                             | `singleLine`, `minimal`                                        | —           |
+| Header/navigation             | `centered`, `compact`, `transparent`                                                                | `split`, `editorial`                                                                                           | —                                                              | —           |
+| Hero                          | `homepageHero`: `editorial`, `fullBleed`, `asymmetric`                                              | `homepageHero`: `editorialSplit`, `imageLed`, `minimal`, `fullBleedOverlay`, `restrained`; legacy `restrained` | legacy `editorial`, `fullBleed`, `asymmetric`                  | —           |
+| Featured collection discovery | `homepageFeaturedCollections`: `editorialCards`, `imageLed`; `homepageCollectionNavigation`: `grid` | Other registered V2 collection-discovery variants; legacy `carousel`                                           | legacy `grid`, `editorialCards`, `imageLed`                    | —           |
+| Product grids/cards           | `homepageFeaturedProducts`: `standard`, `editorial`, `compact`                                      | —                                                                                                              | legacy `standard`, `editorial`, `compact`                      | —           |
+| Story/editorial               | `editorial`, `minimal`, `imageLed`; image/text `imageLeft`, `imageRight`, `stacked`                 | `timeline`, `founder`                                                                                          | —                                                              | —           |
+| Trust/service                 | `homepageTrust`: `minimal`, `cards`, `threeColumn`                                                  | `homepageTrust`: `row`, `compact`; legacy `fourColumn`                                                         | legacy `minimal`, `cards`, `threeColumn`                       | —           |
+| Campaign                      | `homepagePromotion`: `imageLed`                                                                     | `homepagePromotion`: `split`, `overlay`, `minimal`, `editorial`                                                | legacy `imageOverlay`, `split`, `minimal`                      | —           |
+| Newsletter                    | `inline`, `card`                                                                                    | `fullWidth`                                                                                                    | —                                                              | —           |
+| Footer                        | `columns`, `editorial`, `compact`                                                                   | `expanded`, `dark`                                                                                             | —                                                              | —           |
+| Legacy collection sections    | —                                                                                                   | —                                                                                                              | collection header `editorial`; filter bar `horizontal`         | —           |
+| Dynamic collection shell      | `editorial`, `compact`                                                                              | `standard`, `gallery`                                                                                          | —                                                              | —           |
+| Legacy PDP sections           | related products `grid`                                                                             | —                                                                                                              | gallery `thumbnails`; information `premium`; options `buttons` | —           |
+| Dynamic PDP shell             | `balanced`, `compact`, `editorialSplit`                                                             | `editorial`, `galleryDominant`                                                                                 | —                                                              | —           |
 
 ## Design-system and page-recipe matrix
 
@@ -193,7 +194,7 @@ the three renderer targets.
 | PDP recipes              | `productSimple`, `productJewellery`, `productVariantLed` are direction-selectable          | `productGallery`                                               | Selected recipes are **incomplete** for the same recipe-variant reason.                                                   |
 | PDP gallery/info/options | Three dynamic presentation bundles reach the shell                                         | Gallery-dominant recipe and standalone `editorial` PDP variant | Legacy gallery/info/options identities are dropped by dynamic replacement.                                                |
 | EN/FI                    | Language plan and localized component contracts survive to shared renderers.               | —                                                              | —                                                                                                                         |
-| Responsive               | Four breakpoints and no-overflow contracts are registered.                                 | —                                                              | **Incomplete proof:** not every one of 76 variants has direct visual evidence at 375/768/1024/1440.                       |
+| Responsive               | Four breakpoints and no-overflow contracts are registered.                                 | —                                                              | **Incomplete proof:** not every one of 91 variants has direct visual evidence at 375/768/1024/1440.                       |
 | Accessibility            | Keyboard, semantics, labels and focus contracts exist; V2 commerce contracts are specific. | —                                                              | **Incomplete proof:** adapted V1 contracts are generic and per-variant route evidence is not exhaustive.                  |
 
 ## Prioritized gaps
@@ -230,7 +231,7 @@ the three renderer targets.
 
 ### Already available — do not rebuild
 
-- The 76 approved variant renderers and V2 definitions.
+- The 91 approved variant renderers and V2 definitions.
 - Typed dynamic collection and PDP bindings, protected commerce semantics and generic option logic.
 - Three deterministic whole-storefront directions with atomic proposal behavior.
 - Brand-system materialization for typography, spacing, radius, imagery and surface depth.

@@ -11,19 +11,13 @@ import {
   type SectionInstance,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
-import { aurumHeroDefinition } from "./aurum-hero";
-import { collectionDefinitions } from "./collection";
-import { homepageDefinitions } from "./homepage";
-import { productDefinitions } from "./product";
-import { dynamicCommerceBridgeDefinitions } from "./dynamic-commerce-bridge";
+import { homepageCommerceBridgeDefinitions } from "./homepage-commerce-bridge";
 import type { ComponentDefinition, StorefrontRenderContext } from "./contract";
+import { veskifyLegacyComponentRegistry } from "./legacy-registry";
 
 export const veskifyComponentRegistry = {
-  ...homepageDefinitions,
-  ...collectionDefinitions,
-  ...productDefinitions,
-  ...dynamicCommerceBridgeDefinitions,
-  hero: aurumHeroDefinition,
+  ...veskifyLegacyComponentRegistry,
+  ...homepageCommerceBridgeDefinitions,
 } as const satisfies Record<string, ComponentDefinition>;
 
 export type RegisteredComponentType = keyof typeof veskifyComponentRegistry;
@@ -82,12 +76,14 @@ export function createStorefrontRenderContext({
   catalogue,
   snapshot,
   pagePathPrefix = "",
+  renderTarget = "preview",
 }: {
   activeLocale: Locale;
   primaryLocale: Locale;
   catalogue: CatalogueDisplayModel;
   snapshot: Pick<StorefrontSnapshot, "navigation" | "pages">;
   pagePathPrefix?: string;
+  renderTarget?: StorefrontRenderContext["renderTarget"];
 }): StorefrontRenderContext {
   const pagePaths = Object.fromEntries(
     snapshot.pages.map((page) => [
@@ -104,5 +100,6 @@ export function createStorefrontRenderContext({
     navigation: navigationModelSchema.parse(snapshot.navigation),
     pagePaths,
     homePath: homePage ? pagePaths[homePage.id] : undefined,
+    renderTarget,
   };
 }

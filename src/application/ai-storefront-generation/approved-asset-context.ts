@@ -10,6 +10,10 @@ import { createStorefrontDesignBriefEvidenceFingerprint } from "@/application/so
 import type { StorefrontDesignBriefContract } from "@/domain/source-discovery";
 import { idSchema, localizedTextSchema } from "@/domain/shared";
 import { canonicalValueFingerprint } from "@/domain/storefront";
+import {
+  approvedAssetPlacementOperationSchema,
+  type ApprovedAssetPlacementOperation,
+} from "@/domain/storefront";
 
 export const approvedGenerationAssetSchema = z
   .object({
@@ -109,25 +113,13 @@ export const approvedGenerationAssetContextSchema = z
     }
   });
 
-export const approvedAssetPlacementOperationSchema = z
-  .object({
-    type: z.literal("PLACE_APPROVED_SOURCE_ASSET"),
-    pageId: idSchema,
-    componentId: idSchema,
-    componentType: z.string().trim().min(1).max(80),
-    assetSlotId: z.string().trim().min(1).max(80),
-    assetId: idSchema,
-    role: assetRoleSchema,
-    assetRevision: z.string().trim().min(1).max(120),
-    materialFingerprint: z.string().trim().min(1),
-    sourceReferenceId: idSchema,
-    required: z.boolean().default(false),
-  })
-  .strict();
+export {
+  approvedAssetPlacementOperationSchema,
+  type ApprovedAssetPlacementOperation,
+} from "@/domain/storefront";
 
 export type ApprovedGenerationAsset = z.infer<typeof approvedGenerationAssetSchema>;
 export type ApprovedGenerationAssetContext = z.infer<typeof approvedGenerationAssetContextSchema>;
-export type ApprovedAssetPlacementOperation = z.infer<typeof approvedAssetPlacementOperationSchema>;
 
 export type ApprovedGenerationAssetErrorCode =
   | "no-approved-brief"

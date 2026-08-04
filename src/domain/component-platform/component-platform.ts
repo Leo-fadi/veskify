@@ -6,6 +6,7 @@ import {
   localizedTextSchema,
   safeExternalUrlSchema,
 } from "@/domain/shared";
+import { assetRoleSchema } from "@/domain/shared";
 import { pageTypeSchema } from "@/domain/storefront";
 import {
   componentDesignCompatibilitySchema,
@@ -135,17 +136,7 @@ export const commerceBindingSourceTypeSchema = z.enum([
   "localizedContent",
 ]);
 
-export const assetRoleSchema = z.enum([
-  "logo",
-  "heroDesktop",
-  "heroMobile",
-  "collectionImage",
-  "productMainImage",
-  "productAlternativeImage",
-  "editorialImage",
-  "supportingContentImage",
-  "iconDecorative",
-]);
+export { assetRoleSchema, type AssetRole } from "@/domain/shared";
 
 export const commerceBindingSlotDefinitionSchema = z
   .object({
@@ -1746,7 +1737,6 @@ export type ComponentFamily = z.infer<typeof componentFamilySchema>;
 export type ComponentVariantDefinition = z.infer<typeof componentVariantDefinitionSchema>;
 export type ContentSlotDefinition = z.infer<typeof contentSlotDefinitionSchema>;
 export type CommerceBindingSourceType = z.infer<typeof commerceBindingSourceTypeSchema>;
-export type AssetRole = z.infer<typeof assetRoleSchema>;
 export type CommerceBindingSlotDefinition = z.infer<typeof commerceBindingSlotDefinitionSchema>;
 export type AssetSlotDefinition = z.infer<typeof assetSlotDefinitionSchema>;
 export type EditablePresentationField = z.infer<typeof editablePresentationFieldSchema>;

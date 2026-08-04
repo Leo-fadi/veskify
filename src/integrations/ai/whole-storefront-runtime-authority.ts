@@ -66,6 +66,8 @@ import {
 import { idSchema, type Locale } from "@/domain/shared";
 import {
   storefrontSnapshotSchema,
+  type ApprovedAssetPlacementOperation,
+  approvedAssetPresentationSchema,
   type PageModel,
   type SectionInstance,
   type StorefrontSnapshot,
@@ -344,6 +346,7 @@ function projectedRuntimeSection(
   componentInput: WholeStorefrontRuntimeComponent,
   planningInput: WholeStorefrontPlanningInput,
   approvedAssetPresentations: readonly ApprovedAssetPresentation[],
+  approvedAssetPlacements: readonly ApprovedAssetPlacementOperation[],
 ): SectionInstance {
   const { visible, ...instance } = componentInput;
   const component = resolveApprovedBrandStoryMedia(
@@ -351,6 +354,37 @@ function projectedRuntimeSection(
     planningInput.approvedAssetContext,
     approvedAssetPresentations,
   );
+  const placements = approvedAssetPlacements
+    .filter(
+      (placement) =>
+        placement.componentId === component.id && placement.componentType === component.component,
+    )
+    .map((placement) => structuredClone(placement));
+  const compactAssignments = new Map(
+    component.assetAssignments.map((assignment) => [assignment.slotId, assignment]),
+  );
+  placements.forEach((placement) => {
+    const assignment = compactAssignments.get(placement.assetSlotId);
+    if (
+      !assignment ||
+      assignment.assetId !== placement.assetId ||
+      assignment.role !== placement.role
+    ) {
+      throw new ServerWholeStorefrontAuthorityError("malformed-state");
+    }
+  });
+  const presentations = placements.flatMap((placement) => {
+    const presentation = approvedAssetPresentations.find(
+      (candidate) =>
+        candidate.assetId === placement.assetId &&
+        candidate.role === placement.role &&
+        candidate.revision === placement.assetRevision &&
+        candidate.materialFingerprint === placement.materialFingerprint,
+    );
+    return presentation
+      ? [approvedAssetPresentationSchema.parse(structuredClone(presentation))]
+      : [];
+  });
   if (component.component === "dynamicCollectionCommerce") {
     const collection = component.bindings.find((binding) => binding.source === "collection");
     const products = component.bindings.find((binding) => binding.source === "productList");
@@ -369,6 +403,8 @@ function projectedRuntimeSection(
         canonicalRevision: collection.revision,
       },
       props: structuredClone(component.props),
+      approvedAssetPlacements: placements,
+      approvedAssetPresentations: presentations,
     };
   }
   if (component.component === "dynamicProductDetail") {
@@ -387,6 +423,8 @@ function projectedRuntimeSection(
         canonicalRevision: product.revision,
       },
       props: structuredClone(component.props),
+      approvedAssetPlacements: placements,
+      approvedAssetPresentations: presentations,
     };
   }
   return {
@@ -396,6 +434,8 @@ function projectedRuntimeSection(
     visible,
     content: structuredClone(component.content),
     props: structuredClone(component.props),
+    approvedAssetPlacements: placements,
+    approvedAssetPresentations: presentations,
   };
 }
 
@@ -404,11 +444,17 @@ function compiledProjectedPage(
   components: readonly WholeStorefrontRuntimeComponent[],
   planningInput: WholeStorefrontPlanningInput,
   approvedAssetPresentations: readonly ApprovedAssetPresentation[],
+  approvedAssetPlacements: readonly ApprovedAssetPlacementOperation[],
 ): PageModel {
   return {
     ...structuredClone(currentPage),
     sections: components.map((component) =>
-      projectedRuntimeSection(component, planningInput, approvedAssetPresentations),
+      projectedRuntimeSection(
+        component,
+        planningInput,
+        approvedAssetPresentations,
+        approvedAssetPlacements.filter((placement) => placement.pageId === currentPage.id),
+      ),
     ),
   };
 }
@@ -492,6 +538,7 @@ function projectPlanOperations(
         plannedPage.components,
         planningInput,
         approvedAssetPresentations,
+        wholeStorefrontProposal.proposedStorefront.approvedAssetPlacements,
       );
       const projectedIds = new Set(projectedPage.sections.map((section) => section.id));
       const removedSectionIds = currentPage.sections
@@ -568,7 +615,7 @@ function planDerivedProposalEnvelope(input: {
     input.request.targetFingerprint,
     input.request.permissionFingerprint,
     operations,
-    input.plan.approvedAssetPlacements,
+    input.request.assetPlacementOperations,
   );
   const pageOperationCount = operations.filter(
     ({ target }) => target.kind === "page" || target.kind === "section",
@@ -602,7 +649,11 @@ function planDerivedProposalEnvelope(input: {
       targetFingerprint: input.request.targetFingerprint,
       permissionFingerprint: input.request.permissionFingerprint,
       operations,
-      assetPlacementOperations: structuredClone(input.plan.approvedAssetPlacements),
+      // The provider-facing envelope contains only explicitly requested
+      // placements. Authority-derived placements remain in the validated
+      // compiled proposal and projected snapshot sections below, so a provider
+      // cannot claim an unrequested source asset as its own operation.
+      assetPlacementOperations: structuredClone(input.request.assetPlacementOperations),
       summary,
       validation: { valid: true, errors: [] },
       status: "pending",
@@ -759,9 +810,16 @@ export function createServerWholeStorefrontPlanningHandler({
       diagnostic("normalization_completed", "success");
       diagnostic("proposal_schema_validated", "success");
       stage = "proposal_compiled";
+      // The provider selects a registered direction only. Once that selection
+      // has been validated into a plan, the server-owned placement projection
+      // becomes the canonical proposal transport for response validation.
+      const proposalRequest = aiStorefrontProviderRequestSchema.parse({
+        ...canonicalRequest,
+        assetPlacementOperations: plan.approvedAssetPlacements,
+      });
       const envelope = validateAiStorefrontProviderResponse(
-        canonicalRequest,
-        await context.proposalEnvelope(canonicalRequest, plan),
+        proposalRequest,
+        await context.proposalEnvelope(proposalRequest, plan),
       );
       diagnostic(stage, "success");
       if (

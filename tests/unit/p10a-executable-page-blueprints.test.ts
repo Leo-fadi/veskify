@@ -17,7 +17,7 @@ function requiredProfile(profileId: string) {
 
 function bindingsFor(pageType: string) {
   return pageType === "home"
-    ? (["navigation"] as const)
+    ? (["navigation", "projectBrandContext", "collectionList", "productList"] as const)
     : pageType === "collection"
       ? (["collection", "productList"] as const)
       : pageType === "product"
@@ -76,11 +76,11 @@ describe("P10A-03 executable PageBlueprint profiles", () => {
     expect(first.slots.map(({ component, variant }) => [component, variant])).toEqual([
       ["announcementBar", "singleLine"],
       ["header", "transparent"],
-      ["hero", "fullBleed"],
-      ["featuredCategories", "imageLed"],
-      ["brandStory", "imageLed"],
-      ["productGrid", "editorial"],
-      ["benefitIcons", "minimal"],
+      ["homepageHero", "fullBleed"],
+      ["homepageFeaturedCollections", "imageLed"],
+      ["homepagePromotion", "imageLed"],
+      ["homepageFeaturedProducts", "editorial"],
+      ["homepageTrust", "minimal"],
       ["newsletter", "inline"],
       ["footer", "editorial"],
     ]);
@@ -218,7 +218,7 @@ describe("P10A-03 executable PageBlueprint profiles", () => {
     ).toBe("invalid-profile");
 
     const incompatibleAssetRole = structuredClone(base);
-    incompatibleAssetRole.profile!.requiredAssetRoles = ["productAlternativeImage"];
+    incompatibleAssetRole.profile!.requiredAssetRoles = ["supportingContentImage"];
     expect(
       errorCode(() =>
         materializeExecutablePageBlueprint({
@@ -236,7 +236,12 @@ describe("P10A-03 executable PageBlueprint profiles", () => {
     const materialized = materializeExecutablePageBlueprint({
       pagePlan: profile,
       componentDefinitions: veskifyComponentDefinitionsV2,
-      availableBindingCategories: ["navigation"],
+      availableBindingCategories: [
+        "navigation",
+        "projectBrandContext",
+        "collectionList",
+        "productList",
+      ],
       brandSystemParameterValues: { spacingScale: "compact" },
     });
     expect(

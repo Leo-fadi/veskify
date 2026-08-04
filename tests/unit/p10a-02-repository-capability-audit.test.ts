@@ -31,14 +31,14 @@ function capabilityMatrixStatuses(): string[] {
 
 describe("P10A-02 repository capability audit", () => {
   it("keeps every legacy renderer registration represented in the canonical V2 registry", () => {
-    expect(p10a02ComponentCapabilityAudit.v1RegisteredComponentTypes).toHaveLength(19);
+    expect(p10a02ComponentCapabilityAudit.v1RegisteredComponentTypes).toHaveLength(25);
     expect(p10a02ComponentCapabilityAudit.v1TypesMissingV2Definition).toEqual([]);
     expect(p10a02ComponentCapabilityAudit.rendererTypesMissingV2Definition).toEqual([]);
   });
 
   it("keeps every V2 component type connected to either the legacy bridge or an all-surface renderer", () => {
     expect(p10a02ComponentCapabilityAudit.v2RegisteredComponentTypes).toHaveLength(25);
-    expect(p10a02ComponentCapabilityAudit.v2RegisteredVariantCount).toBe(76);
+    expect(p10a02ComponentCapabilityAudit.v2RegisteredVariantCount).toBe(91);
     expect(p10a02ComponentCapabilityAudit.componentFamilyCounts).toEqual({
       content: 17,
       commerce: 4,
@@ -47,14 +47,7 @@ describe("P10A-02 repository capability audit", () => {
       service: 1,
     });
     expect(p10a02ComponentCapabilityAudit.v2TypesMissingRegisteredRenderer).toEqual([]);
-    expect(p10a02ComponentCapabilityAudit.v2TypesWithoutLegacyRegistryBridge).toEqual([
-      "homepageCollectionNavigation",
-      "homepageFeaturedCollections",
-      "homepageFeaturedProducts",
-      "homepageHero",
-      "homepagePromotion",
-      "homepageTrust",
-    ]);
+    expect(p10a02ComponentCapabilityAudit.v2TypesWithoutLegacyRegistryBridge).toEqual([]);
   });
 
   it("rejects duplicate family/variant identities and missing page-family compatibility", () => {
