@@ -194,7 +194,10 @@ describe("P8-01 whole-storefront generation plan", () => {
                 component: componentPlan.component,
                 variant: componentPlan.variant,
                 disposition: componentPlan.disposition,
-                preservesExistingContent: componentPlan.preservesExistingContent,
+                preservesExistingContent:
+                  componentPlan.disposition === "removed"
+                    ? undefined
+                    : componentPlan.preservesExistingContent,
               },
         ),
       })),

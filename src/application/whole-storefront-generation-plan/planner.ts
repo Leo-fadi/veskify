@@ -770,11 +770,12 @@ function mappedBrandStoryPresentation(planningInput: WholeStorefrontPlanningInpu
     );
   }
   const businessName = planningInput.brief.businessIdentity.businessName;
+  const sourceLocale = planningInput.brief.languagePlan.primaryLanguage ?? "en";
   return {
     content: {
-      eyebrow: { en: businessName, fi: businessName },
-      heading: { en: businessName, fi: businessName },
-      body: { en: description, fi: description },
+      eyebrow: { [sourceLocale]: businessName },
+      heading: { [sourceLocale]: businessName },
+      body: { [sourceLocale]: description },
       approvedAssetId: approvedAsset.assetId,
       facts: [],
     },
@@ -813,80 +814,112 @@ function authoritativeHomepageProfileComponents(input: {
     invalid("unsupported-page-family", "The authoritative homepage profile is unavailable.");
   }
   const consumedSourceIds = new Set<string>();
-  return materialization.slots.flatMap((slot) => {
-    if (page.sections.some((section) => section.component === slot.component)) return [];
-    const definition = definitionFor(definitions, slot.component);
-    const legacyDefinition = getComponentDefinition(slot.component);
-    const bridgeComponent = homepageCommerceBridgeComponentNames.find(
-      (component): component is HomepageCommerceBridgeComponent => component === slot.component,
-    );
-    const replacementSource = bridgeComponent
-      ? page.sections.find(
-          (section) =>
-            !consumedSourceIds.has(section.id) &&
-            legacyHomepageComponentForBridge[bridgeComponent].includes(section.component),
-        )
-      : undefined;
-    const profileSlot = pagePlan.slots.find((candidate) => candidate.id === slot.slotId);
-    if (!profileSlot) {
-      invalid(
-        "unsupported-page-family",
-        `The authoritative homepage profile is missing slot ${slot.slotId}.`,
-      );
-    }
-    if (!replacementSource && !profileSlot.required) {
-      if (profileSlot.omitWhen === "when-not-requested") return [];
+  const managedSourceIds = new Set(
+    page.sections
+      .filter((section) =>
+        homepageCommerceBridgeComponentNames.some((component) => component === section.component),
+      )
+      .map((section) => section.id),
+  );
+  const selectedComponents: WholeStorefrontGenerationPlan["pagePlans"][number]["components"] =
+    materialization.slots.flatMap((slot) => {
+      const definition = definitionFor(definitions, slot.component);
+      const legacyDefinition = getComponentDefinition(slot.component);
       if (
-        profileSlot.omitWhen === "when-imagery-is-unavailable" &&
-        !planningInput.approvedAssetContext?.assets.some((asset) => asset.role === "editorialImage")
+        (slot.component === "header" || slot.component === "footer") &&
+        page.sections.some((section) => section.component === slot.component)
       ) {
         return [];
       }
-    }
-    if (replacementSource) consumedSourceIds.add(replacementSource.id);
-    const componentId =
-      replacementSource?.id ?? generatedComponentId(page.id, slot.component, usedComponentIds);
-    usedComponentIds.add(componentId);
-    const mappedPresentation = bridgeComponent
-      ? mappedHomepageBridgePresentation(bridgeComponent, replacementSource, planningInput)
-      : slot.component === "brandStory"
-        ? mappedBrandStoryPresentation(planningInput)
-        : {
-            content: legacyDefinition.defaultContent,
-            props: legacyDefinition.defaultProps,
-            assetAssignments: [],
-          };
-    const instance = componentInstanceV2Schema.parse({
-      id: componentId,
-      component: slot.component,
-      componentVersion: definition.version,
-      variant: slot.variant,
-      content: structuredClone(mappedPresentation.content),
-      props: structuredClone(mappedPresentation.props),
-      styleOverrides: bridgeComponent ? { surface: "plain" } : {},
-      bindings: bridgeComponent
-        ? homepageBindings(bridgeComponent, planningInput, revision, replacementSource)
-        : [],
-      assetAssignments: mappedPresentation.assetAssignments,
-    });
-    try {
-      registry.validateInstance(instance);
-    } catch (error) {
-      invalid(
-        "invalid-component-contract",
-        error instanceof Error
-          ? error.message
-          : `The authoritative ${slot.component} profile component is invalid.`,
+      const bridgeComponent = homepageCommerceBridgeComponentNames.find(
+        (component): component is HomepageCommerceBridgeComponent => component === slot.component,
       );
-    }
-    return [
-      {
-        disposition: replacementSource ? ("replacement" as const) : ("added" as const),
-        instance,
-        replacesComponentIds: replacementSource ? [replacementSource.id] : [],
-      },
-    ];
-  });
+      const replacementSource = bridgeComponent
+        ? page.sections.find(
+            (section) =>
+              !consumedSourceIds.has(section.id) &&
+              (section.component === slot.component ||
+                legacyHomepageComponentForBridge[bridgeComponent].includes(section.component)),
+          )
+        : undefined;
+      const profileSlot = pagePlan.slots.find((candidate) => candidate.id === slot.slotId);
+      if (!profileSlot) {
+        invalid(
+          "unsupported-page-family",
+          `The authoritative homepage profile is missing slot ${slot.slotId}.`,
+        );
+      }
+      if (!replacementSource && !profileSlot.required) {
+        if (profileSlot.omitWhen === "when-not-requested") return [];
+        if (
+          profileSlot.omitWhen === "when-imagery-is-unavailable" &&
+          !planningInput.approvedAssetContext?.assets.some(
+            (asset) => asset.role === "editorialImage",
+          )
+        ) {
+          return [];
+        }
+      }
+      if (replacementSource) consumedSourceIds.add(replacementSource.id);
+      const componentId =
+        replacementSource?.id ?? generatedComponentId(page.id, slot.component, usedComponentIds);
+      usedComponentIds.add(componentId);
+      const mappedPresentation = bridgeComponent
+        ? mappedHomepageBridgePresentation(bridgeComponent, replacementSource, planningInput)
+        : slot.component === "brandStory"
+          ? mappedBrandStoryPresentation(planningInput)
+          : {
+              content: legacyDefinition.defaultContent,
+              props: legacyDefinition.defaultProps,
+              assetAssignments: [],
+            };
+      const instance = componentInstanceV2Schema.parse({
+        id: componentId,
+        component: slot.component,
+        componentVersion: definition.version,
+        variant: slot.variant,
+        content: structuredClone(mappedPresentation.content),
+        props: structuredClone(mappedPresentation.props),
+        styleOverrides: bridgeComponent ? { surface: "plain" } : {},
+        bindings: bridgeComponent
+          ? homepageBindings(bridgeComponent, planningInput, revision, replacementSource)
+          : [],
+        assetAssignments: mappedPresentation.assetAssignments,
+      });
+      try {
+        registry.validateInstance(instance);
+      } catch (error) {
+        invalid(
+          "invalid-component-contract",
+          error instanceof Error
+            ? error.message
+            : `The authoritative ${slot.component} profile component is invalid.`,
+        );
+      }
+      return [
+        {
+          disposition: replacementSource ? ("replacement" as const) : ("added" as const),
+          instance,
+          replacesComponentIds: replacementSource ? [replacementSource.id] : [],
+        },
+      ];
+    });
+  const removedComponents: WholeStorefrontGenerationPlan["pagePlans"][number]["components"] =
+    // Profile-managed bridge sections that are not selected by the new executable
+    // materialization must not remain as accidental page-body authority.
+    [...managedSourceIds]
+      .filter((id) => !consumedSourceIds.has(id))
+      .map((componentId) => {
+        const section = page.sections.find((candidate) => candidate.id === componentId)!;
+        return {
+          disposition: "removed" as const,
+          componentId,
+          component: section.component,
+          componentVersion: definitionFor(definitions, section.component).version,
+          variant: section.variant,
+        };
+      });
+  return [...selectedComponents, ...removedComponents];
 }
 
 function generatedPageId(baseId: string, usedIds: ReadonlySet<string>): string {
@@ -1642,6 +1675,7 @@ export function createWholeStorefrontGenerationPlan(
       }
       if (
         component.disposition === "fallback-retained" ||
+        component.disposition === "removed" ||
         replacementIds.has(component.componentId)
       ) {
         return [];

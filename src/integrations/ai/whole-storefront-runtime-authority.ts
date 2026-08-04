@@ -427,6 +427,25 @@ function projectedRuntimeSection(
       approvedAssetPresentations: presentations,
     };
   }
+  if (component.component === "homepageFeaturedProducts") {
+    const products = component.bindings.find(
+      (
+        binding,
+      ): binding is Extract<(typeof component.bindings)[number], { source: "productList" }> =>
+        binding.source === "productList" && binding.slotId === "products",
+    );
+    if (!products) throw new ServerWholeStorefrontAuthorityError("malformed-state");
+    return {
+      id: component.id,
+      component: component.component,
+      variant: component.variant,
+      visible,
+      content: { ...structuredClone(component.content), productIds: [...products.productIds] },
+      props: structuredClone(component.props),
+      approvedAssetPlacements: placements,
+      approvedAssetPresentations: presentations,
+    };
+  }
   return {
     id: component.id,
     component: component.component,

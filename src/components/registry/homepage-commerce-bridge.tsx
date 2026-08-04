@@ -12,6 +12,7 @@ import type {
 } from "@/domain/storefront";
 import {
   defineComponent,
+  resolveStorefrontNavigationPath,
   type ComponentDefinition,
   type StorefrontRenderContext,
 } from "./contract";
@@ -170,26 +171,25 @@ function projectionFor(
           },
         }
       : {
-          price: {
-            ...product.price,
-            formatted: { en: `€${product.price.amount}`, fi: `${product.price.amount} €` },
-          },
+          price: product.price,
         }),
     ...(product.compareAtPrice === undefined
       ? {}
       : {
-          compareAtPrice: {
-            ...product.compareAtPrice,
-            formatted: {
-              en: `€${product.compareAtPrice.amount}`,
-              fi: `${product.compareAtPrice.amount} €`,
-            },
-          },
+          compareAtPrice: product.compareAtPrice,
         }),
-    availability: product.availabilityLabel ?? {
-      en: "Availability unavailable",
-      fi: "Saatavuus ei saatavilla",
-    },
+    availability:
+      product.availabilityLabel ??
+      (product.stockStatus === "inStock"
+        ? { en: "In stock", fi: "Varastossa" }
+        : product.stockStatus === "lowStock"
+          ? { en: "Limited availability", fi: "Rajoitetusti saatavilla" }
+          : product.stockStatus === "outOfStock"
+            ? { en: "Currently unavailable", fi: "Ei tällä hetkellä saatavilla" }
+            : {
+                en: "Availability unavailable",
+                fi: "Saatavuus ei saatavilla",
+              }),
     media: product.images.map((image) => ({
       assetId: image.id,
       role: "main" as const,
@@ -292,6 +292,19 @@ function instanceFor(
   const projection = projectionFor(context, componentPlacements);
   const revision = `catalogue-${context.catalogue.id}`;
   const contentRecord = z.record(z.string(), z.unknown()).parse(content);
+  const persistedProductIds =
+    component === "homepageFeaturedProducts" && Array.isArray(contentRecord.productIds)
+      ? contentRecord.productIds.map((id) => z.string().parse(id))
+      : undefined;
+  if (
+    persistedProductIds?.some(
+      (id) => !projection.products.some((product) => product.productId === id),
+    )
+  ) {
+    throw new Error(
+      "A persisted homepage product-list binding no longer resolves in canonical commerce.",
+    );
+  }
   const actionLabel =
     component === "homepageHero"
       ? contentRecord.primaryActionLabel
@@ -324,7 +337,7 @@ function instanceFor(
     bindings.push({
       slotId: "products",
       source: "productList",
-      productIds: projection.products.map((item) => item.productId),
+      productIds: persistedProductIds ?? projection.products.map((item) => item.productId),
       revision,
     });
   if (actionNavigationItem && (component === "homepageHero" || component === "homepagePromotion")) {
@@ -436,7 +449,10 @@ function bridge<ContentSchema extends z.ZodType, PropsSchema extends z.ZodType>(
             .flatMap((product) => product.images)
             .find((asset) => asset.id === assetId)?.url ??
           "/seed-assets/placeholder.svg",
-        onNavigate: () => undefined,
+        onNavigate: (intent) => {
+          const path = resolveStorefrontNavigationPath(context, intent);
+          if (path && typeof window !== "undefined") window.location.assign(path);
+        },
       });
     },
   });

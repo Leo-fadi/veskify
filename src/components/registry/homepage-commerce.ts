@@ -60,6 +60,10 @@ export const homepageFeaturedProductsContentSchema = z
     supportingCopy: localizedTextSchema.optional(),
     mediaPlaceholderLabel: localizedTextSchema,
     emptyStateMessage: localizedTextSchema,
+    // The snapshot carries the approved product-list selection as references,
+    // not as copied commerce data. This preserves merchandising order at every
+    // runtime surface while the catalogue remains the only product authority.
+    productIds: z.array(idSchema).min(1).optional(),
   })
   .strict();
 
@@ -580,7 +584,7 @@ export const homepageFeaturedProductsDefinition = commerceListDefinition({
   assetSlot: {
     id: "productMedia",
     title: { en: "Product media", fi: "Tuotemedia" },
-    acceptedRoles: ["productMainImage", "productAlternativeImage", "editorialImage"],
+    acceptedRoles: ["productMainImage", "productAlternativeImage"],
     required: false,
     minItems: 0,
     maxItems: 64,

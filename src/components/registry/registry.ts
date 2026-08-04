@@ -98,6 +98,7 @@ export function createStorefrontRenderContext({
     primaryLocale: localeSchema.parse(primaryLocale),
     catalogue: catalogueDisplayModelSchema.parse(catalogue),
     navigation: navigationModelSchema.parse(snapshot.navigation),
+    pages: snapshot.pages,
     pagePaths,
     homePath: homePage ? pagePaths[homePage.id] : undefined,
     renderTarget,

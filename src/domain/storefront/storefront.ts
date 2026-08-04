@@ -97,7 +97,7 @@ export const pageModelSchema = z
       }
     }
     page.sections.forEach((section, sectionIndex) => {
-      const placementSlots = new Set<string>();
+      const placementIdentities = new Set<string>();
       (section.approvedAssetPlacements ?? []).forEach((placement, placementIndex) => {
         if (placement.pageId !== page.id) {
           context.addIssue({
@@ -113,7 +113,8 @@ export const pageModelSchema = z
             message: "Approved asset placements must target their containing component.",
           });
         }
-        if (placementSlots.has(placement.assetSlotId)) {
+        const identity = `${placement.pageId}:${placement.componentId}:${placement.assetSlotId}:${placement.assetId}`;
+        if (placementIdentities.has(identity)) {
           context.addIssue({
             code: "custom",
             path: [
@@ -123,10 +124,11 @@ export const pageModelSchema = z
               placementIndex,
               "assetSlotId",
             ],
-            message: "A component cannot contain duplicate approved asset placements for one slot.",
+            message:
+              "A component cannot contain an identical approved asset placement more than once.",
           });
         }
-        placementSlots.add(placement.assetSlotId);
+        placementIdentities.add(identity);
       });
       (section.approvedAssetPresentations ?? []).forEach((presentation, presentationIndex) => {
         const placement = (section.approvedAssetPlacements ?? []).find(

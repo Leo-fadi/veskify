@@ -69,6 +69,35 @@ normalization, page/component containment, canonical fingerprint sensitivity,
 Puck round-trip preservation, planner/compiler preservation and browser
 rendering of every profile at preview and published desktop/mobile surfaces.
 
+## Review-correction guarantees
+
+Homepage profile changes reconcile the existing page body against the selected
+executable slots by canonical slot identity: selected bridge sections are
+replaced or added, obsolete profile-managed bridge sections are removed, and
+the final body order follows the materialization. Valid shared-frame header and
+footer sections and unrelated merchant sections remain outside that page-body
+reconciliation authority.
+
+The bridge resolves homepage product, collection and approved navigation
+intents through the canonical snapshot route authority. It does not accept
+arbitrary destinations. A selected featured-product list is persisted as
+canonical product references in the snapshot and is rendered in its planned
+order; missing references fail closed rather than expanding to the catalogue.
+
+Approved asset placement identity includes the target and the asset identity,
+so a multi-item canonical slot such as collection media can carry distinct
+assets up to its registered cardinality while a duplicate placement is
+rejected. Product-media slots remain commerce-owned: editorial source assets
+cannot replace the bound canonical product media.
+
+Initial `homepageHero` materialization applies approved business name and
+description using its registered content fields and preserves the profile
+variant. Homepage commerce display falls back from an approved availability
+label to canonical stock status, and leaves money formatting to the registered
+locale-aware renderer instead of constructing raw currency strings. Generated
+brand-story prose is stored only in the approved source locale; language-plan
+fallback, rather than false translation, supplies other locales.
+
 ## Deliberately deferred
 
 P10A-05 through P10A-08, dynamic-product ownership migration, renderer-version

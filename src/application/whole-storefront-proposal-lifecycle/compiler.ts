@@ -302,7 +302,10 @@ function coordinatedRuntimeComponent(
 ): WholeStorefrontRuntimeComponent {
   if (plan.tokenRefinementPlan !== null) return component;
   const materialization = executableMaterializationForPage(plan, pageRole);
-  const selection = materialization?.slots.find((slot) => slot.component === component.component);
+  const selection =
+    component.component === "header" || component.component === "footer"
+      ? undefined
+      : materialization?.slots.find((slot) => slot.component === component.component);
   return selection ? { ...component, variant: selection.variant } : component;
 }
 
@@ -423,7 +426,14 @@ function plannedPage(
   );
   const retainedById = new Map(
     pagePlan.components.flatMap((component) =>
-      "instance" in component ? [] : [[component.componentId, component] as const],
+      "instance" in component || component.disposition === "removed"
+        ? []
+        : [[component.componentId, component] as const],
+    ),
+  );
+  const removedById = new Set(
+    pagePlan.components.flatMap((component) =>
+      "instance" in component || component.disposition !== "removed" ? [] : [component.componentId],
     ),
   );
   const replacements = pagePlan.components.filter(
@@ -467,6 +477,7 @@ function plannedPage(
   const insertedReplacements = new Set<string>();
   if (originalPage) {
     for (const source of originalPage.components) {
+      if (removedById.has(source.id)) continue;
       const replacement = replacementByTarget.get(source.id);
       if (replacement) {
         if (!insertedReplacements.has(replacement.instance.id)) {
@@ -527,7 +538,7 @@ function plannedPage(
     ? originalPage.components
         .filter(
           (component) =>
-            replacementByTarget.has(component.id) &&
+            (replacementByTarget.has(component.id) || removedById.has(component.id)) &&
             !components.some((candidate) => candidate.id === component.id),
         )
         .map((component) => component.id)

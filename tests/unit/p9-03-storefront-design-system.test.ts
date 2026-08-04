@@ -271,7 +271,7 @@ describe("P9-03 Storefront Design System v1", () => {
       instance: {
         variant: "editorial",
         content: {
-          heading: { en: "Lumo Atelier", fi: "Lumo Atelier" },
+          heading: { fi: "Lumo Atelier" },
           approvedAssetId: "asset_lumo_story",
           facts: [],
         },

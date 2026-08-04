@@ -2,17 +2,48 @@ import type { ReactNode } from "react";
 import type { z } from "zod";
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { Locale } from "@/domain/shared";
-import type { NavigationModel, PageType, SectionInstance } from "@/domain/storefront";
+import type { NavigationModel, PageModel, PageType, SectionInstance } from "@/domain/storefront";
+import type { HomepageNavigationIntent } from "@/components/storefront/homepage-commerce";
 
 export type StorefrontRenderContext = {
   activeLocale: Locale;
   primaryLocale: Locale;
   catalogue: CatalogueDisplayModel;
   navigation: NavigationModel;
+  pages: readonly PageModel[];
   pagePaths: Readonly<Record<string, string>>;
   homePath?: string;
   renderTarget?: "editor" | "preview" | "published";
 };
+
+/** Resolves only canonical snapshot navigation and commerce identities to routes. */
+export function resolveStorefrontNavigationPath(
+  context: StorefrontRenderContext,
+  intent: HomepageNavigationIntent,
+): string | undefined {
+  if (intent.type === "navigateToApprovedAction") {
+    const item = [...context.navigation.primary, ...context.navigation.footer].find(
+      (candidate) => candidate.id === intent.navigationId,
+    );
+    if (!item) return undefined;
+    return item.target.type === "external"
+      ? item.target.url
+      : context.pagePaths[item.target.pageId];
+  }
+  const requiredComponent =
+    intent.type === "navigateToProduct"
+      ? ["productInfo", "dynamicProductDetail"]
+      : ["collectionHeader", "dynamicCollectionCommerce"];
+  const bindingId = intent.type === "navigateToProduct" ? intent.productId : intent.collectionId;
+  const page = context.pages.find((candidate) =>
+    candidate.sections.some(
+      (section) =>
+        requiredComponent.includes(section.component) &&
+        (section.content.productId === bindingId || section.content.collectionId === bindingId),
+    ),
+  );
+  return page ? context.pagePaths[page.id] : undefined;
+}
 
 export type EditorFieldMetadata = {
   source: "content" | "props";
