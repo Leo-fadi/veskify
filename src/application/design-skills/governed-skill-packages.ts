@@ -52,7 +52,7 @@ export const governedSkillPackageDescriptorSchema = z
   .object({
     id: governedSkillPackageIdSchema,
     version: versionSchema,
-    executionKind: z.literal("followUpEditing"),
+    executionKinds: z.array(governedSkillPackageExecutionKindSchema).min(1),
     scope: governedSkillPackageScopeSchema,
     compatibility: z.object({ deprecated: z.literal(false) }).strict(),
     supportedPageTypes: z.array(pageTypeSchema).min(1),
@@ -77,6 +77,7 @@ export const governedSkillPackageDescriptorSchema = z
   .strict()
   .superRefine((descriptor, context) => {
     for (const [field, values] of [
+      ["executionKinds", descriptor.executionKinds],
       ["supportedPageTypes", descriptor.supportedPageTypes],
       ["requiredCapabilityQueries", descriptor.requiredCapabilityQueries],
       ["requiredAuthorityFingerprints", descriptor.requiredAuthorityFingerprints],
@@ -306,8 +307,8 @@ const protectedStateRestrictions = [
 export const governedSkillPackageDescriptors = [
   {
     id: "applyRegisteredWholeStorefrontDirection",
-    version: "1.0.0",
-    executionKind: "followUpEditing",
+    version: "1.1.0",
+    executionKinds: ["initialGeneration", "followUpEditing"],
     scope: "completeStorefront",
     compatibility: { deprecated: false },
     supportedPageTypes: ["home", "collection", "product", "content", "cart", "checkout", "landing"],
@@ -336,7 +337,7 @@ export const governedSkillPackageDescriptors = [
   {
     id: "applyExactBrandPalette",
     version: "1.0.0",
-    executionKind: "followUpEditing",
+    executionKinds: ["followUpEditing"],
     scope: "designSystem",
     compatibility: { deprecated: false },
     supportedPageTypes: ["home", "collection", "product", "content", "cart", "checkout", "landing"],
@@ -352,7 +353,7 @@ export const governedSkillPackageDescriptors = [
   {
     id: "improveHero",
     version: "1.0.0",
-    executionKind: "followUpEditing",
+    executionKinds: ["followUpEditing"],
     scope: "selectedSection",
     compatibility: { deprecated: false },
     supportedPageTypes: ["home", "landing"],
@@ -368,7 +369,7 @@ export const governedSkillPackageDescriptors = [
   {
     id: "addCampaignSection",
     version: "1.0.0",
-    executionKind: "followUpEditing",
+    executionKinds: ["followUpEditing"],
     scope: "currentPage",
     compatibility: { deprecated: false },
     supportedPageTypes: ["home", "landing"],
@@ -684,7 +685,7 @@ export class GovernedSkillPackageRegistry {
         `Unknown governed skill package: ${requestedPackageId}.`,
       );
     }
-    if (descriptor.executionKind !== executionKind) {
+    if (!descriptor.executionKinds.includes(executionKind)) {
       throw new GovernedSkillPackageError(
         "invalidExecutionKind",
         `Package ${requestedPackageId} does not support ${executionKind}.`,

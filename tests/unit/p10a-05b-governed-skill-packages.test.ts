@@ -136,6 +136,12 @@ describe("P10A-05B governed skill package registry", () => {
       governedSkillPackageRegistry.fingerprint,
     );
     expect(
+      governedSkillPackageRegistry.resolve(
+        "applyRegisteredWholeStorefrontDirection",
+        "initialGeneration",
+      ).descriptor.executionKinds,
+    ).toEqual(["initialGeneration", "followUpEditing"]);
+    expect(
       resultCode({
         ...followUp("applyExactBrandPalette", [{ ...pageAuthority("home"), selections: [] }]),
         packageId: "inventedPackage",

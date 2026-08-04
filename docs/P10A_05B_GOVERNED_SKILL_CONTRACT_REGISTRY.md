@@ -1,6 +1,6 @@
 # P10A-05B — Governed skill contract and canonical registry
 
-**Status:** Implemented contract boundary; execution-path integration deferred
+**Status:** Implemented contract boundary; initial-generation integration delivered by P10A-05C
 
 **Scope:** P10A-05B creates one immutable package authority on top of the P10A-05A
 read-only capability-knowledge consumer. It does not alter the existing planner, provider,
@@ -17,7 +17,7 @@ the contract and registry only.
 P10A-03 executable PageBlueprints + P10A-04A generated manifest
   -> P10A-05A read-only capability knowledge
   -> P10A-05B immutable governed package registry
-  -> P10A-05C initial-generation integration (deferred)
+  -> P10A-05C initial-generation integration (implemented)
   -> P10A-05D follow-up proposal integration (deferred)
 ```
 
@@ -28,9 +28,10 @@ P10A-03 executable PageBlueprints + P10A-04A generated manifest
 `initialGeneration` represents the authority required to invoke the existing whole-storefront
 planning path: project and draft authority, approved brief revision/fingerprint, selected
 executable profile set and fingerprints, catalogue/commerce authority, approved assets, locale,
-registered direction and deterministic output-contract identity. It does not invoke
-`WholeStorefrontPlanningInput`, `WholeStorefrontGenerationPlan` or proposal compilation in this
-task.
+registered direction and deterministic output-contract identity. P10A-05C validates this authority
+against server-derived planning input before it invokes the existing `WholeStorefrontPlanningInput`,
+`WholeStorefrontGenerationPlan` and proposal compiler. It remains a single canonical package
+execution, not a second planner or proposal contract.
 
 `followUpEditing` represents already-resolved editing authority: an approved package/version,
 current snapshot and page/profile authority, registered slot/component/variant selections,
@@ -48,19 +49,21 @@ normalization, so one merchant instruction cannot be replayed under another loca
 
 The only P10A-05B canonical executable package IDs are:
 
-| Canonical package                         | Execution kind    | Governed scope      | Profile constraint                                           |
-| ----------------------------------------- | ----------------- | ------------------- | ------------------------------------------------------------ |
-| `applyRegisteredWholeStorefrontDirection` | `followUpEditing` | complete storefront | optional executable profile/slot authority                   |
-| `applyExactBrandPalette`                  | `followUpEditing` | design system       | no page profile authority                                    |
-| `improveHero`                             | `followUpEditing` | selected section    | explicit home/landing executable profile and registered slot |
-| `addCampaignSection`                      | `followUpEditing` | current page        | optional home/landing executable profile                     |
+| Canonical package                         | Execution kind                         | Governed scope      | Profile constraint                                           |
+| ----------------------------------------- | -------------------------------------- | ------------------- | ------------------------------------------------------------ |
+| `applyRegisteredWholeStorefrontDirection` | `initialGeneration`, `followUpEditing` | complete storefront | optional executable profile/slot authority                   |
+| `applyExactBrandPalette`                  | `followUpEditing`                      | design system       | no page profile authority                                    |
+| `improveHero`                             | `followUpEditing`                      | selected section    | explicit home/landing executable profile and registered slot |
+| `addCampaignSection`                      | `followUpEditing`                      | current page        | optional home/landing executable profile                     |
 
 `coordinateWholeStorefront`, `restyleWholeStorefront`, `improveSelectedSection` and
 `improveCurrentPage` remain intent or scope labels. They are deliberately not package IDs and
 cannot acquire independent capability authority.
 
-There is no initial-generation package ID in this registry. P10A-05C will connect the governed
-initial contract to the existing canonical whole-store planner rather than inventing another one.
+There is no additional initial-generation package ID. Only the canonical
+`applyRegisteredWholeStorefrontDirection` package (v1.1.0) authorizes initial generation; deprecated
+aliases and every other package remain follow-up-only. P10A-05C connects that authority to the
+existing canonical whole-store planner rather than inventing another one.
 
 ## Compatibility adapters
 
@@ -118,11 +121,11 @@ navigation, canonical media and approved-asset identity are declared read-only p
 
 ## Migration map and deferred work
 
-| Follow-on task | Required work                                                                                                                       | Not provided by P10A-05B                                    |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| P10A-05C       | Feed the governed initial-generation authority into the existing whole-store planning and proposal path.                            | No planner, provider or proposal integration.               |
-| P10A-05D       | Feed governed follow-up authority into the existing proposal validation/compiler path and retire executable legacy bypasses safely. | No follow-up proposal operations or acceptance integration. |
-| P10A-06        | Classify merchant language into explicit section/page/shared-frame/storefront scope with fail-closed ambiguity handling.            | No natural-language or strict scope routing.                |
+| Follow-on task | Required work                                                                                                                       | Not provided by P10A-05B                                                                        |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| P10A-05C       | Feed the governed initial-generation authority into the existing whole-store planning and proposal path.                            | Initial-generation integration is complete; provider and persistence behavior remain unchanged. |
+| P10A-05D       | Feed governed follow-up authority into the existing proposal validation/compiler path and retire executable legacy bypasses safely. | No follow-up proposal operations or acceptance integration.                                     |
+| P10A-06        | Classify merchant language into explicit section/page/shared-frame/storefront scope with fail-closed ambiguity handling.            | No natural-language or strict scope routing.                                                    |
 
 Brief/source context, approved assets and locale are execution inputs rather than standalone
 packages. Image generation, translation, provider behavior, persistence, publishing, P10A-04C,
