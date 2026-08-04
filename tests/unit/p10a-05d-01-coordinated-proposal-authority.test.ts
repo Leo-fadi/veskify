@@ -302,7 +302,10 @@ describe("P10A-05D-01 coordinated proposal authority", () => {
     const unknownSlot = withFingerprint({
       ...source.plan,
       pageChanges: [
-        { ...home, slotAuthorities: [{ slotId: "unknown-slot", componentIds: ["section_home_hero"] }] },
+        {
+          ...home,
+          slotAuthorities: [{ slotId: "unknown-slot", componentIds: ["section_home_hero"] }],
+        },
         collection,
       ],
     });

@@ -66,7 +66,9 @@ export const wholeStorefrontRuntimeStateSchema = z
         message: "Whole-storefront runtime state must use unique page identities.",
       });
     }
-    const componentIds = state.pages.flatMap((page) => page.components.map((component) => component.id));
+    const componentIds = state.pages.flatMap((page) =>
+      page.components.map((component) => component.id),
+    );
     if (new Set(componentIds).size !== componentIds.length) {
       context.addIssue({
         code: "custom",
@@ -283,15 +285,12 @@ export const coordinatedFollowUpPlanSchema = z
     }
     if (
       plan.pageChanges.length === 0 &&
-      !plan.sharedOperations.some(
-        (operation) => operation.type === "APPLY_REGISTERED_BRAND_SYSTEM",
-      )
+      !plan.sharedOperations.some((operation) => operation.type === "APPLY_REGISTERED_BRAND_SYSTEM")
     ) {
       context.addIssue({
         code: "custom",
         path: ["sharedOperations"],
-        message:
-          "A shared-only coordinated plan must apply one registered BrandSystem operation.",
+        message: "A shared-only coordinated plan must apply one registered BrandSystem operation.",
       });
     }
     if (

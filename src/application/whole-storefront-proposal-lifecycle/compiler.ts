@@ -928,7 +928,9 @@ function coordinatedFollowUpReviewSummary(
   const pages = proposed.pages
     .map((page) => {
       const source = original.pages.find((candidate) => candidate.pageId === page.pageId);
-      const sourceComponents = new Map(source?.components.map((component) => [component.id, component]));
+      const sourceComponents = new Map(
+        source?.components.map((component) => [component.id, component]),
+      );
       const proposedIds = new Set(page.components.map((component) => component.id));
       for (const component of page.components) {
         const previous = sourceComponents.get(component.id);
@@ -988,7 +990,9 @@ function coordinatedFollowUpReviewSummary(
         ? []
         : ["Applies the validated registered BrandSystem across shared storefront presentation."],
     pages,
-    components: componentChanges.sort((left, right) => left.componentId.localeCompare(right.componentId)),
+    components: componentChanges.sort((left, right) =>
+      left.componentId.localeCompare(right.componentId),
+    ),
     navigationChanges: [...original.navigation.primary, ...original.navigation.footer]
       .map((item) => ({ navigationItemId: item.id, status: "retained" as const }))
       .sort((left, right) => left.navigationItemId.localeCompare(right.navigationItemId)),
@@ -1121,8 +1125,7 @@ function compileCoordinatedFollowUpProposal(
       materialization.profileId !== change.profileId ||
       materialization.fingerprint !== change.profileFingerprint ||
       change.slotAuthorities.some(
-        (authority) =>
-          !materialization.slots.some((slot) => slot.slotId === authority.slotId),
+        (authority) => !materialization.slots.some((slot) => slot.slotId === authority.slotId),
       )
     ) {
       invalid(
@@ -1251,7 +1254,9 @@ function validateCoordinatedFollowUpProjection(
     const authorizedComponentIds = new Set(
       change?.slotAuthorities.flatMap((authority) => authority.componentIds) ?? [],
     );
-    const proposedComponents = new Map(page.components.map((component) => [component.id, component]));
+    const proposedComponents = new Map(
+      page.components.map((component) => [component.id, component]),
+    );
     const changedComponentIds = new Set<string>();
     for (const sourceComponent of source.components) {
       const component = proposedComponents.get(sourceComponent.id);
@@ -1456,10 +1461,7 @@ function componentProjectionForCoordinatedFollowUp(
         ? [
             {
               assetId: collectionPlacements[index].assetId,
-              role:
-                collectionPlacements[index].role === "editorialImage"
-                  ? "editorial"
-                  : "card",
+              role: collectionPlacements[index].role === "editorialImage" ? "editorial" : "card",
             },
           ]
         : [];
@@ -1512,7 +1514,9 @@ function componentProjectionForCoordinatedFollowUp(
       ...input.planningInput.draft.navigation.primary,
       ...input.planningInput.draft.navigation.footer,
     ].map((item) => ({ navigationId: item.id, revision })),
-    projectBrandContexts: [{ projectId: input.planningInput.project.id, brandSystemRefs: [], revision }],
+    projectBrandContexts: [
+      { projectId: input.planningInput.project.id, brandSystemRefs: [], revision },
+    ],
     localizedContents: [],
     productListRevision: revision,
     collectionListRevision: revision,
@@ -1551,7 +1555,8 @@ export function validateWholeStorefrontProposal(
       proposal.preconditions.manifestVersion !== followUp.plan.manifest.version ||
       proposal.preconditions.manifestFingerprint !== followUp.plan.manifest.fingerprint ||
       proposal.preconditions.packageRegistryVersion !== followUp.plan.packageRegistry.version ||
-      proposal.preconditions.packageRegistryFingerprint !== followUp.plan.packageRegistry.fingerprint
+      proposal.preconditions.packageRegistryFingerprint !==
+        followUp.plan.packageRegistry.fingerprint
     ) {
       invalid("stale-plan", "The coordinated proposal authority is stale.");
     }
