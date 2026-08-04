@@ -2,7 +2,7 @@ import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storef
 import {
   wholeStorefrontProposalSchema,
   type WholeStorefrontProposal,
-  type WholeStorefrontProposalCompilationInput,
+  type WholeStorefrontProposalAuthorityInput,
   type WholeStorefrontProposalLifecycleState,
   type WholeStorefrontRuntimeState,
   WholeStorefrontProposalError,
@@ -42,7 +42,7 @@ function transactionId(proposal: WholeStorefrontProposal) {
 }
 
 export class WholeStorefrontProposalAcceptanceCoordinator {
-  readonly #currentInput: () => WholeStorefrontProposalCompilationInput;
+  readonly #currentInput: () => WholeStorefrontProposalAuthorityInput;
   readonly #storedStorefront: WholeStorefrontRuntimeState;
   readonly #publishedStorefront: WholeStorefrontRuntimeState;
   #proposal: WholeStorefrontProposal;
@@ -60,7 +60,7 @@ export class WholeStorefrontProposalAcceptanceCoordinator {
     publishedStorefront,
   }: {
     proposal: unknown;
-    currentInput: () => WholeStorefrontProposalCompilationInput;
+    currentInput: () => WholeStorefrontProposalAuthorityInput;
     storedStorefront?: WholeStorefrontRuntimeState;
     publishedStorefront?: WholeStorefrontRuntimeState;
   }) {
