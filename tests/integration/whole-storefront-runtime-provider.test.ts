@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   aiStorefrontProviderResponseSchema,
   AiStorefrontGenerationOrchestrator,
+  AiStorefrontProviderUnavailableError,
   AiStorefrontProviderValidationError,
   buildAiStorefrontProviderRequest,
   createDeterministicMockStorefrontAIProvider,
@@ -421,6 +422,58 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
         retryable: true,
         status: 503,
       } satisfies Partial<AiStorefrontProviderServerError>);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it.each([
+    ["validation", false, 400],
+    ["stale", false, 409],
+    ["permissionDenied", false, 401],
+    ["authenticationUnavailable", true, 503],
+    ["internalFailure", false, 500],
+  ] as const)(
+    "preserves a typed %s response through the browser boundary",
+    async (category, retryable, status) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() =>
+          Promise.resolve(
+            new Response(JSON.stringify({ ok: false, failure: { category, retryable } }), {
+              status,
+            }),
+          ),
+        ),
+      );
+
+      try {
+        await expect(
+          createServerWholeStorefrontPlanningClient().proposeStorefront(request()),
+        ).rejects.toMatchObject({ category, retryable, status });
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+  );
+
+  it("classifies a rejected browser transport as retryable unavailable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.reject(new TypeError("network offline"))),
+    );
+
+    try {
+      await expect(
+        createServerWholeStorefrontPlanningClient().proposeStorefront(request()),
+      ).rejects.toMatchObject({
+        category: "providerUnavailable",
+        retryable: true,
+        status: 0,
+      });
+      await expect(
+        requestAiStorefrontProposal(createServerWholeStorefrontPlanningClient(), request()),
+      ).rejects.toBeInstanceOf(AiStorefrontProviderUnavailableError);
     } finally {
       vi.unstubAllGlobals();
     }
@@ -1000,30 +1053,31 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
     expect(unknownResponse.status).toBe(409);
   });
 
-  it("maps a planner stale-result to a non-retryable stale response", async () => {
-    const handler = createServerWholeStorefrontPlanningHandler({
-      authority: authority(),
-      selectProvider: () => ({
-        id: "stale-planner",
-        capabilities: {
-          wholeStorefrontPlanning: true,
-          structuredPlanOutput: true,
-          approvedAssetReferences: true,
-        },
-        createPlan: () =>
-          Promise.reject(
-            new WholeStorefrontPlanningProviderError("stale-result", "stale planning input"),
-          ),
-      }),
-    });
-    const response = await handler(
-      new Request("http://localhost", { method: "POST", body: JSON.stringify(request()) }),
-    );
+  it.each(["stale-result", "stale-brief", "stale-approved-asset"] as const)(
+    "maps the planner %s failure to a non-retryable stale response",
+    async (code) => {
+      const handler = createServerWholeStorefrontPlanningHandler({
+        authority: authority(),
+        selectProvider: () => ({
+          id: "stale-planner",
+          capabilities: {
+            wholeStorefrontPlanning: true,
+            structuredPlanOutput: true,
+            approvedAssetReferences: true,
+          },
+          createPlan: () =>
+            Promise.reject(new WholeStorefrontGenerationPlanError(code, "stale planning input")),
+        }),
+      });
+      const response = await handler(
+        new Request("http://localhost", { method: "POST", body: JSON.stringify(request()) }),
+      );
 
-    expect(response.status).toBe(409);
-    await expect(response.json()).resolves.toEqual({
-      ok: false,
-      failure: { category: "stale", retryable: false },
-    });
-  });
+      expect(response.status).toBe(409);
+      await expect(response.json()).resolves.toEqual({
+        ok: false,
+        failure: { category: "stale", retryable: false },
+      });
+    },
+  );
 });

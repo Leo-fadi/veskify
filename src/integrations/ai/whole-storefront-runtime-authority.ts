@@ -725,9 +725,10 @@ export function mapServerWholeStorefrontFailure(error: unknown): ServerWholeStor
     return { status: 503, category: "providerUnavailable", retryable: true };
   }
   if (error instanceof WholeStorefrontGenerationPlanError) {
+    const stale = ["stale-result", "stale-brief", "stale-approved-asset"].includes(error.code);
     return {
-      status: error.code === "stale-result" ? 409 : 400,
-      category: error.code === "stale-result" ? "stale" : "validation",
+      status: stale ? 409 : 400,
+      category: stale ? "stale" : "validation",
       retryable: false,
     };
   }

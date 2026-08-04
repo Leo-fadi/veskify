@@ -86,7 +86,7 @@ export class ServerWholeStorefrontPlanningClient implements StorefrontAIProvider
       });
     } catch {
       diagnostic("request_started", "client_request");
-      throw new ServerWholeStorefrontPlanningClientError("internalFailure", true, 0);
+      throw new ServerWholeStorefrontPlanningClientError("providerUnavailable", true, 0);
     }
     diagnostic("response_received", "success", response.status);
     diagnostic("response_decoding_started", "success", response.status);

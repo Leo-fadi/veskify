@@ -186,6 +186,18 @@ function fail(code: WholeStorefrontPlanningProviderFailureCode): never {
   throw new WholeStorefrontPlanningProviderError(code, merchantSafeMessages[code]);
 }
 
+function planningFailureCode(
+  error: WholeStorefrontGenerationPlanError | ZodError,
+): "invalid-plan" | "stale-result" {
+  if (
+    error instanceof WholeStorefrontGenerationPlanError &&
+    ["stale-result", "stale-brief", "stale-approved-asset"].includes(error.code)
+  ) {
+    return "stale-result";
+  }
+  return "invalid-plan";
+}
+
 function noUnsafeProviderContent(value: unknown): boolean {
   if (typeof value === "string") {
     return !/(?:<\/?[a-z][^>]*>|https?:|javascript:|data:|\b(?:function|import|export)\s*\(|=>)/iu.test(
@@ -437,7 +449,7 @@ export async function requestWholeStorefrontGenerationPlan({
   } catch (error) {
     if (error instanceof WholeStorefrontPlanningProviderError) throw error;
     if (error instanceof WholeStorefrontGenerationPlanError || error instanceof ZodError) {
-      return fail("invalid-plan");
+      return fail(planningFailureCode(error));
     }
     // This is the only boundary where an untyped failure is necessarily a
     // provider failure. Validation, normalization, and stale checks happen
@@ -455,11 +467,7 @@ export async function requestWholeStorefrontGenerationPlan({
   } catch (error) {
     if (error instanceof WholeStorefrontPlanningProviderError) throw error;
     if (error instanceof WholeStorefrontGenerationPlanError || error instanceof ZodError) {
-      return fail(
-        error instanceof WholeStorefrontGenerationPlanError && error.code === "stale-result"
-          ? "stale-result"
-          : "invalid-plan",
-      );
+      return fail(planningFailureCode(error));
     }
     throw error;
   }
