@@ -2,7 +2,7 @@ import {
   createWholeStorefrontGenerationPlan,
   createWholeStorefrontGenerationTarget,
   validateWholeStorefrontGenerationPlan,
-} from "@/application/whole-storefront-generation-plan";
+} from "@/application/whole-storefront-generation-plan/planner";
 import {
   wholeStorefrontGenerationPlanSchema,
   wholeStorefrontPlanningInputSchema,
@@ -14,7 +14,7 @@ import {
 import {
   storefrontStyleDesignSystems,
   storefrontStyleDirectionForRegisteredDirection,
-} from "@/application/design-skills";
+} from "@/application/design-skills/skills/apply-storefront-style";
 import { getComponentDefinition } from "@/components/registry";
 import {
   componentInstanceV2Schema,

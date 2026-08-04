@@ -1,16 +1,16 @@
 import { z } from "zod";
 import { registeredTokenRefinementPlanSchema } from "@/application/storefront-design-system/token-refinement";
-import { approvedAssetPlacementOperationSchema } from "@/application/ai-storefront-generation";
 import {
   wholeStorefrontGenerationPlanSchema,
   wholeStorefrontPlanningInputSchema,
   wholeStorefrontReviewSummarySchema,
   wholeStorefrontTargetSchema,
-} from "@/application/whole-storefront-generation-plan";
+} from "@/application/whole-storefront-generation-plan/contract";
 import { componentInstanceV2Schema } from "@/domain/component-platform";
 import { brandSystemSchema } from "@/domain/design-system";
 import { idSchema, localeSchema } from "@/domain/shared";
 import {
+  approvedAssetPlacementOperationSchema,
   canonicalValueFingerprint,
   navigationModelSchema,
   pageTypeSchema,
