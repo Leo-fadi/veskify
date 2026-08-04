@@ -479,6 +479,11 @@ export const aiStorefrontGenerationFailureCodeSchema = z.enum([
   "staleDraft",
   "staleTarget",
   "assetCapabilityUnavailable",
+  "permissionDenied",
+  "authenticationUnavailable",
+  "projectMismatch",
+  "tenantMismatch",
+  "internalFailure",
   "superseded",
 ]);
 export const aiStorefrontGenerationFailureSchema = z
