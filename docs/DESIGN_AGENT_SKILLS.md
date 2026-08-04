@@ -165,6 +165,22 @@ Status values:
 Temporary documentation or merchant-language aliases must resolve to one canonical package or
 operation before planning. They must not become parallel registries.
 
+### 6.1.1 Governed package authority (P10A-05B)
+
+P10A-05B defines the canonical governed package registry separately from the existing legacy
+runtime registry. Its only canonical executable IDs are
+`applyRegisteredWholeStorefrontDirection`, `applyExactBrandPalette`, `improveHero` and
+`addCampaignSection`; all currently represent `followUpEditing` authority. It also defines a
+separate `initialGeneration` authority contract, but does not register or integrate a new
+initial-generation package until P10A-05C uses the existing whole-storefront planning path.
+
+`applyLuxuryStyle`, `applyMinimalNordicStyle`, `applyMinimalNordicStorefrontStyle`,
+`applyWarmPremiumStorefrontStyle` and `applyBrandPalette` are deprecated compatibility adapters
+in the governed registry. They resolve deterministically to a canonical package and cannot be
+independent component, profile, variant or operation authority. The existing eight-skill runtime
+registry remains temporarily supported while P10A-05C/D migrate execution callers. See
+[`P10A_05B_GOVERNED_SKILL_CONTRACT_REGISTRY.md`](./P10A_05B_GOVERNED_SKILL_CONTRACT_REGISTRY.md).
+
 ### 6.2 Existing design-agent baseline
 
 | Skill                                     | Status   | Purpose                                                                                                            |

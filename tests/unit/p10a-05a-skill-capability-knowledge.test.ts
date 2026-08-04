@@ -121,6 +121,37 @@ describe("P10A-05A skill capability knowledge boundary", () => {
     ).toBe("staleManifestFingerprint");
   });
 
+  it("validates bounded parameter values through the read-only capability boundary", () => {
+    const { profile, component, slotId, variant } = requiredHomeSelection();
+    const resolved = skillCapabilityKnowledge.resolveSelection({
+      manifest: manifest(),
+      profileId: profile.profileId,
+      slotId,
+      componentType: component.componentType,
+      variant,
+    });
+    const parameterId = resolved.component.boundedParameterIds[0];
+    if (!parameterId) throw new Error("Expected a bounded homepage capability parameter.");
+
+    const boundedParameterResult = skillCapabilityKnowledge.validateBoundedParameter({
+      manifest: manifest(),
+      componentType: resolved.component.componentType,
+      parameterId,
+      value: "compact",
+    });
+    expect(typeof boundedParameterResult.valid).toBe("boolean");
+    expect(
+      errorCode(() =>
+        skillCapabilityKnowledge.validateBoundedParameter({
+          manifest: manifest(),
+          componentType: resolved.component.componentType,
+          parameterId: "inventedParameter",
+          value: "invented",
+        }),
+      ),
+    ).toBe("unsupportedBoundedParameter");
+  });
+
   it("fails closed for invented profiles, components, and variants", () => {
     const { profile, component, slotId } = requiredHomeSelection();
 

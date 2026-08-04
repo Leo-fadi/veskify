@@ -4,6 +4,7 @@ import type {
   ComponentCapabilityManifestEntry,
   ExecutablePageBlueprintProfileCapabilityEntry,
 } from "@/domain/component-platform";
+import { resolveBoundedParameterInheritance } from "@/domain/component-platform";
 import { pageTypeSchema, type PageType } from "@/domain/storefront";
 import { designSkillRegistry } from "./default-registry";
 import type { DesignSkillRegistry } from "./registry";
@@ -20,6 +21,7 @@ export const skillCapabilityKnowledgeErrorCodes = {
   incompatibleProfilePageType: "incompatibleProfilePageType",
   incompatibleProfileComponent: "incompatibleProfileComponent",
   unknownVariant: "unknownVariant",
+  unsupportedBoundedParameter: "unsupportedBoundedParameter",
 } as const;
 
 export type SkillCapabilityKnowledgeErrorCode =
@@ -43,6 +45,7 @@ export type SkillCapabilityManifestReference = Readonly<{
 export type SkillProfileCapability = Readonly<{
   profileId: string;
   profileVersion: string;
+  fingerprint: string;
   pageType: PageType;
   orderedNarrativeRoles: readonly string[];
   requiredBindingCategories: readonly string[];
@@ -134,6 +137,14 @@ export type SkillCapabilityKnowledgeConsumer = Readonly<{
     component: SkillComponentCapability;
     variant: string;
   }>;
+  validateBoundedParameter: (
+    input: Readonly<{
+      manifest: SkillCapabilityManifestReference;
+      componentType: string;
+      parameterId: string;
+      value: string | number;
+    }>,
+  ) => Readonly<{ valid: boolean }>;
   createProviderCapabilityContext: (
     input: Readonly<{
       manifest: SkillCapabilityManifestReference;
@@ -163,6 +174,7 @@ function profileCapability(
   return deepFreeze({
     profileId: profile.profileId,
     profileVersion: profile.profileVersion,
+    fingerprint: profile.fingerprint,
     pageType: profile.pageType,
     orderedNarrativeRoles: immutableList(profile.orderedNarrativeRoles),
     requiredBindingCategories: immutableList(profile.requiredBindingCategories),
@@ -403,6 +415,20 @@ export function createSkillCapabilityKnowledgeConsumer(
       );
     },
     resolveSelection,
+    validateBoundedParameter: ({ manifest, componentType, parameterId, value }) => {
+      assertManifestReference(manifest);
+      const component = getComponent(componentType);
+      if (!component.boundedParameterIds.includes(parameterId)) {
+        throw new SkillCapabilityKnowledgeError(
+          skillCapabilityKnowledgeErrorCodes.unsupportedBoundedParameter,
+          `Bounded parameter ${parameterId} is not registered for ${componentType}.`,
+        );
+      }
+      const resolution = resolveBoundedParameterInheritance(parameterId, [
+        { level: "instance", value },
+      ]);
+      return deepFreeze({ valid: resolution.issues.length === 0 && resolution.value === value });
+    },
     createProviderCapabilityContext: ({ manifest, selections }) => {
       assertManifestReference(manifest);
       const resolved = selections.map((selection) => resolveSelection({ ...selection, manifest }));
