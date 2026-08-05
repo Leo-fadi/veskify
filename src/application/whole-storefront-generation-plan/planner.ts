@@ -1918,5 +1918,12 @@ export async function acceptWholeStorefrontPlanningResult(
   if (current.requestFingerprint !== expected.requestFingerprint) {
     invalid("stale-result", "The storefront changed while its generation plan was being prepared.");
   }
-  return validateWholeStorefrontGenerationPlan(inputValue, received);
+  const validated = validateWholeStorefrontGenerationPlan(inputValue, received);
+  if (directionId !== undefined && validated.fingerprint !== expected.fingerprint) {
+    invalid(
+      "provider-invented-target",
+      "The returned storefront direction does not match the governed planning authority.",
+    );
+  }
+  return validated;
 }

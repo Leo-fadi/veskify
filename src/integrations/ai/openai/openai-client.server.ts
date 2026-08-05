@@ -6,6 +6,7 @@ import {
   createDeterministicMockAIProvider,
   type AIProvider,
 } from "@/application/ai-provider";
+import { providerModelIdentifierSchema } from "@/application/whole-storefront-generation-plan";
 import { defaultOpenAiModel, defaultOpenAiTimeoutMs, OpenAiProvider } from "./openai-provider";
 import type {
   OpenAiProviderTelemetry,
@@ -71,6 +72,10 @@ export function selectServerAiProvider({
   if (!apiKey) return new MissingApiKeyProvider();
 
   const timeout = timeoutFrom(environment.VESKIFY_OPENAI_TIMEOUT_MS);
+  const parsedModel = providerModelIdentifierSchema.safeParse(
+    environment.VESKIFY_OPENAI_MODEL?.trim() || defaultOpenAiModel,
+  );
+  if (!parsedModel.success) return new MissingApiKeyProvider();
   const client = new OpenAI({
     apiKey,
     maxRetries: 0,
@@ -78,7 +83,7 @@ export function selectServerAiProvider({
     logLevel: "off",
   });
   return new OpenAiProvider({
-    model: environment.VESKIFY_OPENAI_MODEL?.trim() || defaultOpenAiModel,
+    model: parsedModel.data,
     timeoutMs: timeout,
     telemetry,
     responses: {

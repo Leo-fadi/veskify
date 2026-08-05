@@ -162,6 +162,7 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     ).toMatchObject({
       provider: { id: "deterministic-whole-storefront-planning" },
       modelId: null,
+      category: "deterministic-provider-selected",
     });
     expect(
       selectServerWholeStorefrontPlanningProviderConfiguration({
@@ -170,6 +171,7 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     ).toMatchObject({
       provider: { id: "openai-whole-storefront-planning" },
       modelId: null,
+      category: "credentials-unavailable",
     });
     expect(
       selectServerWholeStorefrontPlanningProviderConfiguration({
@@ -182,7 +184,33 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     ).toMatchObject({
       provider: { id: "openai-whole-storefront-planning" },
       modelId: "configured-test-model",
+      category: "eligible",
     });
+    for (const modelId of ["gpt-5.6-sol", "ft:gpt-5.6-sol:veskify:acceptance:abc123"]) {
+      expect(
+        selectServerWholeStorefrontPlanningProviderConfiguration({
+          environment: {
+            VESKIFY_AI_PROVIDER: "openai",
+            OPENAI_API_KEY: "test-only-placeholder",
+            VESKIFY_OPENAI_MODEL: modelId,
+          },
+        }),
+      ).toMatchObject({ modelId, category: "eligible" });
+    }
+    expect(
+      selectServerWholeStorefrontPlanningProviderConfiguration({
+        environment: {
+          VESKIFY_AI_PROVIDER: "openai",
+          OPENAI_API_KEY: "test-only-placeholder",
+          VESKIFY_OPENAI_MODEL: "unsafe model\nidentifier",
+        },
+      }),
+    ).toMatchObject({ modelId: null, category: "model-identity-unavailable" });
+    expect(
+      selectServerWholeStorefrontPlanningProviderConfiguration({
+        environment: { VESKIFY_AI_PROVIDER: "unsupported" },
+      }),
+    ).toMatchObject({ modelId: null, category: "unsupported-provider-configuration" });
   });
 
   it("builds a sanitized registry-aware request with the required planning constraints", () => {
@@ -201,6 +229,39 @@ describe("P8-03 OpenAI whole-storefront planning provider", () => {
     expect(serialized).not.toContain("merchant.example");
     expect(serialized).not.toContain("Private merchant identity");
     expect(serialized).not.toContain("https://");
+  });
+
+  it("constrains governed direction authority before provider invocation and rejects another valid direction", async () => {
+    const input = planningInput();
+    const constrained = buildWholeStorefrontPlanningProviderRequest(
+      input,
+      undefined,
+      null,
+      "modernTechnical",
+    );
+    expect(constrained.directionOptions.map((option) => option.id)).toEqual(["modernTechnical"]);
+    const calls = vi.fn();
+    const wrongDirection: WholeStorefrontPlanningProvider = {
+      id: "direction-test-provider",
+      capabilities: {
+        wholeStorefrontPlanning: true,
+        structuredPlanOutput: true,
+        approvedAssetReferences: true,
+      },
+      createPlan(request) {
+        calls(request);
+        return Promise.resolve(request.planForDirection("premiumEditorial"));
+      },
+    };
+    await expect(
+      requestWholeStorefrontGenerationPlan({
+        provider: wrongDirection,
+        input,
+        currentInput: () => input,
+        directionId: "modernTechnical",
+      }),
+    ).rejects.toMatchObject({ code: "invalid-plan" });
+    expect(calls).toHaveBeenCalledOnce();
   });
 
   it("uses a closed direction DTO and materializes the canonical plan only on the server", async () => {

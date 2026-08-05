@@ -3,6 +3,7 @@ import "server-only";
 import OpenAI from "openai";
 import {
   createDeterministicWholeStorefrontPlanningProvider,
+  providerModelIdentifierSchema,
   type WholeStorefrontPlanningProvider,
   WholeStorefrontPlanningProviderError,
 } from "@/application/whole-storefront-generation-plan";
@@ -23,6 +24,12 @@ export type ServerWholeStorefrontPlanningProviderSelection = "mock" | "openai";
 export type ServerWholeStorefrontPlanningProviderConfiguration = Readonly<{
   provider: WholeStorefrontPlanningProvider;
   modelId: string | null;
+  category:
+    | "eligible"
+    | "deterministic-provider-selected"
+    | "credentials-unavailable"
+    | "model-identity-unavailable"
+    | "unsupported-provider-configuration";
 }>;
 
 type OpenAiServerEnvironment = Readonly<
@@ -82,16 +89,44 @@ export function selectServerWholeStorefrontPlanningProviderConfiguration({
   environment?: OpenAiServerEnvironment;
   telemetry?: OpenAiProviderTelemetry;
 } = {}): ServerWholeStorefrontPlanningProviderConfiguration {
-  if (providerSelection(environment.VESKIFY_AI_PROVIDER) === "mock") {
-    return { provider: createDeterministicWholeStorefrontPlanningProvider(), modelId: null };
+  let selection: ServerWholeStorefrontPlanningProviderSelection;
+  try {
+    selection = providerSelection(environment.VESKIFY_AI_PROVIDER);
+  } catch {
+    return {
+      provider: new MissingCredentialsWholeStorefrontPlanningProvider(),
+      modelId: null,
+      category: "unsupported-provider-configuration",
+    };
+  }
+  if (selection === "mock") {
+    return {
+      provider: createDeterministicWholeStorefrontPlanningProvider(),
+      modelId: null,
+      category: "deterministic-provider-selected",
+    };
   }
   const apiKey = environment.OPENAI_API_KEY?.trim();
   if (!apiKey) {
-    return { provider: new MissingCredentialsWholeStorefrontPlanningProvider(), modelId: null };
+    return {
+      provider: new MissingCredentialsWholeStorefrontPlanningProvider(),
+      modelId: null,
+      category: "credentials-unavailable",
+    };
   }
 
   const timeout = timeoutFrom(environment.VESKIFY_OPENAI_TIMEOUT_MS);
-  const modelId = environment.VESKIFY_OPENAI_MODEL?.trim() || defaultOpenAiModel;
+  const parsedModel = providerModelIdentifierSchema.safeParse(
+    environment.VESKIFY_OPENAI_MODEL?.trim() || defaultOpenAiModel,
+  );
+  if (!parsedModel.success) {
+    return {
+      provider: new MissingCredentialsWholeStorefrontPlanningProvider(),
+      modelId: null,
+      category: "model-identity-unavailable",
+    };
+  }
+  const modelId = parsedModel.data;
   const client = new OpenAI({ apiKey, maxRetries: 0, timeout, logLevel: "off" });
   return {
     provider: new OpenAiWholeStorefrontPlanningProvider({
@@ -104,6 +139,7 @@ export function selectServerWholeStorefrontPlanningProviderConfiguration({
       },
     }),
     modelId,
+    category: "eligible",
   };
 }
 

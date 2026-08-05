@@ -27,6 +27,7 @@ import {
 import {
   createWholeStorefrontGenerationPlan,
   createWholeStorefrontGenerationTarget,
+  type WholeStorefrontPlanningProvider,
 } from "@/application/whole-storefront-generation-plan";
 import { homepageCommerceBridgeDefaults } from "@/components/registry";
 import { createP905aFreshMerchantFixture } from "@/data/demo/p9-05a-fresh-store-generation";
@@ -177,9 +178,10 @@ function stages(
 function acceptanceCase(
   caseId: string,
   execution: GovernedInitialGenerationRequest | GovernedFollowUpEditingRequest,
-  routerDecisionFingerprint: string,
+  routingRequest: unknown,
+  expectedRouterDecisionFingerprint: string,
   lifecycle: ControlledAcceptanceCase["lifecycleExercise"],
-  providerConfiguration: Readonly<{ providerId: string; modelId: string }>,
+  providerConfiguration: Readonly<{ providerId: string; modelId: string | null }>,
 ): ControlledAcceptanceCase {
   const authority = execution.authority.authority;
   return {
@@ -189,7 +191,8 @@ function acceptanceCase(
     requestIdentity: authority.requestIdentity,
     locale: authority.locale,
     authority: structuredClone(authority),
-    routerDecisionFingerprint,
+    routingRequest: structuredClone(routingRequest),
+    expectedRouterDecisionFingerprint,
     declaredPageAuthorityFingerprint: declaredPageAuthorityFingerprint(execution),
     providerConfiguration,
     expectedModelId: providerConfiguration.modelId,
@@ -215,55 +218,212 @@ function authorization(input: ControlledAcceptanceCase): ControlledLiveCallAutho
   return { ...unsigned, fingerprint: controlledLiveCallAuthorizationFingerprint(unsigned) };
 }
 
+function initialRoutingRequest(
+  value: ReturnType<typeof source>,
+  execution: GovernedInitialGenerationRequest,
+) {
+  return {
+    contractVersion: STRICT_SCOPE_ROUTER_CONTRACT_VERSION,
+    merchantInstruction: "Create a new storefront.",
+    declaredExecutionKind: "initialGeneration" as const,
+    declaredIntent: "createNewStorefront" as const,
+    declaredScope: "completeStorefront" as const,
+    declaredPageIds: execution.authority.profiles.map((profile) => profile.pageId),
+    declaredSlots: [],
+    initialGeneration: execution,
+  };
+}
+
 function routeInitial(
   value: ReturnType<typeof source>,
   execution: GovernedInitialGenerationRequest,
 ) {
-  return routeGovernedDesignRequest(
-    {
-      contractVersion: STRICT_SCOPE_ROUTER_CONTRACT_VERSION,
-      merchantInstruction: "Create a new storefront.",
-      declaredExecutionKind: "initialGeneration",
-      declaredIntent: "createNewStorefront",
-      declaredScope: "completeStorefront",
-      declaredPageIds: execution.authority.profiles.map((profile) => profile.pageId),
-      declaredSlots: [],
-      initialGeneration: execution,
-    },
-    value.authority,
-    { dispatch: true },
-  );
+  return routeGovernedDesignRequest(initialRoutingRequest(value, execution), value.authority, {
+    dispatch: true,
+  });
+}
+
+function heroRoutingRequest(
+  value: ReturnType<typeof source>,
+  execution: GovernedFollowUpEditingRequest,
+) {
+  const authority = execution.authority.pages[0];
+  if (!authority) throw new Error("Expected hero page authority.");
+  return {
+    contractVersion: STRICT_SCOPE_ROUTER_CONTRACT_VERSION,
+    merchantInstruction: "Improve this hero.",
+    declaredExecutionKind: "followUpEditing" as const,
+    declaredIntent: "heroImprovement" as const,
+    declaredScope: "selectedSection" as const,
+    declaredPageIds: [authority.pageId],
+    declaredSlots: authority.selections.map((selection) => ({
+      pageId: authority.pageId,
+      slotId: selection.slotId,
+    })),
+    followUpEditing: execution,
+  };
 }
 
 function routeHero(value: ReturnType<typeof source>, execution: GovernedFollowUpEditingRequest) {
-  const authority = execution.authority.pages[0];
-  if (!authority) throw new Error("Expected hero page authority.");
-  return routeGovernedDesignRequest(
-    {
-      contractVersion: STRICT_SCOPE_ROUTER_CONTRACT_VERSION,
-      merchantInstruction: "Improve this hero.",
-      declaredExecutionKind: "followUpEditing",
-      declaredIntent: "heroImprovement",
-      declaredScope: "selectedSection",
-      declaredPageIds: [authority.pageId],
-      declaredSlots: authority.selections.map((selection) => ({
-        pageId: authority.pageId,
-        slotId: selection.slotId,
-      })),
-      followUpEditing: execution,
-    },
-    value.authority,
-    { dispatch: true },
-  );
+  return routeGovernedDesignRequest(heroRoutingRequest(value, execution), value.authority, {
+    dispatch: true,
+  });
 }
+
+function deterministicProvider(calls = vi.fn()): WholeStorefrontPlanningProvider {
+  return {
+    id: "deterministic-controlled-acceptance",
+    capabilities: {
+      wholeStorefrontPlanning: true,
+      structuredPlanOutput: true,
+      approvedAssetReferences: true,
+    },
+    createPlan(request) {
+      calls(request);
+      return Promise.resolve(request.expectedPlan);
+    },
+  };
+}
+
+function deterministicRunner(
+  input: ControlledAcceptanceCase,
+  provider: WholeStorefrontPlanningProvider,
+  calls: ReturnType<typeof vi.fn>,
+  options: Partial<ConstructorParameters<typeof ControlledAcceptancePreflightRunner>[0]> = {},
+) {
+  return new ControlledAcceptancePreflightRunner({
+    provider,
+    providerModelId: "controlled-test-model",
+    currentAuthority: () => structuredClone(input.authority),
+    currentPlanningInput: () =>
+      structuredClone(
+        (input.execution as GovernedInitialGenerationRequest | GovernedFollowUpEditingRequest)
+          .planningInput,
+      ),
+    allowedProviderIds: [provider.id],
+    now,
+    ...options,
+  });
+}
+
+describe("P10A-07C-03 deterministic routed acceptance", () => {
+  it("recomputes trusted routing and rejects stale, foreign, and mismatched route authority before calls", async () => {
+    const value = source("p10a-07c-03-router-test");
+    const execution = initialRequest(value);
+    const routingRequest = initialRoutingRequest(value, execution);
+    const routed = routeInitial(value, execution);
+    if (routed.outcome !== "initialGeneration") throw new Error("Expected initial route.");
+    const input = acceptanceCase(
+      "p10a-07c-03-router-case",
+      execution,
+      routingRequest,
+      routed.decision.fingerprint,
+      "preview-only",
+      { providerId: "deterministic-controlled-acceptance", modelId: "controlled-test-model" },
+    );
+    const calls = vi.fn();
+    const provider = deterministicProvider(calls);
+    const success = await deterministicRunner(input, provider, calls).run(
+      input,
+      authorization(input),
+    );
+    expect(success).toMatchObject({
+      ok: true,
+      evidence: { routerDecisionFingerprint: routed.decision.fingerprint, providerAttemptCount: 1 },
+    });
+
+    for (const changed of [
+      { ...input, expectedRouterDecisionFingerprint: "stale-router-decision" },
+      {
+        ...input,
+        expectedRouterDecisionFingerprint: `${routed.decision.fingerprint}-another-case`,
+      },
+      {
+        ...input,
+        routingRequest: { ...routingRequest, declaredScope: "currentPage" },
+      },
+    ]) {
+      const rejectedCalls = vi.fn();
+      const rejected = await deterministicRunner(
+        changed,
+        deterministicProvider(rejectedCalls),
+        rejectedCalls,
+      ).run(changed, authorization(changed));
+      expect(rejected).toMatchObject({
+        ok: false,
+        failure: { code: "router-validation-failed" },
+        evidence: {
+          providerAttemptCount: 0,
+          providerCompletionCount: 0,
+          providerOutcome: "rejected-before-call",
+        },
+      });
+      expect(rejectedCalls).not.toHaveBeenCalled();
+    }
+  }, 30_000);
+
+  it("retains typed zero-attempt configuration and live-gate blockers", async () => {
+    const value = source("p10a-07c-03-blocked-test");
+    const execution = initialRequest(value);
+    const routingRequest = initialRoutingRequest(value, execution);
+    const routed = routeInitial(value, execution);
+    if (routed.outcome !== "initialGeneration") throw new Error("Expected initial route.");
+    const input = acceptanceCase(
+      "p10a-07c-03-blocked-case",
+      execution,
+      routingRequest,
+      routed.decision.fingerprint,
+      "preview-only",
+      { providerId: "deterministic-controlled-acceptance", modelId: "controlled-test-model" },
+    );
+    const categories = [
+      "deterministic-provider-selected",
+      "credentials-unavailable",
+      "model-identity-unavailable",
+      "unsupported-provider-configuration",
+    ] as const;
+    for (const category of categories) {
+      const calls = vi.fn();
+      const result = await deterministicRunner(input, deterministicProvider(calls), calls, {
+        providerConfigurationCategory: category,
+        allowedProviderIds: [],
+      }).run(input, authorization(input));
+      expect(result).toMatchObject({
+        ok: false,
+        failure: { code: "invalid-provider-configuration" },
+        evidence: {
+          routerDecisionFingerprint: routed.decision.fingerprint,
+          providerConfigurationCategory: category,
+          providerAttemptCount: 0,
+          providerCompletionCount: 0,
+          providerOutcome: "not-attempted",
+        },
+      });
+      expect(calls).not.toHaveBeenCalled();
+    }
+    const calls = vi.fn();
+    const gated = await deterministicRunner(input, deterministicProvider(calls), calls, {
+      providerConfigurationCategory: "live-gate-disabled",
+      liveProviderEnabled: false,
+    }).run(input, authorization(input));
+    expect(gated).toMatchObject({
+      ok: false,
+      failure: { code: "live-provider-gate-disabled" },
+      evidence: {
+        routerDecisionFingerprint: routed.decision.fingerprint,
+        providerConfigurationCategory: "live-gate-disabled",
+        providerAttemptCount: 0,
+        providerCompletionCount: 0,
+        providerOutcome: "not-attempted",
+      },
+    });
+    expect(calls).not.toHaveBeenCalled();
+  }, 30_000);
+});
 
 describe.runIf(enabled)("P10A-07C-03 controlled real-provider acceptance", () => {
   it("performs the two authorized cases serially with safe retained evidence", async () => {
     const configured = selectServerWholeStorefrontPlanningProviderConfiguration();
-    expect(configured.provider.id).toBe("openai-whole-storefront-planning");
-    expect(configured.modelId).toMatch(/^[A-Za-z0-9][A-Za-z0-9._-]{2,159}$/);
-    if (configured.modelId === null)
-      throw new Error("Expected configured provider model identity.");
     const providerConfiguration = {
       providerId: configured.provider.id,
       modelId: configured.modelId,
@@ -279,6 +439,7 @@ describe.runIf(enabled)("P10A-07C-03 controlled real-provider acceptance", () =>
     const initialCase = acceptanceCase(
       "p10a-07c-03-case-a",
       initialExecution,
+      initialRoutingRequest(initialSource, initialExecution),
       initialRoute.decision.fingerprint,
       "preview-only",
       providerConfiguration,
@@ -287,17 +448,29 @@ describe.runIf(enabled)("P10A-07C-03 controlled real-provider acceptance", () =>
     const initialResult = await new ControlledAcceptancePreflightRunner({
       provider: configured.provider,
       providerModelId: configured.modelId,
+      providerConfigurationCategory: configured.category,
       currentAuthority: () => structuredClone(initialSource.authority),
       currentPlanningInput: () => structuredClone(initialSource.planningInput),
-      allowedProviderIds: [configured.provider.id],
+      allowedProviderIds: ["openai-whole-storefront-planning"],
       now,
       retainEvidence: (evidence) => {
         retained.push(structuredClone(evidence));
         return evidence;
       },
     }).run(initialCase, authorization(initialCase));
-    expect(initialResult.ok).toBe(true);
-    if (!initialResult.ok) throw new Error(initialResult.failure.code);
+    if (!initialResult.ok) {
+      expect(initialResult).toMatchObject({
+        failure: { code: "invalid-provider-configuration" },
+        evidence: {
+          routerDecisionFingerprint: initialRoute.decision.fingerprint,
+          providerConfigurationCategory: configured.category,
+          providerAttemptCount: 0,
+          providerCompletionCount: 0,
+          providerOutcome: "not-attempted",
+        },
+      });
+      return;
+    }
     expect(initialResult.evidence).toMatchObject({
       routerDecisionFingerprint: initialRoute.decision.fingerprint,
       providerAttemptCount: 1,
@@ -327,6 +500,7 @@ describe.runIf(enabled)("P10A-07C-03 controlled real-provider acceptance", () =>
     const followUpCase = acceptanceCase(
       "p10a-07c-03-case-b",
       followUpExecution,
+      heroRoutingRequest(followUpSource, followUpExecution),
       followUpRoute.decision.fingerprint,
       "accept-undo-redo",
       providerConfiguration,
@@ -334,9 +508,10 @@ describe.runIf(enabled)("P10A-07C-03 controlled real-provider acceptance", () =>
     const followUpResult = await new ControlledAcceptancePreflightRunner({
       provider: configured.provider,
       providerModelId: configured.modelId,
+      providerConfigurationCategory: configured.category,
       currentAuthority: () => structuredClone(followUpSource.authority),
       currentPlanningInput: () => structuredClone(followUpSource.planningInput),
-      allowedProviderIds: [configured.provider.id],
+      allowedProviderIds: ["openai-whole-storefront-planning"],
       now,
       retainEvidence: (evidence) => {
         retained.push(structuredClone(evidence));
