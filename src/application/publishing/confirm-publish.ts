@@ -1,4 +1,11 @@
 import {
+  AcceptedSnapshotReceiptError,
+  assertAcceptedSnapshotReceiptCurrent,
+  resolveAcceptedSnapshotPublishReceipt,
+  type AcceptedSnapshotCurrentAuthoritySource,
+  type AcceptedSnapshotPublishReceiptRepository,
+} from "@/application/accepted-snapshot-publishing";
+import {
   canonicalStorefrontContentEqual,
   canonicalStorefrontContentFingerprint,
   type StorefrontSnapshot,
@@ -31,6 +38,13 @@ export type PublishConfirmationResult = {
 
 export type PublishConfirmationOptions = Readonly<{
   publicationOperation?: PublicationOperationWrite;
+  authority?:
+    | Readonly<{ kind: "manual" }>
+    | Readonly<{
+        kind: "accepted-ai";
+        receiptRepository: AcceptedSnapshotPublishReceiptRepository;
+        currentAuthoritySource: AcceptedSnapshotCurrentAuthoritySource;
+      }>;
 }>;
 
 function snapshotById(aggregate: ProjectAggregate, snapshotId: string): StorefrontSnapshot {
@@ -83,13 +97,42 @@ export async function confirmPublish(
   options: PublishConfirmationOptions = {},
 ): Promise<PublishConfirmationResult> {
   const preparation = parsePreparation(preparationInput);
-  if (!preparation.publishPermitted) throw new NoPublishableChangesError();
+  const confirmationAuthority = options.authority ?? { kind: "manual" as const };
+  if (confirmationAuthority.kind !== preparation.authority.kind) {
+    throw new AcceptedSnapshotReceiptError("publication-authority-confusion");
+  }
 
   let latest: ProjectAggregate;
   try {
     latest = validateProjectAggregate(await repository.get(preparation.projectId));
     assertCurrentPreparation(preparation, latest);
+    if (preparation.authority.kind === "accepted-ai") {
+      if (confirmationAuthority.kind !== "accepted-ai") {
+        throw new AcceptedSnapshotReceiptError("publication-authority-confusion");
+      }
+      const receipt = await resolveAcceptedSnapshotPublishReceipt(
+        confirmationAuthority.receiptRepository,
+        preparation.authority.receiptId,
+      );
+      if (
+        receipt.fingerprint !== preparation.authority.receiptFingerprint ||
+        receipt.proposalId !== preparation.authority.proposalId ||
+        receipt.proposalRevision !== preparation.authority.proposalRevision ||
+        receipt.reviewRevision !== preparation.authority.reviewRevision ||
+        receipt.acceptedSnapshotId !== preparation.authority.acceptedSnapshotId ||
+        receipt.acceptedSnapshotFingerprint !== preparation.authority.acceptedSnapshotFingerprint
+      ) {
+        throw new AcceptedSnapshotReceiptError("untrusted-receipt");
+      }
+      const currentAuthority =
+        await confirmationAuthority.currentAuthoritySource.resolveCurrentAuthority({
+          receipt,
+          aggregate: latest,
+        });
+      assertAcceptedSnapshotReceiptCurrent(receipt, latest, currentAuthority);
+    }
   } catch (cause) {
+    if (cause instanceof AcceptedSnapshotReceiptError) throw cause;
     if (
       cause instanceof StalePublishPreparationError ||
       cause instanceof PublishConfirmationError
@@ -98,6 +141,8 @@ export async function confirmPublish(
     }
     throw new PublishConfirmationError({ cause });
   }
+
+  if (!preparation.publishPermitted) throw new NoPublishableChangesError();
 
   let aggregate: ProjectAggregate;
   try {
