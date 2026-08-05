@@ -18,7 +18,9 @@ atomic active-version switching and rollback closure.
 ```text
 reviewed proposal
   -> authoritative acceptance transaction
-  -> accepted StorefrontSnapshot materialization evidence
+  -> canonical accepted-runtime-to-StorefrontSnapshot materialization
+  -> exact accepted proposal result = supplied accepted snapshot
+  -> exact supplied accepted snapshot = current persisted draft
   -> server-only AcceptedSnapshotPublishingAuthorityService
   -> immutable AcceptedSnapshotPublishReceiptRepository.createOnce
   -> trusted receipt identity
@@ -55,15 +57,21 @@ accepts canonical lifecycle evidence from a future authoritative acceptance endp
 - the proposal and lifecycle are both accepted;
 - the lifecycle transaction exactly reproduces the reviewed proposed runtime;
 - the active runtime equals the accepted transaction result;
+- the accepted proposal result materializes through the same canonical runtime-to-page/section
+  projection used by whole-storefront integration, including registered component authority,
+  protected collection/product bindings and approved asset placements;
+- the materialized accepted proposal result equals the supplied accepted snapshot by both canonical
+  content fingerprint and collision-safe canonical value;
+- the same supplied accepted snapshot equals the current persisted draft by both checks;
 - the proposal, project, draft and accepted snapshot identities and revisions agree;
-- the accepted snapshot is the exact current repository snapshot by canonical fingerprint and
-  canonical value;
 - component registry, manifest, package registry, commerce and approved-asset authorities agree
   with proposal authority where the proposal represents them.
 
+Proposal/snapshot divergence fails deterministically as `accepted-proposal-content-mismatch` before
+any receipt write, even when the supplied snapshot still exactly matches the persisted draft.
 Preview, rejection, stale acceptance and malformed lifecycle evidence cannot mint a receipt. The
-browser, planner and provider receive no minting API. A caller-created receipt object is not accepted
-by publishing; only an identity that resolves from the trusted repository seam is usable.
+browser, planner and provider receive no minting API. A caller-created receipt object is not
+accepted by publishing; only an identity that resolves from the trusted repository seam is usable.
 
 ## Repository seam
 
@@ -105,11 +113,13 @@ divergent snapshot content, even under a reused snapshot identity, fails closed.
 
 ## Deterministic evidence
 
-The P10A-08B tests cover accepted initial generation and governed follow-up minting, preview and
-rejection, server-only ownership, immutable persistence, deterministic fingerprinting, replay and
-collision, modified and missing receipts, cross-lineage and protected-authority drift, trusted
-prepare resolution, confirm-time re-resolution, undo/redo policy and manual/AI authority separation.
-They use deterministic repositories and perform no provider call or external publication.
+The P10A-08B tests cover exact accepted-proposal/snapshot/draft equality; BrandSystem, variant,
+bounded-parameter, asset, ordering, protected-binding and navigation divergence; canonical input
+normalization; accepted initial generation and governed follow-up minting; preview and rejection;
+server-only ownership; immutable persistence; deterministic fingerprinting; replay and collision;
+modified and missing receipts; cross-lineage and protected-authority drift; trusted prepare
+resolution; confirm-time re-resolution; undo/redo policy; and manual/AI authority separation. They
+use deterministic repositories and perform no provider call or external publication.
 
 ## Explicitly deferred
 

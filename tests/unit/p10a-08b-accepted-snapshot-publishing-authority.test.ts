@@ -32,16 +32,27 @@ import { confirmPublish, preparePublish } from "@/application/publishing";
 import {
   createWholeStorefrontGenerationPlan,
   createWholeStorefrontGenerationTarget,
+  type ApprovedAssetPresentation,
+  type WholeStorefrontPlanningInput,
 } from "@/application/whole-storefront-generation-plan";
 import {
   WholeStorefrontProposalAcceptanceCoordinator,
   compileWholeStorefrontProposal,
+  materializeWholeStorefrontRuntimeSnapshot,
   type WholeStorefrontProposal,
   type WholeStorefrontProposalAuthorityInput,
   type WholeStorefrontProposalLifecycleSnapshot,
+  type WholeStorefrontRuntimeState,
 } from "@/application/whole-storefront-proposal-lifecycle";
-import { createP905aFreshMerchantFixture } from "@/data/demo/p9-05a-fresh-store-generation";
-import { canonicalValueFingerprint } from "@/domain/storefront";
+import {
+  createP905aFreshMerchantFixture,
+  P9_05A_COMPLEX_PRODUCT_ID,
+  P9_05A_SIMPLE_PRODUCT_ID,
+} from "@/data/demo/p9-05a-fresh-store-generation";
+import {
+  canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
+} from "@/domain/storefront";
 import { InMemoryProjectRepository, type ProjectAggregate } from "@/services/storage";
 
 const acceptedAt = "2026-08-05T10:00:00.000Z";
@@ -65,7 +76,18 @@ function initialHarness() {
   });
   const proposal = compileWholeStorefrontProposal({ plan, planningInput });
   const lifecycle = acceptedLifecycle(proposal, () => ({ plan, planningInput }));
-  const projectRepository = new InMemoryProjectRepository([fixture.aggregate]);
+  const acceptedSnapshot = materializeWholeStorefrontRuntimeSnapshot({
+    runtime: proposal.proposedStorefront,
+    planningInput,
+    approvedAssetPresentations: fixture.assetPresentations,
+  });
+  const acceptedAggregate = structuredClone(fixture.aggregate);
+  acceptedAggregate.snapshots = acceptedAggregate.snapshots.map((snapshot) =>
+    snapshot.id === acceptedAggregate.project.draftSnapshotId
+      ? structuredClone(acceptedSnapshot)
+      : snapshot,
+  );
+  const projectRepository = new InMemoryProjectRepository([acceptedAggregate]);
   const receiptRepository = new InMemoryAcceptedSnapshotPublishReceiptRepository();
   const target = createWholeStorefrontGenerationTarget(planningInput);
   const authority: AcceptedSnapshotMintAuthority = {
@@ -90,6 +112,8 @@ function initialHarness() {
     plan,
     proposal,
     lifecycle,
+    planningInput,
+    acceptedSnapshot,
     projectRepository,
     receiptRepository,
     authority,
@@ -145,7 +169,26 @@ function followUpHarness() {
     plan: result.coordinatedPlan,
     planningInput: result.planningInput,
   }));
-  return { fixture, authority, result, lifecycle };
+  const acceptedSnapshot = materializeWholeStorefrontRuntimeSnapshot({
+    runtime: result.proposal.proposedStorefront,
+    planningInput: result.planningInput,
+    approvedAssetPresentations: fixture.assetPresentations,
+  });
+  const acceptedAggregate = structuredClone(fixture.aggregate);
+  acceptedAggregate.snapshots = acceptedAggregate.snapshots.map((snapshot) =>
+    snapshot.id === acceptedAggregate.project.draftSnapshotId
+      ? structuredClone(acceptedSnapshot)
+      : snapshot,
+  );
+  return {
+    fixture,
+    authority,
+    result,
+    lifecycle,
+    planningInput: result.planningInput,
+    acceptedSnapshot,
+    acceptedAggregate,
+  };
 }
 
 function currentAuthority(
@@ -178,6 +221,41 @@ function sourceFor(
   } satisfies AcceptedSnapshotCurrentAuthoritySource;
 }
 
+function materializationFor(harness: {
+  planningInput: WholeStorefrontPlanningInput;
+  fixture: { assetPresentations: readonly ApprovedAssetPresentation[] };
+}) {
+  return {
+    planningInput: harness.planningInput,
+    approvedAssetPresentations: harness.fixture.assetPresentations,
+  };
+}
+
+function lifecycleWithChangedAcceptedResult(
+  lifecycleInput: WholeStorefrontProposalLifecycleSnapshot,
+  mutate: (runtime: WholeStorefrontRuntimeState) => void,
+): WholeStorefrontProposalLifecycleSnapshot {
+  const lifecycle = structuredClone(lifecycleInput);
+  const resulting = structuredClone(lifecycle.proposal.proposedStorefront);
+  mutate(resulting);
+  if (lifecycle.transaction === null) throw new Error("Expected an accepted transaction.");
+  return {
+    ...lifecycle,
+    proposal: { ...lifecycle.proposal, proposedStorefront: structuredClone(resulting) },
+    activeStorefront: structuredClone(resulting),
+    transaction: { ...lifecycle.transaction, resulting: structuredClone(resulting) },
+  };
+}
+
+function requiredRuntimeComponent(runtime: WholeStorefrontRuntimeState, componentType: string) {
+  const page = runtime.pages.find((candidate) =>
+    candidate.components.some((component) => component.component === componentType),
+  );
+  const component = page?.components.find((candidate) => candidate.component === componentType);
+  if (!page || !component) throw new Error(`Expected ${componentType} runtime component.`);
+  return { page, component };
+}
+
 async function mintInitial(
   overrides: {
     actionId?: string;
@@ -188,7 +266,8 @@ async function mintInitial(
   const harness = initialHarness();
   const receipt = await harness.service.mintAfterAcceptance({
     lifecycle: overrides.lifecycle ?? harness.lifecycle,
-    acceptedSnapshot: harness.fixture.draft,
+    acceptedSnapshot: harness.acceptedSnapshot,
+    materialization: materializationFor(harness),
     authority: overrides.authority ?? harness.authority,
     acceptanceActionId: overrides.actionId ?? "acceptance_action_initial",
     acceptedAt,
@@ -213,6 +292,12 @@ describe("P10A-08B authoritative accepted snapshot receipt", () => {
         >,
       ),
     );
+    expect(stored.acceptedRuntimeFingerprint).toBe(
+      `accepted-runtime-${canonicalValueFingerprint(first.proposal.proposedStorefront)}`,
+    );
+    expect(stored.acceptedSnapshotFingerprint).toBe(
+      canonicalStorefrontContentFingerprint(first.acceptedSnapshot),
+    );
     first.receipt.profileAuthorities.push({ profileId: "client", fingerprint: "changed" });
     expect(await resolveAcceptedSnapshotPublishReceipt(first.receiptRepository, stored.id)).toEqual(
       stored,
@@ -224,7 +309,8 @@ describe("P10A-08B authoritative accepted snapshot receipt", () => {
     await expect(
       first.service.mintAfterAcceptance({
         lifecycle: first.lifecycle,
-        acceptedSnapshot: first.fixture.draft,
+        acceptedSnapshot: first.acceptedSnapshot,
+        materialization: materializationFor(first),
         authority: first.authority,
         acceptanceActionId: "acceptance_action_initial",
         acceptedAt,
@@ -233,9 +319,131 @@ describe("P10A-08B authoritative accepted snapshot receipt", () => {
     ).rejects.toMatchObject({ code: "receipt-replay" });
   });
 
+  it.each([
+    {
+      difference: "BrandSystem",
+      mutate: (runtime: WholeStorefrontRuntimeState) => {
+        runtime.brandSystem.colors.primary = "#123456";
+      },
+    },
+    {
+      difference: "one component variant",
+      mutate: (runtime: WholeStorefrontRuntimeState) => {
+        requiredRuntimeComponent(runtime, "dynamicCollectionCommerce").component.variant =
+          "gallery";
+      },
+    },
+    {
+      difference: "one bounded component parameter",
+      mutate: (runtime: WholeStorefrontRuntimeState) => {
+        const { component } = requiredRuntimeComponent(runtime, "dynamicCollectionCommerce");
+        component.props.showDescription = component.props.showDescription !== true;
+      },
+    },
+    {
+      difference: "one approved asset assignment and placement",
+      mutate: (runtime: WholeStorefrontRuntimeState) => {
+        const { page, component } = requiredRuntimeComponent(runtime, "dynamicCollectionCommerce");
+        component.assetAssignments.push({
+          slotId: "collectionCommerceMedia",
+          assetId: "asset_lumo_story",
+          role: "editorialImage",
+        });
+        runtime.approvedAssetPlacements.push({
+          type: "PLACE_APPROVED_SOURCE_ASSET",
+          pageId: page.pageId,
+          componentId: component.id,
+          componentType: component.component,
+          assetSlotId: "collectionCommerceMedia",
+          assetId: "asset_lumo_story",
+          role: "editorialImage",
+          assetRevision: "1:p9-05a-approved",
+          materialFingerprint: "material-asset_lumo_story",
+          sourceReferenceId: "source_lumo_merchant",
+          required: false,
+        });
+      },
+    },
+    {
+      difference: "component ordering",
+      mutate: (runtime: WholeStorefrontRuntimeState) => {
+        const page = runtime.pages.find((candidate) => candidate.components.length > 1);
+        if (!page) throw new Error("Expected a runtime page with multiple components.");
+        [page.components[0], page.components[1]] = [page.components[1], page.components[0]];
+      },
+    },
+    {
+      difference: "protected product binding identity",
+      mutate: (runtime: WholeStorefrontRuntimeState) => {
+        const { component } = requiredRuntimeComponent(runtime, "dynamicProductDetail");
+        const binding = component.bindings.find((candidate) => candidate.source === "product");
+        if (!binding) throw new Error("Expected a protected product binding.");
+        binding.productId =
+          binding.productId === P9_05A_COMPLEX_PRODUCT_ID
+            ? P9_05A_SIMPLE_PRODUCT_ID
+            : P9_05A_COMPLEX_PRODUCT_ID;
+      },
+    },
+    {
+      difference: "navigation route identity",
+      mutate: (runtime: WholeStorefrontRuntimeState) => {
+        const item = runtime.navigation.primary[0];
+        const productPage = runtime.pages.find((page) => page.role === "product-template");
+        if (!item || !productPage) throw new Error("Expected primary navigation and product page.");
+        item.target = { type: "page", pageId: productPage.pageId };
+      },
+    },
+  ])(
+    "rejects accepted proposal divergence in $difference while the snapshot still matches the current draft",
+    async ({ mutate }) => {
+      const harness = initialHarness();
+      const createOnce = vi.spyOn(harness.receiptRepository, "createOnce");
+      const lifecycle = lifecycleWithChangedAcceptedResult(harness.lifecycle, mutate);
+      const aggregate = await harness.projectRepository.get(harness.acceptedSnapshot.projectId);
+      expect(
+        aggregate.snapshots.find((snapshot) => snapshot.id === aggregate.project.draftSnapshotId),
+      ).toEqual(harness.acceptedSnapshot);
+
+      await expect(
+        harness.service.mintAfterAcceptance({
+          lifecycle,
+          acceptedSnapshot: structuredClone(harness.acceptedSnapshot),
+          materialization: materializationFor(harness),
+          authority: harness.authority,
+          acceptanceActionId: "acceptance_action_content_mismatch",
+          acceptedAt,
+          sourceKind: "initialGeneration",
+        }),
+      ).rejects.toMatchObject({ code: "accepted-proposal-content-mismatch" });
+      expect(createOnce).not.toHaveBeenCalled();
+      expect(await harness.receiptRepository.get("acceptance_action_content_mismatch")).toBeNull();
+    },
+  );
+
+  it("accepts harmless input key ordering after canonical schema normalization", async () => {
+    const harness = initialHarness();
+    const reorderedSnapshot = Object.fromEntries(
+      Object.entries(structuredClone(harness.acceptedSnapshot)).reverse(),
+    );
+
+    await expect(
+      harness.service.mintAfterAcceptance({
+        lifecycle: harness.lifecycle,
+        acceptedSnapshot: reorderedSnapshot,
+        materialization: materializationFor(harness),
+        authority: harness.authority,
+        acceptanceActionId: "acceptance_action_normalized",
+        acceptedAt,
+        sourceKind: "initialGeneration",
+      }),
+    ).resolves.toMatchObject({
+      acceptedSnapshotFingerprint: canonicalStorefrontContentFingerprint(harness.acceptedSnapshot),
+    });
+  });
+
   it("mints governed follow-up evidence only after the accepted lifecycle", async () => {
     const harness = followUpHarness();
-    const projectRepository = new InMemoryProjectRepository([harness.fixture.aggregate]);
+    const projectRepository = new InMemoryProjectRepository([harness.acceptedAggregate]);
     const receiptRepository = new InMemoryAcceptedSnapshotPublishReceiptRepository();
     const service = new AcceptedSnapshotPublishingAuthorityService({
       projectRepository,
@@ -243,7 +451,8 @@ describe("P10A-08B authoritative accepted snapshot receipt", () => {
     });
     const receipt = await service.mintAfterAcceptance({
       lifecycle: harness.lifecycle,
-      acceptedSnapshot: harness.fixture.draft,
+      acceptedSnapshot: harness.acceptedSnapshot,
+      materialization: materializationFor(harness),
       authority: {
         proposalRevision: 3,
         reviewRevision: 2,
@@ -287,7 +496,8 @@ describe("P10A-08B authoritative accepted snapshot receipt", () => {
       await expect(
         harness.service.mintAfterAcceptance({
           lifecycle,
-          acceptedSnapshot: harness.fixture.draft,
+          acceptedSnapshot: harness.acceptedSnapshot,
+          materialization: materializationFor(harness),
           authority: harness.authority,
           acceptanceActionId: "acceptance_action_not_accepted",
           acceptedAt,
@@ -332,7 +542,8 @@ describe("P10A-08B authoritative accepted snapshot receipt", () => {
     });
     await collisionService.mintAfterAcceptance({
       lifecycle: first.lifecycle,
-      acceptedSnapshot: first.fixture.draft,
+      acceptedSnapshot: first.acceptedSnapshot,
+      materialization: materializationFor(first),
       authority: first.authority,
       acceptanceActionId: "acceptance_action_collision_one",
       acceptedAt,
@@ -341,7 +552,8 @@ describe("P10A-08B authoritative accepted snapshot receipt", () => {
     await expect(
       collisionService.mintAfterAcceptance({
         lifecycle: first.lifecycle,
-        acceptedSnapshot: first.fixture.draft,
+        acceptedSnapshot: first.acceptedSnapshot,
+        materialization: materializationFor(first),
         authority: first.authority,
         acceptanceActionId: "acceptance_action_collision_two",
         acceptedAt,

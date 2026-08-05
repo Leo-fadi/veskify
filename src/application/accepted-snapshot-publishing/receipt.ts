@@ -116,6 +116,7 @@ export type AcceptedSnapshotReceiptErrorCode =
   | "approved-asset-mismatch"
   | "proposal-not-accepted"
   | "accepted-lifecycle-mismatch"
+  | "accepted-proposal-content-mismatch"
   | "publication-authority-confusion";
 
 export class AcceptedSnapshotReceiptError extends Error {

@@ -2,7 +2,13 @@ import "server-only";
 
 import type { z } from "zod";
 import {
+  type ApprovedAssetPresentation,
+  type WholeStorefrontPlanningInput,
+} from "@/application/whole-storefront-generation-plan";
+import {
+  materializeWholeStorefrontRuntimeSnapshot,
   wholeStorefrontProposalSchema,
+  WholeStorefrontSnapshotMaterializationError,
   type WholeStorefrontProposalLifecycleSnapshot,
 } from "@/application/whole-storefront-proposal-lifecycle";
 import { idSchema, isoDateTimeSchema } from "@/domain/shared";
@@ -37,6 +43,10 @@ export type AcceptedSnapshotMintAuthority = z.infer<typeof mintAuthoritySchema>;
 export type MintAcceptedSnapshotPublishReceiptInput = Readonly<{
   lifecycle: WholeStorefrontProposalLifecycleSnapshot;
   acceptedSnapshot: unknown;
+  materialization: Readonly<{
+    planningInput: WholeStorefrontPlanningInput;
+    approvedAssetPresentations?: readonly ApprovedAssetPresentation[];
+  }>;
   authority: AcceptedSnapshotMintAuthority;
   acceptanceActionId: string;
   acceptedAt: string;
@@ -129,6 +139,29 @@ export class AcceptedSnapshotPublishingAuthorityService {
       });
     }
 
+    let proposalSnapshot: ReturnType<typeof materializeWholeStorefrontRuntimeSnapshot>;
+    try {
+      proposalSnapshot = materializeWholeStorefrontRuntimeSnapshot({
+        runtime: proposal.proposedStorefront,
+        planningInput: input.materialization.planningInput,
+        approvedAssetPresentations: input.materialization.approvedAssetPresentations,
+      });
+    } catch (error) {
+      if (error instanceof WholeStorefrontSnapshotMaterializationError) {
+        throw new AcceptedSnapshotReceiptError("accepted-proposal-content-mismatch", {
+          cause: error,
+        });
+      }
+      throw error;
+    }
+    const snapshotFingerprint = canonicalStorefrontContentFingerprint(snapshot.data);
+    if (
+      canonicalStorefrontContentFingerprint(proposalSnapshot) !== snapshotFingerprint ||
+      canonicalValueString(proposalSnapshot) !== canonicalValueString(snapshot.data)
+    ) {
+      throw new AcceptedSnapshotReceiptError("accepted-proposal-content-mismatch");
+    }
+
     const aggregate = validateProjectAggregate(
       await this.#projectRepository.get(proposal.projectId),
     );
@@ -162,7 +195,6 @@ export class AcceptedSnapshotPublishingAuthorityService {
     ) {
       throw new AcceptedSnapshotReceiptError("stale-draft");
     }
-    const snapshotFingerprint = canonicalStorefrontContentFingerprint(snapshot.data);
     if (
       snapshotFingerprint !== canonicalStorefrontContentFingerprint(currentDraft) ||
       canonicalValueString(snapshot.data) !== canonicalValueString(currentDraft)
