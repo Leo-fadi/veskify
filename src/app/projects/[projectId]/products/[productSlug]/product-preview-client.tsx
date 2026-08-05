@@ -100,11 +100,13 @@ function ProductPreviewLoader({
   productSlug,
   repositoryFactory = defaultRepositoryFactory,
   snapshotKind = "draft",
-  renderTarget = "preview",
+  renderTarget,
   historicalSnapshotId,
   commerceAdapter = defaultCommerceAdapter,
   onPrimaryAction = ignorePrimaryAction,
 }: ProductPreviewClientProps) {
+  const effectiveRenderTarget =
+    renderTarget ?? (snapshotKind === "published" ? "published" : "preview");
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
   const [attempt, setAttempt] = useState(0);
@@ -143,7 +145,7 @@ function ProductPreviewLoader({
             catalogue: aggregate.catalogue,
             snapshot: draft,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
-            renderTarget,
+            renderTarget: effectiveRenderTarget,
           });
           validateRegisteredPage(productPage, context);
           const references = dynamicProduct
@@ -197,7 +199,7 @@ function ProductPreviewLoader({
     historicalSnapshotId,
     productSlug,
     projectId,
-    renderTarget,
+    effectiveRenderTarget,
     snapshotKind,
   ]);
 
@@ -275,7 +277,7 @@ function ProductPreviewLoader({
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
-    renderTarget,
+    renderTarget: effectiveRenderTarget,
   });
   return (
     <div className="project-preview" lang={locale} style={style}>
@@ -335,7 +337,7 @@ function ProductPreviewLoader({
             page={state.productPage}
             presentation={state.commercePresentation}
             primaryLocale={state.aggregate.project.primaryLocale}
-            target={snapshotKind === "published" ? "published" : "preview"}
+            target={effectiveRenderTarget}
           />
         ) : (
           renderStorefrontPage(state.productPage, context)

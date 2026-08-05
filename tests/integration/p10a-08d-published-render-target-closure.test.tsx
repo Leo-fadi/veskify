@@ -11,9 +11,11 @@ import {
 } from "@/integrations/storefront-commerce-routes";
 import { aurumNordicSeed } from "@/data/seed";
 import type * as StorefrontRegistry from "@/components/registry";
+import type * as StorefrontCommerceRoute from "@/components/storefront/storefront-commerce-route";
 import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
 
 const renderedContexts = vi.hoisted(() => [] as unknown[]);
+const nestedTargets = vi.hoisted(() => ({ collection: [] as string[], product: [] as string[] }));
 
 vi.mock("@/components/registry", async (importOriginal) => {
   const actual = await importOriginal<typeof StorefrontRegistry>();
@@ -24,6 +26,25 @@ vi.mock("@/components/registry", async (importOriginal) => {
     ) => {
       renderedContexts.push(args[0]);
       return actual.createStorefrontRenderContext(...args);
+    },
+  };
+});
+
+vi.mock("@/components/storefront/storefront-commerce-route", async (importOriginal) => {
+  const actual = await importOriginal<typeof StorefrontCommerceRoute>();
+  return {
+    ...actual,
+    StorefrontCollectionCommerceRoute: (
+      ...args: Parameters<typeof actual.StorefrontCollectionCommerceRoute>
+    ) => {
+      nestedTargets.collection.push(args[0].target);
+      return actual.StorefrontCollectionCommerceRoute(...args);
+    },
+    StorefrontProductCommerceRoute: (
+      ...args: Parameters<typeof actual.StorefrontProductCommerceRoute>
+    ) => {
+      nestedTargets.product.push(args[0].target);
+      return actual.StorefrontProductCommerceRoute(...args);
     },
   };
 });
@@ -62,9 +83,16 @@ function expectRenderedContext(snapshotId: string, renderTarget: "preview" | "pu
   expect(contexts.every((context) => context.renderTarget === renderTarget)).toBe(true);
 }
 
+function expectNestedTarget(kind: "collection" | "product", target: "preview" | "published") {
+  expect(nestedTargets[kind].length).toBeGreaterThan(0);
+  expect(nestedTargets[kind].every((value) => value === target)).toBe(true);
+}
+
 describe("P10A-08D published route render-target closure", () => {
   beforeEach(() => {
     renderedContexts.splice(0);
+    nestedTargets.collection.splice(0);
+    nestedTargets.product.splice(0);
   });
 
   it("keeps published homepage snapshot selection and render target independently explicit", async () => {
@@ -109,6 +137,7 @@ describe("P10A-08D published route render-target closure", () => {
     );
     await screen.findByRole("heading", { level: 1, name: "Rings" });
     expectRenderedContext(value.project.publishedSnapshotId, "published");
+    expectNestedTarget("collection", "published");
     expect(collectionCalls).toHaveLength(1);
     expect(collectionCalls[0]?.snapshot.id).toBe(value.project.publishedSnapshotId);
     expect(
@@ -144,6 +173,7 @@ describe("P10A-08D published route render-target closure", () => {
     );
     await screen.findByRole("heading", { level: 1, name: "Aurora Ring 585" });
     expectRenderedContext(value.project.publishedSnapshotId, "published");
+    expectNestedTarget("product", "published");
     expect(productCalls).toHaveLength(1);
     expect(productCalls[0]?.snapshot.id).toBe(value.project.publishedSnapshotId);
     expect(productCalls[0]?.product.id).toBe("product_aurora_ring_585");
@@ -167,8 +197,10 @@ describe("P10A-08D published route render-target closure", () => {
     );
     await screen.findByRole("heading", { level: 1, name: "Rings" });
     expectRenderedContext(collection.project.draftSnapshotId, "preview");
+    expectNestedTarget("collection", "preview");
 
     renderedContexts.splice(0);
+    nestedTargets.collection.splice(0);
     const product = aggregate();
     render(
       <ProductPreviewClient
@@ -179,6 +211,69 @@ describe("P10A-08D published route render-target closure", () => {
     );
     await screen.findByRole("heading", { level: 1, name: "Aurora Ring 585" });
     expectRenderedContext(product.project.draftSnapshotId, "preview");
+    expectNestedTarget("product", "preview");
+  });
+
+  it("propagates an independently supplied collection target without changing published snapshot selection", async () => {
+    const value = aggregate();
+    render(
+      <CollectionPreviewClient
+        collectionSlug="rings"
+        projectId={value.project.id}
+        renderTarget="preview"
+        repositoryFactory={() => repository(value).projectRepository}
+        snapshotKind="published"
+      />,
+    );
+    await screen.findByRole("heading", { level: 1, name: "Rings" });
+    expectRenderedContext(value.project.publishedSnapshotId, "preview");
+    expectNestedTarget("collection", "preview");
+  });
+
+  it("propagates an independently supplied PDP target without changing published snapshot selection", async () => {
+    const value = aggregate();
+    render(
+      <ProductPreviewClient
+        productId={value.project.id}
+        productSlug="aurora-ring-585"
+        renderTarget="preview"
+        repositoryFactory={() => repository(value).projectRepository}
+        snapshotKind="published"
+      />,
+    );
+    await screen.findByRole("heading", { level: 1, name: "Aurora Ring 585" });
+    expectRenderedContext(value.project.publishedSnapshotId, "preview");
+    expectNestedTarget("product", "preview");
+  });
+
+  it("derives the published compatibility default once when callers omit renderTarget", async () => {
+    const collection = aggregate();
+    render(
+      <CollectionPreviewClient
+        collectionSlug="rings"
+        projectId={collection.project.id}
+        repositoryFactory={() => repository(collection).projectRepository}
+        snapshotKind="published"
+      />,
+    );
+    await screen.findByRole("heading", { level: 1, name: "Rings" });
+    expectRenderedContext(collection.project.publishedSnapshotId, "published");
+    expectNestedTarget("collection", "published");
+
+    renderedContexts.splice(0);
+    nestedTargets.collection.splice(0);
+    const product = aggregate();
+    render(
+      <ProductPreviewClient
+        productId={product.project.id}
+        productSlug="aurora-ring-585"
+        repositoryFactory={() => repository(product).projectRepository}
+        snapshotKind="published"
+      />,
+    );
+    await screen.findByRole("heading", { level: 1, name: "Aurora Ring 585" });
+    expectRenderedContext(product.project.publishedSnapshotId, "published");
+    expectNestedTarget("product", "published");
   });
 
   it("makes published route wrappers pass the target instead of allowing nested clients to default", async () => {
