@@ -88,6 +88,22 @@ const preparedSnapshotExpectationSchema = z
   })
   .strict();
 
+export const publicationAuthoritySchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("manual") }).strict(),
+  z
+    .object({
+      kind: z.literal("accepted-ai"),
+      receiptId: idSchema,
+      receiptFingerprint: z.string().trim().min(1).max(240),
+      proposalId: idSchema,
+      proposalRevision: z.number().int().nonnegative(),
+      reviewRevision: z.number().int().nonnegative(),
+      acceptedSnapshotId: idSchema,
+      acceptedSnapshotFingerprint: z.string().trim().min(1).max(240),
+    })
+    .strict(),
+]);
+
 export const publishPreparationSchema = z
   .object({
     preparationId: idSchema,
@@ -96,12 +112,14 @@ export const publishPreparationSchema = z
     expectedProjectRevision: z.number().int().nonnegative(),
     expectedDraft: preparedSnapshotExpectationSchema,
     expectedPublished: preparedSnapshotExpectationSchema,
+    authority: publicationAuthoritySchema,
     changeSummary: publishChangeSummarySchema,
     publishPermitted: z.boolean(),
   })
   .strict();
 
 export type PublishChangeSummary = z.infer<typeof publishChangeSummarySchema>;
+export type PublicationAuthority = z.infer<typeof publicationAuthoritySchema>;
 export type PublishPreparation = z.infer<typeof publishPreparationSchema>;
 
 export class InvalidPublishPreparationError extends Error {

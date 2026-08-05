@@ -1,4 +1,11 @@
 import {
+  AcceptedSnapshotReceiptError,
+  assertAcceptedSnapshotReceiptCurrent,
+  resolveAcceptedSnapshotPublishReceipt,
+  type AcceptedSnapshotCurrentAuthoritySource,
+  type AcceptedSnapshotPublishReceiptRepository,
+} from "@/application/accepted-snapshot-publishing";
+import {
   canonicalStorefrontContentEqual,
   canonicalStorefrontContentFingerprint,
   type StorefrontSnapshot,
@@ -20,6 +27,14 @@ export type PreparePublishOptions = {
     draftId: string;
     publishedId: string;
   }) => string;
+  authority?:
+    | Readonly<{ kind: "manual" }>
+    | Readonly<{
+        kind: "accepted-ai";
+        receiptId: string;
+        receiptRepository: AcceptedSnapshotPublishReceiptRepository;
+        currentAuthoritySource: AcceptedSnapshotCurrentAuthoritySource;
+      }>;
 };
 
 function currentSnapshot(
@@ -60,6 +75,38 @@ export async function preparePublish(
     const preparedAt = (options.now?.() ?? new Date()).toISOString();
     const draftFingerprint = canonicalStorefrontContentFingerprint(draft);
     const publishedFingerprint = canonicalStorefrontContentFingerprint(published);
+    const requestedAuthority = options.authority ?? { kind: "manual" as const };
+    const authority =
+      requestedAuthority.kind === "manual"
+        ? requestedAuthority
+        : await (async () => {
+            const receipt = await resolveAcceptedSnapshotPublishReceipt(
+              requestedAuthority.receiptRepository,
+              requestedAuthority.receiptId,
+            );
+            const currentAuthority =
+              await requestedAuthority.currentAuthoritySource.resolveCurrentAuthority({
+                receipt,
+                aggregate,
+              });
+            assertAcceptedSnapshotReceiptCurrent(receipt, aggregate, currentAuthority);
+            if (
+              receipt.acceptedSnapshotId !== draft.id ||
+              receipt.acceptedSnapshotFingerprint !== draftFingerprint
+            ) {
+              throw new AcceptedSnapshotReceiptError("snapshot-mismatch");
+            }
+            return {
+              kind: "accepted-ai" as const,
+              receiptId: receipt.id,
+              receiptFingerprint: receipt.fingerprint,
+              proposalId: receipt.proposalId,
+              proposalRevision: receipt.proposalRevision,
+              reviewRevision: receipt.reviewRevision,
+              acceptedSnapshotId: receipt.acceptedSnapshotId,
+              acceptedSnapshotFingerprint: receipt.acceptedSnapshotFingerprint,
+            };
+          })();
     const preparationId =
       options.createPreparationId?.({
         projectId,
@@ -86,12 +133,14 @@ export async function preparePublish(
         revision: published.revision,
         contentFingerprint: publishedFingerprint,
       },
+      authority,
       changeSummary: createPublishChangeSummary(published, draft),
       publishPermitted: !canonicalStorefrontContentEqual(published, draft),
     });
 
     return deepFreeze(preparation);
   } catch (cause) {
+    if (cause instanceof AcceptedSnapshotReceiptError) throw cause;
     if (cause instanceof PublishPreparationValidationError) throw cause;
     throw new PublishPreparationValidationError({ cause });
   }
