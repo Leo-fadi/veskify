@@ -31,7 +31,10 @@ import {
   type OpenAiResponseRequestOptions,
   type OpenAiResponsesRequest,
 } from "@/integrations/ai/openai";
-import { selectServerWholeStorefrontPlanningProvider } from "@/integrations/ai/openai/whole-storefront-planning-client.server";
+import {
+  selectServerWholeStorefrontPlanningProvider,
+  selectServerWholeStorefrontPlanningProviderConfiguration,
+} from "@/integrations/ai/openai/whole-storefront-planning-client.server";
 
 const now = "2026-07-24T09:00:00.000Z";
 
@@ -153,6 +156,35 @@ function provider(transport: RecordingTransport, telemetry?: { record: (event: u
 }
 
 describe("P8-03 OpenAI whole-storefront planning provider", () => {
+  it("projects only the safe trusted provider and model identity for controlled acceptance", () => {
+    expect(
+      selectServerWholeStorefrontPlanningProviderConfiguration({ environment: {} }),
+    ).toMatchObject({
+      provider: { id: "deterministic-whole-storefront-planning" },
+      modelId: null,
+    });
+    expect(
+      selectServerWholeStorefrontPlanningProviderConfiguration({
+        environment: { VESKIFY_AI_PROVIDER: "openai" },
+      }),
+    ).toMatchObject({
+      provider: { id: "openai-whole-storefront-planning" },
+      modelId: null,
+    });
+    expect(
+      selectServerWholeStorefrontPlanningProviderConfiguration({
+        environment: {
+          VESKIFY_AI_PROVIDER: "openai",
+          OPENAI_API_KEY: "test-only-placeholder",
+          VESKIFY_OPENAI_MODEL: "configured-test-model",
+        },
+      }),
+    ).toMatchObject({
+      provider: { id: "openai-whole-storefront-planning" },
+      modelId: "configured-test-model",
+    });
+  });
+
   it("builds a sanitized registry-aware request with the required planning constraints", () => {
     const request = buildWholeStorefrontPlanningProviderRequest(planningInput());
     const serialized = JSON.stringify(request);

@@ -61,6 +61,8 @@ export const controlledAcceptanceCaseSchema = z
     requestIdentity: safeIdSchema,
     locale: z.enum(["en", "fi"]),
     authority: governedSkillAuthorityEnvelopeSchema,
+    /** Optional because the P10A-07C-02 foundation is intentionally un-routed. */
+    routerDecisionFingerprint: fingerprintSchema.nullable().optional(),
     /** Binds the declared profiles or selected slots to the governed request without duplicating them. */
     declaredPageAuthorityFingerprint: fingerprintSchema,
     providerConfiguration: controlledAcceptanceProviderConfigurationSchema,
@@ -120,6 +122,7 @@ export const controlledAcceptanceEvidenceSchema = z
     governedPackageId: safeIdSchema.nullable(),
     requestFingerprint: fingerprintSchema,
     authorityFingerprint: fingerprintSchema,
+    routerDecisionFingerprint: fingerprintSchema.nullable(),
     projectId: safeIdSchema,
     projectRevision: z.number().int().nonnegative(),
     draftSnapshotId: safeIdSchema,

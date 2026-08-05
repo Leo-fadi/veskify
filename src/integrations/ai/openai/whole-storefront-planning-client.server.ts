@@ -16,6 +16,15 @@ import { OpenAiWholeStorefrontPlanningProvider } from "./whole-storefront-planni
 
 export type ServerWholeStorefrontPlanningProviderSelection = "mock" | "openai";
 
+/**
+ * Safe trusted configuration required by controlled acceptance. It intentionally
+ * exposes neither credentials nor provider options.
+ */
+export type ServerWholeStorefrontPlanningProviderConfiguration = Readonly<{
+  provider: WholeStorefrontPlanningProvider;
+  modelId: string | null;
+}>;
+
 type OpenAiServerEnvironment = Readonly<
   Record<string, string | undefined> & {
     OPENAI_API_KEY?: string;
@@ -66,28 +75,43 @@ function timeoutFrom(value: string | undefined): number {
   return timeout;
 }
 
-export function selectServerWholeStorefrontPlanningProvider({
+export function selectServerWholeStorefrontPlanningProviderConfiguration({
   environment = process.env,
   telemetry,
 }: {
   environment?: OpenAiServerEnvironment;
   telemetry?: OpenAiProviderTelemetry;
-} = {}): WholeStorefrontPlanningProvider {
+} = {}): ServerWholeStorefrontPlanningProviderConfiguration {
   if (providerSelection(environment.VESKIFY_AI_PROVIDER) === "mock") {
-    return createDeterministicWholeStorefrontPlanningProvider();
+    return { provider: createDeterministicWholeStorefrontPlanningProvider(), modelId: null };
   }
   const apiKey = environment.OPENAI_API_KEY?.trim();
-  if (!apiKey) return new MissingCredentialsWholeStorefrontPlanningProvider();
+  if (!apiKey) {
+    return { provider: new MissingCredentialsWholeStorefrontPlanningProvider(), modelId: null };
+  }
 
   const timeout = timeoutFrom(environment.VESKIFY_OPENAI_TIMEOUT_MS);
+  const modelId = environment.VESKIFY_OPENAI_MODEL?.trim() || defaultOpenAiModel;
   const client = new OpenAI({ apiKey, maxRetries: 0, timeout, logLevel: "off" });
-  return new OpenAiWholeStorefrontPlanningProvider({
-    model: environment.VESKIFY_OPENAI_MODEL?.trim() || defaultOpenAiModel,
-    timeoutMs: timeout,
-    telemetry,
-    responses: {
-      create: (request: OpenAiResponsesRequest, options: OpenAiResponseRequestOptions) =>
-        client.responses.create(request, options),
-    },
-  });
+  return {
+    provider: new OpenAiWholeStorefrontPlanningProvider({
+      model: modelId,
+      timeoutMs: timeout,
+      telemetry,
+      responses: {
+        create: (request: OpenAiResponsesRequest, options: OpenAiResponseRequestOptions) =>
+          client.responses.create(request, options),
+      },
+    }),
+    modelId,
+  };
+}
+
+export function selectServerWholeStorefrontPlanningProvider(
+  options: {
+    environment?: OpenAiServerEnvironment;
+    telemetry?: OpenAiProviderTelemetry;
+  } = {},
+): WholeStorefrontPlanningProvider {
+  return selectServerWholeStorefrontPlanningProviderConfiguration(options).provider;
 }

@@ -159,6 +159,7 @@ function baseEvidence(
       execution: input.execution,
     })}`,
     authorityFingerprint: controlledAcceptanceAuthorityFingerprint(input.authority),
+    routerDecisionFingerprint: input.routerDecisionFingerprint ?? null,
     projectId: input.authority.projectId,
     projectRevision: input.authority.projectRevision,
     draftSnapshotId: input.authority.draftSnapshotId,
