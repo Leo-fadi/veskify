@@ -23,6 +23,15 @@ export type WholeStorefrontPlanningProviderCapability = Readonly<{
 export type WholeStorefrontPlanningProviderRequest = Readonly<{
   merchantInstruction: string;
   requestFingerprint: string;
+  /**
+   * Optional trusted orchestration context. This is supplied by a governed
+   * caller, never inferred from a provider response.
+   */
+  governedExecution?: Readonly<{
+    executionKind: "initialGeneration" | "followUpEditing";
+    packageId: string;
+    requestIdentity: string;
+  }>;
   approvedBrief: Readonly<{
     id: string;
     revision: number;
@@ -236,6 +245,8 @@ export function buildWholeStorefrontPlanningProviderRequest(
   inputValue: unknown,
   merchantInstruction = "Prepare a coherent storefront using the approved merchant brief.",
   tokenRefinementValue: unknown = null,
+  directionId?: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
+  governedExecution?: WholeStorefrontPlanningProviderRequest["governedExecution"],
 ): WholeStorefrontPlanningProviderRequest {
   const instruction = validatedMerchantInstruction(merchantInstruction);
   const tokenRefinement =
@@ -245,9 +256,10 @@ export function buildWholeStorefrontPlanningProviderRequest(
   let input: WholeStorefrontPlanningInput;
   let expectedPlan: WholeStorefrontGenerationPlan;
   try {
-    expectedPlan = createWholeStorefrontGenerationPlan(inputValue, {
-      tokenRefinementPlan: tokenRefinement,
-    });
+    expectedPlan = createWholeStorefrontGenerationPlan(
+      inputValue,
+      directionId === undefined ? { tokenRefinementPlan: tokenRefinement } : { directionId },
+    );
     input = structuredClone(inputValue as WholeStorefrontPlanningInput);
   } catch {
     return fail("invalid-request");
@@ -262,6 +274,9 @@ export function buildWholeStorefrontPlanningProviderRequest(
   const request: WholeStorefrontPlanningProviderRequest = {
     merchantInstruction: instruction,
     requestFingerprint: expectedPlan.requestFingerprint,
+    ...(governedExecution === undefined
+      ? {}
+      : { governedExecution: structuredClone(governedExecution) }),
     approvedBrief: {
       id: input.brief.id,
       revision: input.brief.revision,
@@ -422,17 +437,23 @@ export async function requestWholeStorefrontGenerationPlan({
   currentInput,
   merchantInstruction,
   tokenRefinementPlan,
+  directionId,
+  governedExecution,
 }: {
   provider: WholeStorefrontPlanningProvider;
   input: unknown;
   currentInput: () => unknown;
   merchantInstruction?: string;
   tokenRefinementPlan?: RegisteredTokenRefinementPlan | null;
+  directionId?: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
+  governedExecution?: WholeStorefrontPlanningProviderRequest["governedExecution"];
 }): Promise<WholeStorefrontGenerationPlan> {
   const request = buildWholeStorefrontPlanningProviderRequest(
     input,
     merchantInstruction,
     tokenRefinementPlan,
+    directionId,
+    governedExecution,
   );
   if (
     !provider.capabilities.wholeStorefrontPlanning ||
@@ -463,6 +484,7 @@ export async function requestWholeStorefrontGenerationPlan({
       Promise.resolve(providerResult),
       currentInput,
       tokenRefinementPlan,
+      directionId,
     );
   } catch (error) {
     if (error instanceof WholeStorefrontPlanningProviderError) throw error;

@@ -1909,14 +1909,12 @@ export async function acceptWholeStorefrontPlanningResult(
   result: Promise<unknown>,
   currentInput: () => unknown,
   tokenRefinementPlan: RegisteredTokenRefinementPlan | null = null,
+  directionId?: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
 ): Promise<WholeStorefrontGenerationPlan> {
-  const expected = createWholeStorefrontGenerationPlan(inputValue, {
-    tokenRefinementPlan,
-  });
+  const options = directionId === undefined ? { tokenRefinementPlan } : { directionId };
+  const expected = createWholeStorefrontGenerationPlan(inputValue, options);
   const received = await result;
-  const current = createWholeStorefrontGenerationPlan(await currentInput(), {
-    tokenRefinementPlan,
-  });
+  const current = createWholeStorefrontGenerationPlan(await currentInput(), options);
   if (current.requestFingerprint !== expected.requestFingerprint) {
     invalid("stale-result", "The storefront changed while its generation plan was being prepared.");
   }
