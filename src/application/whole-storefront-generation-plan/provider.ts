@@ -1,4 +1,4 @@
-import { ZodError } from "zod";
+import { ZodError, z } from "zod";
 import {
   registeredTokenRefinementPlanSchema,
   type RegisteredTokenRefinementPlan,
@@ -13,6 +13,14 @@ import {
   type WholeStorefrontPlanningInput,
   WholeStorefrontGenerationPlanError,
 } from "./contract";
+
+/** Safe provider/model identity shared by configured adapters and acceptance gates. */
+export const providerModelIdentifierSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(160)
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._:/-]*$/);
 
 export type WholeStorefrontPlanningProviderCapability = Readonly<{
   wholeStorefrontPlanning: boolean;
@@ -400,6 +408,7 @@ export function buildWholeStorefrontPlanningProviderRequest(
       "Do not apply, compile, publish, or otherwise mutate a storefront draft, history, or catalogue.",
     ],
     directionOptions: input.recipeContext.designSystem.directions
+      .filter((direction) => directionId === undefined || direction.id === directionId)
       .map((direction) => ({
         directionVersion: direction.version,
         id: direction.id,

@@ -4,6 +4,7 @@ import {
   governedSkillAuthorityEnvelopeSchema,
   type GovernedSkillAuthorityEnvelope,
 } from "@/application/design-skills";
+import { providerModelIdentifierSchema } from "@/application/whole-storefront-generation-plan";
 import { canonicalValueFingerprint } from "@/domain/storefront";
 import { z } from "zod";
 
@@ -41,9 +42,18 @@ export const controlledAcceptanceProviderConfigurationSchema = z
   .object({
     providerId: safeIdSchema,
     /** Safe model identity only. Credentials and provider options are never accepted here. */
-    modelId: safeIdSchema.nullable(),
+    modelId: providerModelIdentifierSchema.nullable(),
   })
   .strict();
+
+export const controlledAcceptanceProviderConfigurationCategorySchema = z.enum([
+  "eligible",
+  "live-gate-disabled",
+  "deterministic-provider-selected",
+  "credentials-unavailable",
+  "model-identity-unavailable",
+  "unsupported-provider-configuration",
+]);
 
 export const controlledAcceptanceEvidenceRetentionSchema = z
   .object({
@@ -61,10 +71,13 @@ export const controlledAcceptanceCaseSchema = z
     requestIdentity: safeIdSchema,
     locale: z.enum(["en", "fi"]),
     authority: governedSkillAuthorityEnvelopeSchema,
+    /** Optional because the P10A-07C-02 foundation is intentionally un-routed. */
+    routingRequest: z.unknown().optional(),
+    expectedRouterDecisionFingerprint: fingerprintSchema.nullable().optional(),
     /** Binds the declared profiles or selected slots to the governed request without duplicating them. */
     declaredPageAuthorityFingerprint: fingerprintSchema,
     providerConfiguration: controlledAcceptanceProviderConfigurationSchema,
-    expectedModelId: safeIdSchema.nullable(),
+    expectedModelId: providerModelIdentifierSchema.nullable(),
     maximumProviderCalls: z.number().int().min(0).max(10),
     expectedReviewStages: z.array(controlledAcceptanceReviewStageSchema).min(1).max(6),
     lifecycleExercise: controlledAcceptanceLifecycleExerciseSchema,
@@ -100,7 +113,9 @@ export type ControlledAcceptanceFailureCode =
   | "missing-live-authorization"
   | "invalid-live-authorization"
   | "stale-authority"
+  | "router-validation-failed"
   | "invalid-provider-configuration"
+  | "live-provider-gate-disabled"
   | "provider-allowance-exhausted"
   | "evidence-initialization-failed"
   | "provider-unavailable"
@@ -120,6 +135,7 @@ export const controlledAcceptanceEvidenceSchema = z
     governedPackageId: safeIdSchema.nullable(),
     requestFingerprint: fingerprintSchema,
     authorityFingerprint: fingerprintSchema,
+    routerDecisionFingerprint: fingerprintSchema.nullable(),
     projectId: safeIdSchema,
     projectRevision: z.number().int().nonnegative(),
     draftSnapshotId: safeIdSchema,
@@ -131,6 +147,7 @@ export const controlledAcceptanceEvidenceSchema = z
     commerceFingerprint: fingerprintSchema,
     approvedAssetFingerprint: fingerprintSchema.nullable(),
     provider: controlledAcceptanceProviderConfigurationSchema,
+    providerConfigurationCategory: controlledAcceptanceProviderConfigurationCategorySchema,
     providerAttemptCount: z.number().int().nonnegative(),
     providerCompletionCount: z.number().int().nonnegative(),
     providerOutcome: z.enum([

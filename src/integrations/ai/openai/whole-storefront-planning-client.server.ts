@@ -3,6 +3,7 @@ import "server-only";
 import OpenAI from "openai";
 import {
   createDeterministicWholeStorefrontPlanningProvider,
+  providerModelIdentifierSchema,
   type WholeStorefrontPlanningProvider,
   WholeStorefrontPlanningProviderError,
 } from "@/application/whole-storefront-generation-plan";
@@ -15,6 +16,21 @@ import type {
 import { OpenAiWholeStorefrontPlanningProvider } from "./whole-storefront-planning-provider";
 
 export type ServerWholeStorefrontPlanningProviderSelection = "mock" | "openai";
+
+/**
+ * Safe trusted configuration required by controlled acceptance. It intentionally
+ * exposes neither credentials nor provider options.
+ */
+export type ServerWholeStorefrontPlanningProviderConfiguration = Readonly<{
+  provider: WholeStorefrontPlanningProvider;
+  modelId: string | null;
+  category:
+    | "eligible"
+    | "deterministic-provider-selected"
+    | "credentials-unavailable"
+    | "model-identity-unavailable"
+    | "unsupported-provider-configuration";
+}>;
 
 type OpenAiServerEnvironment = Readonly<
   Record<string, string | undefined> & {
@@ -66,28 +82,72 @@ function timeoutFrom(value: string | undefined): number {
   return timeout;
 }
 
-export function selectServerWholeStorefrontPlanningProvider({
+export function selectServerWholeStorefrontPlanningProviderConfiguration({
   environment = process.env,
   telemetry,
 }: {
   environment?: OpenAiServerEnvironment;
   telemetry?: OpenAiProviderTelemetry;
-} = {}): WholeStorefrontPlanningProvider {
-  if (providerSelection(environment.VESKIFY_AI_PROVIDER) === "mock") {
-    return createDeterministicWholeStorefrontPlanningProvider();
+} = {}): ServerWholeStorefrontPlanningProviderConfiguration {
+  let selection: ServerWholeStorefrontPlanningProviderSelection;
+  try {
+    selection = providerSelection(environment.VESKIFY_AI_PROVIDER);
+  } catch {
+    return {
+      provider: new MissingCredentialsWholeStorefrontPlanningProvider(),
+      modelId: null,
+      category: "unsupported-provider-configuration",
+    };
+  }
+  if (selection === "mock") {
+    return {
+      provider: createDeterministicWholeStorefrontPlanningProvider(),
+      modelId: null,
+      category: "deterministic-provider-selected",
+    };
   }
   const apiKey = environment.OPENAI_API_KEY?.trim();
-  if (!apiKey) return new MissingCredentialsWholeStorefrontPlanningProvider();
+  if (!apiKey) {
+    return {
+      provider: new MissingCredentialsWholeStorefrontPlanningProvider(),
+      modelId: null,
+      category: "credentials-unavailable",
+    };
+  }
 
   const timeout = timeoutFrom(environment.VESKIFY_OPENAI_TIMEOUT_MS);
+  const parsedModel = providerModelIdentifierSchema.safeParse(
+    environment.VESKIFY_OPENAI_MODEL?.trim() || defaultOpenAiModel,
+  );
+  if (!parsedModel.success) {
+    return {
+      provider: new MissingCredentialsWholeStorefrontPlanningProvider(),
+      modelId: null,
+      category: "model-identity-unavailable",
+    };
+  }
+  const modelId = parsedModel.data;
   const client = new OpenAI({ apiKey, maxRetries: 0, timeout, logLevel: "off" });
-  return new OpenAiWholeStorefrontPlanningProvider({
-    model: environment.VESKIFY_OPENAI_MODEL?.trim() || defaultOpenAiModel,
-    timeoutMs: timeout,
-    telemetry,
-    responses: {
-      create: (request: OpenAiResponsesRequest, options: OpenAiResponseRequestOptions) =>
-        client.responses.create(request, options),
-    },
-  });
+  return {
+    provider: new OpenAiWholeStorefrontPlanningProvider({
+      model: modelId,
+      timeoutMs: timeout,
+      telemetry,
+      responses: {
+        create: (request: OpenAiResponsesRequest, options: OpenAiResponseRequestOptions) =>
+          client.responses.create(request, options),
+      },
+    }),
+    modelId,
+    category: "eligible",
+  };
+}
+
+export function selectServerWholeStorefrontPlanningProvider(
+  options: {
+    environment?: OpenAiServerEnvironment;
+    telemetry?: OpenAiProviderTelemetry;
+  } = {},
+): WholeStorefrontPlanningProvider {
+  return selectServerWholeStorefrontPlanningProviderConfiguration(options).provider;
 }

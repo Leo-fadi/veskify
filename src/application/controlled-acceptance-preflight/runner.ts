@@ -1,9 +1,12 @@
 import {
   executeGovernedFollowUpEditing,
   executeGovernedInitialGeneration,
+  governedSkillPackageRegistry,
   governedFollowUpEditingRequestSchema,
   governedInitialGenerationRequestSchema,
   governedSkillAuthorityEnvelopeSchema,
+  routeGovernedDesignRequest,
+  strictScopeRouterRequestSchema,
   type GovernedSkillAuthorityEnvelope,
 } from "@/application/design-skills";
 import {
@@ -52,6 +55,10 @@ export type ControlledAcceptancePreflightDependencies = Readonly<{
   provider: WholeStorefrontPlanningProvider;
   /** Safe identity supplied by trusted provider configuration, never by the acceptance case. */
   providerModelId: string | null;
+  /** Safe category supplied by trusted server configuration, never by a case. */
+  providerConfigurationCategory?: ControlledAcceptanceEvidence["providerConfigurationCategory"];
+  /** The live test supplies this explicit gate; deterministic P10A-07C-02 tests stay enabled. */
+  liveProviderEnabled?: boolean;
   currentAuthority: () => unknown;
   /** Required current server-derived planning input; request input is never a fallback. */
   currentPlanningInput: () => unknown;
@@ -146,6 +153,7 @@ function baseEvidence(
   input: ControlledAcceptanceCase,
   packageId: string,
   now: string,
+  providerConfigurationCategory: ControlledAcceptanceEvidence["providerConfigurationCategory"],
 ): RetainedEvidence {
   return {
     caseId: input.caseId,
@@ -159,6 +167,7 @@ function baseEvidence(
       execution: input.execution,
     })}`,
     authorityFingerprint: controlledAcceptanceAuthorityFingerprint(input.authority),
+    routerDecisionFingerprint: null,
     projectId: input.authority.projectId,
     projectRevision: input.authority.projectRevision,
     draftSnapshotId: input.authority.draftSnapshotId,
@@ -170,6 +179,7 @@ function baseEvidence(
     commerceFingerprint: input.authority.commerceFingerprint,
     approvedAssetFingerprint: input.authority.approvedAssetFingerprint,
     provider: clone(input.providerConfiguration),
+    providerConfigurationCategory,
     providerAttemptCount: 0,
     providerCompletionCount: 0,
     providerOutcome: "not-attempted",
@@ -310,6 +320,75 @@ export class ControlledAcceptancePreflightRunner {
     return planning;
   }
 
+  #trustedRouterDecisionFingerprint(
+    input: ControlledAcceptanceCase,
+    execution: ReturnType<typeof extractExecution>,
+    currentAuthority: GovernedSkillAuthorityEnvelope,
+  ): string | null {
+    if (input.routingRequest === undefined) return null;
+    const routedRequest = strictScopeRouterRequestSchema.parse(clone(input.routingRequest));
+    const routedExecution =
+      execution.kind === "initialGeneration"
+        ? routedRequest.initialGeneration
+        : routedRequest.followUpEditing;
+    const unexpectedExecution =
+      execution.kind === "initialGeneration"
+        ? routedRequest.followUpEditing
+        : routedRequest.initialGeneration;
+    if (
+      routedExecution === undefined ||
+      unexpectedExecution !== undefined ||
+      canonicalValueString(routedExecution) !== canonicalValueString(execution.request)
+    ) {
+      throw new Error("routing execution does not match the governed case");
+    }
+    const result = routeGovernedDesignRequest(routedRequest, currentAuthority);
+    if (result.outcome !== execution.kind || !("decision" in result)) {
+      throw new Error("routing did not produce the governed execution kind");
+    }
+    const decision = result.decision;
+    const descriptor = governedSkillPackageRegistry.resolve(
+      execution.packageId,
+      execution.kind,
+    ).descriptor;
+    const expectedPages =
+      execution.kind === "initialGeneration"
+        ? execution.request.authority.profiles.map((profile) => profile.pageId).sort()
+        : execution.request.authority.pages.map((page) => page.pageId).sort();
+    const expectedSlots =
+      execution.kind === "initialGeneration"
+        ? []
+        : execution.request.authority.pages
+            .flatMap((page) =>
+              page.selections.map((selection) => ({
+                pageId: page.pageId,
+                slotId: selection.slotId,
+              })),
+            )
+            .sort(
+              (left, right) =>
+                left.pageId.localeCompare(right.pageId) || left.slotId.localeCompare(right.slotId),
+            );
+    if (
+      decision.packageId !== execution.packageId ||
+      decision.scope !== descriptor.scope ||
+      canonicalValueString([...decision.declaredPageIds].sort()) !==
+        canonicalValueString(expectedPages) ||
+      canonicalValueString(
+        [...decision.declaredSlots].sort(
+          (left, right) =>
+            left.pageId.localeCompare(right.pageId) || left.slotId.localeCompare(right.slotId),
+        ),
+      ) !== canonicalValueString(expectedSlots) ||
+      (input.expectedRouterDecisionFingerprint !== undefined &&
+        input.expectedRouterDecisionFingerprint !== null &&
+        input.expectedRouterDecisionFingerprint !== decision.fingerprint)
+    ) {
+      throw new Error("routing authority mismatch");
+    }
+    return decision.fingerprint;
+  }
+
   #authorization(input: ControlledAcceptanceCase, value: unknown): AuthorizedBudget {
     const authorization = controlledLiveCallAuthorizationSchema.parse(clone(value));
     const unsigned = {
@@ -390,7 +469,12 @@ export class ControlledAcceptancePreflightRunner {
         now,
       );
     }
-    let evidence = baseEvidence(input, execution.packageId, now);
+    let evidence = baseEvidence(
+      input,
+      execution.packageId,
+      now,
+      this.#dependencies.providerConfigurationCategory ?? "eligible",
+    );
     let currentAuthority: GovernedSkillAuthorityEnvelope;
     try {
       currentAuthority = this.#assertCaseAuthority(input, execution);
@@ -399,6 +483,31 @@ export class ControlledAcceptancePreflightRunner {
       return this.#terminalFailure(
         "stale-authority",
         "Current project, draft, registry, manifest, profile, or planning authority is stale.",
+        evidence,
+        now,
+      );
+    }
+    try {
+      evidence = {
+        ...evidence,
+        routerDecisionFingerprint: this.#trustedRouterDecisionFingerprint(
+          input,
+          execution,
+          currentAuthority,
+        ),
+      };
+    } catch {
+      return this.#terminalFailure(
+        "router-validation-failed",
+        "The routed governed request no longer matches its current canonical authority.",
+        { ...evidence, providerOutcome: "rejected-before-call" },
+        now,
+      );
+    }
+    if (this.#dependencies.liveProviderEnabled === false) {
+      return this.#terminalFailure(
+        "live-provider-gate-disabled",
+        "The controlled real-provider gate is not enabled.",
         evidence,
         now,
       );
