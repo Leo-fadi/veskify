@@ -180,51 +180,25 @@ Complete compatible shared-frame/home/collection/PDP composition, live registere
 reachability, commerce/asset preservation, atomicity, persistence/publish, responsive/accessibility
 and retained real-provider evidence. Token-only or API-response-only success does not pass.
 
-### P10A — Grounded orchestration
+### P10A — Grounded orchestration and publishing closure
 
 Freeze vocabulary, audit capabilities, define executable PageBlueprint contracts, generate the
 Component Knowledge Registry from those contracts, define separate initial/follow-up Skill package
 contracts, define scoped router/authority/validation contracts, run golden-store gates and compile
-publication deterministically. P10A defines and validates scopes; it does not deliver
+publication deterministically. P10A closes before commercial visual expansion and does not deliver
 merchant-operable granular editing.
 
-P10A Tasks 6–9 are the commercial-composition delivery sequence after the existing Phase 9 gate:
-Task 6 approves the vocabulary, PageBlueprint-profile, bounded-parameter, inheritance, reachability
-and visual-evidence contracts; Task 7 implements commercial families; Task 8 implements coordinated
-registered PageBlueprint recipe profiles; Task 9 proves AI composition and commercial visual
-quality. These tasks are not Phase 9 closing requirements, and Tasks 7–9 must not begin before Task 6
-is approved.
+### P10B — Commercial Storefront Design System v1
 
-Task 6 code belongs in the canonical component-platform vocabulary and the existing
-`application/storefront-templates` precursor, not in a new recipe engine or registry. It defines
-registered narrative roles, visual weights, adjacency/flow rules, transition intents, bounded
-parameters and non-broadening inheritance. `ComponentDefinitionV2` compatibility and PageBlueprint
-metadata are validated deterministically with stable feedback codes. Legacy components use explicit
-compatibility defaults until Task 7 adds commercial-family metadata. No Task 6 schema result alone
-proves renderer-visible commercial quality; Task 9 owns that proof.
+P10B-01 through P10B-12 deliver governed vocabulary, visual foundations, art direction, frame, commercial families, merchandising, collection/PDP profiles, directions, narrative composition, responsive closure and commercial visual-quality evidence. P10B uses only `BrandSystem → PageBlueprint profile → family/variant → bounded instance override`; manual Puck editing is not a dependency. It closes only after credible-asset review of home, collection, simple PDP and configurable PDP at 375, 768, 1024 and 1440 px.
 
-Persisted pre-Task-6 template selections are a compatibility boundary: parse their v2 slot-only
-execution identity without semantic defaults, verify it against the selected registered template,
-then re-resolve it in memory as v3 metadata. Do not byte-compare a default-enriched legacy plan to a
-current semantic plan, and do not broaden a migration into project, snapshot, commerce, asset or
-route writes.
+### P10C — Storefront Studio Editing Experience v1
 
-### P10B — Assets and Storefront Studio UX
+P10C preserves and renumbers former P10B asset/Studio work, then adds canonical Puck boundaries, stable frame identity, bounded manual operations, scoped AI editing and unified AI/manual history. It closes when a merchant can select, edit, reorder, undo/redo, save, preview and publish through the same `StorefrontSnapshot`.
 
-Add asset upload/library and generated-image lifecycle, then merchant-facing Studio workflows that
-consume the P10A contracts.
+### P10D, P11 and P12
 
-### Phase 11 — Granular editing
-
-Implement and expose the P10A-defined selected-section, current-page, shared-frame, design-system
-and complete-storefront scopes as working merchant features, including selection,
-add/remove/reorder/replace, preview, acceptance, mixed-scope history, Undo/Redo and merchant scope
-controls/warnings without permission widening.
-
-### Phase 12 — Stable domains and reference adapters
-
-Consolidate stable canonical ports and a Vesko reference adapter. Authentication, tenancy, staging,
-deployment and production operations follow later.
+P10D defers registered generated media, video and GLTF/GLB/Three.js presentation with required fallbacks and no arbitrary generated code. P11 then supplies stable domains/reference adapters, and P12 supplies production hardening, tenancy, staging, operations and deployment.
 
 ## 8. Testing strategy
 

@@ -1,10 +1,10 @@
-# Commercial Storefront Design System Vocabulary — Provisional Implementation Specification
+# Commercial Storefront Design System Vocabulary — Implementation Specification
 
-**Status:** implementation-ready technical specification; provisional placement and numbering only.
+**Status:** implementation-ready technical specification; authoritative placement synchronized.
 
-**Scope:** This document specifies extensions to existing canonical contracts; it changes no runtime code, schema, registry, PageBlueprint, component, style, SDD, DOCX, roadmap, fixture, or baseline.
+**Scope:** This document specifies extensions to existing canonical contracts; its implementation scope changes no runtime code, schema, registry, PageBlueprint, component, style, fixture, or baseline. The accompanying roadmap-synchronization task updates the SDD, roadmap and synchronized DOCX only.
 
-This specification does **not** assign an authoritative phase or task number. The current SDD and development roadmap reserve P10B for asset governance and Vesko Storefront Studio UX, including P10B-01 brand asset upload/library, P10B-02 roles/provenance/metadata, P10B-03 generated-image lifecycle and P10B-04 Studio shell. Those identifiers remain authoritative until a separate synchronization updates the SDD, roadmap and synchronized DOCX. Downstream implementation must not treat the former provisional P10B-02B through P10B-13 labels as approved task IDs.
+This specification does **not** independently assign phase or task numbers. The authoritative SDD and development roadmap now place this work in **P10B — Commercial Storefront Design System v1**, after P10A publishing closure and before P10C Storefront Studio Editing Experience v1. Downstream implementation must use the authoritative P10B-01 through P10B-12 sequence in those documents; this specification retains neutral implementation labels only.
 
 ## 1. Executive contract
 
@@ -290,11 +290,9 @@ These are implementation targets, not code to add in this PR.
 
 ## 19. Recommended implementation PR decomposition
 
-### Required prerequisite: authoritative roadmap synchronization
+### Authoritative roadmap synchronization
 
-Before implementation begins, perform one authoritative roadmap-synchronization task. It must select the final phase placement, assign non-conflicting task IDs, update `docs/VESKIFY_SDD.md` and `docs/VESKIFY_DEVELOPMENT_ROADMAP.md`, synchronize `docs/VESKIFY_SDD_v1.2.2.docx`, and record the relationship between commercial design-system work and the existing P10B asset-governance/Storefront Studio work. This specification neither performs nor pre-assigns that task.
-
-The neutral sequence below is a recommended dependency order only. Authoritative IDs are assigned during that synchronization.
+The required synchronization has placed commercial design-system work in P10B, migrated former P10B asset/Studio work to P10C and deferred generated media to P10D. `docs/VESKIFY_SDD.md` and `docs/VESKIFY_DEVELOPMENT_ROADMAP.md` own the final task IDs and dependencies; the synchronized DOCX is their human-readable export. The neutral sequence below remains a technical dependency view, not an alternate task register.
 
 | Provisional implementation label      | Authority extended / likely layers                                                                                              | Dependency, tests and visual evidence                                                                                              | Merchant-visible impact and parallel-model risk                                                                 |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |

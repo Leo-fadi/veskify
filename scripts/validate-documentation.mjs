@@ -14,6 +14,7 @@ const markdownFiles = [
   "docs/DEVELOPMENT_GUIDE.md",
   "docs/CODEX_TASK_TEMPLATE.md",
   "docs/PHASE_9_EVIDENCE_MATRIX.md",
+  "docs/COMMERCIAL_DESIGN_SYSTEM_ROADMAP_SYNCHRONIZATION.md",
   "docs/SDD_V1_2_2_DOCUMENTATION_VALIDATION.md",
   "docs/adr/README.md",
   "docs/adr/ADR-002_CONTROLLED_DESIGN_AGENT.md",
@@ -63,11 +64,11 @@ const requiredSddText = [
   "| **AC-129**",
   "| **AC-135**",
   "P10A defines and validates the scopes.",
-  "Phase 11 implements and exposes those scopes as working merchant",
-  "P10A-04 registry generation consumes P10A-03 blueprint contracts",
+  "P10C implements and exposes those scopes as working merchant",
+  "P10A-04 is generated from `ComponentDefinitionV2`",
   "AC-119 remains solely a Phase 9 gate.",
   "approved Storefront Design Brief-to-runtime handoff",
-  "Broad controlled-vocabulary expansion occurs after the Phase",
+  "Broad commercial vocabulary expansion occurs after the Phase",
   "authoritative\nStorefront Design Brief creation → merchant review → explicit approval",
   "later unapproved brief mutation supplied generation",
   "registered → planner-selectable → proposal-expressible → compiler-preserved",
@@ -84,7 +85,9 @@ const requiredSddText = [
   "semantic tokens normally flow downward",
   "approved evidence provenance is preserved",
   "not required to close Phase 9",
-  "P10A Task 8 implements the coordinated commercial recipes only as registered constrained",
+  "P10B-07 and P10B-08 implement the coordinated commercial recipes only as registered constrained",
+  "P10B-12 visual-quality gate",
+  "P10C Storefront Studio Editing Experience v1",
 ];
 for (const required of requiredSddText) {
   if (!sdd.includes(required)) failures.push(`SDD missing required text: ${required}`);
@@ -136,11 +139,12 @@ for (const [relativePath, markdown] of [
 
 const phaseOrder = [
   "### P9 — Whole-storefront design quality — active",
-  "### P10A — Grounded orchestration",
-  "### P10B — Assets and Vesko Storefront Studio UX",
-  "### P11 — Granular controlled editing",
-  "### P12 — Stable domains and Vesko reference adapters",
-  "### Later — Deployment and operations",
+  "### P10A — Grounded orchestration and publishing closure",
+  "### P10B — Commercial Storefront Design System v1",
+  "### P10C — Storefront Studio Editing Experience v1",
+  "### P10D — Deferred registered advanced media and interactive presentation",
+  "### P11 — Stable domains and Vesko reference adapters",
+  "### P12 — Production hardening and operations",
 ];
 let previousIndex = -1;
 for (const heading of phaseOrder) {
@@ -175,9 +179,9 @@ if (!evidence.includes("Phase 9 remains active")) {
 }
 for (const required of [
   "4a96a5a5567b83e62306f73f7069e0e09f0c8683",
-  "P10A owns AC-129 through AC-138 after Phase 9",
+  "P10A owns AC-129 through AC-135 after Phase 9",
   "AC-136–AC-138 are not required to close Phase 9",
-  "P10A Tasks 6–9",
+  "P10B-01 through P10B-12",
   "Reproducible from the stated v1.2.2 baseline",
 ]) {
   if (!evidence.includes(required)) {
@@ -200,7 +204,9 @@ for (const required of [
 }
 if (
   !roadmap.includes("P9-03 — Minimum proof-enabling design capability reachability") ||
-  !roadmap.includes("Broad controlled-vocabulary scaling belongs to\nP10A-04 after Phase 9 closes")
+  !roadmap.includes(
+    "Broad commercial vocabulary scaling belongs to\nP10B after Phase 9 and P10A publishing closure",
+  )
 ) {
   failures.push("Roadmap does not preserve the P9-03/P10A-04 vocabulary boundary");
 }
