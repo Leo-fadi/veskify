@@ -3,6 +3,7 @@ import {
   ControlledAcceptancePreflightRunner,
   CONTROLLED_ACCEPTANCE_PREFLIGHT_VERSION,
   controlledAcceptanceAuthorityFingerprint,
+  controlledAcceptanceCaseFingerprint,
   controlledLiveCallAuthorizationFingerprint,
   declaredPageAuthorityFingerprint,
   type ControlledAcceptanceCase,
@@ -22,6 +23,7 @@ import {
   createWholeStorefrontGenerationTarget,
   type WholeStorefrontPlanningProvider,
 } from "@/application/whole-storefront-generation-plan";
+import { planRegisteredTokenRefinement } from "@/application/ai-storefront-generation/token-refinement";
 import { homepageCommerceBridgeDefaults } from "@/components/registry";
 import { createP905aFreshMerchantFixture } from "@/data/demo/p9-05a-fresh-store-generation";
 
@@ -206,6 +208,7 @@ function authorization(input: ControlledAcceptanceCase): ControlledLiveCallAutho
     caseId: input.caseId,
     caseVersion: CONTROLLED_ACCEPTANCE_PREFLIGHT_VERSION,
     authorityFingerprint: controlledAcceptanceAuthorityFingerprint(input.authority),
+    caseFingerprint: controlledAcceptanceCaseFingerprint(input),
     providerId,
     maximumProviderCalls: input.maximumProviderCalls,
   };
@@ -239,7 +242,10 @@ function runner(
 ) {
   return new ControlledAcceptancePreflightRunner({
     provider: providerValue,
+    providerModelId: "deterministic-v1",
     currentAuthority: () => structuredClone(input.authority),
+    currentPlanningInput: () =>
+      structuredClone((input.execution as GovernedInitialGenerationRequest).planningInput),
     allowedProviderIds: [providerId],
     now,
     ...extra,
@@ -339,6 +345,82 @@ describe("P10A-07C-02 controlled provider acceptance preflight", () => {
     expect(calls).toHaveBeenCalledOnce();
   }, 20_000);
 
+  it("forwards governed follow-up direction, token, package, and request identity context", async () => {
+    const directionalSource = source();
+    const directionalBase = followUpRequest(directionalSource);
+    const directionDescriptor = governedSkillPackageRegistry.resolve(
+      "applyRegisteredWholeStorefrontDirection",
+      "followUpEditing",
+    ).descriptor;
+    const directional = {
+      ...directionalBase,
+      authority: {
+        ...directionalBase.authority,
+        packageId: directionDescriptor.id,
+        packageVersion: directionDescriptor.version,
+        scope: directionDescriptor.scope,
+      },
+      registeredDirectionId: "modernTechnical" as const,
+    };
+    const tokenSource = source();
+    const tokenBase = followUpRequest(tokenSource);
+    const tokenDescriptor = governedSkillPackageRegistry.resolve(
+      "applyExactBrandPalette",
+      "followUpEditing",
+    ).descriptor;
+    const tokenRefinementPlan = planRegisteredTokenRefinement(
+      "Set primary #B54708, secondary #111111, accent #B54708, background #FFFFFF, surface #FFFFFF, text #111111, muted text #333333, and border #111111. Preserve all layouts and commerce.",
+      tokenSource.planningInput.draft.brandSystem,
+    );
+    if (!tokenRefinementPlan) throw new Error("Expected a registered token refinement plan.");
+    const token = {
+      ...tokenBase,
+      authority: {
+        ...tokenBase.authority,
+        packageId: tokenDescriptor.id,
+        packageVersion: tokenDescriptor.version,
+        scope: tokenDescriptor.scope,
+        pages: [],
+      },
+      tokenRefinementPlan,
+    };
+    const requests: Parameters<WholeStorefrontPlanningProvider["createPlan"]>[0][] = [];
+    const captureProvider = provider(vi.fn(), (request) => {
+      requests.push(request);
+      return request.expectedPlan;
+    });
+    const directionalCase = acceptanceCase(directional);
+    const tokenCase = acceptanceCase(token);
+    await expect(
+      runner(directionalCase, captureProvider).run(directionalCase, authorization(directionalCase)),
+    ).resolves.toMatchObject({ ok: true });
+    await expect(
+      runner(tokenCase, captureProvider).run(tokenCase, authorization(tokenCase)),
+    ).resolves.toMatchObject({ ok: true });
+    const directionRequest = requests.find(
+      (request) =>
+        request.governedExecution?.packageId === "applyRegisteredWholeStorefrontDirection",
+    );
+    const tokenRequest = requests.find(
+      (request) => request.governedExecution?.packageId === "applyExactBrandPalette",
+    );
+    expect(directionRequest?.governedExecution).toEqual({
+      executionKind: "followUpEditing",
+      packageId: "applyRegisteredWholeStorefrontDirection",
+      requestIdentity: directionalCase.requestIdentity,
+    });
+    expect(directionRequest?.tokenRefinementPlan).toBeNull();
+    expect(directionRequest?.expectedPlan.designSystemSelection.directionId).toBe(
+      "modernTechnical",
+    );
+    expect(tokenRequest?.governedExecution).toEqual({
+      executionKind: "followUpEditing",
+      packageId: "applyExactBrandPalette",
+      requestIdentity: tokenCase.requestIdentity,
+    });
+    expect(tokenRequest?.tokenRefinementPlan).toEqual(tokenRefinementPlan);
+  }, 30_000);
+
   it("exercises the canonical reject lifecycle without publish or protected-state mutation", async () => {
     const input = acceptanceCase(initialRequest(), "reject");
     const result = await runner(input, provider()).run(input, authorization(input));
@@ -365,15 +447,39 @@ describe("P10A-07C-02 controlled provider acceptance preflight", () => {
     const unavailable = provider(failingCalls, () => {
       throw new Error("deterministic transport failure");
     });
-    await expect(
-      runner(input, unavailable).run(input, authorization(input)),
-    ).resolves.toMatchObject({
+    const failingPreflight = runner(input, unavailable);
+    await expect(failingPreflight.run(input, authorization(input))).resolves.toMatchObject({
       ok: false,
       failure: { code: "provider-unavailable" },
       evidence: { providerAttemptCount: 1, providerOutcome: "unavailable" },
     });
     expect(failingCalls).toHaveBeenCalledOnce();
+    await expect(failingPreflight.run(input, authorization(input))).resolves.toMatchObject({
+      ok: false,
+      failure: { code: "provider-allowance-exhausted" },
+    });
   }, 20_000);
+
+  it("keeps budget scoped to an authorization fingerprint and does not consume it before a call", async () => {
+    const input = acceptanceCase();
+    const distinctCase = { ...input, caseId: "p10a-07c-02-case-distinct" };
+    const calls = vi.fn();
+    const preflight = runner(input, provider(calls));
+    const invalid = { ...authorization(input), caseFingerprint: "tampered-case-fingerprint" };
+    await expect(preflight.run(input, invalid)).resolves.toMatchObject({
+      ok: false,
+      failure: { code: "invalid-live-authorization" },
+    });
+    await expect(preflight.run(input, authorization(input))).resolves.toMatchObject({ ok: true });
+    await expect(preflight.run(distinctCase, authorization(distinctCase))).resolves.toMatchObject({
+      ok: true,
+    });
+    await expect(preflight.run(input, authorization(input))).resolves.toMatchObject({
+      ok: false,
+      failure: { code: "provider-allowance-exhausted" },
+    });
+    expect(calls).toHaveBeenCalledTimes(2);
+  }, 30_000);
 
   it("classifies deterministic provider validation separately from provider availability", async () => {
     const input = acceptanceCase();
@@ -389,8 +495,13 @@ describe("P10A-07C-02 controlled provider acceptance preflight", () => {
   }, 20_000);
 
   it("fails stale acceptance closed after retaining the reviewable proposal", async () => {
-    const input = acceptanceCase();
-    const currentAcceptancePlanningInput = () => {
+    const input = acceptanceCase(initialRequest(), "accept");
+    let reads = 0;
+    const currentPlanningInput = () => {
+      reads += 1;
+      if (reads < 5) {
+        return structuredClone((input.execution as GovernedInitialGenerationRequest).planningInput);
+      }
       const stale = structuredClone(
         (input.execution as GovernedInitialGenerationRequest).planningInput,
       ) as ReturnType<typeof source>["planningInput"];
@@ -398,10 +509,7 @@ describe("P10A-07C-02 controlled provider acceptance preflight", () => {
       return stale;
     };
     await expect(
-      runner(input, provider(), { currentAcceptancePlanningInput }).run(
-        input,
-        authorization(input),
-      ),
+      runner(input, provider(), { currentPlanningInput }).run(input, authorization(input)),
     ).resolves.toMatchObject({ ok: false, failure: { code: "stale-acceptance" } });
   }, 20_000);
 
@@ -439,6 +547,61 @@ describe("P10A-07C-02 controlled provider acceptance preflight", () => {
         },
       }).run(input, authorization(input)),
     ).resolves.toMatchObject({ ok: false, failure: { code: "evidence-initialization-failed" } });
+    expect(calls).not.toHaveBeenCalled();
+  });
+
+  it("retains final terminal evidence for both success and pre-call rejection", async () => {
+    const input = acceptanceCase();
+    const retained: unknown[] = [];
+    const preflight = runner(input, provider(), {
+      retainEvidence: (evidence) => {
+        retained.push(structuredClone(evidence));
+        return evidence;
+      },
+    });
+    const success = await preflight.run(input, authorization(input));
+    const rejection = await preflight.run(input);
+    if (!success.ok || rejection.ok) throw new Error("Expected terminal evidence outcomes.");
+    expect(retained.at(-2)).toMatchObject({
+      completedAt: now(),
+      finalStatus: "succeeded",
+      providerCompletionCount: 1,
+      failure: null,
+    });
+    expect(retained.at(-1)).toMatchObject({
+      completedAt: now(),
+      finalStatus: "failed",
+      failure: { code: "missing-live-authorization" },
+    });
+    expect(success.evidence).toEqual(retained.at(-2));
+    expect(rejection.evidence).toEqual(retained.at(-1));
+  }, 20_000);
+
+  it("rejects case, trusted model, and required current-planning tampering before provider use", async () => {
+    const input = acceptanceCase();
+    const calls = vi.fn();
+    const changedLifecycle = {
+      ...input,
+      lifecycleExercise: "reject" as const,
+      expectedReviewStages: [...stages("reject")],
+    };
+    await expect(
+      runner(input, provider(calls)).run(changedLifecycle, authorization(input)),
+    ).resolves.toMatchObject({
+      ok: false,
+      failure: { code: "invalid-live-authorization" },
+    });
+    const mismatchedModel = { ...input, expectedModelId: "untrusted-model" };
+    await expect(
+      runner(mismatchedModel, provider(calls)).run(mismatchedModel, authorization(mismatchedModel)),
+    ).resolves.toMatchObject({ ok: false, failure: { code: "invalid-provider-configuration" } });
+    await expect(
+      runner(input, provider(calls), {
+        currentPlanningInput: () => {
+          throw new Error("Current server state unavailable");
+        },
+      }).run(input, authorization(input)),
+    ).resolves.toMatchObject({ ok: false, failure: { code: "stale-authority" } });
     expect(calls).not.toHaveBeenCalled();
   });
 

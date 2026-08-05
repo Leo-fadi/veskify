@@ -81,6 +81,7 @@ export const controlledLiveCallAuthorizationSchema = z
     caseId: safeIdSchema,
     caseVersion: z.literal(CONTROLLED_ACCEPTANCE_PREFLIGHT_VERSION),
     authorityFingerprint: fingerprintSchema,
+    caseFingerprint: fingerprintSchema,
     providerId: safeIdSchema,
     maximumProviderCalls: z.number().int().positive().max(10),
     fingerprint: fingerprintSchema,
@@ -131,6 +132,7 @@ export const controlledAcceptanceEvidenceSchema = z
     approvedAssetFingerprint: fingerprintSchema.nullable(),
     provider: controlledAcceptanceProviderConfigurationSchema,
     providerAttemptCount: z.number().int().nonnegative(),
+    providerCompletionCount: z.number().int().nonnegative(),
     providerOutcome: z.enum([
       "not-attempted",
       "completed",
@@ -174,6 +176,11 @@ export function controlledLiveCallAuthorizationFingerprint(
   authorization: Omit<ControlledLiveCallAuthorization, "fingerprint">,
 ): string {
   return `controlled-live-call-${canonicalValueFingerprint(authorization)}`;
+}
+
+/** Binds an authorization to every material, non-secret acceptance-case input. */
+export function controlledAcceptanceCaseFingerprint(input: ControlledAcceptanceCase): string {
+  return `controlled-acceptance-case-${canonicalValueFingerprint(input)}`;
 }
 
 export function declaredPageAuthorityFingerprint(input: unknown): string {

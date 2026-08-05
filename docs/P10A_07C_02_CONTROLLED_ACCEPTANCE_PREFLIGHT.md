@@ -29,16 +29,20 @@ Before an injected provider is reached, the runner safely clones unknown input a
 - allowed provider and safe provider/model identities (never options or credentials);
 - a positive exact call budget; and
 - an explicit `controlled-live-provider-call` authorisation bound to the case, authority,
-  provider and budget, including its deterministic integrity fingerprint.
+  provider and budget, including the deterministic fingerprint of the complete acceptance case and
+  its own deterministic integrity fingerprint.
 
 The authorisation is an explicit non-secret control value, not an API key or a fixture token. A
 missing, malformed, stale, mismatched, zero-budget, or previously consumed authorisation prevents
-provider invocation. The runner records every attempted boundary call, permits no automatic retry,
-and prevents another successful call after the bounded allowance is consumed.
+provider invocation. Budgets are scoped to the authorization fingerprint, not to a runner instance:
+a pre-call rejection does not consume a budget, while a provider attempt consumes precisely that
+authorization's allowance even when the provider is unavailable. The runner permits no automatic
+retry.
 
 The actual live-provider acceptance task remains responsible for supplying a separately authorised
 live provider and authorisation after P10A-06 merges. It may add a routed case, but must continue
-through this preflight authority and must not alter its default-deny policy.
+through this preflight authority and must not alter its default-deny policy. The trusted adapter
+configuration injects the provider model identity; the case cannot establish that identity itself.
 
 ## Canonical proposal and lifecycle path
 
@@ -46,6 +50,12 @@ The runner first executes the existing P10A-05C or P10A-05D-02 integration witho
 Only then does it call the existing whole-storefront provider boundary. The returned plan must pass
 that boundary's typed validation and have the exact fingerprint of the governed canonical plan;
 otherwise no proposal lifecycle is exercised.
+
+The provider boundary receives the exact permitted direction or registered token-refinement plan
+for a governed follow-up, plus the safe execution kind, governed package ID, and request identity.
+It does not fall back to planning input embedded in the case: a required server-derived current
+planning-input callback is checked before the call, while the provider resolves, and again before
+review and acceptance. Any drift is retained as a stale result and no lifecycle mutation proceeds.
 
 The existing `WholeStorefrontProposalAcceptanceCoordinator` retains the pending proposal before
 review and supplies the configured deterministic lifecycle exercise:
@@ -66,6 +76,11 @@ from the injected clock, execution/package identity, request and authority finge
 project/draft/snapshot, manifest/registry/page/commerce/asset authority, provider/model identity,
 attempt count/outcome, plan/proposal/review fingerprints, lifecycle fingerprints, protected-state
 before/after fingerprints, final status, and safe typed failures.
+
+Evidence retention receives the fully finalized terminal record on every success and failure path.
+Those records include both provider attempt and provider completion counts, terminal timestamps,
+final status and the safe failure classification when applicable; an early initialization check
+still prevents a provider call if the configured retention sink is unusable.
 
 It never accepts API keys, prompts, raw provider DTOs, credential headers, `.env.local` data, or
 raw provider output. Fingerprints are deterministic under injected clock and identities.
