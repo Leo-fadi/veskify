@@ -1,9 +1,6 @@
 import { z } from "zod";
 import { storefrontDesignDirectionComponentSelectionsSchema } from "@/application/storefront-design-system/contract";
-import {
-  approvedAssetPlacementOperationSchema,
-  approvedGenerationAssetContextSchema,
-} from "@/application/ai-storefront-generation";
+import { approvedGenerationAssetContextSchema } from "@/application/ai-storefront-generation/approved-asset-context";
 import {
   assetRoleSchema,
   commerceBindingSourceTypeSchema,
@@ -14,7 +11,11 @@ import {
 import { catalogueDisplayModelSchema } from "@/domain/catalogue";
 import { storefrontDesignBriefContractSchema } from "@/domain/source-discovery";
 import { localeSchema, idSchema } from "@/domain/shared";
-import { canonicalValueFingerprint, storefrontSnapshotSchema } from "@/domain/storefront";
+import {
+  approvedAssetPlacementOperationSchema,
+  canonicalValueFingerprint,
+  storefrontSnapshotSchema,
+} from "@/domain/storefront";
 import { storefrontTemplateDefinitionSchema } from "@/application/storefront-templates";
 import {
   registeredTokenRefinementPlanSchema,

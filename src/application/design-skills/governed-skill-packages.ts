@@ -280,7 +280,7 @@ export const governedFollowUpEditingAuthoritySchema = z
     packageVersion: versionSchema,
     scope: governedSkillPackageScopeSchema,
     authority: governedSkillAuthorityEnvelopeSchema,
-    pages: z.array(governedEditingPageAuthoritySchema).min(1),
+    pages: z.array(governedEditingPageAuthoritySchema),
   })
   .strict()
   .superRefine((request, context) => {
@@ -417,10 +417,17 @@ export const governedSkillPackageDescriptors = [
     supportedPageTypes: ["home", "landing"],
     profileRequirement: "slotTarget",
     selectionConstraint: "canonicalHero",
-    requiredCapabilityQueries: ["capabilityManifest", "executableProfile", "slotSelection"],
+    requiredCapabilityQueries: [
+      "capabilityManifest",
+      "executableProfile",
+      "slotSelection",
+      "boundedParameter",
+      "canonicalBinding",
+      "approvedAsset",
+    ],
     requiredAuthorityFingerprints: ["capabilityManifest", "componentRegistry", "commerce", "draft"],
-    parameterAuthority: "none",
-    assetAuthority: "none",
+    parameterAuthority: "registeredBoundedParameters",
+    assetAuthority: "approvedAssetReuse",
     protectedStateRestrictions: [...protectedStateRestrictions],
     outputContracts: { followUpEditing: "governedFollowUpEditingAuthority.v1" },
   },
@@ -433,10 +440,17 @@ export const governedSkillPackageDescriptors = [
     supportedPageTypes: ["home", "landing"],
     profileRequirement: "optional",
     selectionConstraint: "none",
-    requiredCapabilityQueries: ["capabilityManifest", "executableProfile"],
+    requiredCapabilityQueries: [
+      "capabilityManifest",
+      "executableProfile",
+      "slotSelection",
+      "boundedParameter",
+      "canonicalBinding",
+      "approvedAsset",
+    ],
     requiredAuthorityFingerprints: ["capabilityManifest", "commerce", "approvedAssets", "draft"],
-    parameterAuthority: "none",
-    assetAuthority: "none",
+    parameterAuthority: "registeredBoundedParameters",
+    assetAuthority: "approvedAssetReuse",
     protectedStateRestrictions: [...protectedStateRestrictions],
     outputContracts: { followUpEditing: "governedFollowUpEditingAuthority.v1" },
   },
@@ -848,11 +862,22 @@ export class GovernedSkillPackageRegistry {
         return failure("staleRegistryAuthority", "The governed package registry is stale.");
       }
       this.#consumer.listExecutableProfiles({ manifest: authority.authority.manifest });
-      const wholeStorefront = packageResolution.descriptor.scope === "completeStorefront";
-      if (!wholeStorefront && authority.pages.length !== 1) {
+      const requiresOnePage = ["selectedSection", "currentPage"].includes(
+        packageResolution.descriptor.scope,
+      );
+      if (requiresOnePage && authority.pages.length !== 1) {
         return failure(
           "invalidScope",
           `Package ${authority.packageId} requires exactly one page-scoped authority.`,
+        );
+      }
+      if (
+        packageResolution.descriptor.scope === "completeStorefront" &&
+        authority.pages.length === 0
+      ) {
+        return failure(
+          "invalidScope",
+          `Package ${authority.packageId} requires one or more declared page authorities.`,
         );
       }
       const declaredQueries = packageResolution.descriptor.requiredCapabilityQueries;
