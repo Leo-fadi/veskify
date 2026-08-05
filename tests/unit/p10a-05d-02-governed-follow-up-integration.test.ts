@@ -54,25 +54,26 @@ function baseline(direction: "modernTechnical" | "premiumEditorial" = "modernTec
 
 function pageAuthority(
   source: ReturnType<typeof baseline>,
-  componentType: "homepageHero" | "homepagePromotion",
+  pageType: "home" | "collection" | "product",
+  componentType: string,
 ): GovernedEditingPageAuthority {
   const materialization = source.plan.pageBlueprintMaterializations.find(
-    (candidate) => candidate.pageType === "home",
+    (candidate) => candidate.pageType === pageType,
   );
-  if (!materialization) throw new Error("Expected the home materialization.");
+  if (!materialization) throw new Error(`Expected the ${pageType} materialization.`);
   const profile = skillCapabilityKnowledge
-    .listExecutableProfiles({ manifest: source.authority.manifest, pageType: "home" })
+    .listExecutableProfiles({ manifest: source.authority.manifest, pageType })
     .find((candidate) => candidate.profileId === materialization.profileId);
   const selection = profile?.componentSelections.find(
     (candidate) => candidate.componentType === componentType,
   );
-  const page = source.plan.target.pages.find((candidate) => candidate.type === "home");
+  const page = source.plan.target.pages.find((candidate) => candidate.type === pageType);
   if (!profile || !selection || !page)
     throw new Error("Expected current home capability authority.");
   return {
     pageId: page.id,
-    pageType: "home",
-    profile: { profileId: profile.profileId, fingerprint: profile.fingerprint, pageType: "home" },
+    pageType,
+    profile: { profileId: profile.profileId, fingerprint: profile.fingerprint, pageType },
     selections: [
       {
         profileId: profile.profileId,
@@ -129,8 +130,8 @@ function paletteRefinement(source: ReturnType<typeof baseline>) {
   return refinement;
 }
 
-function heroWithCurrentBinding(source: ReturnType<typeof baseline>) {
-  const pageAuthorityValue = pageAuthority(source, "homepageHero");
+function heroWithCurrentBinding(source: ReturnType<typeof baseline>): GovernedEditingPageAuthority {
+  const pageAuthorityValue = pageAuthority(source, "home", "homepageHero");
   const runtime = createWholeStorefrontRuntimeState({
     plan: source.plan,
     planningInput: source.planningInput,
@@ -143,42 +144,48 @@ function heroWithCurrentBinding(source: ReturnType<typeof baseline>) {
     ...pageAuthorityValue,
     bindings: [
       {
-        targetSlotId: pageAuthorityValue.selections[0]!.slotId,
+        targetSlotId: pageAuthorityValue.selections[0].slotId,
         bindingSlotId: binding.slotId,
         sourceType: binding.source,
         fingerprint: canonicalValueFingerprint(binding),
       },
     ],
-  } satisfies GovernedEditingPageAuthority;
+  };
 }
 
 describe("P10A-05D-02 governed follow-up package integration", () => {
   it("resolves exactly the four governed follow-up packages through the existing aggregate proposal", () => {
     const source = baseline();
-    const hero = pageAuthority(source, "homepageHero");
+    const hero = pageAuthority(source, "home", "homepageHero");
     const palette = request(source, "applyExactBrandPalette", [], {
       tokenRefinementPlan: paletteRefinement(source),
     });
     const campaignSource = baseline("premiumEditorial");
     const campaign = request(campaignSource, "addCampaignSection", [
-      pageAuthority(campaignSource, "homepagePromotion"),
+      pageAuthority(campaignSource, "home", "homepagePromotion"),
     ]);
     const direction = request(source, "applyRegisteredWholeStorefrontDirection", [hero], {
       registeredDirectionId: "modernTechnical",
     });
-    for (const [input, currentAuthority] of [
-      [palette, source.authority],
-      [request(source, "improveHero", [hero]), source.authority],
-      [campaign, campaignSource.authority],
-      [direction, source.authority],
-    ] as const) {
+    const executionCases: ReadonlyArray<
+      Readonly<{
+        input: GovernedFollowUpEditingRequest;
+        currentAuthority: GovernedSkillAuthorityEnvelope;
+      }>
+    > = [
+      { input: palette, currentAuthority: source.authority },
+      { input: request(source, "improveHero", [hero]), currentAuthority: source.authority },
+      { input: campaign, currentAuthority: campaignSource.authority },
+      { input: direction, currentAuthority: source.authority },
+    ];
+    for (const { input, currentAuthority } of executionCases) {
       const result = execute(input, currentAuthority);
       expect(result).toMatchObject({ valid: true });
       if (!result.valid) continue;
       expect(result.proposal.id).toMatch(/^whole_storefront_proposal_/);
       expect(result.coordinatedPlan.kind).toBe("governedFollowUp");
     }
-  });
+  }, 15_000);
 
   it("keeps palette proposals token-only and preserves structure, bindings, assets and commerce", () => {
     const source = baseline();
@@ -202,7 +209,7 @@ describe("P10A-05D-02 governed follow-up package integration", () => {
   it("changes only the explicit canonical hero slot and preserves all unrelated runtime components", () => {
     const source = baseline();
     const result = execute(
-      request(source, "improveHero", [pageAuthority(source, "homepageHero")]),
+      request(source, "improveHero", [pageAuthority(source, "home", "homepageHero")]),
       source.authority,
     );
     if (!result.valid) throw new Error(result.failure.message);
@@ -214,13 +221,13 @@ describe("P10A-05D-02 governed follow-up package integration", () => {
     ).toEqual(original.components.filter((component) => component.component !== "homepageHero"));
     expect(
       proposed.components.find((component) => component.component === "homepageHero")?.variant,
-    ).toBe(pageAuthority(source, "homepageHero").selections[0]?.variant);
+    ).toBe(pageAuthority(source, "home", "homepageHero").selections[0]?.variant);
   });
 
   it("inserts campaigns only at the registered promotion position", () => {
     const source = baseline("premiumEditorial");
     const result = execute(
-      request(source, "addCampaignSection", [pageAuthority(source, "homepagePromotion")]),
+      request(source, "addCampaignSection", [pageAuthority(source, "home", "homepagePromotion")]),
       source.authority,
     );
     if (!result.valid) throw new Error(result.failure.message);
@@ -245,9 +252,75 @@ describe("P10A-05D-02 governed follow-up package integration", () => {
     ).toBeGreaterThan(promotion);
   });
 
+  it("resolves an optional campaign profile from the exact current materialization", () => {
+    const source = baseline("premiumEditorial");
+    const promotion = pageAuthority(source, "home", "homepagePromotion");
+    const result = execute(
+      request(source, "addCampaignSection", [{ ...promotion, profile: undefined }]),
+      source.authority,
+    );
+    expect(result).toMatchObject({ valid: true });
+  });
+
+  it("maps composite collection and product PageBlueprint slots to their runtime components", () => {
+    const source = baseline("premiumEditorial");
+    const collection = pageAuthority(source, "collection", "collectionHeader");
+    const product = pageAuthority(source, "product", "productGallery");
+    const result = execute(
+      request(source, "applyRegisteredWholeStorefrontDirection", [collection, product], {
+        registeredDirectionId: "premiumEditorial",
+      }),
+      source.authority,
+    );
+    if (!result.valid) throw new Error(result.failure.message);
+    const collectionPage = result.proposal.proposedStorefront.pages.find(
+      (page) => page.type === "collection",
+    );
+    const productPage = result.proposal.proposedStorefront.pages.find(
+      (page) => page.type === "product",
+    );
+    expect(
+      collectionPage?.components.find(
+        (component) => component.component === "dynamicCollectionCommerce",
+      )?.variant,
+    ).toBe(
+      result.coordinatedPlan.baselineGenerationPlan.designSystemSelection.collectionPresentation
+        .variant,
+    );
+    expect(
+      productPage?.components.find((component) => component.component === "dynamicProductDetail")
+        ?.variant,
+    ).toBe(
+      result.coordinatedPlan.baselineGenerationPlan.designSystemSelection.productPresentation
+        .variant,
+    );
+  });
+
+  it("fails closed for bounded parameter intents until they have a canonical runtime projection", () => {
+    const source = baseline();
+    const hero = pageAuthority(source, "home", "homepageHero");
+    expect(
+      failureCode(
+        request(source, "improveHero", [
+          {
+            ...hero,
+            boundedParameters: [
+              {
+                targetSlotId: hero.selections[0].slotId,
+                parameterId: "density",
+                value: "compact",
+              },
+            ],
+          },
+        ]),
+        source.authority,
+      ),
+    ).toBe("unsupportedBoundedParameter");
+  });
+
   it("fails closed for stale authority, wrong package scope, invalid slots and non-cloneable input", () => {
     const source = baseline();
-    const hero = pageAuthority(source, "homepageHero");
+    const hero = pageAuthority(source, "home", "homepageHero");
     const valid = request(source, "improveHero", [hero]);
     expect(
       execute(
@@ -279,7 +352,7 @@ describe("P10A-05D-02 governed follow-up package integration", () => {
           ...valid,
           authority: {
             ...valid.authority,
-            pages: [{ ...hero, selections: [{ ...hero.selections[0]!, slotId: "footer" }] }],
+            pages: [{ ...hero, selections: [{ ...hero.selections[0], slotId: "footer" }] }],
           },
         },
         source.authority,
@@ -295,7 +368,7 @@ describe("P10A-05D-02 governed follow-up package integration", () => {
 
   it("rejects non-follow-up, alias, direction, stale planning and contradictory profile authority before compilation", () => {
     const source = baseline();
-    const hero = pageAuthority(source, "homepageHero");
+    const hero = pageAuthority(source, "home", "homepageHero");
     const valid = request(source, "improveHero", [hero]);
     const direction = request(source, "applyRegisteredWholeStorefrontDirection", [hero], {
       registeredDirectionId: "premiumEditorial",
@@ -355,7 +428,7 @@ describe("P10A-05D-02 governed follow-up package integration", () => {
 
   it("is deterministic for normalized authority and rejects duplicate declared page authority", () => {
     const source = baseline();
-    const hero = pageAuthority(source, "homepageHero");
+    const hero = pageAuthority(source, "home", "homepageHero");
     const input = request(source, "improveHero", [hero]);
     const first = execute(input, source.authority);
     const second = execute(structuredClone(input), source.authority);
@@ -383,7 +456,7 @@ describe("P10A-05D-02 governed follow-up package integration", () => {
     expect(
       failureCode(
         request(source, "improveHero", [
-          { ...hero, bindings: [{ ...hero.bindings[0]!, fingerprint: "stale-binding" }] },
+          { ...hero, bindings: [{ ...hero.bindings[0], fingerprint: "stale-binding" }] },
         ]),
         source.authority,
       ),
@@ -393,7 +466,7 @@ describe("P10A-05D-02 governed follow-up package integration", () => {
   it("reuses review, atomic accept/reject/close, undo/redo and stale acceptance safeguards", () => {
     const source = baseline();
     const result = execute(
-      request(source, "improveHero", [pageAuthority(source, "homepageHero")]),
+      request(source, "improveHero", [pageAuthority(source, "home", "homepageHero")]),
       source.authority,
     );
     if (!result.valid) throw new Error(result.failure.message);

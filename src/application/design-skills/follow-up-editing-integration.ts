@@ -110,7 +110,10 @@ function failure(
   code: GovernedFollowUpEditingIntegrationFailureCode,
   message: string,
 ): GovernedFollowUpEditingIntegrationResult {
-  return frozen({ valid: false as const, failure: frozen({ code, message }) });
+  return frozen<GovernedFollowUpEditingIntegrationResult>({
+    valid: false,
+    failure: frozen({ code, message }),
+  });
 }
 
 function mappedFailure(
@@ -206,8 +209,9 @@ function runtimePage(
 function runtimeComponent(
   page: WholeStorefrontRuntimePage,
   componentType: string,
+  components: readonly WholeStorefrontRuntimeComponent[] = page.components,
 ): WholeStorefrontRuntimeComponent {
-  const matches = page.components.filter((component) => component.component === componentType);
+  const matches = components.filter((component) => component.component === componentType);
   if (matches.length !== 1) {
     throw new GovernedSkillPackageError(
       "invalidSlotSelection",
@@ -216,7 +220,56 @@ function runtimeComponent(
         : `The selected component ${componentType} is ambiguous on the current page.`,
     );
   }
-  return matches[0]!;
+  return matches[0];
+}
+
+/**
+ * Collection and product PageBlueprints describe their commercial sub-slots,
+ * while the canonical runtime owns each family as one dynamic component. Keep
+ * that projection explicit so follow-up authority never treats a blueprint
+ * sub-slot as a second runtime component.
+ */
+const compositeRuntimeComponentByBlueprintComponent: Readonly<Record<string, string>> = {
+  collectionHeader: "dynamicCollectionCommerce",
+  filterBar: "dynamicCollectionCommerce",
+  productGrid: "dynamicCollectionCommerce",
+  productGallery: "dynamicProductDetail",
+  productInfo: "dynamicProductDetail",
+  productOptions: "dynamicProductDetail",
+};
+
+type Materialization = WholeStorefrontGenerationPlan["pageBlueprintMaterializations"][number];
+type PageAuthority = GovernedFollowUpEditingAuthority["pages"][number];
+type PageSelection = PageAuthority["selections"][number];
+type CoordinatedPageChange = CoordinatedFollowUpPlan["pageChanges"][number];
+
+function materializedSlotAuthority(materialization: Materialization, selection: PageSelection) {
+  if (selection.profileId !== materialization.profileId) {
+    throw new GovernedSkillPackageError(
+      "staleProfileAuthority",
+      `Selected slot ${selection.slotId} does not belong to the current PageBlueprint materialization.`,
+    );
+  }
+  const slot = materialization.slots.find((candidate) => candidate.slotId === selection.slotId);
+  if (!slot || slot.component !== selection.componentType) {
+    throw new GovernedSkillPackageError(
+      "invalidSlotSelection",
+      `Selected slot ${selection.slotId} does not match the current PageBlueprint materialization.`,
+    );
+  }
+  return slot;
+}
+
+function runtimeComponentForMaterializedSelection(
+  page: WholeStorefrontRuntimePage,
+  materialization: Materialization,
+  selection: PageSelection,
+  components?: readonly WholeStorefrontRuntimeComponent[],
+) {
+  const slot = materializedSlotAuthority(materialization, selection);
+  const runtimeComponentType =
+    compositeRuntimeComponentByBlueprintComponent[slot.component] ?? slot.component;
+  return { slot, component: runtimeComponent(page, runtimeComponentType, components) };
 }
 
 function assertCurrentComponentVersion(
@@ -264,8 +317,10 @@ function assertApprovedAssets(
 }
 
 function assertBindingAuthority(
-  pageAuthority: GovernedFollowUpEditingAuthority["pages"][number],
+  pageAuthority: PageAuthority,
   page: WholeStorefrontRuntimePage,
+  materialization: Materialization,
+  components: readonly WholeStorefrontRuntimeComponent[],
 ) {
   for (const binding of pageAuthority.bindings) {
     const selection = pageAuthority.selections.find(
@@ -277,7 +332,12 @@ function assertBindingAuthority(
         `Binding ${binding.bindingSlotId} has no selected PageBlueprint slot.`,
       );
     }
-    const component = runtimeComponent(page, selection.componentType);
+    const { component } = runtimeComponentForMaterializedSelection(
+      page,
+      materialization,
+      selection,
+      components,
+    );
     const current = component.bindings.find(
       (candidate) =>
         candidate.slotId === binding.bindingSlotId && candidate.source === binding.sourceType,
@@ -289,6 +349,51 @@ function assertBindingAuthority(
       );
     }
   }
+}
+
+function materializeCompositeRuntimeComponent(
+  page: WholeStorefrontRuntimePage,
+  baseline: WholeStorefrontGenerationPlan,
+  materialization: Materialization,
+  selection: PageSelection,
+  components: WholeStorefrontRuntimeComponent[],
+): Readonly<{
+  components: WholeStorefrontRuntimeComponent[];
+  removedComponentIds: readonly string[];
+}> {
+  const slot = materializedSlotAuthority(materialization, selection);
+  const runtimeComponentType = compositeRuntimeComponentByBlueprintComponent[slot.component];
+  if (!runtimeComponentType) return { components, removedComponentIds: [] };
+  const existing = components.filter((component) => component.component === runtimeComponentType);
+  if (existing.length === 1) return { components, removedComponentIds: [] };
+  if (existing.length > 1) {
+    throw new GovernedSkillPackageError(
+      "invalidSlotSelection",
+      `The selected canonical runtime component ${runtimeComponentType} is ambiguous on the current page.`,
+    );
+  }
+  const pagePlan = baseline.pagePlans.find((candidate) => candidate.pageId === page.pageId);
+  const replacements = pagePlan?.components.filter(
+    (candidate) => "instance" in candidate && candidate.instance.component === runtimeComponentType,
+  );
+  if (!replacements || replacements.length !== 1 || !("instance" in replacements[0])) {
+    throw new GovernedSkillPackageError(
+      "invalidSlotSelection",
+      `The current PageBlueprint does not materialize ${slot.component} as its canonical runtime component.`,
+    );
+  }
+  const replacement = replacements[0];
+  const replacedIds = new Set(replacement.replacesComponentIds);
+  const removedComponentIds = components
+    .filter((component) => replacedIds.has(component.id))
+    .map((component) => component.id);
+  return {
+    components: [
+      ...components.filter((component) => !replacedIds.has(component.id)),
+      { ...structuredClone(replacement.instance), visible: true },
+    ],
+    removedComponentIds,
+  };
 }
 
 function promotionComponent(
@@ -341,8 +446,8 @@ function promotionComponent(
 
 function registeredInsertionIndex(
   components: WholeStorefrontRuntimeComponent[],
-  materialization: WholeStorefrontGenerationPlan["pageBlueprintMaterializations"][number],
-  selection: GovernedFollowUpEditingAuthority["pages"][number]["selections"][number],
+  materialization: Materialization,
+  selection: PageSelection,
 ) {
   const selectedIndex = materialization.slots.findIndex((slot) => slot.slotId === selection.slotId);
   if (selectedIndex < 0) {
@@ -361,34 +466,28 @@ function registeredInsertionIndex(
 }
 
 function pageChange(
-  pageAuthority: GovernedFollowUpEditingAuthority["pages"][number],
+  pageAuthority: PageAuthority,
   original: WholeStorefrontRuntimeState,
   baseline: WholeStorefrontGenerationPlan,
   planningInput: WholeStorefrontPlanningInput,
   packageId: GovernedFollowUpEditingAuthority["packageId"],
   requestIdentity: string,
-) {
-  if (!pageAuthority.profile) {
-    throw new GovernedSkillPackageError(
-      "missingProfileAuthority",
-      "This governed follow-up package requires explicit PageBlueprint profile authority.",
-    );
-  }
+): CoordinatedPageChange {
   const page = runtimePage(original, pageAuthority.pageId, pageAuthority.pageType);
   const materialization = baseline.pageBlueprintMaterializations.find(
     (candidate) => candidate.pageType === pageAuthority.pageType,
   );
   if (
     !materialization ||
-    materialization.profileId !== pageAuthority.profile.profileId ||
-    materialization.pageType !== pageAuthority.profile.pageType
+    (pageAuthority.profile !== undefined &&
+      (materialization.profileId !== pageAuthority.profile.profileId ||
+        materialization.pageType !== pageAuthority.profile.pageType))
   ) {
     throw new GovernedSkillPackageError(
       "staleProfileAuthority",
       "The selected PageBlueprint profile does not match the current canonical materialization.",
     );
   }
-  assertBindingAuthority(pageAuthority, page);
   const selected = pageAuthority.selections;
   if (selected.length === 0) {
     throw new GovernedSkillPackageError(
@@ -396,16 +495,35 @@ function pageChange(
       "This governed follow-up package requires one or more exact selected slots.",
     );
   }
+  if (pageAuthority.boundedParameters.length > 0) {
+    throw new GovernedSkillPackageError(
+      "unsupportedBoundedParameter",
+      "This follow-up integration cannot yet express bounded parameter intents through a canonical runtime projection.",
+    );
+  }
   let added: WholeStorefrontRuntimeComponent | null = null;
   const componentIdsBySlot = new Map<string, string[]>();
-  const components = page.components.map((component) => structuredClone(component));
+  let components = page.components.map((component) => structuredClone(component));
+  const removedComponentIds = new Set<string>();
+  const removedComponentIdsBySlot = new Map<string, readonly string[]>();
   for (const selection of selected) {
-    if (!materialization.slots.some((slot) => slot.slotId === selection.slotId)) {
-      throw new GovernedSkillPackageError(
-        "invalidSlotSelection",
-        `Selected slot ${selection.slotId} is not present in the current materialization.`,
-      );
+    if (packageId === "addCampaignSection") continue;
+    const materialized = materializeCompositeRuntimeComponent(
+      page,
+      baseline,
+      materialization,
+      selection,
+      components,
+    );
+    components = materialized.components;
+    materialized.removedComponentIds.forEach((componentId) => removedComponentIds.add(componentId));
+    if (materialized.removedComponentIds.length > 0) {
+      removedComponentIdsBySlot.set(selection.slotId, materialized.removedComponentIds);
     }
+  }
+  assertBindingAuthority(pageAuthority, page, materialization, components);
+  for (const selection of selected) {
+    materializedSlotAuthority(materialization, selection);
     if (packageId === "addCampaignSection") {
       if (selected.length !== 1) {
         throw new GovernedSkillPackageError(
@@ -417,7 +535,20 @@ function pageChange(
       componentIdsBySlot.set(selection.slotId, [added.id]);
       continue;
     }
-    const current = runtimeComponent(page, selection.componentType);
+    const { component: current } = runtimeComponentForMaterializedSelection(
+      page,
+      materialization,
+      selection,
+      components,
+    );
+    if (
+      [...componentIdsBySlot.values()].some((componentIds) => componentIds.includes(current.id))
+    ) {
+      throw new GovernedSkillPackageError(
+        "invalidSlotSelection",
+        "Multiple selected PageBlueprint slots resolve to the same canonical runtime component.",
+      );
+    }
     assertCurrentComponentVersion(current, planningInput);
     const index = components.findIndex((component) => component.id === current.id);
     if (index < 0) {
@@ -426,49 +557,56 @@ function pageChange(
         "The selected runtime component is no longer available.",
       );
     }
-    components[index] = { ...components[index]!, variant: selection.variant };
-    componentIdsBySlot.set(selection.slotId, [current.id]);
+    components[index] = {
+      ...components[index],
+      variant:
+        packageId === "applyRegisteredWholeStorefrontDirection"
+          ? current.variant
+          : selection.variant,
+    };
+    componentIdsBySlot.set(selection.slotId, [
+      current.id,
+      ...(removedComponentIdsBySlot.get(selection.slotId) ?? []),
+    ]);
   }
   if (added) {
-    components.splice(
-      registeredInsertionIndex(components, materialization, selected[0]!),
-      0,
-      added,
-    );
+    components.splice(registeredInsertionIndex(components, materialization, selected[0]), 0, added);
   }
   const proposedPage = { ...page, components };
-  const assetPlacements = pageAuthority.approvedAssets.map((asset) => {
-    const componentId = componentIdsBySlot.get(asset.targetSlotId)?.[0];
-    const component = proposedPage.components.find((candidate) => candidate.id === componentId);
-    if (!component) {
-      throw new GovernedSkillPackageError(
-        "invalidApprovedAssetReference",
-        `Approved asset ${asset.assetId} has no current component placement target.`,
+  const assetPlacements: CoordinatedPageChange["operations"] = pageAuthority.approvedAssets.map(
+    (asset) => {
+      const componentId = componentIdsBySlot.get(asset.targetSlotId)?.[0];
+      const component = proposedPage.components.find((candidate) => candidate.id === componentId);
+      if (!component) {
+        throw new GovernedSkillPackageError(
+          "invalidApprovedAssetReference",
+          `Approved asset ${asset.assetId} has no current component placement target.`,
+        );
+      }
+      const approvedAsset = planningInput.approvedAssetContext?.assets.find(
+        (candidate) => candidate.assetId === asset.assetId,
       );
-    }
-    const approvedAsset = planningInput.approvedAssetContext?.assets.find(
-      (candidate) => candidate.assetId === asset.assetId,
-    );
-    if (!approvedAsset) {
-      throw new GovernedSkillPackageError(
-        "invalidApprovedAssetReference",
-        `Approved asset ${asset.assetId} is no longer available for placement.`,
-      );
-    }
-    return {
-      type: "PLACE_APPROVED_SOURCE_ASSET" as const,
-      pageId: page.pageId,
-      componentId: component.id,
-      componentType: component.component,
-      assetSlotId: asset.assetSlotId,
-      assetId: asset.assetId,
-      role: asset.role,
-      assetRevision: asset.revision,
-      materialFingerprint: asset.materialFingerprint,
-      sourceReferenceId: approvedAsset.sourceReferenceId,
-      required: asset.required,
-    };
-  });
+      if (!approvedAsset) {
+        throw new GovernedSkillPackageError(
+          "invalidApprovedAssetReference",
+          `Approved asset ${asset.assetId} is no longer available for placement.`,
+        );
+      }
+      return {
+        type: "PLACE_APPROVED_SOURCE_ASSET",
+        pageId: page.pageId,
+        componentId: component.id,
+        componentType: component.component,
+        assetSlotId: asset.assetSlotId,
+        assetId: asset.assetId,
+        role: asset.role,
+        assetRevision: asset.revision,
+        materialFingerprint: asset.materialFingerprint,
+        sourceReferenceId: approvedAsset.sourceReferenceId,
+        required: asset.required,
+      };
+    },
+  );
   return {
     pageId: page.pageId,
     pageType: page.type,
@@ -480,9 +618,9 @@ function pageChange(
       .sort((left, right) => left.slotId.localeCompare(right.slotId)),
     operations: [
       {
-        type: "APPLY_PAGE_COMPONENTS" as const,
+        type: "APPLY_PAGE_COMPONENTS",
         page: proposedPage,
-        removedComponentIds: [],
+        removedComponentIds: [...removedComponentIds].sort(),
       },
       ...assetPlacements,
     ],
@@ -583,7 +721,7 @@ export function executeGovernedFollowUpEditing(
       plan: baseline,
       planningInput: planning.data,
     });
-    const sharedOperations = [] as CoordinatedFollowUpPlan["sharedOperations"];
+    const sharedOperations: CoordinatedFollowUpPlan["sharedOperations"] = [];
     if (packageResolution.descriptor.id === "applyExactBrandPalette") {
       const tokenRefinementPlan = request.tokenRefinementPlan!;
       sharedOperations.push({
@@ -624,9 +762,9 @@ export function executeGovernedFollowUpEditing(
         authority.authority.requestIdentity,
       ),
     );
-    const withoutFingerprint = {
-      kind: "governedFollowUp" as const,
-      version: 1 as const,
+    const withoutFingerprint: Omit<CoordinatedFollowUpPlan, "fingerprint"> = {
+      kind: "governedFollowUp",
+      version: 1,
       id: `plan_follow_up_${canonicalValueFingerprint({
         request: governed.value.outputFingerprint,
         baseline: baseline.fingerprint,
@@ -660,8 +798,8 @@ export function executeGovernedFollowUpEditing(
       plan: coordinatedPlan,
       planningInput: planning.data,
     });
-    return frozen({
-      valid: true as const,
+    return frozen<GovernedFollowUpEditingIntegrationResult>({
+      valid: true,
       authority: frozen(structuredClone(authority)),
       planningInput: frozen(structuredClone(planning.data)),
       coordinatedPlan: frozen(structuredClone(coordinatedPlan)),
