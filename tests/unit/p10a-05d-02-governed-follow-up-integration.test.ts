@@ -262,6 +262,44 @@ describe("P10A-05D-02 governed follow-up package integration", () => {
     expect(result).toMatchObject({ valid: true });
   });
 
+  it("fails closed for stale, unknown and ambiguous omitted campaign profile authority", () => {
+    const source = baseline("premiumEditorial");
+    const promotion = pageAuthority(source, "home", "homepagePromotion");
+    const hero = pageAuthority(source, "home", "homepageHero");
+    expect(
+      failureCode(
+        request(source, "addCampaignSection", [
+          { ...promotion, profile: { ...promotion.profile!, fingerprint: "stale-profile" } },
+        ]),
+        source.authority,
+      ),
+    ).toBe("staleProfileAuthority");
+    expect(
+      failureCode(
+        request(source, "addCampaignSection", [
+          {
+            ...promotion,
+            profile: undefined,
+            selections: [{ ...promotion.selections[0], profileId: "unknown-profile" }],
+          },
+        ]),
+        source.authority,
+      ),
+    ).toBe("staleProfileAuthority");
+    expect(
+      failureCode(
+        request(source, "addCampaignSection", [
+          {
+            ...promotion,
+            profile: undefined,
+            selections: [promotion.selections[0], hero.selections[0]],
+          },
+        ]),
+        source.authority,
+      ),
+    ).toBe("invalidSlotSelection");
+  });
+
   it("maps composite collection and product PageBlueprint slots to their runtime components", () => {
     const source = baseline("premiumEditorial");
     const collection = pageAuthority(source, "collection", "collectionHeader");
@@ -299,23 +337,52 @@ describe("P10A-05D-02 governed follow-up package integration", () => {
   it("fails closed for bounded parameter intents until they have a canonical runtime projection", () => {
     const source = baseline();
     const hero = pageAuthority(source, "home", "homepageHero");
+    const result = execute(
+      request(source, "improveHero", [
+        {
+          ...hero,
+          boundedParameters: [
+            {
+              targetSlotId: hero.selections[0].slotId,
+              parameterId: "density",
+              value: "compact",
+            },
+          ],
+        },
+      ]),
+      source.authority,
+    );
+    expect(result).toMatchObject({
+      valid: false,
+      failure: { code: "unsupportedBoundedParameter" },
+    });
+    expect("proposal" in result).toBe(false);
+  });
+
+  it("rejects a different otherwise-valid variant for a whole-storefront materialized slot", () => {
+    const source = baseline();
+    const hero = pageAuthority(source, "home", "homepageHero");
+    const profile = skillCapabilityKnowledge
+      .listExecutableProfiles({ manifest: source.authority.manifest, pageType: "home" })
+      .find((candidate) => candidate.profileId === hero.profile?.profileId);
+    const capability = profile?.componentSelections.find(
+      (candidate) => candidate.slotId === hero.selections[0].slotId,
+    );
+    const differentVariant = capability?.variants.find(
+      (variant) => variant !== hero.selections[0].variant,
+    );
+    if (!differentVariant) throw new Error("Expected a second registered hero variant.");
     expect(
       failureCode(
-        request(source, "improveHero", [
-          {
-            ...hero,
-            boundedParameters: [
-              {
-                targetSlotId: hero.selections[0].slotId,
-                parameterId: "density",
-                value: "compact",
-              },
-            ],
-          },
-        ]),
+        request(
+          source,
+          "applyRegisteredWholeStorefrontDirection",
+          [{ ...hero, selections: [{ ...hero.selections[0], variant: differentVariant }] }],
+          { registeredDirectionId: "modernTechnical" },
+        ),
         source.authority,
       ),
-    ).toBe("unsupportedBoundedParameter");
+    ).toBe("invalidSlotSelection");
   });
 
   it("fails closed for stale authority, wrong package scope, invalid slots and non-cloneable input", () => {

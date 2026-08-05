@@ -260,6 +260,19 @@ function materializedSlotAuthority(materialization: Materialization, selection: 
   return slot;
 }
 
+function assertWholeStorefrontDirectionVariant(
+  materialization: Materialization,
+  selection: PageSelection,
+) {
+  const slot = materializedSlotAuthority(materialization, selection);
+  if (selection.variant !== slot.variant) {
+    throw new GovernedSkillPackageError(
+      "invalidSlotSelection",
+      `Selected variant ${selection.variant} does not match the current materialized ${selection.slotId} slot variant.`,
+    );
+  }
+}
+
 function runtimeComponentForMaterializedSelection(
   page: WholeStorefrontRuntimePage,
   materialization: Materialization,
@@ -507,6 +520,9 @@ function pageChange(
   const removedComponentIds = new Set<string>();
   const removedComponentIdsBySlot = new Map<string, readonly string[]>();
   for (const selection of selected) {
+    if (packageId === "applyRegisteredWholeStorefrontDirection") {
+      assertWholeStorefrontDirectionVariant(materialization, selection);
+    }
     if (packageId === "addCampaignSection") continue;
     const materialized = materializeCompositeRuntimeComponent(
       page,

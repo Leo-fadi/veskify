@@ -47,8 +47,10 @@ snapshot, component registry, commerce, approved-asset context, locale,
 request identity, package registry, manifest, profile, page and slot authority.
 Collection and PDP PageBlueprint sub-slots resolve only through their canonical
 dynamic runtime components. Optional campaign profile declarations resolve from
-the exact current materialization. Bounded parameter intents fail closed until
-the adapter can express them through a canonical runtime projection.
+the exact current materialization. Whole-storefront selections must exactly
+match each materialized slot component and variant. Bounded parameter intents
+fail closed until the adapter can express them through a canonical runtime
+projection.
 It confirms that the selected runtime component has the current registered
 definition version. Binding references must match the exact current canonical
 binding fingerprint. Approved assets are checked against current ID, role,
