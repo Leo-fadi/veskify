@@ -18,4 +18,9 @@ The commercial storefront design-system implementation specification is assigned
 | Former Phase 12 stable domains/adapters | P11                                              | Vesko adapter conformance remains required.                                           |
 | Former later deployment work            | P12                                              | Production hardening remains after design-system and Studio work.                     |
 
-P10D advanced media and interactive presentation is deferred and does not block P10B or P10C. It permits only registered capabilities; arbitrary generated Three.js or other executable presentation code remains prohibited.
+P10D advanced media and interactive presentation is deferred and does not block P10B or P10C.
+Registered, governed Three.js implementations are permitted only as registered
+interactive-presentation capabilities. AI may select or configure them but may not generate their
+implementation; registered component, asset, performance, accessibility and non-interactive-fallback
+authority continues to apply. No arbitrary generated application code or arbitrary/generated Three.js
+implementation is permitted.

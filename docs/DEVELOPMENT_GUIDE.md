@@ -184,13 +184,23 @@ and retained real-provider evidence. Token-only or API-response-only success doe
 
 Freeze vocabulary, audit capabilities, define executable PageBlueprint contracts, generate the
 Component Knowledge Registry from those contracts, define separate initial/follow-up Skill package
-contracts, define scoped router/authority/validation contracts, run golden-store gates and compile
-publication deterministically. P10A closes before commercial visual expansion and does not deliver
-merchant-operable granular editing.
+contracts, define scoped router/authority/validation contracts, and compile publication
+deterministically. P10A owns governed generation and follow-up execution, scope routing, proposal
+lifecycle, controlled-provider acceptance, publishing/compiler authority, publish/render/rollback
+evidence and protected-commerce correctness. It closes before commercial visual expansion and does
+not deliver merchant-operable granular editing or close on commercial visual polish.
 
 ### P10B — Commercial Storefront Design System v1
 
-P10B-01 through P10B-12 deliver governed vocabulary, visual foundations, art direction, frame, commercial families, merchandising, collection/PDP profiles, directions, narrative composition, responsive closure and commercial visual-quality evidence. P10B uses only `BrandSystem → PageBlueprint profile → family/variant → bounded instance override`; manual Puck editing is not a dependency. It closes only after credible-asset review of home, collection, simple PDP and configurable PDP at 375, 768, 1024 and 1440 px.
+P10B-01 through P10B-12 deliver governed vocabulary, visual foundations, art direction, frame,
+commercial families, merchandising, collection/PDP profiles, directions, narrative composition,
+responsive closure and commercial visual-quality evidence. P10B owns commercial component/profile
+reachability for new design-system capabilities, direction differentiation, credible-asset
+complete-storefront generation and manual screenshot/browser review. It uses only `BrandSystem →
+PageBlueprint profile → family/variant → bounded instance override`; manual Puck editing is not a
+dependency. It closes only after credible-asset review of home, collection, simple PDP and
+configurable PDP at 375, 768, 1024 and 1440 px proves that the output is not a generic starter
+theme.
 
 ### P10C — Storefront Studio Editing Experience v1
 
@@ -198,7 +208,13 @@ P10C preserves and renumbers former P10B asset/Studio work, then adds canonical 
 
 ### P10D, P11 and P12
 
-P10D defers registered generated media, video and GLTF/GLB/Three.js presentation with required fallbacks and no arbitrary generated code. P11 then supplies stable domains/reference adapters, and P12 supplies production hardening, tenancy, staging, operations and deployment.
+P10D defers registered generated media, video and GLTF/GLB/Three.js presentation with required
+fallbacks. Registered, governed Three.js implementations are permitted only through registered
+interactive-presentation capabilities; AI may select or configure them but may not generate their
+implementation. Registered component, asset, performance, accessibility and fallback authority
+continues to apply. No arbitrary generated application code or arbitrary/generated Three.js
+implementation is permitted. P11 then supplies stable domains/reference adapters, and P12 supplies
+production hardening, tenancy, staging, operations and deployment.
 
 ## 8. Testing strategy
 
@@ -214,11 +230,14 @@ Use the smallest relevant set:
 - one relevant Playwright journey only when the visible risk requires it;
 - responsive/accessibility checks for changed components.
 
-For commercial-family/PageBlueprint-profile work, P10A acceptance additionally records the full
-reachability chain (registered → planner-selectable → proposal-expressible → compiler-preserved →
-`StorefrontSnapshot`-stored → renderer-visible → editor-editable → manually live-proven) and
-screenshot-level browser review of homepage, collection and PDP at 375, 768, 1024 and 1440 px using
-representative approved assets. Schema-valid or placeholder-only evidence does not close a phase.
+P10A focused acceptance records functional and publishing evidence: governed generation/follow-up
+execution, routing, proposal lifecycle, controlled-provider acceptance, compiler/publish/render/
+rollback behavior and protected-commerce correctness. P10B acceptance records the commercial
+reachability chain for new design-system capabilities (registered → planner-selectable →
+proposal-expressible → compiler-preserved → `StorefrontSnapshot`-stored → renderer-visible →
+editor-editable → manually live-proven), direction differentiation and manual screenshot/browser
+review of homepage, collection and PDP at 375, 768, 1024 and 1440 px using representative approved
+assets. Schema-valid or placeholder-only evidence does not close P10B.
 
 ### Dynamic PDP minimum fixtures
 

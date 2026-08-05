@@ -301,10 +301,13 @@ features.
 P10A-07 evidence-harness groundwork includes premium/minimal jewellery, editorial jewellery, a
 watch retailer, a dense hardware/general-retail catalogue, EN/FI, a simple watch PDP and a complex
 configurable ring PDP. The non-jewellery fixture is mandatory to detect luxury, jewellery, Karvonen
-and sparse-catalog assumptions. It covers schemas, registered capabilities, bindings/commerce,
-responsive behavior, accessibility, fixture leakage, asset provenance, performance and the contract
-validations owned by P10A. P10B owns the final commercial diversity, cross-page and browser-quality
-gate; runtime mixed-scope history and Undo/Redo for granular editing are P10C gates.
+and sparse-catalog assumptions. P10A owns functional and publishing validation for governed
+generation/follow-up execution, routing, proposal lifecycle, controlled-provider acceptance,
+compiler/publish/render/rollback behavior and protected-commerce correctness. P10A does not close
+on commercial visual polish. P10B owns commercial component/profile reachability for new
+design-system capabilities, direction differentiation, credible-asset complete-storefront generation
+and the final commercial screenshot/manual browser-quality gate; runtime mixed-scope history and
+Undo/Redo for granular editing are P10C gates.
 
 P10A-08 compiles validated draft `StorefrontSnapshot` → publish-time validation → immutable runtime
 snapshot → published renderer. It rejects invalid bindings, unknown component versions, missing
@@ -332,9 +335,9 @@ active merchant route does not enforce end-to-end AI acceptance lineage.
 
 ### P10B Commercial Storefront Design System v1
 
-P10B follows P10A publishing closure and is the first phase that broadens commercial visual quality. It owns P10B-01 executable vocabulary, P10B-02 foundations, P10B-03 image/art direction, P10B-04 premium shared frame, P10B-05 hero/editorial/campaign families, P10B-06 product-card and merchandising system, P10B-07 collection profiles, P10B-08 PDP profiles, P10B-09 coordinated directions, P10B-10 narrative composition, P10B-11 responsive closure and P10B-12 visual-quality gate. These tasks extend only the existing canonical `BrandSystem`, registered `PageBlueprint` profiles, component families/variants, approved asset placement and `StorefrontSnapshot` lifecycle.
+P10B follows P10A publishing closure and is the first phase that broadens commercial visual quality. It owns commercial component/profile reachability for new design-system capabilities, direction differentiation, credible-asset complete-storefront generation and P10B-01 executable vocabulary, P10B-02 foundations, P10B-03 image/art direction, P10B-04 premium shared frame, P10B-05 hero/editorial/campaign families, P10B-06 product-card and merchandising system, P10B-07 collection profiles, P10B-08 PDP profiles, P10B-09 coordinated directions, P10B-10 narrative composition, P10B-11 responsive closure and P10B-12 visual-quality gate. These tasks extend only the existing canonical `BrandSystem`, registered `PageBlueprint` profiles, component families/variants, approved asset placement and `StorefrontSnapshot` lifecycle.
 
-P10B closes only when credible assets prove a complete homepage, collection, simple PDP and configurable PDP at 375, 768, 1024 and 1440 px. Review must prove strong typography and imagery, coherent storytelling, cross-page identity, meaningful directions, commercially credible mobile output and protected-commerce correctness; unit, schema, placeholder, generic-starter-theme, repetitive-stack or unexplained-gap evidence is insufficient.
+P10B closes only when credible assets prove a complete homepage, collection, simple PDP and configurable PDP at 375, 768, 1024 and 1440 px. Manual screenshot/browser review must prove strong typography and imagery, coherent storytelling, cross-page identity, meaningful directions, commercially credible mobile output and protected-commerce correctness; unit, schema, placeholder, generic-starter-theme, repetitive-stack or unexplained-gap evidence is insufficient.
 
 ### P10C Storefront Studio Editing Experience v1
 
@@ -346,7 +349,7 @@ AC-119 remains solely a Phase 9 gate. P10C consumes the approved reuse/upload/ge
 
 ### P10D deferred advanced media and interactive presentation
 
-Former P10B-03 becomes **P10D-01 Generated-image lifecycle**, after P10B and P10C. P10D also reserves registered video, GLTF/GLB product assets, registered Three.js presentation, camera and lighting presets, mobile/accessibility fallbacks and performance budgets. It does not block P10B or P10C; arbitrary generated Three.js, scripts, shaders, external assets or removal of fallbacks is prohibited.
+Former P10B-03 becomes **P10D-01 Generated-image lifecycle**, after P10B and P10C. P10D also reserves registered video, GLTF/GLB product assets, registered Three.js presentation, camera and lighting presets, mobile/accessibility fallbacks and performance budgets. Registered, governed Three.js implementations are permitted only as registered interactive-presentation capabilities. AI may select or configure those capabilities but may not generate implementation code; each remains subject to registered component, asset, performance, accessibility and non-interactive-fallback authority. No arbitrary generated application code or arbitrary/generated Three.js implementation is permitted.
 
 ### P11 stable domains and Vesko reference adapters
 
@@ -1960,10 +1963,10 @@ source-commerce baseline; pairwise output agreement alone is insufficient.
 | **P7 — URL-first onboarding and brand reconstruction** | Source discovery, provenance, canonical reconciliation, brand evidence, asset inventory and approved Storefront Design Brief. | A merchant can connect an existing site or start from minimal assets without rebuilding catalogue truth. | URL → approved brief works with deterministic and real public-source modes. |
 | **P8 — Asset-aware initial generation**                | Compose homepage, collection and dynamic PDP from the brief; reuse approved assets; remove fixture defaults.                  | The first generated storefront feels specific to the merchant and catalogue.                             | Initial generation passes source/asset/binding checks and visual review.    |
 | **P9 — Meaningful grounded storefront generation** | Minimum proof-enabling registered capability reachability; coordinated shared frame, homepage, collection and PDP composition; approved-brief runtime handoff; commerce/assets; atomic apply/undo; persistence, preview and publish; responsive, accessibility and real-provider evidence. | A merchant receives a coherent editable storefront from the exact approved brief revision rather than token-only or one-section variation. | The Phase 9 evidence matrix is complete, including retained FR-105 approval-to-runtime correlation; no token-only, fixture-leaking, renderer-only, unapproved-brief or API-response-only result may pass. |
-| **P10A — Grounded orchestration and publishing closure** | Vocabulary freeze, capability audit, executable PageBlueprints, registry, Skills/router, quality contracts and deterministic publish compiler. | Generation retrieves real capabilities and publication compiles the canonical snapshot. | P10A-08 closes before P10B; no merchant-operable editing or commercial-quality claim. |
-| **P10B — Commercial Storefront Design System v1** | P10B-01 through P10B-12: vocabulary, foundations, art direction, frame, families, merchandising, collection/PDP profiles, directions, narrative, responsive closure and visual gate. | Complete credible generated storefront without manual reconstruction. | Credible-asset home/collection/simple-PDP/configurable-PDP review at 375/768/1024/1440; no generic starter theme or schema-only closure. |
+| **P10A — Grounded orchestration and publishing closure** | Vocabulary freeze, capability audit, executable PageBlueprints, registry, Skills/router, functional/publishing quality contracts and deterministic publish compiler. | Governed generation/follow-up execution and publication compile the canonical snapshot. | P10A-08 closes before P10B with controlled-provider, publish/render/rollback and protected-commerce evidence; no merchant-operable editing or commercial-visual-quality claim. |
+| **P10B — Commercial Storefront Design System v1** | P10B-01 through P10B-12: vocabulary, foundations, art direction, frame, families, merchandising, collection/PDP profiles, directions, narrative, responsive closure and visual gate. | Complete credible generated storefront without manual reconstruction. | Commercial component/profile reachability, directions and credible-asset manual screenshot/browser home/collection/simple-PDP/configurable-PDP review at 375/768/1024/1440; no generic starter theme or schema-only closure. |
 | **P10C — Storefront Studio Editing Experience v1** | Migrated asset governance/Studio work plus canonical Puck boundary, frame identity, approved operations, scoped AI and unified history. | Merchant can select/edit/reorder/undo/redo/save/preview/publish. | `StorefrontSnapshot` remains canonical; Puck has no persisted document model. |
-| **P10D — Deferred advanced media and interactive presentation** | Migrated generated-image lifecycle, video, registered GLTF/GLB/Three.js presentation, presets, fallbacks and budgets. | Future rich media when justified. | Does not block P10B/P10C; no arbitrary generated code or Three.js. |
+| **P10D — Deferred advanced media and interactive presentation** | Migrated generated-image lifecycle, video, registered GLTF/GLB/Three.js presentation, presets, fallbacks and budgets. | Future rich media when justified. | Does not block P10B/P10C; registered governed interactive presentation is permitted, but no arbitrary generated application code or arbitrary/generated Three.js implementation is permitted. |
 | **P11 — Stable domains and reference adapters** | Former P12 domains/ports and Vesko conformance adapter. | Integration without competing commerce truth. | Reference adapter passes standalone-equivalent fixtures. |
 | **P12 — Production hardening and operations** | Former later deployment work: auth, tenancy, secrets, staging, observability, recovery and runbooks. | Safely operable integrated product. | Environment-specific operational gates pass. |
 

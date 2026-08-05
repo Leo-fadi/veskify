@@ -49,9 +49,13 @@ safe retained artifact or an explicit approved exception.
   AC-128; and the complete grounded-generation lifecycle.
 - AC-120 belongs to later demo reliability.
 - P10C owns Storefront Studio portions of AC-121, AC-122 and AC-123.
-- P10A owns AC-129 through AC-135 after Phase 9; P10B owns AC-136 through AC-138 after P10A publishing closure. AC-136 through AC-138 are informational in
-  this Phase 9 register, are not required to close Phase 9 and are not satisfied by this
-  documentation amendment.
+- P10A owns AC-129 through AC-135 after Phase 9: governed generation/follow-up execution, routing,
+  proposal lifecycle, controlled-provider acceptance, compiler/publish/render/rollback evidence and
+  protected-commerce correctness. P10B owns AC-136 through AC-138 after P10A publishing closure:
+  commercial component/profile reachability for new design-system capabilities, direction
+  differentiation, credible-asset complete-storefront generation and commercial visual-quality
+  evidence. AC-136 through AC-138 are informational in this Phase 9 register, are not required to
+  close Phase 9 and are not satisfied by this documentation amendment.
 
 ## Phase 9 closing rule
 
