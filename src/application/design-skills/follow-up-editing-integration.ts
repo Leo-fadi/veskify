@@ -98,6 +98,14 @@ export type GovernedFollowUpEditingIntegrationResult =
     }>
   | Readonly<{ valid: false; failure: GovernedFollowUpEditingIntegrationFailure }>;
 
+export type GovernedFollowUpRouteAuthorityValidationResult =
+  | Readonly<{
+      valid: true;
+      authority: GovernedFollowUpEditingAuthority;
+      planningInput: WholeStorefrontPlanningInput;
+    }>
+  | Readonly<{ valid: false; failure: GovernedFollowUpEditingIntegrationFailure }>;
+
 function frozen<T>(value: T): T {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
     Object.freeze(value);
@@ -120,6 +128,13 @@ function mappedFailure(
   failureValue: GovernedSkillPackageFailure,
 ): GovernedFollowUpEditingIntegrationResult {
   return failure(failureValue.code, failureValue.message);
+}
+
+function routeAuthorityFailure(
+  code: GovernedFollowUpEditingIntegrationFailureCode,
+  message: string,
+): GovernedFollowUpRouteAuthorityValidationResult {
+  return frozen({ valid: false as const, failure: frozen({ code, message }) });
 }
 
 function authorityMismatch(
@@ -476,6 +491,108 @@ function registeredInsertionIndex(
     if (existingIndex >= 0) return existingIndex;
   }
   return components.length;
+}
+
+/**
+ * Validates follow-up page, profile, and slot authority against the current
+ * server-derived planning input without compiling a proposal. The strict scope
+ * router consumes this existing governed boundary for route-only validation.
+ */
+export function validateGovernedFollowUpRouteAuthority(
+  inputValue: unknown,
+  currentAuthority: GovernedSkillAuthorityEnvelope,
+  registry: GovernedSkillPackageRegistry = governedSkillPackageRegistry,
+): GovernedFollowUpRouteAuthorityValidationResult {
+  let requestResult: ReturnType<typeof governedFollowUpEditingRequestSchema.safeParse>;
+  try {
+    requestResult = governedFollowUpEditingRequestSchema.safeParse(structuredClone(inputValue));
+  } catch {
+    return routeAuthorityFailure("invalidRequest", "The governed follow-up request is invalid.");
+  }
+  if (!requestResult.success) {
+    return routeAuthorityFailure("invalidRequest", "The governed follow-up request is invalid.");
+  }
+  try {
+    const request = requestResult.data;
+    const governed = registry.validateFollowUpEditing(request.authority, currentAuthority);
+    if (!governed.valid) {
+      return routeAuthorityFailure(governed.failure.code, governed.failure.message);
+    }
+    const planning = wholeStorefrontPlanningInputSchema.safeParse(request.planningInput);
+    if (!planning.success) {
+      return routeAuthorityFailure(
+        "invalidPlanningInput",
+        "The server-derived planning input is invalid.",
+      );
+    }
+    const mismatch = authorityMismatch(planning.data, currentAuthority);
+    if (mismatch) return routeAuthorityFailure("stalePlanningAuthority", mismatch);
+    let baseline: WholeStorefrontGenerationPlan;
+    try {
+      baseline = baselinePlan(planning.data, governed.value.package.descriptor.id, request);
+    } catch (error) {
+      return routeAuthorityFailure(
+        "invalidFollowUpExecution",
+        error instanceof Error
+          ? error.message
+          : "The governed follow-up baseline could not be prepared.",
+      );
+    }
+    const current = createWholeStorefrontRuntimeState({
+      plan: baseline,
+      planningInput: planning.data,
+    });
+    for (const pageAuthority of governed.value.authority.pages) {
+      if (
+        !current.pages.some(
+          (candidate) =>
+            candidate.pageId === pageAuthority.pageId && candidate.type === pageAuthority.pageType,
+        )
+      ) {
+        return routeAuthorityFailure(
+          "unknownPageAuthority",
+          "The governed page authority does not resolve to the current snapshot page.",
+        );
+      }
+      const page = runtimePage(current, pageAuthority.pageId, pageAuthority.pageType);
+      const materialization = baseline.pageBlueprintMaterializations.find(
+        (candidate) => candidate.pageType === pageAuthority.pageType,
+      );
+      if (
+        !materialization ||
+        (pageAuthority.profile !== undefined &&
+          (materialization.profileId !== pageAuthority.profile.profileId ||
+            materialization.pageType !== pageAuthority.profile.pageType))
+      ) {
+        return routeAuthorityFailure(
+          "staleProfileAuthority",
+          "The selected PageBlueprint profile does not match the current canonical materialization.",
+        );
+      }
+      for (const selection of pageAuthority.selections) {
+        materializedSlotAuthority(materialization, selection);
+        if (governed.value.package.descriptor.id === "applyRegisteredWholeStorefrontDirection") {
+          assertWholeStorefrontDirectionVariant(materialization, selection);
+        }
+        if (governed.value.package.descriptor.id !== "addCampaignSection") {
+          runtimeComponentForMaterializedSelection(page, materialization, selection);
+        }
+      }
+    }
+    return frozen({
+      valid: true as const,
+      authority: frozen(structuredClone(governed.value.authority)),
+      planningInput: frozen(structuredClone(planning.data)),
+    });
+  } catch (error) {
+    if (error instanceof GovernedSkillPackageError) {
+      return routeAuthorityFailure(error.code, error.message);
+    }
+    return routeAuthorityFailure(
+      "coordinatedPlanRejected",
+      error instanceof Error ? error.message : "Current route authority could not be validated.",
+    );
+  }
 }
 
 function pageChange(

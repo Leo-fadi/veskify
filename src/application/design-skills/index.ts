@@ -9,3 +9,4 @@ export * from "./initial-generation-integration";
 export * from "./planner";
 export * from "./registry";
 export * from "./skills";
+export * from "./strict-scope-router";
