@@ -28,6 +28,7 @@ import { HistoricalPreviewActions } from "../../historical-preview-actions";
 
 type RepositoryFactory = () => ProjectRepository;
 type ProductPageModel = ProjectAggregate["snapshots"][number]["pages"][number];
+type RouteRenderTarget = "preview" | "published";
 type LoadState =
   | { status: "loading" }
   | {
@@ -83,6 +84,8 @@ type ProductPreviewClientProps = {
   productSlug: string;
   repositoryFactory?: RepositoryFactory;
   snapshotKind?: SnapshotKind;
+  /** Explicit route-render mode; snapshot selection remains independently governed by snapshotKind. */
+  renderTarget?: RouteRenderTarget;
   historicalSnapshotId?: string;
   commerceAdapter?: StorefrontCommerceRouteAdapter;
   onPrimaryAction?: ProductPrimaryActionIntentCallback;
@@ -97,6 +100,7 @@ function ProductPreviewLoader({
   productSlug,
   repositoryFactory = defaultRepositoryFactory,
   snapshotKind = "draft",
+  renderTarget = "preview",
   historicalSnapshotId,
   commerceAdapter = defaultCommerceAdapter,
   onPrimaryAction = ignorePrimaryAction,
@@ -139,6 +143,7 @@ function ProductPreviewLoader({
             catalogue: aggregate.catalogue,
             snapshot: draft,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+            renderTarget,
           });
           validateRegisteredPage(productPage, context);
           const references = dynamicProduct
@@ -186,7 +191,15 @@ function ProductPreviewLoader({
     return () => {
       cancelled = true;
     };
-  }, [attempt, commerceAdapter, historicalSnapshotId, productSlug, projectId, snapshotKind]);
+  }, [
+    attempt,
+    commerceAdapter,
+    historicalSnapshotId,
+    productSlug,
+    projectId,
+    renderTarget,
+    snapshotKind,
+  ]);
 
   const retry = () => {
     setState({ status: "loading" });
@@ -262,6 +275,7 @@ function ProductPreviewLoader({
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+    renderTarget,
   });
   return (
     <div className="project-preview" lang={locale} style={style}>
