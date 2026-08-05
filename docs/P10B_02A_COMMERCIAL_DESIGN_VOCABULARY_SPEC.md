@@ -1,0 +1,307 @@
+# P10B-02A — Commercial Design Vocabulary implementation specification
+
+**Status:** implementation-ready specification
+
+**Scope:** P10B commercial vocabulary only. This document specifies extensions to existing canonical contracts; it changes no runtime code, schema, registry, PageBlueprint, component, style, SDD, DOCX, fixture, or baseline.
+
+## 1. Executive contract
+
+Storefront Design System v1 extends the existing controlled design path so a registered direction can make commercially meaningful, renderer-visible choices across the shared frame, homepage, collection and PDP without emitting CSS, class names, React, or a new page model.
+
+The one inheritance path is:
+
+```text
+BrandSystem
+  -> registered storefront direction
+    -> registered PageBlueprint profile
+      -> registered component family and variant
+        -> bounded instance override
+          -> existing editor / preview / published renderer
+```
+
+Each lower layer may only select, narrow, or override values explicitly permitted by the layer above. `StorefrontSnapshot` remains the sole editable aggregate; `ComponentDefinitionV2`, executable PageBlueprint profiles, approved asset placement and canonical commerce projection remain their current authorities. `StorefrontDesignSystemV1` remains a direction projection and must converge onto those authorities rather than becoming a second token, recipe, or component registry.
+
+The current runtime path is an important baseline: `createWholeStorefrontGenerationPlan` already materializes `dynamicCollectionCommerce` and `dynamicProductDetail` as canonical collection/PDP component replacements, which are proposed and stored. P10B extends the quality and governed diversity of that path; it does not create a collection/PDP bridge or replace those dynamic families.
+
+## 2. Existing authorities to extend
+
+| Existing authority                                          | Current responsibility                                                                                                                  | P10B extension                                                                                                 | Boundary retained                                                                        |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `BrandSystem` in `src/domain/design-system/brand-system.ts` | Validated palette, font tokens, scale ratio, radius, density, imagery style, optional visual system and contrast-derived CSS variables. | Semantic type, spacing, container, surface, action, border/radius/elevation and image-treatment defaults.      | No unrestricted fonts, colour strings outside schema, CSS values or per-page raw styles. |
+| `ComponentDefinitionV2` and `ComponentDesignCompatibility`  | Family/variant, schema, bindings, assets, responsive/a11y rules, narrative roles, bounded-parameter IDs and renderer identity.          | Family-specific composition semantics, complete variant compatibility and declared responsive transformations. | No merchant-specific components or renderer-owned planner data.                          |
+| `boundedParameterDefinitions`                               | Structural/visual parameter definitions, compatible families/pages, authority levels and inheritance validation.                        | Add only approved parameter IDs/value domains needed by commercial foundations and art direction.              | No arbitrary property bag, free-form CSS or unregistered values.                         |
+| Executable `PageBlueprint` profile and page-plan contract   | Slots, variants, narrative role/cardinality, flow rules, responsive parameter IDs, binding/asset categories.                            | Profile-level composition defaults/constraints, optional-region and direction compatibility rules.             | No second executable recipe/page graph or persisted profile state.                       |
+| `StorefrontDesignSystemV1` direction registry               | Three coordinated direction packages, direction-selected recipe references, component variants and collection/PDP presentation values.  | Versioned direction references to canonical foundation, profile and compatible family choices.                 | It stays a reference/projection; no duplicated canonical token or page representation.   |
+| Approved asset role/placement contracts                     | Asset role, provenance, approval/revision/fingerprint and safe render projection.                                                       | Typed treatment metadata and approved responsive crop references.                                              | Product media truth and asset inventory remain protected/owned elsewhere.                |
+| Existing renderer contracts/CSS variable projection         | Converts validated state into shared editor/preview/published rendering.                                                                | Resolves semantic tokens and registered transformations to renderer values.                                    | AI never supplies executable CSS, class names, DOM/React or arbitrary breakpoints.       |
+
+## 3. Canonical inheritance hierarchy
+
+| Layer                           | Owns                                                    | May set                                                                                                                                                        | May not set                                                                                             |
+| ------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `BrandSystem`                   | Merchant-wide semantic foundations and voice.           | Registered palette assignments, type roles, rhythm, default containers, surface/action/border/radius/elevation families, default media posture.                | Component tree, page order, bindings, raw CSS, product facts.                                           |
+| Registered storefront direction | A complete, named coordination package.                 | References to a BrandSystem-compatible foundation set; shared frame, home/collection/PDP profiles; compatible visual family defaults; merchandising intensity. | New tokens, component variants, profile IDs, asset roles, arbitrary per-merchant code.                  |
+| PageBlueprint profile           | Page composition and cross-page constraints.            | Required/optional roles, slot/order/cardinality, composition defaults, responsive profile modes and allowed compatible variants.                               | Brand palette/type definitions, protected commerce values, renderer implementation.                     |
+| Component family/variant        | Reusable semantic presentation pattern.                 | Variant default parameters, compatible assets/narrative roles, local responsive transformation and editable presentation paths.                                | New page order, unsupported global tokens, other component internals.                                   |
+| Component instance              | Merchant-approved local presentation/content selection. | Only registered instance-overridable parameter values, allowed copy and approved asset placement/binding targets.                                              | CSS/class names/React, broadening constraints, protected commerce facts, unregistered responsive modes. |
+
+Inheritance resolves deterministically in this order: global semantic default → direction restriction/default → profile restriction/default → variant restriction/default → instance value. For enums, a lower layer can only select from the currently effective allowed set. For numeric ranges, every lower constraint may narrow the inclusive range but never widen it. A missing value inherits; it does not mean “unbounded.”
+
+## 4. Vocabulary taxonomy
+
+| Category                     | Canonical value classes                                                                                       | Primary owner                                         | Current basis                                                                      |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Brand foundation             | type, colour, spacing, containers, density, surfaces, actions, border/radius/elevation                        | `BrandSystem`                                         | `colors`, `typography`, `shape`, `spacing`, `visualSystem`, `semanticPresentation` |
+| Image treatment              | asset role, ratio, focal/safe area, crop, position, containment, overlay, text-on-image, fallback             | asset metadata/placement plus component compatibility | `AssetRole`, approved placement, `imageTreatment`, `imageAspect`, `cropTreatment`  |
+| Component composition        | family, variant, pattern, visual weight, alignment, density, surface transition, slots, responsive mode       | `ComponentDefinitionV2` / bounded parameters          | component compatibility and narrative vocabulary                                   |
+| Page composition             | shared frame, narrative roles/flow, required/optional slots, insertion/repetition/adjacency, responsive order | executable PageBlueprint profile                      | template page plan and profile materialization                                     |
+| Direction                    | foundation selection, page profiles, component family compatibility, merchandising intensity                  | registered direction                                  | `StorefrontDesignSystemV1.directions`                                              |
+| Protected presentation input | asset placement and read-only commerce binding                                                                | existing domain/canonical commerce contracts          | approved placements and V2 binding slots                                           |
+
+## 5. Structural versus visual authority matrix
+
+| Field category            | Examples                                                                                              | Brand                     | Direction                          | Profile                           | Variant                            | Instance                                                  | Protected / rejected                                           |
+| ------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------- | --------------------------------- | ---------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------- |
+| Structural                | layout model, media/info/filter placement, columns, section width, cardinality, gallery mode          | default only              | selects compatible profile posture | primary authority                 | compatible default/narrowing       | only if `instanceOverrideAllowed`                         | arbitrary DOM/order/grid/CSS                                   |
+| Visual                    | density, surface, visual weight, typography role, image/border/shape/spacing/emphasis/background/tone | semantic default          | coordinated selection              | allowed/narrowed page range       | family/variant default             | bounded local choice                                      | arbitrary style strings/classes                                |
+| Content                   | localised headings, body, CTA labels, approved story copy                                             | voice constraints         | tone/intensity constraints         | required/optional content slots   | schema/default                     | editable schema paths                                     | executable/instructional content or unsupported claims         |
+| Asset                     | approved asset ID, role, presentation/crop selection                                                  | default treatment posture | compatible treatment family        | required/optional asset-role rule | accepted asset role/treatment      | approved placement only                                   | unapproved/wrong-role media or copied commerce media           |
+| Commerce binding          | product, collection, list, navigation IDs and revisions                                               | none                      | selects presentation only          | required binding categories       | accepted binding slot types        | another valid canonical target when allowed               | fields inside product/variant/price/inventory objects          |
+| Protected commerce truth  | product ID/type, SKU, price, compare-at, availability, stock, options, media provenance               | none                      | none                               | placement/adjacency only          | presentation only                  | none                                                      | all mutations fail closed                                      |
+| Responsive transformation | stack, reorder, density reduction, crop switch, nav/filter/gallery mode, grid columns                 | semantic scale/default    | coherent direction mode            | page constraints                  | declared transformation            | only selected supported mode                              | pixel CSS, arbitrary breakpoints or unsupported transformation |
+| Narrative metadata        | role, visual weight, transition intent, flow-rule reference                                           | none                      | direction-level page intent        | primary role/order/cardinality    | compatible roles/weight/transition | no widening; only registered permitted instance selection | free-text role/animation/ordering                              |
+
+## 6. Brand foundation vocabulary
+
+### 6.1 Proposed semantic vocabulary
+
+P10B-02B should extend `BrandSystem`; it must not create a standalone token registry. The proposed values below are closed enums/validated scales whose renderer values are derived in `brandSystemToCssVariables` or an equivalent canonical projection.
+
+| Domain                  | Proposed semantic values                                                                                                                                                                                                                      | Owner and override rule                                                                                                                     |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Font-family roles       | `display`, `heading`, `body`, `utility`, `price` resolve only to existing approved font tokens initially.                                                                                                                                     | Brand owns assignments; direction may select a compatible registered typography direction; instances cannot select fonts.                   |
+| Type roles              | `display`, `h1`, `h2`, `h3`, `body`, `bodySmall`, `label`, `eyebrow`, `button`, `price`, `caption`.                                                                                                                                           | Brand owns scale/weights; direction/profile may select compatible emphasis/reading-width; instance may not change numeric type.             |
+| Type scale              | Base size remains 14–20 and scale ratio 1.125–1.5; add named derived roles rather than component-local unrelated clamps.                                                                                                                      | Brand only; renderer calculates values.                                                                                                     |
+| Semantic colour         | Existing `primary`, `secondary`, `accent`, `background`, `surface`, `text`, `mutedText`, `border`, plus derived `page`, `section`, `raised`, `inset`, `inverse`, `focus`, `link`, `actionPrimary`, `actionSecondary`, disabled/status roles.  | Brand supplies base values; renderer derives compatible foregrounds and validates contrast. Direction selects roles, never literal colours. |
+| Surface                 | `quiet`, `soft`, `layered`, `contrast`, `inverse` presentation roles; map to existing visual-system surface/depth values first.                                                                                                               | Brand default; profile/variant selects only compatible role.                                                                                |
+| Actions                 | `primary`, `secondary`, `quiet`, `text`, `destructive` only where an existing product surface permits it; action hierarchy maps from current `buttonHierarchy`.                                                                               | Brand default and direction intensity; component variant selects schema-approved action presentation.                                       |
+| Spacing rhythm          | Semantic `pageGutter`, `sectionCompact`, `sectionStandard`, `sectionSpacious`, `gridGap`, `cardInset`, `controlInset`; density remains `compact`, `standard`, `spacious`/BrandSystem `airy`, `balanced`, `compact` through a defined mapping. | Brand defaults; profile/variant may narrow density.                                                                                         |
+| Containers              | `reading`, `content`, `commerce`, `wide`, `full`; map initially to current narrow/standard/wide content widths, with a controlled full-bleed exception.                                                                                       | Brand default; profile/variant selects compatible width; instance only where bounded `sectionWidth` permits.                                |
+| Border/radius/elevation | Border `none`, `subtle`, `defined`; radius `square`, `subtle`, `rounded`, `pill`; elevation `flat`, `subtle`, `layered`.                                                                                                                      | Brand defaults; profile/variant narrows; instance may choose an allowed presentation value, not pixels/shadows.                             |
+
+### 6.2 Contrast and status contract
+
+Existing contrast-derived foregrounds remain required. Every text/action/surface pair must resolve to the existing contrast minimum before renderer output; no direction, profile or instance can override the calculated foreground with a raw colour. Status and commerce availability presentation remains protected: design may choose compatible surface/emphasis treatment but never change canonical availability, price, compare-at price, stock, SKU, option or inventory truth.
+
+## 7. Image-treatment vocabulary
+
+### 7.1 Canonical media treatment contract
+
+Asset roles remain the existing closed set: `logo`, `heroDesktop`, `heroMobile`, `collectionImage`, `productMainImage`, `productAlternativeImage`, `editorialImage`, `supportingContentImage`, and `iconDecorative`. P10B-04 should add a typed, approved presentation subrecord associated with an asset placement or approved renderer projection; it must not embed mutable media data in component content.
+
+| Field                           | Closed vocabulary / shape                                                                                                                       | Owner                                                     | Rule                                                                                                        |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `aspectRatio`                   | `natural`, `portrait`, `landscape`, `square`, plus family-approved named ratios where renderer supports them.                                   | Asset treatment default + variant compatibility.          | Renderer resolves CSS; instance selects only allowed registered ratio.                                      |
+| `focalPoint` / `objectPosition` | Normalised named positions (`center`, `top`, `bottom`, `start`, `end`) or bounded normalised coordinates when a delivery adapter supports them. | Approved asset presentation.                              | No raw style string; absent metadata uses deterministic center/family fallback.                             |
+| `fit`                           | `contain`, `cover`, `editorial`.                                                                                                                | Direction/variant default, asset compatibility.           | Must match selected asset role and component variant.                                                       |
+| `bleed`                         | `contained`, `fullBleed`, `framed`, `split`.                                                                                                    | Profile/variant.                                          | Only registered components with compatible `sectionWidth`/media placement can select it.                    |
+| `overlay`                       | `none`, `soft`, `strong`, `contrast`; only when text-on-image is supported.                                                                     | Variant/profile.                                          | Renderer supplies contrast-safe overlay; instance cannot select arbitrary opacity/colour.                   |
+| `textOnImage`                   | `unsupported`, `supported`, `required` with safe-area requirement.                                                                              | Component variant.                                        | A profile requiring text-on-image fails if approved media/safe area is unavailable.                         |
+| Responsive crop                 | desktop/mobile asset reference or deterministic crop treatment/focal override.                                                                  | Approved asset presentation, selected by responsive rule. | `heroMobile` is used only in a compatible hero slot; otherwise the declared fallback applies.               |
+| Fallback                        | `hide`, `containedPlaceholder`, `textOnly`, `canonicalMediaOnly`.                                                                               | Component asset slot/profile omission rule.               | Required approved media with no allowed fallback rejects materialization; commerce media remains canonical. |
+
+### 7.2 Treatment compatibility
+
+`productMainImage` and `productAlternativeImage` stay commerce-owned and may use only canonical media/approved compatible presentation. Editorial source imagery must not replace a product-card/PDP product media binding. Text-on-image requires contrast-safe renderer output, non-decorative alt requirements and an approved crop/safe-area record. A missing mobile crop must fall back deterministically to the desktop approved asset with the registered crop treatment; it must never trigger generated imagery.
+
+## 8. Component-composition vocabulary
+
+P10B extends the current `ComponentDefinitionV2` metadata rather than declaring a new component catalogue.
+
+| Composition dimension     | Contract value                                                                                                                                                | Authority and validation                                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Family and variant        | Existing stable `type`, version, family and registered variant ID.                                                                                            | Registry is the only source; unknown/incompatible variants fail before proposal compilation.              |
+| Structural pattern        | Registered pattern ID such as split, full bleed, grid, carousel, editorial card, compact commerce, gallery/purchase split.                                    | Variant declares one or more patterns; PageBlueprint selects a compatible variant, never primitive trees. |
+| Content density           | `compact`, `standard`, `spacious`; with family-specific bound controls (for example PDP option density).                                                      | Brand direction default → profile/variant constraint → allowed instance override.                         |
+| Visual weight             | Existing `light`, `medium`, `heavy`, `dominant`.                                                                                                              | Must satisfy narrative role, component compatibility and no-adjacent-dominant flow rule.                  |
+| Alignment and width       | Existing `contentAlignment`, `sectionWidth`, `mediaPlacement`, `productInformationPlacement`, `filterPlacement`, `galleryMode`, `columnCount`, `cardinality`. | Structural bounded parameters only; each family explicitly opts in.                                       |
+| Surface transition        | Existing `surfaceTreatment`, `backgroundRole`, `borderTreatment`, `shape`, `emphasis`, `tone`.                                                                | Values resolve to BrandSystem semantic roles, not arbitrary CSS.                                          |
+| Assets                    | Existing accepted asset roles/cardinality plus proposed treatment compatibility.                                                                              | Slot and variant validate role, approval, provenance, crop and fallback.                                  |
+| Narrative                 | Existing allowed narrative roles, visual weights, transition intents and commerce requirement.                                                                | Profile and variant compatibility must both pass.                                                         |
+| Responsive transformation | Registered transformations and each supported breakpoint state.                                                                                               | Variant owns its transformation vocabulary; instance may choose a supported declared mode only.           |
+
+The initial commercial families to deepen are shared frame, hero, collection discovery, product card/grid, editorial/story, campaign, trust/service, dynamic collection commerce and dynamic product detail. Existing `dynamicCollectionCommerce` and `dynamicProductDetail` are the runtime authorities for collection/PDP: P10B enriches their compatible profiles and presentation parameter ranges.
+
+## 9. Page-recipe vocabulary
+
+`PageBlueprint` remains the executable composition contract. A commercial recipe is a registered constrained profile on that contract and remains transient metadata/materialization input—not a persisted page graph.
+
+| Page scope   | Required controlled regions                                                                             | Optional controlled regions                                                                         | P10B profile additions                                                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared frame | exactly one header and footer; announcement may precede header.                                         | announcement, service/navigation extensions allowed by profile.                                     | Frame mode, navigation density/transformation, compatible header/footer/announcement relationships.                                                            |
+| Homepage     | orientation hero, primary discovery, service/footer.                                                    | collection discovery, story, campaign, trust, newsletter under existing omission rules.             | Narrative pacing, promotional intensity, product/collection discovery mix, section rhythm and media posture.                                                   |
+| Collection   | canonical dynamic collection commerce runtime component and shared frame.                               | approved child-collection discovery, campaign/proof only when registered/asset/evidence compatible. | Editorial discovery, catalogue comparison and campaign-led profile choices; filter/card-density/child-collection coordination.                                 |
+| PDP          | canonical dynamic PDP runtime component and shared frame; conversion remains adjacent to product focus. | supporting proof/service/story/related products only where registered and canonically bound.        | jewellery/high-consideration, variant-led, editorial-gallery and standard-commerce profile choices for gallery, purchase, proof, service and related products. |
+
+Insertion must use a declared optional slot whose family, variant, narrative role, visual weight, asset/binding requirements and maximum cardinality all pass. Repetition uses existing per-role and per-family limits. Flow rules continue to prohibit invalid adjacency and direct product-context/conversion separation. Responsive reordering is a registered profile/variant transformation; it cannot alter canonical commerce adjacency or move a required shared-frame region outside its protected position.
+
+## 10. Storefront-direction vocabulary
+
+Each registered direction must select a complete compatible set, not a palette label:
+
+| Direction field         | Required coordinated reference                                                                                             |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Foundation              | BrandSystem semantic foundation identity/version or validated registered projection.                                       |
+| Typography              | Registered font-role/scale/reading-width posture.                                                                          |
+| Density and surfaces    | Direction-wide spacing density, container and surface/border/radius/elevation posture.                                     |
+| Image treatment         | Compatible default treatment, overlay posture and responsive crop strategy.                                                |
+| Shared frame            | Header/navigation/announcement/footer compatible family variants and mobile transformation.                                |
+| Page profiles           | One compatible homepage, collection and PDP PageBlueprint profile.                                                         |
+| Component compatibility | Product-card, hero/editorial/campaign/trust and dynamic commerce variants allowed by those profiles.                       |
+| Merchandising intensity | Closed `restrained`, `balanced`, `campaignLed` value that governs optional campaign/discovery prominence and density only. |
+
+A direction is valid only if it differs from every other active direction across at least two non-colour foundation dimensions and has a material composition difference on home, collection and PDP. Existing directions (`premiumEditorial`, `modernTechnical`, `warmApproachable`) already coordinate typography, density, image treatment, shared-frame choices and collection/PDP presentation. P10B-10 makes that coordination deeper and renderer-visible; it does not add a second direction authority.
+
+## 11. Narrative metadata
+
+Use the existing registered narrative roles: `orientation`, `primary-discovery`, `secondary-discovery`, `product-focus`, `product-proof`, `brand-story`, `brand-proof`, `education`, `campaign`, `trust`, `service`, `conversion`, and `continuation`; visual weights remain `light`, `medium`, `heavy`, `dominant`; transition intents remain `continuation`, `contrast`, `escalation`, `proof`, `clarification`, `conversion`, `reset`.
+
+P10B-11 should add only profile/family compatibility and commercial presentation metadata needed to use these values, for example: permitted section-count range, required adjacent commerce context, optional asset/evidence condition, and direction-compatible weight progression. It must not add free-text narrative names, animation instructions or an independent narrative planner.
+
+## 12. Responsive authority
+
+Responsive authority is semantic and registered, with evidence at 375, 768, 1024 and 1440 px. Components continue to declare mobile/tablet/desktop/wide rules and `allowHorizontalOverflow: false`; renderer CSS maps those rules to its controlled breakpoints.
+
+| Responsive concern               | Registered behaviour                                                                                                                     | Authority                                              |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| Breakpoint-independent semantics | Required landmarks, canonical bindings, asset roles, heading/order meaning, protected commerce and accessibility contract do not change. | Component + PageBlueprint.                             |
+| Layout transformation            | `none`, `stack`, `split`, `grid`, `carousel`, `disclosure`, `stickyPurchase` only when declared by variant.                              | Variant defines; profile selects; renderer implements. |
+| Stacking/order                   | Registered named placement/order transition, such as media above information or filter disclosure.                                       | Profile/variant; no arbitrary CSS `order`.             |
+| Density/typography               | Direction/profile selects constrained density/type role; renderer applies scale at the named breakpoints.                                | Brand/direction/profile; no instance pixel values.     |
+| Media                            | Registered desktop/mobile crop/treatment/focal fallback.                                                                                 | Approved asset presentation + component variant.       |
+| Navigation                       | Declared full navigation → compact/disclosure/drawer pattern with keyboard/focus requirements.                                           | Shared-frame variant/profile.                          |
+| Product grid                     | Declared 1–4-column bounds and grid/carousel collapse mode.                                                                              | Product-card/grid variant/profile.                     |
+| Collection                       | Filter sidebar/horizontal/disclosure and child-collection presentation are declared combinations.                                        | `dynamicCollectionCommerce` variant/profile.           |
+| PDP                              | Gallery/info stacking, thumbnail/grid mode and sticky mobile purchase action are declared combinations.                                  | `dynamicProductDetail` variant/profile.                |
+
+Every selected responsive mode must be renderer-visible at the target widths. The review matrix retains existing EN/FI locale coverage, no-overflow geometry/a11y checks and screenshot/human-review references; a contract declaration alone is not visual-quality proof.
+
+## 13. Compatibility rules
+
+Compatibility is evaluated before a plan/proposal is accepted, in the following deterministic order:
+
+1. direction ID/version, BrandSystem projection and all referenced profiles/families/variants exist;
+2. profile page scope and required bindings/assets match its page and canonical context;
+3. component family supports page type, profile policy and selected narrative role/weight/transition;
+4. variant is registered and permitted by both profile and direction;
+5. every bounded parameter exists, is allowed by the family and effective inherited constraint, and has no incompatible companion;
+6. asset role/approval/provenance/cardinality and proposed treatment suit the component/variant;
+7. responsive mode is declared by the selected variant and compatible with profile/direction;
+8. narrative order, adjacency, cardinality, shared-frame positions and commerce-conversion placement pass;
+9. canonical commerce binding and protected fields remain valid.
+
+| Dimension                    | Required compatibility                                                                                    |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Family ↔ PageBlueprint slot  | Component type/family, page type, slot cardinality and profile policy pass.                               |
+| Variant ↔ profile/direction  | Registered, explicitly allowed, semantically meaningful and selected by the current direction.            |
+| Narrative ↔ family           | Role, visual weight and transition are in `ComponentDesignCompatibility` and registered role definitions. |
+| Asset ↔ component/variant    | Approved role, owner/provenance, cardinality, treatment and responsive fallback are valid.                |
+| Typography/image ↔ direction | Direction references a registered semantic foundation/treatment compatible with the selected family.      |
+| Responsive mode ↔ variant    | Mode is declared for the variant at all required target widths; no arbitrary breakpoint values.           |
+| Adjacency/shared frame       | Flow rules, role/family repetition and header/footer protected position pass across affected pages.       |
+
+## 14. Bounded override rules
+
+| Override state                | Meaning                                                                     | Example                                                                                             | Validation result                                                      |
+| ----------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Inherited                     | No local value; renderer receives the resolved upper-layer value.           | PDP inherits direction `spacious` density.                                                          | Valid.                                                                 |
+| Registered variant default    | Variant supplies its declared default within upper constraints.             | `editorialSplit` supplies a compatible gallery/info posture.                                        | Valid if profile/direction allow it.                                   |
+| Page/profile override         | Profile narrows/selects a value for its compatible slots.                   | Collection profile requires horizontal filter treatment.                                            | Valid only within BrandSystem/direction bounds.                        |
+| Bounded instance override     | Instance selects a registered permitted value within effective constraints. | An approved component instance selects `surfaceTreatment: soft`.                                    | Valid only when `instanceOverrideAllowed` and family/profile allow it. |
+| Prohibited arbitrary override | Any value outside the vocabulary or authority chain.                        | CSS string, class name, React, pixel breakpoint, unknown token/variant, direct product price patch. | Rejected before proposal classification/application.                   |
+
+The existing `resolveBoundedParameterInheritance` model is the implementation precedent: unknown parameters, invalid values, contradictory ranges, broadening, prohibited instance override and prohibited parameter override report typed failures. P10B adds the same failure treatment to all new vocabulary fields.
+
+## 15. Deterministic failure model
+
+Failures are validation results, never best-effort renderer fallbacks that alter canonical state:
+
+| Failure                                                                                                                | Required disposition                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Unknown foundation token, direction, profile, family, variant, parameter, narrative role, flow rule or responsive mode | Reject plan/proposal with stable typed code; leave active draft/history unchanged.                           |
+| Incompatible direction/profile/family/variant or unsupported page scope                                                | Reject before materialization/compiler output.                                                               |
+| Narrowing violation, unsupported instance override, unknown raw value or conflicting parameter pair                    | Reject the proposal/operation; do not silently clamp or last-write-win.                                      |
+| Missing/invalid asset, crop, role, provenance or required safe area                                                    | Use the profile’s registered omission/fallback only when allowed; otherwise reject affected materialization. |
+| Missing canonical binding or protected-commerce drift                                                                  | Reject; never substitute merchant content or a different product/collection.                                 |
+| Unsupported responsive mode or geometry/a11y failure                                                                   | Reject the selected mode/proposal or fail evidence gate; no raw CSS escape hatch.                            |
+| Stale authority fingerprint/version                                                                                    | Mark stale and require replanning; do not apply.                                                             |
+
+Errors should reuse the existing typed vocabulary/compatibility codes where applicable and add narrow stable codes only for newly introduced contract categories. Error messages may name merchant-safe presentation concepts but must not expose raw provider payloads or internal registry details in merchant UI.
+
+## 16. Migration from current contracts
+
+1. Preserve all current `BrandSystem` fields and `brandSystemToCssVariables`; add optional, versioned semantic foundation fields with deterministic defaults mapped from current palette, typography, shape, spacing and `visualSystem` values.
+2. Preserve `boundedParameterDefinitions`, authority levels and inheritance resolver. Add vocabulary IDs through that list, then opt components in explicitly; legacy broad compatibility remains an explicit adapter only.
+3. Preserve templates/profiles and their legacy composite-slot metadata. Add constrained profile metadata/parameters in the current executable PageBlueprint contract; do not persist an independent recipe.
+4. Preserve `StorefrontDesignSystemV1` IDs and direction fingerprinting. Migrate its duplicated presentation values to references/projections of the newly extended canonical contracts without changing current directions until compatible renderer work exists.
+5. Preserve `dynamicCollectionCommerce` and `dynamicProductDetail` generation replacement, bindings, component versions and protected paths. Extend their family/profile compatibility and presentation affordances, not their commerce authority.
+6. Preserve approved asset placement identity, revision, provenance and render-only projection. Add compatible presentation metadata through that path, never through mutable product content.
+7. Version/migrate canonical snapshots with existing component migration conventions; unknown/future values fail closed and migration never changes commerce or approved assets.
+
+## 17. Proposed schema/type changes
+
+These are implementation targets, not code to add in this PR.
+
+| Contract                       | Proposed additive change                                                                                                                                                                               | Validation constraints                                                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `BrandSystem`                  | `typeSystem`, `layoutSystem`, `surfaceSystem`, `actionSystem`, `mediaSystem` semantic subcontracts or a strictly equivalent nested extension of `visualSystem`.                                        | Closed enums/numeric ranges; defaults from current values; renderer-only CSS derivation; contrast validation.                    |
+| Bounded parameter definition   | New parameter IDs for named type role, container role, elevation, overlay, media ratio/focal/crop, action presentation, merchandising intensity and declared responsive transformation where required. | Category structural/visual, compatible family/page types, authority/narrowing levels, incompatibilities and instance permission. |
+| Component design compatibility | Variant-level semantic pattern, supported direction IDs/traits, asset-treatment and responsive-mode compatibility.                                                                                     | Every value references registered vocabulary; all-target renderer identity remains required.                                     |
+| Asset placement/presentation   | Optional approved `presentationTreatment` with ratio, focal/object position, crop/overlay/text-safe-area and responsive derivative references.                                                         | Role/owner/provenance/revision preservation, bounded positions, no direct media URL/content mutation.                            |
+| PageBlueprint profile          | Direction-compatible profile traits; resolved foundation/parameter constraints; optional-region, responsive-order and cross-page-frame rules.                                                          | Keep existing slots/order/bindings/assets/cardinality/flow rules and no second executable representation.                        |
+| Direction contract             | References to semantic foundation profile, complete page-profile references, shared-frame mode and merchandising intensity.                                                                            | Validate every reference against live canonical registries; pairwise non-colour/cross-page distinctness.                         |
+| Renderer projection            | Typed resolved vocabulary projection supplied to current renderers.                                                                                                                                    | Deterministic, fingerprinted and no model-supplied CSS/classes/React.                                                            |
+
+## 18. Proposed test matrix
+
+| Test class                 | Assertions                                                                                                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Foundation schema/unit     | Defaults/migrations, closed values, font/colour/contrast, type/space/container/surface/action resolution and rejection of arbitrary values.                              |
+| Parameter inheritance/unit | Direction/profile/variant/instance narrowing, enum/range conflicts, unknown IDs, incompatible pairs and prohibited local responsive overrides.                           |
+| Component registry/unit    | Variant semantic compatibility, accepted assets, narrative roles/weights/transitions, responsive modes and renderer targets.                                             |
+| PageBlueprint/integration  | Slot/profile/direction compatibility, optional omission/fallback, insertion/repetition/adjacency, shared-frame coordination and no parallel page shape.                  |
+| Commerce integration       | Collection/PDP dynamic runtime instances remain planned, proposed and stored with canonical commerce/asset protection.                                                   |
+| Asset/media integration    | Role/provenance/crop/safe-area validation; desktop/mobile fallback; product media cannot be replaced by editorial media.                                                 |
+| Direction/diversity        | Pairwise direction differences across non-colour foundations and all three page types; no colour-only direction passes.                                                  |
+| Responsive/a11y            | 375/768/1024/1440 and EN/FI: no clipping/overlap, declared transformations visible, keyboard/focus/contrast and commerce controls reachable.                             |
+| Golden-store/human review  | Current fingerprints/profiles/lifecycle/evidence remain current; screenshots/human rubric assess hierarchy, imagery, merchandising, repetition and cross-page coherence. |
+
+## 19. Recommended implementation PR decomposition
+
+| Task                                           | Authority extended / likely layers                                                                                              | Dependency, tests and visual evidence                                                                                            | Merchant-visible impact and parallel-model risk                                                                 |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| P10B-02B canonical vocabulary/schema extension | `BrandSystem`, bounded parameters, component compatibility, asset presentation and PageBlueprint/direction reference contracts. | Depends on this specification; unit schema/inheritance/migration/manifest tests. No visual claim yet.                            | Establishes controlled vocabulary. Highest risk is parallel tokens/recipes; extend existing contracts only.     |
+| P10B-03 commercial visual foundations          | Brand CSS-variable projection and shared renderer token consumption.                                                            | Depends on 02B; contrast/type/spacing/container tests plus four-width foundation specimen.                                       | Coherent typography, rhythm and surfaces across all pages.                                                      |
+| P10B-04 image and art-direction authority      | Approved asset presentation and compatible renderer media projection.                                                           | Depends on 02B/03; asset role/provenance/crop fallback tests and desktop/mobile art-direction screenshots.                       | Approved imagery looks intentional without changing commerce media truth.                                       |
+| P10B-05 premium shared frame                   | Header/announcement/navigation/footer families, compatibility and shared-frame profile rules.                                   | Depends on 03; EN/FI long-name, keyboard/focus and four-width screenshots.                                                       | Credible distinctive storefront frame. Risk: do not fork navigation ownership.                                  |
+| P10B-06 hero/editorial/campaign families       | Existing composition families/variants and their asset/narrative compatibility.                                                 | Depends on 03–04; profile/asset/contrast tests and homepage composition screenshots.                                             | Stronger first impression and story pacing.                                                                     |
+| P10B-07 product-card and merchandising system  | Canonical card presentation authority across homepage, collection and related products.                                         | Depends on 03–04; canonical commerce, card-state and product-count responsive tests.                                             | Consistent product merchandising. Risk: consolidate rather than create a third card authority.                  |
+| P10B-08 collection profiles                    | Existing `dynamicCollectionCommerce`, PageBlueprint profile and direction compatibility.                                        | Depends on 05/07; generation-depth, filters/children/bindings and collection screenshots.                                        | Editorial, catalogue and campaign-led collection choices. No new collection page shape/bridge.                  |
+| P10B-09 PDP profiles                           | Existing `dynamicProductDetail`, PageBlueprint profile and direction compatibility.                                             | Depends on 04/05/07; generation-depth, option/media/sticky action and PDP screenshots.                                           | High-consideration, variant-led, editorial-gallery and standard PDP choices. No replacement PDP family.         |
+| P10B-10 cross-page directions                  | Registered direction contract and existing whole-storefront planner validation.                                                 | Depends on 05–09; pairwise direction/profile/renderer-visible diversity evidence.                                                | Briefs yield different complete stores, not palette variants.                                                   |
+| P10B-11 narrative composition                  | Existing narrative roles/flow rules and profile metadata.                                                                       | Depends on composition families/profiles; role/adjacency/cardinality/commerce-placement tests.                                   | Better commercial pacing without unrestricted section generation.                                               |
+| P10B-12 responsive closure                     | Existing responsive contracts, renderer modes and profile constraints.                                                          | Depends on every affected family; 375/768/1024/1440 EN/FI geometry/a11y/screenshots.                                             | Direction remains deliberate and usable at every target width.                                                  |
+| P10B-13 commercial visual-quality gate         | Golden-store and human-commercial-review evidence authorities.                                                                  | Depends on 10–12; structural fingerprints plus retained screenshot/human rubric across lifecycle/surface/locale/viewport matrix. | Reliable commercial-quality evidence. Risk: deterministic evidence must not claim subjective visual pass alone. |
+
+## 20. Explicit non-goals
+
+- No arbitrary CSS, class names, HTML, JavaScript, React, primitive trees, font imports, breakpoint pixels or model-generated renderer code.
+- No parallel token registry, component registry, direction system, recipe engine, page graph, snapshot shape, asset inventory, commerce model or publish pipeline.
+- No mutation of product, variant, option, SKU, price, compare-at price, availability, stock, inventory, canonical product media or provenance.
+- No merchant-specific components, unrestricted image generation, unsupported commercial claims or automatic “premium” quality assertion.
+- No replacement of the existing `dynamicCollectionCommerce`/`dynamicProductDetail` runtime path; P10B only deepens its governed visual/compositional profile range.
+- No change to SDD/DOCX in this specification PR. Material implementation changes will update required documentation in their own PRs.
+
+## Evidence reviewed
+
+This specification is grounded in the merged P10B-01 audit; SDD controlled-family, PageBlueprint, bounded-parameter, inheritance, responsive and quality requirements; `BrandSystem`; component capability manifest/registry; executable PageBlueprint profiles; registered directions; narrative/bounded-parameter validation; collection/PDP runtime generation; asset-role/placement contracts; storefront renderers; P9 diversity fixtures; and golden-store/human-review contracts. Focused tests named in the task validate those factual baselines before delivery.
