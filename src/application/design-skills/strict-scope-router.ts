@@ -1,10 +1,12 @@
-import { storefrontDesignDirectionIdSchema } from "@/application/storefront-design-system";
+import type { storefrontDesignDirectionIdSchema } from "@/application/storefront-design-system";
 import { canonicalValueFingerprint } from "@/domain/storefront";
-import { idSchema, localeSchema } from "@/domain/shared";
+import { idSchema } from "@/domain/shared";
+import type { localeSchema } from "@/domain/shared";
 import { z } from "zod";
 import {
   executeGovernedFollowUpEditing,
   governedFollowUpEditingRequestSchema,
+  validateGovernedFollowUpRouteAuthority,
   type GovernedFollowUpEditingIntegrationResult,
 } from "./follow-up-editing-integration";
 import {
@@ -25,8 +27,9 @@ export const STRICT_SCOPE_ROUTER_CONTRACT_VERSION = "1.0.0";
 
 export const strictScopeRouterScopeSchema = z.enum([
   "designSystem",
-  "exactSlot",
-  "pageInsertion",
+  "selectedSection",
+  "currentPage",
+  "sharedStorefrontFrame",
   "completeStorefront",
 ]);
 export const strictScopeRouterOutcomeSchema = z.enum([
@@ -52,6 +55,7 @@ export const strictScopeRouterReasonCodeSchema = z.enum([
   "unsupportedCommerceMutation",
   "unsupportedPublishingIntent",
   "unsupportedRequest",
+  "unsupportedCanonicalScope",
   "staleRegistryAuthority",
   "staleCapabilityAuthority",
   "authorityRejected",
@@ -166,8 +170,8 @@ const packageByIntent = {
 
 const scopeByPackage = {
   applyExactBrandPalette: "designSystem",
-  improveHero: "exactSlot",
-  addCampaignSection: "pageInsertion",
+  improveHero: "selectedSection",
+  addCampaignSection: "currentPage",
   applyRegisteredWholeStorefrontDirection: "completeStorefront",
 } as const satisfies Readonly<Record<GovernedSkillPackageId, StrictScopeRouterScope>>;
 
@@ -223,6 +227,24 @@ function inferredIntents(normalized: string): readonly z.infer<typeof supportedI
     matches.push("registeredWholeStorefrontDirection");
   }
   return matches;
+}
+
+function inferredCanonicalScope(normalized: string): StrictScopeRouterScope | undefined {
+  if (
+    hasAny(normalized, ["navigation and footer", "header and footer", "shared storefront frame"])
+  ) {
+    return "sharedStorefrontFrame";
+  }
+  if (hasAny(normalized, ["improve the page", "improve this page", "current page"])) {
+    return "currentPage";
+  }
+  if (hasAny(normalized, ["selected section", "this section", "selected component"])) {
+    return "selectedSection";
+  }
+  if (hasAny(normalized, ["complete storefront", "whole storefront"])) {
+    return "completeStorefront";
+  }
+  return undefined;
 }
 
 function unsupportedIntent(normalized: string): StrictScopeRouterReasonCode | undefined {
@@ -317,6 +339,36 @@ function expectedAuthority(
     return { kind: "followUpEditing", authority: request.followUpEditing.authority };
   }
   return undefined;
+}
+
+function resolveAuthorityPackage(
+  request: StrictScopeRouterRequest,
+  authority: Exclude<ReturnType<typeof expectedAuthority>, undefined>,
+  packageId: GovernedSkillPackageId,
+  registry: GovernedSkillPackageRegistry,
+): StrictScopeRouterClarification | StrictScopeRouterUnsupported | undefined {
+  try {
+    if (authority.kind === "initialGeneration") {
+      const initialGeneration = request.initialGeneration;
+      if (!initialGeneration) return clarification("contradictoryExecutionKind", ["executionKind"]);
+      const resolved = registry.resolve(initialGeneration.packageId, "initialGeneration");
+      return resolved.descriptor.id === packageId
+        ? undefined
+        : clarification("ambiguousPackage", ["package"]);
+    }
+    const resolved = registry.resolve(authority.authority.packageId, "followUpEditing");
+    if (resolved.descriptor.id !== packageId) return clarification("ambiguousPackage", ["package"]);
+    if (resolved.alias && packageId === "applyRegisteredWholeStorefrontDirection") {
+      return clarification("deprecatedAliasMisuse", ["package", "registeredDirection"]);
+    }
+    return undefined;
+  } catch (error) {
+    return unsupported(
+      error instanceof Error && error.name === "GovernedSkillPackageError"
+        ? "unknownPackage"
+        : "authorityRejected",
+    );
+  }
 }
 
 function validateDeclaredAuthority(
@@ -448,6 +500,10 @@ export function routeGovernedDesignRequest(
   if (primaryUnsupported) return unsupported(primaryUnsupported);
   const intents = inferredIntents(normalized);
   if (intents.length !== 1) {
+    const canonicalScope = inferredCanonicalScope(normalized);
+    if (canonicalScope !== undefined || request.declaredScope === "sharedStorefrontFrame") {
+      return clarification("unsupportedCanonicalScope", ["scope"]);
+    }
     return clarification(intents.length > 1 ? "ambiguousPackage" : "unsupportedRequest", [
       "package",
     ]);
@@ -491,6 +547,8 @@ export function routeGovernedDesignRequest(
     const direction = request.followUpEditing?.registeredDirectionId;
     if (!direction) return clarification("missingRegisteredDirection", ["registeredDirection"]);
   }
+  const authorityPackage = resolveAuthorityPackage(request, authority, packageId, registry);
+  if (authorityPackage) return authorityPackage;
   const declared = validateDeclaredAuthority(request, authority, packageId);
   if (declared) return declared;
   const validation =
@@ -501,13 +559,32 @@ export function routeGovernedDesignRequest(
     const reasonCode =
       validation.failure.code === "staleRegistryAuthority"
         ? "staleRegistryAuthority"
-        : validation.failure.code === "staleManifestAuthority"
+        : validation.failure.code === "staleManifestAuthority" ||
+            validation.failure.code === "staleProfileAuthority"
           ? "staleCapabilityAuthority"
           : validation.failure.code === "staleProjectAuthority" ||
               validation.failure.code === "staleDraftAuthority"
             ? "missingProjectOrDraftAuthority"
             : "authorityRejected";
     return unsupported(reasonCode);
+  }
+  if (authority.kind === "followUpEditing") {
+    const routeAuthority = validateGovernedFollowUpRouteAuthority(
+      request.followUpEditing,
+      currentAuthority,
+      registry,
+    );
+    if (!routeAuthority.valid) {
+      return unsupported(
+        routeAuthority.failure.code === "staleProfileAuthority"
+          ? "staleCapabilityAuthority"
+          : routeAuthority.failure.code === "invalidSlotSelection"
+            ? "missingExactSlotAuthority"
+            : routeAuthority.failure.code === "unknownPageAuthority"
+              ? "missingPageAuthority"
+              : "authorityRejected",
+      );
+    }
   }
   const pageIds = stableUnique(request.declaredPageIds, (pageId) => pageId);
   const slots = stableUnique(request.declaredSlots, (slot) => `${slot.pageId}:${slot.slotId}`);

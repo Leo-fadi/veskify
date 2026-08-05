@@ -159,7 +159,12 @@ function initial(source: ReturnType<typeof baseline>): GovernedInitialGeneration
 function request(
   input: Readonly<{
     merchantInstruction: string;
-    declaredScope: "designSystem" | "exactSlot" | "pageInsertion" | "completeStorefront";
+    declaredScope:
+      | "designSystem"
+      | "selectedSection"
+      | "currentPage"
+      | "sharedStorefrontFrame"
+      | "completeStorefront";
     initialGeneration?: GovernedInitialGenerationRequest;
     followUpEditing?: GovernedFollowUpEditingRequest;
     requestedPackageId?: string;
@@ -270,7 +275,7 @@ describe("P10A-06 strict scope router", () => {
     const routed = routeGovernedDesignRequest(
       request({
         merchantInstruction: "Improve this hero.",
-        declaredScope: "exactSlot",
+        declaredScope: "selectedSection",
         followUpEditing: exact,
       }),
       source.authority,
@@ -290,7 +295,7 @@ describe("P10A-06 strict scope router", () => {
         routeGovernedDesignRequest(
           request({
             merchantInstruction: "Improve this hero.",
-            declaredScope: "exactSlot",
+            declaredScope: "selectedSection",
             followUpEditing: followUp(source, "improveHero", pages),
           }),
           source.authority,
@@ -308,7 +313,7 @@ describe("P10A-06 strict scope router", () => {
       routeGovernedDesignRequest(
         request({
           merchantInstruction: "Add a campaign section.",
-          declaredScope: "pageInsertion",
+          declaredScope: "currentPage",
           followUpEditing: campaign,
         }),
         source.authority,
@@ -318,12 +323,12 @@ describe("P10A-06 strict scope router", () => {
       routeGovernedDesignRequest(
         request({
           merchantInstruction: "Improve the page.",
-          declaredScope: "pageInsertion",
+          declaredScope: "currentPage",
           followUpEditing: campaign,
         }),
         source.authority,
       ),
-    ).toMatchObject({ outcome: "clarificationRequired", reasonCode: "unsupportedRequest" });
+    ).toMatchObject({ outcome: "clarificationRequired", reasonCode: "unsupportedCanonicalScope" });
   });
 
   it("requires explicit registered direction, exact declared pages, and canonical package authority", () => {
@@ -364,17 +369,151 @@ describe("P10A-06 strict scope router", () => {
     ).toMatchObject({ outcome: "clarificationRequired", reasonCode: "deprecatedAliasMisuse" });
   });
 
+  it("requires the router package and nested governed package to resolve to the same canonical package", () => {
+    const source = baseline("premiumEditorial");
+    const hero = pageAuthority(source, "home", "homepageHero");
+    const direction = followUp(source, "applyRegisteredWholeStorefrontDirection", [hero], {
+      registeredDirectionId: "premiumEditorial",
+    });
+    expect(
+      routeGovernedDesignRequest(
+        request({
+          merchantInstruction: "Improve this hero.",
+          declaredScope: "selectedSection",
+          followUpEditing: direction,
+        }),
+        source.authority,
+      ),
+    ).toMatchObject({ outcome: "clarificationRequired", reasonCode: "ambiguousPackage" });
+    const campaign = followUp(source, "addCampaignSection", [
+      pageAuthority(source, "home", "homepagePromotion"),
+    ]);
+    expect(
+      routeGovernedDesignRequest(
+        request({
+          merchantInstruction: "Apply approved brand palette.",
+          declaredScope: "designSystem",
+          followUpEditing: campaign,
+        }),
+        source.authority,
+      ),
+    ).toMatchObject({ outcome: "clarificationRequired", reasonCode: "ambiguousPackage" });
+    const paletteAlias = followUp(source, "applyBrandPalette", [], {
+      tokenRefinementPlan: palette(source).tokenRefinementPlan,
+    });
+    expect(
+      routeGovernedDesignRequest(
+        request({
+          merchantInstruction: "Apply approved brand palette.",
+          declaredScope: "designSystem",
+          requestedPackageId: "applyBrandPalette",
+          followUpEditing: paletteAlias,
+        }),
+        source.authority,
+      ),
+    ).toMatchObject({
+      outcome: "followUpEditing",
+      decision: { packageId: "applyExactBrandPalette" },
+    });
+  });
+
+  it("validates current page, profile, and slot authority before route-only success", () => {
+    const source = baseline();
+    const hero = pageAuthority(source, "home", "homepageHero");
+    if (!hero.profile) throw new Error("Expected hero profile authority.");
+    const heroFollowUp = followUp(source, "improveHero", [hero]);
+    const valid = request({
+      merchantInstruction: "Improve this hero.",
+      declaredScope: "selectedSection",
+      followUpEditing: heroFollowUp,
+    });
+    expect(routeGovernedDesignRequest(valid, source.authority)).toMatchObject({
+      outcome: "followUpEditing",
+      decision: {
+        declaredPageIds: [hero.pageId],
+        declaredSlots: [{ pageId: hero.pageId, slotId: "hero" }],
+      },
+    });
+    const fabricated = {
+      ...valid,
+      followUpEditing: {
+        ...heroFollowUp,
+        authority: {
+          ...heroFollowUp.authority,
+          pages: [{ ...hero, pageId: "page_fabricated" }],
+        },
+      },
+      declaredPageIds: ["page_fabricated"],
+      declaredSlots: [{ pageId: "page_fabricated", slotId: "hero" }],
+    };
+    expect(routeGovernedDesignRequest(fabricated, source.authority)).toMatchObject({
+      outcome: "unsupported",
+      reasonCode: "missingPageAuthority",
+    });
+    const stale = {
+      ...valid,
+      followUpEditing: {
+        ...heroFollowUp,
+        authority: {
+          ...heroFollowUp.authority,
+          pages: [{ ...hero, profile: { ...hero.profile, fingerprint: "stale-profile" } }],
+        },
+      },
+    };
+    expect(routeGovernedDesignRequest(stale, source.authority)).toMatchObject({
+      outcome: "unsupported",
+      reasonCode: "staleCapabilityAuthority",
+    });
+    const product = pageAuthority(source, "product", "productGallery");
+    const foreignSlot = {
+      ...valid,
+      followUpEditing: {
+        ...heroFollowUp,
+        authority: {
+          ...heroFollowUp.authority,
+          pages: [{ ...hero, selections: product.selections }],
+        },
+      },
+      declaredSlots: [{ pageId: hero.pageId, slotId: product.selections[0].slotId }],
+    };
+    expect(routeGovernedDesignRequest(foreignSlot, source.authority)).toMatchObject({
+      outcome: "clarificationRequired",
+    });
+  });
+
+  it("recognizes canonical unsupported current-page and shared-frame scopes without widening them", () => {
+    const source = baseline();
+    const hero = followUp(source, "improveHero", [pageAuthority(source, "home", "homepageHero")]);
+    for (const input of [
+      request({
+        merchantInstruction: "Improve the page.",
+        declaredScope: "currentPage",
+        followUpEditing: hero,
+      }),
+      request({
+        merchantInstruction: "Improve navigation and footer.",
+        declaredScope: "sharedStorefrontFrame",
+        followUpEditing: hero,
+      }),
+    ]) {
+      expect(routeGovernedDesignRequest(input, source.authority)).toMatchObject({
+        outcome: "clarificationRequired",
+        reasonCode: "unsupportedCanonicalScope",
+      });
+    }
+  });
+
   it("does not widen slot or page scope, and requires clarification for conflicting executions or packages", () => {
     const source = baseline();
     const hero = pageAuthority(source, "home", "homepageHero");
     const follow = followUp(source, "improveHero", [hero]);
     const valid = request({
       merchantInstruction: "Improve this hero.",
-      declaredScope: "exactSlot",
+      declaredScope: "selectedSection",
       followUpEditing: follow,
     });
     expect(
-      routeGovernedDesignRequest({ ...valid, declaredScope: "pageInsertion" }, source.authority),
+      routeGovernedDesignRequest({ ...valid, declaredScope: "currentPage" }, source.authority),
     ).toMatchObject({
       outcome: "clarificationRequired",
       reasonCode: "conflictingScopes",
@@ -405,7 +544,11 @@ describe("P10A-06 strict scope router", () => {
     ]) {
       expect(
         routeGovernedDesignRequest(
-          request({ merchantInstruction, declaredScope: "exactSlot", followUpEditing: follow }),
+          request({
+            merchantInstruction,
+            declaredScope: "selectedSection",
+            followUpEditing: follow,
+          }),
           source.authority,
         ),
       ).toMatchObject({ outcome: "unsupported" });
@@ -417,7 +560,7 @@ describe("P10A-06 strict scope router", () => {
     const follow = followUp(source, "improveHero", [pageAuthority(source, "home", "homepageHero")]);
     const stale = request({
       merchantInstruction: "Improve this hero.",
-      declaredScope: "exactSlot",
+      declaredScope: "selectedSection",
       followUpEditing: {
         ...follow,
         authority: {
@@ -444,7 +587,7 @@ describe("P10A-06 strict scope router", () => {
     const hero = pageAuthority(source, "home", "homepageHero");
     const input = request({
       merchantInstruction: "Improve this hero.",
-      declaredScope: "exactSlot",
+      declaredScope: "selectedSection",
       followUpEditing: followUp(source, "improveHero", [hero]),
     });
     const before = canonicalValueString(source.planningInput);
