@@ -10,6 +10,7 @@ export default async function PublishedCollectionPage({
     <CollectionPreviewClient
       collectionSlug={collectionSlug}
       projectId={projectId}
+      renderTarget="published"
       snapshotKind="published"
     />
   );
