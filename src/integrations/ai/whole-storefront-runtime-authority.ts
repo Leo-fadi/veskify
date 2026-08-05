@@ -21,7 +21,9 @@ import { StorefrontGenerationScopeError } from "@/application/ai-storefront-gene
 import { recordStorefrontDiagnostic } from "@/application/ai-storefront-generation";
 import {
   compileWholeStorefrontProposal,
+  projectWholeStorefrontRuntimePage,
   type WholeStorefrontRuntimeComponent,
+  WholeStorefrontSnapshotMaterializationError,
   WholeStorefrontProposalError,
 } from "@/application/whole-storefront-proposal-lifecycle";
 import { validateDesignOperationAgainstPage } from "@/application/design-operations";
@@ -36,7 +38,6 @@ import {
 import {
   createWholeStorefrontRecipeContext,
   requestWholeStorefrontGenerationPlan,
-  resolveApprovedBrandStoryMedia,
   type ApprovedAssetPresentation,
   WholeStorefrontPlanningProviderError,
   type WholeStorefrontGenerationPlan,
@@ -71,9 +72,7 @@ import { idSchema, type Locale } from "@/domain/shared";
 import {
   storefrontSnapshotSchema,
   type ApprovedAssetPlacementOperation,
-  approvedAssetPresentationSchema,
   type PageModel,
-  type SectionInstance,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import { canonicalValueFingerprint } from "@/domain/storefront";
@@ -360,122 +359,6 @@ function assertRequestDirectionCompatible(
   }
 }
 
-function projectedRuntimeSection(
-  componentInput: WholeStorefrontRuntimeComponent,
-  planningInput: WholeStorefrontPlanningInput,
-  approvedAssetPresentations: readonly ApprovedAssetPresentation[],
-  approvedAssetPlacements: readonly ApprovedAssetPlacementOperation[],
-): SectionInstance {
-  const { visible, ...instance } = componentInput;
-  const component = resolveApprovedBrandStoryMedia(
-    instance,
-    planningInput.approvedAssetContext,
-    approvedAssetPresentations,
-  );
-  const placements = approvedAssetPlacements
-    .filter(
-      (placement) =>
-        placement.componentId === component.id && placement.componentType === component.component,
-    )
-    .map((placement) => structuredClone(placement));
-  const compactAssignments = new Map(
-    component.assetAssignments.map((assignment) => [assignment.slotId, assignment]),
-  );
-  placements.forEach((placement) => {
-    const assignment = compactAssignments.get(placement.assetSlotId);
-    if (
-      !assignment ||
-      assignment.assetId !== placement.assetId ||
-      assignment.role !== placement.role
-    ) {
-      throw new ServerWholeStorefrontAuthorityError("malformed-state");
-    }
-  });
-  const presentations = placements.flatMap((placement) => {
-    const presentation = approvedAssetPresentations.find(
-      (candidate) =>
-        candidate.assetId === placement.assetId &&
-        candidate.role === placement.role &&
-        candidate.revision === placement.assetRevision &&
-        candidate.materialFingerprint === placement.materialFingerprint,
-    );
-    return presentation
-      ? [approvedAssetPresentationSchema.parse(structuredClone(presentation))]
-      : [];
-  });
-  if (component.component === "dynamicCollectionCommerce") {
-    const collection = component.bindings.find((binding) => binding.source === "collection");
-    const products = component.bindings.find((binding) => binding.source === "productList");
-    if (!collection || !products || collection.revision !== products.revision) {
-      throw new ServerWholeStorefrontAuthorityError("malformed-state");
-    }
-    return {
-      id: component.id,
-      component: component.component,
-      variant: component.variant,
-      visible,
-      content: {
-        ...structuredClone(component.content),
-        collectionId: collection.collectionId,
-        productIds: [...products.productIds],
-        canonicalRevision: collection.revision,
-      },
-      props: structuredClone(component.props),
-      approvedAssetPlacements: placements,
-      approvedAssetPresentations: presentations,
-    };
-  }
-  if (component.component === "dynamicProductDetail") {
-    const product = component.bindings.find((binding) => binding.source === "product");
-    const related = component.bindings.find((binding) => binding.source === "productList");
-    if (!product) throw new ServerWholeStorefrontAuthorityError("malformed-state");
-    return {
-      id: component.id,
-      component: component.component,
-      variant: component.variant,
-      visible,
-      content: {
-        ...structuredClone(component.content),
-        productId: product.productId,
-        relatedProductIds: related ? [...related.productIds] : [],
-        canonicalRevision: product.revision,
-      },
-      props: structuredClone(component.props),
-      approvedAssetPlacements: placements,
-      approvedAssetPresentations: presentations,
-    };
-  }
-  if (component.component === "homepageFeaturedProducts") {
-    const products = component.bindings.find(
-      (
-        binding,
-      ): binding is Extract<(typeof component.bindings)[number], { source: "productList" }> =>
-        binding.source === "productList" && binding.slotId === "products",
-    );
-    if (!products) throw new ServerWholeStorefrontAuthorityError("malformed-state");
-    return {
-      id: component.id,
-      component: component.component,
-      variant: component.variant,
-      visible,
-      content: { ...structuredClone(component.content), productIds: [...products.productIds] },
-      props: structuredClone(component.props),
-      approvedAssetPlacements: placements,
-      approvedAssetPresentations: presentations,
-    };
-  }
-  return {
-    id: component.id,
-    component: component.component,
-    variant: component.variant,
-    visible,
-    content: structuredClone(component.content),
-    props: structuredClone(component.props),
-    approvedAssetPlacements: placements,
-    approvedAssetPresentations: presentations,
-  };
-}
-
 function compiledProjectedPage(
   currentPage: PageModel,
   components: readonly WholeStorefrontRuntimeComponent[],
@@ -483,17 +366,20 @@ function compiledProjectedPage(
   approvedAssetPresentations: readonly ApprovedAssetPresentation[],
   approvedAssetPlacements: readonly ApprovedAssetPlacementOperation[],
 ): PageModel {
-  return {
-    ...structuredClone(currentPage),
-    sections: components.map((component) =>
-      projectedRuntimeSection(
-        component,
-        planningInput,
-        approvedAssetPresentations,
-        approvedAssetPlacements.filter((placement) => placement.pageId === currentPage.id),
-      ),
-    ),
-  };
+  try {
+    return projectWholeStorefrontRuntimePage(
+      currentPage,
+      components,
+      planningInput,
+      approvedAssetPresentations,
+      approvedAssetPlacements,
+    );
+  } catch (error) {
+    if (error instanceof WholeStorefrontSnapshotMaterializationError) {
+      throw new ServerWholeStorefrontAuthorityError("malformed-state");
+    }
+    throw error;
+  }
 }
 
 function projectPlanOperations(

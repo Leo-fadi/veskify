@@ -313,6 +313,23 @@ and unresolved migrations. Published storefronts require no LLM, Puck runtime, p
 object or browser-accessible Vesko/provider credentials. Cart, checkout, order, inventory and
 pricing mutation remain separate commerce operations.
 
+P10A-08B establishes the server-owned accepted-snapshot publication authority seam. After an
+authoritative proposal acceptance transaction, a server-only service may mint one immutable,
+canonically fingerprinted receipt that binds the exact accepted `StorefrontSnapshot` to its project,
+draft, proposal, review, accepted-runtime, registry, manifest, governed package/profile, commerce
+and approved-asset authority where represented. The receipt repository is create-once and rejects
+replay, collision, malformed, modified, missing, stale and cross-authority use. AI-originated
+publication preparation accepts only the receipt identity, resolves trusted storage and validates
+current authority; confirmation resolves and validates it again before a publication write. Manual
+publication remains an explicit separate authority and cannot claim AI acceptance lineage.
+
+This seam does not complete active-route publishing. Its in-memory repository is deterministic
+contract evidence, not durable production storage. The current merchant browser publish route is
+not migrated by P10A-08B and continues through explicit manual authority. P10A-08C owns authoritative
+acceptance-endpoint wiring, durable receipt persistence, browser/gateway enforcement, compiled
+runtime publication, atomic active-version switching and rollback closure. Until P10A-08C, the
+active merchant route does not enforce end-to-end AI acceptance lineage.
+
 ### P10B asset governance and Storefront Studio
 
 P10B follows P10A and consumes its capability/scope contracts:
@@ -1626,11 +1643,17 @@ The approved product direction is one native Vesko module, not a collection of d
 ## 14.3 Save and publish clarity
 - Accepting an AI proposal changes the active draft only.
 
+- A server-authoritative accepted proposal may mint immutable publication authority for that exact
+  accepted snapshot; preview, rejection and browser/provider content cannot mint it.
+
 - Save draft persists work without changing the customer-facing storefront.
 
 - Publish opens a final review and explicitly replaces the published version.
 
 - History restore creates a new draft and never silently republishes an older version.
+
+- Undo invalidates a prior AI acceptance receipt until redo restores the exact current runtime,
+  proposal/review, snapshot and revision authority; visually matching content alone is insufficient.
 
 - Status text and button hierarchy must make these differences obvious to a first-time merchant.
 
