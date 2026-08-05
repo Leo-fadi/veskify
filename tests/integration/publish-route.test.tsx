@@ -1,6 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { PublishClient } from "@/app/projects/[projectId]/publish/publish-client";
+import {
+  AuthoritativeMerchantPublishClientError,
+  type MerchantPublishGatewayClient,
+} from "@/app/projects/[projectId]/publish/authoritative-publish-client";
+import { confirmPublish, preparePublish } from "@/application/publishing";
 import { aurumNordicSeed } from "@/data/seed";
 import {
   InMemoryProjectRepository,
@@ -39,8 +44,41 @@ async function saveDraftTitle(value: InMemoryProjectRepository, title: string) {
   });
 }
 
-function route(value: ProjectRepository) {
-  return render(<PublishClient projectId={projectId} repositoryFactory={() => value} />);
+function gatewayFor(source: ProjectRepository): MerchantPublishGatewayClient {
+  const preparations = new Map<string, Awaited<ReturnType<typeof preparePublish>>>();
+  return {
+    prepare: vi.fn(
+      async ({
+        projectId: requestedProjectId,
+      }: Parameters<MerchantPublishGatewayClient["prepare"]>[0]) => {
+        const preparation = await preparePublish(requestedProjectId, source);
+        preparations.set(preparation.preparationId, preparation);
+        return preparation;
+      },
+    ),
+    confirm: vi.fn(
+      async ({ preparationId }: Parameters<MerchantPublishGatewayClient["confirm"]>[0]) => {
+        const preparation = preparations.get(preparationId);
+        if (!preparation)
+          throw new AuthoritativeMerchantPublishClientError("missing-preparation", 409);
+        const result = await confirmPublish(preparation, source);
+        return { projectRevision: result.aggregate.project.revision };
+      },
+    ),
+  };
+}
+
+function route(
+  value: ProjectRepository,
+  gateway: MerchantPublishGatewayClient = gatewayFor(value),
+) {
+  return render(
+    <PublishClient
+      projectId={projectId}
+      publishGateway={gateway}
+      repositoryFactory={() => value}
+    />,
+  );
 }
 
 function forward(
@@ -74,18 +112,21 @@ describe("P2-12 publish confirmation route", () => {
   });
 
   it("reviews only saved draft content without writing", async () => {
-    const value = repository();
-    await saveDraftTitle(value, "Saved only draft");
-    const before = await value.get(projectId);
-    const publish = vi.spyOn(value, "publish");
-    route(value);
+    const source = repository();
+    await saveDraftTitle(source, "Saved only draft");
+    const before = await source.get(projectId);
+    const browserPublish = vi.fn();
+    const reader = forward(source, { publish: browserPublish });
+    const gateway = gatewayFor(source);
+    route(reader, gateway);
 
     fireEvent.click(await screen.findByRole("button", { name: "Review publish" }));
 
     expect(await screen.findByText("Saved only draft")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Confirm publication" })).toBeVisible();
-    expect(publish).not.toHaveBeenCalled();
-    expect(await value.get(projectId)).toEqual(before);
+    expect(gateway.prepare).toHaveBeenCalledTimes(1);
+    expect(browserPublish).not.toHaveBeenCalled();
+    expect(await source.get(projectId)).toEqual(before);
   });
 
   it("blocks confirmation when the saved draft has no changes", async () => {
@@ -102,10 +143,12 @@ describe("P2-12 publish confirmation route", () => {
   });
 
   it("publishes the exact reviewed saved draft and exposes success links", async () => {
-    const value = repository();
-    await saveDraftTitle(value, "Exact prepared draft");
-    const before = await value.get(projectId);
-    route(value);
+    const source = repository();
+    await saveDraftTitle(source, "Exact prepared draft");
+    const before = await source.get(projectId);
+    const browserPublish = vi.fn();
+    const gateway = gatewayFor(source);
+    route(forward(source, { publish: browserPublish }), gateway);
     fireEvent.click(await screen.findByRole("button", { name: "Review publish" }));
     await screen.findByRole("heading", { name: "Confirm publication" });
     fireEvent.click(screen.getByRole("button", { name: "Publish storefront" }));
@@ -113,7 +156,9 @@ describe("P2-12 publish confirmation route", () => {
     expect(
       await screen.findByRole("heading", { name: "Storefront published successfully" }),
     ).toBeVisible();
-    const after = await value.get(projectId);
+    expect(gateway.confirm).toHaveBeenCalledTimes(1);
+    expect(browserPublish).not.toHaveBeenCalled();
+    const after = await source.get(projectId);
     const published = after.snapshots.find(
       (snapshot) => snapshot.id === after.project.publishedSnapshotId,
     )!;
@@ -148,14 +193,16 @@ describe("P2-12 publish confirmation route", () => {
   });
 
   it("blocks a stale confirmation and lets the merchant review the latest saved draft", async () => {
-    const inner = repository();
-    await saveDraftTitle(inner, "Initial review");
+    const source = repository();
+    await saveDraftTitle(source, "Initial review");
     let staleOnce = true;
-    const value = forward(inner, {
-      publish: async (id, expectation) => {
+    const baseGateway = gatewayFor(source);
+    const gateway: MerchantPublishGatewayClient = {
+      ...baseGateway,
+      confirm: vi.fn(async (input: Parameters<MerchantPublishGatewayClient["confirm"]>[0]) => {
         if (staleOnce) {
           staleOnce = false;
-          const current = await inner.get(id);
+          const current = await source.get(input.projectId);
           const currentDraft = current.snapshots.find(
             (snapshot) => snapshot.id === current.project.draftSnapshotId,
           )!;
@@ -163,15 +210,15 @@ describe("P2-12 publish confirmation route", () => {
           newer.id = "snapshot_publish_route_newer_saved_draft";
           newer.createdAt = new Date(Date.parse(newer.createdAt) + 1_000).toISOString();
           newer.pages[0].title.en = "Newer saved draft";
-          await inner.saveDraft(id, newer, {
+          await source.saveDraft(input.projectId, newer, {
             id: currentDraft.id,
             revision: currentDraft.revision,
           });
         }
-        return inner.publish(id, expectation);
-      },
-    });
-    route(value);
+        throw new AuthoritativeMerchantPublishClientError("savedDraftMismatch", 409);
+      }),
+    };
+    route(forward(source, { publish: vi.fn() }), gateway);
     fireEvent.click(await screen.findByRole("button", { name: "Review publish" }));
     await screen.findByRole("heading", { name: "Confirm publication" });
     fireEvent.click(screen.getByRole("button", { name: "Publish storefront" }));
@@ -186,28 +233,29 @@ describe("P2-12 publish confirmation route", () => {
   });
 
   it("prevents duplicate confirmation while publication is pending", async () => {
-    const inner = repository();
-    await saveDraftTitle(inner, "Pending publication");
-    let resolvePublish: ((aggregate: ProjectAggregate) => void) | undefined;
-    let expectation: Parameters<ProjectRepository["publish"]>[1] | undefined;
-    const publish = vi.fn(
-      (_id: string, nextExpectation: Parameters<ProjectRepository["publish"]>[1]) =>
-        new Promise<ProjectAggregate>((resolve) => {
-          expectation = nextExpectation;
-          resolvePublish = resolve;
-        }),
-    );
-    const value = forward(inner, { publish });
-    route(value);
+    const source = repository();
+    await saveDraftTitle(source, "Pending publication");
+    const baseGateway = gatewayFor(source);
+    let resolveConfirmation: ((value: { projectRevision: number }) => void) | undefined;
+    const gateway: MerchantPublishGatewayClient = {
+      ...baseGateway,
+      confirm: vi.fn(
+        () =>
+          new Promise<{ projectRevision: number }>((resolve) => {
+            resolveConfirmation = resolve;
+          }),
+      ),
+    };
+    route(forward(source, { publish: vi.fn() }), gateway);
     fireEvent.click(await screen.findByRole("button", { name: "Review publish" }));
     await screen.findByRole("heading", { name: "Confirm publication" });
     const publishButton = screen.getByRole("button", { name: "Publish storefront" });
     fireEvent.click(publishButton);
     fireEvent.click(publishButton);
 
-    await waitFor(() => expect(publish).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(gateway.confirm).toHaveBeenCalledTimes(1));
     expect(screen.getByRole("button", { name: "Publishing storefront…" })).toBeDisabled();
-    resolvePublish?.(await inner.publish(projectId, expectation!));
+    resolveConfirmation?.({ projectRevision: 3 });
   });
 
   it("uses Finnish merchant copy and hides repository details in controlled failures", async () => {
@@ -226,12 +274,13 @@ describe("P2-12 publish confirmation route", () => {
   });
 
   it("presents preparation and publish failures safely without retrying automatically", async () => {
-    const get = vi
-      .fn<ProjectRepository["get"]>()
-      .mockResolvedValueOnce(aggregate())
-      .mockRejectedValueOnce(new Error("preparation stack detail"));
-    const preparationFailure = forward(repository(), { get });
-    const first = route(preparationFailure);
+    const preparationFailure: MerchantPublishGatewayClient = {
+      prepare: vi.fn(() =>
+        Promise.reject(new AuthoritativeMerchantPublishClientError("invalid-request", 400)),
+      ),
+      confirm: vi.fn(),
+    };
+    const first = route(repository(), preparationFailure);
     fireEvent.click(await screen.findByRole("button", { name: "Review publish" }));
     expect(await screen.findByText(/could not be reviewed for publishing/i)).toBeVisible();
     expect(screen.queryByText(/preparation stack detail/i)).not.toBeInTheDocument();
@@ -239,11 +288,17 @@ describe("P2-12 publish confirmation route", () => {
 
     const value = repository();
     await saveDraftTitle(value, "Publish failure");
-    route(forward(value, { publish: () => Promise.reject(new Error("publish stack detail")) }));
+    const failingGateway: MerchantPublishGatewayClient = {
+      ...gatewayFor(value),
+      confirm: vi.fn(() =>
+        Promise.reject(new AuthoritativeMerchantPublishClientError("savedDraftMismatch", 409)),
+      ),
+    };
+    route(forward(value, { publish: vi.fn() }), failingGateway);
     fireEvent.click(await screen.findByRole("button", { name: "Review publish" }));
     await screen.findByRole("heading", { name: "Confirm publication" });
     fireEvent.click(screen.getByRole("button", { name: "Publish storefront" }));
-    expect(await screen.findByText(/could not be confirmed safely/i)).toBeVisible();
+    expect(await screen.findByText(/changed after your review/i)).toBeVisible();
     expect(screen.queryByText(/publish stack detail/i)).not.toBeInTheDocument();
   });
 });

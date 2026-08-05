@@ -1,4 +1,8 @@
 import {
+  type AcceptedSnapshotCurrentAuthoritySource,
+  type AcceptedSnapshotPublishReceiptRepository,
+} from "@/application/accepted-snapshot-publishing";
+import {
   confirmPublish,
   InvalidPublishPreparationError,
   NoPublishableChangesError,
@@ -57,6 +61,10 @@ export type AuthoritativePublishingAdapterInput = Readonly<{
   contextPort: MerchantProjectContextPort;
   publishPreparations: AuthoritativePublishPreparationReader;
   revisionMapper: AuthoritativePublishingRevisionMapper;
+  acceptedSnapshotAuthority?: Readonly<{
+    receiptRepository: AcceptedSnapshotPublishReceiptRepository;
+    currentAuthoritySource: AcceptedSnapshotCurrentAuthoritySource;
+  }>;
 }>;
 
 export type StandaloneAuthoritativePublishingAdapterInput = Omit<
@@ -376,6 +384,18 @@ async function executePublish(
   try {
     await confirmPublish(preparation, input.projectRepository, {
       publicationOperation: operation,
+      authority:
+        preparation.authority.kind === "accepted-ai"
+          ? input.acceptedSnapshotAuthority
+            ? {
+                kind: "accepted-ai",
+                receiptRepository: input.acceptedSnapshotAuthority.receiptRepository,
+                currentAuthoritySource: input.acceptedSnapshotAuthority.currentAuthoritySource,
+              }
+            : (() => {
+                throw new VeskoIntegrationError("publishingUnavailable");
+              })()
+          : { kind: "manual" },
     });
     const completed = await loadCompletedPublication(
       publicationOperationIdentity(request),

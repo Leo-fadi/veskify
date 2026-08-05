@@ -6,16 +6,18 @@ export default async function PublishPage({
   searchParams,
 }: {
   params: Promise<{ projectId: string }>;
-  searchParams: Promise<{ "p9-05b-session"?: string }>;
+  searchParams: Promise<{ "p9-05b-session"?: string; "accepted-receipt"?: string }>;
 }) {
   const { projectId } = await params;
-  const sessionId = (await searchParams)["p9-05b-session"];
+  const query = await searchParams;
+  const sessionId = query["p9-05b-session"];
   const localDemoBridge =
     projectId === "project_lumo_fresh" && sessionId
       ? await loadP905bLocalDemoEditorSession({ projectId, sessionId }).catch(() => null)
       : null;
   return (
     <PublishClient
+      acceptedReceiptId={query["accepted-receipt"]}
       projectId={projectId}
       localDemoSession={
         localDemoBridge
