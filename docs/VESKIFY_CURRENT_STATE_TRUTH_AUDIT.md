@@ -238,22 +238,30 @@ currently implies:
 1. **Controlled-provider acceptance is Blocked.** Re-run P10A-07C-03 only under explicit approval
    when trusted server configuration selects an eligible OpenAI provider and model. Case A must
    succeed before Case B; no retry is permitted.
-2. **Accepted-AI merchant wiring is Partial.** Connect the server-only acceptance authority to the
-   authoritative accepted proposal endpoint, persist the receipt through the existing durable
-   repository, and inject the trusted accepted-AI authority into the active gateway composition.
+2. **Accepted-AI publication composition is Partial.** Connect the server-only acceptance authority
+   to the authoritative accepted proposal endpoint, persist the receipt through the existing
+   durable repository, and inject the trusted accepted-AI authority into the active gateway
+   composition.
 3. **P10A-08C-02B is Planned.** Atomically persist the immutable compiled artifact with publication
    history and active artifact/version authority, and define safe rollback/republish without a
    second editable model.
 4. **P10A-08D-02 is Planned.** Prove the current gateway/compiler/published home, collection, and PDP
    journey with final browser and retained manual evidence, including failed compilation,
    no-partial-write, active-version, rollback, and zero-provider publication evidence.
-5. **Merchant route convergence is Partial.** Decide whether P10A closure itself wires the strict
-   router/governed packages into the editor or records that work as P10C reachability. The current
-   roadmap says P10A owns governed execution and P10C owns merchant-operable editing; v1.3.0 must
-   state the exact boundary and acceptance proof.
 
 P10A does not need another registry, proposal model, recipe engine, component system, provider, or
 publish command.
+
+### Decided P10A/P10C editor boundary
+
+Governed initial generation, governed follow-up execution, package authority, strict routing, the
+proposal lifecycle, and their internal functional evidence are P10A authorities. P10A may still
+require internal functional or evidence closure for those contracts, but merchant-facing controls
+are not a P10A closure requirement.
+
+P10C owns connecting the normal Storefront Studio UI to those authorities, including merchant-facing
+routing, clarification UI, frame/page scope controls, and scoped execution through the editor. That
+ownership is an existing binding architecture decision, not an open phase-boundary choice.
 
 ## 9. Commercial storefront quality ceiling and viable path
 
@@ -331,16 +339,20 @@ merely untested.
 
 ## 12. Decisions required for SDD v1.3.0 synchronization
 
-The later synchronization must make these decisions explicitly:
+The later synchronization must make or preserve these decisions explicitly:
 
 1. Choose the new verified baseline commit and date and identify historical evidence that remains
    valid without pretending it proves current output.
 2. Record Phase 9 as closed by product-owner handoff while preserving its incomplete commercial
    and full-matrix evidence truth.
-3. Split P10A status by implemented authority, merchant reachability, controlled-provider evidence,
-   compiled-artifact persistence, rollback, and final render evidence.
-4. Decide the acceptance boundary between P10A internal governed execution and P10C merchant-facing
-   scope controls; name the route that must call the strict router.
+3. Split P10A status by implemented internal authority, functional evidence,
+   controlled-provider evidence, compiled-artifact persistence, rollback, and final render
+   evidence; track merchant reachability under P10C rather than as a P10A closure blocker.
+4. Preserve and document the binding phase boundary: P10A owns internal governed execution,
+   package and strict-routing authority, proposal lifecycle, and functional evidence; P10C owns
+   merchant-facing routing, clarification, frame/page scope controls, and scoped Storefront Studio
+   execution. Name the P10C route that must call the strict router without presenting ownership as
+   an open architectural choice.
 5. Confirm that PageBlueprint profiles are the sole executable recipe authority and define the
    retirement path for duplicated template/direction recipe material.
 6. Define the migration policy for the legacy V1 registry/Puck bridge and the exact zero-blocker
