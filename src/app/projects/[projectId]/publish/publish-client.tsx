@@ -12,6 +12,7 @@ import {
   type ProjectAggregate,
 } from "@/services/storage";
 import {
+  loadP905bLocalDemoSavedAggregate,
   P905bLocalDemoSynchronizationClientError,
   synchronizeP905bLocalDemoAggregate,
 } from "@/integrations/ai/p9-05b-local-demo-client";
@@ -90,12 +91,14 @@ export function PublishClient({
   publishGateway,
   acceptedReceiptId,
   localDemoSession,
+  initialAggregate,
 }: {
   projectId: string;
   repositoryFactory?: RepositoryFactory;
   publishGateway?: MerchantPublishGatewayClient;
   acceptedReceiptId?: string;
   localDemoSession?: { sessionId: string; authoritativeRevision: number };
+  initialAggregate?: ProjectAggregate;
 }) {
   const repository = useRef<ProjectReader | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -114,8 +117,7 @@ export function PublishClient({
 
   useEffect(() => {
     let cancelled = false;
-    repository
-      .current!.get(projectId)
+    Promise.resolve(initialAggregate ?? repository.current!.get(projectId))
       .then((aggregate) => {
         if (cancelled) return;
         setLocale(aggregate.project.primaryLocale);
@@ -128,7 +130,7 @@ export function PublishClient({
     return () => {
       cancelled = true;
     };
-  }, [attempt, projectId]);
+  }, [attempt, initialAggregate, projectId]);
 
   const retryLoad = () => {
     requestId.current = undefined;
@@ -187,12 +189,22 @@ export function PublishClient({
     );
   }
 
-  const review = async () => {
+  const review = async ({ reloadLatestLocalDemo = false } = {}) => {
     setPublishState({ status: "preparing" });
     try {
+      let aggregate = loadState.aggregate;
+      if (localDemoSession && reloadLatestLocalDemo) {
+        const latest = await loadP905bLocalDemoSavedAggregate({
+          projectId,
+          sessionId: localDemoSession.sessionId,
+        });
+        aggregate = latest.aggregate;
+        setLoadState({ status: "success", aggregate });
+        setAuthoritativeRevision(latest.authoritativeRevision);
+      }
       requestId.current ??= `publish_request_${crypto.randomUUID().replaceAll("-", "")}`;
       if (!requestId.current) throw new Error("Missing publication request identity.");
-      if (localDemoSession) {
+      if (localDemoSession && !reloadLatestLocalDemo) {
         if (authoritativeRevision === null) {
           throw new P905bLocalDemoSynchronizationClientError("stale", 409);
         }
@@ -201,7 +213,7 @@ export function PublishClient({
           sessionId: localDemoSession.sessionId,
           expectedRevision: authoritativeRevision,
           mode: "saved",
-          aggregate: loadState.aggregate,
+          aggregate,
         });
         setAuthoritativeRevision(synchronization.authoritativeRevision);
       }
@@ -230,7 +242,7 @@ export function PublishClient({
 
   const startLatestReview = () => {
     requestId.current = undefined;
-    void review();
+    void review({ reloadLatestLocalDemo: Boolean(localDemoSession) });
   };
 
   const publish = async () => {

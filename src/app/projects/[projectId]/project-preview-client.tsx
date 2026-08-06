@@ -8,12 +8,10 @@ import {
   validateStorefrontHomepage,
 } from "@/components/storefront/storefront-page";
 import { brandSystemToCssVariables } from "@/domain/design-system";
-import { catalogueDisplayModelSchema } from "@/domain/catalogue";
-import { projectSchema } from "@/domain/project";
 import type { Locale } from "@/domain/shared";
-import { storefrontSnapshotSchema } from "@/domain/storefront";
 import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
 import { createBrowserProjectRepository, ProjectNotFoundError } from "@/services/storage";
+import { loadP905bLocalDemoPublishedProjection } from "@/integrations/ai/p9-05b-local-demo-client";
 import {
   previewLabel,
   previewPathPrefix,
@@ -39,43 +37,6 @@ type LoadState =
     };
 
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
-
-async function loadPublishedSessionProjection(input: {
-  projectId: string;
-  sessionId: string;
-}): Promise<ProjectAggregate> {
-  const response = await fetch(
-    `/api/demo/p9-05b/published?projectId=${encodeURIComponent(input.projectId)}`,
-    {
-      headers: { "x-veskify-p9-05b-session": input.sessionId },
-    },
-  );
-  const body: unknown = await response.json().catch(() => null);
-  if (
-    !response.ok ||
-    !body ||
-    typeof body !== "object" ||
-    !("ok" in body) ||
-    body.ok !== true ||
-    !("projection" in body) ||
-    !body.projection ||
-    typeof body.projection !== "object"
-  ) {
-    throw new ProjectNotFoundError(input.projectId);
-  }
-  const projection = body.projection;
-  const project = "project" in projection ? projectSchema.safeParse(projection.project) : null;
-  const catalogue =
-    "catalogue" in projection ? catalogueDisplayModelSchema.safeParse(projection.catalogue) : null;
-  const publishedSnapshot =
-    "publishedSnapshot" in projection
-      ? storefrontSnapshotSchema.safeParse(projection.publishedSnapshot)
-      : null;
-  if (!project?.success || !catalogue?.success || !publishedSnapshot?.success) {
-    throw new ProjectNotFoundError(input.projectId);
-  }
-  return { project: project.data, catalogue: catalogue.data, snapshots: [publishedSnapshot.data] };
-}
 
 function StatusPanel({
   title,
@@ -131,7 +92,7 @@ export function ProjectPreviewClient({
     Promise.resolve(
       initialAggregate ??
         (snapshotKind === "published" && publishedSessionId
-          ? loadPublishedSessionProjection({ projectId, sessionId: publishedSessionId })
+          ? loadP905bLocalDemoPublishedProjection({ projectId, sessionId: publishedSessionId })
           : repository.current!.get(projectId)),
     )
       .then((aggregate) => {
@@ -158,6 +119,9 @@ export function ProjectPreviewClient({
             catalogue: aggregate.catalogue,
             snapshot: draft,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+            pagePathSuffix: publishedSessionId
+              ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
+              : "",
             renderTarget: snapshotKind === "published" ? "published" : "preview",
           });
           void renderStorefrontPage(homepage, context);
@@ -259,6 +223,9 @@ export function ProjectPreviewClient({
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+    pagePathSuffix: publishedSessionId
+      ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
+      : "",
     renderTarget: snapshotKind === "published" ? "published" : "preview",
   });
 

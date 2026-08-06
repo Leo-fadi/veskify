@@ -18,6 +18,7 @@ import { brandSystemToCssVariables } from "@/domain/design-system";
 import type { Locale } from "@/domain/shared";
 import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
 import { createBrowserProjectRepository, ProjectNotFoundError } from "@/services/storage";
+import { loadP905bLocalDemoPublishedProjection } from "@/integrations/ai/p9-05b-local-demo-client";
 import {
   previewLabel,
   previewPathPrefix,
@@ -89,6 +90,7 @@ type ProductPreviewClientProps = {
   historicalSnapshotId?: string;
   commerceAdapter?: StorefrontCommerceRouteAdapter;
   onPrimaryAction?: ProductPrimaryActionIntentCallback;
+  publishedSessionId?: string;
 };
 
 export function ProductPreviewClient(props: ProductPreviewClientProps) {
@@ -104,6 +106,7 @@ function ProductPreviewLoader({
   historicalSnapshotId,
   commerceAdapter = defaultCommerceAdapter,
   onPrimaryAction = ignorePrimaryAction,
+  publishedSessionId,
 }: ProductPreviewClientProps) {
   const effectiveRenderTarget =
     renderTarget ?? (snapshotKind === "published" ? "published" : "preview");
@@ -115,8 +118,10 @@ function ProductPreviewLoader({
 
   useEffect(() => {
     let cancelled = false;
-    repository
-      .current!.get(projectId)
+    (snapshotKind === "published" && publishedSessionId
+      ? loadP905bLocalDemoPublishedProjection({ projectId, sessionId: publishedSessionId })
+      : repository.current!.get(projectId)
+    )
       .then((aggregate) => {
         if (cancelled) return;
         const draft = aggregate.snapshots.find(
@@ -145,6 +150,9 @@ function ProductPreviewLoader({
             catalogue: aggregate.catalogue,
             snapshot: draft,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+            pagePathSuffix: publishedSessionId
+              ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
+              : "",
             renderTarget: effectiveRenderTarget,
           });
           validateRegisteredPage(productPage, context);
@@ -201,6 +209,7 @@ function ProductPreviewLoader({
     projectId,
     effectiveRenderTarget,
     snapshotKind,
+    publishedSessionId,
   ]);
 
   const retry = () => {
@@ -277,6 +286,9 @@ function ProductPreviewLoader({
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+    pagePathSuffix: publishedSessionId
+      ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
+      : "",
     renderTarget: effectiveRenderTarget,
   });
   return (
@@ -289,7 +301,9 @@ function ProductPreviewLoader({
         <div>
           <Link
             className="project-preview__back"
-            href={previewPathPrefix(projectId, snapshotKind, historicalSnapshotId)}
+            href={`${previewPathPrefix(projectId, snapshotKind, historicalSnapshotId)}${
+              publishedSessionId ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}` : ""
+            }`}
           >
             Storefront home
           </Link>

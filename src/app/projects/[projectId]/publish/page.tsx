@@ -18,6 +18,7 @@ export default async function PublishPage({
   return (
     <PublishClient
       acceptedReceiptId={query["accepted-receipt"]}
+      initialAggregate={localDemoBridge?.aggregate}
       projectId={projectId}
       localDemoSession={
         localDemoBridge

@@ -138,9 +138,18 @@ test("keeps published navigation on the immutable published snapshot", async ({ 
   await expect(page.getByRole("heading", { name: "Published storefront content" })).toBeVisible();
   await expect(page.getByText("Draft preview")).toHaveCount(0);
   await page.getByRole("link", { name: "Jewellery", exact: true }).click();
-  await expect(page).toHaveURL(`/projects/${projectId}/published/collections/jewellery`);
-  await page.getByRole("link", { name: "Custom Halo Ring", exact: true }).first().click();
-  await expect(page).toHaveURL(`/projects/${projectId}/published/products/custom-halo-ring`);
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === `/projects/${projectId}/published/collections/jewellery` &&
+      url.searchParams.get("p9-05b-session") === sessionId,
+  );
+  await page.getByRole("radio", { name: "English" }).check();
+  await page.getByRole("button", { name: "Custom Halo Ring", exact: true }).click();
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === `/projects/${projectId}/published/products/custom-halo-ring` &&
+      url.searchParams.get("p9-05b-session") === sessionId,
+  );
   await expect(page.getByText("Published storefront")).toBeVisible();
 });
 

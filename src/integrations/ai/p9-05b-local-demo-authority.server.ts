@@ -506,6 +506,24 @@ export async function loadP905bLocalDemoEditorSession(input: {
   };
 }
 
+/** Loads the saved session authority for a fresh local-demo review lifecycle. */
+export async function loadP905bLocalDemoSavedAggregate(input: {
+  projectId: string;
+  sessionId: string;
+  environment?: DemoEnvironment;
+}): Promise<{
+  aggregate: ProjectAggregate;
+  authoritativeRevision: number;
+} | null> {
+  const bridge = await loadP905bLocalDemoEditorSession(input);
+  return bridge
+    ? {
+        aggregate: bridge.aggregate,
+        authoritativeRevision: bridge.authoritativeRevision,
+      }
+    : null;
+}
+
 export function p905bLocalDemoRepository(
   environment: DemoEnvironment = process.env,
 ): InMemoryProjectRepository {
