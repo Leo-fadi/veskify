@@ -10,6 +10,7 @@ vi.mock("server-only", () => ({}));
 import {
   InMemoryAcceptedSnapshotPublishReceiptRepository,
   acceptedSnapshotPublishReceiptFingerprint,
+  type AcceptedSnapshotCurrentAuthority,
   type AcceptedSnapshotCurrentAuthoritySource,
   type AcceptedSnapshotPublishReceipt,
 } from "@/application/accepted-snapshot-publishing";
@@ -19,7 +20,6 @@ import {
   AuthoritativeMerchantPublishError,
   AuthoritativeMerchantPublishService,
   InMemoryMerchantPublishPreparationStore,
-  acceptedSnapshotCurrentAuthorityFromReceipt,
 } from "@/application/publishing/authoritative-merchant-publish.server";
 import { createStandaloneMerchantProjectContextPort } from "@/application/merchant-project-context";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
@@ -117,11 +117,30 @@ async function trustedReceipt(
   return { ...unsigned, fingerprint: acceptedSnapshotPublishReceiptFingerprint(unsigned) };
 }
 
+function authorityRecordedAtAcceptance(
+  receipt: AcceptedSnapshotPublishReceipt,
+): AcceptedSnapshotCurrentAuthority {
+  return {
+    proposalId: receipt.proposalId,
+    proposalRevision: receipt.proposalRevision,
+    proposalFingerprint: receipt.proposalFingerprint,
+    reviewRevision: receipt.reviewRevision,
+    reviewFingerprint: receipt.reviewFingerprint,
+    acceptedRuntimeFingerprint: receipt.acceptedRuntimeFingerprint,
+    componentRegistryFingerprint: receipt.componentRegistryFingerprint,
+    manifest: receipt.manifest,
+    packageRegistry: receipt.packageRegistry,
+    profileAuthorities: receipt.profileAuthorities,
+    commerceFingerprint: receipt.commerceFingerprint,
+    approvedAssetFingerprint: receipt.approvedAssetFingerprint,
+  };
+}
+
 function createHarness(
   options: {
     projects?: Array<typeof aurumNordicSeed | typeof karvonenSeed>;
     permissions?: Array<"readStorefront" | "saveDraft" | "restoreDraft" | "publishStorefront">;
-    authority?: ReturnType<typeof acceptedSnapshotCurrentAuthorityFromReceipt>;
+    authority?: AcceptedSnapshotCurrentAuthority;
   } = {},
 ) {
   const repository = new InMemoryProjectRepository(
@@ -134,12 +153,8 @@ function createHarness(
     ...identity,
     permissions: options.permissions,
   });
-  const resolveCurrentAuthority = vi.fn(
-    ({
-      receipt,
-    }: Parameters<AcceptedSnapshotCurrentAuthoritySource["resolveCurrentAuthority"]>[0]) =>
-      Promise.resolve(options.authority ?? acceptedSnapshotCurrentAuthorityFromReceipt(receipt)),
-  );
+  let currentAuthority: AcceptedSnapshotCurrentAuthority | undefined = options.authority;
+  const resolveCurrentAuthority = vi.fn(() => Promise.resolve(currentAuthority));
   const currentAuthoritySource: AcceptedSnapshotCurrentAuthoritySource = {
     resolveCurrentAuthority,
   };
@@ -173,6 +188,9 @@ function createHarness(
     repository,
     preparationStore,
     receiptRepository,
+    setCurrentAuthority: (authority: AcceptedSnapshotCurrentAuthority | undefined) => {
+      currentAuthority = authority;
+    },
     currentAuthoritySource: { resolveCurrentAuthority },
     authenticatedContext,
     service,
@@ -291,6 +309,7 @@ describe("P10A-08C-01 authoritative merchant publish gateway", () => {
     await saveChangedDraft(harness.repository, projectId, "Accepted AI draft");
     const receipt = await trustedReceipt(harness.repository, projectId);
     await harness.receiptRepository.createOnce(receipt);
+    harness.setCurrentAuthority(authorityRecordedAtAcceptance(receipt));
     const get = vi.spyOn(harness.receiptRepository, "get");
 
     const preparation = await harness.service.prepare(
@@ -342,6 +361,7 @@ describe("P10A-08C-01 authoritative merchant publish gateway", () => {
     await saveChangedDraft(harness.repository, projectId, "Accepted then undo");
     const receipt = await trustedReceipt(harness.repository, projectId);
     await harness.receiptRepository.createOnce(receipt);
+    harness.setCurrentAuthority(authorityRecordedAtAcceptance(receipt));
     const before = await harness.repository.get(projectId);
     const publish = vi.spyOn(harness.repository, "publish");
 
@@ -381,7 +401,7 @@ describe("P10A-08C-01 authoritative merchant publish gateway", () => {
 
     const proposalMismatch = createHarness({
       authority: {
-        ...acceptedSnapshotCurrentAuthorityFromReceipt(receipt),
+        ...authorityRecordedAtAcceptance(receipt),
         proposalId: "proposal_other",
       },
     });
@@ -407,6 +427,7 @@ describe("P10A-08C-01 authoritative merchant publish gateway", () => {
     await saveChangedDraft(harness.repository, projectId, "Idempotent gateway");
     const receipt = await trustedReceipt(harness.repository, projectId);
     await harness.receiptRepository.createOnce(receipt);
+    harness.setCurrentAuthority(authorityRecordedAtAcceptance(receipt));
     const first = await harness.service.prepare(
       manualRequest(projectId, "publish_request_duplicate"),
       request(),

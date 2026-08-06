@@ -192,6 +192,36 @@ describe("P2-12 publish confirmation route", () => {
     expect(publish).not.toHaveBeenCalled();
   });
 
+  it("uses a fresh server request identity after cancellation or stale-review recovery", async () => {
+    const source = repository();
+    await saveDraftTitle(source, "Fresh request identity");
+    const baseGateway = gatewayFor(source);
+    const gateway: MerchantPublishGatewayClient = {
+      ...baseGateway,
+      confirm: vi.fn(() =>
+        Promise.reject(new AuthoritativeMerchantPublishClientError("savedDraftMismatch", 409)),
+      ),
+    };
+    route(forward(source, { publish: vi.fn() }), gateway);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Review publish" }));
+    await screen.findByRole("heading", { name: "Confirm publication" });
+    const firstRequestId = vi.mocked(baseGateway.prepare).mock.calls[0]?.[0].requestId;
+    fireEvent.click(screen.getByRole("link", { name: "Cancel and return to editor" }));
+    fireEvent.click(screen.getByRole("button", { name: "Review publish" }));
+    await waitFor(() => expect(baseGateway.prepare).toHaveBeenCalledTimes(2));
+    const secondRequestId = vi.mocked(baseGateway.prepare).mock.calls[1]?.[0].requestId;
+    expect(secondRequestId).toBeDefined();
+    expect(secondRequestId).not.toBe(firstRequestId);
+
+    await screen.findByRole("heading", { name: "Confirm publication" });
+    fireEvent.click(screen.getByRole("button", { name: "Publish storefront" }));
+    await screen.findByText(/changed after your review/i);
+    fireEvent.click(screen.getByRole("button", { name: "Review latest draft" }));
+    await waitFor(() => expect(baseGateway.prepare).toHaveBeenCalledTimes(3));
+    expect(vi.mocked(baseGateway.prepare).mock.calls[2]?.[0].requestId).not.toBe(secondRequestId);
+  });
+
   it("blocks a stale confirmation and lets the merchant review the latest saved draft", async () => {
     const source = repository();
     await saveDraftTitle(source, "Initial review");

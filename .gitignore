@@ -7,4 +7,7 @@ test-results
 .env*.local
 .DS_Store
 
+# Disposable deterministic P9-05B local publish-session state.
+/.veskify/p9-05b-lumo-local-server/publish-authority/
+
 tsconfig.tsbuildinfo

@@ -185,6 +185,7 @@ export type AuthoritativeMerchantPublishServiceInput = Readonly<{
   preparationStore: MerchantPublishPreparationStore;
   revisionMapper: AuthoritativePublishingRevisionMapper;
   acceptedAiAuthority?: TrustedAcceptedAiPublishingAuthority;
+  afterPublish?: (input: { projectId: string; request: Request }) => Promise<void>;
 }>;
 
 function assertAuthenticatedPublisher(context: MerchantProjectContext, projectId: string): void {
@@ -203,36 +204,6 @@ function preparationId(projectId: string, requestId: string): string {
 
 function requestFingerprint(input: z.infer<typeof merchantPublishPrepareRequestSchema>): string {
   return `merchant-publish-${canonicalValueFingerprint(input)}`;
-}
-
-function currentAuthorityForReceipt(receipt: {
-  proposalId: string;
-  proposalRevision: number;
-  proposalFingerprint: string;
-  reviewRevision: number;
-  reviewFingerprint: string;
-  acceptedRuntimeFingerprint: string;
-  componentRegistryFingerprint: string;
-  manifest: { version: string; fingerprint: string } | null;
-  packageRegistry: { version: string; fingerprint: string } | null;
-  profileAuthorities: readonly { profileId: string; fingerprint: string }[];
-  commerceFingerprint: string;
-  approvedAssetFingerprint: string | null;
-}) {
-  return {
-    proposalId: receipt.proposalId,
-    proposalRevision: receipt.proposalRevision,
-    proposalFingerprint: receipt.proposalFingerprint,
-    reviewRevision: receipt.reviewRevision,
-    reviewFingerprint: receipt.reviewFingerprint,
-    acceptedRuntimeFingerprint: receipt.acceptedRuntimeFingerprint,
-    componentRegistryFingerprint: receipt.componentRegistryFingerprint,
-    manifest: receipt.manifest,
-    packageRegistry: receipt.packageRegistry,
-    profileAuthorities: receipt.profileAuthorities,
-    commerceFingerprint: receipt.commerceFingerprint,
-    approvedAssetFingerprint: receipt.approvedAssetFingerprint,
-  };
 }
 
 /**
@@ -316,15 +287,8 @@ export class AuthoritativeMerchantPublishService {
       throw new AuthoritativeMerchantPublishError("project-mismatch");
     }
     await this.#input.publishingGateway.publish(record.gatewayRequest);
+    await this.#input.afterPublish?.({ projectId: input.data.projectId, request });
     const aggregate = await this.#input.projectRepository.get(input.data.projectId);
     return { projectRevision: aggregate.project.revision };
   }
-}
-
-export function acceptedSnapshotCurrentAuthorityFromReceipt(
-  receipt: Parameters<
-    AcceptedSnapshotCurrentAuthoritySource["resolveCurrentAuthority"]
-  >[0]["receipt"],
-) {
-  return currentAuthorityForReceipt(receipt);
 }

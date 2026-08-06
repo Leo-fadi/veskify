@@ -165,6 +165,9 @@ export function PublishClient({
   const editorHref = localDemoSession
     ? `/projects/${projectId}/editor?p9-05b-session=${encodeURIComponent(localDemoSession.sessionId)}`
     : `/projects/${projectId}/editor`;
+  const publishedHref = localDemoSession
+    ? `/projects/${projectId}/published?p9-05b-session=${encodeURIComponent(localDemoSession.sessionId)}`
+    : `/projects/${projectId}/published`;
   const draft = loadState.aggregate.snapshots.find(
     (snapshot) => snapshot.id === loadState.aggregate.project.draftSnapshotId,
   );
@@ -225,6 +228,11 @@ export function PublishClient({
     }
   };
 
+  const startLatestReview = () => {
+    requestId.current = undefined;
+    void review();
+  };
+
   const publish = async () => {
     if (publishState.status !== "ready") return;
     const preparation = publishState.preparation;
@@ -236,6 +244,7 @@ export function PublishClient({
         requestId: requestId.current,
         preparationId: preparation.preparationId,
       });
+      requestId.current = undefined;
       setPublishState({ status: "success", projectRevision: result.projectRevision });
     } catch (error) {
       const mapped = errorMessage(error, activeLocale);
@@ -255,6 +264,10 @@ export function PublishClient({
         locale={activeLocale}
         onConfirm={() => {
           void publish();
+        }}
+        onCancel={() => {
+          requestId.current = undefined;
+          setPublishState({ status: "idle" });
         }}
         preparation={publishState.preparation}
         primaryLocale={loadState.aggregate.project.primaryLocale}
@@ -318,7 +331,7 @@ export function PublishClient({
               <button
                 className={styles.secondaryAction}
                 onClick={() => {
-                  void review();
+                  startLatestReview();
                 }}
                 type="button"
               >
@@ -335,7 +348,7 @@ export function PublishClient({
               <button
                 className={styles.secondaryAction}
                 onClick={() => {
-                  void review();
+                  startLatestReview();
                 }}
                 type="button"
               >
@@ -358,7 +371,16 @@ export function PublishClient({
             <p>{text.successDraft}</p>
             <div>
               <Link href={editorHref}>{text.editor}</Link>
-              <Link href={`/projects/${projectId}/published`}>{text.publishedStorefront}</Link>
+              <Link
+                href={
+                  localDemoSession
+                    ? `${publishedHref}&published-revision=${publishState.projectRevision}`
+                    : publishedHref
+                }
+                prefetch={false}
+              >
+                {text.publishedStorefront}
+              </Link>
             </div>
           </section>
         ) : null}

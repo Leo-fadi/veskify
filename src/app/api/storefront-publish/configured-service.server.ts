@@ -1,24 +1,24 @@
 import "server-only";
 
 import { join } from "node:path";
-import { FileSystemAcceptedSnapshotPublishReceiptRepository } from "@/application/accepted-snapshot-publishing/index.server";
 import {
   AuthoritativeMerchantPublishError,
   AuthoritativeMerchantPublishService,
   FileSystemMerchantPublishPreparationStore,
-  acceptedSnapshotCurrentAuthorityFromReceipt,
 } from "@/application/publishing/authoritative-merchant-publish.server";
 import { createStandaloneMerchantProjectContextPort } from "@/application/merchant-project-context";
 import { createStandaloneAuthoritativePublishingAdapter } from "@/integrations/vesko-publishing";
 import { P9_05A_PROJECT_ID } from "@/data/demo/p9-05a-fresh-store-generation";
 import {
   P9_05B_LOCAL_DEMO_NAMESPACE,
+  commitP905bLocalDemoPublishedAggregate,
   isP905bLocalDemoConfigured,
   p905bLocalDemoRepository,
   p905bLocalDemoSession,
   sameP905bLocalDemoSecret,
 } from "@/integrations/ai/p9-05b-local-demo-authority.server";
 import { standalonePublishingRevisionMapper } from "@/integrations/vesko-publishing";
+import type { AuthoritativePublishingProjectRepository } from "@/services/storage";
 
 const localDemoIdentity = {
   tenantId: "tenant_lumo_p9_05b_local",
@@ -32,32 +32,37 @@ function localDemoPublishingDirectory() {
   return join(process.cwd(), ".veskify", P9_05B_LOCAL_DEMO_NAMESPACE, "publish-authority");
 }
 
+function currentLocalDemoProjectRepository(
+  environment: Readonly<Record<string, string | undefined>>,
+): AuthoritativePublishingProjectRepository {
+  return {
+    list: () => p905bLocalDemoRepository(environment).list(),
+    get: (projectId) => p905bLocalDemoRepository(environment).get(projectId),
+    create: (aggregate) => p905bLocalDemoRepository(environment).create(aggregate),
+    saveDraft: (projectId, snapshot, expectedBase) =>
+      p905bLocalDemoRepository(environment).saveDraft(projectId, snapshot, expectedBase),
+    publish: (projectId, expectation) =>
+      p905bLocalDemoRepository(environment).publish(projectId, expectation),
+    restore: (projectId, snapshotId, expectation) =>
+      p905bLocalDemoRepository(environment).restore(projectId, snapshotId, expectation),
+    getPublicationOperation: (identity) =>
+      p905bLocalDemoRepository(environment).getPublicationOperation(identity),
+  };
+}
+
 export function createConfiguredAuthoritativeMerchantPublishService(
   environment: Readonly<Record<string, string | undefined>> = process.env,
 ): AuthoritativeMerchantPublishService | null {
   if (!isP905bLocalDemoConfigured(environment)) return null;
-  const projectRepository = p905bLocalDemoRepository(environment);
+  const projectRepository = currentLocalDemoProjectRepository(environment);
   const contextPort = createStandaloneMerchantProjectContextPort({
     projectRepository,
     ...localDemoIdentity,
   });
   const directory = localDemoPublishingDirectory();
-  const receiptRepository = new FileSystemAcceptedSnapshotPublishReceiptRepository(
-    join(directory, "accepted-snapshot-receipts"),
-  );
   const preparationStore = new FileSystemMerchantPublishPreparationStore(
     join(directory, "publish-preparations"),
   );
-  const acceptedSnapshotAuthority = {
-    receiptRepository,
-    currentAuthoritySource: {
-      resolveCurrentAuthority: ({
-        receipt,
-      }: {
-        receipt: Parameters<typeof acceptedSnapshotCurrentAuthorityFromReceipt>[0];
-      }) => Promise.resolve(acceptedSnapshotCurrentAuthorityFromReceipt(receipt)),
-    },
-  };
   const publishingGateway = createStandaloneAuthoritativePublishingAdapter({
     projectRepository,
     contextPort,
@@ -66,7 +71,6 @@ export function createConfiguredAuthoritativeMerchantPublishService(
         return (await preparationStore.load(preparationId))?.preparation ?? null;
       },
     },
-    acceptedSnapshotAuthority,
   });
   return new AuthoritativeMerchantPublishService({
     projectRepository,
@@ -90,6 +94,7 @@ export function createConfiguredAuthoritativeMerchantPublishService(
     },
     preparationStore,
     revisionMapper: standalonePublishingRevisionMapper,
-    acceptedAiAuthority: acceptedSnapshotAuthority,
+    afterPublish: ({ projectId }) =>
+      commitP905bLocalDemoPublishedAggregate({ projectId, environment }),
   });
 }
