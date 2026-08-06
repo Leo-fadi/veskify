@@ -32,6 +32,7 @@ import { HistoricalPreviewActions } from "../../historical-preview-actions";
 type RepositoryFactory = () => ProjectRepository;
 type Snapshot = ProjectAggregate["snapshots"][number];
 type Page = Snapshot["pages"][number];
+type RouteRenderTarget = "preview" | "published";
 
 type LoadState =
   | { status: "loading" }
@@ -90,6 +91,7 @@ export function CollectionPreviewClient({
   collectionSlug,
   repositoryFactory = defaultRepositoryFactory,
   snapshotKind = "draft",
+  renderTarget,
   historicalSnapshotId,
   commerceAdapter = defaultCommerceAdapter,
   onNavigateProduct,
@@ -101,6 +103,8 @@ export function CollectionPreviewClient({
   collectionSlug: string;
   repositoryFactory?: RepositoryFactory;
   snapshotKind?: SnapshotKind;
+  /** Explicit route-render mode; snapshot selection remains independently governed by snapshotKind. */
+  renderTarget?: RouteRenderTarget;
   historicalSnapshotId?: string;
   commerceAdapter?: StorefrontCommerceRouteAdapter;
   onNavigateProduct?: (intent: ProductNavigationIntent) => void;
@@ -108,6 +112,8 @@ export function CollectionPreviewClient({
   onFilterIntent?: (intent: CollectionFilterIntent) => void;
   onSortIntent?: (intent: CollectionSortIntent) => void;
 }) {
+  const effectiveRenderTarget =
+    renderTarget ?? (snapshotKind === "published" ? "published" : "preview");
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
   const [attempt, setAttempt] = useState(0);
@@ -141,6 +147,7 @@ export function CollectionPreviewClient({
             catalogue: aggregate.catalogue,
             snapshot: draft,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+            renderTarget: effectiveRenderTarget,
           });
           void renderStorefrontPage(page, context);
           const commercePresentation = commerceAdapter.collection({
@@ -169,7 +176,15 @@ export function CollectionPreviewClient({
     return () => {
       cancelled = true;
     };
-  }, [attempt, collectionSlug, commerceAdapter, historicalSnapshotId, projectId, snapshotKind]);
+  }, [
+    attempt,
+    collectionSlug,
+    commerceAdapter,
+    historicalSnapshotId,
+    projectId,
+    effectiveRenderTarget,
+    snapshotKind,
+  ]);
 
   const retry = () => {
     setState({ status: "loading" });
@@ -245,6 +260,7 @@ export function CollectionPreviewClient({
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+    renderTarget: effectiveRenderTarget,
   });
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
   const pathPrefix = previewPathPrefix(projectId, snapshotKind, historicalSnapshotId);
@@ -336,7 +352,7 @@ export function CollectionPreviewClient({
             page={state.page}
             presentation={state.commercePresentation}
             primaryLocale={state.aggregate.project.primaryLocale}
-            target={snapshotKind === "published" ? "published" : "preview"}
+            target={effectiveRenderTarget}
           />
         ) : (
           renderStorefrontPage(state.page, context)

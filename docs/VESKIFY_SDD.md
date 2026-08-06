@@ -91,6 +91,7 @@ Owner: Vesko Oy · Product owner: Leo Fadi
 | 1.2         | 29 July 2026    | P9-04D acceptance clarification  | Incorporates the Lumo real-AI design-diversity gate for complete storefront directions, canonical-commerce protection and measured cross-page quality. |
 | 1.2.1       | 30 July 2026    | Corrective amendment             | Defines grounded generation over the existing canonical storefront state, corrects the Phase 9 quality gate and evidence ownership, and binds the P10A/P10B/P11/P12 delivery order without rewriting the v1.2 safety architecture. |
 | 1.2.2       | 31 July 2026    | Commercial design vocabulary      | Defines controlled component families, registered PageBlueprint recipe profiles, bounded parametric design, inheritance, reachability and visual-quality gates; it does not close Phase 9 or unblock P10A. |
+| 1.2.2       | 5 August 2026   | Authoritative commercial roadmap synchronization | Assigns P10B Commercial Storefront Design System v1 after P10A publishing closure; migrates former P10B Studio/asset work to P10C, defers advanced media to P10D, and sequences integration and production hardening afterward. |
 
 ## v1.2.1 corrective amendment — grounded storefront generation
 
@@ -182,8 +183,8 @@ The binding order inside Phase 9 is:
 P9-03 may repair reachability of already registered capabilities, expose the smallest curated set
 required by the Phase 9 directions, correct planner/compiler/renderer gaps and enable the minimum
 editorial, modern-technical and warm compositions needed for acceptance. It MUST NOT become broad
-or unrestricted vocabulary scaling. Broad controlled-vocabulary expansion occurs after the Phase
-9 proof gates, through P10A-04’s generated registry and canonical validation.
+or unrestricted vocabulary scaling. Broad commercial vocabulary expansion occurs after the Phase
+9 proof gates and P10A publishing closure, through P10B’s use of the generated registry and canonical validation.
 
 Phase 9 retained brief-handoff evidence MUST show this complete lifecycle: authoritative
 Storefront Design Brief creation → merchant review → explicit approval → approved
@@ -218,9 +219,9 @@ The existing acceptance IDs retain their wording, but their phase ownership is c
 | --- | --- |
 | AC-119 | Phase 9 asset resolution and approved reuse/generation choice. |
 | AC-120 | Later demo-reliability work; it does not prove generation quality. |
-| AC-121 | P10B Storefront Studio merchant UX. Phase 9 still owns fixture/provider/internal-term leakage in generated storefront output. |
-| AC-122 | Split: Phase 9 owns generated storefront output at all target widths; P10B owns Storefront Studio shell and workflow responsiveness. |
-| AC-123 | Split: Phase 9 owns generated storefront semantics and interactive commerce controls; P10B owns Studio controls, proposal review, save and publish accessibility. |
+| AC-121 | P10C Storefront Studio merchant UX. Phase 9 still owns fixture/provider/internal-term leakage in generated storefront output. |
+| AC-122 | Split: Phase 9 owns generated storefront output at all target widths; P10C owns Storefront Studio shell and workflow responsiveness. |
+| AC-123 | Split: Phase 9 owns generated storefront semantics and interactive commerce controls; P10C owns Studio controls, proposal review, save and publish accessibility. |
 
 Phase 9 additionally owns exact valid token instructions, meaningful initial generation,
 coordinated multi-page composition, registered component reachability, protected-commerce and
@@ -238,16 +239,15 @@ P10A establishes grounded orchestration without changing the canonical state mod
 3. **P10A-03 — Executable PageBlueprint contracts:** evolve the current template contracts into
    validated composition rules that compile to `StorefrontSnapshot`.
 4. **P10A-04 — Generated Component Knowledge Registry:** generate a queryable capability view from
-   canonical contracts, including the executable PageBlueprint contracts produced by P10A-03,
-   and broaden the controlled vocabulary only through validated canonical registrations exposed
-   by that generated view after the Phase 9 proof gate.
+   canonical contracts, including the executable PageBlueprint contracts produced by P10A-03.
+   P10B consumes this registered view for commercial vocabulary and visual-quality expansion.
 5. **P10A-05 — Separate Skill package contracts:** define instructions, schemas, authorities,
    allowed scopes, capability requirements, operations, validation and evidence for initial
    generation and follow-up editing separately.
 6. **P10A-06 — Scoped instruction-router contracts:** define scope classification, authority
    declarations, routing schemas and validation rules that prohibit silent authority widening.
-7. **P10A-07 — Golden-store quality gates:** deterministic and real-provider evaluation across
-   representative catalogues, including at least one non-jewellery merchant.
+7. **P10A-07 — Evidence-harness groundwork:** deterministic and real-provider evaluation
+   infrastructure across representative catalogues, including at least one non-jewellery merchant.
 8. **P10A-08 — Publish compiler:** deterministically validate and publish the accepted canonical
    snapshot with no AI at publication time.
 
@@ -292,19 +292,22 @@ means navigation, header, announcement bar and footer. The contracts classify sc
 authority and require validation that rejects silent widening: “change this hero” cannot classify
 as site-wide, “make this PDP technical” cannot include home, “navigation and footer” may classify as
 shared frame and “use this palette everywhere” may classify as design system. Runtime explanations,
-approval controls and proposal execution belong to Phase 11.
+approval controls and proposal execution belong to P10C.
 
 **Phase boundary:** P10A defines and validates the scopes. P10A does not deliver
-merchant-operable granular editing. Phase 11 implements and exposes those scopes as working merchant
+merchant-operable granular editing. P10C implements and exposes those scopes as working merchant
 features.
 
-P10A-07 golden stores include premium/minimal jewellery, editorial jewellery, a watch retailer, a
-dense hardware/general-retail catalogue, EN/FI, a simple watch PDP and a complex configurable ring
-PDP. The non-jewellery fixture is mandatory to detect luxury, jewellery, Karvonen and sparse-catalog
-assumptions. Gates cover schemas, registered capabilities, bindings/commerce, responsive behavior,
-accessibility, brand/page coherence, diversity, fixture leakage, asset provenance, performance and
-the contract validations owned by P10A. Runtime mixed-scope history and Undo/Redo for granular
-editing are Phase 11 gates.
+P10A-07 evidence-harness groundwork includes premium/minimal jewellery, editorial jewellery, a
+watch retailer, a dense hardware/general-retail catalogue, EN/FI, a simple watch PDP and a complex
+configurable ring PDP. The non-jewellery fixture is mandatory to detect luxury, jewellery, Karvonen
+and sparse-catalog assumptions. P10A owns functional and publishing validation for governed
+generation/follow-up execution, routing, proposal lifecycle, controlled-provider acceptance,
+compiler/publish/render/rollback behavior and protected-commerce correctness. P10A does not close
+on commercial visual polish. P10B owns commercial component/profile reachability for new
+design-system capabilities, direction differentiation, credible-asset complete-storefront generation
+and the final commercial screenshot/manual browser-quality gate; runtime mixed-scope history and
+Undo/Redo for granular editing are P10C gates.
 
 P10A-08 compiles validated draft `StorefrontSnapshot` → publish-time validation → immutable runtime
 snapshot → published renderer. It rejects invalid bindings, unknown component versions, missing
@@ -336,54 +339,31 @@ Manual publication remains explicit and distinct from accepted-AI publication. T
 deterministic compiled-runtime artifact, atomic active-version switching, rollback closure and published
 render-target closure to P10A-08C-02; it does not claim compiler closure.
 
-### P10B asset governance and Storefront Studio
+### P10B Commercial Storefront Design System v1
 
-P10B follows P10A and consumes its capability/scope contracts:
+P10B follows P10A publishing closure and is the first phase that broadens commercial visual quality. It owns commercial component/profile reachability for new design-system capabilities, direction differentiation, credible-asset complete-storefront generation and P10B-01 executable vocabulary, P10B-02 foundations, P10B-03 image/art direction, P10B-04 premium shared frame, P10B-05 hero/editorial/campaign families, P10B-06 product-card and merchandising system, P10B-07 collection profiles, P10B-08 PDP profiles, P10B-09 coordinated directions, P10B-10 narrative composition, P10B-11 responsive closure and P10B-12 visual-quality gate. These tasks extend only the existing canonical `BrandSystem`, registered `PageBlueprint` profiles, component families/variants, approved asset placement and `StorefrontSnapshot` lifecycle.
 
-- **P10B-01 — Brand asset upload/library:** primary/alternate/light/dark logos, favicons, brand,
-  campaign, editorial and story imagery, marks/icons, approved illustrations, textures, permitted
-  fonts and supported video. Fixture/developer registration is not the merchant workflow.
-- **P10B-02 — Roles/provenance/metadata:** stable ID/domain, provenance, approval, role, dimensions,
-  focal point, crop constraints, alt text, locale/market, light/dark suitability, usage restrictions
-  and uploaded/generated origin. Canonical product/variant media, merchant brand, campaign,
-  editorial, temporary generated and accepted generated assets remain distinct.
-- **P10B-03 — Generated-image lifecycle:** merchant request → capability/policy check → temporary
-  proposal asset → technical/safety validation → merchant review → accept/reject → promotion to the
-  approved library → snapshot binding to a stable ID. Generated imagery may support hero,
-  campaign, lifestyle/editorial, decorative background or abstract brand use but never silently
-  replace canonical product/variant media.
-- **P10B-04 — Studio shell:** native Vesko shell, dominant canvas, compact page/section outline,
-  Design and AI tabs, merchant language, proposal review, preview, draft, publish, history,
-  responsive drawers/bottom sheets and keyboard/accessibility. A polished shell must not conceal an
-  ungrounded generator.
+P10B closes only when credible assets prove a complete homepage, collection, simple PDP and configurable PDP at 375, 768, 1024 and 1440 px. Manual screenshot/browser review must prove strong typography and imagery, coherent storytelling, cross-page identity, meaningful directions, commercially credible mobile output and protected-commerce correctness; unit, schema, placeholder, generic-starter-theme, repetitive-stack or unexplained-gap evidence is insufficient.
 
-Existing `AssetInventory` roles/provenance are the foundation; do not create a competing media
-system.
+### P10C Storefront Studio Editing Experience v1
 
-### Phase 11 granular editing
+P10C follows P10B. It migrates former P10B-01 to **P10C-01 Brand asset library**, former P10B-02 to **P10C-02 Asset roles and provenance**, and former P10B-04 to **P10C-08 Brand and asset editor with Studio shell**. It adds P10C-03 canonical Puck boundary, P10C-04 stable frame identity, P10C-05 approved manual frame operations, P10C-06 scoped AI frame/page/shared-frame editing, P10C-07 unified AI/manual history and P10C-09 Studio commercial QA. Existing `AssetInventory` roles/provenance remain the foundation; no competing media, Puck document or history model is introduced.
 
-Phase 11 implements and exposes the scopes defined and validated by P10A as working merchant
-features. It owns selecting a component or section; applying a selected-section proposal;
-current-page editing; shared storefront frame editing; design-system editing; complete-storefront
-editing; add, remove, reorder and replace operations; proposal preview and acceptance; mixed-scope
-history; Undo/Redo; and merchant scope controls and warnings. It provides stable section identity,
-local coherence and runtime enforcement of the P10A prohibition against silent scope widening.
-Common targets include header/navigation/announcement, hero, featured collections/products, brand
-story, campaign/trust, collection discovery/grid, PDP gallery/information/options/specifications and
-footer.
+P10C closes when a merchant can select a frame, edit it manually in Puck, ask AI to redesign another frame, reorder sections, undo/redo, save, preview and publish. `StorefrontSnapshot` remains the shared canonical state; stable identity, approved bounded edits, protected bindings, scoped AI and unified AI/manual history are mandatory.
 
-### Phase 12 canonical domains and adapters
+AC-119 remains solely a Phase 9 gate. P10C consumes the approved reuse/upload/generate decision; it does not claim the generated-storefront asset matrix or authorize generated imagery before P10D.
 
-Phase 12 consolidates canonical product, variant/option, collection/navigation,
-price/availability-presentation, localization, product-media, brand-asset and generated-asset
-domains. Versioned image-delivery, commerce, collection/navigation and asset adapters define
-capability negotiation, synchronization semantics, typed errors, versioning, conformance fixtures
-and integration documentation. Vesko is the first reference implementation of these canonical
-contracts, not a special case embedded through the editor.
+### P10D deferred advanced media and interactive presentation
 
-Immediate full staging integration is not a Phase 12 prerequisite. Authentication, authorization,
-tenant isolation, production persistence, hosted staging, observability, recovery, pilot operations
-and release remain later deployment work.
+Former P10B-03 becomes **P10D-01 Generated-image lifecycle**, after P10B and P10C. P10D also reserves registered video, GLTF/GLB product assets, registered Three.js presentation, camera and lighting presets, mobile/accessibility fallbacks and performance budgets. Registered, governed Three.js implementations are permitted only as registered interactive-presentation capabilities. AI may select or configure those capabilities but may not generate implementation code; each remains subject to registered component, asset, performance, accessibility and non-interactive-fallback authority. No arbitrary generated application code or arbitrary/generated Three.js implementation is permitted.
+
+### P11 stable domains and Vesko reference adapters
+
+Former Phase 12 work migrates to P11: canonical product, variant/option, collection/navigation, price/availability presentation, localization, product-media, brand-asset and generated-asset domains, plus versioned media, commerce, navigation and asset adapters with conformance fixtures. Vesko remains the first reference implementation, not a special case embedded through the editor.
+
+### P12 production hardening and operations
+
+Former later deployment work follows P11: authentication, authorization, tenant isolation, production persistence and secrets, hosted staging, observability, recovery, pilot operations, deployment and release runbooks. It is not a P10B or P10C prerequisite.
 
 ### Capability and recommendation status
 
@@ -409,8 +389,8 @@ tree, arbitrary renderer input or a claim that Phase 9 has closed. P9R-06 proved
 homepage-only generation path. P9R-07 whole-store global colour and typography routing is active
 work at this amendment's baseline and is not claimed complete here.
 
-AC-136 through AC-138 are P10A commercial-design-vocabulary acceptance criteria implemented by
-P10A Tasks 6–9 after the existing Phase 9 gate closes. They are not required to close Phase 9 and
+AC-136 through AC-138 are P10B commercial-design-system acceptance criteria implemented after the
+existing Phase 9 gate and P10A publishing closure. They are not required to close Phase 9 and
 this documentation amendment does not satisfy them. Phase 9 remains open for its existing
 whole-storefront generation, approved-brief handoff, protected-commerce, lifecycle, responsive,
 accessibility and retained real-provider evidence requirements.
@@ -478,9 +458,9 @@ Local values normally derive from global semantic tokens. An instance override m
 allowed, typed and compatible with its family and PageBlueprint profile; it must not create an
 unrelated visual language across sections or bypass global accessibility/responsive rules.
 
-### P10A Task 6 narrative vocabulary and deterministic composition validation
+### P10B-01 narrative vocabulary and deterministic composition validation
 
-Task 6 formalizes the controlled middle layer without creating a second page graph, planner,
+P10B-01 formalizes the controlled middle layer without creating a second page graph, planner,
 snapshot, proposal representation or component registry. `PageBlueprint` precursor plans carry
 registered narrative metadata and continue to materialize only canonical page sections. The
 controlled narrative roles are `orientation`, `primary-discovery`, `secondary-discovery`,
@@ -512,13 +492,14 @@ explicit adapter contract, never an empty-list fallback.
 
 `ComponentDefinitionV2` declares narrative, weight, transition, parameter, PageBlueprint-profile
 and commerce compatibility. Legacy registered components receive a deterministic broad compatibility
-adapter until Task 7 adds family-specific commercial metadata; this preserves existing Phase 9
-snapshots and proposals. PageBlueprint plans declare allowed/required roles, flow-rule IDs,
-cardinality, bounded-parameter and responsive constraints while retaining their existing slot,
-family/variant, binding and omission rules. Task 6 supplies contracts and deterministic validation
-only. Task 7 supplies commercial families/variants, Task 8 supplies executable constrained
-PageBlueprint profiles, and Task 9 supplies AI selection plus commercial visual-quality and
-full-chain evidence. Task 6 alone does not claim commercially strong storefront output.
+adapter until P10B-04 through P10B-06 add family-specific commercial metadata; this preserves
+existing Phase 9 snapshots and proposals. PageBlueprint plans declare allowed/required roles,
+flow-rule IDs, cardinality, bounded-parameter and responsive constraints while retaining their
+existing slot, family/variant, binding and omission rules. P10B-01 supplies contracts and
+deterministic validation only. P10B-04 through P10B-06 supply commercial families/variants;
+P10B-07/08 supply executable constrained PageBlueprint profiles; P10B-09 through P10B-12 supply
+coordinated direction selection, visual quality and full-chain evidence. P10B-01 alone does not
+claim commercially strong storefront output.
 
 Every referenced flow rule must be registered for the page type; unknown or incompatible rule IDs
 fail closed. A section satisfies both its role's visual-weight allowance and its component
@@ -528,10 +509,10 @@ roles must be satisfiable by non-omittable compatible slots: the initial PDP's a
 information/purchase section owns conversion, while optional product-options may be omitted without
 creating false required semantics.
 
-Resolved template selections created before Task 6 are persisted as v2 execution identities with no
+Resolved template selections created before P10B-01 are persisted as v2 execution identities with no
 narrative metadata. Current selections are v3. A v2 selection is migrated only in memory by verifying
-each legacy homepage, collection and product plan against the registered pre-Task-6 execution
-identity, then re-resolving that exact registered plan with Task-6 metadata. Modified legacy plans
+each legacy homepage, collection and product plan against the registered pre-P10B-01 execution
+identity, then re-resolving that exact registered plan with P10B-01 metadata. Modified legacy plans
 and unknown future versions fail closed. Migration neither writes project state nor changes canonical
 commerce, bindings, assets, variants or routes; it never mistakes parser defaults for merchant
 selected semantics.
@@ -550,7 +531,7 @@ storefronts and thousands of controlled variations. Not every theoretical combin
 Compatibility, PageBlueprint-profile constraints, responsive rules, accessibility and cross-page
 coordination MUST filter invalid or low-quality combinations.
 
-P10A Task 8 implements the coordinated commercial recipes only as registered constrained
+P10B-07 and P10B-08 implement the coordinated commercial recipes only as registered constrained
 `PageBlueprint` profiles. P10A-03 remains the canonical implementation contract and MUST NOT
 duplicate or synchronize a separate recipe/template representation.
 
@@ -1809,9 +1790,8 @@ complete: boolean;<br />
 
 ## 16.5 Deployment stages
 
-Phase 12 supplies stable ports, contract tests and a Vesko reference adapter. The staging and
-production rows below are later deployment work; their existence does not make full staging a
-Phase 12 gate.
+P11 supplies stable ports, contract tests and a Vesko reference adapter. The staging and production
+rows below are P12 work; their existence does not make full staging a P11 gate.
 
 | **Stage**                     | **Purpose**                                        | **Required gate**                                                                 |
 |-------------------------------|----------------------------------------------------|-----------------------------------------------------------------------------------|
@@ -1906,8 +1886,8 @@ Phase 12 gate.
 | **AC-128** | Every P9-04D direction uses approved asset provenance and correct product/collection binding, and matches the canonical source-commerce baseline for protected IDs, SKU, price, availability and media truth. | FR-104, FR-107, FR-110, NFR-101 |
 | **AC-129** | After executable PageBlueprint contracts exist, capability retrieval returns only current registered components, variants, bindings, renderers, responsive/accessibility rules and executable blueprints derived from canonical repository contracts. | FR-108, FR-109, NFR-108, NFR-109 |
 | **AC-130** | Unknown, stale, incompatible or schema-invalid component, variant, binding, blueprint and skill references are rejected before a proposal can classify them as reachable or mutate a draft. | FR-108, FR-109, FR-117, NFR-101, NFR-105 |
-| **AC-131** | Initial storefront generation and follow-up editing have separately identified Skill package contracts with separate schemas, declared authority, quality gates and evidence. Runtime merchant execution remains a Phase 11 responsibility. | FR-105, FR-108, FR-113, NFR-101, NFR-108 |
-| **AC-132** | Scope-classification and instruction-router contracts reject any plan whose declared authority silently widens beyond the selected section, page, shared frame, design system or complete-storefront scope. Runtime merchant controls and execution remain Phase 11 responsibilities. | FR-108, FR-113, NFR-101, NFR-105 |
+| **AC-131** | Initial storefront generation and follow-up editing have separately identified Skill package contracts with separate schemas, declared authority, quality gates and evidence. Runtime merchant execution remains a P10C responsibility. | FR-105, FR-108, FR-113, NFR-101, NFR-108 |
+| **AC-132** | Scope-classification and instruction-router contracts reject any plan whose declared authority silently widens beyond the selected section, page, shared frame, design system or complete-storefront scope. Runtime merchant controls and execution remain P10C responsibilities. | FR-108, FR-113, NFR-101, NFR-105 |
 | **AC-133** | Every executable PageBlueprint compiles through controlled operations into the same canonical StorefrontSnapshot used by editor, preview, save, history and publish. | FR-109, FR-113, FR-115, NFR-105, NFR-109 |
 | **AC-134** | Golden-store evaluation proves grounded composition, canonical-commerce preservation, accessibility and responsive quality across representative catalogue shapes and at least one non-jewellery merchant. | FR-109, FR-110, FR-114, NFR-102, NFR-103, NFR-108 |
 | **AC-135** | Publication deterministically validates and publishes the accepted StorefrontSnapshot without an AI call, provider payload or provider-owned page graph at publish time. | FR-108, FR-115, NFR-101, NFR-105, NFR-107 |
@@ -1961,8 +1941,8 @@ source-commerce baseline; pairwise output agreement alone is insufficient.
 <thead>
 <tr class="header">
 <th></th>
-<th><p><strong>v1.2.1 roadmap correction</strong></p>
-<p>The controlled lifecycle is retained, but repository infrastructure is not the same as a proven merchant outcome. Phase 9 remains active until meaningful grounded multi-page composition and its complete evidence gate pass. The binding order is Phase 9, P10A grounded orchestration, P10B assets and Studio UX, Phase 11 granular editing, Phase 12 stable domains and reference adapters, then deployment-specific authentication, tenancy, staging and operations.</p></th>
+<th><p><strong>Authoritative commercial roadmap synchronization</strong></p>
+<p>The controlled lifecycle is retained, but repository infrastructure is not the same as a proven merchant outcome. Phase 9 remains active until meaningful grounded multi-page composition and its complete evidence gate pass. The binding order is Phase 9, P10A publishing closure, P10B Commercial Storefront Design System v1, P10C Storefront Studio Editing Experience v1, deferred P10D advanced registered media, P11 stable domains/reference adapters and P12 production hardening.</p></th>
 </tr>
 </thead>
 <tbody>
@@ -1989,20 +1969,21 @@ source-commerce baseline; pairwise output agreement alone is insufficient.
 | **P7 — URL-first onboarding and brand reconstruction** | Source discovery, provenance, canonical reconciliation, brand evidence, asset inventory and approved Storefront Design Brief. | A merchant can connect an existing site or start from minimal assets without rebuilding catalogue truth. | URL → approved brief works with deterministic and real public-source modes. |
 | **P8 — Asset-aware initial generation**                | Compose homepage, collection and dynamic PDP from the brief; reuse approved assets; remove fixture defaults.                  | The first generated storefront feels specific to the merchant and catalogue.                             | Initial generation passes source/asset/binding checks and visual review.    |
 | **P9 — Meaningful grounded storefront generation** | Minimum proof-enabling registered capability reachability; coordinated shared frame, homepage, collection and PDP composition; approved-brief runtime handoff; commerce/assets; atomic apply/undo; persistence, preview and publish; responsive, accessibility and real-provider evidence. | A merchant receives a coherent editable storefront from the exact approved brief revision rather than token-only or one-section variation. | The Phase 9 evidence matrix is complete, including retained FR-105 approval-to-runtime correlation; no token-only, fixture-leaking, renderer-only, unapproved-brief or API-response-only result may pass. |
-| **P10A — Grounded orchestration** | Vocabulary freeze, repository capability audit, executable PageBlueprint contracts, generated Component Knowledge Registry and post-Phase-9 controlled vocabulary scaling, separate Skill package contracts, scoped instruction-router contracts, golden-store evaluation and deterministic publish compiler. P10A defines and validates scopes but does not deliver merchant-operable granular editing. | Generation retrieves what the product can actually build and compiles to the canonical snapshot. | AC-129 through AC-138 pass without a second registry, page graph or publish model; P10A-04 registry generation consumes P10A-03 blueprint contracts and is the only broad vocabulary-scaling activity. |
-| **P10B — Assets and Storefront Studio UX** | Upload/library, roles/provenance, generated-image lifecycle and merchant-facing Studio flows that consume P10A contracts. | Merchants can govern assets and use generation without developer concepts. | Studio-owned AC-121/122/123 evidence passes. AC-119 remains solely a Phase 9 gate. |
-| **P11 — Granular editing** | Runtime selection and execution for selected section/component, current page, shared frame, design system and complete storefront; add/remove/reorder/replace; preview, acceptance, mixed-scope history, Undo/Redo and merchant scope controls/warnings. | Merchants can make controlled local or coordinated changes without unintended scope widening. | Every merchant-operable scope passes permissions, review, atomicity, history and Undo/Redo tests against the P10A contracts. |
-| **P12 — Stable domains and reference adapters** | Consolidate canonical domain and port contracts; provide a Vesko reference adapter and conformance suite. | Vesko teams can integrate without redesigning Veskify or creating competing commerce truth. | Reference adapter passes contract tests; full staging is not required for this phase. |
-| **Later deployment work** | Authentication, tenancy, production operations, deployment, staging transports, rollout and support runbooks. | The integrated product can be operated safely in Vesko environments. | Environment-specific security, reliability and operational gates pass. |
+| **P10A — Grounded orchestration and publishing closure** | Vocabulary freeze, capability audit, executable PageBlueprints, registry, Skills/router, functional/publishing quality contracts and deterministic publish compiler. | Governed generation/follow-up execution and publication compile the canonical snapshot. | P10A-08 closes before P10B with controlled-provider, publish/render/rollback and protected-commerce evidence; no merchant-operable editing or commercial-visual-quality claim. |
+| **P10B — Commercial Storefront Design System v1** | P10B-01 through P10B-12: vocabulary, foundations, art direction, frame, families, merchandising, collection/PDP profiles, directions, narrative, responsive closure and visual gate. | Complete credible generated storefront without manual reconstruction. | Commercial component/profile reachability, directions and credible-asset manual screenshot/browser home/collection/simple-PDP/configurable-PDP review at 375/768/1024/1440; no generic starter theme or schema-only closure. |
+| **P10C — Storefront Studio Editing Experience v1** | Migrated asset governance/Studio work plus canonical Puck boundary, frame identity, approved operations, scoped AI and unified history. | Merchant can select/edit/reorder/undo/redo/save/preview/publish. | `StorefrontSnapshot` remains canonical; Puck has no persisted document model. |
+| **P10D — Deferred advanced media and interactive presentation** | Migrated generated-image lifecycle, video, registered GLTF/GLB/Three.js presentation, presets, fallbacks and budgets. | Future rich media when justified. | Does not block P10B/P10C; registered governed interactive presentation is permitted, but no arbitrary generated application code or arbitrary/generated Three.js implementation is permitted. |
+| **P11 — Stable domains and reference adapters** | Former P12 domains/ports and Vesko conformance adapter. | Integration without competing commerce truth. | Reference adapter passes standalone-equivalent fixtures. |
+| **P12 — Production hardening and operations** | Former later deployment work: auth, tenancy, secrets, staging, observability, recovery and runbooks. | Safely operable integrated product. | Environment-specific operational gates pass. |
 
 ## 19.3 Next binding task sequence
 
-Execute P10A-01 through P10A-08 in order after Phase 9 closes. Contract owners merge vocabulary,
-capability and executable PageBlueprint foundations before generating the Component Knowledge
-Registry, then merge Skill/router contracts before evaluation and publish-compiler consumers. P10B
-consumes those merged contracts; Phase 11 subsequently implements their editing scopes as
-merchant-operable runtime features. Parallel worktree assignments must still declare owned files,
-dependencies and merge order; a worktree label never changes canonical phase ownership.
+Execute P10A-01 through P10A-08 in order after Phase 9 closes, ending with publish closure. Then
+execute P10B-01 through P10B-12 in dependency order before P10C manual/Puck editing. P10C preserves
+and renumbers former P10B asset/Studio tasks; P10D defers generated media and interactive 3D; former
+Phase 12 moves to P11 and former later deployment work moves to P12. Parallel worktree assignments
+must still declare owned files, dependencies and merge order; a worktree label never changes
+canonical phase ownership.
 
 ## 19.4 Integration rules
 

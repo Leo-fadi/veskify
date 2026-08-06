@@ -10,6 +10,7 @@ export default async function PublishedProductPage({
     <ProductPreviewClient
       productId={projectId}
       productSlug={productSlug}
+      renderTarget="published"
       snapshotKind="published"
     />
   );
