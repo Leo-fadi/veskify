@@ -11,6 +11,7 @@ import { brandSystemToCssVariables } from "@/domain/design-system";
 import type { Locale } from "@/domain/shared";
 import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
 import { createBrowserProjectRepository, ProjectNotFoundError } from "@/services/storage";
+import { loadP905bLocalDemoPublishedProjection } from "@/integrations/ai/p9-05b-local-demo-client";
 import {
   previewLabel,
   previewPathPrefix,
@@ -70,11 +71,15 @@ export function ProjectPreviewClient({
   repositoryFactory = defaultRepositoryFactory,
   snapshotKind = "draft",
   historicalSnapshotId,
+  initialAggregate,
+  publishedSessionId,
 }: {
   projectId: string;
   repositoryFactory?: RepositoryFactory;
   snapshotKind?: SnapshotKind;
   historicalSnapshotId?: string;
+  initialAggregate?: ProjectAggregate;
+  publishedSessionId?: string;
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -84,8 +89,12 @@ export function ProjectPreviewClient({
 
   useEffect(() => {
     let cancelled = false;
-    repository
-      .current!.get(projectId)
+    Promise.resolve(
+      initialAggregate ??
+        (snapshotKind === "published" && publishedSessionId
+          ? loadP905bLocalDemoPublishedProjection({ projectId, sessionId: publishedSessionId })
+          : repository.current!.get(projectId)),
+    )
       .then((aggregate) => {
         if (cancelled) return;
         const draft = aggregate.snapshots.find(
@@ -110,6 +119,9 @@ export function ProjectPreviewClient({
             catalogue: aggregate.catalogue,
             snapshot: draft,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+            pagePathSuffix: publishedSessionId
+              ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
+              : "",
             renderTarget: snapshotKind === "published" ? "published" : "preview",
           });
           void renderStorefrontPage(homepage, context);
@@ -130,7 +142,14 @@ export function ProjectPreviewClient({
     return () => {
       cancelled = true;
     };
-  }, [attempt, historicalSnapshotId, projectId, snapshotKind]);
+  }, [
+    attempt,
+    historicalSnapshotId,
+    initialAggregate,
+    projectId,
+    publishedSessionId,
+    snapshotKind,
+  ]);
 
   const retry = () => {
     setState({ status: "loading" });
@@ -204,6 +223,9 @@ export function ProjectPreviewClient({
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+    pagePathSuffix: publishedSessionId
+      ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
+      : "",
     renderTarget: snapshotKind === "published" ? "published" : "preview",
   });
 

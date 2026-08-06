@@ -21,6 +21,7 @@ import { brandSystemToCssVariables } from "@/domain/design-system";
 import type { Locale } from "@/domain/shared";
 import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
 import { createBrowserProjectRepository, ProjectNotFoundError } from "@/services/storage";
+import { loadP905bLocalDemoPublishedProjection } from "@/integrations/ai/p9-05b-local-demo-client";
 import {
   previewLabel,
   previewPathPrefix,
@@ -98,6 +99,7 @@ export function CollectionPreviewClient({
   onNavigateCollection,
   onFilterIntent = ignoreFilterIntent,
   onSortIntent = ignoreSortIntent,
+  publishedSessionId,
 }: {
   projectId: string;
   collectionSlug: string;
@@ -111,6 +113,7 @@ export function CollectionPreviewClient({
   onNavigateCollection?: (intent: CollectionNavigationIntent) => void;
   onFilterIntent?: (intent: CollectionFilterIntent) => void;
   onSortIntent?: (intent: CollectionSortIntent) => void;
+  publishedSessionId?: string;
 }) {
   const effectiveRenderTarget =
     renderTarget ?? (snapshotKind === "published" ? "published" : "preview");
@@ -122,8 +125,10 @@ export function CollectionPreviewClient({
 
   useEffect(() => {
     let cancelled = false;
-    repository
-      .current!.get(projectId)
+    (snapshotKind === "published" && publishedSessionId
+      ? loadP905bLocalDemoPublishedProjection({ projectId, sessionId: publishedSessionId })
+      : repository.current!.get(projectId)
+    )
       .then((aggregate) => {
         if (cancelled) return;
         const draft = aggregate.snapshots.find(
@@ -147,6 +152,9 @@ export function CollectionPreviewClient({
             catalogue: aggregate.catalogue,
             snapshot: draft,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+            pagePathSuffix: publishedSessionId
+              ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
+              : "",
             renderTarget: effectiveRenderTarget,
           });
           void renderStorefrontPage(page, context);
@@ -184,6 +192,7 @@ export function CollectionPreviewClient({
     projectId,
     effectiveRenderTarget,
     snapshotKind,
+    publishedSessionId,
   ]);
 
   const retry = () => {
@@ -260,6 +269,9 @@ export function CollectionPreviewClient({
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
+    pagePathSuffix: publishedSessionId
+      ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
+      : "",
     renderTarget: effectiveRenderTarget,
   });
   const style = brandSystemToCssVariables(state.draft.brandSystem) as CSSProperties;
@@ -277,7 +289,12 @@ export function CollectionPreviewClient({
               section.content.productId === intent.productId,
           ),
       );
-      if (productPage) window.location.assign(`${pathPrefix}${productPage.slug}`);
+      if (productPage)
+        window.location.assign(
+          `${pathPrefix}${productPage.slug}${
+            publishedSessionId ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}` : ""
+          }`,
+        );
     });
   const navigateCollection =
     onNavigateCollection ??
@@ -292,7 +309,12 @@ export function CollectionPreviewClient({
               section.content.collectionId === intent.collectionId,
           ),
       );
-      if (collectionPage) window.location.assign(`${pathPrefix}${collectionPage.slug}`);
+      if (collectionPage)
+        window.location.assign(
+          `${pathPrefix}${collectionPage.slug}${
+            publishedSessionId ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}` : ""
+          }`,
+        );
     });
 
   return (
@@ -301,7 +323,9 @@ export function CollectionPreviewClient({
         <div>
           <Link
             className="project-preview__back"
-            href={previewPathPrefix(projectId, snapshotKind, historicalSnapshotId)}
+            href={`${previewPathPrefix(projectId, snapshotKind, historicalSnapshotId)}${
+              publishedSessionId ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}` : ""
+            }`}
           >
             Storefront home
           </Link>

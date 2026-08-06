@@ -2,17 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import {
-  confirmPublish,
-  InvalidPublishPreparationError,
-  NoPublishableChangesError,
-  preparePublish,
-  PublishConfirmationError,
-  PublishPreparationValidationError,
-  StalePublishPreparationError,
-  type PublishConfirmationResult,
-  type PublishPreparation,
-} from "@/application/publishing";
+import { type PublishPreparation } from "@/application/publishing";
 import { PublishConfirmation } from "@/components/publishing/publish-confirmation";
 import { PublishStatus, publishingCopy } from "@/components/publishing/publish-status";
 import type { Locale } from "@/domain/shared";
@@ -20,15 +10,21 @@ import {
   createBrowserProjectRepository,
   ProjectNotFoundError,
   type ProjectAggregate,
-  type ProjectRepository,
 } from "@/services/storage";
 import {
+  loadP905bLocalDemoSavedAggregate,
   P905bLocalDemoSynchronizationClientError,
   synchronizeP905bLocalDemoAggregate,
 } from "@/integrations/ai/p9-05b-local-demo-client";
+import {
+  AuthoritativeMerchantPublishClientError,
+  createAuthoritativeMerchantPublishClient,
+  type MerchantPublishGatewayClient,
+} from "./authoritative-publish-client";
 import styles from "./publish.module.css";
 
-type RepositoryFactory = () => ProjectRepository;
+type ProjectReader = Pick<ReturnType<typeof createBrowserProjectRepository>, "get">;
+type RepositoryFactory = () => ProjectReader;
 type LoadState =
   | { status: "loading" }
   | { status: "notFound" }
@@ -42,13 +38,22 @@ type PublishState =
   | { status: "confirming"; preparation: PublishPreparation }
   | { status: "stale"; message: string }
   | { status: "failure"; message: string }
-  | { status: "success"; result: PublishConfirmationResult };
+  | { status: "success"; projectRevision: number };
 
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
 
 function errorMessage(error: unknown, locale: Locale): { stale: boolean; message: string } {
   const fi = locale === "fi";
-  if (error instanceof StalePublishPreparationError) {
+  if (
+    error instanceof AuthoritativeMerchantPublishClientError &&
+    [
+      "stalePublishConfirmation",
+      "staleProjectRevision",
+      "savedDraftMismatch",
+      "publishedStateConflict",
+      "idempotency-conflict",
+    ].includes(error.code)
+  ) {
     return {
       stale: true,
       message: fi
@@ -56,11 +61,7 @@ function errorMessage(error: unknown, locale: Locale): { stale: boolean; message
         : "The saved draft or published storefront changed after your review. Review the latest draft before publishing.",
     };
   }
-  if (
-    error instanceof InvalidPublishPreparationError ||
-    error instanceof PublishConfirmationError ||
-    error instanceof NoPublishableChangesError
-  ) {
+  if (error instanceof AuthoritativeMerchantPublishClientError && error.status === 409) {
     return {
       stale: true,
       message: fi
@@ -68,7 +69,7 @@ function errorMessage(error: unknown, locale: Locale): { stale: boolean; message
         : "Publishing could not be confirmed safely. Review the latest saved draft before trying again.",
     };
   }
-  if (error instanceof PublishPreparationValidationError) {
+  if (error instanceof AuthoritativeMerchantPublishClientError && error.status === 400) {
     return {
       stale: false,
       message: fi
@@ -87,14 +88,25 @@ function errorMessage(error: unknown, locale: Locale): { stale: boolean; message
 export function PublishClient({
   projectId,
   repositoryFactory = defaultRepositoryFactory,
+  publishGateway,
+  acceptedReceiptId,
   localDemoSession,
+  initialAggregate,
 }: {
   projectId: string;
   repositoryFactory?: RepositoryFactory;
+  publishGateway?: MerchantPublishGatewayClient;
+  acceptedReceiptId?: string;
   localDemoSession?: { sessionId: string; authoritativeRevision: number };
+  initialAggregate?: ProjectAggregate;
 }) {
-  const repository = useRef<ProjectRepository | undefined>(undefined);
+  const repository = useRef<ProjectReader | undefined>(undefined);
   repository.current ??= repositoryFactory();
+  const gateway = useRef<MerchantPublishGatewayClient | undefined>(undefined);
+  gateway.current ??=
+    publishGateway ??
+    createAuthoritativeMerchantPublishClient({ sessionId: localDemoSession?.sessionId });
+  const requestId = useRef<string | undefined>(undefined);
   const [attempt, setAttempt] = useState(0);
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [publishState, setPublishState] = useState<PublishState>({ status: "idle" });
@@ -105,8 +117,7 @@ export function PublishClient({
 
   useEffect(() => {
     let cancelled = false;
-    repository
-      .current!.get(projectId)
+    Promise.resolve(initialAggregate ?? repository.current!.get(projectId))
       .then((aggregate) => {
         if (cancelled) return;
         setLocale(aggregate.project.primaryLocale);
@@ -119,9 +130,10 @@ export function PublishClient({
     return () => {
       cancelled = true;
     };
-  }, [attempt, projectId]);
+  }, [attempt, initialAggregate, projectId]);
 
   const retryLoad = () => {
+    requestId.current = undefined;
     setLoadState({ status: "loading" });
     setPublishState({ status: "idle" });
     setAttempt((current) => current + 1);
@@ -155,6 +167,9 @@ export function PublishClient({
   const editorHref = localDemoSession
     ? `/projects/${projectId}/editor?p9-05b-session=${encodeURIComponent(localDemoSession.sessionId)}`
     : `/projects/${projectId}/editor`;
+  const publishedHref = localDemoSession
+    ? `/projects/${projectId}/published?p9-05b-session=${encodeURIComponent(localDemoSession.sessionId)}`
+    : `/projects/${projectId}/published`;
   const draft = loadState.aggregate.snapshots.find(
     (snapshot) => snapshot.id === loadState.aggregate.project.draftSnapshotId,
   );
@@ -174,16 +189,48 @@ export function PublishClient({
     );
   }
 
-  const review = async () => {
+  const review = async ({ reloadLatestLocalDemo = false } = {}) => {
     setPublishState({ status: "preparing" });
     try {
-      const preparation = await preparePublish(projectId, repository.current!);
+      let aggregate = loadState.aggregate;
+      if (localDemoSession && reloadLatestLocalDemo) {
+        const latest = await loadP905bLocalDemoSavedAggregate({
+          projectId,
+          sessionId: localDemoSession.sessionId,
+        });
+        aggregate = latest.aggregate;
+        setLoadState({ status: "success", aggregate });
+        setAuthoritativeRevision(latest.authoritativeRevision);
+      }
+      requestId.current ??= `publish_request_${crypto.randomUUID().replaceAll("-", "")}`;
+      if (!requestId.current) throw new Error("Missing publication request identity.");
+      if (localDemoSession && !reloadLatestLocalDemo) {
+        if (authoritativeRevision === null) {
+          throw new P905bLocalDemoSynchronizationClientError("stale", 409);
+        }
+        const synchronization = await synchronizeP905bLocalDemoAggregate({
+          projectId,
+          sessionId: localDemoSession.sessionId,
+          expectedRevision: authoritativeRevision,
+          mode: "saved",
+          aggregate,
+        });
+        setAuthoritativeRevision(synchronization.authoritativeRevision);
+      }
+      const preparation = await gateway.current!.prepare({
+        projectId,
+        requestId: requestId.current,
+        authority: acceptedReceiptId
+          ? { kind: "accepted-ai", receiptId: acceptedReceiptId }
+          : { kind: "manual" },
+      });
       setPublishState(
         preparation.publishPermitted
           ? { status: "ready", preparation }
           : { status: "noChanges", preparation },
       );
     } catch (error) {
+      requestId.current = undefined;
       const mapped = errorMessage(error, activeLocale);
       setPublishState(
         mapped.stale
@@ -193,27 +240,24 @@ export function PublishClient({
     }
   };
 
+  const startLatestReview = () => {
+    requestId.current = undefined;
+    void review({ reloadLatestLocalDemo: Boolean(localDemoSession) });
+  };
+
   const publish = async () => {
     if (publishState.status !== "ready") return;
     const preparation = publishState.preparation;
     setPublishState({ status: "confirming", preparation });
     try {
-      if (localDemoSession) {
-        if (authoritativeRevision === null) {
-          throw new P905bLocalDemoSynchronizationClientError("stale", 409);
-        }
-        const synchronization = await synchronizeP905bLocalDemoAggregate({
-          projectId,
-          sessionId: localDemoSession.sessionId,
-          expectedRevision: authoritativeRevision,
-          mode: "saved",
-          aggregate: loadState.aggregate,
-        });
-        setAuthoritativeRevision(synchronization.authoritativeRevision);
-      }
-      const result = await confirmPublish(preparation, repository.current!);
-      setPublishState({ status: "success", result });
-      setLoadState({ status: "success", aggregate: result.aggregate });
+      if (!requestId.current) throw new Error("Missing publication request identity.");
+      const result = await gateway.current!.confirm({
+        projectId,
+        requestId: requestId.current,
+        preparationId: preparation.preparationId,
+      });
+      requestId.current = undefined;
+      setPublishState({ status: "success", projectRevision: result.projectRevision });
     } catch (error) {
       const mapped = errorMessage(error, activeLocale);
       setPublishState(
@@ -232,6 +276,10 @@ export function PublishClient({
         locale={activeLocale}
         onConfirm={() => {
           void publish();
+        }}
+        onCancel={() => {
+          requestId.current = undefined;
+          setPublishState({ status: "idle" });
         }}
         preparation={publishState.preparation}
         primaryLocale={loadState.aggregate.project.primaryLocale}
@@ -295,7 +343,7 @@ export function PublishClient({
               <button
                 className={styles.secondaryAction}
                 onClick={() => {
-                  void review();
+                  startLatestReview();
                 }}
                 type="button"
               >
@@ -312,7 +360,7 @@ export function PublishClient({
               <button
                 className={styles.secondaryAction}
                 onClick={() => {
-                  void review();
+                  startLatestReview();
                 }}
                 type="button"
               >
@@ -331,11 +379,20 @@ export function PublishClient({
         {publishState.status === "success" ? (
           <section aria-live="polite" className={styles.success}>
             <h2>{text.successTitle}</h2>
-            <p>{text.successMessage(publishState.result.aggregate.project.revision)}</p>
+            <p>{text.successMessage(publishState.projectRevision)}</p>
             <p>{text.successDraft}</p>
             <div>
               <Link href={editorHref}>{text.editor}</Link>
-              <Link href={`/projects/${projectId}/published`}>{text.publishedStorefront}</Link>
+              <Link
+                href={
+                  localDemoSession
+                    ? `${publishedHref}&published-revision=${publishState.projectRevision}`
+                    : publishedHref
+                }
+                prefetch={false}
+              >
+                {text.publishedStorefront}
+              </Link>
             </div>
           </section>
         ) : null}

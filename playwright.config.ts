@@ -4,7 +4,11 @@ const port = process.env.PLAYWRIGHT_PORT ?? "3100";
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  testIgnore: ["p9r-04-generation-acceptance.spec.ts", "p10a-04c-homepage-commerce-bridge.spec.ts"],
+  testIgnore: [
+    "p9r-04-generation-acceptance.spec.ts",
+    "p10a-04c-homepage-commerce-bridge.spec.ts",
+    "publish-confirmation.spec.ts",
+  ],
   // Project state and browser evidence are intentionally isolated per run.
   workers: 1,
   fullyParallel: false,

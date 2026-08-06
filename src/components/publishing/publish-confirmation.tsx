@@ -10,6 +10,7 @@ export function PublishConfirmation({
   primaryLocale,
   confirming,
   onConfirm,
+  onCancel,
   cancelHref,
 }: {
   preparation: PublishPreparation;
@@ -17,6 +18,7 @@ export function PublishConfirmation({
   primaryLocale: Locale;
   confirming: boolean;
   onConfirm: () => void;
+  onCancel: () => void;
   cancelHref: string;
 }) {
   const text = publishingCopy(locale);
@@ -41,7 +43,9 @@ export function PublishConfirmation({
             {text.cancel}
           </button>
         ) : (
-          <Link href={cancelHref}>{text.cancel}</Link>
+          <Link href={cancelHref} onClick={onCancel}>
+            {text.cancel}
+          </Link>
         )}
       </div>
     </section>

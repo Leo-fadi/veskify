@@ -76,6 +76,7 @@ export function createStorefrontRenderContext({
   catalogue,
   snapshot,
   pagePathPrefix = "",
+  pagePathSuffix = "",
   renderTarget = "preview",
 }: {
   activeLocale: Locale;
@@ -83,12 +84,13 @@ export function createStorefrontRenderContext({
   catalogue: CatalogueDisplayModel;
   snapshot: Pick<StorefrontSnapshot, "navigation" | "pages">;
   pagePathPrefix?: string;
+  pagePathSuffix?: string;
   renderTarget?: StorefrontRenderContext["renderTarget"];
 }): StorefrontRenderContext {
   const pagePaths = Object.fromEntries(
     snapshot.pages.map((page) => [
       page.id,
-      pagePathPrefix ? `${pagePathPrefix}${page.slug === "/" ? "" : page.slug}` : page.slug,
+      `${pagePathPrefix ? `${pagePathPrefix}${page.slug === "/" ? "" : page.slug}` : page.slug}${pagePathSuffix}`,
     ]),
   );
   const homePage = snapshot.pages.find((page) => page.type === "home");

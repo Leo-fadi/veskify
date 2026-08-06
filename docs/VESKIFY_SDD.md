@@ -326,12 +326,18 @@ publication preparation accepts only the receipt identity, resolves trusted stor
 current authority; confirmation resolves and validates it again before a publication write. Manual
 publication remains an explicit separate authority and cannot claim AI acceptance lineage.
 
-This seam does not complete active-route publishing. Its in-memory repository is deterministic
-contract evidence, not durable production storage. The current merchant browser publish route is
-not migrated by P10A-08B and continues through explicit manual authority. P10A-08C owns authoritative
-acceptance-endpoint wiring, durable receipt persistence, browser/gateway enforcement, compiled
-runtime publication, atomic active-version switching and rollback closure. Until P10A-08C, the
-active merchant route does not enforce end-to-end AI acceptance lineage.
+P10A-08C-01 makes this seam effective at the active merchant route. The browser supplies only a
+manual authority declaration or an accepted-receipt ID to a same-origin server boundary. That boundary
+authenticates the merchant, requires `publishStorefront`, resolves receipt authority from trusted durable
+storage, creates the existing `StorefrontPublishingGateway` request and retains the preparation server-side
+for confirmation. It rechecks receipt/current-state authority at preparation and confirmation; the browser
+cannot mutate a repository, move the published pointer, submit receipt content or fall back from accepted
+AI to manual authority. The narrow server receipt store is create-once and parses immutable receipts on
+retrieval; publication request records are also durable for idempotent retry.
+
+Manual publication remains explicit and distinct from accepted-AI publication. This work leaves the
+deterministic compiled-runtime artifact, atomic active-version switching, rollback closure and published
+render-target closure to P10A-08C-02; it does not claim compiler closure.
 
 ### P10B Commercial Storefront Design System v1
 

@@ -477,7 +477,16 @@ export async function loadP905bLocalDemoEditorSession(input: {
     return null;
   }
   const activeAggregate = await current.repository.get(P9_05A_PROJECT_ID);
-  const aggregate = structuredClone(current.savedAggregate);
+  // Accepted but unsaved editor work deliberately stays out of the reload bridge.
+  // A confirmed publish, however, advances the immutable published reference in
+  // authoritative storage, so expose that server result even
+  // if a long-lived route handler was created before the local session reset.
+  const aggregate = structuredClone(
+    activeAggregate.project.publishedSnapshotId !==
+      current.savedAggregate.project.publishedSnapshotId
+      ? activeAggregate
+      : current.savedAggregate,
+  );
   const proposal = current.session.proposal?.proposal ?? null;
   if (
     proposal !== null &&
@@ -497,10 +506,69 @@ export async function loadP905bLocalDemoEditorSession(input: {
   };
 }
 
+/** Loads the saved session authority for a fresh local-demo review lifecycle. */
+export async function loadP905bLocalDemoSavedAggregate(input: {
+  projectId: string;
+  sessionId: string;
+  environment?: DemoEnvironment;
+}): Promise<{
+  aggregate: ProjectAggregate;
+  authoritativeRevision: number;
+} | null> {
+  const bridge = await loadP905bLocalDemoEditorSession(input);
+  return bridge
+    ? {
+        aggregate: bridge.aggregate,
+        authoritativeRevision: bridge.authoritativeRevision,
+      }
+    : null;
+}
+
 export function p905bLocalDemoRepository(
   environment: DemoEnvironment = process.env,
 ): InMemoryProjectRepository {
   return state(environment).repository;
+}
+
+export async function loadP905bLocalDemoPublishedProjection(input: {
+  projectId: string;
+  sessionId: string;
+  environment?: DemoEnvironment;
+}): Promise<
+  | (Pick<ProjectAggregate, "project" | "catalogue"> & {
+      publishedSnapshot: ProjectAggregate["snapshots"][number];
+    })
+  | null
+> {
+  const current = state(input.environment ?? process.env);
+  if (
+    input.projectId !== P9_05A_PROJECT_ID ||
+    !sameP905bLocalDemoSecret(input.sessionId, current.session.id)
+  ) {
+    return null;
+  }
+  const aggregate = await current.repository.get(P9_05A_PROJECT_ID);
+  const publishedSnapshot = aggregate.snapshots.find(
+    (snapshot) => snapshot.id === aggregate.project.publishedSnapshotId,
+  );
+  if (!publishedSnapshot) return null;
+  return {
+    project: structuredClone(aggregate.project),
+    catalogue: structuredClone(aggregate.catalogue),
+    publishedSnapshot: structuredClone(publishedSnapshot),
+  };
+}
+
+/** Records the server-confirmed publish result as the next persisted local-demo bridge state. */
+export async function commitP905bLocalDemoPublishedAggregate(input: {
+  projectId: string;
+  environment?: DemoEnvironment;
+}): Promise<void> {
+  const current = state(input.environment ?? process.env);
+  if (input.projectId !== P9_05A_PROJECT_ID) {
+    throw new Error("The P9-05B local demo publish result targets another project.");
+  }
+  current.savedAggregate = structuredClone(await current.repository.get(P9_05A_PROJECT_ID));
 }
 
 export async function buildP905bLocalDemoRequest(

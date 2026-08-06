@@ -245,7 +245,9 @@ test("P10A-04C renders executable homepage profiles through the deterministic br
 
   for (const width of [1440, 375]) {
     await page.setViewportSize({ width, height: width === 375 ? 812 : 1000 });
-    await page.goto(`/projects/${projectId}/published`);
+    await page.goto(
+      `/projects/${projectId}/published?p9-05b-session=${encodeURIComponent(premium.sessionId)}`,
+    );
     await expect(page.locator('[data-component="homepageHero"]')).toBeVisible();
     await expectRenderedProfile(page, profiles[0], "published");
     await expectNoStorefrontHorizontalClipping(page);
