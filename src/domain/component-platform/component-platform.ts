@@ -1473,7 +1473,7 @@ export function createComponentRegistryV2(
 
     validateInstanceData(instance, definition);
     validateInstanceBindings(instance, definition);
-    validateInstanceAssetAssignments(instance, definition);
+    validateComponentAssetAssignments(instance.assetAssignments, definition);
     validationContracts[instance.component]?.validateInstance?.(instance);
     return instance;
   }
@@ -1557,13 +1557,13 @@ function validateInstanceBindings(
   }
 }
 
-function validateInstanceAssetAssignments(
-  instance: ComponentInstanceV2,
+export function validateComponentAssetAssignments(
+  assetAssignments: ComponentInstanceV2["assetAssignments"],
   definition: ComponentDefinitionV2,
 ) {
   const slots = new Map(definition.assetSlots.map((slot) => [slot.id, slot]));
   const seenAssignments = new Set<string>();
-  instance.assetAssignments.forEach((assignment) => {
+  assetAssignments.forEach((assignment) => {
     const slot = slots.get(assignment.slotId);
     if (!slot) throw new Error(`Invalid asset slot: ${assignment.slotId}.`);
     if (!slot.acceptedRoles.includes(assignment.role)) {
@@ -1576,11 +1576,13 @@ function validateInstanceAssetAssignments(
     seenAssignments.add(assignmentKey);
   });
   for (const slot of definition.assetSlots) {
-    const count = instance.assetAssignments.filter(
-      (assignment) => assignment.slotId === slot.id,
-    ).length;
-    if (slot.required && count < slot.minItems) {
-      throw new Error(`Missing required asset slot: ${slot.id}.`);
+    const count = assetAssignments.filter((assignment) => assignment.slotId === slot.id).length;
+    if (count < slot.minItems) {
+      throw new Error(
+        slot.required
+          ? `Missing required asset slot: ${slot.id}.`
+          : `Not enough assets assigned to slot: ${slot.id}.`,
+      );
     }
     if (slot.maxItems !== undefined && count > slot.maxItems) {
       throw new Error(`Too many assets assigned to slot: ${slot.id}.`);

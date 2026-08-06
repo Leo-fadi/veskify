@@ -4,13 +4,19 @@ import {
   sharedStorefrontFrameProfile,
 } from "@/application/storefront-templates";
 import {
+  createStorefrontPagePaths,
   validateRegisteredSnapshot,
   veskifyComponentCapabilityManifest,
+  veskifyComponentRegistryV2,
 } from "@/components/registry";
 import { catalogueDisplayModelSchema, type CatalogueDisplayModel } from "@/domain/catalogue";
-import { componentVersionSchema } from "@/domain/component-platform";
+import {
+  componentVersionSchema,
+  validateComponentAssetAssignments,
+} from "@/domain/component-platform";
 import { brandSystemSchema } from "@/domain/design-system";
-import { idSchema, localeSchema } from "@/domain/shared";
+import type { Project } from "@/domain/project";
+import { canonicalLocaleOrder, idSchema, localeSchema } from "@/domain/shared";
 import {
   canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
@@ -69,6 +75,14 @@ const localeAuthoritySchema = z
   })
   .strict();
 
+const projectLocaleConfigurationSchema = z
+  .object({
+    activeLocale: localeSchema,
+    primaryLocale: localeSchema,
+    enabledLocales: z.array(localeSchema).min(1),
+  })
+  .strict();
+
 const compilerAuthoritySchema = z
   .object({
     snapshotContractVersion: z.string().trim().min(1).max(120),
@@ -83,7 +97,6 @@ const compilerAuthoritySchema = z
     navigationRoutesFingerprint: fingerprintSchema,
     productMediaFingerprint: fingerprintSchema,
     approvedAssetFingerprint: fingerprintSchema,
-    localeAuthority: localeAuthoritySchema,
     migrationStatus: z.enum(["current", "unresolved"]),
     migrationFingerprint: fingerprintSchema,
   })
@@ -100,6 +113,7 @@ export const publishCompilerInputSchema = z
     sourceSnapshotRevision: z.number().int().nonnegative(),
     sourceSnapshotFingerprint: fingerprintSchema,
     sourceAuthority: sourceAuthoritySchema,
+    projectLocales: projectLocaleConfigurationSchema,
     snapshot: z.unknown(),
     catalogue: z.unknown(),
     authority: compilerAuthoritySchema,
@@ -172,6 +186,7 @@ export const publishCompileReceiptSchema = z
     navigationRoutesFingerprint: fingerprintSchema,
     productMediaFingerprint: fingerprintSchema,
     approvedAssetFingerprint: fingerprintSchema,
+    localeAuthority: localeAuthoritySchema,
     migrationStatus: z.literal("current"),
     migrationFingerprint: fingerprintSchema,
     validationReportFingerprint: fingerprintSchema,
@@ -226,6 +241,8 @@ export type PublishCompilerErrorCode =
   | "navigation-route-violation"
   | "product-media-violation"
   | "invalid-approved-asset"
+  | "invalid-locale-authority"
+  | "duplicate-published-route"
   | "critical-accessibility-failure"
   | "unresolved-migration"
   | "nondeterministic-compiler-result"
@@ -281,10 +298,41 @@ function rendererAuthorityFingerprint(): string {
   )}`;
 }
 
+function publishedRouteAuthority(snapshot: StorefrontSnapshot) {
+  const pagePaths = createStorefrontPagePaths({ snapshot });
+  const routes = snapshot.pages
+    .map((page) => ({
+      pageId: page.id,
+      pageType: page.type,
+      path: pagePaths[page.id],
+    }))
+    .sort(
+      (left, right) =>
+        compare(left.path, right.path) ||
+        compare(left.pageType, right.pageType) ||
+        compare(left.pageId, right.pageId),
+    );
+  const seenPaths = new Set<string>();
+  for (const route of routes) {
+    if (seenPaths.has(route.path)) {
+      throw new PublishCompilerError("duplicate-published-route");
+    }
+    seenPaths.add(route.path);
+  }
+  const homeRoutes = routes.filter(({ pageType }) => pageType === "home");
+  if (homeRoutes.length > 1) {
+    throw new PublishCompilerError("duplicate-published-route");
+  }
+  if (homeRoutes.some(({ path }) => path !== "/")) {
+    throw new PublishCompilerError("navigation-route-violation");
+  }
+  return routes;
+}
+
 function navigationRoutesFingerprint(snapshot: StorefrontSnapshot): string {
   return `publish-navigation-${canonicalValueFingerprint({
     navigation: snapshot.navigation,
-    routes: snapshot.pages.map(({ id, type, slug }) => ({ id, type, slug })),
+    routes: publishedRouteAuthority(snapshot),
   })}`;
 }
 
@@ -296,22 +344,47 @@ function productMediaFingerprint(catalogue: CatalogueDisplayModel): string {
 
 function approvedAssetFingerprint(snapshot: StorefrontSnapshot): string {
   return `publish-approved-assets-${canonicalValueFingerprint(
-    snapshot.pages.flatMap((page) =>
-      page.sections.map((section) => ({
-        pageId: page.id,
-        sectionId: section.id,
-        placements: section.approvedAssetPlacements,
-        presentations: section.approvedAssetPresentations,
-      })),
-    ),
+    snapshot.pages
+      .flatMap((page) =>
+        page.sections.map((section) => ({
+          pageId: page.id,
+          sectionId: section.id,
+          placements: [...(section.approvedAssetPlacements ?? [])].sort(
+            (left, right) =>
+              compare(left.assetSlotId, right.assetSlotId) || compare(left.assetId, right.assetId),
+          ),
+          presentations: [...(section.approvedAssetPresentations ?? [])].sort((left, right) =>
+            compare(left.assetId, right.assetId),
+          ),
+        })),
+      )
+      .sort(
+        (left, right) =>
+          compare(left.pageId, right.pageId) || compare(left.sectionId, right.sectionId),
+      ),
   )}`;
 }
 
-function localeAuthority() {
+function projectLocaleAuthority(
+  configuration: Pick<Project, "primaryLocale" | "enabledLocales"> & {
+    activeLocale: Project["primaryLocale"];
+  },
+) {
+  const supportedLocales = canonicalLocaleOrder(configuration.enabledLocales);
+  if (
+    configuration.enabledLocales.length === 0 ||
+    new Set(configuration.enabledLocales).size !== configuration.enabledLocales.length ||
+    supportedLocales.length !== configuration.enabledLocales.length ||
+    !supportedLocales.includes(configuration.primaryLocale) ||
+    !supportedLocales.includes(configuration.activeLocale) ||
+    configuration.activeLocale !== configuration.primaryLocale
+  ) {
+    throw new PublishCompilerError("invalid-locale-authority");
+  }
   const content = {
-    activeLocale: "en" as const,
-    primaryLocale: "en" as const,
-    supportedLocales: ["en", "fi"] as const,
+    activeLocale: configuration.activeLocale,
+    primaryLocale: configuration.primaryLocale,
+    supportedLocales,
   };
   return {
     ...content,
@@ -375,6 +448,11 @@ export function createCurrentPublishCompilerInput(
           acceptedReceiptId: input.sourceAuthority.acceptedReceiptId,
           acceptedReceiptFingerprint: input.sourceAuthority.acceptedReceiptFingerprint,
         };
+  const locales = projectLocaleAuthority({
+    activeLocale: input.aggregate.project.primaryLocale,
+    primaryLocale: input.aggregate.project.primaryLocale,
+    enabledLocales: input.aggregate.project.enabledLocales,
+  });
   return publishCompilerInputSchema.parse({
     contractVersion: publishCompilerContractVersion,
     projectId: input.aggregate.project.id,
@@ -385,6 +463,11 @@ export function createCurrentPublishCompilerInput(
     sourceSnapshotRevision: input.snapshot.revision,
     sourceSnapshotFingerprint: canonicalStorefrontContentFingerprint(input.snapshot),
     sourceAuthority,
+    projectLocales: {
+      activeLocale: locales.activeLocale,
+      primaryLocale: locales.primaryLocale,
+      enabledLocales: locales.supportedLocales,
+    },
     snapshot: input.snapshot,
     catalogue: input.aggregate.catalogue,
     authority: {
@@ -400,7 +483,6 @@ export function createCurrentPublishCompilerInput(
       navigationRoutesFingerprint: navigationRoutesFingerprint(input.snapshot),
       productMediaFingerprint: productMediaFingerprint(input.aggregate.catalogue),
       approvedAssetFingerprint: approvedAssetFingerprint(input.snapshot),
-      localeAuthority: localeAuthority(),
       migrationStatus: "current",
       migrationFingerprint: migrationFingerprint(),
     },
@@ -574,45 +656,48 @@ function containsProtectedCommerceTruth(value: unknown): boolean {
 function assertAssets(snapshot: StorefrontSnapshot): void {
   for (const page of snapshot.pages) {
     for (const section of page.sections) {
-      const entry = veskifyComponentCapabilityManifest.getByComponentType(section.component);
-      if (!entry) continue;
       const placements = section.approvedAssetPlacements ?? [];
+      if (placements.some(({ assetSlotId }) => assetSlotId === "productMedia")) {
+        throw new PublishCompilerError("product-media-violation");
+      }
+      try {
+        validateComponentAssetAssignments(
+          placements.map((placement) => ({
+            slotId: placement.assetSlotId,
+            assetId: placement.assetId,
+            role: placement.role,
+          })),
+          veskifyComponentRegistryV2.get(section.component),
+        );
+      } catch (cause) {
+        throw new PublishCompilerError("invalid-approved-asset", { cause });
+      }
+      const presentationList = section.approvedAssetPresentations ?? [];
       const presentations = new Map(
-        (section.approvedAssetPresentations ?? []).map((presentation) => [
-          presentation.assetId,
-          presentation,
-        ]),
+        presentationList.map((presentation) => [presentation.assetId, presentation]),
       );
+      if (presentations.size !== presentationList.length) {
+        throw new PublishCompilerError("invalid-approved-asset");
+      }
       for (const placement of placements) {
-        const slot = entry.assetSlots.find(({ id }) => id === placement.assetSlotId);
         const presentation = presentations.get(placement.assetId);
         if (
-          placement.assetSlotId === "productMedia" ||
-          !slot ||
-          !slot.acceptedRoles.includes(placement.role) ||
           !presentation ||
           presentation.role !== placement.role ||
           presentation.revision !== placement.assetRevision ||
           presentation.materialFingerprint !== placement.materialFingerprint ||
           presentation.asset.id !== placement.assetId
         ) {
-          throw new PublishCompilerError(
-            placement.assetSlotId === "productMedia"
-              ? "product-media-violation"
-              : "invalid-approved-asset",
-          );
-        }
-      }
-      for (const required of entry.requiredAssetSlots) {
-        if (
-          !placements.some(
-            (placement) =>
-              placement.assetSlotId === required.slotId &&
-              required.acceptedRoles.includes(placement.role),
-          )
-        ) {
           throw new PublishCompilerError("invalid-approved-asset");
         }
+      }
+      if (
+        presentationList.some(
+          (presentation) =>
+            !placements.some((placement) => placement.assetId === presentation.assetId),
+        )
+      ) {
+        throw new PublishCompilerError("invalid-approved-asset");
       }
     }
   }
@@ -657,9 +742,6 @@ function assertSnapshotAuthority(
   if (authority.approvedAssetFingerprint !== approvedAssetFingerprint(snapshot)) {
     throw new PublishCompilerError("invalid-approved-asset");
   }
-  if (canonicalValueString(authority.localeAuthority) !== canonicalValueString(localeAuthority())) {
-    throw new PublishCompilerError("critical-accessibility-failure");
-  }
   if (
     snapshot.pages.some((page) =>
       page.sections.some(
@@ -676,6 +758,7 @@ function assertSnapshotAuthority(
 function compileResult(
   input: PublishCompilerInput,
   snapshot: StorefrontSnapshot,
+  localeAuthority: z.infer<typeof localeAuthoritySchema>,
 ): CompiledPublicationResult {
   const validationReport = {
     manifestFingerprint: input.authority.manifestFingerprint,
@@ -686,6 +769,7 @@ function compileResult(
     navigationRoutesFingerprint: input.authority.navigationRoutesFingerprint,
     productMediaFingerprint: input.authority.productMediaFingerprint,
     approvedAssetFingerprint: input.authority.approvedAssetFingerprint,
+    localeAuthority,
     migrationFingerprint: input.authority.migrationFingerprint,
   };
   const validationReportFingerprint = `publish-validation-${canonicalValueFingerprint(validationReport)}`;
@@ -717,7 +801,7 @@ function compileResult(
       }),
     })),
     rendererTarget: "published" as const,
-    localeAuthority: input.authority.localeAuthority,
+    localeAuthority,
     validationReportFingerprint,
   };
   const runtimeFingerprint = `compiled-publication-${canonicalValueFingerprint(resultWithoutFingerprint)}`;
@@ -751,6 +835,7 @@ function compileReceipt(
     navigationRoutesFingerprint: input.authority.navigationRoutesFingerprint,
     productMediaFingerprint: input.authority.productMediaFingerprint,
     approvedAssetFingerprint: input.authority.approvedAssetFingerprint,
+    localeAuthority: result.localeAuthority,
     migrationStatus: "current" as const,
     migrationFingerprint: input.authority.migrationFingerprint,
     validationReportFingerprint: result.validationReportFingerprint,
@@ -773,6 +858,14 @@ export function compileStorefrontPublication(inputValue: unknown): TrustedPublis
   }
   const parsed = publishCompilerInputSchema.safeParse(cloned);
   if (!parsed.success) {
+    if (
+      cloned &&
+      typeof cloned === "object" &&
+      "projectLocales" in cloned &&
+      parsed.error.issues.some((issue) => issue.path[0] === "projectLocales")
+    ) {
+      throw new PublishCompilerError("invalid-locale-authority", { cause: parsed.error });
+    }
     throw new PublishCompilerError("malformed-compiler-input", { cause: parsed.error });
   }
   const input = parsed.data;
@@ -797,6 +890,8 @@ export function compileStorefrontPublication(inputValue: unknown): TrustedPublis
       cause: snapshot.success ? catalogue.error : snapshot.error,
     });
   }
+  const localeAuthority = projectLocaleAuthority(input.projectLocales);
+  publishedRouteAuthority(snapshot.data);
   assertExactAuthority(input);
   assertSnapshotAuthority(input, snapshot.data, catalogue.data);
   assertComponentAndRendererAuthority(input, snapshot.data);
@@ -806,13 +901,13 @@ export function compileStorefrontPublication(inputValue: unknown): TrustedPublis
     validateRegisteredSnapshot(
       snapshot.data,
       catalogue.data,
-      input.authority.localeAuthority.activeLocale,
-      input.authority.localeAuthority.primaryLocale,
+      localeAuthority.activeLocale,
+      localeAuthority.primaryLocale,
     );
   } catch (cause) {
     throw new PublishCompilerError("invalid-binding", { cause });
   }
-  const result = compileResult(input, snapshot.data);
+  const result = compileResult(input, snapshot.data, localeAuthority);
   const receipt = compileReceipt(input, result);
   const compilation = trustedPublishCompilationSchema.parse({ result, receipt });
   const { runtimeFingerprint, ...resultPayload } = result;

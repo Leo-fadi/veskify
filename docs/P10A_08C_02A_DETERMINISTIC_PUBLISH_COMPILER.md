@@ -53,13 +53,18 @@ The compiler input binds:
 - exact accepted PageBlueprint/profile authorities where the accepted receipt represents them;
 - shared storefront-frame profile fingerprint;
 - canonical catalogue, navigation/routes and product-media fingerprints;
-- canonical approved placement/presentation fingerprint;
-- locale and component-migration authority.
+- canonical validated approved assignment/presentation fingerprint;
+- project-derived locale authority and component-migration authority.
 
 The current input resolver derives these values from the validated project aggregate, canonical
 draft, accepted receipt lineage and the existing generated registry/profile/renderer authorities.
 The compiler regenerates the live facts and rejects supplied authority drift; input fields do not
 become an alternate inventory.
+
+Locale authority comes from `Project.primaryLocale` and `Project.enabledLocales`. Complete-storefront
+publication uses the project primary locale as its active compile locale, validates that it is enabled,
+and applies the shared canonical locale ordering before fingerprinting. Empty, duplicate, unsupported
+or internally inconsistent locale authority fails closed; disabled locales are never advertised.
 
 ## 4. Compiled publication result
 
@@ -90,6 +95,11 @@ and source snapshot identities; accepted receipt lineage where applicable; sourc
 fingerprints; manifest, registry and profile authority; commerce, routes, product media and approved
 assets; migration status; and validation-report fingerprint.
 
+The receipt also carries the exact normalized locale authority. Navigation authority fingerprints the
+canonical public path for each page, and approved-asset authority fingerprints assignments only after
+registered V2 slot validation. Changing locale, route or validated asset assignment authority changes
+the validation/result and receipt fingerprints.
+
 Receipt ID and fingerprint are derived from canonical content. Identical canonical input and current
 authority produce byte-stable result and receipt fingerprints. The receipt contains no mutable
 snapshot or browser credential.
@@ -103,8 +113,10 @@ The compiler fails closed for the current represented authority categories:
 - stale manifest/registry authority and missing published renderer reachability;
 - unknown/stale PageBlueprint profile, incompatible selection and invalid order/omission;
 - invalid registered content/commerce binding and protected-commerce-shaped mutation;
-- navigation/route, catalogue and product-media divergence;
-- unknown, stale, role-incompatible, missing or product-media-masquerading approved assets;
+- navigation/route, catalogue and product-media divergence, including duplicate canonical public
+  paths and duplicate homepage/root authority;
+- unknown, stale, role-incompatible, missing or product-media-masquerading approved assets, including
+  registered V2 `minItems`/`maxItems`, duplicate-assignment and presentation-correspondence failures;
 - current registered accessibility/locale blockers;
 - unresolved or stale migration authority;
 - nondeterministic result or prepare/confirmation mismatch.
@@ -115,6 +127,16 @@ registered renderer identities/targets, canonical fingerprinting and registered
 asset/accessibility/migration contracts. Existing renderer-conformance tests continue to prove that
 those generated identities reach the actual editor/preview/published runtime maps. The compiler does
 not import client renderer modules or introduce a second accessibility or migration rules engine.
+
+Published route keys use the same canonical `pagePaths` projection as registry render/navigation
+contexts. Because the key is the normalized complete page path, product and collection routes may
+share a terminal slug under their distinct `/products/` and `/collections/` namespaces, while any
+duplicate actual public path or second homepage authority is rejected before compilation.
+
+Approved placements are projected into the registered Component Platform V2 asset assignments and
+passed through its canonical slot validator. The compiler then checks one-to-one presentation,
+revision and material-fingerprint correspondence. It does not copy asset-slot cardinality policy or
+silently select one asset from an overfull slot.
 
 ## 7. Preparation and confirmation
 

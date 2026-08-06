@@ -46,6 +46,24 @@ function aggregate(seed: typeof aurumNordicSeed | typeof karvonenSeed): ProjectA
   };
 }
 
+function aggregateWithDuplicateProductRoute(): ProjectAggregate {
+  const value = aggregate(aurumNordicSeed);
+  const draft = value.snapshots.find(({ id }) => id === value.project.draftSnapshotId)!;
+  const source = draft.pages.find(({ type }) => type === "product")!;
+  const duplicate = structuredClone(source);
+  duplicate.id = "page_duplicate_product_route";
+  duplicate.sections.forEach((section, index) => {
+    section.id = `section_duplicate_product_route_${index}`;
+    section.approvedAssetPlacements = (section.approvedAssetPlacements ?? []).map((placement) => ({
+      ...placement,
+      pageId: duplicate.id,
+      componentId: section.id,
+    }));
+  });
+  draft.pages.push(duplicate);
+  return value;
+}
+
 function request() {
   return new Request("https://studio.test/api/storefront-publish", {
     method: "POST",
@@ -139,12 +157,13 @@ function authorityRecordedAtAcceptance(
 function createHarness(
   options: {
     projects?: Array<typeof aurumNordicSeed | typeof karvonenSeed>;
+    aggregates?: ProjectAggregate[];
     permissions?: Array<"readStorefront" | "saveDraft" | "restoreDraft" | "publishStorefront">;
     authority?: AcceptedSnapshotCurrentAuthority;
   } = {},
 ) {
   const repository = new InMemoryProjectRepository(
-    (options.projects ?? [aurumNordicSeed]).map(aggregate),
+    options.aggregates ?? (options.projects ?? [aurumNordicSeed]).map(aggregate),
   );
   const preparationStore = new InMemoryMerchantPublishPreparationStore();
   const receiptRepository = new InMemoryAcceptedSnapshotPublishReceiptRepository();
@@ -305,6 +324,22 @@ describe("P10A-08C-01 authoritative merchant publish gateway", () => {
     await expect(
       missingAuthentication.service.prepare(manualRequest(projectId), request()),
     ).rejects.toMatchObject({ code: "authentication-required" });
+  });
+
+  it("retains no preparation and performs no publication write for a colliding route", async () => {
+    const value = aggregateWithDuplicateProductRoute();
+    const harness = createHarness({ aggregates: [value] });
+    const createPreparation = vi.spyOn(harness.preparationStore, "createOrResolve");
+    const publish = vi.spyOn(harness.repository, "publish");
+
+    await expect(
+      harness.service.prepare(
+        manualRequest(value.project.id, "publish_request_duplicate_route"),
+        request(),
+      ),
+    ).rejects.toMatchObject({ code: "duplicate-published-route" });
+    expect(createPreparation).not.toHaveBeenCalled();
+    expect(publish).not.toHaveBeenCalled();
   });
 
   it("resolves a trusted persisted AI receipt during both preparation and confirmation", async () => {

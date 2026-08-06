@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   assertMatchingPublishCompilation,
   compileStorefrontPublication,
@@ -11,9 +11,14 @@ import {
   type PublishCompilerError,
   type PublishCompilerInput,
 } from "@/application/publishing";
-import { veskifyComponentCapabilityManifest } from "@/components/registry";
+import {
+  veskifyComponentCapabilityManifest,
+  veskifyComponentRegistry,
+  veskifyComponentRegistryV2,
+} from "@/components/registry";
 import { aurumNordicSeed } from "@/data/seed";
 import { catalogueDisplayModelSchema } from "@/domain/catalogue";
+import { validateComponentAssetAssignments } from "@/domain/component-platform";
 import {
   canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
@@ -33,8 +38,7 @@ function aggregate() {
   };
 }
 
-function manualInput(): PublishCompilerInput {
-  const value = aggregate();
+function manualInput(value = aggregate()): PublishCompilerInput {
   return createCurrentPublishCompilerInput({
     aggregate: value,
     snapshot: value.snapshots[1],
@@ -54,16 +58,6 @@ function replaceSnapshot(
   mutate(snapshot);
   input.snapshot = snapshot;
   input.sourceSnapshotFingerprint = canonicalStorefrontContentFingerprint(snapshot);
-  input.authority.approvedAssetFingerprint = `publish-approved-assets-${canonicalValueFingerprint(
-    snapshot.pages.flatMap((page) =>
-      page.sections.map((section) => ({
-        pageId: page.id,
-        sectionId: section.id,
-        placements: section.approvedAssetPlacements,
-        presentations: section.approvedAssetPresentations,
-      })),
-    ),
-  )}`;
 }
 
 async function changedRepository() {
@@ -84,6 +78,107 @@ function expectCompilerFailure(action: () => unknown, code: PublishCompilerError
   expect(action).toThrowError(expect.objectContaining({ code }));
 }
 
+function localeInput(primaryLocale: "en" | "fi", enabledLocales: Array<"en" | "fi">) {
+  const value = aggregate();
+  value.project.primaryLocale = primaryLocale;
+  value.project.enabledLocales = enabledLocales;
+  return manualInput(value);
+}
+
+function duplicateRouteInput(pageType: "home" | "collection" | "product", padded = false) {
+  const input = manualInput();
+  const snapshot = currentSnapshot(input);
+  const source = snapshot.pages.find((page) => page.type === pageType)!;
+  const duplicate = structuredClone(source);
+  duplicate.id = `page_duplicate_${pageType}`;
+  duplicate.slug = padded ? ` ${source.slug} ` : source.slug;
+  duplicate.sections.forEach((section, index) => {
+    section.id = `section_duplicate_${pageType}_${index}`;
+    section.approvedAssetPlacements = (section.approvedAssetPlacements ?? []).map((placement) => ({
+      ...placement,
+      pageId: duplicate.id,
+      componentId: section.id,
+    }));
+  });
+  snapshot.pages.push(duplicate);
+  input.snapshot = snapshot;
+  input.sourceSnapshotFingerprint = canonicalStorefrontContentFingerprint(snapshot);
+  return input;
+}
+
+function placementAndPresentation({
+  pageId,
+  sectionId,
+  componentType,
+  slotId,
+  role,
+  index,
+}: {
+  pageId: string;
+  sectionId: string;
+  componentType: string;
+  slotId: string;
+  role: "heroDesktop" | "collectionImage";
+  index: number;
+}) {
+  const assetId = `asset_publish_compiler_${index}`;
+  const revision = `asset-revision-${index}`;
+  const materialFingerprint = `asset-material-${index}`;
+  return {
+    placement: {
+      type: "PLACE_APPROVED_SOURCE_ASSET" as const,
+      pageId,
+      componentId: sectionId,
+      componentType,
+      assetSlotId: slotId,
+      assetId,
+      role,
+      assetRevision: revision,
+      materialFingerprint,
+      sourceReferenceId: `source_publish_compiler_${index}`,
+      required: false,
+    },
+    presentation: {
+      assetId,
+      role,
+      revision,
+      materialFingerprint,
+      asset: {
+        id: assetId,
+        url: `/seed-assets/publish-compiler-${index}.svg`,
+        alt: { en: `Publish compiler asset ${index}` },
+        decorative: false,
+      },
+    },
+  };
+}
+
+function assetInput(componentType: "homepageHero" | "homepageFeaturedCollections", count: number) {
+  const value = aggregate();
+  const page = value.snapshots[1].pages.find((candidate) => candidate.type === "home")!;
+  const section = page.sections[0];
+  const definition = veskifyComponentRegistry[componentType];
+  section.component = componentType;
+  section.variant = definition.defaultVariant;
+  section.content = structuredClone(definition.defaultContent);
+  section.props = structuredClone(definition.defaultProps);
+  const slotId = componentType === "homepageHero" ? "heroMedia" : "collectionMedia";
+  const role = componentType === "homepageHero" ? "heroDesktop" : "collectionImage";
+  const assets = Array.from({ length: count }, (_, index) =>
+    placementAndPresentation({
+      pageId: page.id,
+      sectionId: section.id,
+      componentType,
+      slotId,
+      role,
+      index,
+    }),
+  );
+  section.approvedAssetPlacements = assets.map(({ placement }) => placement);
+  section.approvedAssetPresentations = assets.map(({ presentation }) => presentation);
+  return { input: manualInput(value), value, section };
+}
+
 describe("P10A-08C-02A deterministic publish compiler authority", () => {
   it("produces byte-stable immutable result and receipt output for identical canonical input", () => {
     const input = manualInput();
@@ -96,6 +191,183 @@ describe("P10A-08C-02A deterministic publish compiler authority", () => {
     expect(first.receipt.sourceAuthorityKind).toBe("manual");
     expect(first.receipt.acceptedReceiptId).toBeNull();
     expect(Object.isFrozen(first.result.pages)).toBe(true);
+  });
+
+  it("derives Finnish, English-only, Finnish-only and bilingual locale authority from the project", () => {
+    const finnishPrimary = compileStorefrontPublication(localeInput("fi", ["en", "fi"]));
+    const englishOnly = compileStorefrontPublication(localeInput("en", ["en"]));
+    const finnishOnly = compileStorefrontPublication(localeInput("fi", ["fi"]));
+
+    expect(finnishPrimary.result.localeAuthority).toMatchObject({
+      activeLocale: "fi",
+      primaryLocale: "fi",
+      supportedLocales: ["en", "fi"],
+    });
+    expect(englishOnly.result.localeAuthority.supportedLocales).toEqual(["en"]);
+    expect(finnishOnly.result.localeAuthority).toMatchObject({
+      activeLocale: "fi",
+      primaryLocale: "fi",
+      supportedLocales: ["fi"],
+    });
+    expect(finnishOnly.receipt.localeAuthority).toEqual(finnishOnly.result.localeAuthority);
+  });
+
+  it("canonicalizes locale order and changes result and receipt fingerprints with locale authority", () => {
+    const ordered = compileStorefrontPublication(localeInput("en", ["en", "fi"]));
+    const reversed = compileStorefrontPublication(localeInput("en", ["fi", "en"]));
+    const finnish = compileStorefrontPublication(localeInput("fi", ["en", "fi"]));
+
+    expect(canonicalValueString(reversed)).toBe(canonicalValueString(ordered));
+    expect(reversed.result.localeAuthority.supportedLocales).toEqual(["en", "fi"]);
+    expect(finnish.result.runtimeFingerprint).not.toBe(ordered.result.runtimeFingerprint);
+    expect(finnish.receipt.fingerprint).not.toBe(ordered.receipt.fingerprint);
+    expect(finnish.result.validationReportFingerprint).not.toBe(
+      ordered.result.validationReportFingerprint,
+    );
+  });
+
+  it("fails closed for disabled active, missing primary, duplicate and unsupported locales", () => {
+    const disabledActive = manualInput();
+    disabledActive.projectLocales.enabledLocales = ["en"];
+    disabledActive.projectLocales.activeLocale = "fi";
+    expectCompilerFailure(
+      () => compileStorefrontPublication(disabledActive),
+      "invalid-locale-authority",
+    );
+
+    const missingPrimary = manualInput();
+    missingPrimary.projectLocales.enabledLocales = ["fi"];
+    expectCompilerFailure(
+      () => compileStorefrontPublication(missingPrimary),
+      "invalid-locale-authority",
+    );
+
+    const duplicate = manualInput();
+    duplicate.projectLocales.enabledLocales = ["en", "en"];
+    expectCompilerFailure(
+      () => compileStorefrontPublication(duplicate),
+      "invalid-locale-authority",
+    );
+
+    const unsupported = manualInput();
+    Reflect.set(unsupported.projectLocales.enabledLocales, 0, "sv");
+    expectCompilerFailure(
+      () => compileStorefrontPublication(unsupported),
+      "invalid-locale-authority",
+    );
+  });
+
+  it("rejects duplicate product, collection, homepage and normalized public routes", () => {
+    for (const pageType of ["product", "collection", "home"] as const) {
+      expectCompilerFailure(
+        () => compileStorefrontPublication(duplicateRouteInput(pageType)),
+        "duplicate-published-route",
+      );
+    }
+    expectCompilerFailure(
+      () => compileStorefrontPublication(duplicateRouteInput("product", true)),
+      "duplicate-published-route",
+    );
+  });
+
+  it("allows the same terminal slug in distinct product and collection route namespaces", () => {
+    const value = aggregate();
+    value.catalogue.collections[0].slug = "shared";
+    value.snapshots[1].pages.find((page) => page.type === "collection")!.slug =
+      "/collections/shared";
+    value.snapshots[1].pages.find((page) => page.type === "product")!.slug = "/products/shared";
+
+    const first = compileStorefrontPublication(manualInput(value));
+    const second = compileStorefrontPublication(manualInput(structuredClone(value)));
+    expect(first.receipt.navigationRoutesFingerprint).toBe(
+      second.receipt.navigationRoutesFingerprint,
+    );
+  });
+
+  it("enforces homepage hero max-one cardinality with the canonical V2 validator", () => {
+    const legal = assetInput("homepageHero", 1);
+    const legalCompilation = compileStorefrontPublication(legal.input);
+    const assignments = (legal.section.approvedAssetPlacements ?? []).map((placement) => ({
+      slotId: placement.assetSlotId,
+      assetId: placement.assetId,
+      role: placement.role,
+    }));
+    expect(() =>
+      validateComponentAssetAssignments(
+        assignments,
+        veskifyComponentRegistryV2.get("homepageHero"),
+      ),
+    ).not.toThrow();
+    expect(legalCompilation.receipt.approvedAssetFingerprint).toBe(
+      legal.input.authority.approvedAssetFingerprint,
+    );
+
+    const excessive = assetInput("homepageHero", 2);
+    expect(() =>
+      validateComponentAssetAssignments(
+        (excessive.section.approvedAssetPlacements ?? []).map((placement) => ({
+          slotId: placement.assetSlotId,
+          assetId: placement.assetId,
+          role: placement.role,
+        })),
+        veskifyComponentRegistryV2.get("homepageHero"),
+      ),
+    ).toThrow(/Too many assets/i);
+    expectCompilerFailure(
+      () => compileStorefrontPublication(excessive.input),
+      "invalid-approved-asset",
+    );
+  });
+
+  it("accepts bounded multi-item slots and rejects excess, duplicate, role and presentation drift", () => {
+    expect(() =>
+      compileStorefrontPublication(assetInput("homepageFeaturedCollections", 2).input),
+    ).not.toThrow();
+    expectCompilerFailure(
+      () => compileStorefrontPublication(assetInput("homepageFeaturedCollections", 65).input),
+      "invalid-approved-asset",
+    );
+
+    const duplicate = assetInput("homepageHero", 2);
+    const duplicatePlacements = duplicate.section.approvedAssetPlacements;
+    if (!duplicatePlacements) throw new Error("Expected duplicate asset placements.");
+    duplicatePlacements[1].assetId = duplicatePlacements[0].assetId;
+    expect(() => compileStorefrontPublication(manualInput(duplicate.value))).toThrow();
+
+    const wrongRole = assetInput("homepageHero", 1);
+    const wrongRolePlacements = wrongRole.section.approvedAssetPlacements;
+    const wrongRolePresentations = wrongRole.section.approvedAssetPresentations;
+    if (!wrongRolePlacements || !wrongRolePresentations) {
+      throw new Error("Expected role-validation asset fixtures.");
+    }
+    wrongRolePlacements[0].role = "collectionImage";
+    wrongRolePresentations[0].role = "collectionImage";
+    expectCompilerFailure(
+      () => compileStorefrontPublication(manualInput(wrongRole.value)),
+      "invalid-approved-asset",
+    );
+
+    const missingPresentation = assetInput("homepageHero", 1);
+    missingPresentation.section.approvedAssetPresentations = [];
+    expectCompilerFailure(
+      () => compileStorefrontPublication(manualInput(missingPresentation.value)),
+      "invalid-approved-asset",
+    );
+  });
+
+  it("uses V2 minimum/required-slot rules without copying their policy", () => {
+    const definition = structuredClone(veskifyComponentRegistryV2.get("homepageHero"));
+    definition.assetSlots[0].required = true;
+    definition.assetSlots[0].minItems = 1;
+    expect(() => validateComponentAssetAssignments([], definition)).toThrow(
+      /Missing required asset slot/i,
+    );
+    expect(() =>
+      validateComponentAssetAssignments(
+        [{ slotId: "heroMedia", assetId: "asset_invalid_role", role: "logo" }],
+        definition,
+      ),
+    ).toThrow(/does not accept/i);
   });
 
   it("preserves accepted receipt lineage without changing the compiler", () => {
@@ -261,10 +533,11 @@ describe("P10A-08C-02A deterministic publish compiler authority", () => {
     expectCompilerFailure(() => compileStorefrontPublication(assets), "invalid-approved-asset");
 
     const accessibility = manualInput();
-    accessibility.authority.localeAuthority.fingerprint = "stale-locale-authority";
+    accessibility.projectLocales.enabledLocales = ["en"];
+    accessibility.projectLocales.activeLocale = "fi";
     expectCompilerFailure(
       () => compileStorefrontPublication(accessibility),
-      "critical-accessibility-failure",
+      "invalid-locale-authority",
     );
 
     const missingAlternative = manualInput();
@@ -312,6 +585,34 @@ describe("P10A-08C-02A deterministic publish compiler authority", () => {
       code: "prepare-confirmation-compile-mismatch",
     });
     expect(await repository.get(aurumNordicSeed.project.id)).toEqual(before);
+  });
+
+  it("rejects locale authority drift between preparation and confirmation without publishing", async () => {
+    const repository = await changedRepository();
+    const preparation = await preparePublish(aurumNordicSeed.project.id, repository, {
+      createPreparationId: () => "publish_preparation_locale_drift",
+    });
+    const driftedAggregate = await repository.get(aurumNordicSeed.project.id);
+    driftedAggregate.project.primaryLocale = "fi";
+    driftedAggregate.project.enabledLocales = ["fi"];
+    const confirmationRepository = new InMemoryProjectRepository([driftedAggregate]);
+    const publish = vi.spyOn(confirmationRepository, "publish");
+
+    await expect(confirmPublish(preparation, confirmationRepository)).rejects.toMatchObject({
+      code: "prepare-confirmation-compile-mismatch",
+    });
+    expect(publish).not.toHaveBeenCalled();
+  });
+
+  it("performs no publication write when asset cardinality fails during preparation", async () => {
+    const invalid = assetInput("homepageHero", 2);
+    const repository = new InMemoryProjectRepository([invalid.value]);
+    const publish = vi.spyOn(repository, "publish");
+
+    await expect(preparePublish(invalid.value.project.id, repository)).rejects.toMatchObject({
+      code: "invalid-approved-asset",
+    });
+    expect(publish).not.toHaveBeenCalled();
   });
 
   it("accepts an exact fresh recompilation and rejects any result mismatch", () => {
