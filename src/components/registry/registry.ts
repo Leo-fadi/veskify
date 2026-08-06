@@ -70,6 +70,24 @@ export function validateRegisteredSnapshot(
   return snapshot;
 }
 
+/** Canonical public path projection shared by renderer navigation and publish validation. */
+export function createStorefrontPagePaths({
+  snapshot,
+  pagePathPrefix = "",
+  pagePathSuffix = "",
+}: {
+  snapshot: Pick<StorefrontSnapshot, "pages">;
+  pagePathPrefix?: string;
+  pagePathSuffix?: string;
+}): Readonly<Record<string, string>> {
+  return Object.fromEntries(
+    snapshot.pages.map((page) => [
+      page.id,
+      `${pagePathPrefix ? `${pagePathPrefix}${page.slug === "/" ? "" : page.slug}` : page.slug}${pagePathSuffix}`,
+    ]),
+  );
+}
+
 export function createStorefrontRenderContext({
   activeLocale,
   primaryLocale,
@@ -87,12 +105,7 @@ export function createStorefrontRenderContext({
   pagePathSuffix?: string;
   renderTarget?: StorefrontRenderContext["renderTarget"];
 }): StorefrontRenderContext {
-  const pagePaths = Object.fromEntries(
-    snapshot.pages.map((page) => [
-      page.id,
-      `${pagePathPrefix ? `${pagePathPrefix}${page.slug === "/" ? "" : page.slug}` : page.slug}${pagePathSuffix}`,
-    ]),
-  );
+  const pagePaths = createStorefrontPagePaths({ snapshot, pagePathPrefix, pagePathSuffix });
   const homePage = snapshot.pages.find((page) => page.type === "home");
 
   return {

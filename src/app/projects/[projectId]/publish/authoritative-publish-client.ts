@@ -1,6 +1,9 @@
 "use client";
 
-import { publishPreparationSchema, type PublishPreparation } from "@/application/publishing";
+import {
+  publicPublishPreparationSchema,
+  type PublicPublishPreparation,
+} from "@/application/publishing";
 
 export type MerchantPublishRequestAuthority =
   Readonly<{ kind: "manual" }> | Readonly<{ kind: "accepted-ai"; receiptId: string }>;
@@ -10,7 +13,7 @@ export type MerchantPublishGatewayClient = Readonly<{
     projectId: string;
     requestId: string;
     authority: MerchantPublishRequestAuthority;
-  }): Promise<PublishPreparation>;
+  }): Promise<PublicPublishPreparation>;
   confirm(input: {
     projectId: string;
     requestId: string;
@@ -74,7 +77,7 @@ export function createAuthoritativeMerchantPublishClient(
         throw new AuthoritativeMerchantPublishClientError("invalid-response", 502);
       }
       const preparation =
-        "preparation" in body ? publishPreparationSchema.safeParse(body.preparation) : null;
+        "preparation" in body ? publicPublishPreparationSchema.safeParse(body.preparation) : null;
       if (!preparation?.success) {
         throw new AuthoritativeMerchantPublishClientError("invalid-response", 502);
       }

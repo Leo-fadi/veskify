@@ -3,6 +3,7 @@ import {
   assertAcceptedSnapshotReceiptCurrent,
   resolveAcceptedSnapshotPublishReceipt,
   type AcceptedSnapshotCurrentAuthoritySource,
+  type AcceptedSnapshotPublishReceipt,
   type AcceptedSnapshotPublishReceiptRepository,
 } from "@/application/accepted-snapshot-publishing";
 import {
@@ -29,6 +30,12 @@ import {
   StalePublishPreparationError,
   type PublishPreparation,
 } from "./contract";
+import {
+  assertMatchingPublishCompilation,
+  compileStorefrontPublication,
+  createCurrentPublishCompilerInput,
+  PublishCompilerError,
+} from "./publish-compiler";
 
 export type PublishConfirmationResult = {
   aggregate: ProjectAggregate;
@@ -103,6 +110,7 @@ export async function confirmPublish(
   }
 
   let latest: ProjectAggregate;
+  let acceptedReceipt: AcceptedSnapshotPublishReceipt | null = null;
   try {
     latest = validateProjectAggregate(await repository.get(preparation.projectId));
     assertCurrentPreparation(preparation, latest);
@@ -114,6 +122,7 @@ export async function confirmPublish(
         confirmationAuthority.receiptRepository,
         preparation.authority.receiptId,
       );
+      acceptedReceipt = receipt;
       if (
         receipt.fingerprint !== preparation.authority.receiptFingerprint ||
         receipt.proposalId !== preparation.authority.proposalId ||
@@ -131,8 +140,26 @@ export async function confirmPublish(
         });
       assertAcceptedSnapshotReceiptCurrent(receipt, latest, currentAuthority);
     }
+    const draft = snapshotById(latest, latest.project.draftSnapshotId);
+    const currentCompilation = compileStorefrontPublication(
+      createCurrentPublishCompilerInput({
+        aggregate: latest,
+        snapshot: draft,
+        sourceAuthority:
+          acceptedReceipt === null
+            ? { kind: "manual" }
+            : {
+                kind: "accepted-ai",
+                acceptedReceiptId: acceptedReceipt.id,
+                acceptedReceiptFingerprint: acceptedReceipt.fingerprint,
+                profileAuthorities: acceptedReceipt.profileAuthorities,
+              },
+      }),
+    );
+    assertMatchingPublishCompilation(preparation.compilation, currentCompilation);
   } catch (cause) {
     if (cause instanceof AcceptedSnapshotReceiptError) throw cause;
+    if (cause instanceof PublishCompilerError) throw cause;
     if (
       cause instanceof StalePublishPreparationError ||
       cause instanceof PublishConfirmationError

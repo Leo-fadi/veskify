@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { type PublishPreparation } from "@/application/publishing";
+import { type PublicPublishPreparation } from "@/application/publishing";
 import { PublishConfirmation } from "@/components/publishing/publish-confirmation";
 import { PublishStatus, publishingCopy } from "@/components/publishing/publish-status";
 import type { Locale } from "@/domain/shared";
@@ -33,9 +33,9 @@ type LoadState =
 type PublishState =
   | { status: "idle" }
   | { status: "preparing" }
-  | { status: "ready"; preparation: PublishPreparation }
-  | { status: "noChanges"; preparation: PublishPreparation }
-  | { status: "confirming"; preparation: PublishPreparation }
+  | { status: "ready"; preparation: PublicPublishPreparation }
+  | { status: "noChanges"; preparation: PublicPublishPreparation }
+  | { status: "confirming"; preparation: PublicPublishPreparation }
   | { status: "stale"; message: string }
   | { status: "failure"; message: string }
   | { status: "success"; projectRevision: number };

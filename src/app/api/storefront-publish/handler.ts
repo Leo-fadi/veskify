@@ -8,6 +8,7 @@ import {
   type AuthoritativeMerchantPublishService,
 } from "@/application/publishing/authoritative-merchant-publish.server";
 import { VeskoIntegrationError } from "@/application/vesko-integration";
+import { PublishCompilerError } from "@/application/publishing";
 
 const requestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("prepare"), request: merchantPublishPrepareRequestSchema }).strict(),
@@ -39,6 +40,9 @@ function errorResponse(error: unknown): Response {
   if (error instanceof VeskoIntegrationError) {
     const status = error.code === "permissionDenied" ? 403 : 409;
     return failure(status, error.code);
+  }
+  if (error instanceof PublishCompilerError) {
+    return failure(409, "publish-compilation-rejected");
   }
   return failure(503, "publishing-unavailable");
 }

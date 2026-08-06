@@ -2,6 +2,7 @@ import {
   AcceptedSnapshotReceiptError,
   assertAcceptedSnapshotReceiptCurrent,
   resolveAcceptedSnapshotPublishReceipt,
+  type AcceptedSnapshotPublishReceipt,
   type AcceptedSnapshotCurrentAuthoritySource,
   type AcceptedSnapshotPublishReceiptRepository,
 } from "@/application/accepted-snapshot-publishing";
@@ -18,6 +19,12 @@ import {
   PublishPreparationValidationError,
   type PublishPreparation,
 } from "./contract";
+import {
+  compileStorefrontPublication,
+  createCurrentPublishCompilerInput,
+  preparedPublishCompilation,
+  PublishCompilerError,
+} from "./publish-compiler";
 
 export type PreparePublishOptions = {
   now?: () => Date;
@@ -76,9 +83,23 @@ export async function preparePublish(
     const draftFingerprint = canonicalStorefrontContentFingerprint(draft);
     const publishedFingerprint = canonicalStorefrontContentFingerprint(published);
     const requestedAuthority = options.authority ?? { kind: "manual" as const };
-    const authority =
+    const resolvedAuthority: Readonly<{
+      authority:
+        | Readonly<{ kind: "manual" }>
+        | Readonly<{
+            kind: "accepted-ai";
+            receiptId: string;
+            receiptFingerprint: string;
+            proposalId: string;
+            proposalRevision: number;
+            reviewRevision: number;
+            acceptedSnapshotId: string;
+            acceptedSnapshotFingerprint: string;
+          }>;
+      acceptedReceipt: AcceptedSnapshotPublishReceipt | null;
+    }> =
       requestedAuthority.kind === "manual"
-        ? requestedAuthority
+        ? { authority: requestedAuthority, acceptedReceipt: null }
         : await (async () => {
             const receipt = await resolveAcceptedSnapshotPublishReceipt(
               requestedAuthority.receiptRepository,
@@ -97,16 +118,35 @@ export async function preparePublish(
               throw new AcceptedSnapshotReceiptError("snapshot-mismatch");
             }
             return {
-              kind: "accepted-ai" as const,
-              receiptId: receipt.id,
-              receiptFingerprint: receipt.fingerprint,
-              proposalId: receipt.proposalId,
-              proposalRevision: receipt.proposalRevision,
-              reviewRevision: receipt.reviewRevision,
-              acceptedSnapshotId: receipt.acceptedSnapshotId,
-              acceptedSnapshotFingerprint: receipt.acceptedSnapshotFingerprint,
+              acceptedReceipt: receipt,
+              authority: {
+                kind: "accepted-ai" as const,
+                receiptId: receipt.id,
+                receiptFingerprint: receipt.fingerprint,
+                proposalId: receipt.proposalId,
+                proposalRevision: receipt.proposalRevision,
+                reviewRevision: receipt.reviewRevision,
+                acceptedSnapshotId: receipt.acceptedSnapshotId,
+                acceptedSnapshotFingerprint: receipt.acceptedSnapshotFingerprint,
+              },
             };
           })();
+    const { acceptedReceipt, authority } = resolvedAuthority;
+    const compilation = compileStorefrontPublication(
+      createCurrentPublishCompilerInput({
+        aggregate,
+        snapshot: draft,
+        sourceAuthority:
+          acceptedReceipt === null
+            ? { kind: "manual" }
+            : {
+                kind: "accepted-ai",
+                acceptedReceiptId: acceptedReceipt.id,
+                acceptedReceiptFingerprint: acceptedReceipt.fingerprint,
+                profileAuthorities: acceptedReceipt.profileAuthorities,
+              },
+      }),
+    );
     const preparationId =
       options.createPreparationId?.({
         projectId,
@@ -134,6 +174,7 @@ export async function preparePublish(
         contentFingerprint: publishedFingerprint,
       },
       authority,
+      compilation: preparedPublishCompilation(compilation),
       changeSummary: createPublishChangeSummary(published, draft),
       publishPermitted: !canonicalStorefrontContentEqual(published, draft),
     });
@@ -141,6 +182,7 @@ export async function preparePublish(
     return deepFreeze(preparation);
   } catch (cause) {
     if (cause instanceof AcceptedSnapshotReceiptError) throw cause;
+    if (cause instanceof PublishCompilerError) throw cause;
     if (cause instanceof PublishPreparationValidationError) throw cause;
     throw new PublishPreparationValidationError({ cause });
   }

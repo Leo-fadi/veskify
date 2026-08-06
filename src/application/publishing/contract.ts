@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { idSchema, isoDateTimeSchema, localizedTextSchema } from "@/domain/shared";
+import { preparedPublishCompilationSchema } from "./publish-compiler";
 
 const pageReferenceSchema = z
   .object({
@@ -104,7 +105,7 @@ export const publicationAuthoritySchema = z.discriminatedUnion("kind", [
     .strict(),
 ]);
 
-export const publishPreparationSchema = z
+export const publicPublishPreparationSchema = z
   .object({
     preparationId: idSchema,
     projectId: idSchema,
@@ -118,9 +119,22 @@ export const publishPreparationSchema = z
   })
   .strict();
 
+export const publishPreparationSchema = publicPublishPreparationSchema
+  .extend({ compilation: preparedPublishCompilationSchema })
+  .strict();
+
 export type PublishChangeSummary = z.infer<typeof publishChangeSummarySchema>;
 export type PublicationAuthority = z.infer<typeof publicationAuthoritySchema>;
+export type PublicPublishPreparation = z.infer<typeof publicPublishPreparationSchema>;
 export type PublishPreparation = z.infer<typeof publishPreparationSchema>;
+
+export function publicPublishPreparation(
+  preparation: PublishPreparation,
+): PublicPublishPreparation {
+  const { compilation: trustedCompilation, ...publicPreparation } = preparation;
+  void trustedCompilation;
+  return publicPublishPreparationSchema.parse(publicPreparation);
+}
 
 export class InvalidPublishPreparationError extends Error {
   readonly code = "INVALID_PUBLISH_PREPARATION";

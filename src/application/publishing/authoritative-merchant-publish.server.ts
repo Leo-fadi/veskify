@@ -17,7 +17,12 @@ import { idSchema } from "@/domain/shared";
 import type { AuthoritativePublishingProjectRepository } from "@/services/storage";
 import type { AuthoritativePublishingRevisionMapper } from "@/integrations/vesko-publishing";
 import { preparePublish } from "./prepare-publish";
-import { publishPreparationSchema, type PublishPreparation } from "./contract";
+import {
+  publicPublishPreparation,
+  publishPreparationSchema,
+  type PublicPublishPreparation,
+  type PublishPreparation,
+} from "./contract";
 
 const merchantPublishAuthorityRequestSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("manual") }).strict(),
@@ -218,7 +223,7 @@ export class AuthoritativeMerchantPublishService {
     this.#input = input;
   }
 
-  async prepare(inputValue: unknown, request: Request): Promise<PublishPreparation> {
+  async prepare(inputValue: unknown, request: Request): Promise<PublicPublishPreparation> {
     const input = merchantPublishPrepareRequestSchema.safeParse(inputValue);
     if (!input.success) throw new AuthoritativeMerchantPublishError("invalid-request");
     const context = await this.#input.authenticatedContext.resolve({
@@ -270,7 +275,7 @@ export class AuthoritativeMerchantPublishService {
       preparation,
       gatewayRequest,
     });
-    return structuredClone(stored.preparation);
+    return structuredClone(publicPublishPreparation(stored.preparation));
   }
 
   async confirm(inputValue: unknown, request: Request): Promise<{ projectRevision: number }> {
