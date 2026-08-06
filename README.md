@@ -1,151 +1,148 @@
 # Veskify
 
-Veskify is the controlled AI storefront-design engine that powers the future **Vesko Storefront Studio** merchant experience.
+Veskify is the internal controlled storefront-design engine for the merchant-facing **Vesko
+Storefront Studio**. It turns approved brand/source evidence, approved presentation assets, and
+read-only canonical Vesko commerce data into a governed, editable, and explicitly publishable
+storefront.
 
-It helps retailers transform an existing public storefront, a logo, available media and canonical Vesko commerce data into a coherent, responsive and editable online storefront. Merchants can request design changes in plain language, review validated proposals, adjust the result visually, save a draft and publish explicitly.
+The overall product is **Partial**. Phase 9 is closed by product-owner handoff. P10A grounded
+orchestration and publishing closure is active and substantially implemented, but controlled
+real-provider acceptance, accepted-AI receipt wiring, atomic compiled publication/rollback, and
+complete publication evidence remain.
 
 ## Product boundary
 
-Veskify designs presentation. It does not operate commerce.
+Veskify owns storefront presentation and composition: `BrandSystem`, registered components and
+PageBlueprints, `StorefrontSnapshot`, governed proposals, editing, draft/history, preview, and
+publication compilation.
 
-It may design:
+Vesko owns operational commerce and sellability. Veskify consumes product, variant, option, SKU,
+price, stock, availability, canonical media, inventory, order, payment, shipping, tax, and logistics
+truth read-only. It must not mutate or replace those authorities.
 
-- brand tokens and visual direction;
-- navigation, header and footer;
-- homepage, collection and product-detail pages;
-- content, campaign, cart and checkout presentation;
-- reusable responsive component compositions;
-- dynamic product option presentation;
-- localized presentation copy and SEO metadata.
-
-It must not modify:
-
-- product identity or SKU;
-- product type, option values or variant identity;
-- price, compare-at-price, stock or availability truth;
-- payments, shipping, logistics, taxes, orders or inventory;
-- operational checkout behaviour.
-
-Canonical commerce data is consumed through read-only adapters.
+Puck supplies isolated editor mechanics. Puck data is transient adapter data, never a second
+canonical page tree or persistence format. AI emits validated structured operations and may select
+only registered authority; it never emits executable storefront code.
 
 ## Current verified baseline
 
-The repository currently includes:
+The repository includes:
 
-- Next.js App Router, React, TypeScript, Tailwind CSS and Zod;
-- Puck isolated as the visual-editor foundation;
-- canonical storefront, brand, snapshot and history models;
-- registered responsive components;
-- manual section editing and device preview;
-- selected-section, current-page and whole-storefront AI proposal scopes;
-- structured validation and protected-field guards;
-- deterministic and OpenAI provider adapters;
-- atomic multi-page acceptance with undo/redo;
-- separate save draft and publish flows;
-- IndexedDB persistence and realistic Aurum/Karvonen fixtures;
-- deterministic and mocked-provider generation/lifecycle evidence.
+- one canonical editable `StorefrontSnapshot` and `BrandSystem`;
+- ComponentDefinitionV2, a generated capability manifest, and registered renderer authority;
+- executable PageBlueprint profiles for home, collection, and dynamic product-detail composition;
+- protected canonical commerce bindings, dynamic variants/options/media, and safe fallbacks;
+- approved source evidence, asset inventory, and Storefront Design Brief contracts;
+- governed internal initial-generation and follow-up-editing packages;
+- strict internal section, page, frame, and whole-storefront scope authority;
+- validated proposal review, atomic acceptance, undo/redo, draft save, history, and restore;
+- isolated Puck/editor, preview, and published route projections;
+- an authoritative server-side merchant publishing gateway;
+- deterministic publication compilation and published home, collection, and PDP rendering;
+- deterministic, integration, and browser evidence for the stated capabilities.
 
-Phase 9 remains active. The repository does not retain the complete live-provider, browser and
-visual evidence required to claim meaningful coordinated storefront generation.
+Merchant-facing wiring of governed routing, clarification, and scoped execution belongs to P10C.
+It is not a P10A closure requirement.
 
-## Commercial composition contract
+## Commercial limitation and next milestone
 
-Veskify creates commercial variety through controlled component families with meaningful variants,
-registered constrained `PageBlueprint` recipe profiles and typed bounded design parameters. A
-recipe is not a second page graph or executable model: it supplies permitted/default values to the
-canonical `PageBlueprint`. Composition inherits from the global `BrandSystem` through the selected
-PageBlueprint profile and family/variant to constrained instance overrides; AI does not generate
-arbitrary component trees, CSS or executable frontend code. Every capability must prove
-registered → planner-selectable → proposal-expressible → compiler-preserved → `StorefrontSnapshot`-
-stored → renderer-visible → editor-editable → manually live-proven.
+Current output can be a clean, responsive catalogue storefront, but it has limited brand
+distinction and has not passed a current commercial human visual-quality gate. P10B Commercial
+Storefront Design System v1 is the next visual product phase and the first phase allowed to make a
+commercial-quality claim.
 
-Commercial visual acceptance reviews the homepage, collection and PDP as one storefront at 375, 768,
-1024 and 1440 px with representative approved assets. Placeholder SVGs, registry counts and
-deterministic tests alone are not visual-quality evidence. Optional trust/evidence content is omitted
-when approved merchant evidence is unavailable.
+Its target is:
 
-## Next development direction
+> Generate a complete storefront that a serious retailer can publish without a designer rebuilding
+> it.
 
-The binding v1.2.2 sequence is:
+P10B first proves one complete Premium Editorial vertical slice, then Modern Technical and Minimal
+Commerce, then narrative, responsive, and commercial-quality closure. Tests and schema validity
+alone cannot close that gate.
 
-1. complete Phase 9 meaningful grounded shared-frame/home/collection/PDP generation;
-2. build P10A contract-level grounded orchestration from live canonical capabilities, with
-   executable PageBlueprint contracts before generated capability knowledge;
-3. build P10B asset governance and Storefront Studio UX;
-4. implement Phase 11 merchant-operable granular controlled editing against the P10A scope
-   contracts;
-5. consolidate Phase 12 stable domains and Vesko reference adapters;
-6. add environment-specific authentication, tenancy, staging and operations later.
+## Delivery sequence
 
-Veskify is not building another catalogue/import system. Jewellery and watches remain the first deep reference industry before broader expansion.
+1. P10A — Grounded orchestration and publishing closure
+2. P10B — Commercial Storefront Design System v1
+3. P10C — Storefront Studio Editing Experience v1
+4. P10D — Advanced media and registered interactive presentation
+5. P11 — Vesko Integration Readiness and Reference Adapter
+6. P12 — Production hardening and pilot operations
+
+P10D is not required for the first commercial storefront, minimum pilot editor, or Vesko pilot.
+
+## Vesko integration truth
+
+The Vesko OpenAPI 3.0 contract has been obtained and audited. It exposes real store, catalogue,
+media, inventory, Puck, and storefront product surfaces, but it is not sufficient for production
+integration. Typed responses, security/tenancy, revisions, navigation/synchronization, canonical
+draft/history/publication APIs, and staging authority remain unresolved. Raw `/puck` persistence is
+not compatible with canonical `StorefrontSnapshot` storage. No Vesko staging or production evidence
+exists.
+
+See the [OpenAPI contract audit](docs/VESKO_OPENAPI_CONTRACT_AUDIT.md) and
+[integration matrix](docs/VESKO_VESKIFY_INTEGRATION_MATRIX.md).
 
 ## Architecture
 
 ```text
-Vesko / fixture commerce truth
-  -> read-only commerce projection
-  -> one canonical StorefrontSnapshot
-  -> controlled component families and page blueprints
-  -> design skills and structured operations
-  -> validated proposal
-  -> draft acceptance and atomic history
-  -> explicit save and publish
+approved evidence and read-only Vesko commerce
+  → registered capability and PageBlueprint authority
+  → governed instruction and scope
+  → structured plan and proposal
+  → validated StorefrontSnapshot
+  → review and atomic acceptance
+  → draft, history and preview
+  → deterministic publication compilation
+  → immutable published version
+  → homepage, collection and PDP rendering
 ```
 
-Public website discovery is treated as untrusted design evidence with provenance. It informs brand and asset reconstruction but never overrides canonical Vesko commerce values.
+Design inherits through:
+
+```text
+BrandSystem
+  → registered PageBlueprint profile
+  → compatible component family and meaningful variant
+  → bounded validated instance override
+```
+
+Directions select compatible combinations; they do not create another token, recipe, or page
+authority.
 
 ## Local development
 
-Requirements:
-
-- Node.js version supported by the repository;
-- pnpm;
-- a modern browser with IndexedDB.
-
-Install and start:
+Requirements: a repository-supported Node.js version, pnpm, and a modern browser.
 
 ```bash
 pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-The deterministic AI provider is the default and requires no secret.
+The deterministic provider is the safe default for local development and requires no secret.
+Provider credentials must remain server-side and must never be committed.
 
-For the optional real OpenAI provider, configure a local server-side environment file:
+For normal feature work, run focused tests plus typecheck, lint, and formatting once when required.
+Full Vitest, Playwright, and production builds are reserved for explicit release, staging, or
+high-risk validation.
 
-```bash
-OPENAI_API_KEY=<your-key>
-VESKIFY_AI_PROVIDER=openai
-```
+## Authoritative documentation
 
-Never commit provider keys.
+- [Software Design Document v1.3.0](docs/VESKIFY_SDD.md)
+- [Development roadmap](docs/VESKIFY_DEVELOPMENT_ROADMAP.md)
+- [Development delivery tracker](docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md)
+- [Current-state truth audit](docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md)
+- [Capability evidence ledger](docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md)
+- [Development guide](docs/DEVELOPMENT_GUIDE.md)
+- [Binding repository constitution](AGENTS.md)
+- [Architecture decisions](docs/adr/README.md)
 
-## Validation
+Historical phase records retain their original evidence meaning. The v1.2.2 DOCX remains a
+historical export until a dedicated task regenerates and verifies the v1.3.0 document.
 
-Normal feature PRs should run focused tests plus typecheck, lint and formatting once when required. GitHub CI performs the broad gate.
+## Non-claim
 
-Full repository validation is reserved for phase/release gates, high-risk migrations, staging acceptance or explicit instruction.
-
-## Documentation
-
-- [`docs/VESKIFY_SDD.md`](docs/VESKIFY_SDD.md) — authoritative product and architecture specification.
-- [`docs/VESKIFY_SDD_v1.2.2.docx`](docs/VESKIFY_SDD_v1.2.2.docx) — synchronized human-readable export.
-- [`AGENTS.md`](AGENTS.md) — binding Codex/developer constitution.
-- [`docs/VESKIFY_DEVELOPMENT_ROADMAP.md`](docs/VESKIFY_DEVELOPMENT_ROADMAP.md) — current phase plan.
-- [`docs/PHASE_9_EVIDENCE_MATRIX.md`](docs/PHASE_9_EVIDENCE_MATRIX.md) — current Phase 9 evidence and limitations.
-- [`docs/DESIGN_AGENT_SKILLS.md`](docs/DESIGN_AGENT_SKILLS.md) — controlled skill catalogue.
-- [`docs/DEVELOPMENT_GUIDE.md`](docs/DEVELOPMENT_GUIDE.md) — worktree, testing and PR workflow.
-- `docs/adr/` — binding architecture decisions.
-
-## Core decisions
-
-- Puck provides editor mechanics but does not own canonical state.
-- AI emits structured operations, never arbitrary frontend code.
-- Veskify owns storefront composition and proposal safety.
-- Vesko owns commerce truth.
-- Components are reusable, versioned and data-bound.
-- Dynamic product pages render option groups supplied by canonical data.
-- Material changes are reviewable and reversible.
-- Save draft and Publish changes are separate actions.
+This repository does not claim current commercial visual acceptance, completed P10A closure,
+complete Vesko integration, Vesko staging acceptance, production readiness, or production operation.
 
 Owner: Vesko Oy

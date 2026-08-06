@@ -1,6 +1,6 @@
 # Veskify Development Guide
 
-**Version:** 1.2.2
+**Version:** 1.3.0
 **Aligned with:** `docs/VESKIFY_SDD.md` and `AGENTS.md`
 
 ## 1. Purpose
@@ -40,7 +40,7 @@ variants, not colour/padding renames. Commercial recipes are registered constrai
 bindings/assets, responsive constraints and omission/fallback rules; they are not a second template
 or executable page representation. AI can select only typed bounded parameters; it never provides
 arbitrary trees, CSS, classes, code or font imports. Design inherits
-`BrandSystem → registered PageBlueprint recipe profile → family/variant → constrained instance override`.
+`BrandSystem → registered PageBlueprint profile → compatible component family and meaningful variant → bounded validated instance override`.
 
 ### Puck integration
 
@@ -86,26 +86,24 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 ## 3. Current implementation baseline
 
-The v1.2.2 baseline is `4a96a5a5567b83e62306f73f7069e0e09f0c8683` on 31 July 2026 and
-includes P9R-06 homepage routing. The earlier v1.2.1 baseline
-`8174b1a6d31301b4072622e2e3ef675957479121` remains historical PR #123 evidence. At the v1.2.2
-baseline, the following are verified:
+The verified v1.3.0 source baseline is current `main` after PR #165 on 6 August 2026. Phase 9 is
+closed by product-owner handoff. The overall product is **Partial**, and P10A is substantially
+implemented but not closed.
 
-- controlled storefront schemas and registered components;
-- visual editor and manual section operations;
-- selected-section, current-page and whole-storefront proposals;
-- secure real OpenAI provider adapter;
-- atomic whole-storefront acceptance and composite undo/redo;
-- separate save draft and publish flows;
-- history and restore architecture;
-- Karvonen/Lumo fixtures and deterministic or mocked-provider lifecycle coverage.
+The current baseline includes canonical storefront/brand contracts, ComponentDefinitionV2 and its
+generated manifest, executable PageBlueprint profiles, dynamic commerce-bound collection/PDP
+rendering, governed internal initial/follow-up execution, strict internal scope routing, proposal
+acceptance/history, draft persistence, an authoritative publishing gateway, deterministic publish
+compilation, and published homepage/collection/PDP routes.
 
-Do not rebuild these systems. Phase 9 remains active because the repository does not retain the
-complete live-provider, browser and visual evidence required for meaningful coordinated
-shared-frame/home/collection/PDP generation.
+Do not rebuild those systems. Remaining P10A work is controlled real-provider acceptance when an
+eligible approved configuration exists, accepted-AI acceptance-to-receipt wiring, atomic compiled
+publication/rollback, complete retained publication evidence, and the closure record.
 
 All generation and editing paths compile into the same `StorefrontSnapshot`. `PageModel` is an
-implementation type inside that aggregate, not a second canonical page graph.
+implementation type inside that aggregate, not a second canonical page graph. Governed packages
+and routing are internal P10A authorities; merchant-facing routing, clarification, scope controls,
+and normal-editor execution belong to P10C.
 
 ## 4. Branch and PR strategy
 
@@ -148,23 +146,28 @@ Roles may change per phase, but every task must declare ownership and no-touch a
 - two branches modify the same editor route/store;
 - one branch changes a persistence migration while another changes bootstrap logic.
 
-## 6. Task design
+## 6. Future task design policy
 
-Every task prompt must include:
+Every future task must state these 11 items:
 
-1. outcome-based title;
-2. merchant-visible objective;
-3. SDD sections, requirement IDs and acceptance criteria;
-4. exact branch and existing PR if applicable;
-5. dependencies and required base commit/PR;
-6. owned files/modules and files not to touch;
-7. in-scope and out-of-scope functionality;
-8. user flow and UI states;
-9. data/schema/migration impact;
-10. focused tests;
-11. validation limits;
-12. commit, push, PR and review instructions;
-13. final report format.
+1. **Outcome** — the observable merchant, system, or evidence result.
+2. **Canonical authority** — the existing model, contract, registry, adapter, or lifecycle that
+   owns the result.
+3. **Deficiency** — the verified current gap, without treating planned prose as implementation.
+4. **Exact scope** — the bounded files, capabilities, and behavior the task may change.
+5. **Dependencies** — required tasks, commits, contracts, decisions, environments, and ownership.
+6. **Positive evidence** — focused proof that the authorized outcome works.
+7. **Negative and fail-closed evidence** — rejected, stale, invalid, ambiguous, and no-partial-write
+   behavior where relevant.
+8. **Browser and visual evidence** — explicit viewport, fixture, screenshot, and human-review needs;
+   tests alone cannot close P10B commercial quality.
+9. **Non-goals** — adjacent systems and authorities the task must not create or change.
+10. **Exit condition** — the exact implementation and evidence gate required to mark the task done.
+11. **Unlocks** — the named downstream task, merchant capability, or phase gate enabled by closure.
+
+Branch/worktree, owned/no-touch files, validation commands, commit/PR workflow, and completion
+report requirements must also be explicit execution controls, but they do not replace the 11
+product-delivery fields above.
 
 Ask before starting:
 
@@ -174,11 +177,10 @@ Architecture-only tasks are allowed only when they directly unlock a named merch
 
 ## 7. Development sequence
 
-### Phase 9 — Meaningful grounded generation
+### Phase 9 — Closed by product-owner handoff
 
-Complete compatible shared-frame/home/collection/PDP composition, live registered-capability
-reachability, commerce/asset preservation, atomicity, persistence/publish, responsive/accessibility
-and retained real-provider evidence. Token-only or API-response-only success does not pass.
+Phase 9 records remain historical evidence with their stated limits. Do not reopen Phase 9 or
+reinterpret its closure as current commercial, real-provider, Vesko staging, or production proof.
 
 ### P10A — Grounded orchestration and publishing closure
 
@@ -204,7 +206,11 @@ theme.
 
 ### P10C — Storefront Studio Editing Experience v1
 
-P10C preserves and renumbers former P10B asset/Studio work, then adds canonical Puck boundaries, stable frame identity, bounded manual operations, scoped AI editing and unified AI/manual history. It closes when a merchant can select, edit, reorder, undo/redo, save, preview and publish through the same `StorefrontSnapshot`.
+P10C delivers the brand asset library, canonical Puck boundary, stable frame identity, bounded
+manual operations, merchant-facing scoped AI editing, unified AI/manual history and the required
+Storefront Studio shell. It closes when a merchant can select, manually edit, make an AI edit
+elsewhere, add/remove/reorder, undo/redo, save, preview and publish through the same
+`StorefrontSnapshot`.
 
 ### P10D, P11 and P12
 
@@ -213,8 +219,13 @@ fallbacks. Registered, governed Three.js implementations are permitted only thro
 interactive-presentation capabilities; AI may select or configure them but may not generate their
 implementation. Registered component, asset, performance, accessibility and fallback authority
 continues to apply. No arbitrary generated application code or arbitrary/generated Three.js
-implementation is permitted. P11 then supplies stable domains/reference adapters, and P12 supplies
-production hardening, tenancy, staging, operations and deployment.
+implementation is permitted. P10D is not a dependency for the first commercial storefront,
+minimum pilot editor, or Vesko pilot.
+
+P11 closes the incomplete obtained Vesko OpenAPI contract, supplies canonical reference adapters,
+and proves the lifecycle in Vesko staging. Raw `/puck` persistence is incompatible with
+`StorefrontSnapshot`; Veskify commerce writes remain forbidden. P12 then supplies production
+hardening, tenancy, security, observability, recovery, deployment, and pilot operations.
 
 ## 8. Testing strategy
 
