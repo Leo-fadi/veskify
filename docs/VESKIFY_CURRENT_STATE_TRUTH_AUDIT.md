@@ -185,21 +185,21 @@ some is documentation and reachability debt that v1.3.0 must name rather than ob
 
 ## 6. Merchant reachability
 
-| Merchant capability                                              | Status       | Current truth                                                                                                                                                |
-| ---------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Open and edit seeded/local storefronts                           | **Baseline** | Browser routes load canonical snapshots; Puck fields and bounded section commands update unsaved canonical draft state.                                      |
-| Start a project from minimal inputs                              | **Baseline** | The onboarding wizard persists a session, builds a deterministic guided plan/review, and creates a local project for demo or empty catalogue modes.          |
-| Connect an existing Vesko catalogue during onboarding            | **Partial**  | The UI can select the intent, but project creation intentionally stops because no authoritative Vesko catalogue source is wired.                             |
-| Discover a public storefront URL and approve reconciled evidence | **Partial**  | Secure adapter and URL-to-brief lifecycle exist, but the normal onboarding UI does not invoke the public server adapter as a complete merchant journey.      |
-| Generate an initial storefront                                   | **Partial**  | Deterministic guided creation and legacy/runtime whole-store generation are reachable; governed P10A initial generation is not the normal editor path.       |
-| Request AI design changes                                        | **Partial**  | The editor exposes section/page/storefront prompts and proposal review; the strict P10A router and governed packages are internal-only.                      |
-| Review, accept/reject, undo/redo                                 | **Baseline** | Page and whole-store proposal lifecycles are merchant-accessible; whole-store acceptance is atomic.                                                          |
-| Save and reload a draft                                          | **Baseline** | IndexedDB local flow is reachable and tested; Vesko durable persistence is an adapter seam, not an active environment.                                       |
-| Preview home, collection, and PDP                                | **Baseline** | Routes select canonical draft/published/history snapshots and render protected commerce through route adapters.                                              |
-| Publish explicitly                                               | **Partial**  | UI and server gateway exist, but the active server composition is protected local-demo-only. General standalone and production authority are not configured. |
-| Publish accepted AI lineage                                      | **Partial**  | Receipt contracts and enforcement exist, but no merchant acceptance endpoint/configured accepted-AI authority currently completes the chain.                 |
-| Restore history                                                  | **Baseline** | Local history and restore routes operate on immutable snapshots and preserve published state.                                                                |
-| Use Vesko staging or production                                  | **Blocked**  | No confirmed endpoints, auth exchange, production repositories, deployment, or retained environment evidence exist.                                          |
+| Merchant capability                                              | Status       | Current truth                                                                                                                                                                                                                               |
+| ---------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Open and edit seeded/local storefronts                           | **Baseline** | Browser routes load canonical snapshots; Puck fields and bounded section commands update unsaved canonical draft state.                                                                                                                     |
+| Start a project from minimal inputs                              | **Baseline** | The onboarding wizard persists a session, builds a deterministic guided plan/review, and creates a local project for demo or empty catalogue modes.                                                                                         |
+| Connect an existing Vesko catalogue during onboarding            | **Partial**  | The UI can select the intent, but project creation intentionally stops because no authoritative Vesko catalogue source is wired.                                                                                                            |
+| Discover a public storefront URL and approve reconciled evidence | **Partial**  | Secure adapter and URL-to-brief lifecycle exist, but the normal onboarding UI does not invoke the public server adapter as a complete merchant journey.                                                                                     |
+| Generate an initial storefront                                   | **Partial**  | Deterministic guided creation and legacy/runtime whole-store generation are reachable; governed P10A initial generation is not the normal editor path.                                                                                      |
+| Request AI design changes                                        | **Partial**  | The editor exposes section/page/storefront prompts and proposal review; the strict P10A router and governed packages are internal-only.                                                                                                     |
+| Review, accept/reject, undo/redo                                 | **Baseline** | Page and whole-store proposal lifecycles are merchant-accessible; whole-store acceptance is atomic.                                                                                                                                         |
+| Save and reload a draft                                          | **Baseline** | IndexedDB local flow is reachable and tested; Vesko durable persistence is an adapter seam, not an active environment.                                                                                                                      |
+| Preview home, collection, and PDP                                | **Baseline** | Routes select canonical draft/published/history snapshots and render protected commerce through route adapters.                                                                                                                             |
+| Publish explicitly                                               | **Partial**  | UI and server gateway exist, but the active server composition is protected local-demo-only. General standalone and production authority are not configured.                                                                                |
+| Publish accepted AI lineage                                      | **Partial**  | Receipt contracts and enforcement exist, but no merchant acceptance endpoint/configured accepted-AI authority currently completes the chain.                                                                                                |
+| Restore history                                                  | **Baseline** | Local history and restore routes operate on immutable snapshots and preserve published state.                                                                                                                                               |
+| Use Vesko staging or production                                  | **Blocked**  | Audited endpoint surfaces exist, but security/store authority, typed responses, revisions, navigation/synchronization, canonical persistence/publication APIs, deployment, and retained environment evidence remain absent or insufficient. |
 
 ## 7. Evidence truth
 
@@ -303,9 +303,18 @@ Standalone adapters exercise these contracts with deterministic projects and opa
 checks. Server-only staging transport, catalogue/navigation, and product-projection adapters also
 exist. They are fixture-compatible mappings, not evidence of Vesko connectivity.
 
-Vesko owners must still supply:
+The Vesko OpenAPI 3.0 contract has now been obtained and audited in the
+[`Vesko OpenAPI Contract Audit`](./VESKO_OPENAPI_CONTRACT_AUDIT.md), with endpoint-to-port and
+field-level findings in the
+[`Vesko–Veskify Integration Matrix`](./VESKO_VESKIFY_INTEGRATION_MATRIX.md). It establishes real
+endpoint surfaces for store context, products, variants, categories, brands, media, inventory, raw
+Puck configurations, and storefront product reads. Contract acquisition is complete for this
+supplied snapshot; integration sufficiency is not.
 
-- the API/OpenAPI catalogue, base paths, methods, pagination and response envelopes;
+Vesko owners must still resolve or supply:
+
+- authoritative staging/production server and base-path selection, typed response schemas, and
+  consistent pagination envelopes for the selected operations;
 - authentication protocol, credential acquisition/refresh, tenant/environment identity, and
   authorization semantics;
 - canonical product-type, option dependency, variant, availability, price, stock, and media field
@@ -319,8 +328,11 @@ Vesko owners must still supply:
 - deployment, secrets, audit logging, monitoring, backup, recovery, domain activation, and rollback
   ownership.
 
-Until those are documented, real staging adapters and production deployment are **Blocked**, not
-merely untested.
+The audited contract remains insufficient because its response coverage is incomplete, security
+declarations are inconsistent, revision/ETag authority is absent, navigation and synchronization
+contracts are missing, and it exposes no canonical Veskify draft/history/publication API. Until
+those deficiencies are resolved, real staging adapters and production deployment are **Blocked**,
+not merely untested.
 
 ## 11. Documentation, naming, status, and duplication drift
 
