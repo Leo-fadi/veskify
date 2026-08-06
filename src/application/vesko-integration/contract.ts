@@ -895,6 +895,7 @@ export const integrationFailureCodeSchema = z.enum([
   "stalePublishConfirmation",
   "publishedStateConflict",
   "publishingUnavailable",
+  "publishCompilationRejected",
   "unsupportedCapability",
   "malformedIntegrationResponse",
 ]);
@@ -929,13 +930,18 @@ const safeFailureMessages: Record<IntegrationFailureCode, string> = {
   stalePublishConfirmation: "The publish review is no longer current. Review the latest draft.",
   publishedStateConflict: "The published storefront changed. Refresh before publishing.",
   publishingUnavailable: "Publishing is temporarily unavailable.",
+  publishCompilationRejected:
+    "The saved storefront no longer passes the required publishing checks.",
   unsupportedCapability: "This Storefront Studio capability is not available in this environment.",
   malformedIntegrationResponse: "The storefront service returned an invalid response.",
 };
 
 export class VeskoIntegrationError extends Error {
-  constructor(readonly code: IntegrationFailureCode) {
-    super(safeFailureMessages[code]);
+  constructor(
+    readonly code: IntegrationFailureCode,
+    options?: ErrorOptions,
+  ) {
+    super(safeFailureMessages[code], options);
     this.name = "VeskoIntegrationError";
   }
 }

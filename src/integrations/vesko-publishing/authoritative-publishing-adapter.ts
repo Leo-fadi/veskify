@@ -7,6 +7,7 @@ import {
   InvalidPublishPreparationError,
   NoPublishableChangesError,
   PublishConfirmationError,
+  PublishCompilerError,
   publishPreparationSchema,
   PublishPreparationValidationError,
   StalePublishPreparationError,
@@ -253,6 +254,11 @@ function mapPublishingFailure(error: unknown): VeskoIntegrationError {
     error instanceof RepositoryValidationError
   ) {
     return new VeskoIntegrationError("malformedIntegrationResponse");
+  }
+  if (error instanceof PublishCompilerError) {
+    return error.code === "prepare-confirmation-compile-mismatch"
+      ? new VeskoIntegrationError("stalePublishConfirmation", { cause: error })
+      : new VeskoIntegrationError("publishCompilationRejected", { cause: error });
   }
   if (error instanceof PublishConfirmationError) {
     return error.cause === undefined

@@ -339,6 +339,23 @@ Manual publication remains explicit and distinct from accepted-AI publication. T
 deterministic compiled-runtime artifact, atomic active-version switching, rollback closure and published
 render-target closure to P10A-08C-02; it does not claim compiler closure.
 
+P10A-08C-02A establishes the deterministic publish compiler authority. One write-free application
+compiler accepts unknown input, clones and parses it inside a typed boundary, validates the exact current
+canonical draft against live manifest, component/version/variant, renderer, executable PageBlueprint
+profile, commerce, route/navigation, product-media, approved-asset, locale/accessibility and migration
+authority, and produces one immutable renderer-ready result plus a deterministic compile receipt. The
+result is a derived publication projection only; `StorefrontSnapshot` remains the sole editable storefront
+aggregate and canonical commerce is not copied into the result.
+
+Preparation compiles both explicit manual and accepted-AI publication, preserving accepted receipt
+lineage where applicable. Trusted server preparation retains the compile receipt and compiled-result
+identity while the browser receives only bounded preparation information and cannot submit compiled
+content or receipt authority. Confirmation resolves current authority again, recompiles the current
+canonical draft and requires exact result-identity and receipt equality before the existing authoritative
+publication command can run. Compiler failure or drift therefore performs no publication write. The full
+compiled result is not yet persisted: P10A-08C-02B owns atomic artifact/pointer/history and
+rollback/republish integration, while P10A-08D-02 owns final published-route browser evidence.
+
 ### P10B Commercial Storefront Design System v1
 
 P10B follows P10A publishing closure and is the first phase that broadens commercial visual quality. It owns commercial component/profile reachability for new design-system capabilities, direction differentiation, credible-asset complete-storefront generation and P10B-01 executable vocabulary, P10B-02 foundations, P10B-03 image/art direction, P10B-04 premium shared frame, P10B-05 hero/editorial/campaign families, P10B-06 product-card and merchandising system, P10B-07 collection profiles, P10B-08 PDP profiles, P10B-09 coordinated directions, P10B-10 narrative composition, P10B-11 responsive closure and P10B-12 visual-quality gate. These tasks extend only the existing canonical `BrandSystem`, registered `PageBlueprint` profiles, component families/variants, approved asset placement and `StorefrontSnapshot` lifecycle.

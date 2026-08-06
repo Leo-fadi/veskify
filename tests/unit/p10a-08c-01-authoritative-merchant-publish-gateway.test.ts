@@ -270,6 +270,10 @@ describe("P10A-08C-01 authoritative merchant publish gateway", () => {
 
     const preparation = await harness.service.prepare(manualRequest(projectId), request());
     expect(preparation.authority).toEqual({ kind: "manual" });
+    expect(preparation).not.toHaveProperty("compilation");
+    const trustedPreparation = await harness.preparationStore.load(preparation.preparationId);
+    expect(trustedPreparation?.preparation.compilation.receipt.sourceAuthorityKind).toBe("manual");
+    expect(trustedPreparation?.preparation.compilation).not.toHaveProperty("result");
     expect(harness.authenticatedContext.resolve).toHaveBeenCalledTimes(1);
     expect(publish).not.toHaveBeenCalled();
 
@@ -348,6 +352,17 @@ describe("P10A-08C-01 authoritative merchant publish gateway", () => {
             receiptId: "acceptance_receipt_missing",
             receipt: { projectId },
           },
+        },
+        request(),
+      ),
+    ).rejects.toMatchObject({ code: "invalid-request" });
+    await expect(
+      harness.service.confirm(
+        {
+          projectId,
+          requestId: "publish_request_receipt_content",
+          preparationId: "publish_preparation_untrusted_compile",
+          compileReceipt: { fingerprint: "browser-supplied" },
         },
         request(),
       ),
@@ -465,7 +480,7 @@ describe("P10A-08C-01 authoritative merchant publish gateway", () => {
         projectId,
         requestId: "publish_request_duplicate",
         requestFingerprint: "different_request",
-        preparation: first,
+        preparation: record.preparation,
         gatewayRequest: record.gatewayRequest,
       }),
     ).rejects.toMatchObject({ code: "idempotency-conflict" });

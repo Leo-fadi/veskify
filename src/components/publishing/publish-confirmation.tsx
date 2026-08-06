@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { PublishPreparation } from "@/application/publishing";
+import type { PublicPublishPreparation } from "@/application/publishing";
 import type { Locale } from "@/domain/shared";
 import { PublishChangeSummary } from "./publish-change-summary";
 import { publishingCopy } from "./publish-status";
@@ -13,7 +13,7 @@ export function PublishConfirmation({
   onCancel,
   cancelHref,
 }: {
-  preparation: PublishPreparation;
+  preparation: PublicPublishPreparation;
   locale: Locale;
   primaryLocale: Locale;
   confirming: boolean;
