@@ -4,7 +4,7 @@
 - **Version:** 1.2.2
 - **Decision date:** 2026-07-16
 - **Decision owners:** Veskify product and engineering
-- **Related document:** `docs/VESKIFY_SDD.md` and `docs/VESKIFY_SDD_v1.2.2.docx`
+- **Related document:** `docs/VESKIFY_SDD.md` and `docs/VESKIFY_SDD_v1.3.0.docx`
 - **Related decisions:** ADR-001 — Puck as the embedded editor foundation; ADR-003 — URL-first discovery and reconciliation; ADR-004 — dynamic commerce-bound components
 
 ## 1. Context
@@ -233,20 +233,18 @@ The architecture complies with this decision when:
 
 The controlled proposal architecture, provider adapter, section/page/storefront foundations,
 atomic application, undo/redo, save and publish lifecycle are implemented. Automated provider
-coverage is mocked and network-free; retained live-provider Phase 9 evidence remains required.
+coverage is mocked and network-free; retained controlled real-provider P10A evidence remains
+blocked until an eligible approved configuration is available.
 
-This ADR remains binding. New work follows the v1.2.2 roadmap:
+This ADR remains binding. New work follows the v1.3.0 roadmap:
 
-1. complete meaningful grounded Phase 9 composition and evidence;
-2. define P10A executable PageBlueprint contracts from the current template precursors;
-3. generate P10A capability knowledge from canonical component, binding, executable-blueprint and
-   renderer contracts;
-4. define separate initial/follow-up Skill package and scoped router contracts, including authority
-   declarations and no-widening validation;
-5. add golden-store gates and a deterministic publish compiler;
-6. build P10B assets and Storefront Studio UX on those contracts;
-7. implement Phase 11 merchant-operable granular editing, proposal execution, history and Undo/Redo
-   against the P10A contracts;
-8. consolidate Phase 12 stable domains and Vesko reference adapters before later deployment work.
+1. close P10A internal governed orchestration and authoritative publishing evidence;
+2. deliver P10B Commercial Storefront Design System v1 and its retained human quality gate;
+3. deliver P10C merchant-operable Storefront Studio routing, clarification, bounded manual and AI
+   editing, unified history, save, preview and publish;
+4. keep P10D registered advanced media non-blocking for the first commercial storefront, minimum
+   editor and Vesko pilot;
+5. close Vesko contracts and prove canonical reference adapters in P11 staging; and
+6. complete P12 production hardening and controlled pilot operations.
 
 This decision does not authorize a second catalogue model, merchant-specific component code or weaker validation in order to increase generation freedom.

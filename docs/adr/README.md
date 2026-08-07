@@ -1,9 +1,9 @@
 # Architecture decision index
 
-The decisions below remain binding under VESKIFY SDD v1.2.2. The commercial-composition amendment clarifies
-their application; it does not supersede their decisions.
+The decisions below remain binding under Veskify SDD v1.3.0. The consolidated specification
+clarifies their current application; it does not supersede their decisions.
 
-| ADR                                                          | Decision                                                                    | v1.2.2 relevance                                                                                                               |
+| ADR                                                          | Decision                                                                    | Current relevance                                                                                                              |
 | ------------------------------------------------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | [ADR-001](../ADR-001-PUCK_EDITOR_FOUNDATION.md)              | Puck is the isolated editor foundation.                                     | Puck data remains transient; it is not a second storefront graph or persistence model.                                         |
 | [ADR-002](ADR-002_CONTROLLED_DESIGN_AGENT.md)                | AI uses controlled Skills and structured operations.                        | Recipe/family selection, bounded parameters, reachability and visual evidence retain proposal validation and scope boundaries. |
@@ -12,4 +12,4 @@ their application; it does not supersede their decisions.
 
 The authoritative specification is
 [`docs/VESKIFY_SDD.md`](../VESKIFY_SDD.md); its synchronized export is
-[`docs/VESKIFY_SDD_v1.2.2.docx`](../VESKIFY_SDD_v1.2.2.docx).
+[`docs/VESKIFY_SDD_v1.3.0.docx`](../VESKIFY_SDD_v1.3.0.docx).
