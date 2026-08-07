@@ -9,6 +9,7 @@ import {
   EXPECTED_REQUIREMENT_ID_SET,
   extractAuthoritativeRequirementDefinitions,
   extractRequirementIds,
+  hasStaleActiveP10AStatusClaim,
   isAffirmativeMerchantEditorP10AClaim,
 } from "./documentation-validation-helpers.mjs";
 import { extractMarkdownLinks, isSafeHyperlinkTarget } from "./markdown-docx-export.mjs";
@@ -23,6 +24,7 @@ const activeMarkdownFiles = [
   "docs/DEVELOPMENT_GUIDE.md",
   "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
   "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+  "docs/P10A_PHASE_CLOSURE.md",
   "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
   "docs/VESKO_VESKIFY_INTEGRATION_MATRIX.md",
   "docs/P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md",
@@ -106,8 +108,9 @@ for (const relativePath of [
 }
 
 requireText("README.md", [
-  "The overall product is **Partial**. Phase 9 is closed by product-owner handoff.",
-  "P10A grounded\norchestration and publishing closure is active",
+  "The overall product is **Partial**. Phase 9 is closed by product-owner handoff",
+  "P10A grounded\norchestration and publishing is **Baseline / closed**",
+  "P10B Commercial Storefront Design System v1\nis the next active development phase",
   "docs/VESKIFY_SDD_v1.3.0.docx",
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
   "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
@@ -124,7 +127,8 @@ requireText("AGENTS.md", [
 requireText("docs/VESKIFY_SDD.md", [
   "# Veskify Software Design Document v1.3.0",
   "Phase 9 is closed by product-owner handoff",
-  "P10A is\nsubstantially implemented but not closed",
+  "P10A grounded\norchestration and publishing is **Baseline / closed**",
+  "P10B is now the next active\ndevelopment phase",
   "Merchant-facing wiring is not a\nP10A closure requirement",
   "P10B is the first phase allowed to claim a commercially credible\ndesign system",
   "The Vesko OpenAPI 3.0 contract has been obtained and audited",
@@ -135,6 +139,7 @@ requireText("docs/VESKIFY_SDD.md", [
 ]);
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
+  "**Active development phase:** P10B — Commercial Storefront Design System v1 (**Planned**)",
   "P10A owns internal governed initial/follow-up execution",
   "1 — Premium Editorial vertical slice",
   "2 — Modern Technical vertical slice",
@@ -153,20 +158,39 @@ requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
   "## P11 checklist",
   "| ☑",
   "P11-00",
+  "P10A_PHASE_CLOSURE.md",
+]);
+
+requireText("docs/P10A_PHASE_CLOSURE.md", [
+  "**Status:** Baseline / closed",
+  "**Formal exit verdict: Baseline / closed.**",
+  "**Next active development phase:** P10B — Commercial Storefront Design System v1 (**Planned**)",
+  "**Provider calls during closure:** zero",
+]);
+
+requireText("docs/DEVELOPMENT_GUIDE.md", [
+  "Phase 9 is\nclosed by product-owner handoff, and P10A is **Baseline / closed**",
+  "P10B is the active development phase and remains **Planned**",
+  "Completed P10A capability includes governed initial and follow-up\nexecution",
+  "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
+  "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 4) {
-  failures.push("Delivery tracker must contain exactly four completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 7) {
+  failures.push("Delivery tracker must contain exactly seven completed checkboxes");
 }
 if (
+  !/^\| ☑\s+\| P10A\s+\|/m.test(tracker) ||
   !/^\| ☑\s+\| P10A-07C-03R/m.test(tracker) ||
+  !/^\| ☑\s+\| P10A-08B-02/m.test(tracker) ||
   !/^\| ☑\s+\| P10A-08C-02B/m.test(tracker) ||
   !/^\| ☑\s+\| P10A-08D-02/m.test(tracker) ||
+  !/^\| ☑\s+\| P10A-09/m.test(tracker) ||
   !/^\| ☑\s+\| P11-00/m.test(tracker)
 ) {
   failures.push(
-    "Delivery tracker must mark only P10A-07C-03R, P10A-08C-02B, P10A-08D-02, and P11-00 as completed Baseline work",
+    "Delivery tracker must mark P10A overall, every listed P10A closure task, and P11-00 as completed Baseline work",
   );
 }
 
@@ -179,6 +203,10 @@ const staleActivePatterns = [
   [/Phase 12[^\n]*stable domains[^\n]*adapters/i, "old Phase 12 adapter ownership"],
   [/OpenAPI (?:contract )?(?:is )?missing/i, "missing OpenAPI claim"],
   [/raw Puck[^\n]*(?:is|as) canonical/i, "raw Puck canonical-persistence claim"],
+  [/P10A closure record remains/i, "outstanding P10A closure-record claim"],
+  [/P10A controlled acceptance remains blocked/i, "blocked P10A controlled-acceptance claim"],
+  [/P10A-08C-02B is Planned/i, "planned compiled-publication closure claim"],
+  [/P10A-08D-02 is Planned/i, "planned publication-evidence closure claim"],
 ];
 
 for (const [relativePath, markdown] of contents) {
@@ -187,6 +215,9 @@ for (const [relativePath, markdown] of contents) {
     .split("\n")
     .filter((line) => !/Former (?:Phase|later)/.test(line))
     .join("\n");
+  if (hasStaleActiveP10AStatusClaim(currentClaimText)) {
+    failures.push(`${relativePath}: stale active claim (P10A not-closed claim)`);
+  }
   for (const [pattern, label] of staleActivePatterns) {
     if (pattern.test(currentClaimText)) {
       failures.push(`${relativePath}: stale active claim (${label})`);

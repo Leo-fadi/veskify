@@ -49,3 +49,31 @@ const affirmativeMerchantEditorP10APatterns = [
 
 export const isAffirmativeMerchantEditorP10AClaim = (text) =>
   affirmativeMerchantEditorP10APatterns.some((pattern) => pattern.test(text));
+
+const historicalStatusScopePatterns = [
+  /(?:^|\s)(?:historical(?:\s+(?:record|status|wording|documentation))?|earlier\s+documentation|former\s+status)\s*:\s*$/i,
+  /\b(?:historical|earlier)\s+(?:documentation|record|status|wording)\s+(?:said|stated|recorded|described|reported|claimed)(?:\s+that)?\s*$/i,
+];
+const staleP10AStatusPattern =
+  /\bp10a\s+is\s+(?:substantially\s+implemented\s+but\s+)?not\s+closed\b/gi;
+
+export const hasStaleActiveP10AStatusClaim = (markdown) => {
+  const normalized = markdown.replace(/\s+/g, " ");
+
+  for (const match of normalized.matchAll(staleP10AStatusPattern)) {
+    const claimIndex = match.index ?? 0;
+    const sentenceBoundary = Math.max(
+      normalized.lastIndexOf(".", claimIndex - 1),
+      normalized.lastIndexOf("!", claimIndex - 1),
+      normalized.lastIndexOf("?", claimIndex - 1),
+      normalized.lastIndexOf(";", claimIndex - 1),
+    );
+    const claimContext = normalized.slice(sentenceBoundary + 1, claimIndex);
+    const isExplicitlyHistorical = historicalStatusScopePatterns.some((pattern) =>
+      pattern.test(claimContext),
+    );
+    if (!isExplicitlyHistorical) return true;
+  }
+
+  return false;
+};

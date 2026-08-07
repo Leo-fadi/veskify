@@ -4,6 +4,7 @@ import {
   EXPECTED_REQUIREMENT_IDS,
   extractAuthoritativeRequirementDefinitions,
   extractRequirementIds,
+  hasStaleActiveP10AStatusClaim,
   isAffirmativeMerchantEditorP10AClaim,
 } from "./documentation-validation-helpers.mjs";
 import { renderInlineMarkdownForCheck } from "./markdown-docx-export.mjs";
@@ -59,6 +60,24 @@ assert.equal(
   false,
 );
 
+assert.equal(hasStaleActiveP10AStatusClaim("P10A is not closed."), true);
+assert.equal(
+  hasStaleActiveP10AStatusClaim("P10A is substantially\nimplemented but not closed."),
+  true,
+);
+assert.equal(hasStaleActiveP10AStatusClaim("P10A is Baseline / closed."), false);
+assert.equal(
+  hasStaleActiveP10AStatusClaim(
+    "Historical record: P10A is substantially implemented but not closed.",
+  ),
+  false,
+);
+assert.equal(hasStaleActiveP10AStatusClaim("P10A was previously not closed."), false);
+assert.equal(
+  hasStaleActiveP10AStatusClaim("Historical records exist, but P10A is not closed."),
+  true,
+);
+
 const rangeFixture = "FR-119–122; NFR-101 through NFR-103; AC-105-107; AC-138.";
 assert.deepEqual([...extractRequirementIds(rangeFixture)].sort(), [
   "AC-105",
@@ -84,5 +103,5 @@ assert.deepEqual(
 );
 
 process.stdout.write(
-  "Documentation tooling self-check passed (hyperlinks, deterministic relationships, requirement ranges/duplicates, and P10A/P10C negation fixtures).\n",
+  "Documentation tooling self-check passed (hyperlinks, deterministic relationships, requirement ranges/duplicates, P10A/P10C negation, and stale-status whitespace fixtures).\n",
 );

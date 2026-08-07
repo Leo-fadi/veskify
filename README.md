@@ -5,10 +5,10 @@ Storefront Studio**. It turns approved brand/source evidence, approved presentat
 read-only canonical Vesko commerce data into a governed, editable, and explicitly publishable
 storefront.
 
-The overall product is **Partial**. Phase 9 is closed by product-owner handoff. P10A grounded
-orchestration and publishing closure is active and substantially implemented. Controlled
-real-provider acceptance, accepted-AI receipt wiring, atomic compiled publication/rollback, and
-complete correlated publication evidence are implemented; the P10A closure record remains.
+The overall product is **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
+orchestration and publishing is **Baseline / closed**. P10B Commercial Storefront Design System v1
+is the next active development phase, but remains **Planned** until implementation and evidence
+begin.
 
 ## Product boundary
 
@@ -63,8 +63,8 @@ alone cannot close that gate.
 
 ## Delivery sequence
 
-1. P10A — Grounded orchestration and publishing closure
-2. P10B — Commercial Storefront Design System v1
+1. P10A — Grounded orchestration and publishing closure (**Baseline / closed**)
+2. P10B — Commercial Storefront Design System v1 (**Planned / next active phase**)
 3. P10C — Storefront Studio Editing Experience v1
 4. P10D — Advanced media and registered interactive presentation
 5. P11 — Vesko Integration Readiness and Reference Adapter
@@ -136,6 +136,7 @@ high-risk validation.
 - [Development delivery tracker v1.3.0 DOCX](docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx)
 - [Current-state truth audit](docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md)
 - [Capability evidence ledger](docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md)
+- [P10A phase closure record](docs/P10A_PHASE_CLOSURE.md)
 - [Development guide](docs/DEVELOPMENT_GUIDE.md)
 - [Binding repository constitution](AGENTS.md)
 - [Architecture decisions](docs/adr/README.md)
@@ -146,7 +147,8 @@ Historical phase records retain their original evidence meaning. Superseded expo
 
 ## Non-claim
 
-This repository does not claim current commercial visual acceptance, completed P10A closure,
-complete Vesko integration, Vesko staging acceptance, production readiness, or production operation.
+This repository does not claim current P10B commercial visual acceptance, merchant-complete
+Storefront Studio editing, complete Vesko integration, Vesko staging acceptance, production
+readiness, or production operation.
 
 Owner: Vesko Oy

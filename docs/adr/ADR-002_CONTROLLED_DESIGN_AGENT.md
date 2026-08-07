@@ -233,13 +233,15 @@ The architecture complies with this decision when:
 
 The controlled proposal architecture, provider adapter, section/page/storefront foundations,
 atomic application, undo/redo, save and publish lifecycle are implemented. Automated provider
-coverage is mocked and network-free; retained controlled real-provider P10A evidence remains
-blocked until an eligible approved configuration is available.
+coverage remains mocked and network-free by default. The explicitly authorized P10A-07C-03R gate
+retains one successful governed initial-generation call before one successful hero follow-up call,
+with zero retries; P10A is now Baseline / closed.
 
 This ADR remains binding. New work follows the v1.3.0 roadmap:
 
-1. close P10A internal governed orchestration and authoritative publishing evidence;
-2. deliver P10B Commercial Storefront Design System v1 and its retained human quality gate;
+1. preserve the closed P10A internal governed-orchestration and authoritative-publishing contracts;
+2. deliver the now-active but still Planned P10B Commercial Storefront Design System v1 and its
+   retained human quality gate;
 3. deliver P10C merchant-operable Storefront Studio routing, clarification, bounded manual and AI
    editing, unified history, save, preview and publish;
 4. keep P10D registered advanced media non-blocking for the first commercial storefront, minimum

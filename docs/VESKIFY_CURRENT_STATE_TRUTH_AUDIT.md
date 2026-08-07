@@ -1,8 +1,8 @@
 # Veskify Current-State Truth Audit
 
-**Audit date:** 6 August 2026
+**Audit date:** 7 August 2026
 
-**Repository baseline:** `169a8ba56cf25c7b816d9a0e25a5321c31ac85aa` (`origin/main`, including merged PR #163)
+**Repository baseline:** `3d36f548ea79412e6fe3f66b9dd10a2c1e2150f5` (`origin/main`, including merged PR #170)
 
 **Scope:** code-grounded documentation audit; no runtime, canonical specification, roadmap, README, or DOCX change
 
@@ -47,12 +47,6 @@ The repository genuinely has:
 The repository does not yet have:
 
 - the P10A governed router and package integrations wired into the normal merchant editor flow;
-- a successful retained P10A controlled-provider acceptance run;
-- an active merchant endpoint that mints accepted-proposal publication receipts and a configured
-  accepted-AI authority in the active server composition;
-- persisted immutable compiled publication artifacts, an atomic active-artifact pointer, or
-  rollback/republish authority;
-- full published-route browser/manual evidence tied to the current compiler and gateway;
 - a commercially deep storefront design system or retained current full-store visual acceptance;
 - a merchant-connected URL discovery and approval journey using the bounded public adapter;
 - real Vesko API clients, a documented authentication protocol, production storage/deployment,
@@ -148,15 +142,16 @@ Normal standalone projects use browser IndexedDB. Save, publish, and restore cre
 snapshot identities and preserve history. The active publish UI now sends only bounded prepare and
 confirm requests to the same-origin server gateway; it cannot publish directly through IndexedDB.
 
-The configured server gateway is available only for the non-production P9-05B local demo. Without
-that explicit server configuration, the route fails closed. The configured composition supplies
-manual publication but does not inject `acceptedAiAuthority`, so an accepted-AI request is rejected
-even though receipt minting, durable receipt storage, and trusted receipt validation exist as
-server modules and deterministic tests.
+The configured server gateway remains a protected non-production local composition. Without that
+explicit configuration, the route fails closed. Within that bounded composition, authoritative
+proposal acceptance now mints and durably retains one exact accepted-snapshot receipt; later
+canonical client mutation invalidates that receipt rather than silently publishing an older
+accepted snapshot.
 
-PR #163 added deterministic compilation before publication preparation and fresh recompilation at
-confirmation. The compiled result is not persisted as the active published artifact. The existing
-snapshot repository still owns the publication transaction and published snapshot pointer.
+Preparation and confirmation independently resolve current authority and deterministically compile.
+One atomic repository transaction persists the published snapshot, immutable compiled artifact,
+append-only version/history, operation, and active pointer. Restore creates a new draft without
+moving the live pointer; a later explicit republish creates a fresh artifact and version.
 
 ## 5. Development history that remains technically relevant
 
@@ -174,10 +169,12 @@ The repository evolved through additive convergence rather than a clean replacem
    create the missing full visual evidence matrix.
 5. P10A PRs #140-#155 established executable profiles, generated capability knowledge, governed
    package contracts, initial/follow-up integrations, strict routing, evaluation/review protocols,
-   and a safely blocked controlled-provider run.
-6. PRs #159, #162, and #163 added accepted-snapshot receipt authority, the active authoritative
-   merchant gateway, and deterministic publication compilation. PR #161 separately corrected
-   published collection/PDP render-target propagation.
+   and the safely fail-closed precursor to controlled acceptance.
+6. PRs #159, #161-#163, #167-#170 completed accepted-snapshot receipt wiring, the active
+   authoritative gateway, deterministic publication compilation, atomic artifacts/versions and
+   active-pointer authority, rollback/republish, exact published collection/PDP propagation, and
+   correlated manual/accepted-AI publication evidence. PR #168 retained the successful ordered
+   two-call real-provider acceptance.
 
 The old page proposal system, legacy V1 registry bridge, `StorefrontDesignSystemV1` direction
 material, and new P10A authorities currently coexist. Some coexistence is intentional migration;
@@ -185,21 +182,21 @@ some is documentation and reachability debt that v1.3.0 must name rather than ob
 
 ## 6. Merchant reachability
 
-| Merchant capability                                              | Status       | Current truth                                                                                                                                                                                                                               |
-| ---------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Open and edit seeded/local storefronts                           | **Baseline** | Browser routes load canonical snapshots; Puck fields and bounded section commands update unsaved canonical draft state.                                                                                                                     |
-| Start a project from minimal inputs                              | **Baseline** | The onboarding wizard persists a session, builds a deterministic guided plan/review, and creates a local project for demo or empty catalogue modes.                                                                                         |
-| Connect an existing Vesko catalogue during onboarding            | **Partial**  | The UI can select the intent, but project creation intentionally stops because no authoritative Vesko catalogue source is wired.                                                                                                            |
-| Discover a public storefront URL and approve reconciled evidence | **Partial**  | Secure adapter and URL-to-brief lifecycle exist, but the normal onboarding UI does not invoke the public server adapter as a complete merchant journey.                                                                                     |
-| Generate an initial storefront                                   | **Partial**  | Deterministic guided creation and legacy/runtime whole-store generation are reachable; governed P10A initial generation is not the normal editor path.                                                                                      |
-| Request AI design changes                                        | **Partial**  | The editor exposes section/page/storefront prompts and proposal review; the strict P10A router and governed packages are internal-only.                                                                                                     |
-| Review, accept/reject, undo/redo                                 | **Baseline** | Page and whole-store proposal lifecycles are merchant-accessible; whole-store acceptance is atomic.                                                                                                                                         |
-| Save and reload a draft                                          | **Baseline** | IndexedDB local flow is reachable and tested; Vesko durable persistence is an adapter seam, not an active environment.                                                                                                                      |
-| Preview home, collection, and PDP                                | **Baseline** | Routes select canonical draft/published/history snapshots and render protected commerce through route adapters.                                                                                                                             |
-| Publish explicitly                                               | **Partial**  | UI and server gateway exist, but the active server composition is protected local-demo-only. General standalone and production authority are not configured.                                                                                |
-| Publish accepted AI lineage                                      | **Partial**  | Receipt contracts and enforcement exist, but no merchant acceptance endpoint/configured accepted-AI authority currently completes the chain.                                                                                                |
-| Restore history                                                  | **Baseline** | Local history and restore routes operate on immutable snapshots and preserve published state.                                                                                                                                               |
-| Use Vesko staging or production                                  | **Blocked**  | Audited endpoint surfaces exist, but security/store authority, typed responses, revisions, navigation/synchronization, canonical persistence/publication APIs, deployment, and retained environment evidence remain absent or insufficient. |
+| Merchant capability                                              | Status       | Current truth                                                                                                                                                                                                                                  |
+| ---------------------------------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Open and edit seeded/local storefronts                           | **Baseline** | Browser routes load canonical snapshots; Puck fields and bounded section commands update unsaved canonical draft state.                                                                                                                        |
+| Start a project from minimal inputs                              | **Baseline** | The onboarding wizard persists a session, builds a deterministic guided plan/review, and creates a local project for demo or empty catalogue modes.                                                                                            |
+| Connect an existing Vesko catalogue during onboarding            | **Partial**  | The UI can select the intent, but project creation intentionally stops because no authoritative Vesko catalogue source is wired.                                                                                                               |
+| Discover a public storefront URL and approve reconciled evidence | **Partial**  | Secure adapter and URL-to-brief lifecycle exist, but the normal onboarding UI does not invoke the public server adapter as a complete merchant journey.                                                                                        |
+| Generate an initial storefront                                   | **Partial**  | Deterministic guided creation and legacy/runtime whole-store generation are reachable; governed P10A initial generation is not the normal editor path.                                                                                         |
+| Request AI design changes                                        | **Partial**  | The editor exposes section/page/storefront prompts and proposal review; the strict P10A router and governed packages are internal-only.                                                                                                        |
+| Review, accept/reject, undo/redo                                 | **Baseline** | Page and whole-store proposal lifecycles are merchant-accessible; whole-store acceptance is atomic.                                                                                                                                            |
+| Save and reload a draft                                          | **Baseline** | IndexedDB local flow is reachable and tested; Vesko durable persistence is an adapter seam, not an active environment.                                                                                                                         |
+| Preview home, collection, and PDP                                | **Baseline** | Routes select canonical draft/published/history snapshots and render protected commerce through route adapters.                                                                                                                                |
+| Publish explicitly                                               | **Partial**  | UI and server gateway exist, but the active server composition is protected local-demo-only. General standalone and production authority are not configured.                                                                                   |
+| Publish accepted AI lineage                                      | **Partial**  | The protected local server composition completes authoritative acceptance, durable receipt, independent preparation/confirmation resolution, atomic publication, and browser evidence. General merchant/Vesko/production reach remains absent. |
+| Restore history                                                  | **Baseline** | Local history and restore routes operate on immutable snapshots and preserve published state.                                                                                                                                                  |
+| Use Vesko staging or production                                  | **Blocked**  | Audited endpoint surfaces exist, but security/store authority, typed responses, revisions, navigation/synchronization, canonical persistence/publication APIs, deployment, and retained environment evidence remain absent or insufficient.    |
 
 ## 7. Evidence truth
 
@@ -213,51 +210,39 @@ some is documentation and reachability debt that v1.3.0 must name rather than ob
 - Browser/E2E evidence covers the local merchant shell, editor/proposal interactions, onboarding,
   collection/PDP rendering, history/restore, publish confirmation, and deterministic responsive
   journeys.
-- Real-provider evidence is narrow and historical. P9R-07 retains a successful manually reviewed
-  OpenAI design-system-only change through review, accept, undo/redo, save/reload, and preview, but
-  not publication or structural generation. P9R-08 records two unsuccessful pre-correction calls.
-  P10A-07C-03 made zero calls because trusted configuration selected the deterministic provider.
+- Real-provider evidence remains narrow. P9R-07 retains a historical manually reviewed OpenAI
+  design-system-only change. P10A-07C-03R retains one successful governed initial-generation case
+  before one successful exact hero follow-up case through the current package/router authority,
+  with two total calls, zero retry, protected-state parity, and no save or publication.
 - Retained human visual review exists narrowly in the P9R-07 written record and three P9-03E
   content-aware screenshots. It is not a current compiler-correlated full home/collection/PDP
   commercial review.
 
 ### 7.2 What is not proved
 
-There is no Vesko staging or production evidence. There is no successful retained P10A controlled
-provider case. There is no retained current 160-scenario human review record, no complete current
-commercial screenshot matrix, no accepted-AI publication journey, and no compiler-artifact
-rollback/republish evidence. Tests that mock OpenAI transport are integration evidence, not
-real-provider evidence. Browser tests using deterministic fixtures are browser/E2E evidence, not
-human visual or production evidence.
+There is no Vesko staging or production evidence. There is no retained current 160-scenario human
+commercial review record or complete current commercial screenshot matrix. The P10A controlled
+provider evidence does not prove commercial quality, save/publish, Vesko connectivity, or
+production operation. Tests that mock OpenAI transport are integration evidence, not real-provider
+evidence. Browser tests using deterministic fixtures are browser/E2E evidence, not human visual or
+production evidence.
 
-## 8. Actual remaining Phase 10A work
+## 8. P10A closure verdict
 
-P10A is substantially implemented but not closed. The remaining work is narrower than the roadmap
-currently implies:
+P10A is **Baseline / closed**. The explicit 20-item exit audit, merged capability inventory,
+requirement traceability, provider evidence, publication evidence, protected-state verdict, and
+deferred ownership are recorded in [`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md). No required
+P10A exit item remains Partial or Blocked.
 
-1. **Controlled-provider acceptance is Blocked.** Re-run P10A-07C-03 only under explicit approval
-   when trusted server configuration selects an eligible OpenAI provider and model. Case A must
-   succeed before Case B; no retry is permitted.
-2. **Accepted-AI publication composition is Partial.** Connect the server-only acceptance authority
-   to the authoritative accepted proposal endpoint, persist the receipt through the existing
-   durable repository, and inject the trusted accepted-AI authority into the active gateway
-   composition.
-3. **P10A-08C-02B is Planned.** Atomically persist the immutable compiled artifact with publication
-   history and active artifact/version authority, and define safe rollback/republish without a
-   second editable model.
-4. **P10A-08D-02 is Planned.** Prove the current gateway/compiler/published home, collection, and PDP
-   journey with final browser and retained manual evidence, including failed compilation,
-   no-partial-write, active-version, rollback, and zero-provider publication evidence.
-
-P10A does not need another registry, proposal model, recipe engine, component system, provider, or
-publish command.
+P10B is the next active development phase but remains **Planned**. P10A does not require another
+registry, proposal model, recipe engine, component system, provider, publish command, or merchant
+editor integration.
 
 ### Decided P10A/P10C editor boundary
 
 Governed initial generation, governed follow-up execution, package authority, strict routing, the
-proposal lifecycle, and their internal functional evidence are P10A authorities. P10A may still
-require internal functional or evidence closure for those contracts, but merchant-facing controls
-are not a P10A closure requirement.
+proposal lifecycle, and their internal functional evidence are closed P10A authorities.
+Merchant-facing controls are not a P10A closure requirement.
 
 P10C owns connecting the normal Storefront Studio UI to those authorities, including merchant-facing
 routing, clarification UI, frame/page scope controls, and scoped execution through the editor. That
@@ -339,8 +324,8 @@ not merely untested.
 | Drift                                                                               | Current repository truth                                                                                                          | v1.3.0 action                                                                                                                            |
 | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | README and roadmap call Phase 9 active                                              | `P9_CLOSEOUT_RECORD.md` records the explicit post-PR-#134 closeout; later P10A work is merged.                                    | Replace active-Phase-9 narrative while retaining the evidence limitations and historical records.                                        |
-| Roadmap calls P10A planned after Phase 9                                            | P10A-03 through 08C-02A and 08D-01 are merged; only the closure items in §8 remain.                                               | Mark each subtask factually rather than marking the whole phase planned or complete.                                                     |
-| SDD verified baseline is `4a96a5a`                                                  | Current main is `169a8ba`; significant capability and publication authority landed afterward.                                     | Establish a new auditable baseline and move old hashes to revision history.                                                              |
+| Earlier roadmap called P10A planned after Phase 9                                   | All required P10A gates are merged and the formal closure audit passes at Baseline.                                               | Keep P10A closed, P10B active/Planned, and historical task records point-in-time.                                                        |
+| Earlier SDD verified baseline was `4a96a5a`                                         | Current closure baseline is `3d36f54`; significant authority landed afterward.                                                    | Keep the closure baseline current and preserve older hashes only in revision history.                                                    |
 | SDD says deterministic discovery was the only adapter in P7-01                      | A bounded public server adapter exists, but merchant runtime wiring is incomplete.                                                | Separate adapter implementation from merchant reachability and production service status.                                                |
 | `StorefrontDesignSystemV1` and executable profiles both describe recipes/directions | PageBlueprint profiles execute; direction material still supplies active planner context.                                         | Name the direction material as transitional bounded selection data and remove duplicated recipe authority through an explicit migration. |
 | Legacy V1 registry and V2 registry coexist                                          | V1 is still the generic Puck/snapshot bridge; V2 is the capability authority; native dynamic/home components bypass or bridge it. | Mark the V1 bridge **Deprecated** only where a tested V2 migration path exists; do not delete active compatibility prematurely.          |
@@ -349,7 +334,7 @@ not merely untested.
 | Merchant-facing names include historical P9/P10 labels and Veskify proof routes     | Normal UI says Storefront Studio, but demo/internal route names remain.                                                           | Keep internal evidence names internal; standardize merchant language only in product surfaces.                                           |
 | Authentication/tenancy appear implemented in contract prose                         | They are deterministic/standalone authorities; no production identity system exists.                                              | Use **Partial** for contracts/adapters and **Blocked** for real environment operation.                                                   |
 
-## 12. Decisions required for SDD v1.3.0 synchronization
+## 12. Decisions preserved by the v1.3.0 synchronization
 
 The later synchronization must make or preserve these decisions explicitly:
 
@@ -357,9 +342,9 @@ The later synchronization must make or preserve these decisions explicitly:
    valid without pretending it proves current output.
 2. Record Phase 9 as closed by product-owner handoff while preserving its incomplete commercial
    and full-matrix evidence truth.
-3. Split P10A status by implemented internal authority, functional evidence,
-   controlled-provider evidence, compiled-artifact persistence, rollback, and final render
-   evidence; track merchant reachability under P10C rather than as a P10A closure blocker.
+3. Preserve P10A as Baseline / closed from current internal authority, controlled-provider,
+   receipt, compiler, atomic publication, rollback, and final render evidence; track merchant
+   reachability under P10C rather than as a P10A closure blocker.
 4. Preserve and document the binding phase boundary: P10A owns internal governed execution,
    package and strict-routing authority, proposal lifecycle, and functional evidence; P10C owns
    merchant-facing routing, clarification, frame/page scope controls, and scoped Storefront Studio
@@ -371,12 +356,14 @@ The later synchronization must make or preserve these decisions explicitly:
    renderer-conformance gate.
 7. Separate local standalone, protected local demo, controlled provider, Vesko staging, and
    production claims in every baseline table.
-8. Define whether successful P10A-07C acceptance is a P10A closure gate or can be superseded by a
-   later current-architecture controlled run; do not reuse the blocked run as a pass.
-9. Specify accepted-AI receipt minting ownership, durable storage, and active gateway composition.
-10. Specify the P10A-08C-02B compiled artifact, active pointer, history, idempotency, rollback, and
-    republish contracts without making it editable state.
-11. Define P10A-08D-02 retained evidence and its relationship to P10B commercial visual evidence.
+8. Retain the successful ordered P10A-07C-03R current-architecture acceptance separately from the
+   historical blocked precursor; do not broaden it into save, publish, or commercial evidence.
+9. Preserve server-owned accepted-AI receipt minting, durable create-once storage, and active
+   gateway composition.
+10. Preserve the immutable compiled artifact, active pointer, history, idempotency, rollback, and
+    explicit-republish contracts without making them editable state.
+11. Preserve P10A-08D-02 functional publication evidence separately from P10B commercial visual
+    evidence.
 12. Adopt the P10B commercial design-system sequence and criteria without claiming its vocabulary
     specification is implemented.
 13. Clarify current onboarding: deterministic local project creation is reachable; URL discovery,
@@ -393,8 +380,7 @@ The later synchronization must make or preserve these decisions explicitly:
 
 ## 13. Audit boundary confirmation
 
-This audit made no provider call, publication, staging request, or production request. It did not
-read environment secrets. It did not change runtime code, schemas, registries, components,
-PageBlueprints, styles, README, the SDD, the roadmap, or any DOCX. Historical documentation remains
-historical; this document is the evidence basis for, not the execution of, the later v1.3.0
-synchronization.
+The original audit and this closure synchronization made no provider call, publication, staging
+request, or production request and did not read environment secrets. No runtime code, schemas,
+registries, components, PageBlueprints, or styles changed. Historical documentation remains
+historical; this current-state record now links the formal P10A closure authority.
