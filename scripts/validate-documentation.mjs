@@ -1,8 +1,17 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import {
+  EXPECTED_REQUIREMENT_IDS,
+  EXPECTED_REQUIREMENT_ID_SET,
+  extractAuthoritativeRequirementDefinitions,
+  extractRequirementIds,
+  isAffirmativeMerchantEditorP10AClaim,
+} from "./documentation-validation-helpers.mjs";
+import { extractMarkdownLinks, isSafeHyperlinkTarget } from "./markdown-docx-export.mjs";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const activeMarkdownFiles = [
@@ -53,6 +62,15 @@ const checkRelativeLinks = (relativePath, markdown) => {
     }
   }
 };
+
+const collectMarkdownFiles = (relativeDirectory) =>
+  readdirSync(join(repositoryRoot, relativeDirectory), { withFileTypes: true })
+    .sort((left, right) => left.name.localeCompare(right.name))
+    .flatMap((entry) => {
+      const relativePath = join(relativeDirectory, entry.name);
+      if (entry.isDirectory()) return collectMarkdownFiles(relativePath);
+      return entry.isFile() && entry.name.endsWith(".md") ? [relativePath] : [];
+    });
 
 for (const [relativePath, markdown] of contents) checkRelativeLinks(relativePath, markdown);
 
@@ -154,7 +172,6 @@ const staleActivePatterns = [
   [/Phase 12[^\n]*stable domains[^\n]*adapters/i, "old Phase 12 adapter ownership"],
   [/OpenAPI (?:contract )?(?:is )?missing/i, "missing OpenAPI claim"],
   [/raw Puck[^\n]*(?:is|as) canonical/i, "raw Puck canonical-persistence claim"],
-  [/merchant editor[^\n]*P10A closure requirement/i, "merchant editor as P10A closure work"],
 ];
 
 for (const [relativePath, markdown] of contents) {
@@ -168,6 +185,73 @@ for (const [relativePath, markdown] of contents) {
       failures.push(`${relativePath}: stale active claim (${label})`);
     }
   }
+  for (const line of currentClaimText.split("\n")) {
+    if (isAffirmativeMerchantEditorP10AClaim(line)) {
+      failures.push(`${relativePath}: stale active claim (merchant editor as P10A closure work)`);
+    }
+  }
+}
+
+const sdd = contents.get("docs/VESKIFY_SDD.md");
+const authoritativeDefinitions = extractAuthoritativeRequirementDefinitions(sdd);
+const definitionCounts = Object.fromEntries(
+  Object.entries(EXPECTED_REQUIREMENT_IDS).map(([type, identifiers]) => [
+    type,
+    identifiers.filter((identifier) => authoritativeDefinitions.get(identifier) === 1).length,
+  ]),
+);
+
+for (const identifier of EXPECTED_REQUIREMENT_ID_SET) {
+  const count = authoritativeDefinitions.get(identifier) ?? 0;
+  if (count !== 1) {
+    failures.push(
+      `docs/VESKIFY_SDD.md: ${identifier} must have exactly one authoritative definition; found ${count}`,
+    );
+  }
+}
+for (const identifier of authoritativeDefinitions.keys()) {
+  if (!EXPECTED_REQUIREMENT_ID_SET.has(identifier)) {
+    failures.push(`docs/VESKIFY_SDD.md: unexpected authoritative definition ${identifier}`);
+  }
+}
+
+const allowedTraceabilityStatuses = new Set([
+  "Retained unchanged",
+  "Clarified",
+  "Superseded by named v1.3.0 requirement; traceability alias retained",
+  "Historical only",
+]);
+const traceabilityRows = [
+  ...sdd.matchAll(
+    /^\|\s+\*\*((?:FR|NFR|AC)-\d+)\*\*\s+\|\s+([^|]+)\|\s+([^|]+)\|\s+([^|]+)\|\s+\*\*([^|]+)\*\*\s+\|\s+([^|]+)\|$/gm,
+  ),
+];
+for (const row of traceabilityRows) {
+  const status = row[5].trim();
+  if (!allowedTraceabilityStatuses.has(status)) {
+    failures.push(`docs/VESKIFY_SDD.md: ${row[1]} has invalid traceability status ${status}`);
+  }
+}
+if (traceabilityRows.length !== EXPECTED_REQUIREMENT_ID_SET.size) {
+  failures.push(
+    `docs/VESKIFY_SDD.md: expected ${EXPECTED_REQUIREMENT_ID_SET.size} complete traceability rows, found ${traceabilityRows.length}`,
+  );
+}
+
+const requirementReferenceFiles = ["README.md", "AGENTS.md", ...collectMarkdownFiles("docs")];
+const danglingRequirementReferences = [];
+for (const relativePath of requirementReferenceFiles) {
+  const markdown = readRepositoryFile(relativePath);
+  for (const identifier of extractRequirementIds(markdown)) {
+    const numericPart = Number.parseInt(identifier.split("-")[1], 10);
+    if (numericPart < 101) continue;
+    if (!authoritativeDefinitions.has(identifier)) {
+      danglingRequirementReferences.push(`${relativePath}:${identifier}`);
+    }
+  }
+}
+for (const danglingReference of danglingRequirementReferences) {
+  failures.push(`Dangling retained requirement reference ${danglingReference}`);
 }
 
 const exportsToValidate = [
@@ -184,6 +268,7 @@ const exportsToValidate = [
       '<w:br w:type="page"/>',
       '<w:tblInd w:w="0" w:type="dxa"/>',
       "w:numPr",
+      "w:hyperlink",
     ],
   },
   {
@@ -201,6 +286,7 @@ const exportsToValidate = [
       "w:numPr",
       "☑",
       "☐",
+      "w:hyperlink",
     ],
   },
 ];
@@ -252,6 +338,50 @@ for (const { source, output, script, requiredXml } of exportsToValidate) {
     failures.push(`${output}: exposed Markdown syntax in rendered document content`);
   }
 
+  const documentRelationshipsXml = execFileSync(
+    "/usr/bin/unzip",
+    ["-p", outputPath, "word/_rels/document.xml.rels"],
+    { encoding: "utf8" },
+  );
+  const decodeXmlAttribute = (value) =>
+    value
+      .replaceAll("&quot;", '"')
+      .replaceAll("&apos;", "'")
+      .replaceAll("&lt;", "<")
+      .replaceAll("&gt;", ">")
+      .replaceAll("&amp;", "&");
+  const hyperlinkRelationships = [
+    ...documentRelationshipsXml.matchAll(
+      /<Relationship Id="([^"]+)" Type="http:\/\/schemas\.openxmlformats\.org\/officeDocument\/2006\/relationships\/hyperlink" Target="([^"]+)" TargetMode="External"\/>/g,
+    ),
+  ].map((match) => ({ id: match[1], target: decodeXmlAttribute(match[2]) }));
+  const hyperlinkIds = [...documentXml.matchAll(/<w:hyperlink r:id="([^"]+)"/g)].map(
+    (match) => match[1],
+  );
+  const markdownLinks = extractMarkdownLinks(markdown);
+  const safeMarkdownLinks = markdownLinks.filter(({ target }) => isSafeHyperlinkTarget(target));
+  const expectedTargets = [...new Set(safeMarkdownLinks.map(({ target }) => target))];
+  const actualTargets = hyperlinkRelationships.map(({ target }) => target);
+  if (JSON.stringify(actualTargets) !== JSON.stringify(expectedTargets)) {
+    failures.push(
+      `${output}: hyperlink relationship targets/order do not match Markdown (${actualTargets.join(", ")})`,
+    );
+  }
+  if (hyperlinkIds.length !== safeMarkdownLinks.length) {
+    failures.push(
+      `${output}: expected ${safeMarkdownLinks.length} hyperlink elements, found ${hyperlinkIds.length}`,
+    );
+  }
+  const relationshipsById = new Map(hyperlinkRelationships.map(({ id, target }) => [id, target]));
+  for (const hyperlinkId of hyperlinkIds) {
+    if (!relationshipsById.has(hyperlinkId)) {
+      failures.push(`${output}: unresolved hyperlink relationship ${hyperlinkId}`);
+    }
+  }
+  for (const { id } of hyperlinkRelationships) {
+    if (!hyperlinkIds.includes(id)) failures.push(`${output}: unused hyperlink relationship ${id}`);
+  }
+
   const footerXml = execFileSync("/usr/bin/unzip", ["-p", outputPath, "word/footer1.xml"], {
     encoding: "utf8",
   });
@@ -283,6 +413,6 @@ if (failures.length > 0) {
     createHash("sha256").update(readRepositoryFile(source)).digest("hex"),
   );
   process.stdout.write(
-    `Documentation validation passed (${activeMarkdownFiles.length} active Markdown files; synchronized SDD ${hashes[0]}; synchronized tracker ${hashes[1]}; archived v1.2.2 preserved).\n`,
+    `Documentation validation passed (${activeMarkdownFiles.length} active Markdown files; requirements FR ${definitionCounts.functional}, NFR ${definitionCounts.nonFunctional}, AC ${definitionCounts.acceptance}, dangling 0; synchronized SDD ${hashes[0]}; synchronized tracker ${hashes[1]}; archived v1.2.2 preserved).\n`,
   );
 }

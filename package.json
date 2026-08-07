@@ -22,6 +22,8 @@
     "docs:export": "pnpm docs:export:sdd && pnpm docs:export:tracker",
     "docs:check:sdd": "node scripts/export-sdd-docx.mjs --check",
     "docs:check:tracker": "node scripts/export-development-delivery-tracker-docx.mjs --check",
+    "docs:check:tooling": "node scripts/documentation-tooling-self-check.mjs",
+    "docs:check:requirements": "node scripts/check-requirement-traceability.mjs",
     "docs:validate": "node scripts/validate-documentation.mjs",
     "validate": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build",
     "validate:full": "pnpm validate && pnpm test:e2e"

@@ -16,9 +16,11 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 const ARCHIVE_TIMESTAMP = new Date("2000-01-01T00:00:00Z");
-const EXPORTER_VERSION = "1.0.0";
+const EXPORTER_VERSION = "1.1.0";
 const PORTRAIT_WIDTH = 9360;
 const LANDSCAPE_WIDTH = 12960;
+const HYPERLINK_RELATIONSHIP_TYPE =
+  "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink";
 
 const escapeXml = (value) =>
   value
@@ -49,7 +51,57 @@ const runXml = (text, { bold = false, italic = false, code = false, link = false
   return `<w:r><w:rPr>${properties}</w:rPr><w:t${preserved}>${escapeXml(text)}</w:t></w:r>`;
 };
 
-const inlineXml = (text) => {
+export const isSafeHyperlinkTarget = (target) => {
+  if (/^https:\/\//i.test(target)) {
+    try {
+      return new URL(target).protocol === "https:";
+    } catch {
+      return false;
+    }
+  }
+  return (
+    !target.startsWith("/") &&
+    !target.startsWith("#") &&
+    !target.includes("\\") &&
+    ![...target].some((character) => character.charCodeAt(0) < 32) &&
+    !/^[a-z][a-z0-9+.-]*:/i.test(target)
+  );
+};
+
+export const createHyperlinkRegistry = () => {
+  const identifiersByTarget = new Map();
+  const relationships = [];
+
+  return {
+    register(target) {
+      const existing = identifiersByTarget.get(target);
+      if (existing) return existing;
+      const id = `rIdHyperlink${relationships.length + 1}`;
+      identifiersByTarget.set(target, id);
+      relationships.push({ id, target });
+      return id;
+    },
+    entries() {
+      return relationships.map((relationship) => ({ ...relationship }));
+    },
+    xml() {
+      return relationships
+        .map(
+          ({ id, target }) =>
+            `<Relationship Id="${id}" Type="${HYPERLINK_RELATIONSHIP_TYPE}" Target="${escapeXml(target)}" TargetMode="External"/>`,
+        )
+        .join("");
+    },
+  };
+};
+
+export const extractMarkdownLinks = (markdown) =>
+  [...markdown.matchAll(/\[([^\]]+)]\(([^)]+)\)/g)].map((match) => ({
+    label: stripInlineMarkdown(match[1]),
+    target: match[2].trim(),
+  }));
+
+export const inlineXml = (text, hyperlinks) => {
   const tokenPattern = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\)|\*[^*]+\*)/g;
   const output = [];
   let cursor = 0;
@@ -63,7 +115,16 @@ const inlineXml = (text) => {
       output.push(runXml(token.slice(1, -1), { code: true }));
     } else if (token.startsWith("[")) {
       const labelEnd = token.indexOf("](");
-      output.push(runXml(stripInlineMarkdown(token.slice(1, labelEnd)), { link: true }));
+      const label = stripInlineMarkdown(token.slice(1, labelEnd));
+      const target = token.slice(labelEnd + 2, -1).trim();
+      if (hyperlinks && isSafeHyperlinkTarget(target)) {
+        const relationshipId = hyperlinks.register(target);
+        output.push(
+          `<w:hyperlink r:id="${relationshipId}" w:history="1">${runXml(label, { link: true })}</w:hyperlink>`,
+        );
+      } else {
+        output.push(runXml(`${label} (${target})`));
+      }
     } else {
       output.push(runXml(token.slice(1, -1), { italic: true }));
     }
@@ -85,6 +146,7 @@ const paragraphXml = (
     quote = false,
     code = false,
   } = {},
+  hyperlinks,
 ) => {
   const properties = [
     `<w:pStyle w:val="${style}"/>`,
@@ -101,7 +163,7 @@ const paragraphXml = (
     ? '<w:r><w:br w:type="page"/></w:r>'
     : code
       ? runXml(content, { code: true })
-      : inlineXml(content);
+      : inlineXml(content, hyperlinks);
   return `<w:p><w:pPr>${properties}</w:pPr>${body}</w:p>`;
 };
 
@@ -119,6 +181,14 @@ const tableWidths = (headers, pageWidth, layout) => {
   if (layout === "tracker" && headers.length === 7) {
     return [520, 1800, 2800, 850, 1500, 2500, 2990];
   }
+  if (
+    pageWidth === PORTRAIT_WIDTH &&
+    headers.length === 6 &&
+    stripInlineMarkdown(headers[0]) === "ID" &&
+    headers.includes("v1.3.0 owner")
+  ) {
+    return [720, 900, 3000, 1300, 1300, 2140];
+  }
   if (headers.length === 2) {
     return pageWidth === LANDSCAPE_WIDTH ? [2600, 10360] : [2700, 6660];
   }
@@ -130,19 +200,23 @@ const tableWidths = (headers, pageWidth, layout) => {
   );
 };
 
-const tableCellXml = (content, width, { header, centered, compact }) => {
+const tableCellXml = (content, width, { header, centered, compact, traceability }, hyperlinks) => {
   const paragraphProperties = [
-    `<w:pStyle w:val="${header ? "TableHeader" : compact ? "CompactTableText" : "TableText"}"/>`,
+    `<w:pStyle w:val="${header ? "TableHeader" : traceability ? "TraceabilityTableText" : compact ? "CompactTableText" : "TableText"}"/>`,
     centered ? '<w:jc w:val="center"/>' : "",
     "<w:widowControl/>",
   ].join("");
-  return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/><w:vAlign w:val="center"/>${header ? '<w:shd w:val="clear" w:fill="E8EEF5"/>' : ""}</w:tcPr><w:p><w:pPr>${paragraphProperties}</w:pPr>${inlineXml(content)}</w:p></w:tc>`;
+  return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/><w:vAlign w:val="center"/>${header ? '<w:shd w:val="clear" w:fill="E8EEF5"/>' : ""}</w:tcPr><w:p><w:pPr>${paragraphProperties}</w:pPr>${inlineXml(content, hyperlinks)}</w:p></w:tc>`;
 };
 
-const tableXml = (rows, pageWidth, layout) => {
+const tableXml = (rows, pageWidth, layout, hyperlinks) => {
   const headers = rows[0];
   const widths = tableWidths(headers, pageWidth, layout);
-  const compact = layout === "tracker" && headers.length === 7;
+  const traceability =
+    headers.length === 6 &&
+    stripInlineMarkdown(headers[0]) === "ID" &&
+    headers.includes("v1.3.0 owner");
+  const compact = (layout === "tracker" && headers.length === 7) || traceability;
   const centeredColumns = new Set(
     headers
       .map((header, index) => ({ header: stripInlineMarkdown(header), index }))
@@ -154,11 +228,17 @@ const tableXml = (rows, pageWidth, layout) => {
     .map((row, rowIndex) => {
       const cells = widths
         .map((width, columnIndex) =>
-          tableCellXml(row[columnIndex] ?? "", width, {
-            header: rowIndex === 0,
-            centered: rowIndex === 0 || centeredColumns.has(columnIndex),
-            compact,
-          }),
+          tableCellXml(
+            row[columnIndex] ?? "",
+            width,
+            {
+              header: rowIndex === 0,
+              centered: rowIndex === 0 || centeredColumns.has(columnIndex),
+              compact,
+              traceability,
+            },
+            hyperlinks,
+          ),
         )
         .join("");
       const rowProperties = rowIndex === 0 ? "<w:tblHeader/><w:cantSplit/>" : "";
@@ -181,7 +261,7 @@ const isStructuralLine = (lines, index) => {
   return false;
 };
 
-const markdownBodyXml = (markdown, { layout, pageWidth }) => {
+const markdownBodyXml = (markdown, { layout, pageWidth, hyperlinks }) => {
   const lines = markdown.split("\n");
   const output = [];
   let index = 0;
@@ -209,10 +289,14 @@ const markdownBodyXml = (markdown, { layout, pageWidth }) => {
       activeNumberId = undefined;
       const level = heading[1].length - 1;
       output.push(
-        paragraphXml(stripInlineMarkdown(heading[2]), {
-          style: `Heading${Math.min(level, 3)}`,
-          keepNext: true,
-        }),
+        paragraphXml(
+          stripInlineMarkdown(heading[2]),
+          {
+            style: `Heading${Math.min(level, 3)}`,
+            keepNext: true,
+          },
+          hyperlinks,
+        ),
       );
       index += 1;
       continue;
@@ -226,7 +310,7 @@ const markdownBodyXml = (markdown, { layout, pageWidth }) => {
         rows.push(parseTableRow(lines[index]));
         index += 1;
       }
-      output.push(tableXml(rows, pageWidth, layout));
+      output.push(tableXml(rows, pageWidth, layout, hyperlinks));
       continue;
     }
 
@@ -234,11 +318,13 @@ const markdownBodyXml = (markdown, { layout, pageWidth }) => {
       activeNumberId = undefined;
       index += 1;
       while (index < lines.length && !/^```/.test(lines[index])) {
-        output.push(paragraphXml(lines[index] || " ", { style: "CodeBlock", code: true }));
+        output.push(
+          paragraphXml(lines[index] || " ", { style: "CodeBlock", code: true }, hyperlinks),
+        );
         index += 1;
       }
       index += 1;
-      output.push(paragraphXml(""));
+      output.push(paragraphXml("", {}, hyperlinks));
       continue;
     }
 
@@ -251,7 +337,7 @@ const markdownBodyXml = (markdown, { layout, pageWidth }) => {
         parts.push(lines[index].trim());
         index += 1;
       }
-      output.push(paragraphXml(parts.join(" "), { numberId: 1 }));
+      output.push(paragraphXml(parts.join(" "), { numberId: 1 }, hyperlinks));
       continue;
     }
 
@@ -264,7 +350,7 @@ const markdownBodyXml = (markdown, { layout, pageWidth }) => {
         parts.push(lines[index].trim());
         index += 1;
       }
-      output.push(paragraphXml(parts.join(" "), { numberId: activeNumberId }));
+      output.push(paragraphXml(parts.join(" "), { numberId: activeNumberId }, hyperlinks));
       continue;
     }
 
@@ -275,7 +361,7 @@ const markdownBodyXml = (markdown, { layout, pageWidth }) => {
         parts.push(lines[index].replace(/^>\s?/, "").trim());
         index += 1;
       }
-      output.push(paragraphXml(parts.join(" "), { style: "Quote", quote: true }));
+      output.push(paragraphXml(parts.join(" "), { style: "Quote", quote: true }, hyperlinks));
       continue;
     }
 
@@ -286,7 +372,7 @@ const markdownBodyXml = (markdown, { layout, pageWidth }) => {
       parts.push(lines[index].trim());
       index += 1;
     }
-    output.push(paragraphXml(parts.join(" ")));
+    output.push(paragraphXml(parts.join(" "), {}, hyperlinks));
   }
 
   return { title, body: output.join("") };
@@ -306,6 +392,7 @@ const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
   <w:style w:type="paragraph" w:styleId="CodeBlock"><w:name w:val="Code Block"/><w:basedOn w:val="Normal"/><w:next w:val="CodeBlock"/><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/><w:keepLines/></w:pPr><w:rPr><w:rFonts w:ascii="Consolas" w:hAnsi="Consolas"/><w:sz w:val="19"/><w:szCs w:val="19"/><w:color w:val="24384B"/></w:rPr></w:style>
   <w:style w:type="paragraph" w:styleId="TableText"><w:name w:val="Table Text"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:before="0" w:after="0" w:line="240" w:lineRule="auto"/></w:pPr><w:rPr><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr></w:style>
   <w:style w:type="paragraph" w:styleId="CompactTableText"><w:name w:val="Compact Table Text"/><w:basedOn w:val="TableText"/><w:pPr><w:spacing w:before="0" w:after="0" w:line="210" w:lineRule="auto"/></w:pPr><w:rPr><w:sz w:val="15"/><w:szCs w:val="15"/></w:rPr></w:style>
+  <w:style w:type="paragraph" w:styleId="TraceabilityTableText"><w:name w:val="Traceability Table Text"/><w:basedOn w:val="TableText"/><w:pPr><w:spacing w:before="0" w:after="0" w:line="220" w:lineRule="auto"/></w:pPr><w:rPr><w:sz w:val="16"/><w:szCs w:val="16"/></w:rPr></w:style>
   <w:style w:type="paragraph" w:styleId="TableHeader"><w:name w:val="Table Header"/><w:basedOn w:val="TableText"/><w:pPr><w:spacing w:before="0" w:after="0" w:line="220" w:lineRule="auto"/><w:keepLines/></w:pPr><w:rPr><w:b/><w:color w:val="17365D"/><w:sz w:val="17"/><w:szCs w:val="17"/></w:rPr></w:style>
   <w:style w:type="paragraph" w:styleId="Footer"><w:name w:val="Footer"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:before="0" w:after="0"/><w:jc w:val="right"/></w:pPr><w:rPr><w:color w:val="6B7785"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr></w:style>
   <w:style w:type="character" w:styleId="Hyperlink"><w:name w:val="Hyperlink"/><w:uiPriority w:val="99"/><w:unhideWhenUsed/><w:rPr><w:color w:val="2E74B5"/><w:u w:val="single"/></w:rPr></w:style>
@@ -373,7 +460,8 @@ export const exportMarkdownDocx = ({
   const sourceHash = createHash("sha256").update(markdown).digest("hex");
   const trackerLayout = layout === "tracker";
   const pageWidth = trackerLayout ? LANDSCAPE_WIDTH : PORTRAIT_WIDTH;
-  const { body } = markdownBodyXml(markdown, { layout, pageWidth });
+  const hyperlinks = createHyperlinkRegistry();
+  const { body } = markdownBodyXml(markdown, { layout, pageWidth, hyperlinks });
   const stagingDirectory = mkdtempSync(join(tmpdir(), "veskify-docx-"));
   const archivePath = `${stagingDirectory}.docx`;
 
@@ -399,7 +487,7 @@ export const exportMarkdownDocx = ({
     "word/numbering.xml": numberingXml,
     "word/settings.xml": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:updateFields w:val="true"/><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat></w:settings>`,
     "word/footer1.xml": footerXml(footerLabel, pageWidth),
-    "word/_rels/document.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/></Relationships>`,
+    "word/_rels/document.xml.rels": `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>${hyperlinks.xml()}</Relationships>`,
   };
 
   try {
@@ -429,4 +517,13 @@ export const exportMarkdownDocx = ({
     rmSync(stagingDirectory, { recursive: true, force: true });
     rmSync(archivePath, { force: true });
   }
+};
+
+export const renderInlineMarkdownForCheck = (markdown) => {
+  const hyperlinks = createHyperlinkRegistry();
+  return {
+    xml: inlineXml(markdown, hyperlinks),
+    relationships: hyperlinks.entries(),
+    relationshipsXml: hyperlinks.xml(),
+  };
 };
