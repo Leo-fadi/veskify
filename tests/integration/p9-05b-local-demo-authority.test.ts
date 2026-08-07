@@ -23,6 +23,7 @@ import {
   buildP905bLocalDemoRequest,
   createP905bLocalDemoAuthority,
   inspectP905bLocalDemo,
+  inspectP905bLocalDemoPublicationEvidence,
   p905bLocalDemoSession,
   p905bLocalDemoRepository,
   resetP905bLocalDemo,
@@ -88,6 +89,29 @@ async function proposalRequest(merchantInstruction: string) {
 describe("P9-05B local demo server authority", () => {
   beforeEach(async () => {
     await resetP905bLocalDemo(demoEnvironment);
+  });
+
+  it("exposes identity-only publication evidence only to the exact current session", async () => {
+    const session = p905bLocalDemoSession(demoEnvironment);
+    const evidence = await inspectP905bLocalDemoPublicationEvidence({
+      ...session,
+      environment: demoEnvironment,
+    });
+
+    expect(evidence).toMatchObject({
+      projectId: P9_05A_PROJECT_ID,
+      draftSnapshot: { id: "snapshot_lumo_fresh_draft" },
+      publishedSnapshot: { id: "snapshot_lumo_fresh_published" },
+      activePublication: null,
+    });
+    expect(JSON.stringify(evidence)).not.toContain('"pages"');
+    await expect(
+      inspectP905bLocalDemoPublicationEvidence({
+        projectId: P9_05A_PROJECT_ID,
+        sessionId: "wrong-session-authority".repeat(2),
+        environment: demoEnvironment,
+      }),
+    ).resolves.toBeNull();
   });
 
   it("loads the canonical fresh project and reaches the mocked provider through the actual route", async () => {

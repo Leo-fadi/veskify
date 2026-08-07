@@ -33,22 +33,22 @@ The retained record is `p10a-08d-02-publication-evidence-2026-08-07`. Runtime-ge
 remain in their authoritative repository records; the evidence tests assert exact equality rather
 than copying mutable samples into prose.
 
-| Correlated field   | Authoritative value and proof                                                                                                                                           |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Project            | Exact `Project.id` in preparation, operation, artifact, version, pointer, and route projection.                                                                         |
-| Source snapshot    | Exact draft/source ID, revision, and canonical content fingerprint in preparation and artifact.                                                                         |
-| Publication source | Discriminated `manual` or `accepted-ai`; cross-kind fallback is rejected.                                                                                               |
-| Accepted receipt   | Opaque receipt ID at the browser boundary; exact receipt fingerprint and proposal lineage are independently reloaded into the accepted-AI artifact.                     |
-| Preparation        | Server-created preparation ID with exact project/draft/published and active-version preconditions.                                                                      |
-| Operation          | Immutable publication-operation identity/key correlated by the artifact and version.                                                                                    |
-| Compilation        | Exact compile-receipt ID/fingerprint and result runtime/validation fingerprints, recompiled at confirmation.                                                            |
-| Artifact/version   | Integrity-checked immutable artifact and append-only version; the version references that exact artifact.                                                               |
-| Active pointer     | Exact version, artifact, and published-snapshot identities plus integrity fingerprints.                                                                                 |
-| Published snapshot | Exact canonical ID and content fingerprint shared by active pointer, version, repository projection, and route source.                                                  |
-| Routes             | Root homepage, `/collections/jewellery`, and `/products/custom-halo-ring` render through the same active published projection.                                          |
-| Restore lineage    | A → B → restored A as a new draft → fresh C; C references B as predecessor while A/B remain immutable.                                                                  |
-| Failure result     | Stale and injected transaction failures preserve aggregate, active pointer/artifact, published snapshot, operation state, and version history with no orphan records.   |
-| Provider count     | Browser network observation and provider-free compiler/repository tests retain zero external AI-provider calls during prepare, confirm, render, restore, and republish. |
+| Correlated field   | Authoritative value and proof                                                                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Project            | Exact `Project.id` in preparation, operation, artifact, version, pointer, and route projection.                                                                                  |
+| Source snapshot    | Exact draft/source ID, revision, and canonical content fingerprint in preparation and artifact.                                                                                  |
+| Publication source | Discriminated `manual` or `accepted-ai`; cross-kind fallback is rejected.                                                                                                        |
+| Accepted receipt   | Opaque receipt ID at the browser boundary; exact receipt fingerprint, proposal lineage, and accepted snapshot identity are independently reloaded into the accepted-AI artifact. |
+| Preparation        | Server-created preparation ID with exact project/draft/published and active-version preconditions.                                                                               |
+| Operation          | Immutable publication-operation identity/key correlated by the artifact and version.                                                                                             |
+| Compilation        | Exact compile-receipt ID/fingerprint and result runtime/validation fingerprints, recompiled at confirmation.                                                                     |
+| Artifact/version   | Integrity-checked immutable artifact and append-only version; the version references that exact artifact.                                                                        |
+| Active pointer     | Exact version, artifact, and published-snapshot identities plus integrity fingerprints.                                                                                          |
+| Published snapshot | Exact canonical ID and content fingerprint shared by active pointer, version, repository projection, and route source.                                                           |
+| Routes             | Root homepage, `/collections/jewellery`, and `/products/custom-halo-ring` retain the exact session authority and resolve the same active version, artifact, and snapshot.        |
+| Restore lineage    | A → B → restored A as a new draft → fresh C; C references B as predecessor while A/B remain immutable.                                                                           |
+| Failure result     | Stale and injected transaction failures preserve aggregate, active pointer/artifact, published snapshot, operation state, and version history with no orphan records.            |
+| Provider count     | Browser network observation and provider-free compiler/repository tests retain zero external AI-provider calls during prepare, confirm, render, restore, and republish.          |
 
 ## Evidence matrix
 
@@ -82,11 +82,20 @@ pointer references their published snapshot.
 ## Accepted-AI publication result
 
 A deterministic governed whole-storefront proposal is accepted through the authoritative server
-boundary. The client receives no snapshot, runtime, receipt body, or compiler authority; its Publish
-request carries only the opaque accepted-receipt ID. Preparation and confirmation each reload the
-durable receipt and current proposal/snapshot authority independently. The resulting artifact and
-version retain exact receipt and proposal lineage, and the same active projection renders home,
-collection, and PDP.
+boundary. Before acceptance, the browser records the prior active published snapshot identity and
+safe fingerprint. After acceptance, it records the authoritative accepted draft identity and
+fingerprint while proving the active publication has not yet advanced. The client receives no
+snapshot, runtime, receipt body, or compiler authority; its Publish request carries only the opaque
+accepted-receipt ID. Preparation and confirmation each reload the durable receipt and current
+proposal/snapshot authority independently.
+
+Confirmation creates a different active version and artifact from the baseline. The artifact's
+source snapshot and accepted-AI authority match the accepted draft fingerprint, accepted snapshot,
+opaque receipt, and proposal lineage; the version and pointer match that exact artifact and newly
+published snapshot. The published snapshot's canonical content fingerprint equals the accepted
+snapshot fingerprint. The homepage, collection, and PDP preserve the exact `p9-05b-session` query
+authority and independently resolve the same active version, artifact, and snapshot. Missing or
+incorrect session authority cannot read the correlated evidence.
 
 Manual publication stores no receipt lineage. Accepted-AI publication cannot fall back to manual,
 and manual confirmation cannot claim accepted-AI authority.

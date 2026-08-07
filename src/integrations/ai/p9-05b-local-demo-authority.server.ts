@@ -35,7 +35,11 @@ import {
   wholeStorefrontPlanningInputSchema,
 } from "@/application/whole-storefront-generation-plan";
 import { projectAiStorefrontSnapshot } from "@/application/ai-storefront";
-import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
+import {
+  canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
+  canonicalValueString,
+} from "@/domain/storefront";
 import {
   P9_05A_FIXED_TIME,
   P9_05A_PROJECT_ID,
@@ -857,6 +861,75 @@ export async function loadP905bLocalDemoPublishedProjection(input: {
     project: structuredClone(aggregate.project),
     catalogue: structuredClone(aggregate.catalogue),
     publishedSnapshot: structuredClone(publishedSnapshot),
+  };
+}
+
+/**
+ * Returns identity-only publication evidence for the current local-demo session.
+ * Storefront bodies and provider data remain behind the authoritative server boundary.
+ */
+export async function inspectP905bLocalDemoPublicationEvidence(input: {
+  projectId: string;
+  sessionId: string;
+  environment?: DemoEnvironment;
+}) {
+  const current = state(input.environment ?? process.env);
+  if (
+    input.projectId !== P9_05A_PROJECT_ID ||
+    !sameP905bLocalDemoSecret(input.sessionId, current.session.id)
+  ) {
+    return null;
+  }
+
+  const aggregate = await current.repository.get(P9_05A_PROJECT_ID);
+  const draftSnapshot = aggregate.snapshots.find(
+    (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
+  );
+  const persistedPublishedSnapshot = aggregate.snapshots.find(
+    (snapshot) => snapshot.id === aggregate.project.publishedSnapshotId,
+  );
+  const activePublication =
+    await current.repository.getActiveCompiledPublication(P9_05A_PROJECT_ID);
+  if (!draftSnapshot || !persistedPublishedSnapshot) return null;
+  if (
+    activePublication &&
+    activePublication.pointer.publishedSnapshotId !== aggregate.project.publishedSnapshotId
+  ) {
+    return null;
+  }
+
+  const publishedSnapshot = activePublication?.publishedSnapshot ?? persistedPublishedSnapshot;
+  const snapshotIdentity = (snapshot: typeof publishedSnapshot) => ({
+    id: snapshot.id,
+    revision: snapshot.revision,
+    fingerprint: canonicalStorefrontContentFingerprint(snapshot),
+  });
+
+  return {
+    projectId: aggregate.project.id,
+    draftSnapshot: snapshotIdentity(draftSnapshot),
+    publishedSnapshot: snapshotIdentity(publishedSnapshot),
+    activePublication: activePublication
+      ? {
+          pointer: structuredClone(activePublication.pointer),
+          version: {
+            id: activePublication.version.id,
+            sequence: activePublication.version.sequence,
+            predecessorVersionId: activePublication.version.predecessorVersionId,
+            fingerprint: activePublication.version.integrityFingerprint,
+            publishedSnapshot: structuredClone(activePublication.version.publishedSnapshot),
+            artifactId: activePublication.version.artifactId,
+            artifactFingerprint: activePublication.version.artifactFingerprint,
+          },
+          artifact: {
+            id: activePublication.artifact.id,
+            fingerprint: activePublication.artifact.integrityFingerprint,
+            sourceSnapshot: structuredClone(activePublication.artifact.sourceSnapshot),
+            authority: structuredClone(activePublication.artifact.authority),
+          },
+          publishedSnapshot: snapshotIdentity(activePublication.publishedSnapshot),
+        }
+      : null,
   };
 }
 

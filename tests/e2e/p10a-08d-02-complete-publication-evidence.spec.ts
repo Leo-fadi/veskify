@@ -4,6 +4,51 @@ const projectId = "project_lumo_fresh";
 const demoToken = "p10a-08d-02-publication-evidence-token";
 const originalHeading = "Jewellery shaped by patient hands";
 
+type SnapshotIdentity = Readonly<{
+  id: string;
+  revision: number;
+  fingerprint: string;
+}>;
+
+type PublicationEvidence = Readonly<{
+  projectId: string;
+  draftSnapshot: SnapshotIdentity;
+  publishedSnapshot: SnapshotIdentity;
+  activePublication: Readonly<{
+    pointer: Readonly<{
+      versionId: string;
+      versionFingerprint: string;
+      artifactId: string;
+      artifactFingerprint: string;
+      publishedSnapshotId: string;
+    }>;
+    version: Readonly<{
+      id: string;
+      sequence: number;
+      predecessorVersionId: string | null;
+      fingerprint: string;
+      publishedSnapshot: SnapshotIdentity;
+      artifactId: string;
+      artifactFingerprint: string;
+    }>;
+    artifact: Readonly<{
+      id: string;
+      fingerprint: string;
+      sourceSnapshot: SnapshotIdentity;
+      authority:
+        | Readonly<{ kind: "manual" }>
+        | Readonly<{
+            kind: "accepted-ai";
+            receiptId: string;
+            proposalId: string;
+            acceptedSnapshotId: string;
+            acceptedSnapshotFingerprint: string;
+          }>;
+    }>;
+    publishedSnapshot: SnapshotIdentity;
+  }> | null;
+}>;
+
 function editorUrl(sessionId?: string) {
   return sessionId
     ? `/projects/${projectId}/editor?p9-05b-session=${encodeURIComponent(sessionId)}`
@@ -43,24 +88,46 @@ async function resetSession(page: Page): Promise<string> {
   return result.body.session.sessionId;
 }
 
-async function publishedFingerprint(page: Page): Promise<string> {
-  const result = await page.evaluate(async () => {
-    const response = await fetch("/api/demo/p9-05b");
-    return { body: (await response.json()) as unknown, ok: response.ok };
-  });
+async function publicationEvidence(page: Page, sessionId: string): Promise<PublicationEvidence> {
+  const result = await page.evaluate(
+    async ({ targetProjectId, sessionId }) => {
+      const response = await fetch(
+        `/api/demo/p9-05b/publication-evidence?projectId=${encodeURIComponent(targetProjectId)}`,
+        { headers: { "x-veskify-p9-05b-session": sessionId } },
+      );
+      return { body: (await response.json()) as unknown, ok: response.ok };
+    },
+    { targetProjectId: projectId, sessionId },
+  );
   if (
     !result.ok ||
     !result.body ||
     typeof result.body !== "object" ||
-    !("demo" in result.body) ||
-    !result.body.demo ||
-    typeof result.body.demo !== "object" ||
-    !("publishedFingerprint" in result.body.demo) ||
-    typeof result.body.demo.publishedFingerprint !== "string"
+    !("evidence" in result.body) ||
+    !result.body.evidence ||
+    typeof result.body.evidence !== "object" ||
+    !("projectId" in result.body.evidence) ||
+    result.body.evidence.projectId !== projectId ||
+    !("draftSnapshot" in result.body.evidence) ||
+    !("publishedSnapshot" in result.body.evidence) ||
+    !("activePublication" in result.body.evidence)
   ) {
-    throw new Error("Publication evidence could not resolve the safe published fingerprint.");
+    throw new Error("Publication evidence could not resolve safe authoritative identities.");
   }
-  return result.body.demo.publishedFingerprint;
+  return result.body.evidence as PublicationEvidence;
+}
+
+async function publicationEvidenceIsAvailable(page: Page, sessionId?: string): Promise<boolean> {
+  return page.evaluate(
+    async ({ targetProjectId, sessionId }) => {
+      const response = await fetch(
+        `/api/demo/p9-05b/publication-evidence?projectId=${encodeURIComponent(targetProjectId)}`,
+        sessionId ? { headers: { "x-veskify-p9-05b-session": sessionId } } : undefined,
+      );
+      return response.ok;
+    },
+    { targetProjectId: projectId, sessionId },
+  );
 }
 
 async function saveHeading(
@@ -113,24 +180,59 @@ async function prepareAndConfirm(page: Page, sessionId: string, receiptId?: stri
   ).toBeVisible();
 }
 
-async function expectPublishedRouteChain(page: Page, sessionId: string, homeHeading: string) {
+async function expectCurrentPublication(
+  page: Page,
+  sessionId: string,
+  expected: PublicationEvidence,
+) {
+  const current = await publicationEvidence(page, sessionId);
+  expect(current.publishedSnapshot).toEqual(expected.publishedSnapshot);
+  expect(current.activePublication).toEqual(expected.activePublication);
+}
+
+async function expectPublishedRouteChain(
+  page: Page,
+  sessionId: string,
+  homeHeading: string,
+  expected: PublicationEvidence,
+) {
   await page.goto(publishedUrl(sessionId));
+  await expect(page).toHaveURL((url) => {
+    return (
+      url.pathname === `/projects/${projectId}/published` &&
+      url.searchParams.get("p9-05b-session") === sessionId
+    );
+  });
   await page.getByRole("radio", { name: "English" }).check();
   await expect(page.getByText("Published storefront")).toBeVisible();
   await expect(page.getByRole("heading", { name: homeHeading })).toBeVisible();
+  await expectCurrentPublication(page, sessionId, expected);
   await page.getByRole("link", { name: "Jewellery", exact: true }).click();
-  await expect(page).toHaveURL(/\/published\/collections\/jewellery/);
+  await expect(page).toHaveURL((url) => {
+    return (
+      url.pathname === `/projects/${projectId}/published/collections/jewellery` &&
+      url.searchParams.get("p9-05b-session") === sessionId
+    );
+  });
   await page.getByRole("radio", { name: "English" }).check();
   await expect(page.getByRole("heading", { level: 1, name: "Jewellery" })).toBeVisible();
+  await expectCurrentPublication(page, sessionId, expected);
   await page.getByRole("button", { name: "Custom Halo Ring", exact: true }).click();
-  await expect(page).toHaveURL(/\/published\/products\/custom-halo-ring/);
+  await expect(page).toHaveURL((url) => {
+    return (
+      url.pathname === `/projects/${projectId}/published/products/custom-halo-ring` &&
+      url.searchParams.get("p9-05b-session") === sessionId
+    );
+  });
   await page.getByRole("radio", { name: "English" }).check();
   await expect(page.getByRole("heading", { level: 1, name: "Custom Halo Ring" })).toBeVisible();
   await expect(page.getByText("Published storefront")).toBeVisible();
+  await expectCurrentPublication(page, sessionId, expected);
 }
 
 async function acceptDeterministicProposal(page: Page) {
   const sessionId = await resetSession(page);
+  const baseline = await publicationEvidence(page, sessionId);
   const generated = await page.evaluate(
     async ({ targetProjectId, sessionId, token }) => {
       const response = await fetch("/api/demo/p9-05b/generate", {
@@ -160,13 +262,13 @@ async function acceptDeterministicProposal(page: Page) {
   }
   await page.goto(generated.body.editorRoute);
   await page.getByRole("button", { name: /Accept and apply|Hyväksy ja käytä/ }).click();
-  const accepted = page.waitForResponse(
+  const acceptanceResponse = page.waitForResponse(
     (response) => response.url().includes("/api/demo/p9-05b/accept") && response.status() === 200,
   );
   await page
     .getByRole("button", { name: /Apply storefront proposal|Ota kauppaehdotus käyttöön/ })
     .click();
-  const body = (await (await accepted).json()) as unknown;
+  const body = (await (await acceptanceResponse).json()) as unknown;
   expect(JSON.stringify(body)).not.toContain("snapshot");
   expect(JSON.stringify(body)).not.toContain("runtime");
   const publishHref = await page
@@ -175,7 +277,10 @@ async function acceptDeterministicProposal(page: Page) {
   if (!publishHref) throw new Error("Accepted publication evidence did not expose a route.");
   const receiptId = new URL(publishHref, "http://localhost").searchParams.get("accepted-receipt");
   if (!receiptId) throw new Error("Accepted publication route did not contain an opaque receipt.");
-  return { sessionId, receiptId };
+  const accepted = await publicationEvidence(page, sessionId);
+  expect(accepted.activePublication).toEqual(baseline.activePublication);
+  expect(accepted.draftSnapshot.fingerprint).not.toBe(baseline.publishedSnapshot.fingerprint);
+  return { sessionId, receiptId, baseline, accepted };
 }
 
 test("manual publication renders the complete route chain and isolates later local draft edits", async ({
@@ -189,16 +294,19 @@ test("manual publication renders the complete route chain and isolates later loc
     }
   });
   const sessionId = await resetSession(page);
-  const baselineFingerprint = await publishedFingerprint(page);
+  const baseline = await publicationEvidence(page, sessionId);
   await saveHeading(page, sessionId, originalHeading, "Publication evidence version A");
   await prepareAndConfirm(page, sessionId);
-  const versionAFingerprint = await publishedFingerprint(page);
-  expect(versionAFingerprint).not.toBe(baselineFingerprint);
-  await expectPublishedRouteChain(page, sessionId, "Publication evidence version A");
+  const versionA = await publicationEvidence(page, sessionId);
+  expect(versionA.publishedSnapshot.fingerprint).not.toBe(baseline.publishedSnapshot.fingerprint);
+  expect(versionA.activePublication).not.toBeNull();
+  await expectPublishedRouteChain(page, sessionId, "Publication evidence version A", versionA);
 
   await saveHeading(page, undefined, "Publication evidence version A", "Unpublished version B");
-  await expectPublishedRouteChain(page, sessionId, "Publication evidence version A");
-  expect(await publishedFingerprint(page)).toBe(versionAFingerprint);
+  await expectPublishedRouteChain(page, sessionId, "Publication evidence version A", versionA);
+  expect((await publicationEvidence(page, sessionId)).publishedSnapshot).toEqual(
+    versionA.publishedSnapshot,
+  );
   expect(externalProviderCalls).toBe(0);
 });
 
@@ -212,8 +320,35 @@ test("accepted-AI publication uses only the opaque receipt and renders the compl
       externalProviderCalls += 1;
     }
   });
-  const { sessionId, receiptId } = await acceptDeterministicProposal(page);
+  const { sessionId, receiptId, baseline, accepted } = await acceptDeterministicProposal(page);
   await prepareAndConfirm(page, sessionId, receiptId);
-  await expectPublishedRouteChain(page, sessionId, originalHeading);
+  const published = await publicationEvidence(page, sessionId);
+  const active = published.activePublication;
+  expect(active).not.toBeNull();
+  if (!active) throw new Error("Accepted-AI publication did not create an active version.");
+  expect(active.version.id).not.toBe(baseline.activePublication?.version.id ?? null);
+  expect(active.artifact.id).not.toBe(baseline.activePublication?.artifact.id ?? null);
+  expect(published.publishedSnapshot.fingerprint).toBe(accepted.draftSnapshot.fingerprint);
+  expect(active.publishedSnapshot).toEqual(published.publishedSnapshot);
+  expect(active.artifact.sourceSnapshot).toEqual(accepted.draftSnapshot);
+  expect(active.version.publishedSnapshot).toEqual(published.publishedSnapshot);
+  expect(active.version.artifactId).toBe(active.artifact.id);
+  expect(active.version.artifactFingerprint).toBe(active.artifact.fingerprint);
+  expect(active.pointer.versionId).toBe(active.version.id);
+  expect(active.pointer.versionFingerprint).toBe(active.version.fingerprint);
+  expect(active.pointer.artifactId).toBe(active.artifact.id);
+  expect(active.pointer.artifactFingerprint).toBe(active.artifact.fingerprint);
+  expect(active.pointer.publishedSnapshotId).toBe(published.publishedSnapshot.id);
+  expect(active.artifact.authority).toMatchObject({
+    kind: "accepted-ai",
+    receiptId,
+    acceptedSnapshotId: accepted.draftSnapshot.id,
+    acceptedSnapshotFingerprint: accepted.draftSnapshot.fingerprint,
+  });
+  expect(await publicationEvidenceIsAvailable(page)).toBe(false);
+  expect(await publicationEvidenceIsAvailable(page, "wrong-session-authority".repeat(2))).toBe(
+    false,
+  );
+  await expectPublishedRouteChain(page, sessionId, originalHeading, published);
   expect(externalProviderCalls).toBe(0);
 });
