@@ -8,6 +8,7 @@ export default defineConfig({
     "p9r-04-generation-acceptance.spec.ts",
     "p10a-04c-homepage-commerce-bridge.spec.ts",
     "publish-confirmation.spec.ts",
+    "p10a-08d-02-complete-publication-evidence.spec.ts",
   ],
   // Project state and browser evidence are intentionally isolated per run.
   workers: 1,

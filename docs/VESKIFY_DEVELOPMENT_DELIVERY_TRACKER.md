@@ -33,7 +33,7 @@ required evidence are accepted.
 | ☑    | P10A-07C-03R | Controlled real-provider acceptance completion   | **Baseline** | Provider acceptance  | Explicit approval and eligible trusted OpenAI configuration | One initial case before one follow-up case; retained real-provider evidence; no retry                |
 | ☐    | P10A-08B-02  | Accepted-AI acceptance-to-receipt wiring         | **Baseline** | Proposal/publishing  | Existing acceptance, receipt, and gateway authority         | Deterministic; integration; browser/E2E; stale/divergent/no-partial-write rejection                  |
 | ☑    | P10A-08C-02B | Atomic compiled publication and rollback closure | **Baseline** | Publishing           | P10A-08B-02 and deterministic compiler                      | Atomic artifact/version/history persistence; idempotency; rollback/republish evidence                |
-| ☐    | P10A-08D-02  | Complete publication evidence                    | **Planned**  | Publishing and QA    | P10A-08C-02B                                                | Gateway/compiler home, collection, PDP; failure; active version; rollback; zero-provider publication |
+| ☑    | P10A-08D-02  | Complete publication evidence                    | **Baseline** | Publishing and QA    | P10A-08C-02B                                                | Gateway/compiler home, collection, PDP; failure; active version; rollback; zero-provider publication |
 | ☐    | P10A-09      | P10A closure record                              | **Planned**  | Product architecture | Prior P10A closure tasks or explicit disposition            | Accepted closure and evidence coverage record                                                        |
 
 ## P10B checklist
@@ -129,9 +129,13 @@ required evidence are accepted.
 - **Outcome:** Prove manual and accepted-AI compile/publish, exact homepage/collection/PDP
   rendering, failure atomicity, draft/published isolation, restore, and republish with zero provider
   calls during publication.
-- **Status:** **Planned**.
+- **Status:** **Baseline**.
 - **Depends on:** P10A-08C-02B.
-- **Done when:** The stated outcome and required evidence are accepted.
+- **Done:** Manual and accepted-AI authority are correlated through preparation, deterministic
+  compilation, atomic artifact/version publication, the active pointer, and exact published home,
+  collection, and PDP routes. Browser and repository evidence also preserves live state on stale
+  or injected failure, isolates later draft edits, restores history only to a new draft, and creates
+  a fresh version on explicit republish with zero external provider calls during publication.
 - **Required evidence:** Browser/E2E and retained manual evidence correlated to compiled version,
   including no-partial-write and zero-provider publication.
 - **Non-goal:** P10B commercial visual acceptance.

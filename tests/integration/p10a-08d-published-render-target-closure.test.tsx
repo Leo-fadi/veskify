@@ -276,23 +276,34 @@ describe("P10A-08D published route render-target closure", () => {
     expectNestedTarget("product", "published");
   });
 
-  it("makes published route wrappers pass the target instead of allowing nested clients to default", async () => {
+  it("makes published route wrappers pass the target and exact session authority", async () => {
+    const publishedSessionId = "p10a-08d-02-session-authority";
     await expect(
       PublishedCollectionPage({
-        params: Promise.resolve({ projectId: "project_aurum_nordic", collectionSlug: "rings" }),
+        params: Promise.resolve({ projectId: "project_lumo_fresh", collectionSlug: "jewellery" }),
+        searchParams: Promise.resolve({ "p9-05b-session": publishedSessionId }),
       }),
     ).resolves.toMatchObject({
-      props: { snapshotKind: "published", renderTarget: "published" },
+      props: {
+        snapshotKind: "published",
+        renderTarget: "published",
+        publishedSessionId,
+      },
     });
     await expect(
       PublishedProductPage({
         params: Promise.resolve({
-          projectId: "project_aurum_nordic",
-          productSlug: "aurora-ring-585",
+          projectId: "project_lumo_fresh",
+          productSlug: "custom-halo-ring",
         }),
+        searchParams: Promise.resolve({ "p9-05b-session": publishedSessionId }),
       }),
     ).resolves.toMatchObject({
-      props: { snapshotKind: "published", renderTarget: "published" },
+      props: {
+        snapshotKind: "published",
+        renderTarget: "published",
+        publishedSessionId,
+      },
     });
   });
 });

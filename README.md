@@ -7,8 +7,8 @@ storefront.
 
 The overall product is **Partial**. Phase 9 is closed by product-owner handoff. P10A grounded
 orchestration and publishing closure is active and substantially implemented. Controlled
-real-provider acceptance, accepted-AI receipt wiring, and atomic compiled publication/rollback are
-implemented; complete retained publication evidence and the P10A closure record remain.
+real-provider acceptance, accepted-AI receipt wiring, atomic compiled publication/rollback, and
+complete correlated publication evidence are implemented; the P10A closure record remains.
 
 ## Product boundary
 
