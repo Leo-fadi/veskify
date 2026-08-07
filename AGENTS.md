@@ -1,7 +1,7 @@
 # Veskify Codex Constitution
 
-**Version:** 1.2.2
-**Aligned with:** `docs/VESKIFY_SDD.md` and `docs/VESKIFY_SDD_v1.2.2.docx`
+**Version:** 1.3.0
+**Aligned with:** `docs/VESKIFY_SDD.md` and `docs/VESKIFY_SDD_v1.3.0.docx`
 **Status:** Binding repository instructions
 
 These rules apply to every Codex task and every developer working in the Veskify repository.
@@ -9,9 +9,12 @@ These rules apply to every Codex task and every developer working in the Veskify
 ## 1. Source of truth
 
 - `docs/VESKIFY_SDD.md` is the authoritative product and architecture baseline.
-- `docs/VESKIFY_SDD_v1.2.2.docx` is the synchronized human-readable export.
+- `docs/VESKIFY_SDD_v1.3.0.docx` is the synchronized human-readable export.
+- `docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md` is the current task-status authority; its
+  synchronized export is `docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx`.
 - ADR-001 through ADR-004 are binding architecture decisions.
-- Read the complete affected SDD sections, v1.2/v1.2.1/v1.2.2 FR/NFR requirement IDs and acceptance criteria before changing code.
+- Read the complete affected v1.3.0 SDD sections and applicable retained requirement IDs,
+  acceptance criteria and ADRs before changing code.
 - Material product, architecture, schema, roadmap or integration changes require documentation updates in the same PR.
 - If a task conflicts with the SDD or an ADR, stop and report the conflict. Do not silently redefine the product.
 

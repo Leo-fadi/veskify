@@ -25,8 +25,9 @@ product truth and approved architecture. Historical task reports and evidence re
 historical. They do not override current code, contracts, tests, accepted evidence, ADRs, this
 specification, or the current roadmap.
 
-The v1.3.0 DOCX export is deliberately outside this source-synchronization task. Until regenerated
-and verified, the v1.2.2 DOCX is a historical export rather than the current authoritative source.
+The synchronized human-readable export is
+[`VESKIFY_SDD_v1.3.0.docx`](VESKIFY_SDD_v1.3.0.docx). The superseded v1.2.2 export is retained only
+as [`archive/VESKIFY_SDD_v1.2.2.docx`](archive/VESKIFY_SDD_v1.2.2.docx) historical evidence.
 
 ### 1.1 Status and evidence vocabulary
 
@@ -598,5 +599,4 @@ Version 1.3.0 does not claim:
 - that Vesko staging or production evidence exists;
 - that authentication, tenancy, observability, deployment, and operations are production complete;
 - that P10D advanced media is required for the first commercial storefront or pilot;
-- that the v1.2.2 DOCX is synchronized with this v1.3.0 source until a later export task regenerates
-  and verifies it.
+- that archived v1.2.2 prose describes current implementation or phase status.

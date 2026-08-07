@@ -4,7 +4,7 @@
 
 ## Authoritative decision
 
-The commercial storefront design-system implementation specification is assigned to **P10B — Commercial Storefront Design System v1**. P10B follows P10A grounded orchestration and publishing closure, and precedes P10C Storefront Studio Editing Experience v1. The source of task identifiers and dependencies is `docs/VESKIFY_SDD.md` and `docs/VESKIFY_DEVELOPMENT_ROADMAP.md`; `docs/VESKIFY_SDD_v1.2.2.docx` is the synchronized export.
+The commercial storefront design-system implementation specification is assigned to **P10B — Commercial Storefront Design System v1**. P10B follows P10A grounded orchestration and publishing closure, and precedes P10C Storefront Studio Editing Experience v1. The source of task identifiers and dependencies is `docs/VESKIFY_SDD.md` and `docs/VESKIFY_DEVELOPMENT_ROADMAP.md`; `docs/VESKIFY_SDD_v1.3.0.docx` is the synchronized export.
 
 ## Migration record
 

@@ -5,30 +5,37 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const markdownFiles = [
+const activeMarkdownFiles = [
   "README.md",
   "AGENTS.md",
   "docs/VESKIFY_SDD.md",
   "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
-  "docs/DESIGN_AGENT_SKILLS.md",
+  "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
   "docs/DEVELOPMENT_GUIDE.md",
-  "docs/CODEX_TASK_TEMPLATE.md",
-  "docs/PHASE_9_EVIDENCE_MATRIX.md",
+  "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
+  "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
+  "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
+  "docs/VESKO_VESKIFY_INTEGRATION_MATRIX.md",
+  "docs/P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md",
+  "docs/COMMERCIAL_STOREFRONT_DESIGN_VOCABULARY_SPEC.md",
   "docs/COMMERCIAL_DESIGN_SYSTEM_ROADMAP_SYNCHRONIZATION.md",
-  "docs/SDD_V1_2_2_DOCUMENTATION_VALIDATION.md",
+  "docs/ADR-001-PUCK_EDITOR_FOUNDATION.md",
   "docs/adr/README.md",
   "docs/adr/ADR-002_CONTROLLED_DESIGN_AGENT.md",
+  "docs/adr/ADR-003_URL_FIRST_DISCOVERY_AND_RECONCILIATION.md",
+  "docs/adr/ADR-004_DYNAMIC_COMMERCE_BOUND_COMPONENTS.md",
+  "docs/archive/README.md",
 ];
 const failures = [];
 
+const readRepositoryFile = (relativePath) =>
+  readFileSync(join(repositoryRoot, relativePath), "utf8").replaceAll("\r\n", "\n");
+
 const contents = new Map(
-  markdownFiles.map((relativePath) => [
-    relativePath,
-    readFileSync(join(repositoryRoot, relativePath), "utf8"),
-  ]),
+  activeMarkdownFiles.map((relativePath) => [relativePath, readRepositoryFile(relativePath)]),
 );
 
-for (const [relativePath, markdown] of contents) {
+const checkRelativeLinks = (relativePath, markdown) => {
   const linkPattern = /\[[^\]]*]\(([^)]+)\)/g;
   for (const match of markdown.matchAll(linkPattern)) {
     const target = match[1].trim().replace(/^<|>$/g, "");
@@ -45,200 +52,226 @@ for (const [relativePath, markdown] of contents) {
       failures.push(`${relativePath}: missing relative link target ${target}`);
     }
   }
-}
+};
 
-const sdd = contents.get("docs/VESKIFY_SDD.md");
-const roadmap = contents.get("docs/VESKIFY_DEVELOPMENT_ROADMAP.md");
-const evidence = contents.get("docs/PHASE_9_EVIDENCE_MATRIX.md");
-const validationRecord = contents.get("docs/SDD_V1_2_2_DOCUMENTATION_VALIDATION.md");
+for (const [relativePath, markdown] of contents) checkRelativeLinks(relativePath, markdown);
 
-const requiredSddText = [
-  "| **Version**                 | 1.2.2",
-  "Phase 9 remains active.",
-  "`StorefrontSnapshot`",
-  "`ComponentDefinitionV2`",
-  "`PageBlueprint`",
-  "`DataBinding`",
-  "`ProductPresentationContext`",
-  "`Proposal`",
-  "| **AC-129**",
-  "| **AC-135**",
-  "P10A defines and validates the scopes.",
-  "P10C implements and exposes those scopes as working merchant",
-  "P10A-04 is generated from `ComponentDefinitionV2`",
-  "AC-119 remains solely a Phase 9 gate.",
-  "approved Storefront Design Brief-to-runtime handoff",
-  "Broad commercial vocabulary expansion occurs after the Phase",
-  "authoritative\nStorefront Design Brief creation → merchant review → explicit approval",
-  "later unapproved brief mutation supplied generation",
-  "registered → planner-selectable → proposal-expressible → compiler-preserved",
-  "Global BrandSystem",
-  "Commercial visual-quality and protected-commerce gate",
-  "4a96a5a5567b83e62306f73f7069e0e09f0c8683",
-  "bba2827e63f2027c946138f6c91362f3f989b088",
-  "codex/sdd-v1-2-2-commercial-design-vocabulary-recovery",
-  "registered, constrained `PageBlueprint` profile",
-  "Recipe selection materializes or constrains a canonical `PageBlueprint`",
-  "raw CSS, arbitrary class names",
-  "executable JavaScript/React or generated code",
-  "unrestricted font imports",
-  "semantic tokens normally flow downward",
-  "approved evidence provenance is preserved",
-  "not required to close Phase 9",
-  "P10B-07 and P10B-08 implement the coordinated commercial recipes only as registered constrained",
-  "P10B-12 visual-quality gate",
-  "P10C Storefront Studio Editing Experience v1",
-];
-for (const required of requiredSddText) {
-  if (!sdd.includes(required)) failures.push(`SDD missing required text: ${required}`);
-}
-if (
-  sdd.includes("| **Amendment source commit**    | `8174b1a6d31301b4072622e2e3ef675957479121`") ||
-  sdd.includes(
-    "| **Amendment branch**           | `codex/sdd-v1.2.1-grounded-storefront-generator`",
-  )
-) {
-  failures.push("SDD incorrectly uses v1.2.1 provenance as the v1.2.2 amendment source");
-}
-
-for (const required of [
-  "**Repository baseline:** `4a96a5a5567b83e62306f73f7069e0e09f0c8683`",
-  "**Branch:** `codex/sdd-v1-2-2-commercial-design-vocabulary-recovery`",
-  "**PR:** #132",
-  "**Initial delivery commit:** `bba2827e63f2027c946138f6c91362f3f989b088`",
-  "**Review-fix delivery commit:** Recorded by PR #132",
-]) {
-  if (!validationRecord.includes(required)) {
-    failures.push(`v1.2.2 validation record is missing provenance text: ${required}`);
+const requireText = (relativePath, required) => {
+  const markdown = contents.get(relativePath);
+  for (const text of required) {
+    if (!markdown.includes(text)) failures.push(`${relativePath}: missing required text: ${text}`);
   }
-}
-
-const p10aOrder = [
-  "P10A-01 — Vocabulary freeze",
-  "P10A-02 — Repository capability audit",
-  "P10A-03 — Executable PageBlueprint contracts",
-  "P10A-04 — Generated Component Knowledge Registry",
-  "P10A-05 — Separate Skill package contracts",
-  "P10A-06 — Scoped instruction-router contracts",
-  "P10A-07 — Golden-store quality gates",
-  "P10A-08 — Publish compiler",
-];
-for (const [relativePath, markdown] of [
-  ["docs/VESKIFY_SDD.md", sdd],
-  ["docs/VESKIFY_DEVELOPMENT_ROADMAP.md", roadmap],
-]) {
-  let previousTaskIndex = -1;
-  for (const task of p10aOrder) {
-    const taskNumber = task.slice(0, 8);
-    const index = markdown.indexOf(taskNumber, previousTaskIndex + 1);
-    if (index < 0) failures.push(`${relativePath}: missing ${taskNumber}`);
-    if (index <= previousTaskIndex) failures.push(`${relativePath}: invalid P10A order at ${task}`);
-    previousTaskIndex = index;
-  }
-}
+};
 
 const phaseOrder = [
-  "### P9 — Whole-storefront design quality — active",
-  "### P10A — Grounded orchestration and publishing closure",
-  "### P10B — Commercial Storefront Design System v1",
-  "### P10C — Storefront Studio Editing Experience v1",
-  "### P10D — Deferred registered advanced media and interactive presentation",
-  "### P11 — Stable domains and Vesko reference adapters",
-  "### P12 — Production hardening and operations",
+  "P10A — Grounded orchestration and publishing closure",
+  "P10B — Commercial Storefront Design System v1",
+  "P10C — Storefront Studio Editing Experience v1",
+  "P10D — Advanced media and registered interactive presentation",
+  "P11 — Vesko Integration Readiness and Reference Adapter",
+  "P12 — Production hardening and pilot operations",
 ];
-let previousIndex = -1;
-for (const heading of phaseOrder) {
-  const index = roadmap.indexOf(heading);
-  if (index < 0) failures.push(`Roadmap missing heading: ${heading}`);
-  if (index <= previousIndex) failures.push(`Roadmap phase order is invalid at: ${heading}`);
-  previousIndex = index;
+
+for (const relativePath of [
+  "README.md",
+  "docs/VESKIFY_SDD.md",
+  "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+]) {
+  const markdown = contents.get(relativePath);
+  let previousIndex = -1;
+  for (const phase of phaseOrder) {
+    const index = markdown.indexOf(phase, previousIndex + 1);
+    if (index < 0) failures.push(`${relativePath}: missing phase ${phase}`);
+    if (index <= previousIndex) failures.push(`${relativePath}: invalid phase order at ${phase}`);
+    previousIndex = index;
+  }
 }
 
-const evidenceHeader = evidence.split("\n").find((line) => line.startsWith("| Requirement / AC"));
-const evidenceColumns = evidenceHeader
-  ?.split("|")
-  .slice(1, -1)
-  .map((column) => column.trim());
-const requiredEvidenceColumns = [
-  "Requirement / AC",
-  "Task",
-  "PR",
-  "Commit",
-  "Test evidence",
-  "Browser evidence",
-  "Screenshot evidence",
-  "Provider evidence",
-  "Status",
-  "Limitation",
+requireText("README.md", [
+  "The overall product is **Partial**. Phase 9 is closed by product-owner handoff.",
+  "P10A grounded\norchestration and publishing closure is active",
+  "docs/VESKIFY_SDD_v1.3.0.docx",
+  "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+  "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
+  "docs/VESKO_VESKIFY_INTEGRATION_MATRIX.md",
+  "No Vesko staging or production evidence\nexists.",
+]);
+
+requireText("AGENTS.md", [
+  "**Version:** 1.3.0",
+  "docs/VESKIFY_SDD_v1.3.0.docx",
+  "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+]);
+
+requireText("docs/VESKIFY_SDD.md", [
+  "# Veskify Software Design Document v1.3.0",
+  "Phase 9 is closed by product-owner handoff",
+  "P10A is\nsubstantially implemented but not closed",
+  "Merchant-facing wiring is not a\nP10A closure requirement",
+  "P10B is the first phase allowed to claim a commercially credible\ndesign system",
+  "The Vesko OpenAPI 3.0 contract has been obtained and audited",
+  "Raw Puck payloads",
+  "There is no Vesko staging or production evidence",
+  "VESKIFY_SDD_v1.3.0.docx",
+  "archive/VESKIFY_SDD_v1.2.2.docx",
+]);
+
+requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
+  "P10A owns internal governed initial/follow-up execution",
+  "1 — Premium Editorial vertical slice",
+  "2 — Modern Technical vertical slice",
+  "3 — Minimal Commerce vertical slice",
+  "4 — Direction, narrative, responsive and visual-quality closure",
+  "The minimum pilot editor requires",
+  "Full P10C exit requires",
+  "P11-00 — Vesko OpenAPI audit",
+]);
+
+requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
+  "## Overall phase checklist",
+  "## P10A checklist",
+  "## P10B checklist",
+  "## P10C checklist",
+  "## P11 checklist",
+  "| ☑",
+  "P11-00",
+]);
+
+const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
+if ((tracker.match(/☑/g) ?? []).length !== 1) {
+  failures.push("Delivery tracker must contain exactly one completed checkbox");
+}
+if (!/^\| ☑\s+\| P11-00/m.test(tracker)) {
+  failures.push("Delivery tracker must mark only P11-00 as completed Baseline work");
+}
+
+const staleActivePatterns = [
+  [/((?<!archive\/)VESKIFY_SDD_v1\.2\.2\.docx)/, "top-level v1.2.2 active export"],
+  [/Phase 9 remains active/i, "Phase 9 active claim"],
+  [/Phase 9 —[^\n]*active/i, "Phase 9 active heading"],
+  [/P10B[^\n]*Storefront Studio UX/i, "old P10B Studio ownership"],
+  [/Phase 11[^\n]*merchant-operable granular editing/i, "old Phase 11 editing ownership"],
+  [/Phase 12[^\n]*stable domains[^\n]*adapters/i, "old Phase 12 adapter ownership"],
+  [/OpenAPI (?:contract )?(?:is )?missing/i, "missing OpenAPI claim"],
+  [/raw Puck[^\n]*(?:is|as) canonical/i, "raw Puck canonical-persistence claim"],
+  [/merchant editor[^\n]*P10A closure requirement/i, "merchant editor as P10A closure work"],
 ];
-if (!evidenceColumns || evidenceColumns.join("\n") !== requiredEvidenceColumns.join("\n")) {
-  failures.push("Phase 9 evidence matrix is missing the required columns");
-}
-if (!evidence.includes("Phase 9 remains active")) {
-  failures.push("Phase 9 evidence matrix must keep Phase 9 active");
-}
-for (const required of [
-  "4a96a5a5567b83e62306f73f7069e0e09f0c8683",
-  "P10A owns AC-129 through AC-135 after Phase 9",
-  "AC-136–AC-138 are not required to close Phase 9",
-  "P10B-01 through P10B-12",
-  "Reproducible from the stated v1.2.2 baseline",
-]) {
-  if (!evidence.includes(required)) {
-    failures.push(
-      `Phase 9 evidence matrix is missing v1.2.2 ownership/provenance text: ${required}`,
-    );
-  }
-}
-for (const required of [
-  "Approved Storefront Design Brief revision used by runtime generation; FR-105",
-  "project ID, brief ID, revision/fingerprint",
-  "approval actor/action/timestamp",
-  "runtime request/proposal correlation",
-  "no later unapproved brief",
-  "merely validated/unapproved brief",
-]) {
-  if (!evidence.includes(required)) {
-    failures.push(`Phase 9 evidence matrix is missing approved-brief evidence text: ${required}`);
-  }
-}
-if (
-  !roadmap.includes("P9-03 — Minimum proof-enabling design capability reachability") ||
-  !roadmap.includes(
-    "Broad commercial vocabulary scaling belongs to\nP10B after Phase 9 and P10A publishing closure",
-  )
-) {
-  failures.push("Roadmap does not preserve the P9-03/P10A-04 vocabulary boundary");
-}
 
 for (const [relativePath, markdown] of contents) {
-  if (/\bPhase 9 (?:is|—) complete\b/i.test(markdown)) {
-    failures.push(`${relativePath}: incorrectly declares Phase 9 complete`);
+  if (relativePath === "docs/archive/README.md") continue;
+  const currentClaimText = markdown
+    .split("\n")
+    .filter((line) => !/Former (?:Phase|later)/.test(line))
+    .join("\n");
+  for (const [pattern, label] of staleActivePatterns) {
+    if (pattern.test(currentClaimText)) {
+      failures.push(`${relativePath}: stale active claim (${label})`);
+    }
   }
 }
 
-const sourceHash = createHash("sha256").update(sdd.replace(/\r\n/g, "\n")).digest("hex");
-const docxPath = join(repositoryRoot, "docs", "VESKIFY_SDD_v1.2.2.docx");
-if (!existsSync(docxPath)) {
-  failures.push("Missing docs/VESKIFY_SDD_v1.2.2.docx");
-} else {
-  try {
-    execFileSync(
-      process.execPath,
-      [join(repositoryRoot, "scripts", "export-sdd-docx.mjs"), "--check"],
-      {
-        encoding: "utf8",
-      },
-    );
-  } catch {
-    failures.push("DOCX content does not match the deterministic Markdown export");
+const exportsToValidate = [
+  {
+    source: "docs/VESKIFY_SDD.md",
+    output: "docs/VESKIFY_SDD_v1.3.0.docx",
+    script: "scripts/export-sdd-docx.mjs",
+    requiredXml: [
+      "Veskify Software Design Document",
+      "w:footerReference",
+      "w:tblHeader",
+      '<w:pgSz w:w="12240" w:h="15840"/>',
+      '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"',
+      '<w:br w:type="page"/>',
+      '<w:tblInd w:w="0" w:type="dxa"/>',
+      "w:numPr",
+    ],
+  },
+  {
+    source: "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+    output: "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
+    script: "scripts/export-development-delivery-tracker-docx.mjs",
+    requiredXml: [
+      "Veskify Development Delivery Tracker",
+      'w:pgSz w:w="15840" w:h="12240" w:orient="landscape"',
+      '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"',
+      "w:footerReference",
+      "w:tblHeader",
+      '<w:br w:type="page"/>',
+      '<w:tblInd w:w="0" w:type="dxa"/>',
+      "w:numPr",
+      "☑",
+      "☐",
+    ],
+  },
+];
+
+for (const { source, output, script, requiredXml } of exportsToValidate) {
+  const outputPath = join(repositoryRoot, output);
+  if (!existsSync(outputPath)) {
+    failures.push(`Missing synchronized export ${output}`);
+    continue;
   }
 
-  const customProperties = execFileSync("/usr/bin/unzip", ["-p", docxPath, "docProps/custom.xml"], {
+  try {
+    execFileSync(process.execPath, [join(repositoryRoot, script), "--check"], { encoding: "utf8" });
+  } catch {
+    failures.push(`${output} does not match its deterministic Markdown export`);
+  }
+
+  try {
+    execFileSync("/usr/bin/unzip", ["-tqq", outputPath], { encoding: "utf8" });
+  } catch {
+    failures.push(`${output} is not a structurally valid DOCX archive`);
+  }
+
+  const markdown = readRepositoryFile(source);
+  const sourceHash = createHash("sha256").update(markdown).digest("hex");
+  const customProperties = execFileSync(
+    "/usr/bin/unzip",
+    ["-p", outputPath, "docProps/custom.xml"],
+    { encoding: "utf8" },
+  );
+  if (!customProperties.includes(sourceHash)) {
+    failures.push(`${output}: source hash does not match ${source}`);
+  }
+
+  const documentXml = execFileSync("/usr/bin/unzip", ["-p", outputPath, "word/document.xml"], {
     encoding: "utf8",
   });
-  if (!customProperties.includes(sourceHash)) {
-    failures.push("DOCX source hash does not match docs/VESKIFY_SDD.md");
+  for (const required of requiredXml) {
+    if (!documentXml.includes(required))
+      failures.push(`${output}: missing OOXML marker ${required}`);
+  }
+  const pageBreakCount = (documentXml.match(/<w:br w:type="page"\/>/g) ?? []).length;
+  if (pageBreakCount !== 1) {
+    failures.push(
+      `${output}: expected exactly one explicit cover page break, found ${pageBreakCount}`,
+    );
+  }
+  if (/<w:t[^>]*>(?:#{1,4}|\*\*|```)/.test(documentXml)) {
+    failures.push(`${output}: exposed Markdown syntax in rendered document content`);
+  }
+
+  const footerXml = execFileSync("/usr/bin/unzip", ["-p", outputPath, "word/footer1.xml"], {
+    encoding: "utf8",
+  });
+  for (const field of ['w:instr=" PAGE "', 'w:instr=" NUMPAGES "']) {
+    if (!footerXml.includes(field)) failures.push(`${output}: missing footer field ${field}`);
+  }
+}
+
+const archivedSddPath = join(repositoryRoot, "docs", "archive", "VESKIFY_SDD_v1.2.2.docx");
+if (!existsSync(archivedSddPath)) {
+  failures.push("Missing archived docs/archive/VESKIFY_SDD_v1.2.2.docx");
+} else {
+  try {
+    execFileSync("/usr/bin/unzip", ["-tqq", archivedSddPath], { encoding: "utf8" });
+  } catch {
+    failures.push("Archived VESKIFY_SDD_v1.2.2.docx is not structurally valid");
+  }
+  const archivedHash = createHash("sha256").update(readFileSync(archivedSddPath)).digest("hex");
+  if (archivedHash !== "27db7de65e0131dcdbba72adc765fe3716acadb2b150736e496789f7c24bbb25") {
+    failures.push("Archived VESKIFY_SDD_v1.2.2.docx differs from the preserved historical export");
   }
 }
 
@@ -246,7 +279,10 @@ if (failures.length > 0) {
   process.stderr.write(`${failures.join("\n")}\n`);
   process.exitCode = 1;
 } else {
+  const hashes = exportsToValidate.map(({ source }) =>
+    createHash("sha256").update(readRepositoryFile(source)).digest("hex"),
+  );
   process.stdout.write(
-    `Documentation validation passed (${markdownFiles.length} Markdown files, synchronized DOCX ${sourceHash}).\n`,
+    `Documentation validation passed (${activeMarkdownFiles.length} active Markdown files; synchronized SDD ${hashes[0]}; synchronized tracker ${hashes[1]}; archived v1.2.2 preserved).\n`,
   );
 }

@@ -129,16 +129,19 @@ high-risk validation.
 ## Authoritative documentation
 
 - [Software Design Document v1.3.0](docs/VESKIFY_SDD.md)
+- [Software Design Document v1.3.0 DOCX](docs/VESKIFY_SDD_v1.3.0.docx)
 - [Development roadmap](docs/VESKIFY_DEVELOPMENT_ROADMAP.md)
 - [Development delivery tracker](docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md)
+- [Development delivery tracker v1.3.0 DOCX](docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx)
 - [Current-state truth audit](docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md)
 - [Capability evidence ledger](docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md)
 - [Development guide](docs/DEVELOPMENT_GUIDE.md)
 - [Binding repository constitution](AGENTS.md)
 - [Architecture decisions](docs/adr/README.md)
 
-Historical phase records retain their original evidence meaning. The v1.2.2 DOCX remains a
-historical export until a dedicated task regenerates and verifies the v1.3.0 document.
+Historical phase records retain their original evidence meaning. Superseded exports, including
+[SDD v1.2.2](docs/archive/VESKIFY_SDD_v1.2.2.docx), are retained in the
+[documentation archive](docs/archive/README.md) and are not current implementation authority.
 
 ## Non-claim
 

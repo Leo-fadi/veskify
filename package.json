@@ -17,7 +17,11 @@
     "test:e2e": "playwright test && playwright test -c playwright.p10a-08c-01.config.ts && playwright test -c playwright.p10a-04c.config.ts",
     "smoke:openai": "vitest run --config vitest.openai-smoke.config.ts",
     "demo:p9-05a:load": "vitest run --config vitest.p9-05a-demo.config.ts",
-    "docs:export": "node scripts/export-sdd-docx.mjs",
+    "docs:export:sdd": "node scripts/export-sdd-docx.mjs",
+    "docs:export:tracker": "node scripts/export-development-delivery-tracker-docx.mjs",
+    "docs:export": "pnpm docs:export:sdd && pnpm docs:export:tracker",
+    "docs:check:sdd": "node scripts/export-sdd-docx.mjs --check",
+    "docs:check:tracker": "node scripts/export-development-delivery-tracker-docx.mjs --check",
     "docs:validate": "node scripts/validate-documentation.mjs",
     "validate": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build",
     "validate:full": "pnpm validate && pnpm test:e2e"
