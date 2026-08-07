@@ -32,7 +32,7 @@ required evidence are accepted.
 | ---- | ------------ | ------------------------------------------------ | ------------ | -------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | ☑    | P10A-07C-03R | Controlled real-provider acceptance completion   | **Baseline** | Provider acceptance  | Explicit approval and eligible trusted OpenAI configuration | One initial case before one follow-up case; retained real-provider evidence; no retry                |
 | ☐    | P10A-08B-02  | Accepted-AI acceptance-to-receipt wiring         | **Baseline** | Proposal/publishing  | Existing acceptance, receipt, and gateway authority         | Deterministic; integration; browser/E2E; stale/divergent/no-partial-write rejection                  |
-| ☐    | P10A-08C-02B | Atomic compiled publication and rollback closure | **Planned**  | Publishing           | P10A-08B-02 and deterministic compiler                      | Atomic artifact/version/history persistence; idempotency; rollback/republish evidence                |
+| ☑    | P10A-08C-02B | Atomic compiled publication and rollback closure | **Baseline** | Publishing           | P10A-08B-02 and deterministic compiler                      | Atomic artifact/version/history persistence; idempotency; rollback/republish evidence                |
 | ☐    | P10A-08D-02  | Complete publication evidence                    | **Planned**  | Publishing and QA    | P10A-08C-02B                                                | Gateway/compiler home, collection, PDP; failure; active version; rollback; zero-provider publication |
 | ☐    | P10A-09      | P10A closure record                              | **Planned**  | Product architecture | Prior P10A closure tasks or explicit disposition            | Accepted closure and evidence coverage record                                                        |
 
@@ -115,9 +115,11 @@ required evidence are accepted.
 - **Outcome:** Commit the compiled artifact, published snapshot, publication history, and active
   version atomically; preserve the existing live version on failure; restore to draft and change
   live state only through explicit republish.
-- **Status:** **Planned**.
+- **Status:** **Baseline**.
 - **Depends on:** P10A-08B-02 and the current deterministic publish compiler.
-- **Done when:** The stated outcome and required evidence are accepted.
+- **Done:** One authoritative transaction retains the snapshot, artifact, version/history,
+  operation, and active pointer; failures preserve prior live state; historical versions restore
+  only to a new draft and require a fresh explicit publish.
 - **Required evidence:** Deterministic identity, atomicity, idempotency, active-pointer safety,
   rollback, republish, and failure preservation.
 - **Non-goal:** A second editable state model or copied commerce snapshot.

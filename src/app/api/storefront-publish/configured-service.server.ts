@@ -49,6 +49,18 @@ function currentLocalDemoProjectRepository(
       p905bLocalDemoRepository(environment).restore(projectId, snapshotId, expectation),
     getPublicationOperation: (identity) =>
       p905bLocalDemoRepository(environment).getPublicationOperation(identity),
+    getActiveCompiledPublication: (projectId) =>
+      p905bLocalDemoRepository(environment).getActiveCompiledPublication(projectId),
+    getCompiledPublicationArtifact: (projectId, artifactId) =>
+      p905bLocalDemoRepository(environment).getCompiledPublicationArtifact(projectId, artifactId),
+    listPublishedStorefrontVersions: (projectId) =>
+      p905bLocalDemoRepository(environment).listPublishedStorefrontVersions(projectId),
+    restorePublishedStorefrontVersion: (projectId, versionId, expectation) =>
+      p905bLocalDemoRepository(environment).restorePublishedStorefrontVersion(
+        projectId,
+        versionId,
+        expectation,
+      ),
   };
 }
 

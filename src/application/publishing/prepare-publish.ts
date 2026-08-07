@@ -11,7 +11,7 @@ import {
   canonicalStorefrontContentFingerprint,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
-import type { ProjectRepository } from "@/services/storage";
+import type { AuthoritativePublishingProjectRepository } from "@/services/storage";
 import { validateProjectAggregate } from "@/services/storage/repository-validation";
 import { createPublishChangeSummary } from "./change-summary";
 import {
@@ -72,11 +72,12 @@ function deepFreeze<T>(value: T): T {
 
 export async function preparePublish(
   projectId: string,
-  repository: ProjectRepository,
+  repository: AuthoritativePublishingProjectRepository,
   options: PreparePublishOptions = {},
 ): Promise<PublishPreparation> {
   try {
     const aggregate = validateProjectAggregate(await repository.get(projectId));
+    const activePublication = await repository.getActiveCompiledPublication(projectId);
     const draft = currentSnapshot(aggregate.snapshots, aggregate.project.draftSnapshotId);
     const published = currentSnapshot(aggregate.snapshots, aggregate.project.publishedSnapshotId);
     const preparedAt = (options.now?.() ?? new Date()).toISOString();
@@ -175,6 +176,7 @@ export async function preparePublish(
       },
       authority,
       compilation: preparedPublishCompilation(compilation),
+      expectedActivePublicationVersionId: activePublication?.version.id ?? null,
       changeSummary: createPublishChangeSummary(published, draft),
       publishPermitted: !canonicalStorefrontContentEqual(published, draft),
     });

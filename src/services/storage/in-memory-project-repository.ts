@@ -45,6 +45,20 @@ import {
   restoreHistoryMetadata,
   type SnapshotHistoryMetadata,
 } from "./snapshot-history-metadata";
+import {
+  ActivePublicationConflictError,
+  assertPublishedStorefrontVersionIntegrity,
+  CompiledPublicationIntegrityError,
+  createAtomicCompiledPublicationRecords,
+  parseActivePublishedStorefrontPointer,
+  parseAtomicCompiledPublicationWrite,
+  parseCompiledPublicationArtifact,
+  parsePublishedStorefrontVersion,
+  type ActivePublishedStorefrontPointer,
+  type AtomicPublicationFailurePoint,
+  type CompiledPublicationArtifact,
+  type PublishedStorefrontVersion,
+} from "./compiled-publication";
 
 type StoredProject = {
   project: Project;
@@ -54,7 +68,14 @@ type StoredProject = {
   managedDraftSnapshotIds: Set<string>;
   operationSequence: number;
   publicationOperations: Map<string, PublicationOperationRecord>;
+  compiledPublicationArtifacts: Map<string, CompiledPublicationArtifact>;
+  publishedStorefrontVersions: Map<string, PublishedStorefrontVersion>;
+  activePublishedStorefrontPointer: ActivePublishedStorefrontPointer | null;
 };
+
+export type InMemoryProjectRepositoryOptions = Readonly<{
+  failAtomicPublicationAt?: (point: AtomicPublicationFailurePoint) => void;
+}>;
 
 function clone<T>(value: T): T {
   return structuredClone(value);
@@ -70,8 +91,13 @@ function freeze<T>(value: T): T {
 
 export class InMemoryProjectRepository implements AuthoritativePublishingProjectRepository {
   readonly #projects = new Map<string, StoredProject>();
+  readonly #failAtomicPublicationAt?: InMemoryProjectRepositoryOptions["failAtomicPublicationAt"];
 
-  constructor(initialProjects: readonly ProjectAggregate[]) {
+  constructor(
+    initialProjects: readonly ProjectAggregate[],
+    options: InMemoryProjectRepositoryOptions = {},
+  ) {
+    this.#failAtomicPublicationAt = options.failAtomicPublicationAt;
     for (const input of initialProjects) {
       const aggregate = validateProjectAggregate(clone(input));
       if (this.#projects.has(aggregate.project.id)) {
@@ -94,6 +120,9 @@ export class InMemoryProjectRepository implements AuthoritativePublishingProject
         managedDraftSnapshotIds: new Set([aggregate.project.draftSnapshotId]),
         operationSequence: aggregate.snapshots.length,
         publicationOperations: new Map(),
+        compiledPublicationArtifacts: new Map(),
+        publishedStorefrontVersions: new Map(),
+        activePublishedStorefrontPointer: null,
       });
     }
   }
@@ -154,6 +183,9 @@ export class InMemoryProjectRepository implements AuthoritativePublishingProject
       managedDraftSnapshotIds: new Set([aggregate.project.draftSnapshotId]),
       operationSequence: aggregate.snapshots.length,
       publicationOperations: new Map(),
+      compiledPublicationArtifacts: new Map(),
+      publishedStorefrontVersions: new Map(),
+      activePublishedStorefrontPointer: null,
     });
 
     return clone(aggregate);
@@ -254,6 +286,18 @@ export class InMemoryProjectRepository implements AuthoritativePublishingProject
     const operation = expectation.operation
       ? parsePublicationOperationWrite(expectation.operation)
       : undefined;
+    const compiledPublication = expectation.compiledPublication
+      ? parseAtomicCompiledPublicationWrite(expectation.compiledPublication)
+      : undefined;
+    if (compiledPublication && !operation) {
+      throw new CompiledPublicationIntegrityError();
+    }
+    if (
+      compiledPublication &&
+      publicationOperationKey(compiledPublication.operation) !== publicationOperationKey(operation!)
+    ) {
+      throw new CompiledPublicationIntegrityError();
+    }
     if (operation && operation.storefrontProjectId !== projectId) {
       throw repositoryValidationError(
         "Publication operation references a different storefront project.",
@@ -374,8 +418,50 @@ export class InMemoryProjectRepository implements AuthoritativePublishingProject
       snapshots: compacted.snapshots,
       snapshotHistoryMetadata: [...nextSnapshotHistoryMetadata.values()],
     });
+    const nextCompiledPublicationArtifacts = new Map(stored.compiledPublicationArtifacts);
+    const nextPublishedStorefrontVersions = new Map(stored.publishedStorefrontVersions);
+    let nextActivePublishedStorefrontPointer = stored.activePublishedStorefrontPointer;
+    let compiledRecordLinks:
+      Readonly<{ publishedVersionId: string; compiledArtifactId: string }> | undefined;
+    if (compiledPublication) {
+      const currentVersionId = stored.activePublishedStorefrontPointer?.versionId ?? null;
+      if (currentVersionId !== compiledPublication.expectedActiveVersionId) {
+        throw new ActivePublicationConflictError(
+          compiledPublication.expectedActiveVersionId,
+          currentVersionId,
+        );
+      }
+      const records = createAtomicCompiledPublicationRecords({
+        write: compiledPublication,
+        publishedSnapshot: published,
+        predecessorVersionId: currentVersionId,
+        sequence: nextPublishedStorefrontVersions.size + 1,
+        createdAt,
+      });
+      this.#failAtomicPublicationAt?.("artifact");
+      if (nextCompiledPublicationArtifacts.has(records.artifact.id)) {
+        throw new CompiledPublicationIntegrityError();
+      }
+      nextCompiledPublicationArtifacts.set(records.artifact.id, freeze(records.artifact));
+      this.#failAtomicPublicationAt?.("version");
+      if (nextPublishedStorefrontVersions.has(records.version.id)) {
+        throw new CompiledPublicationIntegrityError();
+      }
+      nextPublishedStorefrontVersions.set(records.version.id, freeze(records.version));
+      this.#failAtomicPublicationAt?.("pointer");
+      nextActivePublishedStorefrontPointer = freeze(records.pointer);
+      compiledRecordLinks = {
+        publishedVersionId: records.version.id,
+        compiledArtifactId: records.artifact.id,
+      };
+    }
     const completedOperation = operation
-      ? completePublicationOperation(operation, nextProject.revision, published.id)
+      ? completePublicationOperation(
+          operation,
+          nextProject.revision,
+          published.id,
+          compiledRecordLinks,
+        )
       : undefined;
     const nextPublicationOperations = new Map(stored.publicationOperations);
     if (completedOperation) {
@@ -394,6 +480,9 @@ export class InMemoryProjectRepository implements AuthoritativePublishingProject
     );
     stored.operationSequence = sequence;
     stored.publicationOperations = nextPublicationOperations;
+    stored.compiledPublicationArtifacts = nextCompiledPublicationArtifacts;
+    stored.publishedStorefrontVersions = nextPublishedStorefrontVersions;
+    stored.activePublishedStorefrontPointer = nextActivePublishedStorefrontPointer;
     return clone(aggregate);
   }
 
@@ -404,6 +493,69 @@ export class InMemoryProjectRepository implements AuthoritativePublishingProject
     const stored = this.#requireProject(identity.storefrontProjectId);
     const operation = stored.publicationOperations.get(publicationOperationKey(identity));
     return operation ? clone(operation) : null;
+  }
+
+  async getCompiledPublicationArtifact(
+    projectId: string,
+    artifactId: string,
+  ): Promise<CompiledPublicationArtifact | null> {
+    await Promise.resolve();
+    const stored = this.#requireProject(projectId);
+    const artifact = stored.compiledPublicationArtifacts.get(artifactId);
+    return artifact ? freeze(clone(parseCompiledPublicationArtifact(artifact))) : null;
+  }
+
+  async listPublishedStorefrontVersions(projectId: string): Promise<PublishedStorefrontVersion[]> {
+    await Promise.resolve();
+    const stored = this.#requireProject(projectId);
+    return [...stored.publishedStorefrontVersions.values()]
+      .map((versionValue) => {
+        const version = parsePublishedStorefrontVersion(versionValue);
+        const artifact = stored.compiledPublicationArtifacts.get(version.artifactId);
+        const snapshot = stored.snapshots.get(version.publishedSnapshot.id);
+        if (!artifact || !snapshot) throw new CompiledPublicationIntegrityError();
+        assertPublishedStorefrontVersionIntegrity(version, artifact, snapshot);
+        return freeze(clone(version));
+      })
+      .sort((left, right) => left.sequence - right.sequence);
+  }
+
+  async getActiveCompiledPublication(projectId: string) {
+    await Promise.resolve();
+    const stored = this.#requireProject(projectId);
+    if (!stored.activePublishedStorefrontPointer) return null;
+    const pointer = parseActivePublishedStorefrontPointer(stored.activePublishedStorefrontPointer);
+    const version = stored.publishedStorefrontVersions.get(pointer.versionId);
+    const artifact = stored.compiledPublicationArtifacts.get(pointer.artifactId);
+    const publishedSnapshot = stored.snapshots.get(pointer.publishedSnapshotId);
+    if (!version || !artifact || !publishedSnapshot) throw new CompiledPublicationIntegrityError();
+    const parsedVersion = parsePublishedStorefrontVersion(version);
+    const parsedArtifact = parseCompiledPublicationArtifact(artifact);
+    assertPublishedStorefrontVersionIntegrity(parsedVersion, parsedArtifact, publishedSnapshot);
+    if (
+      parsedVersion.integrityFingerprint !== pointer.versionFingerprint ||
+      parsedArtifact.integrityFingerprint !== pointer.artifactFingerprint ||
+      parsedVersion.artifactId !== parsedArtifact.id ||
+      parsedVersion.publishedSnapshot.id !== publishedSnapshot.id ||
+      canonicalStorefrontContentFingerprint(publishedSnapshot) !==
+        parsedVersion.publishedSnapshot.fingerprint
+    )
+      throw new CompiledPublicationIntegrityError();
+    return freeze(
+      clone({ pointer, version: parsedVersion, artifact: parsedArtifact, publishedSnapshot }),
+    );
+  }
+
+  async restorePublishedStorefrontVersion(
+    projectId: string,
+    versionId: string,
+    expectation: RestoreExpectation,
+  ): Promise<StorefrontSnapshot> {
+    const version = (await this.listPublishedStorefrontVersions(projectId)).find(
+      ({ id }) => id === versionId,
+    );
+    if (!version) throw new CompiledPublicationIntegrityError();
+    return this.restore(projectId, version.publishedSnapshot.id, expectation);
   }
 
   async restore(

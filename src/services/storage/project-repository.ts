@@ -7,6 +7,12 @@ import type {
   PublicationOperationWrite,
 } from "./publication-operation";
 import type { SnapshotHistoryMetadata } from "./snapshot-history-metadata";
+import type {
+  ActiveCompiledPublication,
+  AtomicCompiledPublicationWrite,
+  CompiledPublicationArtifact,
+  PublishedStorefrontVersion,
+} from "./compiled-publication";
 
 export type ProjectAggregate = {
   project: Project;
@@ -67,6 +73,7 @@ export type PublishExpectation = {
   draft: PublishSnapshotExpectation;
   published: PublishSnapshotExpectation;
   operation?: PublicationOperationWrite;
+  compiledPublication?: AtomicCompiledPublicationWrite;
 };
 
 export type RestoreExpectation = {
@@ -96,6 +103,17 @@ export interface AuthoritativePublishingProjectRepository extends ProjectReposit
   getPublicationOperation(
     identity: PublicationOperationIdentity,
   ): Promise<PublicationOperationRecord | null>;
+  getActiveCompiledPublication(projectId: string): Promise<ActiveCompiledPublication | null>;
+  getCompiledPublicationArtifact(
+    projectId: string,
+    artifactId: string,
+  ): Promise<CompiledPublicationArtifact | null>;
+  listPublishedStorefrontVersions(projectId: string): Promise<PublishedStorefrontVersion[]>;
+  restorePublishedStorefrontVersion(
+    projectId: string,
+    versionId: string,
+    expectation: RestoreExpectation,
+  ): Promise<StorefrontSnapshot>;
 }
 
 export class ProjectAlreadyExistsError extends Error {

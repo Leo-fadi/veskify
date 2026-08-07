@@ -30,6 +30,8 @@ import {
 } from "@/domain/storefront";
 import {
   DraftConflictError,
+  ActivePublicationConflictError,
+  CompiledPublicationIntegrityError,
   NoStorefrontChangesError,
   ProjectNotFoundError,
   PublicationOperationConflictError,
@@ -240,7 +242,8 @@ function mapPublishingFailure(error: unknown): VeskoIntegrationError {
   }
   if (
     error instanceof StalePublishPreparationError ||
-    error instanceof PublicationOperationConflictError
+    error instanceof PublicationOperationConflictError ||
+    error instanceof ActivePublicationConflictError
   ) {
     return new VeskoIntegrationError("stalePublishConfirmation");
   }
@@ -251,6 +254,7 @@ function mapPublishingFailure(error: unknown): VeskoIntegrationError {
     error instanceof InvalidPublishPreparationError ||
     error instanceof PublishPreparationValidationError ||
     error instanceof PublicationOperationValidationError ||
+    error instanceof CompiledPublicationIntegrityError ||
     error instanceof RepositoryValidationError
   ) {
     return new VeskoIntegrationError("malformedIntegrationResponse");

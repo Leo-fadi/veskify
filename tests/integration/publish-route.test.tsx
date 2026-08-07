@@ -9,8 +9,8 @@ import { confirmPublish, preparePublish } from "@/application/publishing";
 import { aurumNordicSeed } from "@/data/seed";
 import {
   InMemoryProjectRepository,
+  type AuthoritativePublishingProjectRepository,
   type ProjectAggregate,
-  type ProjectRepository,
 } from "@/services/storage";
 
 const projectId = aurumNordicSeed.project.id;
@@ -44,7 +44,9 @@ async function saveDraftTitle(value: InMemoryProjectRepository, title: string) {
   });
 }
 
-function gatewayFor(source: ProjectRepository): MerchantPublishGatewayClient {
+function gatewayFor(
+  source: AuthoritativePublishingProjectRepository,
+): MerchantPublishGatewayClient {
   const preparations = new Map<string, Awaited<ReturnType<typeof preparePublish>>>();
   return {
     prepare: vi.fn(
@@ -69,7 +71,7 @@ function gatewayFor(source: ProjectRepository): MerchantPublishGatewayClient {
 }
 
 function route(
-  value: ProjectRepository,
+  value: AuthoritativePublishingProjectRepository,
   gateway: MerchantPublishGatewayClient = gatewayFor(value),
 ) {
   return render(
@@ -82,16 +84,23 @@ function route(
 }
 
 function forward(
-  inner: ProjectRepository,
-  overrides: Partial<ProjectRepository> = {},
-): ProjectRepository {
+  inner: AuthoritativePublishingProjectRepository,
+  overrides: Partial<AuthoritativePublishingProjectRepository> = {},
+): AuthoritativePublishingProjectRepository {
   return {
     list: () => inner.list(),
     get: (id) => inner.get(id),
     create: (aggregate) => inner.create(aggregate),
     saveDraft: (id, snapshot, expected) => inner.saveDraft(id, snapshot, expected),
     publish: (id, expectation) => inner.publish(id, expectation),
-    restore: (id, snapshotId) => inner.restore(id, snapshotId),
+    restore: (id, snapshotId, expectation) => inner.restore(id, snapshotId, expectation),
+    getPublicationOperation: (identity) => inner.getPublicationOperation(identity),
+    getActiveCompiledPublication: (id) => inner.getActiveCompiledPublication(id),
+    getCompiledPublicationArtifact: (id, artifactId) =>
+      inner.getCompiledPublicationArtifact(id, artifactId),
+    listPublishedStorefrontVersions: (id) => inner.listPublishedStorefrontVersions(id),
+    restorePublishedStorefrontVersion: (id, versionId, expectation) =>
+      inner.restorePublishedStorefrontVersion(id, versionId, expectation),
     ...overrides,
   };
 }

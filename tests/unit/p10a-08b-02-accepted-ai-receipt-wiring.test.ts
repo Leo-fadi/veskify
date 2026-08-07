@@ -352,6 +352,7 @@ describe("P10A-08B-02 accepted-AI acceptance-to-receipt wiring", () => {
   it("prepares and confirms accepted-AI publication by independently resolving receipt and current authority", async () => {
     const setup = await harness();
     const acceptance = await setup.service.accept(setup.request, httpRequest);
+    const activePublicationRead = vi.spyOn(setup.projectRepository, "getActiveCompiledPublication");
     const preparation = await preparePublish(setup.request.projectId, setup.projectRepository, {
       now: () => new Date("2026-08-07T10:00:00.000Z"),
       authority: {
@@ -373,8 +374,23 @@ describe("P10A-08B-02 accepted-AI acceptance-to-receipt wiring", () => {
       kind: "accepted-ai",
       receiptId: acceptance.receiptId,
     });
+    expect(preparation.expectedActivePublicationVersionId).toBeNull();
+    expect(activePublicationRead).toHaveBeenCalledWith(setup.request.projectId);
     expect(published.aggregate.project.revision).toBe(setup.planningInput.project.revision + 1);
     expect(setup.resolveCurrentAuthority).toHaveBeenCalledTimes(2);
+    const active = await setup.projectRepository.getActiveCompiledPublication(
+      setup.request.projectId,
+    );
+    expect(active?.artifact.authority).toMatchObject({
+      kind: "accepted-ai",
+      receiptId: acceptance.receiptId,
+      proposalId: setup.proposal.id,
+    });
+    expect(active?.artifact.compileReceipt).toMatchObject({
+      sourceAuthorityKind: "accepted-ai",
+      acceptedReceiptId: acceptance.receiptId,
+    });
+    expect(active?.version.authority.kind).toBe("accepted-ai");
   });
 
   it("fails closed before publication when current proposal authority changes after acceptance", async () => {

@@ -120,7 +120,10 @@ export const publicPublishPreparationSchema = z
   .strict();
 
 export const publishPreparationSchema = publicPublishPreparationSchema
-  .extend({ compilation: preparedPublishCompilationSchema })
+  .extend({
+    compilation: preparedPublishCompilationSchema,
+    expectedActivePublicationVersionId: idSchema.nullable(),
+  })
   .strict();
 
 export type PublishChangeSummary = z.infer<typeof publishChangeSummarySchema>;
@@ -131,8 +134,13 @@ export type PublishPreparation = z.infer<typeof publishPreparationSchema>;
 export function publicPublishPreparation(
   preparation: PublishPreparation,
 ): PublicPublishPreparation {
-  const { compilation: trustedCompilation, ...publicPreparation } = preparation;
+  const {
+    compilation: trustedCompilation,
+    expectedActivePublicationVersionId: trustedActiveVersion,
+    ...publicPreparation
+  } = preparation;
   void trustedCompilation;
+  void trustedActiveVersion;
   return publicPublishPreparationSchema.parse(publicPreparation);
 }
 

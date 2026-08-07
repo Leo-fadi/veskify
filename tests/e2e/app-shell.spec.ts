@@ -15,7 +15,7 @@ async function setAurumHomepageContentCount(page: Page, itemCount: number) {
         return database?.version ?? 0;
       }),
     )
-    .toBe(4);
+    .toBe(5);
   await page.evaluate(async (count) => {
     type StoredProject = {
       draftSnapshotId: string;

@@ -841,9 +841,17 @@ export async function loadP905bLocalDemoPublishedProjection(input: {
     return null;
   }
   const aggregate = await current.repository.get(P9_05A_PROJECT_ID);
-  const publishedSnapshot = aggregate.snapshots.find(
-    (snapshot) => snapshot.id === aggregate.project.publishedSnapshotId,
-  );
+  const activePublication =
+    await current.repository.getActiveCompiledPublication(P9_05A_PROJECT_ID);
+  if (
+    activePublication &&
+    activePublication.pointer.publishedSnapshotId !== aggregate.project.publishedSnapshotId
+  ) {
+    return null;
+  }
+  const publishedSnapshot =
+    activePublication?.publishedSnapshot ??
+    aggregate.snapshots.find((snapshot) => snapshot.id === aggregate.project.publishedSnapshotId);
   if (!publishedSnapshot) return null;
   return {
     project: structuredClone(aggregate.project),
