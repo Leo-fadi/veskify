@@ -56,8 +56,9 @@ persistence, an authoritative publishing gateway, a deterministic publish compil
 home, collection, and product-detail rendering.
 
 The product remains **Partial**. Phase 9 is closed by product-owner handoff, and P10A is
-substantially implemented but not closed. Atomic compiled-artifact persistence and rollback and
-complete retained publication evidence remain. The
+substantially implemented but not closed. Atomic compiled-artifact persistence and
+restore-to-draft/explicit-republish rollback are implemented; complete retained publication
+evidence remains. The
 accepted-AI acceptance-to-receipt and active gateway chain is composed, but
 final compiler-correlated retained publication evidence remains a separate closure gate. The current
 merchant editor does not yet expose the governed routing and scoped
@@ -189,7 +190,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Accepted-AI receipt-to-gateway composition           | **Baseline** | Server acceptance mints durable create-once authority used by active prepare/confirm. |
 | Authoritative merchant publishing gateway            | **Baseline** | Server-side auth, permission, preparation, confirmation, and idempotency exist. |
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
-| Compiled-artifact persistence and rollback           | **Planned**  | P10A-08C-02B owns atomic artifact/version history and rollback.                  |
+| Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published snapshot routes render; final compiler-correlated evidence remains. |
 | Commercial storefront design system                  | **Planned**  | P10B owns the first commercial visual-quality claim.                            |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
@@ -390,11 +391,24 @@ write-free and provider-free. It validates component/profile/renderer reachabili
 protected commerce, routes, locales, assets, accessibility, and migrations. Confirmation reloads
 authority and recompiles; any identity drift fails before publication.
 
-### 9.3 Remaining publication closure
+### 9.3 Atomic compiled publication and rollback
 
-P10A-08C-02B must atomically persist the immutable compiled artifact with publication operation,
-history, active artifact/version pointer, and safe rollback/republish authority. This compiled
-artifact is derived publication state, not another editable model.
+P10A-08C-02B atomically persists the canonical published snapshot, immutable compiled artifact,
+append-only published version/history, completed publication operation, and active
+artifact/version pointer through the existing repository transaction. The artifact retains the
+exact deterministic compiler result and receipt, source snapshot fingerprint, manual or accepted-AI
+lineage, compiler and registry/profile authority, route/locale/asset/commerce fingerprints,
+operation identity, timestamp, and integrity fingerprint. Reads validate integrity and all
+correlated identities. Stale active-version, draft, receipt, or compiler authority and injected
+artifact/version/pointer failures leave the prior live state unchanged.
+
+Rollback restores a selected historical published snapshot as a new canonical draft while the
+current live version remains unchanged. Only a later explicit Publish performs a fresh compilation,
+creates a new immutable version, and advances the active pointer. An older artifact is never
+repointed or reused as a new publication. These derived records are not another editable model or
+commerce snapshot.
+
+### 9.4 Remaining publication closure
 
 P10A-08D-02 must retain final browser and human evidence for gateway/compiler publication of home,
 collection, and PDP routes, plus failure/no-partial-write, active-version, rollback, republish, and
@@ -621,7 +635,6 @@ Version 1.3.0 does not claim:
 - that P10A is closed;
 - that a successful retained P10A controlled real-provider case exists;
 - that governed internal routing is wired into the normal merchant editor;
-- that immutable compiled artifacts, active-version rollback, and republish are implemented;
 - that final compiler-correlated home, collection, and PDP publication evidence is retained;
 - that the Vesko OpenAPI contract is sufficient for production integration;
 - that raw Vesko Puck persistence is compatible with `StorefrontSnapshot`;

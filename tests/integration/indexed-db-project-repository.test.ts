@@ -1,6 +1,7 @@
 import "fake-indexeddb/auto";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deleteDB, openDB } from "idb";
+import { confirmPublish, preparePublish } from "@/application/publishing";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import { projectSchema } from "@/domain/project";
 import { canonicalStorefrontContentFingerprint } from "@/domain/storefront";
@@ -297,6 +298,90 @@ runProjectRepositoryContract("IndexedDbProjectRepository", () =>
 );
 
 describe("IndexedDbProjectRepository persistence", () => {
+  it.each(["artifact", "version", "pointer"] as const)(
+    "aborts the complete IndexedDB transaction when %s persistence fails",
+    async (failurePoint) => {
+      const databaseName = testDatabaseName(`compiled-failure-${failurePoint}`);
+      let injected: typeof failurePoint | null = null;
+      const repository = openRepository(databaseName, {
+        failAtomicPublicationAt(point) {
+          if (point === injected) throw new Error(`Injected ${point} persistence failure.`);
+        },
+      });
+      const projectId = aurumNordicSeed.project.id;
+      await makePublishable(repository, `baseline-${failurePoint}`);
+      const baselinePreparation = await preparePublish(projectId, repository, {
+        createPreparationId: () => `publish_preparation_indexed_baseline_${failurePoint}`,
+      });
+      await confirmPublish(baselinePreparation, repository);
+      const activeBefore = await repository.getActiveCompiledPublication(projectId);
+      const versionsBefore = await repository.listPublishedStorefrontVersions(projectId);
+      await makePublishable(repository, `candidate-${failurePoint}`);
+      const preparation = await preparePublish(projectId, repository, {
+        createPreparationId: () => `publish_preparation_indexed_failure_${failurePoint}`,
+      });
+      const aggregateBefore = await repository.get(projectId);
+      injected = failurePoint;
+
+      await expect(confirmPublish(preparation, repository)).rejects.toMatchObject({
+        code: "PUBLISH_CONFIRMATION_FAILED",
+      });
+      expect(await repository.get(projectId)).toEqual(aggregateBefore);
+      expect(await repository.getActiveCompiledPublication(projectId)).toEqual(activeBefore);
+      expect(await repository.listPublishedStorefrontVersions(projectId)).toEqual(versionsBefore);
+      const database = await openDB(databaseName, 5);
+      expect(
+        await database.getAllFromIndex("compiledPublicationArtifacts", "by-project", projectId),
+      ).toHaveLength(1);
+      database.close();
+    },
+  );
+
+  it("reloads exact compiled publication authority and fails closed on persisted tampering", async () => {
+    const databaseName = testDatabaseName("compiled-publication-reopen");
+    const repository = openRepository(databaseName);
+    const projectId = aurumNordicSeed.project.id;
+    await makePublishable(repository, "compiled-reload");
+    const preparation = await preparePublish(projectId, repository, {
+      createPreparationId: () => "publish_preparation_indexed_compiled_reload",
+    });
+    await confirmPublish(preparation, repository);
+    const active = await repository.getActiveCompiledPublication(projectId);
+    const versions = await repository.listPublishedStorefrontVersions(projectId);
+    expect(active).not.toBeNull();
+    expect(versions).toHaveLength(1);
+
+    await repository.close();
+    const reopened = openRepository(databaseName);
+    await expect(reopened.getActiveCompiledPublication(projectId)).resolves.toEqual(active);
+    await expect(reopened.listPublishedStorefrontVersions(projectId)).resolves.toEqual(versions);
+    await reopened.close();
+
+    const database = await openDB(databaseName, 5);
+    const transaction = database.transaction(
+      ["compiledPublicationArtifacts", "publishedStorefrontVersions"],
+      "readwrite",
+    );
+    await transaction.objectStore("compiledPublicationArtifacts").put({
+      ...active!.artifact,
+      createdAt: "2026-08-07T12:00:00.000Z",
+    });
+    await transaction.objectStore("publishedStorefrontVersions").put({
+      ...active!.version,
+      publishedAt: "2026-08-07T12:00:00.000Z",
+    });
+    await transaction.done;
+    database.close();
+
+    const corrupted = openRepository(databaseName);
+    await expect(corrupted.getActiveCompiledPublication(projectId)).rejects.toMatchObject({
+      code: "COMPILED_PUBLICATION_INTEGRITY_FAILED",
+    });
+    await expect(corrupted.listPublishedStorefrontVersions(projectId)).rejects.toMatchObject({
+      code: "COMPILED_PUBLICATION_INTEGRITY_FAILED",
+    });
+  });
+
   it("persists the publication operation atomically with publication and survives reopen", async () => {
     const databaseName = testDatabaseName("publication-operation-reopen");
     const repository = openRepository(databaseName);
@@ -355,7 +440,7 @@ describe("IndexedDbProjectRepository persistence", () => {
     );
     expect(loaded.snapshotHistoryMetadata).toEqual(created.snapshotHistoryMetadata);
     const database = await openDB(databaseName);
-    expect(database.version).toBe(4);
+    expect(database.version).toBe(5);
     const transaction = database.transaction(
       [
         "projects",

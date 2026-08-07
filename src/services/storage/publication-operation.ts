@@ -58,6 +58,8 @@ export const publicationOperationRecordSchema = publicationOperationWriteObjectS
     operationKey: z.string().min(1),
     committedProjectRevision: z.number().int().nonnegative(),
     publishedSnapshotId: idSchema,
+    publishedVersionId: idSchema.optional(),
+    compiledArtifactId: idSchema.optional(),
   })
   .strict()
   .superRefine(refinePublicationResultIdentity);
@@ -116,6 +118,10 @@ export function completePublicationOperation(
   input: PublicationOperationWrite,
   committedProjectRevision: number,
   publishedSnapshotId: string,
+  compiledPublication?: Readonly<{
+    publishedVersionId: string;
+    compiledArtifactId: string;
+  }>,
 ): PublicationOperationRecord {
   const operation = parsePublicationOperationWrite(input);
   return parsePublicationOperationRecord({
@@ -123,6 +129,7 @@ export function completePublicationOperation(
     operationKey: publicationOperationKey(operation),
     committedProjectRevision,
     publishedSnapshotId,
+    ...compiledPublication,
   });
 }
 

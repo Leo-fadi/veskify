@@ -375,6 +375,19 @@ describe("P10A-08B-02 accepted-AI acceptance-to-receipt wiring", () => {
     });
     expect(published.aggregate.project.revision).toBe(setup.planningInput.project.revision + 1);
     expect(setup.resolveCurrentAuthority).toHaveBeenCalledTimes(2);
+    const active = await setup.projectRepository.getActiveCompiledPublication(
+      setup.request.projectId,
+    );
+    expect(active?.artifact.authority).toMatchObject({
+      kind: "accepted-ai",
+      receiptId: acceptance.receiptId,
+      proposalId: setup.proposal.id,
+    });
+    expect(active?.artifact.compileReceipt).toMatchObject({
+      sourceAuthorityKind: "accepted-ai",
+      acceptedReceiptId: acceptance.receiptId,
+    });
+    expect(active?.version.authority.kind).toBe("accepted-ai");
   });
 
   it("fails closed before publication when current proposal authority changes after acceptance", async () => {

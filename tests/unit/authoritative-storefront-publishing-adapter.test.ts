@@ -307,11 +307,19 @@ describe("P9-05B authoritative storefront publishing adapter", () => {
     });
     const sequentialReplay = await reloadedAdapter.publish(request);
     const afterReplay = await harness.repository.get(aurumNordicSeed.project.id);
+    const activeAfterReplay = await harness.repository.getActiveCompiledPublication(
+      aurumNordicSeed.project.id,
+    );
+    const versionsAfterReplay = await harness.repository.listPublishedStorefrontVersions(
+      aurumNordicSeed.project.id,
+    );
 
     expect(concurrentReplay).toEqual(first);
     expect(sequentialReplay).toEqual(first);
     expect(publish).toHaveBeenCalledTimes(1);
     expect(afterReplay).toEqual(afterFirst);
+    expect(versionsAfterReplay).toHaveLength(1);
+    expect(activeAfterReplay?.version.id).toBe(versionsAfterReplay[0].id);
     expect(afterFirst.snapshotHistoryMetadata).toHaveLength(
       (before.snapshotHistoryMetadata?.length ?? 0) + 2,
     );

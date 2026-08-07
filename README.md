@@ -6,9 +6,9 @@ read-only canonical Vesko commerce data into a governed, editable, and explicitl
 storefront.
 
 The overall product is **Partial**. Phase 9 is closed by product-owner handoff. P10A grounded
-orchestration and publishing closure is active and substantially implemented, but controlled
-real-provider acceptance, accepted-AI receipt wiring, atomic compiled publication/rollback, and
-complete publication evidence remain.
+orchestration and publishing closure is active and substantially implemented. Controlled
+real-provider acceptance, accepted-AI receipt wiring, and atomic compiled publication/rollback are
+implemented; complete retained publication evidence and the P10A closure record remain.
 
 ## Product boundary
 
@@ -38,7 +38,8 @@ The repository includes:
 - validated proposal review, atomic acceptance, undo/redo, draft save, history, and restore;
 - isolated Puck/editor, preview, and published route projections;
 - an authoritative server-side merchant publishing gateway;
-- deterministic publication compilation and published home, collection, and PDP rendering;
+- deterministic publication compilation, atomic immutable artifact/version persistence,
+  restore-to-draft/explicit-republish rollback, and published home, collection, and PDP rendering;
 - deterministic, integration, and browser evidence for the stated capabilities.
 
 Merchant-facing wiring of governed routing, clarification, and scoped execution belongs to P10C.

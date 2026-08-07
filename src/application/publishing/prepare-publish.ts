@@ -11,7 +11,10 @@ import {
   canonicalStorefrontContentFingerprint,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
-import type { ProjectRepository } from "@/services/storage";
+import type {
+  AuthoritativePublishingProjectRepository,
+  ProjectRepository,
+} from "@/services/storage";
 import { validateProjectAggregate } from "@/services/storage/repository-validation";
 import { createPublishChangeSummary } from "./change-summary";
 import {
@@ -70,6 +73,12 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
+function supportsCompiledPublicationAuthority(
+  repository: ProjectRepository,
+): repository is AuthoritativePublishingProjectRepository {
+  return "getActiveCompiledPublication" in repository;
+}
+
 export async function preparePublish(
   projectId: string,
   repository: ProjectRepository,
@@ -77,6 +86,9 @@ export async function preparePublish(
 ): Promise<PublishPreparation> {
   try {
     const aggregate = validateProjectAggregate(await repository.get(projectId));
+    const activePublication = supportsCompiledPublicationAuthority(repository)
+      ? await repository.getActiveCompiledPublication(projectId)
+      : null;
     const draft = currentSnapshot(aggregate.snapshots, aggregate.project.draftSnapshotId);
     const published = currentSnapshot(aggregate.snapshots, aggregate.project.publishedSnapshotId);
     const preparedAt = (options.now?.() ?? new Date()).toISOString();
@@ -175,6 +187,7 @@ export async function preparePublish(
       },
       authority,
       compilation: preparedPublishCompilation(compilation),
+      expectedActivePublicationVersionId: activePublication?.version.id ?? null,
       changeSummary: createPublishChangeSummary(published, draft),
       publishPermitted: !canonicalStorefrontContentEqual(published, draft),
     });

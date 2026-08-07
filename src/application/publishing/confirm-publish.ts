@@ -13,6 +13,7 @@ import {
 } from "@/domain/storefront";
 import {
   DraftConflictError,
+  ActivePublicationConflictError,
   NoStorefrontChangesError,
   PublishedConflictError,
   PublishContentConflictError,
@@ -94,7 +95,8 @@ function isStaleRepositoryError(cause: unknown): boolean {
     cause instanceof RevisionConflictError ||
     cause instanceof DraftConflictError ||
     cause instanceof PublishedConflictError ||
-    cause instanceof PublishContentConflictError
+    cause instanceof PublishContentConflictError ||
+    cause instanceof ActivePublicationConflictError
   );
 }
 
@@ -111,6 +113,7 @@ export async function confirmPublish(
 
   let latest: ProjectAggregate;
   let acceptedReceipt: AcceptedSnapshotPublishReceipt | null = null;
+  let currentCompilation: ReturnType<typeof compileStorefrontPublication>;
   try {
     latest = validateProjectAggregate(await repository.get(preparation.projectId));
     assertCurrentPreparation(preparation, latest);
@@ -141,7 +144,7 @@ export async function confirmPublish(
       assertAcceptedSnapshotReceiptCurrent(receipt, latest, currentAuthority);
     }
     const draft = snapshotById(latest, latest.project.draftSnapshotId);
-    const currentCompilation = compileStorefrontPublication(
+    currentCompilation = compileStorefrontPublication(
       createCurrentPublishCompilerInput({
         aggregate: latest,
         snapshot: draft,
@@ -173,12 +176,36 @@ export async function confirmPublish(
 
   let aggregate: ProjectAggregate;
   try {
+    const publicationOperation =
+      options.publicationOperation ??
+      ({
+        tenantId: "tenant_standalone",
+        merchantId: "merchant_standalone",
+        organizationId: "organization_standalone",
+        storeId: "store_standalone",
+        storefrontProjectId: preparation.projectId,
+        operationType: "publish",
+        requestId: preparation.preparationId,
+        requestFingerprint: `standalone-publication-${preparation.compilation.receipt.fingerprint}`,
+        result: {
+          requestId: preparation.preparationId,
+          storefrontProjectId: preparation.projectId,
+          publishedRevision: `standalone-snapshot-revision-${preparation.expectedProjectRevision + 1}`,
+          status: "published",
+        },
+      } satisfies PublicationOperationWrite);
     aggregate = validateProjectAggregate(
       await repository.publish(preparation.projectId, {
         projectRevision: preparation.expectedProjectRevision,
         draft: preparation.expectedDraft,
         published: preparation.expectedPublished,
-        ...(options.publicationOperation ? { operation: options.publicationOperation } : {}),
+        operation: publicationOperation,
+        compiledPublication: {
+          compilation: currentCompilation,
+          authority: preparation.authority,
+          operation: publicationOperation,
+          expectedActiveVersionId: preparation.expectedActivePublicationVersionId,
+        },
       }),
     );
   } catch (cause) {

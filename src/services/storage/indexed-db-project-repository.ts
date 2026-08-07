@@ -49,8 +49,22 @@ import {
   restoreHistoryMetadata,
   type SnapshotHistoryMetadata,
 } from "./snapshot-history-metadata";
+import {
+  ActivePublicationConflictError,
+  assertPublishedStorefrontVersionIntegrity,
+  CompiledPublicationIntegrityError,
+  createAtomicCompiledPublicationRecords,
+  parseActivePublishedStorefrontPointer,
+  parseAtomicCompiledPublicationWrite,
+  parseCompiledPublicationArtifact,
+  parsePublishedStorefrontVersion,
+  type ActivePublishedStorefrontPointer,
+  type AtomicPublicationFailurePoint,
+  type CompiledPublicationArtifact,
+  type PublishedStorefrontVersion,
+} from "./compiled-publication";
 
-const DATABASE_VERSION = 4;
+const DATABASE_VERSION = 5;
 export const VESKIFY_DATABASE_NAME = "veskify";
 
 interface VeskifyDatabase extends DBSchema {
@@ -86,6 +100,20 @@ interface VeskifyDatabase extends DBSchema {
     value: PublicationOperationRecord;
     indexes: { "by-project": string };
   };
+  compiledPublicationArtifacts: {
+    key: string;
+    value: CompiledPublicationArtifact;
+    indexes: { "by-project": string };
+  };
+  publishedStorefrontVersions: {
+    key: string;
+    value: PublishedStorefrontVersion;
+    indexes: { "by-project": string };
+  };
+  activePublishedStorefrontPointers: {
+    key: string;
+    value: ActivePublishedStorefrontPointer;
+  };
 }
 
 function managedDraftProvenance(projectId: string, snapshotId: string) {
@@ -108,6 +136,7 @@ export type IndexedDbProjectRepositoryOptions = {
   databaseName?: string;
   createSnapshotId?: (input: SnapshotIdentityInput) => string;
   createTimestamp?: (input: SnapshotTimeInput) => string;
+  failAtomicPublicationAt?: (point: AtomicPublicationFailurePoint) => void;
 };
 
 function clone<T>(value: T): T {
@@ -362,12 +391,14 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
   readonly #databaseName: string;
   readonly #createSnapshotId: NonNullable<IndexedDbProjectRepositoryOptions["createSnapshotId"]>;
   readonly #createTimestamp: NonNullable<IndexedDbProjectRepositoryOptions["createTimestamp"]>;
+  readonly #failAtomicPublicationAt?: IndexedDbProjectRepositoryOptions["failAtomicPublicationAt"];
   #databasePromise?: Promise<IDBPDatabase<VeskifyDatabase>>;
 
   constructor(options: IndexedDbProjectRepositoryOptions = {}) {
     this.#databaseName = options.databaseName ?? VESKIFY_DATABASE_NAME;
     this.#createSnapshotId = options.createSnapshotId ?? defaultSnapshotId;
     this.#createTimestamp = options.createTimestamp ?? defaultTimestamp;
+    this.#failAtomicPublicationAt = options.failAtomicPublicationAt;
   }
 
   async list(): Promise<ProjectSummary[]> {
@@ -428,6 +459,112 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
       publicationOperationKey(identity),
     );
     return operation ? clone(parsePublicationOperationRecord(operation)) : null;
+  }
+
+  async getCompiledPublicationArtifact(
+    projectId: string,
+    artifactId: string,
+  ): Promise<CompiledPublicationArtifact | null> {
+    const database = await this.#database();
+    if (!(await database.get("projects", projectId))) throw new ProjectNotFoundError(projectId);
+    const artifact = await database.get("compiledPublicationArtifacts", artifactId);
+    if (!artifact) return null;
+    const parsed = parseCompiledPublicationArtifact(artifact);
+    if (parsed.projectId !== projectId) throw new CompiledPublicationIntegrityError();
+    return clone(parsed);
+  }
+
+  async listPublishedStorefrontVersions(projectId: string): Promise<PublishedStorefrontVersion[]> {
+    const database = await this.#database();
+    const transaction = database.transaction(
+      ["projects", "snapshots", "compiledPublicationArtifacts", "publishedStorefrontVersions"],
+      "readonly",
+    );
+    if (!(await transaction.objectStore("projects").get(projectId))) {
+      throw new ProjectNotFoundError(projectId);
+    }
+    const versions = await transaction
+      .objectStore("publishedStorefrontVersions")
+      .index("by-project")
+      .getAll(projectId);
+    const parsed = [] as PublishedStorefrontVersion[];
+    for (const versionValue of versions) {
+      const version = parsePublishedStorefrontVersion(versionValue);
+      const artifact = await transaction
+        .objectStore("compiledPublicationArtifacts")
+        .get(version.artifactId);
+      const snapshot = await transaction.objectStore("snapshots").get(version.publishedSnapshot.id);
+      if (!artifact || !snapshot) throw new CompiledPublicationIntegrityError();
+      assertPublishedStorefrontVersionIntegrity(version, artifact, snapshot);
+      parsed.push(version);
+    }
+    await transaction.done;
+    return parsed.sort((left, right) => left.sequence - right.sequence).map(clone);
+  }
+
+  async getActiveCompiledPublication(projectId: string) {
+    const database = await this.#database();
+    const transaction = database.transaction(
+      [
+        "projects",
+        "snapshots",
+        "compiledPublicationArtifacts",
+        "publishedStorefrontVersions",
+        "activePublishedStorefrontPointers",
+      ],
+      "readonly",
+    );
+    if (!(await transaction.objectStore("projects").get(projectId))) {
+      throw new ProjectNotFoundError(projectId);
+    }
+    const storedPointer = await transaction
+      .objectStore("activePublishedStorefrontPointers")
+      .get(projectId);
+    if (!storedPointer) {
+      await transaction.done;
+      return null;
+    }
+    const pointer = parseActivePublishedStorefrontPointer(storedPointer);
+    const storedVersion = await transaction
+      .objectStore("publishedStorefrontVersions")
+      .get(pointer.versionId);
+    const storedArtifact = await transaction
+      .objectStore("compiledPublicationArtifacts")
+      .get(pointer.artifactId);
+    const publishedSnapshot = await transaction
+      .objectStore("snapshots")
+      .get(pointer.publishedSnapshotId);
+    await transaction.done;
+    if (!storedVersion || !storedArtifact || !publishedSnapshot)
+      throw new CompiledPublicationIntegrityError();
+    const version = parsePublishedStorefrontVersion(storedVersion);
+    const artifact = parseCompiledPublicationArtifact(storedArtifact);
+    assertPublishedStorefrontVersionIntegrity(version, artifact, publishedSnapshot);
+    if (
+      pointer.projectId !== projectId ||
+      version.projectId !== projectId ||
+      artifact.projectId !== projectId ||
+      version.integrityFingerprint !== pointer.versionFingerprint ||
+      artifact.integrityFingerprint !== pointer.artifactFingerprint ||
+      version.artifactId !== artifact.id ||
+      version.publishedSnapshot.id !== publishedSnapshot.id ||
+      canonicalStorefrontContentFingerprint(publishedSnapshot) !==
+        version.publishedSnapshot.fingerprint
+    )
+      throw new CompiledPublicationIntegrityError();
+    return clone({ pointer, version, artifact, publishedSnapshot });
+  }
+
+  async restorePublishedStorefrontVersion(
+    projectId: string,
+    versionId: string,
+    expectation: RestoreExpectation,
+  ): Promise<StorefrontSnapshot> {
+    const version = (await this.listPublishedStorefrontVersions(projectId)).find(
+      ({ id }) => id === versionId,
+    );
+    if (!version) throw new CompiledPublicationIntegrityError();
+    return this.restore(projectId, version.publishedSnapshot.id, expectation);
   }
 
   async create(input: ProjectAggregate): Promise<ProjectAggregate> {
@@ -498,6 +635,9 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
         "snapshotProvenance",
         "snapshotHistoryMetadata",
         "publicationOperations",
+        "compiledPublicationArtifacts",
+        "publishedStorefrontVersions",
+        "activePublishedStorefrontPointers",
       ],
       "readwrite",
     );
@@ -507,6 +647,9 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
     const provenance = transaction.objectStore("snapshotProvenance");
     const historyMetadata = transaction.objectStore("snapshotHistoryMetadata");
     const publicationOperations = transaction.objectStore("publicationOperations");
+    const compiledArtifacts = transaction.objectStore("compiledPublicationArtifacts");
+    const publishedVersions = transaction.objectStore("publishedStorefrontVersions");
+    const activePointers = transaction.objectStore("activePublishedStorefrontPointers");
 
     try {
       const existingSnapshots = await snapshots.index("by-project").getAll(projectId);
@@ -543,6 +686,13 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
       for (const operation of await publicationOperations.index("by-project").getAll(projectId)) {
         await publicationOperations.delete(operation.operationKey);
       }
+      for (const artifact of await compiledArtifacts.index("by-project").getAll(projectId)) {
+        await compiledArtifacts.delete(artifact.id);
+      }
+      for (const version of await publishedVersions.index("by-project").getAll(projectId)) {
+        await publishedVersions.delete(version.id);
+      }
+      await activePointers.delete(projectId);
       await projects.delete(projectId);
       const remainingSnapshots = await snapshots.getAll();
       for (const catalogueId of catalogueIds) {
@@ -692,6 +842,9 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
         "snapshotProvenance",
         "snapshotHistoryMetadata",
         "publicationOperations",
+        "compiledPublicationArtifacts",
+        "publishedStorefrontVersions",
+        "activePublishedStorefrontPointers",
       ],
       "readwrite",
     );
@@ -700,11 +853,28 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
     const provenanceStore = transaction.objectStore("snapshotProvenance");
     const historyMetadataStore = transaction.objectStore("snapshotHistoryMetadata");
     const publicationOperationsStore = transaction.objectStore("publicationOperations");
+    const compiledPublicationArtifactsStore = transaction.objectStore(
+      "compiledPublicationArtifacts",
+    );
+    const publishedStorefrontVersionsStore = transaction.objectStore("publishedStorefrontVersions");
+    const activePublishedStorefrontPointersStore = transaction.objectStore(
+      "activePublishedStorefrontPointers",
+    );
 
     try {
       const operation = expectation.operation
         ? parsePublicationOperationWrite(expectation.operation)
         : undefined;
+      const compiledPublication = expectation.compiledPublication
+        ? parseAtomicCompiledPublicationWrite(expectation.compiledPublication)
+        : undefined;
+      if (compiledPublication && !operation) throw new CompiledPublicationIntegrityError();
+      if (
+        compiledPublication &&
+        publicationOperationKey(compiledPublication.operation) !==
+          publicationOperationKey(operation!)
+      )
+        throw new CompiledPublicationIntegrityError();
       if (operation && operation.storefrontProjectId !== projectId) {
         throw repositoryValidationError(
           "Publication operation references a different storefront project.",
@@ -849,8 +1019,36 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
           ...publishHistoryMetadata(projectId, published.id, synchronizedDraft.id),
         ],
       });
+      const currentPointer = await activePublishedStorefrontPointersStore.get(projectId);
+      const currentVersionId = currentPointer?.versionId ?? null;
+      if (compiledPublication && compiledPublication.expectedActiveVersionId !== currentVersionId) {
+        throw new ActivePublicationConflictError(
+          compiledPublication.expectedActiveVersionId,
+          currentVersionId,
+        );
+      }
+      const compiledRecords = compiledPublication
+        ? createAtomicCompiledPublicationRecords({
+            write: compiledPublication,
+            publishedSnapshot: published,
+            predecessorVersionId: currentVersionId,
+            sequence:
+              (await publishedStorefrontVersionsStore.index("by-project").count(projectId)) + 1,
+            createdAt,
+          })
+        : null;
       const completedOperation = operation
-        ? completePublicationOperation(operation, nextProject.revision, published.id)
+        ? completePublicationOperation(
+            operation,
+            nextProject.revision,
+            published.id,
+            compiledRecords
+              ? {
+                  publishedVersionId: compiledRecords.version.id,
+                  compiledArtifactId: compiledRecords.artifact.id,
+                }
+              : undefined,
+          )
         : undefined;
 
       await snapshotsStore.add(published);
@@ -866,6 +1064,14 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
       }
       if (completedOperation) {
         await publicationOperationsStore.add(completedOperation);
+      }
+      if (compiledRecords) {
+        this.#failAtomicPublicationAt?.("artifact");
+        await compiledPublicationArtifactsStore.add(compiledRecords.artifact);
+        this.#failAtomicPublicationAt?.("version");
+        await publishedStorefrontVersionsStore.add(compiledRecords.version);
+        this.#failAtomicPublicationAt?.("pointer");
+        await activePublishedStorefrontPointersStore.put(compiledRecords.pointer);
       }
       for (const removedSnapshotId of compacted.removedSnapshotIds) {
         await snapshotsStore.delete(removedSnapshotId);
@@ -1058,6 +1264,19 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
             keyPath: "operationKey",
           });
           publicationOperations.createIndex("by-project", "storefrontProjectId");
+        }
+        if (oldVersion < 5) {
+          const artifacts = database.createObjectStore("compiledPublicationArtifacts", {
+            keyPath: "id",
+          });
+          artifacts.createIndex("by-project", "projectId");
+          const versions = database.createObjectStore("publishedStorefrontVersions", {
+            keyPath: "id",
+          });
+          versions.createIndex("by-project", "projectId");
+          database.createObjectStore("activePublishedStorefrontPointers", {
+            keyPath: "projectId",
+          });
         }
       },
     });
