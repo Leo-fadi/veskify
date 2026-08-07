@@ -22,6 +22,7 @@ import { recordStorefrontDiagnostic } from "@/application/ai-storefront-generati
 import {
   compileWholeStorefrontProposal,
   projectWholeStorefrontRuntimePage,
+  type WholeStorefrontProposal,
   type WholeStorefrontRuntimeComponent,
   WholeStorefrontSnapshotMaterializationError,
   WholeStorefrontProposalError,
@@ -115,8 +116,15 @@ export type ServerWholeStorefrontPlanningContext = Readonly<{
   ) => Promise<unknown>;
   claimProposal?: () => void;
   releaseProposal?: () => void;
-  recordValidatedProposal?: (response: AiStorefrontProviderResponse) => void;
+  recordValidatedProposal?: (record: ValidatedServerWholeStorefrontProposalRecord) => void;
   requiresAuthoritativePlanningFingerprint?: boolean;
+}>;
+
+export type ValidatedServerWholeStorefrontProposalRecord = Readonly<{
+  response: AiStorefrontProviderResponse;
+  plan: WholeStorefrontGenerationPlan;
+  proposal: WholeStorefrontProposal;
+  planningInput: WholeStorefrontPlanningInput;
 }>;
 
 export interface ServerWholeStorefrontPlanningAuthority {
@@ -805,6 +813,10 @@ export function createServerWholeStorefrontPlanningHandler({
         ...canonicalRequest,
         assetPlacementOperations: plan.approvedAssetPlacements,
       });
+      const authoritativeProposal = compileWholeStorefrontProposal({
+        plan,
+        planningInput: context.planningInput,
+      });
       const envelope = validateAiStorefrontProviderResponse(
         proposalRequest,
         await context.proposalEnvelope(proposalRequest, plan),
@@ -818,7 +830,12 @@ export function createServerWholeStorefrontPlanningHandler({
       }
       stage = "protected_state_validated";
       diagnostic(stage, "success");
-      context.recordValidatedProposal?.(envelope);
+      context.recordValidatedProposal?.({
+        response: envelope,
+        plan,
+        proposal: authoritativeProposal,
+        planningInput: context.planningInput,
+      });
       proposalRecorded = Boolean(context.recordValidatedProposal);
       const completed = response(200, responseSchema.parse({ ok: true, proposal: envelope }));
       diagnostic("response_completed", "success", completed.status);
@@ -1227,7 +1244,7 @@ export function createStandaloneServerWholeStorefrontPlanningAuthority({
           });
         },
         requiresAuthoritativePlanningFingerprint: true,
-        recordValidatedProposal: (response) => {
+        recordValidatedProposal: ({ response }) => {
           const proposed = response.proposal.proposedStorefront;
           const proposedPages = new Map(proposed.pages.map((page) => [page.id, page]));
           const candidate = storefrontSnapshotSchema.parse({

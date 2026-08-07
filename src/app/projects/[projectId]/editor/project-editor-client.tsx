@@ -17,6 +17,7 @@ import {
   type StorefrontCommerceRouteAdapter,
 } from "@/integrations/storefront-commerce-routes";
 import {
+  acceptP905bLocalDemoProposal,
   P905bLocalDemoSynchronizationClientError,
   synchronizeP905bLocalDemoAggregate,
 } from "@/integrations/ai/p9-05b-local-demo-client";
@@ -39,7 +40,12 @@ import {
 import { brandSystemToCssVariables, type BrandSystem } from "@/domain/design-system";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
 import type { AiStorefrontProposal } from "@/application/ai-storefront";
-import type { PageModel, PageType, StorefrontSnapshot } from "@/domain/storefront";
+import {
+  canonicalValueFingerprint,
+  type PageModel,
+  type PageType,
+  type StorefrontSnapshot,
+} from "@/domain/storefront";
 import { VeskifyPuckCanvas } from "@/integrations/puck/veskify-puck-editor";
 import {
   createBrowserProjectRepository,
@@ -70,7 +76,10 @@ import {
   canonicalPagesEqual,
   changedPagesForActiveDraft,
   composeActiveEditorDraft,
+  establishAcceptedAiReceiptClientAuthority,
   proposalStorefrontPreview,
+  reconcileAcceptedAiReceiptClientAuthority,
+  type AcceptedAiReceiptClientAuthority,
 } from "./editor-draft-state";
 import {
   storefrontProposalHistoryStatus,
@@ -337,7 +346,16 @@ export function ProjectEditorClient({
   const [authoritativeRevision, setAuthoritativeRevision] = useState<number | null>(
     localDemoBridge?.authoritativeRevision ?? null,
   );
+  const [acceptedReceiptAuthority, setAcceptedReceiptAuthority] =
+    useState<AcceptedAiReceiptClientAuthority>();
+  const pendingAcceptedReceiptAuthority = useRef<AcceptedAiReceiptClientAuthority | undefined>(
+    undefined,
+  );
   const savePending = useRef(false);
+  const commitCanonicalPageMutation = (update: Parameters<typeof setSessionPages>[0]): void => {
+    setAcceptedReceiptAuthority(undefined);
+    setSessionPages(update);
+  };
   const resolvedStorefrontAiProvider = useMemo(
     () =>
       storefrontAiProvider ??
@@ -429,6 +447,7 @@ export function ProjectEditorClient({
           setSessionBrandSystem(undefined);
           setImportedDemoProposal(localDemoBridge?.proposal ?? undefined);
           setAuthoritativeRevision(localDemoBridge?.authoritativeRevision ?? null);
+          setAcceptedReceiptAuthority(undefined);
           setResetKeys({});
           setValidationMessage("");
           setHistoryStatus("");
@@ -505,7 +524,10 @@ export function ProjectEditorClient({
       const committedPage =
         editorHistory?.commit(acceptedPage, "Apply design proposal") ??
         structuredClone(acceptedPage);
-      setSessionPages((current) => ({ ...current, [acceptedPage.id]: committedPage }));
+      commitCanonicalPageMutation((current) => ({
+        ...current,
+        [acceptedPage.id]: committedPage,
+      }));
       setValidationMessage("");
       setHistoryStatus("Proposal applied. You can undo this change.");
       setPageEditsAfterStorefront((current) => (agent.canUndoStorefront ? current + 1 : current));
@@ -515,19 +537,31 @@ export function ProjectEditorClient({
         [acceptedPage.id]: (current[acceptedPage.id] ?? 0) + 1,
       }));
     },
-    onStorefrontAccepted: async (snapshot) => {
+    onStorefrontAccepted: async ({ proposalId, acceptedSnapshot }) => {
+      pendingAcceptedReceiptAuthority.current = undefined;
       if (!localDemoBridge) return;
       if (authoritativeRevision === null || !readyState) {
         throw new P905bLocalDemoSynchronizationClientError("stale", 409);
       }
-      const synchronization = await synchronizeP905bLocalDemoAggregate({
+      const acceptance = await acceptP905bLocalDemoProposal({
         projectId,
         sessionId: localDemoBridge.sessionId,
-        expectedRevision: authoritativeRevision,
-        mode: "active",
-        aggregate: aggregateWithActiveDraft(readyState.aggregate, snapshot),
+        proposalId,
+        acceptanceActionId: `acceptance_action_${canonicalValueFingerprint({
+          sessionId: localDemoBridge.sessionId,
+          proposalId,
+          authoritativeRevision,
+        }).slice(-32)}`,
+        expectedAuthorityRevision: authoritativeRevision,
+        expectedProjectRevision: readyState.aggregate.project.revision,
+        expectedDraftId: readyState.draft.id,
+        expectedDraftRevision: readyState.draft.revision,
       });
-      setAuthoritativeRevision(synchronization.authoritativeRevision);
+      setAuthoritativeRevision(acceptance.authoritativeRevision);
+      pendingAcceptedReceiptAuthority.current = establishAcceptedAiReceiptClientAuthority(
+        acceptance.receiptId,
+        acceptedSnapshot,
+      );
     },
     onStorefrontHistorySnapshot: async (snapshot) => {
       if (!localDemoBridge) return;
@@ -545,6 +579,10 @@ export function ProjectEditorClient({
     },
     onStorefrontSnapshot: (snapshot, scope, action) => {
       if (!readyState) return;
+      setAcceptedReceiptAuthority(
+        action === "applied" ? pendingAcceptedReceiptAuthority.current : undefined,
+      );
+      pendingAcceptedReceiptAuthority.current = undefined;
       setSessionPages(
         Object.fromEntries(
           snapshot.pages.flatMap((snapshotPage) => {
@@ -583,6 +621,11 @@ export function ProjectEditorClient({
       setSaveState({ status: "idle" });
     },
   });
+
+  const usableAcceptedReceiptAuthority = reconcileAcceptedAiReceiptClientAuthority(
+    acceptedReceiptAuthority,
+    activeDraft,
+  );
 
   const retry = () => setAttempt((current) => current + 1);
   if (state.status === "loading") {
@@ -730,7 +773,10 @@ export function ProjectEditorClient({
   };
 
   const showHistoryPage = (nextPage: PageModel) => {
-    setSessionPages((current) => ({ ...current, [nextPage.id]: structuredClone(nextPage) }));
+    commitCanonicalPageMutation((current) => ({
+      ...current,
+      [nextPage.id]: structuredClone(nextPage),
+    }));
     if (
       selectedSectionId &&
       !nextPage.sections.some((section) => section.id === selectedSectionId)
@@ -764,7 +810,7 @@ export function ProjectEditorClient({
       setSelectedSectionId(undefined);
     }
     const committedPage = editorHistory?.commit(nextPage, "Edit page") ?? structuredClone(nextPage);
-    setSessionPages((current) => ({ ...current, [nextPage.id]: committedPage }));
+    commitCanonicalPageMutation((current) => ({ ...current, [nextPage.id]: committedPage }));
     setPageEditsAfterStorefront((current) => (agent.canUndoStorefront ? current + 1 : current));
     setValidationMessage("");
     setHistoryStatus("Change added. You can undo it from the editor toolbar.");
@@ -865,7 +911,7 @@ export function ProjectEditorClient({
     )
       return;
     const resetPage = editorHistory?.reset(originalPage) ?? structuredClone(originalPage);
-    setSessionPages((current) => {
+    commitCanonicalPageMutation((current) => {
       const next = { ...current };
       delete next[originalPage.id];
       return next;
@@ -1187,6 +1233,7 @@ export function ProjectEditorClient({
         published,
         pages,
       });
+      setAcceptedReceiptAuthority(undefined);
       setSessionPages((current) =>
         Object.fromEntries(
           Object.entries(current).filter(([pageId, sessionPage]) => {
@@ -1388,7 +1435,7 @@ export function ProjectEditorClient({
             <Button disabled={saveDisabled} onClick={() => void saveDraft()}>
               {saveState.status === "saving" ? text.actions.savingDraft : text.actions.saveDraft}
             </Button>
-            {hasUnsavedChanges ? (
+            {hasUnsavedChanges && !usableAcceptedReceiptAuthority ? (
               <span aria-disabled="true" className={styles.publishAction}>
                 {text.actions.publish}
               </span>
@@ -1396,7 +1443,7 @@ export function ProjectEditorClient({
               <Button
                 href={
                   localDemoBridge
-                    ? `/projects/${projectId}/publish?p9-05b-session=${encodeURIComponent(localDemoBridge.sessionId)}`
+                    ? `/projects/${projectId}/publish?p9-05b-session=${encodeURIComponent(localDemoBridge.sessionId)}${usableAcceptedReceiptAuthority ? `&accepted-receipt=${encodeURIComponent(usableAcceptedReceiptAuthority.receiptId)}` : ""}`
                     : `/projects/${projectId}/publish`
                 }
                 variant="primary"

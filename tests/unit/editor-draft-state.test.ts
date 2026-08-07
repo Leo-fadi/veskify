@@ -3,7 +3,9 @@ import { saveValidatedEditorDraft } from "@/application/draft-save";
 import {
   changedPagesForActiveDraft,
   composeActiveEditorDraft,
+  establishAcceptedAiReceiptClientAuthority,
   proposalStorefrontPreview,
+  reconcileAcceptedAiReceiptClientAuthority,
 } from "@/app/projects/[projectId]/editor/editor-draft-state";
 import { aurumNordicSeed } from "@/data/seed";
 import { InMemoryProjectRepository, type ProjectAggregate } from "@/services/storage";
@@ -52,6 +54,95 @@ function currentDraft(snapshot: StorefrontSnapshot) {
 }
 
 describe("P4-05D editor canonical draft state", () => {
+  it("invalidates accepted-AI authority across every canonical mutation family", () => {
+    const accepted = structuredClone(aurumNordicSeed.draftSnapshot);
+    const authority = establishAcceptedAiReceiptClientAuthority(
+      "accepted_receipt_exact_snapshot",
+      accepted,
+    );
+    const homeIndex = accepted.pages.findIndex((page) => page.type === "home");
+    const heroIndex = accepted.pages[homeIndex].sections.findIndex(
+      (section) => section.component === "hero",
+    );
+
+    const contentChange = structuredClone(accepted);
+    contentChange.pages[homeIndex].title.en = "Later merchant content";
+
+    const addedSection = structuredClone(accepted);
+    addedSection.pages[homeIndex].sections.splice(heroIndex + 1, 0, {
+      ...structuredClone(addedSection.pages[homeIndex].sections[heroIndex]),
+      id: "section_added_after_accepted_ai",
+    });
+
+    const removedSection = structuredClone(accepted);
+    removedSection.pages[homeIndex].sections.splice(heroIndex, 1);
+
+    const reorderedSections = structuredClone(accepted);
+    const [moved] = reorderedSections.pages[homeIndex].sections.splice(heroIndex, 1);
+    reorderedSections.pages[homeIndex].sections.splice(heroIndex + 1, 0, moved);
+
+    const brandChange = structuredClone(accepted);
+    brandChange.brandSystem.colors.primary = "#224466";
+
+    const assetChange = structuredClone(accepted);
+    const assetSection = assetChange.pages[homeIndex].sections[heroIndex];
+    assetSection.content = {
+      ...assetSection.content,
+      approvedAssetId: "asset_assigned_after_accepted_ai",
+    };
+
+    expect(reconcileAcceptedAiReceiptClientAuthority(authority, accepted)).toBe(authority);
+    for (const mutation of [
+      contentChange,
+      addedSection,
+      removedSection,
+      reorderedSections,
+      brandChange,
+      assetChange,
+    ]) {
+      expect(reconcileAcceptedAiReceiptClientAuthority(authority, mutation)).toBeUndefined();
+    }
+  });
+
+  it("never resurrects invalidated authority after undo/redo and accepts only a newly established receipt", () => {
+    const accepted = structuredClone(aurumNordicSeed.draftSnapshot);
+    const firstAuthority = establishAcceptedAiReceiptClientAuthority(
+      "accepted_receipt_first",
+      accepted,
+    );
+    const divergent = structuredClone(accepted);
+    divergent.brandSystem.spacing.density = "compact";
+
+    const invalidated = reconcileAcceptedAiReceiptClientAuthority(firstAuthority, divergent);
+    expect(invalidated).toBeUndefined();
+    expect(reconcileAcceptedAiReceiptClientAuthority(invalidated, accepted)).toBeUndefined();
+    expect(reconcileAcceptedAiReceiptClientAuthority(invalidated, divergent)).toBeUndefined();
+
+    const secondAuthority = establishAcceptedAiReceiptClientAuthority(
+      "accepted_receipt_second",
+      divergent,
+    );
+    expect(reconcileAcceptedAiReceiptClientAuthority(secondAuthority, divergent)).toEqual(
+      secondAuthority,
+    );
+    expect(secondAuthority.receiptId).not.toBe(firstAuthority.receiptId);
+  });
+
+  it("does not convert missing accepted-AI authority into manual publication authority", () => {
+    const accepted = structuredClone(aurumNordicSeed.draftSnapshot);
+    const authority = establishAcceptedAiReceiptClientAuthority(
+      "accepted_receipt_manual_separation",
+      accepted,
+    );
+    const changed = structuredClone(accepted);
+    changed.pages[0].title.fi = "Kauppiaan myöhempi muutos";
+
+    const reconciled = reconcileAcceptedAiReceiptClientAuthority(authority, changed);
+
+    expect(reconciled).toBeUndefined();
+    expect(reconciled).not.toEqual(expect.objectContaining({ kind: "manual" }));
+  });
+
   it("derives changed pages from the complete storefront, not only editor-visible pages", async () => {
     const aggregate = aggregateWithContentPage();
     const draft = aggregate.snapshots.find(

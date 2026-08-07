@@ -90,6 +90,150 @@ async function openPublish(page: Page, sessionId: string) {
   await page.getByRole("radio", { name: "English" }).check();
 }
 
+function acceptedAiAuthorityFromRequestBody(body: string | null) {
+  const value = JSON.parse(body ?? "null") as unknown;
+  if (
+    !value ||
+    typeof value !== "object" ||
+    !("request" in value) ||
+    !value.request ||
+    typeof value.request !== "object" ||
+    !("authority" in value.request) ||
+    !value.request.authority ||
+    typeof value.request.authority !== "object" ||
+    !("kind" in value.request.authority) ||
+    value.request.authority.kind !== "accepted-ai" ||
+    !("receiptId" in value.request.authority) ||
+    typeof value.request.authority.receiptId !== "string"
+  ) {
+    throw new Error("Publish preparation did not carry bounded accepted-AI authority.");
+  }
+  return { kind: "accepted-ai" as const, receiptId: value.request.authority.receiptId };
+}
+
+async function acceptGovernedProposal(page: Page) {
+  const sessionId = await resetSession(page);
+  const generated = await page.evaluate(
+    async ({ projectId: targetProjectId, sessionId, token }) => {
+      const response = await fetch("/api/demo/p9-05b/generate", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-veskify-p9-05b-demo-token": token,
+        },
+        body: JSON.stringify({
+          projectId: targetProjectId,
+          sessionId,
+          merchantInstruction: "Create a modern technical storefront for Lumo Atelier.",
+        }),
+      });
+      return { body: (await response.json()) as unknown, ok: response.ok };
+    },
+    { projectId, sessionId, token: demoToken },
+  );
+  expect(generated.ok).toBe(true);
+  if (
+    !generated.body ||
+    typeof generated.body !== "object" ||
+    !("editorRoute" in generated.body) ||
+    typeof generated.body.editorRoute !== "string"
+  ) {
+    throw new Error("Accepted-AI browser test did not receive an editor route.");
+  }
+
+  await page.goto(generated.body.editorRoute);
+  await page.getByRole("button", { name: /Accept and apply|Hyväksy ja käytä/ }).click();
+  const acceptanceResponse = page.waitForResponse(
+    (response) => response.url().includes("/api/demo/p9-05b/accept") && response.status() === 200,
+  );
+  await page
+    .getByRole("button", { name: /Apply storefront proposal|Ota kauppaehdotus käyttöön/ })
+    .click();
+  const acceptanceBody = (await (await acceptanceResponse).json()) as unknown;
+  expect(JSON.stringify(acceptanceBody)).not.toContain("snapshot");
+  expect(JSON.stringify(acceptanceBody)).not.toContain("runtime");
+  return { sessionId };
+}
+
+test("prepares accepted-AI publication and invalidates it after a later editor mutation", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  let providerCalls = 0;
+  page.on("request", (request) => {
+    if (request.url().includes("/api/demo/p9-05b/generate") || request.url().includes("/api/ai/")) {
+      providerCalls += 1;
+    }
+  });
+  await acceptGovernedProposal(page);
+
+  const publishLink = page.getByRole("link", { name: /Publish|Julkaise/, exact: true });
+  await expect(publishLink).toBeVisible();
+  await expect(publishLink).toHaveAttribute("href", /accepted-receipt=/);
+  const acceptedPublishHref = await publishLink.getAttribute("href");
+  if (!acceptedPublishHref) throw new Error("Accepted-AI publish link did not expose its route.");
+  const callsAfterAcceptance = providerCalls;
+  const publishPage = await page.context().newPage();
+  await publishPage.goto(acceptedPublishHref);
+  await expect(publishPage).toHaveURL(/accepted-receipt=/);
+  await publishPage.getByRole("radio", { name: "English" }).check();
+
+  const preparationRequest = publishPage.waitForRequest((request) => {
+    if (!request.url().includes("/api/storefront-publish") || request.method() !== "POST") {
+      return false;
+    }
+    return request.postData()?.includes('"action":"prepare"') ?? false;
+  });
+  await publishPage.getByRole("button", { name: "Review publish" }).click();
+  const prepareAuthority = acceptedAiAuthorityFromRequestBody(
+    (await preparationRequest).postData(),
+  );
+  expect(typeof prepareAuthority.receiptId).toBe("string");
+  expect(prepareAuthority).toEqual({
+    kind: "accepted-ai",
+    receiptId: prepareAuthority.receiptId,
+  });
+  await expect(publishPage.getByRole("heading", { name: "Confirm publication" })).toBeVisible();
+  await publishPage.close();
+
+  await page.getByRole("radio", { name: "English" }).check();
+  const canvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
+  await canvas.getByText(originalHeading, { exact: true }).click();
+  await expect(page.getByRole("radio", { name: "Selected section" })).toBeChecked({
+    timeout: 3_000,
+  });
+  await page.getByRole("button", { name: "Hide", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Homepage hero — Hidden" })).toBeVisible();
+
+  await expect(page.locator('a[href*="accepted-receipt="]')).toHaveCount(0);
+  await expect(
+    page.locator('[aria-disabled="true"]').filter({ hasText: /^Publish changes$/ }),
+  ).toBeVisible();
+  expect(providerCalls).toBe(callsAfterAcceptance);
+
+  await page.getByRole("button", { name: "Undo", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Homepage hero — Visible" })).toBeVisible();
+  await expect(page.locator('a[href*="accepted-receipt="]')).toHaveCount(0);
+  await expect(
+    page.locator('[aria-disabled="true"]').filter({ hasText: /^Publish changes$/ }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Redo", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Homepage hero — Hidden" })).toBeVisible();
+  await expect(page.locator('a[href*="accepted-receipt="]')).toHaveCount(0);
+  await expect(
+    page.locator('[aria-disabled="true"]').filter({ hasText: /^Publish changes$/ }),
+  ).toBeVisible();
+  expect(providerCalls).toBe(callsAfterAcceptance);
+
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(page.getByText("Draft saved successfully.")).toBeVisible();
+  const manualPublishLink = page.getByRole("link", { name: "Publish changes", exact: true });
+  await expect(manualPublishLink).toHaveAttribute("href", /p9-05b-session=/);
+  expect(await manualPublishLink.getAttribute("href")).not.toContain("accepted-receipt");
+  expect(providerCalls).toBe(callsAfterAcceptance);
+});
+
 test("reviews a saved draft, confirms publication, and opens the published storefront", async ({
   page,
 }) => {

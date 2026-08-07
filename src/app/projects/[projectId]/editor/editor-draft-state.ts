@@ -1,6 +1,35 @@
 import type { AiStorefrontProjection } from "@/application/ai-storefront";
 import type { BrandSystem } from "@/domain/design-system";
-import type { PageModel, StorefrontSnapshot } from "@/domain/storefront";
+import {
+  canonicalValueFingerprint,
+  type PageModel,
+  type StorefrontSnapshot,
+} from "@/domain/storefront";
+
+export type AcceptedAiReceiptClientAuthority = Readonly<{
+  receiptId: string;
+  acceptedSnapshotFingerprint: string;
+}>;
+
+export function establishAcceptedAiReceiptClientAuthority(
+  receiptId: string,
+  acceptedSnapshot: StorefrontSnapshot,
+): AcceptedAiReceiptClientAuthority {
+  return {
+    receiptId,
+    acceptedSnapshotFingerprint: canonicalValueFingerprint(acceptedSnapshot),
+  };
+}
+
+export function reconcileAcceptedAiReceiptClientAuthority(
+  authority: AcceptedAiReceiptClientAuthority | undefined,
+  activeSnapshot: StorefrontSnapshot | undefined,
+): AcceptedAiReceiptClientAuthority | undefined {
+  if (!authority || !activeSnapshot) return undefined;
+  return authority.acceptedSnapshotFingerprint === canonicalValueFingerprint(activeSnapshot)
+    ? authority
+    : undefined;
+}
 
 export const canonicalPagesEqual = (left: PageModel, right: PageModel) =>
   JSON.stringify(left) === JSON.stringify(right);

@@ -1,12 +1,15 @@
 import { z } from "zod";
 import {
   listExecutablePageBlueprintProfiles,
+  materializeExecutablePageBlueprint,
+  runtimeComponentForPageBlueprintComponent,
   sharedStorefrontFrameProfile,
 } from "@/application/storefront-templates";
 import {
   createStorefrontPagePaths,
   validateRegisteredSnapshot,
   veskifyComponentCapabilityManifest,
+  veskifyComponentDefinitionsV2,
   veskifyComponentRegistryV2,
 } from "@/components/registry";
 import { catalogueDisplayModelSchema, type CatalogueDisplayModel } from "@/domain/catalogue";
@@ -607,29 +610,80 @@ function assertProfiles(input: PublishCompilerInput, snapshot: StorefrontSnapsho
   }
   for (const supplied of input.authority.profileAuthorities) {
     const current = veskifyComponentCapabilityManifest.getByProfileId(supplied.profileId);
-    if (
-      !current ||
-      current.profileVersion !== supplied.profileVersion ||
-      current.fingerprint !== supplied.fingerprint
-    ) {
+    if (!current || current.profileVersion !== supplied.profileVersion) {
       throw new PublishCompilerError("stale-profile-authority");
     }
     const pagePlan = listExecutablePageBlueprintProfiles().find(
       (candidate) => candidate.profile?.id === supplied.profileId,
     );
     if (!pagePlan?.profile) throw new PublishCompilerError("stale-profile-authority");
-    const exactPage = snapshot.pages.find(
-      (page) =>
-        page.type === pagePlan.pageType &&
-        page.sections.length === pagePlan.profile!.componentSelections.length &&
-        page.sections.every((section, index) => {
-          const selection = pagePlan.profile!.componentSelections[index];
-          return (
-            selection?.component === section.component &&
-            selection.variants.includes(section.variant)
-          );
-        }),
-    );
+    const materialization = materializeExecutablePageBlueprint({
+      pagePlan,
+      componentDefinitions: veskifyComponentDefinitionsV2,
+      availableBindingCategories: pagePlan.profile.requiredBindingCategories,
+    });
+    const registeredProfileAuthority = current.fingerprint === supplied.fingerprint;
+    const materializedProfileAuthority = materialization.fingerprint === supplied.fingerprint;
+    if (!registeredProfileAuthority && !materializedProfileAuthority) {
+      throw new PublishCompilerError("stale-profile-authority");
+    }
+    if (registeredProfileAuthority) {
+      const exactRegisteredPage = snapshot.pages.find(
+        (page) =>
+          page.type === pagePlan.pageType &&
+          page.sections.length === pagePlan.profile!.componentSelections.length &&
+          page.sections.every((section, index) => {
+            const selection = pagePlan.profile!.componentSelections[index];
+            return (
+              selection?.component === section.component &&
+              selection.variants.includes(section.variant)
+            );
+          }),
+      );
+      if (!exactRegisteredPage) {
+        throw new PublishCompilerError("invalid-ordering-or-omission");
+      }
+      continue;
+    }
+    const projected = materialization.slots.reduce<
+      Array<Readonly<{ component: string; variants: readonly string[]; required: boolean }>>
+    >((entries, slot, index) => {
+      const component = runtimeComponentForPageBlueprintComponent(
+        slot.component,
+        materialization.pageType,
+      );
+      const composite = component !== slot.component;
+      const required = pagePlan.slots[index]?.required ?? false;
+      const prior = entries.at(-1);
+      if (prior?.component === component) {
+        entries[entries.length - 1] = {
+          component,
+          variants: composite ? [] : [...new Set([...prior.variants, slot.variant])],
+          required: prior.required || required,
+        };
+        return entries;
+      }
+      entries.push({ component, variants: composite ? [] : [slot.variant], required });
+      return entries;
+    }, []);
+    const exactPage = snapshot.pages.find((page) => {
+      if (page.type !== pagePlan.pageType) return false;
+      let projectedIndex = 0;
+      for (const section of page.sections) {
+        while (
+          projectedIndex < projected.length &&
+          (projected[projectedIndex]?.component !== section.component ||
+            ((projected[projectedIndex]?.variants.length ?? 0) > 0 &&
+              !projected[projectedIndex]?.variants.includes(section.variant)))
+        ) {
+          if (projected[projectedIndex]?.required) return false;
+          projectedIndex += 1;
+        }
+        if (projectedIndex >= projected.length) return false;
+        projectedIndex += 1;
+      }
+      return projected.slice(projectedIndex).every((entry) => !entry.required);
+    });
     if (!exactPage) throw new PublishCompilerError("invalid-ordering-or-omission");
   }
 }

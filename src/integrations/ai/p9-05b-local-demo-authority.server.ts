@@ -9,8 +9,33 @@ import {
   type AiStorefrontProviderRequest,
   type AiStorefrontProviderResponse,
 } from "@/application/ai-storefront-generation";
+import {
+  type AuthoritativeGovernedProposalAcceptanceSource,
+  type TrustedGovernedProposalAcceptance,
+  type TrustedRecordedProposalAcceptance,
+} from "@/application/accepted-ai-receipt-wiring/index.server";
+import {
+  AcceptedSnapshotReceiptError,
+  acceptedSnapshotProposalFingerprint,
+  acceptedSnapshotReviewFingerprint,
+  acceptedSnapshotRuntimeFingerprint,
+  type AcceptedSnapshotCurrentAuthority,
+} from "@/application/accepted-snapshot-publishing";
+import {
+  createMerchantProjectAuthorization,
+  createStandaloneMerchantProjectContextPort,
+} from "@/application/merchant-project-context";
+import {
+  governedSkillPackageRegistry,
+  skillCapabilityKnowledge,
+} from "@/application/design-skills";
+import {
+  createWholeStorefrontGenerationPlan,
+  createWholeStorefrontGenerationTarget,
+  wholeStorefrontPlanningInputSchema,
+} from "@/application/whole-storefront-generation-plan";
 import { projectAiStorefrontSnapshot } from "@/application/ai-storefront";
-import { canonicalValueFingerprint } from "@/domain/storefront";
+import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 import {
   P9_05A_FIXED_TIME,
   P9_05A_PROJECT_ID,
@@ -24,6 +49,7 @@ import {
   ServerWholeStorefrontAuthorityError,
   type AuthoritativeWholeStorefrontPlanningContextSource,
   type ServerWholeStorefrontPlanningAuthority,
+  type ValidatedServerWholeStorefrontProposalRecord,
 } from "./whole-storefront-runtime-authority";
 
 export const P9_05B_LOCAL_DEMO_FLAG = "VESKIFY_P9_05B_LOCAL_DEMO";
@@ -32,6 +58,20 @@ export const P9_05B_LOCAL_DEMO_NAMESPACE = "p9-05b-lumo-local-server";
 const P10A_04C_LOCAL_DEMO_FLAG = "VESKIFY_P10A_04C_LOCAL_DEMO";
 
 type DemoEnvironment = Readonly<Record<string, string | undefined>>;
+
+type PendingAuthoritativeProposal = Readonly<{
+  response: AiStorefrontProviderResponse;
+  authority: ValidatedServerWholeStorefrontProposalRecord | null;
+  proposalRevision: number;
+  reviewRevision: number;
+}>;
+
+type AcceptedAuthoritativeProposal = Readonly<{
+  proposal: PendingAuthoritativeProposal & {
+    authority: ValidatedServerWholeStorefrontProposalRecord;
+  };
+  acceptance: TrustedRecordedProposalAcceptance;
+}>;
 
 type DemoState = {
   repository: InMemoryProjectRepository;
@@ -42,7 +82,9 @@ type DemoState = {
     id: string;
     authoritativeRevision: number;
     generationRevision: number | null;
-    proposal: AiStorefrontProviderResponse | null;
+    proposal: PendingAuthoritativeProposal | null;
+    accepted: AcceptedAuthoritativeProposal | null;
+    proposalSequence: number;
   };
 };
 
@@ -130,6 +172,8 @@ function createState(environment: DemoEnvironment): DemoState {
       authoritativeRevision: source.aggregate.project.revision,
       generationRevision: null,
       proposal: null,
+      accepted: null,
+      proposalSequence: 0,
     },
   };
 }
@@ -240,11 +284,11 @@ export function createP905bLocalDemoAuthority(
             environment,
           });
         },
-        recordValidatedProposal: (proposal) => {
-          recordP905bLocalDemoProposal({
+        recordValidatedProposal: (record) => {
+          recordP905bLocalDemoAuthoritativeProposal({
             projectId: request.target.projectId,
             sessionId: sessionId!,
-            proposal,
+            record,
             environment,
           });
         },
@@ -368,7 +412,14 @@ export function recordP905bLocalDemoProposal(input: {
   if (proposal.proposal.projectId !== P9_05A_PROJECT_ID) {
     throw new Error("The P9-05B local demo proposal targets another project.");
   }
-  current.session.proposal = structuredClone(proposal);
+  current.session.proposalSequence += 1;
+  current.session.proposal = {
+    response: structuredClone(proposal),
+    authority: null,
+    proposalRevision: current.session.proposalSequence,
+    reviewRevision: 1,
+  };
+  current.session.accepted = null;
   recordDiagnostic({
     event: "proposal_recorded",
     sessionId: input.sessionId,
@@ -377,6 +428,29 @@ export function recordP905bLocalDemoProposal(input: {
   return {
     editorRoute: `/projects/${P9_05A_PROJECT_ID}/editor?p9-05b-session=${encodeURIComponent(current.session.id)}`,
   };
+}
+
+export function recordP905bLocalDemoAuthoritativeProposal(input: {
+  projectId: string;
+  sessionId: string;
+  record: ValidatedServerWholeStorefrontProposalRecord;
+  environment?: DemoEnvironment;
+}): { editorRoute: string } {
+  const response = aiStorefrontProviderResponseSchema.parse(input.record.response);
+  const route = recordP905bLocalDemoProposal({
+    projectId: input.projectId,
+    sessionId: input.sessionId,
+    proposal: response,
+    environment: input.environment,
+  });
+  const current = state(input.environment ?? process.env);
+  const pending = current.session.proposal;
+  if (!pending) throw new ServerWholeStorefrontAuthorityError("stale");
+  current.session.proposal = {
+    ...pending,
+    authority: structuredClone(input.record),
+  };
+  return route;
 }
 
 export async function synchronizeP905bLocalDemoAggregate(input: {
@@ -487,7 +561,7 @@ export async function loadP905bLocalDemoEditorSession(input: {
       ? activeAggregate
       : current.savedAggregate,
   );
-  const proposal = current.session.proposal?.proposal ?? null;
+  const proposal = current.session.proposal?.response.proposal ?? null;
   if (
     proposal !== null &&
     (proposal.projectId !== activeAggregate.project.id ||
@@ -528,6 +602,225 @@ export function p905bLocalDemoRepository(
   environment: DemoEnvironment = process.env,
 ): InMemoryProjectRepository {
   return state(environment).repository;
+}
+
+function acceptedAiMintAuthority(
+  pending: PendingAuthoritativeProposal & {
+    authority: ValidatedServerWholeStorefrontProposalRecord;
+  },
+): TrustedGovernedProposalAcceptance["mintAuthority"] {
+  const proposal = pending.authority.proposal;
+  return {
+    proposalRevision: pending.proposalRevision,
+    reviewRevision: pending.reviewRevision,
+    componentRegistryFingerprint: proposal.preconditions.componentRegistryFingerprint,
+    manifest: skillCapabilityKnowledge.getManifestReference(),
+    packageRegistry: {
+      version: governedSkillPackageRegistry.version,
+      fingerprint: governedSkillPackageRegistry.fingerprint,
+    },
+    profileAuthorities: pending.authority.plan.pageBlueprintMaterializations
+      .map(({ profileId, fingerprint }) => ({ profileId, fingerprint }))
+      .sort((left, right) => left.profileId.localeCompare(right.profileId)),
+    commerceFingerprint: proposal.preconditions.canonicalCommerceFingerprint,
+    approvedAssetFingerprint: proposal.preconditions.assetContextFingerprint,
+  };
+}
+
+async function currentPlanningInputForAcceptedAuthority(
+  current: DemoState,
+  environment: DemoEnvironment,
+) {
+  const source = fixture(environment);
+  const aggregate = validateProjectAggregate(await current.repository.get(P9_05A_PROJECT_ID));
+  const draft = aggregate.snapshots.find(
+    (snapshot) => snapshot.id === aggregate.project.draftSnapshotId,
+  );
+  if (!draft) throw new AcceptedSnapshotReceiptError("stale-current-snapshot");
+  return wholeStorefrontPlanningInputSchema.parse({
+    ...source.planningInput,
+    project: {
+      id: aggregate.project.id,
+      revision: aggregate.project.revision,
+      enabledLocales: aggregate.project.enabledLocales,
+    },
+    draft,
+    catalogue: aggregate.catalogue,
+    componentDefinitions: source.planningInput.componentDefinitions,
+    approvedAssetContext: source.assetContext,
+  });
+}
+
+function trustedAcceptedAiAuthority(
+  current: DemoState,
+  pending: PendingAuthoritativeProposal & {
+    authority: ValidatedServerWholeStorefrontProposalRecord;
+  },
+  authorization: TrustedGovernedProposalAcceptance["authorization"],
+  accepted: TrustedRecordedProposalAcceptance | null,
+  environment: DemoEnvironment,
+): TrustedGovernedProposalAcceptance {
+  return {
+    authorization,
+    authorityRevision: current.session.authoritativeRevision,
+    browserProposalId: pending.response.proposal.id,
+    proposalRevision: pending.proposalRevision,
+    reviewRevision: pending.reviewRevision,
+    reviewed: pending.response.proposal.status === "pending" || accepted !== null,
+    proposal: structuredClone(pending.authority.proposal),
+    currentInput: {
+      plan: structuredClone(pending.authority.plan),
+      planningInput: structuredClone(pending.authority.planningInput),
+    },
+    materialization: {
+      planningInput: structuredClone(pending.authority.planningInput),
+      approvedAssetPresentations: structuredClone(fixture(environment).assetPresentations),
+    },
+    mintAuthority: acceptedAiMintAuthority(pending),
+    sourceKind: "initialGeneration",
+    accepted: accepted === null ? null : structuredClone(accepted),
+  };
+}
+
+export function createP905bLocalDemoAcceptedAiAuthoritySource(
+  environment: DemoEnvironment = process.env,
+): AuthoritativeGovernedProposalAcceptanceSource {
+  return {
+    async resolveForAcceptance({ request, httpRequest }) {
+      const current = state(environment);
+      assertCurrentSession(current, requestSessionId(httpRequest));
+      const pending =
+        current.session.proposal?.response.proposal.id === request.proposalId
+          ? current.session.proposal
+          : current.session.accepted?.proposal.response.proposal.id === request.proposalId
+            ? current.session.accepted.proposal
+            : null;
+      if (!pending?.authority) {
+        throw new AcceptedSnapshotReceiptError("proposal-mismatch");
+      }
+      const trustedPending = { ...pending, authority: pending.authority };
+      const contextPort = createStandaloneMerchantProjectContextPort({
+        projectRepository: current.repository,
+        ...identity,
+      });
+      const context = await contextPort.load({
+        tenantId: identity.tenantId,
+        storefrontProjectId: request.projectId,
+      });
+      const accepted =
+        current.session.accepted?.proposal.response.proposal.id === request.proposalId
+          ? current.session.accepted.acceptance
+          : null;
+      return trustedAcceptedAiAuthority(
+        current,
+        trustedPending,
+        createMerchantProjectAuthorization(context),
+        accepted,
+        environment,
+      );
+    },
+
+    async commitAcceptance({ authority, request, lifecycle, acceptedSnapshot, acceptedAt }) {
+      const current = state(environment);
+      return serializeP905bLocalDemoSynchronization(current, async () => {
+        const pending = current.session.proposal;
+        if (
+          !pending?.authority ||
+          pending.response.proposal.id !== request.proposalId ||
+          pending.authority.proposal.id !== authority.proposal.id ||
+          current.session.authoritativeRevision !== request.expectedAuthorityRevision
+        ) {
+          throw new AcceptedSnapshotReceiptError("proposal-mismatch");
+        }
+        const aggregate = validateProjectAggregate(await current.repository.get(request.projectId));
+        await current.repository.saveDraft(request.projectId, acceptedSnapshot, {
+          id: aggregate.project.draftSnapshotId,
+          revision: request.expectedDraftRevision,
+        });
+        current.session.authoritativeRevision += 1;
+        current.session.generationRevision = null;
+        current.session.proposal = null;
+        current.session.accepted = {
+          proposal: {
+            ...pending,
+            authority: pending.authority,
+          },
+          acceptance: {
+            request: structuredClone(request),
+            acceptedAt,
+            authoritativeRevision: current.session.authoritativeRevision,
+            lifecycle: structuredClone(lifecycle),
+            acceptedSnapshot: structuredClone(acceptedSnapshot),
+            receiptId: null,
+          },
+        };
+        return { authoritativeRevision: current.session.authoritativeRevision };
+      });
+    },
+
+    recordReceipt({ authority, request, receipt }) {
+      const current = state(environment);
+      const accepted = current.session.accepted;
+      if (
+        !accepted ||
+        accepted.proposal.authority.proposal.id !== authority.proposal.id ||
+        accepted.acceptance.request.acceptanceActionId !== request.acceptanceActionId ||
+        receipt.acceptanceActionId !== request.acceptanceActionId
+      ) {
+        throw new AcceptedSnapshotReceiptError("receipt-collision");
+      }
+      current.session.accepted = {
+        ...accepted,
+        acceptance: { ...accepted.acceptance, receiptId: receipt.id },
+      };
+      return Promise.resolve();
+    },
+
+    async resolveCurrentAuthority({ aggregate }) {
+      const current = state(environment);
+      const accepted = current.session.accepted;
+      if (!accepted) throw new AcceptedSnapshotReceiptError("proposal-mismatch");
+      const planningInput = await currentPlanningInputForAcceptedAuthority(current, environment);
+      const target = createWholeStorefrontGenerationTarget(planningInput);
+      const manifest = skillCapabilityKnowledge.getManifestReference();
+      const currentPlan = createWholeStorefrontGenerationPlan(planningInput, {
+        directionId: accepted.proposal.authority.plan.designSystemSelection.directionId,
+      });
+      const profileAuthorities = currentPlan.pageBlueprintMaterializations
+        .map(({ profileId, fingerprint }) => ({ profileId, fingerprint }))
+        .sort((left, right) => left.profileId.localeCompare(right.profileId));
+      const proposal = accepted.acceptance.lifecycle.proposal;
+      const authority: AcceptedSnapshotCurrentAuthority = {
+        proposalId: proposal.id,
+        proposalRevision: accepted.proposal.proposalRevision,
+        proposalFingerprint: acceptedSnapshotProposalFingerprint(proposal),
+        reviewRevision: accepted.proposal.reviewRevision,
+        reviewFingerprint: acceptedSnapshotReviewFingerprint(proposal.reviewSummary),
+        acceptedRuntimeFingerprint: acceptedSnapshotRuntimeFingerprint(
+          accepted.acceptance.lifecycle.activeStorefront,
+        ),
+        componentRegistryFingerprint: target.registryFingerprint,
+        manifest,
+        packageRegistry: {
+          version: governedSkillPackageRegistry.version,
+          fingerprint: governedSkillPackageRegistry.fingerprint,
+        },
+        profileAuthorities,
+        commerceFingerprint: target.canonicalCommerceFingerprint,
+        approvedAssetFingerprint: target.approvedAssetContextFingerprint,
+      };
+      if (aggregate.project.id !== planningInput.project.id) {
+        throw new AcceptedSnapshotReceiptError("project-mismatch");
+      }
+      const currentAggregate = validateProjectAggregate(
+        await current.repository.get(aggregate.project.id),
+      );
+      if (canonicalValueString(currentAggregate) !== canonicalValueString(aggregate)) {
+        throw new AcceptedSnapshotReceiptError("stale-current-snapshot");
+      }
+      return authority;
+    },
+  };
 }
 
 export async function loadP905bLocalDemoPublishedProjection(input: {

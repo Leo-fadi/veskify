@@ -5,6 +5,7 @@ import {
   type WholeStorefrontGenerationPlan,
   type WholeStorefrontPlanningInput,
 } from "@/application/whole-storefront-generation-plan";
+import { runtimeComponentForPageBlueprintComponent } from "@/application/storefront-templates";
 import {
   compileWholeStorefrontProposal,
   createWholeStorefrontRuntimeState,
@@ -238,21 +239,6 @@ function runtimeComponent(
   return matches[0];
 }
 
-/**
- * Collection and product PageBlueprints describe their commercial sub-slots,
- * while the canonical runtime owns each family as one dynamic component. Keep
- * that projection explicit so follow-up authority never treats a blueprint
- * sub-slot as a second runtime component.
- */
-const compositeRuntimeComponentByBlueprintComponent: Readonly<Record<string, string>> = {
-  collectionHeader: "dynamicCollectionCommerce",
-  filterBar: "dynamicCollectionCommerce",
-  productGrid: "dynamicCollectionCommerce",
-  productGallery: "dynamicProductDetail",
-  productInfo: "dynamicProductDetail",
-  productOptions: "dynamicProductDetail",
-};
-
 type Materialization = WholeStorefrontGenerationPlan["pageBlueprintMaterializations"][number];
 type PageAuthority = GovernedFollowUpEditingAuthority["pages"][number];
 type PageSelection = PageAuthority["selections"][number];
@@ -295,8 +281,10 @@ function runtimeComponentForMaterializedSelection(
   components?: readonly WholeStorefrontRuntimeComponent[],
 ) {
   const slot = materializedSlotAuthority(materialization, selection);
-  const runtimeComponentType =
-    compositeRuntimeComponentByBlueprintComponent[slot.component] ?? slot.component;
+  const runtimeComponentType = runtimeComponentForPageBlueprintComponent(
+    slot.component,
+    materialization.pageType,
+  );
   return { slot, component: runtimeComponent(page, runtimeComponentType, components) };
 }
 
@@ -390,8 +378,11 @@ function materializeCompositeRuntimeComponent(
   removedComponentIds: readonly string[];
 }> {
   const slot = materializedSlotAuthority(materialization, selection);
-  const runtimeComponentType = compositeRuntimeComponentByBlueprintComponent[slot.component];
-  if (!runtimeComponentType) return { components, removedComponentIds: [] };
+  const runtimeComponentType = runtimeComponentForPageBlueprintComponent(
+    slot.component,
+    materialization.pageType,
+  );
+  if (runtimeComponentType === slot.component) return { components, removedComponentIds: [] };
   const existing = components.filter((component) => component.component === runtimeComponentType);
   if (existing.length === 1) return { components, removedComponentIds: [] };
   if (existing.length > 1) {

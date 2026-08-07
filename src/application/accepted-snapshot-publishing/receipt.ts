@@ -71,6 +71,30 @@ export const acceptedSnapshotPublishReceiptSchema = z
 
 export type AcceptedSnapshotPublishReceipt = z.infer<typeof acceptedSnapshotPublishReceiptSchema>;
 
+/**
+ * One authoritative acceptance action owns one durable receipt identity. The
+ * receipt repository still distinguishes an exact replay from conflicting
+ * content, so retry safety does not weaken create-once collision protection.
+ */
+export function acceptedSnapshotPublishReceiptIdForAcceptanceAction(
+  acceptanceActionIdInput: string,
+): string {
+  const acceptanceActionId = idSchema.parse(acceptanceActionIdInput);
+  return `acceptance_receipt_${canonicalValueFingerprint({ acceptanceActionId }).slice(-20)}`;
+}
+
+export function acceptedSnapshotProposalFingerprint(proposal: unknown): string {
+  return `accepted-proposal-${canonicalValueFingerprint(proposal)}`;
+}
+
+export function acceptedSnapshotReviewFingerprint(review: unknown): string {
+  return `accepted-review-${canonicalValueFingerprint(review)}`;
+}
+
+export function acceptedSnapshotRuntimeFingerprint(runtime: unknown): string {
+  return `accepted-runtime-${canonicalValueFingerprint(runtime)}`;
+}
+
 export const acceptedSnapshotCurrentAuthoritySchema = z
   .object({
     proposalId: idSchema,

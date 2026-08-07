@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  acceptedAiProposalAcceptanceResultSchema,
+  type AcceptedAiProposalAcceptanceRequest,
+} from "@/application/accepted-ai-receipt-wiring";
 import { catalogueDisplayModelSchema } from "@/domain/catalogue";
 import { projectSchema } from "@/domain/project";
 import { storefrontSnapshotSchema } from "@/domain/storefront";
@@ -16,6 +20,40 @@ export class P905bLocalDemoSynchronizationClientError extends Error {
     super("The local demo storefront state could not be synchronized.");
     this.name = "P905bLocalDemoSynchronizationClientError";
   }
+}
+
+export async function acceptP905bLocalDemoProposal(
+  input: AcceptedAiProposalAcceptanceRequest & { sessionId: string },
+): Promise<{ receiptId: string; authoritativeRevision: number }> {
+  const { sessionId, ...request } = input;
+  const response = await fetch("/api/demo/p9-05b/accept", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-veskify-p9-05b-session": sessionId,
+    },
+    body: JSON.stringify(request),
+  });
+  const body: unknown = await response.json().catch(() => null);
+  const acceptance =
+    body && typeof body === "object" && "ok" in body && body.ok === true && "acceptance" in body
+      ? acceptedAiProposalAcceptanceResultSchema.safeParse(body.acceptance)
+      : null;
+  if (response.ok && acceptance?.success) return acceptance.data;
+  const code =
+    body &&
+    typeof body === "object" &&
+    "failure" in body &&
+    body.failure &&
+    typeof body.failure === "object" &&
+    "code" in body.failure &&
+    typeof body.failure.code === "string"
+      ? body.failure.code
+      : "validation";
+  throw new P905bLocalDemoSynchronizationClientError(
+    code === "stale-authority" ? "stale" : "validation",
+    response.status,
+  );
 }
 
 export async function synchronizeP905bLocalDemoAggregate(input: {
