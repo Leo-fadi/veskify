@@ -56,8 +56,8 @@ persistence, an authoritative publishing gateway, a deterministic publish compil
 home, collection, and product-detail rendering.
 
 The product remains **Partial**. Phase 9 is closed by product-owner handoff, and P10A is
-substantially implemented but not closed. Controlled real-provider acceptance, atomic
-compiled-artifact persistence and rollback, and complete retained publication evidence remain. The
+substantially implemented but not closed. Atomic compiled-artifact persistence and rollback and
+complete retained publication evidence remain. The
 accepted-AI acceptance-to-receipt and active gateway chain is composed, but
 final compiler-correlated retained publication evidence remains a separate closure gate. The current
 merchant editor does not yet expose the governed routing and scoped
@@ -185,7 +185,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Proposal review, atomic acceptance, undo/redo        | **Baseline** | Canonical lifecycle and stale/invalid rejection are deterministically covered.  |
 | Puck/editor projection                               | **Partial**  | Real adapter and editor exist; the full merchant-operable Studio chain is incomplete. |
 | Draft save, history, and restore                     | **Baseline** | Standalone canonical persistence and lifecycle evidence exist.                  |
-| Controlled real-provider acceptance                  | **Blocked**  | No eligible approved provider configuration is currently available.            |
+| Controlled real-provider acceptance                  | **Baseline** | One authorized initial case and then one hero follow-up case passed with two total calls and no retry. |
 | Accepted-AI receipt-to-gateway composition           | **Baseline** | Server acceptance mints durable create-once authority used by active prepare/confirm. |
 | Authoritative merchant publishing gateway            | **Baseline** | Server-side auth, permission, preparation, confirmation, and idempotency exist. |
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
@@ -241,9 +241,10 @@ must fail with a typed deterministic error before proposal compilation; paramete
 silently discarded. Provider-specific request and response formats stay behind adapters. The
 deterministic provider remains the default for reliable tests.
 
-Controlled real-provider acceptance is a separate evidence exercise. P10A-07C-03R can run only
-with explicit approval and an eligible trusted OpenAI configuration. The initial-generation case
-must succeed before the follow-up case, evidence must be retained safely, and no retry is allowed.
+P10A-07C-03R controlled real-provider acceptance completed on 7 August 2026 through an explicitly
+authorized eligible trusted OpenAI configuration. One initial-generation case succeeded before one
+hero follow-up case; each used one provider call, neither retried, safe evidence was retained, and
+no save or publication occurred.
 
 ## 7. Component, PageBlueprint and direction model
 
@@ -397,8 +398,8 @@ artifact is derived publication state, not another editable model.
 
 P10A-08D-02 must retain final browser and human evidence for gateway/compiler publication of home,
 collection, and PDP routes, plus failure/no-partial-write, active-version, rollback, republish, and
-zero-provider-during-publication behavior. P10A-09 records closure only after these gates and the
-eligible controlled-provider result are resolved or explicitly dispositioned.
+zero-provider-during-publication behavior. P10A-09 records closure only after these publication
+gates are resolved or explicitly dispositioned.
 
 ## 10. Commercial Storefront Design System
 
@@ -564,9 +565,8 @@ incomplete.
 
 The binding sequence is:
 
-1. **P10A — Grounded orchestration and publishing closure.** Close controlled-provider evidence,
-   controlled-provider evidence, atomic compiled publication/rollback, final publication evidence,
-   and the closure record.
+1. **P10A — Grounded orchestration and publishing closure.** Close atomic compiled
+   publication/rollback, final publication evidence, and the closure record.
 2. **P10B — Commercial Storefront Design System v1.** Deliver the first commercially credible
    complete storefront through registered visual authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and

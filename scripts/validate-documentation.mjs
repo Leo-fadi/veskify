@@ -156,11 +156,13 @@ requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 1) {
-  failures.push("Delivery tracker must contain exactly one completed checkbox");
+if ((tracker.match(/☑/g) ?? []).length !== 2) {
+  failures.push("Delivery tracker must contain exactly two completed checkboxes");
 }
-if (!/^\| ☑\s+\| P11-00/m.test(tracker)) {
-  failures.push("Delivery tracker must mark only P11-00 as completed Baseline work");
+if (!/^\| ☑\s+\| P10A-07C-03R/m.test(tracker) || !/^\| ☑\s+\| P11-00/m.test(tracker)) {
+  failures.push(
+    "Delivery tracker must mark only P10A-07C-03R and P11-00 as completed Baseline work",
+  );
 }
 
 const staleActivePatterns = [

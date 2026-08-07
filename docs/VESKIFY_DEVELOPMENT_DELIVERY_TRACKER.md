@@ -30,7 +30,7 @@ required evidence are accepted.
 
 | Done | Task         | Outcome                                          | Status       | Owner                | Dependency                                                  | Required evidence                                                                                    |
 | ---- | ------------ | ------------------------------------------------ | ------------ | -------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| ☐    | P10A-07C-03R | Controlled real-provider acceptance completion   | **Blocked**  | Provider acceptance  | Explicit approval and eligible trusted OpenAI configuration | One initial case before one follow-up case; retained real-provider evidence; no retry                |
+| ☑    | P10A-07C-03R | Controlled real-provider acceptance completion   | **Baseline** | Provider acceptance  | Explicit approval and eligible trusted OpenAI configuration | One initial case before one follow-up case; retained real-provider evidence; no retry                |
 | ☐    | P10A-08B-02  | Accepted-AI acceptance-to-receipt wiring         | **Baseline** | Proposal/publishing  | Existing acceptance, receipt, and gateway authority         | Deterministic; integration; browser/E2E; stale/divergent/no-partial-write rejection                  |
 | ☐    | P10A-08C-02B | Atomic compiled publication and rollback closure | **Planned**  | Publishing           | P10A-08B-02 and deterministic compiler                      | Atomic artifact/version/history persistence; idempotency; rollback/republish evidence                |
 | ☐    | P10A-08D-02  | Complete publication evidence                    | **Planned**  | Publishing and QA    | P10A-08C-02B                                                | Gateway/compiler home, collection, PDP; failure; active version; rollback; zero-provider publication |
@@ -91,7 +91,8 @@ required evidence are accepted.
 
 - **Outcome:** Execute exactly one eligible initial-generation case, then one follow-up-editing
   case, through the controlled real-provider boundary.
-- **Status:** **Blocked**.
+- **Status:** **Baseline**. Completed 7 August 2026 with one successful initial-generation call
+  before one successful hero follow-up call, safe retained evidence, and no retry.
 - **Depends on:** Explicit approval and eligible trusted OpenAI provider/model configuration.
 - **Done when:** The stated outcome and required evidence are accepted.
 - **Required evidence:** Safe correlated real-provider evidence; initial succeeds before follow-up;

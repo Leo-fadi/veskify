@@ -1,51 +1,81 @@
-# P10A-07C-03 — Controlled Real-Provider Acceptance
+# P10A-07C-03R — Controlled Real-Provider Acceptance
 
 ## Status
 
-Blocked safely before a real-provider invocation on 2026-08-05. The trusted server configuration
-selected the deterministic whole-storefront planner, not the configured OpenAI provider required
-for this controlled gate. This is retained as typed terminal Case A evidence; Case B was not
-started. No provider/model selection was changed to force eligibility.
+Completed on 7 August 2026 through the explicitly authorized W1 gate. The trusted server
+configuration selected `openai-whole-storefront-planning` with the valid safe model identity
+`gpt-5.6-sol` and configuration category `eligible`.
 
-| Case                        | Provider attempts | Provider completions | Provider outcome | Lifecycle          | Terminal status                            |
-| --------------------------- | ----------------: | -------------------: | ---------------- | ------------------ | ------------------------------------------ |
-| A — initial generation      |                 0 |                    0 | `not-attempted`  | `preview-only`     | `invalid-provider-configuration` / blocked |
-| B — governed hero follow-up |                 0 |                    0 | `not-attempted`  | `accept-undo-redo` | Not started after Case A block             |
+Case A completed before Case B was started. Each case consumed its independently fingerprinted
+single-call authorization exactly once. The live gate completed with three passing tests in one
+test file in 20.40 seconds; it was not rerun.
 
-No provider request, retry, raw provider response, prompt, credential, environment-file value,
-proposal mutation, save, or publish action occurred.
+| Case                        | Provider attempts | Provider completions | Provider outcome | Lifecycle          | Terminal status |
+| --------------------------- | ----------------: | -------------------: | ---------------- | ------------------ | --------------- |
+| A — initial generation      |                 1 |                    1 | `completed`      | `preview-only`     | `succeeded`     |
+| B — governed hero follow-up |                 1 |                    1 | `completed`      | `accept-undo-redo` | `succeeded`     |
 
-## Trusted router and direction authority
+Total real-provider calls were two. OpenAI client retries and per-request retries were both zero.
+No save, publication, Vesko request, credential exposure, raw prompt retention, or raw response
+retention occurred.
 
-Every routed P10A-07C-03 case now supplies its exact canonical router request together with an
-optional expected decision fingerprint. The preflight independently runs
-`routeGovernedDesignRequest` against the current authority, verifies the execution kind, governed
-package, canonical scope, declared pages, and exact slots, then retains only the recomputed
-decision fingerprint. A stale, foreign, mismatched, clarification, or unsupported route produces a
-typed zero-attempt terminal record.
+## Safe retained Case A evidence
 
-For governed initial generation, the canonical provider request now contains only the registered
-direction authorized by P10A-05C. The provider boundary verifies the returned plan against that
-same constrained expected plan. A different otherwise-registered direction is a deterministic
-authority failure; no copied direction inventory or result overwrite is used.
+- Case ID: `p10a-07c-03-case-a`
+- Router decision: `strict-scope-routing-v1_1517_d35347a9d4631999bbfc6b12e8f8364e3a3835f36cf831e10c5d36adc773a22e`
+- Authority: `controlled-acceptance-authority-v1_957_d4dc6144ac810bb5aeb5f082bdc4586fa10782191e72ff3d8caa156a02ab997d`
+- Plan: `whole-storefront-plan-v1_33596_de2236a801829638654440687cc397703d4cbcefc01a3229a57867204904dc01`
+- Proposal: `whole_storefront_proposal_4ad8ae03`
+- Preview: `v1_12691_ecd6de178bac61b7d913aff962a89b5fcad691b9f766bd9e5560a2fe0fa6acfb`
+- Protected state before and after: `controlled-protected-state-v1_674_cc36020ff96f91d081d5490ec2ce060d4fdaaffcb5c29b96b0193aa9d34c58c1`
+- Result: one attempt, one completion, `completed`, `succeeded`, `not-published`
 
-## Blocked evidence and model identifiers
+Case A used the current `applyRegisteredWholeStorefrontDirection` initial-generation package and
+the exact registered `modernTechnical` direction. Current PageBlueprint materializations represented
+shared frame, home, collection, and product-detail authority. The provider result matched the
+canonical plan and produced a valid pending proposal at the expected preview lifecycle.
 
-The runner is constructed before live eligibility is assessed. Deterministic-provider selection,
-credentials unavailable, absent trusted model identity, unsupported provider configuration, and a
-disabled live gate each retain safe terminal evidence: case/version, execution kind, recomputed
-router fingerprint where available, provider-configuration category, zero attempt/completion
-counts, `not-attempted` outcome, and typed failure. Credentials, raw configuration, and raw
-provider data are excluded.
+## Safe retained Case B evidence
 
-Provider/model validation uses the shared canonical provider-model identifier schema. It supports
-ordinary OpenAI identifiers and valid fine-tuned identifiers beginning with `ft:` while rejecting
-empty, control-character, malformed, and overlong values. The trusted injected model identifier is
-the only model value retained in evidence.
+- Case ID: `p10a-07c-03-case-b`
+- Router decision: `strict-scope-routing-v1_1044_46a746718719e1fedb40265142bd5b893858c780ac6e8030d7973f140bd065f4`
+- Authority: `controlled-acceptance-authority-v1_957_5acbbf1e803783d52ec32c80cf8f09f120165dc97721fa01eadd31fb39cf5b36`
+- Plan: `whole-storefront-plan-v1_32788_93b1798f734285e4242f010b78162a4aba20dbb0853da956154b138d01c3ac66`
+- Proposal: `whole_storefront_proposal_04f9c883`
+- Preview and acceptance: `v1_7451_bd25e9c62d5aa8240e8ff6c6e2a307b8de61acc195181002cfa208df9f4e66bc`
+- Undo: `v1_7450_52b79e882fa65bb7eaad570b8ca9c5f6ba77d36178d39bdd692dc2ae845b62b0`
+- Redo: `v1_7451_bd25e9c62d5aa8240e8ff6c6e2a307b8de61acc195181002cfa208df9f4e66bc`
+- Protected state before and after: `controlled-protected-state-v1_674_cc36020ff96f91d081d5490ec2ce060d4fdaaffcb5c29b96b0193aa9d34c58c1`
+- Result: one attempt, one completion, `completed`, `succeeded`, `not-published`
 
-## Deferred
+Case B started only after Case A succeeded. It used the current `improveHero` follow-up package,
+`selectedSection` scope, and the exact materialized homepage hero slot. The proposal changed only
+authorized hero presentation; proposal review, acceptance, undo, and redo all succeeded without
+scope widening.
 
-This result does not establish real-provider acceptance. A future explicitly authorized run may
-use the existing trusted server configuration only when it reports an eligible OpenAI provider and
-trusted model. It must perform Case A first with its single-call allowance and run Case B only after
-Case A succeeds; neither case may retry.
+The successful live gate retained these fields in memory. The safe canonical fingerprints above
+were transcribed after the live run through one gate-disabled deterministic reproduction using the
+same current cases and non-secret provider/model identities. That reproduction made no OpenAI call.
+
+## Trusted authority and protection verdict
+
+Before each call, the preflight independently refreshed the current planning input and ran
+`routeGovernedDesignRequest` against current authority. It verified the execution kind, governed
+package, canonical scope, declared pages, exact slots, PageBlueprint profiles, registry and
+manifest references, commerce fingerprint, and approved-asset fingerprint.
+
+The identical protected-state fingerprints before and after both cases prove that navigation,
+canonical commerce, and approved-asset authority were unchanged. The provider boundary accepted
+only the exact canonical plan. The runner retained `publishState: not-published` and did not expose
+save or publication operations.
+
+## Evidence boundary
+
+The retained record contains only safe provider/model identities, case identities, authority and
+router fingerprints, canonical plan/proposal/lifecycle fingerprints, bounded attempt/completion
+counts, sanitized outcomes, and terminal status. Credentials, authorization headers, environment
+values, raw prompts, and raw provider responses are excluded.
+
+The earlier 5 August 2026 zero-attempt W2 block remains historical evidence of correct fail-closed
+configuration handling; it is superseded as the current acceptance status by this authorized W1
+completion.
