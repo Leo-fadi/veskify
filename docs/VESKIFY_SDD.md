@@ -293,6 +293,28 @@ all option groups supplied by canonical commerce, resolve selected variant price
 and media without mutation, handle incomplete and unavailable selections, and retain unknown
 attributes through a safe generic fallback.
 
+### 7.5 Registered `dynamicCollectionCommerce` contract
+
+The registered `dynamicCollectionCommerce` component uses a required, revision-bound
+`primaryCollection` binding for the exact canonical collection identity and revision, and a
+required, revision-bound `collectionProducts` binding for its exact canonical ordered product
+membership. Where applicable, the optional `childCollections` binding carries the ordered
+canonical child-collection list. Filtering and sorting interactions emit typed presentation intents
+rather than mutating canonical commerce truth. Collection membership, price, stock, availability,
+and canonical media remain protected, and the same registered component renders through editor,
+preview, and published targets.
+
+### 7.6 Registered `dynamicProductDetail` contract
+
+The registered `dynamicProductDetail` component uses a required, revision-bound `primaryProduct`
+binding for the exact canonical product identity and revision. Its optional `relatedProducts`
+binding carries the ordered canonical related-product list, while `productMedia` remains the
+canonical protected product-media authority.
+Option selection uses the existing P6 option-resolution engine. The component emits typed selection
+and primary-action intent rather than mutating price, SKU, stock, availability, variants, or media.
+Unsupported or unknown option structures retain the generic option architecture, and the same
+registered component renders through editor, preview, and published targets.
+
 ## 8. State, editor and lifecycle
 
 ### 8.1 Canonical state
