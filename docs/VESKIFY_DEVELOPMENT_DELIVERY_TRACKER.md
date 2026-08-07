@@ -5,7 +5,8 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 6 August 2026, current `main` after PR #165                                                                         |
+| Baseline                    | 7 August 2026, current `main` after PR #170                                                                         |
+| Active development phase    | P10B — Commercial Storefront Design System v1 (**Planned**)                                                         |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
 | Delivery order              | [`VESKIFY_DEVELOPMENT_ROADMAP.md`](VESKIFY_DEVELOPMENT_ROADMAP.md)                                                  |
@@ -17,24 +18,24 @@ required evidence are accepted.
 
 ## Overall phase checklist
 
-| Done | Task | Outcome                                                | Status      | Owner                                | Dependency                                | Required evidence                                                                                        |
-| ---- | ---- | ------------------------------------------------------ | ----------- | ------------------------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| ☐    | P10A | Grounded orchestration and publishing closure          | **Partial** | Veskify orchestration and publishing | Phase 9 handoff                           | Controlled-provider where eligible; deterministic; integration; browser/E2E; retained publication review |
-| ☐    | P10B | Commercial Storefront Design System v1                 | **Planned** | Veskify design system                | P10A closure                              | Capability chain; responsive browser/E2E; retained human commercial review                               |
-| ☐    | P10C | Storefront Studio Editing Experience v1                | **Planned** | Storefront Studio                    | P10B commercial authority                 | Integration; browser/E2E; retained human commercial review                                               |
-| ☐    | P10D | Advanced media and registered interactive presentation | **Planned** | Design system and media              | Relevant P10B authority                   | Contract; browser/E2E; accessibility; performance; fallback review                                       |
-| ☐    | P11  | Vesko Integration Readiness and Reference Adapter      | **Blocked** | Veskify + Vesko platform             | Contract decisions; P10A and minimum P10C | Adapter conformance; browser/E2E; Vesko staging                                                          |
-| ☐    | P12  | Production hardening and pilot operations              | **Blocked** | Veskify + Vesko platform/operations  | P11 staging exit                          | Security; load; recovery; monitoring; controlled production pilot                                        |
+| Done | Task | Outcome                                                | Status                | Owner                                | Dependency                                | Required evidence                                                                                        |
+| ---- | ---- | ------------------------------------------------------ | --------------------- | ------------------------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| ☑    | P10A | Grounded orchestration and publishing closure          | **Baseline / closed** | Veskify orchestration and publishing | Phase 9 handoff                           | Controlled-provider where eligible; deterministic; integration; browser/E2E; retained publication review |
+| ☐    | P10B | Commercial Storefront Design System v1                 | **Planned**           | Veskify design system                | P10A closure                              | Capability chain; responsive browser/E2E; retained human commercial review                               |
+| ☐    | P10C | Storefront Studio Editing Experience v1                | **Planned**           | Storefront Studio                    | P10B commercial authority                 | Integration; browser/E2E; retained human commercial review                                               |
+| ☐    | P10D | Advanced media and registered interactive presentation | **Planned**           | Design system and media              | Relevant P10B authority                   | Contract; browser/E2E; accessibility; performance; fallback review                                       |
+| ☐    | P11  | Vesko Integration Readiness and Reference Adapter      | **Blocked**           | Veskify + Vesko platform             | Contract decisions; P10A and minimum P10C | Adapter conformance; browser/E2E; Vesko staging                                                          |
+| ☐    | P12  | Production hardening and pilot operations              | **Blocked**           | Veskify + Vesko platform/operations  | P11 staging exit                          | Security; load; recovery; monitoring; controlled production pilot                                        |
 
 ## P10A checklist
 
 | Done | Task         | Outcome                                          | Status       | Owner                | Dependency                                                  | Required evidence                                                                                    |
 | ---- | ------------ | ------------------------------------------------ | ------------ | -------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | ☑    | P10A-07C-03R | Controlled real-provider acceptance completion   | **Baseline** | Provider acceptance  | Explicit approval and eligible trusted OpenAI configuration | One initial case before one follow-up case; retained real-provider evidence; no retry                |
-| ☐    | P10A-08B-02  | Accepted-AI acceptance-to-receipt wiring         | **Baseline** | Proposal/publishing  | Existing acceptance, receipt, and gateway authority         | Deterministic; integration; browser/E2E; stale/divergent/no-partial-write rejection                  |
+| ☑    | P10A-08B-02  | Accepted-AI acceptance-to-receipt wiring         | **Baseline** | Proposal/publishing  | Existing acceptance, receipt, and gateway authority         | Deterministic; integration; browser/E2E; stale/divergent/no-partial-write rejection                  |
 | ☑    | P10A-08C-02B | Atomic compiled publication and rollback closure | **Baseline** | Publishing           | P10A-08B-02 and deterministic compiler                      | Atomic artifact/version/history persistence; idempotency; rollback/republish evidence                |
 | ☑    | P10A-08D-02  | Complete publication evidence                    | **Baseline** | Publishing and QA    | P10A-08C-02B                                                | Gateway/compiler home, collection, PDP; failure; active version; rollback; zero-provider publication |
-| ☐    | P10A-09      | P10A closure record                              | **Planned**  | Product architecture | Prior P10A closure tasks or explicit disposition            | Accepted closure and evidence coverage record                                                        |
+| ☑    | P10A-09      | P10A closure record                              | **Baseline** | Product architecture | Prior P10A closure tasks or explicit disposition            | Accepted closure and evidence coverage record                                                        |
 
 ## P10B checklist
 
@@ -144,9 +145,12 @@ required evidence are accepted.
 
 - **Outcome:** Synchronize evidence, limitations, README, SDD, roadmap, and exports and formally
   close P10A.
-- **Status:** **Planned**.
+- **Status:** **Baseline**. Completed 7 August 2026; see
+  [`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md).
 - **Depends on:** All remaining P10A tasks or explicit product-owner disposition.
-- **Done when:** The stated outcome and required evidence are accepted.
+- **Done:** All 20 exit items were classified explicitly, every required P10A item passed at
+  Baseline, active documentation was synchronized, and P10B became the next active development
+  phase while remaining Planned.
 - **Required evidence:** Traceable closure record.
 - **Non-goal:** Merchant-facing routing, clarification, or scope controls; those belong to P10C.
 

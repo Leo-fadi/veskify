@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 6 August 2026, current `main` after PR #165                           |
+| Verified baseline         | 7 August 2026, current `main` after PR #170                           |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 closure sync | 7 August 2026 | `3d36f54`, current `main` after merged PR #170 | Close P10A from current governed-provider, accepted-receipt, atomic-publication, rollback, and correlated publication evidence; make Planned P10B the next active phase. |
 | 1.3.0 | 6 August 2026 | `27e08a0`, current `main` after merged PR #165 | Consolidate verified product truth, current architecture, commercial-design work, Studio ownership, and Vesko contract readiness. |
 | 1.2.2 | 31 July 2026 | Historical source and DOCX export | Preserve the earlier commercial-vocabulary amendment and its historical evidence context. |
 
@@ -55,14 +56,12 @@ follow-up proposal execution, strict internal scope authority, editing adapters,
 persistence, an authoritative publishing gateway, a deterministic publish compiler, and published
 home, collection, and product-detail rendering.
 
-The product remains **Partial**. Phase 9 is closed by product-owner handoff, and P10A is
-substantially implemented but not closed. Atomic compiled-artifact persistence and
-restore-to-draft/explicit-republish rollback are implemented; complete retained publication
-evidence remains. The
-accepted-AI acceptance-to-receipt and active gateway chain is composed, but
-final compiler-correlated retained publication evidence remains a separate closure gate. The current
-merchant editor does not yet expose the governed routing and scoped
-editing authorities; that is intentionally P10C work, not a P10A closure blocker.
+The product remains **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
+orchestration and publishing is **Baseline / closed** under the formal
+[`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md) exit audit. P10B is now the next active
+development phase, while all P10B work remains **Planned**. The current merchant editor does not
+yet expose the governed routing and scoped editing authorities; that is intentionally P10C work,
+not a P10A closure requirement.
 
 The current visual ceiling is a clean, responsive catalogue storefront with useful commerce depth
 but limited brand distinction. P10B is the first phase allowed to claim a commercially credible
@@ -191,7 +190,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Authoritative merchant publishing gateway            | **Baseline** | Server-side auth, permission, preparation, confirmation, and idempotency exist. |
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
-| Published home, collection, and PDP rendering        | **Baseline** | Canonical published snapshot routes render; final compiler-correlated evidence remains. |
+| Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
 | Commercial storefront design system                  | **Planned**  | P10B owns the first commercial visual-quality claim.                            |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
@@ -418,7 +417,9 @@ draft/published isolation, stale and injected-failure preservation, immutable hi
 restore-to-new-draft, fresh explicit republish, and zero external AI-provider calls during
 publication. This is functional publication evidence, not P10B commercial visual acceptance.
 
-P10A-09 remains the sole owner of the phase closure record; P10A is not closed by this evidence task.
+P10A-09 reconciles this evidence with every other P10A gate in the formal
+[`P10A phase closure record`](P10A_PHASE_CLOSURE.md). P10A is Baseline / closed; this functional
+publication evidence still does not claim P10B commercial visual acceptance.
 
 ## 10. Commercial Storefront Design System
 
@@ -584,10 +585,11 @@ incomplete.
 
 The binding sequence is:
 
-1. **P10A — Grounded orchestration and publishing closure.** Close atomic compiled
-   publication/rollback, final publication evidence, and the closure record.
-2. **P10B — Commercial Storefront Design System v1.** Deliver the first commercially credible
-   complete storefront through registered visual authority and retained human review.
+1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
+   formal P10A phase closure record.
+2. **P10B — Commercial Storefront Design System v1.** **Planned / next active phase.** Deliver the
+   first commercially credible complete storefront through registered visual authority and
+   retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
    scoped AI editing, unified history, save, preview, and publish.
 4. **P10D — Advanced media and registered interactive presentation.** Add governed generated media,
@@ -603,8 +605,9 @@ roadmap and delivery tracker.
 
 ### 15.1 Phase exit summaries
 
-- **P10A:** all remaining internal orchestration/publication gates are complete or explicitly
-  dispositioned, with no merchant-editor wiring requirement.
+- **P10A — Baseline / closed:** all internal orchestration/publication gates are complete with no
+  merchant-editor wiring requirement; evidence and deferred ownership are traceable in
+  [`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md).
 - **P10B:** a serious retailer could publish the generated complete storefront without a designer
   rebuilding it, supported by retained responsive human review.
 - **P10C:** a merchant completes the canonical select-to-publish editing chain in Storefront Studio.
@@ -637,10 +640,7 @@ Version 1.3.0 does not claim:
 
 - that the overall product is Baseline or production ready;
 - that current output has passed the P10B commercial visual-quality gate;
-- that P10A is closed;
-- that a successful retained P10A controlled real-provider case exists;
 - that governed internal routing is wired into the normal merchant editor;
-- that final compiler-correlated home, collection, and PDP publication evidence is retained;
 - that the Vesko OpenAPI contract is sufficient for production integration;
 - that raw Vesko Puck persistence is compatible with `StorefrontSnapshot`;
 - that Veskify may mutate commerce truth;
