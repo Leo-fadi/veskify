@@ -9,6 +9,7 @@ import {
   CompiledPublicationIntegrityError,
   InMemoryProjectRepository,
   parseCompiledPublicationArtifact,
+  type AuthoritativePublishingProjectRepository,
   type AtomicPublicationFailurePoint,
 } from "@/services/storage";
 
@@ -28,6 +29,26 @@ function repository(failAtomicPublicationAt?: (point: AtomicPublicationFailurePo
     ],
     { failAtomicPublicationAt },
   );
+}
+
+function authoritativeDecorator(
+  inner: AuthoritativePublishingProjectRepository,
+): AuthoritativePublishingProjectRepository {
+  return {
+    list: () => inner.list(),
+    get: (id) => inner.get(id),
+    create: (aggregate) => inner.create(aggregate),
+    saveDraft: (id, snapshot, expectedBase) => inner.saveDraft(id, snapshot, expectedBase),
+    publish: (id, expectation) => inner.publish(id, expectation),
+    restore: (id, snapshotId, expectation) => inner.restore(id, snapshotId, expectation),
+    getPublicationOperation: (identity) => inner.getPublicationOperation(identity),
+    getActiveCompiledPublication: (id) => inner.getActiveCompiledPublication(id),
+    getCompiledPublicationArtifact: (id, artifactId) =>
+      inner.getCompiledPublicationArtifact(id, artifactId),
+    listPublishedStorefrontVersions: (id) => inner.listPublishedStorefrontVersions(id),
+    restorePublishedStorefrontVersion: (id, versionId, expectation) =>
+      inner.restorePublishedStorefrontVersion(id, versionId, expectation),
+  };
 }
 
 async function saveChange(value: InMemoryProjectRepository, label: string) {
@@ -51,6 +72,44 @@ async function publishChange(value: InMemoryProjectRepository, label: string) {
 }
 
 describe("P10A-08C-02B atomic compiled publication", () => {
+  it("preserves the active-version precondition through authoritative decorators", async () => {
+    const value = repository();
+    await saveChange(value, "authority_a");
+    const firstPreparation = await preparePublish(projectId, value, {
+      createPreparationId: () => "publish_preparation_authority_a",
+    });
+    expect(firstPreparation.expectedActivePublicationVersionId).toBeNull();
+    await confirmPublish(firstPreparation, value);
+    const activeA = (await value.getActiveCompiledPublication(projectId))!;
+
+    await saveChange(value, "authority_b");
+    const directPreparation = await preparePublish(projectId, value, {
+      createPreparationId: () => "publish_preparation_authority_b_direct",
+    });
+    const activeRead = vi.spyOn(value, "getActiveCompiledPublication");
+    const wrapped = authoritativeDecorator(value);
+    const wrappedPreparation = await preparePublish(projectId, wrapped, {
+      createPreparationId: () => "publish_preparation_authority_b_wrapped",
+    });
+
+    expect(directPreparation.expectedActivePublicationVersionId).toBe(activeA.version.id);
+    expect(wrappedPreparation.expectedActivePublicationVersionId).toBe(activeA.version.id);
+    expect(activeRead).toHaveBeenCalledWith(projectId);
+
+    await confirmPublish(directPreparation, value);
+    const activeB = (await value.getActiveCompiledPublication(projectId))!;
+    const aggregateB = await value.get(projectId);
+    const versionsB = await value.listPublishedStorefrontVersions(projectId);
+    expect(activeB.version.id).not.toBe(activeA.version.id);
+
+    await expect(confirmPublish(wrappedPreparation, wrapped)).rejects.toMatchObject({
+      code: "STALE_PUBLISH_PREPARATION",
+    });
+    expect(await value.get(projectId)).toEqual(aggregateB);
+    expect(await value.getActiveCompiledPublication(projectId)).toEqual(activeB);
+    expect(await value.listPublishedStorefrontVersions(projectId)).toEqual(versionsB);
+  });
+
   it("commits the exact manual snapshot, compiler artifact, version, operation and pointer together", async () => {
     const value = repository();
     const { preparation, result, active } = await publishChange(value, "manual");
