@@ -6,7 +6,7 @@
 
 **Verified baseline:** `3d36f548ea79412e6fe3f66b9dd10a2c1e2150f5` (`origin/main`, including merged PR #170)
 
-**Next active development phase:** P10B — Commercial Storefront Design System v1 (**Planned**)
+**Next active development phase:** P10B — Commercial Storefront Generation System v1 (**Planned**)
 
 **Provider calls during closure:** zero
 
@@ -126,9 +126,9 @@ Source or provider content cannot replace these authorities.
 
 ## 8. Current limitations and deferred ownership
 
-- **P10B — Planned / next active phase:** commercial semantic foundations, deeper component and
-  PageBlueprint diversity, responsive art direction, differentiated complete directions, and
-  retained human commercial visual acceptance.
+- **P10B — Planned / active phase:** complete storefront-generation architecture, commercial
+  semantic foundations, deeper component/PageBlueprint diversity, bounded synthesis, responsive
+  art direction, differentiated directions, and retained human commercial visual acceptance.
 - **P10C — Planned:** normal Storefront Studio wiring for strict routing, clarification, frame/page
   scope controls, bounded manual operations, governed AI execution, and unified merchant history.
 - **P10D — Planned:** governed generated imagery, video, and registered interactive presentation

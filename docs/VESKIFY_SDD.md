@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 7 August 2026, current `main` after PR #170                           |
+| Verified baseline         | 7 August 2026, current `main` after PR #171                           |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B lock | 7 August 2026 | `cd7b25a`, current `main` after merged PR #171 | Lock the complete-storefront generation architecture, broaden the P10B phase name, and replace its provisional 12-task plan with 18 implementation-ready tasks. |
 | 1.3.0 closure sync | 7 August 2026 | `3d36f54`, current `main` after merged PR #170 | Close P10A from current governed-provider, accepted-receipt, atomic-publication, rollback, and correlated publication evidence; make Planned P10B the next active phase. |
 | 1.3.0 | 6 August 2026 | `27e08a0`, current `main` after merged PR #165 | Consolidate verified product truth, current architecture, commercial-design work, Studio ownership, and Vesko contract readiness. |
 | 1.2.2 | 31 July 2026 | Historical source and DOCX export | Preserve the earlier commercial-vocabulary amendment and its historical evidence context. |
@@ -58,14 +59,14 @@ home, collection, and product-detail rendering.
 
 The product remains **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
 orchestration and publishing is **Baseline / closed** under the formal
-[`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md) exit audit. P10B is now the next active
-development phase, while all P10B work remains **Planned**. The current merchant editor does not
+[`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md) exit audit. P10B is now the active development
+phase, while all P10B work remains **Planned**. The current merchant editor does not
 yet expose the governed routing and scoped editing authorities; that is intentionally P10C work,
 not a P10A closure requirement.
 
 The current visual ceiling is a clean, responsive catalogue storefront with useful commerce depth
 but limited brand distinction. P10B is the first phase allowed to claim a commercially credible
-design system. The next major customer milestone is:
+generation system. The next major customer milestone is:
 
 > Generate a complete storefront that a serious retailer can publish without a designer rebuilding
 > it.
@@ -80,10 +81,9 @@ There is no Vesko staging or production evidence.
 
 ### 3.1 Mission
 
-Vesko Storefront Studio should let a retailer reuse an existing website, brand assets, product
-media, and canonical Vesko commerce data to approve a storefront brief, generate a complete
-storefront, improve it through controlled natural-language and visual edits, and explicitly save,
-preview, and publish it.
+Vesko Storefront Studio lets a retailer combine approved website and brand evidence, product media,
+and canonical Vesko commerce data; approve a storefront brief; generate and improve a complete
+storefront through controlled edits; and explicitly save, preview, and publish it.
 
 The product reduces the design and composition burden of Vesko onboarding. It serves merchants who
 may have a logo and product imagery but no complete design system. Jewellery and watches remain the
@@ -91,14 +91,18 @@ first deep reference domain, while the architecture must safely support unknown 
 
 ### 3.2 Veskify authority
 
-Veskify owns presentation and composition:
+Veskify owns storefront creation, presentation, and composition:
 
-- projects, brand systems, pages, sections, navigation, snapshots, drafts, and history;
+- site-map decisions, page creation, routes, navigation, shared frame, projects, brand systems,
+  pages, sections, snapshots, drafts, and history;
+- homepage, collection/category, PDP, About/brand-story, Contact/locations, FAQ,
+  shipping/returns/policy, campaign/editorial, generic content, search/results, cart, checkout,
+  empty, error, and 404 presentation;
 - registered component families, meaningful variants, slots, and bounded parameters;
 - PageBlueprints and registered profiles;
 - presentation bindings and product-presentation contexts;
 - source evidence, asset inventory, approved asset roles, and storefront design briefs;
-- governed skills, plans, operations, proposals, acceptance, and restoration;
+- governed storefront synthesis, skills, plans, operations, proposals, acceptance, and restoration;
 - deterministic publication compilation and Veskify publication authority;
 - editor, preview, and published-renderer projections.
 
@@ -111,11 +115,13 @@ never mutate or replace:
 - canonical product type and attributes;
 - price, compare-at price, stock, availability, and inventory;
 - canonical product and variant media;
-- orders, payments, checkout operations, shipping, tax, returns, and logistics.
+- cart and checkout operations, orders, payments, shipping, tax, returns, logistics, and
+  merchant/store operational facts.
 
 Public source evidence can inform presentation but cannot override Vesko commerce truth. Generated
-copy must not invent materials, certifications, guarantees, delivery promises, availability, or
-price facts.
+copy must not invent materials, certifications, policies, service claims, guarantees, delivery
+promises, compliance facts, availability, or price facts. Legal/policy/service presentation
+requires approved merchant or Vesko evidence.
 
 ### 3.4 Explicit product boundary
 
@@ -132,15 +138,16 @@ The canonical storefront lifecycle is:
 
 ```text
 approved evidence and read-only Vesko commerce
-  → registered capability and PageBlueprint authority
-  → governed instruction and scope
-  → structured plan and proposal
-  → validated StorefrontSnapshot
-  → review and atomic acceptance
-  → draft, history and preview
-  → deterministic publication compilation
-  → immutable published version
-  → homepage, collection and PDP rendering
+  → Veskify site-map and page-set decision
+  → bounded BrandSystem / Design DNA
+  → registered PageBlueprint profile per page
+  → compatible component family and meaningful structural variant
+  → bounded validated parameters
+  → approved asset placement and art direction
+  → narrative and compatibility validation
+  → complete StorefrontSnapshot
+  → preview
+  → explicit publish
 ```
 
 `StorefrontSnapshot` is the sole canonical editable aggregate across generation, editing, preview,
@@ -191,7 +198,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
-| Commercial storefront design system                  | **Planned**  | P10B owns the first commercial visual-quality claim.                            |
+| Commercial storefront generation system              | **Planned**  | P10B owns the first complete-storefront commercial quality/diversity claim.     |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
 
@@ -421,7 +428,7 @@ P10A-09 reconciles this evidence with every other P10A gate in the formal
 [`P10A phase closure record`](P10A_PHASE_CLOSURE.md). P10A is Baseline / closed; this functional
 publication evidence still does not claim P10B commercial visual acceptance.
 
-## 10. Commercial Storefront Design System
+## 10. Commercial Storefront Generation System
 
 ### 10.1 Current ceiling
 
@@ -431,12 +438,51 @@ Typography, spacing, layout, surfaces, controls, image art direction, shared fra
 and narrative depth do not yet form a sufficiently differentiated commercial system. Valid schemas,
 component counts, fixture screenshots, and deterministic tests cannot establish commercial quality.
 
-### 10.2 P10B outcome
+### 10.2 P10B outcome and binding architecture
 
-P10B delivers Commercial Storefront Design System v1 through the existing canonical authorities.
-It must produce one credible complete Premium Editorial storefront before broadening to Modern
-Technical and Minimal Commerce. It then closes direction differentiation, narrative composition,
-responsive behavior, and retained human commercial review.
+P10B delivers Commercial Storefront Generation System v1 through the existing canonical
+authorities. The internal commercial design system is one P10B subsystem; the phase also owns the
+site map, complete registered page set, navigation composition, bounded storefront synthesis,
+diversity control, responsive presentation, and commercial evidence.
+
+The binding model and locked 18-task sequence live in
+[`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
+The architecture produces one complete Premium Editorial storefront before broad synthesis and
+direction expansion. P10B-01 remains the first Planned implementation task; the architecture lock
+does not implement it.
+
+The canonical inheritance remains:
+
+```text
+BrandSystem
+  → PageBlueprint profile
+  → component family / meaningful variant
+  → bounded validated instance override
+```
+
+A blueprint owns structure, regions, hierarchy, slots, relationships, responsive transformation,
+and permitted layouts. Bounded finishing selects typed palette, typography, rhythm, containers,
+surfaces, controls, shape/elevation, density, image treatment, alignment, and visual weight. Raw
+CSS, class aliases, React, generated executable frontend code, and parallel token/page/recipe/
+registry/direction authorities remain prohibited.
+
+`BrandSystem` owns merchant-wide bounded Design DNA across semantic colour, approved font roles and
+pairing, type scale/weights, spacing and section rhythm, gutters/containers, grid/card/control
+density, surfaces, borders, radius, elevation/shadow, actions, image posture, and responsive
+density. AI does not independently style each section.
+
+P10B adds a bounded Veskify-owned site-map/page-family decision through existing PageBlueprint and
+`StorefrontSnapshot` authority. It covers shared frame, home, collection/category, PDP,
+About/brand story, Contact/locations, FAQ, shipping/returns/policy, campaign/editorial, generic
+content, search/results/no-results, cart, checkout, empty, error, and 404 presentation. Vesko
+retains all operational commerce and merchant/store facts.
+
+Commercial minimums are four complete frame systems, three mobile navigation modes, four footer
+compositions, six hero compositions, five canonical product-card anatomies, six homepage profiles,
+four collection/search profiles, four PDP profiles, registered content/support families, and
+governed commerce-utility states. A meaningful variant changes anatomy, hierarchy, arrangement,
+asset/content/CTA relationship, navigation, merchandising, responsive transformation, or
+interaction mode; class, colour, padding, border, or radius alone is not meaningful.
 
 The three registered directions are:
 
@@ -445,16 +491,27 @@ The three registered directions are:
 - **Modern Technical** — precise, feature-led, structured, information-rich presentation;
 - **Minimal Commerce** — quiet, product-forward, efficient commerce with disciplined density.
 
-Each direction must differ materially across shared frame, typography, density, imagery, home,
-collection, PDP, and composition—not merely palette or spacing. Optional proof and trust content is
-shown only when approved merchant evidence exists.
+Each direction is only a coordinated constraint package selecting compatible canonical authority.
+It must differ materially across shared frame, typography, density, imagery, page profiles,
+merchandising, responsive behavior, and narrative composition—not merely palette or spacing.
+Optional proof, policy, and trust content is shown only when approved merchant/Vesko evidence
+exists.
+
+Bounded synthesis selects compatible Design DNA, page set, profiles, frame, component anatomies,
+meaningful variants, parameters, approved assets, image treatments, ordering/cardinality, and
+narrative roles. It rejects incompatible combinations, excessive repetition, protected-state
+drift, and exact or meaningful near duplicates. A deterministic storefront-design fingerprint
+covers structural and non-colour dimensions; hundreds or thousands of outcomes arise from bounded
+combinations, not manually authored templates.
 
 ### 10.3 Commercial acceptance
 
-P10B closes only when representative approved assets and canonical commerce produce a coherent
-home, collection, simple PDP, and configurable PDP at 375, 768, 1024, and 1440 px. Required
-evidence combines contract/schema, deterministic/integration/browser reachability, retained
-screenshots, and human commercial review. Tests alone cannot close visual quality.
+P10B closes only when at least 100 complete bounded storefront configurations pass deterministic
+validity, protected-state, exact-duplicate, near-duplicate, and structural-distribution analysis,
+and a fingerprint-stratified representative subset passes retained human commercial review. The
+complete-store evidence includes required content/support and utility pages, EN/FI where supported,
+and 375, 768, 1024, and 1440 px. Tests alone cannot close visual quality, and one polished vertical
+slice cannot close meaningful diversity.
 
 ## 11. Storefront Studio and merchant editing
 
@@ -587,9 +644,9 @@ The binding sequence is:
 
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
    formal P10A phase closure record.
-2. **P10B — Commercial Storefront Design System v1.** **Planned / next active phase.** Deliver the
-   first commercially credible complete storefront through registered visual authority and
-   retained human review.
+2. **P10B — Commercial Storefront Generation System v1.** **Planned / active phase.** Deliver
+   complete commercially credible storefronts with bounded material diversity through registered
+   authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
    scoped AI editing, unified history, save, preview, and publish.
 4. **P10D — Advanced media and registered interactive presentation.** Add governed generated media,

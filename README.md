@@ -6,19 +6,22 @@ read-only canonical Vesko commerce data into a governed, editable, and explicitl
 storefront.
 
 The overall product is **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
-orchestration and publishing is **Baseline / closed**. P10B Commercial Storefront Design System v1
-is the next active development phase, but remains **Planned** until implementation and evidence
-begin.
+orchestration and publishing is **Baseline / closed**. P10B Commercial Storefront Generation System
+v1 is the active development phase, but remains **Planned** until implementation and evidence begin.
 
 ## Product boundary
 
-Veskify owns storefront presentation and composition: `BrandSystem`, registered components and
-PageBlueprints, `StorefrontSnapshot`, governed proposals, editing, draft/history, preview, and
-publication compilation.
+Veskify owns storefront creation and presentation: site map, page set, navigation, routes,
+`BrandSystem`, registered components and PageBlueprints, `StorefrontSnapshot`, governed synthesis
+and proposals, editing, draft/history, preview, and publication compilation. This includes home,
+collection, PDP, content/support, campaign, search, cart/checkout, empty, error, and 404
+presentation.
 
 Vesko owns operational commerce and sellability. Veskify consumes product, variant, option, SKU,
-price, stock, availability, canonical media, inventory, order, payment, shipping, tax, and logistics
-truth read-only. It must not mutate or replace those authorities.
+price, stock, availability, canonical media, inventory, cart/checkout operations, order, payment,
+shipping, tax, returns, logistics, and merchant/store operational truth read-only. It must not
+mutate, replace, or invent those authorities. Legal, policy, delivery, guarantee, certification,
+and compliance claims require approved merchant or Vesko evidence.
 
 Puck supplies isolated editor mechanics. Puck data is transient adapter data, never a second
 canonical page tree or persistence format. AI emits validated structured operations and may select
@@ -49,7 +52,7 @@ It is not a P10A closure requirement.
 
 Current output can be a clean, responsive catalogue storefront, but it has limited brand
 distinction and has not passed a current commercial human visual-quality gate. P10B Commercial
-Storefront Design System v1 is the next visual product phase and the first phase allowed to make a
+Storefront Generation System v1 is the active product phase and the first phase allowed to make a
 commercial-quality claim.
 
 Its target is:
@@ -57,14 +60,15 @@ Its target is:
 > Generate a complete storefront that a serious retailer can publish without a designer rebuilding
 > it.
 
-P10B first proves one complete Premium Editorial vertical slice, then Modern Technical and Minimal
-Commerce, then narrative, responsive, and commercial-quality closure. Tests and schema validity
-alone cannot close that gate.
+P10B first makes the existing design grammar, Design DNA, component anatomy, page-set authority,
+families, and profiles executable. It then proves one complete Premium Editorial vertical slice
+before bounded synthesis and broader direction/diversity work. Tests and schema validity alone
+cannot close its 100+ configuration scale gate or commercial human-review gate.
 
 ## Delivery sequence
 
 1. P10A — Grounded orchestration and publishing closure (**Baseline / closed**)
-2. P10B — Commercial Storefront Design System v1 (**Planned / next active phase**)
+2. P10B — Commercial Storefront Generation System v1 (**Planned / active phase**)
 3. P10C — Storefront Studio Editing Experience v1
 4. P10D — Advanced media and registered interactive presentation
 5. P11 — Vesko Integration Readiness and Reference Adapter
@@ -88,15 +92,13 @@ See the [OpenAPI contract audit](docs/VESKO_OPENAPI_CONTRACT_AUDIT.md) and
 
 ```text
 approved evidence and read-only Vesko commerce
-  → registered capability and PageBlueprint authority
-  → governed instruction and scope
-  → structured plan and proposal
-  → validated StorefrontSnapshot
-  → review and atomic acceptance
-  → draft, history and preview
-  → deterministic publication compilation
-  → immutable published version
-  → homepage, collection and PDP rendering
+  → Veskify site-map and page-set decision
+  → bounded BrandSystem / Design DNA
+  → registered PageBlueprint profile per page
+  → compatible family, meaningful variant and bounded parameters
+  → approved asset art direction and narrative validation
+  → complete StorefrontSnapshot
+  → preview and explicit publish
 ```
 
 Design inherits through:
@@ -137,6 +139,7 @@ high-risk validation.
 - [Current-state truth audit](docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md)
 - [Capability evidence ledger](docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md)
 - [P10A phase closure record](docs/P10A_PHASE_CLOSURE.md)
+- [P10B commercial storefront generation architecture](docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md)
 - [Development guide](docs/DEVELOPMENT_GUIDE.md)
 - [Binding repository constitution](AGENTS.md)
 - [Architecture decisions](docs/adr/README.md)
