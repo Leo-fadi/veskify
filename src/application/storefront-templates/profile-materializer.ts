@@ -48,6 +48,32 @@ export class ExecutablePageBlueprintMaterializationError extends Error {
   }
 }
 
+const compositeRuntimeComponentByPageType: Readonly<
+  Partial<Record<StorefrontTemplatePagePlan["pageType"], Readonly<Record<string, string>>>>
+> = {
+  collection: {
+    collectionHeader: "dynamicCollectionCommerce",
+    filterBar: "dynamicCollectionCommerce",
+    productGrid: "dynamicCollectionCommerce",
+  },
+  product: {
+    productGallery: "dynamicProductDetail",
+    productInfo: "dynamicProductDetail",
+    productOptions: "dynamicProductDetail",
+    benefitIcons: "dynamicProductDetail",
+    imageText: "dynamicProductDetail",
+    relatedProducts: "dynamicProductDetail",
+  },
+};
+
+/** Canonical PageBlueprint-slot projection into the controlled runtime registry. */
+export function runtimeComponentForPageBlueprintComponent(
+  component: string,
+  pageType: StorefrontTemplatePagePlan["pageType"],
+): string {
+  return compositeRuntimeComponentByPageType[pageType]?.[component] ?? component;
+}
+
 function freeze<T>(value: T): T {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
     Object.freeze(value);

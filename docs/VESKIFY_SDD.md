@@ -56,9 +56,11 @@ persistence, an authoritative publishing gateway, a deterministic publish compil
 home, collection, and product-detail rendering.
 
 The product remains **Partial**. Phase 9 is closed by product-owner handoff, and P10A is
-substantially implemented but not closed. Controlled real-provider acceptance, accepted-AI receipt
-wiring, atomic compiled-artifact persistence and rollback, and complete retained publication
-evidence remain. The current merchant editor does not yet expose the governed routing and scoped
+substantially implemented but not closed. Controlled real-provider acceptance, atomic
+compiled-artifact persistence and rollback, and complete retained publication evidence remain. The
+accepted-AI acceptance-to-receipt and active gateway chain is composed, but
+final compiler-correlated retained publication evidence remains a separate closure gate. The current
+merchant editor does not yet expose the governed routing and scoped
 editing authorities; that is intentionally P10C work, not a P10A closure blocker.
 
 The current visual ceiling is a clean, responsive catalogue storefront with useful commerce depth
@@ -184,7 +186,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Puck/editor projection                               | **Partial**  | Real adapter and editor exist; the full merchant-operable Studio chain is incomplete. |
 | Draft save, history, and restore                     | **Baseline** | Standalone canonical persistence and lifecycle evidence exist.                  |
 | Controlled real-provider acceptance                  | **Blocked**  | No eligible approved provider configuration is currently available.            |
-| Accepted-AI receipt-to-gateway composition           | **Partial**  | Receipt and gateway authority exist but active acceptance wiring is incomplete. |
+| Accepted-AI receipt-to-gateway composition           | **Baseline** | Server acceptance mints durable create-once authority used by active prepare/confirm. |
 | Authoritative merchant publishing gateway            | **Baseline** | Server-side auth, permission, preparation, confirmation, and idempotency exist. |
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Planned**  | P10A-08C-02B owns atomic artifact/version history and rollback.                  |
@@ -370,6 +372,15 @@ registry, manifest, profile, commerce, and approved-asset lineage. Browser-submi
 content is invalid. Stale authority, accept-then-undo divergence, and idempotency conflicts fail
 without moving publication state.
 
+Authoritative governed acceptance accepts only bounded proposal/action identities and optimistic
+project/draft preconditions from the browser. It resolves the authenticated merchant context,
+server-retained proposal and review, current lifecycle, canonical draft, materialization, registry,
+manifest, package, commerce, and approved-asset authority itself. One accepted action owns one
+deterministic receipt identity; exact retries recover that receipt, while conflicting reuse fails
+closed. Prepare and confirm reload the persisted receipt and independently resolve current authority
+again. The same internal authority contract accepts governed initial-generation and follow-up
+proposals; normal merchant follow-up routing remains P10C-owned.
+
 ### 9.2 Deterministic compiler
 
 The publish compiler transforms the exact authorized `StorefrontSnapshot` and current live
@@ -380,11 +391,9 @@ authority and recompiles; any identity drift fails before publication.
 
 ### 9.3 Remaining publication closure
 
-P10A-08B-02 must connect authoritative proposal acceptance to durable accepted-AI receipt creation
-and active gateway composition. P10A-08C-02B must atomically persist the immutable compiled
-artifact with publication operation, history, active artifact/version pointer, and safe
-rollback/republish authority. This compiled artifact is derived publication state, not another
-editable model.
+P10A-08C-02B must atomically persist the immutable compiled artifact with publication operation,
+history, active artifact/version pointer, and safe rollback/republish authority. This compiled
+artifact is derived publication state, not another editable model.
 
 P10A-08D-02 must retain final browser and human evidence for gateway/compiler publication of home,
 collection, and PDP routes, plus failure/no-partial-write, active-version, rollback, republish, and
@@ -556,8 +565,8 @@ incomplete.
 The binding sequence is:
 
 1. **P10A — Grounded orchestration and publishing closure.** Close controlled-provider evidence,
-   accepted-AI receipt composition, atomic compiled publication/rollback, final publication
-   evidence, and the closure record.
+   controlled-provider evidence, atomic compiled publication/rollback, final publication evidence,
+   and the closure record.
 2. **P10B — Commercial Storefront Design System v1.** Deliver the first commercially credible
    complete storefront through registered visual authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
@@ -612,7 +621,6 @@ Version 1.3.0 does not claim:
 - that P10A is closed;
 - that a successful retained P10A controlled real-provider case exists;
 - that governed internal routing is wired into the normal merchant editor;
-- that accepted-AI publication is fully composed end to end;
 - that immutable compiled artifacts, active-version rollback, and republish are implemented;
 - that final compiler-correlated home, collection, and PDP publication evidence is retained;
 - that the Vesko OpenAPI contract is sufficient for production integration;

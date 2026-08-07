@@ -17,6 +17,7 @@ import {
   type StorefrontCommerceRouteAdapter,
 } from "@/integrations/storefront-commerce-routes";
 import {
+  acceptP905bLocalDemoProposal,
   P905bLocalDemoSynchronizationClientError,
   synchronizeP905bLocalDemoAggregate,
 } from "@/integrations/ai/p9-05b-local-demo-client";
@@ -39,7 +40,12 @@ import {
 import { brandSystemToCssVariables, type BrandSystem } from "@/domain/design-system";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
 import type { AiStorefrontProposal } from "@/application/ai-storefront";
-import type { PageModel, PageType, StorefrontSnapshot } from "@/domain/storefront";
+import {
+  canonicalValueFingerprint,
+  type PageModel,
+  type PageType,
+  type StorefrontSnapshot,
+} from "@/domain/storefront";
 import { VeskifyPuckCanvas } from "@/integrations/puck/veskify-puck-editor";
 import {
   createBrowserProjectRepository,
@@ -337,6 +343,7 @@ export function ProjectEditorClient({
   const [authoritativeRevision, setAuthoritativeRevision] = useState<number | null>(
     localDemoBridge?.authoritativeRevision ?? null,
   );
+  const [acceptedReceiptId, setAcceptedReceiptId] = useState<string>();
   const savePending = useRef(false);
   const resolvedStorefrontAiProvider = useMemo(
     () =>
@@ -429,6 +436,7 @@ export function ProjectEditorClient({
           setSessionBrandSystem(undefined);
           setImportedDemoProposal(localDemoBridge?.proposal ?? undefined);
           setAuthoritativeRevision(localDemoBridge?.authoritativeRevision ?? null);
+          setAcceptedReceiptId(undefined);
           setResetKeys({});
           setValidationMessage("");
           setHistoryStatus("");
@@ -515,19 +523,27 @@ export function ProjectEditorClient({
         [acceptedPage.id]: (current[acceptedPage.id] ?? 0) + 1,
       }));
     },
-    onStorefrontAccepted: async (snapshot) => {
+    onStorefrontAccepted: async ({ proposalId }) => {
       if (!localDemoBridge) return;
       if (authoritativeRevision === null || !readyState) {
         throw new P905bLocalDemoSynchronizationClientError("stale", 409);
       }
-      const synchronization = await synchronizeP905bLocalDemoAggregate({
+      const acceptance = await acceptP905bLocalDemoProposal({
         projectId,
         sessionId: localDemoBridge.sessionId,
-        expectedRevision: authoritativeRevision,
-        mode: "active",
-        aggregate: aggregateWithActiveDraft(readyState.aggregate, snapshot),
+        proposalId,
+        acceptanceActionId: `acceptance_action_${canonicalValueFingerprint({
+          sessionId: localDemoBridge.sessionId,
+          proposalId,
+          authoritativeRevision,
+        }).slice(-32)}`,
+        expectedAuthorityRevision: authoritativeRevision,
+        expectedProjectRevision: readyState.aggregate.project.revision,
+        expectedDraftId: readyState.draft.id,
+        expectedDraftRevision: readyState.draft.revision,
       });
-      setAuthoritativeRevision(synchronization.authoritativeRevision);
+      setAuthoritativeRevision(acceptance.authoritativeRevision);
+      setAcceptedReceiptId(acceptance.receiptId);
     },
     onStorefrontHistorySnapshot: async (snapshot) => {
       if (!localDemoBridge) return;
@@ -542,6 +558,7 @@ export function ProjectEditorClient({
         aggregate: aggregateWithActiveDraft(readyState.aggregate, snapshot),
       });
       setAuthoritativeRevision(synchronization.authoritativeRevision);
+      setAcceptedReceiptId(undefined);
     },
     onStorefrontSnapshot: (snapshot, scope, action) => {
       if (!readyState) return;
@@ -1388,7 +1405,7 @@ export function ProjectEditorClient({
             <Button disabled={saveDisabled} onClick={() => void saveDraft()}>
               {saveState.status === "saving" ? text.actions.savingDraft : text.actions.saveDraft}
             </Button>
-            {hasUnsavedChanges ? (
+            {hasUnsavedChanges && !acceptedReceiptId ? (
               <span aria-disabled="true" className={styles.publishAction}>
                 {text.actions.publish}
               </span>
@@ -1396,7 +1413,7 @@ export function ProjectEditorClient({
               <Button
                 href={
                   localDemoBridge
-                    ? `/projects/${projectId}/publish?p9-05b-session=${encodeURIComponent(localDemoBridge.sessionId)}`
+                    ? `/projects/${projectId}/publish?p9-05b-session=${encodeURIComponent(localDemoBridge.sessionId)}${acceptedReceiptId ? `&accepted-receipt=${encodeURIComponent(acceptedReceiptId)}` : ""}`
                     : `/projects/${projectId}/publish`
                 }
                 variant="primary"

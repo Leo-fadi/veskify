@@ -191,7 +191,7 @@ type UseDesignAgentSessionInput = {
   analyticsRoute?: string;
   onProposalReady?: () => void;
   onAcceptedPage: (page: PageModel) => void;
-  onStorefrontAccepted?: (snapshot: StorefrontSnapshot) => Promise<void>;
+  onStorefrontAccepted?: (input: { proposalId: string }) => Promise<void>;
   onStorefrontHistorySnapshot?: (snapshot: StorefrontSnapshot) => Promise<void>;
   onStorefrontSnapshot: (
     snapshot: StorefrontSnapshot,
@@ -1261,7 +1261,7 @@ export function useDesignAgentSession({
             }
             let activeStorefront: StorefrontSnapshot;
             try {
-              await onStorefrontAccepted?.(result.activeDraft);
+              await onStorefrontAccepted?.({ proposalId: generatedStorefrontProposal.id });
               if (actionSequence.current !== actionId) {
                 acceptancePending.current = false;
                 return;

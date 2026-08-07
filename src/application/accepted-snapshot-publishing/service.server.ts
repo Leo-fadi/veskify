@@ -23,7 +23,11 @@ import { validateProjectAggregate } from "@/services/storage/repository-validati
 import {
   AcceptedSnapshotReceiptError,
   acceptedSnapshotCurrentAuthoritySchema,
+  acceptedSnapshotPublishReceiptIdForAcceptanceAction,
   acceptedSnapshotPublishReceiptFingerprint,
+  acceptedSnapshotProposalFingerprint,
+  acceptedSnapshotReviewFingerprint,
+  acceptedSnapshotRuntimeFingerprint,
   acceptedSnapshotPublishReceiptSchema,
   acceptedSnapshotPublishReceiptVersion,
   resolveAcceptedSnapshotPublishReceipt,
@@ -59,23 +63,11 @@ export type AcceptedSnapshotPublishingAuthorityServiceOptions = Readonly<{
   createReceiptId?: (input: { acceptanceActionId: string; receiptFingerprint: string }) => string;
 }>;
 
-function lifecycleProposalFingerprint(
-  proposal: z.infer<typeof wholeStorefrontProposalSchema>,
-): string {
-  return `accepted-proposal-${canonicalValueFingerprint(proposal)}`;
-}
-
-function lifecycleReviewFingerprint(
-  proposal: z.infer<typeof wholeStorefrontProposalSchema>,
-): string {
-  return `accepted-review-${canonicalValueFingerprint(proposal.reviewSummary)}`;
-}
-
 function defaultReceiptId(input: {
   acceptanceActionId: string;
   receiptFingerprint: string;
 }): string {
-  return `acceptance_receipt_${canonicalValueFingerprint(input).slice(-20)}`;
+  return acceptedSnapshotPublishReceiptIdForAcceptanceAction(input.acceptanceActionId);
 }
 
 function assertAcceptedLifecycle(
@@ -261,12 +253,10 @@ export class AcceptedSnapshotPublishingAuthorityService {
       draftId: proposal.draftSnapshotId,
       proposalId: proposal.id,
       proposalRevision: authority.data.proposalRevision,
-      proposalFingerprint: lifecycleProposalFingerprint(proposal),
+      proposalFingerprint: acceptedSnapshotProposalFingerprint(proposal),
       reviewRevision: authority.data.reviewRevision,
-      reviewFingerprint: lifecycleReviewFingerprint(proposal),
-      acceptedRuntimeFingerprint: `accepted-runtime-${canonicalValueFingerprint(
-        proposal.proposedStorefront,
-      )}`,
+      reviewFingerprint: acceptedSnapshotReviewFingerprint(proposal.reviewSummary),
+      acceptedRuntimeFingerprint: acceptedSnapshotRuntimeFingerprint(proposal.proposedStorefront),
       acceptedSnapshotId: snapshot.data.id,
       acceptedSnapshotFingerprint: snapshotFingerprint,
       projectRevision: aggregate.project.revision,

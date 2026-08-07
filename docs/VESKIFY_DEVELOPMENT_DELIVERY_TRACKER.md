@@ -28,13 +28,13 @@ required evidence are accepted.
 
 ## P10A checklist
 
-| Done | Task         | Outcome                                          | Status      | Owner                | Dependency                                                  | Required evidence                                                                                    |
-| ---- | ------------ | ------------------------------------------------ | ----------- | -------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| ☐    | P10A-07C-03R | Controlled real-provider acceptance completion   | **Blocked** | Provider acceptance  | Explicit approval and eligible trusted OpenAI configuration | One initial case before one follow-up case; retained real-provider evidence; no retry                |
-| ☐    | P10A-08B-02  | Accepted-AI acceptance-to-receipt wiring         | **Partial** | Proposal/publishing  | Existing acceptance, receipt, and gateway authority         | Deterministic; integration; browser/E2E; stale/divergent/no-partial-write rejection                  |
-| ☐    | P10A-08C-02B | Atomic compiled publication and rollback closure | **Planned** | Publishing           | P10A-08B-02 and deterministic compiler                      | Atomic artifact/version/history persistence; idempotency; rollback/republish evidence                |
-| ☐    | P10A-08D-02  | Complete publication evidence                    | **Planned** | Publishing and QA    | P10A-08C-02B                                                | Gateway/compiler home, collection, PDP; failure; active version; rollback; zero-provider publication |
-| ☐    | P10A-09      | P10A closure record                              | **Planned** | Product architecture | Prior P10A closure tasks or explicit disposition            | Accepted closure and evidence coverage record                                                        |
+| Done | Task         | Outcome                                          | Status       | Owner                | Dependency                                                  | Required evidence                                                                                    |
+| ---- | ------------ | ------------------------------------------------ | ------------ | -------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| ☐    | P10A-07C-03R | Controlled real-provider acceptance completion   | **Blocked**  | Provider acceptance  | Explicit approval and eligible trusted OpenAI configuration | One initial case before one follow-up case; retained real-provider evidence; no retry                |
+| ☐    | P10A-08B-02  | Accepted-AI acceptance-to-receipt wiring         | **Baseline** | Proposal/publishing  | Existing acceptance, receipt, and gateway authority         | Deterministic; integration; browser/E2E; stale/divergent/no-partial-write rejection                  |
+| ☐    | P10A-08C-02B | Atomic compiled publication and rollback closure | **Planned**  | Publishing           | P10A-08B-02 and deterministic compiler                      | Atomic artifact/version/history persistence; idempotency; rollback/republish evidence                |
+| ☐    | P10A-08D-02  | Complete publication evidence                    | **Planned**  | Publishing and QA    | P10A-08C-02B                                                | Gateway/compiler home, collection, PDP; failure; active version; rollback; zero-provider publication |
+| ☐    | P10A-09      | P10A closure record                              | **Planned**  | Product architecture | Prior P10A closure tasks or explicit disposition            | Accepted closure and evidence coverage record                                                        |
 
 ## P10B checklist
 
@@ -102,7 +102,7 @@ required evidence are accepted.
 
 - **Outcome:** Authoritative proposal acceptance mints and persists the exact server-owned
   accepted-snapshot receipt, and the active publish gateway resolves it.
-- **Status:** **Partial**.
+- **Status:** **Baseline**.
 - **Depends on:** Existing proposal acceptance, receipt repository, and publishing gateway.
 - **Done when:** The stated outcome and required evidence are accepted.
 - **Required evidence:** Exact lineage, create-once persistence, manual/AI separation, stale and

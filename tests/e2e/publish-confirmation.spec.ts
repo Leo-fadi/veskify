@@ -90,6 +90,101 @@ async function openPublish(page: Page, sessionId: string) {
   await page.getByRole("radio", { name: "English" }).check();
 }
 
+function acceptedAiAuthorityFromRequestBody(body: string | null) {
+  const value = JSON.parse(body ?? "null") as unknown;
+  if (
+    !value ||
+    typeof value !== "object" ||
+    !("request" in value) ||
+    !value.request ||
+    typeof value.request !== "object" ||
+    !("authority" in value.request) ||
+    !value.request.authority ||
+    typeof value.request.authority !== "object" ||
+    !("kind" in value.request.authority) ||
+    value.request.authority.kind !== "accepted-ai" ||
+    !("receiptId" in value.request.authority) ||
+    typeof value.request.authority.receiptId !== "string"
+  ) {
+    throw new Error("Publish preparation did not carry bounded accepted-AI authority.");
+  }
+  return { kind: "accepted-ai" as const, receiptId: value.request.authority.receiptId };
+}
+
+test("accepts a governed proposal and prepares accepted-AI publication from only its receipt identity", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const sessionId = await resetSession(page);
+  const generated = await page.evaluate(
+    async ({ projectId: targetProjectId, sessionId, token }) => {
+      const response = await fetch("/api/demo/p9-05b/generate", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-veskify-p9-05b-demo-token": token,
+        },
+        body: JSON.stringify({
+          projectId: targetProjectId,
+          sessionId,
+          merchantInstruction: "Create a modern technical storefront for Lumo Atelier.",
+        }),
+      });
+      return { body: (await response.json()) as unknown, ok: response.ok };
+    },
+    { projectId, sessionId, token: demoToken },
+  );
+  expect(generated.ok).toBe(true);
+  if (
+    !generated.body ||
+    typeof generated.body !== "object" ||
+    !("editorRoute" in generated.body) ||
+    typeof generated.body.editorRoute !== "string"
+  ) {
+    throw new Error("Accepted-AI browser test did not receive an editor route.");
+  }
+
+  await page.goto(generated.body.editorRoute);
+  await page.getByRole("button", { name: /Accept and apply|Hyväksy ja käytä/ }).click();
+  const acceptanceResponse = page.waitForResponse(
+    (response) => response.url().includes("/api/demo/p9-05b/accept") && response.status() === 200,
+  );
+  await page
+    .getByRole("button", { name: /Apply storefront proposal|Ota kauppaehdotus käyttöön/ })
+    .click();
+  const acceptanceBody = (await (await acceptanceResponse).json()) as unknown;
+  expect(JSON.stringify(acceptanceBody)).not.toContain("snapshot");
+  expect(JSON.stringify(acceptanceBody)).not.toContain("runtime");
+
+  const publishLink = page.getByRole("link", { name: /Publish|Julkaise/, exact: true });
+  await expect(publishLink).toBeVisible();
+  await expect(publishLink).toHaveAttribute("href", /accepted-receipt=/);
+  await publishLink.click();
+  await expect(page).toHaveURL(/accepted-receipt=/);
+  await page.getByRole("radio", { name: "English" }).check();
+
+  const preparationRequest = page.waitForRequest((request) => {
+    if (!request.url().includes("/api/storefront-publish") || request.method() !== "POST") {
+      return false;
+    }
+    return request.postData()?.includes('"action":"prepare"') ?? false;
+  });
+  await page.getByRole("button", { name: "Review publish" }).click();
+  const prepareAuthority = acceptedAiAuthorityFromRequestBody(
+    (await preparationRequest).postData(),
+  );
+  expect(typeof prepareAuthority.receiptId).toBe("string");
+  expect(prepareAuthority).toEqual({
+    kind: "accepted-ai",
+    receiptId: prepareAuthority.receiptId,
+  });
+  await expect(page.getByRole("heading", { name: "Confirm publication" })).toBeVisible();
+  await page.getByRole("button", { name: "Publish storefront" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Storefront published successfully" }),
+  ).toBeVisible();
+});
+
 test("reviews a saved draft, confirms publication, and opens the published storefront", async ({
   page,
 }) => {

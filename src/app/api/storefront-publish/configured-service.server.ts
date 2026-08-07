@@ -6,11 +6,13 @@ import {
   AuthoritativeMerchantPublishService,
   FileSystemMerchantPublishPreparationStore,
 } from "@/application/publishing/authoritative-merchant-publish.server";
+import { FileSystemAcceptedSnapshotPublishReceiptRepository } from "@/application/accepted-snapshot-publishing/index.server";
 import { createStandaloneMerchantProjectContextPort } from "@/application/merchant-project-context";
 import { createStandaloneAuthoritativePublishingAdapter } from "@/integrations/vesko-publishing";
 import { P9_05A_PROJECT_ID } from "@/data/demo/p9-05a-fresh-store-generation";
 import {
   P9_05B_LOCAL_DEMO_NAMESPACE,
+  createP905bLocalDemoAcceptedAiAuthoritySource,
   commitP905bLocalDemoPublishedAggregate,
   isP905bLocalDemoConfigured,
   p905bLocalDemoRepository,
@@ -63,6 +65,11 @@ export function createConfiguredAuthoritativeMerchantPublishService(
   const preparationStore = new FileSystemMerchantPublishPreparationStore(
     join(directory, "publish-preparations"),
   );
+  const receiptRepository = new FileSystemAcceptedSnapshotPublishReceiptRepository(
+    join(directory, "accepted-snapshot-receipts"),
+  );
+  const currentAuthoritySource = createP905bLocalDemoAcceptedAiAuthoritySource(environment);
+  const acceptedSnapshotAuthority = { receiptRepository, currentAuthoritySource };
   const publishingGateway = createStandaloneAuthoritativePublishingAdapter({
     projectRepository,
     contextPort,
@@ -71,6 +78,7 @@ export function createConfiguredAuthoritativeMerchantPublishService(
         return (await preparationStore.load(preparationId))?.preparation ?? null;
       },
     },
+    acceptedSnapshotAuthority,
   });
   return new AuthoritativeMerchantPublishService({
     projectRepository,
@@ -94,6 +102,7 @@ export function createConfiguredAuthoritativeMerchantPublishService(
     },
     preparationStore,
     revisionMapper: standalonePublishingRevisionMapper,
+    acceptedAiAuthority: acceptedSnapshotAuthority,
     afterPublish: ({ projectId }) =>
       commitP905bLocalDemoPublishedAggregate({ projectId, environment }),
   });

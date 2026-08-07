@@ -204,7 +204,7 @@ export function PublishClient({
       }
       requestId.current ??= `publish_request_${crypto.randomUUID().replaceAll("-", "")}`;
       if (!requestId.current) throw new Error("Missing publication request identity.");
-      if (localDemoSession && !reloadLatestLocalDemo) {
+      if (localDemoSession && !reloadLatestLocalDemo && !acceptedReceiptId) {
         if (authoritativeRevision === null) {
           throw new P905bLocalDemoSynchronizationClientError("stale", 409);
         }
