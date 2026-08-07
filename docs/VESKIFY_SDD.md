@@ -408,12 +408,17 @@ creates a new immutable version, and advances the active pointer. An older artif
 repointed or reused as a new publication. These derived records are not another editable model or
 commerce snapshot.
 
-### 9.4 Remaining publication closure
+### 9.4 Complete publication evidence
 
-P10A-08D-02 must retain final browser and human evidence for gateway/compiler publication of home,
-collection, and PDP routes, plus failure/no-partial-write, active-version, rollback, republish, and
-zero-provider-during-publication behavior. P10A-09 records closure only after these publication
-gates are resolved or explicitly dispositioned.
+P10A-08D-02 retains correlated deterministic, integration, browser, and narrow human publication
+evidence for both manual and accepted-AI authority. It binds the trusted source draft or accepted
+receipt, preparation, operation, compile receipt/result, immutable artifact/version, active pointer,
+published snapshot, and exact home, collection, and PDP observations. The evidence also proves
+draft/published isolation, stale and injected-failure preservation, immutable history,
+restore-to-new-draft, fresh explicit republish, and zero external AI-provider calls during
+publication. This is functional publication evidence, not P10B commercial visual acceptance.
+
+P10A-09 remains the sole owner of the phase closure record; P10A is not closed by this evidence task.
 
 ## 10. Commercial Storefront Design System
 
