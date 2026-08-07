@@ -9,6 +9,7 @@ import {
   EXPECTED_REQUIREMENT_ID_SET,
   extractAuthoritativeRequirementDefinitions,
   extractRequirementIds,
+  hasStaleActiveP10AStatusClaim,
   isAffirmativeMerchantEditorP10AClaim,
 } from "./documentation-validation-helpers.mjs";
 import { extractMarkdownLinks, isSafeHyperlinkTarget } from "./markdown-docx-export.mjs";
@@ -167,6 +168,14 @@ requireText("docs/P10A_PHASE_CLOSURE.md", [
   "**Provider calls during closure:** zero",
 ]);
 
+requireText("docs/DEVELOPMENT_GUIDE.md", [
+  "Phase 9 is\nclosed by product-owner handoff, and P10A is **Baseline / closed**",
+  "P10B is the active development phase and remains **Planned**",
+  "Completed P10A capability includes governed initial and follow-up\nexecution",
+  "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
+  "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
+]);
+
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
 if ((tracker.match(/☑/g) ?? []).length !== 7) {
   failures.push("Delivery tracker must contain exactly seven completed checkboxes");
@@ -194,7 +203,6 @@ const staleActivePatterns = [
   [/Phase 12[^\n]*stable domains[^\n]*adapters/i, "old Phase 12 adapter ownership"],
   [/OpenAPI (?:contract )?(?:is )?missing/i, "missing OpenAPI claim"],
   [/raw Puck[^\n]*(?:is|as) canonical/i, "raw Puck canonical-persistence claim"],
-  [/P10A (?:is )?(?:substantially implemented but )?not closed/i, "P10A not-closed claim"],
   [/P10A closure record remains/i, "outstanding P10A closure-record claim"],
   [/P10A controlled acceptance remains blocked/i, "blocked P10A controlled-acceptance claim"],
   [/P10A-08C-02B is Planned/i, "planned compiled-publication closure claim"],
@@ -207,6 +215,9 @@ for (const [relativePath, markdown] of contents) {
     .split("\n")
     .filter((line) => !/Former (?:Phase|later)/.test(line))
     .join("\n");
+  if (hasStaleActiveP10AStatusClaim(currentClaimText)) {
+    failures.push(`${relativePath}: stale active claim (P10A not-closed claim)`);
+  }
   for (const [pattern, label] of staleActivePatterns) {
     if (pattern.test(currentClaimText)) {
       failures.push(`${relativePath}: stale active claim (${label})`);

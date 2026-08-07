@@ -86,9 +86,10 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 ## 3. Current implementation baseline
 
-The verified v1.3.0 source baseline is current `main` after PR #165 on 6 August 2026. Phase 9 is
-closed by product-owner handoff. The overall product is **Partial**, and P10A is substantially
-implemented but not closed.
+The verified v1.3.0 source baseline is current `main` after PR #170 on 7 August 2026. Phase 9 is
+closed by product-owner handoff, and P10A is **Baseline / closed**. The overall product remains
+**Partial**. P10B is the active development phase and remains **Planned** until implementation work
+starts.
 
 The current baseline includes canonical storefront/brand contracts, ComponentDefinitionV2 and its
 generated manifest, executable PageBlueprint profiles, dynamic commerce-bound collection/PDP
@@ -96,14 +97,17 @@ rendering, governed internal initial/follow-up execution, strict internal scope 
 acceptance/history, draft persistence, an authoritative publishing gateway, deterministic publish
 compilation, and published homepage/collection/PDP routes.
 
-Do not rebuild those systems. Remaining P10A work is controlled real-provider acceptance when an
-eligible approved configuration exists, accepted-AI acceptance-to-receipt wiring, atomic compiled
-publication/rollback, complete retained publication evidence, and the closure record.
+Do not rebuild those systems. Completed P10A capability includes governed initial and follow-up
+execution, strict internal routing, controlled real-provider acceptance, accepted-AI receipt
+wiring, the authoritative publish gateway, deterministic publish compilation, atomic compiled
+artifact/version persistence, restore-to-draft with explicit republish, and final correlated
+publication evidence.
 
 All generation and editing paths compile into the same `StorefrontSnapshot`. `PageModel` is an
 implementation type inside that aggregate, not a second canonical page graph. Governed packages
 and routing are internal P10A authorities; merchant-facing routing, clarification, scope controls,
-and normal-editor execution belong to P10C.
+and normal-editor execution belong to P10C. P10D remains advanced media, P11 remains Vesko
+integration readiness, and P12 remains production hardening.
 
 ## 4. Branch and PR strategy
 
