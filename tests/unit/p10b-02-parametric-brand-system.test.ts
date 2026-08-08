@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   adaptLegacyCommercialDesignGrammar,
@@ -18,14 +19,19 @@ import {
   aurumNordicBrandSystem,
   brandSystemDesignDnaFingerprint,
   brandSystemSchema,
+  brandSystemToCssVariables,
+  contrastRatio,
   designDnaFingerprint,
   designDnaSchema,
+  migrateLegacyFoundationToDesignDna,
   migrateBrandSystemDesignDna,
   modernTechnicalDesignDna,
   normalizeDesignDna,
   premiumEditorialDesignDna,
   projectBrandSystemDesignDna,
   projectDesignDna,
+  readableForegroundAcrossBackgrounds,
+  standardTextContrastMinimum,
 } from "@/domain/design-system";
 import { InMemoryProjectRepository } from "@/services/storage";
 
@@ -80,6 +86,81 @@ describe("P10B-02 parametric BrandSystem Design DNA", () => {
     expect(brandSystemDesignDnaFingerprint(first)).toMatch(/^design-dna-/);
   });
 
+  it("migrates black page, white surface and white legacy text across both backgrounds", () => {
+    const legacy = brandSystemSchema.parse({
+      ...aurumNordicBrandSystem,
+      colors: {
+        ...aurumNordicBrandSystem.colors,
+        background: "#000000",
+        surface: "#FFFFFF",
+        text: "#FFFFFF",
+        mutedText: "#F5F5F5",
+      },
+    });
+    const first = migrateLegacyFoundationToDesignDna(legacy);
+    const second = migrateLegacyFoundationToDesignDna(structuredClone(legacy));
+
+    expect(designDnaSchema.parse(first)).toEqual(first);
+    expect(second).toEqual(first);
+    expect(designDnaFingerprint(second)).toBe(designDnaFingerprint(first));
+    for (const foreground of [first.colour.text, first.colour.mutedText]) {
+      for (const background of [first.colour.page, first.colour.surface]) {
+        expect(contrastRatio(foreground, background)).toBeGreaterThanOrEqual(
+          standardTextContrastMinimum,
+        );
+      }
+    }
+  });
+
+  it("preserves a merchant foreground that is already valid across every required surface", () => {
+    const legacy = brandSystemSchema.parse({
+      ...aurumNordicBrandSystem,
+      colors: {
+        ...aurumNordicBrandSystem.colors,
+        background: "#FFF8F0",
+        surface: "#E7D8C8",
+        text: "#201A17",
+        mutedText: "#514942",
+      },
+    });
+    const dna = migrateLegacyFoundationToDesignDna(legacy);
+
+    expect(dna.colour.text).toBe("#201A17");
+    expect(
+      readableForegroundAcrossBackgrounds(
+        [legacy.colors.background, legacy.colors.surface],
+        [legacy.colors.text, "#111111"],
+      ),
+    ).toBe("#201A17");
+  });
+
+  it("keeps a valid legacy BrandSystem loadable when its original surfaces are unsatisfiable", () => {
+    const legacy = brandSystemSchema.parse({
+      ...aurumNordicBrandSystem,
+      colors: {
+        ...aurumNordicBrandSystem.colors,
+        background: "#737373",
+        surface: "#7B7B7B",
+        text: "#FFFFFF",
+        mutedText: "#111111",
+      },
+    });
+
+    expect(() =>
+      readableForegroundAcrossBackgrounds(
+        [legacy.colors.background, legacy.colors.surface],
+        [legacy.colors.text, legacy.colors.mutedText],
+      ),
+    ).toThrow(/No bounded foreground/);
+    const migrated = migrateLegacyFoundationToDesignDna(legacy);
+    expect(designDnaSchema.parse(migrated)).toEqual(migrated);
+    expect(brandSystemToCssVariables(legacy)).toMatchObject({
+      "--brand-color-background": "#737373",
+      "--brand-color-surface": "#7B7B7B",
+      "--brand-color-text": "#FFFFFF",
+    });
+  });
+
   it("provides materially different identities even when their colours are identical", () => {
     expect(premiumEditorialDesignDna.colour).toEqual(modernTechnicalDesignDna.colour);
     expect(premiumEditorialDesignDna.typography).not.toEqual(modernTechnicalDesignDna.typography);
@@ -107,6 +188,60 @@ describe("P10B-02 parametric BrandSystem Design DNA", () => {
     });
   });
 
+  it("keeps compatibility aliases separate from semantic surface and density projection", () => {
+    const compact = brandSystemSchema.parse({
+      ...aurumNordicBrandSystem,
+      spacing: { density: "compact" },
+      colors: {
+        ...aurumNordicBrandSystem.colors,
+        background: "#FFF8F0",
+        surface: "#E7D8C8",
+        text: "#201A17",
+      },
+    });
+    const variables = brandSystemToCssVariables(compact);
+
+    expect(variables).toMatchObject({
+      "--brand-color-background": "#FFF8F0",
+      "--brand-color-surface": "#E7D8C8",
+      "--brand-color-text": "#201A17",
+      "--brand-spacing-density": "0.85",
+      "--brand-density-global": "0.86",
+      "--brand-surface-page": "#FFF8F0",
+      "--brand-surface-default": "#E7D8C8",
+      "--brand-surface-page-text": "#201A17",
+    });
+  });
+
+  it("projects and consumes ordinary and contrast surface authority independently", () => {
+    const contrastIdentity = structuredClone(premiumEditorialDesignDna);
+    contrastIdentity.colour.contrastSurface = "#4A0033";
+    contrastIdentity.colour.contrastText = "#FFFFFF";
+    const brand = brandSystemSchema.parse({
+      ...aurumNordicBrandSystem,
+      designDna: contrastIdentity,
+    });
+    const variables = brandSystemToCssVariables(brand);
+    const css = readFileSync("src/components/storefront/homepage-commerce.module.css", "utf8");
+
+    expect(variables).toMatchObject({
+      "--brand-surface-page": contrastIdentity.colour.page,
+      "--brand-surface-page-text": contrastIdentity.colour.text,
+      "--brand-surface-default": contrastIdentity.colour.surface,
+      "--brand-surface-default-text": contrastIdentity.colour.text,
+      "--brand-surface-contrast": "#4A0033",
+      "--brand-surface-contrast-text": "#FFFFFF",
+    });
+    expect(css).toMatch(
+      /\.surface_contrast\s*\{[\s\S]*background:\s*var\(--brand-surface-contrast\);[\s\S]*color:\s*var\(--brand-surface-contrast-text\);/,
+    );
+    expect(css).toMatch(
+      /\.surface_plain\s*\{[\s\S]*background:\s*var\(--brand-surface-page\);[\s\S]*color:\s*var\(--brand-surface-page-text\);/,
+    );
+    expect(css).toContain("--brand-surface-contrast-muted-text");
+    expect(variables["--brand-surface-contrast"]).not.toBe(variables["--brand-surface-default"]);
+  });
+
   it("preserves explicit Design DNA through save and reload", async () => {
     const value = aggregate();
     const repository = new InMemoryProjectRepository([value]);
@@ -124,6 +259,10 @@ describe("P10B-02 parametric BrandSystem Design DNA", () => {
     const reloaded = await repository.get(value.project.id);
     const saved = reloaded.snapshots.find(({ id }) => id === draft.id);
     expect(saved?.brandSystem.designDna).toEqual(premiumEditorialDesignDna);
+    expect(saved?.brandSystem.colors).toEqual(draft.brandSystem.colors);
+    expect(brandSystemToCssVariables(saved!.brandSystem)["--brand-color-text"]).toBe(
+      draft.brandSystem.colors.text,
+    );
   });
 
   it("preserves exact Design DNA in deterministic publication output", () => {
@@ -140,6 +279,10 @@ describe("P10B-02 parametric BrandSystem Design DNA", () => {
       }),
     );
     expect(compilation.result.brandSystem.designDna).toEqual(modernTechnicalDesignDna);
+    expect(compilation.result.brandSystem.colors).toEqual(value.snapshots[1].brandSystem.colors);
+    expect(
+      brandSystemToCssVariables(compilation.result.brandSystem)["--brand-density-global"],
+    ).toBe(projectDesignDna(modernTechnicalDesignDna).cssVariables["--brand-density-global"]);
   });
 
   it("rejects unsupported fonts and arbitrary remote font authority", () => {

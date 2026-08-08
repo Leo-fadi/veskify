@@ -5,6 +5,7 @@ import {
   fontTokenSchema,
   migrateLegacyFoundationToDesignDna,
   projectDesignDna,
+  readableForegroundAcrossBackgrounds,
   type DesignDna,
   type EffectiveDesignDnaProjection,
 } from "./design-dna";
@@ -208,6 +209,12 @@ export function applyBrandSystemFoundationPatch(
   });
 }
 
+const compatibilityDensityValues: Readonly<Record<BrandSystem["spacing"]["density"], string>> = {
+  compact: "0.85",
+  balanced: "1",
+  airy: "1.2",
+};
+
 export function brandSystemToCssVariables(input: BrandSystem): Record<string, string> {
   const brand = brandSystemSchema.parse(input);
   const projection = projectBrandSystemDesignDna(brand);
@@ -215,17 +222,43 @@ export function brandSystemToCssVariables(input: BrandSystem): Record<string, st
   const visualSystem = visualSystemSchema.parse(
     brand.visualSystem ?? premiumVisualPresets.premiumEditorial,
   );
+  const primaryText = readableForegroundAcrossBackgrounds(
+    [brand.colors.primary],
+    [brand.colors.surface, brand.colors.text],
+  );
+  const secondaryText = readableForegroundAcrossBackgrounds(
+    [brand.colors.secondary],
+    [brand.colors.surface, brand.colors.text],
+  );
+  const accentText = readableForegroundAcrossBackgrounds(
+    [brand.colors.accent],
+    [brand.colors.text, brand.colors.surface],
+  );
   return {
     ...projection.cssVariables,
+    "--brand-color-primary": brand.colors.primary,
+    "--brand-color-secondary": brand.colors.secondary,
+    "--brand-color-accent": brand.colors.accent,
+    "--brand-color-background": brand.colors.background,
+    "--brand-color-surface": brand.colors.surface,
+    "--brand-color-text": brand.colors.text,
+    "--brand-color-muted-text": brand.colors.mutedText,
+    "--brand-color-border": brand.colors.border,
     "--brand-surface-section": dna.colour.surface,
     "--brand-surface-subtle": dna.colour.mutedSurface,
-    "--brand-color-primary-text": dna.colour.primaryActionText,
-    "--brand-color-secondary-text": dna.colour.secondaryActionText,
-    "--brand-color-accent-text": projection.cssVariables["--brand-highlight-text"],
-    "--brand-action-disabled-surface": dna.colour.mutedSurface,
-    "--brand-action-disabled-text": dna.colour.unavailable,
-    "--brand-action-disabled-border": dna.colour.unavailable,
-    "--brand-spacing-density": projection.cssVariables["--brand-density-global"],
+    "--brand-action-primary": brand.colors.primary,
+    "--brand-action-primary-text": primaryText,
+    "--brand-color-primary-text": primaryText,
+    "--brand-color-secondary-text": secondaryText,
+    "--brand-color-accent-text": accentText,
+    "--brand-highlight": brand.colors.accent,
+    "--brand-highlight-text": accentText,
+    "--brand-action-disabled-surface": brand.colors.surface,
+    "--brand-action-disabled-text":
+      brand.semanticPresentation?.unavailable ?? brand.colors.mutedText,
+    "--brand-action-disabled-border":
+      brand.semanticPresentation?.unavailable ?? brand.colors.mutedText,
+    "--brand-spacing-density": compatibilityDensityValues[brand.spacing.density],
     "--brand-imagery-style": brand.imagery.style,
     "--brand-content-width": projection.cssVariables["--brand-container-content"],
     "--brand-surface-treatment": dna.surfaces.posture,

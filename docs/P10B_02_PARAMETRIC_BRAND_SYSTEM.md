@@ -50,6 +50,14 @@ palette, typography, shape, spacing, imagery, visual-system, and semantic-presen
 `migrateBrandSystemDesignDna` materializes that same result for persistence. Malformed legacy
 input fails closed.
 
+Legacy foreground migration is multi-background aware. It preserves the merchant's declared text
+or muted-text colour when that colour is readable on both page and ordinary surface, then considers
+existing semantic candidates in declared order. If none is valid, a fixed bounded neutral ramp
+selects the nearest deterministic foreground that passes every required pair. For the rare legacy
+surface combination with no possible shared foreground, migration minimally normalizes only the
+new semantic surface toward the page until the Design DNA contract is satisfiable; the original
+legacy palette and its compatibility variables remain unchanged and loadable.
+
 Registered direction and token-refinement paths synchronize affected Design DNA authority rather
 than leaving stale explicit DNA behind. `StorefrontSnapshot`, draft save/reload, history, and the
 deterministic publication compiler preserve the exact nested contract through their existing
@@ -67,9 +75,19 @@ styling boundary. It returns:
   variables.
 
 Editor, preview, and published render paths already call `brandSystemToCssVariables`; that function
-now delegates to the effective Design DNA projection and retains compatibility aliases for current
-components. No component keeps a second token copy. The P10B-01 adapter consumes resolved Design
-DNA and its lower authority layers continue to reject widening.
+now delegates to the effective Design DNA projection. Existing `--brand-color-*` variables and
+`--brand-spacing-density` remain backward-compatible aliases of the exact accepted BrandSystem
+fields, including compact density `0.85`. New surface/context, typography, spacing, container,
+control, density, and media variables carry Design DNA semantics independently; compact Design DNA
+density remains `0.86` through `--brand-density-global` and does not overload the compatibility
+alias.
+
+Registered ordinary homepage surfaces consume the semantic page/ordinary surface and context-safe
+foreground projections. Registered contrast surfaces consume `contrastSurface`, `contrastText`,
+and a contrast-safe secondary-text projection, while actions use their canonical validated action
+surface/text pairs. A materially different contrast identity is therefore renderer-visible without
+hard-coded component colours. No component keeps a second token copy. The P10B-01 adapter consumes
+resolved Design DNA and its lower authority layers continue to reject widening.
 
 ## Material differentiation
 
@@ -89,7 +107,8 @@ the material-difference proof.
 
 - **Contract/schema and deterministic unit:** full schema, normalization, identity/projection
   fingerprints, migration, material examples, same-input equality, changed-input divergence,
-  contrast, version, font, range, arbitrary-CSS/spacing, semantic relationship, malformed input,
+  multi-background legacy contrast, exact compatibility aliases, ordinary/contrast renderer
+  projection, version, font, range, arbitrary-CSS/spacing, semantic relationship, malformed input,
   and lower-layer broadening rejection.
 - **Integration/lifecycle:** in-memory repository save/reload retains exact Design DNA; the
   deterministic publication compiler retains exact Design DNA in compiled output; existing

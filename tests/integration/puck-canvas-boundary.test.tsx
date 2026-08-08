@@ -95,7 +95,8 @@ describe("Puck iframe storefront boundary", () => {
     expect(canvasRoot().style.getPropertyValue("--brand-color-background")).toBe("#F0E1D2");
     expect(canvasRoot().style.getPropertyValue("--brand-font-heading")).toContain("Georgia");
     expect(canvasRoot().style.getPropertyValue("--brand-font-body")).toContain("system-ui");
-    expect(canvasRoot().style.getPropertyValue("--brand-spacing-density")).toBe("0.86");
+    expect(canvasRoot().style.getPropertyValue("--brand-spacing-density")).toBe("0.85");
+    expect(canvasRoot().style.getPropertyValue("--brand-density-global")).toBe("0.86");
 
     view.rerender(
       <VeskifyPuckCanvas

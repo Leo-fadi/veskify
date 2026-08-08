@@ -255,20 +255,87 @@ function mixHex(foreground: string, background: string, foregroundWeight: number
     .join("")}`.toUpperCase();
 }
 
-function readableForeground(background: string, preferred: readonly string[]): string {
-  const candidates = [...new Set([...preferred, "#111111", "#FFFFFF"])]
-    .map((colour) => ({ colour, ratio: contrastRatio(colour, background) }))
-    .sort((left, right) => right.ratio - left.ratio);
-  return (
-    candidates.find((candidate) => candidate.ratio >= standardTextContrastMinimum)?.colour ??
-    candidates[0].colour
+function squaredChannelDistance(left: string, right: string): number {
+  const leftChannels = hexChannels(left);
+  const rightChannels = hexChannels(right);
+  return leftChannels.reduce(
+    (total, channel, index) => total + (channel - rightChannels[index]) ** 2,
+    0,
   );
+}
+
+function isReadableAcross(foreground: string, backgrounds: readonly string[]): boolean {
+  return backgrounds.every(
+    (background) => contrastRatio(foreground, background) >= standardTextContrastMinimum,
+  );
+}
+
+/**
+ * Resolves one deterministic foreground for every supplied background.
+ *
+ * Supplied semantic colours retain their declared priority. Only when none are
+ * valid does the bounded 256-step neutral ramp select the closest valid colour
+ * to the merchant's original foreground.
+ */
+export function readableForegroundAcrossBackgrounds(
+  backgrounds: readonly string[],
+  preferred: readonly string[],
+): string {
+  if (backgrounds.length === 0 || preferred.length === 0) {
+    throw new Error("Readable foreground resolution requires backgrounds and a preferred colour.");
+  }
+  const normalizedBackgrounds = [...new Set(backgrounds.map((value) => colorSchema.parse(value)))];
+  const supplied = [...new Set(preferred.map((value) => colorSchema.parse(value)))];
+  const suppliedMatch = supplied.find((candidate) =>
+    isReadableAcross(candidate, normalizedBackgrounds),
+  );
+  if (suppliedMatch !== undefined) return suppliedMatch;
+
+  const original = supplied[0];
+  const derived = Array.from({ length: 256 }, (_, channel) => {
+    const pair = channel.toString(16).padStart(2, "0").toUpperCase();
+    const colour = `#${pair}${pair}${pair}`;
+    return {
+      colour,
+      distance: squaredChannelDistance(colour, original),
+      minimumContrast: Math.min(
+        ...normalizedBackgrounds.map((background) => contrastRatio(colour, background)),
+      ),
+    };
+  })
+    .filter(({ colour }) => isReadableAcross(colour, normalizedBackgrounds))
+    .sort(
+      (left, right) =>
+        left.distance - right.distance ||
+        right.minimumContrast - left.minimumContrast ||
+        left.colour.localeCompare(right.colour),
+    );
+  if (derived.length === 0) {
+    throw new Error("No bounded foreground satisfies every required background contrast.");
+  }
+  return derived[0].colour;
+}
+
+function readableForeground(background: string, preferred: readonly string[]): string {
+  return readableForegroundAcrossBackgrounds([background], preferred);
 }
 
 function readableStatus(preferred: string, page: string, fallback: string): string {
   return contrastRatio(preferred, page) >= standardTextContrastMinimum
     ? preferred
     : readableForeground(page, [fallback, preferred]);
+}
+
+function closestReadableSurface(
+  preferredSurface: string,
+  page: string,
+  foreground: string,
+): string {
+  for (let step = 255; step >= 0; step -= 1) {
+    const candidate = mixHex(preferredSurface, page, step / 255);
+    if (contrastRatio(foreground, candidate) >= standardTextContrastMinimum) return candidate;
+  }
+  throw new Error("Legacy semantic surfaces cannot satisfy the Design DNA contrast contract.");
 }
 
 function legacyTypographyPairing(input: LegacyBrandFoundation): DesignDna["typography"]["pairing"] {
@@ -299,13 +366,30 @@ export function migrateLegacyFoundationToDesignDna(input: LegacyBrandFoundation)
     warning: "#9A5B13",
     unavailable: input.colors.mutedText,
   };
-  const pageText = readableForeground(input.colors.background, [input.colors.text]);
-  const surfaceText = readableForeground(input.colors.surface, [pageText]);
-  const text =
-    contrastRatio(pageText, input.colors.surface) >= standardTextContrastMinimum
-      ? pageText
-      : surfaceText;
-  const mutedText = readableForeground(input.colors.background, [input.colors.mutedText, text]);
+  const textCandidates = [
+    input.colors.text,
+    input.colors.mutedText,
+    input.colors.primary,
+    input.colors.secondary,
+    input.colors.accent,
+    input.colors.border,
+  ];
+  let surface = input.colors.surface;
+  let text: string;
+  try {
+    text = readableForegroundAcrossBackgrounds([input.colors.background, surface], textCandidates);
+  } catch {
+    text = readableForeground(input.colors.background, textCandidates);
+    surface = closestReadableSurface(surface, input.colors.background, text);
+  }
+  const requiredTextBackgrounds = [input.colors.background, surface];
+  const mutedText = readableForegroundAcrossBackgrounds(requiredTextBackgrounds, [
+    input.colors.mutedText,
+    text,
+    input.colors.text,
+    input.colors.border,
+    input.colors.secondary,
+  ]);
   const contrastSurface = input.colors.secondary;
   const density =
     input.spacing.density === "airy"
@@ -331,18 +415,18 @@ export function migrateLegacyFoundationToDesignDna(input: LegacyBrandFoundation)
     version: designDnaVersion,
     colour: {
       page: input.colors.background,
-      surface: input.colors.surface,
-      mutedSurface: mixHex(input.colors.surface, input.colors.background, 0.72),
+      surface,
+      mutedSurface: mixHex(surface, input.colors.background, 0.72),
       contrastSurface,
       text,
       mutedText,
-      contrastText: readableForeground(contrastSurface, [input.colors.surface, text]),
+      contrastText: readableForeground(contrastSurface, [surface, text]),
       border: input.colors.border,
       accent: input.colors.accent,
       primaryAction: input.colors.primary,
-      primaryActionText: readableForeground(input.colors.primary, [input.colors.surface, text]),
+      primaryActionText: readableForeground(input.colors.primary, [surface, text]),
       secondaryAction: input.colors.secondary,
-      secondaryActionText: readableForeground(input.colors.secondary, [input.colors.surface, text]),
+      secondaryActionText: readableForeground(input.colors.secondary, [surface, text]),
       success: readableStatus(semantic.success, input.colors.background, text),
       warning: readableStatus(semantic.warning, input.colors.background, text),
       unavailable: readableStatus(semantic.unavailable, input.colors.background, mutedText),
@@ -638,14 +722,41 @@ export function projectDesignDna(input: unknown, baseSize = 16): EffectiveDesign
     "--brand-surface-default": dna.colour.surface,
     "--brand-surface-muted": dna.colour.mutedSurface,
     "--brand-surface-contrast": dna.colour.contrastSurface,
+    "--brand-surface-page-text": dna.colour.text,
+    "--brand-surface-page-muted-text": dna.colour.mutedText,
+    "--brand-surface-default-text": dna.colour.text,
+    "--brand-surface-default-muted-text": dna.colour.mutedText,
+    "--brand-surface-muted-text": readableForeground(dna.colour.mutedSurface, [
+      dna.colour.text,
+      dna.colour.mutedText,
+    ]),
     "--brand-surface-contrast-text": dna.colour.contrastText,
+    "--brand-surface-contrast-muted-text": dna.colour.contrastText,
     "--brand-action-primary": actions.primary.background,
     "--brand-action-primary-background": actions.primary.background,
     "--brand-action-primary-border": actions.primary.border,
     "--brand-action-primary-text": actions.primary.text,
+    "--brand-control-primary-background": actions.primary.background,
+    "--brand-control-primary-border": actions.primary.border,
+    "--brand-control-primary-text": actions.primary.text,
+    "--brand-control-primary-context-text": readableForegroundAcrossBackgrounds(
+      [dna.colour.page, dna.colour.surface],
+      [dna.colour.primaryAction, dna.colour.text],
+    ),
+    "--brand-control-primary-surface": dna.colour.primaryAction,
+    "--brand-control-primary-surface-text": dna.colour.primaryActionText,
     "--brand-action-secondary-background": actions.secondary.background,
     "--brand-action-secondary-border": actions.secondary.border,
     "--brand-action-secondary-text": actions.secondary.text,
+    "--brand-control-secondary-background": actions.secondary.background,
+    "--brand-control-secondary-border": actions.secondary.border,
+    "--brand-control-secondary-text": actions.secondary.text,
+    "--brand-control-secondary-context-text": readableForegroundAcrossBackgrounds(
+      [dna.colour.page, dna.colour.surface],
+      [dna.colour.secondaryAction, dna.colour.text],
+    ),
+    "--brand-control-secondary-surface": dna.colour.secondaryAction,
+    "--brand-control-secondary-surface-text": dna.colour.secondaryActionText,
     "--brand-highlight": dna.colour.accent,
     "--brand-highlight-text": readableForeground(dna.colour.accent, [
       dna.colour.text,
