@@ -316,7 +316,7 @@ architecture. It is not a parallel roadmap.
 | Home/collection/PDP/content/utility profile vocabulary        | P10B-09 through P10B-13   | P10B-14 through P10B-18          |
 | Synthesis, direction, and fingerprint vocabulary              | P10B-15, P10B-16          | P10B-17, P10B-18                 |
 
-After P10B-01, P10B-02, P10B-03, and P10B-05 may run in parallel only with the disjoint authority
+After P10B-01, the P10B-02 and P10B-03 foundations were delivered with the disjoint authority
 ownership and integration rules defined by the architecture lock.
 
 ## 20. Explicit non-goals

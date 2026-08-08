@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 8 August 2026, current `main` after PR #173                                                                         |
+| Baseline                    | 8 August 2026, current `main` after PR #176                                                                         |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -42,7 +42,7 @@ required evidence are accepted.
 | Done | Task    | Outcome                                              | Status       | Owner                           | Dependency                         | Required evidence                                                               |
 | ---- | ------- | ---------------------------------------------------- | ------------ | ------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------- |
 | ☑    | P10B-01 | Commercial grammar and compatibility vocabulary      | **Baseline** | Canonical design contracts      | P10A closure; architecture lock    | Schema/queryability, migration, compatibility and typed rejection               |
-| ☐    | P10B-02 | Parametric BrandSystem / Design DNA                  | **Planned**  | BrandSystem                     | P10B-01                            | Cross-page projection, migration, responsive and lifecycle evidence             |
+| ☑    | P10B-02 | Parametric BrandSystem / Design DNA                  | **Baseline** | BrandSystem                     | P10B-01                            | Cross-page projection, migration, responsive and lifecycle evidence             |
 | ☑    | P10B-03 | Component anatomy and meaningful variant contract    | **Baseline** | Component platform              | P10B-01                            | 25 definitions/91 variants; structural, query, migration and rejection evidence |
 | ☐    | P10B-04 | Responsive image and art-direction authority         | **Planned**  | Asset presentation and media    | P10B-02, P10B-03                   | Provenance/crop/fallback and four-width visual evidence                         |
 | ☐    | P10B-05 | Veskify site-map and page-family authority           | **Planned**  | PageBlueprint/storefront domain | P10B-01                            | Page-set/navigation/generation/lifecycle and rejection evidence                 |
@@ -164,7 +164,7 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 and P10B-03 are **Baseline**. P10B-02 and P10B-04 through P10B-18 remain **Planned**. The
+P10B-01, P10B-02, and P10B-03 are **Baseline**. P10B-04 through P10B-18 remain **Planned**. The
 remaining Done conditions are implementation gates, not claims about the current repository.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
@@ -199,6 +199,8 @@ remaining Done conditions are implementation gates, not claims about the current
 - **Evidence:** Schema/migration/unit, contrast, projection, integration, lifecycle, and four-width
   foundation review.
 - **Non-goal:** Component anatomy, page composition, or direction-owned global tokens.
+- **Status:** **Baseline**. See
+  [`P10B_02_PARAMETRIC_BRAND_SYSTEM.md`](P10B_02_PARAMETRIC_BRAND_SYSTEM.md).
 
 #### P10B-03 — Component anatomy and meaningful variant contract
 

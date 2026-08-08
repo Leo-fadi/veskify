@@ -1,4 +1,8 @@
 import { canonicalLocaleOrder } from "@/domain/shared";
+import {
+  applyBrandSystemFoundationPatch,
+  migrateBrandSystemDesignDna,
+} from "@/domain/design-system";
 import { validateDesignOperationAgainstPage } from "@/application/design-operations";
 import {
   applyRegisteredTokenRefinement,
@@ -214,7 +218,9 @@ function assertProjectionMatchesOperations(
   let affectedDesignState: AiStorefrontReadyProposal["affectedDesignState"] = null;
   for (const envelope of proposal.operations) {
     if (envelope.operation.type === "APPLY_APPROVED_BRAND_COLOURS") {
-      projected.brandSystem.colors = structuredClone(envelope.operation.colors);
+      projected.brandSystem = applyBrandSystemFoundationPatch(projected.brandSystem, {
+        colors: envelope.operation.colors,
+      });
       affectedDesignState = {
         ...(affectedDesignState ?? {}),
         colors: structuredClone(envelope.operation.colors),
@@ -222,7 +228,9 @@ function assertProjectionMatchesOperations(
       continue;
     }
     if (envelope.operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY") {
-      projected.brandSystem.typography = structuredClone(envelope.operation.typography);
+      projected.brandSystem = applyBrandSystemFoundationPatch(projected.brandSystem, {
+        typography: envelope.operation.typography,
+      });
       affectedDesignState = {
         ...(affectedDesignState ?? {}),
         typography: structuredClone(envelope.operation.typography),
@@ -297,7 +305,22 @@ export function validateAiStorefrontProposal(
   input: unknown,
   contextInput: unknown,
 ): AiStorefrontReadyProposal {
-  const proposal = parseReadyProposal(input);
+  const parsedProposal = parseReadyProposal(input);
+  const hasLegacyBrandOperation = parsedProposal.operations.some(
+    ({ operation }) =>
+      operation.type === "APPLY_APPROVED_BRAND_COLOURS" ||
+      operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY",
+  );
+  const proposal: AiStorefrontReadyProposal =
+    hasLegacyBrandOperation && parsedProposal.proposedStorefront.brandSystem.designDna === undefined
+      ? {
+          ...parsedProposal,
+          proposedStorefront: {
+            ...parsedProposal.proposedStorefront,
+            brandSystem: migrateBrandSystemDesignDna(parsedProposal.proposedStorefront.brandSystem),
+          },
+        }
+      : parsedProposal;
   const context = parseContext(contextInput);
   const target = canonicalizeAiStorefrontTarget(proposal.target);
   assertProposalIdentity(proposal, target, context);

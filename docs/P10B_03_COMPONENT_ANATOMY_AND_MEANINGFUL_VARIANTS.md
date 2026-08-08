@@ -194,8 +194,8 @@ provider was called.
 
 ## 9. Remaining P10B work
 
-P10B remains Partial. P10B-02 owns Design DNA/BrandSystem implementation, and P10B-05 owns site-map,
-page-family, and PageBlueprint profile authority. P10B-04 and P10B-06 through P10B-18 remain
-Planned. Later component/profile tasks must use this contract to promote only evidenced structural
-variants and then supply all-target rendering, responsive accessibility, performance, scale, and
-retained human commercial-quality evidence.
+P10B remains Partial. P10B-02 is separately Baseline and owns Design DNA/BrandSystem authority;
+P10B-05 remains Planned and owns site-map, page-family, and PageBlueprint profile authority.
+P10B-04 and P10B-06 through P10B-18 remain Planned. Later component/profile tasks must use this
+contract to promote only evidenced structural variants and then supply all-target rendering,
+responsive accessibility, performance, scale, and retained human commercial-quality evidence.

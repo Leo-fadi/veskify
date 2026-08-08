@@ -86,10 +86,11 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 ## 3. Current implementation baseline
 
-The verified v1.3.0 source baseline is current `main` after PR #173 on 8 August 2026. Phase 9 is
+The verified v1.3.0 source baseline is current `main` after PR #176 on 8 August 2026. Phase 9 is
 closed by product-owner handoff, and P10A is **Baseline / closed**. The overall product remains
-**Partial**. P10B is the active development phase. P10B-01 commercial grammar and P10B-03
-component anatomy are **Baseline**; P10B-02 and P10B-04 through P10B-18 remain **Planned**.
+**Partial**. P10B is the active development phase. P10B-01 commercial grammar, P10B-02 parametric
+BrandSystem / Design DNA, and P10B-03 component anatomy are **Baseline**; P10B-04 through P10B-18
+remain **Planned**.
 
 The current baseline includes canonical storefront/brand contracts, ComponentDefinitionV2 and its
 generated manifest, executable PageBlueprint profiles, dynamic commerce-bound collection/PDP
@@ -211,9 +212,10 @@ validated instance override`; manual Puck editing is not a dependency. P10B clos
 complete configurations pass deterministic diversity/protected-state gates and a representative
 fingerprint-stratified subset passes retained human review at 375, 768, 1024, and 1440 px.
 
-With P10B-01 and P10B-03 Baseline, P10B-02 and P10B-05 may run in parallel only with disjoint
-ownership of `BrandSystem` and site-map/PageBlueprint page-set authority. P10B-03's component
-anatomy/compatibility contract is now the shared foundation they consume.
+With P10B-01, P10B-02, and P10B-03 Baseline, P10B-05 remains Planned and may build on those
+foundations only with disjoint ownership of site-map/PageBlueprint page-set authority. P10B-03
+consumes P10B-02 Design DNA compatibility where relevant but does not copy or replace its
+`BrandSystem` authority.
 Shared registry indexes, schema exports, migrations, manifests, synthesis/direction authority, and
 renderer boundaries require one integration owner. Use A/B/C slices only for necessary
 contract/anatomy, renderer/variant, or PageBlueprint/generation/evidence separation; a parent is not

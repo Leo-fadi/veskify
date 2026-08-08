@@ -309,7 +309,7 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
 
   it("keeps protected commerce as read-only bindings rather than editable proposal content", () => {
     const proposal = compileWholeStorefrontProposal(input());
-    const serialized = JSON.stringify(proposal.proposedStorefront);
+    const serialized = JSON.stringify(proposal.proposedStorefront.pages);
 
     expect(serialized).not.toContain('"price"');
     expect(proposal.reviewSummary.protectedFactsPreserved.join(" ")).toMatch(

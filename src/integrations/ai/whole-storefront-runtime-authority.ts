@@ -28,6 +28,7 @@ import {
   WholeStorefrontProposalError,
 } from "@/application/whole-storefront-proposal-lifecycle";
 import { validateDesignOperationAgainstPage } from "@/application/design-operations";
+import { applyBrandSystemFoundationPatch } from "@/domain/design-system";
 import {
   createStorefrontDesignSystemOperations,
   storefrontStyleDirectionForRegisteredDirection,
@@ -492,7 +493,10 @@ function projectPlanOperations(
   } | null = null;
   operations.forEach((envelope) => {
     if (envelope.operation.type === "APPLY_APPROVED_BRAND_COLOURS") {
-      proposedStorefront.brandSystem.colors = structuredClone(envelope.operation.colors);
+      proposedStorefront.brandSystem = applyBrandSystemFoundationPatch(
+        proposedStorefront.brandSystem,
+        { colors: envelope.operation.colors },
+      );
       affectedDesignState = {
         ...(affectedDesignState ?? {}),
         colors: structuredClone(envelope.operation.colors),
@@ -500,7 +504,10 @@ function projectPlanOperations(
       return;
     }
     if (envelope.operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY") {
-      proposedStorefront.brandSystem.typography = structuredClone(envelope.operation.typography);
+      proposedStorefront.brandSystem = applyBrandSystemFoundationPatch(
+        proposedStorefront.brandSystem,
+        { typography: envelope.operation.typography },
+      );
       affectedDesignState = {
         ...(affectedDesignState ?? {}),
         typography: structuredClone(envelope.operation.typography),

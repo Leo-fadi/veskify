@@ -1,11 +1,11 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01 and P10B-03 are **Baseline**; P10B-02 and P10B-04 through
+**Status:** Binding architecture. P10B-01, P10B-02, and P10B-03 are **Baseline**; P10B-04 through
 P10B-18 remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 8 August 2026, current `main` after merged PR #173
+**Baseline:** 8 August 2026, current `main` after merged PR #176
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -25,7 +25,8 @@ composition and finishing choices whose compatibility is deterministic and whose
 retained for human review.
 
 P10A remains Baseline / closed. P10B-01 is Baseline under
-[`P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md`](P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md), and P10B-03 is
+[`P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md`](P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md), P10B-02 is Baseline
+under [`P10B_02_PARAMETRIC_BRAND_SYSTEM.md`](P10B_02_PARAMETRIC_BRAND_SYSTEM.md), and P10B-03 is
 Baseline under
 [`P10B_03_COMPONENT_ANATOMY_AND_MEANINGFUL_VARIANTS.md`](P10B_03_COMPONENT_ANATOMY_AND_MEANINGFUL_VARIANTS.md).
 P10B is **Partial / active**; all remaining implementation tasks remain Planned.
@@ -360,6 +361,8 @@ publish preserved → evidence retained.
 
 ### P10B-02 — Parametric BrandSystem / Design DNA
 
+- **Status:** **Baseline** under
+  [`P10B_02_PARAMETRIC_BRAND_SYSTEM.md`](P10B_02_PARAMETRIC_BRAND_SYSTEM.md).
 - Implement every Design DNA domain in section 5 with deterministic legacy migration and
   contrast-safe renderer projection.
 - Prove two materially different Design DNA instances change non-colour cross-page foundations and
@@ -558,7 +561,8 @@ P10B-02…13 minimum accepted capability
   → P10B-18 commercial quality and scale
 ```
 
-After P10B-01, P10B-02, P10B-03, and P10B-05 may run in parallel only with disjoint ownership:
+P10B-02 and P10B-03 were delivered in parallel after P10B-01 with disjoint ownership. P10B-05
+remains Planned and must preserve those boundaries:
 
 - P10B-02 owns `BrandSystem`, semantic projection, and its migrations;
 - P10B-03 owns component anatomy/compatibility contracts and their migrations;
@@ -584,6 +588,6 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01 and P10B-03 are Baseline. P10B-02 and P10B-05 remain the active parallel foundations
-subject to the ownership constraints in section 15. No later implementation task is complete
-merely because this architecture is approved or either completed contract task passed.
+P10B-01, P10B-02, and P10B-03 are Baseline. P10B-05 remains Planned foundation work under the
+ownership constraints in section 15. No later implementation task is complete merely because this
+architecture is approved or the completed foundations passed.
