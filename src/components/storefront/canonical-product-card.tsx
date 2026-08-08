@@ -37,7 +37,7 @@ function moneyLabel(
   locale: LocaleContext,
 ) {
   if (value.formatted) return text(value.formatted, locale);
-  return new Intl.NumberFormat("fi-FI", {
+  return new Intl.NumberFormat(locale.activeLocale === "fi" ? "fi-FI" : "en-FI", {
     style: "currency",
     currency: value.currency,
     minimumFractionDigits: Number.isInteger(value.amount) ? 0 : 2,

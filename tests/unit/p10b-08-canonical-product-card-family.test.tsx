@@ -188,6 +188,42 @@ describe("P10B-08 canonical product-card family", () => {
     );
   });
 
+  it("formats fallback prices with the active storefront locale", () => {
+    const fallbackProduct = {
+      ...product,
+      price: { amount: 249, currency: "EUR" },
+      compareAtPrice: undefined,
+    };
+    const fallbackRequest = {
+      ...request(),
+      product: fallbackProduct,
+      media: fallbackProduct.media[0],
+    };
+
+    const english = render(
+      <CanonicalProductCard
+        locale={{ activeLocale: "en", primaryLocale: "en" }}
+        mediaPlaceholder="Unavailable"
+        request={fallbackRequest}
+        resolvedAsset={{ id: source.assetId, url: "/watch.jpg", decorative: false }}
+      />,
+    );
+    expect(english.container.querySelector("[data-card-region='price']")).toHaveTextContent("€249");
+    english.unmount();
+
+    const finnish = render(
+      <CanonicalProductCard
+        locale={{ activeLocale: "fi", primaryLocale: "fi" }}
+        mediaPlaceholder="Unavailable"
+        request={fallbackRequest}
+        resolvedAsset={{ id: source.assetId, url: "/watch.jpg", decorative: false }}
+      />,
+    );
+    expect(finnish.container.querySelector("[data-card-region='price']")).toHaveTextContent(
+      "249 €",
+    );
+  });
+
   it("rejects wrong-product media, editorial substitution and invented fact or badge overrides", () => {
     expect(() =>
       canonicalProductCardRequestSchema.parse({
