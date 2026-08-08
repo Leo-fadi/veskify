@@ -46,11 +46,47 @@
   --brand-color-muted-text: #5f574f;
   --brand-color-border: #ddd2c2;
   --brand-font-heading: "Georgia", "Times New Roman", serif;
+  --brand-font-display: "Georgia", "Times New Roman", serif;
   --brand-font-body: "Inter", "Arial", sans-serif;
+  --brand-font-utility: "Inter", "Arial", sans-serif;
+  --brand-font-price: "Inter", "Arial", sans-serif;
   --brand-type-base-size: 16px;
   --brand-type-scale-ratio: 1.25;
+  --brand-type-display-size: 3.0518rem;
+  --brand-type-heading-size: 1.9531rem;
+  --brand-type-body-size: 1rem;
+  --brand-type-utility-size: 0.8rem;
+  --brand-type-price-size: 1.25rem;
+  --brand-type-display-weight: 600;
+  --brand-type-heading-weight: 600;
+  --brand-type-body-weight: 400;
+  --brand-type-utility-weight: 500;
+  --brand-type-price-weight: 700;
+  --brand-type-display-line-height: 1.05;
+  --brand-type-heading-line-height: 1.05;
+  --brand-type-body-line-height: 1.5;
+  --brand-type-display-tracking: -0.025em;
   --brand-radius: 0.75rem;
+  --brand-control-radius: 0.75rem;
   --brand-spacing-density: 1;
+  --brand-section-rhythm: clamp(4rem, 8vw, 7rem);
+  --brand-page-gutter: clamp(1rem, 5vw, 5rem);
+  --brand-grid-gap: 1.5rem;
+  --brand-card-inset: 1.25rem;
+  --brand-control-height: 2.75rem;
+  --brand-control-padding-inline: 1rem;
+  --brand-density-global: 1;
+  --brand-density-navigation: 1;
+  --brand-density-content: 1;
+  --brand-density-commerce: 1;
+  --brand-container-reading: 38rem;
+  --brand-container-content: 78rem;
+  --brand-container-commerce: 80rem;
+  --brand-container-wide: 92rem;
+  --brand-container-full: 100rem;
+  --brand-elevation-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  --brand-media-ratio: auto;
+  --brand-media-crop: contain;
   --brand-content-width: 78rem;
   --brand-surface-treatment: layered;
   --brand-divider-treatment: subtle;
@@ -98,30 +134,32 @@ a {
 
 .project-preview__header {
   display: grid;
-  gap: 1rem;
+  gap: calc(1rem * var(--brand-density-navigation));
   align-items: center;
-  padding: 1rem clamp(1rem, 4vw, 3rem);
-  border-bottom: 1px solid var(--brand-color-border);
+  padding: calc(1rem * var(--brand-density-navigation)) var(--brand-page-gutter);
+  border-bottom: var(--brand-border-width, 1px) solid var(--brand-color-border);
   background: var(--brand-color-surface);
+  box-shadow: var(--brand-elevation-shadow);
 }
 
 .project-preview__header h1 {
   margin: 0.25rem 0 0;
   font-family: var(--brand-font-heading);
-  font-size: 1.35rem;
+  font-size: var(--brand-type-heading-size);
+  line-height: var(--brand-type-heading-line-height);
 }
 .project-preview__name {
   margin: 0.25rem 0 0;
   font-family: var(--brand-font-heading);
-  font-size: 1.35rem;
-  font-weight: 700;
+  font-size: var(--brand-type-heading-size);
+  font-weight: var(--brand-type-heading-weight);
 }
 
 .project-preview__title {
   margin: 0.25rem 0 0;
   font-family: var(--brand-font-heading);
-  font-size: 1.35rem;
-  font-weight: 700;
+  font-size: var(--brand-type-heading-size);
+  font-weight: var(--brand-type-heading-weight);
 }
 
 .project-preview__back {

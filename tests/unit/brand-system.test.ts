@@ -36,7 +36,7 @@ describe("BrandSystem schema", () => {
     expect(brandSystemToCssVariables(brand)).toMatchObject({
       "--brand-surface-page": "#FFFFFF",
       "--brand-surface-section": "#FFFFFF",
-      "--brand-surface-subtle": "color-mix(in srgb, #FFFFFF 72%, #FFFFFF)",
+      "--brand-surface-subtle": "#FFFFFF",
       "--brand-action-primary": "#B54708",
       "--brand-action-primary-text": "#FFFFFF",
       "--brand-action-disabled-surface": "#FFFFFF",

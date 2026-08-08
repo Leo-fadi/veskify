@@ -61,7 +61,8 @@ home, collection, and product-detail rendering.
 The product remains **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
 orchestration and publishing is **Baseline / closed** under the formal
 [`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md) exit audit. P10B is now **Partial / active**:
-P10B-01 commercial grammar is Baseline, while P10B-02 through P10B-18 remain Planned. The current
+P10B-01 commercial grammar and P10B-02 parametric BrandSystem are Baseline, while P10B-03 through
+P10B-18 remain Planned. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -451,7 +452,8 @@ The binding model and locked 18-task sequence live in
 The architecture produces one complete Premium Editorial storefront before broad synthesis and
 direction expansion. P10B-01 is Baseline; its executable contract and evidence are recorded in
 [`P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md`](P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md). P10B-02, P10B-03,
-and P10B-05 are the next Planned parallel foundations under disjoint authority ownership.
+and P10B-05 were permitted as parallel foundations under disjoint authority ownership. P10B-02 is
+now Baseline; P10B-03 and P10B-05 remain Planned.
 
 The canonical inheritance remains:
 
@@ -491,7 +493,28 @@ with typed errors before proposal mutation. P10B-01 adds vocabulary/query author
 not implement Design DNA persistence, component anatomy, art direction, site-map/page families,
 commercial renderers, synthesis, or visual-quality evidence.
 
-### 10.4 Planned commercial generation authority
+### 10.4 P10B-02 parametric BrandSystem / Design DNA
+
+The canonical `BrandSystem` now contains an optional versioned `designDna` field with deterministic
+legacy migration. Its strict bounded authority covers semantic colour and contrast relationships;
+approved font pairing and display/heading/body/utility/price roles; type scale, weight, line height,
+and tracking; spacing rhythm, gutters, gaps, insets, and container postures; surface, border, radius,
+and elevation grammar; action/control posture; global/page-purpose density; and default media ratio,
+crop, overlay, and prominence posture. Remote font URLs, raw CSS and spacing, invalid ranges or
+relationships, stale versions, malformed migration input, and lower-level widening fail closed.
+
+One immutable canonical projection feeds the existing editor, preview, and published CSS-variable
+boundary. Shared frame, homepage, collection, and PDP consume the same fingerprinted foundations;
+current valid BrandSystem fixtures migrate deterministically, and exact Design DNA survives
+`StorefrontSnapshot`, save/reload, and deterministic publication compilation. Premium Editorial
+and Modern Technical examples share identical colours while differing materially in typography,
+rhythm, containers, surfaces, controls, density, and media posture. Contract and lifecycle details
+are recorded in [`P10B_02_PARAMETRIC_BRAND_SYSTEM.md`](P10B_02_PARAMETRIC_BRAND_SYSTEM.md).
+
+This closes P10B-02 only. It does not claim P10B-03 anatomy, P10B-04 art direction, P10B-05 page
+families, later commercial render families, synthesis, scale diversity, or retained human quality.
+
+### 10.5 Planned commercial generation authority
 
 `BrandSystem` owns merchant-wide bounded Design DNA across semantic colour, approved font roles and
 pairing, type scale/weights, spacing and section rhythm, gutters/containers, grid/card/control
@@ -531,7 +554,7 @@ drift, and exact or meaningful near duplicates. A deterministic storefront-desig
 covers structural and non-colour dimensions; hundreds or thousands of outcomes arise from bounded
 combinations, not manually authored templates.
 
-### 10.5 Commercial acceptance
+### 10.6 Commercial acceptance
 
 P10B closes only when at least 100 complete bounded storefront configurations pass deterministic
 validity, protected-state, exact-duplicate, near-duplicate, and structural-distribution analysis,

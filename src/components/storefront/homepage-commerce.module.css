@@ -2,11 +2,12 @@
   --homepage-columns: 3;
   box-sizing: border-box;
   display: grid;
-  gap: clamp(1rem, 3vw, 2.5rem);
+  gap: var(--brand-grid-gap);
   isolation: isolate;
   max-width: 100%;
   overflow: clip;
-  padding: clamp(2rem, 6vw, 5.5rem) max(1rem, calc((100% - 76rem) / 2));
+  padding: var(--brand-section-rhythm)
+    max(var(--brand-page-gutter), calc((100% - var(--brand-container-content)) / 2));
   position: relative;
 }
 
@@ -102,15 +103,20 @@
 .heroCopy h1,
 .editorialCopy h2,
 .sectionHeading h2 {
-  font-size: clamp(2rem, 5vw, 4.5rem);
-  line-height: 1.02;
+  font-family: var(--brand-font-display);
+  font-size: clamp(2rem, 5vw, var(--brand-type-display-size));
+  font-weight: var(--brand-type-display-weight);
+  letter-spacing: var(--brand-type-display-tracking);
+  line-height: var(--brand-type-display-line-height);
   margin: 0;
   overflow-wrap: anywhere;
 }
 
 .editorialCopy h2,
 .sectionHeading h2 {
-  font-size: clamp(1.75rem, 3vw, 3rem);
+  font-family: var(--brand-font-heading);
+  font-size: clamp(1.75rem, 3vw, var(--brand-type-heading-size));
+  font-weight: var(--brand-type-heading-weight);
 }
 
 .heroCopy p,
@@ -118,7 +124,7 @@
 .sectionHeading p {
   color: var(--brand-color-muted-text);
   font-size: clamp(1rem, 1.6vw, 1.25rem);
-  line-height: 1.6;
+  line-height: var(--brand-type-body-line-height);
   margin: 0;
   max-width: 42rem;
 }

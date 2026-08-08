@@ -7,7 +7,8 @@ storefront.
 
 The overall product is **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
 orchestration and publishing is **Baseline / closed**. P10B Commercial Storefront Generation System
-v1 is **Partial / active**: P10B-01 commercial grammar is Baseline, while later tasks remain Planned.
+v1 is **Partial / active**: P10B-01 commercial grammar and P10B-02 parametric BrandSystem are
+Baseline, while P10B-03 through P10B-18 remain Planned.
 
 ## Product boundary
 

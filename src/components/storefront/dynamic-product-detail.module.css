@@ -27,7 +27,7 @@
 .supportingContent,
 .relatedProducts {
   min-width: 0;
-  padding: clamp(1.25rem, 4vw, 4rem) clamp(1rem, 5vw, 5rem);
+  padding: calc(var(--brand-section-rhythm) * 0.6) var(--brand-page-gutter);
 }
 
 .gallery,
@@ -44,7 +44,8 @@
   width: 100%;
   height: auto;
   max-height: 46rem;
-  object-fit: contain;
+  aspect-ratio: var(--brand-media-ratio);
+  object-fit: var(--brand-media-crop);
   background: var(--brand-color-background);
 }
 
@@ -95,9 +96,11 @@
 
 .identity h1 {
   margin: 0.5rem 0 1rem;
-  font-family: var(--brand-font-heading);
-  font-size: clamp(2.25rem, 6vw, 4.75rem);
-  line-height: 1.02;
+  font-family: var(--brand-font-display);
+  font-size: clamp(2.25rem, 6vw, var(--brand-type-display-size));
+  font-weight: var(--brand-type-display-weight);
+  line-height: var(--brand-type-display-line-height);
+  letter-spacing: var(--brand-type-display-tracking);
   overflow-wrap: anywhere;
 }
 
@@ -121,8 +124,9 @@
 
 .price,
 .priceUnavailable {
-  font-size: clamp(1.35rem, 3vw, 1.8rem);
-  font-weight: 800;
+  font-family: var(--brand-font-price);
+  font-size: var(--brand-type-price-size);
+  font-weight: var(--brand-type-price-weight);
 }
 
 .compareAtPrice {
