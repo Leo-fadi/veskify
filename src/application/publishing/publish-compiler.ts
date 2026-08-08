@@ -751,7 +751,10 @@ function assertAssets(snapshot: StorefrontSnapshot): void {
             if (
               presentation.artDirection.placement.variant !== section.variant ||
               presentation.artDirection.placement.assetSlotId !== placement.assetSlotId ||
-              presentation.artDirection.placement.required !== placement.required
+              presentation.artDirection.placement.required !== placement.required ||
+              presentation.artDirection.source.sourceOwnerId !== placement.sourceReferenceId ||
+              placement.sourceProvenanceKind === undefined ||
+              presentation.artDirection.source.provenanceKind !== placement.sourceProvenanceKind
             ) {
               throw new Error("Responsive image placement authority does not match the section.");
             }

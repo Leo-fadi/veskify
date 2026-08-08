@@ -33,14 +33,20 @@ const overlayBackground: Readonly<Record<ResponsiveImageTreatment["overlay"], st
 };
 
 function treatmentStyle(prefix: string, treatment: ResponsiveImageTreatment): ArtStyle {
+  const rect = treatment.crop.rect;
   return {
-    [`--art-${prefix}-fit`]:
-      treatment.crop.mode === "natural"
+    [`--art-${prefix}-fit`]: rect
+      ? "fill"
+      : treatment.crop.mode === "natural"
         ? "contain"
         : treatment.crop.mode === "editorial"
           ? "cover"
           : treatment.crop.mode,
     [`--art-${prefix}-position`]: `${treatment.focalPoint.x * 100}% ${treatment.focalPoint.y * 100}%`,
+    [`--art-${prefix}-crop-left`]: rect ? `${(-rect.x / rect.width) * 100}%` : "0%",
+    [`--art-${prefix}-crop-top`]: rect ? `${(-rect.y / rect.height) * 100}%` : "0%",
+    [`--art-${prefix}-crop-width`]: rect ? `${100 / rect.width}%` : "100%",
+    [`--art-${prefix}-crop-height`]: rect ? `${100 / rect.height}%` : "100%",
     [`--art-${prefix}-ratio`]: ratio[treatment.ratio],
     [`--art-${prefix}-overlay-background`]: overlayBackground[treatment.overlay],
   };
@@ -101,6 +107,11 @@ export function ResponsiveStorefrontImage({
           <source
             data-art-breakpoint={breakpoint}
             data-art-crop={resolved[breakpoint].treatment.crop.mode}
+            data-art-crop-rect={
+              resolved[breakpoint].treatment.crop.rect
+                ? `${resolved[breakpoint].treatment.crop.rect.x},${resolved[breakpoint].treatment.crop.rect.y},${resolved[breakpoint].treatment.crop.rect.width},${resolved[breakpoint].treatment.crop.rect.height}`
+                : undefined
+            }
             data-art-derivative-id={resolved[breakpoint].derivativeId}
             data-art-focal={`${resolved[breakpoint].treatment.focalPoint.x},${resolved[breakpoint].treatment.focalPoint.y}`}
             data-art-overlay={resolved[breakpoint].treatment.overlay}

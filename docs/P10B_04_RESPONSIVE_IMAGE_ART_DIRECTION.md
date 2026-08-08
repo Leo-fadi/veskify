@@ -156,10 +156,12 @@ The authority fingerprint covers all material source, placement, geometry, treat
 state. Responsive-treatment and derivative arrays are canonicalized before hashing, so order-only
 changes do not alter the fingerprint. A material focal/crop/ratio/overlay/lineage change does.
 
-Existing valid snapshots remain parseable because `artDirection` is optional on the existing
-presentation. The homepage bridge derives one deterministic current-version authority from the
-existing placement, current component/anatomy, source presentation and Design DNA when a legacy
-presentation has none. This is a compatibility projection, not a fixture rewrite or competing
+Existing valid snapshots remain parseable because `artDirection` and the placement's compatible
+`sourceProvenanceKind` addition are optional. Current planners derive that kind from approved source
+evidence (`merchant-upload` or source-discovered evidence). The homepage bridge derives one
+deterministic current-version authority from a legacy presentation only when that exact provenance
+kind is present; it retains ordinary source rendering when old state cannot prove provenance rather
+than inventing lineage. This is a compatibility projection, not a fixture rewrite or competing
 persisted model. New authored authority is preserved exactly by strict snapshot parsing, proposal
 materialization, JSON save/reload, compiler approved-asset fingerprinting, compiled page output and
 published rendering.

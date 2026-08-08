@@ -337,15 +337,15 @@ export function migrateApprovedPresentationArtDirection({
   placement,
   component,
   dna,
+  provenanceKind,
   variant = component.defaultVariant,
-  provenanceKind = "merchantProvided",
 }: {
   presentation: ApprovedAssetPresentation;
   placement: ApprovedAssetPlacementOperation;
   component: ComponentDefinitionV2;
   dna: DesignDna;
   variant?: string;
-  provenanceKind?: ResponsiveImageAuthority["source"]["provenanceKind"];
+  provenanceKind: ResponsiveImageAuthority["source"]["provenanceKind"];
 }): ApprovedAssetPresentation {
   if (presentation.artDirection) return presentation;
   const anatomy = component.commercialAnatomy;

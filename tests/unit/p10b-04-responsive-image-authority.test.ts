@@ -453,14 +453,17 @@ describe("P10B-04 responsive image and art-direction authority", () => {
       placement,
       component: homepageHeroDefinition,
       dna,
+      provenanceKind: "sourceDiscovered",
     });
     const second = migrateApprovedPresentationArtDirection({
       presentation,
       placement,
       component: homepageHeroDefinition,
       dna,
+      provenanceKind: "sourceDiscovered",
     });
     expect(first.artDirection?.fingerprint).toBe(second.artDirection?.fingerprint);
+    expect(first.artDirection?.source.provenanceKind).toBe("sourceDiscovered");
     expect(first.asset).toEqual(presentation.asset);
   });
   it("30 rejects art-direction lineage that disagrees with the approved presentation", () => {
@@ -526,5 +529,41 @@ describe("P10B-04 responsive image and art-direction authority", () => {
         }),
       "invalid-geometry",
     );
+  });
+  it("36 requires migration callers to preserve supplied source provenance", () => {
+    const placement: ApprovedAssetPlacementOperation = {
+      type: "PLACE_APPROVED_SOURCE_ASSET",
+      pageId: "page_home",
+      componentId: "section_hero",
+      componentType: "homepageHero",
+      assetSlotId: "heroMedia",
+      assetId: "asset_hero",
+      role: "heroDesktop",
+      assetRevision: "asset-r1",
+      materialFingerprint: "asset-fp-1",
+      sourceReferenceId: "source_hero",
+      sourceProvenanceKind: "sourceDiscovered",
+      required: false,
+    };
+    const presentation: ApprovedAssetPresentation = {
+      assetId: "asset_hero",
+      role: "heroDesktop",
+      revision: "asset-r1",
+      materialFingerprint: "asset-fp-1",
+      asset: { id: "asset_hero", url: "/hero.jpg", decorative: false, alt: { en: "Hero" } },
+    };
+    if (!placement.sourceProvenanceKind) throw new Error("Missing source provenance fixture.");
+    expect(
+      migrateApprovedPresentationArtDirection({
+        presentation,
+        placement,
+        component: homepageHeroDefinition,
+        dna,
+        provenanceKind: placement.sourceProvenanceKind,
+      }).artDirection?.source,
+    ).toMatchObject({
+      provenanceKind: "sourceDiscovered",
+      sourceOwnerId: "source_hero",
+    });
   });
 });

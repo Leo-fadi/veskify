@@ -449,13 +449,14 @@ function bridge<ContentSchema extends z.ZodType, PropsSchema extends z.ZodType>(
         const placement = approvedAssetPlacements.find(
           (candidate) => candidate.assetId === presentation.assetId,
         );
-        return placement
+        return placement?.sourceProvenanceKind
           ? migrateApprovedPresentationArtDirection({
               presentation,
               placement,
               component: componentDefinition,
               variant,
               dna: resolveBrandSystemDesignDna(context.brandSystem),
+              provenanceKind: placement.sourceProvenanceKind,
             })
           : presentation;
       });

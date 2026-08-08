@@ -8,7 +8,10 @@ import {
   validateResponsiveImageAuthority,
 } from "@/application/responsive-image-authority";
 import { resolveBrandSystemDesignDna } from "@/domain/design-system";
-import { responsiveImageAuthoritySchema } from "@/domain/asset-presentation";
+import {
+  createResponsiveImageAuthority,
+  responsiveImageAuthoritySchema,
+} from "@/domain/asset-presentation";
 import { createCatalogueStorefrontCommerceRouteAdapter } from "@/integrations/storefront-commerce-routes";
 import { aurumNordicSeed } from "@/data/seed";
 import type { ProjectAggregate } from "@/services/storage";
@@ -128,6 +131,46 @@ describe("P10B-04 responsive image renderer integration", () => {
     );
   });
 
+  it("applies the exact normalized editorial crop rectangle at every breakpoint", () => {
+    const { presentation } = productPresentation();
+    const metadata = presentation.projection.assets.find(
+      ({ role }) => role === "productMainImage",
+    )!;
+    const current = responsiveImageAuthoritySchema.parse(metadata.artDirection);
+    const { fingerprint, ...material } = current;
+    void fingerprint;
+    const crop = {
+      mode: "editorial" as const,
+      rect: { x: 0.1, y: 0.2, width: 0.4, height: 0.5 },
+    };
+    material.sourceTreatment = { ...material.sourceTreatment, crop };
+    material.responsiveTreatments = material.responsiveTreatments.map((entry) => ({
+      ...entry,
+      treatment: { ...entry.treatment, crop },
+    }));
+    const authority = createResponsiveImageAuthority(material);
+    const rendered = render(
+      <ResponsiveStorefrontImage
+        alt="Editorial crop"
+        asset={{
+          id: metadata.assetId,
+          url: presentation.resolveAssetUrl(metadata.assetId),
+          decorative: false,
+          alt: { en: "Editorial crop" },
+        }}
+        authority={authority}
+      />,
+    );
+    const frame = rendered.container.querySelector<HTMLElement>("[data-art-direction-contract]");
+    expect(frame?.style.getPropertyValue("--art-mobile-crop-left")).toBe("-25%");
+    expect(frame?.style.getPropertyValue("--art-mobile-crop-top")).toBe("-40%");
+    expect(frame?.style.getPropertyValue("--art-mobile-crop-width")).toBe("250%");
+    expect(frame?.style.getPropertyValue("--art-mobile-crop-height")).toBe("200%");
+    expect(
+      rendered.container.querySelectorAll('[data-art-crop-rect="0.1,0.2,0.4,0.5"]'),
+    ).toHaveLength(4);
+  });
+
   it("preserves authored approved presentation authority through repository save and reload", async () => {
     const generated = await generateP905aScenario("premiumEditorial");
     const accepted = createP905aAcceptanceCoordinator(generated).accept();
@@ -145,6 +188,7 @@ describe("P10B-04 responsive image renderer integration", () => {
       component: homepageHeroDefinition,
       variant: hero.variant,
       dna: resolveBrandSystemDesignDna(snapshot.brandSystem),
+      provenanceKind: "merchantProvided",
     });
     hero.approvedAssetPresentations = [authored];
 

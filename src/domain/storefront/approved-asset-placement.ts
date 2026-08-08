@@ -19,6 +19,9 @@ export const approvedAssetPlacementOperationSchema = z
     assetRevision: z.string().trim().min(1).max(120),
     materialFingerprint: z.string().trim().min(1),
     sourceReferenceId: idSchema,
+    sourceProvenanceKind: z
+      .enum(["merchantProvided", "sourceDiscovered", "generated", "preset"])
+      .optional(),
     required: z.boolean().default(false),
   })
   .strict();

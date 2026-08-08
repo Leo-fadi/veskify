@@ -28,6 +28,7 @@ import {
 import { InMemoryProjectRepository } from "@/services/storage";
 import { migrateApprovedPresentationArtDirection } from "@/application/responsive-image-authority";
 import { resolveBrandSystemDesignDna } from "@/domain/design-system";
+import { createResponsiveImageAuthority } from "@/domain/asset-presentation";
 
 function aggregate() {
   return {
@@ -138,6 +139,7 @@ function placementAndPresentation({
       assetRevision: revision,
       materialFingerprint,
       sourceReferenceId: `source_publish_compiler_${index}`,
+      sourceProvenanceKind: "merchantProvided" as const,
       required: false,
     },
     presentation: {
@@ -332,6 +334,7 @@ describe("P10A-08C-02A deterministic publish compiler authority", () => {
       component: veskifyComponentRegistryV2.get("homepageHero"),
       variant: fixture.section.variant,
       dna: resolveBrandSystemDesignDna(fixture.value.snapshots[1].brandSystem),
+      provenanceKind: "merchantProvided",
     });
     fixture.section.approvedAssetPresentations = [authored];
 
@@ -352,6 +355,38 @@ describe("P10A-08C-02A deterministic publish compiler authority", () => {
     expectCompilerFailure(
       () => compileStorefrontPublication(manualInput(stale)),
       "malformed-compiler-input",
+    );
+
+    const reassigned = structuredClone(fixture.value);
+    const reassignedAuthority = reassigned.snapshots[1].pages
+      .find(({ id }) => id === placement.pageId)
+      ?.sections.find(({ id }) => id === placement.componentId)
+      ?.approvedAssetPresentations?.[0]?.artDirection;
+    if (!reassignedAuthority) throw new Error("Missing reassigned image compiler fixture.");
+    const { fingerprint, ...material } = reassignedAuthority;
+    void fingerprint;
+    material.source.sourceOwnerId = "source_reassigned";
+    const reassignedPresentation = reassigned.snapshots[1].pages
+      .find(({ id }) => id === placement.pageId)
+      ?.sections.find(({ id }) => id === placement.componentId)?.approvedAssetPresentations?.[0];
+    if (!reassignedPresentation) throw new Error("Missing reassigned presentation fixture.");
+    reassignedPresentation.artDirection = createResponsiveImageAuthority(material);
+    expectCompilerFailure(
+      () => compileStorefrontPublication(manualInput(reassigned)),
+      "invalid-approved-asset",
+    );
+
+    const provenanceUnknown = structuredClone(fixture.value);
+    const provenanceUnknownPlacement = provenanceUnknown.snapshots[1].pages
+      .find(({ id }) => id === placement.pageId)
+      ?.sections.find(({ id }) => id === placement.componentId)?.approvedAssetPlacements?.[0];
+    if (!provenanceUnknownPlacement) {
+      throw new Error("Missing provenance-unknown compiler fixture.");
+    }
+    delete provenanceUnknownPlacement.sourceProvenanceKind;
+    expectCompilerFailure(
+      () => compileStorefrontPublication(manualInput(provenanceUnknown)),
+      "invalid-approved-asset",
     );
   });
 
