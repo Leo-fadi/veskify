@@ -4,6 +4,7 @@ import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { Locale } from "@/domain/shared";
 import type { NavigationModel, PageModel, PageType, SectionInstance } from "@/domain/storefront";
 import type { HomepageNavigationIntent } from "@/components/storefront/homepage-commerce";
+import type { BrandSystem } from "@/domain/design-system";
 
 export type StorefrontRenderContext = {
   activeLocale: Locale;
@@ -11,6 +12,7 @@ export type StorefrontRenderContext = {
   catalogue: CatalogueDisplayModel;
   navigation: NavigationModel;
   pages: readonly PageModel[];
+  brandSystem: BrandSystem;
   pagePaths: Readonly<Record<string, string>>;
   homePath?: string;
   renderTarget?: "editor" | "preview" | "published";

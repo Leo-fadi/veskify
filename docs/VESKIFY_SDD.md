@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B-04 | 8 August 2026 | P10B-04 delivery | Establish one versioned responsive image/art-direction authority with exact lineage, normalized geometry, Design DNA/anatomy narrowing, protected product media, deterministic fallback/fingerprint/migration, shared semantic rendering, and four-width evidence. |
 | 1.3.0 P10B-05 | 8 August 2026 | P10B-05 delivery | Establish registered page-family, route, navigation, evidence, locale, shared-frame, deterministic site-map materialization, and lifecycle authority without a second page graph or component-anatomy claim. |
 | 1.3.0 P10B-03 | 8 August 2026 | P10B-03 delivery | Establish typed semantic anatomy, structural-difference validation, conservative complete registry classification, generated commercial-capability queries, and deterministic anatomy migration without falsely promoting current variants. |
 | 1.3.0 P10B-02 | 8 August 2026 | P10B-02 delivery | Establish canonical parametric Design DNA, deterministic legacy BrandSystem migration, semantic renderer projection, contrast-safe colour authority, and bounded cross-page foundations. |
@@ -64,9 +65,9 @@ home, collection, and product-detail rendering.
 The product remains **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
 orchestration and publishing is **Baseline / closed** under the formal
 [`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md) exit audit. P10B is now **Partial / active**:
-P10B-01 commercial grammar, P10B-02 parametric BrandSystem / Design DNA, and P10B-03 component
-anatomy, and P10B-05 site-map/page-family authority are Baseline, while P10B-04 and P10B-06
-through P10B-18 remain Planned. The current
+P10B-01 commercial grammar, P10B-02 parametric BrandSystem / Design DNA, P10B-03 component anatomy,
+P10B-04 responsive image/art-direction authority, and P10B-05 site-map/page-family authority are
+Baseline, while P10B-06 through P10B-18 remain Planned. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -205,7 +206,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
-| Commercial storefront generation system              | **Partial**  | P10B-01 grammar, P10B-02 Design DNA, P10B-03 anatomy, and P10B-05 page-set authority are Baseline; complete-storefront commercial quality/diversity remains Planned. |
+| Commercial storefront generation system              | **Partial**  | P10B-01 grammar, P10B-02 Design DNA, P10B-03 anatomy, P10B-04 art direction, and P10B-05 page-set authority are Baseline; complete-storefront commercial quality/diversity remains Planned. |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
 
@@ -460,6 +461,8 @@ direction expansion. P10B-01 is Baseline; its executable contract and evidence a
 is Baseline under [`P10B_02_PARAMETRIC_BRAND_SYSTEM.md`](P10B_02_PARAMETRIC_BRAND_SYSTEM.md), and
 P10B-03 anatomy is Baseline under
 [`P10B_03_COMPONENT_ANATOMY_AND_MEANINGFUL_VARIANTS.md`](P10B_03_COMPONENT_ANATOMY_AND_MEANINGFUL_VARIANTS.md).
+P10B-04 responsive image/art-direction authority is Baseline under
+[`P10B_04_RESPONSIVE_IMAGE_ART_DIRECTION.md`](P10B_04_RESPONSIVE_IMAGE_ART_DIRECTION.md).
 P10B-05 page-set authority is Baseline under
 [`P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md`](P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md).
 These authorities remain disjoint: P10B-03 consumes P10B-02 compatibility where relevant without
@@ -579,7 +582,34 @@ are recorded in [`P10B_02_PARAMETRIC_BRAND_SYSTEM.md`](P10B_02_PARAMETRIC_BRAND_
 P10B-02 by itself does not claim P10B-03 anatomy, P10B-04 art direction, P10B-05 page families,
 later commercial render families, synthesis, scale diversity, or retained human quality.
 
-### 10.7 Planned commercial generation authority
+### 10.7 P10B-04 responsive image and art-direction authority
+
+The existing approved asset presentation now embeds one optional, versioned responsive-image
+authority. It binds normalized focal point and safe area, typed ratio, bounded crop and overlay,
+exact registered breakpoints, immutable source and approved-derivative lineage, exact component
+version/variant/anatomy region/asset slot, and a deterministic material fingerprint. It contains no
+transformed URL, arbitrary CSS, executable output, second asset registry, or responsive-state store.
+
+Validation consumes current P10B-02 Design DNA and P10B-03 anatomy/slot authority. Lower-level
+treatments can narrow but cannot broaden DNA media defaults or component role/cardinality. Exact
+breakpoint selection falls back deterministically through compatible registered breakpoints and the
+valid source treatment; optional omission remains owned by the component slot. Invalid geometry,
+unsafe safe-area exclusion, stale fingerprints/definitions, wrong role/slot/anatomy/source,
+unapproved derivatives, and broadening fail closed.
+
+Canonical product media remains commerce-owned. Presentation authority retains exact product ID,
+media ID, role, revision, membership and order; wrong-product lineage, editorial replacement, and
+editorial product crop geometry fail. Homepage editorial, collection-card and PDP media share one
+semantic `picture` renderer across editor, preview and published targets. Legacy presentations
+default deterministically without fixture rewrites, while authored authority survives snapshot,
+save/reload, compiler fingerprinting and compiled output exactly.
+
+The contract and deterministic/browser evidence are recorded in
+[`P10B_04_RESPONSIVE_IMAGE_ART_DIRECTION.md`](P10B_04_RESPONSIVE_IMAGE_ART_DIRECTION.md). Production
+CDN derivative materialization, media editing, generated media, later commercial families and
+retained human commercial acceptance remain deferred.
+
+### 10.8 Planned commercial generation authority
 
 `BrandSystem` owns merchant-wide bounded Design DNA across semantic colour, approved font roles and
 pairing, type scale/weights, spacing and section rhythm, gutters/containers, grid/card/control
@@ -760,7 +790,7 @@ The binding sequence is:
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
    formal P10A phase closure record.
 2. **P10B — Commercial Storefront Generation System v1.** **Partial / active phase.** P10B-01,
-   P10B-02, P10B-03, and P10B-05 are Baseline; P10B-04 and P10B-06 through P10B-18 remain Planned.
+   P10B-02, P10B-03, P10B-04, and P10B-05 are Baseline; P10B-06 through P10B-18 remain Planned.
    Deliver complete commercially credible storefronts with bounded material diversity through
    registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and

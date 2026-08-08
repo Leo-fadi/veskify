@@ -26,6 +26,8 @@ import {
   storefrontSnapshotSchema,
 } from "@/domain/storefront";
 import { InMemoryProjectRepository } from "@/services/storage";
+import { migrateApprovedPresentationArtDirection } from "@/application/responsive-image-authority";
+import { resolveBrandSystemDesignDna } from "@/domain/design-system";
 
 function aggregate() {
   return {
@@ -316,6 +318,40 @@ describe("P10A-08C-02A deterministic publish compiler authority", () => {
     expectCompilerFailure(
       () => compileStorefrontPublication(excessive.input),
       "invalid-approved-asset",
+    );
+  });
+
+  it("preserves and revalidates exact responsive image authority in compiled pages", () => {
+    const fixture = assetInput("homepageHero", 1);
+    const placement = fixture.section.approvedAssetPlacements?.[0];
+    const presentation = fixture.section.approvedAssetPresentations?.[0];
+    if (!placement || !presentation) throw new Error("Missing approved image compiler fixture.");
+    const authored = migrateApprovedPresentationArtDirection({
+      presentation,
+      placement,
+      component: veskifyComponentRegistryV2.get("homepageHero"),
+      variant: fixture.section.variant,
+      dna: resolveBrandSystemDesignDna(fixture.value.snapshots[1].brandSystem),
+    });
+    fixture.section.approvedAssetPresentations = [authored];
+
+    const compilation = compileStorefrontPublication(manualInput(fixture.value));
+    const compiledPresentation = compilation.result.pages
+      .find(({ page }) => page.id === placement.pageId)
+      ?.page.sections.find(({ id }) => id === placement.componentId)
+      ?.approvedAssetPresentations?.[0];
+    expect(compiledPresentation?.artDirection).toEqual(authored.artDirection);
+
+    const stale = structuredClone(fixture.value);
+    const staleAuthority = stale.snapshots[1].pages
+      .find(({ id }) => id === placement.pageId)
+      ?.sections.find(({ id }) => id === placement.componentId)
+      ?.approvedAssetPresentations?.[0]?.artDirection;
+    if (!staleAuthority) throw new Error("Missing stale image compiler fixture.");
+    staleAuthority.sourceTreatment.focalPoint.x = 0.4;
+    expectCompilerFailure(
+      () => compileStorefrontPublication(manualInput(stale)),
+      "malformed-compiler-input",
     );
   });
 

@@ -17,6 +17,9 @@ import {
   type StorefrontRenderContext,
 } from "./contract";
 import { renderHomepageCommerce } from "@/components/storefront/homepage-commerce";
+import { migrateApprovedPresentationArtDirection } from "@/application/responsive-image-authority";
+import { resolveBrandSystemDesignDna } from "@/domain/design-system";
+import { veskifyComponentRegistryV2 } from "./v2-registry";
 import {
   homepageCollectionNavigationContentSchema,
   homepageCollectionNavigationPropsSchema,
@@ -257,6 +260,9 @@ function projectionFor(
       approvalStatus: "approved",
       usageRights: "merchantOwned",
       responsiveCrops: [],
+      ...(presentation?.artDirection === undefined
+        ? {}
+        : { artDirection: presentation.artDirection }),
       revision: placement.assetRevision,
     });
   });
@@ -438,11 +444,22 @@ function bridge<ContentSchema extends z.ZodType, PropsSchema extends z.ZodType>(
       approvedAssetPresentations,
       context,
     }) => {
-      const projection = projectionFor(
-        context,
-        approvedAssetPlacements,
-        approvedAssetPresentations,
-      );
+      const componentDefinition = veskifyComponentRegistryV2.get(input.component);
+      const migratedPresentations = approvedAssetPresentations.map((presentation) => {
+        const placement = approvedAssetPlacements.find(
+          (candidate) => candidate.assetId === presentation.assetId,
+        );
+        return placement
+          ? migrateApprovedPresentationArtDirection({
+              presentation,
+              placement,
+              component: componentDefinition,
+              variant,
+              dna: resolveBrandSystemDesignDna(context.brandSystem),
+            })
+          : presentation;
+      });
+      const projection = projectionFor(context, approvedAssetPlacements, migratedPresentations);
       return renderHomepageCommerce({
         target: context.renderTarget ?? "preview",
         instance: instanceFor(
@@ -458,7 +475,7 @@ function bridge<ContentSchema extends z.ZodType, PropsSchema extends z.ZodType>(
         activeLocale: context.activeLocale,
         primaryLocale: context.primaryLocale,
         resolveAssetUrl: (assetId) =>
-          approvedAssetPresentations.find((presentation) => presentation.assetId === assetId)?.asset
+          migratedPresentations.find((presentation) => presentation.assetId === assetId)?.asset
             .url ??
           context.catalogue.products
             .flatMap((product) => product.images)

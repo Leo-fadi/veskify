@@ -9,6 +9,7 @@ export default defineConfig({
     "p10a-04c-homepage-commerce-bridge.spec.ts",
     "publish-confirmation.spec.ts",
     "p10a-08d-02-complete-publication-evidence.spec.ts",
+    "p10b-04-responsive-image-art-direction.spec.ts",
   ],
   // Project state and browser evidence are intentionally isolated per run.
   workers: 1,

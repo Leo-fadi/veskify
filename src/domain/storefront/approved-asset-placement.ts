@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { assetRefSchema, assetRoleSchema, idSchema } from "@/domain/shared";
+import { responsiveImageAuthoritySchema } from "@/domain/asset-presentation";
 
 /**
  * Immutable authority for an approved source asset placed in a storefront
@@ -32,7 +33,25 @@ export const approvedAssetPresentationSchema = z
     revision: z.string().trim().min(1).max(120),
     materialFingerprint: z.string().trim().min(1),
     asset: assetRefSchema,
+    artDirection: responsiveImageAuthoritySchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((presentation, context) => {
+    const source = presentation.artDirection?.source;
+    if (
+      source !== undefined &&
+      (source.assetId !== presentation.assetId ||
+        source.assetId !== presentation.asset.id ||
+        source.role !== presentation.role ||
+        source.revision !== presentation.revision ||
+        source.materialFingerprint !== presentation.materialFingerprint)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["artDirection", "source"],
+        message: "Responsive image source lineage must match the approved presentation exactly.",
+      });
+    }
+  });
 
 export type ApprovedAssetPresentation = z.infer<typeof approvedAssetPresentationSchema>;
