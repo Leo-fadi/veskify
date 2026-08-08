@@ -1,7 +1,7 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01 is **Baseline**; P10B-02 through P10B-18 remain
-**Planned**.
+**Status:** Binding architecture. P10B-01 and P10B-02 are **Baseline**; P10B-03 through P10B-18
+remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
@@ -580,6 +580,6 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01 is Baseline. P10B-02, P10B-03, and P10B-05 are the first intended parallel wave subject to
+P10B-01 and P10B-02 are Baseline. P10B-03 and P10B-05 remain the available foundation work under
 the ownership constraints in section 15. No later implementation task is complete merely because
-this architecture is approved or P10B-01 passed.
+this architecture is approved or either completed foundation passed.

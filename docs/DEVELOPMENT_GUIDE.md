@@ -88,8 +88,8 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 The verified v1.3.0 source baseline is current `main` after PR #172 on 8 August 2026. Phase 9 is
 closed by product-owner handoff, and P10A is **Baseline / closed**. The overall product remains
-**Partial**. P10B is the active development phase. P10B-01 commercial grammar is **Baseline**;
-P10B-02 through P10B-18 remain **Planned**.
+**Partial**. P10B is the active development phase. P10B-01 commercial grammar and P10B-02
+parametric BrandSystem are **Baseline**; P10B-03 through P10B-18 remain **Planned**.
 
 The current baseline includes canonical storefront/brand contracts, ComponentDefinitionV2 and its
 generated manifest, executable PageBlueprint profiles, dynamic commerce-bound collection/PDP

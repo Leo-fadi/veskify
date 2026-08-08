@@ -26,6 +26,7 @@ const activeMarkdownFiles = [
   "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
   "docs/P10A_PHASE_CLOSURE.md",
   "docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md",
+  "docs/P10B_02_PARAMETRIC_BRAND_SYSTEM.md",
   "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
   "docs/VESKO_VESKIFY_INTEGRATION_MATRIX.md",
   "docs/P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md",
@@ -170,7 +171,7 @@ requireText("docs/P10A_PHASE_CLOSURE.md", [
 ]);
 
 requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
-  "**Status:** Binding architecture. P10B-01 is **Baseline**; P10B-02 through P10B-18 remain\n**Planned**.",
+  "**Status:** Binding architecture. P10B-01 and P10B-02 are **Baseline**; P10B-03 through P10B-18\nremain **Planned**.",
   "**Phase:** P10B — Commercial Storefront Generation System v1",
   "Veskify owns storefront creation",
   "Vesko owns operational commerce truth",
@@ -221,15 +222,15 @@ for (const relativePath of [
 
 requireText("docs/DEVELOPMENT_GUIDE.md", [
   "Phase 9 is\nclosed by product-owner handoff, and P10A is **Baseline / closed**",
-  "P10B is the active development phase. P10B-01 commercial grammar is **Baseline**;\nP10B-02 through P10B-18 remain **Planned**",
+  "P10B is the active development phase. P10B-01 commercial grammar and P10B-02\nparametric BrandSystem are **Baseline**; P10B-03 through P10B-18 remain **Planned**",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
   "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 8) {
-  failures.push("Delivery tracker must contain exactly eight completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 9) {
+  failures.push("Delivery tracker must contain exactly nine completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -237,11 +238,12 @@ const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\
 );
 if (
   !/^\| ☑\s+\| P10B-01\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
-  plannedP10bChecklistIds.length !== lockedP10BTasks.length - 1 ||
-  plannedP10bChecklistIds.some((taskId, index) => taskId !== lockedP10BTasks[index + 1][0])
+  !/^\| ☑\s+\| P10B-02\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  plannedP10bChecklistIds.length !== lockedP10BTasks.length - 2 ||
+  plannedP10bChecklistIds.some((taskId, index) => taskId !== lockedP10BTasks[index + 2][0])
 ) {
   failures.push(
-    "Delivery tracker must mark P10B-01 Baseline and list exactly P10B-02 through P10B-18 as Planned unchecked tasks",
+    "Delivery tracker must mark P10B-01 and P10B-02 Baseline and list exactly P10B-03 through P10B-18 as Planned unchecked tasks",
   );
 }
 

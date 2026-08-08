@@ -1,4 +1,9 @@
-import { brandSystemSchema, premiumVisualPresets, type BrandSystem } from "@/domain/design-system";
+import {
+  brandSystemSchema,
+  migrateLegacyFoundationToDesignDna,
+  premiumVisualPresets,
+  type BrandSystem,
+} from "@/domain/design-system";
 import type { StorefrontDesignDirectionId, StorefrontDesignSystemV1 } from "./contract";
 
 const radiusByCornerTreatment = {
@@ -44,7 +49,7 @@ export function registeredBrandSystemForDirection(
   if (!direction || !typography) {
     throw new Error("The selected registered storefront direction is unavailable.");
   }
-  return brandSystemSchema.parse({
+  const materialized = brandSystemSchema.parse({
     ...structuredClone(baseline),
     typography: {
       ...structuredClone(baseline.typography),
@@ -60,5 +65,9 @@ export function registeredBrandSystemForDirection(
       surfaceDepth: direction.surfaceDepth,
       imageTreatment: visualImageTreatmentByTreatment[direction.imageTreatmentId],
     },
+  });
+  return brandSystemSchema.parse({
+    ...materialized,
+    designDna: migrateLegacyFoundationToDesignDna(materialized),
   });
 }

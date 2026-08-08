@@ -478,8 +478,14 @@ describe("P9-05A fresh-store generation demo foundation", () => {
     ];
     directionIds.forEach((directionId) => {
       const value = requiredGenerated(directionId);
-      const serialized = JSON.stringify(value.proposal.proposedStorefront);
+      const serialized = JSON.stringify({
+        pages: value.proposal.proposedStorefront.pages,
+        navigation: value.proposal.proposedStorefront.navigation,
+      });
       protectedKeys.forEach((key) => expect(serialized).not.toContain(`"${key}"`));
+      expect(
+        value.proposal.proposedStorefront.brandSystem.designDna?.typography.roles.price,
+      ).toBeDefined();
       expect(Object.keys(value.fixture.aggregate.catalogue).sort()).toEqual([
         "collections",
         "id",

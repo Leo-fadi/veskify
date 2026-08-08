@@ -1,7 +1,7 @@
 import { validateDesignOperationAgainstPage } from "@/application/design-operations";
 import { validateRegisteredSnapshot } from "@/components/registry";
 import { catalogueDisplayModelSchema, type CatalogueDisplayModel } from "@/domain/catalogue";
-import { brandSystemSchema } from "@/domain/design-system";
+import { applyBrandSystemFoundationPatch, brandSystemSchema } from "@/domain/design-system";
 import { canonicalLocaleOrder, localeSchema, type Locale } from "@/domain/shared";
 import {
   canonicalValueFingerprint,
@@ -353,9 +353,13 @@ export function executeAiStorefrontProposal({
     try {
       if (operation.target.kind === "storefrontDesignSystem") {
         if (operation.operation.type === "APPLY_APPROVED_BRAND_COLOURS") {
-          candidate.brandSystem.colors = structuredClone(operation.operation.colors);
+          candidate.brandSystem = applyBrandSystemFoundationPatch(candidate.brandSystem, {
+            colors: operation.operation.colors,
+          });
         } else if (operation.operation.type === "APPLY_APPROVED_BRAND_TYPOGRAPHY") {
-          candidate.brandSystem.typography = structuredClone(operation.operation.typography);
+          candidate.brandSystem = applyBrandSystemFoundationPatch(candidate.brandSystem, {
+            typography: operation.operation.typography,
+          });
         } else if (operation.operation.type === "APPLY_REGISTERED_BRAND_SYSTEM") {
           candidate.brandSystem = structuredClone(operation.operation.brandSystem);
         } else {
