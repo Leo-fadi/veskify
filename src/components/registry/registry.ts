@@ -6,6 +6,7 @@ import {
   pageModelSchema,
   sectionInstanceSchema,
   storefrontSnapshotSchema,
+  validateCanonicalStorefrontSiteMap,
   type PageModel,
   type PageType,
   type SectionInstance,
@@ -61,12 +62,14 @@ export function validateRegisteredSnapshot(
   catalogue?: CatalogueDisplayModel,
   activeLocale: Locale = "en",
   primaryLocale: Locale = "en",
+  enabledLocales?: readonly Locale[],
 ): StorefrontSnapshot {
   const snapshot = storefrontSnapshotSchema.parse(input);
   const context = catalogue
     ? createStorefrontRenderContext({ activeLocale, primaryLocale, catalogue, snapshot })
     : undefined;
   snapshot.pages.forEach((page) => validateRegisteredPage(page, context));
+  validateCanonicalStorefrontSiteMap(snapshot, { catalogue, enabledLocales });
   return snapshot;
 }
 

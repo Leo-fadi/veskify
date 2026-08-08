@@ -86,13 +86,15 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 ## 3. Current implementation baseline
 
-The verified v1.3.0 source baseline is current `main` after PR #172 on 8 August 2026. Phase 9 is
+The verified v1.3.0 source baseline is current `main` after PR #173 on 8 August 2026. Phase 9 is
 closed by product-owner handoff, and P10A is **Baseline / closed**. The overall product remains
-**Partial**. P10B is the active development phase. P10B-01 commercial grammar is **Baseline**;
-P10B-02 through P10B-18 remain **Planned**.
+**Partial**. P10B is the active development phase. P10B-01 commercial grammar and P10B-05
+site-map/page-family authority are **Baseline**; P10B-02 through P10B-04 and P10B-06 through
+P10B-18 remain **Planned**.
 
 The current baseline includes canonical storefront/brand contracts, ComponentDefinitionV2 and its
-generated manifest, executable PageBlueprint profiles, dynamic commerce-bound collection/PDP
+generated manifest, executable PageBlueprint profiles, registered complete page-set/site-map
+authority, dynamic commerce-bound collection/PDP
 rendering, governed internal initial/follow-up execution, strict internal scope routing, proposal
 acceptance/history, draft persistence, an authoritative publishing gateway, deterministic publish
 compilation, and published homepage/collection/PDP routes.

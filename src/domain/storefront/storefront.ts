@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { brandSystemSchema } from "@/domain/design-system";
 import {
+  canonicalLocaleOrder,
   idSchema,
   isoDateTimeSchema,
+  localeSchema,
   localizedSeoSchema,
   localizedTextSchema,
   safeExternalUrlSchema,
@@ -64,16 +66,102 @@ export const pageTypeSchema = z.enum([
   "landing",
 ]);
 
+export const pageFamilyIdValues = [
+  "home",
+  "collection",
+  "search-results",
+  "product-detail",
+  "about",
+  "contact",
+  "store-locations",
+  "faq",
+  "shipping-information",
+  "returns-information",
+  "policy-legal",
+  "generic-content",
+  "campaign-editorial",
+  "cart",
+  "checkout",
+  "no-results",
+  "empty-state",
+  "error-state",
+  "not-found",
+] as const;
+export const pageFamilyIdSchema = z.enum(pageFamilyIdValues);
+
+const authorityVersionSchema = z.string().regex(/^\d+\.\d+\.\d+$/);
+export const pageFamilyCommerceContextSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("none") }).strict(),
+  z.object({ kind: z.literal("search") }).strict(),
+  z.object({ kind: z.literal("collection"), collectionId: idSchema }).strict(),
+  z.object({ kind: z.literal("product"), productId: idSchema }).strict(),
+]);
+export const pageFactEvidenceReferenceSchema = z
+  .object({
+    source: z.enum(["merchant-approved", "vesko-authoritative", "approved-source-evidence"]),
+    authorityId: idSchema,
+    revision: z.string().trim().min(1).max(120),
+    status: z.literal("approved"),
+  })
+  .strict();
+
+export const pageFamilyAuthoritySchema = z
+  .object({
+    familyId: pageFamilyIdSchema,
+    familyVersion: authorityVersionSchema,
+    profileId: z.string().trim().min(1).max(160),
+    profileVersion: authorityVersionSchema,
+    localeCoverage: z.array(localeSchema).min(1),
+    sharedFrameId: z.string().trim().min(1).max(160),
+    sharedFrameVersion: authorityVersionSchema,
+    commerceContext: pageFamilyCommerceContextSchema,
+    commerceOperationAuthority: z.enum(["read-only-presentation", "presentation-only"]),
+    navigationAreas: z.array(z.enum(["primary", "footer"])).max(2),
+    parentPageId: idSchema.optional(),
+    evidenceReferences: z.array(pageFactEvidenceReferenceSchema),
+  })
+  .strict()
+  .superRefine((authority, context) => {
+    if (new Set(authority.localeCoverage).size !== authority.localeCoverage.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["localeCoverage"],
+        message: "Page locale coverage must be unique.",
+      });
+    }
+    if (
+      authority.localeCoverage.some(
+        (locale, index) => canonicalLocaleOrder(authority.localeCoverage)[index] !== locale,
+      )
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["localeCoverage"],
+        message: "Page locale coverage must use canonical locale order.",
+      });
+    }
+    if (new Set(authority.navigationAreas).size !== authority.navigationAreas.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["navigationAreas"],
+        message: "Page navigation areas must be unique.",
+      });
+    }
+  });
+
+export const storefrontRouteSchema = z
+  .string()
+  .trim()
+  .regex(/^\/$|^\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/);
+
 export const pageModelSchema = z
   .object({
     id: idSchema,
     type: pageTypeSchema,
-    slug: z
-      .string()
-      .trim()
-      .regex(/^\/$|^\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/),
+    slug: storefrontRouteSchema,
     title: localizedTextSchema,
     seo: localizedSeoSchema,
+    pageFamily: pageFamilyAuthoritySchema.optional(),
     themeOverride: brandSystemSchema.partial().optional(),
     sections: z.array(sectionInstanceSchema),
   })
@@ -234,6 +322,10 @@ export const storefrontSnapshotSchema = z
 export type AllowedSectionOverrides = z.infer<typeof allowedSectionOverridesSchema>;
 export type SectionInstance = z.infer<typeof sectionInstanceSchema>;
 export type PageType = z.infer<typeof pageTypeSchema>;
+export type PageFamilyId = z.infer<typeof pageFamilyIdSchema>;
+export type PageFamilyAuthority = z.infer<typeof pageFamilyAuthoritySchema>;
+export type PageFamilyCommerceContext = z.infer<typeof pageFamilyCommerceContextSchema>;
+export type PageFactEvidenceReference = z.infer<typeof pageFactEvidenceReferenceSchema>;
 export type PageModel = z.infer<typeof pageModelSchema>;
 export type NavigationItem = z.infer<typeof navigationItemSchema>;
 export type NavigationModel = z.infer<typeof navigationModelSchema>;

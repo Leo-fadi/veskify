@@ -2,7 +2,7 @@
 
 **Version:** 1.3.0
 
-**Baseline:** 7 August 2026, current `main` after PR #171
+**Baseline:** 8 August 2026, current `main` after PR #173
 
 **Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)
 
@@ -51,19 +51,20 @@ development phase; its waves and tasks remain Planned until implemented and evid
 The binding architecture, coverage targets, concrete Done conditions, synthesis/fingerprint model,
 and parallelization rules live in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B is **Partial / active**. P10B-01 is Baseline; P10B-02 through P10B-18 remain **Planned**.
+P10B is **Partial / active**. P10B-01 and P10B-05 are Baseline; P10B-02 through P10B-04 and
+P10B-06 through P10B-18 remain **Planned**.
 
 ### 3.1 Dependency waves
 
-| Wave                           | Planned work                       | Gate                                                                                        |
-| ------------------------------ | ---------------------------------- | ------------------------------------------------------------------------------------------- |
-| 1 — Grammar                    | P10B-01 (**Baseline**)             | Existing authorities have executable vocabulary; no visual implementation claim.            |
-| 2 — Parallel foundations       | P10B-02, P10B-03, P10B-05          | Disjoint ownership of BrandSystem, component anatomy, and page-set/PageBlueprint authority. |
-| 3 — Art direction and families | P10B-04, P10B-06, P10B-07, P10B-08 | Real registered frame/content/merchandising authority reaches renderers.                    |
-| 4 — Page profiles              | P10B-09 through P10B-13            | Complete home, commerce, content/support, and utility page coverage.                        |
-| 5 — Early complete store       | P10B-14                            | One credible Premium Editorial multi-page storefront passes retained human review.          |
-| 6 — Synthesis and diversity    | P10B-15, P10B-16                   | Bounded complete-store synthesis plus deterministic duplicate/near-duplicate control.       |
-| 7 — Closure                    | P10B-17, P10B-18                   | Responsive/a11y/performance and 100+ configuration quality/diversity gates pass.            |
+| Wave                           | Planned work                             | Gate                                                                                        |
+| ------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 1 — Grammar                    | P10B-01 (**Baseline**)                   | Existing authorities have executable vocabulary; no visual implementation claim.            |
+| 2 — Parallel foundations       | P10B-02, P10B-03, P10B-05 (**Baseline**) | Disjoint ownership of BrandSystem, component anatomy, and page-set/PageBlueprint authority. |
+| 3 — Art direction and families | P10B-04, P10B-06, P10B-07, P10B-08       | Real registered frame/content/merchandising authority reaches renderers.                    |
+| 4 — Page profiles              | P10B-09 through P10B-13                  | Complete home, commerce, content/support, and utility page coverage.                        |
+| 5 — Early complete store       | P10B-14                                  | One credible Premium Editorial multi-page storefront passes retained human review.          |
+| 6 — Synthesis and diversity    | P10B-15, P10B-16                         | Bounded complete-store synthesis plus deterministic duplicate/near-duplicate control.       |
+| 7 — Closure                    | P10B-17, P10B-18                         | Responsive/a11y/performance and 100+ configuration quality/diversity gates pass.            |
 
 ### 3.2 Locked tasks
 
@@ -73,7 +74,7 @@ P10B is **Partial / active**. P10B-01 is Baseline; P10B-02 through P10B-18 remai
 | P10B-02 — Parametric BrandSystem / Design DNA                    | Make merchant-wide typography, palette, rhythm, layout, surfaces, controls, shape/elevation, density, and media posture bounded and coherent. | **Planned**  | P10B-01                                                         | BrandSystem                          | Migration, non-colour cross-page projection, save/publish preservation, responsive evidence                   | Per-section themes or raw CSS                                             |
 | P10B-03 — Component anatomy and meaningful variant contract      | Register anatomy, structural variants, parameters, assets, responsive transformations, and compatibility for every commercial family.         | **Planned**  | P10B-01                                                         | Component platform                   | Registry/queryability, meaningful structural difference, all-target renderer identity, fail-closed validation | CSS-class aliases presented as variants                                   |
 | P10B-04 — Responsive image and art-direction authority           | Add approved focal point, safe area, crop, ratio, overlay, derivative, and responsive treatment authority.                                    | **Planned**  | P10B-02, P10B-03                                                | Asset presentation and media         | Provenance/role/crop/fallback tests and four-width visual evidence                                            | Mutating canonical product media                                          |
-| P10B-05 — Veskify site-map and page-family authority             | Create and validate complete page sets, navigation, routes, and registered page families through PageBlueprint/StorefrontSnapshot.            | **Planned**  | P10B-01                                                         | PageBlueprint and storefront domain  | Route/navigation/page-set validation, canonical generation, save/publish preservation                         | Second page graph or unrestricted CMS                                     |
+| P10B-05 — Veskify site-map and page-family authority             | Create and validate complete page sets, navigation, routes, and registered page families through PageBlueprint/StorefrontSnapshot.            | **Baseline** | P10B-01                                                         | PageBlueprint and storefront domain  | Route/navigation/page-set validation, canonical generation, save/publish preservation                         | Second page graph or unrestricted CMS                                     |
 | P10B-06 — Commercial shared-frame families                       | Deliver at least four frames, three mobile navigation modes, and four footer compositions.                                                    | **Planned**  | P10B-02, P10B-03, P10B-05; P10B-04 where applicable             | Shared frame                         | Capability chain, EN/FI, keyboard/focus and four-width retained review                                        | Merchant editor controls or new navigation truth                          |
 | P10B-07 — Hero, editorial, campaign and proof families           | Deliver at least six hero compositions plus reusable story, campaign, service, and evidence-backed proof families.                            | **Planned**  | P10B-02 through P10B-05                                         | Commercial content families          | Exact generation/render reachability, approved evidence/assets, omission and retained review                  | Invented claims or generic filler                                         |
 | P10B-08 — Canonical product-card and merchandising family        | Establish one protected card authority with at least five meaningful anatomies.                                                               | **Planned**  | P10B-02 through P10B-04                                         | Commerce presentation                | Cross-page protected-commerce/media regression, responsive states and retained review                         | Duplicate card authority or commerce ownership                            |

@@ -22,6 +22,7 @@ import {
   type StorefrontTemplatePagePlan,
   type StorefrontTemplateSlot,
 } from "./contract";
+import { pageFamilyBaselinePagePlans } from "./page-family-baselines";
 
 const createdAt = "2026-07-18T00:00:00.000Z";
 const allPageTypes = ["home", "collection", "product"] as const;
@@ -841,12 +842,13 @@ const templatesById = new Map(
 );
 
 const profilesById = new Map(
-  validatedTemplates.flatMap((templateDefinition) =>
-    templateDefinition.pagePlans.flatMap((pagePlanDefinition) =>
-      pagePlanDefinition.profile
-        ? [[pagePlanDefinition.profile.id, pagePlanDefinition] as const]
-        : [],
-    ),
+  [
+    ...validatedTemplates.flatMap((templateDefinition) => templateDefinition.pagePlans),
+    ...pageFamilyBaselinePagePlans,
+  ].flatMap((pagePlanDefinition) =>
+    pagePlanDefinition.profile
+      ? [[pagePlanDefinition.profile.id, pagePlanDefinition] as const]
+      : [],
   ),
 );
 

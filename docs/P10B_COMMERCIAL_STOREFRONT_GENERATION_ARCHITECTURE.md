@@ -1,11 +1,11 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01 is **Baseline**; P10B-02 through P10B-18 remain
-**Planned**.
+**Status:** Binding architecture. P10B-01 and P10B-05 are **Baseline**; P10B-02 through P10B-04
+and P10B-06 through P10B-18 remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 8 August 2026, current `main` after merged PR #172
+**Baseline:** 8 August 2026, current `main` after merged PR #173
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -24,9 +24,11 @@ pages, or arbitrary AI-generated frontend code. Commercial diversity comes from 
 composition and finishing choices whose compatibility is deterministic and whose visual quality is
 retained for human review.
 
-P10A remains Baseline / closed. P10B-01 is now Baseline under
-[`P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md`](P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md). P10B is **Partial /
-active**; all later implementation tasks remain Planned.
+P10A remains Baseline / closed. P10B-01 is Baseline under
+[`P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md`](P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md), and P10B-05 is
+Baseline under
+[`P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md`](P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md).
+P10B is **Partial / active**; the remaining implementation tasks remain Planned.
 
 ## 2. Storefront and commerce ownership
 
@@ -390,6 +392,8 @@ publish preserved → evidence retained.
   save/reload/publish preservation.
 - Reject unknown families, duplicate/unsafe routes, orphan navigation, missing commerce context,
   and unsupported policy/service claims before mutation.
+- **Status:** **Baseline** under
+  [`P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md`](P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md).
 
 ### P10B-06 — Commercial shared-frame families
 
@@ -580,6 +584,6 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01 is Baseline. P10B-02, P10B-03, and P10B-05 are the first intended parallel wave subject to
-the ownership constraints in section 15. No later implementation task is complete merely because
-this architecture is approved or P10B-01 passed.
+P10B-01 and P10B-05 are Baseline. P10B-02 and P10B-03 remain the parallel foundation work subject
+to the ownership constraints in section 15. No later implementation task is complete merely
+because this architecture is approved or either Baseline task passed.

@@ -121,7 +121,7 @@ export function createPublishChangeSummary(
       continue;
     }
 
-    const metadataFields = (["type", "slug", "title", "seo"] as const).filter(
+    const metadataFields = (["type", "slug", "title", "seo", "pageFamily"] as const).filter(
       (field) => !sameValue(beforePage[field], afterPage[field]),
     );
     if (metadataFields.length > 0) {

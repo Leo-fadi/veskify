@@ -957,6 +957,7 @@ export function compileStorefrontPublication(inputValue: unknown): TrustedPublis
       catalogue.data,
       localeAuthority.activeLocale,
       localeAuthority.primaryLocale,
+      localeAuthority.supportedLocales,
     );
   } catch (cause) {
     throw new PublishCompilerError("invalid-binding", { cause });

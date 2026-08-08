@@ -33,7 +33,7 @@ export const publishChangeSummarySchema = z
         .extend({
           beforeTitle: localizedTextSchema,
           afterTitle: localizedTextSchema,
-          changedFields: z.array(z.enum(["type", "slug", "title", "seo"])).min(1),
+          changedFields: z.array(z.enum(["type", "slug", "title", "seo", "pageFamily"])).min(1),
         })
         .strict(),
     ),

@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 7 August 2026, current `main` after PR #171                           |
+| Verified baseline         | 8 August 2026, current `main` after PR #173                           |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B-05 | 8 August 2026 | P10B-05 delivery | Establish registered page-family, route, navigation, evidence, locale, shared-frame, deterministic site-map materialization, and lifecycle authority without a second page graph or component-anatomy claim. |
 | 1.3.0 P10B-01 | 8 August 2026 | P10B-01 delivery | Establish the closed, owned, narrowing-only commercial grammar, generated query authority, deterministic migration, compatibility language, and typed fail-closed evidence; make P10B Partial. |
 | 1.3.0 P10B lock | 7 August 2026 | `cd7b25a`, current `main` after merged PR #171 | Lock the complete-storefront generation architecture, broaden the P10B phase name, and replace its provisional 12-task plan with 18 implementation-ready tasks. |
 | 1.3.0 closure sync | 7 August 2026 | `3d36f54`, current `main` after merged PR #170 | Close P10A from current governed-provider, accepted-receipt, atomic-publication, rollback, and correlated publication evidence; make Planned P10B the next active phase. |
@@ -61,7 +62,8 @@ home, collection, and product-detail rendering.
 The product remains **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
 orchestration and publishing is **Baseline / closed** under the formal
 [`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md) exit audit. P10B is now **Partial / active**:
-P10B-01 commercial grammar is Baseline, while P10B-02 through P10B-18 remain Planned. The current
+P10B-01 commercial grammar and P10B-05 site-map/page-family authority are Baseline, while P10B-02
+through P10B-04 and P10B-06 through P10B-18 remain Planned. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -185,6 +187,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Canonical storefront and brand contracts             | **Baseline** | `StorefrontSnapshot` and `BrandSystem` govern editable presentation state.     |
 | ComponentDefinitionV2 and generated manifest         | **Baseline** | Registered definitions are runtime-queryable without a parallel inventory.     |
 | PageBlueprint profiles and materialization           | **Baseline** | Registered profiles materialize canonical page composition.                    |
+| Site-map and registered page-family authority        | **Baseline** | Nineteen registered families materialize deterministic canonical pages/navigation with route, locale, evidence, context, and lifecycle validation. |
 | Dynamic collection and PDP commerce presentation     | **Baseline** | Canonical bindings, option groups, variants, media, price, and availability render safely. |
 | Source evidence, asset inventory, and approved brief | **Baseline** | Provenance and protected-commerce reconciliation are contracted and tested.    |
 | Governed initial generation                          | **Partial**  | Internal authority exists; normal merchant editor reach is P10C work.           |
@@ -199,7 +202,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
-| Commercial storefront generation system              | **Partial**  | P10B-01 grammar is Baseline; complete-storefront commercial quality/diversity remains Planned. |
+| Commercial storefront generation system              | **Partial**  | P10B-01 grammar and P10B-05 page-set authority are Baseline; commercial anatomy, rendering quality, and diversity remain Planned. |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
 
@@ -450,8 +453,10 @@ The binding model and locked 18-task sequence live in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
 The architecture produces one complete Premium Editorial storefront before broad synthesis and
 direction expansion. P10B-01 is Baseline; its executable contract and evidence are recorded in
-[`P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md`](P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md). P10B-02, P10B-03,
-and P10B-05 are the next Planned parallel foundations under disjoint authority ownership.
+[`P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md`](P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md). P10B-05 is also
+Baseline; its registered page-set evidence is recorded in
+[`P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md`](P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md).
+P10B-02 and P10B-03 remain the parallel Planned foundations under disjoint authority ownership.
 
 The canonical inheritance remains:
 
@@ -491,7 +496,35 @@ with typed errors before proposal mutation. P10B-01 adds vocabulary/query author
 not implement Design DNA persistence, component anatomy, art direction, site-map/page families,
 commercial renderers, synthesis, or visual-quality evidence.
 
-### 10.4 Planned commercial generation authority
+### 10.4 P10B-05 site-map and page-family authority
+
+The canonical page-family registry contains stable versioned authority for home, collection,
+search/results, product detail, About, Contact, locations, FAQ, shipping, returns, policy/legal,
+generic content, campaign/editorial landing, cart, checkout, no-results, empty, error, and 404.
+Each family declares its route class, required or optional commerce context, allowed PageBlueprint
+profile references, navigation eligibility, all-enabled-locale coverage, shared-frame requirement,
+approved-fact requirements, omission/fallback policy, and commerce-operation boundary.
+
+One bounded transient site-map decision deterministically materializes the existing canonical
+`StorefrontSnapshot.pages` and `StorefrontSnapshot.navigation`. Each resulting `PageModel` retains
+its exact family/profile/context/locale/shared-frame/evidence reference. There is no persisted site
+map beside the snapshot and no second page graph. Deterministic IDs and a canonical site-map
+fingerprint make repeated materialization stable.
+
+Validation fails before mutation for unsafe or duplicate routes, missing or duplicate root,
+family/type/route mismatch, reserved namespace conflict, missing/cyclic parents, orphan or missing
+navigation, missing collection/product context, stale family/profile/frame authority, invalid EN/FI
+coverage, evidence-free factual pages, and utility pages that claim operational commerce authority.
+Optional evidence-gated pages are omitted with an explicit reason; required ones fail. Legacy P10A
+home/collection/PDP snapshots remain valid without implicit migration, and governed materialization
+preserves their exact existing sections and protected bindings through save/reload and deterministic
+publication compilation.
+
+The minimum site-map profiles intentionally contain no component anatomy. P10B-05 establishes
+page-family/profile authority only; P10B-03 and P10B-06 through P10B-13 still own commercial
+component, frame, content/support, search, and utility presentation.
+
+### 10.5 Planned commercial generation authority
 
 `BrandSystem` owns merchant-wide bounded Design DNA across semantic colour, approved font roles and
 pairing, type scale/weights, spacing and section rhythm, gutters/containers, grid/card/control
@@ -531,7 +564,7 @@ drift, and exact or meaningful near duplicates. A deterministic storefront-desig
 covers structural and non-colour dimensions; hundreds or thousands of outcomes arise from bounded
 combinations, not manually authored templates.
 
-### 10.5 Commercial acceptance
+### 10.6 Commercial acceptance
 
 P10B closes only when at least 100 complete bounded storefront configurations pass deterministic
 validity, protected-state, exact-duplicate, near-duplicate, and structural-distribution analysis,

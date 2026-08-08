@@ -44,15 +44,19 @@ function errorCode(action: () => unknown) {
 }
 
 describe("P10A-03 executable PageBlueprint profiles", () => {
-  it("registers a shared frame and deterministic home, collection, and product profiles", () => {
+  it("registers a shared frame plus deterministic commercial and page-family profiles", () => {
     expect(sharedStorefrontFrameProfile).toMatchObject({
       id: "blueprint-shared-storefront-frame",
       version: "1.0.0",
       requiredBindingCategories: ["navigation"],
     });
-    expect(listExecutablePageBlueprintProfiles()).toHaveLength(9);
+    const profiles = listExecutablePageBlueprintProfiles();
+    expect(profiles).toHaveLength(18);
     expect(
-      listExecutablePageBlueprintProfiles().every(
+      profiles.filter((plan) => plan.profile?.id.startsWith("blueprint-site-map-")),
+    ).toHaveLength(9);
+    expect(
+      profiles.every(
         (plan) => plan.profile?.version === "1.0.0" && plan.profile.scope === plan.pageType,
       ),
     ).toBe(true);
