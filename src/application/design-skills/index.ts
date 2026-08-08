@@ -1,4 +1,5 @@
 export * from "./capability-knowledge";
+export * from "./commercial-design-grammar";
 export * from "./contract";
 export * from "./default-registry";
 export * from "./deterministic-provider";

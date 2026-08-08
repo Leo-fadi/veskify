@@ -21,8 +21,17 @@ import {
   type ResponsiveRule,
 } from "./component-platform";
 import { boundedParametersById, type BoundedParameterDefinition } from "./design-vocabulary";
+import {
+  createCommercialGrammarCapability,
+  evaluateCommercialGrammarCompatibility,
+  resolveCommercialGrammarInheritance,
+  type CommercialGrammarCategory,
+  type CommercialGrammarCompatibilityAuthority,
+  type CommercialGrammarLayer,
+  type CommercialGrammarValueCompatibility,
+} from "./commercial-design-grammar";
 
-export const componentCapabilityManifestVersion = "1.0.0" as const;
+export const componentCapabilityManifestVersion = "1.1.0" as const;
 
 type NarrativeRole = ComponentDefinitionV2["designCompatibility"]["allowedNarrativeRoles"][number];
 
@@ -97,6 +106,7 @@ export type GeneratedComponentCapabilityManifest = Readonly<{
   version: typeof componentCapabilityManifestVersion;
   entries: readonly ComponentCapabilityManifestEntry[];
   profiles: readonly ExecutablePageBlueprintProfileCapabilityEntry[];
+  commercialDesignGrammar: ReturnType<typeof createCommercialGrammarCapability>;
   fingerprint: string;
 }>;
 
@@ -115,6 +125,20 @@ export type ComponentCapabilityManifestAuthority = Readonly<{
   getBoundedParameters: (
     componentType: string,
   ) => readonly ComponentCapabilityManifestEntry["boundedParameters"][number][];
+  listCommercialGrammarCategories: () => readonly CommercialGrammarCategory[];
+  getCommercialGrammarCategory: (
+    categoryId: CommercialGrammarCategory["id"],
+  ) => CommercialGrammarCategory | undefined;
+  getCommercialGrammarValueCompatibility: (
+    categoryId: CommercialGrammarCategory["id"],
+    value: string,
+  ) => CommercialGrammarValueCompatibility | undefined;
+  resolveCommercialGrammar: (
+    layers: readonly CommercialGrammarLayer[],
+  ) => ReturnType<typeof resolveCommercialGrammarInheritance>;
+  evaluateCommercialGrammarCompatibility: (
+    input: Parameters<typeof evaluateCommercialGrammarCompatibility>[2],
+  ) => ReturnType<typeof evaluateCommercialGrammarCompatibility>;
 }>;
 
 export type ComponentCapabilityManifestGenerationInput = Readonly<{
@@ -422,6 +446,7 @@ export function createComponentCapabilityManifestAuthority(
     .map((profile) => profileEntry(profile, byComponentType))
     .sort((left, right) => compareCanonicalStrings(left.profileId, right.profileId));
   const profilesById = new Map(profiles.map((profile) => [profile.profileId, profile]));
+  const componentFamilies = new Set(entries.map((entry) => entry.family));
   for (const entry of entries) {
     for (const profileId of entry.pageBlueprintCompatibility.profileIds) {
       if (!profilesById.has(profileId)) {
@@ -431,7 +456,32 @@ export function createComponentCapabilityManifestAuthority(
       }
     }
   }
-  const manifestContent = { version: componentCapabilityManifestVersion, entries, profiles };
+  const commercialDesignGrammar = createCommercialGrammarCapability();
+  const commercialGrammarCompatibilityAuthority: CommercialGrammarCompatibilityAuthority = {
+    hasPageBlueprintProfile: (profileId) => profilesById.has(profileId),
+    hasComponentFamily: (family) => componentFamilies.has(family as ComponentFamily),
+    getComponent: (componentType) => {
+      const entry = byComponentType.get(componentType);
+      return entry
+        ? { family: entry.family, variants: entry.variants.map((variant) => variant.id) }
+        : undefined;
+    },
+  };
+  const grammarCategoriesById = new Map(
+    commercialDesignGrammar.categories.map((category) => [category.id, category]),
+  );
+  const grammarValueCompatibilityById = new Map(
+    commercialDesignGrammar.valueCompatibility.map((entry) => [
+      `${entry.categoryId}:${entry.value}`,
+      entry,
+    ]),
+  );
+  const manifestContent = {
+    version: componentCapabilityManifestVersion,
+    entries,
+    profiles,
+    commercialDesignGrammar,
+  };
   const manifest = deepFreeze({
     ...manifestContent,
     fingerprint: `component-capability-manifest-${canonicalValueFingerprint(
@@ -451,6 +501,18 @@ export function createComponentCapabilityManifestAuthority(
     getVariants: (componentType) => byComponentType.get(componentType)?.variants ?? [],
     getBoundedParameters: (componentType) =>
       byComponentType.get(componentType)?.boundedParameters ?? [],
+    listCommercialGrammarCategories: () => commercialDesignGrammar.categories,
+    getCommercialGrammarCategory: (categoryId) => grammarCategoriesById.get(categoryId),
+    getCommercialGrammarValueCompatibility: (categoryId, value) =>
+      grammarValueCompatibilityById.get(`${categoryId}:${value}`),
+    resolveCommercialGrammar: (layers) =>
+      resolveCommercialGrammarInheritance(commercialDesignGrammar, layers),
+    evaluateCommercialGrammarCompatibility: (compatibilityInput) =>
+      evaluateCommercialGrammarCompatibility(
+        commercialDesignGrammar,
+        commercialGrammarCompatibilityAuthority,
+        compatibilityInput,
+      ),
   });
 }
 
@@ -460,6 +522,8 @@ export function serializeComponentCapabilityManifest(
   return canonicalValueString({
     version: manifest.version,
     entries: manifest.entries,
+    profiles: manifest.profiles,
+    commercialDesignGrammar: manifest.commercialDesignGrammar,
     fingerprint: manifest.fingerprint,
   });
 }
