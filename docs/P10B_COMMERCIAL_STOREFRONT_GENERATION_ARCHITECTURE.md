@@ -1,7 +1,7 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01, P10B-02, and P10B-03 are **Baseline**; P10B-04 through
-P10B-18 remain **Planned**.
+**Status:** Binding architecture. P10B-01, P10B-02, P10B-03, and P10B-05 are **Baseline**;
+P10B-04 and P10B-06 through P10B-18 remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
@@ -29,7 +29,9 @@ P10A remains Baseline / closed. P10B-01 is Baseline under
 under [`P10B_02_PARAMETRIC_BRAND_SYSTEM.md`](P10B_02_PARAMETRIC_BRAND_SYSTEM.md), and P10B-03 is
 Baseline under
 [`P10B_03_COMPONENT_ANATOMY_AND_MEANINGFUL_VARIANTS.md`](P10B_03_COMPONENT_ANATOMY_AND_MEANINGFUL_VARIANTS.md).
-P10B is **Partial / active**; all remaining implementation tasks remain Planned.
+P10B-05 is Baseline under
+[`P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md`](P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md).
+P10B is **Partial / active**; P10B-04 and P10B-06 through P10B-18 remain Planned.
 
 ## 2. Storefront and commerce ownership
 
@@ -397,6 +399,8 @@ publish preserved → evidence retained.
   save/reload/publish preservation.
 - Reject unknown families, duplicate/unsafe routes, orphan navigation, missing commerce context,
   and unsupported policy/service claims before mutation.
+- **Status:** **Baseline** under
+  [`P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md`](P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md).
 
 ### P10B-06 — Commercial shared-frame families
 
@@ -588,6 +592,6 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01, P10B-02, and P10B-03 are Baseline. P10B-05 remains Planned foundation work under the
-ownership constraints in section 15. No later implementation task is complete merely because this
-architecture is approved or the completed foundations passed.
+P10B-01, P10B-02, P10B-03, and P10B-05 are Baseline under the disjoint ownership constraints in
+section 15. No later implementation task is complete merely because this architecture is approved
+or the completed foundations passed.

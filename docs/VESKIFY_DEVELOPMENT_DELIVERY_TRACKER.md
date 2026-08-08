@@ -45,7 +45,7 @@ required evidence are accepted.
 | ☑    | P10B-02 | Parametric BrandSystem / Design DNA                  | **Baseline** | BrandSystem                     | P10B-01                            | Cross-page projection, migration, responsive and lifecycle evidence             |
 | ☑    | P10B-03 | Component anatomy and meaningful variant contract    | **Baseline** | Component platform              | P10B-01                            | 25 definitions/91 variants; structural, query, migration and rejection evidence |
 | ☐    | P10B-04 | Responsive image and art-direction authority         | **Planned**  | Asset presentation and media    | P10B-02, P10B-03                   | Provenance/crop/fallback and four-width visual evidence                         |
-| ☐    | P10B-05 | Veskify site-map and page-family authority           | **Planned**  | PageBlueprint/storefront domain | P10B-01                            | Page-set/navigation/generation/lifecycle and rejection evidence                 |
+| ☑    | P10B-05 | Veskify site-map and page-family authority           | **Baseline** | PageBlueprint/storefront domain | P10B-01                            | Page-set/navigation/generation/lifecycle and rejection evidence                 |
 | ☐    | P10B-06 | Commercial shared-frame families                     | **Planned**  | Shared frame                    | P10B-02, P10B-03, P10B-05          | Minimum frame/mobile/footer coverage and responsive human review                |
 | ☐    | P10B-07 | Hero, editorial, campaign and proof families         | **Planned**  | Commercial content families     | P10B-02 through P10B-05            | Minimum anatomy coverage, provenance, full chain and visual review              |
 | ☐    | P10B-08 | Canonical product-card and merchandising family      | **Planned**  | Commerce presentation           | P10B-02 through P10B-04            | Five anatomies, protected commerce, full chain and visual review                |
@@ -164,8 +164,9 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01, P10B-02, and P10B-03 are **Baseline**. P10B-04 through P10B-18 remain **Planned**. The
-remaining Done conditions are implementation gates, not claims about the current repository.
+P10B-01, P10B-02, P10B-03, and P10B-05 are **Baseline**. P10B-04 and P10B-06 through P10B-18
+remain **Planned**. The remaining Done conditions are implementation gates, not claims about the
+current repository.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
 
@@ -250,6 +251,8 @@ remaining Done conditions are implementation gates, not claims about the current
 - **Evidence:** Contract/unit, PageBlueprint materialization, generation/proposal/compiler/snapshot,
   navigation/route, lifecycle, and no-partial-write tests.
 - **Non-goal:** Another page graph, snapshot, recipe engine, or unrestricted CMS.
+- **Status:** **Baseline**. See
+  [`P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md`](P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md).
 
 #### P10B-06 — Commercial shared-frame families
 

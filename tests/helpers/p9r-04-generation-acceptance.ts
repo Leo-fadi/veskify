@@ -146,6 +146,7 @@ function recipeIdFor(page: PageModel): string {
     const executableMatches = listExecutablePageBlueprintProfiles().filter(
       (plan) =>
         plan.pageType === "home" &&
+        (plan.profile?.componentSelections.length ?? 0) > 0 &&
         plan.profile?.componentSelections.every((selection) => {
           if (actualSelections.has(`${selection.component}:${selection.defaultVariant}`)) {
             return true;

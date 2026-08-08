@@ -96,7 +96,7 @@ export const executablePageBlueprintProfileSchema = z
     id: pageBlueprintFlowRuleIdSchema,
     version: pageBlueprintProfileVersionSchema,
     scope: pageTypeSchema,
-    orderedNarrativeRoles: z.array(narrativeRoleSchema).min(1),
+    orderedNarrativeRoles: z.array(narrativeRoleSchema),
     roleCardinality: z.array(
       z
         .object({
@@ -115,7 +115,7 @@ export const executablePageBlueprintProfileSchema = z
           }
         }),
     ),
-    componentSelections: z.array(pageBlueprintComponentSelectionSchema).min(1),
+    componentSelections: z.array(pageBlueprintComponentSelectionSchema),
     parameterDefaults: z
       .record(z.string().trim().min(1).max(80), z.union([z.string(), z.number()]))
       .default({}),
@@ -265,7 +265,7 @@ export const legacyStorefrontTemplateSlotSchema = z
 export const storefrontTemplatePagePlanSchema = z
   .object({
     pageType: pageTypeSchema,
-    slots: z.array(storefrontTemplateSlotSchema).min(1),
+    slots: z.array(storefrontTemplateSlotSchema),
     pageBlueprint: pageBlueprintCompositionContractSchema.default(
       defaultPageBlueprintCompositionContract,
     ),
