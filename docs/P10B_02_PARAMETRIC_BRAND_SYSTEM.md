@@ -128,4 +128,4 @@ diversity, retained human commercial review, Vesko staging, or production readin
 - No page-set, route, navigation, or PageBlueprint family work from P10B-05.
 - No raw CSS, remote font URL, per-section theme store, duplicate registry, or generated executable
   frontend code.
-- P10B-03 through P10B-18 remain Planned.
+- P10B-03 is separately Baseline; P10B-04 through P10B-18 remain Planned.

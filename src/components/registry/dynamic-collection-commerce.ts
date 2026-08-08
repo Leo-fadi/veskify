@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { validateComponentDefinitionV2 } from "@/domain/component-platform";
 import { localizedTextSchema } from "@/domain/shared";
+import { withCurrentComponentCommercialAnatomy } from "./commercial-anatomy";
 
 export const dynamicCollectionCommerceVariantSchema = z.enum([
   "standard",
@@ -307,7 +308,9 @@ const definitionInput = {
   },
 };
 
-export const dynamicCollectionCommerceDefinition = validateComponentDefinitionV2(definitionInput);
+export const dynamicCollectionCommerceDefinition = validateComponentDefinitionV2(
+  withCurrentComponentCommercialAnatomy(definitionInput),
+);
 
 export type DynamicCollectionCommerceContent = z.infer<
   typeof dynamicCollectionCommerceContentSchema
