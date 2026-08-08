@@ -12,9 +12,9 @@ exportMarkdownDocx({
   title: "Veskify Development Delivery Tracker",
   subtitle: "Version 1.3.0",
   coverLines: [
-    "Delivery status baseline: 7 August 2026, current main after merged PR #171",
+    "Delivery status baseline: 8 August 2026, current main after merged PR #172",
     "Overall product status: Partial",
-    "Active phase: P10B Commercial Storefront Generation System v1 (Planned)",
+    "Active phase: P10B Commercial Storefront Generation System v1 (Partial)",
     "Authoritative source: docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
   ],
   footerLabel: "Veskify Delivery Tracker v1.3.0",

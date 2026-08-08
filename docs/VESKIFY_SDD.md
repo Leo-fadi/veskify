@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B-01 | 8 August 2026 | P10B-01 delivery | Establish the closed, owned, narrowing-only commercial grammar, generated query authority, deterministic migration, compatibility language, and typed fail-closed evidence; make P10B Partial. |
 | 1.3.0 P10B lock | 7 August 2026 | `cd7b25a`, current `main` after merged PR #171 | Lock the complete-storefront generation architecture, broaden the P10B phase name, and replace its provisional 12-task plan with 18 implementation-ready tasks. |
 | 1.3.0 closure sync | 7 August 2026 | `3d36f54`, current `main` after merged PR #170 | Close P10A from current governed-provider, accepted-receipt, atomic-publication, rollback, and correlated publication evidence; make Planned P10B the next active phase. |
 | 1.3.0 | 6 August 2026 | `27e08a0`, current `main` after merged PR #165 | Consolidate verified product truth, current architecture, commercial-design work, Studio ownership, and Vesko contract readiness. |
@@ -59,10 +60,10 @@ home, collection, and product-detail rendering.
 
 The product remains **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
 orchestration and publishing is **Baseline / closed** under the formal
-[`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md) exit audit. P10B is now the active development
-phase, while all P10B work remains **Planned**. The current merchant editor does not
-yet expose the governed routing and scoped editing authorities; that is intentionally P10C work,
-not a P10A closure requirement.
+[`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md) exit audit. P10B is now **Partial / active**:
+P10B-01 commercial grammar is Baseline, while P10B-02 through P10B-18 remain Planned. The current
+merchant editor does not yet expose the governed routing and scoped editing authorities; that is
+intentionally P10C work, not a P10A closure requirement.
 
 The current visual ceiling is a clean, responsive catalogue storefront with useful commerce depth
 but limited brand distinction. P10B is the first phase allowed to claim a commercially credible
@@ -198,7 +199,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
-| Commercial storefront generation system              | **Planned**  | P10B owns the first complete-storefront commercial quality/diversity claim.     |
+| Commercial storefront generation system              | **Partial**  | P10B-01 grammar is Baseline; complete-storefront commercial quality/diversity remains Planned. |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
 
@@ -448,8 +449,9 @@ diversity control, responsive presentation, and commercial evidence.
 The binding model and locked 18-task sequence live in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
 The architecture produces one complete Premium Editorial storefront before broad synthesis and
-direction expansion. P10B-01 remains the first Planned implementation task; the architecture lock
-does not implement it.
+direction expansion. P10B-01 is Baseline; its executable contract and evidence are recorded in
+[`P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md`](P10B_01_COMMERCIAL_DESIGN_GRAMMAR.md). P10B-02, P10B-03,
+and P10B-05 are the next Planned parallel foundations under disjoint authority ownership.
 
 The canonical inheritance remains:
 
@@ -465,6 +467,31 @@ and permitted layouts. Bounded finishing selects typed palette, typography, rhyt
 surfaces, controls, shape/elevation, density, image treatment, alignment, and visual weight. Raw
 CSS, class aliases, React, generated executable frontend code, and parallel token/page/recipe/
 registry/direction authorities remain prohibited.
+
+### 10.3 P10B-01 executable commercial grammar
+
+The existing generated component/PageBlueprint capability manifest now includes one immutable,
+versioned commercial grammar. It closes typography posture/roles/scale/weight/tracking/line-height;
+container/rhythm/gutter/grid/alignment/density/visual-weight/balance; surfaces; action/control
+hierarchy; border/radius/elevation; media ratio/crop/focal-point/overlay/emphasis; responsive
+transformations; and commercial narrative roles.
+
+Every category declares one primary owner plus exact narrowing and selection levels. Resolution
+follows `BrandSystem → PageBlueprint profile → component family/meaningful variant → bounded
+validated instance override`; lower levels intersect inherited authority and cannot broaden it.
+Compatibility rules express allowed, prohibited, required, mutually exclusive, and narrowing-
+intersection relationships across profiles, components/variants, responsive modes, narrative
+roles, and asset/media requirements. The manifest and each effective selection have deterministic,
+order-insensitive fingerprints.
+
+Valid v1.3 BrandSystem and executable PageBlueprint state is adapted deterministically without
+persisting another model. Unknown or stale authority, unregistered values, conflicts, widening,
+wrong-owner overrides, raw CSS/class/code, and incompatible protected-media selections fail closed
+with typed errors before proposal mutation. P10B-01 adds vocabulary/query authority only; it does
+not implement Design DNA persistence, component anatomy, art direction, site-map/page families,
+commercial renderers, synthesis, or visual-quality evidence.
+
+### 10.4 Planned commercial generation authority
 
 `BrandSystem` owns merchant-wide bounded Design DNA across semantic colour, approved font roles and
 pairing, type scale/weights, spacing and section rhythm, gutters/containers, grid/card/control
@@ -504,7 +531,7 @@ drift, and exact or meaningful near duplicates. A deterministic storefront-desig
 covers structural and non-colour dimensions; hundreds or thousands of outcomes arise from bounded
 combinations, not manually authored templates.
 
-### 10.3 Commercial acceptance
+### 10.5 Commercial acceptance
 
 P10B closes only when at least 100 complete bounded storefront configurations pass deterministic
 validity, protected-state, exact-duplicate, near-duplicate, and structural-distribution analysis,
@@ -644,7 +671,8 @@ The binding sequence is:
 
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
    formal P10A phase closure record.
-2. **P10B — Commercial Storefront Generation System v1.** **Planned / active phase.** Deliver
+2. **P10B — Commercial Storefront Generation System v1.** **Partial / active phase.** P10B-01 is
+   Baseline; deliver
    complete commercially credible storefronts with bounded material diversity through registered
    authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
