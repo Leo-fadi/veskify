@@ -12,11 +12,14 @@ import {
   PAGE_FAMILY_AUTHORITY_VERSION,
   PageFamilyValidationError,
   SITE_MAP_SHARED_FRAME,
+  pageFactEvidenceReferenceSchema,
   storefrontRouteSchema,
   storefrontSnapshotSchema,
   validateCanonicalStorefrontSiteMap,
+  validateCompleteStorefrontPageFamilyPresence,
   validatePageFamilyRegistry,
   type NavigationModel,
+  type PageFactEvidenceReference,
   type PageFamilyAuthority,
   type PageModel,
   type StorefrontSnapshot,
@@ -26,6 +29,10 @@ import {
   type SiteMapPageDecision,
   type StorefrontSiteMapDecision,
 } from "./contract";
+import {
+  PageFactEvidenceAuthorityError,
+  type PageFactEvidenceAuthority,
+} from "./evidence-authority";
 
 export const siteMapMaterializationErrorCodes = [
   "invalid-decision",
@@ -37,6 +44,11 @@ export const siteMapMaterializationErrorCodes = [
   "stale-page-family-version",
   "stale-profile-reference",
   "missing-evidence",
+  "unknown-evidence-authority",
+  "stale-evidence-revision",
+  "evidence-not-approved",
+  "evidence-source-mismatch",
+  "evidence-family-incompatible",
   "invalid-parent",
   "invalid-locale-coverage",
   "invalid-shared-frame",
@@ -154,6 +166,7 @@ function pageAuthority(
   decision: StorefrontSiteMapDecision,
   page: SiteMapPageDecision,
   parentPageId: string | undefined,
+  evidenceReferences: PageFactEvidenceReference[],
 ): PageFamilyAuthority {
   const definition = getPageFamilyDefinition(page.familyId);
   return {
@@ -168,7 +181,7 @@ function pageAuthority(
     commerceOperationAuthority: definition.commerceOperationAuthority,
     navigationAreas: page.navigation.map(({ area }) => area),
     ...(parentPageId ? { parentPageId } : {}),
-    evidenceReferences: structuredClone(page.evidenceReferences),
+    evidenceReferences: structuredClone(evidenceReferences),
   };
 }
 
@@ -204,6 +217,7 @@ export function materializeStorefrontSiteMap(
     decision: unknown;
     baseSnapshot: StorefrontSnapshot;
     catalogue: CatalogueDisplayModel;
+    evidenceAuthority: PageFactEvidenceAuthority;
   }>,
 ): StorefrontSiteMapMaterialization {
   const decision = parseDecision(input.decision);
@@ -229,6 +243,7 @@ export function materializeStorefrontSiteMap(
     familyId: SiteMapPageDecision["familyId"];
     reason: "missing-approved-evidence";
   }> = [];
+  const canonicalEvidenceByPageKey = new Map<string, PageFactEvidenceReference[]>();
   const includedPages = decision.pages.filter((page) => {
     if (!storefrontRouteSchema.safeParse(page.route).success) {
       throw new SiteMapMaterializationError(
@@ -239,10 +254,20 @@ export function materializeStorefrontSiteMap(
     assertProfile(page);
     assertLocales(decision, page);
     const definition = getPageFamilyDefinition(page.familyId);
-    if (
-      definition.evidenceRequirement === "approved-facts" &&
-      page.evidenceReferences.length === 0
-    ) {
+    let canonicalEvidence: PageFactEvidenceReference[] = [];
+    try {
+      canonicalEvidence = page.evidenceReferences.map((reference) =>
+        pageFactEvidenceReferenceSchema.parse(
+          input.evidenceAuthority.resolve({ reference, familyId: page.familyId }),
+        ),
+      );
+    } catch (cause) {
+      if (cause instanceof PageFactEvidenceAuthorityError) {
+        throw new SiteMapMaterializationError(cause.code, cause.message, { cause });
+      }
+      throw cause;
+    }
+    if (definition.evidenceRequirement === "approved-facts" && canonicalEvidence.length === 0) {
       if (!page.required && definition.omissionBehavior === "omit-optional-or-fail-required") {
         omittedPages.push({
           key: page.key,
@@ -256,8 +281,17 @@ export function materializeStorefrontSiteMap(
         `Required page ${page.key} lacks approved factual authority.`,
       );
     }
+    canonicalEvidenceByPageKey.set(page.key, canonicalEvidence);
     return true;
   });
+
+  validateCompleteStorefrontPageFamilyPresence(
+    includedPages.map((page) => ({
+      familyId: page.familyId,
+      commerceContext: page.commerceContext,
+    })),
+    input.catalogue,
+  );
 
   const basePagesById = new Map(input.baseSnapshot.pages.map((page) => [page.id, page]));
   const pageIds = new Map(
@@ -288,7 +322,12 @@ export function materializeStorefrontSiteMap(
       slug: page.route,
       title: structuredClone(page.title),
       seo: structuredClone(page.seo),
-      pageFamily: pageAuthority(decision, page, parentPageId),
+      pageFamily: pageAuthority(
+        decision,
+        page,
+        parentPageId,
+        canonicalEvidenceByPageKey.get(page.key) ?? [],
+      ),
     };
   });
   const snapshot = storefrontSnapshotSchema.parse({

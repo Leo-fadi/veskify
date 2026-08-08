@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { idSchema, localeSchema, localizedSeoSchema, localizedTextSchema } from "@/domain/shared";
 import {
-  pageFactEvidenceReferenceSchema,
+  pageFactEvidenceRequestSchema,
   pageFamilyCommerceContextSchema,
   pageFamilyIdSchema,
 } from "@/domain/storefront";
@@ -36,7 +36,7 @@ export const siteMapPageDecisionSchema = z
     navigation: z.array(siteMapNavigationPlacementSchema).max(2),
     parentKey: idSchema.optional(),
     existingPageId: idSchema.optional(),
-    evidenceReferences: z.array(pageFactEvidenceReferenceSchema),
+    evidenceReferences: z.array(pageFactEvidenceRequestSchema),
   })
   .strict()
   .superRefine((page, context) => {

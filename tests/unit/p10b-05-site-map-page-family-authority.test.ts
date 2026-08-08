@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  createStorefrontDesignBriefPageFactEvidenceAuthority,
   materializeStorefrontSiteMap,
+  type PageFactEvidenceAuthority,
   type SiteMapMaterializationError,
   type StorefrontSiteMapDecision,
 } from "@/application/storefront-site-map";
@@ -9,11 +11,23 @@ import {
   createCurrentPublishCompilerInput,
 } from "@/application/publishing";
 import {
+  approveStorefrontDesignBrief,
+  createStorefrontDesignBrief,
+} from "@/application/source-discovery";
+import {
   getExecutablePageBlueprintProfile,
   materializeExecutablePageBlueprint,
 } from "@/application/storefront-templates";
 import { validateRegisteredSnapshot, veskifyComponentDefinitionsV2 } from "@/components/registry";
 import { aurumNordicSeed } from "@/data/seed";
+import { createIdleUrlBriefWorkflow, urlBriefWorkflowSchema } from "@/domain/onboarding";
+import {
+  reconciliationResultSchema,
+  sourceDiscoveryResultSchema,
+  sourceEvidenceSchema,
+  sourceReferenceSchema,
+  type EvidenceKind,
+} from "@/domain/source-discovery";
 import {
   canonicalStorefrontSiteMapFingerprint,
   canonicalValueString,
@@ -26,14 +40,115 @@ import {
 import { InMemoryProjectRepository, type ProjectAggregate } from "@/services/storage";
 
 const localized = (en: string, fi: string) => ({ en, fi });
+const now = "2026-08-08T08:00:00.000Z";
 const evidence = [
   {
-    source: "merchant-approved" as const,
-    authorityId: "approved_facts_1",
+    source: "approved-source-evidence" as const,
+    authorityId: "evidence_page_fact",
     revision: "1",
-    status: "approved" as const,
   },
 ];
+
+function approvedEvidenceWorkflow(
+  evidenceKind: EvidenceKind = "merchant-brand-fact",
+  evidenceId = "evidence_page_fact",
+) {
+  const source = sourceReferenceSchema.parse({
+    id: "source_page_facts",
+    sourceType: "deterministic-fixture",
+    url: "https://merchant.example/store",
+    normalizedOrigin: "https://merchant.example",
+    requestedLocale: "en",
+    discoveredAt: now,
+    allowedDiscoveryPolicy: {
+      mode: "deterministic",
+      maxPages: 5,
+      maxAssets: 10,
+      followSameOriginOnly: true,
+    },
+    status: "complete",
+    warnings: [],
+    failure: null,
+  });
+  const evidenceItem = sourceEvidenceSchema.parse({
+    id: evidenceId,
+    kind: evidenceKind,
+    provenance: {
+      sourceReferenceId: source.id,
+      sourceUrl: source.url,
+      observedAt: now,
+      extractionLocation: "approved deterministic page fact",
+    },
+    sourceUrl: source.url,
+    confidence: 1,
+    observedValue: "Merchant-approved factual content.",
+    extractionMethod: "deterministic-test-fixture",
+    locale: "en",
+    warnings: [],
+    uncertainty: { isUncertain: false, reason: null },
+  });
+  const discovery = sourceDiscoveryResultSchema.parse({
+    source,
+    evidence: [evidenceItem],
+    assetCandidates: [],
+    warnings: [],
+  });
+  const reconciliation = reconciliationResultSchema.parse({
+    sourceReferenceId: source.id,
+    canonicalCommerceProjectionRef: aurumNordicSeed.catalogue.id,
+    decisions: [],
+    unresolvedConflictIds: [],
+    missingInformationIds: [],
+  });
+  const materialEvidence = {
+    sourceReferences: [source],
+    evidence: [evidenceItem],
+    assetCandidates: [],
+    reconciliation,
+  };
+  const brief = approveStorefrontDesignBrief(
+    createStorefrontDesignBrief({
+      id: "brief_page_facts",
+      now,
+      businessIdentity: { businessName: "Aurum Nordic" },
+      languagePlan: { selectedLanguages: ["en", "fi"], primaryLanguage: "en" },
+      sourceReferenceIds: [source.id],
+      sourceEvidenceIds: [evidenceItem.id],
+      materialEvidence,
+      canonicalCommerceProjectionRef: aurumNordicSeed.catalogue.id,
+      approvedBrandDirection: {
+        logoAssetRef: null,
+        supportingImageAssetRefs: [],
+        preferredBrandColours: ["#132a24"],
+        typographyDirection: "serif-led",
+        visualStyleDirection: "editorial",
+        imageryDirection: "product-focused",
+        toneKeywords: ["warm"],
+      },
+      pagePlan: { pageTypes: ["home", "collection", "product"] },
+      unresolvedItems: [],
+      materialUnresolvedBlockers: [],
+    }),
+    { actorId: "merchant_owner", approvedAt: now },
+  );
+  const idle = createIdleUrlBriefWorkflow({ id: "workflow_page_facts", now });
+  return urlBriefWorkflowSchema.parse({
+    ...idle,
+    status: "approved",
+    lastSafeState: "approved",
+    sourceReferences: [source],
+    currentSourceReferenceId: source.id,
+    discoveryResult: discovery,
+    reconciliation,
+    briefRevisions: [brief],
+    currentBriefRevision: brief.revision,
+    approvedEvidenceFingerprint: brief.approvedEvidenceFingerprint,
+  });
+}
+
+function evidenceAuthority(): PageFactEvidenceAuthority {
+  return createStorefrontDesignBriefPageFactEvidenceAuthority(approvedEvidenceWorkflow());
+}
 
 const profileByFamily: Readonly<Record<PageFamilyId, string>> = {
   home: "blueprint-site-map-home-baseline",
@@ -114,76 +229,114 @@ function commerceContext(familyId: PageFamilyId) {
 
 function decision(): StorefrontSiteMapDecision {
   const definitions = listPageFamilyDefinitions();
+  const pages: StorefrontSiteMapDecision["pages"] = definitions.map((definition, index) => {
+    const [en, fi] = titles[definition.id];
+    const navigation =
+      definition.id === "home"
+        ? [{ area: "primary" as const, order: 0, label: localized(en, fi) }]
+        : definition.id === "collection"
+          ? [{ area: "primary" as const, order: 1, label: localized(en, fi) }]
+          : definition.id === "search-results"
+            ? [{ area: "primary" as const, order: 2, label: localized(en, fi) }]
+            : definition.id === "campaign-editorial"
+              ? [{ area: "primary" as const, order: 3, label: localized(en, fi) }]
+              : definition.id === "product-detail" ||
+                  [
+                    "about",
+                    "contact",
+                    "faq",
+                    "shipping-information",
+                    "returns-information",
+                    "policy-legal",
+                  ].includes(definition.id)
+                ? [{ area: "footer" as const, order: index, label: localized(en, fi) }]
+                : [];
+    const existingPageId =
+      definition.id === "home"
+        ? "page_home"
+        : definition.id === "collection"
+          ? "page_collection_rings"
+          : definition.id === "product-detail"
+            ? "page_product_aurora"
+            : undefined;
+    const parentKey =
+      definition.id === "store-locations"
+        ? "contact"
+        : definition.id === "generic-content"
+          ? "about"
+          : undefined;
+    return {
+      key: definition.id,
+      familyId: definition.id,
+      familyVersion: "1.0.0",
+      route: routeByFamily[definition.id],
+      required: true,
+      profile: { id: profileByFamily[definition.id], version: "1.0.0" },
+      localeCoverage: ["en", "fi"],
+      title: localized(en, fi),
+      seo: {
+        title: localized(en, fi),
+        metaDescription: localized(`${en} information.`, `${fi} — lisätiedot.`),
+      },
+      commerceContext: commerceContext(definition.id),
+      navigation,
+      ...(parentKey ? { parentKey } : {}),
+      ...(existingPageId ? { existingPageId } : {}),
+      evidenceReferences:
+        definition.evidenceRequirement === "approved-facts" ? structuredClone(evidence) : [],
+    };
+  });
+
+  for (const [index, collection] of aurumNordicSeed.catalogue.collections.slice(1).entries()) {
+    const en = collection.title.en ?? collection.id;
+    const fi = collection.title.fi ?? en;
+    pages.push({
+      ...structuredClone(pages.find(({ familyId }) => familyId === "collection")!),
+      key: `collection-${collection.id}`,
+      route: `/collections/${collection.slug}`,
+      title: localized(en, fi),
+      seo: {
+        title: localized(en, fi),
+        metaDescription: localized(`${en} collection.`, `${fi} — mallisto.`),
+      },
+      commerceContext: { kind: "collection", collectionId: collection.id },
+      navigation: [{ area: "primary", order: 10 + index, label: localized(en, fi) }],
+      existingPageId: undefined,
+    });
+  }
+  for (const [index, product] of aurumNordicSeed.catalogue.products.slice(1).entries()) {
+    const en = product.title.en ?? product.id;
+    const fi = product.title.fi ?? en;
+    pages.push({
+      ...structuredClone(pages.find(({ familyId }) => familyId === "product-detail")!),
+      key: `pdp-${product.id}`,
+      route: `/products/${product.id.replace(/^product_/, "").replaceAll("_", "-")}`,
+      title: localized(en, fi),
+      seo: {
+        title: localized(en, fi),
+        metaDescription: localized(`${en} product.`, `${fi} — tuote.`),
+      },
+      commerceContext: { kind: "product", productId: product.id },
+      navigation: [{ area: "footer", order: 30 + index, label: localized(en, fi) }],
+      existingPageId: undefined,
+    });
+  }
+
   return {
     schemaVersion: 1,
     projectId: aurumNordicSeed.project.id,
     localeCoverage: ["en", "fi"],
     sharedFrame: { id: "blueprint-shared-storefront-frame", version: "1.0.0" },
-    pages: definitions.map((definition, index) => {
-      const [en, fi] = titles[definition.id];
-      const navigation =
-        definition.id === "home"
-          ? [{ area: "primary" as const, order: 0, label: localized(en, fi) }]
-          : definition.id === "collection"
-            ? [{ area: "primary" as const, order: 1, label: localized(en, fi) }]
-            : definition.id === "search-results"
-              ? [{ area: "primary" as const, order: 2, label: localized(en, fi) }]
-              : definition.id === "campaign-editorial"
-                ? [{ area: "primary" as const, order: 3, label: localized(en, fi) }]
-                : definition.id === "product-detail" ||
-                    [
-                      "about",
-                      "contact",
-                      "faq",
-                      "shipping-information",
-                      "returns-information",
-                      "policy-legal",
-                    ].includes(definition.id)
-                  ? [{ area: "footer" as const, order: index, label: localized(en, fi) }]
-                  : [];
-      const existingPageId =
-        definition.id === "home"
-          ? "page_home"
-          : definition.id === "collection"
-            ? "page_collection_rings"
-            : definition.id === "product-detail"
-              ? "page_product_aurora"
-              : undefined;
-      const parentKey =
-        definition.id === "store-locations"
-          ? "contact"
-          : definition.id === "generic-content"
-            ? "about"
-            : undefined;
-      return {
-        key: definition.id,
-        familyId: definition.id,
-        familyVersion: "1.0.0",
-        route: routeByFamily[definition.id],
-        required: true,
-        profile: { id: profileByFamily[definition.id], version: "1.0.0" },
-        localeCoverage: ["en", "fi"],
-        title: localized(en, fi),
-        seo: {
-          title: localized(en, fi),
-          metaDescription: localized(`${en} information.`, `${fi} — lisätiedot.`),
-        },
-        commerceContext: commerceContext(definition.id),
-        navigation,
-        ...(parentKey ? { parentKey } : {}),
-        ...(existingPageId ? { existingPageId } : {}),
-        evidenceReferences:
-          definition.evidenceRequirement === "approved-facts" ? structuredClone(evidence) : [],
-      };
-    }),
+    pages,
   };
 }
 
-function materialize(input = decision()) {
+function materialize(input = decision(), authority = evidenceAuthority()) {
   return materializeStorefrontSiteMap({
     decision: input,
     baseSnapshot: structuredClone(aurumNordicSeed.draftSnapshot),
     catalogue: structuredClone(aurumNordicSeed.catalogue),
+    evidenceAuthority: authority,
   });
 }
 
@@ -223,9 +376,11 @@ describe("P10B-05 site-map and page-family authority", () => {
 
   it("materializes a complete canonical page set with routes, navigation, parents, locales and shared frame", () => {
     const result = materialize();
-    expect(result.snapshot.pages).toHaveLength(19);
+    expect(result.snapshot.pages).toHaveLength(
+      17 + aurumNordicSeed.catalogue.collections.length + aurumNordicSeed.catalogue.products.length,
+    );
     expect(result.omittedPages).toEqual([]);
-    expect(result.snapshot.pages.map((page) => page.pageFamily!.familyId)).toEqual(
+    expect([...new Set(result.snapshot.pages.map((page) => page.pageFamily!.familyId))]).toEqual(
       listPageFamilyDefinitions().map(({ id }) => id),
     );
     expect(result.snapshot.pages.find((page) => page.pageFamily!.familyId === "home")?.slug).toBe(
@@ -248,15 +403,18 @@ describe("P10B-05 site-map and page-family authority", () => {
     const base = structuredClone(aurumNordicSeed.draftSnapshot);
     const beforeInput = structuredClone(input);
     const beforeBase = structuredClone(base);
+    const authority = evidenceAuthority();
     const first = materializeStorefrontSiteMap({
       decision: input,
       baseSnapshot: base,
       catalogue: aurumNordicSeed.catalogue,
+      evidenceAuthority: authority,
     });
     const second = materializeStorefrontSiteMap({
       decision: structuredClone(input),
       baseSnapshot: structuredClone(base),
       catalogue: aurumNordicSeed.catalogue,
+      evidenceAuthority: authority,
     });
     expect(first.fingerprint).toBe(second.fingerprint);
     expect(first.fingerprint).toBe(canonicalStorefrontSiteMapFingerprint(first.snapshot));
@@ -363,6 +521,193 @@ describe("P10B-05 site-map and page-family authority", () => {
     expectCode(() => validateCanonicalStorefrontSiteMap(utility), "commerce-authority-violation");
   });
 
+  it("resolves caller references only through current approved brief evidence", () => {
+    const valid = materialize();
+    const aboutEvidence = valid.snapshot.pages.find(
+      ({ pageFamily }) => pageFamily?.familyId === "about",
+    )!.pageFamily!.evidenceReferences[0];
+    expect(aboutEvidence).toMatchObject({
+      source: "approved-source-evidence",
+      authorityId: "evidence_page_fact",
+      revision: "1",
+      status: "approved",
+      approvalAuthorityId: "brief_page_facts",
+    });
+    expect(aboutEvidence.approvalFingerprint).toBeTruthy();
+
+    const unknown = decision();
+    const optionalForged = unknown.pages.find(({ familyId }) => familyId === "about")!;
+    optionalForged.required = false;
+    optionalForged.evidenceReferences[0].authorityId = "evidence_fabricated";
+    expectCode(() => materialize(unknown), "unknown-evidence-authority");
+
+    const staleRevision = decision();
+    staleRevision.pages.find(
+      ({ familyId }) => familyId === "about",
+    )!.evidenceReferences[0].revision = "99";
+    expectCode(() => materialize(staleRevision), "stale-evidence-revision");
+
+    const sourceMismatch = decision();
+    sourceMismatch.pages.find(
+      ({ familyId }) => familyId === "about",
+    )!.evidenceReferences[0].source = "merchant-approved";
+    expectCode(() => materialize(sourceMismatch), "evidence-source-mismatch");
+
+    const staleWorkflow = approvedEvidenceWorkflow();
+    staleWorkflow.status = "stale";
+    expectCode(
+      () =>
+        materialize(
+          decision(),
+          createStorefrontDesignBriefPageFactEvidenceAuthority(staleWorkflow),
+        ),
+      "evidence-not-approved",
+    );
+
+    const incompatible = decision();
+    incompatible.pages
+      .filter(
+        ({ familyId }) =>
+          listPageFamilyDefinitions().find(({ id }) => id === familyId)?.evidenceRequirement ===
+          "approved-facts",
+      )
+      .forEach((page) => {
+        page.evidenceReferences = [
+          { source: "approved-source-evidence", authorityId: "evidence_contact", revision: "1" },
+        ];
+      });
+    expectCode(
+      () =>
+        materialize(
+          incompatible,
+          createStorefrontDesignBriefPageFactEvidenceAuthority(
+            approvedEvidenceWorkflow("footer-contact", "evidence_contact"),
+          ),
+        ),
+      "evidence-family-incompatible",
+    );
+
+    const callerApproved = decision() as unknown as {
+      pages: Array<{ familyId: string; evidenceReferences: Array<Record<string, unknown>> }>;
+    };
+    callerApproved.pages.find(
+      ({ familyId }) => familyId === "about",
+    )!.evidenceReferences[0].status = "approved";
+    expectCode(() => materialize(callerApproved as never), "invalid-decision");
+  });
+
+  it("enforces explicit required, contextual and optional family presence", () => {
+    const homepageOnly = decision();
+    homepageOnly.pages = homepageOnly.pages.filter(({ familyId }) => familyId === "home");
+    expectCode(() => materialize(homepageOnly), "missing-commerce-context-coverage");
+
+    for (const familyId of [
+      "search-results",
+      "cart",
+      "checkout",
+      "no-results",
+      "empty-state",
+      "error-state",
+      "not-found",
+    ] as const) {
+      const incomplete = decision();
+      incomplete.pages = incomplete.pages.filter((page) => page.familyId !== familyId);
+      expectCode(() => materialize(incomplete), "missing-required-page-family");
+    }
+
+    const withoutGeneric = decision();
+    withoutGeneric.pages = withoutGeneric.pages.filter(
+      ({ familyId }) => familyId !== "generic-content",
+    );
+    expect(() => materialize(withoutGeneric)).not.toThrow();
+    expect(listPageFamilyDefinitions().find(({ id }) => id === "generic-content")).toMatchObject({
+      presenceAuthority: { kind: "optional", cardinality: "repeatable" },
+      omissionBehavior: "never",
+    });
+
+    const duplicateSingleton = structuredClone(materialize().snapshot);
+    const cart = duplicateSingleton.pages.find(
+      ({ pageFamily }) => pageFamily?.familyId === "cart",
+    )!;
+    duplicateSingleton.pages.push({ ...structuredClone(cart), id: "page_duplicate_cart" });
+    expectCode(
+      () =>
+        validateCanonicalStorefrontSiteMap(duplicateSingleton, {
+          catalogue: aurumNordicSeed.catalogue,
+        }),
+      "duplicate-singleton-page-family",
+    );
+
+    for (const [familyId, contextId] of [
+      ["collection", "collection_everyday"],
+      ["product-detail", "product_lumi_halo_ring"],
+    ] as const) {
+      const incomplete = decision();
+      incomplete.pages = incomplete.pages.filter(
+        (page) =>
+          page.familyId !== familyId ||
+          (page.commerceContext.kind === "collection"
+            ? page.commerceContext.collectionId !== contextId
+            : page.commerceContext.kind === "product"
+              ? page.commerceContext.productId !== contextId
+              : true),
+      );
+      expectCode(() => materialize(incomplete), "missing-commerce-context-coverage");
+    }
+
+    const duplicateContext = decision();
+    const product = structuredClone(
+      duplicateContext.pages.find(({ familyId }) => familyId === "product-detail")!,
+    );
+    product.key = "pdp-duplicate-context";
+    product.route = "/products/duplicate-context";
+    product.existingPageId = undefined;
+    duplicateContext.pages.push(product);
+    expectCode(() => materialize(duplicateContext), "duplicate-commerce-context");
+  });
+
+  it("requires every navigable parent chain to terminate at canonical navigation", () => {
+    const direct = materialize().snapshot;
+    const campaignId = direct.pages.find(
+      ({ pageFamily }) => pageFamily?.familyId === "campaign-editorial",
+    )!.id;
+    const aboutId = direct.pages.find(({ pageFamily }) => pageFamily?.familyId === "about")!.id;
+    expect(direct.navigation.primary).toContainEqual(
+      expect.objectContaining({ target: { type: "page", pageId: campaignId } }),
+    );
+    expect(direct.navigation.footer).toContainEqual(
+      expect.objectContaining({ target: { type: "page", pageId: aboutId } }),
+    );
+
+    const transitive = decision();
+    transitive.pages.find(({ familyId }) => familyId === "generic-content")!.parentKey =
+      "store-locations";
+    expect(() => materialize(transitive)).not.toThrow();
+
+    for (const utilityFamily of ["cart", "checkout", "error-state"] as const) {
+      const utilityParent = decision();
+      utilityParent.pages.find(({ familyId }) => familyId === "store-locations")!.parentKey =
+        utilityFamily;
+      expectCode(() => materialize(utilityParent), "invalid-parent");
+    }
+
+    const unreachable = decision();
+    unreachable.pages.find(({ familyId }) => familyId === "contact")!.navigation = [];
+    expectCode(() => materialize(unreachable), "orphan-navigation");
+
+    const selfParent = decision();
+    selfParent.pages.find(({ familyId }) => familyId === "store-locations")!.parentKey =
+      "store-locations";
+    expectCode(() => materialize(selfParent), "invalid-parent");
+
+    const cycle = decision();
+    cycle.pages.find(({ familyId }) => familyId === "store-locations")!.parentKey =
+      "generic-content";
+    cycle.pages.find(({ familyId }) => familyId === "generic-content")!.parentKey =
+      "store-locations";
+    expectCode(() => materialize(cycle), "invalid-parent");
+  });
+
   it("omits unsupported optional factual pages and fails required ones", () => {
     const optional = decision();
     const optionalShipping = optional.pages.find(
@@ -402,6 +747,9 @@ describe("P10B-05 site-map and page-family authority", () => {
 
   it("survives repository save/reload and deterministic compile/publish projection", async () => {
     const result = materialize();
+    const canonicalEvidenceReference = result.snapshot.pages.find(
+      ({ pageFamily }) => pageFamily?.familyId === "about",
+    )!.pageFamily!.evidenceReferences[0];
     const aggregate: ProjectAggregate = {
       project: structuredClone(aurumNordicSeed.project),
       catalogue: structuredClone(aurumNordicSeed.catalogue),
@@ -418,6 +766,10 @@ describe("P10B-05 site-map and page-family authority", () => {
     const reloaded = await repository.get(result.snapshot.projectId);
     const draft = reloaded.snapshots.find(({ id }) => id === reloaded.project.draftSnapshotId)!;
     expect(draft).toEqual(result.snapshot);
+    expect(
+      draft.pages.find(({ pageFamily }) => pageFamily?.familyId === "about")!.pageFamily!
+        .evidenceReferences[0],
+    ).toEqual(canonicalEvidenceReference);
 
     const compilation = compileStorefrontPublication(
       createCurrentPublishCompilerInput({
@@ -427,6 +779,10 @@ describe("P10B-05 site-map and page-family authority", () => {
       }),
     );
     expect(compilation.result.pages.map(({ page }) => page)).toEqual(result.snapshot.pages);
+    expect(
+      compilation.result.pages.find(({ page }) => page.pageFamily?.familyId === "about")!.page
+        .pageFamily!.evidenceReferences[0],
+    ).toEqual(canonicalEvidenceReference);
     expect(compilation.result.sharedFrame.navigation).toEqual(result.snapshot.navigation);
     expect(compilation.result.rendererTarget).toBe("published");
   });

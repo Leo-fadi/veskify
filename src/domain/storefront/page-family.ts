@@ -1,7 +1,14 @@
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import { canonicalLocaleOrder, type Locale } from "@/domain/shared";
+import type { EvidenceKind } from "@/domain/source-discovery";
 import { canonicalValueFingerprint } from "./canonical-storefront";
-import type { PageFamilyId, PageModel, PageType, StorefrontSnapshot } from "./storefront";
+import type {
+  PageFamilyCommerceContext,
+  PageFamilyId,
+  PageModel,
+  PageType,
+  StorefrontSnapshot,
+} from "./storefront";
 
 export const PAGE_FAMILY_AUTHORITY_VERSION = "1.0.0" as const;
 export const SITE_MAP_SHARED_FRAME = Object.freeze({
@@ -24,6 +31,10 @@ export const pageFamilyRouteClassValues = [
 export type PageFamilyRouteClass = (typeof pageFamilyRouteClassValues)[number];
 export type PageFamilyCommerceContextRequirement = "none" | "search" | "collection" | "product";
 export type PageFamilyEvidenceRequirement = "none" | "approved-facts";
+export type PageFamilyPresenceAuthority =
+  | Readonly<{ kind: "required-singleton" }>
+  | Readonly<{ kind: "contextual"; context: "collection" | "product" }>
+  | Readonly<{ kind: "optional"; cardinality: "singleton" | "repeatable" }>;
 
 export type PageFamilyDefinition = Readonly<{
   id: PageFamilyId;
@@ -36,6 +47,8 @@ export type PageFamilyDefinition = Readonly<{
   localizationRequirement: "all-enabled-locales";
   sharedFrameRequirement: typeof SITE_MAP_SHARED_FRAME;
   evidenceRequirement: PageFamilyEvidenceRequirement;
+  permittedEvidenceKinds: readonly EvidenceKind[];
+  presenceAuthority: PageFamilyPresenceAuthority;
   omissionBehavior: "never" | "omit-optional-or-fail-required";
   commerceOperationAuthority: "read-only-presentation" | "presentation-only";
 }>;
@@ -44,6 +57,23 @@ const profile = (id: string) => Object.freeze({ id, version: "1.0.0" as const })
 const bothNavigation = ["primary", "footer"] as const;
 const contentProfile = profile("blueprint-site-map-content-baseline");
 const stateProfile = profile("blueprint-site-map-state-baseline");
+const requiredSingleton = Object.freeze({ kind: "required-singleton" as const });
+const contextualCollection = Object.freeze({
+  kind: "contextual" as const,
+  context: "collection" as const,
+});
+const contextualProduct = Object.freeze({
+  kind: "contextual" as const,
+  context: "product" as const,
+});
+const optionalSingleton = Object.freeze({
+  kind: "optional" as const,
+  cardinality: "singleton" as const,
+});
+const optionalRepeatable = Object.freeze({
+  kind: "optional" as const,
+  cardinality: "repeatable" as const,
+});
 
 function definition(
   input: Omit<
@@ -55,6 +85,7 @@ function definition(
     ...input,
     allowedProfileReferences: Object.freeze([...input.allowedProfileReferences]),
     navigationEligibility: Object.freeze([...input.navigationEligibility]),
+    permittedEvidenceKinds: Object.freeze([...input.permittedEvidenceKinds]),
     version: PAGE_FAMILY_AUTHORITY_VERSION,
     localizationRequirement: "all-enabled-locales",
     sharedFrameRequirement: SITE_MAP_SHARED_FRAME,
@@ -70,6 +101,8 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     allowedProfileReferences: [profile("blueprint-site-map-home-baseline")],
     navigationEligibility: bothNavigation,
     evidenceRequirement: "none",
+    permittedEvidenceKinds: [],
+    presenceAuthority: requiredSingleton,
     omissionBehavior: "never",
     commerceOperationAuthority: "read-only-presentation",
   }),
@@ -81,6 +114,8 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     allowedProfileReferences: [profile("blueprint-site-map-collection-baseline")],
     navigationEligibility: bothNavigation,
     evidenceRequirement: "none",
+    permittedEvidenceKinds: [],
+    presenceAuthority: contextualCollection,
     omissionBehavior: "never",
     commerceOperationAuthority: "read-only-presentation",
   }),
@@ -92,6 +127,8 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     allowedProfileReferences: [profile("blueprint-site-map-search-baseline")],
     navigationEligibility: ["primary"],
     evidenceRequirement: "none",
+    permittedEvidenceKinds: [],
+    presenceAuthority: requiredSingleton,
     omissionBehavior: "never",
     commerceOperationAuthority: "read-only-presentation",
   }),
@@ -103,6 +140,8 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     allowedProfileReferences: [profile("blueprint-site-map-product-baseline")],
     navigationEligibility: bothNavigation,
     evidenceRequirement: "none",
+    permittedEvidenceKinds: [],
+    presenceAuthority: contextualProduct,
     omissionBehavior: "never",
     commerceOperationAuthority: "read-only-presentation",
   }),
@@ -126,6 +165,13 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
       allowedProfileReferences: [contentProfile],
       navigationEligibility: bothNavigation,
       evidenceRequirement,
+      permittedEvidenceKinds:
+        evidenceRequirement === "none"
+          ? []
+          : id === "contact" || id === "store-locations"
+            ? ["footer-contact", "merchant-brand-fact"]
+            : ["merchant-brand-fact"],
+      presenceAuthority: id === "generic-content" ? optionalRepeatable : optionalSingleton,
       omissionBehavior: evidenceRequirement === "none" ? "never" : "omit-optional-or-fail-required",
       commerceOperationAuthority: "read-only-presentation",
     }),
@@ -138,6 +184,8 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     allowedProfileReferences: [profile("blueprint-site-map-campaign-baseline")],
     navigationEligibility: bothNavigation,
     evidenceRequirement: "approved-facts",
+    permittedEvidenceKinds: ["merchant-brand-fact", "marketing-copy-candidate"],
+    presenceAuthority: optionalRepeatable,
     omissionBehavior: "omit-optional-or-fail-required",
     commerceOperationAuthority: "read-only-presentation",
   }),
@@ -149,6 +197,8 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     allowedProfileReferences: [profile("blueprint-site-map-cart-baseline")],
     navigationEligibility: [],
     evidenceRequirement: "none",
+    permittedEvidenceKinds: [],
+    presenceAuthority: requiredSingleton,
     omissionBehavior: "never",
     commerceOperationAuthority: "presentation-only",
   }),
@@ -160,6 +210,8 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     allowedProfileReferences: [profile("blueprint-site-map-checkout-baseline")],
     navigationEligibility: [],
     evidenceRequirement: "none",
+    permittedEvidenceKinds: [],
+    presenceAuthority: requiredSingleton,
     omissionBehavior: "never",
     commerceOperationAuthority: "presentation-only",
   }),
@@ -172,6 +224,8 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
       allowedProfileReferences: [stateProfile],
       navigationEligibility: [],
       evidenceRequirement: "none",
+      permittedEvidenceKinds: [],
+      presenceAuthority: requiredSingleton,
       omissionBehavior: "never",
       commerceOperationAuthority: "presentation-only",
     }),
@@ -184,6 +238,8 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     allowedProfileReferences: [stateProfile],
     navigationEligibility: [],
     evidenceRequirement: "none",
+    permittedEvidenceKinds: [],
+    presenceAuthority: requiredSingleton,
     omissionBehavior: "never",
     commerceOperationAuthority: "presentation-only",
   }),
@@ -200,6 +256,10 @@ export const pageFamilyValidationCodes = [
   "route-family-mismatch",
   "missing-homepage",
   "duplicate-homepage",
+  "missing-required-page-family",
+  "duplicate-singleton-page-family",
+  "missing-commerce-context-coverage",
+  "duplicate-commerce-context",
   "orphan-navigation",
   "navigation-target-missing",
   "invalid-commerce-context",
@@ -261,8 +321,100 @@ export function validatePageFamilyRegistry(
         `Page family ${entry.id} must allow at least one registered PageBlueprint profile.`,
       );
     }
+    if (
+      (entry.evidenceRequirement === "approved-facts") !==
+      entry.permittedEvidenceKinds.length > 0
+    ) {
+      throw new PageFamilyValidationError(
+        "unsupported-page-family",
+        `Page family ${entry.id} has inconsistent evidence-kind authority.`,
+      );
+    }
   });
   return Object.freeze(entries.map((entry) => structuredClone(entry)));
+}
+
+export type PageFamilyPresenceCandidate = Readonly<{
+  familyId: PageFamilyId;
+  commerceContext: PageFamilyCommerceContext;
+}>;
+
+/** Shared completeness authority for transient decisions and persisted governed snapshots. */
+export function validateCompleteStorefrontPageFamilyPresence(
+  candidates: readonly PageFamilyPresenceCandidate[],
+  catalogue?: CatalogueDisplayModel,
+): void {
+  for (const candidate of candidates) {
+    const definition = getPageFamilyDefinition(candidate.familyId);
+    if (candidate.commerceContext.kind !== definition.commerceContext) {
+      throw new PageFamilyValidationError(
+        "invalid-commerce-context",
+        `Page family ${candidate.familyId} has incompatible ${candidate.commerceContext.kind} context.`,
+      );
+    }
+  }
+
+  for (const definition of pageFamilyDefinitions) {
+    const familyCandidates = candidates.filter(({ familyId }) => familyId === definition.id);
+    if (definition.presenceAuthority.kind === "required-singleton") {
+      if (familyCandidates.length === 0) {
+        throw new PageFamilyValidationError(
+          definition.id === "home" ? "missing-homepage" : "missing-required-page-family",
+          `A complete storefront requires exactly one ${definition.id} page.`,
+        );
+      }
+      if (familyCandidates.length > 1) {
+        throw new PageFamilyValidationError(
+          definition.id === "home" ? "duplicate-homepage" : "duplicate-singleton-page-family",
+          `A complete storefront cannot contain multiple ${definition.id} pages.`,
+        );
+      }
+      continue;
+    }
+    if (
+      definition.presenceAuthority.kind === "optional" &&
+      definition.presenceAuthority.cardinality === "singleton" &&
+      familyCandidates.length > 1
+    ) {
+      throw new PageFamilyValidationError(
+        "duplicate-singleton-page-family",
+        `A complete storefront cannot contain multiple ${definition.id} pages.`,
+      );
+    }
+    if (definition.presenceAuthority.kind !== "contextual") continue;
+
+    const contextIds = familyCandidates.map(({ commerceContext }) =>
+      commerceContext.kind === "collection"
+        ? commerceContext.collectionId
+        : commerceContext.kind === "product"
+          ? commerceContext.productId
+          : "",
+    );
+    if (new Set(contextIds).size !== contextIds.length) {
+      throw new PageFamilyValidationError(
+        "duplicate-commerce-context",
+        `Page family ${definition.id} repeats a canonical commerce context.`,
+      );
+    }
+    if (!catalogue) continue;
+    const expectedIds =
+      definition.presenceAuthority.context === "collection"
+        ? catalogue.collections.map(({ id }) => id)
+        : catalogue.products.map(({ id }) => id);
+    if (contextIds.some((id) => !expectedIds.includes(id))) {
+      throw new PageFamilyValidationError(
+        "invalid-commerce-context",
+        `Page family ${definition.id} references commerce outside the canonical catalogue.`,
+      );
+    }
+    const missingIds = expectedIds.filter((id) => !contextIds.includes(id));
+    if (missingIds.length > 0) {
+      throw new PageFamilyValidationError(
+        "missing-commerce-context-coverage",
+        `Page family ${definition.id} is missing canonical contexts: ${missingIds.join(", ")}.`,
+      );
+    }
+  }
 }
 
 function routeMatches(routeClass: PageFamilyRouteClass, route: string): boolean {
@@ -410,16 +562,13 @@ export function validateCanonicalStorefrontSiteMap(
 
   const routes = new Set<string>();
   const pagesById = new Map(snapshot.pages.map((page) => [page.id, page]));
-  const homePages = snapshot.pages.filter((page) => page.pageFamily!.familyId === "home");
-  if (homePages.length === 0) {
-    throw new PageFamilyValidationError("missing-homepage", "The page set requires one homepage.");
-  }
-  if (homePages.length > 1) {
-    throw new PageFamilyValidationError(
-      "duplicate-homepage",
-      "The page set has multiple homepages.",
-    );
-  }
+  validateCompleteStorefrontPageFamilyPresence(
+    snapshot.pages.map((page) => ({
+      familyId: page.pageFamily!.familyId,
+      commerceContext: page.pageFamily!.commerceContext,
+    })),
+    options.catalogue,
+  );
   for (const page of snapshot.pages) {
     const authority = page.pageFamily!;
     const definition = getPageFamilyDefinition(authority.familyId);
@@ -512,6 +661,20 @@ export function validateCanonicalStorefrontSiteMap(
         `Page ${page.id} has an invalid parent page.`,
       );
     }
+    if (parentId) {
+      const childDefinition = getPageFamilyDefinition(page.pageFamily!.familyId);
+      const parent = pagesById.get(parentId)!;
+      const parentDefinition = getPageFamilyDefinition(parent.pageFamily!.familyId);
+      if (
+        childDefinition.navigationEligibility.length === 0 ||
+        parentDefinition.navigationEligibility.length === 0
+      ) {
+        throw new PageFamilyValidationError(
+          "invalid-parent",
+          `Page ${page.id} cannot use a navigation-ineligible family as a parent-chain member.`,
+        );
+      }
+    }
     const visited = new Set([page.id]);
     let cursor = parentId;
     while (cursor) {
@@ -558,15 +721,24 @@ export function validateCanonicalStorefrontSiteMap(
         );
       }
     }
+  }
+  for (const page of snapshot.pages) {
     const definition = getPageFamilyDefinition(page.pageFamily!.familyId);
-    if (
-      definition.navigationEligibility.length > 0 &&
-      page.pageFamily!.navigationAreas.length === 0 &&
-      !page.pageFamily!.parentPageId
-    ) {
+    if (definition.navigationEligibility.length === 0) continue;
+    let cursor: PageModel | undefined = page;
+    let reachable = false;
+    for (let hop = 0; hop <= snapshot.pages.length && cursor; hop += 1) {
+      if (cursor.pageFamily!.navigationAreas.length > 0) {
+        reachable = true;
+        break;
+      }
+      const parentId: string | undefined = cursor.pageFamily!.parentPageId;
+      cursor = parentId ? pagesById.get(parentId) : undefined;
+    }
+    if (!reachable) {
       throw new PageFamilyValidationError(
         "orphan-navigation",
-        `Page ${page.id} is unreachable from canonical navigation or a parent page.`,
+        `Page ${page.id} has no canonical navigation path through its parent chain.`,
       );
     }
   }

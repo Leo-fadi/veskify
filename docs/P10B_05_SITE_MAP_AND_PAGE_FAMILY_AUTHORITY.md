@@ -30,8 +30,10 @@ The versioned `1.0.0` registry contains 19 families:
 
 Every family declares its canonical `PageModel` type, route class, commerce-context requirement,
 allowed PageBlueprint profile reference, navigation eligibility, all-enabled-locales policy,
-shared-frame requirement, evidence requirement, omission/failure policy, and commerce-operation
-boundary.
+shared-frame requirement, evidence requirement, explicit presence/cardinality authority,
+omission/failure policy, and commerce-operation boundary. Presence and omission are separate:
+`generic-content`, for example, is optional/repeatable even though a selected generic page cannot be
+silently omitted.
 
 P10B-05 registers nine deliberately empty baseline PageBlueprint profiles for page-family and route
 proof. They are executable and deterministic but add no component anatomy or commercial visual
@@ -52,11 +54,18 @@ A bounded decision declares:
 - navigation placement and order;
 - optional parent keys;
 - localized title/SEO coverage;
-- approved factual-authority references where required.
+- factual-authority requests containing only source class, authority ID, and exact revision where
+  required.
 
 New page IDs and navigation IDs derive deterministically from the decision. Materialization is pure,
 does not mutate its input or base snapshot, and produces a deterministic site-map fingerprint from
 canonical page-family, route, relationship, and navigation state.
+
+The decision cannot declare approval. A read-only evidence resolver is injected from the canonical
+persisted URL/brief workflow and resolves the current approved Storefront Design Brief revision,
+exact source-evidence material, source class, evidence fingerprint, and family-compatible evidence
+kind. Only that resolver can issue the canonical `status: approved`, brief ID, and approval
+fingerprint retained by `StorefrontSnapshot`.
 
 ## Routing and reachability
 
@@ -64,18 +73,37 @@ The route authority reserves `/`, `/collections/*`, `/products/*`, `/search`, `/
 `/campaigns/*`, `/cart`, `/checkout`, `/states/*`, and `/404` for their registered route classes.
 Validation rejects unsafe paths, duplicate routes, multiple or missing roots, family/type/route
 mismatch, reserved-namespace conflicts, missing parents, parent cycles, navigation to missing pages,
-undeclared navigation placement, and navigable pages that are neither linked nor parent-reachable.
+undeclared navigation placement, and navigable pages whose bounded parent chain does not terminate
+at a real primary/footer placement. Parent-chain members must themselves be navigation-eligible;
+cart, checkout, 404, and state pages cannot serve as synthetic navigation roots.
 
 Collection pages require a canonical collection ID and its canonical collection slug. PDP pages
 require a canonical product ID. Existing section bindings must agree with those identities. Search
 uses a separate search context and does not masquerade as a collection identity.
 
+Complete-storefront presence is generated from the registered family definitions rather than from a
+second rule list. Home, search/results, cart, checkout, no-results, empty, error, and 404 are required
+singletons. Collection and PDP are contextual/repeatable and require exactly one page for each
+canonical collection/product supplied for public storefront representation. About, Contact,
+locations, FAQ, shipping, returns, and policy/legal are optional singletons; generic content and
+campaign/editorial are optional/repeatable. The materializer checks this authority before page
+construction, and canonical snapshot validation repeats the same check after save/reload.
+
 ## Evidence-backed support pages
 
 About, Contact, locations, FAQ, shipping, returns, policy/legal, and campaign/editorial families
-require approved merchant, Vesko-authoritative, or approved-source-evidence references. An optional
-page without that authority is omitted and recorded. A required page without it fails with typed
-`missing-evidence` before a snapshot is produced.
+require references resolved by an injected trusted authority. The current canonical adapter issues
+`approved-source-evidence` references from the approved Storefront Design Brief; a
+`merchant-approved` or `vesko-authoritative` request cannot masquerade as that source class and
+requires its corresponding trusted authority. An optional page without authority is omitted and
+recorded. A required page without it fails with typed `missing-evidence` before a snapshot is
+produced.
+
+Caller references are not approval authority. Every supplied reference is resolved against the
+current approved brief and its exact canonical evidence revision. Unknown IDs, stale revisions,
+unapproved or superseded workflow state, source-class mismatch, fingerprint drift, and evidence
+kinds incompatible with the target family fail closed. A supplied invalid reference also fails for
+an optional page; only genuine absence may invoke registered omission behaviour.
 
 The contract therefore cannot invent store addresses, shipping or return terms, guarantees,
 certifications, compliance statements, delivery promises, or legal text. Generic content is
@@ -88,9 +116,10 @@ operational cart, checkout, payment, inventory, shipping, or order ownership.
 
 The bounded materializer and canonical validator fail closed for invalid decisions, unsupported or
 stale families, stale profiles, unsafe/duplicate/mismatched routes, missing or duplicate homepages,
-reserved namespace conflicts, orphan or missing navigation, invalid parents, missing commerce
-context, invalid EN/FI coverage, stale shared-frame identity, missing evidence, mixed legacy/new
-authority, and utility commerce-authority widening.
+missing/duplicate required singleton families, incomplete or duplicate commerce-context coverage,
+reserved namespace conflicts, orphan or missing navigation, invalid or non-terminating parent
+chains, missing commerce context, invalid EN/FI coverage, stale shared-frame identity, missing or
+untrusted evidence, mixed legacy/new authority, and utility commerce-authority widening.
 
 No invalid decision mutates the source snapshot or repository. Legacy P10A snapshots with no
 page-family references remain valid without implicit migration; governed page sets require every
@@ -109,9 +138,11 @@ registered page-set decision
 ```
 
 The complete 19-family EN/FI fixture preserves the existing P10A homepage, collection, and PDP
-sections exactly, including protected collection/product identities and commerce bindings. The
-compiler preserves every governed page and the canonical navigation shared frame without an AI or
-provider call.
+sections exactly while adding contextual coverage for every canonical collection and product,
+including protected collection/product identities and commerce bindings. Resolver-issued evidence
+references survive snapshot persistence and compiler projection byte-for-byte. The compiler
+preserves every governed page and the canonical navigation shared frame without an AI or provider
+call.
 
 ## Deferred work
 
