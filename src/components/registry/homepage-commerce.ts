@@ -11,6 +11,7 @@ import {
   type StorefrontAssetMetadata,
 } from "@/domain/component-platform";
 import { idSchema, localizedTextSchema } from "@/domain/shared";
+import { withCurrentComponentCommercialAnatomy } from "./commercial-anatomy";
 
 const localizedActionLabelSchema = localizedTextSchema.optional();
 
@@ -199,7 +200,9 @@ const accessibilityRequirements = {
 const stableMigration = { policy: "stable", previousVersions: [], migrations: [] } as const;
 
 function define(input: unknown): ComponentDefinitionV2 {
-  return validateComponentDefinitionV2(input);
+  return validateComponentDefinitionV2(
+    withCurrentComponentCommercialAnatomy(input as Record<string, unknown>),
+  );
 }
 
 function designCompatibilityFor(family: "commerce" | "marketing" | "navigation" | "service") {

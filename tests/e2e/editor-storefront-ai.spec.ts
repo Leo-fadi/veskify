@@ -136,6 +136,7 @@ test("exact P9-05D token refinement issues one canonical storefront POST", async
   await acceptStorefrontProposal(page);
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#201A17");
   await expect(canvasRoot).toHaveCSS("--brand-color-text", "#201A17");
+  await expect(canvasRoot).toHaveCSS("--brand-surface-page-text", "#201A17");
   await expect(canvasRoot).toHaveCSS("--brand-color-surface", "#E7D8C8");
   await expect(canvasRoot).toHaveCSS("--brand-color-border", "#E7D8C8");
   await expect(canvasRoot).toHaveCSS(
@@ -245,19 +246,24 @@ test("multiple accepted storefront proposals undo and redo in chronological orde
   await expect(page.getByTestId("draft-status")).toContainText("Unsaved changes");
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#2F3A32");
   await expect(canvasRoot).toHaveCSS("--brand-spacing-density", "0.85");
+  await expect(canvasRoot).toHaveCSS("--brand-density-global", "0.86");
 
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#2F3A32");
   await expect(canvasRoot).toHaveCSS("--brand-spacing-density", "1");
+  await expect(canvasRoot).toHaveCSS("--brand-density-global", "1");
   await page.getByRole("button", { name: "Undo", exact: true }).click();
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#8A5A2B");
   await expect(canvasRoot).toHaveCSS("--brand-spacing-density", "1");
+  await expect(canvasRoot).toHaveCSS("--brand-density-global", "1");
   await page.getByRole("button", { name: "Redo", exact: true }).click();
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#2F3A32");
   await expect(canvasRoot).toHaveCSS("--brand-spacing-density", "1");
+  await expect(canvasRoot).toHaveCSS("--brand-density-global", "1");
   await page.getByRole("button", { name: "Redo", exact: true }).click();
   await expect(canvasRoot).toHaveCSS("--brand-color-primary", "#2F3A32");
   await expect(canvasRoot).toHaveCSS("--brand-spacing-density", "0.85");
+  await expect(canvasRoot).toHaveCSS("--brand-density-global", "0.86");
 });
 
 test("page edits after storefront Accept are undone before the composite storefront change", async ({

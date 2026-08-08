@@ -11,9 +11,9 @@ import type {
 } from "@/domain/component-platform";
 import {
   brandSystemSchema,
-  premiumVisualPresets,
-  visualSystemSchema,
+  resolveBrandSystemDesignDna,
   type BrandSystem,
+  type DesignDna,
 } from "@/domain/design-system";
 import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 
@@ -57,28 +57,13 @@ function deepFreeze<T>(value: T): T {
   return value;
 }
 
-function typographyPosture(brand: BrandSystem): string {
-  if (
-    brand.typography.headingFont === "georgia" ||
-    brand.typography.headingFont === "system-serif"
-  ) {
+function typographyPosture(brand: BrandSystem, dna: DesignDna): string {
+  if (dna.typography.pairing === "serif-led") {
     return "editorial";
   }
   if (brand.voice.energy === "direct") return "technical";
   if (brand.voice.warmth === "warm") return "humanist";
   return brand.voice.positioning === "premium" ? "restrained" : "modern";
-}
-
-function typographyScale(scaleRatio: number): string {
-  if (scaleRatio < 1.2) return "compact";
-  if (scaleRatio >= 1.35) return "expressive";
-  return "balanced";
-}
-
-function typographyWeight(weight: BrandSystem["typography"]["headingWeight"]): string {
-  if (weight === 400) return "regular";
-  if (weight === 500) return "medium";
-  return "strong";
 }
 
 const legacyNarrativeRole: Readonly<Record<string, string>> = {
@@ -125,73 +110,42 @@ export function adaptLegacyCommercialDesignGrammar(
     );
   }
   const brand = parsedBrand.data;
-  const visual = visualSystemSchema.parse(
-    brand.visualSystem ?? premiumVisualPresets.premiumEditorial,
-  );
+  const dna = resolveBrandSystemDesignDna(brand);
   const brandSelections: Record<string, string> = {
-    "typography.posture": typographyPosture(brand),
-    "typography.scale": typographyScale(brand.typography.scaleRatio),
-    "typography.weight": typographyWeight(brand.typography.headingWeight),
-    "typography.tracking": "normal",
-    "typography.lineHeight": "balanced",
-    "layout.container":
-      visual.contentWidth === "narrow"
-        ? "reading"
-        : visual.contentWidth === "wide"
-          ? "wide"
-          : "content",
-    "layout.pageGutter":
-      brand.spacing.density === "compact"
-        ? "compact"
-        : brand.spacing.density === "airy"
-          ? "generous"
-          : "standard",
-    "layout.density":
-      brand.spacing.density === "airy"
-        ? "spacious"
-        : brand.spacing.density === "balanced"
-          ? "standard"
-          : "compact",
+    "typography.posture": typographyPosture(brand, dna),
+    "typography.scale": dna.typography.scale.posture,
+    "typography.weight": dna.typography.weightPosture,
+    "typography.tracking": dna.typography.trackingPosture,
+    "typography.lineHeight": dna.typography.lineHeightPosture,
+    "layout.container": dna.spacing.containers.content === "wide" ? "wide" : "content",
+    "layout.pageGutter": dna.spacing.pageGutter,
+    "layout.density": dna.density.posture === "balanced" ? "standard" : dna.density.posture,
     "surface.role":
-      visual.surface === "quiet"
+      dna.surfaces.posture === "quiet"
         ? "background"
-        : visual.surface === "contrast"
+        : dna.surfaces.posture === "contrast"
           ? "contrast"
           : "surface",
     "action.hierarchy":
-      visual.buttonHierarchy === "quiet"
+      dna.controls.emphasis === "restrained"
         ? "quiet"
-        : visual.buttonHierarchy === "strong"
+        : dna.controls.emphasis === "strong"
           ? "primary"
           : "secondary",
     "control.posture":
-      brand.spacing.density === "compact"
-        ? "compact"
-        : brand.spacing.density === "airy"
-          ? "prominent"
+      dna.controls.height === "prominent"
+        ? "prominent"
+        : dna.controls.height === "compact"
+          ? "compact"
           : "standard",
-    "shape.border": visual.borderTreatment ?? visual.divider,
-    "shape.radius": brand.shape.radius,
-    "shape.elevation":
-      visual.surfaceDepth === "layered"
-        ? "raised"
-        : visual.surfaceDepth === "subtle"
-          ? "subtle"
-          : "flat",
-    "media.ratio": visual.imageAspect ?? "natural",
-    "media.crop":
-      (visual.cropTreatment ?? (visual.imageTreatment === "contained" ? "contain" : "cover")) ===
-      "editorial"
-        ? "editorial"
-        : (visual.cropTreatment ?? (visual.imageTreatment === "contained" ? "contain" : "cover")),
+    "shape.border": dna.surfaces.border,
+    "shape.radius": dna.surfaces.radius,
+    "shape.elevation": dna.surfaces.elevation,
+    "media.ratio": dna.media.ratio,
+    "media.crop": dna.media.crop,
     "media.focalPoint": "source",
-    "media.overlay": "none",
-    "media.emphasis":
-      visual.imageTreatment === "editorial"
-        ? "leading"
-        : visual.imageTreatment === "crop"
-          ? "immersive"
-          : "balanced",
+    "media.overlay": dna.media.overlay,
+    "media.emphasis": dna.media.prominence,
   };
   const pageSelections: Record<string, string> = {
     "layout.visualWeight": slot.visualWeight,

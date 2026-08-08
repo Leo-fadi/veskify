@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { brandSystemSchema, type BrandSystem } from "@/domain/design-system";
+import {
+  applyBrandSystemFoundationPatch,
+  brandSystemSchema,
+  type BrandSystem,
+} from "@/domain/design-system";
 import { exactBrandPalettePlanSchema } from "./brand-palette-contract";
 
 export const registeredTokenRefinementPlanSchema = z
@@ -29,8 +33,7 @@ export function applyRegisteredTokenRefinement(
   baseline: BrandSystem,
   plan: RegisteredTokenRefinementPlan,
 ): BrandSystem {
-  return brandSystemSchema.parse({
-    ...structuredClone(baseline),
+  return applyBrandSystemFoundationPatch(baseline, {
     ...(plan.palette === null ? {} : { colors: structuredClone(plan.palette.colors) }),
     ...(plan.typography === null ? {} : { typography: structuredClone(plan.typography) }),
     ...(plan.spacing === null ? {} : { spacing: structuredClone(plan.spacing) }),

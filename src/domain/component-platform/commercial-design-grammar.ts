@@ -11,6 +11,31 @@ const grammarTokenSchema = z
 
 export const commercialDesignGrammarVersion = "1.0.0" as const;
 
+export const commercialTypographyPostures = [
+  "editorial",
+  "modern",
+  "technical",
+  "humanist",
+  "restrained",
+] as const;
+export const commercialTypographyPostureSchema = z.enum(commercialTypographyPostures);
+
+export const commercialResponsiveTransformations = [
+  "preserve",
+  "reflow",
+  "stack",
+  "reorder",
+  "collapse",
+  "scroll",
+  "condense",
+  "hide-optional",
+  "switch-layout",
+  "simplify",
+  "disclosure",
+  "carousel",
+] as const;
+export const commercialResponsiveTransformationSchema = z.enum(commercialResponsiveTransformations);
+
 export const commercialGrammarAuthorityLevels = [
   "brandSystem",
   "pageBlueprint",
@@ -146,11 +171,7 @@ const pageOwned = (
   });
 
 export const commercialGrammarCategories = [
-  brandOwned(
-    "typography.posture",
-    ["editorial", "modern", "technical", "humanist", "restrained"],
-    "modern",
-  ),
+  brandOwned("typography.posture", commercialTypographyPostures, "modern"),
   brandOwned(
     "typography.role",
     ["display", "heading", "body", "utility", "price", "emphasis"],
@@ -236,24 +257,7 @@ export const commercialGrammarCategories = [
   brandOwned("media.emphasis", ["supporting", "balanced", "leading", "immersive"], "balanced", {
     selectionLevels: ["brandSystem", "pageBlueprint", "componentVariant"],
   }),
-  pageOwned(
-    "responsive.transformation",
-    [
-      "preserve",
-      "reflow",
-      "stack",
-      "reorder",
-      "collapse",
-      "scroll",
-      "condense",
-      "hide-optional",
-      "switch-layout",
-      "simplify",
-      "disclosure",
-      "carousel",
-    ],
-    "reflow",
-  ),
+  pageOwned("responsive.transformation", commercialResponsiveTransformations, "reflow"),
   pageOwned(
     "narrative.role",
     [

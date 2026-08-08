@@ -1,6 +1,6 @@
 .collectionHeader {
   display: grid;
-  width: min(100%, 90rem);
+  width: min(100%, var(--brand-container-commerce));
   margin: 0 auto;
   background: var(--brand-surface-subtle);
 }
@@ -10,16 +10,18 @@
   max-width: 42rem;
   flex-direction: column;
   justify-content: center;
-  padding: clamp(3rem, 8vw, 7rem) clamp(1.25rem, 6vw, 6rem);
+  padding: var(--brand-section-rhythm) var(--brand-page-gutter);
 }
 
 .collectionCopy h1 {
   max-width: 12ch;
   margin: 0.6rem 0 1rem;
   font-family: var(--brand-font-heading);
-  font-size: clamp(2.75rem, 8vw, 6.5rem);
-  line-height: 0.96;
-  letter-spacing: -0.04em;
+  font-family: var(--brand-font-display);
+  font-size: clamp(2.75rem, 8vw, var(--brand-type-display-size));
+  font-weight: var(--brand-type-display-weight);
+  line-height: var(--brand-type-display-line-height);
+  letter-spacing: var(--brand-type-display-tracking);
 }
 
 .collectionCopy > p:last-child {
@@ -49,9 +51,9 @@
 
 .filterBar {
   display: flex;
-  width: min(calc(100% - 2rem), 80rem);
+  width: min(calc(100% - 2rem), var(--brand-container-commerce));
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: var(--brand-grid-gap);
   align-items: end;
   margin: 0 auto;
   padding: 1.5rem 0;
@@ -71,12 +73,12 @@
 
 .filterBar button,
 .filterBar select {
-  min-height: 2.75rem;
+  min-height: var(--brand-control-height);
   border: 1px solid var(--brand-color-border);
-  border-radius: 999px;
+  border-radius: var(--brand-control-radius);
   background: var(--brand-color-surface);
   color: var(--brand-color-text);
-  padding: 0.65rem 1rem;
+  padding: 0.65rem var(--brand-control-padding-inline);
   font: inherit;
   font-weight: 700;
 }

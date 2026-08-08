@@ -1,10 +1,19 @@
 import { z } from "zod";
-import { contrastRatio, standardTextContrastMinimum } from "./color-contrast";
+import {
+  designDnaFingerprint,
+  designDnaSchema,
+  fontTokenSchema,
+  migrateLegacyFoundationToDesignDna,
+  projectDesignDna,
+  readableForegroundAcrossBackgrounds,
+  type DesignDna,
+  type EffectiveDesignDnaProjection,
+} from "./design-dna";
 
 const colorSchema = z.string().regex(/^#(?:[0-9a-fA-F]{6})$/, "Use six-digit hex colours.");
 
-export const approvedFontTokens = ["inter", "georgia", "system-sans", "system-serif"] as const;
-export const fontTokenSchema = z.enum(approvedFontTokens);
+export { approvedFontTokens, fontTokenSchema } from "./design-dna";
+export type { DesignDna, EffectiveDesignDnaProjection, FontToken } from "./design-dna";
 
 export const brandVoiceSchema = z
   .object({
@@ -124,68 +133,109 @@ export const brandSystemSchema = z
     voice: brandVoiceSchema,
     visualSystem: visualSystemSchema.optional(),
     semanticPresentation: semanticPresentationRolesSchema.optional(),
+    designDna: designDnaSchema.optional(),
   })
   .strict();
 
-export type FontToken = z.infer<typeof fontTokenSchema>;
 export type BrandSystem = z.infer<typeof brandSystemSchema>;
 export type VisualSystem = z.infer<typeof visualSystemSchema>;
 
-const fontStacks: Record<FontToken, string> = {
-  inter: '"Inter", "Arial", sans-serif',
-  georgia: '"Georgia", "Times New Roman", serif',
-  "system-sans": 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  "system-serif": 'Georgia, Cambria, "Times New Roman", serif',
-};
+export function resolveBrandSystemDesignDna(input: BrandSystem): DesignDna {
+  const brand = brandSystemSchema.parse(input);
+  return brand.designDna ?? migrateLegacyFoundationToDesignDna(brand);
+}
 
-const radiusValues: Record<BrandSystem["shape"]["radius"], string> = {
-  square: "0rem",
-  subtle: "0.375rem",
-  rounded: "0.75rem",
-  pill: "9999px",
-};
+/** Deterministically upgrades a legacy BrandSystem while preserving its existing merchant intent. */
+export function migrateBrandSystemDesignDna(input: unknown): BrandSystem {
+  const brand = brandSystemSchema.parse(structuredClone(input));
+  return brandSystemSchema.parse({
+    ...brand,
+    designDna: resolveBrandSystemDesignDna(brand),
+  });
+}
 
-const densityValues: Record<BrandSystem["spacing"]["density"], string> = {
+export function brandSystemDesignDnaFingerprint(input: BrandSystem): string {
+  return designDnaFingerprint(resolveBrandSystemDesignDna(input));
+}
+
+export function projectBrandSystemDesignDna(input: BrandSystem): EffectiveDesignDnaProjection {
+  const brand = brandSystemSchema.parse(input);
+  return projectDesignDna(resolveBrandSystemDesignDna(brand), brand.typography.baseSize);
+}
+
+export type BrandSystemFoundationPatch = Readonly<
+  Partial<
+    Pick<
+      BrandSystem,
+      | "colors"
+      | "typography"
+      | "shape"
+      | "spacing"
+      | "imagery"
+      | "visualSystem"
+      | "semanticPresentation"
+    >
+  >
+>;
+
+/** Applies compatibility-field changes and synchronizes only their canonical Design DNA domains. */
+export function applyBrandSystemFoundationPatch(
+  baseline: BrandSystem,
+  patch: BrandSystemFoundationPatch,
+): BrandSystem {
+  const current = resolveBrandSystemDesignDna(baseline);
+  const candidate = brandSystemSchema.parse({
+    ...structuredClone(baseline),
+    ...structuredClone(patch),
+  });
+  const derived = migrateLegacyFoundationToDesignDna(candidate);
+  const changesColour = "colors" in patch || "semanticPresentation" in patch;
+  const changesSurfaces = "shape" in patch || "visualSystem" in patch;
+  const changesMedia = "imagery" in patch || "visualSystem" in patch;
+  const changesControls = "spacing" in patch || changesSurfaces;
+  return brandSystemSchema.parse({
+    ...candidate,
+    designDna: {
+      ...current,
+      ...(changesColour ? { colour: derived.colour } : {}),
+      ...(patch.typography === undefined ? {} : { typography: derived.typography }),
+      ...(patch.spacing === undefined
+        ? {}
+        : { spacing: derived.spacing, density: derived.density }),
+      ...(changesSurfaces ? { surfaces: derived.surfaces } : {}),
+      ...(changesControls ? { controls: derived.controls } : {}),
+      ...(changesMedia ? { media: derived.media } : {}),
+    },
+  });
+}
+
+const compatibilityDensityValues: Readonly<Record<BrandSystem["spacing"]["density"], string>> = {
   compact: "0.85",
   balanced: "1",
   airy: "1.2",
 };
 
-function contrastingForeground(background: string, preferred: readonly string[]) {
-  const candidates = [...new Set([...preferred, "#111111", "#FFFFFF"])]
-    .map((color) => ({ color, contrast: contrastRatio(color, background) }))
-    .sort((left, right) => right.contrast - left.contrast);
-  return (
-    candidates.find(({ contrast }) => contrast >= standardTextContrastMinimum)?.color ??
-    candidates[0].color
-  );
-}
-
 export function brandSystemToCssVariables(input: BrandSystem): Record<string, string> {
   const brand = brandSystemSchema.parse(input);
+  const projection = projectBrandSystemDesignDna(brand);
+  const dna = resolveBrandSystemDesignDna(brand);
   const visualSystem = visualSystemSchema.parse(
     brand.visualSystem ?? premiumVisualPresets.premiumEditorial,
   );
-  const semanticPresentation = brand.semanticPresentation ?? {
-    emphasis: brand.colors.accent,
-    success: "#237A45",
-    warning: "#9A5B13",
-    unavailable: brand.colors.mutedText,
-  };
-  const primaryForeground = contrastingForeground(brand.colors.primary, [
-    brand.colors.surface,
-    brand.colors.text,
-  ]);
-  const secondaryForeground = contrastingForeground(brand.colors.secondary, [
-    brand.colors.surface,
-    brand.colors.text,
-  ]);
-  const accentForeground = contrastingForeground(brand.colors.accent, [
-    brand.colors.text,
-    brand.colors.surface,
-  ]);
-
+  const primaryText = readableForegroundAcrossBackgrounds(
+    [brand.colors.primary],
+    [brand.colors.surface, brand.colors.text],
+  );
+  const secondaryText = readableForegroundAcrossBackgrounds(
+    [brand.colors.secondary],
+    [brand.colors.surface, brand.colors.text],
+  );
+  const accentText = readableForegroundAcrossBackgrounds(
+    [brand.colors.accent],
+    [brand.colors.text, brand.colors.surface],
+  );
   return {
+    ...projection.cssVariables,
     "--brand-color-primary": brand.colors.primary,
     "--brand-color-secondary": brand.colors.secondary,
     "--brand-color-accent": brand.colors.accent,
@@ -194,49 +244,32 @@ export function brandSystemToCssVariables(input: BrandSystem): Record<string, st
     "--brand-color-text": brand.colors.text,
     "--brand-color-muted-text": brand.colors.mutedText,
     "--brand-color-border": brand.colors.border,
-    "--brand-surface-page": brand.colors.background,
-    "--brand-surface-section": brand.colors.surface,
-    "--brand-surface-subtle": `color-mix(in srgb, ${brand.colors.surface} 72%, ${brand.colors.background})`,
+    "--brand-surface-section": dna.colour.surface,
+    "--brand-surface-subtle": dna.colour.mutedSurface,
     "--brand-action-primary": brand.colors.primary,
-    "--brand-action-primary-text": primaryForeground,
-    "--brand-color-primary-text": primaryForeground,
-    "--brand-color-secondary-text": secondaryForeground,
-    "--brand-color-accent-text": accentForeground,
-    "--brand-action-disabled-surface": brand.colors.surface,
-    "--brand-action-disabled-text": semanticPresentation.unavailable,
-    "--brand-action-disabled-border": semanticPresentation.unavailable,
+    "--brand-action-primary-text": primaryText,
+    "--brand-color-primary-text": primaryText,
+    "--brand-color-secondary-text": secondaryText,
+    "--brand-color-accent-text": accentText,
     "--brand-highlight": brand.colors.accent,
-    "--brand-highlight-text": accentForeground,
-    "--brand-color-emphasis": semanticPresentation.emphasis,
-    "--brand-color-success": semanticPresentation.success,
-    "--brand-color-warning": semanticPresentation.warning,
-    "--brand-color-unavailable": semanticPresentation.unavailable,
-    "--brand-font-heading": fontStacks[brand.typography.headingFont],
-    "--brand-font-body": fontStacks[brand.typography.bodyFont],
-    "--brand-type-base-size": `${brand.typography.baseSize}px`,
-    "--brand-type-scale-ratio": String(brand.typography.scaleRatio),
-    "--brand-type-heading-weight": String(brand.typography.headingWeight),
-    "--brand-type-body-weight": String(brand.typography.bodyWeight),
-    "--brand-radius": radiusValues[brand.shape.radius],
-    "--brand-spacing-density": densityValues[brand.spacing.density],
+    "--brand-highlight-text": accentText,
+    "--brand-action-disabled-surface": brand.colors.surface,
+    "--brand-action-disabled-text":
+      brand.semanticPresentation?.unavailable ?? brand.colors.mutedText,
+    "--brand-action-disabled-border":
+      brand.semanticPresentation?.unavailable ?? brand.colors.mutedText,
+    "--brand-spacing-density": compatibilityDensityValues[brand.spacing.density],
     "--brand-imagery-style": brand.imagery.style,
-    "--brand-content-width":
-      visualSystem.contentWidth === "narrow"
-        ? "68rem"
-        : visualSystem.contentWidth === "wide"
-          ? "92rem"
-          : "78rem",
-    "--brand-surface-treatment": visualSystem.surface,
-    "--brand-divider-treatment": visualSystem.divider,
-    "--brand-button-hierarchy": visualSystem.buttonHierarchy,
+    "--brand-content-width": projection.cssVariables["--brand-container-content"],
+    "--brand-surface-treatment": dna.surfaces.posture,
+    "--brand-divider-treatment": dna.surfaces.border,
+    "--brand-button-hierarchy": dna.controls.emphasis,
     "--brand-image-treatment": visualSystem.imageTreatment,
     "--brand-theme": visualSystem.theme,
-    "--brand-border-treatment": visualSystem.borderTreatment ?? visualSystem.divider,
-    "--brand-surface-depth": visualSystem.surfaceDepth ?? visualSystem.surface,
-    "--brand-image-aspect": visualSystem.imageAspect ?? "natural",
-    "--brand-crop-treatment":
-      visualSystem.cropTreatment ??
-      (visualSystem.imageTreatment === "contained" ? "contain" : "cover"),
+    "--brand-border-treatment": dna.surfaces.border,
+    "--brand-surface-depth": dna.surfaces.elevation,
+    "--brand-image-aspect": dna.media.ratio,
+    "--brand-crop-treatment": dna.media.crop,
   };
 }
 
