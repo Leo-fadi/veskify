@@ -416,7 +416,7 @@ export function createCommercialDesignGrammarKnowledge(
         profileId: input.materialization.profileId,
         componentFamily: component.family,
         componentType: runtimeComponentType,
-        variant: slot.variant,
+        ...(runtimeComponentType === slot.component ? { variant: slot.variant } : {}),
         responsiveMode: resolution.values["responsive.transformation"],
         narrativeRole: resolution.values["narrative.role"],
         assetRoles: input.assetRoles,

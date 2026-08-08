@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assetRoleSchema } from "@/domain/shared";
 import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 
 const grammarTokenSchema = z
@@ -280,6 +281,14 @@ export const commercialGrammarCompatibilityRelationSchema = z.enum([
   "narrowingIntersection",
 ]);
 
+export const commercialGrammarMediaRequirements = [
+  "none",
+  "approvedAsset",
+  "canonicalProductMedia",
+  "responsiveDerivative",
+] as const;
+export const commercialGrammarMediaRequirementSchema = z.enum(commercialGrammarMediaRequirements);
+
 export const commercialGrammarCompatibilityReferenceSchema = z.discriminatedUnion("kind", [
   z
     .object({
@@ -303,7 +312,7 @@ export const commercialGrammarCompatibilityReferenceSchema = z.discriminatedUnio
   z
     .object({
       kind: z.literal("mediaRequirement"),
-      value: z.enum(["none", "approvedAsset", "canonicalProductMedia", "responsiveDerivative"]),
+      value: commercialGrammarMediaRequirementSchema,
     })
     .strict(),
 ]);
@@ -366,6 +375,16 @@ export type CommercialGrammarLayer = Readonly<{
 export type CommercialGrammarIssueCode =
   | "UNKNOWN_GRAMMAR_CATEGORY"
   | "UNKNOWN_GRAMMAR_VALUE"
+  | "UNKNOWN_PAGE_BLUEPRINT_PROFILE"
+  | "UNKNOWN_COMPONENT_FAMILY"
+  | "UNKNOWN_COMPONENT_TYPE"
+  | "UNKNOWN_COMPONENT_VARIANT"
+  | "UNKNOWN_RESPONSIVE_MODE"
+  | "UNKNOWN_NARRATIVE_ROLE"
+  | "UNKNOWN_ASSET_ROLE"
+  | "UNKNOWN_MEDIA_REQUIREMENT"
+  | "INVALID_COMPATIBILITY_INPUT"
+  | "DUPLICATE_GRAMMAR_AUTHORITY_LEVEL"
   | "UNBOUNDED_DESIGN_VALUE"
   | "PROHIBITED_GRAMMAR_AUTHORITY"
   | "ILLEGAL_GRAMMAR_BROADENING"
@@ -378,6 +397,8 @@ export type CommercialGrammarIssue = Readonly<{
   categoryId?: string;
   level?: z.infer<typeof commercialGrammarAuthorityLevelSchema>;
   ruleId?: string;
+  authorityKind?: string;
+  authorityId?: string;
   message: string;
 }>;
 
@@ -403,6 +424,40 @@ export type CommercialGrammarCapability = Readonly<{
   fingerprint: string;
 }>;
 
+export type CommercialGrammarCompatibilityInput = Readonly<{
+  values: Readonly<Record<string, string>>;
+  profileId?: string;
+  componentFamily?: string;
+  componentType?: string;
+  variant?: string;
+  responsiveMode?: string;
+  narrativeRole?: string;
+  assetRoles?: readonly string[];
+  mediaRequirements?: readonly string[];
+}>;
+
+export type CommercialGrammarCompatibilityAuthority = Readonly<{
+  hasPageBlueprintProfile: (profileId: string) => boolean;
+  hasComponentFamily: (family: string) => boolean;
+  getComponent: (
+    componentType: string,
+  ) => Readonly<{ family: string; variants: readonly string[] }> | undefined;
+}>;
+
+const commercialGrammarCompatibilityInputSchema = z
+  .object({
+    values: z.record(z.string(), z.string()),
+    profileId: z.string().optional(),
+    componentFamily: z.string().optional(),
+    componentType: z.string().optional(),
+    variant: z.string().optional(),
+    responsiveMode: z.string().optional(),
+    narrativeRole: z.string().optional(),
+    assetRoles: z.array(z.string()).optional(),
+    mediaRequirements: z.array(z.string()).optional(),
+  })
+  .strict();
+
 function deepFreeze<T>(value: T): T {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
     Object.freeze(value);
@@ -413,6 +468,35 @@ function deepFreeze<T>(value: T): T {
 
 function looksUnbounded(value: string): boolean {
   return /[{};]|(?:^|\s)(?:class|style|css|react|javascript)(?:\s|$)/i.test(value);
+}
+
+function compareCanonicalStrings(left: string, right: string): number {
+  return left === right ? 0 : left < right ? -1 : 1;
+}
+
+function canonicalizeIssues(issues: readonly CommercialGrammarIssue[]): CommercialGrammarIssue[] {
+  return [...issues].sort((left, right) =>
+    compareCanonicalStrings(
+      canonicalValueString({
+        code: left.code,
+        categoryId: left.categoryId ?? "",
+        level: left.level ?? "",
+        ruleId: left.ruleId ?? "",
+        authorityKind: left.authorityKind ?? "",
+        authorityId: left.authorityId ?? "",
+        message: left.message,
+      }),
+      canonicalValueString({
+        code: right.code,
+        categoryId: right.categoryId ?? "",
+        level: right.level ?? "",
+        ruleId: right.ruleId ?? "",
+        authorityKind: right.authorityKind ?? "",
+        authorityId: right.authorityId ?? "",
+        message: right.message,
+      }),
+    ),
+  );
 }
 
 export function createCommercialGrammarCapability(): CommercialGrammarCapability {
@@ -538,6 +622,33 @@ export function resolveCommercialGrammarInheritance(
   const levelOrder = new Map(
     commercialGrammarAuthorityLevels.map((level, index) => [level, index]),
   );
+  const duplicateLevels = commercialGrammarAuthorityLevels.filter(
+    (level) => layers.filter((layer) => layer.level === level).length > 1,
+  );
+  if (duplicateLevels.length > 0) {
+    const duplicateIssues = canonicalizeIssues(
+      duplicateLevels.map((level) => ({
+        code: "DUPLICATE_GRAMMAR_AUTHORITY_LEVEL" as const,
+        level,
+        authorityKind: "grammarAuthorityLevel",
+        authorityId: level,
+        message: `More than one ${level} commercial grammar authority layer is not permitted.`,
+      })),
+    );
+    const values = Object.fromEntries(
+      [...selectedById].sort(([left], [right]) => left.localeCompare(right)),
+    );
+    const allowedValues = Object.fromEntries(
+      [...allowedById]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([id, valuesForId]) => [id, [...valuesForId].sort()]),
+    );
+    const content = { values, allowedValues, issues: duplicateIssues };
+    return deepFreeze({
+      ...content,
+      fingerprint: `commercial-design-selection-${canonicalValueFingerprint(canonicalValueString(content))}`,
+    });
+  }
   const ordered = [...layers].sort(
     (left, right) => (levelOrder.get(left.level) ?? 99) - (levelOrder.get(right.level) ?? 99),
   );
@@ -638,7 +749,8 @@ export function resolveCommercialGrammarInheritance(
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([id, valuesForId]) => [id, [...valuesForId].sort()]),
   );
-  const content = { values, allowedValues, issues };
+  const canonicalIssues = canonicalizeIssues(issues);
+  const content = { values, allowedValues, issues: canonicalIssues };
   return deepFreeze({
     ...content,
     fingerprint: `commercial-design-selection-${canonicalValueFingerprint(canonicalValueString(content))}`,
@@ -647,17 +759,7 @@ export function resolveCommercialGrammarInheritance(
 
 function referenceIsActive(
   reference: CommercialGrammarCompatibilityReference,
-  input: Readonly<{
-    values: Readonly<Record<string, string>>;
-    profileId?: string;
-    componentFamily?: string;
-    componentType?: string;
-    variant?: string;
-    responsiveMode?: string;
-    narrativeRole?: string;
-    assetRoles?: readonly string[];
-    mediaRequirements?: readonly string[];
-  }>,
+  input: CommercialGrammarCompatibilityInput,
 ): boolean {
   switch (reference.kind) {
     case "grammarValue":
@@ -679,14 +781,189 @@ function referenceIsActive(
   }
 }
 
+function compatibilityAuthorityIssue(
+  code: CommercialGrammarIssueCode,
+  authorityKind: string,
+  authorityId: string,
+  message: string,
+): CommercialGrammarIssue {
+  return { code, authorityKind, authorityId, message };
+}
+
+function validateCommercialGrammarCompatibilityInput(
+  capability: CommercialGrammarCapability,
+  authority: CommercialGrammarCompatibilityAuthority,
+  input: unknown,
+): Readonly<
+  | { success: true; input: CommercialGrammarCompatibilityInput }
+  | { success: false; issues: readonly CommercialGrammarIssue[] }
+> {
+  const parsed = commercialGrammarCompatibilityInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      success: false,
+      issues: [
+        {
+          code: "INVALID_COMPATIBILITY_INPUT",
+          authorityKind: "compatibilityInput",
+          authorityId: "input",
+          message: "Commercial grammar compatibility input is structurally invalid.",
+        },
+      ],
+    };
+  }
+
+  const normalized: CommercialGrammarCompatibilityInput = {
+    ...parsed.data,
+    values: Object.fromEntries(
+      Object.entries(parsed.data.values).sort(([left], [right]) =>
+        compareCanonicalStrings(left, right),
+      ),
+    ),
+    ...(parsed.data.assetRoles === undefined
+      ? {}
+      : { assetRoles: [...parsed.data.assetRoles].sort(compareCanonicalStrings) }),
+    ...(parsed.data.mediaRequirements === undefined
+      ? {}
+      : {
+          mediaRequirements: [...parsed.data.mediaRequirements].sort(compareCanonicalStrings),
+        }),
+  };
+  const categoriesById = new Map(capability.categories.map((category) => [category.id, category]));
+  const issues: CommercialGrammarIssue[] = [];
+
+  for (const [categoryId, value] of Object.entries(normalized.values)) {
+    const category = categoriesById.get(categoryId as CommercialGrammarCategory["id"]);
+    if (!category) {
+      issues.push(issueForUnknown(categoryId));
+    } else if (!category.values.includes(value)) {
+      issues.push(issueForUnknown(categoryId, value));
+    }
+  }
+  if (normalized.profileId && !authority.hasPageBlueprintProfile(normalized.profileId)) {
+    issues.push(
+      compatibilityAuthorityIssue(
+        "UNKNOWN_PAGE_BLUEPRINT_PROFILE",
+        "pageBlueprintProfile",
+        normalized.profileId,
+        `Executable PageBlueprint profile ${normalized.profileId} is not registered in current authority.`,
+      ),
+    );
+  }
+  if (normalized.componentFamily && !authority.hasComponentFamily(normalized.componentFamily)) {
+    issues.push(
+      compatibilityAuthorityIssue(
+        "UNKNOWN_COMPONENT_FAMILY",
+        "componentFamily",
+        normalized.componentFamily,
+        `Component family ${normalized.componentFamily} is not registered in current authority.`,
+      ),
+    );
+  }
+  const component = normalized.componentType
+    ? authority.getComponent(normalized.componentType)
+    : undefined;
+  if (normalized.componentType && !component) {
+    issues.push(
+      compatibilityAuthorityIssue(
+        "UNKNOWN_COMPONENT_TYPE",
+        "componentType",
+        normalized.componentType,
+        `Component type ${normalized.componentType} is not registered in current authority.`,
+      ),
+    );
+  }
+  if (
+    component &&
+    normalized.componentFamily &&
+    authority.hasComponentFamily(normalized.componentFamily) &&
+    component.family !== normalized.componentFamily
+  ) {
+    issues.push(
+      compatibilityAuthorityIssue(
+        "INCOMPATIBLE_GRAMMAR_SELECTION",
+        "componentFamily",
+        `${normalized.componentType}:${normalized.componentFamily}`,
+        `Component ${normalized.componentType} belongs to ${component.family}, not ${normalized.componentFamily}.`,
+      ),
+    );
+  }
+  if (normalized.variant) {
+    if (!component || !component.variants.includes(normalized.variant)) {
+      issues.push(
+        compatibilityAuthorityIssue(
+          "UNKNOWN_COMPONENT_VARIANT",
+          "componentVariant",
+          `${normalized.componentType ?? "missing-component"}:${normalized.variant}`,
+          `Component variant ${normalized.componentType ?? "<missing>"}/${normalized.variant} is not registered in current authority.`,
+        ),
+      );
+    }
+  }
+  const responsiveValues = categoriesById.get("responsive.transformation")?.values ?? [];
+  if (normalized.responsiveMode && !responsiveValues.includes(normalized.responsiveMode)) {
+    issues.push(
+      compatibilityAuthorityIssue(
+        "UNKNOWN_RESPONSIVE_MODE",
+        "responsiveMode",
+        normalized.responsiveMode,
+        `Responsive mode ${normalized.responsiveMode} is not registered in commercial grammar authority.`,
+      ),
+    );
+  }
+  const narrativeValues = categoriesById.get("narrative.role")?.values ?? [];
+  if (normalized.narrativeRole && !narrativeValues.includes(normalized.narrativeRole)) {
+    issues.push(
+      compatibilityAuthorityIssue(
+        "UNKNOWN_NARRATIVE_ROLE",
+        "narrativeRole",
+        normalized.narrativeRole,
+        `Narrative role ${normalized.narrativeRole} is not registered in commercial grammar authority.`,
+      ),
+    );
+  }
+  for (const assetRole of normalized.assetRoles ?? []) {
+    if (!assetRoleSchema.safeParse(assetRole).success) {
+      issues.push(
+        compatibilityAuthorityIssue(
+          "UNKNOWN_ASSET_ROLE",
+          "assetRole",
+          assetRole,
+          `Asset role ${assetRole} is not registered in canonical asset-role authority.`,
+        ),
+      );
+    }
+  }
+  for (const mediaRequirement of normalized.mediaRequirements ?? []) {
+    if (!commercialGrammarMediaRequirementSchema.safeParse(mediaRequirement).success) {
+      issues.push(
+        compatibilityAuthorityIssue(
+          "UNKNOWN_MEDIA_REQUIREMENT",
+          "mediaRequirement",
+          mediaRequirement,
+          `Media requirement ${mediaRequirement} is not registered in commercial grammar authority.`,
+        ),
+      );
+    }
+  }
+
+  const canonicalIssues = canonicalizeIssues(issues);
+  return canonicalIssues.length > 0
+    ? { success: false, issues: canonicalIssues }
+    : { success: true, input: deepFreeze(normalized) };
+}
+
 export function evaluateCommercialGrammarCompatibility(
   capability: CommercialGrammarCapability,
-  input: Parameters<typeof referenceIsActive>[1],
+  authority: CommercialGrammarCompatibilityAuthority,
+  input: CommercialGrammarCompatibilityInput,
 ): readonly CommercialGrammarIssue[] {
+  const validation = validateCommercialGrammarCompatibilityInput(capability, authority, input);
+  if (!validation.success) return deepFreeze(validation.issues);
   const issues: CommercialGrammarIssue[] = [];
   for (const rule of capability.compatibilityRules) {
-    const left = referenceIsActive(rule.left, input);
-    const right = referenceIsActive(rule.right, input);
+    const left = referenceIsActive(rule.left, validation.input);
+    const right = referenceIsActive(rule.right, validation.input);
     if (
       (rule.relation === "prohibited" || rule.relation === "mutuallyExclusive") &&
       left &&
@@ -713,5 +990,5 @@ export function evaluateCommercialGrammarCompatibility(
       });
     }
   }
-  return deepFreeze(issues);
+  return deepFreeze(canonicalizeIssues(issues));
 }

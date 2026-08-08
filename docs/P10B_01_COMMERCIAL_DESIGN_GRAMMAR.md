@@ -95,6 +95,10 @@ narrative registry.
 ## 4. Inheritance and narrowing
 
 Resolution is deterministic and ordered by canonical authority level, not caller array order.
+Exactly one effective layer is permitted at each of BrandSystem, PageBlueprint, component-variant,
+and instance authority. Duplicate layers at any level fail closed before any selection is applied;
+reversing duplicate inputs therefore produces the same typed issue, effective defaults, and
+fingerprint rather than selecting a caller-order-dependent winner.
 
 1. Start from each registered category and its default allowed set.
 2. Apply BrandSystem authority.
@@ -122,6 +126,16 @@ Compatibility references are closed and can address:
 - a commercial narrative role;
 - an approved asset role; or
 - a typed media requirement.
+
+Compatibility evaluation first parses and canonicalizes the complete input, then validates every
+supplied reference against current authority before running any relationship rule. Grammar
+category/value, responsive-mode, and narrative-role validity comes from the generated commercial
+grammar capability; profile, component-family, component-type, and variant validity comes from the
+same generated executable PageBlueprint/component capability manifest; asset roles come from the
+shared canonical asset-role schema; and media requirements come from the closed media-requirement
+contract. The rule list is not used as an identity inventory. A registered reference with no active
+rule remains valid, while any unknown or stale reference fails closed and cannot be interpreted as
+compatible.
 
 Rules use exactly five relationships:
 
@@ -158,6 +172,16 @@ Domain resolution returns stable issue codes:
 
 - `UNKNOWN_GRAMMAR_CATEGORY`;
 - `UNKNOWN_GRAMMAR_VALUE`;
+- `UNKNOWN_PAGE_BLUEPRINT_PROFILE`;
+- `UNKNOWN_COMPONENT_FAMILY`;
+- `UNKNOWN_COMPONENT_TYPE`;
+- `UNKNOWN_COMPONENT_VARIANT`;
+- `UNKNOWN_RESPONSIVE_MODE`;
+- `UNKNOWN_NARRATIVE_ROLE`;
+- `UNKNOWN_ASSET_ROLE`;
+- `UNKNOWN_MEDIA_REQUIREMENT`;
+- `INVALID_COMPATIBILITY_INPUT`;
+- `DUPLICATE_GRAMMAR_AUTHORITY_LEVEL`;
 - `UNBOUNDED_DESIGN_VALUE`;
 - `PROHIBITED_GRAMMAR_AUTHORITY`;
 - `ILLEGAL_GRAMMAR_BROADENING`;
@@ -195,10 +219,12 @@ Focused deterministic evidence covers:
 - all 27 categories and nine domains;
 - ownership and exact selection/narrowing authority;
 - four-level inheritance and bounded instance override;
-- illegal broadening, empty intersection, unknown category/value, raw CSS/code, and wrong-owner
-  rejection;
-- all five compatibility relationships and protected-media requirements;
-- stable order-insensitive authority and material selection fingerprints;
+- illegal broadening, empty intersection, unknown category/value, raw CSS/code, wrong-owner, and
+  duplicate-level rejection;
+- fail-closed validation of profile, component, variant, responsive, narrative, asset, and media
+  authority before all five compatibility relationships and protected-media requirements;
+- stable order-insensitive valid authority, deterministic invalid-result, and material selection
+  fingerprints;
 - deterministic non-mutating v1.3 adaptation;
 - every current executable P10A PageBlueprint and slot, including composite collection/PDP
   mapping;

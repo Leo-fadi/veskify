@@ -26,6 +26,7 @@ import {
   evaluateCommercialGrammarCompatibility,
   resolveCommercialGrammarInheritance,
   type CommercialGrammarCategory,
+  type CommercialGrammarCompatibilityAuthority,
   type CommercialGrammarLayer,
   type CommercialGrammarValueCompatibility,
 } from "./commercial-design-grammar";
@@ -136,7 +137,7 @@ export type ComponentCapabilityManifestAuthority = Readonly<{
     layers: readonly CommercialGrammarLayer[],
   ) => ReturnType<typeof resolveCommercialGrammarInheritance>;
   evaluateCommercialGrammarCompatibility: (
-    input: Parameters<typeof evaluateCommercialGrammarCompatibility>[1],
+    input: Parameters<typeof evaluateCommercialGrammarCompatibility>[2],
   ) => ReturnType<typeof evaluateCommercialGrammarCompatibility>;
 }>;
 
@@ -445,6 +446,7 @@ export function createComponentCapabilityManifestAuthority(
     .map((profile) => profileEntry(profile, byComponentType))
     .sort((left, right) => compareCanonicalStrings(left.profileId, right.profileId));
   const profilesById = new Map(profiles.map((profile) => [profile.profileId, profile]));
+  const componentFamilies = new Set(entries.map((entry) => entry.family));
   for (const entry of entries) {
     for (const profileId of entry.pageBlueprintCompatibility.profileIds) {
       if (!profilesById.has(profileId)) {
@@ -455,6 +457,16 @@ export function createComponentCapabilityManifestAuthority(
     }
   }
   const commercialDesignGrammar = createCommercialGrammarCapability();
+  const commercialGrammarCompatibilityAuthority: CommercialGrammarCompatibilityAuthority = {
+    hasPageBlueprintProfile: (profileId) => profilesById.has(profileId),
+    hasComponentFamily: (family) => componentFamilies.has(family as ComponentFamily),
+    getComponent: (componentType) => {
+      const entry = byComponentType.get(componentType);
+      return entry
+        ? { family: entry.family, variants: entry.variants.map((variant) => variant.id) }
+        : undefined;
+    },
+  };
   const grammarCategoriesById = new Map(
     commercialDesignGrammar.categories.map((category) => [category.id, category]),
   );
@@ -496,7 +508,11 @@ export function createComponentCapabilityManifestAuthority(
     resolveCommercialGrammar: (layers) =>
       resolveCommercialGrammarInheritance(commercialDesignGrammar, layers),
     evaluateCommercialGrammarCompatibility: (compatibilityInput) =>
-      evaluateCommercialGrammarCompatibility(commercialDesignGrammar, compatibilityInput),
+      evaluateCommercialGrammarCompatibility(
+        commercialDesignGrammar,
+        commercialGrammarCompatibilityAuthority,
+        compatibilityInput,
+      ),
   });
 }
 

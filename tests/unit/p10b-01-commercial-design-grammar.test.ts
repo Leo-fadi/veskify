@@ -20,8 +20,8 @@ import {
   commercialGrammarCompatibilityRelationSchema,
   commercialGrammarCompatibilityReferenceSchema,
   createCommercialGrammarCapability,
-  evaluateCommercialGrammarCompatibility,
   resolveCommercialGrammarInheritance,
+  type CommercialGrammarLayer,
 } from "@/domain/component-platform";
 import { aurumNordicBrandSystem, brandSystemSchema } from "@/domain/design-system";
 import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
@@ -61,6 +61,14 @@ function withFingerprint(
     ...materialization,
     fingerprint: `page-blueprint-${canonicalValueFingerprint(canonicalValueString(content))}`,
   };
+}
+
+function registeredComponentWithVariant() {
+  const component = veskifyComponentCapabilityManifest.manifest.entries.find(
+    (entry) => entry.variants.length > 0,
+  );
+  if (!component) throw new Error("Expected a registered component variant.");
+  return component;
 }
 
 describe("P10B-01 commercial design grammar and compatibility vocabulary", () => {
@@ -295,16 +303,20 @@ describe("P10B-01 commercial design grammar and compatibility vocabulary", () =>
       { level: "brandSystem", selections: { "media.crop": "artDirected" } },
     ]);
     expect(
-      evaluateCommercialGrammarCompatibility(capability, {
-        values: resolution.values,
-        mediaRequirements: [],
-      }).map((issue) => issue.code),
+      veskifyComponentCapabilityManifest
+        .evaluateCommercialGrammarCompatibility({
+          values: resolution.values,
+          mediaRequirements: [],
+        })
+        .map((issue) => issue.code),
     ).toContain("MISSING_GRAMMAR_REQUIREMENT");
     expect(
-      evaluateCommercialGrammarCompatibility(capability, {
-        values: resolution.values,
-        mediaRequirements: ["approvedAsset"],
-      }).map((issue) => issue.code),
+      veskifyComponentCapabilityManifest
+        .evaluateCommercialGrammarCompatibility({
+          values: resolution.values,
+          mediaRequirements: ["approvedAsset"],
+        })
+        .map((issue) => issue.code),
     ).not.toContain("MISSING_GRAMMAR_REQUIREMENT");
   });
 
@@ -317,10 +329,12 @@ describe("P10B-01 commercial design grammar and compatibility vocabulary", () =>
       },
     ]);
     expect(
-      evaluateCommercialGrammarCompatibility(capability, {
-        values: resolution.values,
-        mediaRequirements: ["approvedAsset", "canonicalProductMedia"],
-      }).map((issue) => issue.code),
+      veskifyComponentCapabilityManifest
+        .evaluateCommercialGrammarCompatibility({
+          values: resolution.values,
+          mediaRequirements: ["approvedAsset", "canonicalProductMedia"],
+        })
+        .map((issue) => issue.code),
     ).toEqual(
       expect.arrayContaining(["INCOMPATIBLE_GRAMMAR_SELECTION", "INCOMPATIBLE_GRAMMAR_SELECTION"]),
     );
@@ -330,17 +344,139 @@ describe("P10B-01 commercial design grammar and compatibility vocabulary", () =>
     const capability = createCommercialGrammarCapability();
     const resolution = resolveCommercialGrammarInheritance(capability, []);
     expect(
-      evaluateCommercialGrammarCompatibility(capability, {
-        values: resolution.values,
-        responsiveMode: "stack",
-      }).map((issue) => issue.code),
+      veskifyComponentCapabilityManifest
+        .evaluateCommercialGrammarCompatibility({
+          values: resolution.values,
+          responsiveMode: "stack",
+        })
+        .map((issue) => issue.code),
     ).toContain("CONFLICTING_GRAMMAR_CONSTRAINT");
     expect(
-      evaluateCommercialGrammarCompatibility(capability, {
+      veskifyComponentCapabilityManifest.evaluateCommercialGrammarCompatibility({
         values: resolution.values,
         responsiveMode: "reflow",
       }),
     ).toEqual([]);
+  });
+
+  it("fails closed for the exact unknown compatibility category and value examples", () => {
+    const unknownCategory =
+      veskifyComponentCapabilityManifest.evaluateCommercialGrammarCompatibility({
+        values: { "unknown.category": "value" },
+      });
+    const unknownValue = veskifyComponentCapabilityManifest.evaluateCommercialGrammarCompatibility({
+      values: { "layout.alignment": "diagonal" },
+    });
+    expect(unknownCategory.map((issue) => issue.code)).toEqual(["UNKNOWN_GRAMMAR_CATEGORY"]);
+    expect(unknownValue.map((issue) => issue.code)).toEqual(["UNKNOWN_GRAMMAR_VALUE"]);
+    expect(unknownValue).not.toEqual([]);
+  });
+
+  it.each([
+    [
+      "PageBlueprint profile",
+      { values: {}, profileId: "blueprint-unknown-profile" },
+      "UNKNOWN_PAGE_BLUEPRINT_PROFILE",
+    ],
+    [
+      "component family",
+      { values: {}, componentFamily: "unknownFamily" },
+      "UNKNOWN_COMPONENT_FAMILY",
+    ],
+    ["component type", { values: {}, componentType: "unknownComponent" }, "UNKNOWN_COMPONENT_TYPE"],
+    ["responsive mode", { values: {}, responsiveMode: "diagonal" }, "UNKNOWN_RESPONSIVE_MODE"],
+    ["narrative role", { values: {}, narrativeRole: "fabricatedClaim" }, "UNKNOWN_NARRATIVE_ROLE"],
+    ["asset role", { values: {}, assetRoles: ["unknownAsset"] }, "UNKNOWN_ASSET_ROLE"],
+    [
+      "media requirement",
+      { values: {}, mediaRequirements: ["inventedMedia"] },
+      "UNKNOWN_MEDIA_REQUIREMENT",
+    ],
+  ] as const)("rejects an unknown %s before compatibility rules", (_label, input, expectedCode) => {
+    const issues = veskifyComponentCapabilityManifest.evaluateCommercialGrammarCompatibility(input);
+    expect(issues.map((issue) => issue.code)).toEqual([expectedCode]);
+  });
+
+  it("rejects an unknown variant through current component capability authority", () => {
+    const component = registeredComponentWithVariant();
+    const issues = veskifyComponentCapabilityManifest.evaluateCommercialGrammarCompatibility({
+      values: {},
+      componentType: component.componentType,
+      variant: "unknownVariant",
+    });
+    expect(issues.map((issue) => issue.code)).toEqual(["UNKNOWN_COMPONENT_VARIANT"]);
+  });
+
+  it("allows registered authority with no active rule and distinguishes known incompatibility", () => {
+    const component = registeredComponentWithVariant();
+    const variant = component.variants[0];
+    if (!variant) throw new Error("Expected a registered component variant.");
+    const profile = veskifyComponentCapabilityManifest.manifest.profiles[0];
+    if (!profile) throw new Error("Expected a registered PageBlueprint profile.");
+    expect(
+      veskifyComponentCapabilityManifest.evaluateCommercialGrammarCompatibility({
+        values: { "layout.alignment": "center" },
+        profileId: profile.profileId,
+        componentFamily: component.family,
+        componentType: component.componentType,
+        variant: variant.id,
+        assetRoles: ["editorialImage"],
+        mediaRequirements: ["responsiveDerivative"],
+      }),
+    ).toEqual([]);
+
+    const incompatible = veskifyComponentCapabilityManifest.evaluateCommercialGrammarCompatibility({
+      values: { "media.crop": "artDirected" },
+      mediaRequirements: ["approvedAsset", "canonicalProductMedia"],
+    });
+    expect(incompatible.map((issue) => issue.code)).toContain("INCOMPATIBLE_GRAMMAR_SELECTION");
+    expect(incompatible.map((issue) => issue.code)).not.toContain("UNKNOWN_MEDIA_REQUIREMENT");
+  });
+
+  it.each([
+    ["brandSystem", "typography.posture", "editorial", "modern"],
+    ["pageBlueprint", "layout.alignment", "center", "split"],
+    ["componentVariant", "layout.alignment", "center", "split"],
+    ["instance", "layout.alignment", "center", "split"],
+  ] as const)(
+    "rejects duplicate %s authority layers independent of caller order",
+    (level, categoryId, firstValue, secondValue) => {
+      const capability = createCommercialGrammarCapability();
+      const firstLayer = { level, selections: { [categoryId]: firstValue } };
+      const secondLayer = { level, selections: { [categoryId]: secondValue } };
+      const forward = resolveCommercialGrammarInheritance(capability, [firstLayer, secondLayer]);
+      const reversed = resolveCommercialGrammarInheritance(capability, [secondLayer, firstLayer]);
+
+      expect(forward.issues.map((issue) => issue.code)).toEqual([
+        "DUPLICATE_GRAMMAR_AUTHORITY_LEVEL",
+      ]);
+      expect(reversed.issues).toEqual(forward.issues);
+      expect(reversed.fingerprint).toBe(forward.fingerprint);
+      expect(forward.values[categoryId]).toBe(
+        capability.categories.find((category) => category.id === categoryId)?.defaultValue,
+      );
+    },
+  );
+
+  it("keeps a valid unique hierarchy caller-order independent", () => {
+    const capability = createCommercialGrammarCapability();
+    const layers: readonly CommercialGrammarLayer[] = [
+      { level: "brandSystem" as const, selections: { "typography.posture": "editorial" } },
+      {
+        level: "pageBlueprint" as const,
+        constraints: { "layout.alignment": ["center"] },
+        selections: { "layout.alignment": "center" },
+      },
+      {
+        level: "componentVariant" as const,
+        constraints: { "layout.alignment": ["center"] },
+      },
+      { level: "instance" as const, selections: { "layout.alignment": "center" } },
+    ];
+    const forward = resolveCommercialGrammarInheritance(capability, layers);
+    const reversed = resolveCommercialGrammarInheritance(capability, [...layers].reverse());
+    expect(forward.issues).toEqual([]);
+    expect(reversed).toEqual(forward);
   });
 
   it("produces stable order-insensitive authority and selection fingerprints", () => {
@@ -410,9 +546,16 @@ describe("P10B-01 commercial design grammar and compatibility vocabulary", () =>
           materialization: currentMaterialization,
           slotId: slot.slotId,
         });
+        const repeated = commercialDesignGrammarKnowledge.resolveMaterializedSlot({
+          reference,
+          brandSystem: aurumNordicBrandSystem,
+          materialization: currentMaterialization,
+          slotId: slot.slotId,
+        });
         expect(resolved.profileId).toBe(currentMaterialization.profileId);
         expect(resolved.pageBlueprintSelection.slotId).toBe(slot.slotId);
         expect(resolved.grammar.issues).toEqual([]);
+        expect(repeated).toEqual(resolved);
       }
     }
   });
