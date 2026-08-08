@@ -68,6 +68,34 @@ function meaningfulProductDefinition(): ComponentDefinitionV2 {
   return validateComponentDefinitionV2(definition);
 }
 
+function anatomyOf(definition: ComponentDefinitionV2) {
+  const anatomy = definition.commercialAnatomy;
+  if (!anatomy) throw new Error("Expected registered commercial anatomy.");
+  return anatomy;
+}
+
+function editorialStructureOf(definition: ComponentDefinitionV2) {
+  const editorial = anatomyOf(definition).variants.find(
+    (variant) => variant.variantId === "editorial",
+  );
+  if (!editorial) throw new Error("Expected editorial variant anatomy.");
+  return editorial.structure;
+}
+
+function addContentInput(
+  definition: ComponentDefinitionV2,
+  reference: string,
+  schemaProperties: Record<string, unknown>,
+) {
+  Object.assign(definition.contentSchema.properties, schemaProperties);
+  anatomyOf(definition).parameters.push({
+    id: `contentInput.content.${reference}`,
+    kind: "contentInput",
+    source: "content",
+    reference,
+  });
+}
+
 function errorCode(action: () => unknown) {
   try {
     action();
@@ -202,6 +230,202 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
     if (!anatomy) throw new Error("Expected commercial anatomy.");
     anatomy.compatibility.assetRequirements[0].acceptedRoles = ["logo"];
     expect(() => validateComponentDefinitionV2(definition)).toThrow(/invalid or stale/i);
+  });
+
+  it("accepts normal mutable content inputs", () => {
+    const definition = meaningfulProductDefinition();
+    expect(anatomyOf(definition).parameters).toContainEqual(
+      expect.objectContaining({
+        kind: "contentInput",
+        source: "content",
+        reference: "supportingHeading",
+      }),
+    );
+    expect(() => validateComponentDefinitionV2(definition)).not.toThrow();
+  });
+
+  it("rejects content inputs protected by component read-only authority", () => {
+    const definition = meaningfulProductDefinition();
+    definition.protectedFields.readOnlyPaths.push("content.trustItems");
+    expect(() => validateComponentDefinitionV2(definition)).toThrow(
+      /Commercial mutable parameters cannot reference protected read-only authority/i,
+    );
+  });
+
+  it("rejects content inputs overlapping canonical protected commerce authority", () => {
+    const definition = meaningfulProductDefinition();
+    addContentInput(definition, "productIds", {
+      productIds: { type: "array", items: { type: "string" } },
+    });
+    expect(() => validateComponentDefinitionV2(definition)).toThrow(
+      /Commercial mutable parameters cannot reference protected read-only authority/i,
+    );
+  });
+
+  it("rejects a mutable parent path that contains a protected child", () => {
+    const definition = meaningfulProductDefinition();
+    addContentInput(definition, "commercialBlock", {
+      commercialBlock: {
+        type: "object",
+        properties: {
+          label: { type: "string" },
+          protectedValue: { type: "string" },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    });
+    definition.protectedFields.readOnlyPaths.push("content.commercialBlock.protectedValue");
+    expect(() => validateComponentDefinitionV2(definition)).toThrow(
+      /Commercial mutable parameters cannot reference protected read-only authority/i,
+    );
+  });
+
+  it("rejects a mutable child path beneath a protected parent", () => {
+    const definition = meaningfulProductDefinition();
+    addContentInput(definition, "commercialBlock.label", {
+      commercialBlock: {
+        type: "object",
+        properties: { label: { type: "string" } },
+        required: [],
+        additionalProperties: false,
+      },
+    });
+    definition.protectedFields.readOnlyPaths.push("content.commercialBlock");
+    expect(() => validateComponentDefinitionV2(definition)).toThrow(
+      /Commercial mutable parameters cannot reference protected read-only authority/i,
+    );
+  });
+
+  it("continues to reject protected structural and semantic-finishing paths", () => {
+    const structural = meaningfulProductDefinition();
+    structural.editablePresentationFields = structural.editablePresentationFields.filter(
+      (field) => field.path !== "props.galleryLayout",
+    );
+    structural.protectedFields.readOnlyPaths.push("props.galleryLayout");
+    expect(() => validateComponentDefinitionV2(structural)).toThrow(
+      /Commercial mutable parameters cannot reference protected read-only authority/i,
+    );
+
+    const finishing = meaningfulProductDefinition();
+    finishing.editablePresentationFields = finishing.editablePresentationFields.filter(
+      (field) => field.path !== "styleOverrides.surfaceTreatment",
+    );
+    finishing.protectedFields.readOnlyPaths.push("styleOverrides.surfaceTreatment");
+    expect(() => validateComponentDefinitionV2(finishing)).toThrow(
+      /Commercial mutable parameters cannot reference protected read-only authority/i,
+    );
+  });
+
+  it("keeps canonical commerce-binding and asset-role references legitimate", () => {
+    const definition = meaningfulProductDefinition();
+    definition.protectedFields.readOnlyPaths.push("primaryProduct", "productMedia");
+    expect(anatomyOf(definition).parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "commerceBinding", reference: "primaryProduct" }),
+        expect.objectContaining({ kind: "assetRole", reference: "productMedia" }),
+      ]),
+    );
+    expect(() => validateComponentDefinitionV2(definition)).not.toThrow();
+  });
+
+  it("never generates a manifest that advertises protected mutable content", () => {
+    const definition = meaningfulProductDefinition();
+    definition.protectedFields.readOnlyPaths.push("content.trustItems");
+    expect(() => authority([definition])).toThrow(
+      /Commercial mutable parameters cannot reference protected read-only authority/i,
+    );
+  });
+
+  it("accepts required and optional regions when they are realized", () => {
+    const definition = meaningfulProductDefinition();
+    const structure = editorialStructureOf(definition);
+    expect(structure.regionOrder).toEqual(expect.arrayContaining(["frame", "metadata"]));
+    expect(() => validateComponentDefinitionV2(definition)).not.toThrow();
+  });
+
+  it("rejects a required region missing from realized region order", () => {
+    const definition = meaningfulProductDefinition();
+    const structure = editorialStructureOf(definition);
+    structure.regionOrder = structure.regionOrder.filter((region) => region !== "frame");
+    expect(() => validateComponentDefinitionV2(definition)).toThrow(
+      /must realize required semantic region frame/i,
+    );
+  });
+
+  it("rejects a required region declared as omitted", () => {
+    const definition = meaningfulProductDefinition();
+    const structure = editorialStructureOf(definition);
+    structure.regionOrder = structure.regionOrder.filter((region) => region !== "frame");
+    structure.omittedRegions.push("frame");
+    expect(() => validateComponentDefinitionV2(definition)).toThrow(
+      /must realize required semantic region frame/i,
+    );
+  });
+
+  it("allows an optional region to be explicitly omitted", () => {
+    const definition = meaningfulProductDefinition();
+    const structure = editorialStructureOf(definition);
+    structure.regionOrder = structure.regionOrder.filter((region) => region !== "metadata");
+    structure.omittedRegions.push("metadata");
+    expect(() => validateComponentDefinitionV2(definition)).not.toThrow();
+  });
+
+  it("rejects a region that is simultaneously realized and omitted", () => {
+    const definition = meaningfulProductDefinition();
+    editorialStructureOf(definition).omittedRegions.push("metadata");
+    expect(() => validateComponentDefinitionV2(definition)).toThrow(
+      /omitted region cannot remain in the realized region order/i,
+    );
+  });
+
+  it("rejects asset placement into an omitted region", () => {
+    const definition = meaningfulProductDefinition();
+    const structure = editorialStructureOf(definition);
+    structure.regionOrder = structure.regionOrder.filter((region) => region !== "media");
+    structure.omittedRegions.push("media");
+    expect(() => validateComponentDefinitionV2(definition)).toThrow(
+      /asset placement productMedia must target a realized, non-omitted region/i,
+    );
+  });
+
+  it("accepts asset placement into a realized region", () => {
+    const definition = meaningfulProductDefinition();
+    const structure = editorialStructureOf(definition);
+    expect(structure.assetPlacements).toContainEqual({
+      slotId: "productMedia",
+      region: "media",
+    });
+    expect(() => validateComponentDefinitionV2(definition)).not.toThrow();
+  });
+
+  it("continues to reject asset placement into an undeclared region", () => {
+    const definition = meaningfulProductDefinition();
+    editorialStructureOf(definition).assetPlacements[0].region = "proof";
+    expect(() => validateComponentDefinitionV2(definition)).toThrow(
+      /references undeclared semantic region proof/i,
+    );
+  });
+
+  it("cannot generate or return commercial-ready capability with incomplete required anatomy", () => {
+    const definition = meaningfulProductDefinition();
+    const structure = editorialStructureOf(definition);
+    structure.regionOrder = structure.regionOrder.filter((region) => region !== "frame");
+    expect(() => authority([definition])).toThrow(/must realize required semantic region frame/i);
+  });
+
+  it("keeps required-region validation independent of variant declaration order", () => {
+    const definition = meaningfulProductDefinition();
+    const structure = editorialStructureOf(definition);
+    structure.regionOrder = structure.regionOrder.filter((region) => region !== "frame");
+    const reversed = structuredClone(definition);
+    anatomyOf(reversed).variants.reverse();
+    expect(() => validateComponentDefinitionV2(definition)).toThrow(
+      /must realize required semantic region frame/i,
+    );
+    expect(() => validateComponentDefinitionV2(reversed)).toThrow(
+      /must realize required semantic region frame/i,
+    );
   });
 
   it("exposes anatomy, parameters, transformations, roles and assets in generated capability", () => {

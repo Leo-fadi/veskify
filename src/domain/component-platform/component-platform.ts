@@ -1770,21 +1770,32 @@ function validateCommercialAnatomyConsistency(
         message: `Commercial anatomy parameter ${parameter.id} references unknown authority.`,
       });
     }
+    const mutableAuthorityPaths = [
+      parameter.reference,
+      `${parameter.source}.${parameter.reference}`,
+    ];
     if (
-      ["structural", "semanticFinishing"].includes(parameter.kind) &&
-      protectedPaths.some((path) => pathsOverlap(parameter.reference, path))
+      ["structural", "semanticFinishing", "contentInput"].includes(parameter.kind) &&
+      protectedPaths.some((protectedPath) =>
+        mutableAuthorityPaths.some((authorityPath) => pathsOverlap(authorityPath, protectedPath)),
+      )
     ) {
       context.addIssue({
         code: "custom",
         path: ["commercialAnatomy", "parameters", index, "reference"],
-        message: "Presentation parameters cannot reference protected commerce authority.",
+        message: "Commercial mutable parameters cannot reference protected read-only authority.",
       });
     }
   });
 
   const anatomyVariants = new Map(anatomy.variants.map((variant) => [variant.variantId, variant]));
   const baseline = anatomyVariants.get(definition.defaultVariant);
+  const requiredRegions = anatomy.regions
+    .filter((region) => region.required)
+    .map((region) => region.id);
   anatomy.variants.forEach((variant, index) => {
+    const realizedRegions = new Set(variant.structure.regionOrder);
+    const omittedRegions = new Set(variant.structure.omittedRegions);
     for (const region of [
       ...variant.structure.regionOrder,
       ...variant.structure.omittedRegions,
@@ -1798,12 +1809,28 @@ function validateCommercialAnatomyConsistency(
         });
       }
     }
+    requiredRegions.forEach((region) => {
+      if (!realizedRegions.has(region) || omittedRegions.has(region)) {
+        context.addIssue({
+          code: "custom",
+          path: ["commercialAnatomy", "variants", index, "structure", "regionOrder"],
+          message: `Variant ${variant.variantId} must realize required semantic region ${region}.`,
+        });
+      }
+    });
     variant.structure.assetPlacements.forEach((placement) => {
       if (!assetSlots.has(placement.slotId)) {
         context.addIssue({
           code: "custom",
           path: ["commercialAnatomy", "variants", index, "structure", "assetPlacements"],
           message: `Variant ${variant.variantId} references unknown asset slot ${placement.slotId}.`,
+        });
+      }
+      if (!realizedRegions.has(placement.region) || omittedRegions.has(placement.region)) {
+        context.addIssue({
+          code: "custom",
+          path: ["commercialAnatomy", "variants", index, "structure", "assetPlacements"],
+          message: `Variant ${variant.variantId} asset placement ${placement.slotId} must target a realized, non-omitted region.`,
         });
       }
     });

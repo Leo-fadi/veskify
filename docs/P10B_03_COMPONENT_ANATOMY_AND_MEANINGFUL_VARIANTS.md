@@ -43,9 +43,15 @@ The closed semantic-region vocabulary includes frame, navigation, media, content
 merchandising, price, metadata, proof, actions, utility, continuation, and service. A component
 declares only the regions it uses.
 
-Protected commerce remains separate from presentation configuration. Commerce-binding parameters
-reference the existing registered binding slots; they do not introduce editable commerce values or
-a second product model.
+Schema-backed mutable parameters—props-backed structure, props/style-backed semantic finishing,
+and content-backed content input—must resolve in their canonical schema and must not overlap
+protected commerce or component read-only paths. The overlap check is bidirectional: neither a
+protected parent nor a mutable parent containing a protected child is accepted. Schema presence
+alone therefore does not make read-only content commercially editable.
+
+Commerce-binding and asset-role parameters remain typed references to existing canonical binding
+and asset slots. They identify protected external/canonical authority but do not grant editable
+value authority, so they are not treated as mutable content or presentation paths.
 
 ## 3. Meaningful structural difference
 
@@ -79,6 +85,11 @@ must also be registered. Once a definition claims commercial readiness, missing 
 stale slot/asset/region/transformation references, and incompatible page/narrative authority fail
 closed. Duplicate regions and invalid migrations always fail schema validation.
 
+Every region declared `required` must appear exactly once in every realized commercial variant's
+base `regionOrder` and may never appear in `omittedRegions`. Optional regions may be realized or
+explicitly omitted, but never both. Responsive collapse, reorder, or condensation remains a typed
+transformation and does not excuse a structurally incomplete base variant.
+
 ## 4. Responsive anatomy and compatibility
 
 Responsive anatomy declares registered transformations such as preserve, stack, scroll, collapse,
@@ -89,6 +100,10 @@ semantic regions. Arbitrary media-query code does not become design authority.
 Compatibility remains embedded in the component definition and generated manifest. No parallel
 compatibility registry was added. Current asset requirements are derived from the same registered
 asset slots and approved role authority already used by components.
+
+Every asset placement must target a declared region that is present in the variant's realized
+`regionOrder`. An omitted or otherwise unrealized region cannot hide an asset assignment. Required
+asset slots therefore cannot be structurally assigned outside realized anatomy.
 
 ## 5. Generated capability and fail-closed query
 
@@ -104,6 +119,11 @@ The requirement query rejects unknown components or variants, missing or stale a
 incompatible page/narrative/asset use, variants not yet commercially ready, and non-meaningful
 variants when meaningful structure is required. P10A consumers that do not request P10B
 commercial-ready authority remain compatible and continue to use the same manifest.
+
+Canonical component validation establishes the mutable-path, required-region, and realized-asset
+invariants before manifest generation. The generated authority therefore cannot advertise a
+protected mutable content path or return a commercial-ready variant with incomplete anatomy; the
+manifest/query layer does not duplicate or weaken these checks.
 
 ## 6. Current registry audit
 
@@ -157,9 +177,18 @@ Focused deterministic evidence covers all required P10B-03 areas:
 12. missing/stale anatomy rejection when commercial capability is required;
 13. complete 25-definition/91-variant current-registry classification;
 14. unchanged valid P10A capability consumers; and
-15. deterministic anatomy migration resolution.
+15. deterministic anatomy migration resolution;
+16. valid mutable content-input authority;
+17. protected content and commerce overlap rejection, including both parent/child directions;
+18. continued structural and semantic-finishing protection;
+19. legitimate commerce-binding and asset-role references;
+20. required-region presence and required-region omission rejection;
+21. optional-region presence, omission, and mutual exclusion;
+22. realized, omitted, and undeclared asset-placement validation;
+23. commercial-ready generation/query rejection for incomplete anatomy; and
+24. variant-order-independent validation.
 
-The focused suite passed 119 tests across component-platform, generated-manifest,
+The focused suite passed 137 tests across component-platform, generated-manifest,
 commercial-capability, skill-knowledge, P10B-01 grammar, and P10B-03 anatomy coverage. No AI
 provider was called.
 
