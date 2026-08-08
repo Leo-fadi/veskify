@@ -503,7 +503,9 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
       expect(
         entry?.variants.every(
           (variant) =>
-            variant.structuralClassification === "notYetP10BCommercialReady" &&
+            (variant.structuralClassification === "notYetP10BCommercialReady" ||
+              (["productGrid", "relatedProducts"].includes(definition.type) &&
+                variant.structuralClassification === "legacySuperseded")) &&
             variant.materialDifferences.length === 0,
         ),
       ).toBe(true);

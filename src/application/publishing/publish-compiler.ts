@@ -31,6 +31,10 @@ import {
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import type { ProjectAggregate } from "@/services/storage";
+import {
+  canonicalProductCardAuthority,
+  requireCanonicalProductCardAnatomy,
+} from "@/domain/product-card";
 
 export const publishCompilerContractVersion = "1.0.0" as const;
 export const publishCompilerVersion = "1.0.0" as const;
@@ -100,6 +104,7 @@ const compilerAuthoritySchema = z
     commerceFingerprint: fingerprintSchema,
     navigationRoutesFingerprint: fingerprintSchema,
     productMediaFingerprint: fingerprintSchema,
+    productCardAuthorityFingerprint: fingerprintSchema,
     approvedAssetFingerprint: fingerprintSchema,
     migrationStatus: z.enum(["current", "unresolved"]),
     migrationFingerprint: fingerprintSchema,
@@ -189,6 +194,7 @@ export const publishCompileReceiptSchema = z
     commerceFingerprint: fingerprintSchema,
     navigationRoutesFingerprint: fingerprintSchema,
     productMediaFingerprint: fingerprintSchema,
+    productCardAuthorityFingerprint: fingerprintSchema,
     approvedAssetFingerprint: fingerprintSchema,
     localeAuthority: localeAuthoritySchema,
     migrationStatus: z.literal("current"),
@@ -244,6 +250,7 @@ export type PublishCompilerErrorCode =
   | "protected-commerce-violation"
   | "navigation-route-violation"
   | "product-media-violation"
+  | "stale-product-card-authority"
   | "invalid-approved-asset"
   | "invalid-locale-authority"
   | "duplicate-published-route"
@@ -486,6 +493,7 @@ export function createCurrentPublishCompilerInput(
       commerceFingerprint: `publish-commerce-${canonicalValueFingerprint(input.aggregate.catalogue)}`,
       navigationRoutesFingerprint: navigationRoutesFingerprint(input.snapshot),
       productMediaFingerprint: productMediaFingerprint(input.aggregate.catalogue),
+      productCardAuthorityFingerprint: canonicalProductCardAuthority.fingerprint,
       approvedAssetFingerprint: approvedAssetFingerprint(input.snapshot),
       migrationStatus: "current",
       migrationFingerprint: migrationFingerprint(),
@@ -518,6 +526,9 @@ function assertExactAuthority(input: PublishCompilerInput): void {
     throw new PublishCompilerError("unknown-renderer", {
       cause: new Error("The registered published-renderer authority changed during compilation."),
     });
+  }
+  if (authority.productCardAuthorityFingerprint !== canonicalProductCardAuthority.fingerprint) {
+    throw new PublishCompilerError("stale-product-card-authority");
   }
   if (
     authority.sharedFrameFingerprint !==
@@ -832,6 +843,36 @@ function assertSnapshotAuthority(
   }
 }
 
+function assertProductCardAuthority(snapshot: StorefrontSnapshot): void {
+  try {
+    for (const page of snapshot.pages) {
+      for (const section of page.sections) {
+        if (section.component === "dynamicCollectionCommerce") {
+          requireCanonicalProductCardAnatomy(
+            z.object({ cardVariant: z.string() }).passthrough().parse(section.props).cardVariant,
+            "collectionResults",
+          );
+        } else if (section.component === "homepageFeaturedProducts") {
+          requireCanonicalProductCardAnatomy(
+            z.object({ cardVariant: z.string() }).passthrough().parse(section.props).cardVariant,
+            "homepageMerchandising",
+          );
+        } else if (section.component === "dynamicProductDetail") {
+          requireCanonicalProductCardAnatomy(
+            z
+              .object({ relatedCardVariant: z.string().default("standard") })
+              .passthrough()
+              .parse(section.props).relatedCardVariant,
+            "relatedProducts",
+          );
+        }
+      }
+    }
+  } catch (cause) {
+    throw new PublishCompilerError("stale-product-card-authority", { cause });
+  }
+}
+
 function compileResult(
   input: PublishCompilerInput,
   snapshot: StorefrontSnapshot,
@@ -845,6 +886,7 @@ function compileResult(
     commerceFingerprint: input.authority.commerceFingerprint,
     navigationRoutesFingerprint: input.authority.navigationRoutesFingerprint,
     productMediaFingerprint: input.authority.productMediaFingerprint,
+    productCardAuthorityFingerprint: input.authority.productCardAuthorityFingerprint,
     approvedAssetFingerprint: input.authority.approvedAssetFingerprint,
     localeAuthority,
     migrationFingerprint: input.authority.migrationFingerprint,
@@ -911,6 +953,7 @@ function compileReceipt(
     commerceFingerprint: input.authority.commerceFingerprint,
     navigationRoutesFingerprint: input.authority.navigationRoutesFingerprint,
     productMediaFingerprint: input.authority.productMediaFingerprint,
+    productCardAuthorityFingerprint: input.authority.productCardAuthorityFingerprint,
     approvedAssetFingerprint: input.authority.approvedAssetFingerprint,
     localeAuthority: result.localeAuthority,
     migrationStatus: "current" as const,
@@ -973,6 +1016,7 @@ export function compileStorefrontPublication(inputValue: unknown): TrustedPublis
   assertSnapshotAuthority(input, snapshot.data, catalogue.data);
   assertComponentAndRendererAuthority(input, snapshot.data);
   assertProfiles(input, snapshot.data);
+  assertProductCardAuthority(snapshot.data);
   assertAssets(snapshot.data);
   try {
     validateRegisteredSnapshot(

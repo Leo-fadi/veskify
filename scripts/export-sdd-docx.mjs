@@ -13,7 +13,7 @@ exportMarkdownDocx({
   subtitle: "Version 1.3.0",
   coverLines: [
     "Verified baseline: 8 August 2026",
-    "Current main after merged PR #176",
+    "P10B-08 implementation branch based on current main after merged PR #177",
     "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
     "Authoritative source: docs/VESKIFY_SDD.md",
   ],

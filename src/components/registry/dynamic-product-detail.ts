@@ -2,6 +2,7 @@ import { z } from "zod";
 import { validateComponentDefinitionV2 } from "@/domain/component-platform";
 import { localizedTextSchema } from "@/domain/shared";
 import { withCurrentComponentCommercialAnatomy } from "./commercial-anatomy";
+import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
 
 const trustItemSchema = z
   .object({
@@ -38,6 +39,7 @@ export const dynamicProductDetailPropsSchema = z
     showSku: z.boolean(),
     stickyMobileAction: z.boolean(),
     mediaTreatment: z.enum(["contained", "crop", "editorial"]).default("contained"),
+    relatedCardVariant: canonicalProductCardAnatomyIdSchema.default("standard"),
   })
   .strict();
 
@@ -61,6 +63,7 @@ export const dynamicProductDetailDefaultProps = dynamicProductDetailPropsSchema.
   showSku: true,
   stickyMobileAction: true,
   mediaTreatment: "contained",
+  relatedCardVariant: "standard",
 });
 
 export const dynamicProductDetailDefaultStyleOverrides =

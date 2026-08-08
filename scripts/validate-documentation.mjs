@@ -231,8 +231,8 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 12) {
-  failures.push("Delivery tracker must contain exactly twelve completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 13) {
+  failures.push("Delivery tracker must contain exactly thirteen completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -240,18 +240,22 @@ const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\
 );
 const expectedPlannedP10bChecklistIds = lockedP10BTasks
   .map(([taskId]) => taskId)
-  .filter((taskId) => !["P10B-01", "P10B-02", "P10B-03", "P10B-04", "P10B-05"].includes(taskId));
+  .filter(
+    (taskId) =>
+      !["P10B-01", "P10B-02", "P10B-03", "P10B-04", "P10B-05", "P10B-08"].includes(taskId),
+  );
 if (
   !/^\| ☑\s+\| P10B-01\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-02\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-03\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-04\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-05\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-08\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must mark P10B-01 through P10B-05 Baseline and keep P10B-06 through P10B-18 Planned and unchecked",
+    "Delivery tracker must mark P10B-01 through P10B-05 and P10B-08 Baseline, and keep P10B-06, P10B-07, and P10B-09 through P10B-18 Planned and unchecked",
   );
 }
 

@@ -25,12 +25,9 @@ import type {
   ProductPresentationContext,
   StorefrontAssetMetadata,
 } from "@/domain/component-platform";
-import { formatComponentVersion, type ComponentDefinitionV2 } from "@/domain/component-platform";
-import {
-  createResponsiveImageAuthority,
-  responsiveImageBreakpoints,
-} from "@/domain/asset-presentation";
-import { resolveBrandSystemDesignDna, type BrandSystem } from "@/domain/design-system";
+import type { ComponentDefinitionV2 } from "@/domain/component-platform";
+import type { BrandSystem } from "@/domain/design-system";
+import { createCanonicalProductMediaResponsiveAuthority } from "@/application/responsive-image-authority";
 import type {
   CatalogueDisplayModel,
   CollectionDisplayModel,
@@ -408,69 +405,19 @@ function productAssets(
             ? ("editorialImage" as const)
             : ("productAlternativeImage" as const);
       const revision = product.revision ?? `product-${product.productId}`;
-      const anatomy = artContext?.component.commercialAnatomy;
-      const anatomyPlacement = anatomy?.variants
-        .find(({ variantId }) => variantId === artContext?.variant)
-        ?.structure?.assetPlacements.find(({ slotId }) =>
-          artContext?.component.type === "dynamicProductDetail"
-            ? slotId === "productMedia"
-            : slotId === "collectionCommerceMedia",
-        );
-      const dna = artContext ? resolveBrandSystemDesignDna(artContext.brandSystem) : undefined;
-      const sourceFingerprint = `product-media-${canonicalValueFingerprint({
-        assetId: media.assetId,
-        productId: product.productId,
-        revision,
-        role,
-      })}`;
       const artDirection =
-        artContext &&
-        anatomy &&
-        anatomyPlacement &&
-        dna &&
-        role !== "editorialImage" &&
-        !merchantProvidedAssetIds.has(media.assetId)
-          ? createResponsiveImageAuthority({
-              contractVersion: "1.0.0",
-              source: {
-                assetId: media.assetId,
-                role,
-                revision,
-                materialFingerprint: sourceFingerprint,
-                provenanceKind: "canonicalProductMedia",
-                sourceOwnerId: product.productId,
-              },
-              placement: {
-                componentType: artContext.component.type,
-                componentVersion: formatComponentVersion(artContext.component.version),
-                variant: artContext.variant,
-                anatomyContractVersion: anatomy.contractVersion,
-                anatomyIdentity: anatomy.identity,
-                anatomyVersion: formatComponentVersion(anatomy.version),
-                anatomyRegion: anatomyPlacement.region,
-                assetSlotId:
-                  artContext.component.type === "dynamicProductDetail"
-                    ? "productMedia"
-                    : "collectionCommerceMedia",
-                required: false,
-              },
-              safeArea: { x: 0, y: 0, width: 1, height: 1 },
-              sourceTreatment: {
-                ratio: dna.media.ratio,
-                crop: { mode: "contain" },
-                focalPoint: { x: 0.5, y: 0.5 },
-                overlay: "none",
-              },
-              responsiveTreatments: responsiveImageBreakpoints.map((breakpoint) => ({
-                breakpoint,
-                treatment: {
-                  ratio: dna.media.ratio,
-                  crop: { mode: "contain" as const },
-                  focalPoint: { x: 0.5, y: 0.5 },
-                  overlay: "none" as const,
-                },
-              })),
-              derivatives: [],
+        artContext && role !== "editorialImage" && !merchantProvidedAssetIds.has(media.assetId)
+          ? createCanonicalProductMediaResponsiveAuthority({
+              component: artContext.component,
+              variant: artContext.variant,
+              brandSystem: artContext.brandSystem,
+              productId: product.productId,
+              media,
+              revision,
+              assetSlotId:
+                artContext.component.type === "dynamicProductDetail"
+                  ? "productMedia"
+                  : "collectionCommerceMedia",
             })
           : undefined;
       return {
@@ -756,7 +703,10 @@ function productPresentation(
         })),
         relatedHeading: related.heading,
       },
-      props: dynamicProductDetailDefaultProps,
+      props: {
+        ...dynamicProductDetailDefaultProps,
+        relatedCardVariant: related.productIds.length ? "horizontal" : "standard",
+      },
       styleOverrides: dynamicProductDetailDefaultStyleOverrides,
       bindings: [
         {

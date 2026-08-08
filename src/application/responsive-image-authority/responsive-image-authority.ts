@@ -1,4 +1,5 @@
 import type { DesignDna } from "@/domain/design-system";
+import { resolveBrandSystemDesignDna, type BrandSystem } from "@/domain/design-system";
 import {
   createResponsiveImageAuthority,
   rectContains,
@@ -14,6 +15,84 @@ import type {
   ApprovedAssetPlacementOperation,
   ApprovedAssetPresentation,
 } from "@/domain/storefront";
+import type { ProductPresentationContext } from "@/domain/component-platform";
+import { canonicalValueFingerprint } from "@/domain/storefront";
+
+export function createCanonicalProductMediaResponsiveAuthority(
+  input: Readonly<{
+    component: ComponentDefinitionV2;
+    variant: string;
+    brandSystem: BrandSystem;
+    productId: string;
+    media: ProductPresentationContext["media"][number];
+    revision: string;
+    assetSlotId: string;
+  }>,
+) {
+  if (input.media.role === "editorial") {
+    throw new ResponsiveImageAuthorityError(
+      "editorial-product-replacement",
+      "Editorial media cannot replace canonical product media.",
+    );
+  }
+  const anatomy = input.component.commercialAnatomy;
+  const placement = anatomy?.variants
+    .find(({ variantId }) => variantId === input.variant)
+    ?.structure?.assetPlacements.find(({ slotId }) => slotId === input.assetSlotId);
+  if (!anatomy || !placement) {
+    throw new ResponsiveImageAuthorityError(
+      "wrong-anatomy",
+      "Canonical product media requires registered component anatomy placement.",
+    );
+  }
+  const role = input.media.role === "main" ? "productMainImage" : "productAlternativeImage";
+  const dna = resolveBrandSystemDesignDna(input.brandSystem);
+  const materialFingerprint = `product-media-${canonicalValueFingerprint({
+    assetId: input.media.assetId,
+    productId: input.productId,
+    revision: input.revision,
+    role,
+  })}`;
+  return createResponsiveImageAuthority({
+    contractVersion: "1.0.0",
+    source: {
+      assetId: input.media.assetId,
+      role,
+      revision: input.revision,
+      materialFingerprint,
+      provenanceKind: "canonicalProductMedia",
+      sourceOwnerId: input.productId,
+    },
+    placement: {
+      componentType: input.component.type,
+      componentVersion: formatComponentVersion(input.component.version),
+      variant: input.variant,
+      anatomyContractVersion: anatomy.contractVersion,
+      anatomyIdentity: anatomy.identity,
+      anatomyVersion: formatComponentVersion(anatomy.version),
+      anatomyRegion: placement.region,
+      assetSlotId: input.assetSlotId,
+      required: false,
+    },
+    safeArea: { x: 0, y: 0, width: 1, height: 1 },
+    sourceTreatment: {
+      ratio: dna.media.ratio,
+      crop: { mode: "contain" },
+      focalPoint: { x: 0.5, y: 0.5 },
+      overlay: "none",
+    },
+    responsiveTreatments: responsiveImageBreakpoints.map((breakpoint) => ({
+      breakpoint,
+      treatment: {
+        ratio: dna.media.ratio,
+        crop: { mode: "contain" as const },
+        focalPoint: { x: 0.5, y: 0.5 },
+        overlay: "none" as const,
+      },
+    })),
+    derivatives: [],
+  });
+}
 
 export const responsiveImageAuthorityErrorCodes = [
   "unknown-authority",

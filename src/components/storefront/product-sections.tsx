@@ -6,6 +6,8 @@ import type { ProductDisplayModel } from "@/domain/catalogue";
 import type { StorefrontRenderContext } from "@/components/registry/contract";
 import { StorefrontImage } from "./homepage-sections";
 import styles from "./product-sections.module.css";
+import { CanonicalProductCard } from "./canonical-product-card";
+import { projectLegacyProductCardProduct } from "@/domain/product-card";
 
 const text = (value: LocalizedText, context: StorefrontRenderContext) =>
   resolveLocalizedText(value, context.activeLocale, context.primaryLocale);
@@ -297,17 +299,31 @@ export function RelatedProducts({
       <h2 id={headingId}>{text(heading, context)}</h2>
       {products.length ? (
         <div className={styles.relatedGrid}>
-          {products.map((product) => (
-            <article key={product.id}>
-              <StorefrontImage asset={product.images[0]} context={context} />
-              <h3>{text(product.title, context)}</h3>
-              <p>{productPriceLabel(product, context)}</p>
-              <p>
-                {stockLabel(product.stockStatus, context)} ·{" "}
-                {label("Display only", "Vain esitys", context)}
-              </p>
-            </article>
-          ))}
+          {products.map((source) => {
+            const projected = projectLegacyProductCardProduct(source);
+            const media = projected.product.media[0];
+            const asset = projected.assets[0];
+            return (
+              <CanonicalProductCard
+                key={source.id}
+                locale={context}
+                mediaPlaceholder={label(
+                  "Product image unavailable",
+                  "Tuotekuva ei ole saatavilla",
+                  context,
+                )}
+                request={{
+                  anatomyId: "horizontal",
+                  context: "legacyRelatedProducts",
+                  product: projected.product,
+                  ...(media && asset ? { media, asset } : {}),
+                  showCanonicalBadge: true,
+                  conciseAttributeLimit: 0,
+                }}
+                resolvedAsset={source.images[0]}
+              />
+            );
+          })}
         </div>
       ) : (
         <p className={styles.empty}>

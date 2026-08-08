@@ -48,8 +48,7 @@
   :is(p, .store-eyebrow, .store-footer__legal) {
   color: var(--brand-color-text);
 }
-.store-vocabulary:is(.store-background--background, .store-background--surface)
-  :is(.product-card__stock, dd) {
+.store-vocabulary:is(.store-background--background, .store-background--surface) dd {
   color: var(--brand-color-muted-text);
 }
 .store-vocabulary.store-background--primary
@@ -96,7 +95,7 @@
 .store-shape--rounded {
   --section-radius: max(var(--brand-radius), 1.5rem);
 }
-.store-vocabulary :is(.category-card, .product-card, input, button, .store-button) {
+.store-vocabulary :is(.category-card, input, button, .store-button) {
   border-radius: var(--section-radius);
 }
 .store-vocabulary .store-button--secondary {
@@ -179,28 +178,17 @@
 .store-variant--carousel .category-card {
   scroll-snap-align: start;
 }
-.store-variant--imageLed :is(.category-card, .product-card) img {
+.store-variant--imageLed .category-card img {
   aspect-ratio: 3 / 4;
 }
-.store-variant--imageLed :is(.category-card, .product-card) h3 {
+.store-variant--imageLed .category-card h3 {
   font-size: 1.6rem;
 }
 .product-grid.store-variant--compact {
   gap: 0.75rem;
 }
-.store-variant--standard .product-card {
-  border: 1px solid var(--brand-color-border);
-  background: var(--brand-color-surface);
-}
-.store-variant--editorial .product-card {
-  overflow: visible;
-  background: transparent;
-}
-.store-variant--editorial .product-card img {
-  border-radius: var(--section-radius);
-}
-.store-variant--compact .product-card div {
-  padding: 0.75rem;
+.store-variant--standard [data-card-anatomy] {
+  min-width: 0;
 }
 .campaign-banner.store-variant--imageOverlay {
   position: relative;
