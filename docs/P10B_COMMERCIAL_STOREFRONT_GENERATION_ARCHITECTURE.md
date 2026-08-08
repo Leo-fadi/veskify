@@ -1,7 +1,7 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01, P10B-02, P10B-03, and P10B-05 are **Baseline**;
-P10B-04 and P10B-06 through P10B-18 remain **Planned**.
+**Status:** Binding architecture. P10B-01 through P10B-05 are **Baseline**; P10B-06 through
+P10B-18 remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useId, type CSSProperties, type ReactNode } from "react";
 import { z } from "zod";
 import {
@@ -15,7 +14,6 @@ import {
   idSchema,
   localeSchema,
   resolveLocalizedText,
-  safeExternalUrlSchema,
   type AssetRef,
   type Locale,
   type LocalizedText,
@@ -61,6 +59,7 @@ import {
   dynamicCollectionCommerceDefaultProps,
 } from "@/components/registry/dynamic-collection-commerce";
 import styles from "./homepage-commerce.module.css";
+import { ResponsiveStorefrontImage } from "./responsive-storefront-image";
 
 export const approvedNavigationIntentSchema = z
   .object({
@@ -95,6 +94,7 @@ type ResolvedAsset = {
   asset: AssetRef;
   provenance: StorefrontAssetMetadata["provenance"];
   role: StorefrontAssetMetadata["role"];
+  artDirection?: StorefrontAssetMetadata["artDirection"];
 };
 
 const homepageComponentTypes = new Set([
@@ -145,15 +145,9 @@ function prepare(input: HomepageCommerceRendererInput) {
 function ImageAsset({ resolved, locale }: { resolved: ResolvedAsset; locale: LocaleContext }) {
   const alt =
     resolved.asset.decorative || !resolved.asset.alt ? "" : text(resolved.asset.alt, locale);
-  const external = safeExternalUrlSchema.safeParse(resolved.asset.url);
-  if (external.success) {
-    return (
-      // Canonical remote assets are HTTPS-only; native rendering avoids unsafe wildcard hosts.
-      // eslint-disable-next-line @next/next/no-img-element
-      <img alt={alt} height={900} src={new URL(external.data.trim()).href} width={1200} />
-    );
-  }
-  return <Image alt={alt} height={900} src={resolved.asset.url} width={1200} />;
+  return (
+    <ResponsiveStorefrontImage alt={alt} asset={resolved.asset} authority={resolved.artDirection} />
+  );
 }
 
 function resolveAsset(
@@ -170,6 +164,7 @@ function resolveAsset(
     }),
     provenance: metadata.provenance,
     role: metadata.role,
+    ...(metadata.artDirection === undefined ? {} : { artDirection: metadata.artDirection }),
   };
 }
 
