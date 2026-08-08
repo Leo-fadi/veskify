@@ -103,7 +103,7 @@ export function createStorefrontRenderContext({
   activeLocale: Locale;
   primaryLocale: Locale;
   catalogue: CatalogueDisplayModel;
-  snapshot: Pick<StorefrontSnapshot, "navigation" | "pages">;
+  snapshot: Pick<StorefrontSnapshot, "navigation" | "pages" | "brandSystem">;
   pagePathPrefix?: string;
   pagePathSuffix?: string;
   renderTarget?: StorefrontRenderContext["renderTarget"];
@@ -117,6 +117,7 @@ export function createStorefrontRenderContext({
     catalogue: catalogueDisplayModelSchema.parse(catalogue),
     navigation: navigationModelSchema.parse(snapshot.navigation),
     pages: snapshot.pages,
+    brandSystem: snapshot.brandSystem,
     pagePaths,
     homePath: homePage ? pagePaths[homePage.id] : undefined,
     renderTarget,

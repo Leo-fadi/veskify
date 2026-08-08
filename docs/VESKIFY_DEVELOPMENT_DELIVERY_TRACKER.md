@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 8 August 2026, current `main` after PR #176                                                                         |
+| Baseline                    | 8 August 2026, P10B-04 implementation and evidence branch                                                           |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -44,7 +44,7 @@ required evidence are accepted.
 | ☑    | P10B-01 | Commercial grammar and compatibility vocabulary      | **Baseline** | Canonical design contracts      | P10A closure; architecture lock    | Schema/queryability, migration, compatibility and typed rejection               |
 | ☑    | P10B-02 | Parametric BrandSystem / Design DNA                  | **Baseline** | BrandSystem                     | P10B-01                            | Cross-page projection, migration, responsive and lifecycle evidence             |
 | ☑    | P10B-03 | Component anatomy and meaningful variant contract    | **Baseline** | Component platform              | P10B-01                            | 25 definitions/91 variants; structural, query, migration and rejection evidence |
-| ☐    | P10B-04 | Responsive image and art-direction authority         | **Planned**  | Asset presentation and media    | P10B-02, P10B-03                   | Provenance/crop/fallback and four-width visual evidence                         |
+| ☑    | P10B-04 | Responsive image and art-direction authority         | **Baseline** | Asset presentation and media    | P10B-02, P10B-03                   | 35-case authority, integration/lifecycle and four-width browser evidence        |
 | ☑    | P10B-05 | Veskify site-map and page-family authority           | **Baseline** | PageBlueprint/storefront domain | P10B-01                            | Page-set/navigation/generation/lifecycle and rejection evidence                 |
 | ☐    | P10B-06 | Commercial shared-frame families                     | **Planned**  | Shared frame                    | P10B-02, P10B-03, P10B-05          | Minimum frame/mobile/footer coverage and responsive human review                |
 | ☐    | P10B-07 | Hero, editorial, campaign and proof families         | **Planned**  | Commercial content families     | P10B-02 through P10B-05            | Minimum anatomy coverage, provenance, full chain and visual review              |
@@ -164,9 +164,8 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01, P10B-02, P10B-03, and P10B-05 are **Baseline**. P10B-04 and P10B-06 through P10B-18
-remain **Planned**. The remaining Done conditions are implementation gates, not claims about the
-current repository.
+P10B-01 through P10B-05 are **Baseline**. P10B-06 through P10B-18 remain **Planned**. The
+remaining Done conditions are implementation gates, not claims about the current repository.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
 
@@ -235,6 +234,12 @@ current repository.
 - **Evidence:** Contract/unit, asset/media integration, responsive browser, fallback, and retained
   visual evidence.
 - **Non-goal:** Modifying canonical product media or unrestricted image generation.
+- **Status:** **Baseline**. Contract `1.0.0` embeds exact lineage and bounded treatment in the
+  existing approved presentation, consumes Design DNA and registered anatomy, projects protected
+  same-product media, preserves authority through lifecycle/compiler boundaries, and renders
+  semantic four-breakpoint evidence. Production CDN transforms and retained commercial visual
+  acceptance remain deferred. See
+  [`P10B_04_RESPONSIVE_IMAGE_ART_DIRECTION.md`](P10B_04_RESPONSIVE_IMAGE_ART_DIRECTION.md).
 
 #### P10B-05 — Veskify site-map and page-family authority
 

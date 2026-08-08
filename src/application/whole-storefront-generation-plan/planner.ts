@@ -1227,6 +1227,10 @@ function validateAssetPlacements(
         assetRevision: asset.revision,
         materialFingerprint: asset.materialFingerprint,
         sourceReferenceId: asset.sourceReferenceId,
+        sourceProvenanceKind:
+          asset.provenance.location === "merchant-upload"
+            ? ("merchantProvided" as const)
+            : ("sourceDiscovered" as const),
         required: slot.required,
       });
     });
@@ -1262,7 +1266,12 @@ function validateAssetPlacements(
       !asset ||
       asset.revision !== placement.assetRevision ||
       asset.materialFingerprint !== placement.materialFingerprint ||
-      asset.sourceReferenceId !== placement.sourceReferenceId
+      asset.sourceReferenceId !== placement.sourceReferenceId ||
+      (placement.sourceProvenanceKind !== undefined &&
+        placement.sourceProvenanceKind !==
+          (asset.provenance.location === "merchant-upload"
+            ? "merchantProvided"
+            : "sourceDiscovered"))
     ) {
       invalid(
         "stale-approved-asset",

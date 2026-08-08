@@ -727,6 +727,10 @@ function pageChange(
         assetRevision: asset.revision,
         materialFingerprint: asset.materialFingerprint,
         sourceReferenceId: approvedAsset.sourceReferenceId,
+        sourceProvenanceKind:
+          approvedAsset.provenance.location === "merchant-upload"
+            ? ("merchantProvided" as const)
+            : ("sourceDiscovered" as const),
         required: asset.required,
       };
     },

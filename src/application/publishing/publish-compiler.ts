@@ -17,7 +17,8 @@ import {
   componentVersionSchema,
   validateComponentAssetAssignments,
 } from "@/domain/component-platform";
-import { brandSystemSchema } from "@/domain/design-system";
+import { brandSystemSchema, resolveBrandSystemDesignDna } from "@/domain/design-system";
+import { validateResponsiveImageAuthority } from "@/application/responsive-image-authority";
 import type { Project } from "@/domain/project";
 import { canonicalLocaleOrder, idSchema, localeSchema } from "@/domain/shared";
 import {
@@ -708,6 +709,7 @@ function containsProtectedCommerceTruth(value: unknown): boolean {
 }
 
 function assertAssets(snapshot: StorefrontSnapshot): void {
+  const dna = resolveBrandSystemDesignDna(snapshot.brandSystem);
   for (const page of snapshot.pages) {
     for (const section of page.sections) {
       const placements = section.approvedAssetPlacements ?? [];
@@ -743,6 +745,27 @@ function assertAssets(snapshot: StorefrontSnapshot): void {
           presentation.asset.id !== placement.assetId
         ) {
           throw new PublishCompilerError("invalid-approved-asset");
+        }
+        if (presentation.artDirection) {
+          try {
+            if (
+              presentation.artDirection.placement.variant !== section.variant ||
+              presentation.artDirection.placement.assetSlotId !== placement.assetSlotId ||
+              presentation.artDirection.placement.required !== placement.required ||
+              presentation.artDirection.source.sourceOwnerId !== placement.sourceReferenceId ||
+              placement.sourceProvenanceKind === undefined ||
+              presentation.artDirection.source.provenanceKind !== placement.sourceProvenanceKind
+            ) {
+              throw new Error("Responsive image placement authority does not match the section.");
+            }
+            validateResponsiveImageAuthority({
+              authority: presentation.artDirection,
+              component: veskifyComponentRegistryV2.get(section.component),
+              dna,
+            });
+          } catch (cause) {
+            throw new PublishCompilerError("invalid-approved-asset", { cause });
+          }
         }
       }
       if (

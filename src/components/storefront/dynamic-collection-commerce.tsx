@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useId, useState } from "react";
 import { z } from "zod";
 import {
@@ -14,7 +13,6 @@ import {
   idSchema,
   localeSchema,
   resolveLocalizedText,
-  safeExternalUrlSchema,
   type AssetRef,
   type Locale,
   type LocalizedText,
@@ -32,6 +30,7 @@ import {
 import { veskifyComponentRegistryV2 } from "@/components/registry/v2-registry";
 import styles from "./dynamic-collection-commerce.module.css";
 import { validateRouteUsedAssetConformance } from "./storefront-asset-conformance";
+import { ResponsiveStorefrontImage } from "./responsive-storefront-image";
 
 export const collectionLoadingPresentationSchema = z
   .object({ status: z.enum(["ready", "loading"]) })
@@ -130,6 +129,7 @@ type ResolvedAsset = {
   asset: AssetRef;
   provenance: StorefrontAssetMetadata["provenance"];
   role: StorefrontAssetMetadata["role"];
+  artDirection?: StorefrontAssetMetadata["artDirection"];
 };
 type ProductMediaPresentation = ProductPresentationContext["media"][number];
 type CollectionCommerceAssetRole =
@@ -343,6 +343,7 @@ function prepareDynamicCollectionCommerce(
         }),
         provenance: metadata.provenance,
         role: metadata.role,
+        ...(metadata.artDirection === undefined ? {} : { artDirection: metadata.artDirection }),
       };
     },
   };
@@ -351,15 +352,9 @@ function prepareDynamicCollectionCommerce(
 function CommerceImage({ resolved, locale }: { resolved: ResolvedAsset; locale: LocaleContext }) {
   const alt =
     resolved.asset.decorative || !resolved.asset.alt ? "" : text(resolved.asset.alt, locale);
-  const external = safeExternalUrlSchema.safeParse(resolved.asset.url);
-  if (external.success) {
-    return (
-      // The canonical asset contract permits HTTPS only; native rendering avoids unsafe wildcard hosts.
-      // eslint-disable-next-line @next/next/no-img-element
-      <img alt={alt} height={900} src={new URL(external.data.trim()).href} width={1200} />
-    );
-  }
-  return <Image alt={alt} height={900} src={resolved.asset.url} width={1200} />;
+  return (
+    <ResponsiveStorefrontImage alt={alt} asset={resolved.asset} authority={resolved.artDirection} />
+  );
 }
 
 function moneyLabel(

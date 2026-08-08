@@ -7,6 +7,7 @@ import {
   safeExternalUrlSchema,
 } from "@/domain/shared";
 import { assetRoleSchema } from "@/domain/shared";
+import { responsiveImageAuthoritySchema } from "@/domain/asset-presentation";
 import { pageTypeSchema } from "@/domain/storefront";
 import {
   componentDesignCompatibilitySchema,
@@ -1455,6 +1456,7 @@ export const storefrontAssetMetadataSchema = z
     approvalStatus: z.enum(["pending", "approved", "rejected"]),
     usageRights: z.enum(["merchantOwned", "licensed", "publicSource", "generated", "unknown"]),
     responsiveCrops: z.array(assetCropSchema).default([]),
+    artDirection: responsiveImageAuthoritySchema.optional(),
     revision: presentationRevisionSchema.optional(),
   })
   .strict()

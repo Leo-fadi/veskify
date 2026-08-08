@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useRef, useState, type CSSProperties } from "react";
-import Image from "next/image";
 import { z } from "zod";
 import {
   componentProjectionContextSchema,
@@ -19,7 +18,6 @@ import {
   localeSchema,
   localizedTextSchema,
   resolveLocalizedText,
-  safeExternalUrlSchema,
   type AssetRef,
   type Locale,
   type LocalizedText,
@@ -38,6 +36,7 @@ import {
 import { veskifyComponentRegistryV2 } from "@/components/registry/v2-registry";
 import styles from "./dynamic-product-detail.module.css";
 import { validateRouteUsedAssetConformance } from "./storefront-asset-conformance";
+import { ResponsiveStorefrontImage } from "./responsive-storefront-image";
 
 export const productPrimaryActionPresentationSchema = z
   .object({
@@ -132,6 +131,7 @@ export type DynamicProductDetailRendererInput = ProductOptionIntentCallbacks & {
 type ResolvedAsset = {
   asset: AssetRef;
   provenance: StorefrontAssetMetadata["provenance"];
+  artDirection?: StorefrontAssetMetadata["artDirection"];
 };
 
 type PreparedDynamicProductDetail = ProductOptionIntentCallbacks & {
@@ -407,7 +407,11 @@ function prepareDynamicProductDetail(
         alt: decorative ? undefined : (alt ?? metadata.alt),
         decorative,
       });
-      return { asset, provenance: metadata.provenance };
+      return {
+        asset,
+        provenance: metadata.provenance,
+        ...(metadata.artDirection === undefined ? {} : { artDirection: metadata.artDirection }),
+      };
     },
   };
 }
@@ -422,29 +426,24 @@ const fallbackLabel = (en: string, fi: string, context: LocaleContext) =>
 
 function ProductAssetImage({
   asset,
+  artDirection,
   locale,
   className,
 }: {
   asset: AssetRef;
+  artDirection?: StorefrontAssetMetadata["artDirection"];
   locale: LocaleContext;
   className?: string;
 }) {
   const alt = asset.decorative || !asset.alt ? "" : text(asset.alt, locale);
-  const externalUrl = safeExternalUrlSchema.safeParse(asset.url);
-  if (externalUrl.success) {
-    return (
-      // Canonical asset references permit HTTPS only; native rendering avoids unsafe wildcard hosts.
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        alt={alt}
-        className={className}
-        height={900}
-        src={new URL(externalUrl.data.trim()).href}
-        width={1200}
-      />
-    );
-  }
-  return <Image alt={alt} className={className} height={900} src={asset.url} width={1200} />;
+  return (
+    <ResponsiveStorefrontImage
+      alt={alt}
+      asset={asset}
+      authority={artDirection}
+      className={className}
+    />
+  );
 }
 
 function moneyLabel(
@@ -525,7 +524,12 @@ export function DynamicProductGallery({
         data-asset-id={selected.assetId}
         data-asset-provenance={resolved.provenance.kind}
       >
-        <ProductAssetImage asset={resolved.asset} className={styles.primaryImage} locale={locale} />
+        <ProductAssetImage
+          artDirection={resolved.artDirection}
+          asset={resolved.asset}
+          className={styles.primaryImage}
+          locale={locale}
+        />
       </figure>
       {galleryMedia.length > 1 ? (
         <div
@@ -545,7 +549,11 @@ export function DynamicProductGallery({
                 onClick={() => setSelection({ mediaFingerprint, assetId: mediaItem.assetId })}
                 type="button"
               >
-                <ProductAssetImage asset={item.asset} locale={locale} />
+                <ProductAssetImage
+                  artDirection={item.artDirection}
+                  asset={item.asset}
+                  locale={locale}
+                />
               </button>
             );
           })}
@@ -871,7 +879,11 @@ function EnumeratedOptionGroup({
                   <span aria-hidden="true" className={styles.swatch} />
                 ) : null}
                 {group.presentation === "imageChoice" && image ? (
-                  <ProductAssetImage asset={image.asset} locale={locale} />
+                  <ProductAssetImage
+                    artDirection={image.artDirection}
+                    asset={image.asset}
+                    locale={locale}
+                  />
                 ) : null}
                 <span>{text(value.label, locale)}</span>
               </button>
@@ -1138,7 +1150,11 @@ export function DynamicProductSupportingContent({
           data-asset-provenance={image.provenance.kind}
           data-asset-role="editorialImage"
         >
-          <ProductAssetImage asset={image.asset} locale={locale} />
+          <ProductAssetImage
+            artDirection={image.artDirection}
+            asset={image.asset}
+            locale={locale}
+          />
         </figure>
       ) : null}
       {content.trustItems.length ? (
@@ -1185,7 +1201,11 @@ export function DynamicRelatedProducts({
             <article key={product.productId}>
               {image ? (
                 <figure data-asset-id={media.assetId} data-asset-provenance={image.provenance.kind}>
-                  <ProductAssetImage asset={image.asset} locale={locale} />
+                  <ProductAssetImage
+                    artDirection={image.artDirection}
+                    asset={image.asset}
+                    locale={locale}
+                  />
                 </figure>
               ) : null}
               <h3>{text(product.title, locale)}</h3>
