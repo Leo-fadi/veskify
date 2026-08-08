@@ -511,21 +511,37 @@ publish preserved → evidence retained.
 
 ```text
 P10B-01
-  ├─ P10B-02 ─┐
-  ├─ P10B-03 ─┼─ P10B-04
-  └─ P10B-05 ─┘
+  ├─ P10B-02
+  ├─ P10B-03
+  └─ P10B-05
 
-P10B-02/03/04/05
-  ├─ P10B-06 shared frame
-  ├─ P10B-07 hero/editorial/campaign/proof
-  ├─ P10B-08 product card
-  ├─ P10B-12 content/support
-  └─ P10B-13 utility presentation
+P10B-02 + P10B-03
+  → P10B-04 responsive image/art direction
 
-P10B-05/06/07/08
-  ├─ P10B-09 homepage profiles
-  ├─ P10B-10 collection/search profiles
-  └─ P10B-11 PDP profiles
+P10B-02 + P10B-03 + P10B-05
+  → P10B-06 shared frame
+    (also consumes P10B-04 where media applies)
+
+P10B-02 + P10B-03 + P10B-04 + P10B-05
+  → P10B-07 hero/editorial/campaign/proof
+
+P10B-02 + P10B-03 + P10B-04
+  → P10B-08 product card
+
+P10B-05 + P10B-06 + P10B-07 + P10B-08
+  → P10B-09 homepage profiles
+
+P10B-04 + P10B-05 + P10B-06 + P10B-08
+  → P10B-10 collection/search profiles
+
+P10B-03 + P10B-04 + P10B-05 + P10B-06 + P10B-08
+  → P10B-11 PDP profiles
+
+P10B-03 + P10B-04 + P10B-05 + P10B-06 + P10B-07
+  → P10B-12 content/support
+
+P10B-03 + P10B-05 + P10B-06 + P10B-08
+  → P10B-13 utility presentation
 
 P10B-02…13 minimum accepted capability
   → P10B-14 Premium Editorial complete-storefront slice
