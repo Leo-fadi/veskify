@@ -2,7 +2,7 @@
 
 **Audit date:** 7 August 2026
 
-**Repository baseline:** `3d36f548ea79412e6fe3f66b9dd10a2c1e2150f5` (`origin/main`, including merged PR #170)
+**Repository baseline:** `cd7b25a1fb34a6f92a75047b24045089b7a41489` (`origin/main`, including merged PR #171)
 
 **Scope:** code-grounded documentation audit; no runtime, canonical specification, roadmap, README, or DOCX change
 
@@ -234,9 +234,9 @@ requirement traceability, provider evidence, publication evidence, protected-sta
 deferred ownership are recorded in [`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md). No required
 P10A exit item remains Partial or Blocked.
 
-P10B is the next active development phase but remains **Planned**. P10A does not require another
-registry, proposal model, recipe engine, component system, provider, publish command, or merchant
-editor integration.
+P10B — Commercial Storefront Generation System v1 is the active development phase but remains
+**Planned**. P10A does not require another registry, proposal model, recipe engine, component
+system, provider, publish command, or merchant editor integration.
 
 ### Decided P10A/P10C editor boundary
 
@@ -250,25 +250,31 @@ ownership is an existing binding architecture decision, not an open phase-bounda
 
 ## 9. Commercial storefront quality ceiling and viable path
 
-The current ceiling remains the P10B-01 conclusion: a competent, clean, responsive catalogue
-storefront with limited brand distinction. Homepage has the greatest useful variation. Collection
-and PDP are safe and functionally deep but their governed profiles remain visually narrow. Brand
-tokens do not yet provide a sufficient semantic typography, spacing, layout, surface, control, and
-image-art-direction system. Product-card authority is duplicated across legacy, homepage, and
-collection renderers. Current direction packages can converge below the first viewport.
+The current ceiling remains the conclusion of the historical P10B capability audit: a competent,
+clean, responsive catalogue storefront with limited brand distinction. Homepage has the greatest
+useful variation. Collection and PDP are safe and functionally deep but their governed profiles
+remain visually narrow. Brand tokens do not yet provide a sufficient semantic typography, spacing,
+layout, surface, control, and image-art-direction system. Product-card authority is duplicated
+across legacy, homepage, and collection renderers. Current direction packages can converge below
+the first viewport.
 
 Commercial viability requires P10B, not looser generation:
 
-1. extend the existing `BrandSystem` with governed semantic visual foundations and make renderers
-   consume them consistently;
-2. deepen registered shared-frame, hero, product-card, collection, PDP, editorial, campaign, and
-   evidence-backed trust families;
-3. enrich only the existing executable PageBlueprint profiles and dynamic commerce authorities;
+1. extend the existing `BrandSystem` into bounded cross-page Design DNA;
+2. define meaningful anatomy and deepen registered frame, content, merchandising, and dynamic
+   commerce families;
+3. create complete site-map/page-family authority using only executable PageBlueprint profiles and
+   `StorefrontSnapshot`;
 4. add approved responsive art-direction metadata without replacing canonical product media;
-5. make complete registered directions materially different across home, collection, PDP, frame,
-   typography, density, imagery, and composition; and
-6. retain correlated browser screenshots and human review at 375, 768, 1024, and 1440 px with
-   representative approved assets and protected-commerce comparisons.
+5. prove home, commerce, content/support, campaign, search, cart/checkout, empty, error, and 404
+   presentation in an early complete Premium Editorial store;
+6. synthesize compatible registered combinations and reject exact/meaningful near duplicates with
+   a structural design fingerprint; and
+7. generate 100+ complete configurations, then retain four-width human review for a representative
+   fingerprint-stratified subset.
+
+The binding plan is
+[`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
 
 P10C can then make those proven capabilities merchant-editable. A polished shell before P10B would
 improve usability but would not raise the generated storefront quality ceiling.
@@ -364,8 +370,8 @@ The later synchronization must make or preserve these decisions explicitly:
     explicit-republish contracts without making them editable state.
 11. Preserve P10A-08D-02 functional publication evidence separately from P10B commercial visual
     evidence.
-12. Adopt the P10B commercial design-system sequence and criteria without claiming its vocabulary
-    specification is implemented.
+12. Preserve the locked P10B commercial storefront-generation architecture and 18-task sequence
+    without claiming P10B-01 or any implementation task is complete.
 13. Clarify current onboarding: deterministic local project creation is reachable; URL discovery,
     exact approved-brief runtime correlation, and existing Vesko catalogue creation are not one
     complete merchant journey.

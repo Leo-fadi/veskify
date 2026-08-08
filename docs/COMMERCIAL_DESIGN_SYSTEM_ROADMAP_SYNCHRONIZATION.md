@@ -4,7 +4,12 @@
 
 ## Authoritative decision
 
-The commercial storefront design-system implementation specification is assigned to **P10B — Commercial Storefront Design System v1**. P10B follows P10A grounded orchestration and publishing closure, and precedes P10C Storefront Studio Editing Experience v1. The source of task identifiers and dependencies is `docs/VESKIFY_SDD.md` and `docs/VESKIFY_DEVELOPMENT_ROADMAP.md`; `docs/VESKIFY_SDD_v1.3.0.docx` is the synchronized export.
+This 5 August 2026 migration record originally assigned the commercial design-system specification
+to **P10B — Commercial Storefront Design System v1**. The current phase name and delivery plan are
+superseded by
+[`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md):
+**P10B — Commercial Storefront Generation System v1**, with the design system retained as a
+subsystem. The historical ownership migration below remains valid.
 
 ## Migration record
 

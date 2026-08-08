@@ -6,6 +6,11 @@
 
 **Scope:** documentation and repository evidence only. No provider call, runtime code, PageBlueprint, SDD, DOCX, baseline, or fixture was changed.
 
+**Current authority:** This pre-implementation audit remains historical evidence. Its provisional
+delivery implications are superseded by
+[`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md);
+its factual findings are unchanged.
+
 ## 1. Executive conclusion
 
 The repository has the beginnings of a controlled storefront design system, not yet a commercially complete one. Its important strengths are real: one canonical `StorefrontSnapshot`; registered components and variants; bounded presentation values; protected commerce and approved-asset rules; three coordinated directions; and the same registered implementations across editor, preview and published targets where the V2 bridge is active. Those foundations should be extended, not replaced.

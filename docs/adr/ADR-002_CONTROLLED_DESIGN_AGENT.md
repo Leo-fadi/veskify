@@ -240,8 +240,8 @@ with zero retries; P10A is now Baseline / closed.
 This ADR remains binding. New work follows the v1.3.0 roadmap:
 
 1. preserve the closed P10A internal governed-orchestration and authoritative-publishing contracts;
-2. deliver the now-active but still Planned P10B Commercial Storefront Design System v1 and its
-   retained human quality gate;
+2. deliver the now-active but still Planned P10B Commercial Storefront Generation System v1 and
+   its retained human quality/diversity gate;
 3. deliver P10C merchant-operable Storefront Studio routing, clarification, bounded manual and AI
    editing, unified history, save, preview and publish;
 4. keep P10D registered advanced media non-blocking for the first commercial storefront, minimum

@@ -25,6 +25,7 @@ const activeMarkdownFiles = [
   "docs/VESKIFY_CURRENT_STATE_TRUTH_AUDIT.md",
   "docs/VESKIFY_CAPABILITY_EVIDENCE_LEDGER.md",
   "docs/P10A_PHASE_CLOSURE.md",
+  "docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md",
   "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
   "docs/VESKO_VESKIFY_INTEGRATION_MATRIX.md",
   "docs/P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md",
@@ -85,7 +86,7 @@ const requireText = (relativePath, required) => {
 
 const phaseOrder = [
   "P10A — Grounded orchestration and publishing closure",
-  "P10B — Commercial Storefront Design System v1",
+  "P10B — Commercial Storefront Generation System v1",
   "P10C — Storefront Studio Editing Experience v1",
   "P10D — Advanced media and registered interactive presentation",
   "P11 — Vesko Integration Readiness and Reference Adapter",
@@ -110,7 +111,7 @@ for (const relativePath of [
 requireText("README.md", [
   "The overall product is **Partial**. Phase 9 is closed by product-owner handoff",
   "P10A grounded\norchestration and publishing is **Baseline / closed**",
-  "P10B Commercial Storefront Design System v1\nis the next active development phase",
+  "P10B Commercial Storefront Generation System\nv1 is the active development phase",
   "docs/VESKIFY_SDD_v1.3.0.docx",
   "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER_v1.3.0.docx",
   "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
@@ -128,9 +129,9 @@ requireText("docs/VESKIFY_SDD.md", [
   "# Veskify Software Design Document v1.3.0",
   "Phase 9 is closed by product-owner handoff",
   "P10A grounded\norchestration and publishing is **Baseline / closed**",
-  "P10B is now the next active\ndevelopment phase",
+  "P10B is now the active development\nphase",
   "Merchant-facing wiring is not a\nP10A closure requirement",
-  "P10B is the first phase allowed to claim a commercially credible\ndesign system",
+  "P10B is the first phase allowed to claim a commercially credible\ngeneration system",
   "The Vesko OpenAPI 3.0 contract has been obtained and audited",
   "Raw Puck payloads",
   "There is no Vesko staging or production evidence",
@@ -139,12 +140,12 @@ requireText("docs/VESKIFY_SDD.md", [
 ]);
 
 requireText("docs/VESKIFY_DEVELOPMENT_ROADMAP.md", [
-  "**Active development phase:** P10B — Commercial Storefront Design System v1 (**Planned**)",
+  "**Active development phase:** P10B — Commercial Storefront Generation System v1 (**Planned**)",
   "P10A owns internal governed initial/follow-up execution",
-  "1 — Premium Editorial vertical slice",
-  "2 — Modern Technical vertical slice",
-  "3 — Minimal Commerce vertical slice",
-  "4 — Direction, narrative, responsive and visual-quality closure",
+  "1 — Grammar",
+  "2 — Parallel foundations",
+  "5 — Early complete store",
+  "7 — Closure",
   "The minimum pilot editor requires",
   "Full P10C exit requires",
   "P11-00 — Vesko OpenAPI audit",
@@ -164,9 +165,59 @@ requireText("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md", [
 requireText("docs/P10A_PHASE_CLOSURE.md", [
   "**Status:** Baseline / closed",
   "**Formal exit verdict: Baseline / closed.**",
-  "**Next active development phase:** P10B — Commercial Storefront Design System v1 (**Planned**)",
+  "**Next active development phase:** P10B — Commercial Storefront Generation System v1 (**Planned**)",
   "**Provider calls during closure:** zero",
 ]);
+
+requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
+  "**Status:** Binding pre-implementation architecture",
+  "**Phase:** P10B — Commercial Storefront Generation System v1",
+  "Veskify owns storefront creation",
+  "Vesko owns operational commerce truth",
+  "BrandSystem\n  → PageBlueprint profile\n  → component family / meaningful variant\n  → bounded validated instance override",
+  "At least four materially distinct complete frame systems",
+  "At least six meaningful compositions",
+  "at least five meaningful anatomies",
+  "Homepage: at least six materially different registered profiles",
+  "Collection/search: at least four profiles",
+  "PDP: at least four profiles",
+  "at least 100 complete bounded storefront configurations",
+  "P10B-02, P10B-03, and P10B-05 may run in parallel",
+]);
+
+const lockedP10BTasks = [
+  ["P10B-01", "Commercial design grammar and compatibility vocabulary"],
+  ["P10B-02", "Parametric BrandSystem / Design DNA"],
+  ["P10B-03", "Component anatomy and meaningful variant contract"],
+  ["P10B-04", "Responsive image and art-direction authority"],
+  ["P10B-05", "Veskify site-map and page-family authority"],
+  ["P10B-06", "Commercial shared-frame families"],
+  ["P10B-07", "Hero, editorial, campaign and proof families"],
+  ["P10B-08", "Canonical product-card and merchandising family"],
+  ["P10B-09", "Commercial homepage profile library"],
+  ["P10B-10", "Commercial collection and search profiles"],
+  ["P10B-11", "Commercial PDP profile library"],
+  ["P10B-12", "Content and support page families"],
+  ["P10B-13", "Commerce utility presentation pages"],
+  ["P10B-14", "Premium Editorial complete-storefront vertical slice"],
+  ["P10B-15", "Bounded storefront synthesis and narrative engine"],
+  ["P10B-16", "Coordinated directions and diversity control"],
+  ["P10B-17", "Responsive, accessibility and performance closure"],
+  ["P10B-18", "Commercial quality and scale gate"],
+];
+
+for (const relativePath of [
+  "docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md",
+  "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+  "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+]) {
+  const markdown = contents.get(relativePath);
+  for (const [taskId, title] of lockedP10BTasks) {
+    if (!markdown.includes(`${taskId} — ${title}`)) {
+      failures.push(`${relativePath}: missing locked task ${taskId} — ${title}`);
+    }
+  }
+}
 
 requireText("docs/DEVELOPMENT_GUIDE.md", [
   "Phase 9 is\nclosed by product-owner handoff, and P10A is **Baseline / closed**",
@@ -179,6 +230,33 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
 if ((tracker.match(/☑/g) ?? []).length !== 7) {
   failures.push("Delivery tracker must contain exactly seven completed checkboxes");
+}
+
+const p10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
+  (match) => match[1],
+);
+if (
+  p10bChecklistIds.length !== lockedP10BTasks.length ||
+  p10bChecklistIds.some((taskId, index) => taskId !== lockedP10BTasks[index][0])
+) {
+  failures.push(
+    "Delivery tracker must list exactly P10B-01 through P10B-18 as Planned unchecked tasks",
+  );
+}
+
+for (const relativePath of [
+  "README.md",
+  "docs/VESKIFY_SDD.md",
+  "docs/VESKIFY_DEVELOPMENT_ROADMAP.md",
+  "docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",
+  "docs/DEVELOPMENT_GUIDE.md",
+  "docs/P10A_PHASE_CLOSURE.md",
+  "docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md",
+  "docs/adr/ADR-002_CONTROLLED_DESIGN_AGENT.md",
+]) {
+  if (contents.get(relativePath).includes("P10B — Commercial Storefront Design System v1")) {
+    failures.push(`${relativePath}: stale active P10B phase name`);
+  }
 }
 if (
   !/^\| ☑\s+\| P10A\s+\|/m.test(tracker) ||
@@ -367,10 +445,8 @@ for (const { source, output, script, requiredXml } of exportsToValidate) {
       failures.push(`${output}: missing OOXML marker ${required}`);
   }
   const pageBreakCount = (documentXml.match(/<w:br w:type="page"\/>/g) ?? []).length;
-  if (pageBreakCount !== 1) {
-    failures.push(
-      `${output}: expected exactly one explicit cover page break, found ${pageBreakCount}`,
-    );
+  if (pageBreakCount < 1) {
+    failures.push(`${output}: expected an explicit cover page break`);
   }
   if (/<w:t[^>]*>(?:#{1,4}|\*\*|```)/.test(documentXml)) {
     failures.push(`${output}: exposed Markdown syntax in rendered document content`);

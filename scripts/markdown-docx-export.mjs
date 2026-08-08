@@ -177,16 +177,16 @@ const isTableDivider = (line) => {
   return cells.length > 0 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
 };
 
+const isTraceabilityHeaders = (headers) =>
+  headers.length === 6 &&
+  stripInlineMarkdown(headers[0]) === "ID" &&
+  headers.includes("v1.3.0 owner");
+
 const tableWidths = (headers, pageWidth, layout) => {
   if (layout === "tracker" && headers.length === 7) {
     return [520, 1800, 2800, 850, 1500, 2500, 2990];
   }
-  if (
-    pageWidth === PORTRAIT_WIDTH &&
-    headers.length === 6 &&
-    stripInlineMarkdown(headers[0]) === "ID" &&
-    headers.includes("v1.3.0 owner")
-  ) {
+  if (pageWidth === PORTRAIT_WIDTH && isTraceabilityHeaders(headers)) {
     return [720, 900, 3000, 1300, 1300, 2140];
   }
   if (headers.length === 2) {
@@ -212,10 +212,7 @@ const tableCellXml = (content, width, { header, centered, compact, traceability 
 const tableXml = (rows, pageWidth, layout, hyperlinks) => {
   const headers = rows[0];
   const widths = tableWidths(headers, pageWidth, layout);
-  const traceability =
-    headers.length === 6 &&
-    stripInlineMarkdown(headers[0]) === "ID" &&
-    headers.includes("v1.3.0 owner");
+  const traceability = isTraceabilityHeaders(headers);
   const compact = (layout === "tracker" && headers.length === 7) || traceability;
   const centeredColumns = new Set(
     headers
@@ -241,7 +238,10 @@ const tableXml = (rows, pageWidth, layout, hyperlinks) => {
           ),
         )
         .join("");
-      const rowProperties = rowIndex === 0 ? "<w:tblHeader/><w:cantSplit/>" : "";
+      const rowProperties = [
+        rowIndex === 0 ? "<w:tblHeader/>" : "",
+        rowIndex === 0 || traceability || compact ? "<w:cantSplit/>" : "",
+      ].join("");
       return `<w:tr><w:trPr>${rowProperties}</w:trPr>${cells}</w:tr>`;
     })
     .join("");
@@ -310,7 +310,28 @@ const markdownBodyXml = (markdown, { layout, pageWidth, hyperlinks }) => {
         rows.push(parseTableRow(lines[index]));
         index += 1;
       }
-      output.push(tableXml(rows, pageWidth, layout, hyperlinks));
+      const rowsPerChunk =
+        isTraceabilityHeaders(rows[0]) && rows.length > 17
+          ? 6
+          : layout === "tracker" && rows[0].length === 7 && rows.length > 12
+            ? 9
+            : undefined;
+      if (rowsPerChunk) {
+        const dataRows = rows.slice(1);
+        for (let offset = 0; offset < dataRows.length; offset += rowsPerChunk) {
+          if (offset > 0) output.push(paragraphXml("", { pageBreak: true }, hyperlinks));
+          output.push(
+            tableXml(
+              [rows[0], ...dataRows.slice(offset, offset + rowsPerChunk)],
+              pageWidth,
+              layout,
+              hyperlinks,
+            ),
+          );
+        }
+      } else {
+        output.push(tableXml(rows, pageWidth, layout, hyperlinks));
+      }
       continue;
     }
 

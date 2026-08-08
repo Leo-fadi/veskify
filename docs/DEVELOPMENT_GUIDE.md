@@ -86,7 +86,7 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 ## 3. Current implementation baseline
 
-The verified v1.3.0 source baseline is current `main` after PR #170 on 7 August 2026. Phase 9 is
+The verified v1.3.0 source baseline is current `main` after PR #171 on 7 August 2026. Phase 9 is
 closed by product-owner handoff, and P10A is **Baseline / closed**. The overall product remains
 **Partial**. P10B is the active development phase and remains **Planned** until implementation work
 starts.
@@ -196,17 +196,27 @@ lifecycle, controlled-provider acceptance, publishing/compiler authority, publis
 evidence and protected-commerce correctness. It closes before commercial visual expansion and does
 not deliver merchant-operable granular editing or close on commercial visual polish.
 
-### P10B — Commercial Storefront Design System v1
+### P10B — Commercial Storefront Generation System v1
 
-P10B-01 through P10B-12 deliver governed vocabulary, visual foundations, art direction, frame,
-commercial families, merchandising, collection/PDP profiles, directions, narrative composition,
-responsive closure and commercial visual-quality evidence. P10B owns commercial component/profile
-reachability for new design-system capabilities, direction differentiation, credible-asset
-complete-storefront generation and manual screenshot/browser review. It uses only `BrandSystem →
-PageBlueprint profile → family/variant → bounded instance override`; manual Puck editing is not a
-dependency. It closes only after credible-asset review of home, collection, simple PDP and
-configurable PDP at 375, 768, 1024 and 1440 px proves that the output is not a generic starter
-theme.
+P10B-01 through P10B-18 deliver executable grammar, bounded Design DNA, meaningful component
+anatomy, art direction, complete site-map/page-family authority, commercial families/profiles, an
+early Premium Editorial complete-storefront slice, bounded synthesis, diversity control,
+responsive/accessibility/performance closure, and a commercial quality/scale gate. P10B owns
+complete-storefront generation and presentation; Vesko retains operational commerce.
+
+The binding architecture is
+[`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
+It uses only `BrandSystem → PageBlueprint profile → component family/meaningful variant → bounded
+validated instance override`; manual Puck editing is not a dependency. P10B closes only when 100+
+complete configurations pass deterministic diversity/protected-state gates and a representative
+fingerprint-stratified subset passes retained human review at 375, 768, 1024, and 1440 px.
+
+After P10B-01, P10B-02, P10B-03, and P10B-05 may run in parallel only with disjoint ownership of
+`BrandSystem`, component anatomy/compatibility, and site-map/PageBlueprint page-set authority.
+Shared registry indexes, schema exports, migrations, manifests, synthesis/direction authority, and
+renderer boundaries require one integration owner. Use A/B/C slices only for necessary
+contract/anatomy, renderer/variant, or PageBlueprint/generation/evidence separation; a parent is not
+complete until all required slices and evidence pass.
 
 ### P10C — Storefront Studio Editing Experience v1
 

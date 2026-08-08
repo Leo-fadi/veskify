@@ -2,13 +2,23 @@
 
 **Status:** implementation-ready technical specification; authoritative placement synchronized.
 
-**Scope:** This document specifies extensions to existing canonical contracts; its implementation scope changes no runtime code, schema, registry, PageBlueprint, component, style, fixture, or baseline. The accompanying roadmap-synchronization task updates the SDD, roadmap and synchronized DOCX only.
+**Scope:** This document specifies extensions to existing canonical contracts. The P10B
+architecture lock changes documentation only; it does not implement runtime code, schemas,
+registries, PageBlueprints, components, styles, fixtures, synthesis, or provider behavior.
 
-This specification does **not** independently assign phase or task numbers. The authoritative SDD and development roadmap now place this work in **P10B — Commercial Storefront Design System v1**, after P10A publishing closure and before P10C Storefront Studio Editing Experience v1. Downstream implementation must use the authoritative P10B-01 through P10B-12 sequence in those documents; this specification retains neutral implementation labels only.
+This specification defines the commercial design-grammar subsystem of **P10B — Commercial
+Storefront Generation System v1**, after P10A publishing closure and before P10C Storefront Studio
+Editing Experience v1. The binding complete-generation architecture and P10B-01 through P10B-18
+sequence are in
+[`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
+This vocabulary does not create a second task register or imply that P10B-01 is implemented.
 
 ## 1. Executive contract
 
-Storefront Design System v1 extends the existing controlled design path so a registered direction can orchestrate commercially meaningful, renderer-visible choices by selecting compatible registered contracts across the shared frame, homepage, collection and PDP without emitting CSS, class names, React, or a new page model.
+The commercial design system extends the existing controlled design path so bounded synthesis can
+orchestrate commercially meaningful, renderer-visible choices by selecting compatible registered
+contracts across the complete Veskify-owned page set without emitting CSS, class names, React, or
+a new page model.
 
 The one inheritance path is:
 
@@ -142,12 +152,14 @@ The initial commercial families to deepen are shared frame, hero, collection dis
 
 `PageBlueprint` remains the executable composition contract. A commercial recipe is a registered constrained profile on that contract and remains transient metadata/materialization input—not a persisted page graph.
 
-| Page scope   | Required controlled regions                                                                             | Optional controlled regions                                                                         | Provisional profile additions                                                                                                                                  |
-| ------------ | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Shared frame | exactly one header and footer; announcement may precede header.                                         | announcement, service/navigation extensions allowed by profile.                                     | Frame mode, navigation density/transformation, compatible header/footer/announcement relationships.                                                            |
-| Homepage     | orientation hero, primary discovery, service/footer.                                                    | collection discovery, story, campaign, trust, newsletter under existing omission rules.             | Narrative pacing, promotional intensity, product/collection discovery mix, section rhythm and media posture.                                                   |
-| Collection   | canonical dynamic collection commerce runtime component and shared frame.                               | approved child-collection discovery, campaign/proof only when registered/asset/evidence compatible. | Editorial discovery, catalogue comparison and campaign-led profile choices; filter/card-density/child-collection coordination.                                 |
-| PDP          | canonical dynamic PDP runtime component and shared frame; conversion remains adjacent to product focus. | supporting proof/service/story/related products only where registered and canonically bound.        | jewellery/high-consideration, variant-led, editorial-gallery and standard-commerce profile choices for gallery, purchase, proof, service and related products. |
+| Page scope        | Required controlled regions                                                                             | Optional controlled regions                                                                   | Provisional profile additions                                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Shared frame      | exactly one header and footer; announcement may precede header.                                         | announcement, service/navigation extensions allowed by profile.                               | At least four frame systems, three mobile navigation modes, four footer compositions, and coordinated announcement/search/cart/locale treatment. |
+| Homepage          | orientation hero, primary discovery, service/footer.                                                    | collection discovery, story, campaign, trust, newsletter under existing omission rules.       | At least six materially different narrative/profile choices spanning commercial emphasis, rhythm and media posture.                              |
+| Collection/search | canonical dynamic collection commerce runtime component, shared frame, and results/no-results state.    | approved child collections, campaign/proof when evidence compatible.                          | At least four editorial discovery, catalogue comparison, campaign-led, and dense/search profiles with coordinated filters/cards.                 |
+| PDP               | canonical dynamic PDP runtime component and shared frame; conversion remains adjacent to product focus. | supporting proof/service/story/related products only where registered and canonically bound.  | At least four standard, high-consideration, gallery-led, and variant-led profiles through the same generic option/commerce architecture.         |
+| Content/support   | approved-fact content role, shared frame, route, navigation, and localization.                          | evidence-backed story, location, service, campaign, and related content under omission rules. | About/story, Contact/locations, FAQ, shipping/returns, policy, campaign/editorial, and reusable generic content profiles.                        |
+| Commerce utility  | canonical operational context where available, shared frame, accessible action/state presentation.      | registered empty/error recovery and approved service guidance.                                | Search/no-results, cart, checkout, empty, error, and 404 presentation while Vesko retains operations.                                            |
 
 Insertion must use a declared optional slot whose family, variant, narrative role, visual weight, asset/binding requirements and maximum cardinality all pass. Repetition uses existing per-role and per-family limits. Flow rules continue to prohibit invalid adjacency and direct product-context/conversion separation. Responsive reordering is a registered profile/variant transformation; it cannot alter canonical commerce adjacency or move a required shared-frame region outside its protected position.
 
@@ -162,7 +174,7 @@ Each registered direction must select a complete compatible set, not a palette l
 | Density and surfaces    | Compatible foundation/profile references for spacing density, containers and surface/border/radius/elevation posture.                            |
 | Image treatment         | Compatible profile/family/variant treatment, overlay and responsive-crop references.                                                             |
 | Shared frame            | Compatible header/navigation/announcement/footer profile and family/variant references, including mobile transformation.                         |
-| Page profiles           | One compatible homepage, collection and PDP PageBlueprint profile.                                                                               |
+| Page profiles           | Compatible registered profiles for the selected complete page set, including home, commerce, content/support, and utility families.              |
 | Component compatibility | Product-card, hero/editorial/campaign/trust and dynamic-commerce families/variants allowed by those profiles.                                    |
 | Merchandising intent    | Registered compatibility trait selecting profiles/variants for `restrained`, `balanced` or `campaignLed` optional-region prominence and density. |
 
@@ -288,26 +300,24 @@ These are implementation targets, not code to add in this PR.
 | Responsive/a11y            | 375/768/1024/1440 and EN/FI: no clipping/overlap, declared transformations visible, keyboard/focus/contrast and commerce controls reachable.                                                  |
 | Golden-store/human review  | Current fingerprints/profiles/lifecycle/evidence remain current; screenshots/human rubric assess hierarchy, imagery, merchandising, repetition and cross-page coherence.                      |
 
-## 19. Recommended implementation PR decomposition
+## 19. Locked implementation relationship
 
-### Authoritative roadmap synchronization
+This vocabulary is consumed first by P10B-01, then by the remaining locked tasks in the generation
+architecture. It is not a parallel roadmap.
 
-The required synchronization has placed commercial design-system work in P10B, migrated former P10B asset/Studio work to P10C and deferred generated media to P10D. `docs/VESKIFY_SDD.md` and `docs/VESKIFY_DEVELOPMENT_ROADMAP.md` own the final task IDs and dependencies; the synchronized DOCX is their human-readable export. The neutral sequence below remains a technical dependency view, not an alternate task register.
+| Vocabulary concern                                            | Primary implementing task | Downstream consumers             |
+| ------------------------------------------------------------- | ------------------------- | -------------------------------- |
+| Grammar, ownership, inheritance, compatibility, typed failure | P10B-01                   | Every P10B task                  |
+| Parametric merchant-wide Design DNA                           | P10B-02                   | P10B-04, P10B-06 through P10B-18 |
+| Anatomy and meaningful structural variants                    | P10B-03                   | P10B-04, P10B-06 through P10B-18 |
+| Responsive approved-asset art direction                       | P10B-04                   | P10B-06 through P10B-18          |
+| Page-family/profile vocabulary                                | P10B-05                   | P10B-06, P10B-09 through P10B-18 |
+| Frame/content/product-card family vocabulary                  | P10B-06 through P10B-08   | P10B-09 through P10B-18          |
+| Home/collection/PDP/content/utility profile vocabulary        | P10B-09 through P10B-13   | P10B-14 through P10B-18          |
+| Synthesis, direction, and fingerprint vocabulary              | P10B-15, P10B-16          | P10B-17, P10B-18                 |
 
-| Provisional implementation label      | Authority extended / likely layers                                                                                              | Dependency, tests and visual evidence                                                                                              | Merchant-visible impact and parallel-model risk                                                                 |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Vocabulary contract implementation    | `BrandSystem`, bounded parameters, component compatibility, asset presentation and PageBlueprint/direction reference contracts. | Depends on roadmap synchronization and this specification; unit schema/inheritance/migration/manifest tests. No visual claim yet.  | Establishes controlled vocabulary. Highest risk is parallel tokens/recipes; extend existing contracts only.     |
-| Commercial visual foundations         | Brand CSS-variable projection and shared renderer token consumption.                                                            | Depends on vocabulary contract implementation; contrast/type/spacing/container tests plus four-width foundation specimen.          | Coherent typography, rhythm and surfaces across all pages.                                                      |
-| Image-treatment authority             | Approved asset presentation and compatible renderer media projection.                                                           | Depends on vocabulary contract implementation and visual foundations; asset role/provenance/crop fallback tests and screenshots.   | Approved imagery looks intentional without changing commerce media truth.                                       |
-| Premium shared frame                  | Header/announcement/navigation/footer families, compatibility and shared-frame profile rules.                                   | Depends on visual foundations; EN/FI long-name, keyboard/focus and four-width screenshots.                                         | Credible distinctive storefront frame. Risk: do not fork navigation ownership.                                  |
-| Hero/editorial/campaign families      | Existing composition families/variants and their asset/narrative compatibility.                                                 | Depends on visual foundations and image-treatment authority; profile/asset/contrast tests and homepage screenshots.                | Stronger first impression and story pacing.                                                                     |
-| Product-card and merchandising system | Canonical card presentation authority across homepage, collection and related products.                                         | Depends on visual foundations and image-treatment authority; commerce, card-state and product-count responsive tests.              | Consistent product merchandising. Risk: consolidate rather than create a third card authority.                  |
-| Collection-page profile expansion     | Existing `dynamicCollectionCommerce`, PageBlueprint profile and direction compatibility.                                        | Depends on premium shared frame and product-card system; generation-depth, filters/children/bindings and collection screenshots.   | Editorial, catalogue and campaign-led collection choices. No new collection page shape/bridge.                  |
-| PDP profile expansion                 | Existing `dynamicProductDetail`, PageBlueprint profile and direction compatibility.                                             | Depends on image treatment, premium shared frame and product-card system; option/media/sticky action and PDP screenshots.          | High-consideration, variant-led, editorial-gallery and standard PDP choices. No replacement PDP family.         |
-| Cross-page design directions          | Registered direction compatibility-selection contract and existing whole-storefront planner validation.                         | Depends on the frame, family and page-profile expansions; pairwise direction/profile/renderer-visible diversity evidence.          | Briefs yield different complete stores, not palette variants; direction stays outside inheritance.              |
-| Narrative composition                 | Existing narrative roles/flow rules and profile metadata.                                                                       | Depends on composition families/profiles; role/adjacency/cardinality/commerce-placement tests.                                     | Better commercial pacing without unrestricted section generation.                                               |
-| Responsive closure                    | Existing responsive contracts, renderer modes and profile constraints.                                                          | Depends on every affected family; 375/768/1024/1440 EN/FI geometry/a11y/screenshots.                                               | Direction remains deliberate and usable at every target width.                                                  |
-| Commercial visual-quality gate        | Golden-store and human-commercial-review evidence authorities.                                                                  | Depends on cross-page directions, narrative composition and responsive closure; retained screenshot/human-review lifecycle matrix. | Reliable commercial-quality evidence. Risk: deterministic evidence must not claim subjective visual pass alone. |
+After P10B-01, P10B-02, P10B-03, and P10B-05 may run in parallel only with the disjoint authority
+ownership and integration rules defined by the architecture lock.
 
 ## 20. Explicit non-goals
 
@@ -316,7 +326,7 @@ The required synchronization has placed commercial design-system work in P10B, m
 - No mutation of product, variant, option, SKU, price, compare-at price, availability, stock, inventory, canonical product media or provenance.
 - No merchant-specific components, unrestricted image generation, unsupported commercial claims or automatic “premium” quality assertion.
 - No replacement of the existing `dynamicCollectionCommerce`/`dynamicProductDetail` runtime path; commercial design-system work only deepens its governed visual/compositional profile range.
-- No change to SDD/DOCX in this specification PR. Material implementation changes will update required documentation in their own PRs.
+- No claim that this architecture/documentation lock implements P10B-01 or any runtime capability.
 
 ## Evidence reviewed
 
