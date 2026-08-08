@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { validateComponentDefinitionV2 } from "@/domain/component-platform";
 import { localizedTextSchema } from "@/domain/shared";
+import { withCurrentComponentCommercialAnatomy } from "./commercial-anatomy";
 
 const trustItemSchema = z
   .object({
@@ -331,7 +332,9 @@ const definitionInput = {
   },
 };
 
-export const dynamicProductDetailDefinition = validateComponentDefinitionV2(definitionInput);
+export const dynamicProductDetailDefinition = validateComponentDefinitionV2(
+  withCurrentComponentCommercialAnatomy(definitionInput),
+);
 
 export type DynamicProductDetailContent = z.infer<typeof dynamicProductDetailContentSchema>;
 export type DynamicProductDetailProps = z.infer<typeof dynamicProductDetailPropsSchema>;

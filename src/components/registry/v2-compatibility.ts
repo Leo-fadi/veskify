@@ -7,6 +7,7 @@ import {
   type EditablePresentationField,
   validateComponentDefinitionV2,
 } from "@/domain/component-platform";
+import { withCurrentComponentCommercialAnatomy } from "./commercial-anatomy";
 
 type V1EditorFieldMetadata = {
   source: "content" | "props";
@@ -140,77 +141,79 @@ function legacyContentDesignCompatibility() {
 export function adaptV1ComponentDefinitionToV2(
   definition: InspectableComponentDefinitionV1,
 ): ComponentDefinitionV2 {
-  return validateComponentDefinitionV2({
-    type: definition.type,
-    version: { major: 1, minor: 0, patch: 0 },
-    title: localizedLabel(definition.label),
-    merchantDescription: {
-      en: `${definition.label} storefront section.`,
-      fi: `${localizedLabel(definition.label).fi} kaupan osio.`,
-    },
-    family: "content",
-    supportedPageTypes: [...definition.allowedPageTypes],
-    variants: definition.variants.map((variant) => ({
-      id: variant,
-      title: localizedVariantLabel(variant),
-    })),
-    defaultVariant: definition.defaultVariant,
-    industryTags: [],
-    contentSchema: serializableObjectContract(definition.contentSchema),
-    propsSchema: serializableObjectContract(definition.propsSchema),
-    styleOverridesSchema: {
-      type: "object",
-      properties: {},
-      required: [],
-      additionalProperties: false,
-    },
-    contentSlots: [],
-    commerceBindingSlots: [],
-    assetSlots:
-      definition.type === "brandStory"
-        ? [
-            {
-              id: "brandStoryMedia",
-              title: { en: "Brand story media", fi: "Bränditarinan media" },
-              acceptedRoles: ["editorialImage", "logo"],
-              required: false,
-              minItems: 0,
-              maxItems: 1,
-            },
-          ]
-        : [],
-    editablePresentationFields: Object.entries(definition.editorFields).map(([path, field]) =>
-      editableFieldFromV1(path, field),
-    ),
-    protectedFields: { readOnlyPaths: [...definition.protectedFields.readOnlyPaths] },
-    responsiveRules: [
-      {
-        breakpoints: ["mobile", "tablet", "desktop", "wide"],
-        allowHorizontalOverflow: false,
-        notes: {
-          en: "Existing registered renderer with responsive behaviour at all supported widths.",
-          fi: "Nykyinen rekisteröity renderöinti mukautuu kaikilla tuetuilla leveyksillä.",
-        },
+  return validateComponentDefinitionV2(
+    withCurrentComponentCommercialAnatomy({
+      type: definition.type,
+      version: { major: 1, minor: 0, patch: 0 },
+      title: localizedLabel(definition.label),
+      merchantDescription: {
+        en: `${definition.label} storefront section.`,
+        fi: `${localizedLabel(definition.label).fi} kaupan osio.`,
       },
-    ],
-    accessibilityRequirements: {
-      keyboard: "Retain the existing registered renderer keyboard behaviour.",
-      semantics: "Retain the existing registered renderer semantic structure.",
-      labels: "Retain the existing registered renderer labels and alt text rules.",
-      focus: "Retain the existing registered renderer focus behaviour.",
-    },
-    designCompatibility: legacyContentDesignCompatibility(),
-    migration: {
-      policy: "compatible",
-      previousVersions: [],
-      migrations: [],
-    },
-    renderer: {
-      adapterId: "veskifyV1Registry",
-      exportName: definition.type,
-      supportedTargets: ["editor", "preview", "published"],
-    },
-  });
+      family: "content",
+      supportedPageTypes: [...definition.allowedPageTypes],
+      variants: definition.variants.map((variant) => ({
+        id: variant,
+        title: localizedVariantLabel(variant),
+      })),
+      defaultVariant: definition.defaultVariant,
+      industryTags: [],
+      contentSchema: serializableObjectContract(definition.contentSchema),
+      propsSchema: serializableObjectContract(definition.propsSchema),
+      styleOverridesSchema: {
+        type: "object",
+        properties: {},
+        required: [],
+        additionalProperties: false,
+      },
+      contentSlots: [],
+      commerceBindingSlots: [],
+      assetSlots:
+        definition.type === "brandStory"
+          ? [
+              {
+                id: "brandStoryMedia",
+                title: { en: "Brand story media", fi: "Bränditarinan media" },
+                acceptedRoles: ["editorialImage", "logo"],
+                required: false,
+                minItems: 0,
+                maxItems: 1,
+              },
+            ]
+          : [],
+      editablePresentationFields: Object.entries(definition.editorFields).map(([path, field]) =>
+        editableFieldFromV1(path, field),
+      ),
+      protectedFields: { readOnlyPaths: [...definition.protectedFields.readOnlyPaths] },
+      responsiveRules: [
+        {
+          breakpoints: ["mobile", "tablet", "desktop", "wide"],
+          allowHorizontalOverflow: false,
+          notes: {
+            en: "Existing registered renderer with responsive behaviour at all supported widths.",
+            fi: "Nykyinen rekisteröity renderöinti mukautuu kaikilla tuetuilla leveyksillä.",
+          },
+        },
+      ],
+      accessibilityRequirements: {
+        keyboard: "Retain the existing registered renderer keyboard behaviour.",
+        semantics: "Retain the existing registered renderer semantic structure.",
+        labels: "Retain the existing registered renderer labels and alt text rules.",
+        focus: "Retain the existing registered renderer focus behaviour.",
+      },
+      designCompatibility: legacyContentDesignCompatibility(),
+      migration: {
+        policy: "compatible",
+        previousVersions: [],
+        migrations: [],
+      },
+      renderer: {
+        adapterId: "veskifyV1Registry",
+        exportName: definition.type,
+        supportedTargets: ["editor", "preview", "published"],
+      },
+    }),
+  );
 }
 
 export function adaptV1ComponentRegistryToV2(

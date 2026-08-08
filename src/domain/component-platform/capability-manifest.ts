@@ -4,6 +4,7 @@ import type { ExecutablePageBlueprintProfile } from "@/application/storefront-te
 import {
   componentDataSchemaContractSchema,
   componentDefinitionV2Schema,
+  formatComponentVersion,
   protectedCommerceFieldPaths,
   type AccessibilityRequirement,
   type AssetRole,
@@ -12,8 +13,11 @@ import {
   type CommerceBindingSourceType,
   type ComponentDefinitionV2,
   type ComponentDataSchemaContract,
+  type ComponentCommercialAnatomy,
   type ComponentFamily,
+  type ComponentMaterialDifference,
   type ComponentMigrationMetadata,
+  type ComponentVariantStructuralClassification,
   type ComponentVersion,
   type ContentSlotDefinition,
   type EditablePresentationField,
@@ -31,7 +35,7 @@ import {
   type CommercialGrammarValueCompatibility,
 } from "./commercial-design-grammar";
 
-export const componentCapabilityManifestVersion = "1.1.0" as const;
+export const componentCapabilityManifestVersion = "1.2.0" as const;
 
 type NarrativeRole = ComponentDefinitionV2["designCompatibility"]["allowedNarrativeRoles"][number];
 
@@ -46,6 +50,8 @@ export type ComponentCapabilityManifestEntry = Readonly<{
     compatibleDensity: readonly NonNullable<
       ComponentDefinitionV2["variants"][number]["compatibleDensity"]
     >[number][];
+    structuralClassification: ComponentVariantStructuralClassification | "unclassified";
+    materialDifferences: readonly ComponentMaterialDifference[];
   }>[];
   allowedPageTypes: readonly PageType[];
   narrativeRoles: readonly NarrativeRole[];
@@ -77,6 +83,7 @@ export type ComponentCapabilityManifestEntry = Readonly<{
   protectedPaths: readonly string[];
   responsiveRules: readonly Readonly<ResponsiveRule>[];
   accessibilityRequirements: Readonly<AccessibilityRequirement>;
+  commercialAnatomy?: Readonly<ComponentCommercialAnatomy> & Readonly<{ fingerprint: string }>;
   renderer: Readonly<RendererAdapterIdentity>;
   migration: Readonly<ComponentMigrationMetadata>;
   fingerprint: string;
@@ -125,6 +132,16 @@ export type ComponentCapabilityManifestAuthority = Readonly<{
   getBoundedParameters: (
     componentType: string,
   ) => readonly ComponentCapabilityManifestEntry["boundedParameters"][number][];
+  getCommercialAnatomy: (
+    componentType: string,
+  ) => ComponentCapabilityManifestEntry["commercialAnatomy"];
+  getCommercialAnatomyMigration: (
+    componentType: string,
+    fromVersion: Readonly<ComponentVersion>,
+  ) => ComponentMigrationMetadata["migrations"][number] | undefined;
+  requireCommercialReadyVariant: (
+    input: CommercialReadyVariantRequirement,
+  ) => CommercialReadyVariantCapability;
   listCommercialGrammarCategories: () => readonly CommercialGrammarCategory[];
   getCommercialGrammarCategory: (
     categoryId: CommercialGrammarCategory["id"],
@@ -145,6 +162,48 @@ export type ComponentCapabilityManifestGenerationInput = Readonly<{
   componentDefinitions: readonly unknown[];
   executableProfiles: readonly unknown[];
   validateExecutableProfile: (profile: unknown) => ExecutablePageBlueprintProfile;
+}>;
+
+export const commercialCapabilityErrorCodes = {
+  unknownComponent: "unknownComponent",
+  unknownVariant: "unknownVariant",
+  missingAnatomy: "missingAnatomy",
+  staleAnatomy: "staleAnatomy",
+  incompatiblePageFamily: "incompatiblePageFamily",
+  incompatibleNarrativeRole: "incompatibleNarrativeRole",
+  incompatibleAssetRole: "incompatibleAssetRole",
+  notCommercialReady: "notCommercialReady",
+  notMeaningfulStructuralVariant: "notMeaningfulStructuralVariant",
+} as const;
+
+export type CommercialCapabilityErrorCode =
+  (typeof commercialCapabilityErrorCodes)[keyof typeof commercialCapabilityErrorCodes];
+
+export class CommercialCapabilityError extends Error {
+  constructor(
+    readonly code: CommercialCapabilityErrorCode,
+    message: string,
+  ) {
+    super(message);
+    this.name = "CommercialCapabilityError";
+  }
+}
+
+export type CommercialReadyVariantRequirement = Readonly<{
+  componentType: string;
+  variant: string;
+  expectedAnatomyIdentity?: string;
+  expectedAnatomyVersion?: Readonly<ComponentVersion>;
+  pageType?: PageType;
+  narrativeRole?: NarrativeRole;
+  assetRoles?: readonly AssetRole[];
+  requireMeaningful?: boolean;
+}>;
+
+export type CommercialReadyVariantCapability = Readonly<{
+  component: ComponentCapabilityManifestEntry;
+  variant: ComponentCapabilityManifestEntry["variants"][number];
+  anatomy: NonNullable<ComponentCapabilityManifestEntry["commercialAnatomy"]>;
 }>;
 
 function compareCanonicalStrings(left: string, right: string): number {
@@ -239,6 +298,60 @@ function canonicalizeParameterDefaults(
   );
 }
 
+function canonicalizeCommercialAnatomy(
+  anatomy: ComponentCommercialAnatomy,
+): NonNullable<ComponentCapabilityManifestEntry["commercialAnatomy"]> {
+  const content = {
+    ...clone(anatomy),
+    regions: canonicalRows(anatomy.regions, (region) => region.id),
+    parameters: canonicalRows(anatomy.parameters, (parameter) => parameter.id),
+    responsiveTransformations: canonicalRows(
+      anatomy.responsiveTransformations,
+      (transformation) => transformation.id,
+    ).map((transformation) => ({
+      ...transformation,
+      breakpoints: sortStrings(transformation.breakpoints),
+      affectedRegions: sortStrings(transformation.affectedRegions),
+    })),
+    compatibility: {
+      allowedPageTypes: sortStrings(anatomy.compatibility.allowedPageTypes),
+      narrativeRoles: sortStrings(anatomy.compatibility.narrativeRoles),
+      brandPostures: sortStrings(anatomy.compatibility.brandPostures),
+      assetRequirements: canonicalRows(
+        anatomy.compatibility.assetRequirements,
+        (requirement) => requirement.slotId,
+      ).map((requirement) => ({
+        ...requirement,
+        acceptedRoles: sortStrings(requirement.acceptedRoles),
+      })),
+      responsiveModes: sortStrings(anatomy.compatibility.responsiveModes),
+    },
+    variants: canonicalRows(anatomy.variants, (variant) => variant.variantId).map((variant) => ({
+      ...variant,
+      materialDifferences: sortStrings(variant.materialDifferences),
+      finishingTokenIds: sortStrings(variant.finishingTokenIds),
+      structure: {
+        ...variant.structure,
+        omittedRegions: sortStrings(variant.structure.omittedRegions),
+        assetPlacements: canonicalRows(
+          variant.structure.assetPlacements,
+          (placement) => placement.slotId,
+        ),
+        responsiveTransformationIds: sortStrings(variant.structure.responsiveTransformationIds),
+      },
+    })),
+    migration: {
+      ...clone(anatomy.migration),
+      previousVersions: canonicalRows(anatomy.migration.previousVersions, canonicalValueString),
+      migrations: canonicalRows(anatomy.migration.migrations, canonicalValueString),
+    },
+  };
+  return deepFreeze({
+    ...content,
+    fingerprint: `component-anatomy-${canonicalValueFingerprint(canonicalValueString(content))}`,
+  });
+}
+
 function componentEntry(definition: ComponentDefinitionV2): ComponentCapabilityManifestEntry {
   const parameterIds = uniqueSorted(
     definition.designCompatibility.boundedParameterIds,
@@ -270,16 +383,30 @@ function componentEntry(definition: ComponentDefinitionV2): ComponentCapabilityM
     definition.commerceBindingSlots.map(canonicalizeBindingSlot),
     (slot) => slot.id,
   );
+  const commercialAnatomy =
+    definition.commercialAnatomy === undefined
+      ? undefined
+      : canonicalizeCommercialAnatomy(definition.commercialAnatomy);
+  const commercialVariants = new Map(
+    commercialAnatomy?.variants.map((variant) => [variant.variantId, variant]) ?? [],
+  );
   const entry = {
     registryIdentity: `ComponentDefinitionV2:${definition.type}`,
     componentType: definition.type,
     componentDefinitionVersion: clone(definition.version),
     family: definition.family,
     defaultVariant: definition.defaultVariant,
-    variants: canonicalRows(definition.variants, (variant) => variant.id).map((variant) => ({
-      id: variant.id,
-      compatibleDensity: sortStrings(variant.compatibleDensity ?? []),
-    })),
+    variants: canonicalRows(definition.variants, (variant) => variant.id).map(
+      (variant): ComponentCapabilityManifestEntry["variants"][number] => ({
+        id: variant.id,
+        compatibleDensity: sortStrings(variant.compatibleDensity ?? []),
+        structuralClassification:
+          commercialVariants.get(variant.id)?.classification ?? "unclassified",
+        materialDifferences: sortStrings(
+          commercialVariants.get(variant.id)?.materialDifferences ?? [],
+        ),
+      }),
+    ),
     allowedPageTypes: uniqueSorted(
       definition.supportedPageTypes,
       `page type for ${definition.type}`,
@@ -337,6 +464,7 @@ function componentEntry(definition: ComponentDefinitionV2): ComponentCapabilityM
       }),
     ),
     accessibilityRequirements: clone(definition.accessibilityRequirements),
+    ...(commercialAnatomy === undefined ? {} : { commercialAnatomy }),
     renderer: {
       ...clone(definition.renderer),
       supportedTargets: sortStrings(definition.renderer.supportedTargets),
@@ -489,6 +617,93 @@ export function createComponentCapabilityManifestAuthority(
     )}`,
   });
 
+  function requireCommercialReadyVariant(
+    requirement: CommercialReadyVariantRequirement,
+  ): CommercialReadyVariantCapability {
+    const component = byComponentType.get(requirement.componentType);
+    if (!component) {
+      throw new CommercialCapabilityError(
+        commercialCapabilityErrorCodes.unknownComponent,
+        `Unknown registered component capability: ${requirement.componentType}.`,
+      );
+    }
+    const variant = component.variants.find((candidate) => candidate.id === requirement.variant);
+    if (!variant) {
+      throw new CommercialCapabilityError(
+        commercialCapabilityErrorCodes.unknownVariant,
+        `Unknown registered component variant: ${requirement.componentType}/${requirement.variant}.`,
+      );
+    }
+    const anatomy = component.commercialAnatomy;
+    if (!anatomy) {
+      throw new CommercialCapabilityError(
+        commercialCapabilityErrorCodes.missingAnatomy,
+        `Component ${requirement.componentType} has no registered commercial anatomy.`,
+      );
+    }
+    if (
+      (requirement.expectedAnatomyIdentity !== undefined &&
+        requirement.expectedAnatomyIdentity !== anatomy.identity) ||
+      (requirement.expectedAnatomyVersion !== undefined &&
+        formatComponentVersion(requirement.expectedAnatomyVersion) !==
+          formatComponentVersion(anatomy.version))
+    ) {
+      throw new CommercialCapabilityError(
+        commercialCapabilityErrorCodes.staleAnatomy,
+        `Component ${requirement.componentType} commercial anatomy authority is stale.`,
+      );
+    }
+    if (
+      requirement.pageType !== undefined &&
+      !anatomy.compatibility.allowedPageTypes.includes(requirement.pageType)
+    ) {
+      throw new CommercialCapabilityError(
+        commercialCapabilityErrorCodes.incompatiblePageFamily,
+        `Component ${requirement.componentType} is not commercially compatible with ${requirement.pageType} pages.`,
+      );
+    }
+    if (
+      requirement.narrativeRole !== undefined &&
+      !anatomy.compatibility.narrativeRoles.includes(requirement.narrativeRole)
+    ) {
+      throw new CommercialCapabilityError(
+        commercialCapabilityErrorCodes.incompatibleNarrativeRole,
+        `Component ${requirement.componentType} is not commercially compatible with narrative role ${requirement.narrativeRole}.`,
+      );
+    }
+    const acceptedAssetRoles = new Set(
+      anatomy.compatibility.assetRequirements.flatMap((asset) => asset.acceptedRoles),
+    );
+    for (const assetRole of requirement.assetRoles ?? []) {
+      if (!acceptedAssetRoles.has(assetRole)) {
+        throw new CommercialCapabilityError(
+          commercialCapabilityErrorCodes.incompatibleAssetRole,
+          `Component ${requirement.componentType} does not accept commercial asset role ${assetRole}.`,
+        );
+      }
+    }
+    if (
+      variant.structuralClassification === "unclassified" ||
+      variant.structuralClassification === "legacySuperseded" ||
+      variant.structuralClassification === "notYetP10BCommercialReady"
+    ) {
+      throw new CommercialCapabilityError(
+        commercialCapabilityErrorCodes.notCommercialReady,
+        `Component variant ${requirement.componentType}/${requirement.variant} is not P10B commercial-ready.`,
+      );
+    }
+    if (
+      (requirement.requireMeaningful ?? true) &&
+      variant.structuralClassification !== "meaningfulStructuralVariant"
+    ) {
+      throw new CommercialCapabilityError(
+        commercialCapabilityErrorCodes.notMeaningfulStructuralVariant,
+        `Component variant ${requirement.componentType}/${requirement.variant} is not a meaningful structural variant.`,
+      );
+    }
+    return deepFreeze({ component, variant, anatomy });
+  }
+
   return deepFreeze({
     manifest,
     getByComponentType: (componentType) => byComponentType.get(componentType),
@@ -501,6 +716,16 @@ export function createComponentCapabilityManifestAuthority(
     getVariants: (componentType) => byComponentType.get(componentType)?.variants ?? [],
     getBoundedParameters: (componentType) =>
       byComponentType.get(componentType)?.boundedParameters ?? [],
+    getCommercialAnatomy: (componentType) => byComponentType.get(componentType)?.commercialAnatomy,
+    getCommercialAnatomyMigration: (componentType, fromVersion) => {
+      const anatomy = byComponentType.get(componentType)?.commercialAnatomy;
+      return anatomy?.migration.migrations.find(
+        (migration) =>
+          formatComponentVersion(migration.fromVersion) === formatComponentVersion(fromVersion) &&
+          formatComponentVersion(migration.toVersion) === formatComponentVersion(anatomy.version),
+      );
+    },
+    requireCommercialReadyVariant,
     listCommercialGrammarCategories: () => commercialDesignGrammar.categories,
     getCommercialGrammarCategory: (categoryId) => grammarCategoriesById.get(categoryId),
     getCommercialGrammarValueCompatibility: (categoryId, value) =>

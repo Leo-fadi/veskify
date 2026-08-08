@@ -12,6 +12,10 @@ import {
   componentDesignCompatibilitySchema,
   createLegacyComponentDesignCompatibility,
 } from "./design-vocabulary";
+import {
+  commercialResponsiveTransformationSchema,
+  commercialTypographyPostureSchema,
+} from "./commercial-design-grammar";
 
 const tokenSchema = z
   .string()
@@ -310,6 +314,295 @@ export const componentMigrationMetadataSchema = z
   })
   .strict();
 
+export const componentCommercialAnatomyContractVersion = "1.0.0" as const;
+
+export const componentSemanticRegionSchema = z.enum([
+  "frame",
+  "navigation",
+  "media",
+  "content",
+  "heading",
+  "body",
+  "merchandising",
+  "price",
+  "metadata",
+  "proof",
+  "actions",
+  "utility",
+  "continuation",
+  "service",
+]);
+
+export const componentSemanticRegionDefinitionSchema = z
+  .object({
+    id: componentSemanticRegionSchema,
+    required: z.boolean(),
+  })
+  .strict();
+
+export const componentVariantStructuralClassificationSchema = z.enum([
+  "meaningfulStructuralVariant",
+  "finishingOnlyVariation",
+  "compatibilityAlias",
+  "legacySuperseded",
+  "notYetP10BCommercialReady",
+]);
+
+export const componentMaterialDifferenceSchema = z.enum([
+  "hierarchy",
+  "regionArrangement",
+  "regionPresence",
+  "assetPlacement",
+  "contentRelationship",
+  "ctaRelationship",
+  "merchandisingEmphasis",
+  "navigationModel",
+  "responsiveTransformation",
+  "presentationMode",
+]);
+
+export const componentCommercialParameterKindSchema = z.enum([
+  "structural",
+  "semanticFinishing",
+  "contentInput",
+  "commerceBinding",
+  "assetRole",
+]);
+
+export const componentCommercialParameterSourceSchema = z.enum([
+  "props",
+  "styleOverrides",
+  "content",
+  "commerceBindingSlot",
+  "assetSlot",
+]);
+
+export const componentCommercialParameterSchema = z
+  .object({
+    id: tokenSchema,
+    kind: componentCommercialParameterKindSchema,
+    source: componentCommercialParameterSourceSchema,
+    reference: pathSchema,
+  })
+  .strict()
+  .superRefine((parameter, context) => {
+    const validSource =
+      (parameter.kind === "structural" && parameter.source === "props") ||
+      (parameter.kind === "semanticFinishing" &&
+        (parameter.source === "props" || parameter.source === "styleOverrides")) ||
+      (parameter.kind === "contentInput" && parameter.source === "content") ||
+      (parameter.kind === "commerceBinding" && parameter.source === "commerceBindingSlot") ||
+      (parameter.kind === "assetRole" && parameter.source === "assetSlot");
+    if (!validSource) {
+      context.addIssue({
+        code: "custom",
+        path: ["source"],
+        message: `Commercial parameter kind ${parameter.kind} cannot use ${parameter.source}.`,
+      });
+    }
+  });
+
+export const componentResponsiveTransformationSchema = z
+  .object({
+    id: tokenSchema,
+    mode: commercialResponsiveTransformationSchema,
+    breakpoints: z.array(z.enum(["mobile", "tablet", "desktop", "wide"])).min(1),
+    fromPresentationMode: tokenSchema,
+    toPresentationMode: tokenSchema,
+    affectedRegions: z.array(componentSemanticRegionSchema).min(1),
+  })
+  .strict()
+  .superRefine((transformation, context) => {
+    for (const [field, values] of [
+      ["breakpoints", transformation.breakpoints],
+      ["affectedRegions", transformation.affectedRegions],
+    ] as const) {
+      if (!unique(values)) {
+        context.addIssue({
+          code: "custom",
+          path: [field],
+          message: `${field} must not contain duplicates.`,
+        });
+      }
+    }
+  });
+
+export const componentAssetRequirementReferenceSchema = z
+  .object({
+    slotId: tokenSchema,
+    acceptedRoles: z.array(assetRoleSchema).min(1),
+    required: z.boolean(),
+    minItems: z.number().int().nonnegative(),
+    maxItems: z.number().int().positive().optional(),
+  })
+  .strict();
+
+export const componentVariantStructureSchema = z
+  .object({
+    regionOrder: z.array(componentSemanticRegionSchema).min(1),
+    omittedRegions: z.array(componentSemanticRegionSchema).default([]),
+    assetPlacements: z
+      .array(
+        z
+          .object({
+            slotId: tokenSchema,
+            region: componentSemanticRegionSchema,
+          })
+          .strict(),
+      )
+      .default([]),
+    contentRelationship: z.enum(["balanced", "contentLed", "mediaLed", "supporting"]),
+    ctaRelationship: z.enum(["none", "inline", "separated", "overlay", "sticky"]),
+    merchandisingEmphasis: z.enum(["none", "supporting", "balanced", "dominant"]),
+    navigationModel: z.enum(["none", "inline", "toolbar", "disclosure", "carousel"]),
+    responsiveTransformationIds: z.array(tokenSchema).min(1),
+    presentationMode: tokenSchema,
+  })
+  .strict()
+  .superRefine((structure, context) => {
+    for (const [field, values] of [
+      ["regionOrder", structure.regionOrder],
+      ["omittedRegions", structure.omittedRegions],
+      ["responsiveTransformationIds", structure.responsiveTransformationIds],
+      ["assetPlacements", structure.assetPlacements.map((placement) => placement.slotId)],
+    ] as const) {
+      if (!unique(values)) {
+        context.addIssue({
+          code: "custom",
+          path: [field],
+          message: `${field} must not contain duplicates.`,
+        });
+      }
+    }
+    structure.omittedRegions.forEach((region, index) => {
+      if (structure.regionOrder.includes(region)) {
+        context.addIssue({
+          code: "custom",
+          path: ["omittedRegions", index],
+          message: "An omitted region cannot remain in the realized region order.",
+        });
+      }
+    });
+  });
+
+export const componentVariantStructuralSemanticsSchema = z
+  .object({
+    variantId: tokenSchema,
+    classification: componentVariantStructuralClassificationSchema,
+    materialDifferences: z.array(componentMaterialDifferenceSchema),
+    finishingTokenIds: z.array(tokenSchema).default([]),
+    aliasOf: tokenSchema.optional(),
+    supersededBy: tokenSchema.optional(),
+    structure: componentVariantStructureSchema,
+  })
+  .strict()
+  .superRefine((variant, context) => {
+    if (!unique(variant.materialDifferences)) {
+      context.addIssue({
+        code: "custom",
+        path: ["materialDifferences"],
+        message: "Material difference declarations must be unique.",
+      });
+    }
+    if (!unique(variant.finishingTokenIds)) {
+      context.addIssue({
+        code: "custom",
+        path: ["finishingTokenIds"],
+        message: "Finishing token identities must be unique.",
+      });
+    }
+    if (
+      variant.classification === "meaningfulStructuralVariant" &&
+      variant.materialDifferences.length === 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["materialDifferences"],
+        message: "Meaningful structural variants require a material difference declaration.",
+      });
+    }
+    if (
+      variant.classification === "finishingOnlyVariation" &&
+      (variant.materialDifferences.length > 0 || variant.finishingTokenIds.length === 0)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["classification"],
+        message:
+          "Finishing-only variations require finishing tokens and cannot declare material structural differences.",
+      });
+    }
+    if (
+      variant.classification === "compatibilityAlias" &&
+      (variant.aliasOf === undefined || variant.materialDifferences.length > 0)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["aliasOf"],
+        message: "Compatibility aliases require an alias target and no material differences.",
+      });
+    }
+    if (
+      ["legacySuperseded", "notYetP10BCommercialReady"].includes(variant.classification) &&
+      variant.materialDifferences.length > 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["materialDifferences"],
+        message: `${variant.classification} variants cannot claim material differences.`,
+      });
+    }
+  });
+
+export const componentCommercialAnatomySchema = z
+  .object({
+    contractVersion: z.literal(componentCommercialAnatomyContractVersion),
+    identity: tokenSchema,
+    version: componentVersionSchema,
+    regions: z.array(componentSemanticRegionDefinitionSchema).min(1),
+    parameters: z.array(componentCommercialParameterSchema),
+    responsiveTransformations: z.array(componentResponsiveTransformationSchema).min(1),
+    compatibility: z
+      .object({
+        allowedPageTypes: z.array(pageTypeSchema).min(1),
+        narrativeRoles: z.array(tokenSchema).min(1),
+        brandPostures: z.array(commercialTypographyPostureSchema).min(1),
+        assetRequirements: z.array(componentAssetRequirementReferenceSchema),
+        responsiveModes: z.array(commercialResponsiveTransformationSchema).min(1),
+      })
+      .strict(),
+    variants: z.array(componentVariantStructuralSemanticsSchema).min(1),
+    migration: componentMigrationMetadataSchema,
+  })
+  .strict()
+  .superRefine((anatomy, context) => {
+    for (const [field, values] of [
+      ["regions", anatomy.regions.map((region) => region.id)],
+      ["parameters", anatomy.parameters.map((parameter) => parameter.id)],
+      [
+        "responsiveTransformations",
+        anatomy.responsiveTransformations.map((transformation) => transformation.id),
+      ],
+      ["variants", anatomy.variants.map((variant) => variant.variantId)],
+      ["allowedPageTypes", anatomy.compatibility.allowedPageTypes],
+      ["narrativeRoles", anatomy.compatibility.narrativeRoles],
+      ["brandPostures", anatomy.compatibility.brandPostures],
+      [
+        "assetRequirements",
+        anatomy.compatibility.assetRequirements.map((requirement) => requirement.slotId),
+      ],
+      ["responsiveModes", anatomy.compatibility.responsiveModes],
+    ] as const) {
+      if (!unique(values)) {
+        context.addIssue({
+          code: "custom",
+          path: [field],
+          message: `${field} must not contain duplicates.`,
+        });
+      }
+    }
+  });
+
 export const protectedCommerceFieldPaths = [
   "productIds",
   "collectionIds",
@@ -362,6 +655,7 @@ export const componentDefinitionV2Schema = z
     designCompatibility: componentDesignCompatibilitySchema.default(
       createLegacyComponentDesignCompatibility(),
     ),
+    commercialAnatomy: componentCommercialAnatomySchema.optional(),
     migration: componentMigrationMetadataSchema,
     renderer: rendererAdapterIdentitySchema,
   })
@@ -396,6 +690,7 @@ export const componentDefinitionV2Schema = z
     }
 
     validateMigrationConsistency(definition, context);
+    validateCommercialAnatomyConsistency(definition, context);
 
     const allProtectedPaths = [
       ...definition.protectedFields.readOnlyPaths,
@@ -1288,6 +1583,281 @@ function jsonSchemaDeclaresPath(
   return true;
 }
 
+function sameMembers(left: readonly string[], right: readonly string[]): boolean {
+  return (
+    left.length === right.length &&
+    [...left].sort().every((value, index) => value === [...right].sort()[index])
+  );
+}
+
+function sameStructuredValue(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function realizedMaterialDifferences(
+  variant: z.infer<typeof componentVariantStructuralSemanticsSchema>,
+  baseline?: z.infer<typeof componentVariantStructuralSemanticsSchema>,
+): Set<z.infer<typeof componentMaterialDifferenceSchema>> {
+  const realized = new Set<z.infer<typeof componentMaterialDifferenceSchema>>();
+  const structure = variant.structure;
+  const base = baseline?.structure;
+  if (base === undefined) {
+    if (structure.regionOrder.length > 1) {
+      realized.add("hierarchy");
+      realized.add("regionArrangement");
+    }
+    if (structure.omittedRegions.length > 0) realized.add("regionPresence");
+    if (structure.assetPlacements.length > 0) realized.add("assetPlacement");
+    if (structure.contentRelationship !== "balanced") realized.add("contentRelationship");
+    if (structure.ctaRelationship !== "none") realized.add("ctaRelationship");
+    if (structure.merchandisingEmphasis !== "none") {
+      realized.add("merchandisingEmphasis");
+    }
+    if (structure.navigationModel !== "none") realized.add("navigationModel");
+    if (structure.presentationMode !== "baseline") realized.add("presentationMode");
+    return realized;
+  }
+  if (!sameStructuredValue(structure.regionOrder, base.regionOrder)) {
+    realized.add("hierarchy");
+    realized.add("regionArrangement");
+  }
+  if (!sameStructuredValue(structure.omittedRegions, base.omittedRegions)) {
+    realized.add("regionPresence");
+  }
+  if (!sameStructuredValue(structure.assetPlacements, base.assetPlacements)) {
+    realized.add("assetPlacement");
+  }
+  if (structure.contentRelationship !== base.contentRelationship) {
+    realized.add("contentRelationship");
+  }
+  if (structure.ctaRelationship !== base.ctaRelationship) realized.add("ctaRelationship");
+  if (structure.merchandisingEmphasis !== base.merchandisingEmphasis) {
+    realized.add("merchandisingEmphasis");
+  }
+  if (structure.navigationModel !== base.navigationModel) realized.add("navigationModel");
+  if (
+    !sameStructuredValue(structure.responsiveTransformationIds, base.responsiveTransformationIds)
+  ) {
+    realized.add("responsiveTransformation");
+  }
+  if (structure.presentationMode !== base.presentationMode) realized.add("presentationMode");
+  return realized;
+}
+
+function validateCommercialAnatomyConsistency(
+  definition: z.infer<typeof componentDefinitionV2Schema>,
+  context: z.RefinementCtx,
+) {
+  const anatomy = definition.commercialAnatomy;
+  if (anatomy === undefined) return;
+
+  validateMigrationConsistency({ version: anatomy.version, migration: anatomy.migration }, context);
+
+  const claimsCommercialReadiness = anatomy.variants.some(
+    (variant) =>
+      variant.classification !== "legacySuperseded" &&
+      variant.classification !== "notYetP10BCommercialReady",
+  );
+  if (!claimsCommercialReadiness) return;
+
+  const registeredVariantIds = definition.variants.map((variant) => variant.id);
+  const anatomyVariantIds = anatomy.variants.map((variant) => variant.variantId);
+  if (!sameMembers(registeredVariantIds, anatomyVariantIds)) {
+    context.addIssue({
+      code: "custom",
+      path: ["commercialAnatomy", "variants"],
+      message: "Commercial anatomy must classify every registered variant exactly once.",
+    });
+  }
+  if (!sameMembers(definition.supportedPageTypes, anatomy.compatibility.allowedPageTypes)) {
+    context.addIssue({
+      code: "custom",
+      path: ["commercialAnatomy", "compatibility", "allowedPageTypes"],
+      message: "Commercial anatomy page-family compatibility must match the component definition.",
+    });
+  }
+  if (
+    !sameMembers(
+      definition.designCompatibility.allowedNarrativeRoles,
+      anatomy.compatibility.narrativeRoles,
+    )
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["commercialAnatomy", "compatibility", "narrativeRoles"],
+      message: "Commercial anatomy narrative compatibility must match registered authority.",
+    });
+  }
+
+  const regions = new Set(anatomy.regions.map((region) => region.id));
+  const transformations = new Map(
+    anatomy.responsiveTransformations.map((transformation) => [transformation.id, transformation]),
+  );
+  for (const [index, transformation] of anatomy.responsiveTransformations.entries()) {
+    transformation.affectedRegions.forEach((region) => {
+      if (!regions.has(region)) {
+        context.addIssue({
+          code: "custom",
+          path: ["commercialAnatomy", "responsiveTransformations", index, "affectedRegions"],
+          message: `Responsive transformation references undeclared semantic region ${region}.`,
+        });
+      }
+    });
+    if (!anatomy.compatibility.responsiveModes.includes(transformation.mode)) {
+      context.addIssue({
+        code: "custom",
+        path: ["commercialAnatomy", "responsiveTransformations", index, "mode"],
+        message: `Responsive transformation mode ${transformation.mode} is outside compatibility authority.`,
+      });
+    }
+  }
+
+  const assetSlots = new Map(definition.assetSlots.map((slot) => [slot.id, slot]));
+  if (
+    !sameMembers(
+      definition.assetSlots.map((slot) => slot.id),
+      anatomy.compatibility.assetRequirements.map((requirement) => requirement.slotId),
+    )
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["commercialAnatomy", "compatibility", "assetRequirements"],
+      message: "Commercial anatomy asset requirements must cover the registered asset slots.",
+    });
+  }
+  anatomy.compatibility.assetRequirements.forEach((requirement, index) => {
+    const slot = assetSlots.get(requirement.slotId);
+    if (
+      slot === undefined ||
+      !sameMembers(slot.acceptedRoles, requirement.acceptedRoles) ||
+      slot.required !== requirement.required ||
+      slot.minItems !== requirement.minItems ||
+      slot.maxItems !== requirement.maxItems
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["commercialAnatomy", "compatibility", "assetRequirements", index],
+        message: `Commercial anatomy asset requirement ${requirement.slotId} is invalid or stale.`,
+      });
+    }
+  });
+
+  const contentSlots = new Set(definition.contentSlots.map((slot) => slot.id));
+  const bindingSlots = new Set(definition.commerceBindingSlots.map((slot) => slot.id));
+  const protectedPaths = [
+    ...protectedCommerceFieldPaths,
+    ...definition.protectedFields.readOnlyPaths,
+  ];
+  anatomy.parameters.forEach((parameter, index) => {
+    let validReference = false;
+    if (parameter.source === "props") {
+      validReference = jsonSchemaDeclaresPath(definition.propsSchema, parameter.reference);
+    } else if (parameter.source === "styleOverrides") {
+      validReference = jsonSchemaDeclaresPath(definition.styleOverridesSchema, parameter.reference);
+    } else if (parameter.source === "content") {
+      validReference =
+        jsonSchemaDeclaresPath(definition.contentSchema, parameter.reference) ||
+        contentSlots.has(parameter.reference);
+    } else if (parameter.source === "commerceBindingSlot") {
+      validReference = bindingSlots.has(parameter.reference);
+    } else if (parameter.source === "assetSlot") {
+      validReference = assetSlots.has(parameter.reference);
+    }
+    if (!validReference) {
+      context.addIssue({
+        code: "custom",
+        path: ["commercialAnatomy", "parameters", index, "reference"],
+        message: `Commercial anatomy parameter ${parameter.id} references unknown authority.`,
+      });
+    }
+    if (
+      ["structural", "semanticFinishing"].includes(parameter.kind) &&
+      protectedPaths.some((path) => pathsOverlap(parameter.reference, path))
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["commercialAnatomy", "parameters", index, "reference"],
+        message: "Presentation parameters cannot reference protected commerce authority.",
+      });
+    }
+  });
+
+  const anatomyVariants = new Map(anatomy.variants.map((variant) => [variant.variantId, variant]));
+  const baseline = anatomyVariants.get(definition.defaultVariant);
+  anatomy.variants.forEach((variant, index) => {
+    for (const region of [
+      ...variant.structure.regionOrder,
+      ...variant.structure.omittedRegions,
+      ...variant.structure.assetPlacements.map((placement) => placement.region),
+    ]) {
+      if (!regions.has(region)) {
+        context.addIssue({
+          code: "custom",
+          path: ["commercialAnatomy", "variants", index, "structure"],
+          message: `Variant ${variant.variantId} references undeclared semantic region ${region}.`,
+        });
+      }
+    }
+    variant.structure.assetPlacements.forEach((placement) => {
+      if (!assetSlots.has(placement.slotId)) {
+        context.addIssue({
+          code: "custom",
+          path: ["commercialAnatomy", "variants", index, "structure", "assetPlacements"],
+          message: `Variant ${variant.variantId} references unknown asset slot ${placement.slotId}.`,
+        });
+      }
+    });
+    variant.structure.responsiveTransformationIds.forEach((transformationId) => {
+      if (!transformations.has(transformationId)) {
+        context.addIssue({
+          code: "custom",
+          path: [
+            "commercialAnatomy",
+            "variants",
+            index,
+            "structure",
+            "responsiveTransformationIds",
+          ],
+          message: `Variant ${variant.variantId} references unknown responsive transformation ${transformationId}.`,
+        });
+      }
+    });
+    if (variant.aliasOf !== undefined) {
+      const target = anatomyVariants.get(variant.aliasOf);
+      if (target === undefined || !sameStructuredValue(target.structure, variant.structure)) {
+        context.addIssue({
+          code: "custom",
+          path: ["commercialAnatomy", "variants", index, "aliasOf"],
+          message: `Compatibility alias ${variant.variantId} must match an existing variant structure.`,
+        });
+      }
+    }
+    if (variant.supersededBy !== undefined && !anatomyVariants.has(variant.supersededBy)) {
+      context.addIssue({
+        code: "custom",
+        path: ["commercialAnatomy", "variants", index, "supersededBy"],
+        message: `Superseded variant ${variant.variantId} references an unknown replacement.`,
+      });
+    }
+    if (variant.classification === "meaningfulStructuralVariant") {
+      const realized = realizedMaterialDifferences(
+        variant,
+        variant.variantId === definition.defaultVariant ? undefined : baseline,
+      );
+      const unsupported = variant.materialDifferences.filter(
+        (difference) => !realized.has(difference),
+      );
+      if (unsupported.length > 0) {
+        context.addIssue({
+          code: "custom",
+          path: ["commercialAnatomy", "variants", index, "materialDifferences"],
+          message: `Variant ${variant.variantId} does not realize declared material differences: ${unsupported.join(", ")}.`,
+        });
+      }
+    }
+  });
+}
+
 function validateMigrationConsistency(
   definition: {
     version: ComponentVersion;
@@ -1748,6 +2318,26 @@ export type AccessibilityRequirement = z.infer<typeof accessibilityRequirementSc
 export type RendererAdapterIdentity = z.infer<typeof rendererAdapterIdentitySchema>;
 export type ComponentMigrationContract = z.infer<typeof componentMigrationContractSchema>;
 export type ComponentMigrationMetadata = z.infer<typeof componentMigrationMetadataSchema>;
+export type ComponentSemanticRegion = z.infer<typeof componentSemanticRegionSchema>;
+export type ComponentSemanticRegionDefinition = z.infer<
+  typeof componentSemanticRegionDefinitionSchema
+>;
+export type ComponentVariantStructuralClassification = z.infer<
+  typeof componentVariantStructuralClassificationSchema
+>;
+export type ComponentMaterialDifference = z.infer<typeof componentMaterialDifferenceSchema>;
+export type ComponentCommercialParameterKind = z.infer<
+  typeof componentCommercialParameterKindSchema
+>;
+export type ComponentCommercialParameter = z.infer<typeof componentCommercialParameterSchema>;
+export type ComponentResponsiveTransformation = z.infer<
+  typeof componentResponsiveTransformationSchema
+>;
+export type ComponentVariantStructure = z.infer<typeof componentVariantStructureSchema>;
+export type ComponentVariantStructuralSemantics = z.infer<
+  typeof componentVariantStructuralSemanticsSchema
+>;
+export type ComponentCommercialAnatomy = z.infer<typeof componentCommercialAnatomySchema>;
 export type ComponentDefinitionV2 = z.infer<typeof componentDefinitionV2Schema>;
 export type ProductBinding = z.infer<typeof productBindingSchema>;
 export type ProductListBinding = z.infer<typeof productListBindingSchema>;

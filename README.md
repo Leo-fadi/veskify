@@ -7,7 +7,8 @@ storefront.
 
 The overall product is **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
 orchestration and publishing is **Baseline / closed**. P10B Commercial Storefront Generation System
-v1 is **Partial / active**: P10B-01 commercial grammar is Baseline, while later tasks remain Planned.
+v1 is **Partial / active**: P10B-01 commercial grammar and P10B-03 component anatomy are Baseline,
+while the remaining tasks remain Planned.
 
 ## Product boundary
 
@@ -35,6 +36,8 @@ The repository includes:
 - ComponentDefinitionV2, a generated capability manifest, and registered renderer authority;
 - a closed, owned, narrowing-only commercial grammar with deterministic compatibility and
   selection fingerprints;
+- typed component anatomy, structural-difference classification, deterministic migration, and a
+  generated fail-closed commercial-ready capability query;
 - executable PageBlueprint profiles for home, collection, and dynamic product-detail composition;
 - protected canonical commerce bindings, dynamic variants/options/media, and safe fallbacks;
 - approved source evidence, asset inventory, and Storefront Design Brief contracts;
