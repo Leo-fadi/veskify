@@ -202,7 +202,7 @@ test("loads the complete persisted homepage and switches locale by keyboard", as
         ),
       ),
   ).toBe(true);
-  await expect(page.getByText("1 290 €")).toBeVisible();
+  await expect(page.getByText("€1,290")).toBeVisible();
   const ringsLink = page
     .getByRole("navigation", { name: "Primary navigation" })
     .getByRole("link", { name: "Rings" });
