@@ -38,7 +38,7 @@ describe("P10A-02 repository capability audit", () => {
 
   it("keeps every V2 component type connected to either the legacy bridge or an all-surface renderer", () => {
     expect(p10a02ComponentCapabilityAudit.v2RegisteredComponentTypes).toHaveLength(27);
-    expect(p10a02ComponentCapabilityAudit.v2RegisteredVariantCount).toBe(100);
+    expect(p10a02ComponentCapabilityAudit.v2RegisteredVariantCount).toBe(104);
     expect(p10a02ComponentCapabilityAudit.componentFamilyCounts).toEqual({
       content: 16,
       commerce: 4,

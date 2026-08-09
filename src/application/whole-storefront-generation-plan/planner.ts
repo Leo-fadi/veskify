@@ -4,6 +4,7 @@ import {
 } from "@/application/storefront-design-system";
 import {
   getExecutablePageBlueprintProfile,
+  getCommercialCollectionSearchProfile,
   getCommercialHomepageProfile,
   getTemplateById,
   getTemplatePagePlan,
@@ -59,8 +60,11 @@ import { veskifyComponentCapabilityManifest } from "@/components/registry/capabi
 import { resolveCommercialSharedFrameProfile } from "@/domain/storefront/commercial-shared-frame";
 import {
   commercialHomepageProfileIdSchema,
+  commercialCollectionSearchProfileIdSchema,
   resolveCommercialHomepageProfileSlots,
   resolveCommercialHomepageSlotItemCardinality,
+  type CommercialCollectionSearchProfileAuthority,
+  type CommercialCollectionSearchProfileId,
   type CommercialHomepageProfileId,
 } from "@/application/storefront-templates";
 
@@ -532,6 +536,7 @@ function materializeDirectionPageBlueprints(
   input: WholeStorefrontPlanningInput,
   directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
   homepageProfileId?: CommercialHomepageProfileId,
+  collectionProfileId?: CommercialCollectionSearchProfileId,
 ) {
   const templateId = templateForDirection(directionId);
   const contextTemplate = input.recipeContext.templates.find(
@@ -552,7 +557,9 @@ function materializeDirectionPageBlueprints(
     const pagePlan =
       pageType === "home" && homepageProfileId
         ? getCommercialHomepageProfile(homepageProfileId)
-        : getTemplatePagePlan(templateId, pageType);
+        : pageType === "collection" && collectionProfileId
+          ? getCommercialCollectionSearchProfile(collectionProfileId)
+          : getTemplatePagePlan(templateId, pageType);
     if (!pagePlan) {
       invalid(
         "unsupported-page-family",
@@ -631,6 +638,72 @@ function assertCommercialHomepageSelection(
         );
       }
     }
+  }
+  return authority;
+}
+
+function assertCommercialCollectionSearchSelection(
+  input: WholeStorefrontPlanningInput,
+  profileId: CommercialCollectionSearchProfileId,
+  selection: WholeStorefrontGenerationPlan["designSystemSelection"],
+) {
+  const pagePlan = getCommercialCollectionSearchProfile(profileId);
+  const authority = pagePlan?.profile?.commercialCollectionSearch;
+  const slot = pagePlan?.slots[0];
+  if (!pagePlan || !authority || !slot) {
+    invalid(
+      "unsupported-page-family",
+      `Commercial collection/search profile ${profileId} is unavailable.`,
+    );
+  }
+  if (!input.draft.sharedFrame) {
+    invalid(
+      "unsupported-page-family",
+      "Commercial collection/search generation requires canonical snapshot-level shared-frame authority.",
+    );
+  }
+  const frame = resolveCommercialSharedFrameProfile(input.draft.sharedFrame);
+  if (!authority.compatibleSharedFrameProfileIds.includes(frame.id)) {
+    invalid(
+      "unsupported-page-family",
+      `Commercial collection/search profile ${profileId} is incompatible with shared frame ${frame.id}.`,
+    );
+  }
+  const imagePosture = {
+    premiumEditorial: "immersive",
+    modernTechnical: "contained",
+    warmApproachable: "editorial",
+  }[selection.directionId] as "contained" | "editorial" | "immersive";
+  if (
+    !authority.designDnaNarrowing.spacingDensity.includes(selection.spacingDensity) ||
+    !authority.designDnaNarrowing.surfaceDepth.includes(selection.surfaceDepth) ||
+    !authority.designDnaNarrowing.imagePosture.includes(imagePosture)
+  ) {
+    invalid(
+      "unsupported-page-family",
+      `Commercial collection/search profile ${profileId} cannot broaden the selected Design DNA.`,
+    );
+  }
+  const manifest = veskifyComponentCapabilityManifest.getByComponentType(slot.sectionType);
+  const variant = manifest?.variants.find((entry) => entry.id === slot.defaultVariant);
+  if (
+    !manifest?.commercialAnatomy ||
+    !variant ||
+    variant.structuralClassification !== "meaningfulStructuralVariant"
+  ) {
+    invalid(
+      "invalid-component-contract",
+      `Commercial collection/search profile ${profileId} requires current meaningful ${slot.sectionType}/${slot.defaultVariant} authority.`,
+    );
+  }
+  if (
+    authority.campaignEvidencePolicy === "approved-editorial-media-required" &&
+    !input.approvedAssetContext?.assets.some((asset) => asset.role === "editorialImage")
+  ) {
+    invalid(
+      "missing-required-recipe-asset",
+      `Commercial collection/search profile ${profileId} requires approved editorial campaign media.`,
+    );
   }
   return authority;
 }
@@ -1064,7 +1137,8 @@ function authoritativeHomepageProfileComponents(input: {
       const legacyDefinition = getComponentDefinition(slot.component);
       if (
         (slot.component === "header" || slot.component === "footer") &&
-        page.sections.some((section) => section.component === slot.component)
+        (planningInput.draft.sharedFrame !== undefined ||
+          page.sections.some((section) => section.component === slot.component))
       ) {
         return [];
       }
@@ -1386,21 +1460,45 @@ function dynamicCollectionComponent(
   definition: ComponentDefinitionV2,
   usedComponentIds: Set<string>,
   presentation: WholeStorefrontGenerationPlan["designSystemSelection"]["collectionPresentation"],
+  commercialProfile?: Readonly<{
+    authority: CommercialCollectionSearchProfileAuthority;
+    variant: string;
+    approvedAssetContext: WholeStorefrontPlanningInput["approvedAssetContext"];
+  }>,
   replacementId?: string,
 ): ComponentInstanceV2 {
   const id = replacementId ?? generatedComponentId(pageId, definition.type, usedComponentIds);
   usedComponentIds.add(id);
+  const campaignAsset =
+    commercialProfile?.authority.campaignEvidencePolicy === "approved-editorial-media-required"
+      ? commercialProfile.approvedAssetContext?.assets.find(
+          (asset) => asset.role === "editorialImage",
+        )
+      : undefined;
+  if (
+    commercialProfile?.authority.campaignEvidencePolicy === "approved-editorial-media-required" &&
+    !campaignAsset
+  ) {
+    invalid(
+      "missing-required-recipe-asset",
+      "Campaign-led collection discovery requires approved editorial media.",
+    );
+  }
   return {
     id,
     component: "dynamicCollectionCommerce",
     componentVersion: definition.version,
-    variant: presentation.variant,
+    variant: commercialProfile?.variant ?? presentation.variant,
     content: structuredClone(dynamicCollectionCommerceDefaultContent),
     props: {
       ...structuredClone(dynamicCollectionCommerceDefaultProps),
-      gridDensity: presentation.gridDensity,
-      cardVariant: presentation.cardVariant,
-      filterLayout: presentation.filterLayout,
+      gridDensity: commercialProfile?.authority.gridDensity ?? presentation.gridDensity,
+      cardVariant: commercialProfile?.authority.productCardAnatomyId ?? presentation.cardVariant,
+      filterLayout: commercialProfile?.authority.filterLayout ?? presentation.filterLayout,
+      showChildCollections:
+        commercialProfile?.authority.childCollectionTreatment === "omit"
+          ? false
+          : dynamicCollectionCommerceDefaultProps.showChildCollections,
     },
     styleOverrides: structuredClone(dynamicCollectionCommerceDefaultStyleOverrides),
     bindings: [
@@ -1412,7 +1510,15 @@ function dynamicCollectionComponent(
         revision,
       },
     ],
-    assetAssignments: [],
+    assetAssignments: campaignAsset
+      ? [
+          {
+            slotId: "collectionCommerceMedia",
+            assetId: campaignAsset.assetId,
+            role: campaignAsset.role,
+          },
+        ]
+      : [],
   };
 }
 
@@ -1663,6 +1769,7 @@ export function createWholeStorefrontGenerationPlan(
   options: {
     directionId?: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
     homepageProfileId?: CommercialHomepageProfileId;
+    collectionProfileId?: CommercialCollectionSearchProfileId;
     tokenRefinementPlan?: RegisteredTokenRefinementPlan | null;
   } = {},
 ): WholeStorefrontGenerationPlan {
@@ -1728,11 +1835,28 @@ export function createWholeStorefrontGenerationPlan(
   const commercialHomepageAuthority = options.homepageProfileId
     ? assertCommercialHomepageSelection(input, options.homepageProfileId, designSystemSelection)
     : undefined;
+  const commercialCollectionSearchAuthority = options.collectionProfileId
+    ? assertCommercialCollectionSearchSelection(
+        input,
+        options.collectionProfileId,
+        designSystemSelection,
+      )
+    : undefined;
   const pageBlueprintMaterializations = materializeDirectionPageBlueprints(
     input,
     designSystemSelection.directionId,
     options.homepageProfileId,
+    options.collectionProfileId,
   );
+  const commercialCollectionProfileVariant = options.collectionProfileId
+    ? getCommercialCollectionSearchProfile(options.collectionProfileId)?.slots[0]?.defaultVariant
+    : undefined;
+  if (commercialCollectionSearchAuthority && !commercialCollectionProfileVariant) {
+    invalid(
+      "unsupported-page-family",
+      "Commercial collection/search profile is missing its registered component slot.",
+    );
+  }
   const collectionComponentDefinition = definitionFor(definitions, "dynamicCollectionCommerce");
   const productComponentDefinition = definitionFor(definitions, "dynamicProductDetail");
   const usedComponentIds = new Set(
@@ -1798,6 +1922,13 @@ export function createWholeStorefrontGenerationPlan(
         collectionComponentDefinition,
         usedComponentIds,
         designSystemSelection.collectionPresentation,
+        commercialCollectionSearchAuthority && commercialCollectionProfileVariant
+          ? {
+              authority: commercialCollectionSearchAuthority,
+              variant: commercialCollectionProfileVariant,
+              approvedAssetContext: input.approvedAssetContext,
+            }
+          : undefined,
         page.sections.find((section) => section.component === "dynamicCollectionCommerce")?.id,
       );
       try {
@@ -1931,6 +2062,13 @@ export function createWholeStorefrontGenerationPlan(
       collectionComponentDefinition,
       usedComponentIds,
       designSystemSelection.collectionPresentation,
+      commercialCollectionSearchAuthority && commercialCollectionProfileVariant
+        ? {
+            authority: commercialCollectionSearchAuthority,
+            variant: commercialCollectionProfileVariant,
+            approvedAssetContext: input.approvedAssetContext,
+          }
+        : undefined,
     );
     try {
       registry.validateInstance(instance);
@@ -2234,12 +2372,22 @@ export function validateWholeStorefrontGenerationPlan(
   const homepageMaterialization = plan.pageBlueprintMaterializations.find(
     (entry) => entry.pageType === "home",
   );
+  const collectionMaterialization = plan.pageBlueprintMaterializations.find(
+    (entry) => entry.pageType === "collection",
+  );
   const expected = createWholeStorefrontGenerationPlan(inputValue, {
     directionId: plan.designSystemSelection.directionId,
     ...(homepageMaterialization?.commercialHomepage
       ? {
           homepageProfileId: commercialHomepageProfileIdSchema.parse(
             homepageMaterialization.profileId,
+          ),
+        }
+      : {}),
+    ...(collectionMaterialization?.commercialCollectionSearch
+      ? {
+          collectionProfileId: commercialCollectionSearchProfileIdSchema.parse(
+            collectionMaterialization.profileId,
           ),
         }
       : {}),

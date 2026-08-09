@@ -1,14 +1,22 @@
 import { z } from "zod";
 import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
-import { validateComponentDefinitionV2 } from "@/domain/component-platform";
+import {
+  validateComponentDefinitionV2,
+  type ComponentCommercialAnatomy,
+  type ComponentDefinitionV2,
+} from "@/domain/component-platform";
 import { localizedTextSchema } from "@/domain/shared";
-import { withCurrentComponentCommercialAnatomy } from "./commercial-anatomy";
+import { createRegisteredComponentCommercialAnatomy } from "./commercial-anatomy";
 
 export const dynamicCollectionCommerceVariantSchema = z.enum([
   "standard",
   "editorial",
   "compact",
   "gallery",
+  "editorialDiscovery",
+  "catalogueComparison",
+  "campaignLedDiscovery",
+  "denseSearch",
 ]);
 
 export const dynamicCollectionCommerceContentSchema = z
@@ -85,6 +93,16 @@ const definitionInput = {
     { id: "editorial", title: { en: "Editorial", fi: "Toimituksellinen" } },
     { id: "compact", title: { en: "Compact", fi: "Kompakti" } },
     { id: "gallery", title: { en: "Gallery", fi: "Galleria" } },
+    {
+      id: "editorialDiscovery",
+      title: { en: "Editorial discovery", fi: "Toimituksellinen löydettävyys" },
+    },
+    { id: "catalogueComparison", title: { en: "Catalogue comparison", fi: "Luettelon vertailu" } },
+    {
+      id: "campaignLedDiscovery",
+      title: { en: "Campaign-led discovery", fi: "Kampanjavetoinen löydettävyys" },
+    },
+    { id: "denseSearch", title: { en: "Dense search", fi: "Tiivis haku" } },
   ],
   defaultVariant: "standard",
   industryTags: [],
@@ -275,6 +293,7 @@ const definitionInput = {
       "orientation",
       "primary-discovery",
       "secondary-discovery",
+      "campaign",
       "continuation",
     ],
     allowedVisualWeights: ["medium", "heavy", "dominant"],
@@ -309,9 +328,179 @@ const definitionInput = {
   },
 };
 
-export const dynamicCollectionCommerceDefinition = validateComponentDefinitionV2(
-  withCurrentComponentCommercialAnatomy(definitionInput),
+const collectionRegions = [
+  "frame",
+  "media",
+  "content",
+  "heading",
+  "merchandising",
+  "actions",
+] as const;
+
+const commercialCollectionAnatomy = createRegisteredComponentCommercialAnatomy(
+  definitionInput as unknown as ComponentDefinitionV2,
+  {
+    version: { major: 1, minor: 2, patch: 0 },
+    regions: collectionRegions.map((id) => ({
+      id,
+      required: id === "frame" || id === "heading" || id === "merchandising",
+    })),
+    responsiveTransformations: [
+      {
+        id: "editorialCollectionStack",
+        mode: "stack",
+        breakpoints: ["mobile", "tablet"],
+        fromPresentationMode: "editorialCollectionSpread",
+        toPresentationMode: "editorialCollectionStack",
+        affectedRegions: ["media", "content", "merchandising"],
+      },
+      {
+        id: "collectionFilterDisclosure",
+        mode: "disclosure",
+        breakpoints: ["mobile", "tablet"],
+        fromPresentationMode: "editorialCollectionSpread",
+        toPresentationMode: "editorialFilterDisclosure",
+        affectedRegions: ["actions", "merchandising"],
+      },
+      {
+        id: "comparisonFilterDisclosure",
+        mode: "disclosure",
+        breakpoints: ["mobile", "tablet"],
+        fromPresentationMode: "comparisonRail",
+        toPresentationMode: "comparisonDisclosure",
+        affectedRegions: ["actions", "merchandising"],
+      },
+      {
+        id: "comparisonGridReflow",
+        mode: "reflow",
+        breakpoints: ["mobile", "tablet", "desktop", "wide"],
+        fromPresentationMode: "comparisonRail",
+        toPresentationMode: "comparisonGrid",
+        affectedRegions: ["merchandising"],
+      },
+      {
+        id: "campaignLeadStack",
+        mode: "stack",
+        breakpoints: ["mobile", "tablet"],
+        fromPresentationMode: "campaignLeadIn",
+        toPresentationMode: "campaignLeadStack",
+        affectedRegions: ["media", "content", "merchandising"],
+      },
+      {
+        id: "campaignFilterDisclosure",
+        mode: "disclosure",
+        breakpoints: ["mobile", "tablet"],
+        fromPresentationMode: "campaignLeadIn",
+        toPresentationMode: "campaignFilterDisclosure",
+        affectedRegions: ["actions", "merchandising"],
+      },
+      {
+        id: "denseFilterDisclosure",
+        mode: "disclosure",
+        breakpoints: ["mobile", "tablet"],
+        fromPresentationMode: "denseSearchToolbar",
+        toPresentationMode: "denseSearchDisclosure",
+        affectedRegions: ["actions", "merchandising"],
+      },
+      {
+        id: "denseGridReflow",
+        mode: "reflow",
+        breakpoints: ["mobile", "tablet", "desktop", "wide"],
+        fromPresentationMode: "denseSearchToolbar",
+        toPresentationMode: "denseSearchGrid",
+        affectedRegions: ["merchandising"],
+      },
+    ],
+    variants: definitionInput.variants.map((variant) => {
+      const legacy = ["standard", "editorial", "compact", "gallery"].includes(variant.id);
+      const structures = {
+        editorialDiscovery: {
+          regionOrder: ["frame", "media", "heading", "content", "merchandising", "actions"],
+          omittedRegions: [],
+          contentRelationship: "contentLed",
+          ctaRelationship: "inline",
+          merchandisingEmphasis: "supporting",
+          navigationModel: "carousel",
+          responsiveTransformationIds: ["editorialCollectionStack", "collectionFilterDisclosure"],
+          presentationMode: "editorialCollectionSpread",
+        },
+        catalogueComparison: {
+          regionOrder: ["frame", "heading", "actions", "merchandising", "content", "media"],
+          omittedRegions: [],
+          contentRelationship: "supporting",
+          ctaRelationship: "inline",
+          merchandisingEmphasis: "dominant",
+          navigationModel: "disclosure",
+          responsiveTransformationIds: ["comparisonFilterDisclosure", "comparisonGridReflow"],
+          presentationMode: "comparisonRail",
+        },
+        campaignLedDiscovery: {
+          regionOrder: ["frame", "media", "heading", "content", "actions", "merchandising"],
+          omittedRegions: [],
+          contentRelationship: "mediaLed",
+          ctaRelationship: "separated",
+          merchandisingEmphasis: "dominant",
+          navigationModel: "carousel",
+          responsiveTransformationIds: ["campaignLeadStack", "campaignFilterDisclosure"],
+          presentationMode: "campaignLeadIn",
+        },
+        denseSearch: {
+          regionOrder: ["frame", "heading", "actions", "merchandising", "media", "content"],
+          omittedRegions: [],
+          contentRelationship: "supporting",
+          ctaRelationship: "inline",
+          merchandisingEmphasis: "dominant",
+          navigationModel: "disclosure",
+          responsiveTransformationIds: ["denseFilterDisclosure", "denseGridReflow"],
+          presentationMode: "denseSearchToolbar",
+        },
+      } as const;
+      if (legacy) {
+        return {
+          variantId: variant.id,
+          classification: "notYetP10BCommercialReady" as const,
+          materialDifferences: [],
+          finishingTokenIds: [],
+          structure: {
+            regionOrder: [...collectionRegions],
+            omittedRegions: [],
+            assetPlacements: [{ slotId: "collectionCommerceMedia", region: "media" as const }],
+            contentRelationship: "balanced" as const,
+            ctaRelationship: "inline" as const,
+            merchandisingEmphasis: "balanced" as const,
+            navigationModel: "toolbar" as const,
+            responsiveTransformationIds: ["denseGridReflow"],
+            presentationMode: "legacyCollection",
+          },
+        };
+      }
+      const structure = structures[variant.id as keyof typeof structures];
+      return {
+        variantId: variant.id,
+        classification: "meaningfulStructuralVariant" as const,
+        materialDifferences: [
+          "hierarchy",
+          "regionArrangement",
+          "contentRelationship",
+          "merchandisingEmphasis",
+          "navigationModel",
+          "responsiveTransformation",
+          "presentationMode",
+        ],
+        finishingTokenIds: [],
+        structure: {
+          ...structure,
+          assetPlacements: [{ slotId: "collectionCommerceMedia", region: "media" as const }],
+        },
+      };
+    }) as unknown as ComponentCommercialAnatomy["variants"],
+  },
 );
+
+export const dynamicCollectionCommerceDefinition = validateComponentDefinitionV2({
+  ...definitionInput,
+  commercialAnatomy: commercialCollectionAnatomy,
+});
 
 export type DynamicCollectionCommerceContent = z.infer<
   typeof dynamicCollectionCommerceContentSchema

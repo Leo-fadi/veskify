@@ -12,7 +12,10 @@ import {
   applyRegisteredTokenRefinement,
   registeredBrandSystemForDirection,
 } from "@/application/storefront-design-system";
-import { commercialHomepageProfileIdSchema } from "@/application/storefront-templates";
+import {
+  commercialCollectionSearchProfileIdSchema,
+  commercialHomepageProfileIdSchema,
+} from "@/application/storefront-templates";
 import {
   storefrontStyleDesignSystems,
   storefrontStyleDirectionForRegisteredDirection,
@@ -191,12 +194,22 @@ function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
     const homepageMaterialization = input.plan.pageBlueprintMaterializations.find(
       (entry) => entry.pageType === "home",
     );
+    const collectionMaterialization = input.plan.pageBlueprintMaterializations.find(
+      (entry) => entry.pageType === "collection",
+    );
     return createWholeStorefrontGenerationPlan(input.planningInput, {
       directionId: input.plan.designSystemSelection.directionId,
       ...(homepageMaterialization?.commercialHomepage
         ? {
             homepageProfileId: commercialHomepageProfileIdSchema.parse(
               homepageMaterialization.profileId,
+            ),
+          }
+        : {}),
+      ...(collectionMaterialization?.commercialCollectionSearch
+        ? {
+            collectionProfileId: commercialCollectionSearchProfileIdSchema.parse(
+              collectionMaterialization.profileId,
             ),
           }
         : {}),
