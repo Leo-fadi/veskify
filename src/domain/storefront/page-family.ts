@@ -57,6 +57,12 @@ const profile = (id: string) => Object.freeze({ id, version: "1.0.0" as const })
 const bothNavigation = ["primary", "footer"] as const;
 const contentProfile = profile("blueprint-site-map-content-baseline");
 const stateProfile = profile("blueprint-site-map-state-baseline");
+const commercialCollectionSearchProfiles = [
+  profile("collection-editorial-discovery"),
+  profile("collection-catalogue-comparison"),
+  profile("collection-campaign-led-discovery"),
+  profile("collection-dense-search"),
+] as const;
 const requiredSingleton = Object.freeze({ kind: "required-singleton" as const });
 const contextualCollection = Object.freeze({
   kind: "contextual" as const,
@@ -111,7 +117,10 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     pageType: "collection",
     routeClass: "collection-detail",
     commerceContext: "collection",
-    allowedProfileReferences: [profile("blueprint-site-map-collection-baseline")],
+    allowedProfileReferences: [
+      profile("blueprint-site-map-collection-baseline"),
+      ...commercialCollectionSearchProfiles,
+    ],
     navigationEligibility: bothNavigation,
     evidenceRequirement: "none",
     permittedEvidenceKinds: [],
@@ -124,7 +133,10 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     pageType: "collection",
     routeClass: "search",
     commerceContext: "search",
-    allowedProfileReferences: [profile("blueprint-site-map-search-baseline")],
+    allowedProfileReferences: [
+      profile("blueprint-site-map-search-baseline"),
+      ...commercialCollectionSearchProfiles,
+    ],
     navigationEligibility: ["primary"],
     evidenceRequirement: "none",
     permittedEvidenceKinds: [],

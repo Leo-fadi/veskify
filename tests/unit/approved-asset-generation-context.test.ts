@@ -10,6 +10,7 @@ import {
   approveAssetCandidate,
   registerDiscoveredAssetCandidates,
 } from "@/domain/asset-review";
+import { veskifyComponentDefinitionsV2 } from "@/components/registry";
 import { dynamicCollectionCommerceDefinition } from "@/components/registry/dynamic-collection-commerce";
 import {
   approveStorefrontDesignBrief,
@@ -201,18 +202,12 @@ describe("P7-05 approved source-asset generation context", () => {
     const context = createApprovedGenerationAssetContext({
       workflow: withApprovedLogo(await approvedWorkflow()),
     });
-    const brandHeader = structuredClone(dynamicCollectionCommerceDefinition);
+    const brandStory = veskifyComponentDefinitionsV2.find(
+      (definition) => definition.type === "brandStory",
+    );
+    if (!brandStory) throw new Error("Missing registered brand-story asset authority.");
+    const brandHeader = structuredClone(brandStory);
     brandHeader.type = "brandHeader";
-    brandHeader.assetSlots = [
-      {
-        id: "brandLogo",
-        title: { en: "Logo", fi: "Logo" },
-        acceptedRoles: ["logo"],
-        required: false,
-        minItems: 0,
-        maxItems: 1,
-      },
-    ];
     const definitions = [brandHeader];
     const target = {
       affectedPageIds: ["page_home"],
@@ -228,7 +223,7 @@ describe("P7-05 approved source-asset generation context", () => {
       pageId: "page_home",
       componentId: "section_brand_header",
       componentType: "brandHeader",
-      assetSlotId: "brandLogo",
+      assetSlotId: "brandStoryMedia",
       assetId: context.assets[0].assetId,
       role: "logo" as const,
       assetRevision: context.assets[0].revision,

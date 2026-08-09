@@ -107,6 +107,9 @@ export type ExecutablePageBlueprintProfileCapabilityEntry = Readonly<{
   responsiveBreakpoints: Readonly<ExecutablePageBlueprintProfile["responsiveBreakpoints"]>;
   accessibilityContract: ExecutablePageBlueprintProfile["accessibilityContract"];
   commercialHomepage?: NonNullable<ExecutablePageBlueprintProfile["commercialHomepage"]>;
+  commercialCollectionSearch?: NonNullable<
+    ExecutablePageBlueprintProfile["commercialCollectionSearch"]
+  >;
   fingerprint: string;
 }>;
 
@@ -536,6 +539,9 @@ function profileEntry(
     accessibilityContract: profile.accessibilityContract,
     ...(profile.commercialHomepage
       ? { commercialHomepage: clone(profile.commercialHomepage) }
+      : {}),
+    ...(profile.commercialCollectionSearch
+      ? { commercialCollectionSearch: clone(profile.commercialCollectionSearch) }
       : {}),
   };
   return deepFreeze({

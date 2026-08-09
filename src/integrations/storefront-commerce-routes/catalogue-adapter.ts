@@ -42,6 +42,7 @@ import {
   canonicalValueFingerprint,
   canonicalValueString,
   type PageModel,
+  type SectionInstance,
 } from "@/domain/storefront";
 import type {
   CollectionCommerceRouteInput,
@@ -785,12 +786,16 @@ function collectionContext(
   filters: readonly string[],
   revision: string,
   heroAssetId?: string,
+  additionalAssets: CollectionPresentationContext["assets"] = [],
 ): CollectionPresentationContext {
   return {
     collectionId: collection.id,
     title: collection.title,
     description: collection.description,
-    assets: heroAssetId ? [{ assetId: heroAssetId, role: "hero" }] : [],
+    assets: [
+      ...(heroAssetId ? [{ assetId: heroAssetId, role: "hero" as const }] : []),
+      ...additionalAssets,
+    ],
     productIds: [...collection.productIds],
     filters: filters.flatMap((filterId) => {
       const filter = collectionFilter(filterId, products);
@@ -801,6 +806,70 @@ function collectionContext(
       title: { en: "No products in this collection", fi: "Tässä mallistossa ei ole tuotteita" },
     },
     revision,
+  };
+}
+
+function approvedCollectionMedia(section: SectionInstance): Readonly<{
+  assets: CollectionPresentationContext["assets"];
+  metadata: readonly StorefrontAssetMetadata[];
+  assignments: readonly {
+    slotId: string;
+    assetId: string;
+    role: StorefrontAssetMetadata["role"];
+  }[];
+  urls: readonly AssetRef[];
+}> {
+  const placements = (section.approvedAssetPlacements ?? []).filter(
+    (placement) =>
+      placement.componentId === section.id &&
+      placement.componentType === "dynamicCollectionCommerce" &&
+      placement.assetSlotId === "collectionCommerceMedia",
+  );
+  const values = placements.map((placement) => {
+    const presentation = (section.approvedAssetPresentations ?? []).find(
+      (candidate) =>
+        candidate.assetId === placement.assetId &&
+        candidate.role === placement.role &&
+        candidate.revision === placement.assetRevision &&
+        candidate.materialFingerprint === placement.materialFingerprint,
+    );
+    if (!presentation) {
+      throw new Error("Collection route approved asset placement lacks its approved presentation.");
+    }
+    return { placement, presentation };
+  });
+  return {
+    assets: values.map(({ placement }) => ({
+      assetId: placement.assetId,
+      role: placement.role === "editorialImage" ? ("editorial" as const) : ("hero" as const),
+    })),
+    metadata: values.map(({ placement, presentation }) => ({
+      assetId: placement.assetId,
+      role: placement.role,
+      ...(presentation.asset.alt === undefined
+        ? { decorative: true }
+        : { alt: presentation.asset.alt, decorative: false }),
+      provenance: {
+        kind:
+          placement.sourceProvenanceKind === "merchantProvided"
+            ? ("merchantProvided" as const)
+            : ("sourceDiscovered" as const),
+        sourceId: placement.sourceReferenceId,
+      },
+      approvalStatus: "approved" as const,
+      usageRights: "merchantOwned" as const,
+      responsiveCrops: [],
+      ...(presentation.artDirection === undefined
+        ? {}
+        : { artDirection: presentation.artDirection }),
+      revision: presentation.revision,
+    })),
+    assignments: values.map(({ placement }) => ({
+      slotId: placement.assetSlotId,
+      assetId: placement.assetId,
+      role: placement.role,
+    })),
+    urls: values.map(({ presentation }) => presentation.asset),
   };
 }
 
@@ -844,22 +913,27 @@ function collectionPresentation(
       throw new Error("Collection route binding revision does not match the canonical catalogue.");
     }
     const productContexts = products.map((product) => productContext(product, revision));
+    const approvedMedia = approvedCollectionMedia(dynamicSection);
     const collection = collectionContext(
       input.collection,
       products,
       canonicalCollectionFilterIds(products),
       revision,
       products[0]?.images[0]?.id,
+      approvedMedia.assets,
     );
     const projection: ComponentProjectionContext = {
       evidenceReferences: [],
       products: productContexts,
       collections: [collection],
-      assets: productAssets(productContexts, new Set(), {
-        component: dynamicCollectionCommerceDefinition,
-        variant: dynamicSection.variant,
-        brandSystem: input.snapshot.brandSystem,
-      }),
+      assets: [
+        ...productAssets(productContexts, new Set(), {
+          component: dynamicCollectionCommerceDefinition,
+          variant: dynamicSection.variant,
+          brandSystem: input.snapshot.brandSystem,
+        }),
+        ...approvedMedia.metadata,
+      ],
       navigation: [],
       projectBrandContexts: [],
       localizedContents: [],
@@ -889,10 +963,10 @@ function collectionPresentation(
             revision,
           },
         ],
-        assetAssignments: [],
+        assetAssignments: [...approvedMedia.assignments],
       },
       projection,
-      resolveAssetUrl: assetUrlResolver(input.aggregate.catalogue),
+      resolveAssetUrl: assetUrlResolver(input.aggregate.catalogue, approvedMedia.urls),
     };
   }
   if (

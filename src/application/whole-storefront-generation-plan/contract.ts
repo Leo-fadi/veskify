@@ -22,7 +22,10 @@ import {
   storefrontDesignSystemV1Schema,
 } from "@/application/storefront-design-system";
 import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
-import { commercialHomepageProfileAuthoritySchema } from "@/application/storefront-templates/contract";
+import {
+  commercialCollectionSearchProfileAuthoritySchema,
+  commercialHomepageProfileAuthoritySchema,
+} from "@/application/storefront-templates/contract";
 
 export const WHOLE_STOREFRONT_GENERATION_PLAN_SCHEMA_VERSION = 1 as const;
 
@@ -133,6 +136,7 @@ export const wholeStorefrontPageBlueprintMaterializationSchema = z
     requiredBindingCategories: z.array(commerceBindingSourceTypeSchema),
     requiredAssetRoles: z.array(assetRoleSchema),
     commercialHomepage: commercialHomepageProfileAuthoritySchema.optional(),
+    commercialCollectionSearch: commercialCollectionSearchProfileAuthoritySchema.optional(),
     fingerprint: fingerprintSchema,
   })
   .strict();
@@ -297,7 +301,16 @@ export const wholeStorefrontDesignSystemSelectionSchema = z
     componentSelections: storefrontDesignDirectionComponentSelectionsSchema,
     collectionPresentation: z
       .object({
-        variant: z.enum(["standard", "editorial", "compact", "gallery"]),
+        variant: z.enum([
+          "standard",
+          "editorial",
+          "compact",
+          "gallery",
+          "editorialDiscovery",
+          "catalogueComparison",
+          "campaignLedDiscovery",
+          "denseSearch",
+        ]),
         gridDensity: z.enum(["compact", "standard", "spacious"]),
         cardVariant: canonicalProductCardAnatomyIdSchema,
         filterLayout: z.enum(["sidebar", "horizontal"]),

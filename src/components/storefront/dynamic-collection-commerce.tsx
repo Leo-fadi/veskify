@@ -38,6 +38,15 @@ export const collectionLoadingPresentationSchema = z
   .object({ status: z.enum(["ready", "loading"]) })
   .strict();
 
+/** A transient canonical search projection; it is never persisted as storefront content. */
+export const collectionSearchPresentationSchema = z
+  .object({
+    query: z.string().trim().min(1).max(200),
+    canonicalRevision: z.string().trim().min(1).max(120),
+    resultProductIds: z.array(idSchema),
+  })
+  .strict();
+
 export const productNavigationIntentSchema = z
   .object({
     type: z.literal("navigateToProduct"),
@@ -119,6 +128,7 @@ export type DynamicCollectionCommerceRendererInput = {
   activeLocale: Locale;
   primaryLocale: Locale;
   loading: { status: "ready" | "loading" };
+  search?: z.input<typeof collectionSearchPresentationSchema>;
   resolveAssetUrl: (assetId: string) => string;
   onNavigateProduct: (intent: ProductNavigationIntent) => void;
   onNavigateCollection: (intent: CollectionNavigationIntent) => void;
@@ -154,6 +164,7 @@ type PreparedDynamicCollectionCommerce = Omit<
   props: DynamicCollectionCommerceProps;
   styleOverrides: DynamicCollectionCommerceStyleOverrides;
   loading: z.infer<typeof collectionLoadingPresentationSchema>;
+  search?: z.infer<typeof collectionSearchPresentationSchema>;
   assetFor: (assetId: string, alt?: LocalizedText) => ResolvedAsset;
   cardMediaFor: (productId: string) => ProductMediaPresentation | undefined;
 };
@@ -206,6 +217,25 @@ function requiredAssetRoles(
     }
     add(hero.assetId, heroRole as CollectionCommerceAssetRole);
   }
+  collection.assets
+    .filter((asset) => asset.role !== "hero")
+    .forEach((asset) => {
+      const expectedRole =
+        asset.role === "editorial"
+          ? "editorialImage"
+          : (assetMetadata.get(asset.assetId)?.role ?? "collectionImage");
+      if (
+        ![
+          "collectionImage",
+          "productMainImage",
+          "productAlternativeImage",
+          "editorialImage",
+        ].includes(expectedRole)
+      ) {
+        throw new Error(`Canonical collection asset role is not supported: ${asset.assetId}.`);
+      }
+      add(asset.assetId, expectedRole as CollectionCommerceAssetRole);
+    });
   selectedCardMedia.forEach(({ media, role }) => add(media.assetId, role));
   return required;
 }
@@ -308,19 +338,41 @@ function prepareDynamicCollectionCommerce(
     requiredAssets,
     assetMetadata,
   } = validateDynamicCollectionCommerceRoutePresentation(input.instance, input.projection);
+  const search =
+    input.search === undefined ? undefined : collectionSearchPresentationSchema.parse(input.search);
+  if (
+    search &&
+    (search.canonicalRevision !== collection.revision ||
+      !arraysEqual(
+        search.resultProductIds,
+        products.map((product) => product.productId),
+      ))
+  ) {
+    throw new Error(
+      "Search presentation must retain its canonical result membership and revision.",
+    );
+  }
+  const variant = dynamicCollectionCommerceVariantSchema.parse(instance.variant);
+  if (
+    variant === "campaignLedDiscovery" &&
+    !collection.assets.some((asset) => asset.role === "editorial")
+  ) {
+    throw new Error("Campaign-led collection discovery requires approved editorial media.");
+  }
 
   return {
     target: input.target,
     collection,
     products,
     childCollections,
-    variant: dynamicCollectionCommerceVariantSchema.parse(instance.variant),
+    variant,
     content: dynamicCollectionCommerceContentSchema.parse(instance.content),
     props: dynamicCollectionCommercePropsSchema.parse(instance.props),
     styleOverrides: dynamicCollectionCommerceStyleOverridesSchema.parse(instance.styleOverrides),
     activeLocale: localeSchema.parse(input.activeLocale),
     primaryLocale: localeSchema.parse(input.primaryLocale),
     loading: collectionLoadingPresentationSchema.parse(input.loading),
+    ...(search === undefined ? {} : { search }),
     onNavigateProduct: input.onNavigateProduct,
     onNavigateCollection: input.onNavigateCollection,
     onFilterIntent: input.onFilterIntent,
@@ -487,6 +539,93 @@ function ChildCollectionNavigation({
         ))}
       </ul>
     </nav>
+  );
+}
+
+function CampaignLead({
+  input,
+  locale,
+}: {
+  input: PreparedDynamicCollectionCommerce;
+  locale: LocaleContext;
+}) {
+  if (input.variant !== "campaignLedDiscovery") return null;
+  const editorial = input.collection.assets.find((asset) => asset.role === "editorial");
+  if (!editorial)
+    throw new Error("Campaign-led collection discovery requires approved editorial media.");
+  const image = input.assetFor(editorial.assetId, input.collection.title);
+  return (
+    <section
+      className={styles.campaignLead}
+      data-layout-region="campaign-lead"
+      data-asset-id={editorial.assetId}
+      data-asset-provenance={image.provenance.kind}
+      data-asset-role={image.role}
+    >
+      <figure>
+        <CommerceImage locale={locale} resolved={image} />
+      </figure>
+      <div>
+        <p>{fallback("Collection spotlight", "Malliston nosto", locale)}</p>
+        <h2>{text(input.collection.title, locale)}</h2>
+        {input.collection.description ? <p>{text(input.collection.description, locale)}</p> : null}
+      </div>
+    </section>
+  );
+}
+
+function SearchResultsContext({
+  input,
+  locale,
+}: {
+  input: PreparedDynamicCollectionCommerce;
+  locale: LocaleContext;
+}) {
+  if (!input.search) return null;
+  return (
+    <p className={styles.searchContext} data-search-query={input.search.query}>
+      {fallback("Search results for", "Hakutulokset haulle", locale)}{" "}
+      <strong>“{input.search.query}”</strong>
+    </p>
+  );
+}
+
+function SearchZeroResults({
+  input,
+  locale,
+}: {
+  input: PreparedDynamicCollectionCommerce;
+  locale: LocaleContext;
+}) {
+  if (!input.search) return null;
+  return (
+    <div
+      className={styles.emptyState}
+      data-search-zero-results="true"
+      data-search-query={input.search.query}
+    >
+      <h3>{fallback("No results found", "Hakutuloksia ei löytynyt", locale)}</h3>
+      <p>
+        {fallback(
+          "No canonical products match",
+          "Yhtään kanonista tuotetta ei vastaa hakua",
+          locale,
+        )}{" "}
+        “{input.search.query}”.
+      </p>
+      <button
+        onClick={() =>
+          input.onNavigateCollection({
+            type: "navigateToCollection",
+            collectionId: input.collection.collectionId,
+            collectionRevision: input.collection.revision,
+          })
+        }
+        type="button"
+      >
+        {fallback("Browse this collection", "Selaa tätä mallistoa", locale)}
+      </button>
+    </div>
   );
 }
 
@@ -783,63 +922,97 @@ function CollectionSort({
 export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommerce) {
   const productsHeadingId = useId();
   const locale = { activeLocale: input.activeLocale, primaryLocale: input.primaryLocale };
-  return (
-    <main
-      className={`${styles.root} ${styles[`variant_${input.variant}`]} ${styles[`surface_${input.styleOverrides.surfaceTreatment}`]}`}
-      data-component="dynamicCollectionCommerce"
-      data-render-target={input.target}
-      data-variant={input.variant}
-      data-responsive-layout="content-driven"
+  const childCollections = <ChildCollectionNavigation input={input} locale={locale} />;
+  const commerce = (
+    <div
+      className={`${styles.commerceLayout} ${styles[`layout_${input.props.filterLayout}`]}`}
+      data-filter-layout={input.props.filterLayout}
     >
-      <CollectionHeader input={input} locale={locale} />
-      <ChildCollectionNavigation input={input} locale={locale} />
-      <div
-        className={`${styles.commerceLayout} ${styles[`layout_${input.props.filterLayout}`]}`}
-        data-filter-layout={input.props.filterLayout}
+      <CollectionFilters input={input} locale={locale} />
+      <section
+        aria-busy={input.loading.status === "loading"}
+        aria-labelledby={productsHeadingId}
+        className={styles.productResults}
+        data-layout-region="products"
       >
-        <CollectionFilters input={input} locale={locale} />
-        <section
-          aria-busy={input.loading.status === "loading"}
-          aria-labelledby={productsHeadingId}
-          className={styles.productResults}
-          data-layout-region="products"
-        >
-          <div className={styles.productGridHeading}>
+        <div className={styles.productGridHeading}>
+          <div>
             <h2 id={productsHeadingId}>{text(input.content.productsHeading, locale)}</h2>
-            <CollectionSort input={input} locale={locale} />
+            <SearchResultsContext input={input} locale={locale} />
           </div>
-          {input.loading.status === "loading" ? (
-            <p aria-live="polite" className={styles.loadingState}>
-              {text(input.content.loadingLabel, locale)}
-            </p>
-          ) : input.products.length === 0 ? (
+          <CollectionSort input={input} locale={locale} />
+        </div>
+        {input.loading.status === "loading" ? (
+          <p aria-live="polite" className={styles.loadingState}>
+            {text(input.content.loadingLabel, locale)}
+          </p>
+        ) : input.products.length === 0 ? (
+          input.search ? (
+            <SearchZeroResults input={input} locale={locale} />
+          ) : (
             <div className={styles.emptyState}>
               <h3>{text(input.collection.emptyState.title, locale)}</h3>
               {input.collection.emptyState.description ? (
                 <p>{text(input.collection.emptyState.description, locale)}</p>
               ) : null}
             </div>
-          ) : (
-            <div
-              className={`${styles.productGrid} ${styles[`density_${input.props.gridDensity}`]}`}
-              data-product-count={input.products.length}
-            >
-              {input.products.map((product) => (
-                <DynamicCollectionProductCard
-                  assetFor={input.assetFor}
-                  content={input.content}
-                  key={product.productId}
-                  locale={locale}
-                  onNavigateProduct={input.onNavigateProduct}
-                  media={input.cardMediaFor(product.productId)}
-                  product={product}
-                  props={input.props}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
+          )
+        ) : (
+          <div
+            className={`${styles.productGrid} ${styles[`density_${input.props.gridDensity}`]}`}
+            data-product-count={input.products.length}
+          >
+            {input.products.map((product) => (
+              <DynamicCollectionProductCard
+                assetFor={input.assetFor}
+                content={input.content}
+                context={input.search ? "searchResults" : "collectionResults"}
+                key={product.productId}
+                locale={locale}
+                onNavigateProduct={input.onNavigateProduct}
+                media={input.cardMediaFor(product.productId)}
+                product={product}
+                props={input.props}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+  return (
+    <main
+      className={`${styles.root} ${styles[`variant_${input.variant}`]} ${styles[`surface_${input.styleOverrides.surfaceTreatment}`]}`}
+      data-component="dynamicCollectionCommerce"
+      data-render-target={input.target}
+      data-variant={input.variant}
+      data-results-treatment={
+        input.variant === "editorialDiscovery"
+          ? "curated"
+          : input.variant === "catalogueComparison"
+            ? "comparison"
+            : input.variant === "campaignLedDiscovery"
+              ? "campaign-transition"
+              : input.variant === "denseSearch"
+                ? "dense-scan"
+                : "standard"
+      }
+      data-search-context={input.search ? "canonical" : "none"}
+      data-responsive-layout="content-driven"
+    >
+      <CampaignLead input={input} locale={locale} />
+      <CollectionHeader input={input} locale={locale} />
+      {input.variant === "catalogueComparison" ? (
+        <>
+          {commerce}
+          {childCollections}
+        </>
+      ) : (
+        <>
+          {childCollections}
+          {commerce}
+        </>
+      )}
     </main>
   );
 }
