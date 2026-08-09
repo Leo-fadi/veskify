@@ -99,6 +99,10 @@ for (const evidence of [
   { profile: "centered-minimal", width: 375, name: "compact-overlay-mobile.png" },
 ] as const) {
   test(`retains ${evidence.name} commercial visual evidence`, async ({ page }) => {
+    test.skip(
+      process.platform !== "darwin",
+      "The retained, human-reviewed P10B-06 visual baselines were captured on macOS.",
+    );
     await page.setViewportSize({ width: evidence.width, height: 1000 });
     await page.goto(`/p10b-06-frame-proof?profile=${evidence.profile}`);
     if (evidence.width === 375) {
