@@ -127,6 +127,7 @@ export const headerDefinition = defineComponent({
       {...props}
       className={sectionVocabularyClass(variant, props)}
       context={context}
+      variant={variant}
     />
   ),
 });
@@ -538,6 +539,7 @@ export const footerDefinition = defineComponent({
       {...props}
       className={sectionVocabularyClass(variant, props)}
       context={context}
+      variant={variant}
     />
   ),
 });

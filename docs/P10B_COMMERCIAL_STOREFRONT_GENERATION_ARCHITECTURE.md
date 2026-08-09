@@ -1,11 +1,11 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01 through P10B-05 are **Baseline**; P10B-06 through
-P10B-18 remain **Planned**.
+**Status:** Binding architecture. P10B-01 through P10B-06 and P10B-08 are **Baseline**; P10B-07 and
+P10B-09 through P10B-18 remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 8 August 2026, current `main` after merged PR #176
+**Baseline:** 9 August 2026, merged P10B-06 and P10B-08 integration on PR #178
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -31,7 +31,11 @@ Baseline under
 [`P10B_03_COMPONENT_ANATOMY_AND_MEANINGFUL_VARIANTS.md`](P10B_03_COMPONENT_ANATOMY_AND_MEANINGFUL_VARIANTS.md).
 P10B-05 is Baseline under
 [`P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md`](P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md).
-P10B is **Partial / active**; P10B-04 and P10B-06 through P10B-18 remain Planned.
+P10B-06 is Baseline under
+[`P10B_06_COMMERCIAL_SHARED_FRAME_FAMILIES.md`](P10B_06_COMMERCIAL_SHARED_FRAME_FAMILIES.md).
+P10B-08 is Baseline under
+[`P10B_08_CANONICAL_PRODUCT_CARD_AND_MERCHANDISING.md`](P10B_08_CANONICAL_PRODUCT_CARD_AND_MERCHANDISING.md).
+P10B is **Partial / active**; P10B-07 and P10B-09 through P10B-18 remain Planned.
 
 ## 2. Storefront and commerce ownership
 
@@ -409,6 +413,8 @@ publish preserved → evidence retained.
 - Prove one frame identity across every page, EN/FI, four target widths, keyboard/focus, proposal,
   snapshot, preview, and publish.
 - Reject incompatible header/footer/mobile combinations and any second navigation authority.
+- **Status:** **Baseline**. See
+  [`P10B_06_COMMERCIAL_SHARED_FRAME_FAMILIES.md`](P10B_06_COMMERCIAL_SHARED_FRAME_FAMILIES.md).
 
 ### P10B-07 — Hero, editorial, campaign and proof families
 
@@ -592,6 +598,6 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01, P10B-02, P10B-03, and P10B-05 are Baseline under the disjoint ownership constraints in
+P10B-01 through P10B-06 and P10B-08 are Baseline under the disjoint ownership constraints in
 section 15. No later implementation task is complete merely because this architecture is approved
 or the completed foundations passed.

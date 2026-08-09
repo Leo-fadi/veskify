@@ -40,11 +40,11 @@ describe("P10A-02 repository capability audit", () => {
     expect(p10a02ComponentCapabilityAudit.v2RegisteredComponentTypes).toHaveLength(25);
     expect(p10a02ComponentCapabilityAudit.v2RegisteredVariantCount).toBe(91);
     expect(p10a02ComponentCapabilityAudit.componentFamilyCounts).toEqual({
-      content: 17,
+      content: 15,
       commerce: 4,
       marketing: 2,
-      navigation: 1,
-      service: 1,
+      navigation: 2,
+      service: 2,
     });
     expect(p10a02ComponentCapabilityAudit.v2TypesMissingRegisteredRenderer).toEqual([]);
     expect(p10a02ComponentCapabilityAudit.v2TypesWithoutLegacyRegistryBridge).toEqual([]);

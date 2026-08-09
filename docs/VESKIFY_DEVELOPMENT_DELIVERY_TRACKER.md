@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 8 August 2026, P10B-08 implementation and evidence branch based on current `main` after PR #177                     |
+| Baseline                    | 9 August 2026, merged P10B-06 and P10B-08 integration on PR #178                                                    |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -46,7 +46,7 @@ required evidence are accepted.
 | ☑    | P10B-03 | Component anatomy and meaningful variant contract    | **Baseline** | Component platform              | P10B-01                            | 25 definitions/91 variants; structural, query, migration and rejection evidence                |
 | ☑    | P10B-04 | Responsive image and art-direction authority         | **Baseline** | Asset presentation and media    | P10B-02, P10B-03                   | 35-case authority, integration/lifecycle and four-width browser evidence                       |
 | ☑    | P10B-05 | Veskify site-map and page-family authority           | **Baseline** | PageBlueprint/storefront domain | P10B-01                            | Page-set/navigation/generation/lifecycle and rejection evidence                                |
-| ☐    | P10B-06 | Commercial shared-frame families                     | **Planned**  | Shared frame                    | P10B-02, P10B-03, P10B-05          | Minimum frame/mobile/footer coverage and responsive human review                               |
+| ☑    | P10B-06 | Commercial shared-frame families                     | **Baseline** | Shared frame                    | P10B-02, P10B-03, P10B-05          | Four frames, three mobile modes, four footers, lifecycle and retained browser review           |
 | ☐    | P10B-07 | Hero, editorial, campaign and proof families         | **Planned**  | Commercial content families     | P10B-02 through P10B-05            | Minimum anatomy coverage, provenance, full chain and visual review                             |
 | ☑    | P10B-08 | Canonical product-card and merchandising family      | **Baseline** | Commerce presentation           | P10B-02 through P10B-04            | One renderer; five anatomies; protected facts/media; lifecycle and four-width browser evidence |
 | ☐    | P10B-09 | Commercial homepage profile library                  | **Planned**  | PageBlueprint profiles          | P10B-05 through P10B-08            | Six profiles, materialization-to-render and visual review                                      |
@@ -164,8 +164,8 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 through P10B-05 and P10B-08 are **Baseline**. P10B-06, P10B-07, and P10B-09 through
-P10B-18 remain **Planned**. The
+P10B-01 through P10B-06 and P10B-08 are **Baseline**. P10B-07 and P10B-09 through P10B-18 remain
+**Planned**. The
 remaining Done conditions are implementation gates, not claims about the current repository.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
@@ -273,6 +273,10 @@ remaining Done conditions are implementation gates, not claims about the current
 - **Evidence:** Full capability chain, navigation regression, responsive/a11y browser evidence, and
   retained human review.
 - **Non-goal:** P10C merchant frame-editing controls.
+- **Status:** **Baseline**. Four exact root-frame profiles, three mobile modes, and four footer
+  compositions preserve canonical navigation and frame identity through snapshot, save/reload,
+  Puck root, preview, publication compilation, EN/FI, and 375/768/1024/1440 px evidence. See
+  [`P10B_06_COMMERCIAL_SHARED_FRAME_FAMILIES.md`](P10B_06_COMMERCIAL_SHARED_FRAME_FAMILIES.md).
 
 #### P10B-07 — Hero, editorial, campaign and proof families
 
@@ -677,8 +681,8 @@ and responsive browser evidence. See
 
 #### P11-10 — Pilot readiness
 
-- **Outcome:** Prove one real pilot has onboarding, diagnostics, audit records, observability,
-  recovery guidance, and documented limitations.
+- **Outcome:** Prove one real pilot has complete diagnostics, audit, observability, recovery, and
+  documented limitations.
 - **Status:** **Blocked**.
 - **Depends on:** P11-09.
 - **Done when:** The stated outcome and required evidence are accepted.
@@ -687,13 +691,10 @@ and responsive browser evidence. See
 
 ### P12 — Production hardening and pilot operations
 
-#### P12 — Production and pilot closure
-
-- **Outcome:** Establish authentication, tenant isolation, security, observability, performance,
-  backup/recovery, deployment, incidents, and controlled pilot operations.
+- **Outcome:** Close production authentication, tenancy, security, observability, recovery,
+  deployment, incident response, and controlled-pilot operations.
 - **Status:** **Blocked**.
 - **Depends on:** P11-10.
 - **Done when:** The stated outcome and required evidence are accepted.
-- **Required evidence:** Security/load/recovery exercises, production telemetry, and controlled pilot
-  evidence.
-- **Non-goal:** New design, editor, advanced-media, or commerce scope.
+- **Required evidence:** Security, load, recovery, telemetry, and controlled-pilot evidence.
+  **Non-goal:** New design, editor, advanced-media, or commerce scope.

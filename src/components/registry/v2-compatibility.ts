@@ -128,12 +128,12 @@ function editableFieldFromV1(
   };
 }
 
-function legacyContentDesignCompatibility() {
+function legacyContentDesignCompatibility(family: "content" | "navigation" | "service") {
   const compatibility = createLegacyComponentDesignCompatibility();
   return {
     ...compatibility,
     boundedParameterIds: boundedParameterDefinitions
-      .filter((parameter) => parameter.compatibleComponentFamilies.includes("content"))
+      .filter((parameter) => parameter.compatibleComponentFamilies.includes(family))
       .map((parameter) => parameter.id),
   };
 }
@@ -150,7 +150,12 @@ export function adaptV1ComponentDefinitionToV2(
         en: `${definition.label} storefront section.`,
         fi: `${localizedLabel(definition.label).fi} kaupan osio.`,
       },
-      family: "content",
+      family:
+        definition.type === "header"
+          ? "navigation"
+          : definition.type === "footer"
+            ? "service"
+            : "content",
       supportedPageTypes: [...definition.allowedPageTypes],
       variants: definition.variants.map((variant) => ({
         id: variant,
@@ -201,7 +206,13 @@ export function adaptV1ComponentDefinitionToV2(
         labels: "Retain the existing registered renderer labels and alt text rules.",
         focus: "Retain the existing registered renderer focus behaviour.",
       },
-      designCompatibility: legacyContentDesignCompatibility(),
+      designCompatibility: legacyContentDesignCompatibility(
+        definition.type === "header"
+          ? "navigation"
+          : definition.type === "footer"
+            ? "service"
+            : "content",
+      ),
       migration: {
         policy: "compatible",
         previousVersions: [],

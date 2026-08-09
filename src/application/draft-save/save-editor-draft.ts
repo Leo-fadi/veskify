@@ -73,7 +73,7 @@ export function assembleValidatedEditorDraft({
 }: {
   baseDraft: StorefrontSnapshot;
   changedPages: readonly PageModel[];
-  aggregate: Pick<ProjectAggregate, "catalogue">;
+  aggregate: Pick<ProjectAggregate, "catalogue" | "project">;
   primaryLocale: Locale;
   identity?: Pick<StorefrontSnapshot, "id" | "createdAt" | "createdBy">;
   brandSystem?: BrandSystem;
@@ -98,11 +98,18 @@ export function assembleValidatedEditorDraft({
     const context = createStorefrontRenderContext({
       activeLocale: primaryLocale,
       primaryLocale,
+      enabledLocales: aggregate.project.enabledLocales,
       catalogue: aggregate.catalogue,
       snapshot: candidate,
     });
     changedPages.forEach((page) => validateRegisteredPage(page, context));
-    return validateRegisteredSnapshot(candidate, aggregate.catalogue, primaryLocale, primaryLocale);
+    return validateRegisteredSnapshot(
+      candidate,
+      aggregate.catalogue,
+      primaryLocale,
+      primaryLocale,
+      aggregate.project.enabledLocales,
+    );
   } catch (cause) {
     if (cause instanceof EditorDraftValidationError) throw cause;
     throw new EditorDraftValidationError({ cause });

@@ -500,15 +500,29 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
       expect(
         entry?.variants.every((variant) => variant.structuralClassification !== "unclassified"),
       ).toBe(true);
-      expect(
-        entry?.variants.every(
-          (variant) =>
-            (variant.structuralClassification === "notYetP10BCommercialReady" ||
-              (["productGrid", "relatedProducts"].includes(definition.type) &&
-                variant.structuralClassification === "legacySuperseded")) &&
-            variant.materialDifferences.length === 0,
-        ),
-      ).toBe(true);
+      if (["header", "footer"].includes(definition.type)) {
+        expect(
+          entry?.variants.filter(
+            (variant) => variant.structuralClassification === "meaningfulStructuralVariant",
+          ).length,
+        ).toBeGreaterThanOrEqual(4);
+      } else if (["productGrid", "relatedProducts"].includes(definition.type)) {
+        expect(
+          entry?.variants.every(
+            (variant) =>
+              variant.structuralClassification === "legacySuperseded" &&
+              variant.materialDifferences.length === 0,
+          ),
+        ).toBe(true);
+      } else {
+        expect(
+          entry?.variants.every(
+            (variant) =>
+              variant.structuralClassification === "notYetP10BCommercialReady" &&
+              variant.materialDifferences.length === 0,
+          ),
+        ).toBe(true);
+      }
     }
   });
 
