@@ -13,7 +13,7 @@ exportMarkdownDocx({
   subtitle: "Version 1.3.0",
   coverLines: [
     "Verified baseline: 9 August 2026",
-    "P10B-06 shared frame, P10B-07 storytelling and P10B-08 product-card baseline",
+    "P10B-11 commercial PDP profile baseline",
     "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
     "Authoritative source: docs/VESKIFY_SDD.md",
   ],

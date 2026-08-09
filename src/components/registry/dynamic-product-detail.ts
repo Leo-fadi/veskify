@@ -1,7 +1,16 @@
 import { z } from "zod";
-import { validateComponentDefinitionV2 } from "@/domain/component-platform";
+import {
+  validateComponentDefinitionV2,
+  type ComponentInstanceValidationContracts,
+  type ComponentInstanceV2,
+  type ComponentProjectionContext,
+} from "@/domain/component-platform";
 import { localizedTextSchema } from "@/domain/shared";
-import { withCurrentComponentCommercialAnatomy } from "./commercial-anatomy";
+import { pageFactEvidenceReferenceSchema } from "@/domain/storefront";
+import {
+  createRegisteredComponentCommercialAnatomy,
+  type RegisteredCommercialAnatomyInput,
+} from "./commercial-anatomy";
 import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
 
 const trustItemSchema = z
@@ -25,6 +34,8 @@ export const dynamicProductDetailContentSchema = z
     supportingHeading: localizedTextSchema.optional(),
     supportingBody: localizedTextSchema.optional(),
     trustItems: z.array(trustItemSchema).max(6).default([]),
+    /** Required only when high-consideration factual support/proof is present. */
+    supportingEvidence: pageFactEvidenceReferenceSchema.optional(),
     relatedHeading: localizedTextSchema,
     primaryActionLabel: localizedTextSchema,
   })
@@ -272,6 +283,7 @@ const definitionInput = {
       "commerce.product.optionGroups",
       "commerce.product.selectedValues",
       "assets.*.provenance",
+      "content.supportingEvidence",
     ],
   },
   responsiveRules: [
@@ -335,9 +347,243 @@ const definitionInput = {
   },
 };
 
-export const dynamicProductDetailDefinition = validateComponentDefinitionV2(
-  withCurrentComponentCommercialAnatomy(definitionInput),
-);
+/**
+ * P10B-11 promotes the existing generic PDP runtime into governed commercial
+ * compositions. These are deliberately anatomy declarations for one renderer,
+ * not product-type page forks or a second PDP authority.
+ */
+const commercialPdpAnatomy: RegisteredCommercialAnatomyInput = {
+  version: { major: 1, minor: 2, patch: 0 },
+  regions: [
+    { id: "frame", required: true },
+    { id: "media", required: true },
+    { id: "content", required: true },
+    { id: "heading", required: true },
+    { id: "merchandising", required: false },
+    { id: "price", required: true },
+    { id: "metadata", required: false },
+    { id: "proof", required: false },
+    { id: "service", required: false },
+    { id: "actions", required: true },
+    { id: "continuation", required: false },
+  ],
+  responsiveTransformations: [
+    {
+      id: "pdpStandardStack",
+      mode: "stack",
+      breakpoints: ["mobile", "tablet"],
+      fromPresentationMode: "standardCommercePdp",
+      toPresentationMode: "standardCommerceStack",
+      affectedRegions: ["media", "content", "merchandising", "actions"],
+    },
+    {
+      id: "pdpHighConsiderationReflow",
+      mode: "reflow",
+      breakpoints: ["mobile", "tablet"],
+      fromPresentationMode: "highConsiderationPdp",
+      toPresentationMode: "highConsiderationStack",
+      affectedRegions: ["content", "proof", "service", "media", "actions"],
+    },
+    {
+      id: "pdpGalleryLedContain",
+      mode: "switch-layout",
+      breakpoints: ["mobile", "tablet"],
+      fromPresentationMode: "galleryLedPdp",
+      toPresentationMode: "galleryLedStack",
+      affectedRegions: ["media", "content", "merchandising", "actions"],
+    },
+    {
+      id: "pdpVariantLedFocus",
+      mode: "reorder",
+      breakpoints: ["mobile", "tablet"],
+      fromPresentationMode: "variantLedPdp",
+      toPresentationMode: "variantLedStack",
+      affectedRegions: ["content", "merchandising", "actions", "media"],
+    },
+  ],
+  variants: [
+    {
+      variantId: "balanced",
+      classification: "meaningfulStructuralVariant",
+      materialDifferences: [
+        "hierarchy",
+        "regionArrangement",
+        "assetPlacement",
+        "ctaRelationship",
+        "merchandisingEmphasis",
+        "presentationMode",
+      ],
+      finishingTokenIds: [],
+      structure: {
+        regionOrder: [
+          "frame",
+          "media",
+          "content",
+          "heading",
+          "price",
+          "metadata",
+          "merchandising",
+          "actions",
+          "proof",
+          "service",
+          "continuation",
+        ],
+        omittedRegions: [],
+        assetPlacements: [{ slotId: "productMedia", region: "media" }],
+        contentRelationship: "balanced",
+        ctaRelationship: "inline",
+        merchandisingEmphasis: "balanced",
+        navigationModel: "none",
+        responsiveTransformationIds: ["pdpStandardStack"],
+        presentationMode: "standardCommercePdp",
+      },
+    },
+    {
+      variantId: "editorial",
+      classification: "compatibilityAlias",
+      materialDifferences: [],
+      finishingTokenIds: [],
+      aliasOf: "editorialSplit",
+      structure: {
+        regionOrder: [
+          "frame",
+          "content",
+          "heading",
+          "price",
+          "metadata",
+          "proof",
+          "service",
+          "media",
+          "merchandising",
+          "actions",
+          "continuation",
+        ],
+        omittedRegions: [],
+        assetPlacements: [{ slotId: "productMedia", region: "media" }],
+        contentRelationship: "supporting",
+        ctaRelationship: "separated",
+        merchandisingEmphasis: "supporting",
+        navigationModel: "none",
+        responsiveTransformationIds: ["pdpHighConsiderationReflow"],
+        presentationMode: "highConsiderationPdp",
+      },
+    },
+    {
+      variantId: "compact",
+      classification: "meaningfulStructuralVariant",
+      materialDifferences: [
+        "hierarchy",
+        "regionArrangement",
+        "ctaRelationship",
+        "responsiveTransformation",
+        "presentationMode",
+      ],
+      finishingTokenIds: [],
+      structure: {
+        regionOrder: [
+          "frame",
+          "content",
+          "heading",
+          "price",
+          "metadata",
+          "merchandising",
+          "actions",
+          "media",
+          "proof",
+          "service",
+          "continuation",
+        ],
+        omittedRegions: [],
+        assetPlacements: [{ slotId: "productMedia", region: "media" }],
+        contentRelationship: "contentLed",
+        ctaRelationship: "sticky",
+        merchandisingEmphasis: "dominant",
+        navigationModel: "none",
+        responsiveTransformationIds: ["pdpVariantLedFocus"],
+        presentationMode: "variantLedPdp",
+      },
+    },
+    {
+      variantId: "galleryDominant",
+      classification: "meaningfulStructuralVariant",
+      materialDifferences: [
+        "contentRelationship",
+        "ctaRelationship",
+        "merchandisingEmphasis",
+        "responsiveTransformation",
+        "presentationMode",
+      ],
+      finishingTokenIds: [],
+      structure: {
+        regionOrder: [
+          "frame",
+          "media",
+          "content",
+          "heading",
+          "price",
+          "metadata",
+          "merchandising",
+          "actions",
+          "proof",
+          "service",
+          "continuation",
+        ],
+        omittedRegions: [],
+        assetPlacements: [{ slotId: "productMedia", region: "frame" }],
+        contentRelationship: "mediaLed",
+        ctaRelationship: "separated",
+        merchandisingEmphasis: "supporting",
+        navigationModel: "none",
+        responsiveTransformationIds: ["pdpGalleryLedContain"],
+        presentationMode: "galleryLedPdp",
+      },
+    },
+    {
+      variantId: "editorialSplit",
+      classification: "meaningfulStructuralVariant",
+      materialDifferences: [
+        "hierarchy",
+        "regionArrangement",
+        "contentRelationship",
+        "ctaRelationship",
+        "responsiveTransformation",
+        "presentationMode",
+      ],
+      finishingTokenIds: [],
+      structure: {
+        regionOrder: [
+          "frame",
+          "content",
+          "heading",
+          "price",
+          "metadata",
+          "proof",
+          "service",
+          "media",
+          "merchandising",
+          "actions",
+          "continuation",
+        ],
+        omittedRegions: [],
+        assetPlacements: [{ slotId: "productMedia", region: "media" }],
+        contentRelationship: "supporting",
+        ctaRelationship: "separated",
+        merchandisingEmphasis: "supporting",
+        navigationModel: "none",
+        responsiveTransformationIds: ["pdpHighConsiderationReflow"],
+        presentationMode: "highConsiderationPdp",
+      },
+    },
+  ],
+};
+
+export const dynamicProductDetailDefinition = validateComponentDefinitionV2({
+  ...definitionInput,
+  commercialAnatomy: createRegisteredComponentCommercialAnatomy(
+    definitionInput as Parameters<typeof createRegisteredComponentCommercialAnatomy>[0],
+    commercialPdpAnatomy,
+  ),
+});
 
 export type DynamicProductDetailContent = z.infer<typeof dynamicProductDetailContentSchema>;
 export type DynamicProductDetailProps = z.infer<typeof dynamicProductDetailPropsSchema>;
@@ -345,3 +591,56 @@ export type DynamicProductDetailStyleOverrides = z.infer<
   typeof dynamicProductDetailStyleOverridesSchema
 >;
 export type DynamicProductDetailVariant = z.infer<typeof dynamicProductDetailVariantSchema>;
+
+/**
+ * High-consideration PDP support is presentation-only only when it retains a
+ * current approved factual reference. Other PDP profiles can still omit the
+ * optional region entirely; commerce truth is always supplied by bindings.
+ */
+export function resolveDynamicProductDetailSupportingContent(
+  input: unknown,
+  options: Readonly<{
+    variant: DynamicProductDetailVariant;
+    currentEvidenceReferences?: readonly z.infer<typeof pageFactEvidenceReferenceSchema>[];
+  }>,
+): DynamicProductDetailContent {
+  const content = dynamicProductDetailContentSchema.parse(input);
+  const hasSupportingClaim =
+    content.supportingHeading !== undefined ||
+    content.supportingBody !== undefined ||
+    content.trustItems.length > 0;
+  if (!hasSupportingClaim || !["editorial", "editorialSplit"].includes(options.variant)) {
+    return content;
+  }
+  const evidence = content.supportingEvidence;
+  const current = new Map(
+    (options.currentEvidenceReferences ?? []).map((reference) => {
+      const parsed = pageFactEvidenceReferenceSchema.parse(reference);
+      return [`${parsed.source}:${parsed.authorityId}`, parsed] as const;
+    }),
+  );
+  if (
+    !evidence ||
+    JSON.stringify(current.get(`${evidence.source}:${evidence.authorityId}`)) !==
+      JSON.stringify(evidence)
+  ) {
+    throw new Error("High-consideration PDP support requires current approved factual evidence.");
+  }
+  return content;
+}
+
+function validateDynamicProductDetailEvidenceConformance(
+  instance: ComponentInstanceV2,
+  projection: ComponentProjectionContext,
+) {
+  if (instance.component !== "dynamicProductDetail") return;
+  resolveDynamicProductDetailSupportingContent(instance.content, {
+    variant: dynamicProductDetailVariantSchema.parse(instance.variant),
+    currentEvidenceReferences: projection.evidenceReferences,
+  });
+}
+
+export const dynamicProductDetailInstanceValidationContracts: ComponentInstanceValidationContracts =
+  {
+    dynamicProductDetail: { validateConformance: validateDynamicProductDetailEvidenceConformance },
+  };
