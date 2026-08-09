@@ -12,6 +12,7 @@ import type {
 } from "@/domain/storefront";
 import type { HomepageNavigationIntent } from "@/components/storefront/homepage-commerce";
 import type { BrandSystem } from "@/domain/design-system";
+import type { CommerceUtilityIntent, CommerceUtilityRuntimeState } from "@/domain/commerce-utility";
 
 export type StorefrontRenderContext = {
   activeLocale: Locale;
@@ -28,6 +29,10 @@ export type StorefrontRenderContext = {
   renderTarget?: "editor" | "preview" | "published";
   /** Current, externally resolved proof authority. Snapshot content never establishes approval. */
   evidenceReferences?: readonly PageFactEvidenceReference[];
+  /** Read-only operational state from a commerce/runtime adapter; never snapshot-persisted. */
+  commerceUtilityRuntime?: CommerceUtilityRuntimeState;
+  /** Present only when the adapter has declared the rendered utility action executable. */
+  onCommerceUtilityIntent?: (intent: CommerceUtilityIntent) => void;
 };
 
 /** Resolves only canonical snapshot navigation and commerce identities to routes. */

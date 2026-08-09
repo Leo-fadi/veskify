@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 9 August 2026, P10B-10 commercial collection/search profiles           |
+| Verified baseline         | 9 August 2026, P10B-13 commerce utility presentation pages             |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -18,6 +18,7 @@
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
 | 1.3.0 P10B-10 | 9 August 2026 | P10B-10 delivery | Establish four fingerprinted commercial collection/search PageBlueprint profiles with exact canonical commerce, product-card and media authority, transient fail-closed zero-result context, deterministic lifecycle reachability, and retained four-width browser evidence. |
+| 1.3.0 P10B-13 | 9 August 2026 | P10B-13 delivery | Establish seven fingerprinted commerce-utility PageBlueprint profiles with transient read-only cart/checkout/search/runtime state, fail-closed executable actions, snapshot configuration preservation, and retained four-width browser evidence. |
 | 1.3.0 P10B-09 | 9 August 2026 | P10B-09 delivery | Establish six fingerprinted commercial homepage PageBlueprint profiles with evidence/cardinality authority, exact frame/story/card composition, deterministic lifecycle reachability, and retained four-width browser evidence. |
 | 1.3.0 P10B-07 | 8 August 2026 | P10B-07 delivery | Establish commercial-ready hero, editorial, campaign, service and evidence-grounded proof families with six meaningful hero anatomies, canonical art direction, PageBlueprint generation reachability, lifecycle preservation and four-width browser evidence. |
 | 1.3.0 P10B-08 | 8 August 2026 | P10B-08 delivery | Establish one fingerprinted product-card authority and renderer, five meaningful anatomies, exact protected-commerce and P10B-04 media lineage, deterministic legacy migration, generation/publish reachability, and four-width browser evidence. |
@@ -74,7 +75,8 @@ P10B-01 commercial grammar, P10B-02 parametric BrandSystem / Design DNA, P10B-03
 P10B-04 responsive image/art-direction authority, P10B-05 site-map/page-family authority, P10B-06
 commercial shared-frame families, P10B-07 hero/editorial/campaign/proof families, P10B-08
 canonical product-card authority, P10B-09 commercial homepage profiles, and P10B-10 commercial
-collection/search profiles are Baseline. P10B-11 through P10B-18 remain Planned. The current
+collection/search profiles and P10B-13 commerce utility presentation are Baseline. P10B-11,
+P10B-12, and P10B-14 through P10B-18 remain Planned. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -753,7 +755,24 @@ child collection ordering, active filters, and zero-result behavior. Four-width 
 covers the canonical route renderer and retains screenshots in its report. Details are in
 [`P10B_10_COMMERCIAL_COLLECTION_SEARCH_PROFILES.md`](P10B_10_COMMERCIAL_COLLECTION_SEARCH_PROFILES.md).
 
-### 10.13 Planned commercial generation authority
+### 10.13 P10B-13 commerce utility presentation authority
+
+Seven versioned utility profiles—cart, checkout boundary, no-results, generic empty, recoverable
+error, 404, and loading—now materialize a single registered `commerceUtility` component through
+the existing P10B-05 page-family/PageBlueprint authority. They select compatible P10B-06 frames,
+inherit P10B-02 Design DNA, declare exact responsive transformations, and preserve only the
+presentation configuration in `StorefrontSnapshot`, save/reload, and deterministic publication.
+
+Current cart lines, quantities, prices, totals, checkout sessions, queries, filters, and runtime
+errors are a transient read-only commerce-adapter projection. The renderer resolves canonical
+product identity/media from the existing catalogue and displays only adapter-supplied prices; it
+does not calculate totals, discounts, shipping, tax, or inventory. Actions render only when the
+runtime adapter declares and handles the matching bounded intent. P10B-10 no-results retains
+query/filter context and emits no products. Error, empty, and 404 remain semantically distinct.
+Checkout retains its existing external/adapter boundary and does not create payment or order
+authority. Details are in [`P10B_13_COMMERCE_UTILITY_PRESENTATION_PAGES.md`](P10B_13_COMMERCE_UTILITY_PRESENTATION_PAGES.md).
+
+### 10.14 Planned commercial generation authority
 
 `BrandSystem` owns merchant-wide bounded Design DNA across semantic colour, approved font roles and
 pairing, type scale/weights, spacing and section rhythm, gutters/containers, grid/card/control
@@ -934,7 +953,8 @@ The binding sequence is:
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
    formal P10A phase closure record.
 2. **P10B — Commercial Storefront Generation System v1.** **Partial / active phase.** P10B-01
-   through P10B-10 are Baseline; P10B-11 through P10B-18 remain Planned.
+   through P10B-10 and P10B-13 are Baseline; P10B-11, P10B-12, and P10B-14 through P10B-18
+   remain Planned.
    Deliver complete commercially credible storefronts with bounded material diversity through
    registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and

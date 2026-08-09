@@ -31,16 +31,16 @@ function capabilityMatrixStatuses(): string[] {
 
 describe("P10A-02 repository capability audit", () => {
   it("keeps every legacy renderer registration represented in the canonical V2 registry", () => {
-    expect(p10a02ComponentCapabilityAudit.v1RegisteredComponentTypes).toHaveLength(27);
+    expect(p10a02ComponentCapabilityAudit.v1RegisteredComponentTypes).toHaveLength(28);
     expect(p10a02ComponentCapabilityAudit.v1TypesMissingV2Definition).toEqual([]);
     expect(p10a02ComponentCapabilityAudit.rendererTypesMissingV2Definition).toEqual([]);
   });
 
   it("keeps every V2 component type connected to either the legacy bridge or an all-surface renderer", () => {
-    expect(p10a02ComponentCapabilityAudit.v2RegisteredComponentTypes).toHaveLength(27);
-    expect(p10a02ComponentCapabilityAudit.v2RegisteredVariantCount).toBe(104);
+    expect(p10a02ComponentCapabilityAudit.v2RegisteredComponentTypes).toHaveLength(28);
+    expect(p10a02ComponentCapabilityAudit.v2RegisteredVariantCount).toBe(111);
     expect(p10a02ComponentCapabilityAudit.componentFamilyCounts).toEqual({
-      content: 16,
+      content: 17,
       commerce: 4,
       marketing: 2,
       navigation: 2,

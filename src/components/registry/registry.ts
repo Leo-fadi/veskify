@@ -16,6 +16,7 @@ import {
 import { homepageCommerceBridgeDefinitions } from "./homepage-commerce-bridge";
 import type { ComponentDefinition, StorefrontRenderContext } from "./contract";
 import { veskifyLegacyComponentRegistry } from "./legacy-registry";
+import type { CommerceUtilityIntent, CommerceUtilityRuntimeState } from "@/domain/commerce-utility";
 
 export const veskifyComponentRegistry = {
   ...veskifyLegacyComponentRegistry,
@@ -119,6 +120,8 @@ export function createStorefrontRenderContext({
   pagePathSuffix = "",
   renderTarget = "preview",
   evidenceReferences = [],
+  commerceUtilityRuntime,
+  onCommerceUtilityIntent,
 }: {
   activeLocale: Locale;
   primaryLocale: Locale;
@@ -130,6 +133,8 @@ export function createStorefrontRenderContext({
   pagePathSuffix?: string;
   renderTarget?: StorefrontRenderContext["renderTarget"];
   evidenceReferences?: StorefrontRenderContext["evidenceReferences"];
+  commerceUtilityRuntime?: CommerceUtilityRuntimeState;
+  onCommerceUtilityIntent?: (intent: CommerceUtilityIntent) => void;
 }): StorefrontRenderContext {
   const parsedActiveLocale = localeSchema.parse(activeLocale);
   const parsedPrimaryLocale = localeSchema.parse(primaryLocale);
@@ -159,5 +164,9 @@ export function createStorefrontRenderContext({
     homePath: homePage ? pagePaths[homePage.id] : undefined,
     renderTarget,
     evidenceReferences,
+    ...(commerceUtilityRuntime
+      ? { commerceUtilityRuntime: structuredClone(commerceUtilityRuntime) }
+      : {}),
+    ...(onCommerceUtilityIntent ? { onCommerceUtilityIntent } : {}),
   };
 }

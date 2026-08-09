@@ -1,5 +1,7 @@
 import {
+  commercialUtilityProfileIdSchema,
   getExecutablePageBlueprintProfile,
+  materializeCommerceUtilityPage,
   materializeExecutablePageBlueprint,
 } from "@/application/storefront-templates";
 import { validateRegisteredSnapshot, veskifyComponentDefinitionsV2 } from "@/components/registry";
@@ -315,7 +317,7 @@ export function materializeStorefrontSiteMap(
         `Page ${page.key} references an omitted or missing parent page.`,
       );
     }
-    return {
+    const materializedPage = {
       ...(existing ? structuredClone(existing) : { sections: [] }),
       id: pageIds.get(page.key)!,
       type: getPageFamilyDefinition(page.familyId).pageType,
@@ -329,6 +331,14 @@ export function materializeStorefrontSiteMap(
         canonicalEvidenceByPageKey.get(page.key) ?? [],
       ),
     };
+    const utilityProfile = getExecutablePageBlueprintProfile(page.profile.id)?.profile
+      ?.commercialUtility;
+    return utilityProfile
+      ? materializeCommerceUtilityPage(
+          materializedPage,
+          commercialUtilityProfileIdSchema.parse(page.profile.id),
+        )
+      : materializedPage;
   });
   const snapshot = storefrontSnapshotSchema.parse({
     ...structuredClone(input.baseSnapshot),

@@ -9,6 +9,7 @@ import {
   homepagePromotionDefinition,
   homepageTrustDefinition,
 } from "./homepage-commerce";
+import { commerceUtilityDefinition } from "./commerce-utility";
 
 function registeredVariants(definition: Readonly<{ variants: readonly { id: string }[] }>) {
   return definition.variants.map(({ id }) => id);
@@ -108,6 +109,10 @@ export const supportedSectionManifest = {
   dynamicProductDetail: {
     allowedPageTypes: ["product"] as const satisfies readonly PageType[],
     variants: ["balanced", "editorial", "compact", "galleryDominant", "editorialSplit"] as const,
+  },
+  commerceUtility: {
+    allowedPageTypes: commerceUtilityDefinition.allowedPageTypes,
+    variants: commerceUtilityDefinition.variants,
   },
   homepageHero: {
     allowedPageTypes: registeredPageTypes(homepageHeroDefinition),

@@ -27,6 +27,7 @@ import {
 import { pageFamilyBaselinePagePlans } from "./page-family-baselines";
 import { commercialHomepagePagePlans } from "./commercial-homepage-profiles";
 import { commercialCollectionSearchPagePlans } from "./commercial-collection-search-profiles";
+import { commercialUtilityPagePlans } from "./commercial-utility-profiles";
 
 export {
   commercialHomepageProfileIds,
@@ -52,6 +53,17 @@ export {
   CommercialCollectionSearchProfileError,
   type CommercialCollectionSearchProfileId,
 } from "./commercial-collection-search-profiles";
+
+export {
+  commercialUtilityProfileIds,
+  commercialUtilityProfileIdSchema,
+  COMMERCIAL_UTILITY_PROFILE_VERSION,
+  getCommercialUtilityProfile,
+  listCommercialUtilityProfiles,
+  validateCommercialUtilityProfileLibrary,
+  type CommercialUtilityProfileId,
+} from "./commercial-utility-profiles";
+export { materializeCommerceUtilityPage } from "./commerce-utility-materializer";
 
 const createdAt = "2026-07-18T00:00:00.000Z";
 const allPageTypes = ["home", "collection", "product"] as const;
@@ -715,16 +727,12 @@ function validatePagePlan(
   plan.slots.forEach((slotDefinition) => {
     const manifest = getSupportedSectionManifest(slotDefinition.sectionType);
     if (!manifest) throw new Error(`Unsupported section type: ${slotDefinition.sectionType}.`);
-    if (!(manifest.allowedPageTypes as readonly PageType[]).includes(plan.pageType)) {
+    if (!manifest.allowedPageTypes.includes(plan.pageType)) {
       throw new Error(
         `Section ${slotDefinition.sectionType} is not allowed on ${plan.pageType} pages.`,
       );
     }
-    if (
-      slotDefinition.allowedVariants.some(
-        (variant) => !(manifest.variants as readonly string[]).includes(variant),
-      )
-    ) {
+    if (slotDefinition.allowedVariants.some((variant) => !manifest.variants.includes(variant))) {
       throw new Error(
         `Unsupported variant in ${template.id}/${plan.pageType}/${slotDefinition.id}.`,
       );
@@ -896,6 +904,7 @@ const profilesById = new Map(
     ...pageFamilyBaselinePagePlans,
     ...commercialHomepagePagePlans,
     ...commercialCollectionSearchPagePlans,
+    ...commercialUtilityPagePlans,
   ].flatMap((pagePlanDefinition) =>
     pagePlanDefinition.profile
       ? [[pagePlanDefinition.profile.id, pagePlanDefinition] as const]

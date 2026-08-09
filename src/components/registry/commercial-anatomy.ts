@@ -333,6 +333,101 @@ function sharedFrameComponentAnatomy(definition: AnatomySource): ComponentCommer
 export function createCurrentComponentCommercialAnatomy(
   definition: AnatomySource,
 ): ComponentCommercialAnatomy {
+  if (definition.type === "commerceUtility") {
+    const regions: ComponentSemanticRegion[] = ["frame", "heading", "content", "actions"];
+    const structures: Record<
+      string,
+      Readonly<{
+        presentationMode: string;
+        order: ComponentSemanticRegion[];
+        omitted: ComponentSemanticRegion[];
+        differences: readonly (
+          | "hierarchy"
+          | "regionArrangement"
+          | "regionPresence"
+          | "presentationMode"
+          | "responsiveTransformation"
+        )[];
+      }>
+    > = {
+      cart: {
+        presentationMode: "cartSummary",
+        order: ["frame", "heading", "content", "actions"],
+        omitted: [],
+        differences: ["presentationMode"],
+      },
+      checkoutBoundary: {
+        presentationMode: "checkoutTransition",
+        order: ["frame", "heading", "actions", "content"],
+        omitted: [],
+        differences: ["presentationMode"],
+      },
+      noResults: {
+        presentationMode: "searchRecovery",
+        order: ["frame", "heading", "content", "actions"],
+        omitted: [],
+        differences: ["presentationMode"],
+      },
+      emptyState: {
+        presentationMode: "emptyContinuation",
+        order: ["frame", "heading", "content", "actions"],
+        omitted: [],
+        differences: ["presentationMode"],
+      },
+      recoverableError: {
+        presentationMode: "errorRecovery",
+        order: ["frame", "heading", "content", "actions"],
+        omitted: [],
+        differences: ["presentationMode"],
+      },
+      notFound: {
+        presentationMode: "missingRouteRecovery",
+        order: ["frame", "heading", "content", "actions"],
+        omitted: [],
+        differences: ["presentationMode"],
+      },
+      loading: {
+        presentationMode: "pendingStatus",
+        order: ["frame", "heading", "content"],
+        omitted: ["actions"],
+        differences: ["presentationMode"],
+      },
+    };
+    return createRegisteredComponentCommercialAnatomy(definition, {
+      regions: regions.map((id) => ({ id, required: id === "frame" || id === "heading" })),
+      responsiveTransformations: [
+        {
+          id: "utilityStack",
+          mode: "stack",
+          breakpoints: ["mobile", "tablet"],
+          fromPresentationMode: "utilityWide",
+          toPresentationMode: "utilityStack",
+          affectedRegions: ["content", "actions"],
+        },
+      ],
+      variants: definition.variants.map((variant) => {
+        const structure = structures[variant.id];
+        if (!structure) throw new Error(`Missing utility anatomy for ${variant.id}.`);
+        return {
+          variantId: variant.id,
+          classification: "meaningfulStructuralVariant",
+          materialDifferences: [...structure.differences],
+          finishingTokenIds: [],
+          structure: {
+            regionOrder: structure.order,
+            omittedRegions: structure.omitted,
+            assetPlacements: [],
+            contentRelationship: "contentLed",
+            ctaRelationship: structure.omitted.includes("actions") ? "none" : "separated",
+            merchandisingEmphasis: "none",
+            navigationModel: "none",
+            responsiveTransformationIds: ["utilityStack"],
+            presentationMode: structure.presentationMode,
+          },
+        };
+      }),
+    });
+  }
   if (definition.type === "header" || definition.type === "footer") {
     return sharedFrameComponentAnatomy(definition);
   }

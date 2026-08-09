@@ -111,6 +111,13 @@ const variantLabels: Readonly<Record<string, { en: string; fi: string }>> = {
   catalogueComparison: { en: "Catalogue comparison", fi: "Luettelon vertailu" },
   campaignLedDiscovery: { en: "Campaign-led discovery", fi: "Kampanjavetoinen löytäminen" },
   denseSearch: { en: "Dense search", fi: "Tiivis haku" },
+  cart: { en: "Cart", fi: "Ostoskori" },
+  checkoutBoundary: { en: "Checkout boundary", fi: "Kassan rajapinta" },
+  noResults: { en: "No results", fi: "Ei tuloksia" },
+  emptyState: { en: "Empty state", fi: "Tyhjä tila" },
+  recoverableError: { en: "Recoverable error", fi: "Palautettava virhe" },
+  notFound: { en: "Page not found", fi: "Sivua ei löytynyt" },
+  loading: { en: "Loading", fi: "Ladataan" },
 };
 
 function localizedLabel(value: string) {

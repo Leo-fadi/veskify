@@ -224,7 +224,17 @@ const roles = (
   input: Omit<z.input<typeof narrativeRoleDefinitionSchema>, "id">,
 ): NarrativeRoleDefinition => narrativeRoleDefinitionSchema.parse({ id, ...input });
 
-const allPages: Array<z.infer<typeof pageTypeSchema>> = ["home", "collection", "product"];
+// Utility presentation is a first-class storefront surface. These roles remain
+// presentation-only there; this does not confer commerce-operation authority.
+const allPages: Array<z.infer<typeof pageTypeSchema>> = [
+  "home",
+  "collection",
+  "product",
+  "content",
+  "cart",
+  "checkout",
+  "landing",
+];
 const allWeights: Array<z.infer<typeof visualWeightSchema>> = [
   "light",
   "medium",

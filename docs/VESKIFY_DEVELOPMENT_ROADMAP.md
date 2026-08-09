@@ -2,7 +2,7 @@
 
 **Version:** 1.3.0
 
-**Baseline:** 9 August 2026, P10B-10 commercial collection/search profiles
+**Baseline:** 9 August 2026, P10B-13 commerce utility presentation pages
 
 **Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)
 
@@ -51,7 +51,8 @@ phase; each remaining task stays Planned until implemented and evidenced.
 The binding architecture, coverage targets, concrete Done conditions, synthesis/fingerprint model,
 and parallelization rules live in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B is **Partial / active**. P10B-01 through P10B-10 are Baseline; P10B-11 through P10B-18
+P10B is **Partial / active**. P10B-01 through P10B-10 and P10B-13 are Baseline; P10B-11,
+P10B-12, and P10B-14 through P10B-18
 remain **Planned**.
 
 ### 3.1 Dependency waves
@@ -82,7 +83,7 @@ remain **Planned**.
 | P10B-10 — Commercial collection and search profiles              | Deliver four editorial, comparison, campaign, and dense/search profiles.                                                                      | **Baseline** | P10B-04 through P10B-06, P10B-08                                | PageBlueprint and dynamic collection | Exact commerce/intents/cards/zero-results, lifecycle, 16 responsive views and retained report evidence                              | Second collection engine, membership mutation, or operational search route |
 | P10B-11 — Commercial PDP profile library                         | Deliver at least four standard, high-consideration, gallery-led, and variant-led experiences.                                                 | **Planned**  | P10B-03 through P10B-06, P10B-08                                | PageBlueprint and dynamic PDP        | Generic options/configurations, commerce/media parity, all-target render and retained review                                        | Product-type forks                                                         |
 | P10B-12 — Content and support page families                      | Generate About, Contact/locations, FAQ, shipping/returns, policy, campaign/editorial, and generic content pages from approved facts.          | **Planned**  | P10B-03 through P10B-07                                         | PageBlueprint and content families   | Provenance, localization, route/navigation, omission/fallback and retained review                                                   | Fabricated policy/service/compliance claims                                |
-| P10B-13 — Commerce utility presentation pages                    | Deliver governed search/no-results, cart, checkout, empty, error, and 404 presentation.                                                       | **Planned**  | P10B-03, P10B-05, P10B-06, P10B-08                              | Utility presentation                 | Canonical facts/actions, empty/error/a11y/responsive and complete-page-set evidence                                                 | Cart/checkout/payment operations                                           |
+| P10B-13 — Commerce utility presentation pages                    | Deliver governed search/no-results, cart, checkout, empty, error, and 404 presentation.                                                       | **Baseline** | P10B-03, P10B-05, P10B-06, P10B-08                              | Utility presentation                 | Canonical facts/actions, state distinction, save/publish preservation, 16 responsive views and retained evidence                    | Cart/checkout/payment operations                                           |
 | P10B-14 — Premium Editorial complete-storefront vertical slice   | Prove one credible complete multi-page storefront before broad synthesis/direction expansion.                                                 | **Planned**  | Minimum accepted P10B-02 through P10B-13 capability             | Storefront generation and QA         | Complete canonical chain plus EN/FI/four-width retained human review                                                                | Hand-built or homepage-only proof                                          |
 | P10B-15 — Bounded storefront synthesis and narrative engine      | Generate coherent complete stores from compatible Design DNA, page set, profiles, variants, parameters, assets, and narrative roles.          | **Planned**  | P10B-14 and sufficient real family/profile authority            | Storefront generation                | Determinism, compatibility, repetition control, no-partial generation and complete snapshot evidence                                | Arbitrary trees/styles or best-effort mutation                             |
 | P10B-16 — Coordinated directions and diversity control           | Make the three directions constraint packages and add deterministic duplicate/near-duplicate prevention.                                      | **Planned**  | P10B-15                                                         | Direction selection and evaluation   | Structural fingerprint, pairwise non-colour/flow/responsive diversity and typed rejection                                           | Fixed templates or colour-only diversity                                   |

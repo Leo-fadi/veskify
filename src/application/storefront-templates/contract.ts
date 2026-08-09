@@ -68,6 +68,7 @@ const pageBlueprintProfileVersionSchema = z.string().regex(/^\d+\.\d+\.\d+$/);
 
 const commercialHomepageFingerprintSchema = z.string().trim().min(1).max(240);
 const commercialCollectionSearchFingerprintSchema = z.string().trim().min(1).max(240);
+const commercialUtilityFingerprintSchema = z.string().trim().min(1).max(240);
 
 export const commercialHomepageProfileAuthoritySchema = z
   .object({
@@ -295,6 +296,61 @@ export const commercialCollectionSearchProfileAuthoritySchema = z
     }
   });
 
+/** Registered PageBlueprint presentation authority for transient commerce/runtime states. */
+export const commercialUtilityProfileAuthoritySchema = z
+  .object({
+    family: z.literal("commercial-utility"),
+    state: z.enum(["cart", "checkout", "no-results", "empty", "error", "not-found", "loading"]),
+    compatibleSharedFrameProfileIds: z.array(commercialSharedFrameProfileIdSchema).min(1),
+    defaultSharedFrameProfileId: commercialSharedFrameProfileIdSchema,
+    requiredRuntimeCapabilities: z.array(z.string().trim().min(1).max(80)).default([]),
+    omissionBehavior: z.literal("fail-closed"),
+    responsiveArchitecture: z.tuple([
+      z
+        .object({
+          breakpoint: z.literal("mobile"),
+          viewport: z.literal(375),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("tablet"),
+          viewport: z.literal(768),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("desktop"),
+          viewport: z.literal(1024),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("wide"),
+          viewport: z.literal(1440),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+    ]),
+    structuralSignature: commercialUtilityFingerprintSchema,
+    structuralFingerprint: commercialUtilityFingerprintSchema,
+  })
+  .strict()
+  .superRefine((authority, context) => {
+    if (
+      !authority.compatibleSharedFrameProfileIds.includes(authority.defaultSharedFrameProfileId)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["defaultSharedFrameProfileId"],
+        message: "The default shared frame must be compatible with the utility profile.",
+      });
+    }
+  });
+
 const pageBlueprintComponentSelectionSchema = z
   .object({
     slotId: z.string().trim().min(1).max(80),
@@ -363,6 +419,7 @@ export const executablePageBlueprintProfileSchema = z
     accessibilityContract: z.literal("registered-component-contracts"),
     commercialHomepage: commercialHomepageProfileAuthoritySchema.optional(),
     commercialCollectionSearch: commercialCollectionSearchProfileAuthoritySchema.optional(),
+    commercialUtility: commercialUtilityProfileAuthoritySchema.optional(),
   })
   .strict()
   .superRefine((profile, context) => {
@@ -622,6 +679,9 @@ export type CommercialHomepageProfileAuthority = z.infer<
 >;
 export type CommercialCollectionSearchProfileAuthority = z.infer<
   typeof commercialCollectionSearchProfileAuthoritySchema
+>;
+export type CommercialUtilityProfileAuthority = z.infer<
+  typeof commercialUtilityProfileAuthoritySchema
 >;
 export type StorefrontTemplateSlot = z.infer<typeof storefrontTemplateSlotSchema>;
 export type StorefrontTemplatePagePlan = z.infer<typeof storefrontTemplatePagePlanSchema>;

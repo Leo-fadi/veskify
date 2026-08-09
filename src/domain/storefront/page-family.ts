@@ -57,6 +57,7 @@ const profile = (id: string) => Object.freeze({ id, version: "1.0.0" as const })
 const bothNavigation = ["primary", "footer"] as const;
 const contentProfile = profile("blueprint-site-map-content-baseline");
 const stateProfile = profile("blueprint-site-map-state-baseline");
+const utilityProfile = (id: string) => profile(id);
 const commercialCollectionSearchProfiles = [
   profile("collection-editorial-discovery"),
   profile("collection-catalogue-comparison"),
@@ -210,7 +211,10 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     pageType: "cart",
     routeClass: "cart",
     commerceContext: "none",
-    allowedProfileReferences: [profile("blueprint-site-map-cart-baseline")],
+    allowedProfileReferences: [
+      profile("blueprint-site-map-cart-baseline"),
+      utilityProfile("commerce-utility-cart"),
+    ],
     navigationEligibility: [],
     evidenceRequirement: "none",
     permittedEvidenceKinds: [],
@@ -223,7 +227,10 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     pageType: "checkout",
     routeClass: "checkout",
     commerceContext: "none",
-    allowedProfileReferences: [profile("blueprint-site-map-checkout-baseline")],
+    allowedProfileReferences: [
+      profile("blueprint-site-map-checkout-baseline"),
+      utilityProfile("commerce-utility-checkout"),
+    ],
     navigationEligibility: [],
     evidenceRequirement: "none",
     permittedEvidenceKinds: [],
@@ -237,7 +244,16 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
       pageType: "content",
       routeClass: "state",
       commerceContext: "none",
-      allowedProfileReferences: [stateProfile],
+      allowedProfileReferences: [
+        stateProfile,
+        utilityProfile(
+          id === "no-results"
+            ? "commerce-utility-no-results"
+            : id === "empty-state"
+              ? "commerce-utility-empty"
+              : "commerce-utility-error",
+        ),
+      ],
       navigationEligibility: [],
       evidenceRequirement: "none",
       permittedEvidenceKinds: [],
@@ -251,7 +267,11 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     pageType: "content",
     routeClass: "not-found",
     commerceContext: "none",
-    allowedProfileReferences: [stateProfile],
+    allowedProfileReferences: [
+      stateProfile,
+      utilityProfile("commerce-utility-not-found"),
+      utilityProfile("commerce-utility-loading"),
+    ],
     navigationEligibility: [],
     evidenceRequirement: "none",
     permittedEvidenceKinds: [],
