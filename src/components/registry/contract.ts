@@ -15,6 +15,8 @@ import type { BrandSystem } from "@/domain/design-system";
 export type StorefrontRenderContext = {
   activeLocale: Locale;
   primaryLocale: Locale;
+  enabledLocales: readonly Locale[];
+  onLocaleChange?: (locale: Locale) => void;
   catalogue: CatalogueDisplayModel;
   navigation: NavigationModel;
   sharedFrame?: SharedFrameModel;

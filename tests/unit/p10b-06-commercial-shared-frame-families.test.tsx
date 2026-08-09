@@ -1,11 +1,13 @@
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   compileCommercialSharedFrameProposal,
   compileCommercialSharedFrameSelection,
   createCommercialSharedFrameProposal,
   currentCommercialSharedFrameSelection,
 } from "@/application/commercial-shared-frame";
+import { confirmPublish, preparePublish } from "@/application/publishing";
 import {
   compiledPublicationResultSchema,
   compileStorefrontPublication,
@@ -23,6 +25,7 @@ import { validateComponentDefinitionV2 } from "@/domain/component-platform";
 import { brandSystemToCssVariables } from "@/domain/design-system";
 import {
   CommercialSharedFrameError,
+  canonicalStorefrontContentFingerprint,
   commercialSharedFrameProfiles,
   validateCommercialSharedFrameSnapshot,
 } from "@/domain/storefront";
@@ -189,6 +192,58 @@ describe("P10B-06 commercial shared-frame families", () => {
     expect(editorMarkup).toContain('data-frame-profile="commerce-utility"');
   });
 
+  it("uses exact enabled-locale authority and delegates switching to the host", () => {
+    const result = compile("editorial-masthead");
+    expect(result.snapshot.pages.every((page) => page.pageFamily === undefined)).toBe(true);
+    const onLocaleChange = vi.fn();
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      enabledLocales: ["en", "fi"],
+      onLocaleChange,
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot: result.snapshot,
+    });
+    const homepage = result.snapshot.pages.find(({ type }) => type === "home")!;
+    render(renderStorefrontPage(homepage, context));
+
+    expect(screen.getAllByRole("button", { name: "FI" }).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getAllByRole("button", { name: "FI" })[0]);
+    expect(onLocaleChange).toHaveBeenCalledOnce();
+    expect(onLocaleChange).toHaveBeenCalledWith("fi");
+    cleanup();
+  });
+
+  it("renders canonical footer contact and policy content without inventing legal facts", () => {
+    const result = compile("compact-technical");
+    const homepage = result.snapshot.pages.find(({ type }) => type === "home")!;
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot: result.snapshot,
+    });
+    const markup = renderToStaticMarkup(renderStorefrontPage(homepage, context));
+    const footerMarkup = markup.slice(markup.indexOf("<footer"));
+    expect(footerMarkup).toContain("Helsinki · hello@aurumnordic.example");
+    expect(footerMarkup).toContain("Delivery · Returns · Privacy");
+    expect(footerMarkup).not.toContain("Draft placeholder");
+
+    const withoutPolicies = structuredClone(result.snapshot);
+    withoutPolicies.sharedFrame!.footer.props.showPolicies = false;
+    const withoutPoliciesContext = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot: withoutPolicies,
+    });
+    const withoutPoliciesMarkup = renderToStaticMarkup(
+      renderStorefrontPage(homepage, withoutPoliciesContext),
+    );
+    expect(withoutPoliciesMarkup).toContain("Helsinki · hello@aurumnordic.example");
+    expect(withoutPoliciesMarkup).not.toContain("Delivery · Returns · Privacy");
+  });
+
   it("projects the same root frame across home, collection, PDP, content and utility pages", () => {
     const snapshot = structuredClone(compile("centered-minimal").snapshot);
     const source = snapshot.pages[0];
@@ -274,6 +329,7 @@ describe("P10B-06 commercial shared-frame families", () => {
     const context = createStorefrontRenderContext({
       activeLocale: "fi",
       primaryLocale: "en",
+      enabledLocales: ["en", "fi"],
       catalogue: aurumNordicSeed.catalogue,
       snapshot,
     });
@@ -402,6 +458,16 @@ describe("P10B-06 commercial shared-frame families", () => {
     expect(
       publication.result.sharedFrame.componentExecutions.map(({ componentType }) => componentType),
     ).toEqual(expect.arrayContaining(["header", "footer"]));
+
+    const preparation = await preparePublish(result.snapshot.projectId, repository, {
+      createPreparationId: () => "publish_preparation_p10b_06_shared_frame",
+    });
+    const confirmed = await confirmPublish(preparation, repository);
+    expect(confirmed.publishedSnapshot.sharedFrame).toEqual(result.snapshot.sharedFrame);
+    expect(
+      (await repository.getActiveCompiledPublication(result.snapshot.projectId))?.version
+        .publishedSnapshot.fingerprint,
+    ).toBe(canonicalStorefrontContentFingerprint(confirmed.publishedSnapshot));
   });
 
   it("keeps legacy P9/P10A snapshots valid until deterministic frame migration is requested", () => {

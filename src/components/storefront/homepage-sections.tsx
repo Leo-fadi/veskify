@@ -578,8 +578,11 @@ export function StoreFooter({
     <CommercialStoreFooter
       brandName={brandName}
       className={className}
+      contact={contact}
       context={context}
       copyright={copyright}
+      policyLabel={policyLabel}
+      showPolicies={showPolicies}
       variant={variant}
     />
   );

@@ -65,11 +65,6 @@ function profileFor(
       : fallbackByFooter(variant as FooterVariant);
 }
 
-function enabledLocales(context: StorefrontRenderContext) {
-  const fromPages = context.pages.flatMap((page) => page.pageFamily?.localeCoverage ?? []);
-  return [...new Set([context.primaryLocale, ...fromPages])];
-}
-
 function frameDestination(context: StorefrontRenderContext, familyId: "search-results" | "cart") {
   const page = context.pages.find((candidate) => candidate.pageFamily?.familyId === familyId);
   return page ? context.pagePaths[page.id] : undefined;
@@ -88,6 +83,16 @@ function UtilityControls({
 }) {
   const searchPath = frameDestination(context, "search-results");
   const cartPath = frameDestination(context, "cart");
+  function selectLocale(locale: StorefrontRenderContext["activeLocale"]) {
+    onNavigate?.();
+    if (context.onLocaleChange) {
+      context.onLocaleChange(locale);
+      return;
+    }
+    const destination = new URL(window.location.href);
+    destination.searchParams.set("locale", locale);
+    window.location.assign(destination.toString());
+  }
   return (
     <div className={styles.utilities} data-frame-region="utilities">
       {showSearch && searchPath ? (
@@ -101,15 +106,16 @@ function UtilityControls({
         </a>
       ) : null}
       <div aria-label={context.activeLocale === "fi" ? "Kielivalinta" : "Language"}>
-        {enabledLocales(context).map((locale) => (
-          <a
-            aria-current={locale === context.activeLocale ? "page" : undefined}
-            href={`?locale=${locale}`}
+        {context.enabledLocales.map((locale) => (
+          <button
+            aria-pressed={locale === context.activeLocale}
+            className={styles.localeButton}
             key={locale}
-            onClick={onNavigate}
+            onClick={() => selectLocale(locale)}
+            type="button"
           >
             {locale.toUpperCase()}
-          </a>
+          </button>
         ))}
       </div>
     </div>
@@ -305,13 +311,19 @@ function NavigationList({
 
 export function CommercialStoreFooter({
   brandName,
+  contact,
+  policyLabel,
   copyright,
+  showPolicies,
   context,
   className,
   variant,
 }: {
   brandName: string;
+  contact: { en?: string; fi?: string };
+  policyLabel: { en?: string; fi?: string };
   copyright: { en?: string; fi?: string };
+  showPolicies: boolean;
   context: StorefrontRenderContext;
   className?: string;
   variant: FooterVariant;
@@ -324,6 +336,7 @@ export function CommercialStoreFooter({
       <a className="store-brand" href={context.homePath ?? "/"}>
         {brandName}
       </a>
+      <p>{resolveLocalizedText(contact, context.activeLocale, context.primaryLocale)}</p>
       <p>{resolveLocalizedText(copyright, context.activeLocale, context.primaryLocale)}</p>
     </div>
   );
@@ -345,6 +358,11 @@ export function CommercialStoreFooter({
     >
       <h2>{context.activeLocale === "fi" ? "Lisätiedot" : "Information"}</h2>
       <NavigationList context={context} items={footer} />
+      {showPolicies ? (
+        <p className={styles.footerPolicy} data-frame-region="footer-policy">
+          {resolveLocalizedText(policyLabel, context.activeLocale, context.primaryLocale)}
+        </p>
+      ) : null}
     </nav>
   );
   const regions =

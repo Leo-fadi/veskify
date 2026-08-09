@@ -18,7 +18,8 @@
 }
 
 .serviceStrip a,
-.utilities a {
+.utilities a,
+.localeButton {
   color: inherit;
   text-underline-offset: 0.2rem;
 }
@@ -81,10 +82,20 @@
 
 .desktopFrame a,
 .mobilePanel a,
-.utilities a {
+.utilities a,
+.localeButton {
   display: inline-flex;
   min-height: var(--brand-control-height, 2.75rem);
   align-items: center;
+}
+
+.localeButton {
+  border: 0;
+  padding: 0 0.25rem;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
 }
 
 .brand {
@@ -103,7 +114,7 @@
   gap: 0.35rem;
 }
 
-.utilities [aria-current="page"] {
+.utilities [aria-pressed="true"] {
   font-weight: 800;
   text-decoration-thickness: 0.15rem;
 }
@@ -149,6 +160,7 @@
 
 .menuTrigger:focus-visible,
 .closeButton:focus-visible,
+.localeButton:focus-visible,
 .header a:focus-visible,
 .footer a:focus-visible {
   outline: 3px solid var(--brand-color-accent);
@@ -201,6 +213,11 @@
 }
 
 .footerBrand p {
+  color: var(--brand-color-muted-text);
+  font-size: 0.8rem;
+}
+
+.footerPolicy {
   color: var(--brand-color-muted-text);
   font-size: 0.8rem;
 }

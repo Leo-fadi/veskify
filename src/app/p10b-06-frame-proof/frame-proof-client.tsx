@@ -33,6 +33,7 @@ export function P10B06FrameProofClient({
   const context = createStorefrontRenderContext({
     activeLocale: locale,
     primaryLocale: "en",
+    enabledLocales: ["en", "fi"],
     catalogue: aurumNordicSeed.catalogue,
     snapshot: compiled.snapshot,
     renderTarget: "preview",

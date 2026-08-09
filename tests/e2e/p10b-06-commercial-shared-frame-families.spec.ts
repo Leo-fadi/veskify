@@ -139,3 +139,20 @@ test("one frame keeps its structure while Design DNA materially changes its appe
   expect(technical.equals(baseline)).toBe(false);
   await expect(page.locator("header")).toHaveAttribute("data-frame-profile", "centered-minimal");
 });
+
+test("locale controls preserve current preview query authority", async ({ page }) => {
+  const providerRequests = monitorProviderTraffic(page);
+  await page.goto("/p10b-06-frame-proof?profile=compact-technical&dna=technical&session=retained");
+  await page
+    .locator("header[data-frame-region=header]")
+    .getByRole("button", { name: "FI" })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/locale=fi/);
+  const destination = new URL(page.url());
+  expect(destination.searchParams.get("profile")).toBe("compact-technical");
+  expect(destination.searchParams.get("dna")).toBe("technical");
+  expect(destination.searchParams.get("session")).toBe("retained");
+  await expect(page.locator("[data-p10b-06-frame-proof]")).toHaveAttribute("lang", "fi");
+  expect(providerRequests).toEqual([]);
+});
