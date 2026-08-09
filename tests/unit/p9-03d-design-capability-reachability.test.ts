@@ -386,7 +386,7 @@ describe("P9-03D design-capability reachability audit", () => {
     });
     expect(collectionRule?.notes?.en).toContain("375, 768, 1024 and 1440");
     expect(collectionRule?.notes?.fi).toContain("375, 768, 1024 ja 1440");
-    expect(productRule).toMatchObject({ maxColumns: 2 });
+    expect(productRule).toMatchObject({ maxColumns: 3 });
     expect(productRule).not.toEqual(collectionRule);
     expect(minWidthRule).toMatchObject({
       minWidthPx: 320,

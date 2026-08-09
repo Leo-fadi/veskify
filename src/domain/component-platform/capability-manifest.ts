@@ -107,6 +107,7 @@ export type ExecutablePageBlueprintProfileCapabilityEntry = Readonly<{
   responsiveBreakpoints: Readonly<ExecutablePageBlueprintProfile["responsiveBreakpoints"]>;
   accessibilityContract: ExecutablePageBlueprintProfile["accessibilityContract"];
   commercialHomepage?: NonNullable<ExecutablePageBlueprintProfile["commercialHomepage"]>;
+  commercialProductDetail?: NonNullable<ExecutablePageBlueprintProfile["commercialProductDetail"]>;
   commercialCollectionSearch?: NonNullable<
     ExecutablePageBlueprintProfile["commercialCollectionSearch"]
   >;
@@ -539,6 +540,9 @@ function profileEntry(
     accessibilityContract: profile.accessibilityContract,
     ...(profile.commercialHomepage
       ? { commercialHomepage: clone(profile.commercialHomepage) }
+      : {}),
+    ...(profile.commercialProductDetail
+      ? { commercialProductDetail: clone(profile.commercialProductDetail) }
       : {}),
     ...(profile.commercialCollectionSearch
       ? { commercialCollectionSearch: clone(profile.commercialCollectionSearch) }

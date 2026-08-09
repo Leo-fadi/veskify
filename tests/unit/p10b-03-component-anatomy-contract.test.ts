@@ -41,10 +41,13 @@ function meaningfulProductDefinition(): ComponentDefinitionV2 {
     toPresentationMode: "editorialPurchaseStack",
     affectedRegions: ["media", "content", "actions"],
   });
-  anatomy.compatibility.responsiveModes.push("stack");
+  if (!anatomy.compatibility.responsiveModes.includes("stack")) {
+    anatomy.compatibility.responsiveModes.push("stack");
+  }
   const editorial = anatomy.variants.find((variant) => variant.variantId === "editorial");
   if (!editorial) throw new Error("Expected editorial dynamic PDP variant metadata.");
   editorial.classification = "meaningfulStructuralVariant";
+  delete editorial.aliasOf;
   editorial.materialDifferences = [
     "hierarchy",
     "regionArrangement",
@@ -63,7 +66,10 @@ function meaningfulProductDefinition(): ComponentDefinitionV2 {
     "actions",
   ];
   editorial.structure.ctaRelationship = "sticky";
-  editorial.structure.responsiveTransformationIds = ["preserveRegistered", "stackPurchaseAtMobile"];
+  editorial.structure.responsiveTransformationIds = [
+    "pdpHighConsiderationReflow",
+    "stackPurchaseAtMobile",
+  ];
   editorial.structure.presentationMode = "editorialPurchaseStack";
   return validateComponentDefinitionV2(definition);
 }
@@ -160,7 +166,7 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
       componentType: definition.type,
       variant: "editorial",
       expectedAnatomyIdentity: "dynamicProductDetail.anatomy",
-      expectedAnatomyVersion: { major: 1, minor: 0, patch: 0 },
+      expectedAnatomyVersion: { major: 1, minor: 2, patch: 0 },
       pageType: "product",
       narrativeRole: "product-focus",
       assetRoles: ["productMainImage"],
@@ -401,9 +407,9 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
 
   it("continues to reject asset placement into an undeclared region", () => {
     const definition = meaningfulProductDefinition();
-    editorialStructureOf(definition).assetPlacements[0].region = "proof";
+    editorialStructureOf(definition).assetPlacements[0].region = "utility";
     expect(() => validateComponentDefinitionV2(definition)).toThrow(
-      /references undeclared semantic region proof/i,
+      /references undeclared semantic region utility/i,
     );
   });
 
@@ -443,7 +449,7 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
         "assetRole",
       ]),
     );
-    expect(entry?.commercialAnatomy?.responsiveTransformations).toHaveLength(1);
+    expect(entry?.commercialAnatomy?.responsiveTransformations).toHaveLength(4);
     expect(entry?.commercialAnatomy?.compatibility.narrativeRoles).toContain("product-focus");
     expect(entry?.commercialAnatomy?.compatibility.assetRequirements[0].slotId).toBe(
       "productMedia",
@@ -495,6 +501,7 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
       "homepagePromotion",
       "homepageEditorial",
       "homepageProof",
+      "dynamicProductDetail",
     ]);
     const p10b10CollectionVariants = new Set([
       "editorialDiscovery",

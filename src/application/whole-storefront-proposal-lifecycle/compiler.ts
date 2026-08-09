@@ -13,8 +13,9 @@ import {
   registeredBrandSystemForDirection,
 } from "@/application/storefront-design-system";
 import {
-  commercialCollectionSearchProfileIdSchema,
   commercialHomepageProfileIdSchema,
+  commercialPdpProfileIdSchema,
+  commercialCollectionSearchProfileIdSchema,
 } from "@/application/storefront-templates";
 import {
   storefrontStyleDesignSystems,
@@ -194,6 +195,9 @@ function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
     const homepageMaterialization = input.plan.pageBlueprintMaterializations.find(
       (entry) => entry.pageType === "home",
     );
+    const productMaterialization = input.plan.pageBlueprintMaterializations.find(
+      (entry) => entry.pageType === "product",
+    );
     const collectionMaterialization = input.plan.pageBlueprintMaterializations.find(
       (entry) => entry.pageType === "collection",
     );
@@ -204,6 +208,11 @@ function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
             homepageProfileId: commercialHomepageProfileIdSchema.parse(
               homepageMaterialization.profileId,
             ),
+          }
+        : {}),
+      ...(productMaterialization?.commercialProductDetail
+        ? {
+            pdpProfileId: commercialPdpProfileIdSchema.parse(productMaterialization.profileId),
           }
         : {}),
       ...(collectionMaterialization?.commercialCollectionSearch

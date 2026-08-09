@@ -2,7 +2,7 @@
 
 **Version:** 1.3.0
 
-**Baseline:** 9 August 2026, P10B-13 commerce utility presentation pages
+**Baseline:** 9 August 2026, P10B-11 commercial PDP profiles and P10B-13 utility presentation pages
 
 **Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)
 
@@ -51,9 +51,8 @@ phase; each remaining task stays Planned until implemented and evidenced.
 The binding architecture, coverage targets, concrete Done conditions, synthesis/fingerprint model,
 and parallelization rules live in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B is **Partial / active**. P10B-01 through P10B-10 and P10B-13 are Baseline; P10B-11,
-P10B-12, and P10B-14 through P10B-18
-remain **Planned**.
+P10B is **Partial / active**. P10B-01 through P10B-11 and P10B-13 are Baseline; P10B-12 and
+P10B-14 through P10B-18 remain **Planned**.
 
 ### 3.1 Dependency waves
 
@@ -81,7 +80,7 @@ remain **Planned**.
 | P10B-08 — Canonical product-card and merchandising family        | Establish one protected card authority with at least five meaningful anatomies.                                                               | **Baseline** | P10B-02 through P10B-04                                         | Commerce presentation                | One renderer, cross-context fact/media parity, lifecycle/publish authority and four-width browser evidence                          | Duplicate card authority or commerce ownership                             |
 | P10B-09 — Commercial homepage profile library                    | Deliver at least six materially different homepage profiles and narrative flows.                                                              | **Baseline** | P10B-05 through P10B-08                                         | PageBlueprint profiles               | Six fingerprinted profiles; exact frame/story/card composition; evidence/cardinality guards; lifecycle and 24-view browser evidence | Colour-only profiles or unregistered sections                              |
 | P10B-10 — Commercial collection and search profiles              | Deliver four editorial, comparison, campaign, and dense/search profiles.                                                                      | **Baseline** | P10B-04 through P10B-06, P10B-08                                | PageBlueprint and dynamic collection | Exact commerce/intents/cards/zero-results, lifecycle, 16 responsive views and retained report evidence                              | Second collection engine, membership mutation, or operational search route |
-| P10B-11 — Commercial PDP profile library                         | Deliver at least four standard, high-consideration, gallery-led, and variant-led experiences.                                                 | **Planned**  | P10B-03 through P10B-06, P10B-08                                | PageBlueprint and dynamic PDP        | Generic options/configurations, commerce/media parity, all-target render and retained review                                        | Product-type forks                                                         |
+| P10B-11 — Commercial PDP profile library                         | Deliver at least four standard, high-consideration, gallery-led, and variant-led experiences.                                                 | **Baseline** | P10B-03 through P10B-06, P10B-08                                | PageBlueprint and dynamic PDP        | Generic options/configurations, commerce/media parity, all-target render and retained review                                        | Product-type forks                                                         |
 | P10B-12 — Content and support page families                      | Generate About, Contact/locations, FAQ, shipping/returns, policy, campaign/editorial, and generic content pages from approved facts.          | **Planned**  | P10B-03 through P10B-07                                         | PageBlueprint and content families   | Provenance, localization, route/navigation, omission/fallback and retained review                                                   | Fabricated policy/service/compliance claims                                |
 | P10B-13 — Commerce utility presentation pages                    | Deliver governed search/no-results, cart, checkout, empty, error, and 404 presentation.                                                       | **Baseline** | P10B-03, P10B-05, P10B-06, P10B-08                              | Utility presentation                 | Canonical facts/actions, state distinction, save/publish preservation, 16 responsive views and retained evidence                    | Cart/checkout/payment operations                                           |
 | P10B-14 — Premium Editorial complete-storefront vertical slice   | Prove one credible complete multi-page storefront before broad synthesis/direction expansion.                                                 | **Planned**  | Minimum accepted P10B-02 through P10B-13 capability             | Storefront generation and QA         | Complete canonical chain plus EN/FI/four-width retained human review                                                                | Hand-built or homepage-only proof                                          |
@@ -94,7 +93,7 @@ remain **Planned**.
 
 Use A/B/C slices only for necessary contract/anatomy, renderer/variant, or
 PageBlueprint/generation/evidence separation. A parent is not complete until all required slices
-and evidence pass. With P10B-01 through P10B-10 Baseline, their disjoint authority
+and evidence pass. With P10B-01 through P10B-11 and P10B-13 Baseline, their disjoint authority
 ownership remains defined by the architecture lock. Shared schema exports, registry
 indexes, migrations, manifests, direction/synthesis authority, and renderer boundaries require one
 integration owner and cannot be edited concurrently.

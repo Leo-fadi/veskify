@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 9 August 2026, P10B-13 commerce utility presentation pages             |
+| Verified baseline         | 9 August 2026, P10B-11 PDP profiles and P10B-13 utility presentation pages |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -18,6 +18,7 @@
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
 | 1.3.0 P10B-10 | 9 August 2026 | P10B-10 delivery | Establish four fingerprinted commercial collection/search PageBlueprint profiles with exact canonical commerce, product-card and media authority, transient fail-closed zero-result context, deterministic lifecycle reachability, and retained four-width browser evidence. |
+| 1.3.0 P10B-11 | 9 August 2026 | P10B-11 delivery | Establish four fingerprinted commercial PDP PageBlueprint profiles inside the canonical dynamic PDP runtime, retain generic canonical option/media/card authority, ground optional high-consideration support in approved evidence, preserve lifecycle/publishing, and provide four-width browser evidence. |
 | 1.3.0 P10B-13 | 9 August 2026 | P10B-13 delivery | Establish six fingerprinted commerce-utility PageBlueprint profiles plus route-local loading state with transient read-only cart/checkout/search/runtime state, fail-closed executable actions, snapshot configuration preservation, and retained four-width browser evidence. |
 | 1.3.0 P10B-09 | 9 August 2026 | P10B-09 delivery | Establish six fingerprinted commercial homepage PageBlueprint profiles with evidence/cardinality authority, exact frame/story/card composition, deterministic lifecycle reachability, and retained four-width browser evidence. |
 | 1.3.0 P10B-07 | 8 August 2026 | P10B-07 delivery | Establish commercial-ready hero, editorial, campaign, service and evidence-grounded proof families with six meaningful hero anatomies, canonical art direction, PageBlueprint generation reachability, lifecycle preservation and four-width browser evidence. |
@@ -75,8 +76,8 @@ P10B-01 commercial grammar, P10B-02 parametric BrandSystem / Design DNA, P10B-03
 P10B-04 responsive image/art-direction authority, P10B-05 site-map/page-family authority, P10B-06
 commercial shared-frame families, P10B-07 hero/editorial/campaign/proof families, P10B-08
 canonical product-card authority, P10B-09 commercial homepage profiles, and P10B-10 commercial
-collection/search profiles and P10B-13 commerce utility presentation are Baseline. P10B-11,
-P10B-12, and P10B-14 through P10B-18 remain Planned. The current
+collection/search profiles, P10B-11 commercial PDP profiles, and P10B-13 commerce utility
+presentation are Baseline. P10B-12 and P10B-14 through P10B-18 remain Planned. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -955,8 +956,7 @@ The binding sequence is:
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
    formal P10A phase closure record.
 2. **P10B — Commercial Storefront Generation System v1.** **Partial / active phase.** P10B-01
-   through P10B-10 and P10B-13 are Baseline; P10B-11, P10B-12, and P10B-14 through P10B-18
-   remain Planned.
+   through P10B-11 and P10B-13 are Baseline; P10B-12 and P10B-14 through P10B-18 remain Planned.
    Deliver complete commercially credible storefronts with bounded material diversity through
    registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
