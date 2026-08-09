@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 9 August 2026, P10B-06 shared frame, P10B-07 storytelling and P10B-08 product cards                                 |
+| Baseline                    | 9 August 2026, P10B-09 commercial homepage profiles                                                                 |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -49,7 +49,7 @@ required evidence are accepted.
 | ☑    | P10B-06 | Commercial shared-frame families                     | **Baseline** | Shared frame                    | P10B-02, P10B-03, P10B-05          | Four frames, three mobile modes, four footers, lifecycle and retained browser review           |
 | ☑    | P10B-07 | Hero, editorial, campaign and proof families         | **Baseline** | Commercial content families     | P10B-02 through P10B-05            | Six heroes, story/campaign/proof chain, provenance and four-width browser review               |
 | ☑    | P10B-08 | Canonical product-card and merchandising family      | **Baseline** | Commerce presentation           | P10B-02 through P10B-04            | One renderer; five anatomies; protected facts/media; lifecycle and four-width browser evidence |
-| ☐    | P10B-09 | Commercial homepage profile library                  | **Planned**  | PageBlueprint profiles          | P10B-05 through P10B-08            | Six profiles, materialization-to-render and visual review                                      |
+| ☑    | P10B-09 | Commercial homepage profile library                  | **Baseline** | PageBlueprint profiles          | P10B-05 through P10B-08            | Six profiles, materialization-to-render and 24-view visual review                              |
 | ☐    | P10B-10 | Commercial collection and search profiles            | **Planned**  | Collection/search presentation  | P10B-04 through P10B-06, P10B-08   | Four profiles, commerce/intents and visual review                                              |
 | ☐    | P10B-11 | Commercial PDP profile library                       | **Planned**  | PDP presentation                | P10B-03 through P10B-06, P10B-08   | Four profiles, generic options/commerce and visual review                                      |
 | ☐    | P10B-12 | Content and support page families                    | **Planned**  | Content page presentation       | P10B-03 through P10B-07            | Approved-fact provenance, localization, lifecycle and visual review                            |
@@ -164,7 +164,7 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 through P10B-08 are **Baseline**. P10B-09 through P10B-18 remain **Planned**. The
+P10B-01 through P10B-09 are **Baseline**. P10B-10 through P10B-18 remain **Planned**. The
 remaining Done conditions are implementation gates, not claims about the current repository.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
@@ -321,6 +321,12 @@ and responsive browser evidence. See
 - **Non-goal:** A product model, catalogue write path, or copied commerce truth.
 
 #### P10B-09 — Commercial homepage profile library
+
+**Status:** Baseline. Six versioned, structurally fingerprinted homepage PageBlueprint profiles
+compose current shared-frame, commercial storytelling, canonical product-card, approved-media,
+and Design DNA authority. Evidence/cardinality guards fail closed; deterministic lifecycle and
+24 retained four-width browser images pass. See
+[`P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md`](P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md).
 
 - **Outcome:** Deliver multiple materially different homepage profiles and narrative flows.
 - **Authority:** Existing executable homepage PageBlueprint profiles and narrative constraints.

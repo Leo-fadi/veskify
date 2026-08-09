@@ -25,6 +25,20 @@ import {
   type StorefrontTemplateSlot,
 } from "./contract";
 import { pageFamilyBaselinePagePlans } from "./page-family-baselines";
+import { commercialHomepagePagePlans } from "./commercial-homepage-profiles";
+
+export {
+  commercialHomepageProfileIds,
+  commercialHomepageProfileIdSchema,
+  COMMERCIAL_HOMEPAGE_PROFILE_VERSION,
+  getCommercialHomepageProfile,
+  listCommercialHomepageProfiles,
+  validateCommercialHomepageProfileLibrary,
+  resolveCommercialHomepageProfileSlots,
+  resolveCommercialHomepageSlotItemLimit,
+  CommercialHomepageProfileError,
+  type CommercialHomepageProfileId,
+} from "./commercial-homepage-profiles";
 
 const createdAt = "2026-07-18T00:00:00.000Z";
 const allPageTypes = ["home", "collection", "product"] as const;
@@ -867,6 +881,7 @@ const profilesById = new Map(
   [
     ...validatedTemplates.flatMap((templateDefinition) => templateDefinition.pagePlans),
     ...pageFamilyBaselinePagePlans,
+    ...commercialHomepagePagePlans,
   ].flatMap((pagePlanDefinition) =>
     pagePlanDefinition.profile
       ? [[pagePlanDefinition.profile.id, pagePlanDefinition] as const]

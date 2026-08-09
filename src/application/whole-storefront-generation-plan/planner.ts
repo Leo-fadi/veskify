@@ -4,6 +4,7 @@ import {
 } from "@/application/storefront-design-system";
 import {
   getExecutablePageBlueprintProfile,
+  getCommercialHomepageProfile,
   getTemplateById,
   getTemplatePagePlan,
 } from "@/application/storefront-templates/registry";
@@ -54,6 +55,14 @@ import {
   homepageCommerceBridgeDefaults,
   type HomepageCommerceBridgeComponent,
 } from "@/components/registry/homepage-commerce-bridge";
+import { veskifyComponentCapabilityManifest } from "@/components/registry/capability-manifest";
+import { resolveCommercialSharedFrameProfile } from "@/domain/storefront/commercial-shared-frame";
+import {
+  commercialHomepageProfileIdSchema,
+  resolveCommercialHomepageProfileSlots,
+  resolveCommercialHomepageSlotItemLimit,
+  type CommercialHomepageProfileId,
+} from "@/application/storefront-templates";
 
 const FAMILY_REQUIREMENTS = {
   homepage: [
@@ -522,6 +531,7 @@ function resolvedWholeStorefrontBindingCategories(
 function materializeDirectionPageBlueprints(
   input: WholeStorefrontPlanningInput,
   directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
+  homepageProfileId?: CommercialHomepageProfileId,
 ) {
   const templateId = templateForDirection(directionId);
   const contextTemplate = input.recipeContext.templates.find(
@@ -539,7 +549,10 @@ function materializeDirectionPageBlueprints(
     );
   }
   return (["home", "collection", "product"] as const).map((pageType) => {
-    const pagePlan = getTemplatePagePlan(templateId, pageType);
+    const pagePlan =
+      pageType === "home" && homepageProfileId
+        ? getCommercialHomepageProfile(homepageProfileId)
+        : getTemplatePagePlan(templateId, pageType);
     if (!pagePlan) {
       invalid(
         "unsupported-page-family",
@@ -559,6 +572,67 @@ function materializeDirectionPageBlueprints(
       );
     }
   });
+}
+
+function assertCommercialHomepageSelection(
+  input: WholeStorefrontPlanningInput,
+  profileId: CommercialHomepageProfileId,
+  selection: WholeStorefrontGenerationPlan["designSystemSelection"],
+) {
+  const pagePlan = getCommercialHomepageProfile(profileId);
+  const authority = pagePlan?.profile?.commercialHomepage;
+  if (!pagePlan || !authority) {
+    invalid("unsupported-page-family", `Commercial homepage profile ${profileId} is unavailable.`);
+  }
+  if (!input.draft.sharedFrame) {
+    invalid(
+      "unsupported-page-family",
+      "Commercial homepage generation requires canonical snapshot-level shared-frame authority.",
+    );
+  }
+  const frame = resolveCommercialSharedFrameProfile(input.draft.sharedFrame);
+  if (!authority.compatibleSharedFrameProfileIds.includes(frame.id)) {
+    invalid(
+      "unsupported-page-family",
+      `Commercial homepage profile ${profileId} is incompatible with shared frame ${frame.id}.`,
+    );
+  }
+  const imagePosture = {
+    premiumEditorial: "immersive",
+    modernTechnical: "contained",
+    warmApproachable: "editorial",
+  }[selection.directionId] as "contained" | "editorial" | "immersive";
+  if (
+    !authority.designDnaNarrowing.spacingDensity.includes(selection.spacingDensity) ||
+    !authority.designDnaNarrowing.surfaceDepth.includes(selection.surfaceDepth) ||
+    !authority.designDnaNarrowing.imagePosture.includes(imagePosture)
+  ) {
+    invalid(
+      "unsupported-page-family",
+      `Commercial homepage profile ${profileId} cannot broaden the selected Design DNA.`,
+    );
+  }
+  for (const slot of pagePlan.slots) {
+    if (
+      ["homepageHero", "homepageEditorial", "homepagePromotion", "homepageProof"].includes(
+        slot.sectionType,
+      )
+    ) {
+      const manifest = veskifyComponentCapabilityManifest.getByComponentType(slot.sectionType);
+      const variant = manifest?.variants.find((entry) => entry.id === slot.defaultVariant);
+      if (
+        !manifest?.commercialAnatomy ||
+        !variant ||
+        variant.structuralClassification !== "meaningfulStructuralVariant"
+      ) {
+        invalid(
+          "invalid-component-contract",
+          `Commercial homepage profile ${profileId} requires current meaningful ${slot.sectionType}/${slot.defaultVariant} authority.`,
+        );
+      }
+    }
+  }
+  return authority;
 }
 
 function generatedComponentId(
@@ -597,6 +671,8 @@ function homepageBindings(
   revision: string,
   source?: WholeStorefrontPlanningInput["draft"]["pages"][number]["sections"][number],
   assetAssignments: readonly ComponentInstanceV2["assetAssignments"][number][] = [],
+  allowSourceAssetFallback = true,
+  itemLimit?: number,
 ): ComponentInstanceV2["bindings"] {
   const sourceCollectionIds = Array.isArray(source?.content.collectionIds)
     ? source.content.collectionIds.filter(
@@ -634,8 +710,11 @@ function homepageBindings(
             source: "collectionList" as const,
             collectionIds:
               sourceCollectionIds.length > 0
-                ? sourceCollectionIds
-                : input.catalogue.collections.map((collection) => collection.id),
+                ? boundedHomepageItems(sourceCollectionIds, itemLimit)
+                : boundedHomepageItems(
+                    input.catalogue.collections.map((collection) => collection.id),
+                    itemLimit,
+                  ),
             revision,
           },
         ]
@@ -647,8 +726,11 @@ function homepageBindings(
             source: "productList" as const,
             productIds:
               sourceProductIds.length > 0
-                ? sourceProductIds
-                : input.catalogue.products.map((product) => product.id),
+                ? boundedHomepageItems(sourceProductIds, itemLimit)
+                : boundedHomepageItems(
+                    input.catalogue.products.map((product) => product.id),
+                    itemLimit,
+                  ),
             revision,
           },
         ]
@@ -678,7 +760,7 @@ function homepageBindings(
   const assetIds =
     assignedAssetIds.length > 0
       ? assignedAssetIds
-      : typeof sourceAssetId === "string"
+      : allowSourceAssetFallback && typeof sourceAssetId === "string"
         ? [sourceAssetId]
         : [];
   const bindingSlots =
@@ -706,6 +788,10 @@ function objectValue(value: unknown): Record<string, unknown> | undefined {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     ? Object.fromEntries(Object.entries(value))
     : undefined;
+}
+
+function boundedHomepageItems<T>(items: readonly T[], itemLimit?: number): T[] {
+  return itemLimit === undefined ? [...items] : items.slice(0, itemLimit);
 }
 
 function mappedHomepageBridgePresentation(
@@ -923,6 +1009,35 @@ function authoritativeHomepageProfileComponents(input: {
   if (!pagePlan) {
     invalid("unsupported-page-family", "The authoritative homepage profile is unavailable.");
   }
+  let includedCommercialSlots: ReadonlySet<string> | undefined;
+  if (materialization.commercialHomepage) {
+    try {
+      const resolved = resolveCommercialHomepageProfileSlots(materialization.profileId, {
+        canonicalCommerce:
+          planningInput.catalogue.products.length > 0 &&
+          planningInput.catalogue.collections.length > 0,
+        canonicalProductCount: planningInput.catalogue.products.length,
+        canonicalCollectionCount: planningInput.catalogue.collections.length,
+        approvedMerchantEvidence:
+          planningInput.brief.businessIdentity.shortDescription.trim().length > 0 &&
+          planningInput.brief.approval.status === "approved" &&
+          planningInput.brief.approvedEvidenceFingerprint !== null,
+        approvedMedia: Boolean(
+          planningInput.approvedAssetContext?.assets.some((asset) =>
+            ["editorialImage", "heroDesktop", "heroMobile", "collectionImage"].includes(asset.role),
+          ),
+        ),
+      });
+      includedCommercialSlots = new Set(resolved.includedSlotIds);
+    } catch (cause) {
+      invalid(
+        "missing-required-recipe-content",
+        cause instanceof Error
+          ? cause.message
+          : "The commercial homepage profile lacks required approved authority.",
+      );
+    }
+  }
   const consumedSourceIds = new Set<string>();
   const managedSourceIds = new Set(
     page.sections
@@ -959,6 +1074,7 @@ function authoritativeHomepageProfileComponents(input: {
           `The authoritative homepage profile is missing slot ${slot.slotId}.`,
         );
       }
+      if (includedCommercialSlots && !includedCommercialSlots.has(slot.slotId)) return [];
       if (!replacementSource && !profileSlot.required) {
         if (profileSlot.omitWhen === "when-not-requested") return [];
         if (
@@ -995,24 +1111,64 @@ function authoritativeHomepageProfileComponents(input: {
               assetAssignments: [],
             };
       const mappedAssetAssignments =
-        bridgeComponent === "homepageEditorial" && slot.variant === "continuationCta"
+        (bridgeComponent === "homepageEditorial" && slot.variant === "continuationCta") ||
+        (bridgeComponent === "homepageHero" && slot.variant === "restrained")
           ? []
           : mappedPresentation.assetAssignments;
       const mappedProps: Record<string, unknown> = Object.fromEntries(
         Object.entries(mappedPresentation.props),
       );
+      const mappedContent: Record<string, unknown> = Object.fromEntries(
+        Object.entries(mappedPresentation.content),
+      );
+      if (bridgeComponent === "homepageHero" && slot.variant === "campaignMerchandising") {
+        const locale = planningInput.brief.languagePlan.primaryLanguage ?? "en";
+        mappedContent.eyebrow = {
+          [locale]: planningInput.brief.businessIdentity.businessName,
+        };
+      }
+      if (bridgeComponent === "homepageEditorial" && slot.variant === "craftProcess") {
+        const locale = planningInput.brief.languagePlan.primaryLanguage ?? "en";
+        mappedContent.steps = [
+          {
+            id: "approved_process_context",
+            title: { [locale]: planningInput.brief.businessIdentity.businessName },
+            description: {
+              [locale]: planningInput.brief.businessIdentity.shortDescription.trim(),
+            },
+          },
+        ];
+      }
       if (
         bridgeComponent === "homepageHero" &&
         (slot.variant === "fullBleedOverlay" || slot.variant === "fullBleed")
       ) {
         mappedProps.mediaPosition = "background";
       }
+      const itemLimit = materialization.commercialHomepage
+        ? slot.component === "homepageFeaturedProducts"
+          ? resolveCommercialHomepageSlotItemLimit(
+              materialization.profileId,
+              slot.slotId,
+              "products",
+              planningInput.catalogue.products.length,
+            )
+          : slot.component === "homepageFeaturedCollections" ||
+              slot.component === "homepageCollectionNavigation"
+            ? resolveCommercialHomepageSlotItemLimit(
+                materialization.profileId,
+                slot.slotId,
+                "collections",
+                planningInput.catalogue.collections.length,
+              )
+            : undefined
+        : undefined;
       const instance = componentInstanceV2Schema.parse({
         id: componentId,
         component: slot.component,
         componentVersion: definition.version,
         variant: slot.variant,
-        content: structuredClone(mappedPresentation.content),
+        content: mappedContent,
         props: mappedProps,
         styleOverrides: bridgeComponent ? { surface: "plain" } : {},
         bindings: bridgeComponent
@@ -1022,6 +1178,11 @@ function authoritativeHomepageProfileComponents(input: {
               revision,
               replacementSource,
               mappedAssetAssignments,
+              !(
+                (bridgeComponent === "homepageEditorial" && slot.variant === "continuationCta") ||
+                (bridgeComponent === "homepageHero" && slot.variant === "restrained")
+              ),
+              itemLimit,
             )
           : [],
         assetAssignments: mappedAssetAssignments,
@@ -1041,6 +1202,7 @@ function authoritativeHomepageProfileComponents(input: {
           disposition: replacementSource ? ("replacement" as const) : ("added" as const),
           instance,
           replacesComponentIds: replacementSource ? [replacementSource.id] : [],
+          pageBlueprintSlotId: slot.slotId,
         },
       ];
     });
@@ -1488,6 +1650,7 @@ export function createWholeStorefrontGenerationPlan(
   inputValue: unknown,
   options: {
     directionId?: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
+    homepageProfileId?: CommercialHomepageProfileId;
     tokenRefinementPlan?: RegisteredTokenRefinementPlan | null;
   } = {},
 ): WholeStorefrontGenerationPlan {
@@ -1550,9 +1713,13 @@ export function createWholeStorefrontGenerationPlan(
     collectionPresentation: selectedDirection.collectionPresentation,
     productPresentation: selectedDirection.productPresentation,
   });
+  const commercialHomepageAuthority = options.homepageProfileId
+    ? assertCommercialHomepageSelection(input, options.homepageProfileId, designSystemSelection)
+    : undefined;
   const pageBlueprintMaterializations = materializeDirectionPageBlueprints(
     input,
     designSystemSelection.directionId,
+    options.homepageProfileId,
   );
   const collectionComponentDefinition = definitionFor(definitions, "dynamicCollectionCommerce");
   const productComponentDefinition = definitionFor(definitions, "dynamicProductDetail");
@@ -1702,7 +1869,9 @@ export function createWholeStorefrontGenerationPlan(
           usedComponentIds,
           materialization: homepageMaterialization,
           revision: commerceRevision,
-          productCardAnatomyId: designSystemSelection.collectionPresentation.cardVariant,
+          productCardAnatomyId:
+            commercialHomepageAuthority?.productCardAnatomyId ??
+            designSystemSelection.collectionPresentation.cardVariant,
         }),
       );
     }
@@ -2007,6 +2176,7 @@ export function createWholeStorefrontGenerationPlan(
           ? ("tokenOnlyRefinement" as const)
           : ("coordinatedStructuralDirection" as const),
         tokenRefinementPlan,
+        homepageProfileId: options.homepageProfileId ?? null,
       },
       "whole-storefront-request",
     ),
@@ -2049,8 +2219,18 @@ export function validateWholeStorefrontGenerationPlan(
   planValue: unknown,
 ): WholeStorefrontGenerationPlan {
   const plan = wholeStorefrontGenerationPlanSchema.parse(planValue);
+  const homepageMaterialization = plan.pageBlueprintMaterializations.find(
+    (entry) => entry.pageType === "home",
+  );
   const expected = createWholeStorefrontGenerationPlan(inputValue, {
     directionId: plan.designSystemSelection.directionId,
+    ...(homepageMaterialization?.commercialHomepage
+      ? {
+          homepageProfileId: commercialHomepageProfileIdSchema.parse(
+            homepageMaterialization.profileId,
+          ),
+        }
+      : {}),
     tokenRefinementPlan: plan.tokenRefinementPlan,
   });
   if (canonicalValueString(plan) !== canonicalValueString(expected)) {

@@ -1,11 +1,11 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01 through P10B-08 are **Baseline**; P10B-09 through
+**Status:** Binding architecture. P10B-01 through P10B-09 are **Baseline**; P10B-10 through
 P10B-18 remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 9 August 2026, P10B-06 shared frame, P10B-07 storytelling and P10B-08 product cards
+**Baseline:** 9 August 2026, P10B-09 commercial homepage profiles
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -39,7 +39,9 @@ P10B-07 is Baseline under
 [`P10B_07_HERO_EDITORIAL_CAMPAIGN_PROOF_FAMILIES.md`](P10B_07_HERO_EDITORIAL_CAMPAIGN_PROOF_FAMILIES.md).
 P10B-08 is Baseline under
 [`P10B_08_CANONICAL_PRODUCT_CARD_AND_MERCHANDISING.md`](P10B_08_CANONICAL_PRODUCT_CARD_AND_MERCHANDISING.md).
-P10B is **Partial / active**; P10B-09 through P10B-18 remain Planned.
+P10B-09 is Baseline under
+[`P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md`](P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md).
+P10B is **Partial / active**; P10B-10 through P10B-18 remain Planned.
 
 ## 2. Storefront and commerce ownership
 
@@ -443,6 +445,12 @@ publish preserved → evidence retained.
 
 ### P10B-09 — Commercial homepage profile library
 
+**Status:** Baseline. Six versioned PageBlueprint profiles compose P10B-06 frames, P10B-07
+storytelling families, P10B-08 cards, P10B-04 assets, and P10B-02 Design DNA through executable
+evidence/cardinality, compatibility, responsive, fingerprint, lifecycle, and browser authority.
+See
+[`P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md`](P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md).
+
 - Register at least six materially different homepage profiles with distinct hierarchy, narrative
   flow, merchandising emphasis, cardinality, and responsive transformation.
 - Prove generation selection, exact materialization, proposal/compiler/snapshot preservation,
@@ -605,6 +613,6 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01 through P10B-08 are Baseline under the disjoint ownership constraints in
+P10B-01 through P10B-09 are Baseline under the disjoint ownership constraints in
 section 15. No later implementation task is complete merely because this architecture is approved
 or the completed foundations passed.

@@ -12,6 +12,7 @@ export default defineConfig({
     "p10b-04-responsive-image-art-direction.spec.ts",
     "p10b-07-commercial-storytelling.spec.ts",
     "p10b-08-canonical-product-card-family.spec.ts",
+    "p10b-09-commercial-homepage-profile-library.spec.ts",
   ],
   // Project state and browser evidence are intentionally isolated per run.
   workers: 1,

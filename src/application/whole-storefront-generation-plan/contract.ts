@@ -22,6 +22,7 @@ import {
   storefrontDesignSystemV1Schema,
 } from "@/application/storefront-design-system";
 import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
+import { commercialHomepageProfileAuthoritySchema } from "@/application/storefront-templates/contract";
 
 export const WHOLE_STOREFRONT_GENERATION_PLAN_SCHEMA_VERSION = 1 as const;
 
@@ -131,6 +132,7 @@ export const wholeStorefrontPageBlueprintMaterializationSchema = z
       .min(1),
     requiredBindingCategories: z.array(commerceBindingSourceTypeSchema),
     requiredAssetRoles: z.array(assetRoleSchema),
+    commercialHomepage: commercialHomepageProfileAuthoritySchema.optional(),
     fingerprint: fingerprintSchema,
   })
   .strict();
@@ -220,6 +222,7 @@ const wholeStorefrontGeneratedComponentPlanSchema = z
     disposition: z.enum(["added", "replacement"]),
     instance: componentInstanceV2Schema,
     replacesComponentIds: z.array(idSchema).default([]),
+    pageBlueprintSlotId: z.string().trim().min(1).max(80).optional(),
   })
   .strict();
 
