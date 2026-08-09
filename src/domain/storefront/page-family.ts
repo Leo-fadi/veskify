@@ -63,6 +63,10 @@ const commercialCollectionSearchProfiles = [
   profile("collection-campaign-led-discovery"),
   profile("collection-dense-search"),
 ] as const;
+const searchCompatibleCommercialCollectionSearchProfiles = [
+  profile("collection-catalogue-comparison"),
+  profile("collection-dense-search"),
+] as const;
 const requiredSingleton = Object.freeze({ kind: "required-singleton" as const });
 const contextualCollection = Object.freeze({
   kind: "contextual" as const,
@@ -135,7 +139,7 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     commerceContext: "search",
     allowedProfileReferences: [
       profile("blueprint-site-map-search-baseline"),
-      ...commercialCollectionSearchProfiles,
+      ...searchCompatibleCommercialCollectionSearchProfiles,
     ],
     navigationEligibility: ["primary"],
     evidenceRequirement: "none",

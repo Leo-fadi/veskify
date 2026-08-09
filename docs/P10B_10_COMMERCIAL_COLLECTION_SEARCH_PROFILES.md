@@ -48,6 +48,12 @@ missing registered responsive transformations, non-meaningful collection anatomy
 frame, card anatomy, or Design DNA, and pairs that differ in fewer than three material dimensions.
 Colour, typography, spacing, and other finishing values cannot make a profile distinct.
 
+All four profiles are permitted on canonical collection pages. Only catalogue comparison and dense
+search are permitted for the `search-results` page family because their `compact` card anatomy is
+registered for the transient `searchResults` context. Editorial discovery and campaign-led
+discovery remain collection-only; their editorial and image-first card anatomies intentionally
+fail closed for search results.
+
 ## Commerce, media, and search protection
 
 The existing catalogue route adapter constructs the existing projection and bindings. The renderer

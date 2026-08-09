@@ -17,6 +17,8 @@ import {
   compileStorefrontPublication,
   createCurrentPublishCompilerInput,
 } from "@/application/publishing";
+import { createStorefrontRenderContext, renderRegisteredSection } from "@/components/registry";
+import { dynamicCollectionCommerceBridgeDefinition } from "@/components/registry/dynamic-commerce-bridge";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
 import { renderDynamicCollectionCommerce } from "@/components/storefront/dynamic-collection-commerce";
 import { createP905aFreshMerchantFixture } from "@/data/demo/p9-05a-fresh-store-generation";
@@ -25,6 +27,8 @@ import {
   applyCommercialSharedFrame,
   canonicalStorefrontContentFingerprint,
   canonicalValueString,
+  listPageFamilyDefinitions,
+  type SectionInstance,
 } from "@/domain/storefront";
 import { InMemoryProjectRepository } from "@/services/storage";
 
@@ -202,6 +206,52 @@ describe("P10B-10 commercial collection and search profile library", () => {
         },
       ),
     ).toThrow(/requires approved editorial campaign media/);
+  });
+
+  it("projects every registered collection profile safely through the legacy preview bridge", () => {
+    const result = lifecycle("collection-editorial-discovery");
+    const collection = result.collection;
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: result.fixture.aggregate.catalogue,
+      snapshot: result.snapshot,
+    });
+
+    for (const [index, variant] of [
+      "editorialDiscovery",
+      "catalogueComparison",
+      "campaignLedDiscovery",
+      "denseSearch",
+    ].entries()) {
+      const section = {
+        id: `legacy-preview-${index}`,
+        component: "dynamicCollectionCommerce",
+        variant,
+        visible: true,
+        content: {
+          ...dynamicCollectionCommerceBridgeDefinition.defaultContent,
+          collectionId: collection.id,
+          productIds: collection.productIds,
+          canonicalRevision: result.presentation.projection.collections[0].revision,
+        },
+        props: dynamicCollectionCommerceBridgeDefinition.defaultProps,
+      } satisfies SectionInstance;
+      expect(() => renderRegisteredSection(section, context, "collection")).not.toThrow();
+    }
+  });
+
+  it("allows only search-compatible collection profiles on the search-result family", () => {
+    const searchResultProfileIds = listPageFamilyDefinitions()
+      .find((definition) => definition.id === "search-results")!
+      .allowedProfileReferences.map((profile) => profile.id);
+    expect(searchResultProfileIds).toEqual([
+      "blueprint-site-map-search-baseline",
+      "collection-catalogue-comparison",
+      "collection-dense-search",
+    ]);
+    expect(searchResultProfileIds).not.toContain("collection-editorial-discovery");
+    expect(searchResultProfileIds).not.toContain("collection-campaign-led-discovery");
   });
 
   it("preserves canonical membership, order, facts, filters, sorting and product-media lineage for every profile", () => {
