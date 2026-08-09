@@ -286,6 +286,43 @@ export const navigationModelSchema = z
     }
   });
 
+export const sharedFrameModelSchema = z
+  .object({
+    id: idSchema,
+    profileId: z.string().trim().min(1).max(160),
+    profileVersion: authorityVersionSchema,
+    authorityFingerprint: z.string().trim().min(1).max(240),
+    header: sectionInstanceSchema,
+    footer: sectionInstanceSchema,
+    announcement: sectionInstanceSchema.optional(),
+  })
+  .strict()
+  .superRefine((frame, context) => {
+    for (const [field, section, component] of [
+      ["header", frame.header, "header"],
+      ["footer", frame.footer, "footer"],
+      ["announcement", frame.announcement, "announcementBar"],
+    ] as const) {
+      if (section && (section.component !== component || !section.visible)) {
+        context.addIssue({
+          code: "custom",
+          path: [field],
+          message: `The canonical shared-frame ${field} must be a visible ${component} section.`,
+        });
+      }
+    }
+    const sectionIds = [frame.header.id, frame.footer.id, frame.announcement?.id].filter(
+      (id): id is string => id !== undefined,
+    );
+    if (new Set(sectionIds).size !== sectionIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: [],
+        message: "Canonical shared-frame section IDs must be unique.",
+      });
+    }
+  });
+
 export const storefrontSnapshotSchema = z
   .object({
     id: idSchema,
@@ -293,6 +330,7 @@ export const storefrontSnapshotSchema = z
     revision: z.number().int().nonnegative(),
     brandSystem: brandSystemSchema,
     navigation: navigationModelSchema,
+    sharedFrame: sharedFrameModelSchema.optional(),
     pages: z.array(pageModelSchema).min(1),
     catalogueRef: idSchema,
     createdAt: isoDateTimeSchema,
@@ -309,7 +347,16 @@ export const storefrontSnapshotSchema = z
       });
     }
 
-    const sectionIds = snapshot.pages.flatMap((page) => page.sections.map((section) => section.id));
+    const sectionIds = [
+      ...(snapshot.sharedFrame
+        ? [
+            snapshot.sharedFrame.header.id,
+            snapshot.sharedFrame.footer.id,
+            snapshot.sharedFrame.announcement?.id,
+          ].filter((id): id is string => id !== undefined)
+        : []),
+      ...snapshot.pages.flatMap((page) => page.sections.map((section) => section.id)),
+    ];
     if (new Set(sectionIds).size !== sectionIds.length) {
       context.addIssue({
         code: "custom",
@@ -344,4 +391,5 @@ export type PageFactEvidenceReference = z.infer<typeof pageFactEvidenceReference
 export type PageModel = z.infer<typeof pageModelSchema>;
 export type NavigationItem = z.infer<typeof navigationItemSchema>;
 export type NavigationModel = z.infer<typeof navigationModelSchema>;
+export type SharedFrameModel = z.infer<typeof sharedFrameModelSchema>;
 export type StorefrontSnapshot = z.infer<typeof storefrontSnapshotSchema>;

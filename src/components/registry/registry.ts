@@ -6,6 +6,7 @@ import {
   pageModelSchema,
   sectionInstanceSchema,
   storefrontSnapshotSchema,
+  validateCommercialSharedFrameSnapshot,
   validateCanonicalStorefrontSiteMap,
   type PageModel,
   type PageType,
@@ -65,9 +66,17 @@ export function validateRegisteredSnapshot(
   enabledLocales?: readonly Locale[],
 ): StorefrontSnapshot {
   const snapshot = storefrontSnapshotSchema.parse(input);
+  if (snapshot.sharedFrame) validateCommercialSharedFrameSnapshot(snapshot);
   const context = catalogue
     ? createStorefrontRenderContext({ activeLocale, primaryLocale, catalogue, snapshot })
     : undefined;
+  if (snapshot.sharedFrame) {
+    validateRegisteredSection(snapshot.sharedFrame.header, undefined, context);
+    validateRegisteredSection(snapshot.sharedFrame.footer, undefined, context);
+    if (snapshot.sharedFrame.announcement) {
+      validateRegisteredSection(snapshot.sharedFrame.announcement, undefined, context);
+    }
+  }
   snapshot.pages.forEach((page) => validateRegisteredPage(page, context));
   validateCanonicalStorefrontSiteMap(snapshot, { catalogue, enabledLocales });
   return snapshot;
@@ -103,7 +112,7 @@ export function createStorefrontRenderContext({
   activeLocale: Locale;
   primaryLocale: Locale;
   catalogue: CatalogueDisplayModel;
-  snapshot: Pick<StorefrontSnapshot, "navigation" | "pages" | "brandSystem">;
+  snapshot: Pick<StorefrontSnapshot, "navigation" | "pages" | "brandSystem" | "sharedFrame">;
   pagePathPrefix?: string;
   pagePathSuffix?: string;
   renderTarget?: StorefrontRenderContext["renderTarget"];
@@ -116,6 +125,7 @@ export function createStorefrontRenderContext({
     primaryLocale: localeSchema.parse(primaryLocale),
     catalogue: catalogueDisplayModelSchema.parse(catalogue),
     navigation: navigationModelSchema.parse(snapshot.navigation),
+    ...(snapshot.sharedFrame ? { sharedFrame: structuredClone(snapshot.sharedFrame) } : {}),
     pages: snapshot.pages,
     brandSystem: snapshot.brandSystem,
     pagePaths,

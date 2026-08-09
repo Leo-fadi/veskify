@@ -2,7 +2,13 @@ import type { ReactNode } from "react";
 import type { z } from "zod";
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { Locale } from "@/domain/shared";
-import type { NavigationModel, PageModel, PageType, SectionInstance } from "@/domain/storefront";
+import type {
+  NavigationModel,
+  PageModel,
+  PageType,
+  SectionInstance,
+  SharedFrameModel,
+} from "@/domain/storefront";
 import type { HomepageNavigationIntent } from "@/components/storefront/homepage-commerce";
 import type { BrandSystem } from "@/domain/design-system";
 
@@ -11,6 +17,7 @@ export type StorefrontRenderContext = {
   primaryLocale: Locale;
   catalogue: CatalogueDisplayModel;
   navigation: NavigationModel;
+  sharedFrame?: SharedFrameModel;
   pages: readonly PageModel[];
   brandSystem: BrandSystem;
   pagePaths: Readonly<Record<string, string>>;

@@ -1,0 +1,450 @@
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
+import {
+  compileCommercialSharedFrameProposal,
+  compileCommercialSharedFrameSelection,
+  createCommercialSharedFrameProposal,
+  currentCommercialSharedFrameSelection,
+} from "@/application/commercial-shared-frame";
+import {
+  compiledPublicationResultSchema,
+  compileStorefrontPublication,
+  createCurrentPublishCompilerInput,
+} from "@/application/publishing/publish-compiler";
+import {
+  createStorefrontRenderContext,
+  validateRegisteredSnapshot,
+  veskifyComponentCapabilityManifest,
+  veskifyComponentDefinitionsV2,
+} from "@/components/registry";
+import { renderStorefrontPage } from "@/components/storefront/storefront-page";
+import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
+import { validateComponentDefinitionV2 } from "@/domain/component-platform";
+import { brandSystemToCssVariables } from "@/domain/design-system";
+import {
+  CommercialSharedFrameError,
+  commercialSharedFrameProfiles,
+  validateCommercialSharedFrameSnapshot,
+} from "@/domain/storefront";
+import { InMemoryProjectRepository, type ProjectAggregate } from "@/services/storage";
+import { renderPuckCanvasRoot } from "@/integrations/puck/config";
+
+function compile(profileId: (typeof commercialSharedFrameProfiles)[number]["id"]) {
+  return compileCommercialSharedFrameSelection({
+    snapshot: aurumNordicSeed.draftSnapshot,
+    catalogue: aurumNordicSeed.catalogue,
+    selection: currentCommercialSharedFrameSelection(profileId),
+  });
+}
+
+function errorCode(action: () => unknown) {
+  try {
+    action();
+  } catch (error) {
+    if (error instanceof CommercialSharedFrameError) return error.code;
+    throw error;
+  }
+  throw new Error("Expected shared-frame validation to fail.");
+}
+
+function emptyPage(
+  source: (typeof aurumNordicSeed.draftSnapshot.pages)[number],
+  input: { id: string; slug: string; type: "collection" | "content" | "cart" },
+) {
+  return {
+    ...structuredClone(source),
+    ...input,
+    title: { en: input.type === "cart" ? "Cart" : "About" },
+    seo: {
+      title: { en: input.type === "cart" ? "Cart" : "About" },
+      metaDescription: { en: "Canonical page presentation." },
+    },
+    sections: [],
+  };
+}
+
+describe("P10B-06 commercial shared-frame families", () => {
+  it("registers four structurally distinct complete frames, three mobile modes and four footers", () => {
+    expect(commercialSharedFrameProfiles).toHaveLength(4);
+    expect(new Set(commercialSharedFrameProfiles.map(({ id }) => id)).size).toBe(4);
+    expect(
+      new Set(
+        commercialSharedFrameProfiles.map((profile) =>
+          JSON.stringify({
+            desktop: profile.desktopComposition,
+            header: profile.headerVariant,
+            footer: profile.footerVariant,
+            mobile: profile.mobileNavigationMode,
+            footerComposition: profile.footerComposition,
+            regions: profile.semanticRegions,
+          }),
+        ),
+      ).size,
+    ).toBe(4);
+    expect(
+      new Set(
+        commercialSharedFrameProfiles.map(({ mobileNavigationMode }) => mobileNavigationMode),
+      ),
+    ).toEqual(new Set(["drawer", "stacked-disclosure", "compact-overlay"]));
+    expect(
+      new Set(commercialSharedFrameProfiles.map(({ footerComposition }) => footerComposition)).size,
+    ).toBe(4);
+
+    const footerRegionOrders = commercialSharedFrameProfiles.map((profile) => {
+      const result = compile(profile.id);
+      const context = createStorefrontRenderContext({
+        activeLocale: "en",
+        primaryLocale: "en",
+        catalogue: aurumNordicSeed.catalogue,
+        snapshot: result.snapshot,
+      });
+      const markup = renderToStaticMarkup(
+        renderStorefrontPage(
+          result.snapshot.pages.find(({ type }) => type === "home")!,
+          context,
+        ),
+      );
+      return ["footer-brand", "footer-store-pages", "footer-information"]
+        .map((region) => ({ region, index: markup.indexOf(`data-frame-region="${region}"`) }))
+        .filter(({ index }) => index >= 0)
+        .sort((left, right) => left.index - right.index)
+        .map(({ region }) => region)
+        .join(">");
+    });
+    expect(new Set(footerRegionOrders).size).toBe(4);
+  });
+
+  it("promotes exactly four meaningful header and footer anatomies to commercial-ready queries", () => {
+    for (const profile of commercialSharedFrameProfiles) {
+      const header = veskifyComponentCapabilityManifest.requireCommercialReadyVariant({
+        componentType: "header",
+        variant: profile.headerVariant,
+        expectedAnatomyIdentity: "header.commercialSharedFrameAnatomy",
+        requireMeaningful: true,
+      });
+      const footer = veskifyComponentCapabilityManifest.requireCommercialReadyVariant({
+        componentType: "footer",
+        variant: profile.footerVariant,
+        expectedAnatomyIdentity: "footer.commercialSharedFrameAnatomy",
+        requireMeaningful: true,
+      });
+      expect(header.variant.structuralClassification).toBe("meaningfulStructuralVariant");
+      expect(footer.variant.structuralClassification).toBe("meaningfulStructuralVariant");
+    }
+  });
+
+  it("materializes one canonical frame identity across every page without page-local chrome", () => {
+    for (const profile of commercialSharedFrameProfiles) {
+      const result = compile(profile.id);
+      expect(result.snapshot.sharedFrame).toMatchObject({
+        profileId: profile.id,
+        profileVersion: profile.version,
+        authorityFingerprint: profile.authorityFingerprint,
+        header: { variant: profile.headerVariant },
+        footer: { variant: profile.footerVariant },
+      });
+      expect(
+        result.snapshot.pages.every((page) =>
+          page.sections.every(
+            (section) => !["announcementBar", "header", "footer"].includes(section.component),
+          ),
+        ),
+      ).toBe(true);
+      expect(result.snapshot.navigation).toEqual(aurumNordicSeed.draftSnapshot.navigation);
+    }
+  });
+
+  it("renders the same frame authority for editor, preview and published targets", () => {
+    const result = compile("commerce-utility");
+    const homepage = result.snapshot.pages.find(({ type }) => type === "home")!;
+    for (const target of ["editor", "preview", "published"] as const) {
+      const context = createStorefrontRenderContext({
+        activeLocale: "en",
+        primaryLocale: "en",
+        catalogue: aurumNordicSeed.catalogue,
+        snapshot: result.snapshot,
+        renderTarget: target,
+      });
+      const markup = renderToStaticMarkup(renderStorefrontPage(homepage, context));
+      expect(markup).toContain('data-frame-profile="commerce-utility"');
+      expect(markup).toContain('data-mobile-navigation-mode="stacked-disclosure"');
+      expect(markup).toContain('data-footer-composition="service-navigation"');
+    }
+
+    const editorContext = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot: result.snapshot,
+      renderTarget: "editor",
+    });
+    const editorMarkup = renderToStaticMarkup(
+      renderPuckCanvasRoot({
+        children: <div data-editor-page-content={homepage.id} />,
+        context: editorContext,
+        brandSystem: result.snapshot.brandSystem,
+      }),
+    );
+    expect(editorMarkup).toContain('data-veskify-canvas-root="true"');
+    expect(editorMarkup).toContain('data-frame-profile="commerce-utility"');
+  });
+
+  it("projects the same root frame across home, collection, PDP, content and utility pages", () => {
+    const snapshot = structuredClone(compile("centered-minimal").snapshot);
+    const source = snapshot.pages[0];
+    snapshot.pages.push(
+      emptyPage(source, { id: "page_about_frame_proof", slug: "/pages/about", type: "content" }),
+      emptyPage(source, { id: "page_cart_frame_proof", slug: "/cart", type: "cart" }),
+    );
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot,
+    });
+    expect(new Set(snapshot.pages.map(({ type }) => type))).toEqual(
+      new Set(["home", "collection", "product", "content", "cart"]),
+    );
+    for (const page of snapshot.pages) {
+      const markup = renderToStaticMarkup(renderStorefrontPage(page, context));
+      expect(markup).toContain('data-frame-profile="centered-minimal"');
+      expect(markup.match(/data-frame-region="header"/g)).toHaveLength(1);
+      expect(markup.match(/data-frame-region="footer"/g)).toHaveLength(1);
+    }
+  });
+
+  it("uses canonical navigation only and cannot invent unavailable frame destinations", () => {
+    const result = compile("editorial-masthead");
+    const homepage = result.snapshot.pages.find(({ type }) => type === "home")!;
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot: result.snapshot,
+    });
+    const markup = renderToStaticMarkup(renderStorefrontPage(homepage, context));
+    for (const item of [
+      ...result.snapshot.navigation.primary,
+      ...result.snapshot.navigation.footer,
+    ]) {
+      expect(markup).toContain(item.label.en);
+    }
+    expect(markup).not.toContain('href="/search"');
+    expect(markup).not.toContain('href="/cart"');
+  });
+
+  it("projects search and cart utilities only from exact canonical page-family destinations", () => {
+    const result = compile("commerce-utility");
+    const snapshot = structuredClone(result.snapshot);
+    const source = snapshot.pages[0];
+    const authorityBase = {
+      familyVersion: "1.0.0",
+      profileVersion: "1.0.0",
+      localeCoverage: ["en", "fi"] as ("en" | "fi")[],
+      sharedFrameId: snapshot.sharedFrame!.id,
+      sharedFrameVersion: "1.0.0",
+      commerceOperationAuthority: "read-only-presentation" as const,
+      navigationAreas: [] as ("primary" | "footer")[],
+      evidenceReferences: [],
+    };
+    snapshot.pages.push(
+      {
+        ...emptyPage(source, {
+          id: "page_search_frame_proof",
+          slug: "/search",
+          type: "collection",
+        }),
+        pageFamily: {
+          ...authorityBase,
+          familyId: "search-results",
+          profileId: "blueprint-site-map-search-baseline",
+          commerceContext: { kind: "search" },
+        },
+      },
+      {
+        ...emptyPage(source, { id: "page_cart_frame_proof", slug: "/cart", type: "cart" }),
+        pageFamily: {
+          ...authorityBase,
+          familyId: "cart",
+          profileId: "blueprint-site-map-cart-baseline",
+          commerceContext: { kind: "none" },
+        },
+      },
+    );
+    const context = createStorefrontRenderContext({
+      activeLocale: "fi",
+      primaryLocale: "en",
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot,
+    });
+    const markup = renderToStaticMarkup(renderStorefrontPage(snapshot.pages[0], context));
+    expect(markup).toContain('href="/search"');
+    expect(markup).toContain(">Haku<");
+    expect(markup).toContain('href="/cart"');
+    expect(markup).toContain(">Ostoskori<");
+  });
+
+  it("compiles an exact bounded proposal and fails closed when its source snapshot is stale", () => {
+    const proposal = createCommercialSharedFrameProposal(
+      aurumNordicSeed.draftSnapshot,
+      "centered-minimal",
+    );
+    const compiled = compileCommercialSharedFrameProposal({
+      snapshot: aurumNordicSeed.draftSnapshot,
+      catalogue: aurumNordicSeed.catalogue,
+      proposal,
+    });
+    expect(compiled.snapshot.sharedFrame?.profileId).toBe("centered-minimal");
+
+    const changed = structuredClone(aurumNordicSeed.draftSnapshot);
+    changed.revision += 1;
+    expect(() =>
+      compileCommercialSharedFrameProposal({
+        snapshot: changed,
+        catalogue: aurumNordicSeed.catalogue,
+        proposal,
+      }),
+    ).toThrow(/exact current snapshot/i);
+    expect(changed.sharedFrame).toBeUndefined();
+  });
+
+  it("fails closed for stale selections, incompatible combinations and duplicated authority", () => {
+    const stale = structuredClone(currentCommercialSharedFrameSelection("centered-minimal"));
+    stale.authorityFingerprint = "stale";
+    expect(() =>
+      compileCommercialSharedFrameSelection({
+        snapshot: aurumNordicSeed.draftSnapshot,
+        catalogue: aurumNordicSeed.catalogue,
+        selection: stale,
+      }),
+    ).toThrow(/current executable authority/i);
+
+    const mismatch = structuredClone(compile("centered-minimal").snapshot);
+    mismatch.sharedFrame!.footer.variant = "compact";
+    expect(errorCode(() => validateCommercialSharedFrameSnapshot(mismatch))).toBe(
+      "incompatible-frame-combination",
+    );
+
+    const duplicated = structuredClone(compile("centered-minimal").snapshot);
+    duplicated.pages[0].sections.unshift(structuredClone(duplicated.sharedFrame!.header));
+    duplicated.pages[0].sections[0].id = "duplicate_page_header";
+    expect(errorCode(() => validateCommercialSharedFrameSnapshot(duplicated))).toBe(
+      "duplicated-page-frame-authority",
+    );
+
+    const ambiguousLegacy = structuredClone(aurumNordicSeed.draftSnapshot);
+    const collectionHeader = ambiguousLegacy.pages
+      .find(({ type }) => type === "collection")!
+      .sections.find(({ component }) => component === "header")!;
+    collectionHeader.content = { ...collectionHeader.content, brandName: "Conflicting brand" };
+    expect(
+      errorCode(() =>
+        compileCommercialSharedFrameSelection({
+          snapshot: ambiguousLegacy,
+          catalogue: aurumNordicSeed.catalogue,
+          selection: currentCommercialSharedFrameSelection("centered-minimal"),
+        }),
+      ),
+    ).toBe("ambiguous-legacy-frame-authority");
+  });
+
+  it("rejects cosmetic-only anatomy when it claims a meaningful frame difference", () => {
+    const header = structuredClone(
+      veskifyComponentDefinitionsV2.find(({ type }) => type === "header")!,
+    );
+    const anatomy = header.commercialAnatomy!;
+    const centered = anatomy.variants.find(({ variantId }) => variantId === "centered")!;
+    const transparent = anatomy.variants.find(({ variantId }) => variantId === "transparent")!;
+    transparent.classification = "meaningfulStructuralVariant";
+    transparent.materialDifferences = ["presentationMode"];
+    transparent.structure = structuredClone(centered.structure);
+    expect(() => validateComponentDefinitionV2(header)).toThrow(/does not realize/i);
+  });
+
+  it("keeps frame structure stable while two Design DNA identities change visual foundations", () => {
+    const first = compile("compact-technical").snapshot;
+    const second = structuredClone(first);
+    second.brandSystem = structuredClone(karvonenSeed.draftSnapshot.brandSystem);
+    expect(first.sharedFrame?.profileId).toBe(second.sharedFrame?.profileId);
+    expect(first.sharedFrame?.header.variant).toBe(second.sharedFrame?.header.variant);
+    expect(brandSystemToCssVariables(first.brandSystem)).not.toEqual(
+      brandSystemToCssVariables(second.brandSystem),
+    );
+  });
+
+  it("preserves the exact frame through save/reload and deterministic publication", async () => {
+    const result = compile("editorial-masthead");
+    const aggregate: ProjectAggregate = {
+      project: structuredClone(aurumNordicSeed.project),
+      catalogue: structuredClone(aurumNordicSeed.catalogue),
+      snapshots: [
+        structuredClone(aurumNordicSeed.publishedSnapshot),
+        structuredClone(aurumNordicSeed.draftSnapshot),
+      ],
+    };
+    const repository = new InMemoryProjectRepository([aggregate]);
+    await repository.saveDraft(result.snapshot.projectId, result.snapshot, {
+      id: aurumNordicSeed.draftSnapshot.id,
+      revision: aurumNordicSeed.draftSnapshot.revision,
+    });
+    const reloaded = await repository.get(result.snapshot.projectId);
+    const draft = reloaded.snapshots.find(({ id }) => id === reloaded.project.draftSnapshotId)!;
+    expect(draft.sharedFrame).toEqual(result.snapshot.sharedFrame);
+
+    const publication = compileStorefrontPublication(
+      createCurrentPublishCompilerInput({
+        aggregate: reloaded,
+        snapshot: draft,
+        sourceAuthority: { kind: "manual" },
+      }),
+    );
+    expect(publication.result.sharedFrame.frame).toEqual(result.snapshot.sharedFrame);
+    expect(
+      publication.result.sharedFrame.componentExecutions.map(({ componentType }) => componentType),
+    ).toEqual(expect.arrayContaining(["header", "footer"]));
+  });
+
+  it("keeps legacy P9/P10A snapshots valid until deterministic frame migration is requested", () => {
+    expect(aurumNordicSeed.draftSnapshot.sharedFrame).toBeUndefined();
+    expect(
+      validateRegisteredSnapshot(
+        aurumNordicSeed.draftSnapshot,
+        aurumNordicSeed.catalogue,
+        "en",
+        "en",
+      ),
+    ).toEqual(aurumNordicSeed.draftSnapshot);
+    expect(compile("centered-minimal").snapshot.sharedFrame?.profileId).toBe("centered-minimal");
+
+    const withoutAnnouncement = structuredClone(aurumNordicSeed.draftSnapshot);
+    withoutAnnouncement.pages.forEach((page) => {
+      page.sections.forEach((section) => {
+        if (section.component === "announcementBar") section.visible = false;
+      });
+    });
+    const migrated = compileCommercialSharedFrameSelection({
+      snapshot: withoutAnnouncement,
+      catalogue: aurumNordicSeed.catalogue,
+      selection: currentCommercialSharedFrameSelection("centered-minimal"),
+    });
+    expect(migrated.snapshot.sharedFrame?.announcement).toBeUndefined();
+
+    const legacyArtifact = structuredClone(
+      compileStorefrontPublication(
+        createCurrentPublishCompilerInput({
+          aggregate: {
+            project: structuredClone(aurumNordicSeed.project),
+            catalogue: structuredClone(aurumNordicSeed.catalogue),
+            snapshots: [structuredClone(aurumNordicSeed.draftSnapshot)],
+          },
+          snapshot: aurumNordicSeed.draftSnapshot,
+          sourceAuthority: { kind: "manual" },
+        }),
+      ).result,
+    ) as Record<string, unknown>;
+    delete (legacyArtifact.sharedFrame as Record<string, unknown>).componentExecutions;
+    expect(
+      compiledPublicationResultSchema.parse(legacyArtifact).sharedFrame.componentExecutions,
+    ).toEqual([]);
+  });
+});
