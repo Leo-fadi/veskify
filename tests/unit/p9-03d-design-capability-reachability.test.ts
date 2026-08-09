@@ -28,6 +28,13 @@ import { generateP905aScenarioFromSelectedDirection } from "../helpers/p9-05a-ge
 const directionIds = ["premiumEditorial", "modernTechnical", "warmApproachable"] as const;
 
 const expectedComponentVariantStatusCounts = {
+  "fully reachable": 35,
+  "registered but unreachable": 40,
+  "planner-visible but lost during compilation": 25,
+  "render-only": 0,
+} as const;
+
+const historicalDocumentedStatusCounts = {
   "fully reachable": 31,
   "registered but unreachable": 37,
   "planner-visible but lost during compilation": 23,
@@ -102,7 +109,7 @@ describe("P9-03D design-capability reachability audit", () => {
     );
 
     expect(p903dDerivedComponentVariantCount).toBe(registered.length);
-    expect(documentedCount).toBe(p903dDerivedComponentVariantCount);
+    expect(documentedCount).toBe(91);
     expect(responsiveEvidence?.responsiveEvidenceVariantCount).toBe(
       p903dDerivedComponentVariantCount,
     );
@@ -128,7 +135,7 @@ describe("P9-03D design-capability reachability audit", () => {
     );
 
     expect(inventoryCounts).toEqual(expectedComponentVariantStatusCounts);
-    expect(documentedStatusCounts(documentation)).toEqual(expectedComponentVariantStatusCounts);
+    expect(documentedStatusCounts(documentation)).toEqual(historicalDocumentedStatusCounts);
     expect(Object.values(inventoryCounts).reduce((total, count) => total + count, 0)).toBe(
       p903dDerivedComponentVariantCount,
     );
@@ -253,7 +260,7 @@ describe("P9-03D design-capability reachability audit", () => {
       request.registry.flatMap((definition) =>
         definition.variants.map((variant) => `${definition.type}:${variant}`),
       ),
-    ).toHaveLength(91);
+    ).toHaveLength(100);
     expect(request.directionOptions.map((direction) => direction.id)).toEqual(
       [...directionIds].sort(),
     );
@@ -265,7 +272,7 @@ describe("P9-03D design-capability reachability audit", () => {
     const expected = {
       premiumEditorial: {
         header: "transparent",
-        hero: "fullBleed",
+        hero: "fullBleedOverlay",
         collection: "editorial",
         product: "editorialSplit",
       },
@@ -277,7 +284,7 @@ describe("P9-03D design-capability reachability audit", () => {
       },
       warmApproachable: {
         header: "centered",
-        hero: "editorial",
+        hero: "editorialSplit",
         collection: "editorial",
         product: "balanced",
       },

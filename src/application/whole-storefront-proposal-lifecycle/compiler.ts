@@ -6,6 +6,7 @@ import {
 import {
   wholeStorefrontGenerationPlanSchema,
   wholeStorefrontPlanningInputSchema,
+  type WholeStorefrontPlanningInput,
 } from "@/application/whole-storefront-generation-plan/contract";
 import {
   applyRegisteredTokenRefinement,
@@ -24,7 +25,12 @@ import {
   type StorefrontAssetMetadata,
   type ComponentInstanceV2,
 } from "@/domain/component-platform";
-import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
+import {
+  canonicalValueFingerprint,
+  canonicalValueString,
+  pageFactEvidenceReferenceSchema,
+  type PageFactEvidenceReference,
+} from "@/domain/storefront";
 import {
   dynamicCollectionCommerceBridgeContentSchema,
   dynamicProductDetailBridgeContentSchema,
@@ -1411,6 +1417,24 @@ function validateRegisteredBrandSystemOperations(
   }
 }
 
+export function projectWholeStorefrontEvidenceReferences(
+  planningInput: WholeStorefrontPlanningInput,
+): PageFactEvidenceReference[] {
+  return planningInput.brief.businessIdentity.shortDescription.trim() &&
+    planningInput.brief.approval.actorId
+    ? [
+        pageFactEvidenceReferenceSchema.parse({
+          source: "merchant-approved",
+          authorityId: planningInput.brief.id,
+          revision: String(planningInput.brief.revision),
+          status: "approved",
+          approvalAuthorityId: planningInput.brief.approval.actorId,
+          approvalFingerprint: planningInput.brief.approvedEvidenceFingerprint,
+        }),
+      ]
+    : [];
+}
+
 function componentProjectionForCoordinatedFollowUp(
   input: CoordinatedFollowUpProposalCompilationInput,
   proposed: WholeStorefrontRuntimeState,
@@ -1518,6 +1542,7 @@ function componentProjectionForCoordinatedFollowUp(
       { projectId: input.planningInput.project.id, brandSystemRefs: [], revision },
     ],
     localizedContents: [],
+    evidenceReferences: projectWholeStorefrontEvidenceReferences(input.planningInput),
     productListRevision: revision,
     collectionListRevision: revision,
   };

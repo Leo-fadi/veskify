@@ -3,6 +3,7 @@ import { idSchema, isoDateTimeSchema } from "@/domain/shared";
 import {
   canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
+  pageFactEvidenceReferenceSchema,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import type { ProjectAggregate } from "@/services/storage";
@@ -39,6 +40,7 @@ export const acceptedSnapshotPublishReceiptSchema = z
     profileAuthorities: z.array(profileAuthoritySchema).max(128),
     commerceFingerprint: fingerprintSchema,
     approvedAssetFingerprint: fingerprintSchema.nullable(),
+    evidenceReferences: z.array(pageFactEvidenceReferenceSchema).optional(),
     acceptanceActionId: idSchema,
     acceptedAt: isoDateTimeSchema,
     sourceKind: z.enum(["initialGeneration", "governedFollowUp"]),
@@ -109,6 +111,7 @@ export const acceptedSnapshotCurrentAuthoritySchema = z
     profileAuthorities: z.array(profileAuthoritySchema).max(128),
     commerceFingerprint: fingerprintSchema,
     approvedAssetFingerprint: fingerprintSchema.nullable(),
+    evidenceReferences: z.array(pageFactEvidenceReferenceSchema).optional(),
   })
   .strict();
 
@@ -138,6 +141,7 @@ export type AcceptedSnapshotReceiptErrorCode =
   | "profile-authority-mismatch"
   | "commerce-mismatch"
   | "approved-asset-mismatch"
+  | "evidence-authority-mismatch"
   | "proposal-not-accepted"
   | "accepted-lifecycle-mismatch"
   | "accepted-proposal-content-mismatch"
@@ -236,7 +240,7 @@ export function assertAcceptedSnapshotReceiptCurrent(
   receipt: AcceptedSnapshotPublishReceipt,
   aggregate: ProjectAggregate,
   currentAuthorityInput: unknown,
-): void {
+): AcceptedSnapshotCurrentAuthority {
   const currentAuthority = acceptedSnapshotCurrentAuthoritySchema.safeParse(currentAuthorityInput);
   if (!currentAuthority.success) {
     throw new AcceptedSnapshotReceiptError("malformed-receipt", {
@@ -299,4 +303,11 @@ export function assertAcceptedSnapshotReceiptCurrent(
   if (current.approvedAssetFingerprint !== receipt.approvedAssetFingerprint) {
     throw new AcceptedSnapshotReceiptError("approved-asset-mismatch");
   }
+  if (
+    canonicalValueFingerprint(current.evidenceReferences ?? []) !==
+    canonicalValueFingerprint(receipt.evidenceReferences ?? [])
+  ) {
+    throw new AcceptedSnapshotReceiptError("evidence-authority-mismatch");
+  }
+  return current;
 }

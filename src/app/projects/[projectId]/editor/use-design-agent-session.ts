@@ -50,6 +50,7 @@ import type { BrandSystem } from "@/domain/design-system";
 import { resolveLocalizedText, type Locale, type LocalizedText } from "@/domain/shared";
 import {
   canonicalStorefrontContentFingerprint,
+  type PageFactEvidenceReference,
   type PageModel,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
@@ -187,9 +188,15 @@ type UseDesignAgentSessionInput = {
   disabled: boolean;
   provider?: AIProvider;
   storefrontProvider?: StorefrontAIProvider;
+  currentEvidenceReferencesForStorefrontProposal?: (
+    proposalId: string,
+  ) => readonly PageFactEvidenceReference[];
   analytics?: ProposalAnalyticsSink;
   analyticsRoute?: string;
   onProposalReady?: () => void;
+  onStorefrontEvidenceAuthority?: (
+    evidenceReferences: readonly PageFactEvidenceReference[],
+  ) => void;
   onAcceptedPage: (page: PageModel) => void;
   onStorefrontAccepted?: (input: {
     proposalId: string;
@@ -428,9 +435,11 @@ export function useDesignAgentSession({
   disabled,
   provider,
   storefrontProvider,
+  currentEvidenceReferencesForStorefrontProposal,
   analytics = noopProposalAnalyticsSink,
   analyticsRoute = `/projects/${projectId}/editor`,
   onProposalReady,
+  onStorefrontEvidenceAuthority,
   onAcceptedPage,
   onStorefrontAccepted,
   onStorefrontHistorySnapshot,
@@ -1005,6 +1014,9 @@ export function useDesignAgentSession({
         activeLocale,
         primaryLocale,
       });
+      onStorefrontEvidenceAuthority?.(
+        currentEvidenceReferencesForStorefrontProposal?.(result.proposal.id) ?? [],
+      );
       refreshStorefrontHistory();
       setGeneratedStorefrontProposal(result.proposal);
       setRequest("");

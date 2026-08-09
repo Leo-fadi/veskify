@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 9 August 2026, merged P10B-06 and P10B-08 integration on PR #178                                                    |
+| Baseline                    | 9 August 2026, P10B-06 shared frame, P10B-07 storytelling and P10B-08 product cards                                 |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -43,11 +43,11 @@ required evidence are accepted.
 | ---- | ------- | ---------------------------------------------------- | ------------ | ------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------- |
 | ☑    | P10B-01 | Commercial grammar and compatibility vocabulary      | **Baseline** | Canonical design contracts      | P10A closure; architecture lock    | Schema/queryability, migration, compatibility and typed rejection                              |
 | ☑    | P10B-02 | Parametric BrandSystem / Design DNA                  | **Baseline** | BrandSystem                     | P10B-01                            | Cross-page projection, migration, responsive and lifecycle evidence                            |
-| ☑    | P10B-03 | Component anatomy and meaningful variant contract    | **Baseline** | Component platform              | P10B-01                            | 25 definitions/91 variants; structural, query, migration and rejection evidence                |
+| ☑    | P10B-03 | Component anatomy and meaningful variant contract    | **Baseline** | Component platform              | P10B-01                            | 27 definitions/100 variants; structural, query, migration and rejection evidence               |
 | ☑    | P10B-04 | Responsive image and art-direction authority         | **Baseline** | Asset presentation and media    | P10B-02, P10B-03                   | 35-case authority, integration/lifecycle and four-width browser evidence                       |
 | ☑    | P10B-05 | Veskify site-map and page-family authority           | **Baseline** | PageBlueprint/storefront domain | P10B-01                            | Page-set/navigation/generation/lifecycle and rejection evidence                                |
 | ☑    | P10B-06 | Commercial shared-frame families                     | **Baseline** | Shared frame                    | P10B-02, P10B-03, P10B-05          | Four frames, three mobile modes, four footers, lifecycle and retained browser review           |
-| ☐    | P10B-07 | Hero, editorial, campaign and proof families         | **Planned**  | Commercial content families     | P10B-02 through P10B-05            | Minimum anatomy coverage, provenance, full chain and visual review                             |
+| ☑    | P10B-07 | Hero, editorial, campaign and proof families         | **Baseline** | Commercial content families     | P10B-02 through P10B-05            | Six heroes, story/campaign/proof chain, provenance and four-width browser review               |
 | ☑    | P10B-08 | Canonical product-card and merchandising family      | **Baseline** | Commerce presentation           | P10B-02 through P10B-04            | One renderer; five anatomies; protected facts/media; lifecycle and four-width browser evidence |
 | ☐    | P10B-09 | Commercial homepage profile library                  | **Planned**  | PageBlueprint profiles          | P10B-05 through P10B-08            | Six profiles, materialization-to-render and visual review                                      |
 | ☐    | P10B-10 | Commercial collection and search profiles            | **Planned**  | Collection/search presentation  | P10B-04 through P10B-06, P10B-08   | Four profiles, commerce/intents and visual review                                              |
@@ -164,8 +164,7 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 through P10B-06 and P10B-08 are **Baseline**. P10B-07 and P10B-09 through P10B-18 remain
-**Planned**. The
+P10B-01 through P10B-08 are **Baseline**. P10B-09 through P10B-18 remain **Planned**. The
 remaining Done conditions are implementation gates, not claims about the current repository.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
@@ -218,8 +217,9 @@ remaining Done conditions are implementation gates, not claims about the current
 - **Evidence:** Registry/schema, manifest/queryability, migration, renderer-identity, structural
   comparison, and compatibility rejection tests.
 - **Non-goal:** Implementing all commercial family renderers in this contract task.
-- **Status:** **Baseline**. All 25 current V2 definitions and 91 variants are classified
-  explicitly without false commercial-ready promotion. See
+- **Status:** **Baseline**. At P10B-03 delivery, all then-current 25 V2 definitions and 91 variants
+  were classified explicitly without false commercial-ready promotion. Later family tasks extend
+  that same authority rather than replacing it. See
   [`P10B_03_COMPONENT_ANATOMY_AND_MEANINGFUL_VARIANTS.md`](P10B_03_COMPONENT_ANATOMY_AND_MEANINGFUL_VARIANTS.md).
 
 #### P10B-04 — Responsive image and art-direction authority
@@ -293,6 +293,12 @@ remaining Done conditions are implementation gates, not claims about the current
 - **Evidence:** Registry/profile, proposal/compiler/snapshot/render, provenance, responsive/a11y,
   omission, and retained visual evidence.
 - **Non-goal:** Generic filler or free-form generated sections.
+- **Status:** **Baseline**. Six meaningful hero anatomies, five editorial/story anatomies, five
+  campaign/promotion anatomies and three evidence-grounded proof/service anatomies are registered,
+  PageBlueprint-selectable, deterministically generated, snapshot/publish preserved and rendered
+  through one shared implementation. Focused deterministic coverage and a zero-provider Chromium
+  scenario retain evidence at 375, 768, 1024 and 1440 px. See
+  [`P10B_07_HERO_EDITORIAL_CAMPAIGN_PROOF_FAMILIES.md`](P10B_07_HERO_EDITORIAL_CAMPAIGN_PROOF_FAMILIES.md).
 
 #### P10B-08 — Canonical product-card and merchandising family
 

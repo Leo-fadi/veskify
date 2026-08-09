@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   type AcceptedSnapshotCurrentAuthoritySource,
   type AcceptedSnapshotPublishReceiptRepository,
@@ -27,6 +28,7 @@ import {
 import {
   canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
+  pageFactEvidenceReferenceSchema,
 } from "@/domain/storefront";
 import {
   DraftConflictError,
@@ -67,6 +69,9 @@ export type AuthoritativePublishingAdapterInput = Readonly<{
   acceptedSnapshotAuthority?: Readonly<{
     receiptRepository: AcceptedSnapshotPublishReceiptRepository;
     currentAuthoritySource: AcceptedSnapshotCurrentAuthoritySource;
+  }>;
+  manualEvidenceAuthority?: Readonly<{
+    resolveCurrentEvidenceReferences(input: { projectId: string }): Promise<unknown>;
   }>;
 }>;
 
@@ -405,7 +410,16 @@ async function executePublish(
             : (() => {
                 throw new VeskoIntegrationError("publishingUnavailable");
               })()
-          : { kind: "manual" },
+          : {
+              kind: "manual",
+              currentEvidenceReferences: input.manualEvidenceAuthority
+                ? z.array(pageFactEvidenceReferenceSchema).parse(
+                    await input.manualEvidenceAuthority.resolveCurrentEvidenceReferences({
+                      projectId: aggregate.project.id,
+                    }),
+                  )
+                : [],
+            },
     });
     const completed = await loadCompletedPublication(
       publicationOperationIdentity(request),

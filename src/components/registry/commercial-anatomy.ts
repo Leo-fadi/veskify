@@ -6,7 +6,9 @@ import {
   type ComponentCommercialParameter,
   type ComponentDefinitionV2,
   type ComponentFamily,
+  type ComponentResponsiveTransformation,
   type ComponentSemanticRegion,
+  type ComponentVariantStructuralSemantics,
 } from "@/domain/component-platform";
 
 type AnatomySource = Pick<
@@ -102,6 +104,53 @@ function commercialParameters(definition: AnatomySource): ComponentCommercialPar
     byAuthority.set(`${parameter.source}:${slot.id}`, { id: parameterId(parameter), ...parameter });
   }
   return [...byAuthority.values()].sort((left, right) => left.id.localeCompare(right.id));
+}
+
+export type RegisteredCommercialAnatomyInput = Readonly<{
+  version?: ComponentCommercialAnatomy["version"];
+  regions: readonly Readonly<{ id: ComponentSemanticRegion; required: boolean }>[];
+  responsiveTransformations: readonly ComponentResponsiveTransformation[];
+  variants: readonly ComponentVariantStructuralSemantics[];
+}>;
+
+/**
+ * Materializes governed family-specific anatomy from the same V2 definition authority used by the
+ * conservative registry adapter. It derives parameters, asset requirements and compatibility from
+ * the live definition so a commercial family cannot create parallel or stale authority.
+ */
+export function createRegisteredComponentCommercialAnatomy(
+  definition: AnatomySource,
+  input: RegisteredCommercialAnatomyInput,
+): ComponentCommercialAnatomy {
+  return componentCommercialAnatomySchema.parse({
+    contractVersion: componentCommercialAnatomyContractVersion,
+    identity: `${definition.type}.anatomy`,
+    version: input.version ?? { major: 1, minor: 1, patch: 0 },
+    regions: input.regions,
+    parameters: commercialParameters(definition),
+    responsiveTransformations: input.responsiveTransformations,
+    compatibility: {
+      allowedPageTypes: [...definition.supportedPageTypes],
+      narrativeRoles: [...definition.designCompatibility.allowedNarrativeRoles],
+      brandPostures: [...commercialTypographyPostures],
+      assetRequirements: definition.assetSlots.map((slot) => ({
+        slotId: slot.id,
+        acceptedRoles: [...slot.acceptedRoles],
+        required: slot.required,
+        minItems: slot.minItems,
+        ...(slot.maxItems === undefined ? {} : { maxItems: slot.maxItems }),
+      })),
+      responsiveModes: [
+        ...new Set(input.responsiveTransformations.map((transformation) => transformation.mode)),
+      ],
+    },
+    variants: input.variants,
+    migration: {
+      policy: "compatible",
+      previousVersions: [{ major: 1, minor: 0, patch: 0 }],
+      migrations: [],
+    },
+  });
 }
 
 function sharedFrameComponentAnatomy(definition: AnatomySource): ComponentCommercialAnatomy {

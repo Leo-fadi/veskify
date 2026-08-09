@@ -16,6 +16,7 @@ import {
   commitP905bLocalDemoPublishedAggregate,
   isP905bLocalDemoConfigured,
   p905bLocalDemoRepository,
+  p905bLocalDemoCurrentEvidenceReferences,
   p905bLocalDemoSession,
   sameP905bLocalDemoSecret,
 } from "@/integrations/ai/p9-05b-local-demo-authority.server";
@@ -82,6 +83,10 @@ export function createConfiguredAuthoritativeMerchantPublishService(
   );
   const currentAuthoritySource = createP905bLocalDemoAcceptedAiAuthoritySource(environment);
   const acceptedSnapshotAuthority = { receiptRepository, currentAuthoritySource };
+  const manualEvidenceAuthority = {
+    resolveCurrentEvidenceReferences: () =>
+      Promise.resolve(p905bLocalDemoCurrentEvidenceReferences(environment)),
+  };
   const publishingGateway = createStandaloneAuthoritativePublishingAdapter({
     projectRepository,
     contextPort,
@@ -91,6 +96,7 @@ export function createConfiguredAuthoritativeMerchantPublishService(
       },
     },
     acceptedSnapshotAuthority,
+    manualEvidenceAuthority,
   });
   return new AuthoritativeMerchantPublishService({
     projectRepository,
@@ -115,6 +121,7 @@ export function createConfiguredAuthoritativeMerchantPublishService(
     preparationStore,
     revisionMapper: standalonePublishingRevisionMapper,
     acceptedAiAuthority: acceptedSnapshotAuthority,
+    manualEvidenceAuthority,
     afterPublish: ({ projectId }) =>
       commitP905bLocalDemoPublishedAggregate({ projectId, environment }),
   });

@@ -7,6 +7,7 @@ import {
 } from "@/application/storefront-templates";
 import {
   createStorefrontPagePaths,
+  resolveHomepageProofContent,
   validateRegisteredSnapshot,
   veskifyComponentCapabilityManifest,
   veskifyComponentDefinitionsV2,
@@ -27,6 +28,7 @@ import {
   canonicalValueString,
   navigationModelSchema,
   pageModelSchema,
+  pageFactEvidenceReferenceSchema,
   sharedFrameModelSchema,
   storefrontSnapshotSchema,
   type StorefrontSnapshot,
@@ -126,6 +128,7 @@ export const publishCompilerInputSchema = z
     projectLocales: projectLocaleConfigurationSchema,
     snapshot: z.unknown(),
     catalogue: z.unknown(),
+    currentEvidenceReferences: z.array(pageFactEvidenceReferenceSchema).default([]),
     authority: compilerAuthoritySchema,
   })
   .strict();
@@ -462,6 +465,7 @@ export function createCurrentPublishCompilerInput(
           acceptedReceiptFingerprint: string;
           profileAuthorities: readonly Readonly<{ profileId: string; fingerprint: string }>[];
         }>;
+    currentEvidenceReferences?: readonly z.infer<typeof pageFactEvidenceReferenceSchema>[];
   }>,
 ): PublishCompilerInput {
   const profileReferences =
@@ -506,6 +510,7 @@ export function createCurrentPublishCompilerInput(
     },
     snapshot: input.snapshot,
     catalogue: input.aggregate.catalogue,
+    currentEvidenceReferences: [...(input.currentEvidenceReferences ?? [])],
     authority: {
       snapshotContractVersion: storefrontSnapshotContractVersion,
       manifestVersion: veskifyComponentCapabilityManifest.manifest.version,
@@ -909,6 +914,23 @@ function assertSnapshotAuthority(
   }
 }
 
+function assertCurrentProofEvidence(
+  snapshot: StorefrontSnapshot,
+  currentEvidenceReferences: PublishCompilerInput["currentEvidenceReferences"],
+): void {
+  try {
+    for (const section of snapshot.pages.flatMap((page) => page.sections)) {
+      if (section.component !== "homepageProof") continue;
+      resolveHomepageProofContent(section.content, {
+        required: true,
+        currentEvidenceReferences,
+      });
+    }
+  } catch (cause) {
+    throw new PublishCompilerError("invalid-binding", { cause });
+  }
+}
+
 function assertProductCardAuthority(snapshot: StorefrontSnapshot): void {
   try {
     for (const page of snapshot.pages) {
@@ -1092,6 +1114,7 @@ export function compileStorefrontPublication(inputValue: unknown): TrustedPublis
   publishedRouteAuthority(snapshot.data);
   assertExactAuthority(input);
   assertSnapshotAuthority(input, snapshot.data, catalogue.data);
+  assertCurrentProofEvidence(snapshot.data, input.currentEvidenceReferences);
   assertComponentAndRendererAuthority(input, snapshot.data);
   assertProfiles(input, snapshot.data);
   assertProductCardAuthority(snapshot.data);
@@ -1103,6 +1126,7 @@ export function compileStorefrontPublication(inputValue: unknown): TrustedPublis
       localeAuthority.activeLocale,
       localeAuthority.primaryLocale,
       localeAuthority.supportedLocales,
+      input.currentEvidenceReferences,
     );
   } catch (cause) {
     throw new PublishCompilerError("invalid-binding", { cause });

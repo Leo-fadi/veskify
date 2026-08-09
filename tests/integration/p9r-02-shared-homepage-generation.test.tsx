@@ -20,12 +20,14 @@ import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
 import { aurumNordicSeed } from "@/data/seed";
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
-import type { PageModel, StorefrontSnapshot } from "@/domain/storefront";
+import type { PageFactEvidenceReference, PageModel, StorefrontSnapshot } from "@/domain/storefront";
 import { createStandaloneAuthoritativeWholeStorefrontPlanningContextSource } from "@/integrations/ai/whole-storefront-runtime-authority";
 import { createStorefrontProposalReview } from "@/app/projects/[projectId]/editor/storefront-proposal-review";
 import {
   createP905aAcceptanceCoordinator,
   generateP905aScenario,
+  p905aBriefEvidenceReferences,
+  p905aCurrentEvidenceReferences,
   saveAndResolveP905aPreview,
 } from "../helpers/p9-05a-generation-harness";
 
@@ -56,14 +58,19 @@ function retainedHomepageContent(snapshot: Pick<StorefrontSnapshot, "pages">) {
   };
 }
 
-function renderHomepage(snapshot: StorefrontSnapshot, catalogue: CatalogueDisplayModel) {
-  return renderPage(homepage(snapshot), snapshot, catalogue);
+function renderHomepage(
+  snapshot: StorefrontSnapshot,
+  catalogue: CatalogueDisplayModel,
+  evidenceReferences: PageFactEvidenceReference[],
+) {
+  return renderPage(homepage(snapshot), snapshot, catalogue, evidenceReferences);
 }
 
 function renderPage(
   page: PageModel,
   snapshot: StorefrontSnapshot,
   catalogue: CatalogueDisplayModel,
+  evidenceReferences: PageFactEvidenceReference[],
 ) {
   return render(
     <>
@@ -74,6 +81,7 @@ function renderPage(
           primaryLocale: "fi",
           catalogue,
           snapshot,
+          evidenceReferences,
         }),
       )}
     </>,
@@ -275,6 +283,7 @@ describe("P9R-02 shared-frame and homepage generation", () => {
     const premiumRender = renderHomepage(
       createP905aAcceptanceCoordinator(premium).accept().activeDraft,
       premium.fixture.aggregate.catalogue,
+      p905aCurrentEvidenceReferences(premium),
     );
     expect(
       premiumRender.container.querySelector(".store-header.store-variant--transparent nav"),
@@ -284,7 +293,11 @@ describe("P9R-02 shared-frame and homepage generation", () => {
       premiumRender.container.querySelector(".store-footer.store-variant--editorial"),
     ).toBeTruthy();
 
-    const modernRender = renderHomepage(saved.preview, modern.fixture.aggregate.catalogue);
+    const modernRender = renderHomepage(
+      saved.preview,
+      modern.fixture.aggregate.catalogue,
+      p905aCurrentEvidenceReferences(modern),
+    );
     expect(
       modernRender.container.querySelector(".store-header.store-variant--compact nav"),
     ).toBeTruthy();
@@ -347,6 +360,8 @@ describe("P9R-02 shared-frame and homepage generation", () => {
             "homepageFeaturedProducts",
             "homepageCollectionNavigation",
             "homepagePromotion",
+            "homepageEditorial",
+            "homepageProof",
             "homepageTrust",
           ]).toContain(component.component);
           expect(component.bindings).toEqual(
@@ -432,6 +447,7 @@ describe("P9R-02 shared-frame and homepage generation", () => {
       runtimeHomepage(aurumNordicSeed.draftSnapshot, premium.page.components),
       aurumNordicSeed.draftSnapshot,
       aurumNordicSeed.catalogue,
+      p905aBriefEvidenceReferences(premium.planningInput.brief),
     );
     expect(
       premiumRender.container.querySelector('[data-component="homepagePromotion"]'),
@@ -445,9 +461,12 @@ describe("P9R-02 shared-frame and homepage generation", () => {
       runtimeHomepage(aurumNordicSeed.draftSnapshot, modern.page.components),
       aurumNordicSeed.draftSnapshot,
       aurumNordicSeed.catalogue,
+      p905aBriefEvidenceReferences(modern.planningInput.brief),
     );
     expect(
-      modernRender.container.querySelector(".brand-story.store-variant--minimal"),
+      modernRender.container.querySelector(
+        '[data-component="homepageEditorial"][data-variant="continuationCta"]',
+      ),
     ).toBeTruthy();
     expect(
       modernRender.container.querySelector(".campaign-banner.store-variant--minimal"),

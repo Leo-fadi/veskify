@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
-import { createStorefrontRenderContext } from "@/components/registry";
+import { createStorefrontRenderContext, type StorefrontRenderContext } from "@/components/registry";
 import {
   renderStorefrontPage,
   validateStorefrontHomepage,
@@ -34,6 +34,7 @@ type LoadState =
       aggregate: ProjectAggregate;
       draft: ProjectAggregate["snapshots"][number];
       homepage: ProjectAggregate["snapshots"][number]["pages"][number];
+      evidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
     };
 
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
@@ -89,13 +90,19 @@ export function ProjectPreviewClient({
 
   useEffect(() => {
     let cancelled = false;
-    Promise.resolve(
-      initialAggregate ??
-        (snapshotKind === "published" && publishedSessionId
-          ? loadP905bLocalDemoPublishedProjection({ projectId, sessionId: publishedSessionId })
-          : repository.current!.get(projectId)),
-    )
-      .then((aggregate) => {
+    const aggregateSource = initialAggregate
+      ? Promise.resolve({ aggregate: initialAggregate, evidenceReferences: [] })
+      : snapshotKind === "published" && publishedSessionId
+        ? loadP905bLocalDemoPublishedProjection({
+            projectId,
+            sessionId: publishedSessionId,
+          }).then(({ evidenceReferences, ...aggregate }) => ({ aggregate, evidenceReferences }))
+        : repository.current!.get(projectId).then((aggregate) => ({
+            aggregate,
+            evidenceReferences: [],
+          }));
+    aggregateSource
+      .then(({ aggregate, evidenceReferences }) => {
         if (cancelled) return;
         const draft = aggregate.snapshots.find(
           (snapshot) =>
@@ -119,6 +126,7 @@ export function ProjectPreviewClient({
             enabledLocales: aggregate.project.enabledLocales,
             catalogue: aggregate.catalogue,
             snapshot: draft,
+            evidenceReferences,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
             pagePathSuffix: publishedSessionId
               ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
@@ -131,7 +139,7 @@ export function ProjectPreviewClient({
           return;
         }
         setActiveLocale(aggregate.project.primaryLocale);
-        setState({ status: "success", aggregate, draft, homepage });
+        setState({ status: "success", aggregate, draft, homepage, evidenceReferences });
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -225,6 +233,7 @@ export function ProjectPreviewClient({
     onLocaleChange: setActiveLocale,
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
+    evidenceReferences: state.evidenceReferences,
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
     pagePathSuffix: publishedSessionId
       ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`

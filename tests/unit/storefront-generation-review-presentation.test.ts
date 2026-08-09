@@ -77,6 +77,9 @@ describe("storefront generation review presentation", () => {
 
     expect(notes).toContain("The announcement bar was not added because it was not selected.");
     expect(notes).toContain("The newsletter section was not added because it was not selected.");
+    expect(notes).toContain(
+      "Approved proof was not added because current approved evidence is not available.",
+    );
     expect(notes).toContain("Product options were not added because they were not requested.");
     expect(new Set(notes).size).toBe(notes.length);
   });

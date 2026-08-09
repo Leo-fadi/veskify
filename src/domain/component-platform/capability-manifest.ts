@@ -35,7 +35,7 @@ import {
   type CommercialGrammarValueCompatibility,
 } from "./commercial-design-grammar";
 
-export const componentCapabilityManifestVersion = "1.2.0" as const;
+export const componentCapabilityManifestVersion = "1.3.0" as const;
 
 type NarrativeRole = ComponentDefinitionV2["designCompatibility"]["allowedNarrativeRoles"][number];
 

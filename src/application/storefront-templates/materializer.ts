@@ -152,6 +152,11 @@ function pageSeo(pageType: PageType, brief: StorefrontDesignBrief) {
 function shouldOmitSlot(slot: StorefrontTemplateSlot, brief: StorefrontDesignBrief): boolean {
   if (slot.omitWhen === "when-not-requested") return true;
   if (slot.omitWhen === "when-logo-is-unavailable") return !brief.brandDirection.logoAssetRef;
+  // The onboarding design brief records merchant intent, not the approved
+  // evidence lineage required by homepageProof. The later canonical
+  // whole-storefront planner may materialize this optional slot once its
+  // approved source-discovery brief authority is available.
+  if (slot.omitWhen === "when-evidence-is-unavailable") return true;
   if (slot.omitWhen === "when-imagery-is-unavailable") {
     return brief.brandDirection.supportingImageAssetRefs.length === 0;
   }

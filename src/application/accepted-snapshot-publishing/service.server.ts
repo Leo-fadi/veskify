@@ -269,6 +269,22 @@ export class AcceptedSnapshotPublishingAuthorityService {
       ),
       commerceFingerprint: authority.data.commerceFingerprint,
       approvedAssetFingerprint: authority.data.approvedAssetFingerprint,
+      evidenceReferences:
+        input.materialization.planningInput.brief.approvedEvidenceFingerprint &&
+        input.materialization.planningInput.brief.approval.actorId &&
+        input.materialization.planningInput.brief.businessIdentity.shortDescription.trim()
+          ? [
+              {
+                source: "merchant-approved" as const,
+                authorityId: input.materialization.planningInput.brief.id,
+                revision: String(input.materialization.planningInput.brief.revision),
+                status: "approved" as const,
+                approvalAuthorityId: input.materialization.planningInput.brief.approval.actorId,
+                approvalFingerprint:
+                  input.materialization.planningInput.brief.approvedEvidenceFingerprint,
+              },
+            ]
+          : [],
       acceptanceActionId: acceptanceActionId.data,
       acceptedAt: acceptedAt.data,
       sourceKind: input.sourceKind,

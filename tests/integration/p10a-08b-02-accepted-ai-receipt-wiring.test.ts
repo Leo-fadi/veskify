@@ -31,6 +31,7 @@ const environment = {
   VESKIFY_AI_PROVIDER: "openai",
   VESKIFY_P9_05B_LOCAL_DEMO: "1",
   VESKIFY_P9_05B_LOCAL_DEMO_TOKEN: token,
+  VESKIFY_P10A_04C_LOCAL_DEMO: "1",
 } as const;
 
 function deterministicProvider(): WholeStorefrontPlanningProvider {
@@ -41,7 +42,7 @@ function deterministicProvider(): WholeStorefrontPlanningProvider {
       structuredPlanOutput: true,
       approvedAssetReferences: true,
     },
-    createPlan: (request) => Promise.resolve(request.planForDirection("modernTechnical")),
+    createPlan: (request) => Promise.resolve(request.planForDirection("premiumEditorial")),
   };
 }
 
@@ -65,7 +66,7 @@ async function generatedAuthority() {
       body: JSON.stringify({
         projectId: "project_lumo_fresh",
         sessionId: session.sessionId,
-        merchantInstruction: "Create a modern technical storefront for Lumo Atelier.",
+        merchantInstruction: "Create a premium editorial storefront for Lumo Atelier.",
       }),
     }),
   );

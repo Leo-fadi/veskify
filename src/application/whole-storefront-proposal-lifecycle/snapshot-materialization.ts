@@ -54,10 +54,13 @@ export function projectWholeStorefrontRuntimeSection(
       )
       .map((placement) => structuredClone(placement));
     const compactAssignments = new Map(
-      component.assetAssignments.map((assignment) => [assignment.slotId, assignment]),
+      component.assetAssignments.map((assignment) => [
+        `${assignment.slotId}:${assignment.assetId}`,
+        assignment,
+      ]),
     );
     placements.forEach((placement) => {
-      const assignment = compactAssignments.get(placement.assetSlotId);
+      const assignment = compactAssignments.get(`${placement.assetSlotId}:${placement.assetId}`);
       if (
         !assignment ||
         assignment.assetId !== placement.assetId ||

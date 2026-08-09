@@ -12,6 +12,7 @@ import {
 import {
   createP905aAcceptanceCoordinator,
   generateP905aScenario,
+  p905aCurrentEvidenceReferences,
   saveAndResolveP905aPreview,
 } from "../helpers/p9-05a-generation-harness";
 
@@ -73,6 +74,7 @@ describe("P10B-08 product-card generation and publication reachability", () => {
         aggregate: saved.saved.aggregate,
         snapshot: saved.preview,
         sourceAuthority: { kind: "manual" },
+        currentEvidenceReferences: p905aCurrentEvidenceReferences(generated),
       }),
     );
     expect(compilation.receipt.productCardAuthorityFingerprint).toBe(
@@ -89,6 +91,7 @@ describe("P10B-08 product-card generation and publication reachability", () => {
       aggregate: saved.saved.aggregate,
       snapshot: saved.preview,
       sourceAuthority: { kind: "manual" },
+      currentEvidenceReferences: p905aCurrentEvidenceReferences(generated),
     });
     staleInput.authority.productCardAuthorityFingerprint = "stale-product-card-authority";
     expect(() => compileStorefrontPublication(staleInput)).toThrow(

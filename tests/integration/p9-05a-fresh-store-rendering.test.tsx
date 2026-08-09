@@ -1,12 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { createStorefrontRenderContext } from "@/components/registry";
+import { createStorefrontRenderContext, renderRegisteredSection } from "@/components/registry";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
-import { resolveApprovedBrandStoryMedia } from "@/application/whole-storefront-generation-plan";
-import { createP905aFreshMerchantFixture } from "@/data/demo/p9-05a-fresh-store-generation";
 import {
   createP905aAcceptanceCoordinator,
   generateP905aScenario,
+  p905aCurrentEvidenceReferences,
   saveAndResolveP905aPreview,
 } from "../helpers/p9-05a-generation-harness";
 
@@ -32,6 +31,7 @@ function renderWarmHome(snapshot = acceptedResult.activeDraft) {
           primaryLocale: "fi",
           catalogue: generated.fixture.aggregate.catalogue,
           snapshot,
+          evidenceReferences: p905aCurrentEvidenceReferences(generated),
         }),
       )}
     </>,
@@ -75,30 +75,27 @@ describe("P9-05A rendered warm-store isolation", () => {
     );
   });
 
-  it("rejects unresolved or unapproved brand-story asset IDs before rendering", () => {
-    const fixture = createP905aFreshMerchantFixture("warmApproachable");
-    const pagePlan = generated.plan.pagePlans.find((page) => page.role === "homepage");
-    const story = pagePlan?.components.find(
-      (
-        component,
-      ): component is Extract<(typeof pagePlan.components)[number], { instance: object }> =>
-        "instance" in component && component.instance.component === "brandStory",
+  it("uses approved editorial placements with deterministic presentation fallback", () => {
+    const snapshot = acceptedResult.activeDraft;
+    const story = warmHome(snapshot).sections.find(
+      (section) => section.component === "homepageEditorial",
     );
-    if (!story || !("instance" in story)) throw new Error("Missing warm BrandStory plan instance.");
+    if (!story) throw new Error("Missing warm homepageEditorial section.");
+    const context = createStorefrontRenderContext({
+      activeLocale: "fi",
+      primaryLocale: "fi",
+      catalogue: generated.fixture.aggregate.catalogue,
+      snapshot,
+      evidenceReferences: p905aCurrentEvidenceReferences(generated),
+    });
 
-    const unknown = structuredClone(story.instance);
-    unknown.content.approvedAssetId = "asset_lumo_unapproved";
-    unknown.assetAssignments[0] = {
-      ...unknown.assetAssignments[0],
-      assetId: "asset_lumo_unapproved",
-    };
-    expect(() =>
-      resolveApprovedBrandStoryMedia(unknown, fixture.assetContext, fixture.assetPresentations),
-    ).toThrow(/approved editorial asset assignment/i);
-
-    const missingPresentation = structuredClone(story.instance);
-    expect(() =>
-      resolveApprovedBrandStoryMedia(missingPresentation, fixture.assetContext, []),
-    ).toThrow(/unavailable from the approved asset authority/i);
+    const legacyFallback = structuredClone(story);
+    legacyFallback.approvedAssetPresentations = [];
+    const rendered = render(renderRegisteredSection(legacyFallback, context, "home"));
+    expect(
+      rendered.container.querySelector(
+        '[data-component="homepageEditorial"][data-media-state="approved"]',
+      ),
+    ).toBeTruthy();
   });
 });

@@ -12,7 +12,7 @@ exportMarkdownDocx({
   title: "Veskify Development Delivery Tracker",
   subtitle: "Version 1.3.0",
   coverLines: [
-    "Delivery status baseline: 9 August 2026, merged P10B-06 and P10B-08 integration on PR #178",
+    "Delivery status baseline: 9 August 2026, P10B-06, P10B-07 and P10B-08",
     "Overall product status: Partial",
     "Active phase: P10B Commercial Storefront Generation System v1 (Partial)",
     "Authoritative source: docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",

@@ -207,6 +207,7 @@ function currentAuthority(
     profileAuthorities: receipt.profileAuthorities,
     commerceFingerprint: receipt.commerceFingerprint,
     approvedAssetFingerprint: receipt.approvedAssetFingerprint,
+    evidenceReferences: receipt.evidenceReferences,
   };
 }
 
@@ -764,7 +765,10 @@ describe("P10A-08B authoritative accepted snapshot receipt", () => {
       }),
     ).rejects.toMatchObject({ code: "missing-trusted-receipt" });
     const manual = await preparePublish(harness.receipt.projectId, harness.projectRepository, {
-      authority: { kind: "manual" },
+      authority: {
+        kind: "manual",
+        currentEvidenceReferences: harness.receipt.evidenceReferences,
+      },
     });
     expect(manual.authority).toEqual({ kind: "manual" });
     await expect(

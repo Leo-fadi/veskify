@@ -37,7 +37,8 @@
 }
 
 .hero,
-.promotion {
+.promotion,
+.editorialStory {
   align-items: center;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   min-height: min(42rem, 78vh);
@@ -64,6 +65,43 @@
 
 .variant_asymmetric {
   grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+}
+
+.variant_campaignMerchandising {
+  align-items: end;
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
+  grid-template-rows: auto 1fr auto;
+}
+
+.variant_campaignMerchandising .heroMedia {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  min-height: min(44rem, 82vh);
+}
+
+.heroMerchandising {
+  align-self: end;
+  border-block-end: 1px solid var(--brand-color-border);
+  display: grid;
+  gap: 0.5rem;
+  grid-column: 2;
+  grid-row: 1;
+  padding-block-end: 0.75rem;
+}
+
+.heroMerchandising p {
+  margin: 0;
+}
+
+.variant_campaignMerchandising .heroCopy {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.variant_campaignMerchandising > .actions {
+  align-self: start;
+  grid-column: 2;
+  grid-row: 3;
 }
 
 .variant_fullBleed,
@@ -132,6 +170,15 @@
   max-width: 42rem;
 }
 
+.eyebrow {
+  color: var(--brand-color-accent) !important;
+  font-family: var(--brand-font-utility);
+  font-size: var(--brand-type-utility-size) !important;
+  font-weight: var(--brand-type-utility-weight);
+  letter-spacing: var(--brand-type-utility-tracking);
+  text-transform: uppercase;
+}
+
 .heroMedia,
 .editorialMedia {
   margin: 0;
@@ -189,14 +236,22 @@
   z-index: 0;
 }
 
-.heroMedia img,
-.editorialMedia img,
-.collectionCard img {
+.heroMedia > img,
+.editorialMedia > img,
+.collectionCard > figure > img,
+.heroMedia > span,
+.editorialMedia > span,
+.collectionCard > figure > span {
   display: block;
   height: 100%;
   max-width: 100%;
-  object-fit: cover;
   width: 100%;
+}
+
+.heroMedia > img,
+.editorialMedia > img,
+.collectionCard > figure > img {
+  object-fit: cover;
 }
 
 .image_contain img {
@@ -403,6 +458,115 @@
   color: var(--brand-color-muted-text);
 }
 
+.editorialStory {
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.variant_lookbookGallery.editorialStory {
+  align-items: start;
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
+}
+
+.variant_continuationCta.editorialStory {
+  grid-template-columns: minmax(0, 48rem);
+  justify-content: center;
+  text-align: center;
+}
+
+.storyGallery {
+  display: grid;
+  gap: var(--brand-grid-gap);
+  grid-template-columns: repeat(var(--homepage-columns), minmax(0, 1fr));
+  min-height: 18rem;
+}
+
+.storyGallery .editorialMedia {
+  aspect-ratio: 4 / 5;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.variant_imageText .storyGallery .editorialMedia,
+.variant_brandStory .storyGallery .editorialMedia,
+.variant_craftProcess .storyGallery .editorialMedia {
+  aspect-ratio: 4 / 3;
+}
+
+.processList {
+  counter-reset: process-step;
+  display: grid;
+  gap: var(--brand-grid-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.processList li {
+  border-block-start: 1px solid var(--brand-color-border);
+  display: grid;
+  gap: 0.5rem;
+  padding-block-start: 1rem;
+}
+
+.processList li::before {
+  color: var(--brand-color-accent);
+  content: counter(process-step, decimal-leading-zero);
+  counter-increment: process-step;
+  font-family: var(--brand-font-heading);
+}
+
+.processList h3,
+.processList p,
+.proofGrid p,
+.proofGrid blockquote {
+  margin: 0;
+}
+
+.proofGrid {
+  display: grid;
+  gap: var(--brand-grid-gap);
+  grid-template-columns: repeat(var(--homepage-columns), minmax(0, 1fr));
+}
+
+.proofGrid article {
+  border-block-start: 2px solid var(--brand-color-accent);
+  display: grid;
+  gap: 1rem;
+  padding-block-start: clamp(1rem, 2vw, 1.5rem);
+}
+
+.proofGrid blockquote {
+  display: grid;
+  gap: 1rem;
+}
+
+.proofGrid blockquote p {
+  font-family: var(--brand-font-heading);
+  font-size: clamp(1.25rem, 2.5vw, var(--brand-type-heading-size));
+  line-height: var(--brand-type-heading-line-height);
+}
+
+.proofGrid cite,
+.proofAttribution {
+  color: var(--homepage-surface-muted-text, var(--brand-color-muted-text));
+  font-style: normal;
+}
+
+.variant_quoteSpotlight .proofGrid {
+  grid-template-columns: minmax(0, 52rem);
+  justify-content: center;
+}
+
+.variant_quoteSpotlight .proofGrid article {
+  text-align: center;
+}
+
+.variant_serviceAssurance .proofGrid article {
+  border: 1px solid var(--brand-color-border);
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
 .emptyState {
   background: var(--brand-color-surface);
   border: 1px dashed var(--brand-color-border);
@@ -413,6 +577,37 @@
 }
 
 @media (max-width: 63.99rem) {
+  .hero,
+  .promotion,
+  .editorialStory,
+  .variant_lookbookGallery.editorialStory,
+  .variant_asymmetric {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .variant_brandStory .storyGallery {
+    order: -1;
+  }
+
+  .variant_lookbookGallery .storyGallery {
+    display: flex;
+    max-width: 100%;
+    overflow-x: auto;
+    padding-block-end: 0.75rem;
+    scroll-snap-type: x mandatory;
+  }
+
+  .variant_lookbookGallery .storyGallery .editorialMedia {
+    flex: 0 0 min(82vw, 24rem);
+    scroll-snap-align: start;
+  }
+
+  .variant_proofGrid .proofGrid,
+  .variant_serviceAssurance .proofGrid {
+    grid-template-columns: 1fr;
+  }
+
   .collectionGrid,
   .productGrid,
   .trustGrid {
@@ -421,6 +616,23 @@
 
   .collectionGrid[data-item-count="3"][data-column-count="3"] {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .variant_campaignMerchandising {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto;
+  }
+
+  .variant_campaignMerchandising .heroMedia,
+  .variant_campaignMerchandising .heroMerchandising,
+  .variant_campaignMerchandising .heroCopy,
+  .variant_campaignMerchandising > .actions {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .variant_campaignMerchandising .heroMedia {
+    min-height: 24rem;
   }
 }
 
@@ -431,9 +643,31 @@
 
   .hero,
   .promotion,
+  .editorialStory,
+  .variant_lookbookGallery.editorialStory,
   .variant_asymmetric {
     grid-template-columns: 1fr;
     min-height: auto;
+  }
+
+  .variant_fullBleedOverlay .media_background {
+    grid-area: auto;
+    height: auto;
+    inset: auto;
+    min-height: 18rem;
+    opacity: 1;
+    order: -1;
+    pointer-events: auto;
+    position: relative;
+  }
+
+  .variant_fullBleedOverlay .media_background::after {
+    content: none;
+  }
+
+  .variant_fullBleedOverlay[data-copy-treatment="overlay"] .heroCopy,
+  .variant_fullBleedOverlay[data-copy-treatment="overlay"] .heroCopy p {
+    color: inherit;
   }
 
   .heroMedia,
@@ -443,8 +677,23 @@
 
   .collectionGrid,
   .productGrid,
-  .trustGrid {
+  .trustGrid,
+  .proofGrid {
     grid-template-columns: 1fr;
+  }
+
+  .variant_restrained,
+  .variant_continuationCta.editorialStory {
+    gap: 0.75rem;
+    padding-block: max(1.5rem, calc(var(--brand-section-rhythm) * 0.65));
+  }
+
+  .variant_craftProcess .processList {
+    gap: 0.75rem;
+  }
+
+  .variant_serviceAssurance .proofGrid article {
+    padding: 1rem;
   }
 
   .collectionGrid[data-item-count="1"] .collectionCard[data-has-media="true"] {

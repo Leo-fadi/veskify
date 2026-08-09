@@ -12,7 +12,7 @@ import {
   type MerchantProjectContext,
   type StorefrontPublishingGateway,
 } from "@/application/vesko-integration";
-import { canonicalValueFingerprint } from "@/domain/storefront";
+import { canonicalValueFingerprint, pageFactEvidenceReferenceSchema } from "@/domain/storefront";
 import { idSchema } from "@/domain/shared";
 import type { AuthoritativePublishingProjectRepository } from "@/services/storage";
 import type { AuthoritativePublishingRevisionMapper } from "@/integrations/vesko-publishing";
@@ -190,6 +190,9 @@ export type AuthoritativeMerchantPublishServiceInput = Readonly<{
   preparationStore: MerchantPublishPreparationStore;
   revisionMapper: AuthoritativePublishingRevisionMapper;
   acceptedAiAuthority?: TrustedAcceptedAiPublishingAuthority;
+  manualEvidenceAuthority?: Readonly<{
+    resolveCurrentEvidenceReferences(input: { projectId: string }): Promise<unknown>;
+  }>;
   afterPublish?: (input: { projectId: string; request: Request }) => Promise<void>;
 }>;
 
@@ -234,7 +237,16 @@ export class AuthoritativeMerchantPublishService {
 
     const authority =
       input.data.authority.kind === "manual"
-        ? { kind: "manual" as const }
+        ? {
+            kind: "manual" as const,
+            currentEvidenceReferences: this.#input.manualEvidenceAuthority
+              ? z.array(pageFactEvidenceReferenceSchema).parse(
+                  await this.#input.manualEvidenceAuthority.resolveCurrentEvidenceReferences({
+                    projectId: input.data.projectId,
+                  }),
+                )
+              : [],
+          }
         : this.#input.acceptedAiAuthority
           ? {
               kind: "accepted-ai" as const,

@@ -9,10 +9,12 @@ const profiles = [
     name: "brand-led editorial",
     instruction: "Redesign the entire storefront in a premium editorial direction.",
     selected: [
-      ["homepageHero", "fullBleed"],
+      ["homepageHero", "fullBleedOverlay"],
       ["homepageFeaturedCollections", "imageLed"],
       ["homepagePromotion", "imageLed"],
+      ["homepageEditorial", "lookbookGallery"],
       ["homepageFeaturedProducts", "editorial"],
+      ["homepageProof", "quoteSpotlight"],
       ["homepageTrust", "minimal"],
     ],
   },
@@ -23,6 +25,8 @@ const profiles = [
       ["homepageHero", "asymmetric"],
       ["homepageFeaturedProducts", "compact"],
       ["homepageCollectionNavigation", "grid"],
+      ["homepageEditorial", "continuationCta"],
+      ["homepageProof", "serviceAssurance"],
       ["homepageTrust", "threeColumn"],
     ],
   },
@@ -30,9 +34,11 @@ const profiles = [
     name: "balanced warm",
     instruction: "Redesign the entire storefront in a warm approachable direction.",
     selected: [
-      ["homepageHero", "editorial"],
+      ["homepageHero", "editorialSplit"],
+      ["homepageEditorial", "brandStory"],
       ["homepageFeaturedCollections", "editorialCards"],
       ["homepageFeaturedProducts", "standard"],
+      ["homepageProof", "proofGrid"],
       ["homepageTrust", "cards"],
     ],
   },
@@ -45,6 +51,8 @@ const bridgeComponents = [
   "homepageCollectionNavigation",
   "homepagePromotion",
   "homepageTrust",
+  "homepageEditorial",
+  "homepageProof",
 ] as const;
 
 type GeneratedProposal = {
@@ -175,6 +183,20 @@ async function expectRenderedProfile(
       surface.locator('[data-component="homepagePromotion"] [data-asset-id]'),
     ).toHaveCount(1);
   }
+  if ((await surface.locator('[data-component="homepageEditorial"]').count()) > 0) {
+    const editorial = surface.locator('[data-component="homepageEditorial"]');
+    if ((await editorial.getAttribute("data-variant")) === "continuationCta") {
+      await expect(editorial.locator("[data-asset-id]")).toHaveCount(0);
+    } else {
+      await expect(editorial.locator("[data-asset-id]")).not.toHaveCount(0);
+    }
+  }
+  if ((await surface.locator('[data-component="homepageProof"]').count()) > 0) {
+    await expect(surface.locator('[data-component="homepageProof"]')).toHaveAttribute(
+      "data-evidence-state",
+      "approved",
+    );
+  }
 }
 
 test("P10A-04C renders executable homepage profiles through the deterministic bridge without browser or provider errors", async ({
@@ -183,6 +205,7 @@ test("P10A-04C renders executable homepage profiles through the deterministic br
   test.setTimeout(180_000);
   const browserErrors: string[] = [];
   const providerRequests: string[] = [];
+  const publishFailures: unknown[] = [];
   await page.route("https://lumo.example/**", (route) =>
     route.fulfill({
       body: '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900"><title>Lumo fixture asset</title></svg>',
@@ -197,6 +220,11 @@ test("P10A-04C renders executable homepage profiles through the deterministic br
     const url = new URL(request.url());
     if (url.hostname === "api.openai.com" || url.hostname.endsWith(".openai.com")) {
       providerRequests.push(request.url());
+    }
+  });
+  page.on("response", async (response) => {
+    if (response.url().endsWith("/api/storefront-publish") && !response.ok()) {
+      publishFailures.push(await response.json().catch(() => ({ status: response.status() })));
     }
   });
 
@@ -238,7 +266,23 @@ test("P10A-04C renders executable homepage profiles through the deterministic br
     `/projects/${projectId}/publish?p9-05b-session=${encodeURIComponent(premium.sessionId)}`,
   );
   await page.getByRole("button", { name: /Tarkista julkaisu|Review publish/ }).click();
+  await expect
+    .poll(async () => ({
+      confirm: await page
+        .getByRole("button", { name: /Julkaise verkkokauppa|Publish storefront/ })
+        .count(),
+      publishFailures,
+    }))
+    .toEqual({ confirm: 1, publishFailures: [] });
   await page.getByRole("button", { name: /Julkaise verkkokauppa|Publish storefront/ }).click();
+  await expect
+    .poll(async () => ({
+      success: await page
+        .getByRole("heading", { name: /julkaistiin onnistuneesti|published successfully/i })
+        .count(),
+      publishFailures,
+    }))
+    .toEqual({ success: 1, publishFailures: [] });
   await expect(
     page.getByRole("heading", { name: /julkaistiin onnistuneesti|published successfully/i }),
   ).toBeVisible();

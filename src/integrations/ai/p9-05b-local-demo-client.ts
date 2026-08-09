@@ -6,7 +6,11 @@ import {
 } from "@/application/accepted-ai-receipt-wiring";
 import { catalogueDisplayModelSchema } from "@/domain/catalogue";
 import { projectSchema } from "@/domain/project";
-import { storefrontSnapshotSchema } from "@/domain/storefront";
+import {
+  pageFactEvidenceReferenceSchema,
+  storefrontSnapshotSchema,
+  type PageFactEvidenceReference,
+} from "@/domain/storefront";
 import type { ProjectAggregate } from "@/services/storage";
 
 export type P905bLocalDemoSynchronizationCategory =
@@ -161,7 +165,7 @@ export async function loadP905bLocalDemoSavedAggregate(input: {
 export async function loadP905bLocalDemoPublishedProjection(input: {
   projectId: string;
   sessionId: string;
-}): Promise<ProjectAggregate> {
+}): Promise<ProjectAggregate & { evidenceReferences: PageFactEvidenceReference[] }> {
   const response = await fetch(
     `/api/demo/p9-05b/published?projectId=${encodeURIComponent(input.projectId)}`,
     { headers: { "x-veskify-p9-05b-session": input.sessionId } },
@@ -187,8 +191,24 @@ export async function loadP905bLocalDemoPublishedProjection(input: {
     "publishedSnapshot" in projection
       ? storefrontSnapshotSchema.safeParse(projection.publishedSnapshot)
       : null;
-  if (!project?.success || !catalogue?.success || !publishedSnapshot?.success) {
+  const evidenceReferences =
+    "evidenceReferences" in projection && Array.isArray(projection.evidenceReferences)
+      ? projection.evidenceReferences.map((reference) =>
+          pageFactEvidenceReferenceSchema.safeParse(reference),
+        )
+      : null;
+  if (
+    !project?.success ||
+    !catalogue?.success ||
+    !publishedSnapshot?.success ||
+    !evidenceReferences?.every((reference) => reference.success)
+  ) {
     throw new P905bLocalDemoSavedAggregateClientError();
   }
-  return { project: project.data, catalogue: catalogue.data, snapshots: [publishedSnapshot.data] };
+  return {
+    project: project.data,
+    catalogue: catalogue.data,
+    snapshots: [publishedSnapshot.data],
+    evidenceReferences: evidenceReferences.map((reference) => reference.data),
+  };
 }

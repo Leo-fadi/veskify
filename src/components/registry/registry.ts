@@ -64,6 +64,7 @@ export function validateRegisteredSnapshot(
   activeLocale: Locale = "en",
   primaryLocale: Locale = "en",
   enabledLocales?: readonly Locale[],
+  evidenceReferences: StorefrontRenderContext["evidenceReferences"] = [],
 ): StorefrontSnapshot {
   const snapshot = storefrontSnapshotSchema.parse(input);
   if (snapshot.sharedFrame) validateCommercialSharedFrameSnapshot(snapshot);
@@ -74,6 +75,7 @@ export function validateRegisteredSnapshot(
         enabledLocales,
         catalogue,
         snapshot,
+        evidenceReferences,
       })
     : undefined;
   if (snapshot.sharedFrame) {
@@ -116,6 +118,7 @@ export function createStorefrontRenderContext({
   pagePathPrefix = "",
   pagePathSuffix = "",
   renderTarget = "preview",
+  evidenceReferences = [],
 }: {
   activeLocale: Locale;
   primaryLocale: Locale;
@@ -126,6 +129,7 @@ export function createStorefrontRenderContext({
   pagePathPrefix?: string;
   pagePathSuffix?: string;
   renderTarget?: StorefrontRenderContext["renderTarget"];
+  evidenceReferences?: StorefrontRenderContext["evidenceReferences"];
 }): StorefrontRenderContext {
   const parsedActiveLocale = localeSchema.parse(activeLocale);
   const parsedPrimaryLocale = localeSchema.parse(primaryLocale);
@@ -154,5 +158,6 @@ export function createStorefrontRenderContext({
     pagePaths,
     homePath: homePage ? pagePaths[homePage.id] : undefined,
     renderTarget,
+    evidenceReferences,
   };
 }

@@ -10,7 +10,10 @@ import {
 } from "@/application/draft-save";
 import type { AIProvider } from "@/application/ai-provider";
 import type { StorefrontAIProvider } from "@/application/ai-storefront-generation";
-import { createServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
+import {
+  createServerWholeStorefrontPlanningClient,
+  ServerWholeStorefrontPlanningClient,
+} from "@/integrations/ai/whole-storefront-runtime-client";
 import {
   createCatalogueStorefrontCommerceRouteAdapter,
   type CollectionCommerceRoutePresentation,
@@ -36,12 +39,14 @@ import {
   getComponentDefinition,
   merchantEditorSectionLabel,
   validateRegisteredPage,
+  type StorefrontRenderContext,
 } from "@/components/registry";
 import { brandSystemToCssVariables, type BrandSystem } from "@/domain/design-system";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
 import type { AiStorefrontProposal } from "@/application/ai-storefront";
 import {
   canonicalValueFingerprint,
+  type PageFactEvidenceReference,
   type PageModel,
   type PageType,
   type StorefrontSnapshot,
@@ -95,6 +100,7 @@ type LocalDemoBridge = {
   sessionId: string;
   authoritativeRevision: number;
   baselineFingerprint: string;
+  evidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
 };
 type ReadyState = {
   status: "ready";
@@ -348,6 +354,9 @@ export function ProjectEditorClient({
   );
   const [acceptedReceiptAuthority, setAcceptedReceiptAuthority] =
     useState<AcceptedAiReceiptClientAuthority>();
+  const [currentEvidenceReferences, setCurrentEvidenceReferences] = useState<
+    readonly PageFactEvidenceReference[]
+  >(() => structuredClone(localDemoBridge?.evidenceReferences ?? []));
   const pendingAcceptedReceiptAuthority = useRef<AcceptedAiReceiptClientAuthority | undefined>(
     undefined,
   );
@@ -432,6 +441,7 @@ export function ProjectEditorClient({
             catalogue: aggregate.catalogue,
             snapshot: draft,
             pagePathPrefix: `/projects/${projectId}`,
+            evidenceReferences: localDemoBridge?.evidenceReferences,
           });
           const pages = draft.pages.filter((page) => editorPageTypes.has(page.type));
           pages.forEach((page) => validateRegisteredPage(page, context));
@@ -498,6 +508,7 @@ export function ProjectEditorClient({
           catalogue: readyState.aggregate.catalogue,
           snapshot: activeDraft,
           pagePathPrefix: `/projects/${projectId}`,
+          evidenceReferences: currentEvidenceReferences,
         })
       : undefined;
   const agent = useDesignAgentSession({
@@ -519,9 +530,16 @@ export function ProjectEditorClient({
     disabled: saveState.status === "saving",
     provider: aiProvider,
     storefrontProvider: resolvedStorefrontAiProvider,
+    currentEvidenceReferencesForStorefrontProposal:
+      resolvedStorefrontAiProvider instanceof ServerWholeStorefrontPlanningClient
+        ? (proposalId) =>
+            resolvedStorefrontAiProvider.currentEvidenceReferencesForProposal(proposalId)
+        : undefined,
     initialStorefrontProposal: importedDemoProposal,
     analytics: proposalAnalytics,
     analyticsRoute: `/projects/${projectId}/editor`,
+    onStorefrontEvidenceAuthority: (evidenceReferences) =>
+      setCurrentEvidenceReferences(structuredClone(evidenceReferences)),
     onAcceptedPage: (acceptedPage) => {
       const committedPage =
         editorHistory?.commit(acceptedPage, "Apply design proposal") ??
