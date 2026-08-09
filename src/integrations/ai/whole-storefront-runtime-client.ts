@@ -9,6 +9,19 @@ import {
   type AiStorefrontProviderRequest,
   type StorefrontAIProvider,
 } from "@/application/ai-storefront-generation";
+import {
+  pageFactEvidenceReferenceSchema,
+  type PageFactEvidenceReference,
+} from "@/domain/storefront";
+import { z } from "zod";
+
+const successSchema = z
+  .object({
+    ok: z.literal(true),
+    proposal: z.unknown(),
+    currentEvidenceReferences: z.array(pageFactEvidenceReferenceSchema).default([]),
+  })
+  .strict();
 
 const failureSchema = {
   safeParse(value: unknown) {
@@ -52,9 +65,16 @@ export class ServerWholeStorefrontPlanningClient implements StorefrontAIProvider
     "registeredWholeStorefrontDirection",
   ] as const;
   readonly #p905bSessionId?: string;
+  readonly #evidenceReferencesByProposalId = new Map<string, PageFactEvidenceReference[]>();
 
   constructor({ p905bSessionId }: { p905bSessionId?: string } = {}) {
     this.#p905bSessionId = p905bSessionId;
+  }
+
+  currentEvidenceReferencesForProposal(proposalId: string): PageFactEvidenceReference[] {
+    const references = structuredClone(this.#evidenceReferencesByProposalId.get(proposalId) ?? []);
+    this.#evidenceReferencesByProposalId.delete(proposalId);
+    return references;
   }
 
   async proposeStorefront(request: AiStorefrontProviderRequest): Promise<unknown> {
@@ -102,10 +122,9 @@ export class ServerWholeStorefrontPlanningClient implements StorefrontAIProvider
       );
     }
     diagnostic("response_decoding_completed", "success", response.status);
+    const success = successSchema.safeParse(body);
     const parsed = aiStorefrontProviderResponseSchema.safeParse(
-      body && typeof body === "object" && "ok" in body && body.ok === true
-        ? (body as unknown as { proposal: unknown }).proposal
-        : null,
+      success.success ? success.data.proposal : null,
     );
     if (!response.ok) {
       const failure = failureSchema.safeParse(body);
@@ -141,6 +160,10 @@ export class ServerWholeStorefrontPlanningClient implements StorefrontAIProvider
         response.status,
       );
     }
+    this.#evidenceReferencesByProposalId.set(
+      parsed.data.proposal.id,
+      structuredClone(success.success ? success.data.currentEvidenceReferences : []),
+    );
     return parsed.data;
   }
 }

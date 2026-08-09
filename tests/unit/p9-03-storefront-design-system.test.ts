@@ -28,6 +28,7 @@ import {
   createStandaloneAuthoritativeWholeStorefrontPlanningContextSource,
   createStandaloneServerWholeStorefrontPlanningAuthority,
 } from "@/integrations/ai/whole-storefront-runtime-authority";
+import { ServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
 import { createWholeStorefrontPlanningRouteHandler } from "@/app/api/ai/whole-storefront-proposals/handler";
 
 type Seed = typeof aurumNordicSeed | typeof karvonenSeed;
@@ -302,8 +303,18 @@ describe("P9-03 Storefront Design System v1", () => {
         body: JSON.stringify(requestFor(karvonenSeed)),
       }),
     );
-    const body = (await response.json()) as { proposal: unknown };
+    const body = (await response.json()) as {
+      proposal: unknown;
+      currentEvidenceReferences: Array<Record<string, unknown>>;
+    };
     expect(response.status, JSON.stringify(body)).toBe(200);
+    expect(body.currentEvidenceReferences).toEqual([
+      expect.objectContaining({
+        source: "merchant-approved",
+        status: "approved",
+        approvalAuthorityId: "user_standalone",
+      }),
+    ]);
     const envelope = aiStorefrontProviderResponseSchema.parse(body.proposal);
     expect(
       envelope.proposal.operations.some(
@@ -351,6 +362,25 @@ describe("P9-03 Storefront Design System v1", () => {
     expect(accepted.state).toBe("accepted");
     expect(coordinator.undo()).toEqual(karvonenSeed.draftSnapshot);
     expect(coordinator.redo()).toEqual(accepted.activeDraft);
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      Response.json({
+        ok: true,
+        proposal: body.proposal,
+        currentEvidenceReferences: body.currentEvidenceReferences,
+      }),
+    );
+    try {
+      const client = new ServerWholeStorefrontPlanningClient();
+      const clientEnvelope = aiStorefrontProviderResponseSchema.parse(
+        await client.proposeStorefront(requestFor(karvonenSeed)),
+      );
+      expect(client.currentEvidenceReferencesForProposal(clientEnvelope.proposal.id)).toEqual(
+        body.currentEvidenceReferences,
+      );
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 
   it("rejects an incompatible request direction and accepts the matching brief direction", async () => {

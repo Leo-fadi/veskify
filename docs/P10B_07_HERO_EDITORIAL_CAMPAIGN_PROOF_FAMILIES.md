@@ -90,7 +90,10 @@ approval authority and approval fingerprint. `content.items` is protected read-o
 content, but its embedded approval fields never establish current authority. Generation derives
 the current brand fact from the approved Storefront Design Brief, while render and publication
 conformance require the exact reference to resolve in a separately supplied current-evidence
-projection. A changed revision, revoked approval or changed fingerprint therefore fails closed.
+projection. The server runtime transports that projection beside the validated proposal envelope,
+and the editor consumes it by proposal identity; provider output and embedded proof content cannot
+populate this authority. A changed revision, revoked approval or changed fingerprint therefore
+fails closed.
 
 `resolveHomepageProofContent` expresses the registered omission/failure contract:
 

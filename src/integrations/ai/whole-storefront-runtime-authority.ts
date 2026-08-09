@@ -21,6 +21,7 @@ import { StorefrontGenerationScopeError } from "@/application/ai-storefront-gene
 import { recordStorefrontDiagnostic } from "@/application/ai-storefront-generation";
 import {
   compileWholeStorefrontProposal,
+  projectWholeStorefrontEvidenceReferences,
   projectWholeStorefrontRuntimePage,
   type WholeStorefrontProposal,
   type WholeStorefrontRuntimeComponent,
@@ -72,6 +73,7 @@ import {
 } from "@/domain/source-discovery";
 import { idSchema, type Locale } from "@/domain/shared";
 import {
+  pageFactEvidenceReferenceSchema,
   storefrontSnapshotSchema,
   type ApprovedAssetPlacementOperation,
   type PageModel,
@@ -254,7 +256,13 @@ function validatedAuthoritativePlanningContext(
   };
 }
 
-const responseSchema = z.object({ ok: z.literal(true), proposal: z.unknown() }).strict();
+const responseSchema = z
+  .object({
+    ok: z.literal(true),
+    proposal: z.unknown(),
+    currentEvidenceReferences: z.array(pageFactEvidenceReferenceSchema),
+  })
+  .strict();
 
 function response(status: number, body: unknown) {
   return Response.json(body, { status });
@@ -844,7 +852,16 @@ export function createServerWholeStorefrontPlanningHandler({
         planningInput: context.planningInput,
       });
       proposalRecorded = Boolean(context.recordValidatedProposal);
-      const completed = response(200, responseSchema.parse({ ok: true, proposal: envelope }));
+      const completed = response(
+        200,
+        responseSchema.parse({
+          ok: true,
+          proposal: envelope,
+          currentEvidenceReferences: projectWholeStorefrontEvidenceReferences(
+            context.planningInput,
+          ),
+        }),
+      );
       diagnostic("response_completed", "success", completed.status);
       return completed;
     } catch (error) {
