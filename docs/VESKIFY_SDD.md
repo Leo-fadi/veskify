@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 9 August 2026, P10B-09 commercial homepage profiles                    |
+| Verified baseline         | 9 August 2026, P10B-12 content and support page families               |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B-12 | 9 August 2026 | P10B-12 delivery | Establish fifteen structurally distinct content/support `PageBlueprint` profiles; resolve facts only from current approved brief evidence; preserve canonical page-family, locale, navigation, snapshot, save/reload, compiler, and renderer authority; and retain 61 zero-provider four-width Chromium checks. |
 | 1.3.0 P10B-09 | 9 August 2026 | P10B-09 delivery | Establish six fingerprinted commercial homepage PageBlueprint profiles with evidence/cardinality authority, exact frame/story/card composition, deterministic lifecycle reachability, and retained four-width browser evidence. |
 | 1.3.0 P10B-07 | 8 August 2026 | P10B-07 delivery | Establish commercial-ready hero, editorial, campaign, service and evidence-grounded proof families with six meaningful hero anatomies, canonical art direction, PageBlueprint generation reachability, lifecycle preservation and four-width browser evidence. |
 | 1.3.0 P10B-08 | 8 August 2026 | P10B-08 delivery | Establish one fingerprinted product-card authority and renderer, five meaningful anatomies, exact protected-commerce and P10B-04 media lineage, deterministic legacy migration, generation/publish reachability, and four-width browser evidence. |
@@ -71,9 +72,10 @@ orchestration and publishing is **Baseline / closed** under the formal
 [`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md) exit audit. P10B is now **Partial / active**:
 P10B-01 commercial grammar, P10B-02 parametric BrandSystem / Design DNA, P10B-03 component anatomy,
 P10B-04 responsive image/art-direction authority, P10B-05 site-map/page-family authority, P10B-06
-commercial shared-frame families, P10B-07 hero/editorial/campaign/proof families, and P10B-08
-canonical product-card authority, and P10B-09 commercial homepage profiles are Baseline. P10B-10
-through P10B-18 remain Planned. The current
+commercial shared-frame families, P10B-07 hero/editorial/campaign/proof families, P10B-08
+canonical product-card authority, P10B-09 commercial homepage profiles, and P10B-12 content and
+support page families are Baseline. P10B-10, P10B-11, and P10B-13 through P10B-18 remain Planned.
+The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -212,7 +214,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
-| Commercial storefront generation system              | **Partial**  | P10B-01 grammar, P10B-02 Design DNA, P10B-03 anatomy, P10B-04 art direction, P10B-05 page-set authority, P10B-06 shared-frame authority, P10B-07 commercial content families, P10B-08 product-card authority, and P10B-09 homepage profiles are Baseline; complete-storefront commercial quality/diversity remains Planned. |
+| Commercial storefront generation system              | **Partial**  | P10B-01 grammar, P10B-02 Design DNA, P10B-03 anatomy, P10B-04 art direction, P10B-05 page-set authority, P10B-06 shared-frame authority, P10B-07 commercial content families, P10B-08 product-card authority, P10B-09 homepage profiles, and P10B-12 content/support pages are Baseline; complete-storefront commercial quality/diversity remains Planned. |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
 
@@ -473,8 +475,14 @@ P10B-05 page-set authority is Baseline under
 [`P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md`](P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md).
 P10B-06 shared-frame authority is Baseline under
 [`P10B_06_COMMERCIAL_SHARED_FRAME_FAMILIES.md`](P10B_06_COMMERCIAL_SHARED_FRAME_FAMILIES.md).
+P10B-07 hero/editorial/campaign/proof authority is Baseline under
+[`P10B_07_HERO_EDITORIAL_CAMPAIGN_PROOF_FAMILIES.md`](P10B_07_HERO_EDITORIAL_CAMPAIGN_PROOF_FAMILIES.md).
 P10B-08 product-card authority is Baseline under
 [`P10B_08_CANONICAL_PRODUCT_CARD_AND_MERCHANDISING.md`](P10B_08_CANONICAL_PRODUCT_CARD_AND_MERCHANDISING.md).
+P10B-09 homepage profiles are Baseline under
+[`P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md`](P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md),
+and P10B-12 content/support pages are Baseline under
+[`P10B_12_CONTENT_AND_SUPPORT_PAGE_FAMILIES.md`](P10B_12_CONTENT_AND_SUPPORT_PAGE_FAMILIES.md).
 These authorities remain disjoint: P10B-03 consumes P10B-02 compatibility where relevant without
 duplicating Design DNA authority, and P10B-05 owns only site-map/page-family/PageBlueprint page-set
 authority.
@@ -728,7 +736,33 @@ Twenty-four retained browser images cover six profiles at four widths through th
 renderer. Details are in
 [`P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md`](P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md).
 
-### 10.12 Planned commercial generation authority
+### 10.12 P10B-12 content and support page-family authority
+
+P10B-12 adds fifteen registered `PageBlueprint` profiles to the existing P10B-05 content/support
+families: two About, two Contact, two locations, two FAQ, one service, one policy, two generic,
+and three campaign/editorial compositions. The profiles select the existing P10B-05 page family,
+route, locale, navigation, and shared-frame authority; they do not introduce another page graph,
+CMS, recipe engine, fact registry, or snapshot type.
+
+The only factual input is a strict localized content-support fact document resolved from the current
+approved Storefront Design Brief evidence identity. Caller declarations and body fields never
+authorize content. Evidence and family identity are rechecked at materialization, renderer, and
+compiler boundaries. Missing, stale, revoked, superseded, unapproved, mismatched, or malformed
+evidence fails closed. Required pages without approved facts fail; optional pages omit only through
+the P10B-05 registered policy. No policy, service, delivery, location, guarantee, certification,
+or compliance fact is invented.
+
+The `contentSupport` component consumes P10B-03 anatomy/meaningful-variant authority and P10B-02
+Design DNA through the existing render context. Profiles use P10B-06 frames and reuse P10B-07
+editorial/campaign renderers. Approved media remains governed by existing P10B-04/P10B-07/P10B-08
+authority and is omitted when unsupported; P10B-12 does not manufacture imagery or calls to action.
+Exact fact documents are retained in `StorefrontSnapshot` beside their bound sections and preserved
+through save/reload, deterministic publish compilation, and rendering. Deterministic and 61
+zero-provider four-width Chromium checks establish
+profile, provenance, locale/navigation, protected-commerce, lifecycle, and semantic-renderer
+evidence. This is a family baseline, not P10B's final commercial quality gate.
+
+### 10.13 Planned commercial generation authority
 
 `BrandSystem` owns merchant-wide bounded Design DNA across semantic colour, approved font roles and
 pairing, type scale/weights, spacing and section rhythm, gutters/containers, grid/card/control
@@ -909,7 +943,8 @@ The binding sequence is:
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
    formal P10A phase closure record.
 2. **P10B — Commercial Storefront Generation System v1.** **Partial / active phase.** P10B-01
-   through P10B-09 are Baseline; P10B-10 through P10B-18 remain Planned.
+   through P10B-09 and P10B-12 are Baseline; P10B-10, P10B-11, and P10B-13 through P10B-18 remain
+   Planned.
    Deliver complete commercially credible storefronts with bounded material diversity through
    registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and

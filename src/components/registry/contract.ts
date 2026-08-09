@@ -4,6 +4,7 @@ import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { Locale } from "@/domain/shared";
 import type {
   NavigationModel,
+  ContentSupportFactDocument,
   PageFactEvidenceReference,
   PageModel,
   PageType,
@@ -28,6 +29,8 @@ export type StorefrontRenderContext = {
   renderTarget?: "editor" | "preview" | "published";
   /** Current, externally resolved proof authority. Snapshot content never establishes approval. */
   evidenceReferences?: readonly PageFactEvidenceReference[];
+  /** Current, externally resolved support facts. Snapshot sections carry only document IDs. */
+  contentSupportFactDocuments?: readonly ContentSupportFactDocument[];
 };
 
 /** Resolves only canonical snapshot navigation and commerce identities to routes. */

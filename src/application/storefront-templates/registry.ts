@@ -26,6 +26,7 @@ import {
 } from "./contract";
 import { pageFamilyBaselinePagePlans } from "./page-family-baselines";
 import { commercialHomepagePagePlans } from "./commercial-homepage-profiles";
+import { commercialContentSupportPagePlans } from "./commercial-content-support-profiles";
 
 export {
   commercialHomepageProfileIds,
@@ -40,6 +41,16 @@ export {
   CommercialHomepageProfileError,
   type CommercialHomepageProfileId,
 } from "./commercial-homepage-profiles";
+export {
+  COMMERCIAL_CONTENT_SUPPORT_PROFILE_VERSION,
+  commercialContentSupportProfileIds,
+  commercialContentSupportProfileIdSchema,
+  getCommercialContentSupportProfile,
+  listCommercialContentSupportProfiles,
+  validateCommercialContentSupportProfileLibrary,
+  CommercialContentSupportProfileError,
+  type CommercialContentSupportProfileId,
+} from "./commercial-content-support-profiles";
 
 const createdAt = "2026-07-18T00:00:00.000Z";
 const allPageTypes = ["home", "collection", "product"] as const;
@@ -883,6 +894,7 @@ const profilesById = new Map(
     ...validatedTemplates.flatMap((templateDefinition) => templateDefinition.pagePlans),
     ...pageFamilyBaselinePagePlans,
     ...commercialHomepagePagePlans,
+    ...commercialContentSupportPagePlans,
   ].flatMap((pagePlanDefinition) =>
     pagePlanDefinition.profile
       ? [[pagePlanDefinition.profile.id, pagePlanDefinition] as const]

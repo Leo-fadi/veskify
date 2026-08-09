@@ -57,6 +57,36 @@ const profile = (id: string) => Object.freeze({ id, version: "1.0.0" as const })
 const bothNavigation = ["primary", "footer"] as const;
 const contentProfile = profile("blueprint-site-map-content-baseline");
 const stateProfile = profile("blueprint-site-map-state-baseline");
+const contentSupportProfiles: Readonly<
+  Record<
+    | "about"
+    | "contact"
+    | "store-locations"
+    | "faq"
+    | "shipping-information"
+    | "returns-information"
+    | "policy-legal"
+    | "generic-content",
+    readonly Readonly<{ id: string; version: "1.0.0" }>[]
+  >
+> = Object.freeze({
+  about: [profile("content-about-story"), profile("content-about-process")],
+  contact: [profile("content-contact-channels"), profile("content-contact-directory")],
+  "store-locations": [
+    profile("content-location-directory"),
+    profile("content-location-appointments"),
+  ],
+  faq: [profile("content-faq-disclosure"), profile("content-faq-topic-guide")],
+  "shipping-information": [profile("content-service-details")],
+  "returns-information": [profile("content-service-details")],
+  "policy-legal": [profile("content-policy-reading")],
+  "generic-content": [profile("content-generic-reading"), profile("content-generic-editorial")],
+});
+const campaignContentSupportProfiles = [
+  profile("landing-campaign-editorial"),
+  profile("landing-campaign-image-led"),
+  profile("landing-campaign-story"),
+] as const;
 const requiredSingleton = Object.freeze({ kind: "required-singleton" as const });
 const contextualCollection = Object.freeze({
   kind: "contextual" as const,
@@ -154,7 +184,7 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
       ["shipping-information", "approved-facts"],
       ["returns-information", "approved-facts"],
       ["policy-legal", "approved-facts"],
-      ["generic-content", "none"],
+      ["generic-content", "approved-facts"],
     ] as const
   ).map(([id, evidenceRequirement]) =>
     definition({
@@ -162,17 +192,15 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
       pageType: "content",
       routeClass: "content",
       commerceContext: "none",
-      allowedProfileReferences: [contentProfile],
+      allowedProfileReferences: [contentProfile, ...contentSupportProfiles[id]],
       navigationEligibility: bothNavigation,
       evidenceRequirement,
       permittedEvidenceKinds:
-        evidenceRequirement === "none"
-          ? []
-          : id === "contact" || id === "store-locations"
-            ? ["footer-contact", "merchant-brand-fact"]
-            : ["merchant-brand-fact"],
+        id === "contact" || id === "store-locations"
+          ? ["footer-contact", "merchant-brand-fact"]
+          : ["merchant-brand-fact"],
       presenceAuthority: id === "generic-content" ? optionalRepeatable : optionalSingleton,
-      omissionBehavior: evidenceRequirement === "none" ? "never" : "omit-optional-or-fail-required",
+      omissionBehavior: "omit-optional-or-fail-required",
       commerceOperationAuthority: "read-only-presentation",
     }),
   ),
@@ -181,7 +209,10 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     pageType: "landing",
     routeClass: "campaign",
     commerceContext: "none",
-    allowedProfileReferences: [profile("blueprint-site-map-campaign-baseline")],
+    allowedProfileReferences: [
+      profile("blueprint-site-map-campaign-baseline"),
+      ...campaignContentSupportProfiles,
+    ],
     navigationEligibility: bothNavigation,
     evidenceRequirement: "approved-facts",
     permittedEvidenceKinds: ["merchant-brand-fact", "marketing-copy-candidate"],

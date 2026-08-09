@@ -181,10 +181,10 @@ describe("P10A-07B human commercial review protocol", () => {
     );
 
     expect(sourceFingerprint).toBe(
-      "v1_5120_c4857e3fd9b3fa3cd676db385309c22edb79f5a9d7ac855bf59957b66236bca6",
+      "v1_5153_e156a754c26c9fdbf21ad3a00276358224b5041360a474e88fbacbcbaec6ac91",
     );
     expect(firstFingerprint).toBe(
-      "v1_6523_f6312227290fe789eecb741bb726149405c07bce7b2969a811bb47e8d72e4550",
+      "v1_6556_dc56b963497483c614721d9b8b9eaade91184de3d5c964fc373132b17a0fba8d",
     );
     expect(secondFingerprint).toBe(firstFingerprint);
   });

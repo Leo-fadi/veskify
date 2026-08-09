@@ -26,6 +26,7 @@ import {
   canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
   canonicalValueString,
+  contentSupportFactDocumentSchema,
   navigationModelSchema,
   pageModelSchema,
   pageFactEvidenceReferenceSchema,
@@ -174,6 +175,7 @@ export const compiledPublicationResultSchema = z
         })
         .strict(),
     ),
+    contentSupportFactDocuments: z.array(contentSupportFactDocumentSchema).default([]),
     rendererTarget: z.literal("published"),
     localeAuthority: localeAuthoritySchema,
     validationReportFingerprint: fingerprintSchema,
@@ -931,6 +933,51 @@ function assertCurrentProofEvidence(
   }
 }
 
+function assertCurrentContentSupportFacts(
+  snapshot: StorefrontSnapshot,
+  currentEvidenceReferences: PublishCompilerInput["currentEvidenceReferences"],
+): void {
+  const documents = new Map(
+    snapshot.contentSupportFactDocuments.map((document) => [document.id, document]),
+  );
+  try {
+    for (const page of snapshot.pages) {
+      for (const section of page.sections) {
+        if (section.component !== "contentSupport") continue;
+        const documentId = z
+          .object({ factDocumentId: idSchema })
+          .strict()
+          .parse(section.content).factDocumentId;
+        const document = documents.get(documentId);
+        if (!document)
+          throw new Error("Content/support publication requires the current fact document.");
+        if (
+          !currentEvidenceReferences.some(
+            (reference) =>
+              canonicalValueString(reference) === canonicalValueString(document.evidence),
+          )
+        ) {
+          throw new Error("Content/support publication facts must have current approved evidence.");
+        }
+        if (
+          !page.pageFamily ||
+          document.payload.familyId !== page.pageFamily.familyId ||
+          !page.pageFamily.evidenceReferences.some(
+            (reference) =>
+              canonicalValueString(reference) === canonicalValueString(document.evidence),
+          )
+        ) {
+          throw new Error(
+            "Content/support publication facts must retain exact page-family authority.",
+          );
+        }
+      }
+    }
+  } catch (cause) {
+    throw new PublishCompilerError("invalid-binding", { cause });
+  }
+}
+
 function assertProductCardAuthority(snapshot: StorefrontSnapshot): void {
   try {
     for (const page of snapshot.pages) {
@@ -1019,6 +1066,7 @@ function compileResult(
       page,
       componentExecutions: page.sections.map(componentExecution),
     })),
+    contentSupportFactDocuments: snapshot.contentSupportFactDocuments,
     rendererTarget: "published" as const,
     localeAuthority,
     validationReportFingerprint,
@@ -1115,6 +1163,7 @@ export function compileStorefrontPublication(inputValue: unknown): TrustedPublis
   assertExactAuthority(input);
   assertSnapshotAuthority(input, snapshot.data, catalogue.data);
   assertCurrentProofEvidence(snapshot.data, input.currentEvidenceReferences);
+  assertCurrentContentSupportFacts(snapshot.data, input.currentEvidenceReferences);
   assertComponentAndRendererAuthority(input, snapshot.data);
   assertProfiles(input, snapshot.data);
   assertProductCardAuthority(snapshot.data);

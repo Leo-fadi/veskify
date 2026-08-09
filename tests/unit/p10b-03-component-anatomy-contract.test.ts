@@ -483,18 +483,19 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
       "legacySuperseded",
       "notYetP10BCommercialReady",
     ]);
-    expect(veskifyComponentDefinitionsV2).toHaveLength(27);
+    expect(veskifyComponentDefinitionsV2).toHaveLength(28);
     expect(
       veskifyComponentDefinitionsV2.reduce(
         (total, definition) => total + definition.variants.length,
         0,
       ),
-    ).toBe(100);
-    const p10b07Promoted = new Set([
+    ).toBe(115);
+    const promotedCommercialDefinitions = new Set([
       "homepageHero",
       "homepagePromotion",
       "homepageEditorial",
       "homepageProof",
+      "contentSupport",
     ]);
     for (const definition of veskifyComponentDefinitionsV2) {
       const anatomy = definition.commercialAnatomy;
@@ -520,7 +521,7 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
               variant.materialDifferences.length === 0,
           ),
         ).toBe(true);
-      } else if (!p10b07Promoted.has(definition.type)) {
+      } else if (!promotedCommercialDefinitions.has(definition.type)) {
         expect(
           entry?.variants.every(
             (variant) =>

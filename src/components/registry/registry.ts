@@ -14,12 +14,17 @@ import {
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import { homepageCommerceBridgeDefinitions } from "./homepage-commerce-bridge";
+import {
+  contentSupportBridgeDefinitions,
+  validateContentSupportPageDocuments,
+} from "./content-support-bridge";
 import type { ComponentDefinition, StorefrontRenderContext } from "./contract";
 import { veskifyLegacyComponentRegistry } from "./legacy-registry";
 
 export const veskifyComponentRegistry = {
   ...veskifyLegacyComponentRegistry,
   ...homepageCommerceBridgeDefinitions,
+  ...contentSupportBridgeDefinitions,
 } as const satisfies Record<string, ComponentDefinition>;
 
 export type RegisteredComponentType = keyof typeof veskifyComponentRegistry;
@@ -55,6 +60,7 @@ export function validateRegisteredPage(
 ): PageModel {
   const page = pageModelSchema.parse(input);
   page.sections.forEach((section) => validateRegisteredSection(section, page.type, context));
+  validateContentSupportPageDocuments(page, context);
   return page;
 }
 
@@ -64,9 +70,14 @@ export function validateRegisteredSnapshot(
   activeLocale: Locale = "en",
   primaryLocale: Locale = "en",
   enabledLocales?: readonly Locale[],
-  evidenceReferences: StorefrontRenderContext["evidenceReferences"] = [],
+  evidenceReferences?: StorefrontRenderContext["evidenceReferences"],
+  contentSupportFactDocuments?: StorefrontRenderContext["contentSupportFactDocuments"],
 ): StorefrontSnapshot {
   const snapshot = storefrontSnapshotSchema.parse(input);
+  const factDocuments = contentSupportFactDocuments ?? snapshot.contentSupportFactDocuments;
+  const currentEvidenceReferences =
+    evidenceReferences ??
+    snapshot.pages.flatMap((page) => page.pageFamily?.evidenceReferences ?? []);
   if (snapshot.sharedFrame) validateCommercialSharedFrameSnapshot(snapshot);
   const context = catalogue
     ? createStorefrontRenderContext({
@@ -75,7 +86,8 @@ export function validateRegisteredSnapshot(
         enabledLocales,
         catalogue,
         snapshot,
-        evidenceReferences,
+        evidenceReferences: currentEvidenceReferences,
+        contentSupportFactDocuments: factDocuments,
       })
     : undefined;
   if (snapshot.sharedFrame) {
@@ -119,17 +131,20 @@ export function createStorefrontRenderContext({
   pagePathSuffix = "",
   renderTarget = "preview",
   evidenceReferences = [],
+  contentSupportFactDocuments,
 }: {
   activeLocale: Locale;
   primaryLocale: Locale;
   enabledLocales?: readonly Locale[];
   onLocaleChange?: (locale: Locale) => void;
   catalogue: CatalogueDisplayModel;
-  snapshot: Pick<StorefrontSnapshot, "navigation" | "pages" | "brandSystem" | "sharedFrame">;
+  snapshot: Pick<StorefrontSnapshot, "navigation" | "pages" | "brandSystem" | "sharedFrame"> &
+    Partial<Pick<StorefrontSnapshot, "contentSupportFactDocuments">>;
   pagePathPrefix?: string;
   pagePathSuffix?: string;
   renderTarget?: StorefrontRenderContext["renderTarget"];
   evidenceReferences?: StorefrontRenderContext["evidenceReferences"];
+  contentSupportFactDocuments?: StorefrontRenderContext["contentSupportFactDocuments"];
 }): StorefrontRenderContext {
   const parsedActiveLocale = localeSchema.parse(activeLocale);
   const parsedPrimaryLocale = localeSchema.parse(primaryLocale);
@@ -159,5 +174,7 @@ export function createStorefrontRenderContext({
     homePath: homePage ? pagePaths[homePage.id] : undefined,
     renderTarget,
     evidenceReferences,
+    contentSupportFactDocuments:
+      contentSupportFactDocuments ?? snapshot.contentSupportFactDocuments ?? [],
   };
 }

@@ -19,6 +19,7 @@ import { dynamicCollectionCommerceComponentByTarget } from "@/components/storefr
 import { dynamicProductDetailComponentByTarget } from "@/components/storefront/dynamic-product-detail";
 import { homepageCommerceComponentByTarget } from "@/components/storefront/homepage-commerce";
 import { veskifyComponentCapabilityManifest } from "./capability-manifest";
+import { contentSupportComponentByTarget } from "./content-support-bridge";
 import { veskifyComponentRegistry } from "./registry";
 import { veskifyComponentDefinitionsV2 } from "./v2-registry";
 
@@ -149,12 +150,13 @@ function registrationFromTargetMap(
   targets: Readonly<Record<RendererTarget, RendererCallable>>,
   variants: readonly string[],
   supportedTargets: readonly RendererTarget[] = rendererTargets,
+  exportName?: string,
 ): RendererRegistration {
   const exportNames = [...new Set(Object.values(targets).map((renderer) => renderer.name))];
   return {
     adapterId,
     ...(componentType === undefined ? {} : { componentType }),
-    exportName: exportNames.join("|"),
+    exportName: exportName ?? exportNames.join("|"),
     supportedTargets: supportedTargets.filter((target) => typeof targets[target] === "function"),
     variantCapabilities: capabilitiesFor(variants, supportedTargets),
   };
@@ -187,6 +189,7 @@ export function collectLiveRendererRegistrations(): readonly RendererRegistratio
           "homepageCollectionNavigation",
           "homepagePromotion",
           "homepageTrust",
+          "contentSupport",
         ].includes(componentType),
     )
     .map(([componentType]) => {
@@ -212,6 +215,16 @@ export function collectLiveRendererRegistrations(): readonly RendererRegistratio
         targets,
         variantsFor(componentType),
       ),
+    ),
+    registrationFromTargetMap(
+      "veskifyContentSupportRenderer",
+      "contentSupport",
+      contentSupportComponentByTarget as unknown as Readonly<
+        Record<RendererTarget, RendererCallable>
+      >,
+      variantsFor("contentSupport"),
+      rendererTargets,
+      "ContentSupportSection",
     ),
     registrationFromTargetMap(
       "veskifyCommerceRenderer",

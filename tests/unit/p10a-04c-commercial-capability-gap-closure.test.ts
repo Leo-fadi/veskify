@@ -225,7 +225,7 @@ describe("P10A-04C commercial capability gap closure", () => {
     const report = createLiveRendererConformanceReport();
     expect(report.commercialGaps).toEqual([]);
     expect(report.blockingDefects).toHaveLength(16);
-    expect(report.metadataGaps).toHaveLength(27);
+    expect(report.metadataGaps).toHaveLength(28);
     expect(report.deliberateFutureCapabilities).toHaveLength(7);
   });
 

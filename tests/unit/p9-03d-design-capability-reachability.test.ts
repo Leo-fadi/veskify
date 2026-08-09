@@ -29,7 +29,7 @@ const directionIds = ["premiumEditorial", "modernTechnical", "warmApproachable"]
 
 const expectedComponentVariantStatusCounts = {
   "fully reachable": 35,
-  "registered but unreachable": 40,
+  "registered but unreachable": 55,
   "planner-visible but lost during compilation": 25,
   "render-only": 0,
 } as const;
@@ -260,7 +260,7 @@ describe("P9-03D design-capability reachability audit", () => {
       request.registry.flatMap((definition) =>
         definition.variants.map((variant) => `${definition.type}:${variant}`),
       ),
-    ).toHaveLength(100);
+    ).toHaveLength(115);
     expect(request.directionOptions.map((direction) => direction.id)).toEqual(
       [...directionIds].sort(),
     );
