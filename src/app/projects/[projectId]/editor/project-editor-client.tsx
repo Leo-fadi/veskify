@@ -428,6 +428,7 @@ export function ProjectEditorClient({
           const context = createStorefrontRenderContext({
             activeLocale: aggregate.project.primaryLocale,
             primaryLocale: aggregate.project.primaryLocale,
+            enabledLocales: aggregate.project.enabledLocales,
             catalogue: aggregate.catalogue,
             snapshot: draft,
             pagePathPrefix: `/projects/${projectId}`,
@@ -493,6 +494,7 @@ export function ProjectEditorClient({
       ? createStorefrontRenderContext({
           activeLocale: readyLocale,
           primaryLocale: readyState.aggregate.project.primaryLocale,
+          enabledLocales: readyState.aggregate.project.enabledLocales,
           catalogue: readyState.aggregate.catalogue,
           snapshot: activeDraft,
           pagePathPrefix: `/projects/${projectId}`,
@@ -684,7 +686,13 @@ export function ProjectEditorClient({
       sensitivity: "accent",
     }) === 0;
   const identity = storefrontShellCopy[locale];
-  const context = readyContext!;
+  const context = {
+    ...readyContext!,
+    onLocaleChange: (nextLocale: Locale) => {
+      if (nextLocale !== locale) agent.closeForLocaleChange();
+      setActiveLocale(nextLocale);
+    },
+  };
   const previewHref = `/projects/${projectId}${page.slug === "/" ? "" : page.slug}`;
   const previewStorefront = proposalStorefrontPreview({
     proposal: agent.generatedStorefrontProposal,

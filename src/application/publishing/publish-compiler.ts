@@ -27,6 +27,7 @@ import {
   canonicalValueString,
   navigationModelSchema,
   pageModelSchema,
+  sharedFrameModelSchema,
   storefrontSnapshotSchema,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
@@ -150,7 +151,13 @@ export const compiledPublicationResultSchema = z
       })
       .strict(),
     brandSystem: brandSystemSchema,
-    sharedFrame: z.object({ navigation: navigationModelSchema }).strict(),
+    sharedFrame: z
+      .object({
+        navigation: navigationModelSchema,
+        frame: sharedFrameModelSchema.optional(),
+        componentExecutions: z.array(componentExecutionSchema).default([]),
+      })
+      .strict(),
     pages: z.array(
       z
         .object({
@@ -347,9 +354,27 @@ function productMediaFingerprint(catalogue: CatalogueDisplayModel): string {
 }
 
 function approvedAssetFingerprint(snapshot: StorefrontSnapshot): string {
+  const sharedFrameSections = snapshot.sharedFrame
+    ? [
+        snapshot.sharedFrame.header,
+        snapshot.sharedFrame.footer,
+        snapshot.sharedFrame.announcement,
+      ].filter((section): section is NonNullable<typeof section> => section !== undefined)
+    : [];
   return `publish-approved-assets-${canonicalValueFingerprint(
-    snapshot.pages
-      .flatMap((page) =>
+    [
+      ...sharedFrameSections.map((section) => ({
+        pageId: snapshot.sharedFrame!.id,
+        sectionId: section.id,
+        placements: [...(section.approvedAssetPlacements ?? [])].sort(
+          (left, right) =>
+            compare(left.assetSlotId, right.assetSlotId) || compare(left.assetId, right.assetId),
+        ),
+        presentations: [...(section.approvedAssetPresentations ?? [])].sort((left, right) =>
+          compare(left.assetId, right.assetId),
+        ),
+      })),
+      ...snapshot.pages.flatMap((page) =>
         page.sections.map((section) => ({
           pageId: page.id,
           sectionId: section.id,
@@ -361,11 +386,11 @@ function approvedAssetFingerprint(snapshot: StorefrontSnapshot): string {
             compare(left.assetId, right.assetId),
           ),
         })),
-      )
-      .sort(
-        (left, right) =>
-          compare(left.pageId, right.pageId) || compare(left.sectionId, right.sectionId),
       ),
+    ].sort(
+      (left, right) =>
+        compare(left.pageId, right.pageId) || compare(left.sectionId, right.sectionId),
+    ),
   )}`;
 }
 
@@ -557,47 +582,73 @@ function assertComponentAndRendererAuthority(
   const supplied = new Map(
     input.authority.componentAuthorities.map((authority) => [authority.componentType, authority]),
   );
+  const assertSection = (
+    section: StorefrontSnapshot["pages"][number]["sections"][number],
+    pageType: StorefrontSnapshot["pages"][number]["type"],
+  ) => {
+    const entry = veskifyComponentCapabilityManifest.getByComponentType(section.component);
+    if (!entry) throw new PublishCompilerError("unknown-component");
+    if (!entry.allowedPageTypes.includes(pageType)) {
+      throw new PublishCompilerError("incompatible-component-variant-profile");
+    }
+    if (!entry.variants.some(({ id }) => id === section.variant)) {
+      throw new PublishCompilerError("incompatible-component-variant-profile");
+    }
+    const authority = supplied.get(section.component);
+    if (!authority) throw new PublishCompilerError("stale-registry-authority");
+    if (
+      canonicalValueString(authority.version) !==
+      canonicalValueString(entry.componentDefinitionVersion)
+    ) {
+      throw new PublishCompilerError("unknown-component-version");
+    }
+    if (authority.capabilityFingerprint !== entry.fingerprint) {
+      throw new PublishCompilerError("stale-registry-authority");
+    }
+    if (
+      authority.renderer.adapterId !== entry.renderer.adapterId ||
+      authority.renderer.exportName !== entry.renderer.exportName
+    ) {
+      throw new PublishCompilerError("unknown-renderer", {
+        cause: new Error(`Component ${section.component} has incompatible renderer authority.`),
+      });
+    }
+    if (!entry.renderer.supportedTargets.includes("published")) {
+      throw new PublishCompilerError("unknown-renderer", {
+        cause: new Error(
+          `Component ${section.component}/${section.variant} has no registered published-renderer target.`,
+        ),
+      });
+    }
+  };
+  if (snapshot.sharedFrame) {
+    for (const section of [
+      snapshot.sharedFrame.header,
+      snapshot.sharedFrame.footer,
+      snapshot.sharedFrame.announcement,
+    ]) {
+      if (section) assertSection(section, "home");
+    }
+  }
   for (const page of snapshot.pages) {
     for (const section of page.sections) {
-      const entry = veskifyComponentCapabilityManifest.getByComponentType(section.component);
-      if (!entry) throw new PublishCompilerError("unknown-component");
-      if (!entry.allowedPageTypes.includes(page.type)) {
-        throw new PublishCompilerError("incompatible-component-variant-profile");
-      }
-      if (!entry.variants.some(({ id }) => id === section.variant)) {
-        throw new PublishCompilerError("incompatible-component-variant-profile");
-      }
-      const authority = supplied.get(section.component);
-      if (!authority) throw new PublishCompilerError("stale-registry-authority");
-      if (
-        canonicalValueString(authority.version) !==
-        canonicalValueString(entry.componentDefinitionVersion)
-      ) {
-        throw new PublishCompilerError("unknown-component-version");
-      }
-      if (authority.capabilityFingerprint !== entry.fingerprint) {
-        throw new PublishCompilerError("stale-registry-authority");
-      }
-      if (
-        authority.renderer.adapterId !== entry.renderer.adapterId ||
-        authority.renderer.exportName !== entry.renderer.exportName
-      ) {
-        throw new PublishCompilerError("unknown-renderer", {
-          cause: new Error(`Component ${section.component} has incompatible renderer authority.`),
-        });
-      }
-      if (!entry.renderer.supportedTargets.includes("published")) {
-        throw new PublishCompilerError("unknown-renderer", {
-          cause: new Error(
-            `Component ${section.component}/${section.variant} has no registered published-renderer target.`,
-          ),
-        });
-      }
+      assertSection(section, page.type);
     }
   }
 }
 
 function assertProfiles(input: PublishCompilerInput, snapshot: StorefrontSnapshot): void {
+  const effectivePageSections = (page: StorefrontSnapshot["pages"][number]) =>
+    snapshot.sharedFrame
+      ? [
+          ...(page.type === "home" && snapshot.sharedFrame.announcement
+            ? [snapshot.sharedFrame.announcement]
+            : []),
+          snapshot.sharedFrame.header,
+          ...page.sections,
+          snapshot.sharedFrame.footer,
+        ]
+      : page.sections;
   const canonicalProfileIds = [...input.authority.profileAuthorities]
     .map(({ profileId }) => profileId)
     .sort(compare);
@@ -632,8 +683,8 @@ function assertProfiles(input: PublishCompilerInput, snapshot: StorefrontSnapsho
       const exactRegisteredPage = snapshot.pages.find(
         (page) =>
           page.type === pagePlan.pageType &&
-          page.sections.length === pagePlan.profile!.componentSelections.length &&
-          page.sections.every((section, index) => {
+          effectivePageSections(page).length === pagePlan.profile!.componentSelections.length &&
+          effectivePageSections(page).every((section, index) => {
             const selection = pagePlan.profile!.componentSelections[index];
             return (
               selection?.component === section.component &&
@@ -670,7 +721,7 @@ function assertProfiles(input: PublishCompilerInput, snapshot: StorefrontSnapsho
     const exactPage = snapshot.pages.find((page) => {
       if (page.type !== pagePlan.pageType) return false;
       let projectedIndex = 0;
-      for (const section of page.sections) {
+      for (const section of effectivePageSections(page)) {
         while (
           projectedIndex < projected.length &&
           (projected[projectedIndex]?.component !== section.component ||
@@ -710,72 +761,80 @@ function containsProtectedCommerceTruth(value: unknown): boolean {
 
 function assertAssets(snapshot: StorefrontSnapshot): void {
   const dna = resolveBrandSystemDesignDna(snapshot.brandSystem);
-  for (const page of snapshot.pages) {
-    for (const section of page.sections) {
-      const placements = section.approvedAssetPlacements ?? [];
-      if (placements.some(({ assetSlotId }) => assetSlotId === "productMedia")) {
-        throw new PublishCompilerError("product-media-violation");
-      }
-      try {
-        validateComponentAssetAssignments(
-          placements.map((placement) => ({
-            slotId: placement.assetSlotId,
-            assetId: placement.assetId,
-            role: placement.role,
-          })),
-          veskifyComponentRegistryV2.get(section.component),
-        );
-      } catch (cause) {
-        throw new PublishCompilerError("invalid-approved-asset", { cause });
-      }
-      const presentationList = section.approvedAssetPresentations ?? [];
-      const presentations = new Map(
-        presentationList.map((presentation) => [presentation.assetId, presentation]),
+  const sections = [
+    ...(snapshot.sharedFrame
+      ? [
+          snapshot.sharedFrame.announcement,
+          snapshot.sharedFrame.header,
+          snapshot.sharedFrame.footer,
+        ].filter((section): section is NonNullable<typeof section> => section !== undefined)
+      : []),
+    ...snapshot.pages.flatMap((page) => page.sections),
+  ];
+  for (const section of sections) {
+    const placements = section.approvedAssetPlacements ?? [];
+    if (placements.some(({ assetSlotId }) => assetSlotId === "productMedia")) {
+      throw new PublishCompilerError("product-media-violation");
+    }
+    try {
+      validateComponentAssetAssignments(
+        placements.map((placement) => ({
+          slotId: placement.assetSlotId,
+          assetId: placement.assetId,
+          role: placement.role,
+        })),
+        veskifyComponentRegistryV2.get(section.component),
       );
-      if (presentations.size !== presentationList.length) {
-        throw new PublishCompilerError("invalid-approved-asset");
-      }
-      for (const placement of placements) {
-        const presentation = presentations.get(placement.assetId);
-        if (
-          !presentation ||
-          presentation.role !== placement.role ||
-          presentation.revision !== placement.assetRevision ||
-          presentation.materialFingerprint !== placement.materialFingerprint ||
-          presentation.asset.id !== placement.assetId
-        ) {
-          throw new PublishCompilerError("invalid-approved-asset");
-        }
-        if (presentation.artDirection) {
-          try {
-            if (
-              presentation.artDirection.placement.variant !== section.variant ||
-              presentation.artDirection.placement.assetSlotId !== placement.assetSlotId ||
-              presentation.artDirection.placement.required !== placement.required ||
-              presentation.artDirection.source.sourceOwnerId !== placement.sourceReferenceId ||
-              placement.sourceProvenanceKind === undefined ||
-              presentation.artDirection.source.provenanceKind !== placement.sourceProvenanceKind
-            ) {
-              throw new Error("Responsive image placement authority does not match the section.");
-            }
-            validateResponsiveImageAuthority({
-              authority: presentation.artDirection,
-              component: veskifyComponentRegistryV2.get(section.component),
-              dna,
-            });
-          } catch (cause) {
-            throw new PublishCompilerError("invalid-approved-asset", { cause });
-          }
-        }
-      }
+    } catch (cause) {
+      throw new PublishCompilerError("invalid-approved-asset", { cause });
+    }
+    const presentationList = section.approvedAssetPresentations ?? [];
+    const presentations = new Map(
+      presentationList.map((presentation) => [presentation.assetId, presentation]),
+    );
+    if (presentations.size !== presentationList.length) {
+      throw new PublishCompilerError("invalid-approved-asset");
+    }
+    for (const placement of placements) {
+      const presentation = presentations.get(placement.assetId);
       if (
-        presentationList.some(
-          (presentation) =>
-            !placements.some((placement) => placement.assetId === presentation.assetId),
-        )
+        !presentation ||
+        presentation.role !== placement.role ||
+        presentation.revision !== placement.assetRevision ||
+        presentation.materialFingerprint !== placement.materialFingerprint ||
+        presentation.asset.id !== placement.assetId
       ) {
         throw new PublishCompilerError("invalid-approved-asset");
       }
+      if (presentation.artDirection) {
+        try {
+          if (
+            presentation.artDirection.placement.variant !== section.variant ||
+            presentation.artDirection.placement.assetSlotId !== placement.assetSlotId ||
+            presentation.artDirection.placement.required !== placement.required ||
+            presentation.artDirection.source.sourceOwnerId !== placement.sourceReferenceId ||
+            placement.sourceProvenanceKind === undefined ||
+            presentation.artDirection.source.provenanceKind !== placement.sourceProvenanceKind
+          ) {
+            throw new Error("Responsive image placement authority does not match the section.");
+          }
+          validateResponsiveImageAuthority({
+            authority: presentation.artDirection,
+            component: veskifyComponentRegistryV2.get(section.component),
+            dna,
+          });
+        } catch (cause) {
+          throw new PublishCompilerError("invalid-approved-asset", { cause });
+        }
+      }
+    }
+    if (
+      presentationList.some(
+        (presentation) =>
+          !placements.some((placement) => placement.assetId === presentation.assetId),
+      )
+    ) {
+      throw new PublishCompilerError("invalid-approved-asset");
     }
   }
 }
@@ -820,12 +879,19 @@ function assertSnapshotAuthority(
     throw new PublishCompilerError("invalid-approved-asset");
   }
   if (
-    snapshot.pages.some((page) =>
-      page.sections.some(
-        (section) =>
-          containsProtectedCommerceTruth(section.content) ||
-          containsProtectedCommerceTruth(section.props),
-      ),
+    [
+      ...(snapshot.sharedFrame
+        ? [
+            snapshot.sharedFrame.header,
+            snapshot.sharedFrame.footer,
+            snapshot.sharedFrame.announcement,
+          ].filter((section): section is NonNullable<typeof section> => section !== undefined)
+        : []),
+      ...snapshot.pages.flatMap((page) => page.sections),
+    ].some(
+      (section) =>
+        containsProtectedCommerceTruth(section.content) ||
+        containsProtectedCommerceTruth(section.props),
     )
   ) {
     throw new PublishCompilerError("protected-commerce-violation");
@@ -850,6 +916,26 @@ function compileResult(
     migrationFingerprint: input.authority.migrationFingerprint,
   };
   const validationReportFingerprint = `publish-validation-${canonicalValueFingerprint(validationReport)}`;
+  const componentExecution = (section: StorefrontSnapshot["pages"][number]["sections"][number]) => {
+    const entry = veskifyComponentCapabilityManifest.getByComponentType(section.component)!;
+    return {
+      sectionId: section.id,
+      componentType: section.component,
+      componentVersion: entry.componentDefinitionVersion,
+      variant: section.variant,
+      rendererTarget: "published" as const,
+      rendererAdapterId: entry.renderer.adapterId,
+      rendererExportName: entry.renderer.exportName,
+      capabilityFingerprint: entry.fingerprint,
+    };
+  };
+  const sharedFrameSections = snapshot.sharedFrame
+    ? [
+        snapshot.sharedFrame.announcement,
+        snapshot.sharedFrame.header,
+        snapshot.sharedFrame.footer,
+      ].filter((section): section is NonNullable<typeof section> => section !== undefined)
+    : [];
   const resultWithoutFingerprint = {
     contractVersion: publishCompilerContractVersion,
     compilerVersion: publishCompilerVersion,
@@ -860,22 +946,14 @@ function compileResult(
       fingerprint: input.sourceSnapshotFingerprint,
     },
     brandSystem: snapshot.brandSystem,
-    sharedFrame: { navigation: snapshot.navigation },
+    sharedFrame: {
+      navigation: snapshot.navigation,
+      ...(snapshot.sharedFrame ? { frame: snapshot.sharedFrame } : {}),
+      componentExecutions: sharedFrameSections.map(componentExecution),
+    },
     pages: snapshot.pages.map((page) => ({
       page,
-      componentExecutions: page.sections.map((section) => {
-        const entry = veskifyComponentCapabilityManifest.getByComponentType(section.component)!;
-        return {
-          sectionId: section.id,
-          componentType: section.component,
-          componentVersion: entry.componentDefinitionVersion,
-          variant: section.variant,
-          rendererTarget: "published" as const,
-          rendererAdapterId: entry.renderer.adapterId,
-          rendererExportName: entry.renderer.exportName,
-          capabilityFingerprint: entry.fingerprint,
-        };
-      }),
+      componentExecutions: page.sections.map(componentExecution),
     })),
     rendererTarget: "published" as const,
     localeAuthority,

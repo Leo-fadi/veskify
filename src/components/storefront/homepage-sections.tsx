@@ -7,6 +7,7 @@ import {
   type LocalizedText,
 } from "@/domain/shared";
 import type { StorefrontRenderContext } from "@/components/registry/contract";
+import { CommercialStoreFooter, CommercialStoreHeader } from "./commercial-storefront-frame";
 
 export type SafeLink = { label: LocalizedText; href: string };
 
@@ -119,46 +120,60 @@ export function StoreHeader({
   showCart,
   context,
   className,
+  variant = "centered",
 }: {
   brandName: string;
   showSearch: boolean;
   showCart: boolean;
   context: StorefrontRenderContext;
   className?: string;
+  variant?: "centered" | "split" | "compact" | "transparent" | "editorial";
 }) {
+  if (!context.sharedFrame) {
+    return (
+      <header className={`store-header ${className ?? ""}`}>
+        <a className="store-brand" href={context.homePath ?? "/"}>
+          {brandName}
+        </a>
+        <nav aria-label={text({ en: "Primary navigation", fi: "Päänavigaatio" }, context)}>
+          <ul>
+            {context.navigation.primary.map((item) => (
+              <li key={item.id}>
+                <a href={navigationHref(item, context)}>{text(item.label, context)}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        <div className="store-header__tools">
+          {showSearch ? (
+            <button
+              aria-label={text({ en: "Search (demo)", fi: "Haku (demo)" }, context)}
+              type="button"
+            >
+              ⌕
+            </button>
+          ) : null}
+          {showCart ? (
+            <button
+              aria-label={text({ en: "Cart (demo)", fi: "Ostoskori (demo)" }, context)}
+              type="button"
+            >
+              Bag <span aria-hidden="true">0</span>
+            </button>
+          ) : null}
+        </div>
+      </header>
+    );
+  }
   return (
-    <header className={`store-header ${className ?? ""}`}>
-      <a className="store-brand" href={context.homePath ?? "/"}>
-        {brandName}
-      </a>
-      <nav aria-label={text({ en: "Primary navigation", fi: "Päänavigaatio" }, context)}>
-        <ul>
-          {context.navigation.primary.map((item) => (
-            <li key={item.id}>
-              <a href={navigationHref(item, context)}>{text(item.label, context)}</a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-      <div className="store-header__tools">
-        {showSearch ? (
-          <button
-            aria-label={text({ en: "Search (demo)", fi: "Haku (demo)" }, context)}
-            type="button"
-          >
-            ⌕
-          </button>
-        ) : null}
-        {showCart ? (
-          <button
-            aria-label={text({ en: "Cart (demo)", fi: "Ostoskori (demo)" }, context)}
-            type="button"
-          >
-            Bag <span aria-hidden="true">0</span>
-          </button>
-        ) : null}
-      </div>
-    </header>
+    <CommercialStoreHeader
+      brandName={brandName}
+      className={className}
+      context={context}
+      showCart={showCart}
+      showSearch={showSearch}
+      variant={variant}
+    />
   );
 }
 
@@ -508,6 +523,7 @@ export function StoreFooter({
   showPolicies,
   context,
   className,
+  variant = "columns",
 }: {
   brandName: string;
   contact: LocalizedText;
@@ -516,41 +532,58 @@ export function StoreFooter({
   showPolicies: boolean;
   context: StorefrontRenderContext;
   className?: string;
+  variant?: "columns" | "expanded" | "editorial" | "compact" | "dark";
 }) {
-  return (
-    <footer className={`store-footer ${className ?? ""}`}>
-      {showPolicies ? (
+  if (!context.sharedFrame) {
+    return (
+      <footer className={`store-footer ${className ?? ""}`}>
+        {showPolicies ? (
+          <div>
+            <a className="store-brand" href={context.homePath ?? "/"}>
+              {brandName}
+            </a>
+            <p>{text(contact, context)}</p>
+          </div>
+        ) : null}
+        <nav
+          aria-label={text({ en: "Footer navigation", fi: "Alatunnisteen navigaatio" }, context)}
+        >
+          <h2>{text({ en: "Explore", fi: "Tutustu" }, context)}</h2>
+          <ul>
+            {context.navigation.footer.map((item) => (
+              <li key={item.id}>
+                <a href={navigationHref(item, context)}>{text(item.label, context)}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
         <div>
-          <a className="store-brand" href={context.homePath ?? "/"}>
-            {brandName}
-          </a>
-          <p>{text(contact, context)}</p>
+          <h2>{text({ en: "Information", fi: "Tiedot" }, context)}</h2>
+          <p>{text(policyLabel, context)}</p>
+          <p className="store-footer__legal">
+            {text(
+              {
+                en: "Draft placeholder — review before publishing",
+                fi: "Luonnospaikkamerkki — tarkista ennen julkaisua",
+              },
+              context,
+            )}
+          </p>
         </div>
-      ) : null}
-      <nav aria-label={text({ en: "Footer navigation", fi: "Alatunnisteen navigaatio" }, context)}>
-        <h2>{text({ en: "Explore", fi: "Tutustu" }, context)}</h2>
-        <ul>
-          {context.navigation.footer.map((item) => (
-            <li key={item.id}>
-              <a href={navigationHref(item, context)}>{text(item.label, context)}</a>
-            </li>
-          ))}
-        </ul>
-      </nav>
-      <div>
-        <h2>{text({ en: "Information", fi: "Tiedot" }, context)}</h2>
-        <p>{text(policyLabel, context)}</p>
-        <p className="store-footer__legal">
-          {text(
-            {
-              en: "Draft placeholder — review before publishing",
-              fi: "Luonnospaikkamerkki — tarkista ennen julkaisua",
-            },
-            context,
-          )}
-        </p>
-      </div>
-      <p className="store-footer__copyright">{text(copyright, context)}</p>
-    </footer>
+        <p className="store-footer__copyright">{text(copyright, context)}</p>
+      </footer>
+    );
+  }
+  return (
+    <CommercialStoreFooter
+      brandName={brandName}
+      className={className}
+      contact={contact}
+      context={context}
+      copyright={copyright}
+      policyLabel={policyLabel}
+      showPolicies={showPolicies}
+      variant={variant}
+    />
   );
 }

@@ -43,28 +43,28 @@ proposal lifecycle, functional evidence, and publishing authority. P10C owns nor
 Studio wiring, clarification UI, frame/page scope controls, and merchant execution.
 
 P10A is formally closed at Baseline by the
-[`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md) exit audit. P10B is now the next active
-development phase; its waves and tasks remain Planned until implemented and evidenced.
+[`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md) exit audit. P10B is now the active development
+phase; each remaining task stays Planned until implemented and evidenced.
 
 ## 3. P10B — Commercial Storefront Generation System v1
 
 The binding architecture, coverage targets, concrete Done conditions, synthesis/fingerprint model,
 and parallelization rules live in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B is **Partial / active**. P10B-01 through P10B-05 are Baseline; P10B-06 through P10B-18
+P10B is **Partial / active**. P10B-01 through P10B-06 are Baseline; P10B-07 through P10B-18
 remain **Planned**.
 
 ### 3.1 Dependency waves
 
-| Wave                           | Planned work                             | Gate                                                                                        |
-| ------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------- |
-| 1 — Grammar                    | P10B-01 (**Baseline**)                   | Existing authorities have executable vocabulary; no visual implementation claim.            |
-| 2 — Parallel foundations       | P10B-02, P10B-03, P10B-05 (**Baseline**) | Disjoint ownership of BrandSystem, component anatomy, and page-set/PageBlueprint authority. |
-| 3 — Art direction and families | P10B-04, P10B-06, P10B-07, P10B-08       | Real registered frame/content/merchandising authority reaches renderers.                    |
-| 4 — Page profiles              | P10B-09 through P10B-13                  | Complete home, commerce, content/support, and utility page coverage.                        |
-| 5 — Early complete store       | P10B-14                                  | One credible Premium Editorial multi-page storefront passes retained human review.          |
-| 6 — Synthesis and diversity    | P10B-15, P10B-16                         | Bounded complete-store synthesis plus deterministic duplicate/near-duplicate control.       |
-| 7 — Closure                    | P10B-17, P10B-18                         | Responsive/a11y/performance and 100+ configuration quality/diversity gates pass.            |
+| Wave                           | Planned work                                      | Gate                                                                                        |
+| ------------------------------ | ------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 1 — Grammar                    | P10B-01 (**Baseline**)                            | Existing authorities have executable vocabulary; no visual implementation claim.            |
+| 2 — Parallel foundations       | P10B-02, P10B-03, P10B-05 (**Baseline**)          | Disjoint ownership of BrandSystem, component anatomy, and page-set/PageBlueprint authority. |
+| 3 — Art direction and families | P10B-04, P10B-06 (**Baseline**); P10B-07, P10B-08 | Real registered frame/content/merchandising authority reaches renderers.                    |
+| 4 — Page profiles              | P10B-09 through P10B-13                           | Complete home, commerce, content/support, and utility page coverage.                        |
+| 5 — Early complete store       | P10B-14                                           | One credible Premium Editorial multi-page storefront passes retained human review.          |
+| 6 — Synthesis and diversity    | P10B-15, P10B-16                                  | Bounded complete-store synthesis plus deterministic duplicate/near-duplicate control.       |
+| 7 — Closure                    | P10B-17, P10B-18                                  | Responsive/a11y/performance and 100+ configuration quality/diversity gates pass.            |
 
 ### 3.2 Locked tasks
 
@@ -75,7 +75,7 @@ remain **Planned**.
 | P10B-03 — Component anatomy and meaningful variant contract      | Register anatomy, structural variants, parameters, assets, responsive transformations, and compatibility for every commercial family.         | **Baseline** | P10B-01                                                         | Component platform                   | 25 definitions/91 variants classified; schema/queryability, meaningful structural difference, migration and fail-closed validation | CSS-class aliases presented as variants                                   |
 | P10B-04 — Responsive image and art-direction authority           | Add approved focal point, safe area, crop, ratio, overlay, derivative, and responsive treatment authority.                                    | **Baseline** | P10B-02, P10B-03                                                | Asset presentation and media         | 35-case authority suite, asset/media integration, lifecycle regression, semantic renderer and four-width browser evidence          | Mutating canonical product media; production CDN transforms               |
 | P10B-05 — Veskify site-map and page-family authority             | Create and validate complete page sets, navigation, routes, and registered page families through PageBlueprint/StorefrontSnapshot.            | **Baseline** | P10B-01                                                         | PageBlueprint and storefront domain  | Route/navigation/page-set validation, canonical generation, save/publish preservation                                              | Second page graph or unrestricted CMS                                     |
-| P10B-06 — Commercial shared-frame families                       | Deliver at least four frames, three mobile navigation modes, and four footer compositions.                                                    | **Planned**  | P10B-02, P10B-03, P10B-05; P10B-04 where applicable             | Shared frame                         | Capability chain, EN/FI, keyboard/focus and four-width retained review                                                             | Merchant editor controls or new navigation truth                          |
+| P10B-06 — Commercial shared-frame families                       | Deliver at least four frames, three mobile navigation modes, and four footer compositions.                                                    | **Baseline** | P10B-02, P10B-03, P10B-05; P10B-04 where applicable             | Shared frame                         | Four profiles, three mobile modes, four footers, lifecycle, EN/FI/four-width keyboard/focus, and retained visual evidence          | Merchant editor controls or new navigation truth                          |
 | P10B-07 — Hero, editorial, campaign and proof families           | Deliver at least six hero compositions plus reusable story, campaign, service, and evidence-backed proof families.                            | **Planned**  | P10B-02 through P10B-05                                         | Commercial content families          | Exact generation/render reachability, approved evidence/assets, omission and retained review                                       | Invented claims or generic filler                                         |
 | P10B-08 — Canonical product-card and merchandising family        | Establish one protected card authority with at least five meaningful anatomies.                                                               | **Planned**  | P10B-02 through P10B-04                                         | Commerce presentation                | Cross-page protected-commerce/media regression, responsive states and retained review                                              | Duplicate card authority or commerce ownership                            |
 | P10B-09 — Commercial homepage profile library                    | Deliver at least six materially different homepage profiles and narrative flows.                                                              | **Planned**  | P10B-05 through P10B-08                                         | PageBlueprint profiles               | Materialization/proposal/compiler/snapshot/render chain plus credible-asset review                                                 | Colour-only profiles or unregistered sections                             |
@@ -93,7 +93,7 @@ remain **Planned**.
 
 Use A/B/C slices only for necessary contract/anatomy, renderer/variant, or
 PageBlueprint/generation/evidence separation. A parent is not complete until all required slices
-and evidence pass. With P10B-01 through P10B-05 Baseline, their disjoint authority
+and evidence pass. With P10B-01 through P10B-06 Baseline, their disjoint authority
 ownership remains defined by the architecture lock. Shared schema exports, registry
 indexes, migrations, manifests, direction/synthesis authority, and renderer boundaries require one
 integration owner and cannot be edited concurrently.

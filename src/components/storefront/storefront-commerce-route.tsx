@@ -29,10 +29,19 @@ type SharedRouteProps = Readonly<{
 }>;
 
 function chrome(page: PageModel, context: StorefrontRenderContext, component: "header" | "footer") {
+  if (context.sharedFrame) {
+    return renderRegisteredSection(context.sharedFrame[component], context);
+  }
   const section = page.sections.find(
     (candidate) => candidate.visible && candidate.component === component,
   );
   return section ? renderRegisteredSection(section, context, page.type) : null;
+}
+
+function announcement(page: PageModel, context: StorefrontRenderContext) {
+  return context.sharedFrame?.announcement
+    ? renderRegisteredSection(context.sharedFrame.announcement, context)
+    : null;
 }
 
 export function StorefrontProductCommerceRoute(
@@ -44,6 +53,7 @@ export function StorefrontProductCommerceRoute(
 ) {
   return (
     <Fragment>
+      {announcement(props.page, props.context)}
       {chrome(props.page, props.context, "header")}
       <main>
         <IntegratedDynamicProductDetail
@@ -75,6 +85,7 @@ export function StorefrontCollectionCommerceRoute(
 ) {
   return (
     <Fragment>
+      {announcement(props.page, props.context)}
       {chrome(props.page, props.context, "header")}
       {renderDynamicCollectionCommerce({
         target: props.target,

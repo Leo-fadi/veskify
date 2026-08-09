@@ -64,7 +64,19 @@ export const compiledPublicationArtifactSchema = artifactPayloadSchema
   .strict()
   .superRefine((value, context) => {
     const { integrityFingerprint, ...payload } = value;
-    if (integrityFingerprint !== canonicalValueFingerprint(payload)) {
+    const { componentExecutions, ...legacySharedFrame } = payload.compiledResult.sharedFrame;
+    const legacyPayload = {
+      ...payload,
+      compiledResult: {
+        ...payload.compiledResult,
+        sharedFrame: legacySharedFrame,
+      },
+    };
+    const matchesCurrentPayload = integrityFingerprint === canonicalValueFingerprint(payload);
+    const matchesLegacyPayload =
+      componentExecutions.length === 0 &&
+      integrityFingerprint === canonicalValueFingerprint(legacyPayload);
+    if (!matchesCurrentPayload && !matchesLegacyPayload) {
       context.addIssue({
         code: "custom",
         path: ["integrityFingerprint"],
@@ -291,12 +303,7 @@ export function createAtomicCompiledPublicationRecords(
   pointer: ActivePublishedStorefrontPointer;
 }> {
   const write = parseAtomicCompiledPublicationWrite(input.write);
-  const snapshotFingerprint = canonicalValueFingerprint({
-    brandSystem: input.publishedSnapshot.brandSystem,
-    navigation: input.publishedSnapshot.navigation,
-    pages: input.publishedSnapshot.pages,
-    catalogueRef: input.publishedSnapshot.catalogueRef,
-  });
+  const snapshotFingerprint = canonicalStorefrontContentFingerprint(input.publishedSnapshot);
   if (
     write.compilation.result.sourceSnapshot.fingerprint !== snapshotFingerprint ||
     write.compilation.receipt.sourceSnapshotFingerprint !== snapshotFingerprint

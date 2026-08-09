@@ -3,6 +3,7 @@ import { confirmPublish, preparePublish } from "@/application/publishing";
 import { aurumNordicSeed } from "@/data/seed";
 import {
   canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import {
@@ -168,6 +169,19 @@ describe("P10A-08C-02B atomic compiled publication", () => {
     expect(() => parseCompiledPublicationArtifact(tampered)).toThrow(
       CompiledPublicationIntegrityError,
     );
+  });
+
+  it("validates a legacy hash-covered artifact before projecting missing executions", async () => {
+    const value = repository();
+    const { active } = await publishChange(value, "legacy_artifact");
+    const legacyArtifact = structuredClone(active.artifact);
+    Reflect.deleteProperty(legacyArtifact.compiledResult.sharedFrame, "componentExecutions");
+    const legacyPayload = structuredClone(legacyArtifact);
+    Reflect.deleteProperty(legacyPayload, "integrityFingerprint");
+    legacyArtifact.integrityFingerprint = canonicalValueFingerprint(legacyPayload);
+
+    const parsed = parseCompiledPublicationArtifact(legacyArtifact);
+    expect(parsed.compiledResult.sharedFrame.componentExecutions).toEqual([]);
   });
 
   it.each<AtomicPublicationFailurePoint>(["artifact", "version", "pointer"])(

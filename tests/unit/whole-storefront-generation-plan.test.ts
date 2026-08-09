@@ -17,6 +17,7 @@ import {
   createStorefrontDesignBrief,
 } from "@/application/source-discovery";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
+import { createCurrentComponentCommercialAnatomy } from "@/components/registry/commercial-anatomy";
 import { aurumNordicSeed } from "@/data/seed";
 import type { ComponentDefinitionV2 } from "@/domain/component-platform";
 import { sourceEvidenceSchema, sourceReferenceSchema } from "@/domain/source-discovery";
@@ -556,6 +557,10 @@ describe("P8-01 whole-storefront generation plan", () => {
     } satisfies ComponentDefinitionV2["assetSlots"][number];
     headerDefinition.assetSlots = [slot];
     collectionHeaderDefinition.assetSlots = [slot];
+    headerDefinition.commercialAnatomy = createCurrentComponentCommercialAnatomy(headerDefinition);
+    collectionHeaderDefinition.commercialAnatomy = createCurrentComponentCommercialAnatomy(
+      collectionHeaderDefinition,
+    );
     const context = approvedAssetContext(current.brief);
     const homePage = requiredValue(
       current.draft.pages.find((page) => page.type === "home"),
@@ -688,6 +693,7 @@ describe("P8-01 whole-storefront generation plan", () => {
         maxItems: 1,
       },
     ];
+    headerDefinition.commercialAnatomy = createCurrentComponentCommercialAnatomy(headerDefinition);
     const initialContext = approvedAssetContext(current.brief);
     const firstAsset = requiredValue(initialContext.assets[0], "first approved asset");
     const contextValue = {
