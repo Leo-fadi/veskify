@@ -78,9 +78,9 @@ function pageFor(profileId: CommercialUtilityProfileId): PageModel {
 describe("P10B-13 commerce utility presentation", () => {
   it("registers deterministic PageBlueprint utility profiles with exact state boundaries", () => {
     const profiles = listCommercialUtilityProfiles();
-    expect(profiles).toHaveLength(7);
+    expect(profiles).toHaveLength(6);
     expect(new Set(profiles.map((profile) => profile.profile!.commercialUtility!.state)).size).toBe(
-      7,
+      6,
     );
     profiles.forEach((profile) => {
       const materialization = materializeExecutablePageBlueprint({
@@ -96,11 +96,18 @@ describe("P10B-13 commerce utility presentation", () => {
     expect(() => validateCommercialUtilityProfileLibrary([...profiles, profiles[0]])).toThrow(
       /unique/i,
     );
+    const malformed = structuredClone(profiles[0]);
+    Reflect.set(malformed.profile!.commercialUtility!, "requiredRuntimeCapabilities", [
+      "continue-checkot",
+    ]);
+    expect(() => validateCommercialUtilityProfileLibrary([malformed])).toThrow();
   });
 
   it("renders cart facts from a read-only runtime projection and never persists cart contents", () => {
     const fixture = createP905aFreshMerchantFixture("modernTechnical");
     const product = fixture.aggregate.catalogue.products[0];
+    const price = product.price;
+    if (!price) throw new Error("Expected canonical fixture product price.");
     const cartPage = pageFor("commerce-utility-cart");
     const snapshot = applyCommercialSharedFrame(
       { ...fixture.planningInput.draft, pages: [...fixture.planningInput.draft.pages, cartPage] },
@@ -136,6 +143,15 @@ describe("P10B-13 commerce utility presentation", () => {
     render(<>{renderStorefrontPage(cartPage, context)}</>);
     expect(screen.getByRole("heading", { name: "Cart" })).toBeVisible();
     expect(screen.getByRole("heading", { name: product.title.en })).toBeVisible();
+    expect(
+      screen.getAllByText(
+        new Intl.NumberFormat("en-FI", {
+          style: "currency",
+          currency: price.currency,
+          maximumFractionDigits: 2,
+        }).format(price.amount),
+      ).length,
+    ).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     expect(action).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -209,5 +225,41 @@ describe("P10B-13 commerce utility presentation", () => {
     const unavailable = screen.getByRole("status");
     expect(within(unavailable).getByText("Cart information is unavailable.")).toBeVisible();
     expect(within(unavailable).queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("keeps the cart route meaningful while its transient runtime state is unavailable or loading", () => {
+    const fixture = createP905aFreshMerchantFixture("modernTechnical");
+    const cartPage = pageFor("commerce-utility-cart");
+    const snapshot = applyCommercialSharedFrame(
+      { ...fixture.planningInput.draft, pages: [...fixture.planningInput.draft.pages, cartPage] },
+      "commerce-utility",
+    );
+    const unavailable = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      enabledLocales: ["en", "fi"],
+      catalogue: fixture.aggregate.catalogue,
+      snapshot,
+    });
+    const first = render(<>{renderStorefrontPage(cartPage, unavailable)}</>);
+    expect(screen.getByText("Cart information is unavailable.")).toBeVisible();
+    first.unmount();
+
+    const loading = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      enabledLocales: ["en", "fi"],
+      catalogue: fixture.aggregate.catalogue,
+      snapshot,
+      commerceUtilityRuntime: {
+        kind: "loading",
+        revision: "cart-loading-r1",
+        message: { en: "Retrieving your current cart.", fi: "Haetaan ostoskoriasi." },
+        actions: [],
+      },
+    });
+    render(<>{renderStorefrontPage(cartPage, loading)}</>);
+    expect(screen.getByRole("heading", { name: "Loading" })).toBeVisible();
+    expect(screen.getByText("Retrieving your current cart.")).toBeVisible();
   });
 });

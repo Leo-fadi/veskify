@@ -19,7 +19,6 @@ export const commercialUtilityProfileIds = [
   "commerce-utility-empty",
   "commerce-utility-error",
   "commerce-utility-not-found",
-  "commerce-utility-loading",
 ] as const;
 export const commercialUtilityProfileIdSchema = z.enum(commercialUtilityProfileIds);
 export type CommercialUtilityProfileId = (typeof commercialUtilityProfileIds)[number];
@@ -39,7 +38,7 @@ type UtilityInput = Readonly<{
   role: "orientation" | "continuation" | "service";
   frames: CommercialUtilityProfileAuthority["compatibleSharedFrameProfileIds"];
   defaultFrame: CommercialUtilityProfileAuthority["defaultSharedFrameProfileId"];
-  capabilities: readonly string[];
+  capabilities: CommercialUtilityProfileAuthority["requiredRuntimeCapabilities"];
 }>;
 
 const breakpoints = [
@@ -186,16 +185,6 @@ const inputs: readonly UtilityInput[] = [
     defaultFrame: "centered-minimal",
     capabilities: ["return-home"],
   },
-  {
-    id: "commerce-utility-loading",
-    pageType: "content",
-    state: "loading",
-    variant: "loading",
-    role: "service",
-    frames: ["commerce-utility", "compact-technical"],
-    defaultFrame: "commerce-utility",
-    capabilities: [],
-  },
 ];
 
 export const commercialUtilityPagePlans = deepFreeze(inputs.map(createProfile));
@@ -204,7 +193,7 @@ export function validateCommercialUtilityProfileLibrary(
   entries: readonly unknown[] = commercialUtilityPagePlans,
 ): readonly StorefrontTemplatePagePlan[] {
   const parsed = entries.map((entry) => storefrontTemplatePagePlanSchema.parse(entry));
-  if (parsed.length < 7 || new Set(parsed.map((entry) => entry.profile?.id)).size !== parsed.length)
+  if (parsed.length < 6 || new Set(parsed.map((entry) => entry.profile?.id)).size !== parsed.length)
     throw new Error("Commercial utility profile IDs must be complete and unique.");
   parsed.forEach((plan) => {
     const authority = plan.profile?.commercialUtility;

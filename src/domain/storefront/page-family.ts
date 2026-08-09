@@ -267,11 +267,7 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     pageType: "content",
     routeClass: "not-found",
     commerceContext: "none",
-    allowedProfileReferences: [
-      stateProfile,
-      utilityProfile("commerce-utility-not-found"),
-      utilityProfile("commerce-utility-loading"),
-    ],
+    allowedProfileReferences: [stateProfile, utilityProfile("commerce-utility-not-found")],
     navigationEligibility: [],
     evidenceRequirement: "none",
     permittedEvidenceKinds: [],

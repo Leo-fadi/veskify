@@ -18,7 +18,7 @@
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
 | 1.3.0 P10B-10 | 9 August 2026 | P10B-10 delivery | Establish four fingerprinted commercial collection/search PageBlueprint profiles with exact canonical commerce, product-card and media authority, transient fail-closed zero-result context, deterministic lifecycle reachability, and retained four-width browser evidence. |
-| 1.3.0 P10B-13 | 9 August 2026 | P10B-13 delivery | Establish seven fingerprinted commerce-utility PageBlueprint profiles with transient read-only cart/checkout/search/runtime state, fail-closed executable actions, snapshot configuration preservation, and retained four-width browser evidence. |
+| 1.3.0 P10B-13 | 9 August 2026 | P10B-13 delivery | Establish six fingerprinted commerce-utility PageBlueprint profiles plus route-local loading state with transient read-only cart/checkout/search/runtime state, fail-closed executable actions, snapshot configuration preservation, and retained four-width browser evidence. |
 | 1.3.0 P10B-09 | 9 August 2026 | P10B-09 delivery | Establish six fingerprinted commercial homepage PageBlueprint profiles with evidence/cardinality authority, exact frame/story/card composition, deterministic lifecycle reachability, and retained four-width browser evidence. |
 | 1.3.0 P10B-07 | 8 August 2026 | P10B-07 delivery | Establish commercial-ready hero, editorial, campaign, service and evidence-grounded proof families with six meaningful hero anatomies, canonical art direction, PageBlueprint generation reachability, lifecycle preservation and four-width browser evidence. |
 | 1.3.0 P10B-08 | 8 August 2026 | P10B-08 delivery | Establish one fingerprinted product-card authority and renderer, five meaningful anatomies, exact protected-commerce and P10B-04 media lineage, deterministic legacy migration, generation/publish reachability, and four-width browser evidence. |
@@ -561,7 +561,7 @@ Required semantic regions and protected content, commerce, and asset inputs are 
 closed. Mutable parameters remain bounded by their declared kind and cannot overwrite protected
 content or canonical commerce bindings.
 
-All 27 current V2 component definitions and all 100 registered variants have explicit executable
+All 28 current V2 component definitions and all 111 registered variants have explicit executable
 metadata. P10B-06 promotes exactly four header and four footer variants through realized shared-
 frame anatomy. P10B-07 promotes only registered hero, promotion, editorial and proof variants
 whose implementations declare and realize material hierarchy, region arrangement/presence, asset
@@ -757,11 +757,13 @@ covers the canonical route renderer and retains screenshots in its report. Detai
 
 ### 10.13 P10B-13 commerce utility presentation authority
 
-Seven versioned utility profiles—cart, checkout boundary, no-results, generic empty, recoverable
-error, 404, and loading—now materialize a single registered `commerceUtility` component through
-the existing P10B-05 page-family/PageBlueprint authority. They select compatible P10B-06 frames,
+Six versioned utility profiles—cart, checkout boundary, no-results, generic empty, recoverable
+error, and 404—now materialize a single registered `commerceUtility` component through the
+existing P10B-05 page-family/PageBlueprint authority. They select only compatible P10B-06 frames,
 inherit P10B-02 Design DNA, declare exact responsive transformations, and preserve only the
 presentation configuration in `StorefrontSnapshot`, save/reload, and deterministic publication.
+The registered loading runtime state renders on the route whose adapter state is pending; it does
+not replace the 404 singleton or persist as a second loading page.
 
 Current cart lines, quantities, prices, totals, checkout sessions, queries, filters, and runtime
 errors are a transient read-only commerce-adapter projection. The renderer resolves canonical

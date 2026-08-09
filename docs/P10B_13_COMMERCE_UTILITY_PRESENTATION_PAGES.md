@@ -7,11 +7,13 @@
 
 ## Outcome
 
-P10B-13 supplies seven versioned registered PageBlueprint profiles for cart, checkout boundary,
-search no-results, generic empty, recoverable error, 404, and loading presentation. Each profile
+P10B-13 supplies six versioned registered PageBlueprint profiles for cart, checkout boundary,
+search no-results, generic empty, recoverable error, and 404 presentation. Each profile
 materializes one canonical `commerceUtility` component into the existing P10B-05 page-family page;
-it selects a compatible P10B-06 shared frame, carries an exact fingerprint, and has explicit
-375/768/1024/1440 responsive authority. It does not add a utility registry, cart model, checkout
+it selects a compatible current P10B-06 shared frame, carries an exact fingerprint, and has
+explicit 375/768/1024/1440 responsive authority. The registered loading runtime state renders on
+the current cart, checkout, or state route while its adapter data is pending; it never replaces the
+404 route or persists a loading page. This does not add a utility registry, cart model, checkout
 engine, page graph, or persistence aggregate.
 
 ## Commerce boundary and actions
@@ -31,11 +33,14 @@ commerce authority; it has no local address, payment, shipping, tax, or order wo
 ## State semantics
 
 - Cart distinguishes populated and empty canonical cart state without auto-filled merchandising.
+- A cart with no matching current runtime state renders an explicit unavailable state; a loading
+  runtime renders on the current route rather than silently returning an empty page or claiming
+  `/404`.
 - P10B-10 no-results retains the exact query and active filter labels, renders no products, and
   exposes only supported clear/recovery actions.
-- Generic empty, recoverable error, 404, and loading are distinct registered variants. Error copy
-  exposes no stack trace, provider material, or internal identifiers; 404 never fabricates content
-  or silently redirects.
+- Generic empty, recoverable error, 404, and route-local loading are distinct registered states.
+  Error copy exposes no stack trace, provider material, or internal identifiers; 404 never
+  fabricates content or silently redirects.
 
 ## Lifecycle and evidence
 

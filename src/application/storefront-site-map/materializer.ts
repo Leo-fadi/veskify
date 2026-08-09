@@ -10,6 +10,7 @@ import { canonicalLocaleOrder } from "@/domain/shared";
 import {
   canonicalStorefrontSiteMapFingerprint,
   canonicalValueFingerprint,
+  commercialSharedFrameProfileIdSchema,
   getPageFamilyDefinition,
   PAGE_FAMILY_AUTHORITY_VERSION,
   PageFamilyValidationError,
@@ -333,6 +334,19 @@ export function materializeStorefrontSiteMap(
     };
     const utilityProfile = getExecutablePageBlueprintProfile(page.profile.id)?.profile
       ?.commercialUtility;
+    const sharedFrameProfileId = input.baseSnapshot.sharedFrame?.profileId;
+    const parsedSharedFrameProfileId =
+      commercialSharedFrameProfileIdSchema.safeParse(sharedFrameProfileId);
+    if (
+      utilityProfile &&
+      (!parsedSharedFrameProfileId.success ||
+        !utilityProfile.compatibleSharedFrameProfileIds.includes(parsedSharedFrameProfileId.data))
+    ) {
+      throw new SiteMapMaterializationError(
+        "invalid-shared-frame",
+        `Commerce utility profile ${page.profile.id} is incompatible with the current shared frame.`,
+      );
+    }
     return utilityProfile
       ? materializeCommerceUtilityPage(
           materializedPage,

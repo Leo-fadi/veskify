@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { commerceUtilityActionIdSchema } from "@/domain/commerce-utility";
 import { idSchema, isoDateTimeSchema } from "@/domain/shared";
 import { pageTypeSchema } from "@/domain/storefront";
 import { commercialSharedFrameProfileIdSchema } from "@/domain/storefront/commercial-shared-frame";
@@ -303,7 +304,7 @@ export const commercialUtilityProfileAuthoritySchema = z
     state: z.enum(["cart", "checkout", "no-results", "empty", "error", "not-found", "loading"]),
     compatibleSharedFrameProfileIds: z.array(commercialSharedFrameProfileIdSchema).min(1),
     defaultSharedFrameProfileId: commercialSharedFrameProfileIdSchema,
-    requiredRuntimeCapabilities: z.array(z.string().trim().min(1).max(80)).default([]),
+    requiredRuntimeCapabilities: z.array(commerceUtilityActionIdSchema).max(8).default([]),
     omissionBehavior: z.literal("fail-closed"),
     responsiveArchitecture: z.tuple([
       z

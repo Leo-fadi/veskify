@@ -47,10 +47,12 @@ const labels = (context: StorefrontRenderContext) =>
 
 const text = (value: z.infer<typeof localizedTextSchema>, context: StorefrontRenderContext) =>
   resolveLocalizedText(value, context.activeLocale, context.primaryLocale);
-const money = (amount: number, currency: "EUR") =>
-  new Intl.NumberFormat("fi-FI", { style: "currency", currency, maximumFractionDigits: 2 }).format(
-    amount,
-  );
+const money = (amount: number, currency: "EUR", context: StorefrontRenderContext) =>
+  new Intl.NumberFormat(context.activeLocale === "fi" ? "fi-FI" : "en-FI", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 2,
+  }).format(amount);
 
 export const commerceUtilityContentSchema = z
   .object({
@@ -124,8 +126,19 @@ function CartPresentation({
   placement: "inline" | "aside";
 }) {
   const runtime = context.commerceUtilityRuntime;
-  if (!runtime || runtime.kind !== "cart") return null;
   const copy = labels(context);
+  if (!runtime || runtime.kind !== "cart") {
+    return (
+      <section className={styles.state} data-utility-state="unavailable" role="status">
+        <h1>{copy.cart}</h1>
+        <p>
+          {context.activeLocale === "fi"
+            ? "Ostoskorin tietoja ei ole saatavilla."
+            : "Cart information is unavailable."}
+        </p>
+      </section>
+    );
+  }
   const resolvedLines = runtime.lines.flatMap((line) => {
     const product = context.catalogue.products.find((candidate) => candidate.id === line.productId);
     return product ? [{ line, product }] : [];
@@ -170,7 +183,7 @@ function CartPresentation({
                 <div>
                   <h2>{text(product.title, context)}</h2>
                   {line.unitPrice ? (
-                    <p>{money(line.unitPrice.amount, line.unitPrice.currency)}</p>
+                    <p>{money(line.unitPrice.amount, line.unitPrice.currency, context)}</p>
                   ) : null}
                 </div>
                 <div className={styles.lineActions}>
@@ -209,7 +222,7 @@ function CartPresentation({
                 </div>
                 {line.linePrice ? (
                   <p className={styles.linePrice}>
-                    {money(line.linePrice.amount, line.linePrice.currency)}
+                    {money(line.linePrice.amount, line.linePrice.currency, context)}
                   </p>
                 ) : null}
               </li>
@@ -221,13 +234,13 @@ function CartPresentation({
         {runtime.subtotal ? (
           <p>
             <span>{copy.subtotal}</span>
-            <strong>{money(runtime.subtotal.amount, runtime.subtotal.currency)}</strong>
+            <strong>{money(runtime.subtotal.amount, runtime.subtotal.currency, context)}</strong>
           </p>
         ) : null}
         {runtime.total ? (
           <p>
             <span>{copy.total}</span>
-            <strong>{money(runtime.total.amount, runtime.total.currency)}</strong>
+            <strong>{money(runtime.total.amount, runtime.total.currency, context)}</strong>
           </p>
         ) : null}
         <UtilityAction action="continue-checkout" label={copy.checkout} context={context} />
@@ -335,12 +348,13 @@ export const commerceUtilityDefinition = defineComponent({
   validateContext: ({ variant, context }) => {
     if (
       context.commerceUtilityRuntime &&
+      context.commerceUtilityRuntime.kind !== "loading" &&
       context.commerceUtilityRuntime.kind !== runtimeKindByVariant[variant]
     )
       throw new Error(`Commerce utility ${variant} requires matching canonical runtime state.`);
   },
   renderer: ({ content, props, context, variant }) =>
-    variant === "cart" ? (
+    variant === "cart" && context.commerceUtilityRuntime?.kind !== "loading" ? (
       <CartPresentation context={context} placement={props.summaryPlacement} />
     ) : (
       <StatePresentation content={content} context={context} />
