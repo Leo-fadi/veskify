@@ -34,6 +34,7 @@ export const templateSlotPurposeSchema = z.enum([
   "featured-categories",
   "featured-products",
   "editorial-story",
+  "campaign-promotion",
   "brand-values",
   "social-proof",
   "newsletter",
@@ -50,6 +51,7 @@ export const templateSlotOmissionSchema = z.enum([
   "when-catalogue-is-empty",
   "when-logo-is-unavailable",
   "when-imagery-is-unavailable",
+  "when-evidence-is-unavailable",
   "when-not-requested",
 ]);
 

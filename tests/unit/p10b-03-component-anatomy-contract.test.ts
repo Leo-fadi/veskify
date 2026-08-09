@@ -483,13 +483,19 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
       "legacySuperseded",
       "notYetP10BCommercialReady",
     ]);
-    expect(veskifyComponentDefinitionsV2).toHaveLength(25);
+    expect(veskifyComponentDefinitionsV2).toHaveLength(27);
     expect(
       veskifyComponentDefinitionsV2.reduce(
         (total, definition) => total + definition.variants.length,
         0,
       ),
-    ).toBe(91);
+    ).toBe(100);
+    const p10b07Promoted = new Set([
+      "homepageHero",
+      "homepagePromotion",
+      "homepageEditorial",
+      "homepageProof",
+    ]);
     for (const definition of veskifyComponentDefinitionsV2) {
       const anatomy = definition.commercialAnatomy;
       expect(anatomy, definition.type).toBeDefined();
@@ -500,13 +506,15 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
       expect(
         entry?.variants.every((variant) => variant.structuralClassification !== "unclassified"),
       ).toBe(true);
-      expect(
-        entry?.variants.every(
-          (variant) =>
-            variant.structuralClassification === "notYetP10BCommercialReady" &&
-            variant.materialDifferences.length === 0,
-        ),
-      ).toBe(true);
+      if (!p10b07Promoted.has(definition.type)) {
+        expect(
+          entry?.variants.every(
+            (variant) =>
+              variant.structuralClassification === "notYetP10BCommercialReady" &&
+              variant.materialDifferences.length === 0,
+          ),
+        ).toBe(true);
+      }
     }
   });
 
@@ -516,7 +524,7 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
       manifest: reference,
       pageType: "home",
     });
-    expect(reference.version).toBe("1.2.0");
+    expect(reference.version).toBe("1.3.0");
     expect(components.length).toBeGreaterThan(0);
     expect(components.every((component) => component.variants.length > 0)).toBe(true);
   });

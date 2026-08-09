@@ -286,6 +286,14 @@ function optionalSlotCopy(
       ),
     },
     {
+      match: /home\/approved-proof/i,
+      value: copy("Approved proof", "Hyväksytty näyttö"),
+      message: copy(
+        "Approved proof was not added because current approved evidence is not available.",
+        "Hyväksyttyä näyttöä ei lisätty, koska ajantasaista hyväksyttyä näyttöaineistoa ei ole saatavilla.",
+      ),
+    },
+    {
       match: /product\/product-options/i,
       value: copy("Product options", "Tuotevalinnat"),
       message: copy(

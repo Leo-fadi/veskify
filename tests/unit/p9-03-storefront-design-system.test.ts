@@ -253,7 +253,8 @@ describe("P9-03 Storefront Design System v1", () => {
       omittedPlan.pagePlans
         .find((page) => page.role === "homepage")
         ?.components.some(
-          (component) => "instance" in component && component.instance.component === "brandStory",
+          (component) =>
+            "instance" in component && component.instance.component === "homepageEditorial",
         ),
     ).toBe(false);
 
@@ -264,26 +265,30 @@ describe("P9-03 Storefront Design System v1", () => {
     const generatedStory = plan.pagePlans
       .find((page) => page.role === "homepage")!
       .components.find(
-        (component) => "instance" in component && component.instance.component === "brandStory",
+        (component) =>
+          "instance" in component && component.instance.component === "homepageEditorial",
       );
     expect(generatedStory).toMatchObject({
       disposition: "added",
       instance: {
-        variant: "editorial",
+        variant: "brandStory",
         content: {
-          heading: { fi: "Lumo Atelier" },
-          approvedAssetId: "asset_lumo_story",
-          facts: [],
+          heading: { fi: "Harkittu näkökulma" },
         },
-        assetAssignments: [
-          expect.objectContaining({
-            slotId: "brandStoryMedia",
-            assetId: "asset_lumo_story",
-            role: "editorialImage",
-          }),
-        ],
       },
     });
+    if (!generatedStory || !("instance" in generatedStory)) {
+      throw new Error("Missing generated homepageEditorial instance.");
+    }
+    expect(generatedStory.instance.assetAssignments).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          slotId: "storyMedia",
+          assetId: "asset_lumo_story",
+          role: "editorialImage",
+        }),
+      ]),
+    );
   });
 
   it("returns an atomic registered composition with dynamic commerce through the runtime authority", async () => {
@@ -310,7 +315,7 @@ describe("P9-03 Storefront Design System v1", () => {
     );
     expect(proposedSections).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ component: "homepageHero", variant: "fullBleed" }),
+        expect.objectContaining({ component: "homepageHero", variant: "fullBleedOverlay" }),
       ]),
     );
     const dynamicCollection = proposedSections.find(

@@ -327,7 +327,7 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
     expect(proposal.reviewSummary.canonicalBindings).toEqual(source.plan.canonicalCommerceBindings);
   });
 
-  it("discloses visible homepage reordering in the authoritative review summary", () => {
+  it("does not mislabel homepage replacements and additions as retained-section reordering", () => {
     const source = input();
     const proposal = compileWholeStorefrontProposal(source);
     const originalHome = proposal.originalStorefront.pages.find((page) => page.role === "homepage");
@@ -341,18 +341,19 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
       pageId: originalHome.pageId,
       status: "changed",
     });
-    expect(
-      proposal.reviewSummary.components.filter(
-        (component) => component.pageId === originalHome.pageId,
-      ),
-    ).toEqual(
+    expect(proposal.reviewSummary.components).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
-          status: "modified",
-          description: "Moves this section within the updated homepage order.",
-        }),
+        expect.objectContaining({ component: "homepageEditorial", status: "replaced" }),
+        expect.objectContaining({ component: "brandStory", status: "removed" }),
       ]),
     );
+    expect(
+      proposal.reviewSummary.components.some(
+        (component) =>
+          component.pageId === originalHome.pageId &&
+          component.description === "Moves this section within the updated homepage order.",
+      ),
+    ).toBe(false);
 
     const tokenOnly = compileWholeStorefrontProposal(tokenRefinementInput());
     const tokenOnlyHome = tokenOnly.originalStorefront.pages.find(
@@ -426,7 +427,7 @@ describe("P8-02 whole-storefront proposal lifecycle", () => {
     expect(homeSummary?.status).toBe("changed");
     expect(proposal.reviewSummary.components).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ component: "brandStory", status: "added" }),
+        expect.objectContaining({ component: "homepageEditorial", status: "added" }),
         expect.objectContaining({ status: "removed" }),
         expect.objectContaining({ component: "header", status: "retained" }),
         expect.objectContaining({

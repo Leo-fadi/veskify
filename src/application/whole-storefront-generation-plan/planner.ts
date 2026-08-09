@@ -587,6 +587,8 @@ const legacyHomepageComponentForBridge: Readonly<
   homepageCollectionNavigation: ["featuredCategories"],
   homepagePromotion: ["brandStory", "campaignBanner"],
   homepageTrust: ["benefitIcons"],
+  homepageEditorial: ["brandStory", "imageText"],
+  homepageProof: [],
 };
 
 function homepageBindings(
@@ -594,6 +596,7 @@ function homepageBindings(
   input: WholeStorefrontPlanningInput,
   revision: string,
   source?: WholeStorefrontPlanningInput["draft"]["pages"][number]["sections"][number],
+  assetAssignments: readonly ComponentInstanceV2["assetAssignments"][number][] = [],
 ): ComponentInstanceV2["bindings"] {
   const sourceCollectionIds = Array.isArray(source?.content.collectionIds)
     ? source.content.collectionIds.filter(
@@ -617,7 +620,7 @@ function homepageBindings(
           return input.draft.pages.find((page) => page.id === pageId)?.slug === actionHref;
         })
       : undefined;
-  return [
+  const bindings: ComponentInstanceV2["bindings"] = [
     {
       slotId: "presentationContext",
       source: "projectBrandContext",
@@ -650,10 +653,19 @@ function homepageBindings(
           },
         ]
       : []),
-    ...((component === "homepageHero" || component === "homepagePromotion") && actionNavigationItem
+    ...(["homepageHero", "homepagePromotion", "homepageTrust", "homepageEditorial"].includes(
+      component,
+    ) && actionNavigationItem
       ? [
           {
-            slotId: component === "homepageHero" ? "primaryAction" : "promotionAction",
+            slotId:
+              component === "homepageHero"
+                ? "primaryAction"
+                : component === "homepagePromotion"
+                  ? "promotionAction"
+                  : component === "homepageTrust"
+                    ? "supportAction"
+                    : "editorialAction",
             source: "navigation" as const,
             navigationId: actionNavigationItem.id,
             revision,
@@ -661,6 +673,33 @@ function homepageBindings(
         ]
       : []),
   ];
+  const sourceAssetId = objectValue(source?.content.media)?.id ?? source?.content.approvedAssetId;
+  const assignedAssetIds = assetAssignments.map((assignment) => assignment.assetId);
+  const assetIds =
+    assignedAssetIds.length > 0
+      ? assignedAssetIds
+      : typeof sourceAssetId === "string"
+        ? [sourceAssetId]
+        : [];
+  const bindingSlots =
+    component === "homepageHero"
+      ? ["heroAsset"]
+      : component === "homepagePromotion"
+        ? ["promotionAsset"]
+        : component === "homepageEditorial"
+          ? ["storyPrimaryAsset", "storySecondaryAsset", "storyTertiaryAsset"]
+          : [];
+  assetIds.slice(0, bindingSlots.length).forEach((assetId, index) => {
+    const approved = input.approvedAssetContext?.assets.find((asset) => asset.assetId === assetId);
+    if (!approved) return;
+    bindings.push({
+      slotId: bindingSlots[index],
+      source: "asset",
+      assetId,
+      revision: approved.revision,
+    });
+  });
+  return bindings;
 }
 
 function objectValue(value: unknown): Record<string, unknown> | undefined {
@@ -677,7 +716,10 @@ function mappedHomepageBridgePresentation(
   const defaults = homepageCommerceBridgeDefaults[component];
   const content: Record<string, unknown> = structuredClone(defaults.content);
   const props: Record<string, unknown> = structuredClone(defaults.props);
-  if (source) {
+  if (source?.component === component && component !== "homepageProof") {
+    Object.assign(content, structuredClone(source.content));
+    Object.assign(props, structuredClone(source.props));
+  } else if (source) {
     if (component === "homepageHero") {
       content.heading = source.content.title ?? content.heading;
       if (source.content.body !== undefined) content.supportingCopy = source.content.body;
@@ -718,7 +760,36 @@ function mappedHomepageBridgePresentation(
         ];
       });
       if (items.length > 0) content.items = items;
+    } else if (component === "homepageEditorial") {
+      content.eyebrow = source.content.eyebrow ?? content.eyebrow;
+      content.heading = source.content.heading ?? content.heading;
+      content.body = source.content.body ?? source.content.description ?? content.body;
+      const cta = objectValue(source.content.cta);
+      if (cta?.label !== undefined) content.actionLabel = cta.label;
     }
+  }
+
+  if (component === "homepageProof") {
+    const description = planningInput.brief.businessIdentity.shortDescription.trim();
+    const sourceLocale = planningInput.brief.languagePlan.primaryLanguage ?? "en";
+    content.heading = { [sourceLocale]: planningInput.brief.businessIdentity.businessName };
+    content.items = description
+      ? [
+          {
+            id: "approved_brand_fact",
+            kind: "brandFact",
+            statement: { [sourceLocale]: description },
+            evidence: {
+              source: "merchant-approved",
+              authorityId: planningInput.brief.id,
+              revision: String(planningInput.brief.revision),
+              status: "approved",
+              approvalAuthorityId: planningInput.brief.approval.actorId,
+              approvalFingerprint: planningInput.brief.approvedEvidenceFingerprint,
+            },
+          },
+        ]
+      : [];
   }
 
   const preferredAssetId =
@@ -728,27 +799,35 @@ function mappedHomepageBridgePresentation(
       ? ["heroDesktop", "heroMobile", "editorialImage"]
       : component === "homepagePromotion"
         ? ["editorialImage", "heroDesktop", "heroMobile"]
-        : component === "homepageFeaturedCollections" ||
-            component === "homepageCollectionNavigation"
-          ? ["collectionImage", "editorialImage"]
-          : [];
-  const approvedAsset = planningInput.approvedAssetContext?.assets.find(
-    (asset) =>
-      acceptedRoles.includes(asset.role) &&
-      (preferredAssetId === undefined || asset.assetId === preferredAssetId),
-  );
+        : component === "homepageEditorial"
+          ? ["editorialImage", "heroDesktop", "heroMobile"]
+          : component === "homepageFeaturedCollections" ||
+              component === "homepageCollectionNavigation"
+            ? ["collectionImage", "editorialImage"]
+            : [];
+  const approvedAssets = (planningInput.approvedAssetContext?.assets ?? [])
+    .filter(
+      (asset) =>
+        acceptedRoles.includes(asset.role) &&
+        (preferredAssetId === undefined || asset.assetId === preferredAssetId),
+    )
+    .slice(0, component === "homepageEditorial" ? 3 : 1);
   const assetSlotId =
     component === "homepageHero"
       ? "heroMedia"
       : component === "homepagePromotion"
         ? "promotionMedia"
-        : "collectionMedia";
+        : component === "homepageEditorial"
+          ? "storyMedia"
+          : "collectionMedia";
   return {
     content,
     props,
-    assetAssignments: approvedAsset
-      ? [{ slotId: assetSlotId, assetId: approvedAsset.assetId, role: approvedAsset.role }]
-      : [],
+    assetAssignments: approvedAssets.map((asset) => ({
+      slotId: assetSlotId,
+      assetId: asset.assetId,
+      role: asset.role,
+    })),
   };
 }
 
@@ -852,6 +931,12 @@ function authoritativeHomepageProfileComponents(input: {
       if (!replacementSource && !profileSlot.required) {
         if (profileSlot.omitWhen === "when-not-requested") return [];
         if (
+          profileSlot.omitWhen === "when-evidence-is-unavailable" &&
+          planningInput.brief.businessIdentity.shortDescription.trim().length === 0
+        ) {
+          return [];
+        }
+        if (
           profileSlot.omitWhen === "when-imagery-is-unavailable" &&
           !planningInput.approvedAssetContext?.assets.some(
             (asset) => asset.role === "editorialImage",
@@ -873,6 +958,10 @@ function authoritativeHomepageProfileComponents(input: {
               props: legacyDefinition.defaultProps,
               assetAssignments: [],
             };
+      const mappedAssetAssignments =
+        bridgeComponent === "homepageEditorial" && slot.variant === "continuationCta"
+          ? []
+          : mappedPresentation.assetAssignments;
       const instance = componentInstanceV2Schema.parse({
         id: componentId,
         component: slot.component,
@@ -882,9 +971,15 @@ function authoritativeHomepageProfileComponents(input: {
         props: structuredClone(mappedPresentation.props),
         styleOverrides: bridgeComponent ? { surface: "plain" } : {},
         bindings: bridgeComponent
-          ? homepageBindings(bridgeComponent, planningInput, revision, replacementSource)
+          ? homepageBindings(
+              bridgeComponent,
+              planningInput,
+              revision,
+              replacementSource,
+              mappedAssetAssignments,
+            )
           : [],
-        assetAssignments: mappedPresentation.assetAssignments,
+        assetAssignments: mappedAssetAssignments,
       });
       try {
         registry.validateInstance(instance);

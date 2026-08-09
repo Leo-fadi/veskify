@@ -255,8 +255,11 @@ for (const width of [375, 768, 1024, 1440]) {
         const productGrid = page.locator(`.product-grid[data-item-count="${itemCount}"]`);
         await expect(categoryGrid).toBeVisible();
         await expect(productGrid).toBeVisible();
-        await expect(categoryGrid.locator(".category-card")).toHaveCount(itemCount);
-        await expect(productGrid.locator(".product-card")).toHaveCount(itemCount);
+        // Card anatomy is now shared by both the legacy storefront projection
+        // and the canonical commercial-family renderer. Assert the semantic
+        // list items instead of either renderer's implementation class name.
+        await expect(categoryGrid.locator("article")).toHaveCount(itemCount);
+        await expect(productGrid.locator("article")).toHaveCount(itemCount);
         const [categoryColumns, productColumns] = await Promise.all([
           categoryGrid.evaluate(
             (grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length,

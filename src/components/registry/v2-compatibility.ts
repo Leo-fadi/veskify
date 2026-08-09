@@ -77,6 +77,7 @@ const variantLabels: Readonly<Record<string, { en: string; fi: string }>> = {
   galleryDominant: { en: "Gallery dominant", fi: "Galleria etusijalla" },
   editorialSplit: { en: "Editorial split", fi: "Toimituksellinen jako" },
   fullBleedOverlay: { en: "Full-bleed overlay", fi: "Kokonainen kuva peittotekstillä" },
+  campaignMerchandising: { en: "Campaign merchandising", fi: "Kampanjan tuotteistus" },
   overlay: { en: "Overlay", fi: "Päällekkäinen" },
   row: { en: "Row", fi: "Rivi" },
   imageOverlay: { en: "Image overlay", fi: "Teksti kuvan päällä" },
@@ -98,6 +99,14 @@ const variantLabels: Readonly<Record<string, { en: string; fi: string }>> = {
   imageLeft: { en: "Image left", fi: "Kuva vasemmalla" },
   imageRight: { en: "Image right", fi: "Kuva oikealla" },
   stacked: { en: "Stacked", fi: "Päällekkäinen" },
+  imageText: { en: "Image and text", fi: "Kuva ja teksti" },
+  brandStory: { en: "Brand story", fi: "Bränditarina" },
+  craftProcess: { en: "Craft and process", fi: "Valmistus ja prosessi" },
+  lookbookGallery: { en: "Lookbook gallery", fi: "Lookbook-galleria" },
+  continuationCta: { en: "Continuation", fi: "Jatko" },
+  quoteSpotlight: { en: "Quote spotlight", fi: "Lainausnosto" },
+  proofGrid: { en: "Proof grid", fi: "Näyttöruudukko" },
+  serviceAssurance: { en: "Service assurance", fi: "Palvelulupaus" },
 };
 
 function localizedLabel(value: string) {

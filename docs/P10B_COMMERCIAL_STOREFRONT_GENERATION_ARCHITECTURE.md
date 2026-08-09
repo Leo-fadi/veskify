@@ -1,11 +1,11 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01 through P10B-05 are **Baseline**; P10B-06 through
-P10B-18 remain **Planned**.
+**Status:** Binding architecture. P10B-01 through P10B-05 and P10B-07 are **Baseline**; P10B-06
+and P10B-08 through P10B-18 remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 8 August 2026, current `main` after merged PR #176
+**Baseline:** 8 August 2026, current `main` after merged PR #177
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -29,9 +29,13 @@ P10A remains Baseline / closed. P10B-01 is Baseline under
 under [`P10B_02_PARAMETRIC_BRAND_SYSTEM.md`](P10B_02_PARAMETRIC_BRAND_SYSTEM.md), and P10B-03 is
 Baseline under
 [`P10B_03_COMPONENT_ANATOMY_AND_MEANINGFUL_VARIANTS.md`](P10B_03_COMPONENT_ANATOMY_AND_MEANINGFUL_VARIANTS.md).
-P10B-05 is Baseline under
+P10B-04 is Baseline under
+[`P10B_04_RESPONSIVE_IMAGE_ART_DIRECTION.md`](P10B_04_RESPONSIVE_IMAGE_ART_DIRECTION.md), P10B-05
+is Baseline under
 [`P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md`](P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md).
-P10B is **Partial / active**; P10B-04 and P10B-06 through P10B-18 remain Planned.
+P10B-07 is Baseline under
+[`P10B_07_HERO_EDITORIAL_CAMPAIGN_PROOF_FAMILIES.md`](P10B_07_HERO_EDITORIAL_CAMPAIGN_PROOF_FAMILIES.md).
+P10B is **Partial / active**; P10B-06 and P10B-08 through P10B-18 remain Planned.
 
 ## 2. Storefront and commerce ownership
 
@@ -418,6 +422,9 @@ publish preserved → evidence retained.
   responsive rendering, omission, and publication preservation.
 - Reject invented claims, unapproved proof, missing required assets, invalid adjacency, and
   unsupported family/profile combinations.
+- **Status:** **Baseline**. Six meaningful hero structures, editorial/story, campaign/promotion and
+  evidence-grounded proof/service families use the existing V2 registry, PageBlueprint,
+  `StorefrontSnapshot`, P10B-04 art direction and shared renderer authority.
 
 ### P10B-08 — Canonical product-card and merchandising family
 
@@ -565,14 +572,14 @@ P10B-02…13 minimum accepted capability
   → P10B-18 commercial quality and scale
 ```
 
-P10B-02 and P10B-03 were delivered in parallel after P10B-01 with disjoint ownership. P10B-05
-remains Planned and must preserve those boundaries:
+P10B-02 and P10B-03 were delivered in parallel after P10B-01 with disjoint ownership. P10B-04,
+P10B-05 and P10B-07 now consume and preserve those boundaries:
 
 - P10B-02 owns `BrandSystem`, semantic projection, and its migrations;
 - P10B-03 owns component anatomy/compatibility contracts and their migrations;
 - P10B-05 owns site-map, page-family, PageBlueprint profile, and page-set validation contracts.
 
-P10B-04 begins after the required P10B-02/P10B-03 foundation. Later family/profile tasks may use
+Later family/profile tasks may use
 separate worktrees when their component/profile files do not overlap. Shared registry indexes,
 canonical schema exports, migration order, generated manifests, direction registry, synthesis
 authority, and common renderer boundaries require one named integration owner and must not be
@@ -592,6 +599,6 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01, P10B-02, P10B-03, and P10B-05 are Baseline under the disjoint ownership constraints in
-section 15. No later implementation task is complete merely because this architecture is approved
-or the completed foundations passed.
+P10B-01, P10B-02, P10B-03, P10B-04, P10B-05, and P10B-07 are Baseline under the disjoint ownership
+constraints in section 15. No later implementation task is complete merely because this
+architecture is approved or the completed foundations passed.

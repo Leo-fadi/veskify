@@ -3,13 +3,19 @@ import {
   homepageCollectionNavigationDefinition,
   homepageFeaturedCollectionsDefinition,
   homepageFeaturedProductsDefinition,
+  homepageEditorialDefinition,
   homepageHeroDefinition,
+  homepageProofDefinition,
   homepagePromotionDefinition,
   homepageTrustDefinition,
 } from "./homepage-commerce";
 
 function registeredVariants(definition: Readonly<{ variants: readonly { id: string }[] }>) {
   return definition.variants.map(({ id }) => id);
+}
+
+function registeredPageTypes(definition: Readonly<{ supportedPageTypes: readonly PageType[] }>) {
+  return definition.supportedPageTypes;
 }
 
 /**
@@ -95,7 +101,7 @@ export const supportedSectionManifest = {
     variants: ["balanced", "editorial", "compact", "galleryDominant", "editorialSplit"] as const,
   },
   homepageHero: {
-    allowedPageTypes: ["home"] as const satisfies readonly PageType[],
+    allowedPageTypes: registeredPageTypes(homepageHeroDefinition),
     variants: registeredVariants(homepageHeroDefinition),
   },
   homepageFeaturedCollections: {
@@ -111,12 +117,20 @@ export const supportedSectionManifest = {
     variants: registeredVariants(homepageCollectionNavigationDefinition),
   },
   homepagePromotion: {
-    allowedPageTypes: ["home"] as const satisfies readonly PageType[],
+    allowedPageTypes: registeredPageTypes(homepagePromotionDefinition),
     variants: registeredVariants(homepagePromotionDefinition),
   },
   homepageTrust: {
-    allowedPageTypes: ["home"] as const satisfies readonly PageType[],
+    allowedPageTypes: registeredPageTypes(homepageTrustDefinition),
     variants: registeredVariants(homepageTrustDefinition),
+  },
+  homepageEditorial: {
+    allowedPageTypes: registeredPageTypes(homepageEditorialDefinition),
+    variants: registeredVariants(homepageEditorialDefinition),
+  },
+  homepageProof: {
+    allowedPageTypes: registeredPageTypes(homepageProofDefinition),
+    variants: registeredVariants(homepageProofDefinition),
   },
 } as const;
 

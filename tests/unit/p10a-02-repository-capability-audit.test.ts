@@ -31,20 +31,20 @@ function capabilityMatrixStatuses(): string[] {
 
 describe("P10A-02 repository capability audit", () => {
   it("keeps every legacy renderer registration represented in the canonical V2 registry", () => {
-    expect(p10a02ComponentCapabilityAudit.v1RegisteredComponentTypes).toHaveLength(25);
+    expect(p10a02ComponentCapabilityAudit.v1RegisteredComponentTypes).toHaveLength(27);
     expect(p10a02ComponentCapabilityAudit.v1TypesMissingV2Definition).toEqual([]);
     expect(p10a02ComponentCapabilityAudit.rendererTypesMissingV2Definition).toEqual([]);
   });
 
   it("keeps every V2 component type connected to either the legacy bridge or an all-surface renderer", () => {
-    expect(p10a02ComponentCapabilityAudit.v2RegisteredComponentTypes).toHaveLength(25);
-    expect(p10a02ComponentCapabilityAudit.v2RegisteredVariantCount).toBe(91);
+    expect(p10a02ComponentCapabilityAudit.v2RegisteredComponentTypes).toHaveLength(27);
+    expect(p10a02ComponentCapabilityAudit.v2RegisteredVariantCount).toBe(100);
     expect(p10a02ComponentCapabilityAudit.componentFamilyCounts).toEqual({
-      content: 17,
+      content: 18,
       commerce: 4,
       marketing: 2,
       navigation: 1,
-      service: 1,
+      service: 2,
     });
     expect(p10a02ComponentCapabilityAudit.v2TypesMissingRegisteredRenderer).toEqual([]);
     expect(p10a02ComponentCapabilityAudit.v2TypesWithoutLegacyRegistryBridge).toEqual([]);
@@ -61,8 +61,8 @@ describe("P10A-02 repository capability audit", () => {
     });
 
     expect(p10a02ComponentCapabilityAudit.pageFamilyComponentCounts).toEqual({
-      home: 16,
-      collection: 6,
+      home: 18,
+      collection: 8,
       product: 9,
     });
   });

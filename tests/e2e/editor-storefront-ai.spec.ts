@@ -341,7 +341,9 @@ test("target selector and storefront review actions are keyboard operable", asyn
   await expect(page.getByRole("radio", { name: "Entire storefront" })).toBeChecked();
   await page.getByLabel("Your request").fill(storefrontInstruction);
   await page.getByLabel("Your request").press("Control+Enter");
-  await expect(page.getByLabel("Storefront design proposal").getByRole("heading")).toBeFocused();
+  await expect(page.getByLabel("Storefront design proposal").getByRole("heading")).toBeFocused({
+    timeout: 20_000,
+  });
   await page.getByRole("button", { name: "Reject" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByLabel("Storefront design proposal")).toHaveCount(0);

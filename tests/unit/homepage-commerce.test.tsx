@@ -1177,10 +1177,10 @@ describe("P6-05 dynamic homepage commerce component family", () => {
   });
 
   it("registers accessible product-type-independent responsive contracts", () => {
-    expect(homepageCommerceDefinitions).toHaveLength(6);
+    expect(homepageCommerceDefinitions).toHaveLength(8);
     expect(homepageHeroDefinition.industryTags).toEqual([]);
     for (const definition of homepageCommerceDefinitions) {
-      expect(definition.supportedPageTypes).toEqual(["home"]);
+      expect(definition.supportedPageTypes).toContain("home");
       expect(definition.responsiveRules[0]?.breakpoints).toEqual([
         "mobile",
         "tablet",

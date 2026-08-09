@@ -108,7 +108,8 @@ describe("deterministic initial storefront materializer", () => {
           .filter(
             (slot) =>
               slot.omitWhen !== "when-not-requested" &&
-              slot.omitWhen !== "when-imagery-is-unavailable",
+              slot.omitWhen !== "when-imagery-is-unavailable" &&
+              slot.omitWhen !== "when-evidence-is-unavailable",
           )
           .map((slot) => slot.sectionType),
       ),
@@ -124,6 +125,19 @@ describe("deterministic initial storefront materializer", () => {
             true,
           );
         });
+    });
+  });
+
+  it("omits proof until a canonical approved-evidence authority is available", () => {
+    const result = materializeInitialStorefront(input("template_balanced_commerce"));
+    const homepage = result.generatedSnapshot?.pages.find((page) => page.type === "home");
+
+    expect(homepage?.sections.some((section) => section.component === "homepageProof")).toBe(false);
+    expect(result.provenance.omissions).toContainEqual({
+      pageType: "home",
+      slotId: "approved-proof",
+      sectionType: "homepageProof",
+      condition: "when-evidence-is-unavailable",
     });
   });
 

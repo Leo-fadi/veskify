@@ -28,9 +28,15 @@ import {
   homepageFeaturedProductsContentSchema,
   homepageFeaturedProductsDefinition,
   homepageFeaturedProductsPropsSchema,
+  homepageEditorialContentSchema,
+  homepageEditorialDefinition,
+  homepageEditorialPropsSchema,
   homepageHeroContentSchema,
   homepageHeroDefinition,
   homepageHeroPropsSchema,
+  homepageProofContentSchema,
+  homepageProofDefinition,
+  homepageProofPropsSchema,
   homepageCollectionNavigationDefinition,
   homepageFeaturedCollectionsDefinition,
   homepagePromotionDefinition,
@@ -48,6 +54,8 @@ export const homepageCommerceBridgeComponentNames = [
   "homepageCollectionNavigation",
   "homepagePromotion",
   "homepageTrust",
+  "homepageEditorial",
+  "homepageProof",
 ] as const;
 
 export type HomepageCommerceBridgeComponent = (typeof homepageCommerceBridgeComponentNames)[number];
@@ -70,6 +78,8 @@ export const homepageCommerceBridgeVariants: Readonly<
   homepageCollectionNavigation: variantIds(homepageCollectionNavigationDefinition),
   homepagePromotion: variantIds(homepagePromotionDefinition),
   homepageTrust: variantIds(homepageTrustDefinition),
+  homepageEditorial: variantIds(homepageEditorialDefinition),
+  homepageProof: variantIds(homepageProofDefinition),
 };
 
 export const homepageCommerceBridgeDefaults = {
@@ -146,6 +156,25 @@ export const homepageCommerceBridgeDefaults = {
       ],
     }),
     props: homepageTrustPropsSchema.parse({ columns: 3, textAlignment: "left" }),
+  },
+  homepageEditorial: {
+    content: homepageEditorialContentSchema.parse({
+      eyebrow: { en: "Our perspective", fi: "Näkökulmamme" },
+      heading: { en: "A considered point of view", fi: "Harkittu näkökulma" },
+      body: {
+        en: "Discover the approved story and imagery behind the collection.",
+        fi: "Tutustu malliston hyväksyttyyn tarinaan ja kuvamaailmaan.",
+      },
+    }),
+    props: homepageEditorialPropsSchema.parse({
+      mediaPosition: "right",
+      textAlignment: "left",
+      galleryColumns: 2,
+    }),
+  },
+  homepageProof: {
+    content: homepageProofContentSchema.parse({ items: [] }),
+    props: homepageProofPropsSchema.parse({ columns: 3, textAlignment: "left" }),
   },
 } satisfies Readonly<
   Record<
@@ -323,7 +352,7 @@ function instanceFor(
   const actionLabel =
     component === "homepageHero"
       ? contentRecord.primaryActionLabel
-      : component === "homepagePromotion"
+      : ["homepagePromotion", "homepageTrust", "homepageEditorial"].includes(component)
         ? contentRecord.actionLabel
         : undefined;
   const actionNavigationItem = actionLabel
@@ -355,9 +384,19 @@ function instanceFor(
       productIds,
       revision,
     });
-  if (actionNavigationItem && (component === "homepageHero" || component === "homepagePromotion")) {
+  if (
+    actionNavigationItem &&
+    ["homepageHero", "homepagePromotion", "homepageTrust", "homepageEditorial"].includes(component)
+  ) {
     bindings.push({
-      slotId: component === "homepageHero" ? "primaryAction" : "promotionAction",
+      slotId:
+        component === "homepageHero"
+          ? "primaryAction"
+          : component === "homepagePromotion"
+            ? "promotionAction"
+            : component === "homepageTrust"
+              ? "supportAction"
+              : "editorialAction",
       source: "navigation",
       navigationId: actionNavigationItem.id,
       revision,
@@ -378,6 +417,17 @@ function instanceFor(
         revision: placement.assetRevision,
       });
     }
+  }
+  if (component === "homepageEditorial") {
+    const bindingSlots = ["storyPrimaryAsset", "storySecondaryAsset", "storyTertiaryAsset"];
+    componentPlacements.slice(0, bindingSlots.length).forEach((placement, index) => {
+      bindings.push({
+        slotId: bindingSlots[index],
+        source: "asset",
+        assetId: placement.assetId,
+        revision: placement.assetRevision,
+      });
+    });
   }
   return componentInstanceV2Schema.parse({
     id: sectionId,
@@ -426,7 +476,7 @@ function bridge<ContentSchema extends z.ZodType, PropsSchema extends z.ZodType>(
   return defineComponent({
     type: input.component,
     label: input.label,
-    allowedPageTypes: ["home"],
+    allowedPageTypes: [...veskifyComponentRegistryV2.get(input.component).supportedPageTypes],
     variants: componentVariants,
     defaultVariant: componentVariants[0],
     contentSchema: input.contentSchema,
@@ -539,5 +589,21 @@ export const homepageCommerceBridgeDefinitions = {
     propsSchema: homepageTrustPropsSchema,
     defaultContent: homepageCommerceBridgeDefaults.homepageTrust.content,
     defaultProps: homepageCommerceBridgeDefaults.homepageTrust.props,
+  }),
+  homepageEditorial: bridge({
+    component: "homepageEditorial",
+    label: "Editorial storytelling",
+    contentSchema: homepageEditorialContentSchema,
+    propsSchema: homepageEditorialPropsSchema,
+    defaultContent: homepageCommerceBridgeDefaults.homepageEditorial.content,
+    defaultProps: homepageCommerceBridgeDefaults.homepageEditorial.props,
+  }),
+  homepageProof: bridge({
+    component: "homepageProof",
+    label: "Evidence-grounded proof",
+    contentSchema: homepageProofContentSchema,
+    propsSchema: homepageProofPropsSchema,
+    defaultContent: homepageCommerceBridgeDefaults.homepageProof.content,
+    defaultProps: homepageCommerceBridgeDefaults.homepageProof.props,
   }),
 } as const;

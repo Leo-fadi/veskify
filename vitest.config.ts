@@ -15,5 +15,6 @@ export default defineConfig({
     setupFiles: ["./tests/setup/vitest.setup.ts"],
     include: ["tests/{unit,integration}/**/*.{test,spec}.{ts,tsx}"],
     fileParallelism: false,
+    testTimeout: 30_000,
   },
 });

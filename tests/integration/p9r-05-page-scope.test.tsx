@@ -150,7 +150,11 @@ describe("P9R-05 homepage-only composition scope", () => {
     expect(
       rendered.container.querySelector('[data-component="homepageFeaturedProducts"]'),
     ).toBeTruthy();
-    expect(rendered.container.querySelector(".brand-story.store-variant--minimal")).toBeTruthy();
+    expect(
+      rendered.container.querySelector(
+        '[data-component="homepageEditorial"][data-variant="continuationCta"]',
+      ),
+    ).toBeTruthy();
     expect(rendered.container.querySelector('[data-component="homepageTrust"]')).toBeTruthy();
     expect(rendered.container.querySelector(".store-footer.store-variant--compact")).toBeTruthy();
     expect(accepted.activeDraft.brandSystem).toEqual(baseline.brandSystem);

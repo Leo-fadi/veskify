@@ -347,6 +347,8 @@ describe("P9R-02 shared-frame and homepage generation", () => {
             "homepageFeaturedProducts",
             "homepageCollectionNavigation",
             "homepagePromotion",
+            "homepageEditorial",
+            "homepageProof",
             "homepageTrust",
           ]).toContain(component.component);
           expect(component.bindings).toEqual(
@@ -447,7 +449,9 @@ describe("P9R-02 shared-frame and homepage generation", () => {
       aurumNordicSeed.catalogue,
     );
     expect(
-      modernRender.container.querySelector(".brand-story.store-variant--minimal"),
+      modernRender.container.querySelector(
+        '[data-component="homepageEditorial"][data-variant="continuationCta"]',
+      ),
     ).toBeTruthy();
     expect(
       modernRender.container.querySelector(".campaign-banner.store-variant--minimal"),
