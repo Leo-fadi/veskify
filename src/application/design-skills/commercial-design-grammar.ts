@@ -211,6 +211,9 @@ function assertMaterialization(
     slots: materialization.slots,
     requiredBindingCategories: materialization.requiredBindingCategories,
     requiredAssetRoles: materialization.requiredAssetRoles,
+    ...(materialization.commercialHomepage
+      ? { commercialHomepage: materialization.commercialHomepage }
+      : {}),
   };
   const expectedFingerprint = `page-blueprint-${canonicalValueFingerprint(canonicalValueString(content))}`;
   if (
@@ -223,6 +226,8 @@ function assertMaterialization(
       canonicalValueString([...currentProfile.requiredBindingCategories].sort()) ||
     canonicalValueString([...materialization.requiredAssetRoles].sort()) !==
       canonicalValueString([...currentProfile.requiredAssetRoles].sort()) ||
+    canonicalValueString(materialization.commercialHomepage ?? null) !==
+      canonicalValueString(currentPagePlan.profile?.commercialHomepage ?? null) ||
     materialization.slots.length !== currentProfile.componentSelections.length ||
     materialization.slots.some((candidate, index) => {
       const current = currentProfile.componentSelections[index];

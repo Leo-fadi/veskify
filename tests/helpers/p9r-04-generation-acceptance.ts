@@ -155,8 +155,21 @@ function recipeIdFor(page: PageModel): string {
           return slot?.required === false && slot.omitWhen !== "never";
         }),
     );
-    if (executableMatches.length === 1) {
-      return executableMatches[0]?.profile?.id ?? "uncoordinated-home-baseline";
+    const mostSpecificMatches = executableMatches
+      .map((plan) => ({
+        plan,
+        matchedSelections:
+          plan.profile?.componentSelections.filter((selection) =>
+            actualSelections.has(`${selection.component}:${selection.defaultVariant}`),
+          ).length ?? 0,
+      }))
+      .sort((left, right) => right.matchedSelections - left.matchedSelections);
+    if (
+      mostSpecificMatches.length > 0 &&
+      (mostSpecificMatches.length === 1 ||
+        mostSpecificMatches[0]?.matchedSelections !== mostSpecificMatches[1]?.matchedSelections)
+    ) {
+      return mostSpecificMatches[0]?.plan.profile?.id ?? "uncoordinated-home-baseline";
     }
   }
   const recipes =

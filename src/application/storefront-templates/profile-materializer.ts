@@ -10,7 +10,10 @@ import {
   executablePageBlueprintProfileSchema,
   storefrontTemplatePagePlanSchema,
   type StorefrontTemplatePagePlan,
+  type CommercialHomepageProfileAuthority,
 } from "./contract";
+import { getCommercialSharedFrameProfile } from "@/domain/storefront/commercial-shared-frame";
+import { requireCanonicalProductCardAnatomy } from "@/domain/product-card";
 
 export type ExecutablePageBlueprintMaterialization = Readonly<{
   profileId: string;
@@ -28,6 +31,7 @@ export type ExecutablePageBlueprintMaterialization = Readonly<{
   }>[];
   requiredBindingCategories: readonly string[];
   requiredAssetRoles: readonly string[];
+  commercialHomepage?: CommercialHomepageProfileAuthority;
   fingerprint: string;
 }>;
 
@@ -120,6 +124,15 @@ export function materializeExecutablePageBlueprint(
     throw new ExecutablePageBlueprintMaterializationError(
       "invalid-profile",
       `PageBlueprint profile ${profile.id} is invalid.`,
+    );
+  }
+  if (profile.commercialHomepage) {
+    profile.commercialHomepage.compatibleSharedFrameProfileIds.forEach(
+      getCommercialSharedFrameProfile,
+    );
+    requireCanonicalProductCardAnatomy(
+      profile.commercialHomepage.productCardAnatomyId,
+      "homepageMerchandising",
     );
   }
   if (
@@ -292,6 +305,9 @@ export function materializeExecutablePageBlueprint(
     slots,
     requiredBindingCategories: [...profile.requiredBindingCategories],
     requiredAssetRoles: [...profile.requiredAssetRoles],
+    ...(profile.commercialHomepage
+      ? { commercialHomepage: structuredClone(profile.commercialHomepage) }
+      : {}),
   };
   return freeze({
     ...materialization,

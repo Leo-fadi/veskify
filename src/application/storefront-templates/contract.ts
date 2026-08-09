@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { idSchema, isoDateTimeSchema } from "@/domain/shared";
 import { pageTypeSchema } from "@/domain/storefront";
+import { commercialSharedFrameProfileIdSchema } from "@/domain/storefront/commercial-shared-frame";
+import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
 import {
   assetRoleSchema,
   commerceBindingSourceTypeSchema,
@@ -63,6 +65,149 @@ const pageBlueprintFlowRuleIdSchema = z
   .regex(/^[a-z][A-Za-z0-9]*(?:[._-][a-z][A-Za-z0-9]*)*$/);
 
 const pageBlueprintProfileVersionSchema = z.string().regex(/^\d+\.\d+\.\d+$/);
+
+const commercialHomepageFingerprintSchema = z.string().trim().min(1).max(240);
+
+export const commercialHomepageProfileAuthoritySchema = z
+  .object({
+    family: z.literal("commercial-homepage"),
+    compatibleSharedFrameProfileIds: z.array(commercialSharedFrameProfileIdSchema).min(1),
+    defaultSharedFrameProfileId: commercialSharedFrameProfileIdSchema,
+    merchandisingEmphasis: z.enum([
+      "curated-products",
+      "product-discovery",
+      "restrained-commerce",
+      "campaign-conversion",
+      "collection-discovery",
+      "considered-purchase",
+    ]),
+    productCardAnatomyId: canonicalProductCardAnatomyIdSchema,
+    sectionCardinality: z.array(
+      z
+        .object({
+          slotId: z.string().trim().min(1).max(80),
+          minimum: z.number().int().nonnegative(),
+          ideal: z.number().int().nonnegative(),
+          maximum: z.number().int().positive(),
+        })
+        .strict()
+        .superRefine((cardinality, context) => {
+          if (cardinality.minimum > cardinality.ideal || cardinality.ideal > cardinality.maximum) {
+            context.addIssue({
+              code: "custom",
+              path: ["ideal"],
+              message: "Commercial homepage cardinality must satisfy minimum <= ideal <= maximum.",
+            });
+          }
+        }),
+    ),
+    contentCardinality: z.array(
+      z
+        .object({
+          slotId: z.string().trim().min(1).max(80),
+          resource: z.enum(["products", "collections"]),
+          minimum: z.number().int().nonnegative(),
+          ideal: z.number().int().nonnegative(),
+          maximum: z.number().int().positive(),
+        })
+        .strict()
+        .superRefine((cardinality, context) => {
+          if (cardinality.minimum > cardinality.ideal || cardinality.ideal > cardinality.maximum) {
+            context.addIssue({
+              code: "custom",
+              path: ["ideal"],
+              message:
+                "Commercial homepage content cardinality must satisfy minimum <= ideal <= maximum.",
+            });
+          }
+        }),
+    ),
+    evidenceRequirements: z.array(
+      z
+        .object({
+          slotId: z.string().trim().min(1).max(80),
+          authority: z.enum([
+            "canonical-commerce",
+            "approved-merchant-evidence",
+            "approved-media",
+            "none",
+          ]),
+          unsatisfiedPolicy: z.enum(["fail-closed", "omit"]),
+        })
+        .strict(),
+    ),
+    responsiveArchitecture: z.tuple([
+      z
+        .object({
+          breakpoint: z.literal("mobile"),
+          viewport: z.literal(375),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("tablet"),
+          viewport: z.literal(768),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("desktop"),
+          viewport: z.literal(1024),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("wide"),
+          viewport: z.literal(1440),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+    ]),
+    designDnaNarrowing: z
+      .object({
+        spacingDensity: z.array(z.enum(["compact", "standard", "spacious"])).min(1),
+        surfaceDepth: z.array(z.enum(["flat", "subtle", "layered"])).min(1),
+        imagePosture: z.array(z.enum(["contained", "editorial", "immersive"])).min(1),
+      })
+      .strict(),
+    structuralSignature: commercialHomepageFingerprintSchema,
+    structuralFingerprint: commercialHomepageFingerprintSchema,
+  })
+  .strict()
+  .superRefine((authority, context) => {
+    if (
+      !authority.compatibleSharedFrameProfileIds.includes(authority.defaultSharedFrameProfileId)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["defaultSharedFrameProfileId"],
+        message: "The default shared frame must be one of the profile-compatible frames.",
+      });
+    }
+    for (const [path, values] of [
+      ["compatibleSharedFrameProfileIds", authority.compatibleSharedFrameProfileIds],
+      ["sectionCardinality", authority.sectionCardinality.map((entry) => entry.slotId)],
+      [
+        "contentCardinality",
+        authority.contentCardinality.map((entry) => `${entry.slotId}:${entry.resource}`),
+      ],
+      [
+        "evidenceRequirements",
+        authority.evidenceRequirements.map((entry) => `${entry.slotId}:${entry.authority}`),
+      ],
+    ] as const) {
+      if (new Set(values).size !== values.length) {
+        context.addIssue({
+          code: "custom",
+          path: [path],
+          message: "Commercial homepage authority entries must be unique.",
+        });
+      }
+    }
+  });
 
 const pageBlueprintComponentSelectionSchema = z
   .object({
@@ -130,6 +275,7 @@ export const executablePageBlueprintProfileSchema = z
       z.literal("wide"),
     ]),
     accessibilityContract: z.literal("registered-component-contracts"),
+    commercialHomepage: commercialHomepageProfileAuthoritySchema.optional(),
   })
   .strict()
   .superRefine((profile, context) => {
@@ -384,6 +530,9 @@ export type PageBlueprintCompositionContract = z.infer<
   typeof pageBlueprintCompositionContractSchema
 >;
 export type ExecutablePageBlueprintProfile = z.infer<typeof executablePageBlueprintProfileSchema>;
+export type CommercialHomepageProfileAuthority = z.infer<
+  typeof commercialHomepageProfileAuthoritySchema
+>;
 export type StorefrontTemplateSlot = z.infer<typeof storefrontTemplateSlotSchema>;
 export type StorefrontTemplatePagePlan = z.infer<typeof storefrontTemplatePagePlanSchema>;
 export type LegacyStorefrontTemplatePagePlan = z.infer<

@@ -12,6 +12,7 @@ import {
   applyRegisteredTokenRefinement,
   registeredBrandSystemForDirection,
 } from "@/application/storefront-design-system";
+import { commercialHomepageProfileIdSchema } from "@/application/storefront-templates";
 import {
   storefrontStyleDesignSystems,
   storefrontStyleDirectionForRegisteredDirection,
@@ -187,8 +188,18 @@ function validateCurrentPlan(input: WholeStorefrontProposalCompilationInput) {
 
 function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
   try {
+    const homepageMaterialization = input.plan.pageBlueprintMaterializations.find(
+      (entry) => entry.pageType === "home",
+    );
     return createWholeStorefrontGenerationPlan(input.planningInput, {
       directionId: input.plan.designSystemSelection.directionId,
+      ...(homepageMaterialization?.commercialHomepage
+        ? {
+            homepageProfileId: commercialHomepageProfileIdSchema.parse(
+              homepageMaterialization.profileId,
+            ),
+          }
+        : {}),
       tokenRefinementPlan: input.plan.tokenRefinementPlan,
     });
   } catch (error) {
@@ -387,14 +398,20 @@ function pageTypeForRole(
 function coordinatedRuntimeComponent(
   component: WholeStorefrontRuntimeComponent,
   plan: ReturnType<typeof validateCurrentPlan>,
-  pageRole: WholeStorefrontRuntimePage["role"],
+  pagePlan: ReturnType<typeof validateCurrentPlan>["pagePlans"][number],
 ): WholeStorefrontRuntimeComponent {
   if (plan.tokenRefinementPlan !== null) return component;
-  const materialization = executableMaterializationForPage(plan, pageRole);
+  const materialization = executableMaterializationForPage(plan, pagePlan.role);
+  const planned = pagePlan.components.find(
+    (candidate) => "instance" in candidate && candidate.instance.id === component.id,
+  );
+  const plannedSlotId = planned && "instance" in planned ? planned.pageBlueprintSlotId : undefined;
   const selection =
     component.component === "header" || component.component === "footer"
       ? undefined
-      : materialization?.slots.find((slot) => slot.component === component.component);
+      : plannedSlotId
+        ? materialization?.slots.find((slot) => slot.slotId === plannedSlotId)
+        : materialization?.slots.find((slot) => slot.component === component.component);
   return selection ? { ...component, variant: selection.variant } : component;
 }
 
@@ -456,6 +473,7 @@ function executableMaterializationForPage(
 function orderRuntimeComponentsForMaterialization(
   components: readonly WholeStorefrontRuntimeComponent[],
   materialization: NonNullable<ReturnType<typeof executableMaterializationForPage>>,
+  pagePlan: ReturnType<typeof validateCurrentPlan>["pagePlans"][number],
 ): WholeStorefrontRuntimeComponent[] {
   const slotIndexes = new Map<string, number[]>();
   materialization.slots.forEach((slot, index) => {
@@ -473,11 +491,21 @@ function orderRuntimeComponentsForMaterialization(
   });
   const footerSlotIndex = materialization.slots.findIndex((slot) => slot.component === "footer");
   const consumed = new Map<string, number>();
+  const boundSlotByComponentId = new Map(
+    pagePlan.components.flatMap((component) =>
+      "instance" in component && component.pageBlueprintSlotId
+        ? [[component.instance.id, component.pageBlueprintSlotId] as const]
+        : [],
+    ),
+  );
   return components
     .map((component, originalIndex) => {
       const index = consumed.get(component.component) ?? 0;
       consumed.set(component.component, index + 1);
-      const slotIndex = slotIndexes.get(component.component)?.[index];
+      const boundSlotId = boundSlotByComponentId.get(component.id);
+      const slotIndex = boundSlotId
+        ? materialization.slots.findIndex((slot) => slot.slotId === boundSlotId)
+        : slotIndexes.get(component.component)?.[index];
       const isCompositeCommerceComponent = component.component in compositeSlotComponents;
       return {
         component:
@@ -633,11 +661,11 @@ function plannedPage(
         .map((component) => component.id)
     : [];
   const coordinatedComponents = components.map((component) =>
-    coordinatedRuntimeComponent(component, plan, pagePlan.role),
+    coordinatedRuntimeComponent(component, plan, pagePlan),
   );
   const materialization = executableMaterializationForPage(plan, pagePlan.role);
   const orderedComponents = materialization
-    ? orderRuntimeComponentsForMaterialization(coordinatedComponents, materialization)
+    ? orderRuntimeComponentsForMaterialization(coordinatedComponents, materialization, pagePlan)
     : coordinatedComponents;
   const page = {
     pageId: pagePlan.pageId,
@@ -833,7 +861,7 @@ function reviewSummary(
         const source = original.pages
           .find((candidate) => candidate.pageId === page.pageId)
           ?.components.find((candidate) => candidate.id === component.componentId);
-        const compiled = source ? coordinatedRuntimeComponent(source, plan, page.role) : undefined;
+        const compiled = source ? coordinatedRuntimeComponent(source, plan, page) : undefined;
         if (source && compiled && source.variant !== compiled.variant) {
           return [
             {

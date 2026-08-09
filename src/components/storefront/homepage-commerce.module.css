@@ -610,7 +610,9 @@
 
   .collectionGrid,
   .productGrid,
-  .trustGrid {
+  .trustGrid,
+  .variant_threeColumn .trustGrid,
+  .variant_cards .trustGrid {
     grid-template-columns: repeat(min(2, var(--homepage-columns)), minmax(0, 1fr));
   }
 
@@ -678,6 +680,8 @@
   .collectionGrid,
   .productGrid,
   .trustGrid,
+  .variant_threeColumn .trustGrid,
+  .variant_cards .trustGrid,
   .proofGrid {
     grid-template-columns: 1fr;
   }

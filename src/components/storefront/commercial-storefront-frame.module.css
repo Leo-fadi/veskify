@@ -182,6 +182,8 @@
 
 .footer[data-footer-composition="brand-editorial"] .footerBrand :global(.store-brand) {
   font-size: clamp(2.5rem, 7vw, 6rem);
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .footer[data-footer-composition="service-navigation"] {
@@ -302,5 +304,9 @@
   .desktopFrame .utilities {
     grid-column: 3 !important;
     grid-row: 1 !important;
+  }
+
+  .footer[data-footer-composition="brand-editorial"] .footerBrand :global(.store-brand) {
+    font-size: clamp(2.5rem, 5vw, 3.5rem);
   }
 }
