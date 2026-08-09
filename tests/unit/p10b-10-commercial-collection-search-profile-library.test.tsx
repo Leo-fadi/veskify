@@ -186,8 +186,8 @@ describe("P10B-10 commercial collection and search profile library", () => {
       profile.profile!.commercialCollectionSearch!.defaultSharedFrameProfileId,
     );
     const withoutEditorial = {
-      ...fixture.planningInput.approvedAssetContext!,
-      assets: fixture.planningInput.approvedAssetContext!.assets.filter(
+      ...fixture.planningInput.approvedAssetContext,
+      assets: fixture.planningInput.approvedAssetContext.assets.filter(
         (asset) => asset.role !== "editorialImage",
       ),
     };
@@ -302,7 +302,7 @@ describe("P10B-10 commercial collection and search profile library", () => {
       },
     ];
     collection.childCollectionIds = childCollections.map((child) => child.collectionId);
-    collection.filters[0]!.values[0]!.selected = true;
+    collection.filters[0].values[0].selected = true;
     projection.collections.push(...childCollections);
     instance.bindings.push({
       slotId: "childCollections",
