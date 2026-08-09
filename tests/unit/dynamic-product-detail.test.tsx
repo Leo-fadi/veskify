@@ -18,6 +18,8 @@ import type {
   ProductPresentationContext,
   StorefrontAssetMetadata,
 } from "@/domain/component-platform";
+import { createResponsiveImageAuthority } from "@/domain/asset-presentation";
+import { canonicalValueFingerprint } from "@/domain/storefront";
 
 const localized = (en: string, fi = en) => ({ en, fi });
 
@@ -166,16 +168,62 @@ function asset(
   role: StorefrontAssetMetadata["role"],
   approvalStatus: StorefrontAssetMetadata["approvalStatus"] = "approved",
 ): StorefrontAssetMetadata {
+  const sourceOwnerId =
+    assetId === "asset_related_ring"
+      ? "product_related_ring"
+      : assetId.startsWith("asset_watch")
+        ? "product_watch"
+        : "product_ring";
+  const canonicalRole =
+    role === "productMainImage" || role === "productAlternativeImage" ? role : undefined;
+  const revision = `revision_${assetId}`;
+  const source = canonicalRole
+    ? {
+        assetId,
+        role: canonicalRole,
+        revision,
+        materialFingerprint: `fixture-${canonicalValueFingerprint({ assetId, sourceOwnerId, role })}`,
+        provenanceKind: "canonicalProductMedia" as const,
+        sourceOwnerId,
+      }
+    : undefined;
   return {
     assetId,
     role,
     alt: localized(`${assetId} alt`),
     decorative: false,
-    provenance: { kind: "canonicalProductMedia", sourceId: `source_${assetId}` },
+    provenance: { kind: "canonicalProductMedia", sourceId: sourceOwnerId },
     approvalStatus,
     usageRights: "merchantOwned",
     responsiveCrops: [],
-    revision: `revision_${assetId}`,
+    revision,
+    ...(source
+      ? {
+          artDirection: createResponsiveImageAuthority({
+            contractVersion: "1.0.0",
+            source,
+            placement: {
+              componentType: "dynamicProductDetail",
+              componentVersion: "2.0.0",
+              variant: "balanced",
+              anatomyContractVersion: "1.0.0",
+              anatomyIdentity: "dynamicProductDetail.anatomy",
+              anatomyVersion: "1.0.0",
+              anatomyRegion: "media",
+              assetSlotId: "productMedia",
+              required: false,
+            },
+            sourceTreatment: {
+              ratio: "natural",
+              crop: { mode: "contain" },
+              focalPoint: { x: 0.5, y: 0.5 },
+              overlay: "none",
+            },
+            responsiveTreatments: [],
+            derivatives: [],
+          }),
+        }
+      : {}),
   };
 }
 

@@ -44,7 +44,7 @@ describe("Aurum Nordic collection renderer", () => {
     expect(screen.getAllByAltText("Aurora yellow-gold diamond ring")).toHaveLength(2);
     expect(screen.getAllByText("Aurora Ring 585").length).toBeGreaterThan(0);
     expect(screen.getByText("Lumi Halo Ring")).toBeVisible();
-    expect(screen.getByText(/1\s?290\s?€/)).toBeVisible();
+    expect(screen.getByText("€1,290")).toBeVisible();
     expect(screen.getByText("Limited availability")).toBeVisible();
     expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/");
   });

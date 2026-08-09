@@ -31,6 +31,8 @@ import { veskifyComponentRegistryV2 } from "@/components/registry/v2-registry";
 import styles from "./dynamic-collection-commerce.module.css";
 import { validateRouteUsedAssetConformance } from "./storefront-asset-conformance";
 import { ResponsiveStorefrontImage } from "./responsive-storefront-image";
+import { CanonicalProductCard } from "./canonical-product-card";
+import type { CanonicalProductCardContext } from "@/domain/product-card";
 
 export const collectionLoadingPresentationSchema = z
   .object({ status: z.enum(["ready", "loading"]) })
@@ -127,6 +129,7 @@ export type DynamicCollectionCommerceRendererInput = {
 type LocaleContext = { activeLocale: Locale; primaryLocale: Locale };
 type ResolvedAsset = {
   asset: AssetRef;
+  metadata: StorefrontAssetMetadata;
   provenance: StorefrontAssetMetadata["provenance"];
   role: StorefrontAssetMetadata["role"];
   artDirection?: StorefrontAssetMetadata["artDirection"];
@@ -171,7 +174,7 @@ function productMediaAssetRole(role: ProductMediaPresentation["role"]): Selected
 }
 
 function selectCardMedia(product: ProductPresentationContext): SelectedCardMedia | undefined {
-  const media = product.media[0];
+  const media = product.media.find(({ role }) => role !== "editorial");
   return media ? { media, role: productMediaAssetRole(media.role) } : undefined;
 }
 
@@ -341,6 +344,7 @@ function prepareDynamicCollectionCommerce(
           alt: alt ?? metadata.alt,
           decorative: metadata.decorative,
         }),
+        metadata,
         provenance: metadata.provenance,
         role: metadata.role,
         ...(metadata.artDirection === undefined ? {} : { artDirection: metadata.artDirection }),
@@ -357,17 +361,6 @@ function CommerceImage({ resolved, locale }: { resolved: ResolvedAsset; locale: 
   );
 }
 
-function moneyLabel(
-  value: NonNullable<ProductPresentationContext["price"]>,
-  locale: LocaleContext,
-) {
-  if (value.formatted) return text(value.formatted, locale);
-  return new Intl.NumberFormat(locale.activeLocale === "fi" ? "fi-FI" : "en-FI", {
-    style: "currency",
-    currency: value.currency,
-  }).format(value.amount);
-}
-
 export function DynamicCollectionProductCard({
   product,
   media,
@@ -376,6 +369,7 @@ export function DynamicCollectionProductCard({
   content,
   props,
   onNavigateProduct,
+  context = "collectionResults",
 }: {
   product: ProductPresentationContext;
   media?: ProductMediaPresentation;
@@ -384,84 +378,24 @@ export function DynamicCollectionProductCard({
   content: DynamicCollectionCommerceContent;
   props: DynamicCollectionCommerceProps;
   onNavigateProduct: DynamicCollectionCommerceRendererInput["onNavigateProduct"];
+  context?: CanonicalProductCardContext;
 }) {
-  const titleId = useId();
   const image = media ? assetFor(media.assetId, media.alt ?? product.title) : undefined;
-  const attributes = product.attributeGroups
-    .flatMap((group) => group.attributes)
-    .slice(0, props.conciseAttributeLimit);
-  const sale =
-    product.price !== undefined &&
-    product.compareAtPrice !== undefined &&
-    product.compareAtPrice.amount > product.price.amount;
-  const emitNavigation = () =>
-    onNavigateProduct(
-      productNavigationIntentSchema.parse({
-        type: "navigateToProduct",
-        productId: product.productId,
-        catalogueRevision: product.revision,
-      }),
-    );
   return (
-    <article
-      aria-labelledby={titleId}
-      className={`${styles.productCard} ${styles[`card_${props.cardVariant}`]}`}
-      data-product-type={product.productTypeId}
-    >
-      <div className={styles.productMedia}>
-        {image && media ? (
-          <figure
-            data-asset-id={media.assetId}
-            data-asset-provenance={image.provenance.kind}
-            data-asset-role={image.role}
-          >
-            <CommerceImage locale={locale} resolved={image} />
-          </figure>
-        ) : (
-          <p className={styles.mediaPlaceholder}>{text(content.mediaPlaceholderLabel, locale)}</p>
-        )}
-      </div>
-      <div className={styles.productCopy}>
-        {props.showBadges && (sale || product.priceUnavailableReason) ? (
-          <p className={styles.badges}>
-            {sale
-              ? fallback("Sale", "Alennus", locale)
-              : fallback("Price unavailable", "Hinta ei ole saatavilla", locale)}
-          </p>
-        ) : null}
-        <h3 id={titleId}>
-          <button onClick={emitNavigation} type="button">
-            {text(product.title, locale)}
-          </button>
-        </h3>
-        <div className={styles.priceRow}>
-          {product.price ? (
-            <span className={styles.price}>{moneyLabel(product.price, locale)}</span>
-          ) : (
-            <span className={styles.priceUnavailable}>
-              {text(product.priceUnavailableReason!, locale)}
-            </span>
-          )}
-          {product.compareAtPrice ? <del>{moneyLabel(product.compareAtPrice, locale)}</del> : null}
-        </div>
-        {product.availability ? (
-          <p className={styles.availability}>{text(product.availability, locale)}</p>
-        ) : null}
-        {attributes.length ? (
-          <dl className={styles.attributes}>
-            {attributes.map((attribute) => (
-              <div key={attribute.id}>
-                <dt>{text(attribute.label, locale)}</dt>
-                <dd>
-                  {text(attribute.value, locale)}
-                  {attribute.unit ? ` ${text(attribute.unit, locale)}` : ""}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        ) : null}
-      </div>
-    </article>
+    <CanonicalProductCard
+      locale={locale}
+      mediaPlaceholder={text(content.mediaPlaceholderLabel, locale)}
+      onNavigateProduct={(intent) => onNavigateProduct(productNavigationIntentSchema.parse(intent))}
+      request={{
+        anatomyId: props.cardVariant,
+        context,
+        product,
+        ...(media && image ? { media, asset: image.metadata } : {}),
+        showCanonicalBadge: props.showBadges,
+        conciseAttributeLimit: props.conciseAttributeLimit,
+      }}
+      resolvedAsset={image?.asset}
+    />
   );
 }
 

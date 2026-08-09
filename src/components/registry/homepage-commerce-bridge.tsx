@@ -17,7 +17,11 @@ import {
   type StorefrontRenderContext,
 } from "./contract";
 import { renderHomepageCommerce } from "@/components/storefront/homepage-commerce";
-import { migrateApprovedPresentationArtDirection } from "@/application/responsive-image-authority";
+import {
+  createCanonicalProductMediaResponsiveAuthority,
+  migrateApprovedPresentationArtDirection,
+} from "@/application/responsive-image-authority";
+import type { ComponentDefinitionV2 } from "@/domain/component-platform";
 import { resolveBrandSystemDesignDna } from "@/domain/design-system";
 import { veskifyComponentRegistryV2 } from "./v2-registry";
 import {
@@ -187,6 +191,7 @@ function projectionFor(
   context: StorefrontRenderContext,
   placements: readonly ApprovedAssetPlacementOperation[] = [],
   presentations: readonly ApprovedAssetPresentation[] = [],
+  productCardArtContext?: Readonly<{ component: ComponentDefinitionV2; variant: string }>,
 ): ComponentProjectionContext {
   const revision = `catalogue-${context.catalogue.id}`;
   const products: ProductPresentationContext[] = context.catalogue.products.map((product) => ({
@@ -222,9 +227,9 @@ function projectionFor(
                 en: "Availability unavailable",
                 fi: "Saatavuus ei saatavilla",
               }),
-    media: product.images.map((image) => ({
+    media: product.images.map((image, index) => ({
       assetId: image.id,
-      role: "main" as const,
+      role: index === 0 ? ("main" as const) : ("alternative" as const),
       ...(image.alt === undefined ? {} : { alt: image.alt }),
     })),
     attributeGroups: [],
@@ -261,18 +266,35 @@ function projectionFor(
       revision,
     }),
   );
-  const assets: StorefrontAssetMetadata[] = context.catalogue.products.flatMap((product) =>
-    product.images.map((image) => ({
-      assetId: image.id,
-      role: "productMainImage" as const,
-      ...(image.alt === undefined ? { decorative: true } : { alt: image.alt, decorative: false }),
-      provenance: { kind: "canonicalProductMedia" as const, sourceId: product.id },
-      approvalStatus: "approved" as const,
-      usageRights: "merchantOwned" as const,
-      responsiveCrops: [],
-      revision,
-    })),
-  );
+  const assets: StorefrontAssetMetadata[] = context.catalogue.products.flatMap((product) => {
+    const productContext = products.find((candidate) => candidate.productId === product.id)!;
+    return product.images.map((image, index) => {
+      const media = productContext.media[index];
+      return {
+        assetId: image.id,
+        role: index === 0 ? ("productMainImage" as const) : ("productAlternativeImage" as const),
+        ...(image.alt === undefined ? { decorative: true } : { alt: image.alt, decorative: false }),
+        provenance: { kind: "canonicalProductMedia" as const, sourceId: product.id },
+        approvalStatus: "approved" as const,
+        usageRights: "merchantOwned" as const,
+        responsiveCrops: [],
+        revision,
+        ...(productCardArtContext && media
+          ? {
+              artDirection: createCanonicalProductMediaResponsiveAuthority({
+                component: productCardArtContext.component,
+                variant: productCardArtContext.variant,
+                brandSystem: context.brandSystem,
+                productId: product.id,
+                media,
+                revision,
+                assetSlotId: "productMedia",
+              }),
+            }
+          : {}),
+      };
+    });
+  });
   placements.forEach((placement) => {
     if (assets.some((asset) => asset.assetId === placement.assetId)) return;
     const presentation = presentations.find((candidate) => candidate.assetId === placement.assetId);
@@ -511,7 +533,14 @@ function bridge<ContentSchema extends z.ZodType, PropsSchema extends z.ZodType>(
             })
           : presentation;
       });
-      const projection = projectionFor(context, approvedAssetPlacements, migratedPresentations);
+      const projection = projectionFor(
+        context,
+        approvedAssetPlacements,
+        migratedPresentations,
+        input.component === "homepageFeaturedProducts"
+          ? { component: componentDefinition, variant }
+          : undefined,
+      );
       return renderHomepageCommerce({
         target: context.renderTarget ?? "preview",
         instance: instanceFor(

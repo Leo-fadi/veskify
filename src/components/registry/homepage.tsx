@@ -250,6 +250,9 @@ export const productGridDefinition = defineComponent({
     <ProductGrid
       {...content}
       {...props}
+      anatomyId={
+        variant === "editorial" ? "editorial" : variant === "compact" ? "compact" : "standard"
+      }
       className={sectionVocabularyClass(variant, props)}
       context={context}
     />

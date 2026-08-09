@@ -11,6 +11,7 @@ export default defineConfig({
     "p10a-08d-02-complete-publication-evidence.spec.ts",
     "p10b-04-responsive-image-art-direction.spec.ts",
     "p10b-07-commercial-storytelling.spec.ts",
+    "p10b-08-canonical-product-card-family.spec.ts",
   ],
   // Project state and browser evidence are intentionally isolated per run.
   workers: 1,

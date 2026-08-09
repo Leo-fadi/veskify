@@ -512,6 +512,14 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
             (variant) => variant.structuralClassification === "meaningfulStructuralVariant",
           ).length,
         ).toBeGreaterThanOrEqual(4);
+      } else if (["productGrid", "relatedProducts"].includes(definition.type)) {
+        expect(
+          entry?.variants.every(
+            (variant) =>
+              variant.structuralClassification === "legacySuperseded" &&
+              variant.materialDifferences.length === 0,
+          ),
+        ).toBe(true);
       } else if (!p10b07Promoted.has(definition.type)) {
         expect(
           entry?.variants.every(

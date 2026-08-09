@@ -482,7 +482,7 @@ function assertCoordinatedDirectionCapabilities(
   const family = designSystem.productCardFamilies.find(
     (candidate) => candidate.id === direction.productCardFamilyId,
   );
-  if (!family || family.registryVariant !== direction.collectionPresentation.cardVariant) {
+  if (!family || family.anatomyId !== direction.collectionPresentation.cardVariant) {
     invalid(
       "invalid-component-contract",
       "The selected product-card family is incompatible with the collection presentation.",
@@ -712,6 +712,7 @@ function mappedHomepageBridgePresentation(
   component: HomepageCommerceBridgeComponent,
   source: WholeStorefrontPlanningInput["draft"]["pages"][number]["sections"][number] | undefined,
   planningInput: WholeStorefrontPlanningInput,
+  productCardAnatomyId: WholeStorefrontGenerationPlan["designSystemSelection"]["collectionPresentation"]["cardVariant"],
 ) {
   const defaults = homepageCommerceBridgeDefaults[component];
   const content: Record<string, unknown> = structuredClone(defaults.content);
@@ -735,6 +736,7 @@ function mappedHomepageBridgePresentation(
     ) {
       if (source.content.heading !== undefined) content.heading = source.content.heading;
       if (component === "homepageFeaturedProducts") {
+        props.cardVariant = productCardAnatomyId;
         const columns = { two: 2, three: 3, four: 4 }[String(source.props.columns)];
         if (columns !== undefined) props.columns = columns;
       }
@@ -904,6 +906,7 @@ function authoritativeHomepageProfileComponents(input: {
   usedComponentIds: Set<string>;
   materialization: ExecutablePageBlueprintMaterialization;
   revision: string;
+  productCardAnatomyId: WholeStorefrontGenerationPlan["designSystemSelection"]["collectionPresentation"]["cardVariant"];
 }): WholeStorefrontGenerationPlan["pagePlans"][number]["components"] {
   const {
     planningInput,
@@ -913,6 +916,7 @@ function authoritativeHomepageProfileComponents(input: {
     usedComponentIds,
     materialization,
     revision,
+    productCardAnatomyId,
   } = input;
   if (page.type !== "home") return [];
   const pagePlan = getExecutablePageBlueprintProfile(materialization.profileId);
@@ -977,7 +981,12 @@ function authoritativeHomepageProfileComponents(input: {
         replacementSource?.id ?? generatedComponentId(page.id, slot.component, usedComponentIds);
       usedComponentIds.add(componentId);
       const mappedPresentation = bridgeComponent
-        ? mappedHomepageBridgePresentation(bridgeComponent, replacementSource, planningInput)
+        ? mappedHomepageBridgePresentation(
+            bridgeComponent,
+            replacementSource,
+            planningInput,
+            productCardAnatomyId,
+          )
         : slot.component === "brandStory"
           ? mappedBrandStoryPresentation(planningInput)
           : {
@@ -1257,6 +1266,14 @@ function dynamicProductComponent(
       optionDensity: presentation.optionDensity,
       attributeLayout: presentation.attributeLayout,
       mediaTreatment: presentation.mediaTreatment,
+      relatedCardVariant:
+        presentation.variant === "compact"
+          ? "horizontal"
+          : presentation.variant === "editorial" || presentation.variant === "editorialSplit"
+            ? "editorial"
+            : presentation.variant === "galleryDominant"
+              ? "imageFirst"
+              : "standard",
     },
     styleOverrides: structuredClone(dynamicProductDetailDefaultStyleOverrides),
     bindings: [
@@ -1685,6 +1702,7 @@ export function createWholeStorefrontGenerationPlan(
           usedComponentIds,
           materialization: homepageMaterialization,
           revision: commerceRevision,
+          productCardAnatomyId: designSystemSelection.collectionPresentation.cardVariant,
         }),
       );
     }

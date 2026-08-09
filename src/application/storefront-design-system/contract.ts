@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { canonicalValueFingerprint } from "@/domain/storefront";
+import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
 
 const tokenSchema = z.string().regex(/^[a-z][A-Za-z0-9-]*$/);
 const localizedLabelSchema = z.object({ en: z.string().min(1), fi: z.string().min(1) }).strict();
@@ -114,17 +115,15 @@ const imageTreatmentSchema = z
 
 const productCardFamilySchema = z
   .object({
-    id: z.enum(["minimalProduct", "editorialImage", "compactCommerce", "premiumJewellery"]),
-    label: localizedLabelSchema,
-    registryVariant: z.enum(["standard", "editorial", "compact", "imageFirst", "horizontal"]),
-    requiredCommerceFields: z.tuple([
-      z.literal("productId"),
-      z.literal("title"),
-      z.literal("priceState"),
-      z.literal("availability"),
-      z.literal("canonicalMedia"),
-      z.literal("productRoute"),
+    id: z.enum([
+      "minimalProduct",
+      "editorialImage",
+      "compactCommerce",
+      "premiumJewellery",
+      "denseComparison",
     ]),
+    label: localizedLabelSchema,
+    anatomyId: canonicalProductCardAnatomyIdSchema,
   })
   .strict();
 
@@ -148,7 +147,7 @@ export const storefrontDesignDirectionSchema = z
       .object({
         variant: z.enum(["standard", "editorial", "compact", "gallery"]),
         gridDensity: z.enum(["compact", "standard", "spacious"]),
-        cardVariant: z.enum(["standard", "editorial", "compact", "imageFirst", "horizontal"]),
+        cardVariant: canonicalProductCardAnatomyIdSchema,
         filterLayout: z.enum(["sidebar", "horizontal"]),
       })
       .strict(),
@@ -332,7 +331,7 @@ export const storefrontDesignSystemV1Schema = z
       const productCard = system.productCardFamilies.find(
         (family) => family.id === direction.productCardFamilyId,
       );
-      if (productCard?.registryVariant !== direction.collectionPresentation.cardVariant) {
+      if (productCard?.anatomyId !== direction.collectionPresentation.cardVariant) {
         context.addIssue({
           code: "custom",
           path: ["directions", index, "collectionPresentation", "cardVariant"],

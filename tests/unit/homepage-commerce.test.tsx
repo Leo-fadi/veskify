@@ -21,6 +21,8 @@ import type {
   ProductPresentationContext,
   StorefrontAssetMetadata,
 } from "@/domain/component-platform";
+import { createResponsiveImageAuthority } from "@/domain/asset-presentation";
+import { canonicalValueFingerprint } from "@/domain/storefront";
 
 type JsonFixture = ComponentInstanceV2["content"][string];
 
@@ -96,16 +98,58 @@ function asset(
   approvalStatus: StorefrontAssetMetadata["approvalStatus"] = "approved",
   provenanceKind: StorefrontAssetMetadata["provenance"]["kind"] = "merchantProvided",
 ): StorefrontAssetMetadata {
+  const sourceOwnerId = `product_${assetId.split("_")[1] ?? "unknown"}`;
+  const canonicalRole =
+    role === "productMainImage" || role === "productAlternativeImage" ? role : undefined;
+  const revision = `revision_${assetId}`;
+  const source =
+    canonicalRole && provenanceKind === "canonicalProductMedia"
+      ? {
+          assetId,
+          role: canonicalRole,
+          revision,
+          materialFingerprint: `fixture-${canonicalValueFingerprint({ assetId, sourceOwnerId, role })}`,
+          provenanceKind: "canonicalProductMedia" as const,
+          sourceOwnerId,
+        }
+      : undefined;
   return {
     assetId,
     role,
     alt: localized(`${assetId} alt`, `${assetId} vaihtoehtoinen teksti`),
     decorative: false,
-    provenance: { kind: provenanceKind, sourceId: `source_${assetId}` },
+    provenance: { kind: provenanceKind, sourceId: sourceOwnerId },
     approvalStatus,
     usageRights: "merchantOwned",
     responsiveCrops: [],
-    revision: `revision_${assetId}`,
+    revision,
+    ...(source
+      ? {
+          artDirection: createResponsiveImageAuthority({
+            contractVersion: "1.0.0",
+            source,
+            placement: {
+              componentType: "homepageFeaturedProducts",
+              componentVersion: "2.0.0",
+              variant: "standard",
+              anatomyContractVersion: "1.0.0",
+              anatomyIdentity: "homepageFeaturedProducts.anatomy",
+              anatomyVersion: "1.0.0",
+              anatomyRegion: "media",
+              assetSlotId: "productMedia",
+              required: false,
+            },
+            sourceTreatment: {
+              ratio: "natural",
+              crop: { mode: "contain" },
+              focalPoint: { x: 0.5, y: 0.5 },
+              overlay: "none",
+            },
+            responsiveTreatments: [],
+            derivatives: [],
+          }),
+        }
+      : {}),
   };
 }
 

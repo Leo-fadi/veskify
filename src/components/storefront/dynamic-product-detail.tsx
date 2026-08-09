@@ -37,6 +37,8 @@ import { veskifyComponentRegistryV2 } from "@/components/registry/v2-registry";
 import styles from "./dynamic-product-detail.module.css";
 import { validateRouteUsedAssetConformance } from "./storefront-asset-conformance";
 import { ResponsiveStorefrontImage } from "./responsive-storefront-image";
+import { CanonicalProductCard } from "./canonical-product-card";
+import type { CanonicalProductCardAnatomyId } from "@/domain/product-card";
 
 export const productPrimaryActionPresentationSchema = z
   .object({
@@ -130,6 +132,7 @@ export type DynamicProductDetailRendererInput = ProductOptionIntentCallbacks & {
 
 type ResolvedAsset = {
   asset: AssetRef;
+  metadata: StorefrontAssetMetadata;
   provenance: StorefrontAssetMetadata["provenance"];
   artDirection?: StorefrontAssetMetadata["artDirection"];
 };
@@ -174,7 +177,8 @@ function requiredAssetRoles(
     required.set(assetId, role);
   };
   const addProductMedia = (item: ProductPresentationContext, related: boolean) => {
-    const media = related ? item.media.slice(0, 1) : item.media;
+    const selectedRelated = item.media.find(({ role }) => role !== "editorial");
+    const media = related ? (selectedRelated ? [selectedRelated] : []) : item.media;
     media.forEach((entry) =>
       add(
         entry.assetId,
@@ -409,6 +413,7 @@ function prepareDynamicProductDetail(
       });
       return {
         asset,
+        metadata,
         provenance: metadata.provenance,
         ...(metadata.artDirection === undefined ? {} : { artDirection: metadata.artDirection }),
       };
@@ -1176,11 +1181,13 @@ export function DynamicRelatedProducts({
   heading,
   locale,
   assetFor,
+  anatomyId = "standard",
 }: {
   products: readonly ProductPresentationContext[];
   heading: LocalizedText;
   locale: LocaleContext;
   assetFor: PreparedDynamicProductDetail["assetFor"];
+  anatomyId?: CanonicalProductCardAnatomyId;
 }) {
   const headingId = useId();
   if (products.length === 0) return null;
@@ -1189,7 +1196,7 @@ export function DynamicRelatedProducts({
       <h2 id={headingId}>{text(heading, locale)}</h2>
       <div className={styles.relatedGrid}>
         {products.map((product) => {
-          const media = product.media[0];
+          const media = product.media.find(({ role }) => role !== "editorial");
           const image = media
             ? assetFor(
                 media.assetId,
@@ -1198,24 +1205,24 @@ export function DynamicRelatedProducts({
               )
             : undefined;
           return (
-            <article key={product.productId}>
-              {image ? (
-                <figure data-asset-id={media.assetId} data-asset-provenance={image.provenance.kind}>
-                  <ProductAssetImage
-                    artDirection={image.artDirection}
-                    asset={image.asset}
-                    locale={locale}
-                  />
-                </figure>
-              ) : null}
-              <h3>{text(product.title, locale)}</h3>
-              <p>
-                {product.price
-                  ? moneyLabel(product.price, locale)
-                  : text(product.priceUnavailableReason!, locale)}
-              </p>
-              {product.availability ? <p>{text(product.availability, locale)}</p> : null}
-            </article>
+            <CanonicalProductCard
+              key={product.productId}
+              locale={locale}
+              mediaPlaceholder={fallbackLabel(
+                "Product image unavailable",
+                "Tuotekuva ei ole saatavilla",
+                locale,
+              )}
+              request={{
+                anatomyId,
+                context: "relatedProducts",
+                product,
+                ...(media && image ? { media, asset: image.metadata } : {}),
+                showCanonicalBadge: true,
+                conciseAttributeLimit: 1,
+              }}
+              resolvedAsset={image?.asset}
+            />
           );
         })}
       </div>
@@ -1377,6 +1384,7 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
         product={input.product}
       />
       <DynamicRelatedProducts
+        anatomyId={input.props.relatedCardVariant}
         assetFor={input.assetFor}
         heading={input.content.relatedHeading}
         locale={locale}

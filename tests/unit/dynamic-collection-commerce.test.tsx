@@ -22,6 +22,8 @@ import type {
   ProductPresentationContext,
   StorefrontAssetMetadata,
 } from "@/domain/component-platform";
+import { createResponsiveImageAuthority } from "@/domain/asset-presentation";
+import { canonicalValueFingerprint } from "@/domain/storefront";
 
 const localized = (en: string, fi = en) => ({ en, fi });
 
@@ -138,16 +140,57 @@ function asset(
   role: StorefrontAssetMetadata["role"],
   approvalStatus: StorefrontAssetMetadata["approvalStatus"] = "approved",
 ): StorefrontAssetMetadata {
+  const sourceOwnerId = assetId.replace(/^asset_/, "product_");
+  const canonicalRole =
+    role === "productMainImage" || role === "productAlternativeImage" ? role : undefined;
+  const revision = `revision_${assetId}`;
+  const source = canonicalRole
+    ? {
+        assetId,
+        role: canonicalRole,
+        revision,
+        materialFingerprint: `fixture-${canonicalValueFingerprint({ assetId, sourceOwnerId, role })}`,
+        provenanceKind: "canonicalProductMedia" as const,
+        sourceOwnerId,
+      }
+    : undefined;
   return {
     assetId,
     role,
     alt: localized(`${assetId} alt`),
     decorative: false,
-    provenance: { kind: "canonicalProductMedia", sourceId: `source_${assetId}` },
+    provenance: { kind: "canonicalProductMedia", sourceId: sourceOwnerId },
     approvalStatus,
     usageRights: "merchantOwned",
     responsiveCrops: [],
-    revision: `revision_${assetId}`,
+    revision,
+    ...(source
+      ? {
+          artDirection: createResponsiveImageAuthority({
+            contractVersion: "1.0.0",
+            source,
+            placement: {
+              componentType: "dynamicCollectionCommerce",
+              componentVersion: "2.0.0",
+              variant: "standard",
+              anatomyContractVersion: "1.0.0",
+              anatomyIdentity: "dynamicCollectionCommerce.anatomy",
+              anatomyVersion: "1.0.0",
+              anatomyRegion: "media",
+              assetSlotId: "collectionCommerceMedia",
+              required: false,
+            },
+            sourceTreatment: {
+              ratio: "natural",
+              crop: { mode: "contain" },
+              focalPoint: { x: 0.5, y: 0.5 },
+              overlay: "none",
+            },
+            responsiveTreatments: [],
+            derivatives: [],
+          }),
+        }
+      : {}),
   };
 }
 
@@ -567,12 +610,11 @@ describe("P6-04 dynamic collection commerce", () => {
     );
   });
 
-  it("renders approved main, variant, alternative and editorial card media without relabelling", () => {
+  it("renders canonical product media roles without relabelling and rejects editorial substitution", () => {
     const scenarios = [
       ["main", "productMainImage"],
       ["variant", "productAlternativeImage"],
       ["alternative", "productAlternativeImage"],
-      ["editorial", "editorialImage"],
     ] as const;
 
     for (const [canonicalRole, inventoryRole] of scenarios) {
@@ -598,6 +640,18 @@ describe("P6-04 dynamic collection commerce", () => {
       ).toHaveAttribute("data-asset-role", inventoryRole);
       rendered.unmount();
     }
+    const editorialProduct = {
+      ...structuredClone(watch),
+      productId: "product_editorial",
+      media: [{ assetId: "asset_editorial", role: "editorial" as const }],
+      revision: "product-rev-editorial",
+    };
+    render(
+      renderDynamicCollectionCommerce(
+        productMediaInput(editorialProduct, [asset("asset_editorial", "editorialImage")]),
+      ),
+    );
+    expect(screen.getByText("Product image unavailable")).toBeVisible();
   });
 
   it("rejects unsupported first canonical card media instead of silently substituting it", () => {

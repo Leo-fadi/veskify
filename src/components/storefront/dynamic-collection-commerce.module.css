@@ -37,8 +37,7 @@
 .childCollections button,
 .filters button,
 .filters summary,
-.sortControl select,
-.productCard h3 button {
+.sortControl select {
   min-height: 2.75rem;
   border: 1px solid var(--brand-color-border);
   border-radius: var(--brand-radius);
@@ -70,13 +69,11 @@
   line-height: 1.7;
 }
 
-.collectionHeader figure,
-.productCard figure {
+.collectionHeader figure {
   margin: 0;
 }
 
-.collectionHeader img,
-.productCard img {
+.collectionHeader img {
   display: block;
   width: 100%;
   height: auto;
@@ -203,135 +200,8 @@
   gap: clamp(1.5rem, 4vw, 3rem);
 }
 
-.productCard {
-  display: grid;
-  min-width: 0;
-  align-content: start;
-  border: 1px solid var(--brand-color-border);
-  border-radius: var(--brand-radius);
-  overflow: hidden;
-  background: var(--brand-color-background);
-}
-
-.productCard img,
-.mediaPlaceholder {
-  aspect-ratio: 4 / 5;
-}
-
-.mediaPlaceholder {
-  display: grid;
-  margin: 0;
-  place-items: center;
-  padding: 1rem;
-  color: var(--brand-color-muted-text);
-  background: var(--brand-color-surface);
-  text-align: center;
-}
-
-.productCopy {
-  min-width: 0;
-  padding: 1rem;
-}
-
-.productCard h3 {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.productCard h3 button {
-  min-height: 2.75rem;
-  border: 0;
-  background: transparent;
-  padding-inline: 0;
-  text-align: start;
-  font-family: var(--brand-font-heading);
-  font-size: 1.15rem;
-  font-weight: 800;
-}
-
-.priceRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.6rem;
-  margin-top: 0.75rem;
-}
-
-.price,
-.priceUnavailable {
-  font-size: 1.05rem;
-  font-weight: 800;
-}
-
-.priceRow del,
-.availability,
-.attributes,
-.badges {
-  color: var(--brand-color-muted-text);
-}
-
-.availability,
-.badges {
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.attributes {
-  margin: 0.75rem 0 0;
-  font-size: 0.82rem;
-}
-
-.attributes div {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.attributes dd {
-  margin: 0;
-}
-
-.card_horizontal {
-  grid-template-columns: minmax(7rem, 0.8fr) minmax(0, 1.2fr);
-}
-
-.card_horizontal img,
-.card_horizontal .mediaPlaceholder {
-  height: 100%;
-  min-height: 10rem;
-  aspect-ratio: auto;
-}
-
-.variant_editorial .productCard img {
-  aspect-ratio: 3 / 4;
-}
-
 .variant_gallery .collectionHeader {
   padding-bottom: clamp(2rem, 6vw, 5rem);
-}
-
-.variant_gallery .productCard {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-
-.variant_gallery .productCopy {
-  padding-inline: 0;
-}
-
-.variant_gallery .productCard img {
-  aspect-ratio: 3 / 4;
-}
-
-.variant_editorial .productCard,
-.variant_gallery .productCard {
-  box-shadow: none;
-}
-
-.variant_compact .productCopy {
-  padding: 0.75rem;
 }
 
 .loadingState,

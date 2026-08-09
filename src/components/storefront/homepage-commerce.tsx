@@ -100,6 +100,7 @@ type LocaleContext = { activeLocale: Locale; primaryLocale: Locale };
 type Projection = z.infer<typeof componentProjectionContextSchema>;
 type ResolvedAsset = {
   asset: AssetRef;
+  metadata: StorefrontAssetMetadata;
   provenance: StorefrontAssetMetadata["provenance"];
   role: StorefrontAssetMetadata["role"];
   artDirection?: StorefrontAssetMetadata["artDirection"];
@@ -172,6 +173,7 @@ function resolveAsset(
       alt: alt ?? metadata.alt,
       decorative: metadata.decorative,
     }),
+    metadata,
     provenance: metadata.provenance,
     role: metadata.role,
     ...(metadata.artDirection === undefined ? {} : { artDirection: metadata.artDirection }),
@@ -292,17 +294,14 @@ function canonicalProductMedia(
   allowed?: ReadonlySet<string>,
 ) {
   for (const media of product.media) {
-    const expectedRole =
-      media.role === "main"
-        ? "productMainImage"
-        : media.role === "editorial"
-          ? "editorialImage"
-          : "productAlternativeImage";
+    if (media.role === "editorial") continue;
+    const expectedRole = media.role === "main" ? "productMainImage" : "productAlternativeImage";
     const metadata = projection.assets.find((asset) => asset.assetId === media.assetId);
     if (
       metadata?.approvalStatus === "approved" &&
       metadata.role === expectedRole &&
       metadata.provenance.kind === "canonicalProductMedia" &&
+      metadata.provenance.sourceId === product.productId &&
       (!allowed || allowed.has(media.assetId))
     ) {
       return { media, resolved: resolveAsset(metadata, input, media.alt ?? product.title) };
@@ -687,6 +686,7 @@ export function HomepageFeaturedProductsSection(input: HomepageCommerceRendererI
                   return selected.resolved;
                 }}
                 content={cardContent}
+                context="homepageMerchandising"
                 key={product.productId}
                 locale={locale}
                 media={selected?.media}

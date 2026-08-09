@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 9 August 2026, merged P10B-06 baseline plus P10B-07 delivery          |
+| Verified baseline         | 9 August 2026, P10B-06 shared frame, P10B-07 storytelling and P10B-08 product cards |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -18,6 +18,7 @@
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
 | 1.3.0 P10B-07 | 8 August 2026 | P10B-07 delivery | Establish commercial-ready hero, editorial, campaign, service and evidence-grounded proof families with six meaningful hero anatomies, canonical art direction, PageBlueprint generation reachability, lifecycle preservation and four-width browser evidence. |
+| 1.3.0 P10B-08 | 8 August 2026 | P10B-08 delivery | Establish one fingerprinted product-card authority and renderer, five meaningful anatomies, exact protected-commerce and P10B-04 media lineage, deterministic legacy migration, generation/publish reachability, and four-width browser evidence. |
 | 1.3.0 P10B-06 | 8 August 2026 | P10B-06 delivery | Establish one canonical root shared-frame authority with four structural profiles, three mobile modes, four footer compositions, exact commercial-anatomy selection, cross-page/lifecycle preservation, and retained four-width browser evidence. |
 | 1.3.0 P10B-04 | 8 August 2026 | P10B-04 delivery | Establish one versioned responsive image/art-direction authority with exact lineage, normalized geometry, Design DNA/anatomy narrowing, protected product media, deterministic fallback/fingerprint/migration, shared semantic rendering, and four-width evidence. |
 | 1.3.0 P10B-05 | 8 August 2026 | P10B-05 delivery | Establish registered page-family, route, navigation, evidence, locale, shared-frame, deterministic site-map materialization, and lifecycle authority without a second page graph or component-anatomy claim. |
@@ -69,8 +70,8 @@ orchestration and publishing is **Baseline / closed** under the formal
 [`P10A_PHASE_CLOSURE.md`](P10A_PHASE_CLOSURE.md) exit audit. P10B is now **Partial / active**:
 P10B-01 commercial grammar, P10B-02 parametric BrandSystem / Design DNA, P10B-03 component anatomy,
 P10B-04 responsive image/art-direction authority, P10B-05 site-map/page-family authority, P10B-06
-commercial shared-frame families, and P10B-07 hero/editorial/campaign/proof families are Baseline.
-P10B-08 through P10B-18 remain Planned. The current
+commercial shared-frame families, P10B-07 hero/editorial/campaign/proof families, and P10B-08
+canonical product-card authority are Baseline. P10B-09 through P10B-18 remain Planned. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -209,7 +210,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
-| Commercial storefront generation system              | **Partial**  | P10B-01 grammar, P10B-02 Design DNA, P10B-03 anatomy, P10B-04 art direction, P10B-05 page-set authority, and P10B-07 commercial content families are Baseline; complete-storefront commercial quality/diversity remains Planned. |
+| Commercial storefront generation system              | **Partial**  | P10B-01 grammar, P10B-02 Design DNA, P10B-03 anatomy, P10B-04 art direction, P10B-05 page-set authority, P10B-06 shared-frame authority, P10B-07 commercial content families, and P10B-08 product-card authority are Baseline; complete-storefront commercial quality/diversity remains Planned. |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
 
@@ -468,6 +469,10 @@ P10B-04 responsive image/art-direction authority is Baseline under
 [`P10B_04_RESPONSIVE_IMAGE_ART_DIRECTION.md`](P10B_04_RESPONSIVE_IMAGE_ART_DIRECTION.md).
 P10B-05 page-set authority is Baseline under
 [`P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md`](P10B_05_SITE_MAP_AND_PAGE_FAMILY_AUTHORITY.md).
+P10B-06 shared-frame authority is Baseline under
+[`P10B_06_COMMERCIAL_SHARED_FRAME_FAMILIES.md`](P10B_06_COMMERCIAL_SHARED_FRAME_FAMILIES.md).
+P10B-08 product-card authority is Baseline under
+[`P10B_08_CANONICAL_PRODUCT_CARD_AND_MERCHANDISING.md`](P10B_08_CANONICAL_PRODUCT_CARD_AND_MERCHANDISING.md).
 These authorities remain disjoint: P10B-03 consumes P10B-02 compatibility where relevant without
 duplicating Design DNA authority, and P10B-05 owns only site-map/page-family/PageBlueprint page-set
 authority.
@@ -676,7 +681,28 @@ protected-state authority. Contract, deterministic, lifecycle, accessibility, fo
 and retained visual evidence are recorded in
 [`P10B_06_COMMERCIAL_SHARED_FRAME_FAMILIES.md`](P10B_06_COMMERCIAL_SHARED_FRAME_FAMILIES.md).
 
-### 10.10 Planned commercial generation authority
+### 10.10 P10B-08 canonical product-card authority
+
+One versioned `canonicalProductCardAuthority` owns five meaningful comparison/information-led,
+editorial, compact, image-led, and dense anatomies. Each declares P10B-03 semantic structure,
+material differences, supported contexts, and responsive transformations. One strict renderer is
+used by homepage merchandising, collection/results, related products, and compatibility wrappers;
+legacy `productGrid` and `relatedProducts` definitions are explicitly superseded and cannot be
+promoted by commercial-ready capability queries.
+
+Cards consume the existing `ProductPresentationContext` and P10B-04 responsive-image authority.
+Product ID, title, price/unavailable state, compare-at price, availability, membership, media ID,
+media role, and exact product source owner remain protected. Editorial or wrong-product media,
+invented badges or fact overrides, unsupported context/anatomy combinations, and stale publication
+authority fail closed. Cards emit navigation/detail intent only and own no cart or commerce write.
+
+Design-system records reference the canonical anatomy ID rather than repeating card variants or
+protected-field lists. Deterministic selection reaches PageBlueprint materialization, plan,
+proposal, accepted `StorefrontSnapshot`, save/reload, preview, and the existing publish compiler.
+The compiler fingerprints and revalidates the exact card authority. Details and evidence are in
+[`P10B_08_CANONICAL_PRODUCT_CARD_AND_MERCHANDISING.md`](P10B_08_CANONICAL_PRODUCT_CARD_AND_MERCHANDISING.md).
+
+### 10.11 Planned commercial generation authority
 
 `BrandSystem` owns merchant-wide bounded Design DNA across semantic colour, approved font roles and
 pairing, type scale/weights, spacing and section rhythm, gutters/containers, grid/card/control
@@ -716,7 +742,7 @@ drift, and exact or meaningful near duplicates. A deterministic storefront-desig
 covers structural and non-colour dimensions; hundreds or thousands of outcomes arise from bounded
 combinations, not manually authored templates.
 
-### 10.10 Commercial acceptance
+### 10.12 Commercial acceptance
 
 P10B closes only when at least 100 complete bounded storefront configurations pass deterministic
 validity, protected-state, exact-duplicate, near-duplicate, and structural-distribution analysis,
@@ -857,7 +883,7 @@ The binding sequence is:
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
    formal P10A phase closure record.
 2. **P10B — Commercial Storefront Generation System v1.** **Partial / active phase.** P10B-01
-   through P10B-07 are Baseline; P10B-08 through P10B-18 remain Planned.
+   through P10B-08 are Baseline; P10B-09 through P10B-18 remain Planned.
    Deliver complete commercially credible storefronts with bounded material diversity through
    registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
