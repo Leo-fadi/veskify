@@ -20,6 +20,7 @@ import { compileWholeStorefrontProposal } from "@/application/whole-storefront-p
 import { validateRegisteredSnapshot } from "@/components/registry";
 import {
   canonicalStorefrontContentFingerprint,
+  type PageFactEvidenceReference,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import {
@@ -38,6 +39,31 @@ import {
 } from "@/data/demo/p9-05a-fresh-store-generation";
 
 const SERVER_PROVIDER_ID = "server-whole-storefront-planning";
+
+export function p905aBriefEvidenceReferences(
+  brief: ReturnType<typeof createP905aFreshMerchantFixture>["brief"],
+): PageFactEvidenceReference[] {
+  return brief.approvedEvidenceFingerprint &&
+    brief.approval.actorId &&
+    brief.businessIdentity.shortDescription.trim()
+    ? [
+        {
+          source: "merchant-approved",
+          authorityId: brief.id,
+          revision: String(brief.revision),
+          status: "approved",
+          approvalAuthorityId: brief.approval.actorId,
+          approvalFingerprint: brief.approvedEvidenceFingerprint,
+        },
+      ]
+    : [];
+}
+
+export function p905aCurrentEvidenceReferences(
+  generated: Awaited<ReturnType<typeof generateP905aScenario>>,
+): PageFactEvidenceReference[] {
+  return p905aBriefEvidenceReferences(generated.fixture.brief);
+}
 
 const registeredDirectionMerchantNames: Record<P905aDirectionId, string> = {
   premiumEditorial: "premium editorial",
@@ -325,6 +351,8 @@ export async function saveAndResolveP905aPreview({
       saved.aggregate.catalogue,
       saved.aggregate.project.primaryLocale,
       saved.aggregate.project.primaryLocale,
+      saved.aggregate.project.enabledLocales,
+      p905aCurrentEvidenceReferences(generated),
     ),
     previewPath: previewPathPrefix(saved.aggregate.project.id, "draft"),
   };

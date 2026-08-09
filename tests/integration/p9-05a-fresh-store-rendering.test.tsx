@@ -5,6 +5,7 @@ import { renderStorefrontPage } from "@/components/storefront/storefront-page";
 import {
   createP905aAcceptanceCoordinator,
   generateP905aScenario,
+  p905aCurrentEvidenceReferences,
   saveAndResolveP905aPreview,
 } from "../helpers/p9-05a-generation-harness";
 
@@ -30,6 +31,7 @@ function renderWarmHome(snapshot = acceptedResult.activeDraft) {
           primaryLocale: "fi",
           catalogue: generated.fixture.aggregate.catalogue,
           snapshot,
+          evidenceReferences: p905aCurrentEvidenceReferences(generated),
         }),
       )}
     </>,
@@ -84,6 +86,7 @@ describe("P9-05A rendered warm-store isolation", () => {
       primaryLocale: "fi",
       catalogue: generated.fixture.aggregate.catalogue,
       snapshot,
+      evidenceReferences: p905aCurrentEvidenceReferences(generated),
     });
 
     const legacyFallback = structuredClone(story);

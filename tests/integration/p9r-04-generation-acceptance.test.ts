@@ -31,6 +31,7 @@ import {
 import {
   createP905aAcceptanceCoordinator,
   generateP905aProviderShapeScenarioFromBaseline,
+  p905aCurrentEvidenceReferences,
   saveAndResolveP905aPreview,
 } from "../helpers/p9-05a-generation-harness";
 
@@ -52,6 +53,7 @@ function renderedPages(
     primaryLocale: "fi",
     catalogue: generated.fixture.aggregate.catalogue,
     snapshot,
+    evidenceReferences: p905aCurrentEvidenceReferences(generated),
   });
   return Object.fromEntries(
     snapshot.pages.map((page) => [
@@ -262,6 +264,7 @@ describe("P9R-04 deterministic multi-page generation acceptance gate", () => {
       primaryLocale: "fi",
       catalogue: aggregate.catalogue,
       snapshot: accepted.activeDraft,
+      evidenceReferences: p905aCurrentEvidenceReferences(generated),
     });
     const collectionMarkup = renderToStaticMarkup(
       StorefrontCollectionCommerceRoute({
@@ -369,10 +372,19 @@ describe("P9R-04 deterministic multi-page generation acceptance gate", () => {
       {
         now: () => new Date("2026-07-30T12:00:00.000Z"),
         createPreparationId: () => "publish_preparation_p9r_04",
+        authority: {
+          kind: "manual",
+          currentEvidenceReferences: p905aCurrentEvidenceReferences(generated),
+        },
       },
     );
     expect(preparation.publishPermitted).toBe(true);
-    const published = await confirmPublish(preparation, generated.repository);
+    const published = await confirmPublish(preparation, generated.repository, {
+      authority: {
+        kind: "manual",
+        currentEvidenceReferences: p905aCurrentEvidenceReferences(generated),
+      },
+    });
     expect(p9r04ContentFingerprint(published.publishedSnapshot)).toBe(acceptedFingerprint);
     expect(p9r04ContentFingerprint(published.synchronizedDraftSnapshot)).toBe(acceptedFingerprint);
     expect(generated.providerRequests).toHaveLength(1);

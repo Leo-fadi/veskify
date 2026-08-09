@@ -24,6 +24,7 @@ import {
 import {
   createP905aAcceptanceCoordinator,
   generateP905aScenario,
+  p905aCurrentEvidenceReferences,
   saveAndResolveP905aPreview,
 } from "../helpers/p9-05a-generation-harness";
 import { confirmPublish, preparePublish } from "@/application/publishing";
@@ -292,9 +293,18 @@ describe("Phase 10A deterministic evidence helpers", () => {
       {
         now: () => new Date("2026-08-02T09:00:00.000Z"),
         createPreparationId: () => "publish_preparation_phase_10a_evidence",
+        authority: {
+          kind: "manual",
+          currentEvidenceReferences: p905aCurrentEvidenceReferences(generated),
+        },
       },
     );
-    const published = await confirmPublish(preparation, generated.repository);
+    const published = await confirmPublish(preparation, generated.repository, {
+      authority: {
+        kind: "manual",
+        currentEvidenceReferences: p905aCurrentEvidenceReferences(generated),
+      },
+    });
     const parity = createRendererParityEvidence({
       editor: accepted.activeDraft,
       preview: saved.preview,
@@ -442,9 +452,18 @@ describe("Phase 10A deterministic evidence helpers", () => {
       {
         now: () => new Date("2026-08-02T10:00:00.000Z"),
         createPreparationId: () => "publish_preparation_phase_10a_no_provider",
+        authority: {
+          kind: "manual",
+          currentEvidenceReferences: p905aCurrentEvidenceReferences(generated),
+        },
       },
     );
-    const published = await confirmPublish(preparation, generated.repository);
+    const published = await confirmPublish(preparation, generated.repository, {
+      authority: {
+        kind: "manual",
+        currentEvidenceReferences: p905aCurrentEvidenceReferences(generated),
+      },
+    });
     const evidence = createPublishWithoutProviderEvidence({
       providerCallsBeforePublish: before,
       providerCallsAfterPublish: generated.providerRequests.length,

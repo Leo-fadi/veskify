@@ -12,6 +12,7 @@ import { canonicalValueString } from "@/domain/storefront";
 import {
   createP905aAcceptanceCoordinator,
   generateP905aHomepageOnlyScenarioFromBaseline,
+  p905aCurrentEvidenceReferences,
 } from "../helpers/p9-05a-generation-harness";
 
 const homepageOnlyRequest =
@@ -139,6 +140,7 @@ describe("P9R-05 homepage-only composition scope", () => {
             primaryLocale: "en",
             catalogue: generated.fixture.aggregate.catalogue,
             snapshot: accepted.activeDraft,
+            evidenceReferences: p905aCurrentEvidenceReferences(generated),
           }),
         )}
       </>,
