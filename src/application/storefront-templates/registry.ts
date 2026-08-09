@@ -35,6 +35,7 @@ export {
   listCommercialHomepageProfiles,
   validateCommercialHomepageProfileLibrary,
   resolveCommercialHomepageProfileSlots,
+  resolveCommercialHomepageSlotItemCardinality,
   resolveCommercialHomepageSlotItemLimit,
   CommercialHomepageProfileError,
   type CommercialHomepageProfileId,

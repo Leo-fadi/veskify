@@ -60,7 +60,7 @@ import { resolveCommercialSharedFrameProfile } from "@/domain/storefront/commerc
 import {
   commercialHomepageProfileIdSchema,
   resolveCommercialHomepageProfileSlots,
-  resolveCommercialHomepageSlotItemLimit,
+  resolveCommercialHomepageSlotItemCardinality,
   type CommercialHomepageProfileId,
 } from "@/application/storefront-templates";
 
@@ -672,7 +672,7 @@ function homepageBindings(
   source?: WholeStorefrontPlanningInput["draft"]["pages"][number]["sections"][number],
   assetAssignments: readonly ComponentInstanceV2["assetAssignments"][number][] = [],
   allowSourceAssetFallback = true,
-  itemLimit?: number,
+  itemCardinality?: Readonly<{ minimum: number; maximum: number }>,
 ): ComponentInstanceV2["bindings"] {
   const sourceCollectionIds = Array.isArray(source?.content.collectionIds)
     ? source.content.collectionIds.filter(
@@ -708,13 +708,11 @@ function homepageBindings(
           {
             slotId: "collections",
             source: "collectionList" as const,
-            collectionIds:
-              sourceCollectionIds.length > 0
-                ? boundedHomepageItems(sourceCollectionIds, itemLimit)
-                : boundedHomepageItems(
-                    input.catalogue.collections.map((collection) => collection.id),
-                    itemLimit,
-                  ),
+            collectionIds: boundedHomepageItems(
+              sourceCollectionIds,
+              input.catalogue.collections.map((collection) => collection.id),
+              itemCardinality,
+            ),
             revision,
           },
         ]
@@ -724,13 +722,11 @@ function homepageBindings(
           {
             slotId: "products",
             source: "productList" as const,
-            productIds:
-              sourceProductIds.length > 0
-                ? boundedHomepageItems(sourceProductIds, itemLimit)
-                : boundedHomepageItems(
-                    input.catalogue.products.map((product) => product.id),
-                    itemLimit,
-                  ),
+            productIds: boundedHomepageItems(
+              sourceProductIds,
+              input.catalogue.products.map((product) => product.id),
+              itemCardinality,
+            ),
             revision,
           },
         ]
@@ -790,8 +786,17 @@ function objectValue(value: unknown): Record<string, unknown> | undefined {
     : undefined;
 }
 
-function boundedHomepageItems<T>(items: readonly T[], itemLimit?: number): T[] {
-  return itemLimit === undefined ? [...items] : items.slice(0, itemLimit);
+function boundedHomepageItems<T>(
+  preservedItems: readonly T[],
+  canonicalFallbackItems: readonly T[],
+  cardinality?: Readonly<{ minimum: number; maximum: number }>,
+): T[] {
+  const items =
+    preservedItems.length > 0 &&
+    (cardinality === undefined || preservedItems.length >= cardinality.minimum)
+      ? preservedItems
+      : canonicalFallbackItems;
+  return cardinality === undefined ? [...items] : items.slice(0, cardinality.maximum);
 }
 
 function mappedHomepageBridgePresentation(
@@ -1022,11 +1027,18 @@ function authoritativeHomepageProfileComponents(input: {
           planningInput.brief.businessIdentity.shortDescription.trim().length > 0 &&
           planningInput.brief.approval.status === "approved" &&
           planningInput.brief.approvedEvidenceFingerprint !== null,
-        approvedMedia: Boolean(
-          planningInput.approvedAssetContext?.assets.some((asset) =>
-            ["editorialImage", "heroDesktop", "heroMobile", "collectionImage"].includes(asset.role),
-          ),
-        ),
+        approvedMediaSlotIds: materialization.slots.flatMap((slot) => {
+          const acceptedRoles = new Set(
+            definitionFor(definitions, slot.component).assetSlots.flatMap(
+              (assetSlot) => assetSlot.acceptedRoles,
+            ),
+          );
+          return planningInput.approvedAssetContext?.assets.some((asset) =>
+            acceptedRoles.has(asset.role),
+          )
+            ? [slot.slotId]
+            : [];
+        }),
       });
       includedCommercialSlots = new Set(resolved.includedSlotIds);
     } catch (cause) {
@@ -1145,9 +1157,9 @@ function authoritativeHomepageProfileComponents(input: {
       ) {
         mappedProps.mediaPosition = "background";
       }
-      const itemLimit = materialization.commercialHomepage
+      const itemCardinality = materialization.commercialHomepage
         ? slot.component === "homepageFeaturedProducts"
-          ? resolveCommercialHomepageSlotItemLimit(
+          ? resolveCommercialHomepageSlotItemCardinality(
               materialization.profileId,
               slot.slotId,
               "products",
@@ -1155,7 +1167,7 @@ function authoritativeHomepageProfileComponents(input: {
             )
           : slot.component === "homepageFeaturedCollections" ||
               slot.component === "homepageCollectionNavigation"
-            ? resolveCommercialHomepageSlotItemLimit(
+            ? resolveCommercialHomepageSlotItemCardinality(
                 materialization.profileId,
                 slot.slotId,
                 "collections",
@@ -1182,7 +1194,7 @@ function authoritativeHomepageProfileComponents(input: {
                 (bridgeComponent === "homepageEditorial" && slot.variant === "continuationCta") ||
                 (bridgeComponent === "homepageHero" && slot.variant === "restrained")
               ),
-              itemLimit,
+              itemCardinality,
             )
           : [],
         assetAssignments: mappedAssetAssignments,

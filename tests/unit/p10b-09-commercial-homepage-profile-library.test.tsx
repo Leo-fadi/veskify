@@ -18,6 +18,7 @@ import {
   compileStorefrontPublication,
   createCurrentPublishCompilerInput,
 } from "@/application/publishing";
+import { createApprovedGenerationAssetContextFingerprint } from "@/application/ai-storefront-generation";
 import { createStorefrontRenderContext } from "@/components/registry";
 import { veskifyComponentCapabilityManifest } from "@/components/registry/capability-manifest";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
@@ -135,6 +136,13 @@ describe("P10B-09 commercial homepage profile library", () => {
       validateCommercialHomepageProfileLibrary(replaceFirst(unsupportedResponsive)),
     ).toThrow(/responsive transformation .* unavailable/);
 
+    const unsupportedBreakpoint = structuredClone(profiles[0]);
+    unsupportedBreakpoint.profile!.commercialHomepage!.responsiveArchitecture[2].transformationIds =
+      ["splitToStack"];
+    expect(() =>
+      validateCommercialHomepageProfileLibrary(replaceFirst(unsupportedBreakpoint)),
+    ).toThrow(/splitToStack is not registered for desktop/);
+
     const incompatibleNarrative = structuredClone(profiles[0]);
     incompatibleNarrative.slots[0].narrativeRole = "primary-discovery";
     expect(() =>
@@ -164,7 +172,7 @@ describe("P10B-09 commercial homepage profile library", () => {
       canonicalProductCount: 2,
       canonicalCollectionCount: 1,
       approvedMerchantEvidence: false,
-      approvedMedia: false,
+      approvedMediaSlotIds: [],
     });
     expect(sparse.omittedSlotIds).toEqual(["brand-story", "editorial-lookbook", "approved-proof"]);
     expect(sparse.includedSlotIds).toEqual(["hero", "curated-products", "continuation"]);
@@ -174,7 +182,7 @@ describe("P10B-09 commercial homepage profile library", () => {
         canonicalProductCount: 2,
         canonicalCollectionCount: 1,
         approvedMerchantEvidence: false,
-        approvedMedia: false,
+        approvedMediaSlotIds: [],
       }),
     ).toThrow(/campaign lacks required approved authority/);
     expect(() =>
@@ -183,7 +191,7 @@ describe("P10B-09 commercial homepage profile library", () => {
         canonicalProductCount: 0,
         canonicalCollectionCount: 0,
         approvedMerchantEvidence: true,
-        approvedMedia: true,
+        approvedMediaSlotIds: [],
       }),
     ).toThrow(/featured-collections lacks required approved authority/);
     expect(() =>
@@ -192,7 +200,7 @@ describe("P10B-09 commercial homepage profile library", () => {
         canonicalProductCount: 1,
         canonicalCollectionCount: 1,
         approvedMerchantEvidence: true,
-        approvedMedia: true,
+        approvedMediaSlotIds: [],
       }),
     ).toThrow(/product-discovery requires at least 2 products/);
     expect(
@@ -203,6 +211,70 @@ describe("P10B-09 commercial homepage profile library", () => {
         30,
       ),
     ).toBe(12);
+  });
+
+  it("fails required media per slot and repairs undersized preserved commerce canonically", () => {
+    const campaignFixture = createP905aFreshMerchantFixture("premiumEditorial");
+    const campaignProfile = currentProfile("homepage-campaign-led");
+    const campaignDraft = applyCommercialSharedFrame(
+      campaignFixture.planningInput.draft,
+      campaignProfile.profile!.commercialHomepage!.defaultSharedFrameProfileId,
+    );
+    const currentAssetContext = campaignFixture.planningInput.approvedAssetContext;
+    const collectionOnlyAssets = currentAssetContext.assets.map((asset) => ({
+      ...asset,
+      role: "collectionImage" as const,
+    }));
+    const collectionOnlyContext = {
+      ...currentAssetContext,
+      assets: collectionOnlyAssets,
+      fingerprint: createApprovedGenerationAssetContextFingerprint({
+        ...currentAssetContext,
+        assets: collectionOnlyAssets,
+      }),
+    };
+    expect(() =>
+      createWholeStorefrontGenerationPlan(
+        {
+          ...campaignFixture.planningInput,
+          draft: campaignDraft,
+          approvedAssetContext: collectionOnlyContext,
+        },
+        { directionId: "premiumEditorial", homepageProfileId: "homepage-campaign-led" },
+      ),
+    ).toThrow(/campaign lacks required approved authority/);
+
+    const commerceFixture = createP905aFreshMerchantFixture("modernTechnical");
+    const commerceDraft = structuredClone(commerceFixture.planningInput.draft);
+    const homepage = commerceDraft.pages.find((page) => page.type === "home")!;
+    const productSection = homepage.sections.find(
+      (section) => section.component === "productGrid",
+    )!;
+    productSection.content.productIds = [commerceFixture.planningInput.catalogue.products[0].id];
+    const framedCommerceDraft = applyCommercialSharedFrame(commerceDraft, "commerce-utility");
+    const plan = createWholeStorefrontGenerationPlan(
+      { ...commerceFixture.planningInput, draft: framedCommerceDraft },
+      {
+        directionId: "modernTechnical",
+        homepageProfileId: "homepage-commerce-led-discovery",
+      },
+    );
+    const productPlan = plan.pagePlans
+      .find((page) => page.role === "homepage")!
+      .components.find(
+        (component) =>
+          "instance" in component && component.instance.component === "homepageFeaturedProducts",
+      );
+    if (!productPlan || !("instance" in productPlan)) throw new Error("Missing product plan.");
+    const productBinding = productPlan.instance.bindings.find(
+      (binding) => binding.source === "productList",
+    );
+    if (!productBinding || productBinding.source !== "productList") {
+      throw new Error("Missing canonical product-list binding.");
+    }
+    expect(productBinding.productIds).toEqual(
+      commerceFixture.planningInput.catalogue.products.map((product) => product.id),
+    );
   });
 
   it("fails stale, component-incompatible, frame-incompatible and Design-DNA-broadening inputs", () => {

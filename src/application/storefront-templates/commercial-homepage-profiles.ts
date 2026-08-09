@@ -130,16 +130,54 @@ const homepageCompositionContract = pageBlueprintCompositionContractSchema.parse
   responsiveParameterIds: ["responsiveCollapse", "columnCount"],
 });
 
+const commercialHomepageResponsiveBreakpoints = [
+  { breakpoint: "mobile" as const, viewport: 375 as const },
+  { breakpoint: "tablet" as const, viewport: 768 as const },
+  { breakpoint: "desktop" as const, viewport: 1024 as const },
+  { breakpoint: "wide" as const, viewport: 1440 as const },
+] as const;
+
+function responsiveTransformationBreakpoints(productCardAnatomyId: string) {
+  const registered = new Map<string, Set<string>>();
+  const add = (
+    transformations: readonly Readonly<{ id: string; breakpoints: readonly string[] }>[],
+  ) => {
+    transformations.forEach((transformation) => {
+      const breakpoints = registered.get(transformation.id) ?? new Set<string>();
+      transformation.breakpoints.forEach((breakpoint) => breakpoints.add(breakpoint));
+      registered.set(transformation.id, breakpoints);
+    });
+  };
+  Object.values(componentDefinitions).forEach((definition) =>
+    add(definition.commercialAnatomy?.responsiveTransformations ?? []),
+  );
+  add(
+    requireCanonicalProductCardAnatomy(productCardAnatomyId, "homepageMerchandising")
+      .responsiveTransformations,
+  );
+  return registered;
+}
+
 function responsiveArchitecture(
   transformationIds: readonly string[],
+  productCardAnatomyId: string,
 ): CommercialHomepageProfileAuthority["responsiveArchitecture"] {
   const unique = [...new Set(transformationIds)];
-  return [
-    { breakpoint: "mobile" as const, viewport: 375 as const, transformationIds: unique },
-    { breakpoint: "tablet" as const, viewport: 768 as const, transformationIds: unique },
-    { breakpoint: "desktop" as const, viewport: 1024 as const, transformationIds: unique },
-    { breakpoint: "wide" as const, viewport: 1440 as const, transformationIds: unique },
-  ];
+  const registered = responsiveTransformationBreakpoints(productCardAnatomyId);
+  unique.forEach((transformationId) => {
+    if (!registered.has(transformationId)) {
+      throw new Error(
+        `Commercial homepage responsive transformation ${transformationId} is unavailable.`,
+      );
+    }
+  });
+  return commercialHomepageResponsiveBreakpoints.map(({ breakpoint, viewport }) => ({
+    breakpoint,
+    viewport,
+    transformationIds: unique.filter((transformationId) =>
+      registered.get(transformationId)?.has(breakpoint),
+    ),
+  })) as CommercialHomepageProfileAuthority["responsiveArchitecture"];
 }
 
 function createProfile(input: CommercialProfileInput): StorefrontTemplatePagePlan {
@@ -168,7 +206,10 @@ function createProfile(input: CommercialProfileInput): StorefrontTemplatePagePla
     productCardAnatomyId: input.productCardAnatomyId,
     sectionCardinality,
     contentCardinality: input.contentCardinality,
-    responsiveArchitecture: responsiveArchitecture(input.responsiveTransformationIds),
+    responsiveArchitecture: responsiveArchitecture(
+      input.responsiveTransformationIds,
+      input.productCardAnatomyId,
+    ),
     designDnaNarrowing: input.designDnaNarrowing,
   };
   const structuralSignature = `homepage-structure-${canonicalValueFingerprint(structuralMaterial)}`;
@@ -181,7 +222,10 @@ function createProfile(input: CommercialProfileInput): StorefrontTemplatePagePla
     sectionCardinality,
     contentCardinality: input.contentCardinality.map((entry) => ({ ...entry })),
     evidenceRequirements: input.evidenceRequirements.map((entry) => ({ ...entry })),
-    responsiveArchitecture: responsiveArchitecture(input.responsiveTransformationIds),
+    responsiveArchitecture: responsiveArchitecture(
+      input.responsiveTransformationIds,
+      input.productCardAnatomyId,
+    ),
     designDnaNarrowing: structuredClone(input.designDnaNarrowing),
     structuralSignature,
     structuralFingerprint: `homepage-profile-${canonicalValueFingerprint({
@@ -874,9 +918,18 @@ export function validateCommercialHomepageProfileLibrary(
         );
       }
     });
-    const registeredResponsiveTransformationIds = new Set(
-      productCardAnatomy.responsiveTransformations.map((entry) => entry.id),
-    );
+    const registeredResponsiveTransformations = new Map<string, Set<string>>();
+    const registerResponsiveTransformations = (
+      transformations: readonly Readonly<{ id: string; breakpoints: readonly string[] }>[],
+    ) => {
+      transformations.forEach((transformation) => {
+        const breakpoints =
+          registeredResponsiveTransformations.get(transformation.id) ?? new Set<string>();
+        transformation.breakpoints.forEach((breakpoint) => breakpoints.add(breakpoint));
+        registeredResponsiveTransformations.set(transformation.id, breakpoints);
+      });
+    };
+    registerResponsiveTransformations(productCardAnatomy.responsiveTransformations);
     plan.slots.forEach((entry) => {
       const manifest = getSupportedSectionManifest(entry.sectionType);
       if (!manifest || !(manifest.allowedPageTypes as readonly string[]).includes("home")) {
@@ -894,15 +947,21 @@ export function validateCommercialHomepageProfileLibrary(
           `Commercial homepage narrative role ${entry.narrativeRole} is incompatible with ${entry.sectionType}.`,
         );
       }
-      componentDefinition.commercialAnatomy?.responsiveTransformations.forEach((transformation) =>
-        registeredResponsiveTransformationIds.add(transformation.id),
+      registerResponsiveTransformations(
+        componentDefinition.commercialAnatomy?.responsiveTransformations ?? [],
       );
     });
     authority.responsiveArchitecture.forEach((breakpoint) => {
       breakpoint.transformationIds.forEach((transformationId) => {
-        if (!registeredResponsiveTransformationIds.has(transformationId)) {
+        const supportedBreakpoints = registeredResponsiveTransformations.get(transformationId);
+        if (!supportedBreakpoints) {
           throw new Error(
             `Commercial homepage responsive transformation ${transformationId} is unavailable.`,
+          );
+        }
+        if (!supportedBreakpoints.has(breakpoint.breakpoint)) {
+          throw new Error(
+            `Commercial homepage responsive transformation ${transformationId} is not registered for ${breakpoint.breakpoint}.`,
           );
         }
       });
@@ -977,7 +1036,7 @@ export function resolveCommercialHomepageProfileSlots(
     canonicalProductCount: number;
     canonicalCollectionCount: number;
     approvedMerchantEvidence: boolean;
-    approvedMedia: boolean;
+    approvedMediaSlotIds: readonly string[];
   }>,
 ): Readonly<{ includedSlotIds: readonly string[]; omittedSlotIds: readonly string[] }> {
   const plan = getCommercialHomepageProfile(profileId);
@@ -988,19 +1047,24 @@ export function resolveCommercialHomepageProfileSlots(
       `Commercial homepage profile ${profileId} is unavailable.`,
     );
   }
-  const available = {
-    "canonical-commerce": evidence.canonicalCommerce,
-    "approved-merchant-evidence": evidence.approvedMerchantEvidence,
-    "approved-media": evidence.approvedMedia,
-    none: true,
-  } as const;
+  const approvedMediaSlotIds = new Set(evidence.approvedMediaSlotIds);
+  const isAvailable = (
+    requirement: CommercialHomepageProfileAuthority["evidenceRequirements"][number],
+  ) =>
+    requirement.authority === "canonical-commerce"
+      ? evidence.canonicalCommerce
+      : requirement.authority === "approved-merchant-evidence"
+        ? evidence.approvedMerchantEvidence
+        : requirement.authority === "approved-media"
+          ? approvedMediaSlotIds.has(requirement.slotId)
+          : true;
   const includedSlotIds: string[] = [];
   const omittedSlotIds: string[] = [];
   for (const slot of plan.slots) {
     const requirements = authority.evidenceRequirements.filter(
       (requirement) => requirement.slotId === slot.id,
     );
-    const unsatisfied = requirements.filter((requirement) => !available[requirement.authority]);
+    const unsatisfied = requirements.filter((requirement) => !isAvailable(requirement));
     if (unsatisfied.length === 0) {
       includedSlotIds.push(slot.id);
       continue;
@@ -1045,6 +1109,16 @@ export function resolveCommercialHomepageSlotItemLimit(
   resource: "products" | "collections",
   availableCount: number,
 ): number {
+  return resolveCommercialHomepageSlotItemCardinality(profileId, slotId, resource, availableCount)
+    .maximum;
+}
+
+export function resolveCommercialHomepageSlotItemCardinality(
+  profileId: string,
+  slotId: string,
+  resource: "products" | "collections",
+  availableCount: number,
+): Readonly<{ minimum: number; maximum: number }> {
   const plan = getCommercialHomepageProfile(profileId);
   const authority = plan?.profile?.commercialHomepage;
   if (!authority) {
@@ -1056,12 +1130,15 @@ export function resolveCommercialHomepageSlotItemLimit(
   const cardinality = authority.contentCardinality.find(
     (entry) => entry.slotId === slotId && entry.resource === resource,
   );
-  if (!cardinality) return availableCount;
+  if (!cardinality) return { minimum: 0, maximum: availableCount };
   if (availableCount < cardinality.minimum) {
     throw new CommercialHomepageProfileError(
       "invalid-cardinality",
       `Commercial homepage slot ${slotId} requires at least ${cardinality.minimum} ${resource}.`,
     );
   }
-  return Math.min(availableCount, cardinality.maximum);
+  return {
+    minimum: cardinality.minimum,
+    maximum: Math.min(availableCount, cardinality.maximum),
+  };
 }

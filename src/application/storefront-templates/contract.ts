@@ -141,28 +141,28 @@ export const commercialHomepageProfileAuthoritySchema = z
         .object({
           breakpoint: z.literal("mobile"),
           viewport: z.literal(375),
-          transformationIds: z.array(z.string().trim().min(1).max(80)).min(1),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
         })
         .strict(),
       z
         .object({
           breakpoint: z.literal("tablet"),
           viewport: z.literal(768),
-          transformationIds: z.array(z.string().trim().min(1).max(80)).min(1),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
         })
         .strict(),
       z
         .object({
           breakpoint: z.literal("desktop"),
           viewport: z.literal(1024),
-          transformationIds: z.array(z.string().trim().min(1).max(80)).min(1),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
         })
         .strict(),
       z
         .object({
           breakpoint: z.literal("wide"),
           viewport: z.literal(1440),
-          transformationIds: z.array(z.string().trim().min(1).max(80)).min(1),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
         })
         .strict(),
     ]),
