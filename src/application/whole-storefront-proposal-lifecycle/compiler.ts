@@ -15,6 +15,7 @@ import {
 import {
   commercialHomepageProfileIdSchema,
   commercialPdpProfileIdSchema,
+  commercialCollectionSearchProfileIdSchema,
 } from "@/application/storefront-templates";
 import {
   storefrontStyleDesignSystems,
@@ -197,6 +198,9 @@ function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
     const productMaterialization = input.plan.pageBlueprintMaterializations.find(
       (entry) => entry.pageType === "product",
     );
+    const collectionMaterialization = input.plan.pageBlueprintMaterializations.find(
+      (entry) => entry.pageType === "collection",
+    );
     return createWholeStorefrontGenerationPlan(input.planningInput, {
       directionId: input.plan.designSystemSelection.directionId,
       ...(homepageMaterialization?.commercialHomepage
@@ -209,6 +213,13 @@ function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
       ...(productMaterialization?.commercialProductDetail
         ? {
             pdpProfileId: commercialPdpProfileIdSchema.parse(productMaterialization.profileId),
+          }
+        : {}),
+      ...(collectionMaterialization?.commercialCollectionSearch
+        ? {
+            collectionProfileId: commercialCollectionSearchProfileIdSchema.parse(
+              collectionMaterialization.profileId,
+            ),
           }
         : {}),
       tokenRefinementPlan: input.plan.tokenRefinementPlan,

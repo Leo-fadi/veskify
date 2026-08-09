@@ -217,6 +217,9 @@ function assertMaterialization(
     ...(materialization.commercialProductDetail
       ? { commercialProductDetail: materialization.commercialProductDetail }
       : {}),
+    ...(materialization.commercialCollectionSearch
+      ? { commercialCollectionSearch: materialization.commercialCollectionSearch }
+      : {}),
   };
   const expectedFingerprint = `page-blueprint-${canonicalValueFingerprint(canonicalValueString(content))}`;
   if (
@@ -233,6 +236,8 @@ function assertMaterialization(
       canonicalValueString(currentPagePlan.profile?.commercialHomepage ?? null) ||
     canonicalValueString(materialization.commercialProductDetail ?? null) !==
       canonicalValueString(currentPagePlan.profile?.commercialProductDetail ?? null) ||
+    canonicalValueString(materialization.commercialCollectionSearch ?? null) !==
+      canonicalValueString(currentPagePlan.profile?.commercialCollectionSearch ?? null) ||
     materialization.slots.length !== currentProfile.componentSelections.length ||
     materialization.slots.some((candidate, index) => {
       const current = currentProfile.componentSelections[index];

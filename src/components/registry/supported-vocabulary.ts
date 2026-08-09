@@ -94,7 +94,16 @@ export const supportedSectionManifest = {
   },
   dynamicCollectionCommerce: {
     allowedPageTypes: ["collection"] as const satisfies readonly PageType[],
-    variants: ["standard", "editorial", "compact", "gallery"] as const,
+    variants: [
+      "standard",
+      "editorial",
+      "compact",
+      "gallery",
+      "editorialDiscovery",
+      "catalogueComparison",
+      "campaignLedDiscovery",
+      "denseSearch",
+    ] as const,
   },
   dynamicProductDetail: {
     allowedPageTypes: ["product"] as const satisfies readonly PageType[],

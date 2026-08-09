@@ -12,6 +12,7 @@ import {
   type StorefrontTemplatePagePlan,
   type CommercialHomepageProfileAuthority,
   type CommercialProductDetailProfileAuthority,
+  type CommercialCollectionSearchProfileAuthority,
 } from "./contract";
 import { getCommercialSharedFrameProfile } from "@/domain/storefront/commercial-shared-frame";
 import { requireCanonicalProductCardAnatomy } from "@/domain/product-card";
@@ -34,6 +35,7 @@ export type ExecutablePageBlueprintMaterialization = Readonly<{
   requiredAssetRoles: readonly string[];
   commercialHomepage?: CommercialHomepageProfileAuthority;
   commercialProductDetail?: CommercialProductDetailProfileAuthority;
+  commercialCollectionSearch?: CommercialCollectionSearchProfileAuthority;
   fingerprint: string;
 }>;
 
@@ -144,6 +146,15 @@ export function materializeExecutablePageBlueprint(
     requireCanonicalProductCardAnatomy(
       profile.commercialProductDetail.relatedProductCardAnatomyId,
       "relatedProducts",
+    );
+  }
+  if (profile.commercialCollectionSearch) {
+    profile.commercialCollectionSearch.compatibleSharedFrameProfileIds.forEach(
+      getCommercialSharedFrameProfile,
+    );
+    requireCanonicalProductCardAnatomy(
+      profile.commercialCollectionSearch.productCardAnatomyId,
+      "collectionResults",
     );
   }
   if (
@@ -321,6 +332,9 @@ export function materializeExecutablePageBlueprint(
       : {}),
     ...(profile.commercialProductDetail
       ? { commercialProductDetail: structuredClone(profile.commercialProductDetail) }
+      : {}),
+    ...(profile.commercialCollectionSearch
+      ? { commercialCollectionSearch: structuredClone(profile.commercialCollectionSearch) }
       : {}),
   };
   return freeze({

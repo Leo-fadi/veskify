@@ -107,6 +107,10 @@ const variantLabels: Readonly<Record<string, { en: string; fi: string }>> = {
   quoteSpotlight: { en: "Quote spotlight", fi: "Lainausnosto" },
   proofGrid: { en: "Proof grid", fi: "Näyttöruudukko" },
   serviceAssurance: { en: "Service assurance", fi: "Palvelulupaus" },
+  editorialDiscovery: { en: "Editorial discovery", fi: "Toimituksellinen löytöretki" },
+  catalogueComparison: { en: "Catalogue comparison", fi: "Luettelon vertailu" },
+  campaignLedDiscovery: { en: "Campaign-led discovery", fi: "Kampanjavetoinen löytäminen" },
+  denseSearch: { en: "Dense search", fi: "Tiivis haku" },
 };
 
 function localizedLabel(value: string) {
