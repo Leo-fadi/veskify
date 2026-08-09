@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 9 August 2026, P10B-10 commercial collection/search profiles           |
+| Verified baseline         | 9 August 2026, P10B-10 collection/search and P10B-11 PDP profiles      |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -18,6 +18,7 @@
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
 | 1.3.0 P10B-10 | 9 August 2026 | P10B-10 delivery | Establish four fingerprinted commercial collection/search PageBlueprint profiles with exact canonical commerce, product-card and media authority, transient fail-closed zero-result context, deterministic lifecycle reachability, and retained four-width browser evidence. |
+| 1.3.0 P10B-11 | 9 August 2026 | P10B-11 delivery | Establish four fingerprinted commercial PDP PageBlueprint profiles inside the canonical dynamic PDP runtime, retain generic canonical option/media/card authority, ground optional high-consideration support in approved evidence, preserve lifecycle/publishing, and provide four-width browser evidence. |
 | 1.3.0 P10B-09 | 9 August 2026 | P10B-09 delivery | Establish six fingerprinted commercial homepage PageBlueprint profiles with evidence/cardinality authority, exact frame/story/card composition, deterministic lifecycle reachability, and retained four-width browser evidence. |
 | 1.3.0 P10B-07 | 8 August 2026 | P10B-07 delivery | Establish commercial-ready hero, editorial, campaign, service and evidence-grounded proof families with six meaningful hero anatomies, canonical art direction, PageBlueprint generation reachability, lifecycle preservation and four-width browser evidence. |
 | 1.3.0 P10B-08 | 8 August 2026 | P10B-08 delivery | Establish one fingerprinted product-card authority and renderer, five meaningful anatomies, exact protected-commerce and P10B-04 media lineage, deterministic legacy migration, generation/publish reachability, and four-width browser evidence. |
@@ -74,7 +75,8 @@ P10B-01 commercial grammar, P10B-02 parametric BrandSystem / Design DNA, P10B-03
 P10B-04 responsive image/art-direction authority, P10B-05 site-map/page-family authority, P10B-06
 commercial shared-frame families, P10B-07 hero/editorial/campaign/proof families, P10B-08
 canonical product-card authority, P10B-09 commercial homepage profiles, and P10B-10 commercial
-collection/search profiles are Baseline. P10B-11 through P10B-18 remain Planned. The current
+collection/search profiles and P10B-11 commercial PDP profiles are Baseline. P10B-12 through
+P10B-18 remain Planned. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -213,7 +215,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
-| Commercial storefront generation system              | **Partial**  | P10B-01 grammar, P10B-02 Design DNA, P10B-03 anatomy, P10B-04 art direction, P10B-05 page-set authority, P10B-06 shared-frame authority, P10B-07 commercial content families, P10B-08 product-card authority, P10B-09 homepage profiles, and P10B-10 collection/search profiles are Baseline; complete-storefront commercial quality/diversity remains Planned. |
+| Commercial storefront generation system              | **Partial**  | P10B-01 grammar, P10B-02 Design DNA, P10B-03 anatomy, P10B-04 art direction, P10B-05 page-set authority, P10B-06 shared-frame authority, P10B-07 commercial content families, P10B-08 product-card authority, P10B-09 homepage profiles, P10B-10 collection/search profiles, and P10B-11 PDP profiles are Baseline; complete-storefront commercial quality/diversity remains Planned. |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
 
@@ -729,6 +731,41 @@ Twenty-four retained browser images cover six profiles at four widths through th
 renderer. Details are in
 [`P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md`](P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md).
 
+### 10.12 P10B-11 commercial PDP profile authority
+
+Four versioned executable PDP PageBlueprint profiles now select the existing
+`dynamicProductDetail` authority: `pdp-standard-commerce`, `pdp-high-consideration`,
+`pdp-gallery-led`, and `pdp-variant-led`. They are not product-type forks, a second product
+model, a second option engine, or a replacement PDP renderer. The canonical inheritance chain is
+`BrandSystem / Design DNA → PageBlueprint → component anatomy / meaningful variant → bounded
+validated instance authority`.
+
+Each profile has a deterministic structural signature and identity-bound fingerprint covering its
+dynamic PDP variant, purchase/media/information arrangement, related-product P10B-08 card anatomy,
+compatible/default shared-frame selection, governed responsive transformation, evidence posture, and narrowing
+Design DNA compatibility. Exact duplicates, shallow near-duplicates, stale fingerprints, stale
+versions, unsupported responsive transformations, frame incompatibility, and Design DNA broadening
+fail closed.
+
+The standard profile retains a balanced gallery, identity/price, generic options, availability and
+purchase hierarchy. The high-consideration profile places approved specification, proof and service
+context before its separated purchase panel; factual supporting content must carry a current approved
+evidence reference and otherwise omits. The gallery-led profile gives canonical P10B-04 product media
+the first hierarchy while preserving title, resolved price, generic option state, availability and
+action. The variant-led profile makes generic configuration and purchase controls primary without
+specializing for a product type. All related products use the canonical P10B-08 renderer.
+
+Canonical product identity, variants, option groups/values/dependencies, SKU, resolved price and
+compare-at price, availability, canonical product media, and related products remain read-only.
+The existing generic option resolver proves incomplete and unavailable states, resolved configuration,
+price, availability and media. Approved P10B-04 crop, focal, gallery, ratio and responsive treatment
+may vary; product media identity and lineage cannot be replaced. Deterministic tests cover profile
+registration, simple/configurable products, lifecycle/save/reload/publication, evidence, stale and
+incompatible profiles. Retained browser evidence covers all four profiles at 375, 768, 1024 and
+1440 px. Details are in
+[`P10B_11_COMMERCIAL_PDP_PROFILE_LIBRARY.md`](P10B_11_COMMERCIAL_PDP_PROFILE_LIBRARY.md).
+
+### 10.13 P10B-10 commercial collection/search profile authority
 ### 10.12 P10B-10 commercial collection/search profile authority
 
 Four versioned executable collection/search PageBlueprint profiles now provide editorial discovery,
@@ -934,7 +971,7 @@ The binding sequence is:
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
    formal P10A phase closure record.
 2. **P10B — Commercial Storefront Generation System v1.** **Partial / active phase.** P10B-01
-   through P10B-10 are Baseline; P10B-11 through P10B-18 remain Planned.
+   through P10B-11 are Baseline; P10B-12 through P10B-18 remain Planned.
    Deliver complete commercially credible storefronts with bounded material diversity through
    registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and

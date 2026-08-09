@@ -214,6 +214,9 @@ function assertMaterialization(
     ...(materialization.commercialHomepage
       ? { commercialHomepage: materialization.commercialHomepage }
       : {}),
+    ...(materialization.commercialProductDetail
+      ? { commercialProductDetail: materialization.commercialProductDetail }
+      : {}),
     ...(materialization.commercialCollectionSearch
       ? { commercialCollectionSearch: materialization.commercialCollectionSearch }
       : {}),
@@ -231,6 +234,8 @@ function assertMaterialization(
       canonicalValueString([...currentProfile.requiredAssetRoles].sort()) ||
     canonicalValueString(materialization.commercialHomepage ?? null) !==
       canonicalValueString(currentPagePlan.profile?.commercialHomepage ?? null) ||
+    canonicalValueString(materialization.commercialProductDetail ?? null) !==
+      canonicalValueString(currentPagePlan.profile?.commercialProductDetail ?? null) ||
     canonicalValueString(materialization.commercialCollectionSearch ?? null) !==
       canonicalValueString(currentPagePlan.profile?.commercialCollectionSearch ?? null) ||
     materialization.slots.length !== currentProfile.componentSelections.length ||

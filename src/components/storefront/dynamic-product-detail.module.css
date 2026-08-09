@@ -20,6 +20,48 @@
   min-width: 0;
 }
 
+.highConsiderationLayout,
+.galleryLedPurchase,
+.galleryLedDetail,
+.variantLedLayout,
+.variantLedDetail {
+  display: grid;
+  min-width: 0;
+}
+
+.highConsiderationInformation,
+.highConsiderationEvidence,
+.highConsiderationPurchase,
+.galleryLedStage,
+.galleryLedIdentity,
+.variantLedPurchase,
+.variantLedGallery {
+  min-width: 0;
+}
+
+.highConsiderationInformation,
+.galleryLedIdentity,
+.variantLedPurchase,
+.purchasePanel {
+  background: var(--brand-color-background);
+  padding: calc(var(--brand-section-rhythm) * 0.6) var(--brand-page-gutter);
+}
+
+.highConsiderationEvidence,
+.galleryLedDetail,
+.variantLedDetail {
+  background: var(--brand-color-surface);
+}
+
+.highConsiderationEvidence > .specifications,
+.highConsiderationEvidence > .supportingContent,
+.galleryLedDetail > .specifications,
+.galleryLedDetail > .supportingContent,
+.variantLedDetail > .specifications,
+.variantLedDetail > .supportingContent {
+  background: transparent;
+}
+
 .gallery,
 .emptyGallery,
 .productInformation,
@@ -235,6 +277,20 @@
 
 .variant_editorialSplit .productInformation {
   border-inline-start: 1px solid var(--brand-color-border);
+}
+
+.variant_editorialSplit .highConsiderationInformation {
+  border-bottom: 1px solid var(--brand-color-border);
+}
+
+.variant_galleryDominant .galleryLedStage .gallery,
+.variant_galleryDominant .galleryLedStage .emptyGallery {
+  padding: clamp(1rem, 3vw, 2.5rem);
+}
+
+.variant_compact .purchasePanel {
+  border: 1px solid var(--brand-color-border);
+  border-radius: var(--brand-radius);
 }
 
 .buttonGroup,
@@ -472,6 +528,13 @@
   .relatedProducts {
     padding-inline: clamp(2rem, 5vw, 5rem);
   }
+
+  .highConsiderationInformation,
+  .galleryLedIdentity,
+  .variantLedPurchase,
+  .purchasePanel {
+    padding-inline: clamp(2rem, 5vw, 5rem);
+  }
 }
 
 @media (min-width: 64rem) {
@@ -494,6 +557,59 @@
   .variant_galleryDominant .productCore {
     grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.55fr);
   }
+
+  .highConsiderationLayout {
+    grid-template-columns: minmax(18rem, 0.55fr) minmax(0, 1.1fr) minmax(20rem, 0.75fr);
+    align-items: start;
+  }
+
+  .highConsiderationInformation {
+    position: sticky;
+    top: 0;
+  }
+
+  .highConsiderationPurchase {
+    display: grid;
+    gap: 0;
+  }
+
+  .highConsiderationPurchase .gallery,
+  .highConsiderationPurchase .emptyGallery {
+    min-height: 28rem;
+  }
+
+  .galleryLedPurchase {
+    grid-template-columns: minmax(0, 0.8fr) minmax(22rem, 0.65fr);
+    align-items: start;
+  }
+
+  .galleryLedStage .gallery,
+  .galleryLedStage .emptyGallery {
+    min-height: 50rem;
+  }
+
+  .galleryLedDetail {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .variantLedLayout {
+    grid-template-columns: minmax(22rem, 0.72fr) minmax(0, 1.28fr);
+    align-items: start;
+  }
+
+  .variantLedPurchase {
+    position: sticky;
+    top: 0;
+  }
+
+  .variantLedGallery .gallery,
+  .variantLedGallery .emptyGallery {
+    min-height: 42rem;
+  }
+
+  .variantLedDetail {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 47.999rem) {
@@ -514,5 +630,11 @@
 
   .variant_editorialSplit .productInformation {
     border-inline-start: 0;
+  }
+
+  .highConsiderationPurchase .purchasePanel,
+  .galleryLedPurchase .purchasePanel,
+  .variantLedPurchase .purchasePanel {
+    border-radius: 0;
   }
 }

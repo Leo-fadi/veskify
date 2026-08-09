@@ -6,6 +6,7 @@ import {
   getExecutablePageBlueprintProfile,
   getCommercialCollectionSearchProfile,
   getCommercialHomepageProfile,
+  getCommercialPdpProfile,
   getTemplateById,
   getTemplatePagePlan,
 } from "@/application/storefront-templates/registry";
@@ -60,13 +61,16 @@ import { veskifyComponentCapabilityManifest } from "@/components/registry/capabi
 import { resolveCommercialSharedFrameProfile } from "@/domain/storefront/commercial-shared-frame";
 import {
   commercialHomepageProfileIdSchema,
+  commercialPdpProfileIdSchema,
   commercialCollectionSearchProfileIdSchema,
   resolveCommercialHomepageProfileSlots,
   resolveCommercialHomepageSlotItemCardinality,
   type CommercialCollectionSearchProfileAuthority,
   type CommercialCollectionSearchProfileId,
   type CommercialHomepageProfileId,
+  type CommercialPdpProfileId,
 } from "@/application/storefront-templates";
+import type { CommercialProductDetailProfileAuthority } from "@/application/storefront-templates/contract";
 
 const FAMILY_REQUIREMENTS = {
   homepage: [
@@ -536,6 +540,7 @@ function materializeDirectionPageBlueprints(
   input: WholeStorefrontPlanningInput,
   directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
   homepageProfileId?: CommercialHomepageProfileId,
+  pdpProfileId?: CommercialPdpProfileId,
   collectionProfileId?: CommercialCollectionSearchProfileId,
 ) {
   const templateId = templateForDirection(directionId);
@@ -557,9 +562,11 @@ function materializeDirectionPageBlueprints(
     const pagePlan =
       pageType === "home" && homepageProfileId
         ? getCommercialHomepageProfile(homepageProfileId)
-        : pageType === "collection" && collectionProfileId
-          ? getCommercialCollectionSearchProfile(collectionProfileId)
-          : getTemplatePagePlan(templateId, pageType);
+        : pageType === "product" && pdpProfileId
+          ? getCommercialPdpProfile(pdpProfileId)
+          : pageType === "collection" && collectionProfileId
+            ? getCommercialCollectionSearchProfile(collectionProfileId)
+            : getTemplatePagePlan(templateId, pageType);
     if (!pagePlan) {
       invalid(
         "unsupported-page-family",
@@ -642,6 +649,30 @@ function assertCommercialHomepageSelection(
   return authority;
 }
 
+function assertCommercialPdpSelection(
+  input: WholeStorefrontPlanningInput,
+  profileId: CommercialPdpProfileId,
+  selection: WholeStorefrontGenerationPlan["designSystemSelection"],
+) {
+  const pagePlan = getCommercialPdpProfile(profileId);
+  const authority = pagePlan?.profile?.commercialProductDetail;
+  if (!pagePlan || !authority) {
+    invalid("unsupported-page-family", `Commercial PDP profile ${profileId} is unavailable.`);
+  }
+  assertCommercialProfileFrameAndDna(input, profileId, authority, selection, "PDP");
+  const manifest = veskifyComponentCapabilityManifest.getByComponentType("dynamicProductDetail");
+  const variant = manifest?.variants.find(
+    (entry) => entry.id === authority.dynamicProductDetailVariant,
+  );
+  if (variant?.structuralClassification !== "meaningfulStructuralVariant") {
+    invalid(
+      "invalid-component-contract",
+      `Commercial PDP profile ${profileId} requires current meaningful dynamicProductDetail/${authority.dynamicProductDetailVariant} authority.`,
+    );
+  }
+  return authority;
+}
+
 function assertCommercialCollectionSearchSelection(
   input: WholeStorefrontPlanningInput,
   profileId: CommercialCollectionSearchProfileId,
@@ -656,34 +687,7 @@ function assertCommercialCollectionSearchSelection(
       `Commercial collection/search profile ${profileId} is unavailable.`,
     );
   }
-  if (!input.draft.sharedFrame) {
-    invalid(
-      "unsupported-page-family",
-      "Commercial collection/search generation requires canonical snapshot-level shared-frame authority.",
-    );
-  }
-  const frame = resolveCommercialSharedFrameProfile(input.draft.sharedFrame);
-  if (!authority.compatibleSharedFrameProfileIds.includes(frame.id)) {
-    invalid(
-      "unsupported-page-family",
-      `Commercial collection/search profile ${profileId} is incompatible with shared frame ${frame.id}.`,
-    );
-  }
-  const imagePosture = {
-    premiumEditorial: "immersive",
-    modernTechnical: "contained",
-    warmApproachable: "editorial",
-  }[selection.directionId] as "contained" | "editorial" | "immersive";
-  if (
-    !authority.designDnaNarrowing.spacingDensity.includes(selection.spacingDensity) ||
-    !authority.designDnaNarrowing.surfaceDepth.includes(selection.surfaceDepth) ||
-    !authority.designDnaNarrowing.imagePosture.includes(imagePosture)
-  ) {
-    invalid(
-      "unsupported-page-family",
-      `Commercial collection/search profile ${profileId} cannot broaden the selected Design DNA.`,
-    );
-  }
+  assertCommercialProfileFrameAndDna(input, profileId, authority, selection, "collection/search");
   const manifest = veskifyComponentCapabilityManifest.getByComponentType(slot.sectionType);
   const variant = manifest?.variants.find((entry) => entry.id === slot.defaultVariant);
   if (
@@ -706,6 +710,50 @@ function assertCommercialCollectionSearchSelection(
     );
   }
   return authority;
+}
+
+function assertCommercialProfileFrameAndDna(
+  input: WholeStorefrontPlanningInput,
+  profileId: string,
+  authority: {
+    compatibleSharedFrameProfileIds: readonly string[];
+    designDnaNarrowing: {
+      spacingDensity: readonly string[];
+      surfaceDepth: readonly string[];
+      imagePosture: readonly string[];
+    };
+  },
+  selection: WholeStorefrontGenerationPlan["designSystemSelection"],
+  family: string,
+) {
+  if (!input.draft.sharedFrame) {
+    invalid(
+      "unsupported-page-family",
+      `Commercial ${family} generation requires canonical snapshot-level shared-frame authority.`,
+    );
+  }
+  const frame = resolveCommercialSharedFrameProfile(input.draft.sharedFrame);
+  if (!authority.compatibleSharedFrameProfileIds.includes(frame.id)) {
+    invalid(
+      "unsupported-page-family",
+      `Commercial ${family} profile ${profileId} is incompatible with shared frame ${frame.id}.`,
+    );
+  }
+  const imagePosture = {
+    premiumEditorial: "immersive",
+    modernTechnical: "contained",
+    warmApproachable: "editorial",
+  }[selection.directionId];
+  if (
+    !authority.designDnaNarrowing.spacingDensity.includes(selection.spacingDensity) ||
+    !authority.designDnaNarrowing.surfaceDepth.includes(selection.surfaceDepth) ||
+    !authority.designDnaNarrowing.imagePosture.includes(imagePosture)
+  ) {
+    invalid(
+      "unsupported-page-family",
+      `Commercial ${family} profile ${profileId} cannot broaden the selected Design DNA.`,
+    );
+  }
 }
 
 function generatedComponentId(
@@ -1531,6 +1579,7 @@ function dynamicProductComponent(
   usedComponentIds: Set<string>,
   presentation: WholeStorefrontGenerationPlan["designSystemSelection"]["productPresentation"],
   replacementId?: string,
+  commercialPdp?: CommercialProductDetailProfileAuthority,
 ): ComponentInstanceV2 {
   const id = replacementId ?? generatedComponentId(pageId, definition.type, usedComponentIds);
   usedComponentIds.add(id);
@@ -1538,22 +1587,36 @@ function dynamicProductComponent(
     id,
     component: "dynamicProductDetail",
     componentVersion: definition.version,
-    variant: presentation.variant,
+    variant: commercialPdp?.dynamicProductDetailVariant ?? presentation.variant,
     content: structuredClone(dynamicProductDetailDefaultContent),
     props: {
       ...structuredClone(dynamicProductDetailDefaultProps),
-      galleryLayout: presentation.galleryLayout,
-      optionDensity: presentation.optionDensity,
-      attributeLayout: presentation.attributeLayout,
-      mediaTreatment: presentation.mediaTreatment,
+      galleryLayout:
+        commercialPdp?.dynamicProductDetailProps.galleryLayout ?? presentation.galleryLayout,
+      optionDensity:
+        commercialPdp?.dynamicProductDetailProps.optionDensity ?? presentation.optionDensity,
+      attributeLayout:
+        commercialPdp?.dynamicProductDetailProps.attributeLayout ?? presentation.attributeLayout,
+      showDescription:
+        commercialPdp?.dynamicProductDetailProps.showDescription ??
+        dynamicProductDetailDefaultProps.showDescription,
+      showSku:
+        commercialPdp?.dynamicProductDetailProps.showSku ??
+        dynamicProductDetailDefaultProps.showSku,
+      stickyMobileAction:
+        commercialPdp?.dynamicProductDetailProps.stickyMobileAction ??
+        dynamicProductDetailDefaultProps.stickyMobileAction,
+      mediaTreatment:
+        commercialPdp?.dynamicProductDetailProps.mediaTreatment ?? presentation.mediaTreatment,
       relatedCardVariant:
-        presentation.variant === "compact"
+        commercialPdp?.relatedProductCardAnatomyId ??
+        (presentation.variant === "compact"
           ? "horizontal"
           : presentation.variant === "editorial" || presentation.variant === "editorialSplit"
             ? "editorial"
             : presentation.variant === "galleryDominant"
               ? "imageFirst"
-              : "standard",
+              : "standard"),
     },
     styleOverrides: structuredClone(dynamicProductDetailDefaultStyleOverrides),
     bindings: [
@@ -1769,6 +1832,7 @@ export function createWholeStorefrontGenerationPlan(
   options: {
     directionId?: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
     homepageProfileId?: CommercialHomepageProfileId;
+    pdpProfileId?: CommercialPdpProfileId;
     collectionProfileId?: CommercialCollectionSearchProfileId;
     tokenRefinementPlan?: RegisteredTokenRefinementPlan | null;
   } = {},
@@ -1835,6 +1899,9 @@ export function createWholeStorefrontGenerationPlan(
   const commercialHomepageAuthority = options.homepageProfileId
     ? assertCommercialHomepageSelection(input, options.homepageProfileId, designSystemSelection)
     : undefined;
+  const commercialPdpAuthority = options.pdpProfileId
+    ? assertCommercialPdpSelection(input, options.pdpProfileId, designSystemSelection)
+    : undefined;
   const commercialCollectionSearchAuthority = options.collectionProfileId
     ? assertCommercialCollectionSearchSelection(
         input,
@@ -1846,6 +1913,7 @@ export function createWholeStorefrontGenerationPlan(
     input,
     designSystemSelection.directionId,
     options.homepageProfileId,
+    options.pdpProfileId,
     options.collectionProfileId,
   );
   const commercialCollectionProfileVariant = options.collectionProfileId
@@ -1971,6 +2039,7 @@ export function createWholeStorefrontGenerationPlan(
         usedComponentIds,
         designSystemSelection.productPresentation,
         page.sections.find((section) => section.component === "dynamicProductDetail")?.id,
+        commercialPdpAuthority,
       );
       try {
         registry.validateInstance(instance);
@@ -2327,6 +2396,8 @@ export function createWholeStorefrontGenerationPlan(
           : ("coordinatedStructuralDirection" as const),
         tokenRefinementPlan,
         homepageProfileId: options.homepageProfileId ?? null,
+        pdpProfileId: options.pdpProfileId ?? null,
+        collectionProfileId: options.collectionProfileId ?? null,
       },
       "whole-storefront-request",
     ),
@@ -2372,6 +2443,9 @@ export function validateWholeStorefrontGenerationPlan(
   const homepageMaterialization = plan.pageBlueprintMaterializations.find(
     (entry) => entry.pageType === "home",
   );
+  const productMaterialization = plan.pageBlueprintMaterializations.find(
+    (entry) => entry.pageType === "product",
+  );
   const collectionMaterialization = plan.pageBlueprintMaterializations.find(
     (entry) => entry.pageType === "collection",
   );
@@ -2382,6 +2456,11 @@ export function validateWholeStorefrontGenerationPlan(
           homepageProfileId: commercialHomepageProfileIdSchema.parse(
             homepageMaterialization.profileId,
           ),
+        }
+      : {}),
+    ...(productMaterialization?.commercialProductDetail
+      ? {
+          pdpProfileId: commercialPdpProfileIdSchema.parse(productMaterialization.profileId),
         }
       : {}),
     ...(collectionMaterialization?.commercialCollectionSearch

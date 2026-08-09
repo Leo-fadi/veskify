@@ -1320,76 +1320,157 @@ export function DynamicProductDetail(input: PreparedDynamicProductDetail) {
     activeLocale: input.activeLocale,
     primaryLocale: input.primaryLocale,
   };
+  const gallery = (
+    <DynamicProductGallery
+      assetFor={input.assetFor}
+      layout={input.props.galleryLayout}
+      locale={locale}
+      media={input.resolvedOptions.selectedMediaReferences}
+      product={input.product}
+      treatment={input.props.mediaTreatment}
+    />
+  );
+  const identity = (
+    <>
+      <DynamicProductIdentity
+        locale={locale}
+        product={input.product}
+        resolvedOptions={input.resolvedOptions}
+        showDescription={input.props.showDescription}
+        showSku={input.props.showSku}
+        titleId={titleId}
+      />
+      <DynamicProductResolutionStatus lifecycle={input.resolutionLifecycle} locale={locale} />
+    </>
+  );
+  const purchase = (
+    <>
+      <DynamicProductOptionGroups
+        assetFor={input.assetFor}
+        density={input.props.optionDensity}
+        interactionDisabled={input.resolutionLifecycle.state === "pending"}
+        locale={locale}
+        onClearOption={input.onClearOption}
+        onResetOptions={input.onResetOptions}
+        onSelectOption={input.onSelectOption}
+        onTextOptionChange={input.onTextOptionChange}
+        product={input.product}
+        resolvedOptions={input.resolvedOptions}
+        textEntryDrafts={input.textEntryDrafts}
+      />
+      <DynamicProductPrimaryAction
+        label={input.content.primaryActionLabel}
+        locale={locale}
+        onPrimaryAction={input.onPrimaryAction}
+        product={input.product}
+        resolvedOptions={input.resolvedOptions}
+        state={input.primaryAction}
+        sticky={input.props.stickyMobileAction}
+      />
+    </>
+  );
+  const specifications = (
+    <DynamicProductSpecifications
+      layout={input.props.attributeLayout}
+      locale={locale}
+      product={input.product}
+    />
+  );
+  const supporting = (
+    <DynamicProductSupportingContent
+      assetFor={input.assetFor}
+      content={input.content}
+      locale={locale}
+      product={input.product}
+    />
+  );
+  const related = (
+    <DynamicRelatedProducts
+      anatomyId={input.props.relatedCardVariant}
+      assetFor={input.assetFor}
+      heading={input.content.relatedHeading}
+      locale={locale}
+      products={input.relatedProducts}
+    />
+  );
+  const composition =
+    input.variant === "galleryDominant"
+      ? "gallery-led"
+      : input.variant === "compact"
+        ? "variant-led"
+        : input.variant === "editorial" || input.variant === "editorialSplit"
+          ? "high-consideration"
+          : "standard-commerce";
   return (
     <article
       aria-labelledby={titleId}
       className={`${styles.root} ${styles[`variant_${input.variant}`]} ${styles[`surface_${input.styleOverrides.surfaceTreatment}`]}`}
       data-component="dynamicProductDetail"
+      data-pdp-composition={composition}
       data-render-target={input.target}
       data-variant={input.variant}
       data-responsive-layout="content-driven"
     >
-      <div className={styles.productCore}>
-        <DynamicProductGallery
-          assetFor={input.assetFor}
-          layout={input.props.galleryLayout}
-          locale={locale}
-          media={input.resolvedOptions.selectedMediaReferences}
-          product={input.product}
-          treatment={input.props.mediaTreatment}
-        />
-        <div className={styles.productInformation}>
-          <DynamicProductIdentity
-            locale={locale}
-            product={input.product}
-            resolvedOptions={input.resolvedOptions}
-            showDescription={input.props.showDescription}
-            showSku={input.props.showSku}
-            titleId={titleId}
-          />
-          <DynamicProductResolutionStatus lifecycle={input.resolutionLifecycle} locale={locale} />
-          <DynamicProductOptionGroups
-            assetFor={input.assetFor}
-            density={input.props.optionDensity}
-            interactionDisabled={input.resolutionLifecycle.state === "pending"}
-            locale={locale}
-            onClearOption={input.onClearOption}
-            onResetOptions={input.onResetOptions}
-            onSelectOption={input.onSelectOption}
-            onTextOptionChange={input.onTextOptionChange}
-            product={input.product}
-            resolvedOptions={input.resolvedOptions}
-            textEntryDrafts={input.textEntryDrafts}
-          />
-          <DynamicProductPrimaryAction
-            label={input.content.primaryActionLabel}
-            locale={locale}
-            onPrimaryAction={input.onPrimaryAction}
-            product={input.product}
-            resolvedOptions={input.resolvedOptions}
-            state={input.primaryAction}
-            sticky={input.props.stickyMobileAction}
-          />
-        </div>
-      </div>
-      <DynamicProductSpecifications
-        layout={input.props.attributeLayout}
-        locale={locale}
-        product={input.product}
-      />
-      <DynamicProductSupportingContent
-        assetFor={input.assetFor}
-        content={input.content}
-        locale={locale}
-        product={input.product}
-      />
-      <DynamicRelatedProducts
-        anatomyId={input.props.relatedCardVariant}
-        assetFor={input.assetFor}
-        heading={input.content.relatedHeading}
-        locale={locale}
-        products={input.relatedProducts}
-      />
+      {composition === "standard-commerce" ? (
+        <>
+          <div className={styles.productCore}>
+            {gallery}
+            <div className={styles.productInformation}>
+              {identity}
+              {purchase}
+            </div>
+          </div>
+          {specifications}
+          {supporting}
+          {related}
+        </>
+      ) : null}
+      {composition === "high-consideration" ? (
+        <>
+          <div className={styles.highConsiderationLayout}>
+            <div className={styles.highConsiderationInformation}>{identity}</div>
+            <div className={styles.highConsiderationEvidence}>
+              {specifications}
+              {supporting}
+            </div>
+            <div className={styles.highConsiderationPurchase}>
+              {gallery}
+              <div className={styles.purchasePanel}>{purchase}</div>
+            </div>
+          </div>
+          {related}
+        </>
+      ) : null}
+      {composition === "gallery-led" ? (
+        <>
+          <div className={styles.galleryLedStage}>{gallery}</div>
+          <div className={styles.galleryLedPurchase}>
+            <div className={styles.galleryLedIdentity}>{identity}</div>
+            <div className={styles.purchasePanel}>{purchase}</div>
+          </div>
+          <div className={styles.galleryLedDetail}>
+            {supporting}
+            {specifications}
+          </div>
+          {related}
+        </>
+      ) : null}
+      {composition === "variant-led" ? (
+        <>
+          <div className={styles.variantLedLayout}>
+            <div className={styles.variantLedPurchase}>
+              {identity}
+              <div className={styles.purchasePanel}>{purchase}</div>
+            </div>
+            <div className={styles.variantLedGallery}>{gallery}</div>
+          </div>
+          <div className={styles.variantLedDetail}>
+            {specifications}
+            {supporting}
+          </div>
+          {related}
+        </>
+      ) : null}
     </article>
   );
 }

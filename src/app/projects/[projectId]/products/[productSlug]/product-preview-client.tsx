@@ -7,7 +7,11 @@ import {
   type ProductCommerceRoutePresentation,
   type StorefrontCommerceRouteAdapter,
 } from "@/integrations/storefront-commerce-routes";
-import { createStorefrontRenderContext, validateRegisteredPage } from "@/components/registry";
+import {
+  createStorefrontRenderContext,
+  validateRegisteredPage,
+  type StorefrontRenderContext,
+} from "@/components/registry";
 import { StorefrontProductCommerceRoute } from "@/components/storefront/storefront-commerce-route";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
 import {
@@ -47,6 +51,7 @@ type LoadState =
       draft: ProjectAggregate["snapshots"][number];
       productPage: ProductPageModel;
       commercePresentation: ProductCommerceRoutePresentation | null;
+      evidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
     };
 
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
@@ -119,10 +124,14 @@ function ProductPreviewLoader({
   useEffect(() => {
     let cancelled = false;
     (snapshotKind === "published" && publishedSessionId
-      ? loadP905bLocalDemoPublishedProjection({ projectId, sessionId: publishedSessionId })
-      : repository.current!.get(projectId)
+      ? loadP905bLocalDemoPublishedProjection({ projectId, sessionId: publishedSessionId }).then(
+          ({ evidenceReferences, ...aggregate }) => ({ aggregate, evidenceReferences }),
+        )
+      : repository
+          .current!.get(projectId)
+          .then((aggregate) => ({ aggregate, evidenceReferences: [] }))
     )
-      .then((aggregate) => {
+      .then(({ aggregate, evidenceReferences }) => {
         if (cancelled) return;
         const draft = aggregate.snapshots.find(
           (snapshot) =>
@@ -150,6 +159,7 @@ function ProductPreviewLoader({
             enabledLocales: aggregate.project.enabledLocales,
             catalogue: aggregate.catalogue,
             snapshot: draft,
+            evidenceReferences,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
             pagePathSuffix: publishedSessionId
               ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
@@ -169,6 +179,7 @@ function ProductPreviewLoader({
           void renderStorefrontPage(productPage, context);
           const commercePresentation = commerceAdapter.product({
             aggregate,
+            evidenceReferences,
             snapshot: draft,
             page: productPage,
             product,
@@ -189,6 +200,7 @@ function ProductPreviewLoader({
             draft,
             productPage,
             commercePresentation,
+            evidenceReferences,
           });
           return;
         } catch {
@@ -288,6 +300,7 @@ function ProductPreviewLoader({
     onLocaleChange: setActiveLocale,
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
+    evidenceReferences: state.evidenceReferences,
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
     pagePathSuffix: publishedSessionId
       ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`

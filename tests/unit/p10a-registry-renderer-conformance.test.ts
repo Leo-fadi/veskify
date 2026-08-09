@@ -342,6 +342,11 @@ describe("P10A-04B registry, manifest, and renderer conformance", () => {
     const product = definitions.find((definition) => definition.type === "dynamicProductDetail");
     if (!product) throw new Error("Expected dynamic product definition.");
     Reflect.set(product, "supportedPageTypes", ["collection", "product"]);
+    if (!product.commercialAnatomy) throw new Error("Expected dynamic product commercial anatomy.");
+    Reflect.set(product.commercialAnatomy.compatibility, "allowedPageTypes", [
+      "collection",
+      "product",
+    ]);
     const report = reportFor({ componentDefinitions: definitions, pagePlans: [pagePlan] });
 
     expect(

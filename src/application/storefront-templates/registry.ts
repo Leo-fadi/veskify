@@ -26,6 +26,7 @@ import {
 } from "./contract";
 import { pageFamilyBaselinePagePlans } from "./page-family-baselines";
 import { commercialHomepagePagePlans } from "./commercial-homepage-profiles";
+import { commercialPdpPagePlans } from "./commercial-pdp-profiles";
 import { commercialCollectionSearchPagePlans } from "./commercial-collection-search-profiles";
 
 export {
@@ -41,6 +42,17 @@ export {
   CommercialHomepageProfileError,
   type CommercialHomepageProfileId,
 } from "./commercial-homepage-profiles";
+export {
+  commercialPdpProfileIds,
+  commercialPdpProfileIdSchema,
+  COMMERCIAL_PDP_PROFILE_VERSION,
+  getCommercialPdpProfile,
+  listCommercialPdpProfiles,
+  validateCommercialPdpProfileLibrary,
+  assertCommercialPdpEvidence,
+  CommercialPdpProfileError,
+  type CommercialPdpProfileId,
+} from "./commercial-pdp-profiles";
 
 export {
   commercialCollectionSearchProfileIds,
@@ -895,6 +907,7 @@ const profilesById = new Map(
     ...validatedTemplates.flatMap((templateDefinition) => templateDefinition.pagePlans),
     ...pageFamilyBaselinePagePlans,
     ...commercialHomepagePagePlans,
+    ...commercialPdpPagePlans,
     ...commercialCollectionSearchPagePlans,
   ].flatMap((pagePlanDefinition) =>
     pagePlanDefinition.profile

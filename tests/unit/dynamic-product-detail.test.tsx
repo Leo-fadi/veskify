@@ -727,7 +727,7 @@ describe("P6-02 dynamic product-detail component family", () => {
       expect.objectContaining({
         breakpoints: ["mobile", "tablet", "desktop", "wide"],
         allowHorizontalOverflow: false,
-        maxColumns: 2,
+        maxColumns: 3,
       }),
     ]);
 
