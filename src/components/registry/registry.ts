@@ -75,21 +75,28 @@ export function validateRegisteredSnapshot(
 ): StorefrontSnapshot {
   const snapshot = storefrontSnapshotSchema.parse(input);
   const factDocuments = contentSupportFactDocuments ?? snapshot.contentSupportFactDocuments;
-  const currentEvidenceReferences =
-    evidenceReferences ??
-    snapshot.pages.flatMap((page) => page.pageFamily?.evidenceReferences ?? []);
+  const currentEvidenceReferences = evidenceReferences ?? [];
+  const hasContentSupportSections = snapshot.pages.some((page) =>
+    page.sections.some((section) => section.component === "contentSupport"),
+  );
   if (snapshot.sharedFrame) validateCommercialSharedFrameSnapshot(snapshot);
-  const context = catalogue
-    ? createStorefrontRenderContext({
-        activeLocale,
-        primaryLocale,
-        enabledLocales,
-        catalogue,
-        snapshot,
-        evidenceReferences: currentEvidenceReferences,
-        contentSupportFactDocuments: factDocuments,
-      })
-    : undefined;
+  // Snapshot evidence is retained for provenance, not treated as current
+  // external approval. Structural repository validation can preserve an
+  // already-approved snapshot without inventing a current evidence context;
+  // an explicit render or publish validation must provide the current set and
+  // fails closed when it does not contain the bound document evidence.
+  const context =
+    catalogue && (!hasContentSupportSections || evidenceReferences !== undefined)
+      ? createStorefrontRenderContext({
+          activeLocale,
+          primaryLocale,
+          enabledLocales,
+          catalogue,
+          snapshot,
+          evidenceReferences: currentEvidenceReferences,
+          contentSupportFactDocuments: factDocuments,
+        })
+      : undefined;
   if (snapshot.sharedFrame) {
     validateRegisteredSection(snapshot.sharedFrame.header, undefined, context);
     validateRegisteredSection(snapshot.sharedFrame.footer, undefined, context);

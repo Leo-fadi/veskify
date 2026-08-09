@@ -3,6 +3,7 @@ import {
   canonicalValueString,
   type ContentSupportFactDocument,
   type PageModel,
+  type SectionInstance,
 } from "@/domain/storefront";
 import { resolveLocalizedText } from "@/domain/shared";
 import {
@@ -22,6 +23,7 @@ import {
   contentSupportPropsSchema,
   contentSupportStyleOverridesSchema,
   contentSupportVariantSchema,
+  type ContentSupportStyleOverrides,
 } from "./content-support";
 import { veskifyComponentRegistryV2 } from "./v2-registry";
 import styles from "@/components/storefront/content-support.module.css";
@@ -112,10 +114,14 @@ function instanceFor(
   variant: string,
   content: unknown,
   props: unknown,
+  styleOverrides: SectionInstance["styleOverrides"],
   context: StorefrontRenderContext,
-): ComponentInstanceV2 {
+): Readonly<{ instance: ComponentInstanceV2; styleOverrides: ContentSupportStyleOverrides }> {
   const parsedContent = contentSupportContentSchema.parse(content);
   const document = supportedDocument(context, parsedContent.factDocumentId);
+  const parsedStyleOverrides = contentSupportStyleOverridesSchema.parse({
+    surface: styleOverrides?.surface ?? "default",
+  });
   const instance = componentInstanceV2Schema.parse({
     id: sectionId,
     component: "contentSupport",
@@ -123,7 +129,7 @@ function instanceFor(
     variant,
     content: parsedContent,
     props: contentSupportPropsSchema.parse(props),
-    styleOverrides: contentSupportStyleOverridesSchema.parse({ surface: "plain" }),
+    styleOverrides: parsedStyleOverrides,
     bindings: [
       {
         slotId: "supportFacts",
@@ -136,7 +142,21 @@ function instanceFor(
     ],
     assetAssignments: [],
   });
-  return veskifyComponentRegistryV2.validateInstanceConformance(instance, projectionFor(context));
+  return {
+    instance: veskifyComponentRegistryV2.validateInstanceConformance(
+      instance,
+      projectionFor(context),
+    ),
+    styleOverrides: parsedStyleOverrides,
+  };
+}
+
+function reusableSurface(
+  surface: ContentSupportStyleOverrides["surface"],
+): "plain" | "soft" | "contrast" {
+  if (surface === "secondary") return "soft";
+  if (surface === "primary" || surface === "accent") return "contrast";
+  return "plain";
 }
 
 function text(value: Record<string, string>, context: StorefrontRenderContext) {
@@ -148,11 +168,13 @@ function StorytellingReuse({
   variant,
   document,
   context,
+  surface,
 }: {
   sectionId: string;
   variant: string;
   document: ContentSupportFactDocument;
   context: StorefrontRenderContext;
+  surface: ContentSupportStyleOverrides["surface"];
 }) {
   const story = document.payload.story;
   if (!story) throw new Error("The selected content/support layout requires approved story facts.");
@@ -170,7 +192,7 @@ function StorytellingReuse({
           textAlignment: "left",
           galleryColumns: 2,
         },
-        styleOverrides: { surface: "plain" },
+        styleOverrides: { surface: reusableSurface(surface) },
         bindings: [
           {
             slotId: "presentationContext",
@@ -195,11 +217,13 @@ function CampaignReuse({
   variant,
   document,
   context,
+  surface,
 }: {
   sectionId: string;
   variant: string;
   document: ContentSupportFactDocument;
   context: StorefrontRenderContext;
+  surface: ContentSupportStyleOverrides["surface"];
 }) {
   const campaign = document.payload.campaign;
   if (!campaign) throw new Error("The selected campaign layout requires approved campaign facts.");
@@ -225,7 +249,7 @@ function CampaignReuse({
           actionPresentation: "text",
           textAlignment: "left",
         },
-        styleOverrides: { surface: "plain" },
+        styleOverrides: { surface: reusableSurface(surface) },
         bindings: [
           {
             slotId: "presentationContext",
@@ -250,11 +274,13 @@ function ContentSupportReading({
   variant,
   document,
   context,
+  surface,
 }: {
   sectionId: string;
   variant: string;
   document: ContentSupportFactDocument;
   context: StorefrontRenderContext;
+  surface: ContentSupportStyleOverrides["surface"];
 }) {
   const payload = document.payload;
   if (["aboutStory", "aboutProcess", "genericEditorial"].includes(variant)) {
@@ -264,6 +290,7 @@ function ContentSupportReading({
         variant={variant}
         document={document}
         context={context}
+        surface={surface}
       />
     );
   }
@@ -274,6 +301,7 @@ function ContentSupportReading({
         variant={variant}
         document={document}
         context={context}
+        surface={surface}
       />
     );
   }
@@ -287,6 +315,7 @@ function ContentSupportReading({
       data-page-family={payload.familyId}
       data-render-target={context.renderTarget ?? "preview"}
       data-responsive-layout="governed-content-support"
+      data-surface={surface}
       data-variant={variant}
     >
       <div className={styles.reading}>
@@ -394,18 +423,19 @@ export const contentSupportBridgeDefinitions = {
     protectedFields: {
       readOnlyPaths: ["content.factDocumentId", "bindings.supportFacts", "assets.*.provenance"],
     },
-    validateContext: ({ sectionId, variant, content, props, context }) => {
-      instanceFor(sectionId, variant, content, props, context);
+    validateContext: ({ sectionId, variant, content, props, styleOverrides, context }) => {
+      instanceFor(sectionId, variant, content, props, styleOverrides, context);
     },
-    renderer: ({ sectionId, variant, content, props, context }) => {
-      const instance = instanceFor(sectionId, variant, content, props, context);
+    renderer: ({ sectionId, variant, content, props, styleOverrides, context }) => {
+      const resolved = instanceFor(sectionId, variant, content, props, styleOverrides, context);
       const document = supportedDocument(context, content.factDocumentId);
       return (
         <ContentSupportReading
-          sectionId={instance.id}
+          sectionId={resolved.instance.id}
           variant={variant}
           document={document}
           context={context}
+          surface={resolved.styleOverrides.surface}
         />
       );
     },

@@ -120,6 +120,12 @@ export function materializeContentSupportPage(
       "The approved about/process composition requires at least one approved process step.",
     );
   }
+  if (slot.variant === "genericEditorial" && !fact.payload.story) {
+    throw new ContentSupportPageMaterializationError(
+      "invalid-realization",
+      "The approved generic editorial composition requires approved story facts.",
+    );
+  }
   const realized = pageModelSchema.parse({
     ...page,
     sections: [

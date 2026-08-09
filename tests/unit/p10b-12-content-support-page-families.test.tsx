@@ -16,6 +16,7 @@ import {
 import {
   createStorefrontRenderContext,
   validateRegisteredPage,
+  validateRegisteredSnapshot,
   veskifyComponentDefinitionsV2,
 } from "@/components/registry";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
@@ -37,6 +38,7 @@ import {
   type EvidenceKind,
 } from "@/domain/source-discovery";
 import {
+  canonicalStorefrontContentFingerprint,
   listPageFamilyDefinitions,
   pageModelSchema,
   storefrontSnapshotSchema,
@@ -665,6 +667,124 @@ describe("P10B-12 content and support page families", () => {
         },
       }),
     ).toThrow(/belongs to contact, not faq/i);
+  });
+
+  it("rejects an editorial realization when approved facts omit its required story", () => {
+    const workflow = approvedWorkflow("generic-content", {
+      familyId: "generic-content",
+      title: localized("Journal", "Päiväkirja"),
+      introduction: localized("Approved reading", "Hyväksytty luettava"),
+      blocks: [
+        {
+          kind: "paragraph",
+          id: "approved-note",
+          body: localized("Approved paragraph only.", "Vain hyväksytty kappale."),
+        },
+      ],
+    });
+    expect(() =>
+      materializeContentSupportPage({
+        page: canonicalPage("generic-content", workflow),
+        factAuthority: createStorefrontDesignBriefContentSupportFactAuthority(workflow),
+      }),
+    ).toThrow(/generic editorial composition requires approved story facts/i);
+  });
+
+  it("uses only explicit current evidence for content/support validation", () => {
+    const workflow = approvedWorkflow("about");
+    const factAuthority = createStorefrontDesignBriefContentSupportFactAuthority(workflow);
+    const siteMap = completeSiteMapWithApprovedAbout(workflow);
+    const about = siteMap.snapshot.pages.find((page) => page.pageFamily?.familyId === "about")!;
+    const materializedSnapshot = materializeContentSupportSnapshot({
+      snapshot: siteMap.snapshot,
+      pageId: about.id,
+      factAuthority,
+    });
+    const evidence = about.pageFamily!.evidenceReferences;
+
+    expect(() =>
+      validateRegisteredSnapshot(
+        materializedSnapshot.snapshot,
+        aurumNordicSeed.catalogue,
+        "en",
+        "en",
+        ["en", "fi"],
+        [],
+        materializedSnapshot.snapshot.contentSupportFactDocuments,
+      ),
+    ).toThrow(/fact evidence is not current/i);
+    expect(() =>
+      validateRegisteredSnapshot(
+        materializedSnapshot.snapshot,
+        aurumNordicSeed.catalogue,
+        "en",
+        "en",
+        ["en", "fi"],
+        evidence,
+        materializedSnapshot.snapshot.contentSupportFactDocuments,
+      ),
+    ).not.toThrow();
+    // Persistence may check snapshot structure without fabricating an external
+    // approval context; render and publish validation must pass one explicitly.
+    expect(() =>
+      validateRegisteredSnapshot(
+        materializedSnapshot.snapshot,
+        aurumNordicSeed.catalogue,
+        "en",
+        "en",
+      ),
+    ).not.toThrow();
+  });
+
+  it("preserves legacy fingerprints while fingerprinting approved fact documents", () => {
+    const legacyInput = structuredClone(aurumNordicSeed.draftSnapshot) as Record<string, unknown>;
+    delete legacyInput.contentSupportFactDocuments;
+    const legacy = storefrontSnapshotSchema.parse(legacyInput);
+    const normalized = storefrontSnapshotSchema.parse({
+      ...legacy,
+      contentSupportFactDocuments: [],
+    });
+    expect(canonicalStorefrontContentFingerprint(normalized)).toBe(
+      canonicalStorefrontContentFingerprint(legacy),
+    );
+
+    const workflow = approvedWorkflow("about");
+    const siteMap = completeSiteMapWithApprovedAbout(workflow);
+    const materializedSnapshot = materializeContentSupportSnapshot({
+      snapshot: siteMap.snapshot,
+      pageId: siteMap.snapshot.pages.find((page) => page.pageFamily?.familyId === "about")!.id,
+      factAuthority: createStorefrontDesignBriefContentSupportFactAuthority(workflow),
+    });
+    const withoutDocuments = storefrontSnapshotSchema.parse({
+      ...materializedSnapshot.snapshot,
+      contentSupportFactDocuments: [],
+    });
+    expect(canonicalStorefrontContentFingerprint(materializedSnapshot.snapshot)).not.toBe(
+      canonicalStorefrontContentFingerprint(withoutDocuments),
+    );
+  });
+
+  it("uses canonical section surfaces in the V2 bridge and rendered output", () => {
+    const resolved = materialized("faq");
+    const section = resolved.result.page.sections[0]!;
+    const accented = pageModelSchema.parse({
+      ...resolved.result.page,
+      sections: [
+        {
+          ...section,
+          styleOverrides: { ...section.styleOverrides, surface: "accent" },
+        },
+      ],
+    });
+    expect(renderToStaticMarkup(renderStorefrontPage(accented, resolved.context))).toContain(
+      'data-surface="accent"',
+    );
+    expect(() =>
+      pageModelSchema.parse({
+        ...resolved.result.page,
+        sections: [{ ...section, styleOverrides: { surface: "plain" } }],
+      }),
+    ).toThrow();
   });
 
   it("persists the fact document through canonical repository save/reload", async () => {

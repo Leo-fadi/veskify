@@ -2,6 +2,31 @@
   padding: clamp(2.5rem, 7vw, 6rem) clamp(1rem, 5vw, 4rem);
 }
 
+.section[data-surface="default"] {
+  background: var(--brand-surface-page);
+  color: var(--brand-surface-page-text);
+}
+
+.section[data-surface="surface"] {
+  background: var(--brand-color-surface);
+  color: var(--brand-color-text);
+}
+
+.section[data-surface="primary"] {
+  background: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
+}
+
+.section[data-surface="secondary"] {
+  background: var(--brand-color-secondary);
+  color: var(--brand-color-secondary-text);
+}
+
+.section[data-surface="accent"] {
+  background: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
+}
+
 .reading {
   display: grid;
   gap: 1.25rem;

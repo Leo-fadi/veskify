@@ -80,6 +80,7 @@ export type ComponentRenderInput<TContent, TProps, TVariant extends string> = {
   variant: TVariant;
   content: TContent;
   props: TProps;
+  styleOverrides: NonNullable<SectionInstance["styleOverrides"]>;
   approvedAssetPlacements: NonNullable<SectionInstance["approvedAssetPlacements"]>;
   approvedAssetPresentations: NonNullable<SectionInstance["approvedAssetPresentations"]>;
   context: StorefrontRenderContext;
@@ -164,6 +165,7 @@ export function defineComponent<
       sectionId: section.id,
       content: input.contentSchema.parse(section.content),
       props: input.propsSchema.parse(section.props),
+      styleOverrides: structuredClone(section.styleOverrides ?? {}),
       variant: section.variant as TVariants[number],
       approvedAssetPlacements: structuredClone(section.approvedAssetPlacements ?? []),
       approvedAssetPresentations: structuredClone(section.approvedAssetPresentations ?? []),

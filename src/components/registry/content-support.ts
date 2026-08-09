@@ -42,7 +42,7 @@ export const contentSupportPropsSchema = z
   .strict();
 
 export const contentSupportStyleOverridesSchema = z
-  .object({ surface: z.enum(["plain", "soft", "contrast"]) })
+  .object({ surface: z.enum(["default", "surface", "primary", "secondary", "accent"]) })
   .strict();
 
 export const contentSupportDefaultContent = contentSupportContentSchema.parse({
@@ -53,7 +53,7 @@ export const contentSupportDefaultProps = contentSupportPropsSchema.parse({
   textAlignment: "left",
 });
 export const contentSupportDefaultStyleOverrides = contentSupportStyleOverridesSchema.parse({
-  surface: "plain",
+  surface: "default",
 });
 
 const responsiveRules = [
