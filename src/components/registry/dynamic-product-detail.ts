@@ -290,7 +290,7 @@ const definitionInput = {
     {
       breakpoints: ["mobile", "tablet", "desktop", "wide"],
       allowHorizontalOverflow: false,
-      maxColumns: 2,
+      maxColumns: 3,
       notes: {
         en: "The gallery and product information recompose without product-type-specific layouts at 375, 768, 1024 and 1440 pixels.",
         fi: "Galleria ja tuotetiedot mukautuvat ilman tuotetyyppikohtaisia asetteluja 375, 768, 1024 ja 1440 pikselissä.",

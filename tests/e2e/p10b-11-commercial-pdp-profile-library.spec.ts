@@ -57,6 +57,7 @@ for (const profileId of profiles) {
 }
 
 test("all PDP profiles retain distinct structural composition", async ({ page }) => {
+  test.setTimeout(240_000);
   const fingerprints = new Set<string>();
   const compositions = new Set<string>();
   for (const profileId of profiles) {

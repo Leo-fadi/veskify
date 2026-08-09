@@ -45,7 +45,7 @@ sizing, delivery, review and technical claims are never invented.
 ## Structure, compatibility and responsive behavior
 
 Profile structural signatures include the dynamic PDP variant, gallery/purchase/information
-arrangement, P10B-08 card anatomy, evidence posture, P10B-06 frame compatibility, responsive
+arrangement, P10B-08 card anatomy, evidence posture, P10B-06 compatible/default frame selection, responsive
 transformations and narrowing-only Design DNA selections. Identity-bound fingerprints prevent exact
 and shallow duplicate profiles. Stale signatures, unsupported transformations, incompatible shared
 frames and Design DNA broadening fail closed.

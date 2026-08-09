@@ -21,6 +21,8 @@ import {
   resolveDynamicProductDetailSupportingContent,
   veskifyComponentDefinitionsV2,
 } from "@/components/registry";
+import { validateDynamicProductDetailRoutePresentation } from "@/components/storefront/dynamic-product-detail";
+import { createCatalogueStorefrontCommerceRouteAdapter } from "@/integrations/storefront-commerce-routes";
 import {
   P9_05A_COMPLEX_PRODUCT_ID,
   P9_05A_SIMPLE_PRODUCT_ID,
@@ -214,6 +216,12 @@ describe("P10B-11 commercial PDP profile library", () => {
     expect(() => validateCommercialPdpProfileLibrary([...profiles, profiles[0]])).toThrow(
       /IDs must be unique/i,
     );
+    const staleDefaultFrame = structuredClone(profiles[0]);
+    staleDefaultFrame.profile!.commercialProductDetail!.defaultSharedFrameProfileId =
+      "centered-minimal";
+    expect(() =>
+      validateCommercialPdpProfileLibrary([staleDefaultFrame, ...profiles.slice(1)]),
+    ).toThrow(/stale structural authority/i);
     const fixture = createP905aFreshMerchantFixture("premiumEditorial");
     const wrongFrameDraft = applyCommercialSharedFrame(
       fixture.planningInput.draft,
@@ -256,6 +264,32 @@ describe("P10B-11 commercial PDP profile library", () => {
         canonicalCommerce: true,
         approvedMerchantEvidence: false,
       }),
+    ).not.toThrow();
+  });
+
+  it("threads current approval evidence into high-consideration PDP route projections", () => {
+    const { fixture, snapshot } = fixtureFor("pdp-high-consideration");
+    const evidence = expectedEvidence(fixture)[0];
+    const page = structuredClone(snapshot.pages.find((entry) => entry.type === "product")!);
+    const section = page.sections.find((entry) => entry.component === "dynamicProductDetail")!;
+    section.content.supportingHeading = { en: "Approved support", fi: "Hyväksytty tuki" };
+    section.content.supportingEvidence = evidence;
+    const product = fixture.aggregate.catalogue.products.find(
+      (entry) => entry.id === P9_05A_COMPLEX_PRODUCT_ID,
+    )!;
+    const presentation = createCatalogueStorefrontCommerceRouteAdapter().product({
+      aggregate: fixture.aggregate,
+      evidenceReferences: [evidence],
+      snapshot,
+      page,
+      product,
+    });
+    expect(presentation?.projection.evidenceReferences).toEqual([evidence]);
+    expect(() =>
+      validateDynamicProductDetailRoutePresentation(
+        presentation!.instance,
+        presentation!.projection,
+      ),
     ).not.toThrow();
   });
 

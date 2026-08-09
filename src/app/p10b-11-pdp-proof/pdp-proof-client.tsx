@@ -50,6 +50,7 @@ export function P10B11PdpProofClient({
   });
   const presentation = createCatalogueStorefrontCommerceRouteAdapter().product({
     aggregate,
+    evidenceReferences: context.evidenceReferences,
     snapshot,
     page: productPage,
     product,

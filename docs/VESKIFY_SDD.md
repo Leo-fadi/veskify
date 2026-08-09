@@ -740,7 +740,7 @@ validated instance authority`.
 
 Each profile has a deterministic structural signature and identity-bound fingerprint covering its
 dynamic PDP variant, purchase/media/information arrangement, related-product P10B-08 card anatomy,
-shared-frame compatibility, governed responsive transformation, evidence posture, and narrowing
+compatible/default shared-frame selection, governed responsive transformation, evidence posture, and narrowing
 Design DNA compatibility. Exact duplicates, shallow near-duplicates, stale fingerprints, stale
 versions, unsupported responsive transformations, frame incompatibility, and Design DNA broadening
 fail closed.
