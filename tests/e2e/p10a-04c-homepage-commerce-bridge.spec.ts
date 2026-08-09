@@ -205,6 +205,7 @@ test("P10A-04C renders executable homepage profiles through the deterministic br
   test.setTimeout(180_000);
   const browserErrors: string[] = [];
   const providerRequests: string[] = [];
+  const publishFailures: unknown[] = [];
   await page.route("https://lumo.example/**", (route) =>
     route.fulfill({
       body: '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900"><title>Lumo fixture asset</title></svg>',
@@ -219,6 +220,11 @@ test("P10A-04C renders executable homepage profiles through the deterministic br
     const url = new URL(request.url());
     if (url.hostname === "api.openai.com" || url.hostname.endsWith(".openai.com")) {
       providerRequests.push(request.url());
+    }
+  });
+  page.on("response", async (response) => {
+    if (response.url().endsWith("/api/storefront-publish") && !response.ok()) {
+      publishFailures.push(await response.json().catch(() => ({ status: response.status() })));
     }
   });
 
@@ -260,7 +266,23 @@ test("P10A-04C renders executable homepage profiles through the deterministic br
     `/projects/${projectId}/publish?p9-05b-session=${encodeURIComponent(premium.sessionId)}`,
   );
   await page.getByRole("button", { name: /Tarkista julkaisu|Review publish/ }).click();
+  await expect
+    .poll(async () => ({
+      confirm: await page
+        .getByRole("button", { name: /Julkaise verkkokauppa|Publish storefront/ })
+        .count(),
+      publishFailures,
+    }))
+    .toEqual({ confirm: 1, publishFailures: [] });
   await page.getByRole("button", { name: /Julkaise verkkokauppa|Publish storefront/ }).click();
+  await expect
+    .poll(async () => ({
+      success: await page
+        .getByRole("heading", { name: /julkaistiin onnistuneesti|published successfully/i })
+        .count(),
+      publishFailures,
+    }))
+    .toEqual({ success: 1, publishFailures: [] });
   await expect(
     page.getByRole("heading", { name: /julkaistiin onnistuneesti|published successfully/i }),
   ).toBeVisible();

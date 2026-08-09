@@ -157,6 +157,16 @@ const projection: ComponentProjectionContext = {
     { projectId: "project_p10b07", brandSystemRefs: [], revision: "brand-r1" },
   ],
   localizedContents: [],
+  evidenceReferences: [
+    {
+      source: "merchant-approved",
+      authorityId: "brief_p10b07",
+      revision: "1",
+      status: "approved",
+      approvalAuthorityId: "merchant_p10b07",
+      approvalFingerprint: "approved-fingerprint",
+    },
+  ],
   productListRevision: "products-r1",
   collectionListRevision: "collections-r1",
 };
@@ -332,8 +342,21 @@ describe("P10B-07 hero, editorial, campaign and proof families", () => {
         },
       ],
     });
-    expect(resolveHomepageProofContent(content, { required: true })).toEqual(content);
-    expect(() => veskifyComponentRegistryV2.validateInstance(proof(content.items))).not.toThrow();
+    expect(
+      resolveHomepageProofContent(content, {
+        required: true,
+        currentEvidenceReferences: projection.evidenceReferences,
+      }),
+    ).toEqual(content);
+    expect(() =>
+      veskifyComponentRegistryV2.validateInstanceConformance(proof(content.items), projection),
+    ).not.toThrow();
+
+    const staleProjection = structuredClone(projection);
+    staleProjection.evidenceReferences[0].approvalFingerprint = "replacement-fingerprint";
+    expect(() =>
+      veskifyComponentRegistryV2.validateInstanceConformance(proof(content.items), staleProjection),
+    ).toThrow(/requires current approved evidence/i);
   });
 
   it("07 omits optional proof and fails closed when proof is required without evidence", () => {
@@ -416,6 +439,20 @@ describe("P10B-07 hero, editorial, campaign and proof families", () => {
       "restrainedCondense",
       "campaignReflow",
     ]);
+
+    const campaign = render(
+      renderHomepageCommerce(rendererInput(hero("campaignMerchandising"))),
+    ).container.querySelector('[data-variant="campaignMerchandising"]')!;
+    expect(
+      [...campaign.children].map(
+        (child) => child.getAttribute("data-region") ?? child.getAttribute("data-asset-role"),
+      ),
+    ).toEqual(["heroDesktop", "merchandising", "content", "actions"]);
+    const css = readFileSync("src/components/storefront/homepage-commerce.module.css", "utf8");
+    expect(css).toMatch(/variant_fullBleedOverlay \.media_background[\s\S]*position:\s*relative/);
+    expect(css).toMatch(
+      /variant_lookbookGallery \.storyGallery[\s\S]*scroll-snap-type:\s*x mandatory/,
+    );
   });
 
   it("13 inherits merchant-wide Design DNA without changing component anatomy", () => {
@@ -451,6 +488,81 @@ describe("P10B-07 hero, editorial, campaign and proof families", () => {
     );
   });
 
+  it("preserves an existing editorial media subset and order during regeneration", () => {
+    const fixture = createP905aFreshMerchantFixture("premiumEditorial");
+    const home = fixture.planningInput.draft.pages.find((page) => page.type === "home")!;
+    const initialPlan = createWholeStorefrontGenerationPlan(fixture.planningInput, {
+      directionId: "premiumEditorial",
+    });
+    const initialEditorial = initialPlan.pagePlans
+      .flatMap((page) => page.components)
+      .find(
+        (component) =>
+          "instance" in component && component.instance.component === "homepageEditorial",
+      );
+    if (!initialEditorial || !("instance" in initialEditorial)) {
+      throw new Error("Expected the registered homepage editorial family.");
+    }
+    const approvedStory = fixture.assetContext.assets.find(
+      (asset) => asset.assetId === "asset_lumo_story",
+    )!;
+    const placement = {
+      type: "PLACE_APPROVED_SOURCE_ASSET" as const,
+      pageId: home.id,
+      componentId: initialEditorial.instance.id,
+      componentType: "homepageEditorial",
+      assetSlotId: "storyMedia",
+      assetId: approvedStory.assetId,
+      role: approvedStory.role,
+      assetRevision: approvedStory.revision,
+      materialFingerprint: approvedStory.materialFingerprint,
+      sourceReferenceId: approvedStory.sourceReferenceId,
+      required: false,
+    };
+    home.sections = [
+      ...home.sections.filter((section) => section.component !== "brandStory"),
+      {
+        id: initialEditorial.instance.id,
+        component: initialEditorial.instance.component,
+        variant: initialEditorial.instance.variant,
+        visible: true,
+        content: structuredClone(initialEditorial.instance.content),
+        props: structuredClone(initialEditorial.instance.props),
+        styleOverrides: {},
+        approvedAssetPlacements: [placement],
+        approvedAssetPresentations: [
+          fixture.assetPresentations.find(
+            (presentation) => presentation.assetId === approvedStory.assetId,
+          )!,
+        ],
+      },
+    ];
+
+    const regenerated = createWholeStorefrontGenerationPlan(fixture.planningInput, {
+      directionId: "premiumEditorial",
+    });
+    const editorial = regenerated.pagePlans
+      .flatMap((page) => page.components)
+      .find(
+        (component) =>
+          "instance" in component && component.instance.component === "homepageEditorial",
+      );
+    if (!editorial || !("instance" in editorial)) {
+      throw new Error("Expected regenerated homepage editorial family.");
+    }
+    expect(editorial.instance.assetAssignments).toEqual([
+      { slotId: "storyMedia", assetId: approvedStory.assetId, role: approvedStory.role },
+    ]);
+    expect(editorial.instance.bindings.filter((binding) => binding.source === "asset")).toEqual([
+      {
+        slotId: "storyPrimaryAsset",
+        source: "asset",
+        assetId: approvedStory.assetId,
+        revision: approvedStory.revision,
+      },
+    ]);
+  });
+
   it("15 preserves generated families through save/reload and publish compilation", async () => {
     const fixture = createP905aFreshMerchantFixture("premiumEditorial");
     const plan = createWholeStorefrontGenerationPlan(fixture.planningInput, {
@@ -476,13 +588,37 @@ describe("P10B-07 hero, editorial, campaign and proof families", () => {
     const draft = reloaded.snapshots.find(
       (snapshot) => snapshot.id === reloaded.project.draftSnapshotId,
     )!;
+    const currentEvidenceReferences = [
+      {
+        source: "merchant-approved" as const,
+        authorityId: fixture.planningInput.brief.id,
+        revision: String(fixture.planningInput.brief.revision),
+        status: "approved" as const,
+        approvalAuthorityId: fixture.planningInput.brief.approval.actorId!,
+        approvalFingerprint: fixture.planningInput.brief.approvedEvidenceFingerprint!,
+      },
+    ];
     const publication = compileStorefrontPublication(
       createCurrentPublishCompilerInput({
         aggregate: reloaded,
         snapshot: draft,
         sourceAuthority: { kind: "manual" },
+        currentEvidenceReferences,
       }),
     );
+    expect(() =>
+      compileStorefrontPublication(
+        createCurrentPublishCompilerInput({
+          aggregate: reloaded,
+          snapshot: draft,
+          sourceAuthority: { kind: "manual" },
+          currentEvidenceReferences: currentEvidenceReferences.map((reference) => ({
+            ...reference,
+            revision: "superseded-brief-revision",
+          })),
+        }),
+      ),
+    ).toThrow();
     const storedTypes = draft.pages.flatMap((page) =>
       page.sections.map((section) => section.component),
     );

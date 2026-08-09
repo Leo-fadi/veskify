@@ -35,7 +35,12 @@ export type PreparePublishOptions = {
     publishedId: string;
   }) => string;
   authority?:
-    | Readonly<{ kind: "manual" }>
+    | Readonly<{
+        kind: "manual";
+        currentEvidenceReferences?: NonNullable<
+          ReturnType<typeof assertAcceptedSnapshotReceiptCurrent>["evidenceReferences"]
+        >;
+      }>
     | Readonly<{
         kind: "accepted-ai";
         receiptId: string;
@@ -98,9 +103,16 @@ export async function preparePublish(
             acceptedSnapshotFingerprint: string;
           }>;
       acceptedReceipt: AcceptedSnapshotPublishReceipt | null;
+      currentEvidenceReferences: NonNullable<
+        ReturnType<typeof assertAcceptedSnapshotReceiptCurrent>["evidenceReferences"]
+      >;
     }> =
       requestedAuthority.kind === "manual"
-        ? { authority: requestedAuthority, acceptedReceipt: null }
+        ? {
+            authority: { kind: "manual" as const },
+            acceptedReceipt: null,
+            currentEvidenceReferences: requestedAuthority.currentEvidenceReferences ?? [],
+          }
         : await (async () => {
             const receipt = await resolveAcceptedSnapshotPublishReceipt(
               requestedAuthority.receiptRepository,
@@ -111,7 +123,11 @@ export async function preparePublish(
                 receipt,
                 aggregate,
               });
-            assertAcceptedSnapshotReceiptCurrent(receipt, aggregate, currentAuthority);
+            const current = assertAcceptedSnapshotReceiptCurrent(
+              receipt,
+              aggregate,
+              currentAuthority,
+            );
             if (
               receipt.acceptedSnapshotId !== draft.id ||
               receipt.acceptedSnapshotFingerprint !== draftFingerprint
@@ -120,6 +136,7 @@ export async function preparePublish(
             }
             return {
               acceptedReceipt: receipt,
+              currentEvidenceReferences: current.evidenceReferences ?? [],
               authority: {
                 kind: "accepted-ai" as const,
                 receiptId: receipt.id,
@@ -132,7 +149,7 @@ export async function preparePublish(
               },
             };
           })();
-    const { acceptedReceipt, authority } = resolvedAuthority;
+    const { acceptedReceipt, authority, currentEvidenceReferences } = resolvedAuthority;
     const compilation = compileStorefrontPublication(
       createCurrentPublishCompilerInput({
         aggregate,
@@ -146,6 +163,7 @@ export async function preparePublish(
                 acceptedReceiptFingerprint: acceptedReceipt.fingerprint,
                 profileAuthorities: acceptedReceipt.profileAuthorities,
               },
+        currentEvidenceReferences,
       }),
     );
     const preparationId =

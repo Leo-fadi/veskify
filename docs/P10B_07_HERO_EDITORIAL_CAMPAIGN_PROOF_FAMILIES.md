@@ -69,7 +69,7 @@ radius or other finishing-only change cannot satisfy the meaningful query.
 
 - `imageText` for balanced approved imagery and copy;
 - `brandStory` for media-first brand narrative;
-- `craftProcess` for approved process steps with disclosure-oriented responsive behavior;
+- `craftProcess` for approved process steps with compact mobile rhythm;
 - `lookbookGallery` for up to three approved assets and mobile/tablet carousel transformation;
 - `continuationCta` for copy-led continuation with the media region intentionally absent.
 
@@ -87,14 +87,16 @@ capability queries reject incompatible page families and narrative roles.
 
 Each proof item contains a canonical `PageFactEvidenceReference` with source, authority, revision,
 approval authority and approval fingerprint. `content.items` is protected read-only component
-content. Generation derives the current brand fact from the approved Storefront Design Brief and
-retains its approval identity.
+content, but its embedded approval fields never establish current authority. Generation derives
+the current brand fact from the approved Storefront Design Brief, while render and publication
+conformance require the exact reference to resolve in a separately supplied current-evidence
+projection. A changed revision, revoked approval or changed fingerprint therefore fails closed.
 
 `resolveHomepageProofContent` expresses the registered omission/failure contract:
 
 - optional proof returns omission when the current approved evidence set is empty;
 - required proof fails closed;
-- malformed, unapproved or absent evidence cannot validate as proof content;
+- malformed, unapproved, stale, superseded or absent evidence cannot validate as proof content;
 - reviews, awards, certifications, guarantees, service promises or other unsupported facts are
   never supplied by registry defaults.
 

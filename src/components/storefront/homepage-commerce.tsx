@@ -406,28 +406,42 @@ export function HomepageHeroSection(input: HomepageCommerceRendererInput) {
     media !== undefined &&
     props.mediaPosition === "background";
   const anatomy = anatomyIdentity(instance);
-  const copy = (
-    <div className={`${styles.heroCopy} ${styles[`align_${props.textAlignment}`]}`}>
-      {content.eyebrow ? <p className={styles.eyebrow}>{text(content.eyebrow, locale)}</p> : null}
-      <h1 id={`${instance.id}-heading`}>{text(content.heading, locale)}</h1>
-      {content.supportingCopy ? <p>{text(content.supportingCopy, locale)}</p> : null}
-      <div className={styles.actions}>
-        <ActionButton
-          label={content.primaryActionLabel}
-          locale={locale}
-          navigationId={primary?.navigationId}
-          onNavigate={input.onNavigate}
-        />
-        <ActionButton
-          label={content.secondaryActionLabel}
-          locale={locale}
-          navigationId={secondary?.navigationId}
-          onNavigate={input.onNavigate}
-          presentation="secondary"
-        />
-      </div>
+  const isCampaignMerchandising = instance.variant === "campaignMerchandising";
+  const actions = (
+    <div className={styles.actions} data-region="actions">
+      <ActionButton
+        label={content.primaryActionLabel}
+        locale={locale}
+        navigationId={primary?.navigationId}
+        onNavigate={input.onNavigate}
+      />
+      <ActionButton
+        label={content.secondaryActionLabel}
+        locale={locale}
+        navigationId={secondary?.navigationId}
+        onNavigate={input.onNavigate}
+        presentation="secondary"
+      />
     </div>
   );
+  const copy = (
+    <div
+      className={`${styles.heroCopy} ${styles[`align_${props.textAlignment}`]}`}
+      data-region="content"
+    >
+      {content.eyebrow && !isCampaignMerchandising ? (
+        <p className={styles.eyebrow}>{text(content.eyebrow, locale)}</p>
+      ) : null}
+      <h1 id={`${instance.id}-heading`}>{text(content.heading, locale)}</h1>
+      {content.supportingCopy ? <p>{text(content.supportingCopy, locale)}</p> : null}
+      {isCampaignMerchandising ? null : actions}
+    </div>
+  );
+  const merchandising = isCampaignMerchandising ? (
+    <div className={styles.heroMerchandising} data-region="merchandising">
+      <p className={styles.eyebrow}>{text(content.eyebrow!, locale)}</p>
+    </div>
+  ) : null;
   const mediaFrame = media ? (
     <figure
       className={`${styles.heroMedia} ${styles[`media_${props.mediaPosition}`]} ${styles[`image_${props.imagePresentation}`]}`}
@@ -438,9 +452,13 @@ export function HomepageHeroSection(input: HomepageCommerceRendererInput) {
       <ImageAsset locale={locale} resolved={media} />
     </figure>
   ) : null;
-  const mediaFirst = ["imageLed", "asymmetric", "fullBleedOverlay", "fullBleed"].includes(
-    instance.variant,
-  );
+  const mediaFirst = [
+    "imageLed",
+    "asymmetric",
+    "fullBleedOverlay",
+    "fullBleed",
+    "campaignMerchandising",
+  ].includes(instance.variant);
   return (
     <section
       aria-labelledby={`${instance.id}-heading`}
@@ -457,8 +475,19 @@ export function HomepageHeroSection(input: HomepageCommerceRendererInput) {
       data-presentation-mode={anatomy.presentationMode}
       data-responsive-transformations={anatomy.responsiveTransformations}
     >
-      {mediaFirst ? mediaFrame : copy}
-      {mediaFirst ? copy : mediaFrame}
+      {isCampaignMerchandising ? (
+        <>
+          {mediaFrame}
+          {merchandising}
+          {copy}
+          {actions}
+        </>
+      ) : (
+        <>
+          {mediaFirst ? mediaFrame : copy}
+          {mediaFirst ? copy : mediaFrame}
+        </>
+      )}
     </section>
   );
 }
@@ -904,7 +933,7 @@ export function HomepageEditorialSection(input: HomepageCommerceRendererInput) {
       />
     </div>
   );
-  const mediaFirst = ["brandStory", "lookbookGallery"].includes(instance.variant);
+  const mediaFirst = instance.variant === "lookbookGallery";
   return (
     <section
       aria-labelledby={`${instance.id}-heading`}

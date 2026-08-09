@@ -1507,11 +1507,11 @@ const editorialCommercialAnatomy: RegisteredCommercialAnatomyInput = {
       affectedRegions: ["media", "content", "heading"],
     },
     {
-      id: "processDisclosure",
-      mode: "disclosure",
+      id: "processCondense",
+      mode: "condense",
       breakpoints: ["mobile"],
       fromPresentationMode: "storyProcess",
-      toPresentationMode: "storyProcessDisclosure",
+      toPresentationMode: "storyProcessCompact",
       affectedRegions: ["body", "continuation"],
     },
     {
@@ -1589,8 +1589,8 @@ const editorialCommercialAnatomy: RegisteredCommercialAnatomyInput = {
         contentRelationship: "contentLed",
         ctaRelationship: "none",
         merchandisingEmphasis: "none",
-        navigationModel: "disclosure",
-        responsiveTransformationIds: ["processDisclosure"],
+        navigationModel: "none",
+        responsiveTransformationIds: ["processCondense"],
         presentationMode: "storyProcess",
       },
     },
@@ -1925,10 +1925,27 @@ export const homepageProofDefinition = marketingDefinition({
 
 export function resolveHomepageProofContent(
   input: unknown,
-  options: Readonly<{ required: boolean }>,
+  options: Readonly<{
+    required: boolean;
+    currentEvidenceReferences?: readonly z.infer<typeof pageFactEvidenceReferenceSchema>[];
+  }>,
 ) {
   const content = homepageProofContentSchema.parse(input);
-  if (content.items.length > 0) return content;
+  const currentEvidence = new Map(
+    (options.currentEvidenceReferences ?? []).map((reference) => [
+      `${reference.source}:${reference.authorityId}`,
+      pageFactEvidenceReferenceSchema.parse(reference),
+    ]),
+  );
+  if (
+    content.items.length > 0 &&
+    content.items.every((item) => {
+      const current = currentEvidence.get(`${item.evidence.source}:${item.evidence.authorityId}`);
+      return current !== undefined && JSON.stringify(current) === JSON.stringify(item.evidence);
+    })
+  ) {
+    return content;
+  }
   if (options.required)
     throw new Error("Evidence-grounded proof requires current approved evidence.");
   return undefined;
@@ -2019,6 +2036,7 @@ function validateHomepageInstance(instance: ComponentInstanceV2) {
   switch (instance.component) {
     case "homepageHero": {
       const content = homepageHeroContentSchema.parse(instance.content);
+      const props = homepageHeroPropsSchema.parse(instance.props);
       validateActionPair(instance, content.primaryActionLabel, "primaryAction");
       validateActionPair(instance, content.secondaryActionLabel, "secondaryAction");
       if (
@@ -2030,6 +2048,12 @@ function validateHomepageInstance(instance: ComponentInstanceV2) {
       }
       if (instance.variant === "campaignMerchandising" && !content.eyebrow) {
         throw new Error("Campaign merchandising heroes require an approved campaign eyebrow.");
+      }
+      if (
+        (instance.variant === "fullBleedOverlay" || instance.variant === "fullBleed") &&
+        props.mediaPosition !== "background"
+      ) {
+        throw new Error("Full-bleed overlay heroes require background media placement.");
       }
       break;
     }
@@ -2061,7 +2085,10 @@ function validateHomepageInstance(instance: ComponentInstanceV2) {
       break;
     }
     case "homepageProof": {
-      resolveHomepageProofContent(instance.content, { required: true });
+      const content = homepageProofContentSchema.parse(instance.content);
+      if (content.items.length === 0) {
+        throw new Error("Evidence-grounded proof requires current approved evidence.");
+      }
       break;
     }
   }
@@ -2170,6 +2197,17 @@ function validateHomepageProductMediaConformance(
   }
 }
 
+function validateHomepageProofConformance(
+  instance: ComponentInstanceV2,
+  projection: ComponentProjectionContext,
+) {
+  if (instance.component !== "homepageProof") return;
+  resolveHomepageProofContent(instance.content, {
+    required: true,
+    currentEvidenceReferences: projection.evidenceReferences,
+  });
+}
+
 export const homepageCommerceInstanceValidationContracts: ComponentInstanceValidationContracts =
   Object.fromEntries(
     homepageCommerceDefinitions.map((definition) => [
@@ -2179,7 +2217,9 @@ export const homepageCommerceInstanceValidationContracts: ComponentInstanceValid
         validateConformance:
           definition.type === "homepageFeaturedProducts"
             ? validateHomepageProductMediaConformance
-            : undefined,
+            : definition.type === "homepageProof"
+              ? validateHomepageProofConformance
+              : undefined,
       },
     ]),
   );

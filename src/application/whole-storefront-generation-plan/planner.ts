@@ -773,23 +773,24 @@ function mappedHomepageBridgePresentation(
     const description = planningInput.brief.businessIdentity.shortDescription.trim();
     const sourceLocale = planningInput.brief.languagePlan.primaryLanguage ?? "en";
     content.heading = { [sourceLocale]: planningInput.brief.businessIdentity.businessName };
-    content.items = description
-      ? [
-          {
-            id: "approved_brand_fact",
-            kind: "brandFact",
-            statement: { [sourceLocale]: description },
-            evidence: {
-              source: "merchant-approved",
-              authorityId: planningInput.brief.id,
-              revision: String(planningInput.brief.revision),
-              status: "approved",
-              approvalAuthorityId: planningInput.brief.approval.actorId,
-              approvalFingerprint: planningInput.brief.approvedEvidenceFingerprint,
+    content.items =
+      description && planningInput.brief.approval.actorId
+        ? [
+            {
+              id: "approved_brand_fact",
+              kind: "brandFact",
+              statement: { [sourceLocale]: description },
+              evidence: {
+                source: "merchant-approved",
+                authorityId: planningInput.brief.id,
+                revision: String(planningInput.brief.revision),
+                status: "approved",
+                approvalAuthorityId: planningInput.brief.approval.actorId,
+                approvalFingerprint: planningInput.brief.approvedEvidenceFingerprint,
+              },
             },
-          },
-        ]
-      : [];
+          ]
+        : [];
   }
 
   const preferredAssetId =
@@ -805,13 +806,6 @@ function mappedHomepageBridgePresentation(
               component === "homepageCollectionNavigation"
             ? ["collectionImage", "editorialImage"]
             : [];
-  const approvedAssets = (planningInput.approvedAssetContext?.assets ?? [])
-    .filter(
-      (asset) =>
-        acceptedRoles.includes(asset.role) &&
-        (preferredAssetId === undefined || asset.assetId === preferredAssetId),
-    )
-    .slice(0, component === "homepageEditorial" ? 3 : 1);
   const assetSlotId =
     component === "homepageHero"
       ? "heroMedia"
@@ -820,6 +814,39 @@ function mappedHomepageBridgePresentation(
         : component === "homepageEditorial"
           ? "storyMedia"
           : "collectionMedia";
+  const currentApprovedAssets = planningInput.approvedAssetContext?.assets ?? [];
+  const preservedPlacements =
+    component === "homepageEditorial" && source?.component === "homepageEditorial"
+      ? (source.approvedAssetPlacements ?? []).filter(
+          (placement) => placement.assetSlotId === assetSlotId,
+        )
+      : [];
+  const approvedAssets =
+    preservedPlacements.length > 0
+      ? preservedPlacements.map((placement) => {
+          const current = currentApprovedAssets.find(
+            (asset) =>
+              asset.assetId === placement.assetId &&
+              asset.role === placement.role &&
+              asset.revision === placement.assetRevision &&
+              asset.materialFingerprint === placement.materialFingerprint &&
+              asset.sourceReferenceId === placement.sourceReferenceId,
+          );
+          if (!current) {
+            invalid(
+              "stale-approved-asset",
+              `Existing editorial asset placement ${placement.assetId} is stale or no longer approved.`,
+            );
+          }
+          return current;
+        })
+      : currentApprovedAssets
+          .filter(
+            (asset) =>
+              acceptedRoles.includes(asset.role) &&
+              (preferredAssetId === undefined || asset.assetId === preferredAssetId),
+          )
+          .slice(0, component === "homepageEditorial" ? 3 : 1);
   return {
     content,
     props,
@@ -962,13 +989,22 @@ function authoritativeHomepageProfileComponents(input: {
         bridgeComponent === "homepageEditorial" && slot.variant === "continuationCta"
           ? []
           : mappedPresentation.assetAssignments;
+      const mappedProps: Record<string, unknown> = Object.fromEntries(
+        Object.entries(mappedPresentation.props),
+      );
+      if (
+        bridgeComponent === "homepageHero" &&
+        (slot.variant === "fullBleedOverlay" || slot.variant === "fullBleed")
+      ) {
+        mappedProps.mediaPosition = "background";
+      }
       const instance = componentInstanceV2Schema.parse({
         id: componentId,
         component: slot.component,
         componentVersion: definition.version,
         variant: slot.variant,
         content: structuredClone(mappedPresentation.content),
-        props: structuredClone(mappedPresentation.props),
+        props: mappedProps,
         styleOverrides: bridgeComponent ? { surface: "plain" } : {},
         bindings: bridgeComponent
           ? homepageBindings(

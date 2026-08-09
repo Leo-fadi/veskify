@@ -36,6 +36,7 @@ import {
   getComponentDefinition,
   merchantEditorSectionLabel,
   validateRegisteredPage,
+  type StorefrontRenderContext,
 } from "@/components/registry";
 import { brandSystemToCssVariables, type BrandSystem } from "@/domain/design-system";
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
@@ -95,6 +96,7 @@ type LocalDemoBridge = {
   sessionId: string;
   authoritativeRevision: number;
   baselineFingerprint: string;
+  evidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
 };
 type ReadyState = {
   status: "ready";
@@ -431,6 +433,7 @@ export function ProjectEditorClient({
             catalogue: aggregate.catalogue,
             snapshot: draft,
             pagePathPrefix: `/projects/${projectId}`,
+            evidenceReferences: localDemoBridge?.evidenceReferences,
           });
           const pages = draft.pages.filter((page) => editorPageTypes.has(page.type));
           pages.forEach((page) => validateRegisteredPage(page, context));
@@ -496,6 +499,7 @@ export function ProjectEditorClient({
           catalogue: readyState.aggregate.catalogue,
           snapshot: activeDraft,
           pagePathPrefix: `/projects/${projectId}`,
+          evidenceReferences: localDemoBridge?.evidenceReferences,
         })
       : undefined;
   const agent = useDesignAgentSession({

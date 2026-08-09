@@ -58,6 +58,7 @@ function currentAuthority(
     profileAuthorities: receipt.profileAuthorities,
     commerceFingerprint: receipt.commerceFingerprint,
     approvedAssetFingerprint: receipt.approvedAssetFingerprint,
+    evidenceReferences: receipt.evidenceReferences,
   };
 }
 

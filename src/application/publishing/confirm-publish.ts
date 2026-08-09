@@ -36,6 +36,7 @@ import {
   compileStorefrontPublication,
   createCurrentPublishCompilerInput,
   PublishCompilerError,
+  type PublishCompilerInput,
 } from "./publish-compiler";
 
 export type PublishConfirmationResult = {
@@ -47,7 +48,10 @@ export type PublishConfirmationResult = {
 export type PublishConfirmationOptions = Readonly<{
   publicationOperation?: PublicationOperationWrite;
   authority?:
-    | Readonly<{ kind: "manual" }>
+    | Readonly<{
+        kind: "manual";
+        currentEvidenceReferences?: PublishCompilerInput["currentEvidenceReferences"];
+      }>
     | Readonly<{
         kind: "accepted-ai";
         receiptRepository: AcceptedSnapshotPublishReceiptRepository;
@@ -113,6 +117,12 @@ export async function confirmPublish(
 
   let latest: ProjectAggregate;
   let acceptedReceipt: AcceptedSnapshotPublishReceipt | null = null;
+  let currentEvidenceReferences: NonNullable<
+    ReturnType<typeof assertAcceptedSnapshotReceiptCurrent>["evidenceReferences"]
+  > =
+    confirmationAuthority.kind === "manual"
+      ? (confirmationAuthority.currentEvidenceReferences ?? [])
+      : [];
   let currentCompilation: ReturnType<typeof compileStorefrontPublication>;
   try {
     latest = validateProjectAggregate(await repository.get(preparation.projectId));
@@ -141,7 +151,9 @@ export async function confirmPublish(
           receipt,
           aggregate: latest,
         });
-      assertAcceptedSnapshotReceiptCurrent(receipt, latest, currentAuthority);
+      currentEvidenceReferences =
+        assertAcceptedSnapshotReceiptCurrent(receipt, latest, currentAuthority)
+          .evidenceReferences ?? [];
     }
     const draft = snapshotById(latest, latest.project.draftSnapshotId);
     currentCompilation = compileStorefrontPublication(
@@ -157,6 +169,7 @@ export async function confirmPublish(
                 acceptedReceiptFingerprint: acceptedReceipt.fingerprint,
                 profileAuthorities: acceptedReceipt.profileAuthorities,
               },
+        currentEvidenceReferences,
       }),
     );
     assertMatchingPublishCompilation(preparation.compilation, currentCompilation);

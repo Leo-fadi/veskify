@@ -39,6 +39,7 @@ import {
   canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
   canonicalValueString,
+  type PageFactEvidenceReference,
 } from "@/domain/storefront";
 import {
   P9_05A_FIXED_TIME,
@@ -546,6 +547,7 @@ export async function loadP905bLocalDemoEditorSession(input: {
   sessionId: string;
   authoritativeRevision: number;
   baselineFingerprint: string;
+  evidenceReferences: PageFactEvidenceReference[];
 } | null> {
   const current = state(input.environment ?? process.env);
   if (
@@ -566,6 +568,7 @@ export async function loadP905bLocalDemoEditorSession(input: {
       : current.savedAggregate,
   );
   const proposal = current.session.proposal?.response.proposal ?? null;
+  const planningBrief = current.session.proposal?.authority?.planningInput.brief;
   if (
     proposal !== null &&
     (proposal.projectId !== activeAggregate.project.id ||
@@ -581,6 +584,21 @@ export async function loadP905bLocalDemoEditorSession(input: {
     // This is the stable reset identity, not the mutable authoritative aggregate.
     // The browser uses it only to decide whether it must seed a new local-demo session.
     baselineFingerprint: current.baselineFingerprint,
+    evidenceReferences:
+      planningBrief?.approvedEvidenceFingerprint &&
+      planningBrief.approval.actorId &&
+      planningBrief.businessIdentity.shortDescription.trim()
+        ? [
+            {
+              source: "merchant-approved",
+              authorityId: planningBrief.id,
+              revision: String(planningBrief.revision),
+              status: "approved",
+              approvalAuthorityId: planningBrief.approval.actorId,
+              approvalFingerprint: planningBrief.approvedEvidenceFingerprint,
+            },
+          ]
+        : [],
   };
 }
 
@@ -608,12 +626,37 @@ export function p905bLocalDemoRepository(
   return state(environment).repository;
 }
 
+/** Current server-side proof authority for manual local-demo publication. */
+export function p905bLocalDemoCurrentEvidenceReferences(
+  environment: DemoEnvironment = process.env,
+): PageFactEvidenceReference[] {
+  const current = state(environment);
+  const brief =
+    current.session.accepted?.proposal.authority.planningInput.brief ??
+    current.session.proposal?.authority?.planningInput.brief;
+  return brief?.approvedEvidenceFingerprint &&
+    brief.approval.actorId &&
+    brief.businessIdentity.shortDescription.trim()
+    ? [
+        {
+          source: "merchant-approved",
+          authorityId: brief.id,
+          revision: String(brief.revision),
+          status: "approved",
+          approvalAuthorityId: brief.approval.actorId,
+          approvalFingerprint: brief.approvedEvidenceFingerprint,
+        },
+      ]
+    : [];
+}
+
 function acceptedAiMintAuthority(
   pending: PendingAuthoritativeProposal & {
     authority: ValidatedServerWholeStorefrontProposalRecord;
   },
 ): TrustedGovernedProposalAcceptance["mintAuthority"] {
   const proposal = pending.authority.proposal;
+  const brief = pending.authority.planningInput.brief;
   return {
     proposalRevision: pending.proposalRevision,
     reviewRevision: pending.reviewRevision,
@@ -628,6 +671,21 @@ function acceptedAiMintAuthority(
       .sort((left, right) => left.profileId.localeCompare(right.profileId)),
     commerceFingerprint: proposal.preconditions.canonicalCommerceFingerprint,
     approvedAssetFingerprint: proposal.preconditions.assetContextFingerprint,
+    evidenceReferences:
+      brief.approvedEvidenceFingerprint &&
+      brief.approval.actorId &&
+      brief.businessIdentity.shortDescription.trim()
+        ? [
+            {
+              source: "merchant-approved",
+              authorityId: brief.id,
+              revision: String(brief.revision),
+              status: "approved",
+              approvalAuthorityId: brief.approval.actorId,
+              approvalFingerprint: brief.approvedEvidenceFingerprint,
+            },
+          ]
+        : [],
   };
 }
 
@@ -812,6 +870,21 @@ export function createP905bLocalDemoAcceptedAiAuthoritySource(
         profileAuthorities,
         commerceFingerprint: target.canonicalCommerceFingerprint,
         approvedAssetFingerprint: target.approvedAssetContextFingerprint,
+        evidenceReferences:
+          planningInput.brief.approvedEvidenceFingerprint &&
+          planningInput.brief.approval.actorId &&
+          planningInput.brief.businessIdentity.shortDescription.trim()
+            ? [
+                {
+                  source: "merchant-approved",
+                  authorityId: planningInput.brief.id,
+                  revision: String(planningInput.brief.revision),
+                  status: "approved",
+                  approvalAuthorityId: planningInput.brief.approval.actorId,
+                  approvalFingerprint: planningInput.brief.approvedEvidenceFingerprint,
+                },
+              ]
+            : [],
       };
       if (aggregate.project.id !== planningInput.project.id) {
         throw new AcceptedSnapshotReceiptError("project-mismatch");
@@ -834,6 +907,7 @@ export async function loadP905bLocalDemoPublishedProjection(input: {
 }): Promise<
   | (Pick<ProjectAggregate, "project" | "catalogue"> & {
       publishedSnapshot: ProjectAggregate["snapshots"][number];
+      evidenceReferences: PageFactEvidenceReference[];
     })
   | null
 > {
@@ -861,6 +935,7 @@ export async function loadP905bLocalDemoPublishedProjection(input: {
     project: structuredClone(aggregate.project),
     catalogue: structuredClone(aggregate.catalogue),
     publishedSnapshot: structuredClone(publishedSnapshot),
+    evidenceReferences: structuredClone(p905bLocalDemoCurrentEvidenceReferences(input.environment)),
   };
 }
 

@@ -8,7 +8,7 @@ import {
 } from "@/domain/shared";
 import { assetRoleSchema } from "@/domain/shared";
 import { responsiveImageAuthoritySchema } from "@/domain/asset-presentation";
-import { pageTypeSchema } from "@/domain/storefront";
+import { pageFactEvidenceReferenceSchema, pageTypeSchema } from "@/domain/storefront";
 import {
   componentDesignCompatibilitySchema,
   createLegacyComponentDesignCompatibility,
@@ -1496,6 +1496,7 @@ export const componentProjectionContextSchema = z
     navigation: z.array(navigationProjectionReferenceSchema).default([]),
     projectBrandContexts: z.array(projectBrandProjectionReferenceSchema).default([]),
     localizedContents: z.array(localizedContentProjectionReferenceSchema).default([]),
+    evidenceReferences: z.array(pageFactEvidenceReferenceSchema).default([]),
     productListRevision: presentationRevisionSchema.optional(),
     collectionListRevision: presentationRevisionSchema.optional(),
   })
@@ -1508,6 +1509,7 @@ export const componentProjectionContextSchema = z
       ["navigation", projection.navigation.map((item) => item.navigationId)],
       ["projectBrandContexts", projection.projectBrandContexts.map((item) => item.projectId)],
       ["localizedContents", projection.localizedContents.map((item) => item.contentId)],
+      ["evidenceReferences", projection.evidenceReferences.map((item) => item.authorityId)],
     ] as const) {
       if (!unique(ids)) {
         context.addIssue({

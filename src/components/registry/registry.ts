@@ -63,10 +63,17 @@ export function validateRegisteredSnapshot(
   activeLocale: Locale = "en",
   primaryLocale: Locale = "en",
   enabledLocales?: readonly Locale[],
+  evidenceReferences: StorefrontRenderContext["evidenceReferences"] = [],
 ): StorefrontSnapshot {
   const snapshot = storefrontSnapshotSchema.parse(input);
   const context = catalogue
-    ? createStorefrontRenderContext({ activeLocale, primaryLocale, catalogue, snapshot })
+    ? createStorefrontRenderContext({
+        activeLocale,
+        primaryLocale,
+        catalogue,
+        snapshot,
+        evidenceReferences,
+      })
     : undefined;
   snapshot.pages.forEach((page) => validateRegisteredPage(page, context));
   validateCanonicalStorefrontSiteMap(snapshot, { catalogue, enabledLocales });
@@ -99,6 +106,7 @@ export function createStorefrontRenderContext({
   pagePathPrefix = "",
   pagePathSuffix = "",
   renderTarget = "preview",
+  evidenceReferences = [],
 }: {
   activeLocale: Locale;
   primaryLocale: Locale;
@@ -107,6 +115,7 @@ export function createStorefrontRenderContext({
   pagePathPrefix?: string;
   pagePathSuffix?: string;
   renderTarget?: StorefrontRenderContext["renderTarget"];
+  evidenceReferences?: StorefrontRenderContext["evidenceReferences"];
 }): StorefrontRenderContext {
   const pagePaths = createStorefrontPagePaths({ snapshot, pagePathPrefix, pagePathSuffix });
   const homePage = snapshot.pages.find((page) => page.type === "home");
@@ -121,5 +130,6 @@ export function createStorefrontRenderContext({
     pagePaths,
     homePath: homePage ? pagePaths[homePage.id] : undefined,
     renderTarget,
+    evidenceReferences,
   };
 }

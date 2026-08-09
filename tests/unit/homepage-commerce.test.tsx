@@ -110,6 +110,7 @@ function asset(
 }
 
 const projection: ComponentProjectionContext = {
+  evidenceReferences: [],
   products: [watch, ring],
   collections: [rings, watches],
   assets: [

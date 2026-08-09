@@ -621,6 +621,7 @@ function productPresentation(
     const relatedContexts = relatedProducts.map((product) => productContext(product, revision));
     const products = [primaryContext, ...relatedContexts];
     const projection: ComponentProjectionContext = {
+      evidenceReferences: [],
       products,
       collections: [],
       assets: productAssets(products, new Set(), {
@@ -726,6 +727,7 @@ function productPresentation(
   const products = [primaryContext, ...relatedContexts];
   const merchantProvidedAssetIds = new Set(supporting ? [supporting.media.id] : []);
   const projection: ComponentProjectionContext = {
+    evidenceReferences: [],
     products,
     collections: [],
     assets: productAssets(products, merchantProvidedAssetIds, {
@@ -900,6 +902,7 @@ function collectionPresentation(
       products[0]?.images[0]?.id,
     );
     const projection: ComponentProjectionContext = {
+      evidenceReferences: [],
       products: productContexts,
       collections: [collection],
       assets: productAssets(productContexts, new Set(), {
@@ -989,6 +992,7 @@ function collectionPresentation(
     products[0]?.images[0]?.id,
   );
   const projection: ComponentProjectionContext = {
+    evidenceReferences: [],
     products: productContexts,
     collections: [collection],
     assets: productAssets(productContexts, new Set(), {

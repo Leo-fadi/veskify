@@ -1518,6 +1518,20 @@ function componentProjectionForCoordinatedFollowUp(
       { projectId: input.planningInput.project.id, brandSystemRefs: [], revision },
     ],
     localizedContents: [],
+    evidenceReferences:
+      input.planningInput.brief.businessIdentity.shortDescription.trim() &&
+      input.planningInput.brief.approval.actorId
+        ? [
+            {
+              source: "merchant-approved",
+              authorityId: input.planningInput.brief.id,
+              revision: String(input.planningInput.brief.revision),
+              status: "approved",
+              approvalAuthorityId: input.planningInput.brief.approval.actorId,
+              approvalFingerprint: input.planningInput.brief.approvedEvidenceFingerprint!,
+            },
+          ]
+        : [],
     productListRevision: revision,
     collectionListRevision: revision,
   };

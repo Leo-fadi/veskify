@@ -633,8 +633,11 @@ fallbacks apply only to legacy direct images and do not override explicit art di
 finishing continues to inherit P10B-02 Design DNA; no family-local palette, typography or spacing
 authority exists.
 
-Proof items carry canonical approved evidence references as protected read-only content. Optional
-proof resolves to omission when no current approved evidence exists; required proof fails closed.
+Proof items carry canonical approved evidence references as protected read-only content, but their
+embedded approval fields do not establish current authority. Render and publication conformance
+must match each item to a separately supplied current-evidence projection; changed revisions,
+revoked approval and stale fingerprints fail closed. Optional proof resolves to omission when no
+current approved evidence exists; required proof fails closed.
 The deterministic generation path selects the registered families through the existing executable
 PageBlueprint, proposal compiler, runtime state, `StorefrontSnapshot`, save/reload and publication
 compiler with zero provider calls. Focused and browser evidence is recorded in

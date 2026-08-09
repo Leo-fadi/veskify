@@ -79,6 +79,40 @@ test("premium hero, lookbook, campaign and approved proof retain commercial resp
     await expect(editorial).toHaveAttribute("data-variant", "lookbookGallery");
     await expect(editorial).toHaveAttribute("data-responsive-transformations", "lookbookCarousel");
     await expect(editorial.locator("[data-asset-id]")).toHaveCount(2);
+    const galleryLayout = await editorial
+      .locator("[data-asset-id]")
+      .first()
+      .locator("..")
+      .evaluate((element) => {
+        const style = getComputedStyle(element);
+        return {
+          display: style.display,
+          overflowX: style.overflowX,
+          scrollSnapType: style.scrollSnapType,
+        };
+      });
+    const isCarouselBreakpoint = await frame
+      .locator("body")
+      .evaluate(() => matchMedia("(max-width: 63.99rem)").matches);
+    if (isCarouselBreakpoint) {
+      expect(galleryLayout).toEqual({
+        display: "flex",
+        overflowX: "auto",
+        scrollSnapType: "x mandatory",
+      });
+    } else {
+      expect(galleryLayout.display).toBe("grid");
+    }
+    if (width === 375) {
+      await expect
+        .poll(() =>
+          hero.locator("figure[data-asset-id]").evaluate((element) => {
+            const style = getComputedStyle(element);
+            return { position: style.position, pointerEvents: style.pointerEvents };
+          }),
+        )
+        .toEqual({ position: "relative", pointerEvents: "auto" });
+    }
     await expect(proof).toHaveAttribute("data-evidence-state", "approved");
     await expect(proof.locator("[data-evidence-authority]")).toHaveCount(1);
     await expect(proof.getByText(/Finnish small-batch jewellery/i)).toBeVisible();

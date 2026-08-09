@@ -2,7 +2,13 @@ import type { ReactNode } from "react";
 import type { z } from "zod";
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { Locale } from "@/domain/shared";
-import type { NavigationModel, PageModel, PageType, SectionInstance } from "@/domain/storefront";
+import type {
+  NavigationModel,
+  PageFactEvidenceReference,
+  PageModel,
+  PageType,
+  SectionInstance,
+} from "@/domain/storefront";
 import type { HomepageNavigationIntent } from "@/components/storefront/homepage-commerce";
 import type { BrandSystem } from "@/domain/design-system";
 
@@ -16,6 +22,8 @@ export type StorefrontRenderContext = {
   pagePaths: Readonly<Record<string, string>>;
   homePath?: string;
   renderTarget?: "editor" | "preview" | "published";
+  /** Current, externally resolved proof authority. Snapshot content never establishes approval. */
+  evidenceReferences?: readonly PageFactEvidenceReference[];
 };
 
 /** Resolves only canonical snapshot navigation and commerce identities to routes. */

@@ -307,6 +307,7 @@ function projectionFor(
       { projectId: `project_${context.catalogue.id}`, brandSystemRefs: [], revision },
     ],
     localizedContents: [],
+    evidenceReferences: [...(context.evidenceReferences ?? [])],
     productListRevision: revision,
     collectionListRevision: revision,
   };
