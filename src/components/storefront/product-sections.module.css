@@ -207,23 +207,6 @@
   display: grid;
   gap: 1.5rem;
 }
-.relatedGrid article {
-  min-width: 0;
-}
-.relatedGrid img {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 4/5;
-  object-fit: cover;
-  background: var(--brand-color-background);
-}
-.relatedGrid h3 {
-  font-family: var(--brand-font-heading);
-  font-size: 1.25rem;
-}
-.relatedGrid p {
-  color: var(--brand-color-muted-text);
-}
 .empty {
   border: 1px dashed var(--brand-color-border);
   padding: 2rem;

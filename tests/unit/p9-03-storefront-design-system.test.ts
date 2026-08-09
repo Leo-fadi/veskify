@@ -24,6 +24,7 @@ import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry
 import { createP905aFreshMerchantFixture } from "@/data/demo/p9-05a-fresh-store-generation";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import { brandSystemToCssVariables } from "@/domain/design-system";
+import { canonicalProductCardAuthority } from "@/domain/product-card";
 import {
   createStandaloneAuthoritativeWholeStorefrontPlanningContextSource,
   createStandaloneServerWholeStorefrontPlanningAuthority,
@@ -398,7 +399,8 @@ describe("P9-03 Storefront Design System v1", () => {
 
   it("keeps product-card commerce fields and all commerce bindings protected", () => {
     storefrontDesignSystemV1.productCardFamilies.forEach((family) => {
-      expect(family.requiredCommerceFields).toEqual([
+      expect(storefrontDesignSystemV1.productCardFamilies).toContain(family);
+      expect(canonicalProductCardAuthority.requiredCommerceFields).toEqual([
         "productId",
         "title",
         "priceState",

@@ -12,8 +12,8 @@ exportMarkdownDocx({
   title: "Veskify Software Design Document",
   subtitle: "Version 1.3.0",
   coverLines: [
-    "Verified baseline: 8 August 2026",
-    "P10B-06 commercial shared-frame delivery",
+    "Verified baseline: 9 August 2026",
+    "Merged P10B-06 shared-frame and P10B-08 product-card integration on PR #178",
     "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
     "Authoritative source: docs/VESKIFY_SDD.md",
   ],

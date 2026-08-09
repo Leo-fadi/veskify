@@ -427,14 +427,12 @@
 }
 
 .specificationGroups section,
-.trustItems section,
-.relatedGrid article {
+.trustItems section {
   min-width: 0;
 }
 
 .specificationGroups h3,
-.trustItems h3,
-.relatedGrid h3 {
+.trustItems h3 {
   font-family: var(--brand-font-heading);
   overflow-wrap: anywhere;
 }
@@ -463,23 +461,6 @@
 
 .specifications_table .specificationGroups {
   grid-template-columns: 1fr;
-}
-
-.relatedGrid figure {
-  margin: 0;
-}
-
-.relatedGrid img {
-  display: block;
-  width: 100%;
-  height: auto;
-  aspect-ratio: 4 / 5;
-  object-fit: cover;
-  background: var(--brand-color-background);
-}
-
-.relatedGrid p {
-  color: var(--brand-color-muted-text);
 }
 
 @media (min-width: 48rem) {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
 import {
   boundedParameterDefinitions,
   createLegacyComponentDesignCompatibility,
@@ -71,7 +72,7 @@ export const homepageFeaturedProductsContentSchema = z
 export const homepageFeaturedProductsPropsSchema = z
   .object({
     layout: z.enum(["grid", "carousel"]),
-    cardVariant: z.enum(["standard", "editorial", "compact", "imageFirst", "horizontal"]),
+    cardVariant: canonicalProductCardAnatomyIdSchema,
     columns: z.number().int().min(2).max(4),
   })
   .strict();

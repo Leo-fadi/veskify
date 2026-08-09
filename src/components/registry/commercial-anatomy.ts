@@ -287,6 +287,7 @@ export function createCurrentComponentCommercialAnatomy(
   if (definition.type === "header" || definition.type === "footer") {
     return sharedFrameComponentAnatomy(definition);
   }
+  const supersededProductCardWrapper = ["productGrid", "relatedProducts"].includes(definition.type);
   const regionOrder = [...familyRegions[definition.family]];
   const assetRegion: ComponentSemanticRegion = regionOrder.includes("media") ? "media" : "frame";
   const presentationMode = `${definition.family}Baseline`;
@@ -321,9 +322,12 @@ export function createCurrentComponentCommercialAnatomy(
     },
     variants: definition.variants.map((variant) => ({
       variantId: variant.id,
-      classification: "notYetP10BCommercialReady",
+      classification: supersededProductCardWrapper
+        ? "legacySuperseded"
+        : "notYetP10BCommercialReady",
       materialDifferences: [],
       finishingTokenIds: [],
+      ...(supersededProductCardWrapper ? { supersededBy: "canonicalProductCardFamily" } : {}),
       structure: {
         regionOrder,
         omittedRegions: [],

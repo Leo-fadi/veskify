@@ -7,6 +7,9 @@ import {
   type LocalizedText,
 } from "@/domain/shared";
 import type { StorefrontRenderContext } from "@/components/registry/contract";
+import { CanonicalProductCard } from "./canonical-product-card";
+import { projectLegacyProductCardProduct } from "@/domain/product-card";
+import type { CanonicalProductCardAnatomyId } from "@/domain/product-card";
 import { CommercialStoreFooter, CommercialStoreHeader } from "./commercial-storefront-frame";
 
 export type SafeLink = { label: LocalizedText; href: string };
@@ -24,24 +27,6 @@ const productColumnCount = {
 
 const text = (value: LocalizedText, context: StorefrontRenderContext) =>
   resolveLocalizedText(value, context.activeLocale, context.primaryLocale);
-
-const formatPrice = (amount: number) =>
-  new Intl.NumberFormat("fi-FI", {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(amount);
-
-const productPriceLabel = (
-  product: StorefrontRenderContext["catalogue"]["products"][number],
-  context: StorefrontRenderContext,
-) =>
-  product.price
-    ? formatPrice(product.price.amount)
-    : product.priceUnavailableReason
-      ? text(product.priceUnavailableReason, context)
-      : text({ en: "Price unavailable", fi: "Hinta ei ole saatavilla" }, context);
 
 const assetAlt = (asset: AssetRef, context: StorefrontRenderContext) =>
   asset.decorative || !asset.alt ? "" : text(asset.alt, context);
@@ -273,30 +258,20 @@ export function FeaturedCategories({
   );
 }
 
-const stockLabel = (stock: string | undefined, context: StorefrontRenderContext) =>
-  text(
-    stock === undefined
-      ? { en: "Availability information unavailable", fi: "Saatavuustietoa ei ole" }
-      : stock === "lowStock"
-        ? { en: "Limited availability", fi: "Rajoitetusti saatavilla" }
-        : stock === "outOfStock"
-          ? { en: "Currently unavailable", fi: "Ei juuri nyt saatavilla" }
-          : { en: "In stock", fi: "Varastossa" },
-    context,
-  );
-
 export function ProductGrid({
   heading,
   productIds,
   columns,
   context,
   className,
+  anatomyId = "standard",
 }: {
   heading: LocalizedText;
   productIds: string[];
   columns: "two" | "three" | "four";
   context: StorefrontRenderContext;
   className?: string;
+  anatomyId?: CanonicalProductCardAnatomyId;
 }) {
   const products = productIds.flatMap((id) => {
     const product = context.catalogue.products.find((item) => item.id === id);
@@ -324,16 +299,30 @@ export function ProductGrid({
             } as CSSProperties
           }
         >
-          {products.map((product) => (
-            <article className="product-card" key={product.id}>
-              <StorefrontImage asset={product.images[0]} context={context} />
-              <div>
-                <h3>{text(product.title, context)}</h3>
-                <p>{productPriceLabel(product, context)}</p>
-                <p className="product-card__stock">{stockLabel(product.stockStatus, context)}</p>
-              </div>
-            </article>
-          ))}
+          {products.map((source) => {
+            const projected = projectLegacyProductCardProduct(source);
+            const media = projected.product.media[0];
+            const asset = projected.assets[0];
+            return (
+              <CanonicalProductCard
+                key={source.id}
+                locale={context}
+                mediaPlaceholder={text(
+                  { en: "Product image unavailable", fi: "Tuotekuva ei ole saatavilla" },
+                  context,
+                )}
+                request={{
+                  anatomyId,
+                  context: "legacyHomepageGrid",
+                  product: projected.product,
+                  ...(media && asset ? { media, asset } : {}),
+                  showCanonicalBadge: true,
+                  conciseAttributeLimit: 0,
+                }}
+                resolvedAsset={source.images[0]}
+              />
+            );
+          })}
         </div>
       ) : (
         <p className="store-empty">

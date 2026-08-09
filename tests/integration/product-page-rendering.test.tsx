@@ -111,28 +111,32 @@ describe("Aurum Nordic product composition", () => {
   });
 
   it.each([
-    [1290, /1\s?290\s?€/],
-    [1290.5, /1\s?290,50\s?€/],
-  ])("preserves the catalogue price %s in product and related presentation", (amount, expected) => {
-    const catalogue = structuredClone(aurumNordicSeed.catalogue);
-    catalogue.products[0].price!.amount = amount;
-    const pricePage = structuredClone(page);
-    pricePage.sections[6].content.productIds = ["product_aurora_ring_585"];
-    render(
-      <>
-        {renderStorefrontPage(
-          pricePage,
-          createStorefrontRenderContext({
-            activeLocale: "en",
-            primaryLocale: "en",
-            catalogue,
-            snapshot: aurumNordicSeed.draftSnapshot,
-          }),
-        )}
-      </>,
-    );
-    expect(screen.getAllByText(expected)).toHaveLength(2);
-  });
+    [1290, /1\s?290\s?€/, /€\s?1,290/],
+    [1290.5, /1\s?290,50\s?€/, /€\s?1,290\.50/],
+  ])(
+    "preserves the catalogue price %s in product and locale-aware related presentation",
+    (amount, productExpected, cardExpected) => {
+      const catalogue = structuredClone(aurumNordicSeed.catalogue);
+      catalogue.products[0].price!.amount = amount;
+      const pricePage = structuredClone(page);
+      pricePage.sections[6].content.productIds = ["product_aurora_ring_585"];
+      render(
+        <>
+          {renderStorefrontPage(
+            pricePage,
+            createStorefrontRenderContext({
+              activeLocale: "en",
+              primaryLocale: "en",
+              catalogue,
+              snapshot: aurumNordicSeed.draftSnapshot,
+            }),
+          )}
+        </>,
+      );
+      expect(screen.getByText(productExpected)).toBeVisible();
+      expect(screen.getByText(cardExpected)).toBeVisible();
+    },
+  );
 
   it("renders optional and required text options from canonical option metadata", () => {
     const optional = renderPage("en");

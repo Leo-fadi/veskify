@@ -21,6 +21,7 @@ import {
   registeredTokenRefinementPlanSchema,
   storefrontDesignSystemV1Schema,
 } from "@/application/storefront-design-system";
+import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
 
 export const WHOLE_STOREFRONT_GENERATION_PLAN_SCHEMA_VERSION = 1 as const;
 
@@ -295,7 +296,7 @@ export const wholeStorefrontDesignSystemSelectionSchema = z
       .object({
         variant: z.enum(["standard", "editorial", "compact", "gallery"]),
         gridDensity: z.enum(["compact", "standard", "spacious"]),
-        cardVariant: z.enum(["standard", "editorial", "compact", "imageFirst", "horizontal"]),
+        cardVariant: canonicalProductCardAnatomyIdSchema,
         filterLayout: z.enum(["sidebar", "horizontal"]),
       })
       .strict(),

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { canonicalProductCardAnatomyIdSchema } from "@/domain/product-card";
 import { validateComponentDefinitionV2 } from "@/domain/component-platform";
 import { localizedTextSchema } from "@/domain/shared";
 import { withCurrentComponentCommercialAnatomy } from "./commercial-anatomy";
@@ -26,7 +27,7 @@ export const dynamicCollectionCommerceContentSchema = z
 export const dynamicCollectionCommercePropsSchema = z
   .object({
     gridDensity: z.enum(["compact", "standard", "spacious"]),
-    cardVariant: z.enum(["standard", "editorial", "compact", "imageFirst", "horizontal"]),
+    cardVariant: canonicalProductCardAnatomyIdSchema,
     filterLayout: z.enum(["sidebar", "horizontal"]),
     showDescription: z.boolean(),
     showProductCount: z.boolean(),

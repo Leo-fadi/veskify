@@ -202,7 +202,7 @@ test("loads the complete persisted homepage and switches locale by keyboard", as
         ),
       ),
   ).toBe(true);
-  await expect(page.getByText("1 290 €")).toBeVisible();
+  await expect(page.getByText("€1,290")).toBeVisible();
   const ringsLink = page
     .getByRole("navigation", { name: "Primary navigation" })
     .getByRole("link", { name: "Rings" });
@@ -256,7 +256,7 @@ for (const width of [375, 768, 1024, 1440]) {
         await expect(categoryGrid).toBeVisible();
         await expect(productGrid).toBeVisible();
         await expect(categoryGrid.locator(".category-card")).toHaveCount(itemCount);
-        await expect(productGrid.locator(".product-card")).toHaveCount(itemCount);
+        await expect(productGrid.locator("[data-card-anatomy]")).toHaveCount(itemCount);
         const [categoryColumns, productColumns] = await Promise.all([
           categoryGrid.evaluate(
             (grid) => getComputedStyle(grid).gridTemplateColumns.split(" ").length,
