@@ -147,6 +147,7 @@ function ProductPreviewLoader({
           const context = createStorefrontRenderContext({
             activeLocale: aggregate.project.primaryLocale,
             primaryLocale: aggregate.project.primaryLocale,
+            enabledLocales: aggregate.project.enabledLocales,
             catalogue: aggregate.catalogue,
             snapshot: draft,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
@@ -283,6 +284,8 @@ function ProductPreviewLoader({
   const context = createStorefrontRenderContext({
     activeLocale: locale,
     primaryLocale: state.aggregate.project.primaryLocale,
+    enabledLocales: state.aggregate.project.enabledLocales,
+    onLocaleChange: setActiveLocale,
     catalogue: state.aggregate.catalogue,
     snapshot: state.draft,
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),

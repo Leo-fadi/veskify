@@ -5,6 +5,7 @@ import type { CollectionCommerceRoutePresentation } from "@/integrations/storefr
 import { renderDynamicCollectionCommerce } from "@/components/storefront/dynamic-collection-commerce";
 import {
   getComponentDefinition,
+  renderRegisteredSection,
   validateRegisteredPage,
   veskifyComponentRegistry,
   type ComponentDefinition,
@@ -235,6 +236,31 @@ export const safePuckPreviewContext = createStorefrontRenderContext({
   snapshot: previewSnapshot,
 });
 
+export function renderPuckCanvasRoot({
+  children,
+  context,
+  brandSystem,
+}: {
+  children: ReactNode;
+  context: StorefrontRenderContext;
+  brandSystem: BrandSystem;
+}) {
+  return (
+    <div
+      data-veskify-canvas-root="true"
+      lang={context.activeLocale}
+      style={brandSystemToCssVariables(brandSystem)}
+    >
+      {context.sharedFrame?.announcement
+        ? renderRegisteredSection(context.sharedFrame.announcement, context)
+        : null}
+      {context.sharedFrame ? renderRegisteredSection(context.sharedFrame.header, context) : null}
+      <main>{children}</main>
+      {context.sharedFrame ? renderRegisteredSection(context.sharedFrame.footer, context) : null}
+    </div>
+  );
+}
+
 export function generateVeskifyPuckConfig(
   context: StorefrontRenderContext = safePuckPreviewContext,
   pageType: PageType = "home",
@@ -251,15 +277,8 @@ export function generateVeskifyPuckConfig(
         ]),
     ),
     root: {
-      render: ({ children }: { children: ReactNode }) => (
-        <div
-          data-veskify-canvas-root="true"
-          lang={context.activeLocale}
-          style={brandSystemToCssVariables(brandSystem)}
-        >
-          {children}
-        </div>
-      ),
+      render: ({ children }: { children: ReactNode }) =>
+        renderPuckCanvasRoot({ children, context, brandSystem }),
     },
   } as Config;
 }
@@ -344,7 +363,21 @@ function assertAllowedEditorProps(
   }
 }
 
-function assertRequiredComposition(originalPage: PageModel, proposedPage: PageModel) {
+function assertRequiredComposition(
+  originalPage: PageModel,
+  proposedPage: PageModel,
+  context: StorefrontRenderContext,
+) {
+  if (context.sharedFrame) {
+    if (
+      proposedPage.sections.some((section) =>
+        ["announcementBar", "header", "footer"].includes(section.component),
+      )
+    ) {
+      throw new Error("Page-local frame sections cannot replace canonical shared-frame authority.");
+    }
+    return;
+  }
   for (const component of ["header", "footer"] as const) {
     const originalSections = originalPage.sections.filter(
       (section) => section.component === component,
@@ -415,7 +448,7 @@ export function puckDataToPage(
     ...structuredClone(originalPage),
     sections,
   };
-  assertRequiredComposition(originalPage, proposed);
+  assertRequiredComposition(originalPage, proposed, context);
   return validateRegisteredPage(proposed, context);
 }
 

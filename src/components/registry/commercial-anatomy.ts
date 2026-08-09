@@ -17,6 +17,7 @@ type AnatomySource = Pick<
   | "family"
   | "supportedPageTypes"
   | "variants"
+  | "defaultVariant"
   | "contentSlots"
   | "commerceBindingSlots"
   | "assetSlots"
@@ -152,6 +153,178 @@ export function createRegisteredComponentCommercialAnatomy(
   });
 }
 
+function sharedFrameComponentAnatomy(definition: AnatomySource): ComponentCommercialAnatomy {
+  const isHeader = definition.type === "header";
+  const regions: ComponentSemanticRegion[] = isHeader
+    ? ["frame", "navigation", "utility", "service", "actions"]
+    : ["frame", "navigation", "content", "service", "utility"];
+  const transformations = isHeader
+    ? [
+        {
+          id: "drawerNavigation",
+          mode: "disclosure" as const,
+          fromPresentationMode: "desktopFrame",
+          toPresentationMode: "drawer",
+        },
+        {
+          id: "stackedDisclosure",
+          mode: "stack" as const,
+          fromPresentationMode: "desktopFrame",
+          toPresentationMode: "stackedDisclosure",
+        },
+        {
+          id: "compactOverlay",
+          mode: "switch-layout" as const,
+          fromPresentationMode: "desktopFrame",
+          toPresentationMode: "compactOverlay",
+        },
+      ]
+    : [
+        {
+          id: "footerStack",
+          mode: "stack" as const,
+          fromPresentationMode: "desktopFooter",
+          toPresentationMode: "mobileFooter",
+        },
+      ];
+  const headerStructures = {
+    centered: {
+      regionOrder: ["frame", "navigation", "utility", "actions"],
+      omittedRegions: ["service"],
+      responsiveTransformationIds: ["compactOverlay"],
+      presentationMode: "centeredBrandStack",
+    },
+    split: {
+      regionOrder: ["frame", "navigation", "actions", "utility", "service"],
+      omittedRegions: [],
+      responsiveTransformationIds: ["stackedDisclosure"],
+      presentationMode: "utilityLedGrid",
+    },
+    compact: {
+      regionOrder: ["frame", "utility", "navigation", "actions"],
+      omittedRegions: ["service"],
+      responsiveTransformationIds: ["drawerNavigation"],
+      presentationMode: "compactNavigationRail",
+    },
+    transparent: {
+      regionOrder: ["frame", "navigation", "utility", "actions"],
+      omittedRegions: ["service"],
+      responsiveTransformationIds: ["compactOverlay"],
+      presentationMode: "centeredBrandStack",
+    },
+    editorial: {
+      regionOrder: ["service", "frame", "navigation", "utility", "actions"],
+      omittedRegions: [],
+      responsiveTransformationIds: ["drawerNavigation"],
+      presentationMode: "brandLedMasthead",
+    },
+  } as const;
+  const footerStructures = {
+    columns: {
+      regionOrder: ["frame", "content", "navigation", "service", "utility"],
+      omittedRegions: [],
+      presentationMode: "navigationColumns",
+    },
+    expanded: {
+      regionOrder: ["service", "frame", "navigation", "content", "utility"],
+      omittedRegions: [],
+      presentationMode: "serviceNavigation",
+    },
+    editorial: {
+      regionOrder: ["content", "frame", "navigation", "utility"],
+      omittedRegions: ["service"],
+      presentationMode: "brandEditorial",
+    },
+    compact: {
+      regionOrder: ["frame", "navigation", "utility"],
+      omittedRegions: ["content", "service"],
+      presentationMode: "compactCommerceLegal",
+    },
+    dark: {
+      regionOrder: ["frame", "content", "navigation", "service", "utility"],
+      omittedRegions: [],
+      presentationMode: "navigationColumns",
+    },
+  } as const;
+  const structures = isHeader ? headerStructures : footerStructures;
+  const defaultStructure = structures[definition.defaultVariant as keyof typeof structures];
+  if (!defaultStructure) throw new Error(`Missing shared-frame anatomy for ${definition.type}.`);
+  return componentCommercialAnatomySchema.parse({
+    contractVersion: componentCommercialAnatomyContractVersion,
+    identity: `${definition.type}.commercialSharedFrameAnatomy`,
+    version: { major: 1, minor: 0, patch: 0 },
+    regions: regions.map((id) => ({ id, required: id === "frame" || id === "navigation" })),
+    parameters: commercialParameters(definition),
+    responsiveTransformations: transformations.map((transformation) => ({
+      ...transformation,
+      breakpoints: ["mobile"],
+      affectedRegions: isHeader ? ["navigation", "utility", "actions"] : regions,
+    })),
+    compatibility: {
+      allowedPageTypes: [...definition.supportedPageTypes],
+      narrativeRoles: [...definition.designCompatibility.allowedNarrativeRoles],
+      brandPostures: [...commercialTypographyPostures],
+      assetRequirements: definition.assetSlots.map((slot) => ({
+        slotId: slot.id,
+        acceptedRoles: [...slot.acceptedRoles],
+        required: slot.required,
+        minItems: slot.minItems,
+        ...(slot.maxItems === undefined ? {} : { maxItems: slot.maxItems }),
+      })),
+      responsiveModes: isHeader ? ["disclosure", "stack", "switch-layout"] : ["stack"],
+    },
+    variants: definition.variants.map((variant) => {
+      const structure = structures[variant.id as keyof typeof structures];
+      if (!structure) throw new Error(`Missing shared-frame structure for ${variant.id}.`);
+      const finishingOnly =
+        (isHeader && variant.id === "transparent") || (!isHeader && variant.id === "dark");
+      const materialDifferences = isHeader
+        ? variant.id === "centered"
+          ? ["hierarchy", "regionArrangement", "navigationModel", "presentationMode"]
+          : variant.id === "split" || variant.id === "editorial"
+            ? [
+                "hierarchy",
+                "regionArrangement",
+                "regionPresence",
+                "responsiveTransformation",
+                "presentationMode",
+              ]
+            : variant.id === "compact"
+              ? ["hierarchy", "regionArrangement", "responsiveTransformation", "presentationMode"]
+              : []
+        : variant.id === "columns"
+          ? ["hierarchy", "regionArrangement", "navigationModel", "presentationMode"]
+          : variant.id === "expanded"
+            ? ["hierarchy", "regionArrangement", "presentationMode"]
+            : variant.id === "editorial" || variant.id === "compact"
+              ? ["hierarchy", "regionArrangement", "regionPresence", "presentationMode"]
+              : [];
+      return {
+        variantId: variant.id,
+        classification: finishingOnly ? "finishingOnlyVariation" : "meaningfulStructuralVariant",
+        materialDifferences: finishingOnly ? [] : materialDifferences,
+        finishingTokenIds: finishingOnly ? [`surface.${variant.id}`] : [],
+        structure: {
+          ...structure,
+          assetPlacements: definition.assetSlots.map((slot) => ({
+            slotId: slot.id,
+            region: "frame" as const,
+          })),
+          contentRelationship: variant.id === "editorial" ? "contentLed" : "balanced",
+          ctaRelationship: isHeader ? "separated" : "none",
+          merchandisingEmphasis: "none",
+          navigationModel: isHeader ? "toolbar" : "inline",
+          responsiveTransformationIds:
+            "responsiveTransformationIds" in structure
+              ? [...structure.responsiveTransformationIds]
+              : ["footerStack"],
+        },
+      };
+    }),
+    migration: { policy: "stable", previousVersions: [], migrations: [] },
+  });
+}
+
 /**
  * Adds explicit conservative P10B anatomy to a live definition. Existing variants are intentionally
  * not promoted: later family tasks must replace their classification and realized structural
@@ -160,6 +333,9 @@ export function createRegisteredComponentCommercialAnatomy(
 export function createCurrentComponentCommercialAnatomy(
   definition: AnatomySource,
 ): ComponentCommercialAnatomy {
+  if (definition.type === "header" || definition.type === "footer") {
+    return sharedFrameComponentAnatomy(definition);
+  }
   const regionOrder = [...familyRegions[definition.family]];
   const assetRegion: ComponentSemanticRegion = regionOrder.includes("media") ? "media" : "frame";
   const presentationMode = `${definition.family}Baseline`;

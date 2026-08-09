@@ -144,6 +144,7 @@ export function createProjectRepositoryAiAuthorityResolver({
           displayContext: createStorefrontRenderContext({
             activeLocale: intent.activeLocale,
             primaryLocale: aggregate.project.primaryLocale,
+            enabledLocales: aggregate.project.enabledLocales,
             catalogue: aggregate.catalogue,
             snapshot: draft,
           }),

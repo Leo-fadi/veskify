@@ -506,7 +506,13 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
       expect(
         entry?.variants.every((variant) => variant.structuralClassification !== "unclassified"),
       ).toBe(true);
-      if (!p10b07Promoted.has(definition.type)) {
+      if (["header", "footer"].includes(definition.type)) {
+        expect(
+          entry?.variants.filter(
+            (variant) => variant.structuralClassification === "meaningfulStructuralVariant",
+          ).length,
+        ).toBeGreaterThanOrEqual(4);
+      } else if (!p10b07Promoted.has(definition.type)) {
         expect(
           entry?.variants.every(
             (variant) =>

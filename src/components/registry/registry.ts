@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import { catalogueDisplayModelSchema, type CatalogueDisplayModel } from "@/domain/catalogue";
-import { localeSchema, type Locale } from "@/domain/shared";
+import { canonicalLocaleOrder, localeSchema, type Locale } from "@/domain/shared";
 import {
   navigationModelSchema,
   pageModelSchema,
   sectionInstanceSchema,
   storefrontSnapshotSchema,
+  validateCommercialSharedFrameSnapshot,
   validateCanonicalStorefrontSiteMap,
   type PageModel,
   type PageType,
@@ -66,15 +67,24 @@ export function validateRegisteredSnapshot(
   evidenceReferences: StorefrontRenderContext["evidenceReferences"] = [],
 ): StorefrontSnapshot {
   const snapshot = storefrontSnapshotSchema.parse(input);
+  if (snapshot.sharedFrame) validateCommercialSharedFrameSnapshot(snapshot);
   const context = catalogue
     ? createStorefrontRenderContext({
         activeLocale,
         primaryLocale,
+        enabledLocales,
         catalogue,
         snapshot,
         evidenceReferences,
       })
     : undefined;
+  if (snapshot.sharedFrame) {
+    validateRegisteredSection(snapshot.sharedFrame.header, undefined, context);
+    validateRegisteredSection(snapshot.sharedFrame.footer, undefined, context);
+    if (snapshot.sharedFrame.announcement) {
+      validateRegisteredSection(snapshot.sharedFrame.announcement, undefined, context);
+    }
+  }
   snapshot.pages.forEach((page) => validateRegisteredPage(page, context));
   validateCanonicalStorefrontSiteMap(snapshot, { catalogue, enabledLocales });
   return snapshot;
@@ -101,6 +111,8 @@ export function createStorefrontPagePaths({
 export function createStorefrontRenderContext({
   activeLocale,
   primaryLocale,
+  enabledLocales = [primaryLocale, activeLocale],
+  onLocaleChange,
   catalogue,
   snapshot,
   pagePathPrefix = "",
@@ -110,21 +122,37 @@ export function createStorefrontRenderContext({
 }: {
   activeLocale: Locale;
   primaryLocale: Locale;
+  enabledLocales?: readonly Locale[];
+  onLocaleChange?: (locale: Locale) => void;
   catalogue: CatalogueDisplayModel;
-  snapshot: Pick<StorefrontSnapshot, "navigation" | "pages" | "brandSystem">;
+  snapshot: Pick<StorefrontSnapshot, "navigation" | "pages" | "brandSystem" | "sharedFrame">;
   pagePathPrefix?: string;
   pagePathSuffix?: string;
   renderTarget?: StorefrontRenderContext["renderTarget"];
   evidenceReferences?: StorefrontRenderContext["evidenceReferences"];
 }): StorefrontRenderContext {
+  const parsedActiveLocale = localeSchema.parse(activeLocale);
+  const parsedPrimaryLocale = localeSchema.parse(primaryLocale);
+  const parsedEnabledLocales = canonicalLocaleOrder(
+    enabledLocales.map((locale) => localeSchema.parse(locale)),
+  );
+  if (
+    !parsedEnabledLocales.includes(parsedPrimaryLocale) ||
+    !parsedEnabledLocales.includes(parsedActiveLocale)
+  ) {
+    throw new Error("The active and primary locales must be enabled for storefront rendering.");
+  }
   const pagePaths = createStorefrontPagePaths({ snapshot, pagePathPrefix, pagePathSuffix });
   const homePage = snapshot.pages.find((page) => page.type === "home");
 
   return {
-    activeLocale: localeSchema.parse(activeLocale),
-    primaryLocale: localeSchema.parse(primaryLocale),
+    activeLocale: parsedActiveLocale,
+    primaryLocale: parsedPrimaryLocale,
+    enabledLocales: parsedEnabledLocales,
+    ...(onLocaleChange ? { onLocaleChange } : {}),
     catalogue: catalogueDisplayModelSchema.parse(catalogue),
     navigation: navigationModelSchema.parse(snapshot.navigation),
+    ...(snapshot.sharedFrame ? { sharedFrame: structuredClone(snapshot.sharedFrame) } : {}),
     pages: snapshot.pages,
     brandSystem: snapshot.brandSystem,
     pagePaths,

@@ -30,7 +30,7 @@ export const supportedSectionManifest = {
   },
   header: {
     allowedPageTypes: ["home", "collection", "product"] as const satisfies readonly PageType[],
-    variants: ["centered", "split", "compact", "transparent"] as const,
+    variants: ["centered", "split", "compact", "transparent", "editorial"] as const,
   },
   hero: {
     allowedPageTypes: ["home", "landing"] as const satisfies readonly PageType[],
@@ -62,7 +62,7 @@ export const supportedSectionManifest = {
   },
   footer: {
     allowedPageTypes: ["home", "collection", "product"] as const satisfies readonly PageType[],
-    variants: ["columns", "editorial", "compact"] as const,
+    variants: ["columns", "expanded", "editorial", "compact", "dark"] as const,
   },
   collectionHeader: {
     allowedPageTypes: ["collection"] as const satisfies readonly PageType[],

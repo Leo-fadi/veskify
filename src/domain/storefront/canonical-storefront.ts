@@ -2,7 +2,7 @@ import type { StorefrontSnapshot } from "./storefront";
 
 export type StorefrontContent = Pick<
   StorefrontSnapshot,
-  "brandSystem" | "navigation" | "pages" | "catalogueRef"
+  "brandSystem" | "navigation" | "sharedFrame" | "pages" | "catalogueRef"
 >;
 
 export function canonicalizeValue(value: unknown): unknown {
@@ -25,6 +25,7 @@ export function storefrontContent(snapshot: StorefrontSnapshot): StorefrontConte
   return {
     brandSystem: snapshot.brandSystem,
     navigation: snapshot.navigation,
+    ...(snapshot.sharedFrame ? { sharedFrame: snapshot.sharedFrame } : {}),
     pages: snapshot.pages,
     catalogueRef: snapshot.catalogueRef,
   };
