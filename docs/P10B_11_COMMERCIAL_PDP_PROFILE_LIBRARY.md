@@ -91,7 +91,8 @@ configuration controls, shared frame, no horizontal clipping and zero provider t
 
 ## Scope retained
 
-P10B remains **Partial / active**. P10B-10 and P10B-12 through P10B-18 remain Planned. P10B-11 does
+P10B remains **Partial / active**. P10B-10, P10B-12 content/support, and P10B-13 utility presentation
+are Baseline; P10B-14 through P10B-18 remain Planned. P10B-11 does
 not implement collection/search profiles, content/support pages, commerce utility pages, Storefront
 Studio editing, real-provider work, a product-type-specific renderer, a new product model or any
 commercial facts outside approved evidence and canonical commerce.

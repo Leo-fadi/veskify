@@ -14,6 +14,7 @@ import {
   type CommercialContentSupportProfileAuthority,
   type CommercialProductDetailProfileAuthority,
   type CommercialCollectionSearchProfileAuthority,
+  type CommercialUtilityProfileAuthority,
 } from "./contract";
 import { getCommercialSharedFrameProfile } from "@/domain/storefront/commercial-shared-frame";
 import { requireCanonicalProductCardAnatomy } from "@/domain/product-card";
@@ -38,6 +39,7 @@ export type ExecutablePageBlueprintMaterialization = Readonly<{
   commercialContentSupport?: CommercialContentSupportProfileAuthority;
   commercialProductDetail?: CommercialProductDetailProfileAuthority;
   commercialCollectionSearch?: CommercialCollectionSearchProfileAuthority;
+  commercialUtility?: CommercialUtilityProfileAuthority;
   fingerprint: string;
 }>;
 
@@ -162,6 +164,11 @@ export function materializeExecutablePageBlueprint(
     requireCanonicalProductCardAnatomy(
       profile.commercialCollectionSearch.productCardAnatomyId,
       "collectionResults",
+    );
+  }
+  if (profile.commercialUtility) {
+    profile.commercialUtility.compatibleSharedFrameProfileIds.forEach(
+      getCommercialSharedFrameProfile,
     );
   }
   if (
@@ -345,6 +352,9 @@ export function materializeExecutablePageBlueprint(
       : {}),
     ...(profile.commercialCollectionSearch
       ? { commercialCollectionSearch: structuredClone(profile.commercialCollectionSearch) }
+      : {}),
+    ...(profile.commercialUtility
+      ? { commercialUtility: structuredClone(profile.commercialUtility) }
       : {}),
   };
   return freeze({

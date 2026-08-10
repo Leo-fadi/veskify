@@ -1,5 +1,7 @@
 import {
+  commercialUtilityProfileIdSchema,
   getExecutablePageBlueprintProfile,
+  materializeCommerceUtilityPage,
   materializeExecutablePageBlueprint,
 } from "@/application/storefront-templates";
 import { validateRegisteredSnapshot, veskifyComponentDefinitionsV2 } from "@/components/registry";
@@ -8,6 +10,7 @@ import { canonicalLocaleOrder } from "@/domain/shared";
 import {
   canonicalStorefrontSiteMapFingerprint,
   canonicalValueFingerprint,
+  commercialSharedFrameProfileIdSchema,
   getPageFamilyDefinition,
   PAGE_FAMILY_AUTHORITY_VERSION,
   PageFamilyValidationError,
@@ -315,7 +318,7 @@ export function materializeStorefrontSiteMap(
         `Page ${page.key} references an omitted or missing parent page.`,
       );
     }
-    return {
+    const materializedPage = {
       ...(existing ? structuredClone(existing) : { sections: [] }),
       id: pageIds.get(page.key)!,
       type: getPageFamilyDefinition(page.familyId).pageType,
@@ -329,6 +332,27 @@ export function materializeStorefrontSiteMap(
         canonicalEvidenceByPageKey.get(page.key) ?? [],
       ),
     };
+    const utilityProfile = getExecutablePageBlueprintProfile(page.profile.id)?.profile
+      ?.commercialUtility;
+    const sharedFrameProfileId = input.baseSnapshot.sharedFrame?.profileId;
+    const parsedSharedFrameProfileId =
+      commercialSharedFrameProfileIdSchema.safeParse(sharedFrameProfileId);
+    if (
+      utilityProfile &&
+      (!parsedSharedFrameProfileId.success ||
+        !utilityProfile.compatibleSharedFrameProfileIds.includes(parsedSharedFrameProfileId.data))
+    ) {
+      throw new SiteMapMaterializationError(
+        "invalid-shared-frame",
+        `Commerce utility profile ${page.profile.id} is incompatible with the current shared frame.`,
+      );
+    }
+    return utilityProfile
+      ? materializeCommerceUtilityPage(
+          materializedPage,
+          commercialUtilityProfileIdSchema.parse(page.profile.id),
+        )
+      : materializedPage;
   });
   const snapshot = storefrontSnapshotSchema.parse({
     ...structuredClone(input.baseSnapshot),

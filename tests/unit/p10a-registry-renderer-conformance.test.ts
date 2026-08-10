@@ -54,10 +54,10 @@ describe("P10A-04B registry, manifest, and renderer conformance", () => {
       ),
     ).toHaveLength(5);
     expect(report.blockingDefects).toHaveLength(16);
-    expect(report.metadataGaps).toHaveLength(28);
+    expect(report.metadataGaps).toHaveLength(29);
     expect(report.deliberateFutureCapabilities).toHaveLength(7);
     expect(report.commercialGaps).toHaveLength(0);
-    expect(collectLiveRendererRegistrations()).toHaveLength(32);
+    expect(collectLiveRendererRegistrations()).toHaveLength(33);
     expect(veskifyComponentDefinitionsV2.flatMap((definition) => definition.variants)).toHaveLength(
       veskifyComponentCapabilityManifest.manifest.entries.flatMap((entry) => entry.variants).length,
     );
@@ -75,7 +75,7 @@ describe("P10A-04B registry, manifest, and renderer conformance", () => {
     );
     expect(
       registrations.map((registration) => registration.componentType).filter(Boolean),
-    ).toHaveLength(32);
+    ).toHaveLength(33);
   });
 
   it("fails closed when a definition variant has no renderer-level support", () => {

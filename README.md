@@ -7,10 +7,11 @@ storefront.
 
 The overall product is **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
 orchestration and publishing is **Baseline / closed**. P10B Commercial Storefront Generation System
-v1 is **Partial / active**: P10B-01 through P10B-12 are Baseline, including Design DNA, commercial
+v1 is **Partial / active**: P10B-01 through P10B-13 are Baseline, including Design DNA, commercial
 anatomy, art direction, page-family authority, four canonical shared-frame families, commercial
 storytelling families, a five-anatomy canonical product-card family, homepage, collection/search,
-PDP, and fifteen approved-fact content/support profiles; P10B-13 through P10B-18 remain Planned.
+PDP, fifteen approved-fact content/support profiles, and governed commerce-utility presentation;
+P10B-14 through P10B-18 remain Planned.
 
 ## Product boundary
 

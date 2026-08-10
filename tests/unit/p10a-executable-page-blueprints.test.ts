@@ -51,7 +51,7 @@ describe("P10A-03 executable PageBlueprint profiles", () => {
       requiredBindingCategories: ["navigation"],
     });
     const profiles = listExecutablePageBlueprintProfiles();
-    expect(profiles).toHaveLength(47);
+    expect(profiles).toHaveLength(53);
     expect(
       profiles.filter((plan) => plan.profile?.id.startsWith("blueprint-site-map-")),
     ).toHaveLength(9);

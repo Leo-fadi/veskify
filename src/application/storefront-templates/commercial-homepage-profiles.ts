@@ -932,10 +932,10 @@ export function validateCommercialHomepageProfileLibrary(
     registerResponsiveTransformations(productCardAnatomy.responsiveTransformations);
     plan.slots.forEach((entry) => {
       const manifest = getSupportedSectionManifest(entry.sectionType);
-      if (!manifest || !(manifest.allowedPageTypes as readonly string[]).includes("home")) {
+      if (!manifest || !manifest.allowedPageTypes.includes("home")) {
         throw new Error(`Commercial homepage component ${entry.sectionType} is unavailable.`);
       }
-      if (!(manifest.variants as readonly string[]).includes(entry.defaultVariant)) {
+      if (!manifest.variants.includes(entry.defaultVariant)) {
         throw new Error(`Commercial homepage variant ${entry.defaultVariant} is unavailable.`);
       }
       const componentDefinition =

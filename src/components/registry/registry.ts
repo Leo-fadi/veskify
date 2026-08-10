@@ -20,6 +20,7 @@ import {
 } from "./content-support-bridge";
 import type { ComponentDefinition, StorefrontRenderContext } from "./contract";
 import { veskifyLegacyComponentRegistry } from "./legacy-registry";
+import type { CommerceUtilityIntent, CommerceUtilityRuntimeState } from "@/domain/commerce-utility";
 
 export const veskifyComponentRegistry = {
   ...veskifyLegacyComponentRegistry,
@@ -138,6 +139,8 @@ export function createStorefrontRenderContext({
   pagePathSuffix = "",
   renderTarget = "preview",
   evidenceReferences = [],
+  commerceUtilityRuntime,
+  onCommerceUtilityIntent,
   contentSupportFactDocuments,
 }: {
   activeLocale: Locale;
@@ -151,6 +154,8 @@ export function createStorefrontRenderContext({
   pagePathSuffix?: string;
   renderTarget?: StorefrontRenderContext["renderTarget"];
   evidenceReferences?: StorefrontRenderContext["evidenceReferences"];
+  commerceUtilityRuntime?: CommerceUtilityRuntimeState;
+  onCommerceUtilityIntent?: (intent: CommerceUtilityIntent) => void;
   contentSupportFactDocuments?: StorefrontRenderContext["contentSupportFactDocuments"];
 }): StorefrontRenderContext {
   const parsedActiveLocale = localeSchema.parse(activeLocale);
@@ -181,6 +186,10 @@ export function createStorefrontRenderContext({
     homePath: homePage ? pagePaths[homePage.id] : undefined,
     renderTarget,
     evidenceReferences,
+    ...(commerceUtilityRuntime
+      ? { commerceUtilityRuntime: structuredClone(commerceUtilityRuntime) }
+      : {}),
+    ...(onCommerceUtilityIntent ? { onCommerceUtilityIntent } : {}),
     contentSupportFactDocuments:
       contentSupportFactDocuments ?? snapshot.contentSupportFactDocuments ?? [],
   };

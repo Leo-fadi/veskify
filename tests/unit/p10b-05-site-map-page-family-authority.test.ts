@@ -31,6 +31,7 @@ import {
 import {
   canonicalStorefrontSiteMapFingerprint,
   canonicalValueString,
+  applyCommercialSharedFrame,
   listPageFamilyDefinitions,
   type PageFamilyValidationError,
   validateCanonicalStorefrontSiteMap,
@@ -372,6 +373,27 @@ describe("P10B-05 site-map and page-family authority", () => {
       expect(result.profileVersion).toBe("1.0.0");
       expect(result.slots).toEqual([]);
     }
+  });
+
+  it("rejects a commerce-utility profile whose current shared frame is incompatible", () => {
+    const input = decision();
+    const cart = input.pages.find((page) => page.familyId === "cart");
+    if (!cart) throw new Error("Expected the required cart page.");
+    Reflect.set(cart, "profile", { id: "commerce-utility-cart", version: "1.0.0" });
+    const incompatibleBase = applyCommercialSharedFrame(
+      structuredClone(aurumNordicSeed.draftSnapshot),
+      "editorial-masthead",
+    );
+    expectCode(
+      () =>
+        materializeStorefrontSiteMap({
+          decision: input,
+          baseSnapshot: incompatibleBase,
+          catalogue: structuredClone(aurumNordicSeed.catalogue),
+          evidenceAuthority: evidenceAuthority(),
+        }),
+      "invalid-shared-frame",
+    );
   });
 
   it("materializes a complete canonical page set with routes, navigation, parents, locales and shared frame", () => {
