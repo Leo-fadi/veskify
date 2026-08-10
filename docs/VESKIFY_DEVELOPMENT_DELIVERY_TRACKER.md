@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 10 August 2026, P10B-14 Premium Editorial complete-storefront vertical slice                                        |
+| Baseline                    | 10 August 2026, P10B-15 bounded storefront synthesis and narrative engine                                           |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -55,7 +55,7 @@ required evidence are accepted.
 | ☑    | P10B-12 | Content and support page families                    | **Baseline** | Content page presentation       | P10B-03 through P10B-07            | 15 profiles, approved facts, localization, lifecycle, and 61 Chromium checks                                             |
 | ☑    | P10B-13 | Commerce utility presentation pages                  | **Baseline** | Utility presentation            | P10B-03, P10B-05, P10B-06, P10B-08 | Six profiles plus route-local loading, canonical action boundary, snapshot/publication preservation, 16 responsive views |
 | ☑    | P10B-14 | Premium Editorial complete-storefront vertical slice | **Baseline** | Storefront generation and QA    | Minimum P10B-02 through P10B-13    | 17 routes; canonical generation/save/publish; 15 screenshots; passing 160-scenario human review                          |
-| ☐    | P10B-15 | Bounded storefront synthesis and narrative engine    | **Planned**  | Storefront generation           | P10B-14                            | Determinism, compatibility, no-partial snapshot and repetition control                                                   |
+| ☑    | P10B-15 | Bounded storefront synthesis and narrative engine    | **Baseline** | Storefront generation           | P10B-14                            | 25-case matrix; three complete outcomes; lifecycle; four-width browser; 480-scenario retained human review               |
 | ☐    | P10B-16 | Coordinated directions and diversity control         | **Planned**  | Direction/evaluation authority  | P10B-15                            | Fingerprints, duplicate/near-duplicate and pairwise diversity                                                            |
 | ☐    | P10B-17 | Responsive, accessibility and performance closure    | **Planned**  | Design system and QA            | P10B-16 and implemented families   | Four-width EN/FI geometry, a11y, performance and visual evidence                                                         |
 | ☐    | P10B-18 | Commercial quality and scale gate                    | **Planned**  | Product owner, generation, QA   | All prior P10B tasks               | 100+ configurations and fingerprint-stratified human review                                                              |
@@ -164,7 +164,7 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 through P10B-14 are **Baseline**. P10B-15 through P10B-18 remain **Planned**. The remaining
+P10B-01 through P10B-15 are **Baseline**. P10B-16 through P10B-18 remain **Planned**. The remaining
 Done conditions are implementation gates, not claims about the current repository.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
@@ -437,21 +437,27 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
   retained human commercial review.
 - **Non-goal:** P10B closure or broad direction/diversity proof.
 
-#### P10B-15 — Bounded storefront synthesis and narrative engine
+#### P10B-15 — Bounded storefront synthesis and narrative engine — **Baseline**
 
 - **Outcome:** Generate complete coherent storefronts from compatible Design DNA, page set,
   profiles, families/variants, parameters, assets, and narrative roles.
 - **Authority:** Existing governed planning/proposal compiler plus the registered P10B authorities;
   output remains one `StorefrontSnapshot`.
 - **Depends on:** P10B-14 and sufficient real family/profile capability.
-- **Done when:** Deterministic selection preserves cross-page identity, narrative adjacency/
-  cardinality, repetition limits, bindings/assets, and complete snapshot/lifecycle output for
-  representative inputs.
+- **Delivered:** One versioned deterministic synthesis contract binds exact merchant, evidence,
+  commerce, asset, Design DNA, site-map, frame, PageBlueprint/profile, component/anatomy,
+  narrative, density, art-direction, responsive, planner, registry and recipe authority. The same
+  approved fixture produces editorial-heavy, commerce/discovery-heavy and restrained/minimal
+  complete 17-route stores through the existing whole-storefront proposal, snapshot, save/reload,
+  renderer and immutable publication chain. Details are retained in
+  [`P10B_15_BOUNDED_STOREFRONT_SYNTHESIS_AND_NARRATIVE_ENGINE.md`](P10B_15_BOUNDED_STOREFRONT_SYNTHESIS_AND_NARRATIVE_ENGINE.md).
 - **Fail closed:** Missing, stale, ambiguous, incompatible, unregistered, repetitive, or
   protected-state-divergent combinations produce no partial proposal/snapshot.
-- **Evidence:** Selection/compatibility/unit, proposal/compiler/lifecycle integration, no-partial-
-  write, deterministic fingerprint inputs, and complete-store browser evidence.
-- **Non-goal:** Arbitrary trees/styles or a second synthesis representation.
+- **Evidence:** Required 25-case deterministic matrix; P10B-14 regression; three distinct complete
+  outcomes; exact save/reload and deterministic publication; dedicated 375/768/1024/1440 browser
+  evidence; and three passing 160-scenario retained human commercial reviews (480 scenarios).
+- **Non-goal:** Arbitrary trees/styles, a second synthesis representation, or P10B-16
+  duplicate/near-duplicate and direction-scale authority.
 
 #### P10B-16 — Coordinated directions and diversity control
 

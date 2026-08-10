@@ -1,0 +1,231 @@
+import { z } from "zod";
+import { storefrontDesignDirectionIdSchema } from "@/application/storefront-design-system";
+import {
+  commercialCollectionSearchProfileIdSchema,
+  commercialHomepageProfileIdSchema,
+  commercialPdpProfileIdSchema,
+} from "@/application/storefront-templates";
+import {
+  canonicalValueFingerprint,
+  commercialSharedFrameProfileIdSchema,
+} from "@/domain/storefront";
+
+export const BOUNDED_STOREFRONT_SYNTHESIS_CONTRACT_VERSION = 1 as const;
+
+const fingerprintSchema = z.string().trim().min(1).max(240);
+const referenceSchema = z.string().trim().min(1).max(200);
+const boundedValueSchema = z.union([z.string(), z.number(), z.boolean()]);
+
+export const boundedStorefrontSynthesisIntentSchema = z.enum([
+  "editorial-led",
+  "commerce-led",
+  "restrained-minimal",
+  "dense-catalogue",
+  "high-consideration",
+  "campaign-emphasis",
+  "stronger-brand-storytelling",
+]);
+
+export const boundedStorefrontSynthesisRequestSchema = z
+  .object({
+    intent: boundedStorefrontSynthesisIntentSchema,
+    deterministicSeed: z.string().trim().min(1).max(120).default("canonical"),
+  })
+  .strict();
+
+const narrativeRoleSchema = z.enum([
+  "orientation",
+  "primary-discovery",
+  "secondary-discovery",
+  "product-focus",
+  "product-proof",
+  "brand-story",
+  "brand-proof",
+  "education",
+  "campaign",
+  "trust",
+  "service",
+  "conversion",
+  "continuation",
+]);
+
+const synthesisMaterialSchema = z
+  .object({
+    contractVersion: z.literal(BOUNDED_STOREFRONT_SYNTHESIS_CONTRACT_VERSION),
+    request: boundedStorefrontSynthesisRequestSchema,
+    merchantContextFingerprint: fingerprintSchema,
+    approvedEvidenceRevisions: z.array(
+      z
+        .object({
+          source: referenceSchema,
+          authorityId: referenceSchema,
+          revision: referenceSchema,
+        })
+        .strict(),
+    ),
+    commerceContextFingerprint: fingerprintSchema,
+    assetAuthorityFingerprint: fingerprintSchema.nullable(),
+    designDna: z
+      .object({
+        directionId: storefrontDesignDirectionIdSchema,
+        fingerprint: fingerprintSchema,
+      })
+      .strict(),
+    siteMap: z
+      .object({
+        fingerprint: fingerprintSchema,
+        pageSetFingerprint: fingerprintSchema,
+        pageKeys: z.array(referenceSchema).min(1),
+      })
+      .strict(),
+    sharedFrame: z
+      .object({
+        profileId: commercialSharedFrameProfileIdSchema,
+        profileVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+        authorityFingerprint: fingerprintSchema,
+      })
+      .strict(),
+    commercialProfiles: z
+      .object({
+        homepageProfileId: commercialHomepageProfileIdSchema,
+        collectionProfileId: commercialCollectionSearchProfileIdSchema,
+        searchProfileId: commercialCollectionSearchProfileIdSchema,
+        pdpProfileId: commercialPdpProfileIdSchema,
+      })
+      .strict(),
+    pageProfileSelections: z.array(
+      z
+        .object({
+          pageKey: referenceSchema,
+          familyId: referenceSchema,
+          profileId: referenceSchema,
+          profileVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+          profileFingerprint: fingerprintSchema,
+          narrativeRoles: z.array(narrativeRoleSchema),
+        })
+        .strict(),
+    ),
+    narrative: z
+      .object({
+        posture: z.enum([
+          "story-led",
+          "discovery-led",
+          "restrained",
+          "catalogue-dense",
+          "considered-purchase",
+          "campaign-led",
+        ]),
+        roleSequence: z.array(narrativeRoleSchema).min(1),
+        pageContributions: z.array(
+          z.object({ pageKey: referenceSchema, roles: z.array(narrativeRoleSchema) }).strict(),
+        ),
+        discoveryPath: z.boolean(),
+        conversionPath: z.boolean(),
+      })
+      .strict(),
+    merchandisingPosture: z.enum([
+      "curated",
+      "discovery",
+      "restrained",
+      "dense",
+      "considered",
+      "campaign",
+    ]),
+    informationDensityPosture: z.enum(["compact", "balanced", "airy"]),
+    artDirectionPosture: z.enum(["contained", "editorial", "immersive"]),
+    componentChoices: z.array(
+      z
+        .object({
+          pageKey: referenceSchema,
+          slotId: referenceSchema,
+          component: referenceSchema,
+          variant: referenceSchema,
+          anatomyId: referenceSchema.nullable(),
+          capabilityFingerprint: fingerprintSchema,
+        })
+        .strict(),
+    ),
+    boundedParameters: z.record(referenceSchema, boundedValueSchema),
+    evidenceComposition: z
+      .object({
+        requiredPageKeys: z.array(referenceSchema),
+        optionalPageKeys: z.array(referenceSchema),
+        omittedPageKeys: z.array(referenceSchema),
+      })
+      .strict(),
+    responsivePosture: z
+      .object({
+        breakpoints: z.tuple([z.literal(375), z.literal(768), z.literal(1024), z.literal(1440)]),
+        mode: z.enum(["content-first", "commerce-first", "balanced"]),
+      })
+      .strict(),
+    currentAuthority: z
+      .object({
+        wholeStorefrontTargetFingerprint: fingerprintSchema,
+        componentRegistryFingerprint: fingerprintSchema,
+        recipeContextFingerprint: fingerprintSchema,
+      })
+      .strict(),
+    decisions: z.array(
+      z
+        .object({
+          code: referenceSchema,
+          outcome: referenceSchema,
+          authorityReferences: z.array(referenceSchema),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
+export const boundedStorefrontSynthesisDecisionSchema = synthesisMaterialSchema
+  .extend({ synthesisFingerprint: fingerprintSchema })
+  .strict()
+  .superRefine((decision, context) => {
+    const { synthesisFingerprint, ...material } = decision;
+    const expected = `bounded-storefront-synthesis-${canonicalValueFingerprint(material)}`;
+    if (synthesisFingerprint !== expected) {
+      context.addIssue({
+        code: "custom",
+        path: ["synthesisFingerprint"],
+        message: "The bounded storefront synthesis fingerprint is stale.",
+      });
+    }
+  });
+
+export type BoundedStorefrontSynthesisIntent = z.infer<
+  typeof boundedStorefrontSynthesisIntentSchema
+>;
+export type BoundedStorefrontSynthesisRequest = z.infer<
+  typeof boundedStorefrontSynthesisRequestSchema
+>;
+export type BoundedStorefrontSynthesisDecision = z.infer<
+  typeof boundedStorefrontSynthesisDecisionSchema
+>;
+
+export const boundedStorefrontSynthesisErrorCodes = [
+  "invalid-request",
+  "unsupported-constraint",
+  "incomplete-page-set",
+  "missing-approved-evidence",
+  "stale-authority",
+  "incompatible-frame-profile",
+  "unsupported-narrative-role",
+  "impossible-required-role",
+  "invalid-component-capability",
+  "invalid-bounded-override",
+  "non-deterministic-selection",
+] as const;
+export type BoundedStorefrontSynthesisErrorCode =
+  (typeof boundedStorefrontSynthesisErrorCodes)[number];
+
+export class BoundedStorefrontSynthesisError extends Error {
+  constructor(
+    readonly code: BoundedStorefrontSynthesisErrorCode,
+    message: string,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = "BoundedStorefrontSynthesisError";
+  }
+}
