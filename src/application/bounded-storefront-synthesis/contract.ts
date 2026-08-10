@@ -33,6 +33,48 @@ export const boundedStorefrontSynthesisRequestSchema = z
   })
   .strict();
 
+/**
+ * Exact, already-governed narrowing supplied by a higher-level coordinated-direction authority.
+ * Every value remains inside the existing P10B-15 registered selection vocabulary; the
+ * synthesizer still resolves the current profile, frame, component and evidence authorities.
+ */
+export const boundedStorefrontSynthesisSelectionNarrowingSchema = z
+  .object({
+    authorityId: referenceSchema,
+    authorityVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+    authorityFingerprint: fingerprintSchema,
+    selectionId: referenceSchema,
+    directionId: storefrontDesignDirectionIdSchema,
+    designSystemSpacingDensity: z.enum(["compact", "standard", "spacious"]),
+    designSystemSurfaceDepth: z.enum(["flat", "subtle", "layered"]),
+    sharedFrameProfileId: commercialSharedFrameProfileIdSchema,
+    homepageProfileId: commercialHomepageProfileIdSchema,
+    collectionProfileId: commercialCollectionSearchProfileIdSchema,
+    searchProfileId: commercialCollectionSearchProfileIdSchema,
+    pdpProfileId: commercialPdpProfileIdSchema,
+    includedOptionalPageFamilyIds: z.array(referenceSchema).max(40),
+    narrativePosture: z.enum([
+      "story-led",
+      "discovery-led",
+      "restrained",
+      "catalogue-dense",
+      "considered-purchase",
+      "campaign-led",
+    ]),
+    merchandisingPosture: z.enum([
+      "curated",
+      "discovery",
+      "restrained",
+      "dense",
+      "considered",
+      "campaign",
+    ]),
+    informationDensityPosture: z.enum(["compact", "balanced", "airy"]),
+    artDirectionPosture: z.enum(["contained", "editorial", "immersive"]),
+    responsiveMode: z.enum(["content-first", "commerce-first", "balanced"]),
+  })
+  .strict();
+
 const narrativeRoleSchema = z.enum([
   "orientation",
   "primary-discovery",
@@ -68,6 +110,8 @@ const synthesisMaterialSchema = z
     designDna: z
       .object({
         directionId: storefrontDesignDirectionIdSchema,
+        spacingDensity: z.enum(["compact", "standard", "spacious"]),
+        surfaceDepth: z.enum(["flat", "subtle", "layered"]),
         fingerprint: fingerprintSchema,
       })
       .strict(),
@@ -198,6 +242,9 @@ export type BoundedStorefrontSynthesisIntent = z.infer<
 >;
 export type BoundedStorefrontSynthesisRequest = z.infer<
   typeof boundedStorefrontSynthesisRequestSchema
+>;
+export type BoundedStorefrontSynthesisSelectionNarrowing = z.infer<
+  typeof boundedStorefrontSynthesisSelectionNarrowingSchema
 >;
 export type BoundedStorefrontSynthesisDecision = z.infer<
   typeof boundedStorefrontSynthesisDecisionSchema

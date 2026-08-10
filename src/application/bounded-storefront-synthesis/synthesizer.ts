@@ -31,10 +31,13 @@ import {
 import {
   boundedStorefrontSynthesisDecisionSchema,
   boundedStorefrontSynthesisRequestSchema,
+  boundedStorefrontSynthesisSelectionNarrowingSchema,
   BoundedStorefrontSynthesisError,
   type BoundedStorefrontSynthesisDecision,
   type BoundedStorefrontSynthesisRequest,
+  type BoundedStorefrontSynthesisSelectionNarrowing,
 } from "./contract";
+import { validateDirectionSelectionNarrowing } from "./direction-registry";
 
 type Selection = Readonly<{
   directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
@@ -55,6 +58,7 @@ export type BoundedStorefrontSynthesisInput = Readonly<{
   siteMapDecision: StorefrontSiteMapDecision;
   approvedEvidenceReferences: readonly PageFactEvidenceReference[];
   request: BoundedStorefrontSynthesisRequest;
+  selectionNarrowing?: BoundedStorefrontSynthesisSelectionNarrowing;
 }>;
 
 export type BoundedStorefrontSynthesisExecutionInput = BoundedStorefrontSynthesisInput &
@@ -86,6 +90,47 @@ function selectionFor(
   input: BoundedStorefrontSynthesisInput,
   request: BoundedStorefrontSynthesisRequest,
 ): Selection {
+  if (input.selectionNarrowing) {
+    const narrowing = boundedStorefrontSynthesisSelectionNarrowingSchema.safeParse(
+      input.selectionNarrowing,
+    );
+    if (!narrowing.success) {
+      fail("unsupported-constraint", "The governed synthesis narrowing is invalid.");
+    }
+    try {
+      validateDirectionSelectionNarrowing(narrowing.data);
+    } catch (error) {
+      fail(
+        "unsupported-constraint",
+        "The governed synthesis narrowing is stale or unsupported.",
+        error,
+      );
+    }
+    return {
+      directionId: narrowing.data.directionId,
+      homepageProfileId: narrowing.data.homepageProfileId,
+      collectionProfileId: narrowing.data.collectionProfileId,
+      searchProfileId: narrowing.data.searchProfileId,
+      pdpProfileId: narrowing.data.pdpProfileId,
+      narrativePosture: narrowing.data.narrativePosture,
+      merchandisingPosture: narrowing.data.merchandisingPosture,
+      densityPosture: narrowing.data.informationDensityPosture,
+      artDirectionPosture: narrowing.data.artDirectionPosture,
+      responsiveMode: narrowing.data.responsiveMode,
+      decisions: [
+        {
+          code: "governed-selection-narrowing",
+          outcome: narrowing.data.selectionId,
+          authorityReferences: [
+            `authority:${narrowing.data.authorityId}`,
+            `version:${narrowing.data.authorityVersion}`,
+            `fingerprint:${narrowing.data.authorityFingerprint}`,
+            `request:${request.intent}`,
+          ],
+        },
+      ],
+    };
+  }
   const productCount = input.planningInput.catalogue.products.length;
   const configurable = hasConfigurableProducts(input.planningInput);
   const chosen = (
@@ -224,22 +269,31 @@ function selectionFor(
 function selectedSiteMap(
   input: StorefrontSiteMapDecision,
   selection: Selection,
+  includedOptionalPageFamilyIds?: readonly string[],
 ): StorefrontSiteMapDecision {
+  const includedOptionalFamilies = new Set(includedOptionalPageFamilyIds ?? []);
   return {
     ...structuredClone(input),
-    pages: input.pages.map((page) => {
-      const profileId =
-        page.familyId === "home"
-          ? selection.homepageProfileId
-          : page.familyId === "collection"
-            ? selection.collectionProfileId
-            : page.familyId === "search-results"
-              ? selection.searchProfileId
-              : page.familyId === "product-detail"
-                ? selection.pdpProfileId
-                : page.profile.id;
-      return { ...structuredClone(page), profile: { ...page.profile, id: profileId } };
-    }),
+    pages: input.pages
+      .filter(
+        (page) =>
+          includedOptionalPageFamilyIds === undefined ||
+          page.required ||
+          includedOptionalFamilies.has(page.familyId),
+      )
+      .map((page) => {
+        const profileId =
+          page.familyId === "home"
+            ? selection.homepageProfileId
+            : page.familyId === "collection"
+              ? selection.collectionProfileId
+              : page.familyId === "search-results"
+                ? selection.searchProfileId
+                : page.familyId === "product-detail"
+                  ? selection.pdpProfileId
+                  : page.profile.id;
+        return { ...structuredClone(page), profile: { ...page.profile, id: profileId } };
+      }),
   };
 }
 
@@ -281,6 +335,22 @@ function preferredFrames(selection: Selection): readonly CommercialSharedFramePr
     return ["compact-technical", "commerce-utility", "centered-minimal"];
   }
   return ["centered-minimal", "commerce-utility", "editorial-masthead"];
+}
+
+function selectedFrame(
+  siteMap: StorefrontSiteMapDecision,
+  selection: Selection,
+  narrowing: BoundedStorefrontSynthesisSelectionNarrowing | undefined,
+): CommercialSharedFrameProfileId {
+  if (!narrowing) return selectSharedFrame(siteMap, preferredFrames(selection));
+  const resolved = selectSharedFrame(siteMap, [narrowing.sharedFrameProfileId]);
+  if (resolved !== narrowing.sharedFrameProfileId) {
+    fail(
+      "incompatible-frame-profile",
+      `The governed frame ${narrowing.sharedFrameProfileId} is incompatible with the selected complete page set.`,
+    );
+  }
+  return resolved;
 }
 
 function approvedEvidenceRevisions(input: BoundedStorefrontSynthesisInput) {
@@ -351,6 +421,17 @@ function profileMaterial(siteMap: StorefrontSiteMapDecision, input: WholeStorefr
     if (!plan?.profile || plan.profile.version !== page.profile.version) {
       fail("stale-authority", `Page ${page.key} has a stale PageBlueprint profile reference.`);
     }
+    const availableAssetRoles = new Set(
+      input.approvedAssetContext?.assets.map(({ role }) => role) ?? [],
+    );
+    for (const requiredRole of plan.profile.requiredAssetRoles) {
+      if (!availableAssetRoles.has(requiredRole)) {
+        fail(
+          "missing-approved-evidence",
+          `Page ${page.key} requires approved asset role ${requiredRole}.`,
+        );
+      }
+    }
     const roles = plan.slots.map((slot) => slot.narrativeRole);
     if (roles.some((role) => role === undefined)) {
       fail("unsupported-narrative-role", `Page ${page.key} has an unsupported narrative role.`);
@@ -416,10 +497,7 @@ function validateNarrative(
   const discoveryPath = roles.some((role) =>
     ["primary-discovery", "secondary-discovery", "orientation"].includes(role),
   );
-  const conversionPath =
-    roles.includes("conversion") ||
-    (roles.includes("product-focus") &&
-      siteMap.pages.some(({ familyId }) => ["cart", "checkout"].includes(familyId)));
+  const conversionPath = roles.includes("conversion") || roles.includes("product-focus");
   if (hasCatalogue && !discoveryPath) {
     fail("impossible-required-role", "The selected catalogue page set has no discovery path.");
   }
@@ -463,8 +541,15 @@ export function createBoundedStorefrontSynthesisDecision(
   const target = createWholeStorefrontGenerationTarget(input.planningInput);
   const selection = selectionFor(input, request.data);
   const evidenceAware = evidenceAwareSiteMap(input);
-  const siteMap = selectedSiteMap(evidenceAware.siteMap, selection);
-  const frameId = selectSharedFrame(siteMap, preferredFrames(selection));
+  const siteMap = selectedSiteMap(
+    evidenceAware.siteMap,
+    selection,
+    input.selectionNarrowing?.includedOptionalPageFamilyIds,
+  );
+  const directionOmittedPageKeys = evidenceAware.siteMap.pages
+    .filter((page) => !siteMap.pages.some(({ key }) => key === page.key))
+    .map(({ key }) => key);
+  const frameId = selectedFrame(siteMap, selection, input.selectionNarrowing);
   const frame = getCommercialSharedFrameProfile(frameId);
   const profileAuthority = profileMaterial(siteMap, input.planningInput);
   const narrativePaths = validateNarrative(siteMap, profileAuthority.pageContributions);
@@ -472,7 +557,17 @@ export function createBoundedStorefrontSynthesisDecision(
     input.planningInput.draft.brandSystem,
     input.planningInput.recipeContext.designSystem,
     selection.directionId,
+    input.selectionNarrowing
+      ? {
+          spacingDensity: input.selectionNarrowing.designSystemSpacingDensity,
+          surfaceDepth: input.selectionNarrowing.designSystemSurfaceDepth,
+        }
+      : undefined,
   );
+  const selectedDirection = input.planningInput.recipeContext.designSystem.directions.find(
+    ({ id }) => id === selection.directionId,
+  );
+  if (!selectedDirection) fail("stale-authority", "Selected Design DNA authority is unavailable.");
   const material = {
     contractVersion: 1 as const,
     request: request.data,
@@ -487,6 +582,10 @@ export function createBoundedStorefrontSynthesisDecision(
     assetAuthorityFingerprint: input.planningInput.approvedAssetContext?.fingerprint ?? null,
     designDna: {
       directionId: selection.directionId,
+      spacingDensity:
+        input.selectionNarrowing?.designSystemSpacingDensity ?? selectedDirection.spacingDensity,
+      surfaceDepth:
+        input.selectionNarrowing?.designSystemSurfaceDepth ?? selectedDirection.surfaceDepth,
       fingerprint: `design-dna-${canonicalValueFingerprint(brandSystem.designDna)}`,
     },
     siteMap: {
@@ -528,7 +627,7 @@ export function createBoundedStorefrontSynthesisDecision(
     evidenceComposition: {
       requiredPageKeys: siteMap.pages.filter(({ required }) => required).map(({ key }) => key),
       optionalPageKeys: siteMap.pages.filter(({ required }) => !required).map(({ key }) => key),
-      omittedPageKeys: evidenceAware.omittedPageKeys,
+      omittedPageKeys: [...evidenceAware.omittedPageKeys, ...directionOmittedPageKeys],
     },
     responsivePosture: {
       breakpoints: [375, 768, 1024, 1440] as [375, 768, 1024, 1440],
@@ -595,6 +694,10 @@ export function executeBoundedStorefrontSynthesis(
     contentFactAuthority: input.contentFactAuthority,
     approvedAssetPresentations: input.approvedAssetPresentations,
     directionId: decision.designDna.directionId,
+    designSystemNarrowing: {
+      spacingDensity: decision.designDna.spacingDensity,
+      surfaceDepth: decision.designDna.surfaceDepth,
+    },
     materializationIdPrefix: `p10b15_${decision.synthesisFingerprint.slice(-12)}`,
   });
   return Object.freeze({

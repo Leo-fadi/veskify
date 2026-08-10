@@ -95,8 +95,9 @@ authority, P10B-05 site-map/page-family authority, P10B-06 commercial shared-fra
 P10B-07 hero/editorial/campaign/proof families, P10B-08 canonical product-card authority,
 P10B-09 commercial homepage profiles, P10B-10 commercial collection/search profiles, P10B-11
 commercial PDP profiles, P10B-12 content/support page families, P10B-13 commerce-utility
-presentation, the P10B-14 complete-store convergence proof, and P10B-15 bounded storefront
-synthesis are **Baseline**; P10B-16 through P10B-18 remain **Planned**.
+presentation, the P10B-14 complete-store convergence proof, P10B-15 bounded storefront synthesis,
+and P10B-16 coordinated direction/diversity control are **Baseline**; P10B-17 and P10B-18 remain
+**Planned**.
 
 The current baseline includes canonical storefront/brand contracts, ComponentDefinitionV2 and its
 generated manifest, executable PageBlueprint profiles, registered complete page-set/site-map
@@ -219,7 +220,7 @@ validated instance override`; manual Puck editing is not a dependency. P10B clos
 complete configurations pass deterministic diversity/protected-state gates and a representative
 fingerprint-stratified subset passes retained human review at 375, 768, 1024, and 1440 px.
 
-P10B-01 through P10B-15 are Baseline; P10B-16 through P10B-18 remain Planned. Their ownership
+P10B-01 through P10B-16 are Baseline; P10B-17 and P10B-18 remain Planned. Their ownership
 remains disjoint: P10B-05 owns site-map/PageBlueprint page-set authority,
 while P10B-03 consumes P10B-02 Design DNA compatibility where relevant without copying or replacing
 its `BrandSystem` authority.

@@ -41,6 +41,10 @@ export function registeredBrandSystemForDirection(
   baseline: BrandSystem,
   designSystem: StorefrontDesignSystemV1,
   directionId: StorefrontDesignDirectionId,
+  narrowing?: Readonly<{
+    spacingDensity: "compact" | "standard" | "spacious";
+    surfaceDepth: "flat" | "subtle" | "layered";
+  }>,
 ): BrandSystem {
   const direction = designSystem.directions.find((candidate) => candidate.id === directionId);
   const typography = designSystem.typographyDirections.find(
@@ -49,6 +53,7 @@ export function registeredBrandSystemForDirection(
   if (!direction || !typography) {
     throw new Error("The selected registered storefront direction is unavailable.");
   }
+  const selected = { ...direction, ...narrowing };
   const materialized = brandSystemSchema.parse({
     ...structuredClone(baseline),
     typography: {
@@ -57,13 +62,13 @@ export function registeredBrandSystemForDirection(
       bodyFont: typography.bodyFont,
       scaleRatio: typography.scaleRatio,
     },
-    shape: { radius: radiusByCornerTreatment[direction.cornerTreatment] },
-    spacing: { density: densityBySpacing[direction.spacingDensity] },
-    imagery: { style: imageryByTreatment[direction.imageTreatmentId] },
+    shape: { radius: radiusByCornerTreatment[selected.cornerTreatment] },
+    spacing: { density: densityBySpacing[selected.spacingDensity] },
+    imagery: { style: imageryByTreatment[selected.imageTreatmentId] },
     visualSystem: {
       ...structuredClone(baseline.visualSystem ?? premiumVisualPresets.premiumEditorial),
-      surfaceDepth: direction.surfaceDepth,
-      imageTreatment: visualImageTreatmentByTreatment[direction.imageTreatmentId],
+      surfaceDepth: selected.surfaceDepth,
+      imageTreatment: visualImageTreatmentByTreatment[selected.imageTreatmentId],
     },
   });
   return brandSystemSchema.parse({
