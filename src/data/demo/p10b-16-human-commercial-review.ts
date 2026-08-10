@@ -15,7 +15,8 @@ import { veskifyComponentCapabilityManifest } from "@/components/registry/capabi
 import { canonicalValueFingerprint } from "@/domain/storefront";
 import {
   P10B16_REPRESENTATIVE_DIRECTION_IDS,
-  createP10B16RepresentativeBatch,
+  createP10B16RepresentativeAuthority,
+  createP10B16RepresentativeOutcome,
 } from "./p10b-16-coordinated-directions";
 
 const routeForSurface = {
@@ -33,11 +34,13 @@ const targetForLifecycle = {
 } as const;
 
 export function createP10B16HumanCommercialReviews(
-  fixture: ReturnType<typeof createP10B16RepresentativeBatch> = createP10B16RepresentativeBatch(),
+  fixture: ReturnType<
+    typeof createP10B16RepresentativeAuthority
+  > = createP10B16RepresentativeAuthority(),
 ) {
   return Object.freeze(
     P10B16_REPRESENTATIVE_DIRECTION_IDS.map((directionId) => {
-      const outcome = fixture.outcomes[directionId][0];
+      const outcome = createP10B16RepresentativeOutcome(directionId, 0);
       const materialization = outcome.synthesis.materialization;
       const responsiveEvidence = goldenStoreEvaluationLifecycleStates.flatMap((lifecycle) =>
         goldenStoreEvaluationSurfaces.flatMap((surface) =>

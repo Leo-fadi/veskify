@@ -12,6 +12,7 @@ import {
   type CoordinatedDirectionResult,
   type CoordinatedStorefrontDirectionId,
 } from "@/application/bounded-storefront-synthesis";
+import { getCommercialCollectionSearchProfile } from "@/application/storefront-templates";
 import { createP10B14PremiumEditorialFixture } from "@/data/demo/p10b-14-premium-editorial";
 import { canonicalValueString } from "@/domain/storefront";
 
@@ -121,6 +122,13 @@ describe("P10B-16 governed coordinated direction authority", () => {
       expect(entry.constraints.sharedFrameProfileIds).toContain(
         selection.decision.sharedFrame.profileId,
       );
+      const searchNarrowing = getCommercialCollectionSearchProfile(
+        selection.narrowing.searchProfileId,
+      )?.profile?.commercialCollectionSearch?.designDnaNarrowing;
+      expect(searchNarrowing?.spacingDensity).toContain(
+        selection.narrowing.designSystemSpacingDensity,
+      );
+      expect(searchNarrowing?.surfaceDepth).toContain(selection.narrowing.designSystemSurfaceDepth);
       expect(selection.decision.decisions[0]?.code).toBe("governed-selection-narrowing");
     }
   });

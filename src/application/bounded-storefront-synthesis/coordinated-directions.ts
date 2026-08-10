@@ -196,7 +196,7 @@ function candidateMatchesProfileDesignDna(
   );
   if (!selection) return false;
   const imagePosture = {
-    premiumEditorial: "immersive",
+    premiumEditorial: "editorial",
     modernTechnical: "contained",
     warmApproachable: "editorial",
   }[selection.id] as "contained" | "editorial" | "immersive";
@@ -204,6 +204,8 @@ function candidateMatchesProfileDesignDna(
     getCommercialHomepageProfile(candidate.homepageProfileId)?.profile?.commercialHomepage
       ?.designDnaNarrowing,
     getCommercialCollectionSearchProfile(candidate.collectionProfileId)?.profile
+      ?.commercialCollectionSearch?.designDnaNarrowing,
+    getCommercialCollectionSearchProfile(candidate.searchProfileId)?.profile
       ?.commercialCollectionSearch?.designDnaNarrowing,
     getCommercialPdpProfile(candidate.pdpProfileId)?.profile?.commercialProductDetail
       ?.designDnaNarrowing,

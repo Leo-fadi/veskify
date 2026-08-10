@@ -34,8 +34,8 @@ const packages = [
       "Expressive image-led hierarchy, spacious editorial pacing, considered merchandising and evidence-backed story continuity.",
     constraints: {
       designSystemDirectionIds: ["premiumEditorial"],
-      designSystemSpacingDensities: ["spacious"],
-      designSystemSurfaceDepths: ["layered"],
+      designSystemSpacingDensities: ["standard"],
+      designSystemSurfaceDepths: ["subtle"],
       sharedFrameProfileIds: ["editorial-masthead", "centered-minimal", "commerce-utility"],
       homepageProfileIds: [
         "homepage-editorial-storytelling",
@@ -58,9 +58,9 @@ const packages = [
       responsiveModes: ["content-first", "balanced"],
       designDna: {
         typographyPairings: ["serif-led"],
-        spacingScales: ["generous"],
+        spacingScales: ["balanced"],
         surfacePostures: ["quiet", "layered", "contrast"],
-        controlDensities: ["spacious"],
+        controlDensities: ["balanced"],
         mediaPostures: ["editorial"],
       },
     },

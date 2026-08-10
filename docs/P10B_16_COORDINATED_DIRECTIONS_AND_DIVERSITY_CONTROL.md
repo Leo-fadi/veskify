@@ -44,7 +44,8 @@ complete-store posture without reverting to a legacy fixed compact selection.
 
 ### Premium Editorial (`premium-editorial`)
 
-- serif-led, generous, layered, editorial Design DNA;
+- serif-led editorial Design DNA with balanced core spacing/surface compatibility and airy
+  page-level rhythm;
 - editorial/centered/commerce frame compatibility where the complete page set permits it;
 - editorial, campaign and high-consideration homepage constraints;
 - editorial/campaign discovery and high-consideration/gallery PDP constraints;

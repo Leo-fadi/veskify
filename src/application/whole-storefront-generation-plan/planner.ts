@@ -645,7 +645,7 @@ function assertCommercialHomepageSelection(
     );
   }
   const imagePosture = {
-    premiumEditorial: "immersive",
+    premiumEditorial: "editorial",
     modernTechnical: "contained",
     warmApproachable: "editorial",
   }[selection.directionId] as "contained" | "editorial" | "immersive";
@@ -773,7 +773,7 @@ function assertCommercialProfileFrameAndDna(
     );
   }
   const imagePosture = {
-    premiumEditorial: "immersive",
+    premiumEditorial: "editorial",
     modernTechnical: "contained",
     warmApproachable: "editorial",
   }[selection.directionId];

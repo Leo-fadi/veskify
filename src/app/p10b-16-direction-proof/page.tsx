@@ -1,6 +1,7 @@
 import {
   P10B16_REPRESENTATIVE_DIRECTION_IDS,
-  createP10B16RepresentativeBatch,
+  createP10B16RepresentativeAuthority,
+  createP10B16RepresentativeOutcome,
 } from "@/data/demo/p10b-16-coordinated-directions";
 import { P10B15SynthesisProofClient } from "../p10b-15-synthesis-proof/proof-client";
 
@@ -23,8 +24,8 @@ export default async function P10B16DirectionProofPage({
   const alternative = Math.min(2, Math.max(0, Number.parseInt(query.alternative ?? "0", 10) || 0));
   const route = query.route ?? "/";
   const locale = query.locale === "fi" ? "fi" : "en";
-  const proof = createP10B16RepresentativeBatch();
-  const outcome = proof.outcomes[directionId][alternative];
+  const proof = createP10B16RepresentativeAuthority();
+  const outcome = createP10B16RepresentativeOutcome(directionId, alternative);
   const page = outcome.synthesis.materialization.snapshot.pages.find(
     (candidate) => candidate.slug === route,
   );
