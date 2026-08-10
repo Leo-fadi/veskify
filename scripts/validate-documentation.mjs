@@ -32,6 +32,8 @@ const activeMarkdownFiles = [
   "docs/P10B_06_COMMERCIAL_SHARED_FRAME_FAMILIES.md",
   "docs/P10B_07_HERO_EDITORIAL_CAMPAIGN_PROOF_FAMILIES.md",
   "docs/P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md",
+  "docs/P10B_12_CONTENT_AND_SUPPORT_PAGE_FAMILIES.md",
+  "docs/P10B_11_COMMERCIAL_PDP_PROFILE_LIBRARY.md",
   "docs/P10B_10_COMMERCIAL_COLLECTION_SEARCH_PROFILES.md",
   "docs/VESKO_OPENAPI_CONTRACT_AUDIT.md",
   "docs/VESKO_VESKIFY_INTEGRATION_MATRIX.md",
@@ -177,7 +179,7 @@ requireText("docs/P10A_PHASE_CLOSURE.md", [
 ]);
 
 requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
-  "**Status:** Binding architecture. P10B-01 through P10B-11 and P10B-13 are **Baseline**;\nP10B-12 and P10B-14 through P10B-18 remain **Planned**.",
+  "**Status:** Binding architecture. P10B-01 through P10B-13 are **Baseline**; P10B-14 through P10B-18\nremain **Planned**.",
   "**Phase:** P10B — Commercial Storefront Generation System v1",
   "Veskify owns storefront creation",
   "Vesko owns operational commerce truth",
@@ -227,16 +229,16 @@ for (const relativePath of [
 }
 
 requireText("docs/DEVELOPMENT_GUIDE.md", [
-  "Phase 9 is closed by product-owner handoff, and\nP10A is **Baseline / closed**",
-  "P10B is the active development phase. P10B-01 commercial grammar, P10B-02 parametric\nBrandSystem / Design DNA, P10B-03 component anatomy, P10B-04 responsive image/art-direction\nauthority, P10B-05 site-map/page-family authority, P10B-06 commercial shared-frame families,\nP10B-07 hero/editorial/campaign/proof families, P10B-08 canonical product-card authority,\nP10B-09 commercial homepage profiles, P10B-10 commercial collection/search profiles, P10B-11\ncommercial PDP profiles, and P10B-13 commerce-utility presentation are **Baseline**; P10B-12 and\nP10B-14 through P10B-18 remain **Planned**",
+  "Phase 9 is\nclosed by product-owner handoff, and P10A is **Baseline / closed**",
+  "P10B-09 commercial homepage profiles, P10B-10 commercial collection/search profiles, P10B-11\ncommercial PDP profiles, P10B-12 content/support page families, and P10B-13 commerce-utility\npresentation are **Baseline**; P10B-14 through P10B-18 remain **Planned**.",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
   "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 19) {
-  failures.push("Delivery tracker must contain exactly nineteen completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 20) {
+  failures.push("Delivery tracker must contain exactly twenty completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -258,6 +260,7 @@ const expectedPlannedP10bChecklistIds = lockedP10BTasks
         "P10B-09",
         "P10B-10",
         "P10B-11",
+        "P10B-12",
         "P10B-13",
       ].includes(taskId),
   );
@@ -273,12 +276,13 @@ if (
   !/^\| ☑\s+\| P10B-09\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-10\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-11\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-12\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-13\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must mark P10B-01 through P10B-11 and P10B-13 Baseline and keep P10B-12 and P10B-14 through P10B-18 Planned and unchecked",
+    "Delivery tracker must mark P10B-01 through P10B-13 Baseline and keep P10B-14 through P10B-18 Planned and unchecked",
   );
 }
 
@@ -291,7 +295,31 @@ requireText("docs/P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md", [
   "`homepage-collection-gateway`",
   "`homepage-high-consideration`",
   "25/25 passing",
-  "P10B-10 through P10B-18 remain Planned",
+]);
+
+requireText("docs/P10B_12_CONTENT_AND_SUPPORT_PAGE_FAMILIES.md", [
+  "**Status:** Baseline",
+  "fifteen",
+  "Callers cannot supply a factual body",
+  "P10B-05 remains the sole owner",
+  "P10B-06 shared frame",
+  "P10B-07 editorial renderer",
+  "Provider calls:** Zero",
+  "61",
+]);
+
+requireText("docs/P10B_11_COMMERCIAL_PDP_PROFILE_LIBRARY.md", [
+  "**Status:** Baseline",
+  "`pdp-standard-commerce`",
+  "`pdp-high-consideration`",
+  "`pdp-gallery-led`",
+  "`pdp-variant-led`",
+  "`dynamicProductDetail`",
+  "P10B-04 remains the only responsive product-media authority",
+  "P10B-08 canonical product-card renderer",
+  "375, 768, 1024 and 1440 px",
+  "save/reload and publication preservation",
+  "P10B-10, P10B-12 content/support, and P10B-13 utility presentation\nare Baseline; P10B-14 through P10B-18 remain Planned",
 ]);
 
 requireText("docs/P10B_10_COMMERCIAL_COLLECTION_SEARCH_PROFILES.md", [

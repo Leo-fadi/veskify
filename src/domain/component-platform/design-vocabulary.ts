@@ -301,7 +301,7 @@ export const narrativeRoleDefinitions = [
     accessibilityRequirement: "standard",
   }),
   roles("brand-story", {
-    allowedPageTypes: ["home", "collection", "product"],
+    allowedPageTypes: ["home", "collection", "product", "content", "landing"],
     visualWeights: ["medium", "heavy"],
     commercialPriority: "supporting",
     maxOccurrences: 1,
@@ -331,7 +331,7 @@ export const narrativeRoleDefinitions = [
     accessibilityRequirement: "standard",
   }),
   roles("campaign", {
-    allowedPageTypes: ["home", "collection"],
+    allowedPageTypes: ["home", "collection", "landing"],
     visualWeights: ["medium", "heavy", "dominant"],
     commercialPriority: "standard",
     maxOccurrences: 1,

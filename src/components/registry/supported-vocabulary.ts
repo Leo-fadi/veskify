@@ -10,6 +10,7 @@ import {
   homepageTrustDefinition,
 } from "./homepage-commerce";
 import { commerceUtilityDefinition } from "./commerce-utility";
+import { contentSupportDefinition } from "./content-support";
 
 function registeredVariants(definition: Readonly<{ variants: readonly { id: string }[] }>) {
   return definition.variants.map(({ id }) => id);
@@ -145,6 +146,10 @@ export const supportedSectionManifest = {
   homepageProof: {
     allowedPageTypes: registeredPageTypes(homepageProofDefinition),
     variants: registeredVariants(homepageProofDefinition),
+  },
+  contentSupport: {
+    allowedPageTypes: registeredPageTypes(contentSupportDefinition),
+    variants: registeredVariants(contentSupportDefinition),
   },
 } as const;
 

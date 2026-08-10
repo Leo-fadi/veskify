@@ -68,6 +68,7 @@ const pageBlueprintFlowRuleIdSchema = z
 const pageBlueprintProfileVersionSchema = z.string().regex(/^\d+\.\d+\.\d+$/);
 
 const commercialHomepageFingerprintSchema = z.string().trim().min(1).max(240);
+const commercialContentSupportFingerprintSchema = z.string().trim().min(1).max(240);
 const commercialProductDetailFingerprintSchema = z.string().trim().min(1).max(240);
 const commercialCollectionSearchFingerprintSchema = z.string().trim().min(1).max(240);
 const commercialUtilityFingerprintSchema = z.string().trim().min(1).max(240);
@@ -455,6 +456,81 @@ export const commercialUtilityProfileAuthoritySchema = z
     }
   });
 
+/** Governed fact-bound authority for canonical content/support PageBlueprints. */
+export const commercialContentSupportProfileAuthoritySchema = z
+  .object({
+    family: z.literal("commercial-content-support"),
+    pageFamilyIds: z
+      .array(
+        z.enum([
+          "about",
+          "contact",
+          "store-locations",
+          "faq",
+          "shipping-information",
+          "returns-information",
+          "policy-legal",
+          "campaign-editorial",
+          "generic-content",
+        ]),
+      )
+      .min(1),
+    compatibleSharedFrameProfileIds: z.array(commercialSharedFrameProfileIdSchema).min(1),
+    defaultSharedFrameProfileId: commercialSharedFrameProfileIdSchema,
+    evidencePolicy: z.literal("current-approved-brief-facts"),
+    responsiveArchitecture: z.tuple([
+      z
+        .object({
+          breakpoint: z.literal("mobile"),
+          viewport: z.literal(375),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("tablet"),
+          viewport: z.literal(768),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("desktop"),
+          viewport: z.literal(1024),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("wide"),
+          viewport: z.literal(1440),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+    ]),
+    structuralSignature: commercialContentSupportFingerprintSchema,
+    structuralFingerprint: commercialContentSupportFingerprintSchema,
+  })
+  .strict()
+  .superRefine((authority, context) => {
+    if (
+      !authority.compatibleSharedFrameProfileIds.includes(authority.defaultSharedFrameProfileId)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["defaultSharedFrameProfileId"],
+        message: "The default shared frame must be compatible with the profile.",
+      });
+    }
+    if (new Set(authority.pageFamilyIds).size !== authority.pageFamilyIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["pageFamilyIds"],
+        message: "Content/support page-family IDs must be unique.",
+      });
+    }
+  });
+
 const pageBlueprintComponentSelectionSchema = z
   .object({
     slotId: z.string().trim().min(1).max(80),
@@ -522,6 +598,7 @@ export const executablePageBlueprintProfileSchema = z
     ]),
     accessibilityContract: z.literal("registered-component-contracts"),
     commercialHomepage: commercialHomepageProfileAuthoritySchema.optional(),
+    commercialContentSupport: commercialContentSupportProfileAuthoritySchema.optional(),
     commercialProductDetail: commercialProductDetailProfileAuthoritySchema.optional(),
     commercialCollectionSearch: commercialCollectionSearchProfileAuthoritySchema.optional(),
     commercialUtility: commercialUtilityProfileAuthoritySchema.optional(),
@@ -781,6 +858,9 @@ export type PageBlueprintCompositionContract = z.infer<
 export type ExecutablePageBlueprintProfile = z.infer<typeof executablePageBlueprintProfileSchema>;
 export type CommercialHomepageProfileAuthority = z.infer<
   typeof commercialHomepageProfileAuthoritySchema
+>;
+export type CommercialContentSupportProfileAuthority = z.infer<
+  typeof commercialContentSupportProfileAuthoritySchema
 >;
 export type CommercialProductDetailProfileAuthority = z.infer<
   typeof commercialProductDetailProfileAuthoritySchema

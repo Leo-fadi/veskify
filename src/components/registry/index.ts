@@ -8,6 +8,8 @@ export * from "./dynamic-collection-commerce";
 export * from "./dynamic-commerce-bridge";
 export * from "./homepage-commerce";
 export * from "./homepage-commerce-bridge";
+export * from "./content-support";
+export * from "./content-support-bridge";
 export * from "./collection";
 export * from "./homepage";
 export * from "./product";

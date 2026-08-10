@@ -644,7 +644,7 @@ describe("P10B-05 site-map and page-family authority", () => {
     expect(() => materialize(withoutGeneric)).not.toThrow();
     expect(listPageFamilyDefinitions().find(({ id }) => id === "generic-content")).toMatchObject({
       presenceAuthority: { kind: "optional", cardinality: "repeatable" },
-      omissionBehavior: "never",
+      omissionBehavior: "omit-optional-or-fail-required",
     });
 
     const duplicateSingleton = structuredClone(materialize().snapshot);

@@ -674,6 +674,7 @@ function makeSnapshot(
     brandSystem: structuredClone(karvonenBrandSystem),
     navigation: structuredClone(navigation),
     pages: structuredClone([homePage, collectionPage, productPage]),
+    contentSupportFactDocuments: [],
     catalogueRef: "catalogue_karvonen",
     createdAt: "2026-07-21T09:00:00+03:00",
     createdBy,

@@ -1,12 +1,12 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01 through P10B-11 and P10B-13 are **Baseline**;
-P10B-12 and P10B-14 through P10B-18 remain **Planned**.
+**Status:** Binding architecture. P10B-01 through P10B-13 are **Baseline**; P10B-14 through P10B-18
+remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 9 August 2026, P10B-11 commercial PDP profiles and P10B-13 commerce utility
-presentation pages
+**Baseline:** 9 August 2026, P10B-10 collection/search, P10B-11 PDP, P10B-12 content/support, and
+P10B-13 commerce utility presentation profiles
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -46,7 +46,9 @@ P10B-10 is Baseline under
 [`P10B_10_COMMERCIAL_COLLECTION_SEARCH_PROFILES.md`](P10B_10_COMMERCIAL_COLLECTION_SEARCH_PROFILES.md).
 P10B-11 is Baseline under
 [`P10B_11_COMMERCIAL_PDP_PROFILE_LIBRARY.md`](P10B_11_COMMERCIAL_PDP_PROFILE_LIBRARY.md).
-P10B is **Partial / active**; P10B-12 and P10B-14 through P10B-18 remain Planned.
+P10B-12 is Baseline under
+[`P10B_12_CONTENT_AND_SUPPORT_PAGE_FAMILIES.md`](P10B_12_CONTENT_AND_SUPPORT_PAGE_FAMILIES.md).
+P10B is **Partial / active**; P10B-14 through P10B-18 remain Planned.
 
 ## 2. Storefront and commerce ownership
 
@@ -333,10 +335,9 @@ commercial review. It does not wait for P10B-18 and does not itself complete the
 
 ## 13. Locked implementation sequence
 
-P10B-01 through P10B-11 and P10B-13 are **Baseline**. P10B-12 and P10B-14 through P10B-18 remain
-**Planned**. Parent tasks may use A/B/C slices only when required to keep contract,
-renderer, profile/generation, or evidence PRs reviewable. A parent remains Planned or Partial until
-every required slice and its evidence passes.
+P10B-01 through P10B-13 are **Baseline**. P10B-14 through P10B-18 are **Planned**. Parent tasks
+may use A/B/C slices only when required to keep contract, renderer, profile/generation, or evidence
+PRs reviewable. A parent remains Planned or Partial until every required slice and its evidence passes.
 
 | Task                                                             | Locked outcome                                                                                                                                                   | Dependency                                                           |
 | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
@@ -490,13 +491,24 @@ four-width browser authority. See
 
 ### P10B-12 — Content and support page families
 
-- Register About/brand story, Contact/locations, FAQ, shipping/returns, policy,
-  campaign/editorial, and generic content profiles; provide multiple meaningful compositions where
-  commercially useful.
-- Prove approved-fact provenance, localization, site-map/navigation reachability, omission/fallback,
-  responsive output, snapshot preservation, and publication.
-- Reject fabricated store locations, policy, certification, guarantee, delivery, compliance, or
-  service claims.
+**Status:** Baseline. Fifteen registered, structurally distinct profiles now cover About,
+Contact/locations, FAQ, service/policy, generic content, and campaign/editorial families through
+the existing P10B-05 page family. Two About, Contact, locations, FAQ, and generic profiles plus
+three campaign profiles provide meaningful structural alternatives; shipping, returns, and policy
+keep distinct approved facts where their reading structure is shared.
+
+- Resolve factual content only from exact current approved Storefront Design Brief evidence. The
+  strict localized fact document preserves source/revision/fingerprint and is rechecked at
+  materialization, rendering, and compilation. Caller declarations never authorize facts.
+- Preserve P10B-05 route, locale, navigation, and page-set authority; use P10B-06 frames and
+  P10B-07 editorial/campaign renderers without a second page graph, component registry, or CMS.
+- Reject missing, stale, revoked, unapproved, malformed, mismatched, or wrong-family evidence;
+  fail required facts and omit optional ones only through registered P10B-05 policy. Never invent
+  locations, policy, certification, guarantee, delivery, compliance, or service claims.
+- Preserve the validated document through `StorefrontSnapshot`, save/reload, deterministic publish
+  compilation, and semantic rendering. Deterministic cases and 61 zero-provider Chromium checks at
+  375/768/1024/1440 px establish the implemented boundary. See
+  [`P10B_12_CONTENT_AND_SUPPORT_PAGE_FAMILIES.md`](P10B_12_CONTENT_AND_SUPPORT_PAGE_FAMILIES.md).
 
 ### P10B-13 — Commerce utility presentation pages
 
@@ -625,6 +637,6 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01 through P10B-11 and P10B-13 are Baseline under the disjoint ownership constraints in
+P10B-01 through P10B-13 are Baseline under the disjoint ownership constraints in
 section 15. No later implementation task is complete merely because this architecture is approved
 or the completed foundations passed.

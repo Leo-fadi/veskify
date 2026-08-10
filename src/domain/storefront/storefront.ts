@@ -13,6 +13,19 @@ import {
   approvedAssetPlacementOperationSchema,
   approvedAssetPresentationSchema,
 } from "./approved-asset-placement";
+import { contentSupportFactDocumentSchema } from "./content-support-facts";
+import { pageFactEvidenceReferenceSchema } from "./page-fact-evidence";
+
+export {
+  pageFactEvidenceReferenceSchema,
+  pageFactEvidenceRequestSchema,
+  pageFactEvidenceSourceSchema,
+} from "./page-fact-evidence";
+export type {
+  PageFactEvidenceReference,
+  PageFactEvidenceRequest,
+  PageFactEvidenceSource,
+} from "./page-fact-evidence";
 
 const recordSchema = z.record(z.string(), z.unknown());
 const componentTokenSchema = z
@@ -96,28 +109,6 @@ export const pageFamilyCommerceContextSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("collection"), collectionId: idSchema }).strict(),
   z.object({ kind: z.literal("product"), productId: idSchema }).strict(),
 ]);
-export const pageFactEvidenceSourceSchema = z.enum([
-  "merchant-approved",
-  "vesko-authoritative",
-  "approved-source-evidence",
-]);
-
-export const pageFactEvidenceRequestSchema = z
-  .object({
-    source: pageFactEvidenceSourceSchema,
-    authorityId: idSchema,
-    revision: z.string().trim().min(1).max(120),
-  })
-  .strict();
-
-export const pageFactEvidenceReferenceSchema = pageFactEvidenceRequestSchema
-  .extend({
-    status: z.literal("approved"),
-    approvalAuthorityId: idSchema,
-    approvalFingerprint: z.string().trim().min(1),
-  })
-  .strict();
-
 export const pageFamilyAuthoritySchema = z
   .object({
     familyId: pageFamilyIdSchema,
@@ -332,6 +323,7 @@ export const storefrontSnapshotSchema = z
     navigation: navigationModelSchema,
     sharedFrame: sharedFrameModelSchema.optional(),
     pages: z.array(pageModelSchema).min(1),
+    contentSupportFactDocuments: z.array(contentSupportFactDocumentSchema).default([]),
     catalogueRef: idSchema,
     createdAt: isoDateTimeSchema,
     createdBy: z.enum(["user", "agent", "system"]),
@@ -365,6 +357,17 @@ export const storefrontSnapshotSchema = z
       });
     }
 
+    const contentSupportDocumentIds = snapshot.contentSupportFactDocuments.map(
+      (document) => document.id,
+    );
+    if (new Set(contentSupportDocumentIds).size !== contentSupportDocumentIds.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Content/support fact document IDs must be unique within a snapshot.",
+        path: ["contentSupportFactDocuments"],
+      });
+    }
+
     const knownPageIds = new Set(pageIds);
     for (const [area, items] of Object.entries(snapshot.navigation)) {
       items.forEach((item, index) => {
@@ -385,9 +388,6 @@ export type PageType = z.infer<typeof pageTypeSchema>;
 export type PageFamilyId = z.infer<typeof pageFamilyIdSchema>;
 export type PageFamilyAuthority = z.infer<typeof pageFamilyAuthoritySchema>;
 export type PageFamilyCommerceContext = z.infer<typeof pageFamilyCommerceContextSchema>;
-export type PageFactEvidenceSource = z.infer<typeof pageFactEvidenceSourceSchema>;
-export type PageFactEvidenceRequest = z.infer<typeof pageFactEvidenceRequestSchema>;
-export type PageFactEvidenceReference = z.infer<typeof pageFactEvidenceReferenceSchema>;
 export type PageModel = z.infer<typeof pageModelSchema>;
 export type NavigationItem = z.infer<typeof navigationItemSchema>;
 export type NavigationModel = z.infer<typeof navigationModelSchema>;
