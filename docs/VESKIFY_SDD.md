@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 10 August 2026, P10B-15 bounded storefront synthesis and narrative engine |
+| Verified baseline         | 10 August 2026, P10B-16 coordinated directions and diversity control |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -18,6 +18,7 @@
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
 | 1.3.0 P10B-15 | 10 August 2026 | P10B-15 delivery | Generalize complete-store generation into one versioned deterministic bounded synthesis and cross-page narrative authority with exact evidence, commerce, asset, Design DNA, page/profile/frame/component fingerprints; three complete outcomes; lifecycle publication; browser evidence; and retained human review. |
+| 1.3.0 P10B-16 | 10 August 2026 | P10B-16 delivery | Register Premium Editorial, Modern Technical and Minimal Commerce as versioned narrowing packages; add deterministic direction/diversity fingerprints, duplicate and near-duplicate classification, bounded repetition avoidance, nine representative complete outcomes and retained browser/human evidence. |
 | 1.3.0 P10B-14 | 10 August 2026 | P10B-14 delivery | Prove one 17-route Premium Editorial storefront through current Design DNA, site-map, profile, proposal, snapshot, persistence, publication, canonical renderer, four-width browser and retained human-review authority. |
 | 1.3.0 P10B-10 | 9 August 2026 | P10B-10 delivery | Establish four fingerprinted commercial collection/search PageBlueprint profiles with exact canonical commerce, product-card and media authority, transient fail-closed zero-result context, deterministic lifecycle reachability, and retained four-width browser evidence. |
 | 1.3.0 P10B-11 | 9 August 2026 | P10B-11 delivery | Establish four fingerprinted commercial PDP PageBlueprint profiles inside the canonical dynamic PDP runtime, retain generic canonical option/media/card authority, ground optional high-consideration support in approved evidence, preserve lifecycle/publishing, and provide four-width browser evidence. |
@@ -81,7 +82,7 @@ commercial shared-frame families, P10B-07 hero/editorial/campaign/proof families
 canonical product-card authority, P10B-09 commercial homepage profiles, and P10B-10 commercial
 collection/search profiles, P10B-11 commercial PDP profiles, P10B-12 content/support page families,
 P10B-13 commerce utility presentation, the P10B-14 Premium Editorial complete-storefront vertical
-slice, and the P10B-15 bounded synthesis and narrative engine are Baseline. P10B-16 through P10B-18
+slice, the P10B-15 bounded synthesis engine and P10B-16 direction/diversity authority are Baseline. P10B-17 and P10B-18
 remain Planned. The
 current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
@@ -222,7 +223,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
-| Commercial storefront generation system              | **Partial**  | P10B-01 through P10B-14 provide the commercial grammar, Design DNA, assets, page/frame/component/profile/utility authorities and first complete 17-route proof; P10B-15 generalizes them into deterministic bounded complete-store synthesis with cross-page narrative and retained lifecycle/browser/human evidence. Direction-scale diversity and phase-wide quality closure remain Planned. |
+| Commercial storefront generation system              | **Partial**  | P10B-01 through P10B-14 provide the commercial grammar, Design DNA, assets, page/frame/component/profile/utility authorities and first complete 17-route proof; P10B-15 generalizes them into deterministic bounded complete-store synthesis; P10B-16 adds three coordinated constraint packages, structural diversity classification and repetition control with retained lifecycle/browser/human evidence. Phase-wide responsive/performance and 100+ quality/scale closure remain Planned. |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
 
@@ -811,8 +812,8 @@ required 375/768/1024/1440 widths. The existing human commercial-review protocol
 route and component/art-direction fingerprints. See
 [`P10B_14_PREMIUM_EDITORIAL_COMPLETE_STOREFRONT_VERTICAL_SLICE.md`](P10B_14_PREMIUM_EDITORIAL_COMPLETE_STOREFRONT_VERTICAL_SLICE.md).
 
-This establishes one representative complete store. P10B-15 now generalizes that convergence path;
-P10B-16 direction/diversity authority, P10B-17 phase-wide
+This establishes one representative complete store. P10B-15 generalizes that convergence path and
+P10B-16 now governs direction/diversity authority; P10B-17 phase-wide
 responsive/accessibility/performance closure and P10B-18 repeated quality-and-scale gate remain
 separate.
 
@@ -841,10 +842,36 @@ dedicated four-width browser proof and three passing 160-scenario retained human
 cover the stated P10B-15 outcome. See
 [`P10B_15_BOUNDED_STOREFRONT_SYNTHESIS_AND_NARRATIVE_ENGINE.md`](P10B_15_BOUNDED_STOREFRONT_SYNTHESIS_AND_NARRATIVE_ENGINE.md).
 
-This is the bounded synthesis space, not the P10B-16 direction-scale duplicate/near-duplicate
-controller or the P10B-18 100+ configuration commercial-quality gate.
+This is the bounded synthesis space consumed by the P10B-16 direction-scale
+duplicate/near-duplicate controller, not the P10B-18 100+ configuration commercial-quality gate.
 
-### 10.17 Remaining planned commercial generation authority
+### 10.17 P10B-16 coordinated direction and diversity authority
+
+One versioned registry defines Premium Editorial, Modern Technical and Minimal Commerce as
+coordinated constraint packages over the existing P10B-15 authority. Packages narrow current
+Design DNA finishing, frames, PageBlueprint profiles, meaningful component anatomies, optional
+factual page composition, narrative, merchandising, art direction, density and responsive posture.
+They add no direction-specific renderer, template, page graph, component registry, token authority
+or executable code. Exact package identity/version/fingerprint and every referenced capability are
+revalidated before synthesis; stale, unsupported or incompatible selection fails before proposal
+compilation.
+
+Each selected store receives a cross-page direction fingerprint and an independent diversity
+fingerprint spanning non-colour Design DNA, page set, profiles, frame, component anatomy, bounded
+parameters, art, density, narrative and responsive posture. Deterministic comparison separates
+exact duplicates, palette-only differences, shallow component swaps, near duplicates and materially
+different stores. A material result requires changed rendered architecture; direction names or
+colour alone never qualify. Batch selection rejects previously used exact/near candidates and fails
+closed when valid novelty is exhausted.
+
+The retained batch has three complete outcomes per direction and preserves current required
+home/search/commerce/utility authority while narrowing only optional approved-fact pages. It passes
+save/reload and compiled publication, protects commerce/evidence/product media, renders at
+375/768/1024/1440, and binds three passing reviews to exact direction/diversity/snapshot
+fingerprints. See
+[`P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md`](P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md).
+
+### 10.18 Remaining planned commercial generation authority
 
 `BrandSystem` owns merchant-wide bounded Design DNA across semantic colour, approved font roles and
 pairing, type scale/weights, spacing and section rhythm, gutters/containers, grid/card/control
@@ -884,7 +911,7 @@ drift, and exact or meaningful near duplicates. A deterministic storefront-desig
 covers structural and non-colour dimensions; hundreds or thousands of outcomes arise from bounded
 combinations, not manually authored templates.
 
-### 10.18 Commercial acceptance
+### 10.19 Commercial acceptance
 
 P10B closes only when at least 100 complete bounded storefront configurations pass deterministic
 validity, protected-state, exact-duplicate, near-duplicate, and structural-distribution analysis,
@@ -1025,7 +1052,7 @@ The binding sequence is:
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
    formal P10A phase closure record.
 2. **P10B — Commercial Storefront Generation System v1.** **Partial / active phase.** P10B-01
-   through P10B-15 are Baseline; P10B-16 through P10B-18 remain Planned.
+   through P10B-16 are Baseline; P10B-17 and P10B-18 remain Planned.
    Deliver complete commercially credible storefronts with bounded material diversity through
    registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and

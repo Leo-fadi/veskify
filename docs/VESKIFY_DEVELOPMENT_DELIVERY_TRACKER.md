@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 10 August 2026, P10B-15 bounded storefront synthesis and narrative engine                                           |
+| Baseline                    | 10 August 2026, P10B-16 coordinated directions and diversity control                                                |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -56,7 +56,7 @@ required evidence are accepted.
 | ☑    | P10B-13 | Commerce utility presentation pages                  | **Baseline** | Utility presentation            | P10B-03, P10B-05, P10B-06, P10B-08 | Six profiles plus route-local loading, canonical action boundary, snapshot/publication preservation, 16 responsive views |
 | ☑    | P10B-14 | Premium Editorial complete-storefront vertical slice | **Baseline** | Storefront generation and QA    | Minimum P10B-02 through P10B-13    | 17 routes; canonical generation/save/publish; 15 screenshots; passing 160-scenario human review                          |
 | ☑    | P10B-15 | Bounded storefront synthesis and narrative engine    | **Baseline** | Storefront generation           | P10B-14                            | 25-case matrix; three complete outcomes; lifecycle; four-width browser; 480-scenario retained human review               |
-| ☐    | P10B-16 | Coordinated directions and diversity control         | **Planned**  | Direction/evaluation authority  | P10B-15                            | Fingerprints, duplicate/near-duplicate and pairwise diversity                                                            |
+| ☑    | P10B-16 | Coordinated directions and diversity control         | **Baseline** | Direction/evaluation authority  | P10B-15                            | Three packages; nine outcomes; fingerprint/classification/repetition control; browser and retained human review          |
 | ☐    | P10B-17 | Responsive, accessibility and performance closure    | **Planned**  | Design system and QA            | P10B-16 and implemented families   | Four-width EN/FI geometry, a11y, performance and visual evidence                                                         |
 | ☐    | P10B-18 | Commercial quality and scale gate                    | **Planned**  | Product owner, generation, QA   | All prior P10B tasks               | 100+ configurations and fingerprint-stratified human review                                                              |
 
@@ -164,7 +164,7 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 through P10B-15 are **Baseline**. P10B-16 through P10B-18 remain **Planned**. The remaining
+P10B-01 through P10B-16 are **Baseline**. P10B-17 and P10B-18 remain **Planned**. The remaining
 Done conditions are implementation gates, not claims about the current repository.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
@@ -459,20 +459,25 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
 - **Non-goal:** Arbitrary trees/styles, a second synthesis representation, or P10B-16
   duplicate/near-duplicate and direction-scale authority.
 
-#### P10B-16 — Coordinated directions and diversity control
+#### P10B-16 — Coordinated directions and diversity control — **Baseline**
 
 - **Outcome:** Make Premium Editorial, Modern Technical, and Minimal Commerce coordinated constraint
   packages and prevent duplicates/near duplicates.
-- **Authority:** Existing direction-selection authority plus deterministic storefront-design
-  fingerprint/evaluation.
+- **Authority:** Versioned Premium Editorial, Modern Technical and Minimal Commerce narrowing
+  packages over P10B-15 plus deterministic direction/diversity fingerprint authority.
 - **Depends on:** P10B-15.
-- **Done when:** Fingerprints cover Design DNA, page set/profiles, frame, anatomies/variants,
-  structural parameters, image posture, density/responsive posture, and narrative composition;
-  exact and meaningful near duplicates fail, and pairwise stores differ materially beyond colour.
+- **Done:** Three canonical packages validate current Design DNA/profile/frame/anatomy/page/evidence
+  references and drive the canonical proposal/snapshot lifecycle. Fingerprints cover Design DNA,
+  page set/profiles, frame, anatomies/variants, bounded parameters, image posture,
+  density/responsive posture and narrative composition; comparison classifies exact, palette-only,
+  shallow, near and material outcomes; repetition control fails closed when novelty is exhausted.
 - **Fail closed:** Fixed-template/token/page direction authority, incompatible references,
   colour-only differences, and fingerprints that omit material structure are rejected.
-- **Evidence:** Determinism, exact/near-duplicate fixtures, pairwise structural scoring, direction
-  compatibility, complete-store generation, and representative visual evidence.
+- **Evidence:** 31 focused unit/integration cases; nine representative complete outcomes; exact
+  save/reload and compiled publication; protected commerce/evidence/media parity; dedicated
+  375/768/1024/1440 browser coverage; three retained human commercial reviews and one exact
+  evidence manifest. See
+  [`P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md`](P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md).
 - **Non-goal:** Thousands of manually authored templates.
 
 #### P10B-17 — Responsive, accessibility and performance closure

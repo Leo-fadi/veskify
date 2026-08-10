@@ -213,6 +213,10 @@ function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
     );
     return createWholeStorefrontGenerationPlan(input.planningInput, {
       directionId: input.plan.designSystemSelection.directionId,
+      designSystemNarrowing: {
+        spacingDensity: input.plan.designSystemSelection.spacingDensity,
+        surfaceDepth: input.plan.designSystemSelection.surfaceDepth,
+      },
       ...(homepageMaterialization?.commercialHomepage
         ? {
             homepageProfileId: commercialHomepageProfileIdSchema.parse(
@@ -1143,6 +1147,10 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
           original.brandSystem,
           input.planningInput.recipeContext.designSystem,
           plan.designSystemSelection.directionId,
+          {
+            spacingDensity: plan.designSystemSelection.spacingDensity,
+            surfaceDepth: plan.designSystemSelection.surfaceDepth,
+          },
         )
       : applyRegisteredTokenRefinement(original.brandSystem, plan.tokenRefinementPlan);
   add(

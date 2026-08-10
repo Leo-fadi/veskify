@@ -81,6 +81,7 @@ export function P10B15SynthesisProofClient({
   snapshotFingerprint,
   synthesisFingerprint,
   target,
+  p10b16,
 }: {
   aggregate: ProjectAggregate;
   evidenceReferences: readonly PageFactEvidenceReference[];
@@ -91,6 +92,12 @@ export function P10B15SynthesisProofClient({
   snapshotFingerprint: string;
   synthesisFingerprint: string;
   target: "proposal" | "editor" | "preview" | "published";
+  p10b16?: Readonly<{
+    directionId: string;
+    alternative: number;
+    directionFingerprint: string;
+    diversityFingerprint: string;
+  }>;
 }) {
   const [lastUtilityIntent, setLastUtilityIntent] = useState<CommerceUtilityIntent | null>(null);
   const page = snapshot.pages.find((candidate) => candidate.id === pageId)!;
@@ -145,6 +152,10 @@ export function P10B15SynthesisProofClient({
       data-page-profile={page.pageFamily!.profileId}
       data-page-route={page.slug}
       data-p10b-15-synthesis={intent}
+      data-p10b-16-direction={p10b16?.directionId}
+      data-p10b-16-alternative={p10b16?.alternative}
+      data-direction-fingerprint={p10b16?.directionFingerprint}
+      data-diversity-fingerprint={p10b16?.diversityFingerprint}
       data-render-target={target}
       data-rendered-locale={locale}
       data-shared-frame-profile={snapshot.sharedFrame!.profileId}

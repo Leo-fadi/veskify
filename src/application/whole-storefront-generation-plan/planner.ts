@@ -645,7 +645,7 @@ function assertCommercialHomepageSelection(
     );
   }
   const imagePosture = {
-    premiumEditorial: "immersive",
+    premiumEditorial: "editorial",
     modernTechnical: "contained",
     warmApproachable: "editorial",
   }[selection.directionId] as "contained" | "editorial" | "immersive";
@@ -773,7 +773,7 @@ function assertCommercialProfileFrameAndDna(
     );
   }
   const imagePosture = {
-    premiumEditorial: "immersive",
+    premiumEditorial: "editorial",
     modernTechnical: "contained",
     warmApproachable: "editorial",
   }[selection.directionId];
@@ -1867,6 +1867,10 @@ export function createWholeStorefrontGenerationPlan(
     homepageProfileId?: CommercialHomepageProfileId;
     pdpProfileId?: CommercialPdpProfileId;
     collectionProfileId?: CommercialCollectionSearchProfileId;
+    designSystemNarrowing?: Readonly<{
+      spacingDensity: "compact" | "standard" | "spacious";
+      surfaceDepth: "flat" | "subtle" | "layered";
+    }>;
     tokenRefinementPlan?: RegisteredTokenRefinementPlan | null;
   } = {},
 ): WholeStorefrontGenerationPlan {
@@ -1922,9 +1926,10 @@ export function createWholeStorefrontGenerationPlan(
     typographyDirectionId: selectedDirection.typographyDirectionId,
     imageTreatmentId: selectedDirection.imageTreatmentId,
     productCardFamilyId: selectedDirection.productCardFamilyId,
-    spacingDensity: selectedDirection.spacingDensity,
+    spacingDensity:
+      options.designSystemNarrowing?.spacingDensity ?? selectedDirection.spacingDensity,
     cornerTreatment: selectedDirection.cornerTreatment,
-    surfaceDepth: selectedDirection.surfaceDepth,
+    surfaceDepth: options.designSystemNarrowing?.surfaceDepth ?? selectedDirection.surfaceDepth,
     componentSelections: selectedDirection.componentSelections,
     collectionPresentation: selectedDirection.collectionPresentation,
     productPresentation: selectedDirection.productPresentation,
@@ -2486,6 +2491,10 @@ export function validateWholeStorefrontGenerationPlan(
   );
   const expected = createWholeStorefrontGenerationPlan(inputValue, {
     directionId: plan.designSystemSelection.directionId,
+    designSystemNarrowing: {
+      spacingDensity: plan.designSystemSelection.spacingDensity,
+      surfaceDepth: plan.designSystemSelection.surfaceDepth,
+    },
     ...(homepageMaterialization?.commercialHomepage
       ? {
           homepageProfileId: commercialHomepageProfileIdSchema.parse(

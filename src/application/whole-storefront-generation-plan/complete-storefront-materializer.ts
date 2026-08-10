@@ -182,6 +182,10 @@ export function materializeCompleteStorefrontSelection(
     contentFactAuthority: ContentSupportFactAuthority;
     approvedAssetPresentations: readonly ApprovedAssetPresentation[];
     directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
+    designSystemNarrowing?: Readonly<{
+      spacingDensity: "compact" | "standard" | "spacious";
+      surfaceDepth: "flat" | "subtle" | "layered";
+    }>;
     materializationIdPrefix?: string;
   }>,
 ): CompleteStorefrontMaterialization {
@@ -274,6 +278,7 @@ export function materializeCompleteStorefrontSelection(
     pdpProfileId: commercialPdpProfileIdSchema.parse(
       selectedProfile(snapshot, "product-detail", "PDP"),
     ),
+    designSystemNarrowing: input.designSystemNarrowing,
   });
   const proposal = compileWholeStorefrontProposal({ plan, planningInput });
   const materialized = materializeWholeStorefrontRuntimeSnapshot({
