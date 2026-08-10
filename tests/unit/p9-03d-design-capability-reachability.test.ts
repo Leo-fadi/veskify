@@ -29,7 +29,7 @@ const directionIds = ["premiumEditorial", "modernTechnical", "warmApproachable"]
 
 const expectedComponentVariantStatusCounts = {
   "fully reachable": 35,
-  "registered but unreachable": 55,
+  "registered but unreachable": 59,
   "planner-visible but lost during compilation": 25,
   "render-only": 0,
 } as const;
@@ -260,7 +260,7 @@ describe("P9-03D design-capability reachability audit", () => {
       request.registry.flatMap((definition) =>
         definition.variants.map((variant) => `${definition.type}:${variant}`),
       ),
-    ).toHaveLength(115);
+    ).toHaveLength(119);
     expect(request.directionOptions.map((direction) => direction.id)).toEqual(
       [...directionIds].sort(),
     );
@@ -386,7 +386,7 @@ describe("P9-03D design-capability reachability audit", () => {
     });
     expect(collectionRule?.notes?.en).toContain("375, 768, 1024 and 1440");
     expect(collectionRule?.notes?.fi).toContain("375, 768, 1024 ja 1440");
-    expect(productRule).toMatchObject({ maxColumns: 2 });
+    expect(productRule).toMatchObject({ maxColumns: 3 });
     expect(productRule).not.toEqual(collectionRule);
     expect(minWidthRule).toMatchObject({
       minWidthPx: 320,

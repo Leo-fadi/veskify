@@ -1,5 +1,8 @@
 import { createComponentRegistryV2 } from "@/domain/component-platform";
-import { dynamicProductDetailDefinition } from "./dynamic-product-detail";
+import {
+  dynamicProductDetailDefinition,
+  dynamicProductDetailInstanceValidationContracts,
+} from "./dynamic-product-detail";
 import { dynamicCollectionCommerceDefinition } from "./dynamic-collection-commerce";
 import {
   homepageCommerceDefinitions,
@@ -30,6 +33,7 @@ export const veskifyComponentDefinitionsV2 = [
 ] as const;
 
 export const veskifyComponentRegistryV2 = createComponentRegistryV2(veskifyComponentDefinitionsV2, {
+  ...dynamicProductDetailInstanceValidationContracts,
   ...homepageCommerceInstanceValidationContracts,
   ...contentSupportInstanceValidationContracts,
 });

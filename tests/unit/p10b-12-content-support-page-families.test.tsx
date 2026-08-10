@@ -766,7 +766,7 @@ describe("P10B-12 content and support page families", () => {
 
   it("uses canonical section surfaces in the V2 bridge and rendered output", () => {
     const resolved = materialized("faq");
-    const section = resolved.result.page.sections[0]!;
+    const section = resolved.result.page.sections[0];
     const accented = pageModelSchema.parse({
       ...resolved.result.page,
       sections: [

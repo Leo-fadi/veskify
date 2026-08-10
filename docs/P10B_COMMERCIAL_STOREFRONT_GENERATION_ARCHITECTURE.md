@@ -1,11 +1,11 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01 through P10B-09 and P10B-12 are **Baseline**; P10B-10,
-P10B-11, and P10B-13 through P10B-18 remain **Planned**.
+**Status:** Binding architecture. P10B-01 through P10B-12 are **Baseline**; P10B-13 through P10B-18
+remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 9 August 2026, P10B-12 content and support page families
+**Baseline:** 9 August 2026, P10B-10 collection/search, P10B-11 PDP, and P10B-12 content/support profiles
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -41,9 +41,13 @@ P10B-08 is Baseline under
 [`P10B_08_CANONICAL_PRODUCT_CARD_AND_MERCHANDISING.md`](P10B_08_CANONICAL_PRODUCT_CARD_AND_MERCHANDISING.md).
 P10B-09 is Baseline under
 [`P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md`](P10B_09_COMMERCIAL_HOMEPAGE_PROFILE_LIBRARY.md).
+P10B-10 is Baseline under
+[`P10B_10_COMMERCIAL_COLLECTION_SEARCH_PROFILES.md`](P10B_10_COMMERCIAL_COLLECTION_SEARCH_PROFILES.md).
+P10B-11 is Baseline under
+[`P10B_11_COMMERCIAL_PDP_PROFILE_LIBRARY.md`](P10B_11_COMMERCIAL_PDP_PROFILE_LIBRARY.md).
 P10B-12 is Baseline under
 [`P10B_12_CONTENT_AND_SUPPORT_PAGE_FAMILIES.md`](P10B_12_CONTENT_AND_SUPPORT_PAGE_FAMILIES.md).
-P10B is **Partial / active**; P10B-10, P10B-11, and P10B-13 through P10B-18 remain Planned.
+P10B is **Partial / active**; P10B-13 through P10B-18 remain Planned.
 
 ## 2. Storefront and commerce ownership
 
@@ -330,7 +334,7 @@ commercial review. It does not wait for P10B-18 and does not itself complete the
 
 ## 13. Locked implementation sequence
 
-P10B-01 through P10B-09 and P10B-12 are **Baseline**. Remaining tasks are **Planned**. Parent tasks
+P10B-01 through P10B-12 are **Baseline**. P10B-13 through P10B-18 are **Planned**. Parent tasks
 may use A/B/C slices only when required to keep contract, renderer, profile/generation, or evidence
 PRs reviewable. A parent remains Planned or Partial until every required slice and its evidence
 passes.
@@ -462,6 +466,12 @@ See
   authority, and generic unregistered sections.
 
 ### P10B-10 — Commercial collection and search profiles
+
+**Status:** Baseline. Four versioned collection/search PageBlueprint profiles compose P10B-06
+frames, P10B-03 collection anatomy, P10B-08 product cards, P10B-04 approved media, and P10B-02
+Design DNA through exact canonical catalogue bindings, structural fingerprints, lifecycle, and
+four-width browser authority. See
+[`P10B_10_COMMERCIAL_COLLECTION_SEARCH_PROFILES.md`](P10B_10_COMMERCIAL_COLLECTION_SEARCH_PROFILES.md).
 
 - Register at least four profiles: editorial discovery, catalogue comparison, campaign-led, and
   dense/search-oriented, including results and no-results behavior.
@@ -627,6 +637,6 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01 through P10B-09 and P10B-12 are Baseline under the disjoint ownership constraints in
+P10B-01 through P10B-12 are Baseline under the disjoint ownership constraints in
 section 15. No later implementation task is complete merely because this architecture is approved
 or the completed foundations passed.

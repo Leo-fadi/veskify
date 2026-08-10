@@ -4,7 +4,9 @@ import {
 } from "@/application/storefront-design-system";
 import {
   getExecutablePageBlueprintProfile,
+  getCommercialCollectionSearchProfile,
   getCommercialHomepageProfile,
+  getCommercialPdpProfile,
   getTemplateById,
   getTemplatePagePlan,
 } from "@/application/storefront-templates/registry";
@@ -59,10 +61,16 @@ import { veskifyComponentCapabilityManifest } from "@/components/registry/capabi
 import { resolveCommercialSharedFrameProfile } from "@/domain/storefront/commercial-shared-frame";
 import {
   commercialHomepageProfileIdSchema,
+  commercialPdpProfileIdSchema,
+  commercialCollectionSearchProfileIdSchema,
   resolveCommercialHomepageProfileSlots,
   resolveCommercialHomepageSlotItemCardinality,
+  type CommercialCollectionSearchProfileAuthority,
+  type CommercialCollectionSearchProfileId,
   type CommercialHomepageProfileId,
+  type CommercialPdpProfileId,
 } from "@/application/storefront-templates";
+import type { CommercialProductDetailProfileAuthority } from "@/application/storefront-templates/contract";
 
 const FAMILY_REQUIREMENTS = {
   homepage: [
@@ -532,6 +540,8 @@ function materializeDirectionPageBlueprints(
   input: WholeStorefrontPlanningInput,
   directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"],
   homepageProfileId?: CommercialHomepageProfileId,
+  pdpProfileId?: CommercialPdpProfileId,
+  collectionProfileId?: CommercialCollectionSearchProfileId,
 ) {
   const templateId = templateForDirection(directionId);
   const contextTemplate = input.recipeContext.templates.find(
@@ -552,7 +562,11 @@ function materializeDirectionPageBlueprints(
     const pagePlan =
       pageType === "home" && homepageProfileId
         ? getCommercialHomepageProfile(homepageProfileId)
-        : getTemplatePagePlan(templateId, pageType);
+        : pageType === "product" && pdpProfileId
+          ? getCommercialPdpProfile(pdpProfileId)
+          : pageType === "collection" && collectionProfileId
+            ? getCommercialCollectionSearchProfile(collectionProfileId)
+            : getTemplatePagePlan(templateId, pageType);
     if (!pagePlan) {
       invalid(
         "unsupported-page-family",
@@ -633,6 +647,113 @@ function assertCommercialHomepageSelection(
     }
   }
   return authority;
+}
+
+function assertCommercialPdpSelection(
+  input: WholeStorefrontPlanningInput,
+  profileId: CommercialPdpProfileId,
+  selection: WholeStorefrontGenerationPlan["designSystemSelection"],
+) {
+  const pagePlan = getCommercialPdpProfile(profileId);
+  const authority = pagePlan?.profile?.commercialProductDetail;
+  if (!pagePlan || !authority) {
+    invalid("unsupported-page-family", `Commercial PDP profile ${profileId} is unavailable.`);
+  }
+  assertCommercialProfileFrameAndDna(input, profileId, authority, selection, "PDP");
+  const manifest = veskifyComponentCapabilityManifest.getByComponentType("dynamicProductDetail");
+  const variant = manifest?.variants.find(
+    (entry) => entry.id === authority.dynamicProductDetailVariant,
+  );
+  if (variant?.structuralClassification !== "meaningfulStructuralVariant") {
+    invalid(
+      "invalid-component-contract",
+      `Commercial PDP profile ${profileId} requires current meaningful dynamicProductDetail/${authority.dynamicProductDetailVariant} authority.`,
+    );
+  }
+  return authority;
+}
+
+function assertCommercialCollectionSearchSelection(
+  input: WholeStorefrontPlanningInput,
+  profileId: CommercialCollectionSearchProfileId,
+  selection: WholeStorefrontGenerationPlan["designSystemSelection"],
+) {
+  const pagePlan = getCommercialCollectionSearchProfile(profileId);
+  const authority = pagePlan?.profile?.commercialCollectionSearch;
+  const slot = pagePlan?.slots[0];
+  if (!pagePlan || !authority || !slot) {
+    invalid(
+      "unsupported-page-family",
+      `Commercial collection/search profile ${profileId} is unavailable.`,
+    );
+  }
+  assertCommercialProfileFrameAndDna(input, profileId, authority, selection, "collection/search");
+  const manifest = veskifyComponentCapabilityManifest.getByComponentType(slot.sectionType);
+  const variant = manifest?.variants.find((entry) => entry.id === slot.defaultVariant);
+  if (
+    !manifest?.commercialAnatomy ||
+    !variant ||
+    variant.structuralClassification !== "meaningfulStructuralVariant"
+  ) {
+    invalid(
+      "invalid-component-contract",
+      `Commercial collection/search profile ${profileId} requires current meaningful ${slot.sectionType}/${slot.defaultVariant} authority.`,
+    );
+  }
+  if (
+    authority.campaignEvidencePolicy === "approved-editorial-media-required" &&
+    !input.approvedAssetContext?.assets.some((asset) => asset.role === "editorialImage")
+  ) {
+    invalid(
+      "missing-required-recipe-asset",
+      `Commercial collection/search profile ${profileId} requires approved editorial campaign media.`,
+    );
+  }
+  return authority;
+}
+
+function assertCommercialProfileFrameAndDna(
+  input: WholeStorefrontPlanningInput,
+  profileId: string,
+  authority: {
+    compatibleSharedFrameProfileIds: readonly string[];
+    designDnaNarrowing: {
+      spacingDensity: readonly string[];
+      surfaceDepth: readonly string[];
+      imagePosture: readonly string[];
+    };
+  },
+  selection: WholeStorefrontGenerationPlan["designSystemSelection"],
+  family: string,
+) {
+  if (!input.draft.sharedFrame) {
+    invalid(
+      "unsupported-page-family",
+      `Commercial ${family} generation requires canonical snapshot-level shared-frame authority.`,
+    );
+  }
+  const frame = resolveCommercialSharedFrameProfile(input.draft.sharedFrame);
+  if (!authority.compatibleSharedFrameProfileIds.includes(frame.id)) {
+    invalid(
+      "unsupported-page-family",
+      `Commercial ${family} profile ${profileId} is incompatible with shared frame ${frame.id}.`,
+    );
+  }
+  const imagePosture = {
+    premiumEditorial: "immersive",
+    modernTechnical: "contained",
+    warmApproachable: "editorial",
+  }[selection.directionId];
+  if (
+    !authority.designDnaNarrowing.spacingDensity.includes(selection.spacingDensity) ||
+    !authority.designDnaNarrowing.surfaceDepth.includes(selection.surfaceDepth) ||
+    !authority.designDnaNarrowing.imagePosture.includes(imagePosture)
+  ) {
+    invalid(
+      "unsupported-page-family",
+      `Commercial ${family} profile ${profileId} cannot broaden the selected Design DNA.`,
+    );
+  }
 }
 
 function generatedComponentId(
@@ -1064,7 +1185,8 @@ function authoritativeHomepageProfileComponents(input: {
       const legacyDefinition = getComponentDefinition(slot.component);
       if (
         (slot.component === "header" || slot.component === "footer") &&
-        page.sections.some((section) => section.component === slot.component)
+        (planningInput.draft.sharedFrame !== undefined ||
+          page.sections.some((section) => section.component === slot.component))
       ) {
         return [];
       }
@@ -1386,21 +1508,45 @@ function dynamicCollectionComponent(
   definition: ComponentDefinitionV2,
   usedComponentIds: Set<string>,
   presentation: WholeStorefrontGenerationPlan["designSystemSelection"]["collectionPresentation"],
+  commercialProfile?: Readonly<{
+    authority: CommercialCollectionSearchProfileAuthority;
+    variant: string;
+    approvedAssetContext: WholeStorefrontPlanningInput["approvedAssetContext"];
+  }>,
   replacementId?: string,
 ): ComponentInstanceV2 {
   const id = replacementId ?? generatedComponentId(pageId, definition.type, usedComponentIds);
   usedComponentIds.add(id);
+  const campaignAsset =
+    commercialProfile?.authority.campaignEvidencePolicy === "approved-editorial-media-required"
+      ? commercialProfile.approvedAssetContext?.assets.find(
+          (asset) => asset.role === "editorialImage",
+        )
+      : undefined;
+  if (
+    commercialProfile?.authority.campaignEvidencePolicy === "approved-editorial-media-required" &&
+    !campaignAsset
+  ) {
+    invalid(
+      "missing-required-recipe-asset",
+      "Campaign-led collection discovery requires approved editorial media.",
+    );
+  }
   return {
     id,
     component: "dynamicCollectionCommerce",
     componentVersion: definition.version,
-    variant: presentation.variant,
+    variant: commercialProfile?.variant ?? presentation.variant,
     content: structuredClone(dynamicCollectionCommerceDefaultContent),
     props: {
       ...structuredClone(dynamicCollectionCommerceDefaultProps),
-      gridDensity: presentation.gridDensity,
-      cardVariant: presentation.cardVariant,
-      filterLayout: presentation.filterLayout,
+      gridDensity: commercialProfile?.authority.gridDensity ?? presentation.gridDensity,
+      cardVariant: commercialProfile?.authority.productCardAnatomyId ?? presentation.cardVariant,
+      filterLayout: commercialProfile?.authority.filterLayout ?? presentation.filterLayout,
+      showChildCollections:
+        commercialProfile?.authority.childCollectionTreatment === "omit"
+          ? false
+          : dynamicCollectionCommerceDefaultProps.showChildCollections,
     },
     styleOverrides: structuredClone(dynamicCollectionCommerceDefaultStyleOverrides),
     bindings: [
@@ -1412,7 +1558,15 @@ function dynamicCollectionComponent(
         revision,
       },
     ],
-    assetAssignments: [],
+    assetAssignments: campaignAsset
+      ? [
+          {
+            slotId: "collectionCommerceMedia",
+            assetId: campaignAsset.assetId,
+            role: campaignAsset.role,
+          },
+        ]
+      : [],
   };
 }
 
@@ -1425,6 +1579,7 @@ function dynamicProductComponent(
   usedComponentIds: Set<string>,
   presentation: WholeStorefrontGenerationPlan["designSystemSelection"]["productPresentation"],
   replacementId?: string,
+  commercialPdp?: CommercialProductDetailProfileAuthority,
 ): ComponentInstanceV2 {
   const id = replacementId ?? generatedComponentId(pageId, definition.type, usedComponentIds);
   usedComponentIds.add(id);
@@ -1432,22 +1587,36 @@ function dynamicProductComponent(
     id,
     component: "dynamicProductDetail",
     componentVersion: definition.version,
-    variant: presentation.variant,
+    variant: commercialPdp?.dynamicProductDetailVariant ?? presentation.variant,
     content: structuredClone(dynamicProductDetailDefaultContent),
     props: {
       ...structuredClone(dynamicProductDetailDefaultProps),
-      galleryLayout: presentation.galleryLayout,
-      optionDensity: presentation.optionDensity,
-      attributeLayout: presentation.attributeLayout,
-      mediaTreatment: presentation.mediaTreatment,
+      galleryLayout:
+        commercialPdp?.dynamicProductDetailProps.galleryLayout ?? presentation.galleryLayout,
+      optionDensity:
+        commercialPdp?.dynamicProductDetailProps.optionDensity ?? presentation.optionDensity,
+      attributeLayout:
+        commercialPdp?.dynamicProductDetailProps.attributeLayout ?? presentation.attributeLayout,
+      showDescription:
+        commercialPdp?.dynamicProductDetailProps.showDescription ??
+        dynamicProductDetailDefaultProps.showDescription,
+      showSku:
+        commercialPdp?.dynamicProductDetailProps.showSku ??
+        dynamicProductDetailDefaultProps.showSku,
+      stickyMobileAction:
+        commercialPdp?.dynamicProductDetailProps.stickyMobileAction ??
+        dynamicProductDetailDefaultProps.stickyMobileAction,
+      mediaTreatment:
+        commercialPdp?.dynamicProductDetailProps.mediaTreatment ?? presentation.mediaTreatment,
       relatedCardVariant:
-        presentation.variant === "compact"
+        commercialPdp?.relatedProductCardAnatomyId ??
+        (presentation.variant === "compact"
           ? "horizontal"
           : presentation.variant === "editorial" || presentation.variant === "editorialSplit"
             ? "editorial"
             : presentation.variant === "galleryDominant"
               ? "imageFirst"
-              : "standard",
+              : "standard"),
     },
     styleOverrides: structuredClone(dynamicProductDetailDefaultStyleOverrides),
     bindings: [
@@ -1663,6 +1832,8 @@ export function createWholeStorefrontGenerationPlan(
   options: {
     directionId?: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
     homepageProfileId?: CommercialHomepageProfileId;
+    pdpProfileId?: CommercialPdpProfileId;
+    collectionProfileId?: CommercialCollectionSearchProfileId;
     tokenRefinementPlan?: RegisteredTokenRefinementPlan | null;
   } = {},
 ): WholeStorefrontGenerationPlan {
@@ -1728,11 +1899,32 @@ export function createWholeStorefrontGenerationPlan(
   const commercialHomepageAuthority = options.homepageProfileId
     ? assertCommercialHomepageSelection(input, options.homepageProfileId, designSystemSelection)
     : undefined;
+  const commercialPdpAuthority = options.pdpProfileId
+    ? assertCommercialPdpSelection(input, options.pdpProfileId, designSystemSelection)
+    : undefined;
+  const commercialCollectionSearchAuthority = options.collectionProfileId
+    ? assertCommercialCollectionSearchSelection(
+        input,
+        options.collectionProfileId,
+        designSystemSelection,
+      )
+    : undefined;
   const pageBlueprintMaterializations = materializeDirectionPageBlueprints(
     input,
     designSystemSelection.directionId,
     options.homepageProfileId,
+    options.pdpProfileId,
+    options.collectionProfileId,
   );
+  const commercialCollectionProfileVariant = options.collectionProfileId
+    ? getCommercialCollectionSearchProfile(options.collectionProfileId)?.slots[0]?.defaultVariant
+    : undefined;
+  if (commercialCollectionSearchAuthority && !commercialCollectionProfileVariant) {
+    invalid(
+      "unsupported-page-family",
+      "Commercial collection/search profile is missing its registered component slot.",
+    );
+  }
   const collectionComponentDefinition = definitionFor(definitions, "dynamicCollectionCommerce");
   const productComponentDefinition = definitionFor(definitions, "dynamicProductDetail");
   const usedComponentIds = new Set(
@@ -1798,6 +1990,13 @@ export function createWholeStorefrontGenerationPlan(
         collectionComponentDefinition,
         usedComponentIds,
         designSystemSelection.collectionPresentation,
+        commercialCollectionSearchAuthority && commercialCollectionProfileVariant
+          ? {
+              authority: commercialCollectionSearchAuthority,
+              variant: commercialCollectionProfileVariant,
+              approvedAssetContext: input.approvedAssetContext,
+            }
+          : undefined,
         page.sections.find((section) => section.component === "dynamicCollectionCommerce")?.id,
       );
       try {
@@ -1840,6 +2039,7 @@ export function createWholeStorefrontGenerationPlan(
         usedComponentIds,
         designSystemSelection.productPresentation,
         page.sections.find((section) => section.component === "dynamicProductDetail")?.id,
+        commercialPdpAuthority,
       );
       try {
         registry.validateInstance(instance);
@@ -1931,6 +2131,13 @@ export function createWholeStorefrontGenerationPlan(
       collectionComponentDefinition,
       usedComponentIds,
       designSystemSelection.collectionPresentation,
+      commercialCollectionSearchAuthority && commercialCollectionProfileVariant
+        ? {
+            authority: commercialCollectionSearchAuthority,
+            variant: commercialCollectionProfileVariant,
+            approvedAssetContext: input.approvedAssetContext,
+          }
+        : undefined,
     );
     try {
       registry.validateInstance(instance);
@@ -2189,6 +2396,8 @@ export function createWholeStorefrontGenerationPlan(
           : ("coordinatedStructuralDirection" as const),
         tokenRefinementPlan,
         homepageProfileId: options.homepageProfileId ?? null,
+        pdpProfileId: options.pdpProfileId ?? null,
+        collectionProfileId: options.collectionProfileId ?? null,
       },
       "whole-storefront-request",
     ),
@@ -2234,12 +2443,30 @@ export function validateWholeStorefrontGenerationPlan(
   const homepageMaterialization = plan.pageBlueprintMaterializations.find(
     (entry) => entry.pageType === "home",
   );
+  const productMaterialization = plan.pageBlueprintMaterializations.find(
+    (entry) => entry.pageType === "product",
+  );
+  const collectionMaterialization = plan.pageBlueprintMaterializations.find(
+    (entry) => entry.pageType === "collection",
+  );
   const expected = createWholeStorefrontGenerationPlan(inputValue, {
     directionId: plan.designSystemSelection.directionId,
     ...(homepageMaterialization?.commercialHomepage
       ? {
           homepageProfileId: commercialHomepageProfileIdSchema.parse(
             homepageMaterialization.profileId,
+          ),
+        }
+      : {}),
+    ...(productMaterialization?.commercialProductDetail
+      ? {
+          pdpProfileId: commercialPdpProfileIdSchema.parse(productMaterialization.profileId),
+        }
+      : {}),
+    ...(collectionMaterialization?.commercialCollectionSearch
+      ? {
+          collectionProfileId: commercialCollectionSearchProfileIdSchema.parse(
+            collectionMaterialization.profileId,
           ),
         }
       : {}),

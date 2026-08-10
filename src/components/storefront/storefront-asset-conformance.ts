@@ -31,7 +31,7 @@ export function validateRouteUsedAssetConformance({
     if (metadata.role !== expectedRole) {
       throw new Error(`${boundary} media role does not match metadata: ${assetId}.`);
     }
-    if (assignedAssets.size > 0 && assignedAssets.get(assetId) !== expectedRole) {
+    if (assignedAssets.has(assetId) && assignedAssets.get(assetId) !== expectedRole) {
       throw new Error(`Missing canonical ${boundary} asset assignment: ${assetId}.`);
     }
   }

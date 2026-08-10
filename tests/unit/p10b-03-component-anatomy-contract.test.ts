@@ -41,10 +41,13 @@ function meaningfulProductDefinition(): ComponentDefinitionV2 {
     toPresentationMode: "editorialPurchaseStack",
     affectedRegions: ["media", "content", "actions"],
   });
-  anatomy.compatibility.responsiveModes.push("stack");
+  if (!anatomy.compatibility.responsiveModes.includes("stack")) {
+    anatomy.compatibility.responsiveModes.push("stack");
+  }
   const editorial = anatomy.variants.find((variant) => variant.variantId === "editorial");
   if (!editorial) throw new Error("Expected editorial dynamic PDP variant metadata.");
   editorial.classification = "meaningfulStructuralVariant";
+  delete editorial.aliasOf;
   editorial.materialDifferences = [
     "hierarchy",
     "regionArrangement",
@@ -63,7 +66,10 @@ function meaningfulProductDefinition(): ComponentDefinitionV2 {
     "actions",
   ];
   editorial.structure.ctaRelationship = "sticky";
-  editorial.structure.responsiveTransformationIds = ["preserveRegistered", "stackPurchaseAtMobile"];
+  editorial.structure.responsiveTransformationIds = [
+    "pdpHighConsiderationReflow",
+    "stackPurchaseAtMobile",
+  ];
   editorial.structure.presentationMode = "editorialPurchaseStack";
   return validateComponentDefinitionV2(definition);
 }
@@ -160,7 +166,7 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
       componentType: definition.type,
       variant: "editorial",
       expectedAnatomyIdentity: "dynamicProductDetail.anatomy",
-      expectedAnatomyVersion: { major: 1, minor: 0, patch: 0 },
+      expectedAnatomyVersion: { major: 1, minor: 2, patch: 0 },
       pageType: "product",
       narrativeRole: "product-focus",
       assetRoles: ["productMainImage"],
@@ -401,9 +407,9 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
 
   it("continues to reject asset placement into an undeclared region", () => {
     const definition = meaningfulProductDefinition();
-    editorialStructureOf(definition).assetPlacements[0].region = "proof";
+    editorialStructureOf(definition).assetPlacements[0].region = "utility";
     expect(() => validateComponentDefinitionV2(definition)).toThrow(
-      /references undeclared semantic region proof/i,
+      /references undeclared semantic region utility/i,
     );
   });
 
@@ -443,7 +449,7 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
         "assetRole",
       ]),
     );
-    expect(entry?.commercialAnatomy?.responsiveTransformations).toHaveLength(1);
+    expect(entry?.commercialAnatomy?.responsiveTransformations).toHaveLength(4);
     expect(entry?.commercialAnatomy?.compatibility.narrativeRoles).toContain("product-focus");
     expect(entry?.commercialAnatomy?.compatibility.assetRequirements[0].slotId).toBe(
       "productMedia",
@@ -489,13 +495,20 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
         (total, definition) => total + definition.variants.length,
         0,
       ),
-    ).toBe(115);
+    ).toBe(119);
     const promotedCommercialDefinitions = new Set([
       "homepageHero",
       "homepagePromotion",
       "homepageEditorial",
       "homepageProof",
       "contentSupport",
+      "dynamicProductDetail",
+    ]);
+    const p10b10CollectionVariants = new Set([
+      "editorialDiscovery",
+      "catalogueComparison",
+      "campaignLedDiscovery",
+      "denseSearch",
     ]);
     for (const definition of veskifyComponentDefinitionsV2) {
       const anatomy = definition.commercialAnatomy;
@@ -519,6 +532,16 @@ describe("P10B-03 component anatomy and meaningful variants", () => {
             (variant) =>
               variant.structuralClassification === "legacySuperseded" &&
               variant.materialDifferences.length === 0,
+          ),
+        ).toBe(true);
+      } else if (definition.type === "dynamicCollectionCommerce") {
+        expect(
+          entry?.variants.every((variant) =>
+            p10b10CollectionVariants.has(variant.id)
+              ? variant.structuralClassification === "meaningfulStructuralVariant" &&
+                variant.materialDifferences.length >= 3
+              : variant.structuralClassification === "notYetP10BCommercialReady" &&
+                variant.materialDifferences.length === 0,
           ),
         ).toBe(true);
       } else if (!promotedCommercialDefinitions.has(definition.type)) {

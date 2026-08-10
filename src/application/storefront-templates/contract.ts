@@ -68,6 +68,8 @@ const pageBlueprintProfileVersionSchema = z.string().regex(/^\d+\.\d+\.\d+$/);
 
 const commercialHomepageFingerprintSchema = z.string().trim().min(1).max(240);
 const commercialContentSupportFingerprintSchema = z.string().trim().min(1).max(240);
+const commercialProductDetailFingerprintSchema = z.string().trim().min(1).max(240);
+const commercialCollectionSearchFingerprintSchema = z.string().trim().min(1).max(240);
 
 export const commercialHomepageProfileAuthoritySchema = z
   .object({
@@ -210,6 +212,194 @@ export const commercialHomepageProfileAuthoritySchema = z
     }
   });
 
+/**
+ * Governed P10B PDP composition metadata. This stays attached to the canonical
+ * product PageBlueprint and selects the existing dynamicProductDetail runtime;
+ * it is not a separate page shape, product model, or renderer authority.
+ */
+export const commercialProductDetailProfileAuthoritySchema = z
+  .object({
+    family: z.literal("commercial-product-detail"),
+    compatibleSharedFrameProfileIds: z.array(commercialSharedFrameProfileIdSchema).min(1),
+    defaultSharedFrameProfileId: commercialSharedFrameProfileIdSchema,
+    presentation: z.enum(["standard-commerce", "high-consideration", "gallery-led", "variant-led"]),
+    dynamicProductDetailVariant: z.enum([
+      "balanced",
+      "editorial",
+      "compact",
+      "galleryDominant",
+      "editorialSplit",
+    ]),
+    dynamicProductDetailProps: z
+      .object({
+        galleryLayout: z.enum(["thumbnails", "grid"]),
+        optionDensity: z.enum(["compact", "comfortable"]),
+        attributeLayout: z.enum(["groups", "table"]),
+        showDescription: z.boolean(),
+        showSku: z.boolean(),
+        stickyMobileAction: z.boolean(),
+        mediaTreatment: z.enum(["contained", "crop", "editorial"]),
+      })
+      .strict(),
+    relatedProductCardAnatomyId: canonicalProductCardAnatomyIdSchema,
+    evidenceRequirements: z.array(
+      z
+        .object({
+          region: z.enum(["product", "supporting", "proof", "service", "related-products"]),
+          authority: z.enum(["canonical-commerce", "approved-merchant-evidence", "approved-media"]),
+          unsatisfiedPolicy: z.enum(["fail-closed", "omit"]),
+        })
+        .strict(),
+    ),
+    responsiveArchitecture: z.tuple([
+      z
+        .object({
+          breakpoint: z.literal("mobile"),
+          viewport: z.literal(375),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("tablet"),
+          viewport: z.literal(768),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("desktop"),
+          viewport: z.literal(1024),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("wide"),
+          viewport: z.literal(1440),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+    ]),
+    designDnaNarrowing: z
+      .object({
+        spacingDensity: z.array(z.enum(["compact", "standard", "spacious"])).min(1),
+        surfaceDepth: z.array(z.enum(["flat", "subtle", "layered"])).min(1),
+        imagePosture: z.array(z.enum(["contained", "editorial", "immersive"])).min(1),
+      })
+      .strict(),
+    structuralSignature: commercialProductDetailFingerprintSchema,
+    structuralFingerprint: commercialProductDetailFingerprintSchema,
+  })
+  .strict()
+  .superRefine((authority, context) => {
+    if (
+      !authority.compatibleSharedFrameProfileIds.includes(authority.defaultSharedFrameProfileId)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["defaultSharedFrameProfileId"],
+        message: "The default shared frame must be one of the profile-compatible frames.",
+      });
+    }
+    const evidenceIds = authority.evidenceRequirements.map(
+      (entry) => `${entry.region}:${entry.authority}`,
+    );
+    if (new Set(evidenceIds).size !== evidenceIds.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["evidenceRequirements"],
+        message: "Commercial PDP evidence requirements must be unique.",
+      });
+    }
+  });
+
+/**
+ * Registered presentation authority for the single canonical collection/search
+ * commerce component. It deliberately describes a PageBlueprint profile rather
+ * than introducing a collection, search, membership, or filter data model.
+ */
+export const commercialCollectionSearchProfileAuthoritySchema = z
+  .object({
+    family: z.literal("commercial-collection-search"),
+    compatibleSharedFrameProfileIds: z.array(commercialSharedFrameProfileIdSchema).min(1),
+    defaultSharedFrameProfileId: commercialSharedFrameProfileIdSchema,
+    presentationMode: z.enum([
+      "editorial-discovery",
+      "catalogue-comparison",
+      "campaign-led-discovery",
+      "dense-search",
+    ]),
+    productCardAnatomyId: canonicalProductCardAnatomyIdSchema,
+    gridDensity: z.enum(["compact", "standard", "spacious"]),
+    filterLayout: z.enum(["sidebar", "horizontal"]),
+    childCollectionTreatment: z.enum(["editorial-discovery", "navigation", "compact", "omit"]),
+    resultsTreatment: z.enum(["curated", "comparison", "campaign-transition", "dense-scan"]),
+    campaignEvidencePolicy: z.enum(["not-required", "approved-editorial-media-required"]),
+    responsiveArchitecture: z.tuple([
+      z
+        .object({
+          breakpoint: z.literal("mobile"),
+          viewport: z.literal(375),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("tablet"),
+          viewport: z.literal(768),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("desktop"),
+          viewport: z.literal(1024),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+      z
+        .object({
+          breakpoint: z.literal("wide"),
+          viewport: z.literal(1440),
+          transformationIds: z.array(z.string().trim().min(1).max(80)),
+        })
+        .strict(),
+    ]),
+    designDnaNarrowing: z
+      .object({
+        spacingDensity: z.array(z.enum(["compact", "standard", "spacious"])).min(1),
+        surfaceDepth: z.array(z.enum(["flat", "subtle", "layered"])).min(1),
+        imagePosture: z.array(z.enum(["contained", "editorial", "immersive"])).min(1),
+      })
+      .strict(),
+    structuralSignature: commercialCollectionSearchFingerprintSchema,
+    structuralFingerprint: commercialCollectionSearchFingerprintSchema,
+  })
+  .strict()
+  .superRefine((authority, context) => {
+    if (
+      !authority.compatibleSharedFrameProfileIds.includes(authority.defaultSharedFrameProfileId)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["defaultSharedFrameProfileId"],
+        message: "The default shared frame must be one of the profile-compatible frames.",
+      });
+    }
+    if (
+      (authority.presentationMode === "campaign-led-discovery") !==
+      (authority.campaignEvidencePolicy === "approved-editorial-media-required")
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["campaignEvidencePolicy"],
+        message: "Only campaign-led discovery may require approved editorial media.",
+      });
+    }
+  });
+
+/** Governed fact-bound authority for canonical content/support PageBlueprints. */
 export const commercialContentSupportProfileAuthoritySchema = z
   .object({
     family: z.literal("commercial-content-support"),
@@ -352,6 +542,8 @@ export const executablePageBlueprintProfileSchema = z
     accessibilityContract: z.literal("registered-component-contracts"),
     commercialHomepage: commercialHomepageProfileAuthoritySchema.optional(),
     commercialContentSupport: commercialContentSupportProfileAuthoritySchema.optional(),
+    commercialProductDetail: commercialProductDetailProfileAuthoritySchema.optional(),
+    commercialCollectionSearch: commercialCollectionSearchProfileAuthoritySchema.optional(),
   })
   .strict()
   .superRefine((profile, context) => {
@@ -611,6 +803,12 @@ export type CommercialHomepageProfileAuthority = z.infer<
 >;
 export type CommercialContentSupportProfileAuthority = z.infer<
   typeof commercialContentSupportProfileAuthoritySchema
+>;
+export type CommercialProductDetailProfileAuthority = z.infer<
+  typeof commercialProductDetailProfileAuthoritySchema
+>;
+export type CommercialCollectionSearchProfileAuthority = z.infer<
+  typeof commercialCollectionSearchProfileAuthoritySchema
 >;
 export type StorefrontTemplateSlot = z.infer<typeof storefrontTemplateSlotSchema>;
 export type StorefrontTemplatePagePlan = z.infer<typeof storefrontTemplatePagePlanSchema>;

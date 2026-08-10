@@ -12,6 +12,8 @@ import {
   type StorefrontTemplatePagePlan,
   type CommercialHomepageProfileAuthority,
   type CommercialContentSupportProfileAuthority,
+  type CommercialProductDetailProfileAuthority,
+  type CommercialCollectionSearchProfileAuthority,
 } from "./contract";
 import { getCommercialSharedFrameProfile } from "@/domain/storefront/commercial-shared-frame";
 import { requireCanonicalProductCardAnatomy } from "@/domain/product-card";
@@ -34,6 +36,8 @@ export type ExecutablePageBlueprintMaterialization = Readonly<{
   requiredAssetRoles: readonly string[];
   commercialHomepage?: CommercialHomepageProfileAuthority;
   commercialContentSupport?: CommercialContentSupportProfileAuthority;
+  commercialProductDetail?: CommercialProductDetailProfileAuthority;
+  commercialCollectionSearch?: CommercialCollectionSearchProfileAuthority;
   fingerprint: string;
 }>;
 
@@ -140,6 +144,24 @@ export function materializeExecutablePageBlueprint(
   if (profile.commercialContentSupport) {
     profile.commercialContentSupport.compatibleSharedFrameProfileIds.forEach(
       getCommercialSharedFrameProfile,
+    );
+  }
+  if (profile.commercialProductDetail) {
+    profile.commercialProductDetail.compatibleSharedFrameProfileIds.forEach(
+      getCommercialSharedFrameProfile,
+    );
+    requireCanonicalProductCardAnatomy(
+      profile.commercialProductDetail.relatedProductCardAnatomyId,
+      "relatedProducts",
+    );
+  }
+  if (profile.commercialCollectionSearch) {
+    profile.commercialCollectionSearch.compatibleSharedFrameProfileIds.forEach(
+      getCommercialSharedFrameProfile,
+    );
+    requireCanonicalProductCardAnatomy(
+      profile.commercialCollectionSearch.productCardAnatomyId,
+      "collectionResults",
     );
   }
   if (
@@ -317,6 +339,12 @@ export function materializeExecutablePageBlueprint(
       : {}),
     ...(profile.commercialContentSupport
       ? { commercialContentSupport: structuredClone(profile.commercialContentSupport) }
+      : {}),
+    ...(profile.commercialProductDetail
+      ? { commercialProductDetail: structuredClone(profile.commercialProductDetail) }
+      : {}),
+    ...(profile.commercialCollectionSearch
+      ? { commercialCollectionSearch: structuredClone(profile.commercialCollectionSearch) }
       : {}),
   };
   return freeze({

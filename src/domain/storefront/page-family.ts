@@ -87,6 +87,16 @@ const campaignContentSupportProfiles = [
   profile("landing-campaign-image-led"),
   profile("landing-campaign-story"),
 ] as const;
+const commercialCollectionSearchProfiles = [
+  profile("collection-editorial-discovery"),
+  profile("collection-catalogue-comparison"),
+  profile("collection-campaign-led-discovery"),
+  profile("collection-dense-search"),
+] as const;
+const searchCompatibleCommercialCollectionSearchProfiles = [
+  profile("collection-catalogue-comparison"),
+  profile("collection-dense-search"),
+] as const;
 const requiredSingleton = Object.freeze({ kind: "required-singleton" as const });
 const contextualCollection = Object.freeze({
   kind: "contextual" as const,
@@ -141,7 +151,10 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     pageType: "collection",
     routeClass: "collection-detail",
     commerceContext: "collection",
-    allowedProfileReferences: [profile("blueprint-site-map-collection-baseline")],
+    allowedProfileReferences: [
+      profile("blueprint-site-map-collection-baseline"),
+      ...commercialCollectionSearchProfiles,
+    ],
     navigationEligibility: bothNavigation,
     evidenceRequirement: "none",
     permittedEvidenceKinds: [],
@@ -154,7 +167,10 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     pageType: "collection",
     routeClass: "search",
     commerceContext: "search",
-    allowedProfileReferences: [profile("blueprint-site-map-search-baseline")],
+    allowedProfileReferences: [
+      profile("blueprint-site-map-search-baseline"),
+      ...searchCompatibleCommercialCollectionSearchProfiles,
+    ],
     navigationEligibility: ["primary"],
     evidenceRequirement: "none",
     permittedEvidenceKinds: [],

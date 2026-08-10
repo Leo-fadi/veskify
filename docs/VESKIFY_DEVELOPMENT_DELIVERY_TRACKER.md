@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 9 August 2026, P10B-12 content and support page families                                                            |
+| Baseline                    | 9 August 2026, P10B-10 collection/search, P10B-11 PDP and P10B-12 content/support profiles                          |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -39,26 +39,26 @@ required evidence are accepted.
 
 ## P10B checklist
 
-| Done | Task    | Outcome                                              | Status       | Owner                           | Dependency                         | Required evidence                                                                                              |
-| ---- | ------- | ---------------------------------------------------- | ------------ | ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| ☑    | P10B-01 | Commercial grammar and compatibility vocabulary      | **Baseline** | Canonical design contracts      | P10A closure; architecture lock    | Schema/queryability, migration, compatibility and typed rejection                                              |
-| ☑    | P10B-02 | Parametric BrandSystem / Design DNA                  | **Baseline** | BrandSystem                     | P10B-01                            | Cross-page projection, migration, responsive and lifecycle evidence                                            |
-| ☑    | P10B-03 | Component anatomy and meaningful variant contract    | **Baseline** | Component platform              | P10B-01                            | 27 definitions/100 variants; structural, query, migration and rejection evidence                               |
-| ☑    | P10B-04 | Responsive image and art-direction authority         | **Baseline** | Asset presentation and media    | P10B-02, P10B-03                   | 35-case authority, integration/lifecycle and four-width browser evidence                                       |
-| ☑    | P10B-05 | Veskify site-map and page-family authority           | **Baseline** | PageBlueprint/storefront domain | P10B-01                            | Page-set/navigation/generation/lifecycle and rejection evidence                                                |
-| ☑    | P10B-06 | Commercial shared-frame families                     | **Baseline** | Shared frame                    | P10B-02, P10B-03, P10B-05          | Four frames, three mobile modes, four footers, lifecycle and retained browser review                           |
-| ☑    | P10B-07 | Hero, editorial, campaign and proof families         | **Baseline** | Commercial content families     | P10B-02 through P10B-05            | Six heroes, story/campaign/proof chain, provenance and four-width browser review                               |
-| ☑    | P10B-08 | Canonical product-card and merchandising family      | **Baseline** | Commerce presentation           | P10B-02 through P10B-04            | One renderer; five anatomies; protected facts/media; lifecycle and four-width browser evidence                 |
-| ☑    | P10B-09 | Commercial homepage profile library                  | **Baseline** | PageBlueprint profiles          | P10B-05 through P10B-08            | Six profiles, materialization-to-render and 24-view visual review                                              |
-| ☐    | P10B-10 | Commercial collection and search profiles            | **Planned**  | Collection/search presentation  | P10B-04 through P10B-06, P10B-08   | Four profiles, commerce/intents and visual review                                                              |
-| ☐    | P10B-11 | Commercial PDP profile library                       | **Planned**  | PDP presentation                | P10B-03 through P10B-06, P10B-08   | Four profiles, generic options/commerce and visual review                                                      |
-| ☑    | P10B-12 | Content and support page families                    | **Baseline** | Content page presentation       | P10B-03 through P10B-07            | 15 profiles; current approved facts; locale/navigation; save/reload/compiler; 61 zero-provider Chromium checks |
-| ☐    | P10B-13 | Commerce utility presentation pages                  | **Planned**  | Utility presentation            | P10B-03, P10B-05, P10B-06, P10B-08 | Search/cart/checkout/state/a11y evidence                                                                       |
-| ☐    | P10B-14 | Premium Editorial complete-storefront vertical slice | **Planned**  | Storefront generation and QA    | Minimum P10B-02 through P10B-13    | Complete page set, four widths and retained human review                                                       |
-| ☐    | P10B-15 | Bounded storefront synthesis and narrative engine    | **Planned**  | Storefront generation           | P10B-14                            | Determinism, compatibility, no-partial snapshot and repetition control                                         |
-| ☐    | P10B-16 | Coordinated directions and diversity control         | **Planned**  | Direction/evaluation authority  | P10B-15                            | Fingerprints, duplicate/near-duplicate and pairwise diversity                                                  |
-| ☐    | P10B-17 | Responsive, accessibility and performance closure    | **Planned**  | Design system and QA            | P10B-16 and implemented families   | Four-width EN/FI geometry, a11y, performance and visual evidence                                               |
-| ☐    | P10B-18 | Commercial quality and scale gate                    | **Planned**  | Product owner, generation, QA   | All prior P10B tasks               | 100+ configurations and fingerprint-stratified human review                                                    |
+| Done | Task    | Outcome                                              | Status       | Owner                           | Dependency                         | Required evidence                                                                                |
+| ---- | ------- | ---------------------------------------------------- | ------------ | ------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------ |
+| ☑    | P10B-01 | Commercial grammar and compatibility vocabulary      | **Baseline** | Canonical design contracts      | P10A closure; architecture lock    | Schema/queryability, migration, compatibility and typed rejection                                |
+| ☑    | P10B-02 | Parametric BrandSystem / Design DNA                  | **Baseline** | BrandSystem                     | P10B-01                            | Cross-page projection, migration, responsive and lifecycle evidence                              |
+| ☑    | P10B-03 | Component anatomy and meaningful variant contract    | **Baseline** | Component platform              | P10B-01                            | 28 definitions/119 variants; structural, query, migration and rejection evidence                 |
+| ☑    | P10B-04 | Responsive image and art-direction authority         | **Baseline** | Asset presentation and media    | P10B-02, P10B-03                   | 35-case authority, integration/lifecycle and four-width browser evidence                         |
+| ☑    | P10B-05 | Veskify site-map and page-family authority           | **Baseline** | PageBlueprint/storefront domain | P10B-01                            | Page-set/navigation/generation/lifecycle and rejection evidence                                  |
+| ☑    | P10B-06 | Commercial shared-frame families                     | **Baseline** | Shared frame                    | P10B-02, P10B-03, P10B-05          | Four frames, three mobile modes, four footers, lifecycle and retained browser review             |
+| ☑    | P10B-07 | Hero, editorial, campaign and proof families         | **Baseline** | Commercial content families     | P10B-02 through P10B-05            | Six heroes, story/campaign/proof chain, provenance and four-width browser review                 |
+| ☑    | P10B-08 | Canonical product-card and merchandising family      | **Baseline** | Commerce presentation           | P10B-02 through P10B-04            | One renderer; five anatomies; protected facts/media; lifecycle and four-width browser evidence   |
+| ☑    | P10B-09 | Commercial homepage profile library                  | **Baseline** | PageBlueprint profiles          | P10B-05 through P10B-08            | Six profiles, materialization-to-render and 24-view visual review                                |
+| ☑    | P10B-10 | Commercial collection and search profiles            | **Baseline** | Collection/search presentation  | P10B-04 through P10B-06, P10B-08   | Four profiles, exact commerce/intents, lifecycle and 16-view browser review                      |
+| ☑    | P10B-11 | Commercial PDP profile library                       | **Baseline** | PDP presentation                | P10B-03 through P10B-06, P10B-08   | Four fingerprinted profiles, generic simple/configurable commerce, lifecycle and 16-view review  |
+| ☑    | P10B-12 | Content and support page families                    | **Baseline** | Content page presentation       | P10B-03 through P10B-07            | 15 profiles; current approved facts; locale/navigation; save/reload/compiler; 61 Chromium checks |
+| ☐    | P10B-13 | Commerce utility presentation pages                  | **Planned**  | Utility presentation            | P10B-03, P10B-05, P10B-06, P10B-08 | Search/cart/checkout/state/a11y evidence                                                         |
+| ☐    | P10B-14 | Premium Editorial complete-storefront vertical slice | **Planned**  | Storefront generation and QA    | Minimum P10B-02 through P10B-13    | Complete page set, four widths and retained human review                                         |
+| ☐    | P10B-15 | Bounded storefront synthesis and narrative engine    | **Planned**  | Storefront generation           | P10B-14                            | Determinism, compatibility, no-partial snapshot and repetition control                           |
+| ☐    | P10B-16 | Coordinated directions and diversity control         | **Planned**  | Direction/evaluation authority  | P10B-15                            | Fingerprints, duplicate/near-duplicate and pairwise diversity                                    |
+| ☐    | P10B-17 | Responsive, accessibility and performance closure    | **Planned**  | Design system and QA            | P10B-16 and implemented families   | Four-width EN/FI geometry, a11y, performance and visual evidence                                 |
+| ☐    | P10B-18 | Commercial quality and scale gate                    | **Planned**  | Product owner, generation, QA   | All prior P10B tasks               | 100+ configurations and fingerprint-stratified human review                                      |
 
 ## P10C checklist
 
@@ -164,9 +164,8 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 through P10B-09 and P10B-12 are **Baseline**. P10B-10, P10B-11, and P10B-13 through
-P10B-18 remain **Planned**. The remaining Done conditions are implementation gates, not claims
-about the current repository.
+P10B-01 through P10B-12 are **Baseline**. P10B-13 through P10B-18 remain **Planned**. The remaining
+Done conditions are implementation gates, not claims about the current repository.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
 
@@ -343,6 +342,15 @@ and Design DNA authority. Evidence/cardinality guards fail closed; deterministic
 
 #### P10B-10 — Commercial collection and search profiles
 
+**Status:** Baseline. Four fingerprinted executable PageBlueprint profiles now select the existing
+P10B-06 shared frame, P10B-03 `dynamicCollectionCommerce` anatomy, P10B-08 canonical card anatomy,
+and P10B-04 approved media treatment. Exact canonical catalogue bindings preserve product
+membership/order, facts, product media, filters/sort state, and child-collection order. Campaign
+media is approved collection/editorial media, not a product-media replacement. A transient
+revision-checked zero-result context keeps the query without fabricating products. Deterministic
+lifecycle and 16-view Chromium evidence pass with zero provider calls. See
+[`P10B_10_COMMERCIAL_COLLECTION_SEARCH_PROFILES.md`](P10B_10_COMMERCIAL_COLLECTION_SEARCH_PROFILES.md).
+
 - **Outcome:** Deliver editorial discovery, catalogue comparison, campaign-led, and dense/search
   experiences.
 - **Authority:** Existing PageBlueprint profiles and `dynamicCollectionCommerce`.
@@ -357,6 +365,13 @@ and Design DNA authority. Evidence/cardinality guards fail closed; deterministic
 - **Non-goal:** A second collection/search engine.
 
 #### P10B-11 — Commercial PDP profile library
+
+**Status:** **Baseline**. Four fingerprinted PageBlueprint profiles select the existing generic
+`dynamicProductDetail`: balanced standard commerce, approved-evidence high consideration,
+P10B-04 gallery-led, and configuration-led. Generic simple/configurable option resolution,
+canonical product media, P10B-08 related cards, shared-frame compatibility, save/reload and
+publication remain exact; sixteen browser captures cover 375/768/1024/1440 px. See
+[`P10B_11_COMMERCIAL_PDP_PROFILE_LIBRARY.md`](P10B_11_COMMERCIAL_PDP_PROFILE_LIBRARY.md).
 
 - **Outcome:** Deliver distinct standard, high-consideration, gallery-led, and variant-led purchase
   experiences.
