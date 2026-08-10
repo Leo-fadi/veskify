@@ -1241,10 +1241,13 @@ function compileCoordinatedFollowUpProposal(
   }
   for (const change of input.plan.pageChanges) {
     const originalPage = original.pages.find((page) => page.pageId === change.pageId);
+    const sourcePage = input.planningInput.draft.pages.find((page) => page.id === change.pageId);
     if (
       !originalPage ||
+      !sourcePage ||
       originalPage.type !== change.pageType ||
-      originalPage.role !== roleForPageType(change.pageType) ||
+      sourcePage.type !== change.pageType ||
+      originalPage.role !== roleForPage(sourcePage) ||
       coordinatedPageAuthorityFingerprint(originalPage) !== change.pageAuthorityFingerprint
     ) {
       invalid(

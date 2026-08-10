@@ -243,29 +243,59 @@ function assertSnapshotRealization(
     const snapshot = entries.get(state)!.snapshot;
     assertSharedFrame(snapshot);
     for (const pageType of ["home", "collection", "product"] as const) {
-      const page = snapshot.pages.find((candidate) => candidate.type === pageType);
+      const pages = snapshot.pages.filter((candidate) => candidate.type === pageType);
       const materialization = materializations.get(pageType);
       const pagePlan =
         materialization && getExecutablePageBlueprintProfile(materialization.profileId);
-      if (!page || !materialization || !pagePlan) {
+      if (pages.length === 0 || !materialization || !pagePlan) {
         throw new GoldenStoreEvaluationError(
           "stale-profile",
           `${state} lifecycle cannot realize the canonical ${pageType} PageBlueprint.`,
         );
       }
-      try {
-        validateExecutablePageBlueprintRealization({
-          pagePlan,
-          materialization,
-          componentDefinitions: veskifyComponentDefinitionsV2,
-          sections: page.sections,
-        });
-      } catch (cause) {
-        throw new GoldenStoreEvaluationError(
-          "stale-profile",
-          `${state} lifecycle snapshot does not realize ${materialization.profileId}.`,
-          cause,
-        );
+      for (const page of pages) {
+        let expectedPagePlan = pagePlan;
+        let expectedPageMaterialization = materialization;
+        const declaredProfile = page.pageFamily;
+        if (
+          declaredProfile &&
+          (declaredProfile.profileId !== materialization.profileId ||
+            declaredProfile.profileVersion !== materialization.profileVersion)
+        ) {
+          const declaredPagePlan = getExecutablePageBlueprintProfile(declaredProfile.profileId);
+          if (
+            !declaredPagePlan?.profile ||
+            declaredPagePlan.pageType !== pageType ||
+            declaredPagePlan.profile.version !== declaredProfile.profileVersion
+          ) {
+            throw new GoldenStoreEvaluationError(
+              "stale-profile",
+              `${state} lifecycle page ${page.id} declares an unavailable PageBlueprint profile.`,
+            );
+          }
+          expectedPagePlan = declaredPagePlan;
+          expectedPageMaterialization = wholeStorefrontPageBlueprintMaterializationSchema.parse(
+            materializeExecutablePageBlueprint({
+              pagePlan: declaredPagePlan,
+              componentDefinitions: veskifyComponentDefinitionsV2,
+              availableBindingCategories: declaredPagePlan.profile.requiredBindingCategories,
+            }),
+          );
+        }
+        try {
+          validateExecutablePageBlueprintRealization({
+            pagePlan: expectedPagePlan,
+            materialization: expectedPageMaterialization,
+            componentDefinitions: veskifyComponentDefinitionsV2,
+            sections: page.sections,
+          });
+        } catch (cause) {
+          throw new GoldenStoreEvaluationError(
+            "stale-profile",
+            `${state} lifecycle page ${page.id} does not realize ${expectedPageMaterialization.profileId}.`,
+            cause,
+          );
+        }
       }
     }
   }

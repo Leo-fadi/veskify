@@ -6,6 +6,15 @@ import {
   P10B14_PREMIUM_EDITORIAL_SELECTION,
 } from "@/application/premium-editorial-vertical-slice";
 import { confirmPublish, preparePublish } from "@/application/publishing";
+import { createWholeStorefrontGenerationPlan } from "@/application/whole-storefront-generation-plan";
+import {
+  compileWholeStorefrontProposal,
+  coordinatedFollowUpPlanFingerprint,
+  coordinatedPageAuthorityFingerprint,
+  coordinatedProtectedStateFingerprint,
+  createWholeStorefrontRuntimeState,
+  type CoordinatedFollowUpPlan,
+} from "@/application/whole-storefront-proposal-lifecycle";
 import { createStorefrontRenderContext } from "@/components/registry";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
 import {
@@ -60,6 +69,89 @@ describe("P10B-14 Premium Editorial complete-storefront vertical slice", () => {
         enabledLocales: ["en", "fi"],
       }),
     ).not.toThrow();
+  });
+
+  it("preserves the family-aware search role through a governed follow-up compilation", () => {
+    const planningInput = structuredClone(result.slice.planningInput);
+    planningInput.draft.pages = planningInput.draft.pages.map((page) => ({
+      ...page,
+      sections: page.sections.filter((section) => section.component !== "contentSupport"),
+    }));
+    const baselineGenerationPlan = createWholeStorefrontGenerationPlan(planningInput, {
+      directionId: P10B14_PREMIUM_EDITORIAL_SELECTION.directionId,
+      homepageProfileId: P10B14_PREMIUM_EDITORIAL_SELECTION.homepageProfileId,
+      collectionProfileId: P10B14_PREMIUM_EDITORIAL_SELECTION.collectionProfileId,
+      pdpProfileId: P10B14_PREMIUM_EDITORIAL_SELECTION.pdpProfileId,
+    });
+    const original = createWholeStorefrontRuntimeState({
+      plan: baselineGenerationPlan,
+      planningInput,
+    });
+    const sourcePage = planningInput.draft.pages.find((page) => page.slug === "/search");
+    const originalPage = sourcePage
+      ? original.pages.find((page) => page.pageId === sourcePage.id)
+      : undefined;
+    const materialization = baselineGenerationPlan.pageBlueprintMaterializations.find(
+      (entry) => entry.pageType === "collection",
+    );
+    const slot = materialization?.slots[0];
+    const component = originalPage?.components[0];
+    if (!sourcePage || !originalPage || !materialization || !slot || !component) {
+      throw new Error("Expected current search follow-up authority.");
+    }
+    expect(originalPage.role).toBe("other");
+    const withoutFingerprint = {
+      kind: "governedFollowUp" as const,
+      version: 1 as const,
+      id: "plan_p10b14_search_follow_up",
+      target: baselineGenerationPlan.target,
+      requestIdentity: "p10b14-search-follow-up-request",
+      locale: "en" as const,
+      manifest: { version: "1.0.0", fingerprint: "manifest-p10b14-search-follow-up" },
+      packageRegistry: { version: "2.0.0", fingerprint: "registry-p10b14-search-follow-up" },
+      componentRegistryFingerprint: baselineGenerationPlan.componentRegistryFingerprint,
+      commerceFingerprint: baselineGenerationPlan.target.canonicalCommerceFingerprint,
+      approvedAssetFingerprint: planningInput.approvedAssetContext?.fingerprint ?? null,
+      protectedStateFingerprint: coordinatedProtectedStateFingerprint(original),
+      baselineGenerationPlan,
+      sharedOperations: [],
+      pageChanges: [
+        {
+          pageId: originalPage.pageId,
+          pageType: "collection" as const,
+          profileId: materialization.profileId,
+          profileFingerprint: materialization.fingerprint,
+          pageAuthorityFingerprint: coordinatedPageAuthorityFingerprint(originalPage),
+          slotAuthorities: [{ slotId: slot.slotId, componentIds: [component.id] }],
+          operations: [
+            {
+              type: "APPLY_PAGE_COMPONENTS" as const,
+              page: {
+                ...originalPage,
+                components: originalPage.components.map((candidate) =>
+                  candidate.id === component.id
+                    ? { ...candidate, visible: !candidate.visible }
+                    : candidate,
+                ),
+              },
+              removedComponentIds: [],
+            },
+          ],
+        },
+      ],
+      explanation: "Review the exact search-page presentation change before applying it.",
+    };
+    const plan: CoordinatedFollowUpPlan = {
+      ...withoutFingerprint,
+      fingerprint: coordinatedFollowUpPlanFingerprint(withoutFingerprint),
+    };
+
+    const proposal = compileWholeStorefrontProposal({ plan, planningInput });
+    const proposedSearch = proposal.proposedStorefront.pages.find(
+      (page) => page.pageId === originalPage.pageId,
+    );
+    expect(proposedSearch?.role).toBe("other");
+    expect(proposedSearch?.components[0]?.visible).toBe(!component.visible);
   });
 
   it("preserves one frame and one Design DNA while retaining every registered page authority", () => {
