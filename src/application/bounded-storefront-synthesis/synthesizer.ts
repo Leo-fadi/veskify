@@ -1,0 +1,604 @@
+import { registeredBrandSystemForDirection } from "@/application/storefront-design-system";
+import {
+  getCommercialCollectionSearchProfile,
+  getCommercialHomepageProfile,
+  getCommercialPdpProfile,
+  getExecutablePageBlueprintProfile,
+  type CommercialCollectionSearchProfileId,
+  type CommercialHomepageProfileId,
+  type CommercialPdpProfileId,
+} from "@/application/storefront-templates";
+import type { StorefrontSiteMapDecision } from "@/application/storefront-site-map";
+import {
+  createWholeStorefrontGenerationTarget,
+  materializeCompleteStorefrontSelection,
+  type ApprovedAssetPresentation,
+  type CompleteStorefrontMaterialization,
+  type WholeStorefrontGenerationPlan,
+  type WholeStorefrontPlanningInput,
+} from "@/application/whole-storefront-generation-plan";
+import type { ContentSupportFactAuthority } from "@/application/content-support-pages";
+import type { PageFactEvidenceAuthority } from "@/application/storefront-site-map";
+import {
+  applyCommercialSharedFrame,
+  canonicalValueFingerprint,
+  canonicalValueString,
+  commercialSharedFrameProfileIds,
+  getCommercialSharedFrameProfile,
+  type PageFactEvidenceReference,
+  type CommercialSharedFrameProfileId,
+} from "@/domain/storefront";
+import {
+  boundedStorefrontSynthesisDecisionSchema,
+  boundedStorefrontSynthesisRequestSchema,
+  BoundedStorefrontSynthesisError,
+  type BoundedStorefrontSynthesisDecision,
+  type BoundedStorefrontSynthesisRequest,
+} from "./contract";
+
+type Selection = Readonly<{
+  directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
+  homepageProfileId: CommercialHomepageProfileId;
+  collectionProfileId: CommercialCollectionSearchProfileId;
+  searchProfileId: CommercialCollectionSearchProfileId;
+  pdpProfileId: CommercialPdpProfileId;
+  narrativePosture: BoundedStorefrontSynthesisDecision["narrative"]["posture"];
+  merchandisingPosture: BoundedStorefrontSynthesisDecision["merchandisingPosture"];
+  densityPosture: BoundedStorefrontSynthesisDecision["informationDensityPosture"];
+  artDirectionPosture: BoundedStorefrontSynthesisDecision["artDirectionPosture"];
+  responsiveMode: BoundedStorefrontSynthesisDecision["responsivePosture"]["mode"];
+  decisions: BoundedStorefrontSynthesisDecision["decisions"];
+}>;
+
+export type BoundedStorefrontSynthesisInput = Readonly<{
+  planningInput: WholeStorefrontPlanningInput;
+  siteMapDecision: StorefrontSiteMapDecision;
+  approvedEvidenceReferences: readonly PageFactEvidenceReference[];
+  request: BoundedStorefrontSynthesisRequest;
+}>;
+
+export type BoundedStorefrontSynthesisExecutionInput = BoundedStorefrontSynthesisInput &
+  Readonly<{
+    decision: BoundedStorefrontSynthesisDecision;
+    pageEvidenceAuthority: PageFactEvidenceAuthority;
+    contentFactAuthority: ContentSupportFactAuthority;
+    approvedAssetPresentations: readonly ApprovedAssetPresentation[];
+  }>;
+
+export type BoundedStorefrontSynthesisResult = Readonly<{
+  decision: BoundedStorefrontSynthesisDecision;
+  materialization: CompleteStorefrontMaterialization;
+}>;
+
+function fail(
+  code: ConstructorParameters<typeof BoundedStorefrontSynthesisError>[0],
+  message: string,
+  cause?: unknown,
+): never {
+  throw new BoundedStorefrontSynthesisError(code, message, cause ? { cause } : undefined);
+}
+
+function hasConfigurableProducts(input: WholeStorefrontPlanningInput): boolean {
+  return input.catalogue.products.some((product) => (product.orderOptions?.length ?? 0) > 0);
+}
+
+function selectionFor(
+  input: BoundedStorefrontSynthesisInput,
+  request: BoundedStorefrontSynthesisRequest,
+): Selection {
+  const productCount = input.planningInput.catalogue.products.length;
+  const configurable = hasConfigurableProducts(input.planningInput);
+  const chosen = (
+    selection: Omit<Selection, "decisions">,
+    decisions: BoundedStorefrontSynthesisDecision["decisions"],
+  ): Selection => ({ ...selection, decisions });
+  const authorityReferences = [
+    `request:${request.intent}`,
+    `catalogue-products:${productCount}`,
+    `configurable-products:${String(configurable)}`,
+  ];
+
+  if (request.intent === "editorial-led" || request.intent === "stronger-brand-storytelling") {
+    return chosen(
+      {
+        directionId: "premiumEditorial",
+        homepageProfileId: "homepage-editorial-storytelling",
+        collectionProfileId: "collection-editorial-discovery",
+        searchProfileId: "collection-dense-search",
+        pdpProfileId: "pdp-high-consideration",
+        narrativePosture: "story-led",
+        merchandisingPosture: "curated",
+        densityPosture: "airy",
+        artDirectionPosture: "immersive",
+        responsiveMode: "content-first",
+      },
+      [
+        {
+          code: "story-authority-selected",
+          outcome: "editorial homepage and considered PDP",
+          authorityReferences,
+        },
+      ],
+    );
+  }
+  if (request.intent === "restrained-minimal") {
+    return chosen(
+      {
+        directionId: "warmApproachable",
+        homepageProfileId: "homepage-minimal-brand-commerce",
+        collectionProfileId: "collection-editorial-discovery",
+        searchProfileId: "collection-dense-search",
+        pdpProfileId: "pdp-standard-commerce",
+        narrativePosture: "restrained",
+        merchandisingPosture: "restrained",
+        densityPosture: "balanced",
+        artDirectionPosture: "contained",
+        responsiveMode: "balanced",
+      },
+      [
+        {
+          code: "restrained-authority-selected",
+          outcome: "minimal homepage and standard commerce progression",
+          authorityReferences,
+        },
+      ],
+    );
+  }
+  if (request.intent === "campaign-emphasis") {
+    const hasEditorialMedia = input.planningInput.approvedAssetContext?.assets.some(
+      (asset) => asset.role === "editorialImage",
+    );
+    if (!hasEditorialMedia) {
+      fail(
+        "missing-approved-evidence",
+        "Campaign emphasis requires current approved editorial media.",
+      );
+    }
+    return chosen(
+      {
+        directionId: "premiumEditorial",
+        homepageProfileId: "homepage-campaign-led",
+        collectionProfileId: "collection-campaign-led-discovery",
+        searchProfileId: "collection-dense-search",
+        pdpProfileId: "pdp-high-consideration",
+        narrativePosture: "campaign-led",
+        merchandisingPosture: "campaign",
+        densityPosture: "airy",
+        artDirectionPosture: "immersive",
+        responsiveMode: "content-first",
+      },
+      [
+        {
+          code: "campaign-authority-selected",
+          outcome: "approved-media campaign profiles",
+          authorityReferences: [...authorityReferences, "asset-role:editorialImage"],
+        },
+      ],
+    );
+  }
+
+  const denseRequested = request.intent === "dense-catalogue";
+  const densityAvailable = productCount >= 8;
+  const collectionProfileId =
+    denseRequested && densityAvailable
+      ? "collection-dense-search"
+      : "collection-editorial-discovery";
+  const narrowed = denseRequested && !densityAvailable;
+  return chosen(
+    {
+      directionId: "warmApproachable",
+      homepageProfileId: "homepage-high-consideration",
+      collectionProfileId,
+      searchProfileId: "collection-dense-search",
+      pdpProfileId: configurable ? "pdp-high-consideration" : "pdp-standard-commerce",
+      narrativePosture:
+        request.intent === "high-consideration"
+          ? "considered-purchase"
+          : denseRequested && densityAvailable
+            ? "catalogue-dense"
+            : "discovery-led",
+      merchandisingPosture:
+        denseRequested && densityAvailable
+          ? "dense"
+          : request.intent === "high-consideration"
+            ? "considered"
+            : "discovery",
+      densityPosture: denseRequested && densityAvailable ? "compact" : "balanced",
+      artDirectionPosture: "editorial",
+      responsiveMode: denseRequested && densityAvailable ? "commerce-first" : "balanced",
+    },
+    [
+      {
+        code: narrowed ? "dense-request-narrowed" : "commerce-authority-selected",
+        outcome: narrowed
+          ? "catalogue is too small for dense collection composition; discovery profile selected"
+          : configurable
+            ? "discovery profile and considered configurable-product path"
+            : "discovery profile and standard product path",
+        authorityReferences,
+      },
+    ],
+  );
+}
+
+function selectedSiteMap(
+  input: StorefrontSiteMapDecision,
+  selection: Selection,
+): StorefrontSiteMapDecision {
+  return {
+    ...structuredClone(input),
+    pages: input.pages.map((page) => {
+      const profileId =
+        page.familyId === "home"
+          ? selection.homepageProfileId
+          : page.familyId === "collection"
+            ? selection.collectionProfileId
+            : page.familyId === "search-results"
+              ? selection.searchProfileId
+              : page.familyId === "product-detail"
+                ? selection.pdpProfileId
+                : page.profile.id;
+      return { ...structuredClone(page), profile: { ...page.profile, id: profileId } };
+    }),
+  };
+}
+
+function profileCompatibility(profileId: string): readonly CommercialSharedFrameProfileId[] {
+  const profile = getExecutablePageBlueprintProfile(profileId)?.profile;
+  if (!profile) fail("stale-authority", `PageBlueprint profile ${profileId} is unavailable.`);
+  return (
+    profile.commercialHomepage?.compatibleSharedFrameProfileIds ??
+    profile.commercialProductDetail?.compatibleSharedFrameProfileIds ??
+    profile.commercialCollectionSearch?.compatibleSharedFrameProfileIds ??
+    profile.commercialContentSupport?.compatibleSharedFrameProfileIds ??
+    profile.commercialUtility?.compatibleSharedFrameProfileIds ??
+    commercialSharedFrameProfileIds
+  );
+}
+
+function selectSharedFrame(
+  decision: StorefrontSiteMapDecision,
+  preferred: readonly CommercialSharedFrameProfileId[],
+): CommercialSharedFrameProfileId {
+  const compatible = commercialSharedFrameProfileIds.filter((frameId) =>
+    decision.pages.every((page) => profileCompatibility(page.profile.id).includes(frameId)),
+  );
+  const selected = preferred.find((frameId) => compatible.includes(frameId)) ?? compatible[0];
+  if (!selected) {
+    fail(
+      "incompatible-frame-profile",
+      "No registered shared-frame profile is compatible with the selected complete page set.",
+    );
+  }
+  return selected;
+}
+
+function preferredFrames(selection: Selection): readonly CommercialSharedFrameProfileId[] {
+  if (selection.directionId === "premiumEditorial") {
+    return ["editorial-masthead", "centered-minimal"];
+  }
+  if (selection.densityPosture === "compact") {
+    return ["compact-technical", "commerce-utility", "centered-minimal"];
+  }
+  return ["centered-minimal", "commerce-utility", "editorial-masthead"];
+}
+
+function approvedEvidenceRevisions(input: BoundedStorefrontSynthesisInput) {
+  const approved = new Map(
+    input.approvedEvidenceReferences.map((reference) => [
+      `${reference.source}:${reference.authorityId}:${reference.revision}`,
+      reference,
+    ]),
+  );
+  for (const page of input.siteMapDecision.pages.filter(({ required }) => required)) {
+    for (const reference of page.evidenceReferences) {
+      const key = `${reference.source}:${reference.authorityId}:${reference.revision}`;
+      const current = approved.get(key);
+      if (!current || current.status !== "approved") {
+        fail(
+          "missing-approved-evidence",
+          `Page ${page.key} references evidence that is not in the current approved revision set.`,
+        );
+      }
+    }
+  }
+  return [...approved.values()]
+    .map(({ source, authorityId, revision }) => ({ source, authorityId, revision }))
+    .sort((left, right) =>
+      `${left.source}:${left.authorityId}:${left.revision}`.localeCompare(
+        `${right.source}:${right.authorityId}:${right.revision}`,
+      ),
+    );
+}
+
+function evidenceAwareSiteMap(input: BoundedStorefrontSynthesisInput): {
+  siteMap: StorefrontSiteMapDecision;
+  omittedPageKeys: string[];
+} {
+  const approved = new Set(
+    input.approvedEvidenceReferences
+      .filter(({ status }) => status === "approved")
+      .map(({ source, authorityId, revision }) => `${source}:${authorityId}:${revision}`),
+  );
+  const omittedPageKeys: string[] = [];
+  const pages = input.siteMapDecision.pages.filter((page) => {
+    const satisfied = page.evidenceReferences.every((reference) =>
+      approved.has(`${reference.source}:${reference.authorityId}:${reference.revision}`),
+    );
+    if (satisfied) return true;
+    if (page.required) {
+      fail(
+        "missing-approved-evidence",
+        `Required page ${page.key} does not have current approved evidence.`,
+      );
+    }
+    omittedPageKeys.push(page.key);
+    return false;
+  });
+  return {
+    siteMap: { ...structuredClone(input.siteMapDecision), pages },
+    omittedPageKeys,
+  };
+}
+
+function profileMaterial(siteMap: StorefrontSiteMapDecision, input: WholeStorefrontPlanningInput) {
+  const pageProfileSelections: BoundedStorefrontSynthesisDecision["pageProfileSelections"] = [];
+  const componentChoices: BoundedStorefrontSynthesisDecision["componentChoices"] = [];
+  const pageContributions: BoundedStorefrontSynthesisDecision["narrative"]["pageContributions"] =
+    [];
+  for (const page of siteMap.pages) {
+    const plan = getExecutablePageBlueprintProfile(page.profile.id);
+    if (!plan?.profile || plan.profile.version !== page.profile.version) {
+      fail("stale-authority", `Page ${page.key} has a stale PageBlueprint profile reference.`);
+    }
+    const roles = plan.slots.map((slot) => slot.narrativeRole);
+    if (roles.some((role) => role === undefined)) {
+      fail("unsupported-narrative-role", `Page ${page.key} has an unsupported narrative role.`);
+    }
+    pageProfileSelections.push({
+      pageKey: page.key,
+      familyId: page.familyId,
+      profileId: plan.profile.id,
+      profileVersion: plan.profile.version,
+      profileFingerprint: `page-blueprint-profile-${canonicalValueFingerprint(plan)}`,
+      narrativeRoles: roles,
+    });
+    pageContributions.push({ pageKey: page.key, roles });
+    for (const slot of plan.slots) {
+      const definition = input.componentDefinitions.find(
+        (candidate) => candidate.type === slot.sectionType,
+      );
+      if (!definition || !definition.variants.some(({ id }) => id === slot.defaultVariant)) {
+        fail(
+          "invalid-component-capability",
+          `Page ${page.key} selects unavailable ${slot.sectionType}/${slot.defaultVariant}.`,
+        );
+      }
+      const anatomyId =
+        plan.profile.commercialHomepage?.productCardAnatomyId ??
+        plan.profile.commercialCollectionSearch?.productCardAnatomyId ??
+        plan.profile.commercialProductDetail?.relatedProductCardAnatomyId ??
+        null;
+      componentChoices.push({
+        pageKey: page.key,
+        slotId: slot.id,
+        component: slot.sectionType,
+        variant: slot.defaultVariant,
+        anatomyId,
+        capabilityFingerprint: `component-capability-${canonicalValueFingerprint(definition)}`,
+      });
+    }
+  }
+  return { pageProfileSelections, componentChoices, pageContributions };
+}
+
+function validateNarrative(
+  siteMap: StorefrontSiteMapDecision,
+  pageContributions: BoundedStorefrontSynthesisDecision["narrative"]["pageContributions"],
+) {
+  for (const page of pageContributions) {
+    for (let index = 2; index < page.roles.length; index += 1) {
+      if (
+        page.roles[index] === page.roles[index - 1] &&
+        page.roles[index] === page.roles[index - 2]
+      ) {
+        fail(
+          "impossible-required-role",
+          `Page ${page.pageKey} repeats the same narrative role three times consecutively.`,
+        );
+      }
+    }
+  }
+  const roles = pageContributions.flatMap(({ roles: values }) => values);
+  const hasCatalogue = siteMap.pages.some(({ familyId }) =>
+    ["collection", "search-results"].includes(familyId),
+  );
+  const discoveryPath = roles.some((role) =>
+    ["primary-discovery", "secondary-discovery", "orientation"].includes(role),
+  );
+  const conversionPath =
+    roles.includes("conversion") ||
+    (roles.includes("product-focus") &&
+      siteMap.pages.some(({ familyId }) => ["cart", "checkout"].includes(familyId)));
+  if (hasCatalogue && !discoveryPath) {
+    fail("impossible-required-role", "The selected catalogue page set has no discovery path.");
+  }
+  if (!conversionPath) {
+    fail("impossible-required-role", "The selected storefront has no bounded conversion path.");
+  }
+  const roleSequence = roles.filter((role, index) => role !== roles[index - 1]);
+  return { roleSequence, discoveryPath, conversionPath };
+}
+
+function boundedParameters(
+  selection: Selection,
+  frameId: CommercialSharedFrameProfileId,
+): Record<string, string | number | boolean> {
+  const collection = getCommercialCollectionSearchProfile(selection.collectionProfileId)?.profile
+    ?.commercialCollectionSearch;
+  const homepage = getCommercialHomepageProfile(selection.homepageProfileId)?.profile
+    ?.commercialHomepage;
+  const pdp = getCommercialPdpProfile(selection.pdpProfileId)?.profile?.commercialProductDetail;
+  if (!collection || !homepage || !pdp) {
+    fail("stale-authority", "Selected commercial profile authority is unavailable.");
+  }
+  return {
+    "frame.profile": frameId,
+    "homepage.merchandising": homepage.merchandisingEmphasis,
+    "homepage.productCardAnatomy": homepage.productCardAnatomyId,
+    "collection.gridDensity": collection.gridDensity,
+    "collection.filterLayout": collection.filterLayout,
+    "collection.productCardAnatomy": collection.productCardAnatomyId,
+    "pdp.presentation": pdp.presentation,
+    "pdp.relatedProductCardAnatomy": pdp.relatedProductCardAnatomyId,
+  };
+}
+
+export function createBoundedStorefrontSynthesisDecision(
+  inputValue: BoundedStorefrontSynthesisInput,
+): BoundedStorefrontSynthesisDecision {
+  const request = boundedStorefrontSynthesisRequestSchema.safeParse(inputValue.request);
+  if (!request.success) fail("invalid-request", "The bounded synthesis request is invalid.");
+  const input = { ...inputValue, request: request.data };
+  const target = createWholeStorefrontGenerationTarget(input.planningInput);
+  const selection = selectionFor(input, request.data);
+  const evidenceAware = evidenceAwareSiteMap(input);
+  const siteMap = selectedSiteMap(evidenceAware.siteMap, selection);
+  const frameId = selectSharedFrame(siteMap, preferredFrames(selection));
+  const frame = getCommercialSharedFrameProfile(frameId);
+  const profileAuthority = profileMaterial(siteMap, input.planningInput);
+  const narrativePaths = validateNarrative(siteMap, profileAuthority.pageContributions);
+  const brandSystem = registeredBrandSystemForDirection(
+    input.planningInput.draft.brandSystem,
+    input.planningInput.recipeContext.designSystem,
+    selection.directionId,
+  );
+  const material = {
+    contractVersion: 1 as const,
+    request: request.data,
+    merchantContextFingerprint: `merchant-context-${canonicalValueFingerprint({
+      project: input.planningInput.project,
+      briefId: input.planningInput.brief.id,
+      briefRevision: input.planningInput.brief.revision,
+      approvedEvidenceFingerprint: input.planningInput.brief.approvedEvidenceFingerprint,
+    })}`,
+    approvedEvidenceRevisions: approvedEvidenceRevisions(input),
+    commerceContextFingerprint: target.canonicalCommerceFingerprint,
+    assetAuthorityFingerprint: input.planningInput.approvedAssetContext?.fingerprint ?? null,
+    designDna: {
+      directionId: selection.directionId,
+      fingerprint: `design-dna-${canonicalValueFingerprint(brandSystem.designDna)}`,
+    },
+    siteMap: {
+      fingerprint: `site-map-decision-${canonicalValueFingerprint(siteMap)}`,
+      pageSetFingerprint: `page-set-${canonicalValueFingerprint(
+        siteMap.pages.map(({ key, familyId, route, profile }) => ({
+          key,
+          familyId,
+          route,
+          profile,
+        })),
+      )}`,
+      pageKeys: siteMap.pages.map(({ key }) => key),
+    },
+    sharedFrame: {
+      profileId: frame.id,
+      profileVersion: frame.version,
+      authorityFingerprint: frame.authorityFingerprint,
+    },
+    commercialProfiles: {
+      homepageProfileId: selection.homepageProfileId,
+      collectionProfileId: selection.collectionProfileId,
+      searchProfileId: selection.searchProfileId,
+      pdpProfileId: selection.pdpProfileId,
+    },
+    pageProfileSelections: profileAuthority.pageProfileSelections,
+    narrative: {
+      posture: selection.narrativePosture,
+      roleSequence: narrativePaths.roleSequence,
+      pageContributions: profileAuthority.pageContributions,
+      discoveryPath: narrativePaths.discoveryPath,
+      conversionPath: narrativePaths.conversionPath,
+    },
+    merchandisingPosture: selection.merchandisingPosture,
+    informationDensityPosture: selection.densityPosture,
+    artDirectionPosture: selection.artDirectionPosture,
+    componentChoices: profileAuthority.componentChoices,
+    boundedParameters: boundedParameters(selection, frame.id),
+    evidenceComposition: {
+      requiredPageKeys: siteMap.pages.filter(({ required }) => required).map(({ key }) => key),
+      optionalPageKeys: siteMap.pages.filter(({ required }) => !required).map(({ key }) => key),
+      omittedPageKeys: evidenceAware.omittedPageKeys,
+    },
+    responsivePosture: {
+      breakpoints: [375, 768, 1024, 1440] as [375, 768, 1024, 1440],
+      mode: selection.responsiveMode,
+    },
+    currentAuthority: {
+      wholeStorefrontTargetFingerprint: target.fingerprint,
+      componentRegistryFingerprint: target.registryFingerprint,
+      recipeContextFingerprint: target.recipeFingerprint,
+    },
+    decisions: selection.decisions,
+  };
+  return boundedStorefrontSynthesisDecisionSchema.parse({
+    ...material,
+    synthesisFingerprint: `bounded-storefront-synthesis-${canonicalValueFingerprint(material)}`,
+  });
+}
+
+export function validateBoundedStorefrontSynthesisDecision(
+  decisionValue: unknown,
+  input: BoundedStorefrontSynthesisInput,
+): BoundedStorefrontSynthesisDecision {
+  const parsed = boundedStorefrontSynthesisDecisionSchema.safeParse(decisionValue);
+  if (!parsed.success) {
+    fail("stale-authority", "The bounded synthesis contract is invalid or stale.", parsed.error);
+  }
+  const expected = createBoundedStorefrontSynthesisDecision(input);
+  if (canonicalValueString(parsed.data) !== canonicalValueString(expected)) {
+    fail(
+      "stale-authority",
+      "The bounded synthesis decision does not match current canonical authority.",
+    );
+  }
+  return parsed.data;
+}
+
+export function executeBoundedStorefrontSynthesis(
+  input: BoundedStorefrontSynthesisExecutionInput,
+): BoundedStorefrontSynthesisResult {
+  const decision = validateBoundedStorefrontSynthesisDecision(input.decision, input);
+  const planningInput = {
+    ...structuredClone(input.planningInput),
+    draft: applyCommercialSharedFrame(input.planningInput.draft, decision.sharedFrame.profileId),
+  } satisfies WholeStorefrontPlanningInput;
+  const selectedDecision = selectedSiteMap(input.siteMapDecision, {
+    directionId: decision.designDna.directionId,
+    ...decision.commercialProfiles,
+    narrativePosture: decision.narrative.posture,
+    merchandisingPosture: decision.merchandisingPosture,
+    densityPosture: decision.informationDensityPosture,
+    artDirectionPosture: decision.artDirectionPosture,
+    responsiveMode: decision.responsivePosture.mode,
+    decisions: decision.decisions,
+  });
+  const includedPageKeys = new Set(decision.siteMap.pageKeys);
+  const siteMapDecision = {
+    ...selectedDecision,
+    pages: selectedDecision.pages.filter(({ key }) => includedPageKeys.has(key)),
+  };
+  const materialization = materializeCompleteStorefrontSelection({
+    planningInput,
+    siteMapDecision,
+    pageEvidenceAuthority: input.pageEvidenceAuthority,
+    contentFactAuthority: input.contentFactAuthority,
+    approvedAssetPresentations: input.approvedAssetPresentations,
+    directionId: decision.designDna.directionId,
+    materializationIdPrefix: `p10b15_${decision.synthesisFingerprint.slice(-12)}`,
+  });
+  return Object.freeze({
+    decision: structuredClone(decision),
+    materialization,
+  });
+}

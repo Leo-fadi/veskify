@@ -12,8 +12,8 @@ exportMarkdownDocx({
   title: "Veskify Software Design Document",
   subtitle: "Version 1.3.0",
   coverLines: [
-    "Verified baseline: 9 August 2026",
-    "P10B-09 homepage, P10B-10 collection/search, P10B-11 PDP, and P10B-12 content/support baselines",
+    "Verified baseline: 10 August 2026",
+    "P10B-15 bounded storefront synthesis and narrative engine",
     "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
     "Authoritative source: docs/VESKIFY_SDD.md",
   ],
