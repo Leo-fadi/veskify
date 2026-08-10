@@ -47,6 +47,10 @@ import {
   type HomepageCommerceBridgeComponent,
 } from "@/components/registry/homepage-commerce-bridge";
 import {
+  contentSupportContentSchema,
+  contentSupportStyleOverridesSchema,
+} from "@/components/registry/content-support";
+import {
   wholeStorefrontProposalCompilationInputSchema,
   coordinatedInitialGenerationProposalCompilationInputSchema,
   coordinatedFollowUpProposalCompilationInputSchema,
@@ -76,6 +80,12 @@ function roleForPageType(
   if (type === "collection") return "collection-template";
   if (type === "product") return "product-template";
   return "other";
+}
+
+function roleForPage(
+  page: WholeStorefrontProposalCompilationInput["planningInput"]["draft"]["pages"][number],
+): WholeStorefrontRuntimePage["role"] {
+  return page.pageFamily?.familyId === "search-results" ? "other" : roleForPageType(page.type);
 }
 
 function parse(input: unknown): WholeStorefrontProposalCompilationInput {
@@ -237,6 +247,7 @@ function sourceComponent(
   page: WholeStorefrontProposalCompilationInput["planningInput"]["draft"]["pages"][number],
   section: WholeStorefrontProposalCompilationInput["planningInput"]["draft"]["pages"][number]["sections"][number],
   plan: ReturnType<typeof validateCurrentPlan>,
+  planningInput: WholeStorefrontPlanningInput,
 ): WholeStorefrontRuntimeComponent {
   const expected = plan.pagePlans
     .find((candidate) => candidate.pageId === page.id)
@@ -254,7 +265,10 @@ function sourceComponent(
       "A retained source component is missing from the validated whole-storefront plan.",
     );
   }
-  if (Object.keys(section.styleOverrides ?? {}).length > 0) {
+  if (
+    Object.keys(section.styleOverrides ?? {}).length > 0 &&
+    section.component !== "contentSupport"
+  ) {
     return invalid(
       "incomplete-required-operation-compilation",
       "The validated plan does not contain a supported V2 operation for existing section style overrides.",
@@ -340,6 +354,32 @@ function sourceComponent(
           ]
         : []),
     ];
+  } else if (section.component === "contentSupport") {
+    const parsedContent = contentSupportContentSchema.parse(content);
+    const document = planningInput.draft.contentSupportFactDocuments.find(
+      (candidate) => candidate.id === parsedContent.factDocumentId,
+    );
+    const locale = planningInput.brief.languagePlan.primaryLanguage;
+    if (!document || !locale) {
+      return invalid(
+        "invalid-page-component-target",
+        "Content/support proposal projection requires its current approved fact document.",
+      );
+    }
+    content = parsedContent;
+    styleOverrides = contentSupportStyleOverridesSchema.parse({
+      surface: section.styleOverrides?.surface ?? "default",
+    });
+    bindings = [
+      {
+        slotId: "supportFacts",
+        source: "localizedContent",
+        contentId: document.id,
+        locale,
+        fallbackLocale: locale,
+        revision: document.fingerprint,
+      },
+    ];
   }
   return {
     ...componentInstanceV2Schema.parse({
@@ -364,7 +404,9 @@ function createOriginalState(
   const registry = createComponentRegistryV2(input.planningInput.componentDefinitions);
   const pages = input.planningInput.draft.pages
     .map((page) => {
-      const components = page.sections.map((section) => sourceComponent(page, section, plan));
+      const components = page.sections.map((section) =>
+        sourceComponent(page, section, plan, input.planningInput),
+      );
       components.forEach((component) => {
         try {
           const { visible, ...instance } = component;
@@ -386,7 +428,7 @@ function createOriginalState(
       });
       return {
         pageId: page.id,
-        role: roleForPageType(page.type),
+        role: roleForPage(page),
         type: page.type,
         components,
       };
@@ -1199,10 +1241,13 @@ function compileCoordinatedFollowUpProposal(
   }
   for (const change of input.plan.pageChanges) {
     const originalPage = original.pages.find((page) => page.pageId === change.pageId);
+    const sourcePage = input.planningInput.draft.pages.find((page) => page.id === change.pageId);
     if (
       !originalPage ||
+      !sourcePage ||
       originalPage.type !== change.pageType ||
-      originalPage.role !== roleForPageType(change.pageType) ||
+      sourcePage.type !== change.pageType ||
+      originalPage.role !== roleForPage(sourcePage) ||
       coordinatedPageAuthorityFingerprint(originalPage) !== change.pageAuthorityFingerprint
     ) {
       invalid(

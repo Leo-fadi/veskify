@@ -558,26 +558,6 @@
     grid-template-columns: minmax(0, 1.45fr) minmax(18rem, 0.55fr);
   }
 
-  .highConsiderationLayout {
-    grid-template-columns: minmax(18rem, 0.55fr) minmax(0, 1.1fr) minmax(20rem, 0.75fr);
-    align-items: start;
-  }
-
-  .highConsiderationInformation {
-    position: sticky;
-    top: 0;
-  }
-
-  .highConsiderationPurchase {
-    display: grid;
-    gap: 0;
-  }
-
-  .highConsiderationPurchase .gallery,
-  .highConsiderationPurchase .emptyGallery {
-    min-height: 28rem;
-  }
-
   .galleryLedPurchase {
     grid-template-columns: minmax(0, 0.8fr) minmax(22rem, 0.65fr);
     align-items: start;
@@ -609,6 +589,28 @@
 
   .variantLedDetail {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 75rem) {
+  .highConsiderationLayout {
+    grid-template-columns: minmax(18rem, 0.55fr) minmax(0, 1.1fr) minmax(20rem, 0.75fr);
+    align-items: start;
+  }
+
+  .highConsiderationInformation {
+    position: sticky;
+    top: 0;
+  }
+
+  .highConsiderationPurchase {
+    display: grid;
+    gap: 0;
+  }
+
+  .highConsiderationPurchase .gallery,
+  .highConsiderationPurchase .emptyGallery {
+    min-height: 28rem;
   }
 }
 

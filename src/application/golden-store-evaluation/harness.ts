@@ -10,6 +10,7 @@ import {
   canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
   canonicalValueString,
+  validateCommercialSharedFrameSnapshot,
 } from "@/domain/storefront";
 import {
   GOLDEN_STORE_EVALUATION_CONTRACT_VERSION,
@@ -202,6 +203,18 @@ function assertCurrentProfiles(
 }
 
 function assertSharedFrame(snapshot: GoldenStoreLifecycleEvidence["snapshot"]): void {
+  if (snapshot.sharedFrame) {
+    try {
+      validateCommercialSharedFrameSnapshot(snapshot);
+    } catch (cause) {
+      throw new GoldenStoreEvaluationError(
+        "stale-profile",
+        "Golden-store shared-frame authority is not current.",
+        cause,
+      );
+    }
+    return;
+  }
   for (const pageType of ["home", "collection", "product"] as const) {
     const page = snapshot.pages.find((candidate) => candidate.type === pageType);
     if (!page) {
@@ -230,29 +243,59 @@ function assertSnapshotRealization(
     const snapshot = entries.get(state)!.snapshot;
     assertSharedFrame(snapshot);
     for (const pageType of ["home", "collection", "product"] as const) {
-      const page = snapshot.pages.find((candidate) => candidate.type === pageType);
+      const pages = snapshot.pages.filter((candidate) => candidate.type === pageType);
       const materialization = materializations.get(pageType);
       const pagePlan =
         materialization && getExecutablePageBlueprintProfile(materialization.profileId);
-      if (!page || !materialization || !pagePlan) {
+      if (pages.length === 0 || !materialization || !pagePlan) {
         throw new GoldenStoreEvaluationError(
           "stale-profile",
           `${state} lifecycle cannot realize the canonical ${pageType} PageBlueprint.`,
         );
       }
-      try {
-        validateExecutablePageBlueprintRealization({
-          pagePlan,
-          materialization,
-          componentDefinitions: veskifyComponentDefinitionsV2,
-          sections: page.sections,
-        });
-      } catch (cause) {
-        throw new GoldenStoreEvaluationError(
-          "stale-profile",
-          `${state} lifecycle snapshot does not realize ${materialization.profileId}.`,
-          cause,
-        );
+      for (const page of pages) {
+        let expectedPagePlan = pagePlan;
+        let expectedPageMaterialization = materialization;
+        const declaredProfile = page.pageFamily;
+        if (
+          declaredProfile &&
+          (declaredProfile.profileId !== materialization.profileId ||
+            declaredProfile.profileVersion !== materialization.profileVersion)
+        ) {
+          const declaredPagePlan = getExecutablePageBlueprintProfile(declaredProfile.profileId);
+          if (
+            !declaredPagePlan?.profile ||
+            declaredPagePlan.pageType !== pageType ||
+            declaredPagePlan.profile.version !== declaredProfile.profileVersion
+          ) {
+            throw new GoldenStoreEvaluationError(
+              "stale-profile",
+              `${state} lifecycle page ${page.id} declares an unavailable PageBlueprint profile.`,
+            );
+          }
+          expectedPagePlan = declaredPagePlan;
+          expectedPageMaterialization = wholeStorefrontPageBlueprintMaterializationSchema.parse(
+            materializeExecutablePageBlueprint({
+              pagePlan: declaredPagePlan,
+              componentDefinitions: veskifyComponentDefinitionsV2,
+              availableBindingCategories: declaredPagePlan.profile.requiredBindingCategories,
+            }),
+          );
+        }
+        try {
+          validateExecutablePageBlueprintRealization({
+            pagePlan: expectedPagePlan,
+            materialization: expectedPageMaterialization,
+            componentDefinitions: veskifyComponentDefinitionsV2,
+            sections: page.sections,
+          });
+        } catch (cause) {
+          throw new GoldenStoreEvaluationError(
+            "stale-profile",
+            `${state} lifecycle page ${page.id} does not realize ${expectedPageMaterialization.profileId}.`,
+            cause,
+          );
+        }
       }
     }
   }
@@ -304,8 +347,9 @@ function assertProtectedState(
 function profileIdFor(
   surface: GoldenStoreEvaluationScenario["surface"],
   materializations: Map<string, WholeStorefrontPageBlueprintMaterialization>,
+  sharedFrameProfileId: string,
 ): string {
-  if (surface === "shared-frame") return sharedStorefrontFrameProfile.id;
+  if (surface === "shared-frame") return sharedFrameProfileId;
   const profile = materializations.get(surface);
   if (!profile)
     throw new GoldenStoreEvaluationError("stale-profile", `Missing ${surface} profile.`);
@@ -349,7 +393,12 @@ function assertCompleteMatrix(
           scenarios.push({
             lifecycle,
             surface,
-            profileId: profileIdFor(surface, materializations),
+            profileId: profileIdFor(
+              surface,
+              materializations,
+              input.canonicalBaseline.snapshot.sharedFrame?.profileId ??
+                sharedStorefrontFrameProfile.id,
+            ),
             locale,
             viewport,
             evidenceReference: key,

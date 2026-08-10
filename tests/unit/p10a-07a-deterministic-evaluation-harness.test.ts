@@ -140,6 +140,45 @@ describe("P10A-07A deterministic golden-store evaluation harness", () => {
     });
   });
 
+  it("validates every commerce page when a lifecycle contains multiple pages of one type", () => {
+    const input = validInput();
+    const withInvalidSecondProduct = (snapshot: (typeof input.lifecycle)[number]["snapshot"]) => {
+      const next = structuredClone(snapshot);
+      const product = next.pages.find((page) => page.type === "product");
+      if (!product) throw new Error("Expected the canonical product fixture page.");
+      next.pages.push({
+        ...structuredClone(product),
+        id: "page_second_product_without_blueprint_realization",
+        slug: "/products/second-product-without-blueprint-realization",
+        sections: [],
+      });
+      return storefrontSnapshotSchema.parse(next);
+    };
+    const baselineSnapshot = withInvalidSecondProduct(input.canonicalBaseline.snapshot);
+    const baselineFingerprint = canonicalStorefrontContentFingerprint(baselineSnapshot);
+    const lifecycle = input.lifecycle.map((entry) => {
+      const snapshot = withInvalidSecondProduct(entry.snapshot);
+      return {
+        ...entry,
+        snapshot,
+        snapshotFingerprint: canonicalStorefrontContentFingerprint(snapshot),
+      };
+    });
+
+    expect(
+      errorCode(() =>
+        runDeterministicGoldenStoreEvaluation({
+          ...input,
+          canonicalBaseline: {
+            snapshot: baselineSnapshot,
+            snapshotFingerprint: baselineFingerprint,
+          },
+          lifecycle,
+        }),
+      ),
+    ).toBe("stale-profile");
+  });
+
   it("is deterministic and omits timestamps from the canonical run fingerprint", () => {
     const first = runDeterministicGoldenStoreEvaluation(validInput());
     const second = runDeterministicGoldenStoreEvaluation(validInput());

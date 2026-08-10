@@ -251,7 +251,7 @@ const inputs: readonly ContentProfileInput[] = [
     variant: "serviceDetails",
     narrativeRole: "service",
     visualWeight: "medium",
-    compatibleSharedFrameProfileIds: ["commerce-utility", "compact-technical"],
+    compatibleSharedFrameProfileIds: ["commerce-utility", "compact-technical", "centered-minimal"],
     defaultSharedFrameProfileId: "commerce-utility",
   },
   {

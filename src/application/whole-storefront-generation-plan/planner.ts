@@ -58,6 +58,10 @@ import {
   type HomepageCommerceBridgeComponent,
 } from "@/components/registry/homepage-commerce-bridge";
 import { veskifyComponentCapabilityManifest } from "@/components/registry/capability-manifest";
+import {
+  contentSupportContentSchema,
+  contentSupportStyleOverridesSchema,
+} from "@/components/registry/content-support";
 import { resolveCommercialSharedFrameProfile } from "@/domain/storefront/commercial-shared-frame";
 import {
   commercialHomepageProfileIdSchema,
@@ -154,10 +158,11 @@ function parsePlanningInput(inputValue: unknown): WholeStorefrontPlanningInput {
   throw parsed.error;
 }
 
-function roleForPage(type: WholeStorefrontPlanningInput["draft"]["pages"][number]["type"]) {
-  if (type === "home") return "homepage" as const;
-  if (type === "collection") return "collection-template" as const;
-  if (type === "product") return "product-template" as const;
+function roleForPage(page: WholeStorefrontPlanningInput["draft"]["pages"][number]) {
+  if (page.pageFamily?.familyId === "search-results") return "other" as const;
+  if (page.type === "home") return "homepage" as const;
+  if (page.type === "collection") return "collection-template" as const;
+  if (page.type === "product") return "product-template" as const;
   return "other" as const;
 }
 
@@ -247,7 +252,7 @@ export function createWholeStorefrontGenerationTarget(
     .sort((left, right) => left.id.localeCompare(right.id))
     .map((page) => ({
       id: page.id,
-      role: roleForPage(page.type),
+      role: roleForPage(page),
       type: page.type,
       sections: [...page.sections]
         .sort((left, right) => left.id.localeCompare(right.id))
@@ -258,10 +263,8 @@ export function createWholeStorefrontGenerationTarget(
           visible: section.visible,
         })),
     }));
-  for (const role of ["homepage", "collection-template", "product-template"] as const) {
-    if (pages.filter((page) => page.role === role).length > 1) {
-      invalid("unsupported-page-family", `Only one ${role} page may be planned at a time.`);
-    }
+  if (pages.filter((page) => page.role === "homepage").length > 1) {
+    invalid("unsupported-page-family", "Only one homepage may be planned at a time.");
   }
   const activeDraftFingerprint = fingerprint(input.draft, "draft");
   const registryFingerprint = fingerprint(definitions, "component-registry");
@@ -377,6 +380,36 @@ function retainedComponent(
               },
             ]
           : []),
+      ],
+    };
+  }
+  if (section.component === "contentSupport") {
+    const content = contentSupportContentSchema.parse(section.content);
+    const document = input.draft.contentSupportFactDocuments.find(
+      (candidate) => candidate.id === content.factDocumentId,
+    );
+    const locale = input.brief.languagePlan.primaryLanguage;
+    if (!document || !locale) {
+      invalid(
+        "invalid-component-contract",
+        "Retained content/support presentation requires its exact approved fact document.",
+      );
+    }
+    return {
+      ...base,
+      content,
+      styleOverrides: contentSupportStyleOverridesSchema.parse({
+        surface: section.styleOverrides?.surface ?? "default",
+      }),
+      bindings: [
+        {
+          slotId: "supportFacts",
+          source: "localizedContent",
+          contentId: document.id,
+          locale,
+          fallbackLocale: locale,
+          revision: document.fingerprint,
+        },
       ],
     };
   }
@@ -1954,7 +1987,9 @@ export function createWholeStorefrontGenerationPlan(
         } catch (error) {
           invalid(
             "invalid-component-contract",
-            error instanceof Error ? error.message : "A retained component is no longer valid.",
+            error instanceof Error
+              ? `Retained ${instance.component}: ${error.message}`
+              : "A retained component is no longer valid.",
           );
         }
         return {
