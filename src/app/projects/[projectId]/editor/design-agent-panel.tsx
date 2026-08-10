@@ -109,6 +109,8 @@ const copy = {
     proposal: "Design proposal",
     pages: "pages",
     sections: "sections",
+    controlledAcceptance:
+      "This controlled acceptance uses the generated proposal. Accept or reject it, then start a new controlled run to create another proposal.",
   },
   fi: {
     eyebrow: "Suunnitteluavustaja",
@@ -184,6 +186,8 @@ const copy = {
     proposal: "Suunnitteluehdotus",
     pages: "sivua",
     sections: "osiota",
+    controlledAcceptance:
+      "Tässä valvotussa hyväksynnässä käytetään luotua ehdotusta. Hyväksy tai hylkää se ja aloita uusi valvottu ajo luodaksesi uuden ehdotuksen.",
   },
 } as const;
 
@@ -384,7 +388,10 @@ export function DesignAgentPanel({
         </div>
       </dl>
 
-      <fieldset className={styles.targetSelector} disabled={busy}>
+      <fieldset
+        className={styles.targetSelector}
+        disabled={busy || controller.controlledStorefrontAcceptance}
+      >
         <legend>{text.target}</legend>
         {(
           [
@@ -411,12 +418,21 @@ export function DesignAgentPanel({
         <p className={styles.guidance}>{targetSummary}</p>
       </fieldset>
 
+      {controller.controlledStorefrontAcceptance ? (
+        <p className={styles.guidance}>{text.controlledAcceptance}</p>
+      ) : null}
+
       <form className={styles.form} onSubmit={submit}>
         <label htmlFor="design-request">{text.request}</label>
         <textarea
           aria-describedby="design-request-guidance"
           aria-invalid={session?.state === "failed" && !controller.request.trim()}
-          disabled={controller.controlsDisabled || controller.previewActive || needsClarification}
+          disabled={
+            controller.controlsDisabled ||
+            controller.controlledStorefrontAcceptance ||
+            controller.previewActive ||
+            needsClarification
+          }
           id="design-request"
           onChange={(event) => controller.setRequest(event.target.value)}
           onKeyDown={submitFromKeyboard}
@@ -431,6 +447,7 @@ export function DesignAgentPanel({
         <button
           disabled={
             controller.controlsDisabled ||
+            controller.controlledStorefrontAcceptance ||
             controller.previewActive ||
             needsClarification ||
             !controller.request.trim()
@@ -444,7 +461,10 @@ export function DesignAgentPanel({
           {examples.map((prompt) => (
             <button
               disabled={
-                controller.controlsDisabled || controller.previewActive || needsClarification
+                controller.controlsDisabled ||
+                controller.controlledStorefrontAcceptance ||
+                controller.previewActive ||
+                needsClarification
               }
               key={prompt}
               onClick={() => controller.setRequest(prompt)}
@@ -628,7 +648,7 @@ export function DesignAgentPanel({
             >
               {accepting ? text.accepting : applicationFailed ? text.retryAccept : text.accept}
             </button>
-            {!applicationFailed ? (
+            {!applicationFailed && !controller.controlledStorefrontAcceptance ? (
               <button
                 disabled={controller.controlsDisabled}
                 onClick={() => {
@@ -650,18 +670,20 @@ export function DesignAgentPanel({
             >
               {text.reject}
             </button>
-            <button
-              disabled={controller.controlsDisabled}
-              onClick={() => {
-                setConfirmingStorefrontProposalId(null);
-                controller.cancelSession();
-              }}
-              type="button"
-            >
-              {text.close}
-            </button>
+            {!controller.controlledStorefrontAcceptance ? (
+              <button
+                disabled={controller.controlsDisabled}
+                onClick={() => {
+                  setConfirmingStorefrontProposalId(null);
+                  controller.cancelSession();
+                }}
+                type="button"
+              >
+                {text.close}
+              </button>
+            ) : null}
           </div>
-          {!applicationFailed ? (
+          {!applicationFailed && !controller.controlledStorefrontAcceptance ? (
             <form className={styles.form} onSubmit={revise}>
               <label htmlFor="storefront-design-revision">{text.revision}</label>
               <textarea

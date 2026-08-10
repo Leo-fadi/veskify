@@ -584,6 +584,7 @@ export function ProjectEditorClient({
             resolvedStorefrontAiProvider.currentEvidenceReferencesForProposal(proposalId)
         : undefined,
     initialStorefrontProposal: importedDemoProposal,
+    controlledStorefrontAcceptance: localDemoBridge?.kind === "p10b-16l",
     analytics: proposalAnalytics,
     analyticsRoute: `/projects/${projectId}/editor`,
     onStorefrontEvidenceAuthority: (evidenceReferences) =>
@@ -1446,6 +1447,10 @@ export function ProjectEditorClient({
                 <label key={enabledLocale}>
                   <input
                     checked={locale === enabledLocale}
+                    disabled={
+                      agent.controlledStorefrontAcceptance &&
+                      agent.generatedStorefrontProposal !== null
+                    }
                     name="editor-locale"
                     onChange={() => {
                       if (enabledLocale !== locale) agent.closeForLocaleChange();

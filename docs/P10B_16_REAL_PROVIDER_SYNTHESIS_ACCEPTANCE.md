@@ -220,6 +220,12 @@ one-page presentation. Accept makes the complete snapshot the active unsaved dra
 the raw snapshot, Redo restores the exact accepted snapshot, and neither action bypasses server
 authority.
 
+The imported live proposal is review-only because the reset's one-call provider budget has already
+been consumed. Storefront target changes, new requests, revision, regeneration and non-authoritative
+Close are unavailable; the merchant must explicitly accept or reject the retained proposal. A new
+result requires a fresh controlled reset, so a failed replacement attempt cannot orphan the server
+proposal or bypass the call budget.
+
 Active-history changes and explicit Save synchronize only the validated current draft through the
 canonical repository contract with optimistic authority revision checks. Client synchronization
 cannot replace published snapshots, the published pointer, project authority, history metadata or

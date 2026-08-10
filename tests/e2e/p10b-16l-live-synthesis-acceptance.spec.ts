@@ -174,6 +174,26 @@ test("mocked P10B-16L synthesis reaches normal Studio review, history, save, rel
   if (!homePageId) throw new Error("P10B-16L home page identity is unavailable.");
   const accept = page.getByRole("button", { name: /Hyväksy ja käytä|Accept and apply/ });
   await expect(accept).toBeVisible();
+  const proposalReview = page.getByLabel(
+    /Verkkokaupan suunnitteluehdotus|Storefront design proposal/,
+  );
+  await expect(
+    page.getByText(
+      /valvotussa hyväksynnässä käytetään luotua ehdotusta|controlled acceptance uses the generated proposal/i,
+    ),
+  ).toBeVisible();
+  await expect(
+    proposalReview.getByRole("button", { name: /Luo uudelleen|Regenerate/ }),
+  ).toHaveCount(0);
+  await expect(
+    proposalReview.getByLabel(/Miten ehdotusta pitäisi muuttaa|How should this proposal change/),
+  ).toHaveCount(0);
+  await expect(proposalReview.getByRole("button", { name: /^(Sulje|Close)$/ })).toHaveCount(0);
+  await expect(
+    page.getByRole("radio", { name: /Koko verkkokauppa|Entire storefront/ }),
+  ).toBeDisabled();
+  await expect(page.getByRole("radio", { name: "English" })).toBeDisabled();
+  await expect(page.getByLabel(/Pyyntösi|Your request/)).toBeDisabled();
   await expect(page.getByRole("button", { name: /Tallenna luonnos|Save draft/ })).toBeDisabled();
   await expect(
     page
