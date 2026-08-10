@@ -120,6 +120,7 @@ function panelController(
     blocksSave: true,
     controlsDisabled: state === "accepting",
     generationRetryAvailable: false,
+    controlledStorefrontAcceptance: false,
     canUndoStorefront: false,
     canRedoStorefront: false,
     submitRequest: noop,

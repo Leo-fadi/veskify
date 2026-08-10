@@ -89,6 +89,13 @@ export const wholeStorefrontProposalOperationSchema = z.discriminatedUnion("type
     .object({
       type: z.literal("APPLY_REGISTERED_BRAND_SYSTEM"),
       directionId: z.enum(["premiumEditorial", "modernTechnical", "warmApproachable"]).optional(),
+      designSystemNarrowing: z
+        .object({
+          spacingDensity: z.enum(["compact", "standard", "spacious"]),
+          surfaceDepth: z.enum(["flat", "subtle", "layered"]),
+        })
+        .strict()
+        .optional(),
       refinementId: z.literal("validatedTokenRefinement").optional(),
       tokenRefinementPlan: registeredTokenRefinementPlanSchema.optional(),
       brandSystem: brandSystemSchema,
@@ -112,6 +119,14 @@ export const wholeStorefrontProposalOperationSchema = z.discriminatedUnion("type
           path: ["tokenRefinementPlan"],
           message:
             "Only a validated token-refinement operation may include its canonical token plan.",
+        });
+      }
+      if (operation.designSystemNarrowing !== undefined && operation.directionId === undefined) {
+        context.addIssue({
+          code: "custom",
+          path: ["designSystemNarrowing"],
+          message:
+            "Only a registered direction operation may include bounded design-system narrowing.",
         });
       }
     }),

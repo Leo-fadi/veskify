@@ -13,7 +13,12 @@ import {
   validateAiStorefrontProviderResponse,
 } from "@/application/ai-storefront-generation";
 import {
+  canonicalizeAiStorefrontPermissionGrants,
+  canonicalizeAiStorefrontTarget,
+  createAiStorefrontBaselineFingerprint,
+  createAiStorefrontPermissionFingerprint,
   createAiStorefrontProposalId,
+  createAiStorefrontTargetFingerprint,
   type AiStorefrontOperation,
 } from "@/application/ai-storefront";
 import { resolveStorefrontGenerationScope } from "@/application/ai-storefront-generation";
@@ -32,14 +37,14 @@ import { validateDesignOperationAgainstPage } from "@/application/design-operati
 import { applyBrandSystemFoundationPatch } from "@/domain/design-system";
 import {
   createStorefrontDesignSystemOperations,
+  designSkillRegistry,
+  protectedDesignPaths,
   storefrontStyleDirectionForRegisteredDirection,
 } from "@/application/design-skills";
-import {
-  createAiStorefrontBaselineFingerprint,
-  projectAiStorefrontSnapshot,
-} from "@/application/ai-storefront";
+import { projectAiStorefrontSnapshot } from "@/application/ai-storefront";
 import {
   createWholeStorefrontRecipeContext,
+  createWholeStorefrontGenerationTarget,
   requestWholeStorefrontGenerationPlan,
   type ApprovedAssetPresentation,
   WholeStorefrontPlanningProviderError,
@@ -61,6 +66,7 @@ import {
   createStorefrontDesignBrief,
 } from "@/application/source-discovery";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
+import { getComponentDefinition } from "@/components/registry";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import {
   componentDefinitionV2Schema,
@@ -73,6 +79,7 @@ import {
 } from "@/domain/source-discovery";
 import { idSchema, type Locale } from "@/domain/shared";
 import {
+  canonicalValueString,
   pageFactEvidenceReferenceSchema,
   storefrontSnapshotSchema,
   type ApprovedAssetPlacementOperation,
@@ -405,6 +412,7 @@ function projectPlanOperations(
   wholeStorefrontProposal: ReturnType<typeof compileWholeStorefrontProposal>,
   planningInput: WholeStorefrontPlanningInput,
   approvedAssetPresentations: readonly ApprovedAssetPresentation[],
+  validateLegacyRequestDirection: boolean,
 ): {
   operations: AiStorefrontOperation[];
   proposedStorefront: AiStorefrontProviderRequest["storefront"];
@@ -413,7 +421,7 @@ function projectPlanOperations(
     typography?: typeof request.storefront.brandSystem.typography;
   } | null;
 } {
-  assertRequestDirectionCompatible(request, plan);
+  if (validateLegacyRequestDirection) assertRequestDirectionCompatible(request, plan);
   const direction = storefrontStyleDirectionForRegisteredDirection(
     plan.designSystemSelection.directionId,
   );
@@ -448,12 +456,27 @@ function projectPlanOperations(
     request.target.designSystemTarget !== null &&
     request.capability === "registeredWholeStorefrontDirection"
   ) {
+    const registeredDirection = planningInput.recipeContext.designSystem.directions.find(
+      ({ id }) => id === plan.designSystemSelection.directionId,
+    );
+    if (!registeredDirection) {
+      throw new ServerWholeStorefrontAuthorityError("malformed-state");
+    }
+    const designSystemNarrowing =
+      registeredDirection.spacingDensity === plan.designSystemSelection.spacingDensity &&
+      registeredDirection.surfaceDepth === plan.designSystemSelection.surfaceDepth
+        ? undefined
+        : {
+            spacingDensity: plan.designSystemSelection.spacingDensity,
+            surfaceDepth: plan.designSystemSelection.surfaceDepth,
+          };
     add(
       request.target.designSystemTarget,
       plan.tokenRefinementPlan === null
         ? {
             type: "APPLY_REGISTERED_BRAND_SYSTEM",
             directionId: plan.designSystemSelection.directionId,
+            ...(designSystemNarrowing === undefined ? {} : { designSystemNarrowing }),
             brandSystem: structuredClone(wholeStorefrontProposal.proposedStorefront.brandSystem),
           }
         : {
@@ -544,6 +567,7 @@ function planDerivedProposalEnvelope(input: {
   plan: WholeStorefrontGenerationPlan;
   planningInput: WholeStorefrontPlanningInput;
   approvedAssetPresentations: readonly ApprovedAssetPresentation[];
+  validateLegacyRequestDirection?: boolean;
 }): AiStorefrontProviderResponse {
   const wholeStorefrontProposal = compileWholeStorefrontProposal({
     plan: input.plan,
@@ -555,6 +579,7 @@ function planDerivedProposalEnvelope(input: {
     wholeStorefrontProposal,
     input.planningInput,
     input.approvedAssetPresentations,
+    input.validateLegacyRequestDirection ?? true,
   );
   const proposalId = createAiStorefrontProposalId(
     input.request.requestId,
@@ -612,6 +637,206 @@ function planDerivedProposalEnvelope(input: {
       wholeStorefrontProposalFingerprint: canonicalValueFingerprint(wholeStorefrontProposal),
     },
   };
+}
+
+/**
+ * Builds the existing Studio proposal transport directly from current
+ * server-owned planning authority and one already trusted plan. This is not a
+ * provider request: `providerId` is retained only as a safe audit identity.
+ * No merchant text classification or planning-provider selection occurs here.
+ */
+export function createServerAuthoritativeTrustedPlanProposalTransport(input: {
+  planningInput: WholeStorefrontPlanningInput;
+  plan: WholeStorefrontGenerationPlan;
+  merchantInstruction: string;
+  activeLocale: Locale;
+  requestSequence: number;
+  correlationRequestId: string;
+  providerId: string;
+}): AiStorefrontProviderRequest {
+  let planningInput: WholeStorefrontPlanningInput;
+  try {
+    planningInput = wholeStorefrontPlanningInputSchema.parse(structuredClone(input.planningInput));
+    // The canonical compiler owns every current-plan, registry, profile,
+    // commerce, asset and draft precondition check. Building a Studio transport
+    // must not create a parallel plan validator.
+    compileWholeStorefrontProposal({ plan: input.plan, planningInput });
+  } catch (error) {
+    if (error instanceof WholeStorefrontProposalError) throw error;
+    throw new ServerWholeStorefrontAuthorityError("malformed-state");
+  }
+
+  const currentTarget = createWholeStorefrontGenerationTarget(planningInput);
+  if (
+    currentTarget.fingerprint !== input.plan.target.fingerprint ||
+    currentTarget.registryFingerprint !== input.plan.componentRegistryFingerprint
+  ) {
+    throw new ServerWholeStorefrontAuthorityError("stale");
+  }
+  const storefront = projectAiStorefrontSnapshot(planningInput.draft);
+  const context = {
+    projectId: planningInput.project.id,
+    draftSnapshotId: planningInput.draft.id,
+    draftRevision: planningInput.draft.revision,
+    enabledLocales: planningInput.project.enabledLocales,
+    activeLocale: input.activeLocale,
+    storefront,
+  };
+  const affectedPageIds = input.plan.pagePlans
+    .map(({ pageId }) => pageId)
+    .sort((left, right) => left.localeCompare(right));
+  const target = canonicalizeAiStorefrontTarget({
+    scope: "storefront",
+    projectId: planningInput.project.id,
+    draftSnapshotId: planningInput.draft.id,
+    draftRevision: planningInput.draft.revision,
+    affectedPageIds,
+    affectedSectionTargets: [],
+    designSystemTarget: {
+      kind: "storefrontDesignSystem",
+      projectId: planningInput.project.id,
+    },
+    enabledLocales: planningInput.project.enabledLocales,
+    activeLocale: input.activeLocale,
+  });
+  const skill = designSkillRegistry.get("applyRegisteredWholeStorefrontDirection");
+  const permissionGrants = canonicalizeAiStorefrontPermissionGrants(
+    [
+      ...affectedPageIds.map((pageId) => ({
+        skillId: skill.id,
+        skillVersion: skill.version,
+        skillScope: skill.scope,
+        operationTypes: ["APPLY_REGISTERED_PAGE_SECTIONS", "REORDER_SECTIONS"] as const,
+        target: { kind: "page" as const, pageId },
+      })),
+      {
+        skillId: skill.id,
+        skillVersion: skill.version,
+        skillScope: skill.scope,
+        operationTypes: ["APPLY_REGISTERED_BRAND_SYSTEM"] as const,
+        target: target.designSystemTarget!,
+      },
+    ],
+    target,
+    context,
+  );
+  const pagesById = new Map(storefront.pages.map((page) => [page.id, page]));
+  const affectedPages = affectedPageIds.map((pageId) => {
+    const page = pagesById.get(pageId);
+    if (!page) throw new ServerWholeStorefrontAuthorityError("malformed-state");
+    return structuredClone(page);
+  });
+  const affectedSections = affectedPages.flatMap((page) =>
+    page.sections.map((section) => ({ pageId: page.id, section: structuredClone(section) })),
+  );
+  if (affectedSections.length === 0) {
+    throw new ServerWholeStorefrontAuthorityError("malformed-state");
+  }
+  const componentContracts = [...new Set(affectedSections.map(({ section }) => section.component))]
+    .sort((left, right) => left.localeCompare(right))
+    .map((componentType) => ({
+      componentType,
+      variants: [...getComponentDefinition(componentType).variants],
+      // Whole-page replacement stays bounded by the canonical registered-page
+      // validator. This transport metadata does not grant component mutation.
+      approvedStyleFields: ["variant"] as const,
+    }));
+
+  return aiStorefrontProviderRequestSchema.parse({
+    requestId: input.correlationRequestId,
+    requestSequence: input.requestSequence,
+    providerId: input.providerId,
+    capability: "registeredWholeStorefrontDirection",
+    instruction: input.merchantInstruction,
+    target,
+    storefront,
+    affectedPages,
+    affectedSections,
+    componentContracts,
+    designSystemContext: {
+      colors: structuredClone(storefront.brandSystem.colors),
+      typography: structuredClone(storefront.brandSystem.typography),
+    },
+    brandPalettePlan: null,
+    tokenRefinementPlan: null,
+    permissionGrants,
+    storefrontBaselineFingerprint: createAiStorefrontBaselineFingerprint(context),
+    targetFingerprint: createAiStorefrontTargetFingerprint(context, target),
+    permissionFingerprint: createAiStorefrontPermissionFingerprint(
+      permissionGrants,
+      target,
+      context,
+    ),
+    activeLocale: input.activeLocale,
+    enabledLocales: planningInput.project.enabledLocales,
+    protectedPaths: [...protectedDesignPaths],
+    untrustedImportedContent: [],
+    assetReferenceCapability: "structuredApprovedAssets",
+    approvedAssetContext: planningInput.approvedAssetContext,
+    assetPlacementOperations: structuredClone(input.plan.approvedAssetPlacements),
+    assetContextFingerprint: planningInput.approvedAssetContext?.fingerprint ?? null,
+    responseContract: "ai-storefront-proposal/v1",
+  });
+}
+
+/**
+ * Projects one already trusted, current server-owned plan into the existing
+ * Studio proposal transport without selecting or invoking a planning provider.
+ *
+ * `request` supplies only the existing Studio request identity, target,
+ * permissions and precondition transport. The validated `plan` is the sole
+ * presentation authority: legacy request-text direction classification is not
+ * consulted. The canonical compiler still revalidates the plan against the
+ * exact current planning input, the provider-response boundary replays every
+ * projected operation, and the resulting storefront must exactly equal the
+ * server-supplied expected snapshot.
+ */
+export function createServerAuthoritativeTrustedPlanProposalResponse(input: {
+  request: AiStorefrontProviderRequest;
+  plan: WholeStorefrontGenerationPlan;
+  planningInput: WholeStorefrontPlanningInput;
+  approvedAssetPresentations: readonly ApprovedAssetPresentation[];
+  expectedSnapshot: StorefrontSnapshot;
+}): AiStorefrontProviderResponse {
+  let request: AiStorefrontProviderRequest;
+  let planningInput: WholeStorefrontPlanningInput;
+  try {
+    request = aiStorefrontProviderRequestSchema.parse(structuredClone(input.request));
+    planningInput = wholeStorefrontPlanningInputSchema.parse(structuredClone(input.planningInput));
+  } catch {
+    throw new ServerWholeStorefrontAuthorityError("malformed-state");
+  }
+
+  const authoritative = createServerAuthoritativeTrustedPlanProposalTransport({
+    planningInput,
+    plan: input.plan,
+    merchantInstruction: request.instruction,
+    activeLocale: request.activeLocale,
+    requestSequence: request.requestSequence,
+    correlationRequestId: request.requestId,
+    providerId: request.providerId,
+  });
+  if (canonicalValueString(request) !== canonicalValueString(authoritative)) {
+    throw new ServerWholeStorefrontAuthorityError("stale");
+  }
+  const response = validateAiStorefrontProviderResponse(
+    authoritative,
+    planDerivedProposalEnvelope({
+      request: authoritative,
+      plan: input.plan,
+      planningInput,
+      approvedAssetPresentations: input.approvedAssetPresentations,
+      validateLegacyRequestDirection: false,
+    }),
+  );
+  if (
+    response.metadata.authoritativePlanningFingerprint !== input.plan.fingerprint ||
+    canonicalValueString(response.proposal.proposedStorefront) !==
+      canonicalValueString(projectAiStorefrontSnapshot(input.expectedSnapshot))
+  ) {
+    throw new ServerWholeStorefrontAuthorityError("malformed-state");
+  }
+  return response;
 }
 
 /**

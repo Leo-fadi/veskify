@@ -84,6 +84,7 @@ function homepageController(): DesignAgentSessionController {
     blocksSave: true,
     controlsDisabled: false,
     generationRetryAvailable: false,
+    controlledStorefrontAcceptance: false,
     canUndoStorefront: false,
     canRedoStorefront: false,
     submitRequest: noop,
@@ -106,6 +107,28 @@ function homepageController(): DesignAgentSessionController {
 }
 
 describe("P4-05D storefront proposal review projection", () => {
+  it("keeps a controlled imported proposal available for accept or reject only", () => {
+    render(
+      createElement(DesignAgentPanel, {
+        controller: { ...homepageController(), controlledStorefrontAcceptance: true },
+        locale: "en",
+        primaryLocale: "en",
+        pageTitle: "Homepage",
+        storefrontPageCount: 3,
+      }),
+    );
+
+    expect(screen.getByLabelText("Homepage design proposal")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Accept and apply" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Reject" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "Regenerate" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Close" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("How should this proposal change?")).not.toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Entire storefront" })).toBeDisabled();
+    expect(screen.getByLabelText("Your request")).toBeDisabled();
+    expect(screen.getByText(/controlled acceptance uses the generated proposal/i)).toBeVisible();
+  });
+
   it("presents homepage-only scope and operation-derived confirmation copy in English and Finnish", () => {
     const englishReview = createStorefrontProposalReview(homepageProposal, "en", "en");
     const finnishReview = createStorefrontProposalReview(homepageProposal, "fi", "fi");

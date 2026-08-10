@@ -27,6 +27,7 @@ import type {
 } from "@/domain/component-platform";
 import type { ComponentDefinitionV2 } from "@/domain/component-platform";
 import type { BrandSystem } from "@/domain/design-system";
+import { canonicalProductTypePresentationId } from "@/domain/product-card";
 import { createCanonicalProductMediaResponsiveAuthority } from "@/application/responsive-image-authority";
 import type {
   CatalogueDisplayModel,
@@ -340,7 +341,7 @@ function productContext(
   );
   return {
     productId: product.id,
-    productTypeId: presentationId(product.productType, "product_type"),
+    productTypeId: canonicalProductTypePresentationId(product.productType),
     sku: product.sku,
     title: product.title,
     description: product.description,

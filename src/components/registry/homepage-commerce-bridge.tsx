@@ -23,6 +23,7 @@ import {
 } from "@/application/responsive-image-authority";
 import type { ComponentDefinitionV2 } from "@/domain/component-platform";
 import { resolveBrandSystemDesignDna } from "@/domain/design-system";
+import { canonicalProductTypePresentationId } from "@/domain/product-card";
 import { veskifyComponentRegistryV2 } from "./v2-registry";
 import {
   homepageCollectionNavigationContentSchema,
@@ -196,7 +197,7 @@ function projectionFor(
   const revision = `catalogue-${context.catalogue.id}`;
   const products: ProductPresentationContext[] = context.catalogue.products.map((product) => ({
     productId: product.id,
-    productTypeId: product.productType,
+    productTypeId: canonicalProductTypePresentationId(product.productType),
     sku: product.sku ?? product.id,
     title: product.title,
     ...(product.description === undefined ? {} : { description: product.description }),

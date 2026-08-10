@@ -148,6 +148,7 @@ export type DesignAgentSessionController = {
   blocksSave: boolean;
   controlsDisabled: boolean;
   generationRetryAvailable: boolean;
+  controlledStorefrontAcceptance: boolean;
   canUndoStorefront: boolean;
   canRedoStorefront: boolean;
   submitRequest: () => void;
@@ -185,6 +186,7 @@ type UseDesignAgentSessionInput = {
   publishedSnapshot?: StorefrontSnapshot;
   catalogue?: CatalogueDisplayModel;
   initialStorefrontProposal?: AiStorefrontProposal;
+  controlledStorefrontAcceptance?: boolean;
   disabled: boolean;
   provider?: AIProvider;
   storefrontProvider?: StorefrontAIProvider;
@@ -202,6 +204,8 @@ type UseDesignAgentSessionInput = {
     proposalId: string;
     acceptedSnapshot: StorefrontSnapshot;
   }) => Promise<void>;
+  onStorefrontRejected?: (input: { proposalId: string }) => Promise<void>;
+  projectStorefrontHistorySnapshot?: (snapshot: StorefrontSnapshot) => StorefrontSnapshot;
   onStorefrontHistorySnapshot?: (snapshot: StorefrontSnapshot) => Promise<void>;
   onStorefrontSnapshot: (
     snapshot: StorefrontSnapshot,
@@ -267,6 +271,10 @@ const statuses = {
   targetSwitch: {
     en: "The previous request was replaced because you chose a different target.",
     fi: "Edellinen pyyntö korvattiin, koska valitsit toisen kohteen.",
+  },
+  controlledAcceptance: {
+    en: "This controlled proposal stays ready until you accept or reject it.",
+    fi: "Tämä valvottu ehdotus säilyy tarkistettavana, kunnes hyväksyt tai hylkäät sen.",
   },
 } satisfies Record<string, LocalizedText>;
 
@@ -432,6 +440,7 @@ export function useDesignAgentSession({
   publishedSnapshot,
   catalogue,
   initialStorefrontProposal,
+  controlledStorefrontAcceptance = false,
   disabled,
   provider,
   storefrontProvider,
@@ -442,6 +451,8 @@ export function useDesignAgentSession({
   onStorefrontEvidenceAuthority,
   onAcceptedPage,
   onStorefrontAccepted,
+  onStorefrontRejected,
+  projectStorefrontHistorySnapshot,
   onStorefrontHistorySnapshot,
   onStorefrontSnapshot,
 }: UseDesignAgentSessionInput): DesignAgentSessionController {
@@ -1075,7 +1086,7 @@ export function useDesignAgentSession({
 
   const submitRequest = () => {
     const instruction = request.trim();
-    if (disabled) return;
+    if (disabled || controlledStorefrontAcceptance) return;
     if (!instruction) {
       setSession(
         uiSession("failed", statuses.empty, {
@@ -1131,7 +1142,7 @@ export function useDesignAgentSession({
   const answerClarification = () => {
     const pending = clarificationRequest.current;
     const answer = clarificationAnswer.trim();
-    if (!pending || !answer || disabled) return;
+    if (!pending || !answer || disabled || controlledStorefrontAcceptance) return;
     clarificationRequest.current = null;
     setGenerationRetryUsed(false);
     void generate(pending.useOriginal ? pending.instruction : answer, "initial", targetScope);
@@ -1139,6 +1150,12 @@ export function useDesignAgentSession({
 
   const reviseProposal = () => {
     if (session?.state !== "proposalReady" || !revision.trim()) return;
+    if (controlledStorefrontAcceptance && generatedStorefrontProposal) {
+      setSession((current) =>
+        current ? { ...current, status: statuses.controlledAcceptance } : current,
+      );
+      return;
+    }
     const kind = classifyRevisionInstruction(revision);
     if (kind === "startOver") {
       restartSession();
@@ -1168,6 +1185,12 @@ export function useDesignAgentSession({
 
   const regenerateProposal = () => {
     if (session?.state !== "proposalReady" || !lastGenerationInstruction.current) return;
+    if (controlledStorefrontAcceptance && generatedStorefrontProposal) {
+      setSession((current) =>
+        current ? { ...current, status: statuses.controlledAcceptance } : current,
+      );
+      return;
+    }
     setGenerationRetryUsed(false);
     void generate(lastGenerationInstruction.current, "regeneration", lastGenerationScope.current);
   };
@@ -1175,6 +1198,7 @@ export function useDesignAgentSession({
   const retryGeneration = () => {
     if (
       disabled ||
+      controlledStorefrontAcceptance ||
       session?.state !== "failed" ||
       !session.failure?.retryable ||
       generationRetryUsed ||
@@ -1383,6 +1407,34 @@ export function useDesignAgentSession({
     if (generatedStorefrontProposal) {
       const coordinator = pendingStorefrontAcceptance.current;
       if (!coordinator) return;
+      if (onStorefrontRejected) {
+        acceptancePending.current = true;
+        const proposalId = generatedStorefrontProposal.id;
+        void (async () => {
+          try {
+            await onStorefrontRejected({ proposalId });
+            const result = coordinator.reject();
+            if (result.state === "rejected") {
+              pendingStorefrontAcceptance.current = null;
+              setGeneratedStorefrontProposal(null);
+              setSession(uiSession("rejected", statuses.rejected));
+            }
+          } catch {
+            const message = {
+              en: "The storefront proposal could not be rejected safely. Your draft is unchanged.",
+              fi: "Kauppaehdotusta ei voitu hylätä turvallisesti. Luonnos säilyi ennallaan.",
+            };
+            setSession(
+              uiSession("failed", message, {
+                failure: { message, retryable: false },
+              }),
+            );
+          } finally {
+            acceptancePending.current = false;
+          }
+        })();
+        return;
+      }
       const result = coordinator.reject();
       if (result.state === "rejected") {
         pendingStorefrontAcceptance.current = null;
@@ -1400,6 +1452,12 @@ export function useDesignAgentSession({
 
   const cancelSession = () => {
     if (disabled) return;
+    if (controlledStorefrontAcceptance && generatedStorefrontProposal) {
+      setSession((current) =>
+        current ? { ...current, status: statuses.controlledAcceptance } : current,
+      );
+      return;
+    }
     actionSequence.current += 1;
     if (generatedStorefrontProposal || lastGenerationScope.current === "storefront") {
       closeStorefrontPending();
@@ -1415,7 +1473,7 @@ export function useDesignAgentSession({
   };
 
   const restartSession = () => {
-    if (disabled) return;
+    if (disabled || controlledStorefrontAcceptance) return;
     closePending();
     closeStorefrontPending();
     runtime.confirmation.reset();
@@ -1565,10 +1623,12 @@ export function useDesignAgentSession({
   };
 
   const closeForLocaleChange = () => {
+    if (controlledStorefrontAcceptance && generatedStorefrontProposal) return;
     supersedeForContextChange(page, selectedSectionId, statuses.localeSwitch);
   };
 
   const selectTarget = (nextTarget: DesignAgentTargetScope) => {
+    if (controlledStorefrontAcceptance) return;
     if (nextTarget === targetScope || (nextTarget === "section" && !selectedSectionId)) return;
     targetExplicitlySelected.current = true;
     const hasWorkflow = Boolean(
@@ -1605,15 +1665,21 @@ export function useDesignAgentSession({
         : "storefront";
       const previous = history?.undo();
       if (!previous) return false;
-      await onStorefrontHistorySnapshot?.(previous);
+      const projectedPrevious = projectStorefrontHistorySnapshot?.(previous) ?? previous;
       acceptedStorefrontHistoryFingerprint.current =
-        canonicalStorefrontContentFingerprint(previous);
-      onStorefrontSnapshot(previous, scope, "undone");
+        canonicalStorefrontContentFingerprint(projectedPrevious);
+      await onStorefrontHistorySnapshot?.(projectedPrevious);
+      onStorefrontSnapshot(projectedPrevious, scope, "undone");
       refreshStorefrontHistory();
       setSession(uiSession("accepted", storefrontProposalHistoryStatus(scope, "undone")));
       return true;
     } catch {
-      acceptedStorefrontHistory.current?.redo();
+      const restoredSnapshot = acceptedStorefrontHistory.current?.redo();
+      acceptedStorefrontHistoryFingerprint.current = restoredSnapshot
+        ? canonicalStorefrontContentFingerprint(
+            projectStorefrontHistorySnapshot?.(restoredSnapshot) ?? restoredSnapshot,
+          )
+        : null;
       refreshStorefrontHistory();
       return false;
     }
@@ -1628,14 +1694,21 @@ export function useDesignAgentSession({
         : "storefront";
       const next = history?.redo();
       if (!next) return false;
-      await onStorefrontHistorySnapshot?.(next);
-      acceptedStorefrontHistoryFingerprint.current = canonicalStorefrontContentFingerprint(next);
-      onStorefrontSnapshot(next, scope, "redone");
+      const projectedNext = projectStorefrontHistorySnapshot?.(next) ?? next;
+      acceptedStorefrontHistoryFingerprint.current =
+        canonicalStorefrontContentFingerprint(projectedNext);
+      await onStorefrontHistorySnapshot?.(projectedNext);
+      onStorefrontSnapshot(projectedNext, scope, "redone");
       refreshStorefrontHistory();
       setSession(uiSession("accepted", storefrontProposalHistoryStatus(scope, "redone")));
       return true;
     } catch {
-      acceptedStorefrontHistory.current?.undo();
+      const restoredSnapshot = acceptedStorefrontHistory.current?.undo();
+      acceptedStorefrontHistoryFingerprint.current = restoredSnapshot
+        ? canonicalStorefrontContentFingerprint(
+            projectStorefrontHistorySnapshot?.(restoredSnapshot) ?? restoredSnapshot,
+          )
+        : null;
       refreshStorefrontHistory();
       return false;
     }
@@ -1690,6 +1763,7 @@ export function useDesignAgentSession({
     blocksSave,
     controlsDisabled,
     generationRetryAvailable,
+    controlledStorefrontAcceptance,
     canUndoStorefront: storefrontHistoryState.canUndo,
     canRedoStorefront: storefrontHistoryState.canRedo,
     submitRequest,

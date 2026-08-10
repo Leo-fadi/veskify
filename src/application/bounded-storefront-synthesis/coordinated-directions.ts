@@ -4,6 +4,7 @@ import {
   getCommercialHomepageProfile,
   getCommercialPdpProfile,
   getExecutablePageBlueprintProfile,
+  resolveCommercialHomepageProfileSlots,
 } from "@/application/storefront-templates";
 import { resolveBrandSystemDesignDna, type DesignDna } from "@/domain/design-system";
 import { canonicalValueFingerprint } from "@/domain/storefront";
@@ -169,22 +170,63 @@ function narrowingFor(
   });
 }
 
-function hasApprovedEditorialMedia(input: BoundedStorefrontSynthesisInput): boolean {
-  return (
-    input.planningInput.approvedAssetContext?.assets.some(
-      ({ role }) => role === "editorialImage",
-    ) ?? false
-  );
-}
-
 function candidateHasSupportedAssetPosture(
   candidate: CandidateMaterial,
   input: BoundedStorefrontSynthesisInput,
 ): boolean {
-  const requiresEditorialMedia =
-    candidate.homepageProfileId === "homepage-campaign-led" ||
-    candidate.collectionProfileId === "collection-campaign-led-discovery";
-  return !requiresEditorialMedia || hasApprovedEditorialMedia(input);
+  const availableRoles = new Set(
+    input.planningInput.approvedAssetContext?.assets.map(({ role }) => role) ?? [],
+  );
+  const includedOptional = new Set(candidate.includedOptionalPageFamilyIds);
+  const homepage = getCommercialHomepageProfile(candidate.homepageProfileId);
+  if (!homepage) return false;
+  try {
+    resolveCommercialHomepageProfileSlots(candidate.homepageProfileId, {
+      canonicalCommerce:
+        input.planningInput.catalogue.products.length > 0 &&
+        input.planningInput.catalogue.collections.length > 0,
+      canonicalProductCount: input.planningInput.catalogue.products.length,
+      canonicalCollectionCount: input.planningInput.catalogue.collections.length,
+      approvedMerchantEvidence:
+        input.planningInput.brief.businessIdentity.shortDescription.trim().length > 0 &&
+        input.planningInput.brief.approval.status === "approved" &&
+        input.planningInput.brief.approvedEvidenceFingerprint !== null,
+      approvedMediaSlotIds: homepage.slots.flatMap((slot) => {
+        const definition = input.planningInput.componentDefinitions.find(
+          ({ type }) => type === slot.sectionType,
+        );
+        const acceptedRoles = new Set(
+          definition?.assetSlots.flatMap(({ acceptedRoles }) => acceptedRoles) ?? [],
+        );
+        return input.planningInput.approvedAssetContext?.assets.some(({ role }) =>
+          acceptedRoles.has(role),
+        )
+          ? [slot.id]
+          : [];
+      }),
+    });
+  } catch {
+    return false;
+  }
+  return input.siteMapDecision.pages
+    .filter((page) => page.required || includedOptional.has(page.familyId))
+    .every((page) => {
+      const profileId =
+        page.familyId === "home"
+          ? candidate.homepageProfileId
+          : page.familyId === "collection"
+            ? candidate.collectionProfileId
+            : page.familyId === "search-results"
+              ? candidate.searchProfileId
+              : page.familyId === "product-detail"
+                ? candidate.pdpProfileId
+                : page.profile.id;
+      const profile = getExecutablePageBlueprintProfile(profileId)?.profile;
+      return (
+        profile !== undefined &&
+        profile.requiredAssetRoles.every((requiredRole) => availableRoles.has(requiredRole))
+      );
+    });
 }
 
 function candidateMatchesProfileDesignDna(

@@ -92,6 +92,7 @@ function controller(
     blocksSave: true,
     controlsDisabled: false,
     generationRetryAvailable: false,
+    controlledStorefrontAcceptance: false,
     canUndoStorefront: false,
     canRedoStorefront: false,
     submitRequest: noop,

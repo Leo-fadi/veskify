@@ -5,7 +5,7 @@ import {
 } from "@/components/registry";
 import type { Locale } from "@/domain/shared";
 import type { BrandSystem } from "@/domain/design-system";
-import type { PageModel, StorefrontSnapshot } from "@/domain/storefront";
+import type { PageFactEvidenceReference, PageModel, StorefrontSnapshot } from "@/domain/storefront";
 import {
   DraftConflictError,
   type ProjectAggregate,
@@ -65,20 +65,29 @@ function currentDraft(aggregate: ProjectAggregate) {
 
 export function assembleValidatedEditorDraft({
   baseDraft,
-  changedPages,
+  changedPages = [],
+  replacementSnapshot,
   aggregate,
   primaryLocale,
   identity,
   brandSystem,
+  evidenceReferences,
 }: {
   baseDraft: StorefrontSnapshot;
-  changedPages: readonly PageModel[];
+  changedPages?: readonly PageModel[];
+  replacementSnapshot?: StorefrontSnapshot;
   aggregate: Pick<ProjectAggregate, "catalogue" | "project">;
   primaryLocale: Locale;
   identity?: Pick<StorefrontSnapshot, "id" | "createdAt" | "createdBy">;
   brandSystem?: BrandSystem;
+  evidenceReferences?: readonly PageFactEvidenceReference[];
 }): StorefrontSnapshot {
   try {
+    if (replacementSnapshot && (changedPages.length > 0 || brandSystem)) {
+      throw new Error(
+        "A complete replacement snapshot cannot be combined with page or brand deltas.",
+      );
+    }
     const changedById = new Map(changedPages.map((page) => [page.id, structuredClone(page)]));
     if (changedById.size !== changedPages.length) {
       throw new Error("Changed page IDs must be unique.");
@@ -89,26 +98,48 @@ export function assembleValidatedEditorDraft({
       }
     }
 
-    const candidate: StorefrontSnapshot = {
-      ...structuredClone(baseDraft),
-      ...(identity ?? {}),
-      ...(brandSystem ? { brandSystem: structuredClone(brandSystem) } : {}),
-      pages: baseDraft.pages.map((page) => changedById.get(page.id) ?? structuredClone(page)),
-    };
+    if (
+      replacementSnapshot &&
+      (baseDraft.projectId !== aggregate.project.id ||
+        replacementSnapshot.projectId !== baseDraft.projectId ||
+        replacementSnapshot.id !== baseDraft.id ||
+        replacementSnapshot.revision !== baseDraft.revision ||
+        replacementSnapshot.createdAt !== baseDraft.createdAt ||
+        replacementSnapshot.createdBy !== baseDraft.createdBy ||
+        replacementSnapshot.catalogueRef !== baseDraft.catalogueRef)
+    ) {
+      throw new Error("A complete replacement snapshot must retain the loaded draft authority.");
+    }
+    const candidate: StorefrontSnapshot = replacementSnapshot
+      ? {
+          ...structuredClone(replacementSnapshot),
+          ...(identity ?? {}),
+        }
+      : {
+          ...structuredClone(baseDraft),
+          ...(identity ?? {}),
+          ...(brandSystem ? { brandSystem: structuredClone(brandSystem) } : {}),
+          pages: baseDraft.pages.map((page) => changedById.get(page.id) ?? structuredClone(page)),
+        };
     const context = createStorefrontRenderContext({
       activeLocale: primaryLocale,
       primaryLocale,
       enabledLocales: aggregate.project.enabledLocales,
       catalogue: aggregate.catalogue,
       snapshot: candidate,
+      evidenceReferences,
     });
-    changedPages.forEach((page) => validateRegisteredPage(page, context));
+    (replacementSnapshot ? candidate.pages : changedPages).forEach((page) =>
+      validateRegisteredPage(page, context),
+    );
     return validateRegisteredSnapshot(
       candidate,
       aggregate.catalogue,
       primaryLocale,
       primaryLocale,
       aggregate.project.enabledLocales,
+      evidenceReferences,
+      candidate.contentSupportFactDocuments,
     );
   } catch (cause) {
     if (cause instanceof EditorDraftValidationError) throw cause;
@@ -121,19 +152,23 @@ export async function saveValidatedEditorDraft({
   projectId,
   loadedDraft,
   changedPages,
+  replacementSnapshot,
   primaryLocale,
   now = () => new Date(),
   createSnapshotId,
   brandSystem,
+  evidenceReferences,
 }: {
   repository: ProjectRepository;
   projectId: string;
   loadedDraft: StorefrontSnapshot;
-  changedPages: readonly PageModel[];
+  changedPages?: readonly PageModel[];
+  replacementSnapshot?: StorefrontSnapshot;
   primaryLocale: Locale;
   now?: () => Date;
   createSnapshotId?: (date: Date) => string;
   brandSystem?: BrandSystem;
+  evidenceReferences?: readonly PageFactEvidenceReference[];
 }): Promise<{ aggregate: ProjectAggregate; draft: StorefrontSnapshot }> {
   const latest = await repository.get(projectId);
   const latestDraft = currentDraft(latest);
@@ -152,9 +187,11 @@ export async function saveValidatedEditorDraft({
   const draft = assembleValidatedEditorDraft({
     baseDraft: latestDraft,
     changedPages,
+    replacementSnapshot,
     aggregate: latest,
     primaryLocale,
     brandSystem,
+    evidenceReferences,
     identity: {
       id: snapshotId,
       createdAt: date.toISOString(),

@@ -36,6 +36,7 @@ import {
   pageFactEvidenceReferenceSchema,
   type PageFactEvidenceReference,
 } from "@/domain/storefront";
+import { canonicalProductTypePresentationId } from "@/domain/product-card";
 import {
   dynamicCollectionCommerceBridgeContentSchema,
   dynamicProductDetailBridgeContentSchema,
@@ -1498,6 +1499,7 @@ function validateRegisteredBrandSystemOperations(
         original.brandSystem,
         input.planningInput.recipeContext.designSystem,
         operation.directionId,
+        operation.designSystemNarrowing,
       );
       if (canonicalValueString(operation.brandSystem) !== canonicalValueString(expected)) {
         invalid(
@@ -1545,7 +1547,7 @@ function componentProjectionForCoordinatedFollowUp(
   const revision = input.plan.commerceFingerprint;
   const products = input.planningInput.catalogue.products.map((product) => ({
     productId: product.id,
-    productTypeId: product.productType,
+    productTypeId: canonicalProductTypePresentationId(product.productType),
     sku: product.sku ?? product.id,
     title: product.title,
     ...(product.description === undefined ? {} : { description: product.description }),

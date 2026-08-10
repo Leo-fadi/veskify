@@ -72,6 +72,40 @@ describe("P2-07 validated editor draft save", () => {
     );
   });
 
+  it("fails closed when complete-snapshot replacement loses loaded draft authority", () => {
+    const replacement = structuredClone(aurumNordicSeed.draftSnapshot);
+    replacement.catalogueRef = "catalogue_untrusted";
+    expect(() =>
+      assembleValidatedEditorDraft({
+        baseDraft: aurumNordicSeed.draftSnapshot,
+        replacementSnapshot: replacement,
+        aggregate: aurumNordicSeed,
+        primaryLocale: "en",
+      }),
+    ).toThrow(EditorDraftValidationError);
+
+    const crossProjectReplacement = structuredClone(aurumNordicSeed.draftSnapshot);
+    crossProjectReplacement.projectId = "project_untrusted";
+    expect(() =>
+      assembleValidatedEditorDraft({
+        baseDraft: aurumNordicSeed.draftSnapshot,
+        replacementSnapshot: crossProjectReplacement,
+        aggregate: aurumNordicSeed,
+        primaryLocale: "en",
+      }),
+    ).toThrow(EditorDraftValidationError);
+
+    expect(() =>
+      assembleValidatedEditorDraft({
+        baseDraft: aurumNordicSeed.draftSnapshot,
+        replacementSnapshot: aurumNordicSeed.draftSnapshot,
+        changedPages: [changedPage("home", "Ambiguous replacement")],
+        aggregate: aurumNordicSeed,
+        primaryLocale: "en",
+      }),
+    ).toThrow(EditorDraftValidationError);
+  });
+
   it("saves multiple pages while preserving published, catalogue and untouched pages", async () => {
     const value = repository();
     const before = await value.get(projectId);
