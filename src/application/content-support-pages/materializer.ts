@@ -136,7 +136,7 @@ export function materializeContentSupportPage(
         visible: true,
         content: { factDocumentId: fact.id },
         props: { readingWidth: "standard", textAlignment: "left" },
-        styleOverrides: { contentWidth: "standard" },
+        styleOverrides: { surface: "default" },
       },
     ],
   });

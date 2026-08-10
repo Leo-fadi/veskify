@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 9 August 2026, P10B-10 collection/search, P10B-11 PDP, P10B-12 content/support, and P10B-13 utility presentation    |
+| Baseline                    | 10 August 2026, P10B-14 Premium Editorial complete-storefront vertical slice                                        |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -54,7 +54,7 @@ required evidence are accepted.
 | ☑    | P10B-11 | Commercial PDP profile library                       | **Baseline** | PDP presentation                | P10B-03 through P10B-06, P10B-08   | Four profiles, generic options/commerce and visual review                                                                |
 | ☑    | P10B-12 | Content and support page families                    | **Baseline** | Content page presentation       | P10B-03 through P10B-07            | 15 profiles, approved facts, localization, lifecycle, and 61 Chromium checks                                             |
 | ☑    | P10B-13 | Commerce utility presentation pages                  | **Baseline** | Utility presentation            | P10B-03, P10B-05, P10B-06, P10B-08 | Six profiles plus route-local loading, canonical action boundary, snapshot/publication preservation, 16 responsive views |
-| ☐    | P10B-14 | Premium Editorial complete-storefront vertical slice | **Planned**  | Storefront generation and QA    | Minimum P10B-02 through P10B-13    | Complete page set, four widths and retained human review                                                                 |
+| ☑    | P10B-14 | Premium Editorial complete-storefront vertical slice | **Baseline** | Storefront generation and QA    | Minimum P10B-02 through P10B-13    | 17 routes; canonical generation/save/publish; 15 screenshots; passing 160-scenario human review                          |
 | ☐    | P10B-15 | Bounded storefront synthesis and narrative engine    | **Planned**  | Storefront generation           | P10B-14                            | Determinism, compatibility, no-partial snapshot and repetition control                                                   |
 | ☐    | P10B-16 | Coordinated directions and diversity control         | **Planned**  | Direction/evaluation authority  | P10B-15                            | Fingerprints, duplicate/near-duplicate and pairwise diversity                                                            |
 | ☐    | P10B-17 | Responsive, accessibility and performance closure    | **Planned**  | Design system and QA            | P10B-16 and implemented families   | Four-width EN/FI geometry, a11y, performance and visual evidence                                                         |
@@ -164,7 +164,7 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 through P10B-13 are **Baseline**. P10B-14 through P10B-18 remain **Planned**. The remaining
+P10B-01 through P10B-14 are **Baseline**. P10B-15 through P10B-18 remain **Planned**. The remaining
 Done conditions are implementation gates, not claims about the current repository.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
@@ -418,20 +418,23 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
   retained visual evidence.
 - **Non-goal:** Owning cart, checkout, payment, order, tax, shipping, or returns operations.
 
-#### P10B-14 — Premium Editorial complete-storefront vertical slice
+#### P10B-14 — Premium Editorial complete-storefront vertical slice — **Baseline**
 
 - **Outcome:** Prove one commercially credible complete multi-page storefront early.
 - **Authority:** Existing canonical generation/proposal/snapshot/preview/publication chain using the
   implemented P10B authorities.
 - **Depends on:** Minimum accepted P10B-02 through P10B-13 capability.
-- **Done when:** One approved brief with realistic commerce and credible assets generates shared
-  frame, home, collection, simple/configurable PDP, About, Contact/locations, FAQ/service, and
-  required utility/error states; navigation, EN/FI where supported, four widths, protected state,
-  preview/publish, and retained human review pass.
+- **Delivered:** One approved Lumo brief, read-only two-product commerce projection and approved
+  assets reach a 17-route canonical snapshot through the site-map, commercial PageBlueprint,
+  whole-storefront proposal, save/reload and deterministic publication path. One Design DNA and
+  `centered-minimal` frame span all pages; simple/configurable PDP, factual content, utility states,
+  15 four-width/representative screenshots and the passing 160-scenario human record are retained
+  in
+  [`P10B_14_PREMIUM_EDITORIAL_COMPLETE_STOREFRONT_VERTICAL_SLICE.md`](P10B_14_PREMIUM_EDITORIAL_COMPLETE_STOREFRONT_VERTICAL_SLICE.md).
 - **Fail closed:** Missing/disconnected/generic required pages, manual reconstruction, stale
   authority, or schema-only visual evidence fails the slice.
 - **Evidence:** Complete capability chain, correlated browser/screenshots, protected parity, and
-  signed human commercial review.
+  retained human commercial review.
 - **Non-goal:** P10B closure or broad direction/diversity proof.
 
 #### P10B-15 — Bounded storefront synthesis and narrative engine

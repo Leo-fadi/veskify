@@ -10,6 +10,7 @@ import {
   canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
   canonicalValueString,
+  validateCommercialSharedFrameSnapshot,
 } from "@/domain/storefront";
 import {
   GOLDEN_STORE_EVALUATION_CONTRACT_VERSION,
@@ -202,6 +203,18 @@ function assertCurrentProfiles(
 }
 
 function assertSharedFrame(snapshot: GoldenStoreLifecycleEvidence["snapshot"]): void {
+  if (snapshot.sharedFrame) {
+    try {
+      validateCommercialSharedFrameSnapshot(snapshot);
+    } catch (cause) {
+      throw new GoldenStoreEvaluationError(
+        "stale-profile",
+        "Golden-store shared-frame authority is not current.",
+        cause,
+      );
+    }
+    return;
+  }
   for (const pageType of ["home", "collection", "product"] as const) {
     const page = snapshot.pages.find((candidate) => candidate.type === pageType);
     if (!page) {
@@ -304,8 +317,9 @@ function assertProtectedState(
 function profileIdFor(
   surface: GoldenStoreEvaluationScenario["surface"],
   materializations: Map<string, WholeStorefrontPageBlueprintMaterialization>,
+  sharedFrameProfileId: string,
 ): string {
-  if (surface === "shared-frame") return sharedStorefrontFrameProfile.id;
+  if (surface === "shared-frame") return sharedFrameProfileId;
   const profile = materializations.get(surface);
   if (!profile)
     throw new GoldenStoreEvaluationError("stale-profile", `Missing ${surface} profile.`);
@@ -349,7 +363,12 @@ function assertCompleteMatrix(
           scenarios.push({
             lifecycle,
             surface,
-            profileId: profileIdFor(surface, materializations),
+            profileId: profileIdFor(
+              surface,
+              materializations,
+              input.canonicalBaseline.snapshot.sharedFrame?.profileId ??
+                sharedStorefrontFrameProfile.id,
+            ),
             locale,
             viewport,
             evidenceReference: key,

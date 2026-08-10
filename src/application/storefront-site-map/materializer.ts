@@ -165,6 +165,29 @@ function assertLocales(decision: StorefrontSiteMapDecision, page: SiteMapPageDec
   }
 }
 
+function assertSharedFrameCompatibility(
+  page: SiteMapPageDecision,
+  sharedFrameProfileId: string | undefined,
+): void {
+  // P10B-05 and legacy snapshots may carry only the canonical frame slot.
+  // Compatibility becomes executable once P10B-06 has materialized a profile.
+  if (sharedFrameProfileId === undefined) return;
+  const profile = getExecutablePageBlueprintProfile(page.profile.id)?.profile;
+  const compatible =
+    profile?.commercialHomepage?.compatibleSharedFrameProfileIds ??
+    profile?.commercialProductDetail?.compatibleSharedFrameProfileIds ??
+    profile?.commercialCollectionSearch?.compatibleSharedFrameProfileIds ??
+    profile?.commercialContentSupport?.compatibleSharedFrameProfileIds ??
+    profile?.commercialUtility?.compatibleSharedFrameProfileIds;
+  const parsedSharedFrame = commercialSharedFrameProfileIdSchema.safeParse(sharedFrameProfileId);
+  if (compatible && (!parsedSharedFrame.success || !compatible.includes(parsedSharedFrame.data))) {
+    throw new SiteMapMaterializationError(
+      "invalid-shared-frame",
+      `PageBlueprint profile ${page.profile.id} is incompatible with the current shared frame.`,
+    );
+  }
+}
+
 function pageAuthority(
   decision: StorefrontSiteMapDecision,
   page: SiteMapPageDecision,
@@ -256,6 +279,7 @@ export function materializeStorefrontSiteMap(
     }
     assertProfile(page);
     assertLocales(decision, page);
+    assertSharedFrameCompatibility(page, input.baseSnapshot.sharedFrame?.profileId);
     const definition = getPageFamilyDefinition(page.familyId);
     let canonicalEvidence: PageFactEvidenceReference[] = [];
     try {

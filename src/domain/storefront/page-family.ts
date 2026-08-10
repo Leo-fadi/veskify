@@ -94,6 +94,20 @@ const commercialCollectionSearchProfiles = [
   profile("collection-campaign-led-discovery"),
   profile("collection-dense-search"),
 ] as const;
+const commercialHomepageProfiles = [
+  profile("homepage-editorial-storytelling"),
+  profile("homepage-commerce-led-discovery"),
+  profile("homepage-minimal-brand-commerce"),
+  profile("homepage-campaign-led"),
+  profile("homepage-collection-gateway"),
+  profile("homepage-high-consideration"),
+] as const;
+const commercialProductDetailProfiles = [
+  profile("pdp-standard-commerce"),
+  profile("pdp-high-consideration"),
+  profile("pdp-gallery-led"),
+  profile("pdp-variant-led"),
+] as const;
 const searchCompatibleCommercialCollectionSearchProfiles = [
   profile("collection-catalogue-comparison"),
   profile("collection-dense-search"),
@@ -139,7 +153,10 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     pageType: "home",
     routeClass: "root",
     commerceContext: "none",
-    allowedProfileReferences: [profile("blueprint-site-map-home-baseline")],
+    allowedProfileReferences: [
+      profile("blueprint-site-map-home-baseline"),
+      ...commercialHomepageProfiles,
+    ],
     navigationEligibility: bothNavigation,
     evidenceRequirement: "none",
     permittedEvidenceKinds: [],
@@ -184,7 +201,10 @@ export const pageFamilyDefinitions: readonly PageFamilyDefinition[] = Object.fre
     pageType: "product",
     routeClass: "product-detail",
     commerceContext: "product",
-    allowedProfileReferences: [profile("blueprint-site-map-product-baseline")],
+    allowedProfileReferences: [
+      profile("blueprint-site-map-product-baseline"),
+      ...commercialProductDetailProfiles,
+    ],
     navigationEligibility: bothNavigation,
     evidenceRequirement: "none",
     permittedEvidenceKinds: [],

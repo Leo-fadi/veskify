@@ -162,6 +162,7 @@ export function projectWholeStorefrontRuntimePage(
 }
 
 function expectedPageRole(page: PageModel): WholeStorefrontRuntimeState["pages"][number]["role"] {
+  if (page.pageFamily?.familyId === "search-results") return "other";
   if (page.type === "home") return "homepage";
   if (page.type === "collection") return "collection-template";
   if (page.type === "product") return "product-template";
