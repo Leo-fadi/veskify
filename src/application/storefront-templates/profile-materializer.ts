@@ -11,6 +11,7 @@ import {
   storefrontTemplatePagePlanSchema,
   type StorefrontTemplatePagePlan,
   type CommercialHomepageProfileAuthority,
+  type CommercialContentSupportProfileAuthority,
   type CommercialProductDetailProfileAuthority,
   type CommercialCollectionSearchProfileAuthority,
 } from "./contract";
@@ -34,6 +35,7 @@ export type ExecutablePageBlueprintMaterialization = Readonly<{
   requiredBindingCategories: readonly string[];
   requiredAssetRoles: readonly string[];
   commercialHomepage?: CommercialHomepageProfileAuthority;
+  commercialContentSupport?: CommercialContentSupportProfileAuthority;
   commercialProductDetail?: CommercialProductDetailProfileAuthority;
   commercialCollectionSearch?: CommercialCollectionSearchProfileAuthority;
   fingerprint: string;
@@ -137,6 +139,11 @@ export function materializeExecutablePageBlueprint(
     requireCanonicalProductCardAnatomy(
       profile.commercialHomepage.productCardAnatomyId,
       "homepageMerchandising",
+    );
+  }
+  if (profile.commercialContentSupport) {
+    profile.commercialContentSupport.compatibleSharedFrameProfileIds.forEach(
+      getCommercialSharedFrameProfile,
     );
   }
   if (profile.commercialProductDetail) {
@@ -329,6 +336,9 @@ export function materializeExecutablePageBlueprint(
     requiredAssetRoles: [...profile.requiredAssetRoles],
     ...(profile.commercialHomepage
       ? { commercialHomepage: structuredClone(profile.commercialHomepage) }
+      : {}),
+    ...(profile.commercialContentSupport
+      ? { commercialContentSupport: structuredClone(profile.commercialContentSupport) }
       : {}),
     ...(profile.commercialProductDetail
       ? { commercialProductDetail: structuredClone(profile.commercialProductDetail) }

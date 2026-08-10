@@ -14,12 +14,17 @@ import {
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import { homepageCommerceBridgeDefinitions } from "./homepage-commerce-bridge";
+import {
+  contentSupportBridgeDefinitions,
+  validateContentSupportPageDocuments,
+} from "./content-support-bridge";
 import type { ComponentDefinition, StorefrontRenderContext } from "./contract";
 import { veskifyLegacyComponentRegistry } from "./legacy-registry";
 
 export const veskifyComponentRegistry = {
   ...veskifyLegacyComponentRegistry,
   ...homepageCommerceBridgeDefinitions,
+  ...contentSupportBridgeDefinitions,
 } as const satisfies Record<string, ComponentDefinition>;
 
 export type RegisteredComponentType = keyof typeof veskifyComponentRegistry;
@@ -55,6 +60,7 @@ export function validateRegisteredPage(
 ): PageModel {
   const page = pageModelSchema.parse(input);
   page.sections.forEach((section) => validateRegisteredSection(section, page.type, context));
+  validateContentSupportPageDocuments(page, context);
   return page;
 }
 
@@ -64,20 +70,33 @@ export function validateRegisteredSnapshot(
   activeLocale: Locale = "en",
   primaryLocale: Locale = "en",
   enabledLocales?: readonly Locale[],
-  evidenceReferences: StorefrontRenderContext["evidenceReferences"] = [],
+  evidenceReferences?: StorefrontRenderContext["evidenceReferences"],
+  contentSupportFactDocuments?: StorefrontRenderContext["contentSupportFactDocuments"],
 ): StorefrontSnapshot {
   const snapshot = storefrontSnapshotSchema.parse(input);
+  const factDocuments = contentSupportFactDocuments ?? snapshot.contentSupportFactDocuments;
+  const currentEvidenceReferences = evidenceReferences ?? [];
+  const hasContentSupportSections = snapshot.pages.some((page) =>
+    page.sections.some((section) => section.component === "contentSupport"),
+  );
   if (snapshot.sharedFrame) validateCommercialSharedFrameSnapshot(snapshot);
-  const context = catalogue
-    ? createStorefrontRenderContext({
-        activeLocale,
-        primaryLocale,
-        enabledLocales,
-        catalogue,
-        snapshot,
-        evidenceReferences,
-      })
-    : undefined;
+  // Snapshot evidence is retained for provenance, not treated as current
+  // external approval. Structural repository validation can preserve an
+  // already-approved snapshot without inventing a current evidence context;
+  // an explicit render or publish validation must provide the current set and
+  // fails closed when it does not contain the bound document evidence.
+  const context =
+    catalogue && (!hasContentSupportSections || evidenceReferences !== undefined)
+      ? createStorefrontRenderContext({
+          activeLocale,
+          primaryLocale,
+          enabledLocales,
+          catalogue,
+          snapshot,
+          evidenceReferences: currentEvidenceReferences,
+          contentSupportFactDocuments: factDocuments,
+        })
+      : undefined;
   if (snapshot.sharedFrame) {
     validateRegisteredSection(snapshot.sharedFrame.header, undefined, context);
     validateRegisteredSection(snapshot.sharedFrame.footer, undefined, context);
@@ -119,17 +138,20 @@ export function createStorefrontRenderContext({
   pagePathSuffix = "",
   renderTarget = "preview",
   evidenceReferences = [],
+  contentSupportFactDocuments,
 }: {
   activeLocale: Locale;
   primaryLocale: Locale;
   enabledLocales?: readonly Locale[];
   onLocaleChange?: (locale: Locale) => void;
   catalogue: CatalogueDisplayModel;
-  snapshot: Pick<StorefrontSnapshot, "navigation" | "pages" | "brandSystem" | "sharedFrame">;
+  snapshot: Pick<StorefrontSnapshot, "navigation" | "pages" | "brandSystem" | "sharedFrame"> &
+    Partial<Pick<StorefrontSnapshot, "contentSupportFactDocuments">>;
   pagePathPrefix?: string;
   pagePathSuffix?: string;
   renderTarget?: StorefrontRenderContext["renderTarget"];
   evidenceReferences?: StorefrontRenderContext["evidenceReferences"];
+  contentSupportFactDocuments?: StorefrontRenderContext["contentSupportFactDocuments"];
 }): StorefrontRenderContext {
   const parsedActiveLocale = localeSchema.parse(activeLocale);
   const parsedPrimaryLocale = localeSchema.parse(primaryLocale);
@@ -159,5 +181,7 @@ export function createStorefrontRenderContext({
     homePath: homePage ? pagePaths[homePage.id] : undefined,
     renderTarget,
     evidenceReferences,
+    contentSupportFactDocuments:
+      contentSupportFactDocuments ?? snapshot.contentSupportFactDocuments ?? [],
   };
 }

@@ -4,6 +4,7 @@ import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { Locale } from "@/domain/shared";
 import type {
   NavigationModel,
+  ContentSupportFactDocument,
   PageFactEvidenceReference,
   PageModel,
   PageType,
@@ -28,6 +29,8 @@ export type StorefrontRenderContext = {
   renderTarget?: "editor" | "preview" | "published";
   /** Current, externally resolved proof authority. Snapshot content never establishes approval. */
   evidenceReferences?: readonly PageFactEvidenceReference[];
+  /** Current, externally resolved support facts. Snapshot sections carry only document IDs. */
+  contentSupportFactDocuments?: readonly ContentSupportFactDocument[];
 };
 
 /** Resolves only canonical snapshot navigation and commerce identities to routes. */
@@ -77,6 +80,7 @@ export type ComponentRenderInput<TContent, TProps, TVariant extends string> = {
   variant: TVariant;
   content: TContent;
   props: TProps;
+  styleOverrides: NonNullable<SectionInstance["styleOverrides"]>;
   approvedAssetPlacements: NonNullable<SectionInstance["approvedAssetPlacements"]>;
   approvedAssetPresentations: NonNullable<SectionInstance["approvedAssetPresentations"]>;
   context: StorefrontRenderContext;
@@ -161,6 +165,7 @@ export function defineComponent<
       sectionId: section.id,
       content: input.contentSchema.parse(section.content),
       props: input.propsSchema.parse(section.props),
+      styleOverrides: structuredClone(section.styleOverrides ?? {}),
       variant: section.variant as TVariants[number],
       approvedAssetPlacements: structuredClone(section.approvedAssetPlacements ?? []),
       approvedAssetPresentations: structuredClone(section.approvedAssetPresentations ?? []),

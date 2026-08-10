@@ -1,0 +1,93 @@
+.section {
+  padding: clamp(2.5rem, 7vw, 6rem) clamp(1rem, 5vw, 4rem);
+}
+
+.section[data-surface="default"] {
+  background: var(--brand-surface-page);
+  color: var(--brand-surface-page-text);
+}
+
+.section[data-surface="surface"] {
+  background: var(--brand-color-surface);
+  color: var(--brand-color-text);
+}
+
+.section[data-surface="primary"] {
+  background: var(--brand-color-primary);
+  color: var(--brand-color-primary-text);
+}
+
+.section[data-surface="secondary"] {
+  background: var(--brand-color-secondary);
+  color: var(--brand-color-secondary-text);
+}
+
+.section[data-surface="accent"] {
+  background: var(--brand-color-accent);
+  color: var(--brand-color-accent-text);
+}
+
+.reading {
+  display: grid;
+  gap: 1.25rem;
+  margin: 0 auto;
+  max-width: 48rem;
+}
+
+.reading h1,
+.article h2,
+.card h2 {
+  margin: 0;
+}
+
+.introduction {
+  font-size: 1.2rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.article,
+.card,
+.faq {
+  border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  padding-top: 1.25rem;
+}
+
+.article p,
+.card p,
+.faq p,
+.card address,
+.card ul {
+  line-height: 1.65;
+  margin: 0.65rem 0 0;
+}
+
+.card {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.card a {
+  color: inherit;
+  text-underline-offset: 0.2em;
+}
+
+.faq summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+
+@media (min-width: 48rem) {
+  .section[data-variant="contactDirectory"] .reading,
+  .section[data-variant="locationDirectory"] .reading {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 68rem;
+  }
+
+  .section[data-variant="contactDirectory"] .reading > h1,
+  .section[data-variant="contactDirectory"] .reading > .introduction,
+  .section[data-variant="locationDirectory"] .reading > h1,
+  .section[data-variant="locationDirectory"] .reading > .introduction {
+    grid-column: 1 / -1;
+  }
+}

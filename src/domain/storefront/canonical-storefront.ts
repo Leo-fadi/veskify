@@ -1,9 +1,18 @@
 import type { StorefrontSnapshot } from "./storefront";
 
-export type StorefrontContent = Pick<
-  StorefrontSnapshot,
-  "brandSystem" | "navigation" | "sharedFrame" | "pages" | "catalogueRef"
->;
+export type StorefrontContent = Omit<
+  Pick<
+    StorefrontSnapshot,
+    | "brandSystem"
+    | "navigation"
+    | "sharedFrame"
+    | "pages"
+    | "contentSupportFactDocuments"
+    | "catalogueRef"
+  >,
+  "contentSupportFactDocuments"
+> &
+  Partial<Pick<StorefrontSnapshot, "contentSupportFactDocuments">>;
 
 export function canonicalizeValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonicalizeValue);
@@ -27,6 +36,13 @@ export function storefrontContent(snapshot: StorefrontSnapshot): StorefrontConte
     navigation: snapshot.navigation,
     ...(snapshot.sharedFrame ? { sharedFrame: snapshot.sharedFrame } : {}),
     pages: snapshot.pages,
+    // The empty collection is a P10B-12 schema normalization. Omitting it
+    // preserves accepted fingerprints for stored snapshots from before that
+    // optional authority existed, while non-empty approved facts remain part
+    // of canonical snapshot integrity.
+    ...(snapshot.contentSupportFactDocuments.length > 0
+      ? { contentSupportFactDocuments: snapshot.contentSupportFactDocuments }
+      : {}),
     catalogueRef: snapshot.catalogueRef,
   };
 }

@@ -8,4 +8,6 @@ export * from "./materializer";
 export * from "./design-vocabulary-validation";
 export * from "./profile-materializer";
 export * from "./page-family-baselines";
+export * from "./commercial-content-support-profiles";
 export * from "./commercial-collection-search-profiles";
+export * from "./commercial-pdp-profiles";

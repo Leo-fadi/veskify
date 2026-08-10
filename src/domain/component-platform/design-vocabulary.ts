@@ -224,7 +224,13 @@ const roles = (
   input: Omit<z.input<typeof narrativeRoleDefinitionSchema>, "id">,
 ): NarrativeRoleDefinition => narrativeRoleDefinitionSchema.parse({ id, ...input });
 
-const allPages: Array<z.infer<typeof pageTypeSchema>> = ["home", "collection", "product"];
+const allPages: Array<z.infer<typeof pageTypeSchema>> = [
+  "home",
+  "collection",
+  "product",
+  "content",
+  "landing",
+];
 const allWeights: Array<z.infer<typeof visualWeightSchema>> = [
   "light",
   "medium",
@@ -291,7 +297,7 @@ export const narrativeRoleDefinitions = [
     accessibilityRequirement: "standard",
   }),
   roles("brand-story", {
-    allowedPageTypes: ["home", "collection", "product"],
+    allowedPageTypes: ["home", "collection", "product", "content", "landing"],
     visualWeights: ["medium", "heavy"],
     commercialPriority: "supporting",
     maxOccurrences: 1,
@@ -321,7 +327,7 @@ export const narrativeRoleDefinitions = [
     accessibilityRequirement: "standard",
   }),
   roles("campaign", {
-    allowedPageTypes: ["home", "collection"],
+    allowedPageTypes: ["home", "collection", "landing"],
     visualWeights: ["medium", "heavy", "dominant"],
     commercialPriority: "standard",
     maxOccurrences: 1,

@@ -1,4 +1,5 @@
 export * from "./canonical-storefront";
+export * from "./content-support-facts";
 export * from "./storefront";
 export * from "./approved-asset-placement";
 export * from "./page-family";

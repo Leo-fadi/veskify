@@ -25,6 +25,7 @@ function bindingCategoriesFor(pageType: string) {
   }
   if (pageType === "collection") return ["collection", "productList"] as const;
   if (pageType === "product") return ["product"] as const;
+  if (pageType === "content" || pageType === "landing") return ["localizedContent"] as const;
   return [] as const;
 }
 
