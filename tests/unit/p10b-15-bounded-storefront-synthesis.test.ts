@@ -160,6 +160,7 @@ describe("P10B-15 bounded storefront synthesis contract and selection", () => {
 
   it("16. selects registered dense discovery authority for a large catalogue", () => {
     const planningInput = structuredClone(common.planningInput);
+    const siteMapDecision = structuredClone(common.siteMapDecision);
     const template = planningInput.catalogue.products[0];
     const extraProducts = Array.from({ length: 7 }, (_, index) => ({
       ...structuredClone(template),
@@ -177,18 +178,100 @@ describe("P10B-15 bounded storefront synthesis contract and selection", () => {
     }));
     planningInput.catalogue.products.push(...extraProducts);
     planningInput.catalogue.collections[0].productIds.push(...extraProducts.map(({ id }) => id));
+    const productPageTemplate = siteMapDecision.pages.find(
+      ({ familyId }) => familyId === "product-detail",
+    )!;
+    siteMapDecision.pages.push(
+      ...extraProducts.map((product, index) => ({
+        ...structuredClone(productPageTemplate),
+        key: `p10b15-dense-product-${index + 1}`,
+        route: `/products/dense-${index + 1}`,
+        title: { en: `Dense product ${index + 1}`, fi: `Tiivis tuote ${index + 1}` },
+        seo: {
+          title: { en: `Dense product ${index + 1}`, fi: `Tiivis tuote ${index + 1}` },
+          metaDescription: {
+            en: `Dense product ${index + 1}.`,
+            fi: `Tiivis tuote ${index + 1}.`,
+          },
+        },
+        commerceContext: { kind: "product" as const, productId: product.id },
+      })),
+    );
     const request = { intent: "dense-catalogue", deterministicSeed: "large" } as const;
     const selected = createBoundedStorefrontSynthesisDecision({
       ...common,
       planningInput,
+      siteMapDecision,
       request,
     });
+    const result = executeBoundedStorefrontSynthesis({
+      ...common,
+      planningInput,
+      siteMapDecision,
+      request,
+      decision: selected,
+      pageEvidenceAuthority: source.pageEvidenceAuthority,
+      contentFactAuthority: source.contentFactAuthority,
+      approvedAssetPresentations: source.fixture.assetPresentations,
+    });
+    const discoverySections = result.materialization.snapshot.pages
+      .filter(({ pageFamily }) =>
+        ["collection", "search-results"].includes(pageFamily?.familyId ?? ""),
+      )
+      .map(({ sections }) => sections[0]);
     expect(selected.commercialProfiles.collectionProfileId).toBe("collection-dense-search");
     expect(selected.informationDensityPosture).toBe("compact");
+    expect(discoverySections).toHaveLength(2);
+    expect(new Set(discoverySections.map(({ id }) => id)).size).toBe(2);
+    expect(
+      discoverySections.every(({ id }) => id.length <= 80 && id.startsWith("section_collection_")),
+    ).toBe(true);
   });
 
   it("17. uses configurable-product complexity to select a considered PDP", () => {
     expect(decision("commerce-led").commercialProfiles.pdpProfileId).toBe("pdp-high-consideration");
+
+    const planningInput = structuredClone(common.planningInput);
+    const siteMapDecision = structuredClone(common.siteMapDecision);
+    const originalProductId = planningInput.catalogue.products[0].id;
+    const longProductId = `product_${"bounded".repeat(10)}`;
+    planningInput.catalogue.products[0].id = longProductId;
+    for (const collection of planningInput.catalogue.collections) {
+      collection.productIds = collection.productIds.map((productId) =>
+        productId === originalProductId ? longProductId : productId,
+      );
+    }
+    for (const page of siteMapDecision.pages) {
+      if (
+        page.commerceContext.kind === "product" &&
+        page.commerceContext.productId === originalProductId
+      ) {
+        page.commerceContext.productId = longProductId;
+      }
+    }
+    const request = { intent: "high-consideration", deterministicSeed: "long-id" } as const;
+    const selected = createBoundedStorefrontSynthesisDecision({
+      ...common,
+      planningInput,
+      siteMapDecision,
+      request,
+    });
+    const result = executeBoundedStorefrontSynthesis({
+      ...common,
+      planningInput,
+      siteMapDecision,
+      request,
+      decision: selected,
+      pageEvidenceAuthority: source.pageEvidenceAuthority,
+      contentFactAuthority: source.contentFactAuthority,
+      approvedAssetPresentations: source.fixture.assetPresentations,
+    });
+    const longProductSection = result.materialization.snapshot.pages
+      .flatMap(({ sections }) => sections)
+      .find(({ content }) => content.productId === longProductId);
+    expect(longProductId.length).toBeGreaterThan(45);
+    expect(longProductSection?.id).toMatch(/^section_product_[a-f0-9]{32}$/);
+    expect(longProductSection?.id.length).toBeLessThanOrEqual(80);
   });
 
   it("18. rejects unsupported request vocabulary and impossible campaign narrowing", () => {

@@ -27,6 +27,7 @@ import {
 } from "@/components/registry";
 import {
   canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
   storefrontSnapshotSchema,
   validateCanonicalStorefrontSiteMap,
   type SectionInstance,
@@ -60,11 +61,20 @@ export type CompleteStorefrontMaterialization = Readonly<{
   snapshotFingerprint: string;
 }>;
 
+function materializedSectionId(
+  kind: "collection" | "product",
+  materializationIdPrefix: string,
+  identity: Readonly<Record<string, string>>,
+): string {
+  return `section_${kind}_${canonicalValueFingerprint({ materializationIdPrefix, ...identity }).slice(-32)}`;
+}
+
 function collectionSection(
   snapshot: StorefrontSnapshot,
   planningInput: WholeStorefrontPlanningInput,
   profileId: CommercialCollectionSearchProfileId,
   materializationIdPrefix: string,
+  pageId: string,
   collectionId?: string,
 ): SectionInstance {
   const collection = collectionId
@@ -83,7 +93,11 @@ function collectionSection(
     draft: snapshot,
   }).canonicalCommerceFingerprint;
   return {
-    id: `section_${materializationIdPrefix}_${profileId.replaceAll("-", "_")}`,
+    id: materializedSectionId("collection", materializationIdPrefix, {
+      pageId,
+      profileId,
+      collectionId: collection.id,
+    }),
     component: "dynamicCollectionCommerce",
     variant: slot.defaultVariant,
     visible: true,
@@ -111,13 +125,18 @@ function productSection(
   canonicalRevision: string,
   profileId: CommercialPdpProfileId,
   materializationIdPrefix: string,
+  pageId: string,
 ): SectionInstance {
   const authority = getCommercialPdpProfile(profileId)?.profile?.commercialProductDetail;
   if (!authority) {
     throw new Error(`Complete storefront materialization requires current ${profileId} authority.`);
   }
   return {
-    id: `section_${materializationIdPrefix}_product_${productId.replaceAll("_", "-")}`,
+    id: materializedSectionId("product", materializationIdPrefix, {
+      pageId,
+      profileId,
+      productId,
+    }),
     component: "dynamicProductDetail",
     variant: authority.dynamicProductDetailVariant,
     visible: true,
@@ -204,6 +223,7 @@ export function materializeCompleteStorefrontSelection(
               input.planningInput,
               commercialCollectionSearchProfileIdSchema.parse(page.pageFamily?.profileId),
               materializationIdPrefix,
+              page.id,
               page.pageFamily?.commerceContext.kind === "collection"
                 ? page.pageFamily.commerceContext.collectionId
                 : undefined,
@@ -230,6 +250,7 @@ export function materializeCompleteStorefrontSelection(
               target.canonicalCommerceFingerprint,
               commercialPdpProfileIdSchema.parse(page.pageFamily.profileId),
               materializationIdPrefix,
+              page.id,
             ),
           ],
         };
