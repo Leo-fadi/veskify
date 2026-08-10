@@ -179,7 +179,7 @@ export interface OpenAiResponsesTransport {
 export type OpenAiProviderTelemetryEvent = Readonly<{
   providerId: "openai";
   modelId: string;
-  operation: "proposal" | "wholeStorefrontPlanning";
+  operation: "proposal" | "wholeStorefrontPlanning" | "completeStorefrontSynthesisIntent";
   durationMs: number;
   outcome:
     | "success"

@@ -25,6 +25,12 @@ import {
   synchronizeP905bLocalDemoAggregate,
 } from "@/integrations/ai/p9-05b-local-demo-client";
 import {
+  acceptP10bLiveSynthesisProposal,
+  P10bLiveSynthesisAcceptanceClientError,
+  rejectP10bLiveSynthesisProposal,
+  synchronizeP10bLiveSynthesisAggregate,
+} from "@/integrations/ai/p10b-live-synthesis-acceptance-client";
+import {
   canDuplicateSection,
   canToggleSectionVisibility,
   CanonicalEditorHistory,
@@ -45,6 +51,7 @@ import { brandSystemToCssVariables, type BrandSystem } from "@/domain/design-sys
 import { resolveLocalizedText, type Locale } from "@/domain/shared";
 import type { AiStorefrontProposal } from "@/application/ai-storefront";
 import {
+  canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
   type PageFactEvidenceReference,
   type PageModel,
@@ -79,7 +86,6 @@ import styles from "./project-editor.module.css";
 import { DesignAgentPanel } from "./design-agent-panel";
 import {
   canonicalPagesEqual,
-  changedPagesForActiveDraft,
   composeActiveEditorDraft,
   establishAcceptedAiReceiptClientAuthority,
   proposalStorefrontPreview,
@@ -94,7 +100,7 @@ import {
 
 type RepositoryFactory = () => ProjectRepository;
 const defaultCommerceRouteAdapter = createCatalogueStorefrontCommerceRouteAdapter();
-type LocalDemoBridge = {
+type LocalDemoBridgeBase = {
   aggregate: ProjectAggregate;
   proposal: AiStorefrontProposal | null;
   sessionId: string;
@@ -102,6 +108,14 @@ type LocalDemoBridge = {
   baselineFingerprint: string;
   evidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
 };
+type LocalDemoBridge =
+  | (LocalDemoBridgeBase & { kind: "p9-05b" })
+  | (LocalDemoBridgeBase & {
+      kind: "p10b-16l";
+      rawDraft: StorefrontSnapshot;
+      reviewBaselineFingerprint: string | null;
+      persistedAggregate: ProjectAggregate;
+    });
 type ReadyState = {
   status: "ready";
   aggregate: ProjectAggregate;
@@ -124,6 +138,26 @@ type SaveUiState =
 
 const editorPageTypes = new Set<PageType>(["home", "collection", "product"]);
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
+
+function editorPagesFor(
+  draft: StorefrontSnapshot,
+  localDemoBridge: LocalDemoBridge | undefined,
+): PageModel[] {
+  return draft.pages.filter(
+    (page) => localDemoBridge?.kind === "p10b-16l" || editorPageTypes.has(page.type),
+  );
+}
+
+function p10bLiveHistorySnapshot(
+  snapshot: StorefrontSnapshot,
+  localDemoBridge: LocalDemoBridge | undefined,
+): StorefrontSnapshot {
+  return localDemoBridge?.kind === "p10b-16l" &&
+    localDemoBridge.reviewBaselineFingerprint !== null &&
+    canonicalStorefrontContentFingerprint(snapshot) === localDemoBridge.reviewBaselineFingerprint
+    ? structuredClone(localDemoBridge.rawDraft)
+    : snapshot;
+}
 
 function StatusPanel({
   title,
@@ -335,6 +369,7 @@ export function ProjectEditorClient({
   const [activeLocale, setActiveLocale] = useState<Locale>();
   const [sessionPages, setSessionPages] = useState<Record<string, PageModel>>({});
   const [sessionBrandSystem, setSessionBrandSystem] = useState<BrandSystem>();
+  const [sessionStorefrontDraft, setSessionStorefrontDraft] = useState<StorefrontSnapshot>();
   const [resetKeys, setResetKeys] = useState<Record<string, number>>({});
   const [validationMessage, setValidationMessage] = useState("");
   const [historyStatus, setHistoryStatus] = useState("");
@@ -369,7 +404,9 @@ export function ProjectEditorClient({
     () =>
       storefrontAiProvider ??
       createServerWholeStorefrontPlanningClient({
-        ...(localDemoBridge ? { p905bSessionId: localDemoBridge.sessionId } : {}),
+        ...(localDemoBridge?.kind === "p9-05b"
+          ? { p905bSessionId: localDemoBridge.sessionId }
+          : {}),
       }),
     [localDemoBridge, storefrontAiProvider],
   );
@@ -412,13 +449,20 @@ export function ProjectEditorClient({
         if (!(currentRepository instanceof IndexedDbProjectRepository)) {
           throw new Error("The local demo bridge requires the canonical browser repository.");
         }
-        const marker = `veskify:p9-05b:${localDemoBridge.sessionId}:${localDemoBridge.baselineFingerprint}`;
+        const marker = `veskify:${localDemoBridge.kind}:${localDemoBridge.sessionId}:${localDemoBridge.baselineFingerprint}:${localDemoBridge.authoritativeRevision}`;
         if (window.sessionStorage.getItem(marker) !== "seeded") {
-          await currentRepository.replaceLocalDemoAggregate(localDemoBridge.aggregate);
+          await currentRepository.replaceLocalDemoAggregate(
+            localDemoBridge.kind === "p10b-16l"
+              ? localDemoBridge.persistedAggregate
+              : localDemoBridge.aggregate,
+          );
           window.sessionStorage.setItem(marker, "seeded");
         }
       }
-      return currentRepository.get(projectId);
+      const persisted = await currentRepository.get(projectId);
+      return localDemoBridge?.kind === "p10b-16l" && localDemoBridge.proposal !== null
+        ? structuredClone(localDemoBridge.aggregate)
+        : persisted;
     };
     void load()
       .then((aggregate) => {
@@ -443,7 +487,7 @@ export function ProjectEditorClient({
             pagePathPrefix: `/projects/${projectId}`,
             evidenceReferences: localDemoBridge?.evidenceReferences,
           });
-          const pages = draft.pages.filter((page) => editorPageTypes.has(page.type));
+          const pages = editorPagesFor(draft, localDemoBridge);
           pages.forEach((page) => validateRegisteredPage(page, context));
           if (pages.length === 0) throw new Error("No supported draft pages are available.");
           const nextHistory = new CanonicalEditorHistory({
@@ -456,6 +500,7 @@ export function ProjectEditorClient({
           setActiveLocale(aggregate.project.primaryLocale);
           setSessionPages({});
           setSessionBrandSystem(undefined);
+          setSessionStorefrontDraft(undefined);
           setImportedDemoProposal(localDemoBridge?.proposal ?? undefined);
           setAuthoritativeRevision(localDemoBridge?.authoritativeRevision ?? null);
           setAcceptedReceiptAuthority(undefined);
@@ -486,19 +531,22 @@ export function ProjectEditorClient({
   }, [attempt, localDemoBridge, projectId]);
 
   const readyState = state.status === "ready" ? state : undefined;
+  const editorDraftBase = sessionStorefrontDraft ?? readyState?.draft;
+  const editorDraftPages = editorDraftBase ? editorPagesFor(editorDraftBase, localDemoBridge) : [];
   const readyOriginalPage =
-    readyState?.pages.find((item) => item.id === selectedPageId) ?? readyState?.pages[0];
+    editorDraftPages.find((item) => item.id === selectedPageId) ?? editorDraftPages[0];
   const readyPage = readyOriginalPage
     ? (sessionPages[readyOriginalPage.id] ?? readyOriginalPage)
     : undefined;
   const readyLocale = activeLocale ?? readyState?.aggregate.project.primaryLocale;
   const activeDraft = readyState
     ? composeActiveEditorDraft({
-        draft: readyState.draft,
+        draft: editorDraftBase ?? readyState.draft,
         sessionPages,
         brandSystem: sessionBrandSystem,
       })
     : undefined;
+  const visiblePages = activeDraft ? editorPagesFor(activeDraft, localDemoBridge) : [];
   const readyContext =
     readyState && readyLocale && activeDraft
       ? createStorefrontRenderContext({
@@ -563,69 +611,105 @@ export function ProjectEditorClient({
       if (authoritativeRevision === null || !readyState) {
         throw new P905bLocalDemoSynchronizationClientError("stale", 409);
       }
-      const acceptance = await acceptP905bLocalDemoProposal({
+      if (localDemoBridge.kind === "p9-05b") {
+        const acceptance = await acceptP905bLocalDemoProposal({
+          projectId,
+          sessionId: localDemoBridge.sessionId,
+          proposalId,
+          acceptanceActionId: `acceptance_action_${canonicalValueFingerprint({
+            sessionId: localDemoBridge.sessionId,
+            proposalId,
+            authoritativeRevision,
+          }).slice(-32)}`,
+          expectedAuthorityRevision: authoritativeRevision,
+          expectedProjectRevision: readyState.aggregate.project.revision,
+          expectedDraftId: readyState.draft.id,
+          expectedDraftRevision: readyState.draft.revision,
+        });
+        setAuthoritativeRevision(acceptance.authoritativeRevision);
+        pendingAcceptedReceiptAuthority.current = establishAcceptedAiReceiptClientAuthority(
+          acceptance.receiptId,
+          acceptedSnapshot,
+        );
+        return;
+      }
+      const acceptance = await acceptP10bLiveSynthesisProposal({
         projectId,
         sessionId: localDemoBridge.sessionId,
         proposalId,
-        acceptanceActionId: `acceptance_action_${canonicalValueFingerprint({
-          sessionId: localDemoBridge.sessionId,
-          proposalId,
-          authoritativeRevision,
-        }).slice(-32)}`,
-        expectedAuthorityRevision: authoritativeRevision,
-        expectedProjectRevision: readyState.aggregate.project.revision,
-        expectedDraftId: readyState.draft.id,
-        expectedDraftRevision: readyState.draft.revision,
+        expectedRevision: authoritativeRevision,
+        acceptedSnapshot,
       });
       setAuthoritativeRevision(acceptance.authoritativeRevision);
-      pendingAcceptedReceiptAuthority.current = establishAcceptedAiReceiptClientAuthority(
-        acceptance.receiptId,
-        acceptedSnapshot,
-      );
     },
+    onStorefrontRejected:
+      localDemoBridge?.kind === "p10b-16l"
+        ? async ({ proposalId }) => {
+            if (authoritativeRevision === null) return;
+            const rejection = await rejectP10bLiveSynthesisProposal({
+              projectId,
+              sessionId: localDemoBridge.sessionId,
+              proposalId,
+              expectedRevision: authoritativeRevision,
+            });
+            setAuthoritativeRevision(rejection.authoritativeRevision);
+            window.location.reload();
+          }
+        : undefined,
+    projectStorefrontHistorySnapshot: (snapshot) =>
+      p10bLiveHistorySnapshot(snapshot, localDemoBridge),
     onStorefrontHistorySnapshot: async (snapshot) => {
       if (!localDemoBridge) return;
       if (authoritativeRevision === null || !readyState) {
         throw new P905bLocalDemoSynchronizationClientError("stale", 409);
       }
-      const synchronization = await synchronizeP905bLocalDemoAggregate({
-        projectId,
-        sessionId: localDemoBridge.sessionId,
-        expectedRevision: authoritativeRevision,
-        mode: "active",
-        aggregate: aggregateWithActiveDraft(readyState.aggregate, snapshot),
-      });
+      const synchronization = await (localDemoBridge.kind === "p9-05b"
+        ? synchronizeP905bLocalDemoAggregate({
+            projectId,
+            sessionId: localDemoBridge.sessionId,
+            expectedRevision: authoritativeRevision,
+            mode: "active",
+            aggregate: aggregateWithActiveDraft(readyState.aggregate, snapshot),
+          })
+        : synchronizeP10bLiveSynthesisAggregate({
+            projectId,
+            sessionId: localDemoBridge.sessionId,
+            expectedRevision: authoritativeRevision,
+            mode: "active",
+            aggregate: aggregateWithActiveDraft(readyState.aggregate, snapshot),
+          }));
       setAuthoritativeRevision(synchronization.authoritativeRevision);
     },
     onStorefrontSnapshot: (snapshot, scope, action) => {
       if (!readyState) return;
+      const authoritativeSnapshot = p10bLiveHistorySnapshot(snapshot, localDemoBridge);
       setAcceptedReceiptAuthority(
         action === "applied" ? pendingAcceptedReceiptAuthority.current : undefined,
       );
       pendingAcceptedReceiptAuthority.current = undefined;
-      setSessionPages(
-        Object.fromEntries(
-          snapshot.pages.flatMap((snapshotPage) => {
-            const baseline = readyState.draft.pages.find((item) => item.id === snapshotPage.id);
-            return baseline && canonicalPagesEqual(snapshotPage, baseline)
-              ? []
-              : [[snapshotPage.id, structuredClone(snapshotPage)] as const];
-          }),
-        ),
-      );
-      setSessionBrandSystem(structuredClone(snapshot.brandSystem));
-      snapshot.pages.forEach((snapshotPage) => editorHistory?.rebase(snapshotPage));
+      setSessionPages({});
+      setSessionBrandSystem(undefined);
+      setSessionStorefrontDraft(structuredClone(authoritativeSnapshot));
+      authoritativeSnapshot.pages.forEach((snapshotPage) => editorHistory?.rebase(snapshotPage));
       setResetKeys((current) =>
         Object.fromEntries(
-          snapshot.pages.map((snapshotPage) => [
+          authoritativeSnapshot.pages.map((snapshotPage) => [
             snapshotPage.id,
             (current[snapshotPage.id] ?? 0) + 1,
           ]),
         ),
       );
+      setSelectedPageId((current) =>
+        current && authoritativeSnapshot.pages.some((item) => item.id === current)
+          ? current
+          : (authoritativeSnapshot.pages.find((item) => item.type === "home")?.id ??
+            authoritativeSnapshot.pages[0]?.id),
+      );
       setSelectedSectionId((current) =>
         current &&
-        snapshot.pages.some((item) => item.sections.some((section) => section.id === current))
+        authoritativeSnapshot.pages.some((item) =>
+          item.sections.some((section) => section.id === current),
+        )
           ? current
           : undefined,
       );
@@ -687,16 +771,12 @@ export function ProjectEditorClient({
     );
   }
 
-  const originalPage = readyOriginalPage!;
+  const originalPage = readyOriginalPage;
   const page = readyPage!;
   const currentPageHasUnsavedChanges = !canonicalPagesEqual(page, originalPage);
-  const changedPages = changedPagesForActiveDraft({
-    baseDraft: state.draft,
-    activeDraft: activeDraft!,
-  });
-  const brandSystemChanged =
-    JSON.stringify(activeDraft!.brandSystem) !== JSON.stringify(state.draft.brandSystem);
-  const hasUnsavedChanges = changedPages.length > 0 || brandSystemChanged;
+  const hasUnsavedChanges =
+    canonicalStorefrontContentFingerprint(activeDraft!) !==
+    canonicalStorefrontContentFingerprint(state.draft);
   const locale = readyLocale!;
   const title = resolveLocalizedText(page.title, locale, state.aggregate.project.primaryLocale);
   const pageRepeatsProjectName =
@@ -711,7 +791,11 @@ export function ProjectEditorClient({
       setActiveLocale(nextLocale);
     },
   };
-  const previewHref = `/projects/${projectId}${page.slug === "/" ? "" : page.slug}`;
+  const previewHref = `/projects/${projectId}${page.slug === "/" ? "" : page.slug}${
+    localDemoBridge?.kind === "p10b-16l"
+      ? `?p10b-16l-session=${encodeURIComponent(localDemoBridge.sessionId)}`
+      : ""
+  }`;
   const previewStorefront = proposalStorefrontPreview({
     proposal: agent.generatedStorefrontProposal,
     previewActive: agent.previewActive,
@@ -756,17 +840,23 @@ export function ProjectEditorClient({
     try {
       assembleValidatedEditorDraft({
         baseDraft: state.draft,
-        changedPages,
-        brandSystem: activeDraft!.brandSystem,
+        replacementSnapshot: activeDraft!,
         aggregate: state.aggregate,
         primaryLocale: state.aggregate.project.primaryLocale,
+        evidenceReferences: currentEvidenceReferences,
       });
       completeDraftIsValid = true;
     } catch {
       completeDraftIsValid = false;
     }
   }
-  const proposalBlocksSave = agent.blocksSave;
+  const localAcceptanceProposalPending =
+    localDemoBridge?.kind === "p10b-16l" &&
+    localDemoBridge.proposal !== null &&
+    authoritativeRevision === localDemoBridge.authoritativeRevision;
+  const proposalBlocksSave = agent.blocksSave || localAcceptanceProposalPending;
+  const previewBlocked =
+    localDemoBridge?.kind === "p10b-16l" && (proposalBlocksSave || hasUnsavedChanges);
   const saving = saveState.status === "saving";
   const mutationsBlocked = saving || proposalBlocksSave;
   const saveDisabled =
@@ -905,7 +995,7 @@ export function ProjectEditorClient({
     ) {
       return;
     }
-    const nextOriginalPage = state.pages.find((candidate) => candidate.id === nextPageId);
+    const nextOriginalPage = visiblePages.find((candidate) => candidate.id === nextPageId);
     const nextPage = nextOriginalPage
       ? (sessionPages[nextOriginalPage.id] ?? nextOriginalPage)
       : undefined;
@@ -1029,7 +1119,7 @@ export function ProjectEditorClient({
 
   const outlineList = (
     <ol aria-label={text.navigation.outline} className={styles.outlineList}>
-      {state.pages.map((item) => {
+      {visiblePages.map((item) => {
         const itemIsCurrent = item.id === page.id;
         const itemPage = sessionPages[item.id] ?? item;
         return (
@@ -1126,7 +1216,7 @@ export function ProjectEditorClient({
       storefrontPageCount={activeDraft!.pages.length}
       onConfirmationDialogOpenChange={setToolDrawerNestedModalOpen}
       onReviewPage={(pageId) => {
-        const candidate = state.pages.find((item) => item.id === pageId);
+        const candidate = visiblePages.find((item) => item.id === pageId);
         if (!candidate || candidate.id === page.id) return;
         agent.closeForPageSwitch(candidate);
         setSelectedPageId(candidate.id);
@@ -1206,7 +1296,7 @@ export function ProjectEditorClient({
   const saveDraft = async () => {
     if (saveDisabled || savePending.current) return;
     const capturedDraft = structuredClone(state.draft);
-    const capturedChangedPages = structuredClone(changedPages);
+    const capturedActiveDraft = structuredClone(activeDraft!);
     savePending.current = true;
     setSaveState({ status: "saving" });
     try {
@@ -1217,21 +1307,29 @@ export function ProjectEditorClient({
         repository: stagingRepository,
         projectId,
         loadedDraft: capturedDraft,
-        changedPages: capturedChangedPages,
-        brandSystem: activeDraft!.brandSystem,
+        replacementSnapshot: capturedActiveDraft,
         primaryLocale: state.aggregate.project.primaryLocale,
+        evidenceReferences: currentEvidenceReferences,
       });
       if (localDemoBridge) {
         if (authoritativeRevision === null) {
           throw new P905bLocalDemoSynchronizationClientError("stale", 409);
         }
-        const synchronization = await synchronizeP905bLocalDemoAggregate({
-          projectId,
-          sessionId: localDemoBridge.sessionId,
-          expectedRevision: authoritativeRevision,
-          mode: "saved",
-          aggregate: prepared.aggregate,
-        });
+        const synchronization = await (localDemoBridge.kind === "p9-05b"
+          ? synchronizeP905bLocalDemoAggregate({
+              projectId,
+              sessionId: localDemoBridge.sessionId,
+              expectedRevision: authoritativeRevision,
+              mode: "saved",
+              aggregate: prepared.aggregate,
+            })
+          : synchronizeP10bLiveSynthesisAggregate({
+              projectId,
+              sessionId: localDemoBridge.sessionId,
+              expectedRevision: authoritativeRevision,
+              mode: "saved",
+              aggregate: prepared.aggregate,
+            }));
         setAuthoritativeRevision(synchronization.authoritativeRevision);
       }
       await repository.current!.saveDraft(projectId, prepared.draft, {
@@ -1250,7 +1348,7 @@ export function ProjectEditorClient({
         (snapshot) => snapshot.id === result.aggregate.project.publishedSnapshotId,
       );
       if (!published) throw new EditorDraftValidationError();
-      const pages = result.draft.pages.filter((item) => editorPageTypes.has(item.type));
+      const pages = editorPagesFor(result.draft, localDemoBridge);
       pages.forEach((savedPage) => editorHistory?.rebase(savedPage));
       setState({
         status: "ready",
@@ -1269,6 +1367,7 @@ export function ProjectEditorClient({
         ),
       );
       setSessionBrandSystem(undefined);
+      setSessionStorefrontDraft(undefined);
       agent.clearStorefrontHistory();
       setPageEditsAfterStorefront(0);
       setResetKeys((current) =>
@@ -1285,7 +1384,8 @@ export function ProjectEditorClient({
       if (
         error instanceof StaleEditorDraftError ||
         error instanceof DraftConflictError ||
-        (error instanceof P905bLocalDemoSynchronizationClientError && error.category === "stale")
+        (error instanceof P905bLocalDemoSynchronizationClientError && error.category === "stale") ||
+        (error instanceof P10bLiveSynthesisAcceptanceClientError && error.category === "stale")
       ) {
         setSaveState({
           status: "stale",
@@ -1455,20 +1555,26 @@ export function ProjectEditorClient({
                     : text.panels.expandContextual}
               </Button>
             </div>
-            <Button href={previewHref} variant="secondary">
-              {text.actions.preview}
-            </Button>
+            {previewBlocked ? (
+              <span aria-disabled="true" className={styles.publishAction}>
+                {text.actions.preview}
+              </span>
+            ) : (
+              <Button href={previewHref} variant="secondary">
+                {text.actions.preview}
+              </Button>
+            )}
             <Button disabled={saveDisabled} onClick={() => void saveDraft()}>
               {saveState.status === "saving" ? text.actions.savingDraft : text.actions.saveDraft}
             </Button>
-            {hasUnsavedChanges && !usableAcceptedReceiptAuthority ? (
+            {proposalBlocksSave || (hasUnsavedChanges && !usableAcceptedReceiptAuthority) ? (
               <span aria-disabled="true" className={styles.publishAction}>
                 {text.actions.publish}
               </span>
             ) : (
               <Button
                 href={
-                  localDemoBridge
+                  localDemoBridge?.kind === "p9-05b"
                     ? `/projects/${projectId}/publish?p9-05b-session=${encodeURIComponent(localDemoBridge.sessionId)}${usableAcceptedReceiptAuthority ? `&accepted-receipt=${encodeURIComponent(usableAcceptedReceiptAuthority.receiptId)}` : ""}`
                     : `/projects/${projectId}/publish`
                 }
@@ -1528,7 +1634,7 @@ export function ProjectEditorClient({
                   onChange={(event) => selectPage(event.target.value)}
                   value={page.id}
                 >
-                  {state.pages.map((item) => (
+                  {visiblePages.map((item) => (
                     <option key={item.id} value={item.id}>
                       {editorPageName(item, locale, state.aggregate.project.primaryLocale)}
                     </option>
@@ -1537,9 +1643,15 @@ export function ProjectEditorClient({
               </Field>
               {outlineList}
               {sectionActions}
-              <Link className={styles.previewLink} href={previewHref}>
-                {text.navigation.viewSelectedPage}
-              </Link>
+              {previewBlocked ? (
+                <span aria-disabled="true" className={styles.previewLink}>
+                  {text.navigation.viewSelectedPage}
+                </span>
+              ) : (
+                <Link className={styles.previewLink} href={previewHref}>
+                  {text.navigation.viewSelectedPage}
+                </Link>
+              )}
               {renderDraftSafeguards(false)}
             </aside>
           ) : null}

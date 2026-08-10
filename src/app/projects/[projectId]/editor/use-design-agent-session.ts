@@ -202,6 +202,8 @@ type UseDesignAgentSessionInput = {
     proposalId: string;
     acceptedSnapshot: StorefrontSnapshot;
   }) => Promise<void>;
+  onStorefrontRejected?: (input: { proposalId: string }) => Promise<void>;
+  projectStorefrontHistorySnapshot?: (snapshot: StorefrontSnapshot) => StorefrontSnapshot;
   onStorefrontHistorySnapshot?: (snapshot: StorefrontSnapshot) => Promise<void>;
   onStorefrontSnapshot: (
     snapshot: StorefrontSnapshot,
@@ -442,6 +444,8 @@ export function useDesignAgentSession({
   onStorefrontEvidenceAuthority,
   onAcceptedPage,
   onStorefrontAccepted,
+  onStorefrontRejected,
+  projectStorefrontHistorySnapshot,
   onStorefrontHistorySnapshot,
   onStorefrontSnapshot,
 }: UseDesignAgentSessionInput): DesignAgentSessionController {
@@ -1383,6 +1387,34 @@ export function useDesignAgentSession({
     if (generatedStorefrontProposal) {
       const coordinator = pendingStorefrontAcceptance.current;
       if (!coordinator) return;
+      if (onStorefrontRejected) {
+        acceptancePending.current = true;
+        const proposalId = generatedStorefrontProposal.id;
+        void (async () => {
+          try {
+            await onStorefrontRejected({ proposalId });
+            const result = coordinator.reject();
+            if (result.state === "rejected") {
+              pendingStorefrontAcceptance.current = null;
+              setGeneratedStorefrontProposal(null);
+              setSession(uiSession("rejected", statuses.rejected));
+            }
+          } catch {
+            const message = {
+              en: "The storefront proposal could not be rejected safely. Your draft is unchanged.",
+              fi: "Kauppaehdotusta ei voitu hylätä turvallisesti. Luonnos säilyi ennallaan.",
+            };
+            setSession(
+              uiSession("failed", message, {
+                failure: { message, retryable: false },
+              }),
+            );
+          } finally {
+            acceptancePending.current = false;
+          }
+        })();
+        return;
+      }
       const result = coordinator.reject();
       if (result.state === "rejected") {
         pendingStorefrontAcceptance.current = null;
@@ -1605,15 +1637,21 @@ export function useDesignAgentSession({
         : "storefront";
       const previous = history?.undo();
       if (!previous) return false;
-      await onStorefrontHistorySnapshot?.(previous);
+      const projectedPrevious = projectStorefrontHistorySnapshot?.(previous) ?? previous;
       acceptedStorefrontHistoryFingerprint.current =
-        canonicalStorefrontContentFingerprint(previous);
-      onStorefrontSnapshot(previous, scope, "undone");
+        canonicalStorefrontContentFingerprint(projectedPrevious);
+      await onStorefrontHistorySnapshot?.(projectedPrevious);
+      onStorefrontSnapshot(projectedPrevious, scope, "undone");
       refreshStorefrontHistory();
       setSession(uiSession("accepted", storefrontProposalHistoryStatus(scope, "undone")));
       return true;
     } catch {
-      acceptedStorefrontHistory.current?.redo();
+      const restoredSnapshot = acceptedStorefrontHistory.current?.redo();
+      acceptedStorefrontHistoryFingerprint.current = restoredSnapshot
+        ? canonicalStorefrontContentFingerprint(
+            projectStorefrontHistorySnapshot?.(restoredSnapshot) ?? restoredSnapshot,
+          )
+        : null;
       refreshStorefrontHistory();
       return false;
     }
@@ -1628,14 +1666,21 @@ export function useDesignAgentSession({
         : "storefront";
       const next = history?.redo();
       if (!next) return false;
-      await onStorefrontHistorySnapshot?.(next);
-      acceptedStorefrontHistoryFingerprint.current = canonicalStorefrontContentFingerprint(next);
-      onStorefrontSnapshot(next, scope, "redone");
+      const projectedNext = projectStorefrontHistorySnapshot?.(next) ?? next;
+      acceptedStorefrontHistoryFingerprint.current =
+        canonicalStorefrontContentFingerprint(projectedNext);
+      await onStorefrontHistorySnapshot?.(projectedNext);
+      onStorefrontSnapshot(projectedNext, scope, "redone");
       refreshStorefrontHistory();
       setSession(uiSession("accepted", storefrontProposalHistoryStatus(scope, "redone")));
       return true;
     } catch {
-      acceptedStorefrontHistory.current?.undo();
+      const restoredSnapshot = acceptedStorefrontHistory.current?.undo();
+      acceptedStorefrontHistoryFingerprint.current = restoredSnapshot
+        ? canonicalStorefrontContentFingerprint(
+            projectStorefrontHistorySnapshot?.(restoredSnapshot) ?? restoredSnapshot,
+          )
+        : null;
       refreshStorefrontHistory();
       return false;
     }

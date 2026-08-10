@@ -401,6 +401,14 @@ export function canonicalProductCardFactsFingerprint(
   })}`;
 }
 
+/**
+ * Derives a stable presentation identity without treating the merchant-facing
+ * product-type label as an identifier or changing canonical commerce truth.
+ */
+export function canonicalProductTypePresentationId(productType: string): string {
+  return `product-type-${canonicalValueFingerprint(productType).slice(0, 24)}`;
+}
+
 /** Compatibility projection for stored legacy components; it never persists a second product model. */
 export function projectLegacyProductCardProduct(product: ProductDisplayModel) {
   const revision = `legacy-product-${canonicalValueFingerprint(product)}`;
@@ -415,7 +423,7 @@ export function projectLegacyProductCardProduct(product: ProductDisplayModel) {
           : { en: "Availability not provided", fi: "Saatavuustietoa ei annettu" });
   const context = productPresentationContextSchema.parse({
     productId: product.id,
-    productTypeId: `product-type-${canonicalValueFingerprint(product.productType).slice(0, 24)}`,
+    productTypeId: canonicalProductTypePresentationId(product.productType),
     sku: product.sku,
     title: product.title,
     description: product.description,

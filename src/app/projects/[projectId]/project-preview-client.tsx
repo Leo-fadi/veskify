@@ -26,18 +26,19 @@ type LoadState =
   | { status: "loading" }
   | { status: "notFound" }
   | { status: "missingDraft" }
-  | { status: "missingHomepage" }
+  | { status: "missingPage" }
   | { status: "failure" }
   | { status: "validationFailure" }
   | {
       status: "success";
       aggregate: ProjectAggregate;
       draft: ProjectAggregate["snapshots"][number];
-      homepage: ProjectAggregate["snapshots"][number]["pages"][number];
+      page: ProjectAggregate["snapshots"][number]["pages"][number];
       evidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
     };
 
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
+const emptyEvidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]> = [];
 
 function StatusPanel({
   title,
@@ -73,14 +74,20 @@ export function ProjectPreviewClient({
   snapshotKind = "draft",
   historicalSnapshotId,
   initialAggregate,
+  initialEvidenceReferences = emptyEvidenceReferences,
   publishedSessionId,
+  pageSlug = "/",
+  draftSessionId,
 }: {
   projectId: string;
   repositoryFactory?: RepositoryFactory;
   snapshotKind?: SnapshotKind;
   historicalSnapshotId?: string;
   initialAggregate?: ProjectAggregate;
+  initialEvidenceReferences?: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
   publishedSessionId?: string;
+  pageSlug?: string;
+  draftSessionId?: string;
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
@@ -91,7 +98,10 @@ export function ProjectPreviewClient({
   useEffect(() => {
     let cancelled = false;
     const aggregateSource = initialAggregate
-      ? Promise.resolve({ aggregate: initialAggregate, evidenceReferences: [] })
+      ? Promise.resolve({
+          aggregate: initialAggregate,
+          evidenceReferences: initialEvidenceReferences,
+        })
       : snapshotKind === "published" && publishedSessionId
         ? loadP905bLocalDemoPublishedProjection({
             projectId,
@@ -113,13 +123,13 @@ export function ProjectPreviewClient({
           setState({ status: "missingDraft" });
           return;
         }
-        const homepage = draft.pages.find((page) => page.type === "home");
-        if (!homepage) {
-          setState({ status: "missingHomepage" });
+        const page = draft.pages.find((candidate) => candidate.slug === pageSlug);
+        if (!page) {
+          setState({ status: "missingPage" });
           return;
         }
         try {
-          validateStorefrontHomepage(homepage);
+          if (page.type === "home") validateStorefrontHomepage(page);
           const context = createStorefrontRenderContext({
             activeLocale: aggregate.project.primaryLocale,
             primaryLocale: aggregate.project.primaryLocale,
@@ -130,16 +140,18 @@ export function ProjectPreviewClient({
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
             pagePathSuffix: publishedSessionId
               ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
-              : "",
+              : draftSessionId
+                ? `?p10b-16l-session=${encodeURIComponent(draftSessionId)}`
+                : "",
             renderTarget: snapshotKind === "published" ? "published" : "preview",
           });
-          void renderStorefrontPage(homepage, context);
+          void renderStorefrontPage(page, context);
         } catch {
           setState({ status: "validationFailure" });
           return;
         }
         setActiveLocale(aggregate.project.primaryLocale);
-        setState({ status: "success", aggregate, draft, homepage, evidenceReferences });
+        setState({ status: "success", aggregate, draft, page, evidenceReferences });
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -155,6 +167,9 @@ export function ProjectPreviewClient({
     attempt,
     historicalSnapshotId,
     initialAggregate,
+    initialEvidenceReferences,
+    draftSessionId,
+    pageSlug,
     projectId,
     publishedSessionId,
     snapshotKind,
@@ -193,11 +208,15 @@ export function ProjectPreviewClient({
       />
     );
   }
-  if (state.status === "missingHomepage") {
+  if (state.status === "missingPage") {
     return (
       <StatusPanel
-        title="Homepage unavailable"
-        message="The saved draft does not contain a homepage yet."
+        title={pageSlug === "/" ? "Homepage unavailable" : "Page unavailable"}
+        message={
+          pageSlug === "/"
+            ? "The saved draft does not contain a homepage yet."
+            : "The saved draft does not contain this storefront page."
+        }
         retry={retry}
         snapshotKind={snapshotKind}
       />
@@ -237,7 +256,9 @@ export function ProjectPreviewClient({
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
     pagePathSuffix: publishedSessionId
       ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
-      : "",
+      : draftSessionId
+        ? `?p10b-16l-session=${encodeURIComponent(draftSessionId)}`
+        : "",
     renderTarget: snapshotKind === "published" ? "published" : "preview",
   });
 
@@ -286,7 +307,7 @@ export function ProjectPreviewClient({
         }
         className="project-preview__storefront"
       >
-        {renderStorefrontPage(state.homepage, renderContext)}
+        {renderStorefrontPage(state.page, renderContext)}
       </div>
     </div>
   );

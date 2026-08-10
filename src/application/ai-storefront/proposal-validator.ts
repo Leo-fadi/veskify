@@ -248,6 +248,7 @@ function assertProjectionMatchesOperations(
               proposal.originalStorefront.brandSystem,
               storefrontDesignSystemV1,
               envelope.operation.directionId!,
+              envelope.operation.designSystemNarrowing,
             );
       if (
         canonicalValueString(registeredBrandSystem) !==
