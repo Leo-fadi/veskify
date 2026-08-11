@@ -6,9 +6,16 @@ import {
   type CoordinatedDirectionRequest,
   type CoordinatedStorefrontDirectionId,
 } from "./direction-contract";
+import {
+  executableCoordinatedDirectionDeterministicSeed,
+  listExecutableCoordinatedDirectionIntents,
+  MAX_EXECUTABLE_COORDINATED_DIRECTION_INTENTS,
+  type CoordinatedDirectionExecutionInput,
+  type CoordinatedDirectionResult,
+} from "./coordinated-directions";
 import { listCoordinatedStorefrontDirections } from "./direction-registry";
 
-export const P10B_LIVE_SYNTHESIS_INTENT_CONTRACT_VERSION = "1.0.0" as const;
+export const P10B_LIVE_SYNTHESIS_INTENT_CONTRACT_VERSION = "2.0.0" as const;
 
 const boundedNarrativePostureSchema = z.enum([
   "story-led",
@@ -72,19 +79,27 @@ const approvedAssetPostureSchema = z
   })
   .strict();
 
-const safeDirectionOptionSchema = z
+const executableCharacteristicsSchema = z
   .object({
-    id: coordinatedStorefrontDirectionIdSchema,
-    label: z.string().trim().min(1).max(80),
-    version: z.string().regex(/^\d+\.\d+\.\d+$/),
-    authorityFingerprint: z.string().trim().min(1).max(240),
-    synthesisIntent: z.enum(["editorial-led", "commerce-led", "restrained-minimal"]),
-    plannerDescription: z.string().trim().min(1).max(400),
-    narrativePostures: z.array(boundedNarrativePostureSchema).min(1),
-    merchandisingPostures: z.array(boundedMerchandisingPostureSchema).min(1),
-    informationDensityPostures: z.array(boundedInformationDensitySchema).min(1),
-    artDirectionPostures: z.array(boundedArtDirectionSchema).min(1),
-    responsiveModes: z.array(boundedResponsiveModeSchema).min(1),
+    narrativePosture: boundedNarrativePostureSchema,
+    merchandisingPosture: boundedMerchandisingPostureSchema,
+    informationDensityPosture: boundedInformationDensitySchema,
+    artDirectionPosture: boundedArtDirectionSchema,
+    responsiveMode: boundedResponsiveModeSchema,
+  })
+  .strict();
+
+const safeExecutableIntentOptionSchema = z
+  .object({
+    intentId: z.string().trim().min(1).max(240),
+    directionId: coordinatedStorefrontDirectionIdSchema,
+    directionLabel: z.string().trim().min(1).max(80),
+    directionVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+    directionAuthorityFingerprint: z.string().trim().min(1).max(240),
+    description: z.string().trim().min(1).max(400),
+    characteristics: executableCharacteristicsSchema,
+    expectedExecutionFingerprint: z.string().trim().min(1).max(240),
+    executableIntentFingerprint: z.string().trim().min(1).max(240),
   })
   .strict();
 
@@ -97,7 +112,7 @@ const liveSynthesisRequestMaterialSchema = z
     catalogueCharacteristics: catalogueCharacteristicsSchema,
     evidenceRichness: evidenceRichnessSchema,
     approvedAssetPosture: approvedAssetPostureSchema,
-    directionOptions: z.array(safeDirectionOptionSchema).min(1).max(3),
+    executableIntents: z.array(safeExecutableIntentOptionSchema).min(1).max(48),
     currentAuthorityFingerprint: z.string().trim().min(1).max(240),
   })
   .strict();
@@ -115,22 +130,49 @@ export const p10bLiveSynthesisIntentProviderRequestSchema = liveSynthesisRequest
         message: "The live synthesis intent request fingerprint is stale.",
       });
     }
-    const directionIds = request.directionOptions.map(({ id }) => id);
-    if (new Set(directionIds).size !== directionIds.length) {
+    const intentIds = request.executableIntents.map(({ intentId }) => intentId);
+    if (new Set(intentIds).size !== intentIds.length) {
       context.addIssue({
         code: "custom",
-        path: ["directionOptions"],
-        message: "Live synthesis direction options must be unique.",
+        path: ["executableIntents"],
+        message: "Live synthesis executable intent IDs must be unique.",
       });
     }
+    const intentFingerprints = request.executableIntents.map(
+      ({ executableIntentFingerprint }) => executableIntentFingerprint,
+    );
+    if (new Set(intentFingerprints).size !== intentFingerprints.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["executableIntents"],
+        message: "Live synthesis executable intent fingerprints must be unique.",
+      });
+    }
+    request.executableIntents.forEach((option, index) => {
+      const { executableIntentFingerprint, ...optionMaterial } = option;
+      const expectedIntentFingerprint = `p10b-live-executable-intent-${canonicalValueFingerprint({
+        contractVersion: request.contractVersion,
+        currentAuthorityFingerprint: request.currentAuthorityFingerprint,
+        ...optionMaterial,
+      })}`;
+      if (executableIntentFingerprint !== expectedIntentFingerprint) {
+        context.addIssue({
+          code: "custom",
+          path: ["executableIntents", index, "executableIntentFingerprint"],
+          message: "The executable intent fingerprint is stale.",
+        });
+      }
+    });
+    const directionIds = new Set(request.executableIntents.map(({ directionId }) => directionId));
     if (
       request.requestedDirectionId !== null &&
-      (directionIds.length !== 1 || directionIds[0] !== request.requestedDirectionId)
+      (directionIds.size !== 1 || !directionIds.has(request.requestedDirectionId))
     ) {
       context.addIssue({
         code: "custom",
         path: ["requestedDirectionId"],
-        message: "A named live acceptance run must expose only its exact requested direction.",
+        message:
+          "A named live acceptance run must expose only executable intents for its requested direction.",
       });
     }
   });
@@ -138,12 +180,8 @@ export const p10bLiveSynthesisIntentProviderRequestSchema = liveSynthesisRequest
 export const p10bLiveSynthesisIntentProviderResultSchema = z
   .object({
     requestFingerprint: z.string().trim().min(1).max(240),
-    directionId: coordinatedStorefrontDirectionIdSchema,
-    narrativePosture: boundedNarrativePostureSchema.nullable(),
-    merchandisingPosture: boundedMerchandisingPostureSchema.nullable(),
-    informationDensityPosture: boundedInformationDensitySchema.nullable(),
-    artDirectionPosture: boundedArtDirectionSchema.nullable(),
-    responsiveMode: boundedResponsiveModeSchema.nullable(),
+    executableIntentId: z.string().trim().min(1).max(240),
+    executableIntentFingerprint: z.string().trim().min(1).max(240),
   })
   .strict();
 
@@ -153,6 +191,19 @@ export type P10bLiveSynthesisIntentProviderRequest = z.infer<
 export type P10bLiveSynthesisIntentProviderResult = z.infer<
   typeof p10bLiveSynthesisIntentProviderResultSchema
 >;
+
+export function p10bLiveSynthesisExecutableResultFingerprint(
+  result: CoordinatedDirectionResult,
+): string {
+  return `p10b-live-executable-result-${canonicalValueFingerprint({
+    directionAuthorityFingerprint: result.direction.authorityFingerprint,
+    directionFingerprint: result.directionFingerprint,
+    selectionFingerprint: canonicalValueFingerprint(result.narrowing),
+    synthesisFingerprint: result.decision.synthesisFingerprint,
+    structuralDiversityFingerprint: result.diversity.structuralFingerprint,
+    snapshotFingerprint: result.synthesis.materialization.snapshotFingerprint,
+  })}`;
+}
 
 export interface P10bLiveSynthesisIntentProvider {
   readonly id: string;
@@ -167,6 +218,7 @@ export type P10bLiveSynthesisIntentFailureCode =
   | "provider-refusal"
   | "malformed-response"
   | "unsupported-selection"
+  | "no-executable-compatible-intent"
   | "stale-authority";
 
 export class P10bLiveSynthesisIntentError extends Error {
@@ -188,6 +240,10 @@ export type CreateP10bLiveSynthesisIntentRequestInput = Readonly<{
   evidenceRichness: z.input<typeof evidenceRichnessSchema>;
   approvedAssetPosture: z.input<typeof approvedAssetPostureSchema>;
   currentAuthorityFingerprint: string;
+  executionAuthority: Omit<
+    CoordinatedDirectionExecutionInput,
+    "directionRequest" | "usedDiversityFingerprints"
+  >;
 }>;
 
 function normalizedInstruction(value: string): string {
@@ -205,6 +261,27 @@ function normalizedInstruction(value: string): string {
   return normalized;
 }
 
+function executableIntentDescription(
+  directionLabel: string,
+  characteristics: z.infer<typeof executableCharacteristicsSchema>,
+): string {
+  return `${directionLabel}: ${characteristics.narrativePosture} narrative, ${characteristics.merchandisingPosture} merchandising, ${characteristics.informationDensityPosture} density, ${characteristics.artDirectionPosture} art direction and ${characteristics.responsiveMode} responsive posture.`;
+}
+
+function executableIntentFingerprint(
+  currentAuthorityFingerprint: string,
+  optionMaterial: Omit<
+    z.infer<typeof safeExecutableIntentOptionSchema>,
+    "executableIntentFingerprint"
+  >,
+): string {
+  return `p10b-live-executable-intent-${canonicalValueFingerprint({
+    contractVersion: P10B_LIVE_SYNTHESIS_INTENT_CONTRACT_VERSION,
+    currentAuthorityFingerprint,
+    ...optionMaterial,
+  })}`;
+}
+
 export function createP10bLiveSynthesisIntentProviderRequest(
   input: CreateP10bLiveSynthesisIntentRequestInput,
 ): P10bLiveSynthesisIntentProviderRequest {
@@ -215,6 +292,40 @@ export function createP10bLiveSynthesisIntentProviderRequest(
   const registeredDirections = listCoordinatedStorefrontDirections().filter(
     ({ id }) => requestedDirectionId === null || id === requestedDirectionId,
   );
+  const executableIntents = registeredDirections.flatMap((direction) =>
+    listExecutableCoordinatedDirectionIntents(
+      {
+        ...input.executionAuthority,
+        directionId: direction.id,
+        currentAuthorityFingerprint: input.currentAuthorityFingerprint,
+      },
+      { maximumIntents: MAX_EXECUTABLE_COORDINATED_DIRECTION_INTENTS },
+    ).map((intent) => {
+      const optionMaterial = {
+        intentId: intent.intentId,
+        directionId: direction.id,
+        directionLabel: direction.label,
+        directionVersion: direction.version,
+        directionAuthorityFingerprint: direction.authorityFingerprint,
+        description: executableIntentDescription(direction.label, intent.characteristics),
+        characteristics: intent.characteristics,
+        expectedExecutionFingerprint: p10bLiveSynthesisExecutableResultFingerprint(intent.result),
+      } satisfies Omit<
+        z.infer<typeof safeExecutableIntentOptionSchema>,
+        "executableIntentFingerprint"
+      >;
+      return {
+        ...optionMaterial,
+        executableIntentFingerprint: executableIntentFingerprint(
+          input.currentAuthorityFingerprint,
+          optionMaterial,
+        ),
+      };
+    }),
+  );
+  if (executableIntents.length === 0) {
+    throw new P10bLiveSynthesisIntentError("no-executable-compatible-intent");
+  }
   const material = liveSynthesisRequestMaterialSchema.parse({
     contractVersion: P10B_LIVE_SYNTHESIS_INTENT_CONTRACT_VERSION,
     merchantInstruction: normalizedInstruction(input.merchantInstruction),
@@ -223,19 +334,7 @@ export function createP10bLiveSynthesisIntentProviderRequest(
     catalogueCharacteristics: input.catalogueCharacteristics,
     evidenceRichness: input.evidenceRichness,
     approvedAssetPosture: input.approvedAssetPosture,
-    directionOptions: registeredDirections.map((direction) => ({
-      id: direction.id,
-      label: direction.label,
-      version: direction.version,
-      authorityFingerprint: direction.authorityFingerprint,
-      synthesisIntent: direction.intent,
-      plannerDescription: direction.plannerDescription,
-      narrativePostures: direction.constraints.narrativePostures,
-      merchandisingPostures: direction.constraints.merchandisingPostures,
-      informationDensityPostures: direction.constraints.informationDensityPostures,
-      artDirectionPostures: direction.constraints.artDirectionPostures,
-      responsiveModes: direction.constraints.responsiveModes,
-    })),
+    executableIntents,
     currentAuthorityFingerprint: input.currentAuthorityFingerprint,
   });
   return p10bLiveSynthesisIntentProviderRequestSchema.parse({
@@ -244,16 +343,17 @@ export function createP10bLiveSynthesisIntentProviderRequest(
   });
 }
 
-function assertAllowedValue(value: string | null, allowed: readonly string[]): string | undefined {
-  if (value === null) return undefined;
-  if (!allowed.includes(value)) throw new P10bLiveSynthesisIntentError("unsupported-selection");
-  return value;
-}
+export type ValidatedP10bLiveSynthesisIntent = Readonly<{
+  directionRequest: CoordinatedDirectionRequest;
+  executableIntentId: string;
+  executableIntentFingerprint: string;
+  expectedExecutionFingerprint: string;
+}>;
 
 export function validateP10bLiveSynthesisIntentProviderResult(
   requestInput: unknown,
   resultInput: unknown,
-): CoordinatedDirectionRequest {
+): ValidatedP10bLiveSynthesisIntent {
   const request = p10bLiveSynthesisIntentProviderRequestSchema.safeParse(requestInput);
   if (!request.success) throw new P10bLiveSynthesisIntentError("invalid-request");
   const result = p10bLiveSynthesisIntentProviderResultSchema.safeParse(resultInput);
@@ -261,44 +361,26 @@ export function validateP10bLiveSynthesisIntentProviderResult(
   if (result.data.requestFingerprint !== request.data.requestFingerprint) {
     throw new P10bLiveSynthesisIntentError("stale-authority");
   }
-  const option = request.data.directionOptions.find(({ id }) => id === result.data.directionId);
+  const option = request.data.executableIntents.find(
+    ({ intentId }) => intentId === result.data.executableIntentId,
+  );
   if (!option) throw new P10bLiveSynthesisIntentError("unsupported-selection");
-  const boundedSelections = [
-    result.data.narrativePosture,
-    result.data.merchandisingPosture,
-    result.data.informationDensityPosture,
-    result.data.artDirectionPosture,
-    result.data.responsiveMode,
-  ];
-  if (
-    request.data.requestedDirectionId !== null &&
-    boundedSelections.every((selection) => selection === null)
-  ) {
-    throw new P10bLiveSynthesisIntentError("unsupported-selection");
+  if (result.data.executableIntentFingerprint !== option.executableIntentFingerprint) {
+    throw new P10bLiveSynthesisIntentError("stale-authority");
   }
-  const characteristics = {
-    narrativePosture: assertAllowedValue(result.data.narrativePosture, option.narrativePostures),
-    merchandisingPosture: assertAllowedValue(
-      result.data.merchandisingPosture,
-      option.merchandisingPostures,
-    ),
-    informationDensityPosture: assertAllowedValue(
-      result.data.informationDensityPosture,
-      option.informationDensityPostures,
-    ),
-    artDirectionPosture: assertAllowedValue(
-      result.data.artDirectionPosture,
-      option.artDirectionPostures,
-    ),
-    responsiveMode: assertAllowedValue(result.data.responsiveMode, option.responsiveModes),
-  };
-  return coordinatedDirectionRequestSchema.parse({
-    directionId: result.data.directionId,
-    deterministicSeed: `p10b-live-${canonicalValueFingerprint(result.data)}`,
-    characteristics: Object.fromEntries(
-      Object.entries(characteristics).filter(
-        (entry): entry is [string, string] => entry[1] !== undefined,
-      ),
-    ),
+  const directionRequest = coordinatedDirectionRequestSchema.parse({
+    directionId: option.directionId,
+    deterministicSeed: executableCoordinatedDirectionDeterministicSeed({
+      currentAuthorityFingerprint: request.data.currentAuthorityFingerprint,
+      directionAuthorityFingerprint: option.directionAuthorityFingerprint,
+      intentId: option.intentId,
+    }),
+    characteristics: option.characteristics,
+  });
+  return Object.freeze({
+    directionRequest,
+    executableIntentId: option.intentId,
+    executableIntentFingerprint: option.executableIntentFingerprint,
+    expectedExecutionFingerprint: option.expectedExecutionFingerprint,
   });
 }

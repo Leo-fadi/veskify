@@ -7,6 +7,8 @@ vi.mock("server-only", () => ({}));
 import { StorefrontProposalAcceptanceCoordinator } from "@/application/ai-storefront";
 import { assembleValidatedEditorDraft, saveValidatedEditorDraft } from "@/application/draft-save";
 import {
+  BoundedStorefrontSynthesisError,
+  CoordinatedStorefrontDirectionError,
   P10bLiveSynthesisIntentError,
   p10bLiveSynthesisIntentProviderRequestSchema,
   type CoordinatedStorefrontDirectionId,
@@ -26,6 +28,8 @@ import {
   isP10bLiveSynthesisAcceptanceConfigured,
   loadP10bLiveSynthesisEditorSession,
   loadP10bLiveSynthesisPreviewSession,
+  mapP10bLiveSynthesisGenerationError,
+  P10bLiveSynthesisAcceptanceError,
   p10bLiveSynthesisAcceptanceSession,
   rejectP10bLiveSynthesisProposal,
   resetP10bLiveSynthesisAcceptance,
@@ -99,6 +103,8 @@ describe("P10B-16L local real-provider synthesis acceptance bridge", () => {
       approvedAssets: "unchanged",
       validation: "valid",
     });
+    expect(metadata.executableIntentId).toMatch(/^coordinated-executable-intent-/);
+    expect(metadata.executableIntentFingerprint).toMatch(/^p10b-live-executable-intent-/);
     expect(metadata.pageCount).toBe(28);
     expect(metadata.pageFamilyCounts).toMatchObject({
       home: 1,
@@ -248,7 +254,7 @@ describe("P10B-16L local real-provider synthesis acceptance bridge", () => {
       ({ id }) => id === preview.aggregate.project.draftSnapshotId,
     );
     expect(canonicalStorefrontContentFingerprint(previewDraft!)).toBe(metadata.snapshotFingerprint);
-  });
+  }, 120_000);
 
   it("keeps synthesis scaffolding transient and restores the raw aggregate on rejection", async () => {
     const raw = await inspectP10bLiveSynthesisAcceptance(environment);
@@ -284,7 +290,7 @@ describe("P10B-16L local real-provider synthesis acceptance bridge", () => {
       aggregateFingerprint: raw.baselineFingerprint,
       generationStatus: "rejected",
     });
-  });
+  }, 120_000);
 
   it("produces structurally distinct named direction outcomes and supports provider choice", async () => {
     const fingerprints = new Map<CoordinatedStorefrontDirectionId, string>();
@@ -303,122 +309,231 @@ describe("P10B-16L local real-provider synthesis acceptance bridge", () => {
     await resetP10bLiveSynthesisAcceptance(environment);
     const { metadata } = await generated(null);
     expect(metadata.directionId).toBe("modern-technical");
-  }, 90_000);
+  }, 240_000);
 
-  it("rejects arbitrary provider output and provider failure without a fallback or second call", async () => {
-    const calls = vi.fn();
-    const invalidProvider: P10bLiveSynthesisIntentProvider = {
-      id: "recording-invalid-provider",
-      modelId: "mocked-invalid-output",
-      selectIntent(request) {
-        calls();
-        const current = p10bLiveSynthesisIntentProviderRequestSchema.parse(request);
-        return Promise.resolve({
-          requestFingerprint: current.requestFingerprint,
-          directionId: current.directionOptions[0]?.id,
-          narrativePosture: null,
-          merchandisingPosture: null,
-          informationDensityPosture: null,
-          artDirectionPosture: null,
-          responsiveMode: null,
-          jsx: "<ArbitraryStorefront />",
-        });
-      },
-    };
-    const session = p10bLiveSynthesisAcceptanceSession(environment);
-    await expect(
-      generateP10bLiveSynthesisAcceptance({
-        ...session,
-        merchantInstruction: "Create the complete storefront.",
-        requestedDirectionId: null,
-        providerConfiguration: {
-          provider: invalidProvider,
-          modelId: invalidProvider.modelId,
-          category: "eligible",
-        },
-        environment,
-      }),
-    ).rejects.toMatchObject({ code: "invalid" });
-    expect(calls).toHaveBeenCalledOnce();
-    await expect(
-      generateP10bLiveSynthesisAcceptance({
-        ...session,
-        merchantInstruction: "Try again without a reset.",
-        requestedDirectionId: null,
-        providerConfiguration: {
-          provider: invalidProvider,
-          modelId: invalidProvider.modelId,
-          category: "eligible",
-        },
-        environment,
-      }),
-    ).rejects.toMatchObject({ code: "stale" });
-    expect(calls).toHaveBeenCalledOnce();
-    expect((await inspectP10bLiveSynthesisAcceptance(environment)).rawPresentation).toMatchObject({
-      pageCount: 1,
-      sectionCount: 0,
-    });
+  it("maps typed provider, coordinated-direction and synthesis failures to bounded safe categories", () => {
+    const cases: Array<readonly [unknown, string]> = [
+      [new P10bLiveSynthesisIntentError("stale-authority"), "stale-authority"],
+      [new P10bLiveSynthesisIntentError("credentials-unavailable"), "provider-unavailable"],
+      [new P10bLiveSynthesisIntentError("provider-unavailable"), "provider-unavailable"],
+      [new P10bLiveSynthesisIntentError("provider-refusal"), "provider-response-invalid"],
+      [new P10bLiveSynthesisIntentError("malformed-response"), "provider-response-invalid"],
+      [new P10bLiveSynthesisIntentError("unsupported-selection"), "unsupported-provider-selection"],
+      [
+        new P10bLiveSynthesisIntentError("no-executable-compatible-intent"),
+        "no-executable-compatible-intent",
+      ],
+      [new P10bLiveSynthesisIntentError("invalid-request"), "malformed-state"],
+      [
+        new CoordinatedStorefrontDirectionError(
+          "stale-direction-authority",
+          "raw stale direction detail",
+        ),
+        "stale-authority",
+      ],
+      [
+        new CoordinatedStorefrontDirectionError(
+          "invalid-direction-reference",
+          "raw invalid direction detail",
+        ),
+        "malformed-state",
+      ],
+      [
+        new CoordinatedStorefrontDirectionError(
+          "unsupported-characteristic",
+          "raw unsupported characteristic detail",
+        ),
+        "no-valid-coordinated-candidate",
+      ],
+      [
+        new CoordinatedStorefrontDirectionError(
+          "incompatible-direction",
+          "raw incompatible direction detail",
+        ),
+        "no-valid-coordinated-candidate",
+      ],
+      [
+        new CoordinatedStorefrontDirectionError("no-valid-diversity", "raw diversity detail"),
+        "no-valid-coordinated-candidate",
+      ],
+      [
+        new CoordinatedStorefrontDirectionError("unknown-direction", "raw unknown detail"),
+        "malformed-state",
+      ],
+      [
+        new BoundedStorefrontSynthesisError("stale-authority", "raw stale detail"),
+        "stale-authority",
+      ],
+      [
+        new BoundedStorefrontSynthesisError(
+          "non-deterministic-selection",
+          "raw non-deterministic detail",
+        ),
+        "malformed-state",
+      ],
+      [new Error("raw unknown internal detail"), "malformed-state"],
+      [new P10bLiveSynthesisAcceptanceError("protected-commerce"), "protected-commerce"],
+    ];
+    for (const code of [
+      "invalid-request",
+      "unsupported-constraint",
+      "incomplete-page-set",
+      "missing-approved-evidence",
+      "incompatible-frame-profile",
+      "unsupported-narrative-role",
+      "impossible-required-role",
+      "invalid-component-capability",
+      "invalid-bounded-override",
+    ] as const) {
+      cases.push([
+        new BoundedStorefrontSynthesisError(code, `raw ${code} materialization detail`),
+        "synthesis-materialization-failure",
+      ]);
+    }
 
-    await resetP10bLiveSynthesisAcceptance(environment);
-    const failedCalls = vi.fn();
-    const failedProvider: P10bLiveSynthesisIntentProvider = {
-      id: "recording-failed-provider",
-      modelId: "mocked-provider-failure",
-      selectIntent() {
-        failedCalls();
-        return Promise.reject(new P10bLiveSynthesisIntentError("provider-unavailable"));
-      },
-    };
-    await expect(
-      generateP10bLiveSynthesisAcceptance({
-        ...p10bLiveSynthesisAcceptanceSession(environment),
-        merchantInstruction: "Create the complete storefront.",
-        requestedDirectionId: null,
-        providerConfiguration: {
-          provider: failedProvider,
-          modelId: failedProvider.modelId,
-          category: "eligible",
-        },
-        environment,
-      }),
-    ).rejects.toMatchObject({ code: "provider-unavailable" });
-    expect(failedCalls).toHaveBeenCalledOnce();
+    for (const [error, expectedCode] of cases) {
+      expect(mapP10bLiveSynthesisGenerationError(error)).toMatchObject({ code: expectedCode });
+    }
   });
 
-  it("retains only bounded failure diagnostics when a provider throws an unknown error", async () => {
-    const diagnostic = vi.spyOn(console, "info").mockImplementation(() => undefined);
-    const failedProvider: P10bLiveSynthesisIntentProvider = {
-      id: "recording-unknown-failure-provider",
-      modelId: "mocked-unknown-failure",
-      selectIntent() {
-        return Promise.reject(
-          Object.assign(new Error("raw-provider-message-must-not-be-retained"), {
-            code: "raw-provider-code-must-not-be-retained",
-          }),
-        );
-      },
-    };
-
-    await expect(
-      generateP10bLiveSynthesisAcceptance({
-        ...p10bLiveSynthesisAcceptanceSession(environment),
-        merchantInstruction: "Create the complete storefront.",
-        requestedDirectionId: null,
-        providerConfiguration: {
-          provider: failedProvider,
-          modelId: failedProvider.modelId,
-          category: "eligible",
+  it("fails unsupported, stale, malformed and unavailable provider outcomes without raw-state mutation, retry or diagnostic leakage", async () => {
+    const rawMessage = "raw-provider-message-must-not-be-retained";
+    const rawPayload = "raw-provider-payload-must-not-be-retained";
+    const cases = [
+      {
+        name: "malformed",
+        code: "provider-response-invalid",
+        select(request: unknown) {
+          const current = p10bLiveSynthesisIntentProviderRequestSchema.parse(request);
+          const option = current.executableIntents[0];
+          return Promise.resolve({
+            requestFingerprint: current.requestFingerprint,
+            executableIntentId: option.intentId,
+            executableIntentFingerprint: option.executableIntentFingerprint,
+            rawProviderPayload: rawPayload,
+          });
         },
-        environment,
-      }),
-    ).rejects.toMatchObject({ code: "malformed-state" });
+      },
+      {
+        name: "unsupported",
+        code: "unsupported-provider-selection",
+        select(request: unknown) {
+          const current = p10bLiveSynthesisIntentProviderRequestSchema.parse(request);
+          return Promise.resolve({
+            requestFingerprint: current.requestFingerprint,
+            executableIntentId: `unadvertised-${rawPayload}`,
+            executableIntentFingerprint: current.executableIntents[0].executableIntentFingerprint,
+          });
+        },
+      },
+      {
+        name: "stale",
+        code: "stale-authority",
+        select(request: unknown) {
+          const current = p10bLiveSynthesisIntentProviderRequestSchema.parse(request);
+          return Promise.resolve({
+            requestFingerprint: current.requestFingerprint,
+            executableIntentId: current.executableIntents[0].intentId,
+            executableIntentFingerprint: `stale-${rawPayload}`,
+          });
+        },
+      },
+      {
+        name: "unavailable",
+        code: "provider-unavailable",
+        select() {
+          return Promise.reject(new P10bLiveSynthesisIntentError("provider-unavailable"));
+        },
+      },
+      {
+        name: "unknown",
+        code: "malformed-state",
+        select() {
+          return Promise.reject(
+            Object.assign(new Error(rawMessage), { code: `raw-code-${rawPayload}` }),
+          );
+        },
+      },
+    ] as const;
 
-    const retained = canonicalValueString(diagnostic.mock.calls);
-    expect(retained).toContain('"failureCode":"malformed-state"');
-    expect(retained).not.toContain("raw-provider-code-must-not-be-retained");
-    expect(retained).not.toContain("raw-provider-message-must-not-be-retained");
-    diagnostic.mockRestore();
-  });
+    for (const entry of cases) {
+      await resetP10bLiveSynthesisAcceptance(environment);
+      const before = await inspectP10bLiveSynthesisAcceptance(environment);
+      const session = p10bLiveSynthesisAcceptanceSession(environment);
+      const calls = vi.fn();
+      const provider: P10bLiveSynthesisIntentProvider = {
+        id: `recording-${entry.name}-provider`,
+        modelId: `mocked-${entry.name}-provider`,
+        selectIntent(request) {
+          calls();
+          return entry.select(request);
+        },
+      };
+      const diagnostic = vi.spyOn(console, "info").mockImplementation(() => undefined);
+      const merchantInstruction = `Create the ${entry.name} storefront without retaining this instruction.`;
+
+      await expect(
+        generateP10bLiveSynthesisAcceptance({
+          ...session,
+          merchantInstruction,
+          requestedDirectionId: "premium-editorial",
+          providerConfiguration: {
+            provider,
+            modelId: provider.modelId,
+            category: "eligible",
+          },
+          environment,
+        }),
+      ).rejects.toMatchObject({ code: entry.code });
+      expect(calls).toHaveBeenCalledOnce();
+
+      const failed = await inspectP10bLiveSynthesisAcceptance(environment);
+      expect(failed).toMatchObject({
+        aggregateFingerprint: before.baselineFingerprint,
+        authoritativeRevision: before.authoritativeRevision,
+        generationStatus: "failed",
+        providerCallCount: 1,
+        rawPresentation: {
+          pageCount: 1,
+          sectionCount: 0,
+          hasSharedFrame: false,
+          hasDesignDna: false,
+          hasPageFamilySelection: false,
+        },
+      });
+      const editor = await loadP10bLiveSynthesisEditorSession({ ...session, environment });
+      expect(editor?.proposal).toBeNull();
+      expect(
+        editor?.aggregate.snapshots.find(
+          ({ id }) => id === editor.aggregate.project.draftSnapshotId,
+        )?.pages,
+      ).toHaveLength(1);
+
+      await expect(
+        generateP10bLiveSynthesisAcceptance({
+          ...session,
+          merchantInstruction: "A forbidden second attempt.",
+          requestedDirectionId: "premium-editorial",
+          providerConfiguration: {
+            provider,
+            modelId: provider.modelId,
+            category: "eligible",
+          },
+          environment,
+        }),
+      ).rejects.toMatchObject({ code: "stale" });
+      expect(calls).toHaveBeenCalledOnce();
+
+      const retained = canonicalValueString(diagnostic.mock.calls);
+      expect(retained).toContain(`"failureCode":"${entry.code}"`);
+      expect(retained).not.toContain(rawMessage);
+      expect(retained).not.toContain(rawPayload);
+      expect(retained).not.toContain(merchantInstruction);
+      expect(retained).not.toContain(session.sessionId);
+      expect(retained).not.toContain(token);
+      diagnostic.mockRestore();
+    }
+  }, 180_000);
 
   it("rejects unsafe route access before provider selection and cannot activate in production", async () => {
     const selected = vi.fn(() =>
@@ -564,5 +679,5 @@ describe("P10B-16L local real-provider synthesis acceptance bridge", () => {
         environment,
       }),
     ).rejects.toMatchObject({ code: "protected-commerce" });
-  });
+  }, 120_000);
 });

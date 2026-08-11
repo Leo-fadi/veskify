@@ -2,9 +2,12 @@ import "server-only";
 
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import {
+  BoundedStorefrontSynthesisError,
+  CoordinatedStorefrontDirectionError,
   createP10bLiveSynthesisIntentProviderRequest,
   executeCoordinatedDirection,
   listCoordinatedStorefrontDirections,
+  p10bLiveSynthesisExecutableResultFingerprint,
   P10bLiveSynthesisIntentError,
   p10bLiveSynthesisIntentProviderRequestSchema,
   validateP10bLiveSynthesisIntentProviderResult,
@@ -58,6 +61,12 @@ export type P10bLiveSynthesisAcceptanceFailure =
   | "stale"
   | "invalid"
   | "provider-unavailable"
+  | "provider-response-invalid"
+  | "unsupported-provider-selection"
+  | "no-executable-compatible-intent"
+  | "stale-authority"
+  | "no-valid-coordinated-candidate"
+  | "synthesis-materialization-failure"
   | "protected-commerce"
   | "malformed-state";
 
@@ -73,6 +82,8 @@ export type P10bLiveSynthesisAcceptanceMetadata = Readonly<{
   modelId: string;
   providerCallCount: 1;
   directionId: CoordinatedStorefrontDirectionId;
+  executableIntentId: string;
+  executableIntentFingerprint: string;
   directionAuthorityFingerprint: string;
   directionFingerprint: string;
   synthesisFingerprint: string;
@@ -207,26 +218,22 @@ function explicitMockProvider(): P10bLiveSynthesisIntentProvider {
         );
         const selected =
           input.requestedDirectionId ??
-          input.directionOptions.find(({ id }) => id === "modern-technical")?.id ??
-          input.directionOptions[0]?.id;
+          input.executableIntents.find(({ directionId }) => directionId === "modern-technical")
+            ?.directionId ??
+          input.executableIntents[0]?.directionId;
         if (!selected) throw new Error("The explicit mock transport has no direction authority.");
-        const selectedOption = input.directionOptions.find(({ id }) => id === selected);
-        if (!selectedOption) throw new Error("The explicit mock direction is not registered.");
+        const selectedOption = input.executableIntents.find(
+          ({ directionId }) => directionId === selected,
+        );
+        if (!selectedOption) throw new Error("The explicit mock direction is not executable.");
         return Promise.resolve({
           id: `mocked_p10b16l_${input.requestFingerprint.slice(-16)}`,
           status: "completed",
           output: [],
           output_text: JSON.stringify({
             requestFingerprint: input.requestFingerprint,
-            directionId: selected,
-            narrativePosture:
-              input.requestedDirectionId === null
-                ? null
-                : (selectedOption.narrativePostures[0] ?? null),
-            merchandisingPosture: null,
-            informationDensityPosture: null,
-            artDirectionPosture: null,
-            responsiveMode: null,
+            executableIntentId: selectedOption.intentId,
+            executableIntentFingerprint: selectedOption.executableIntentFingerprint,
           }),
         });
       },
@@ -313,6 +320,14 @@ function intentRequest(input: {
       editorialMediaAvailable: false,
     },
     currentAuthorityFingerprint: authorityFingerprint(input.fixture, input.aggregate),
+    executionAuthority: {
+      planningInput: input.fixture.executionPlanningInput,
+      siteMapDecision: input.fixture.siteMapDecision,
+      approvedEvidenceReferences: input.fixture.approvedEvidenceReferences,
+      pageEvidenceAuthority: input.fixture.pageEvidenceAuthority,
+      contentFactAuthority: input.fixture.contentFactAuthority,
+      approvedAssetPresentations: input.fixture.approvedAssetPresentations,
+    },
   });
 }
 
@@ -441,19 +456,62 @@ function pageFamilyCounts(snapshot: StorefrontSnapshot): Record<string, number> 
   );
 }
 
-function mapGenerationError(error: unknown): P10bLiveSynthesisAcceptanceError {
+export function mapP10bLiveSynthesisGenerationError(
+  error: unknown,
+): P10bLiveSynthesisAcceptanceError {
   if (error instanceof P10bLiveSynthesisAcceptanceError) return error;
   if (error instanceof P10bLiveSynthesisIntentError) {
+    switch (error.code) {
+      case "stale-authority":
+        return new P10bLiveSynthesisAcceptanceError("stale-authority");
+      case "credentials-unavailable":
+      case "provider-unavailable":
+        return new P10bLiveSynthesisAcceptanceError("provider-unavailable");
+      case "provider-refusal":
+      case "malformed-response":
+        return new P10bLiveSynthesisAcceptanceError("provider-response-invalid");
+      case "unsupported-selection":
+        return new P10bLiveSynthesisAcceptanceError("unsupported-provider-selection");
+      case "no-executable-compatible-intent":
+        return new P10bLiveSynthesisAcceptanceError("no-executable-compatible-intent");
+      case "invalid-request":
+        return new P10bLiveSynthesisAcceptanceError("malformed-state");
+    }
+  }
+  if (error instanceof CoordinatedStorefrontDirectionError) {
+    if (error.code === "stale-direction-authority") {
+      return new P10bLiveSynthesisAcceptanceError("stale-authority");
+    }
+    if (
+      ["unsupported-characteristic", "incompatible-direction", "no-valid-diversity"].includes(
+        error.code,
+      )
+    ) {
+      return new P10bLiveSynthesisAcceptanceError("no-valid-coordinated-candidate");
+    }
+    return new P10bLiveSynthesisAcceptanceError("malformed-state");
+  }
+  if (error instanceof BoundedStorefrontSynthesisError) {
     if (error.code === "stale-authority") {
-      return new P10bLiveSynthesisAcceptanceError("stale");
+      return new P10bLiveSynthesisAcceptanceError("stale-authority");
     }
-    if (["credentials-unavailable", "provider-unavailable"].includes(error.code)) {
-      return new P10bLiveSynthesisAcceptanceError("provider-unavailable");
+    if (error.code === "non-deterministic-selection") {
+      return new P10bLiveSynthesisAcceptanceError("malformed-state");
     }
-    return new P10bLiveSynthesisAcceptanceError("invalid");
+    return new P10bLiveSynthesisAcceptanceError("synthesis-materialization-failure");
   }
   return new P10bLiveSynthesisAcceptanceError("malformed-state");
 }
+
+type GenerationStage =
+  | "intent-authority"
+  | "provider-intent"
+  | "authority-refresh"
+  | "provider-selection"
+  | "coordinated-synthesis"
+  | "studio-transport"
+  | "studio-proposal"
+  | "studio-replay";
 
 function safeDiagnostic(input: {
   current: AcceptanceState;
@@ -461,17 +519,20 @@ function safeDiagnostic(input: {
   providerId: string;
   modelId: string | null;
   directionId?: CoordinatedStorefrontDirectionId;
-  failureCode?: string;
-  failureStage?: string;
+  executableIntentFingerprint?: string;
+  failureCode?: P10bLiveSynthesisAcceptanceFailure;
+  failureStage?: GenerationStage;
 }) {
   console.info("p10b-16l-live-synthesis-acceptance", {
     outcome: input.outcome,
-    session: `${input.current.session.id.slice(0, 6)}…`,
     providerId: input.providerId,
     modelId: input.modelId,
     providerCallCount: input.current.session.providerCallCount,
     authoritativeRevision: input.current.session.authoritativeRevision,
     ...(input.directionId ? { directionId: input.directionId } : {}),
+    ...(input.executableIntentFingerprint
+      ? { executableIntentFingerprint: input.executableIntentFingerprint }
+      : {}),
     ...(input.failureCode ? { failureCode: input.failureCode } : {}),
     ...(input.failureStage ? { failureStage: input.failureStage } : {}),
   });
@@ -491,41 +552,46 @@ export async function generateP10bLiveSynthesisAcceptance(input: {
     if (current.session.generationStatus !== "idle") {
       throw new P10bLiveSynthesisAcceptanceError("stale");
     }
-    if (
-      input.providerConfiguration.category !== "eligible" ||
-      input.providerConfiguration.modelId === null
-    ) {
-      current.session.generationStatus = "failed";
-      throw new P10bLiveSynthesisAcceptanceError("provider-unavailable");
-    }
-
-    const fixture = createP10B16LRawKarvonenAcceptanceFixture();
-    const aggregate = await current.repository.get(input.projectId);
-    if (
-      canonicalValueFingerprint(aggregate) !== current.baselineFingerprint ||
-      canonicalValueFingerprint(aggregate.catalogue) !== current.commerceFingerprint
-    ) {
-      throw new P10bLiveSynthesisAcceptanceError("stale");
-    }
-    const request = intentRequest({ ...input, fixture, aggregate });
-    current.session.generationStatus = "calling";
-    current.session.providerCallCount += 1;
-    if (current.session.providerCallCount !== 1) {
-      throw new P10bLiveSynthesisAcceptanceError("stale");
-    }
-
-    let generationStage = "provider-intent";
+    let generationStage: GenerationStage = "intent-authority";
+    let selectedDirectionId: CoordinatedStorefrontDirectionId | undefined;
+    let selectedExecutableIntentFingerprint: string | undefined;
     try {
+      if (
+        input.providerConfiguration.category !== "eligible" ||
+        input.providerConfiguration.modelId === null
+      ) {
+        throw new P10bLiveSynthesisAcceptanceError("provider-unavailable");
+      }
+
+      const fixture = createP10B16LRawKarvonenAcceptanceFixture();
+      const aggregate = await current.repository.get(input.projectId);
+      if (
+        canonicalValueFingerprint(aggregate) !== current.baselineFingerprint ||
+        canonicalValueFingerprint(aggregate.catalogue) !== current.commerceFingerprint
+      ) {
+        throw new P10bLiveSynthesisAcceptanceError("stale");
+      }
+      const request = intentRequest({ ...input, fixture, aggregate });
+      if (current.session.providerCallCount !== 0) {
+        throw new P10bLiveSynthesisAcceptanceError("stale");
+      }
+      current.session.generationStatus = "calling";
+      current.session.providerCallCount = 1;
+      generationStage = "provider-intent";
       const providerResult = await input.providerConfiguration.provider.selectIntent(request);
+      generationStage = "authority-refresh";
       const currentAggregate = await current.repository.get(input.projectId);
       const currentRequest = intentRequest({ ...input, fixture, aggregate: currentAggregate });
       if (canonicalValueString(currentRequest) !== canonicalValueString(request)) {
         throw new P10bLiveSynthesisIntentError("stale-authority");
       }
-      const directionRequest = validateP10bLiveSynthesisIntentProviderResult(
+      generationStage = "provider-selection";
+      const validatedIntent = validateP10bLiveSynthesisIntentProviderResult(
         currentRequest,
         providerResult,
       );
+      selectedDirectionId = validatedIntent.directionRequest.directionId;
+      selectedExecutableIntentFingerprint = validatedIntent.executableIntentFingerprint;
       generationStage = "coordinated-synthesis";
       const result = executeCoordinatedDirection({
         planningInput: fixture.executionPlanningInput,
@@ -534,8 +600,14 @@ export async function generateP10bLiveSynthesisAcceptance(input: {
         pageEvidenceAuthority: fixture.pageEvidenceAuthority,
         contentFactAuthority: fixture.contentFactAuthority,
         approvedAssetPresentations: fixture.approvedAssetPresentations,
-        directionRequest,
+        directionRequest: validatedIntent.directionRequest,
       });
+      if (
+        p10bLiveSynthesisExecutableResultFingerprint(result) !==
+        validatedIntent.expectedExecutionFingerprint
+      ) {
+        throw new P10bLiveSynthesisAcceptanceError("malformed-state");
+      }
       const materialization = result.synthesis.materialization;
       generationStage = "studio-transport";
       const proposalTransport = createServerAuthoritativeTrustedPlanProposalTransport({
@@ -583,6 +655,8 @@ export async function generateP10bLiveSynthesisAcceptance(input: {
         modelId: input.providerConfiguration.modelId,
         providerCallCount: 1,
         directionId: result.direction.id,
+        executableIntentId: validatedIntent.executableIntentId,
+        executableIntentFingerprint: validatedIntent.executableIntentFingerprint,
         directionAuthorityFingerprint: result.direction.authorityFingerprint,
         directionFingerprint: result.directionFingerprint,
         synthesisFingerprint: result.decision.synthesisFingerprint,
@@ -620,6 +694,7 @@ export async function generateP10bLiveSynthesisAcceptance(input: {
         providerId: input.providerConfiguration.provider.id,
         modelId: input.providerConfiguration.modelId,
         directionId: result.direction.id,
+        executableIntentFingerprint: validatedIntent.executableIntentFingerprint,
       });
       return {
         ...clone(metadata),
@@ -628,12 +703,14 @@ export async function generateP10bLiveSynthesisAcceptance(input: {
     } catch (error) {
       current.session.generationStatus = "failed";
       current.session.generated = null;
-      const mapped = mapGenerationError(error);
+      const mapped = mapP10bLiveSynthesisGenerationError(error);
       safeDiagnostic({
         current,
         outcome: "failed",
         providerId: input.providerConfiguration.provider.id,
         modelId: input.providerConfiguration.modelId,
+        directionId: selectedDirectionId,
+        executableIntentFingerprint: selectedExecutableIntentFingerprint,
         failureCode: mapped.code,
         failureStage: generationStage,
       });
