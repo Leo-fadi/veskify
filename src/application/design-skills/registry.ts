@@ -1,4 +1,5 @@
 import { designOperationSchema, type DesignOperation } from "@/application/design-operations";
+import { assertNoExecutableContent } from "@/application/design-safety/executable-content";
 import { getComponentDefinition } from "@/components/registry";
 import type { PageModel } from "@/domain/storefront";
 import {
@@ -9,19 +10,7 @@ import {
   type DesignSkillScope,
 } from "./contract";
 
-const executableContentPattern =
-  /<\/?[a-z][^>]*>|javascript\s*:|\b(?:eval|function)\s*\(|=>\s*\{|```(?:html|css|js|javascript|jsx|tsx)|(?:^|\n)\s*(?:[.#][\w-]+|[a-z][\w-]*)\s*\{[^}]*:[^}]*\}|\b(?:background|color|display|font-family|position)\s*:\s*[^;\n]+;/i;
-
-export function assertNoExecutableContent(value: unknown) {
-  const visit = (item: unknown): void => {
-    if (typeof item === "string" && executableContentPattern.test(item)) {
-      throw new Error("Design skills cannot emit executable or embedded content.");
-    }
-    if (Array.isArray(item)) item.forEach(visit);
-    else if (item && typeof item === "object") Object.values(item).forEach(visit);
-  };
-  visit(value);
-}
+export { assertNoExecutableContent } from "@/application/design-safety/executable-content";
 
 function operationComponent(
   operation: DesignOperation,

@@ -1,10 +1,18 @@
 import {
   getCommercialCollectionSearchProfile,
-  getCommercialPdpProfile,
   listCommercialCollectionSearchProfiles,
+} from "@/application/storefront-templates/commercial-collection-search-profiles";
+import {
+  getCommercialPdpProfile,
   listCommercialPdpProfiles,
-  materializeExecutablePageBlueprint,
-} from "@/application/storefront-templates";
+} from "@/application/storefront-templates/commercial-pdp-profiles";
+import { materializeExecutablePageBlueprint } from "@/application/storefront-templates/profile-materializer";
+import { createDynamicCommerceProductMatchContext } from "./product-match-context";
+
+export {
+  createDynamicCommerceProductMatchContext,
+  type DynamicCommerceProductMatchContext,
+} from "./product-match-context";
 import {
   dynamicCollectionCommerceBridgeContentSchema,
   dynamicCollectionCommerceContentSchema,
@@ -395,40 +403,12 @@ function requireUniqueHighestPriorityRule<T extends { id: string; priority: numb
   return selected[0];
 }
 
-export type DynamicCommerceProductMatchContext = Readonly<{
-  optionStructure: "simple" | "configurable";
-  optionGroupCount: number;
-  mediaAvailability: "none" | "single" | "multiple";
-  highConsideration: boolean;
-}>;
-
-function productMatchContext(
-  product: ProductDisplayModel,
-  highConsideration?: boolean,
-): DynamicCommerceProductMatchContext {
-  const canonicalOptionGroupCount = product.orderOptions?.length ?? 0;
-  const optionStructure =
-    canonicalOptionGroupCount > 0 || product.variants.length > 1 ? "configurable" : "simple";
-  return {
-    optionStructure,
-    // A multi-variant product is structurally configurable even when the
-    // projection has no separate order-option groups.
-    optionGroupCount: Math.max(
-      canonicalOptionGroupCount,
-      optionStructure === "configurable" ? 1 : 0,
-    ),
-    mediaAvailability:
-      product.images.length === 0 ? "none" : product.images.length === 1 ? "single" : "multiple",
-    highConsideration: highConsideration ?? canonicalOptionGroupCount >= 4,
-  };
-}
-
 function selectProductComplexityRule(input: {
   product: ProductDisplayModel;
   rules: readonly DynamicCommerceProductComplexityRule[];
   highConsideration?: boolean;
 }): DynamicCommerceProductComplexityRule {
-  const context = productMatchContext(input.product, input.highConsideration);
+  const context = createDynamicCommerceProductMatchContext(input.product, input.highConsideration);
   const matches = input.rules.filter((rule) => {
     const match = rule.match;
     return (

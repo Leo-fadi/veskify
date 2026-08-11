@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 11 August 2026, P10B-16P-01 dynamic commerce route archetype authority |
+| Verified baseline         | 11 August 2026, P10B-16P-02A prompted Storefront Design Intent V2 authority |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B-16P-02A | 11 August 2026 | P10B-16P-02A delivery | Establish the strict transient provider-safe capability projection, prompted request, preference-rich Design Intent V2, exact capability-reference validation, deterministic fingerprints, server-only OpenAI adapter and safe mocked-transport evidence without compiling or materializing a storefront before the provider response. |
 | 1.3.0 P10B-16P-01 | 11 August 2026 | P10B-16P-01 delivery | Separate static design pages, maintained collection/search and PDP archetypes, and concrete commerce route inventory inside one fingerprinted `StorefrontSnapshot`; add deterministic mapping/migration, transient Studio/runtime projections, lifecycle/compiler/publication preservation, and exact route rendering without per-product or per-collection design documents. |
 | 1.3.0 P10B-15 | 10 August 2026 | P10B-15 delivery | Generalize complete-store generation into one versioned deterministic bounded synthesis and cross-page narrative authority with exact evidence, commerce, asset, Design DNA, page/profile/frame/component fingerprints; three complete outcomes; lifecycle publication; browser evidence; and retained human review. |
 | 1.3.0 P10B-16 | 10 August 2026 | P10B-16 delivery | Register Premium Editorial, Modern Technical and Minimal Commerce as versioned narrowing packages; add deterministic direction/diversity fingerprints, duplicate and near-duplicate classification, bounded repetition avoidance, nine representative complete outcomes and retained browser/human evidence. |
@@ -84,9 +85,9 @@ canonical product-card authority, P10B-09 commercial homepage profiles, and P10B
 collection/search profiles, P10B-11 commercial PDP profiles, P10B-12 content/support page families,
 P10B-13 commerce utility presentation, the P10B-14 Premium Editorial complete-storefront vertical
 slice, the P10B-15 bounded synthesis engine, P10B-16 direction/diversity authority, and
-P10B-16P-01 dynamic commerce route archetype authority are Baseline. P10B-16P-02,
-P10B-16P-03, P10B-17, and P10B-18 remain Planned. The
-current
+P10B-16P-01 dynamic commerce route archetype authority, and P10B-16P-02A prompted Design Intent V2
+authority are Baseline. P10B-16P-02 is Partial; P10B-16P-02B, P10B-16P-03, P10B-16P-04,
+P10B-17, and P10B-18 remain Planned. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -225,7 +226,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
-| Commercial storefront generation system              | **Partial**  | P10B-01 through P10B-14 provide the commercial grammar, Design DNA, assets, page/frame/component/profile/utility authorities and first complete 17-route proof; P10B-15 generalizes them into deterministic bounded complete-store synthesis; P10B-16 adds three coordinated constraint packages, structural diversity classification and repetition control; P10B-16P-01 replaces copied commerce-route design pages with one maintained dynamic-archetype authority. P10B-16P-02, P10B-16P-03, phase-wide responsive/performance, and 100+ quality/scale closure remain Planned. |
+| Commercial storefront generation system              | **Partial**  | P10B-01 through P10B-14 provide the commercial grammar, Design DNA, assets, page/frame/component/profile/utility authorities and first complete 17-route proof; P10B-15 generalizes them into deterministic bounded complete-store synthesis; P10B-16 adds three coordinated constraint packages, structural diversity classification and repetition control; P10B-16P-01 replaces copied commerce-route design pages with one maintained dynamic-archetype authority; P10B-16P-02A adds the strict transient prompted Design Intent V2 boundary. Deterministic intent compilation, Studio wiring, live V2 acceptance, phase-wide responsive/performance, and 100+ quality/scale closure remain Planned. |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
 
@@ -279,6 +280,15 @@ P10A-07C-03R controlled real-provider acceptance completed on 7 August 2026 thro
 authorized eligible trusted OpenAI configuration. One initial-generation case succeeded before one
 hero follow-up case; each used one provider call, neither retried, safe evidence was retained, and
 no save or publication occurred.
+
+The later P10B-16L OpenAI path is separately scoped compatibility authority. Its retained authorized
+call used the earlier v1 direction/posture contract, completed the strict provider result, and then
+failed coordinated synthesis with safe code `malformed-state`. The corrected v2 compatibility path
+now pre-executes and materializes compatible storefront candidates before asking the provider to
+select an advertised `executableIntentId`, but that corrected path has made zero live calls. Neither
+path is prompt-driven storefront generation. P10B-16P-02A instead defines a strict non-executable
+preference-rich Design Intent V2 before any complete-store execution; no live V2 provider call has
+occurred.
 
 ## 7. Component, PageBlueprint and direction model
 
@@ -844,9 +854,11 @@ route and component/art-direction fingerprints. See
 
 This establishes one representative complete store. P10B-15 generalizes that convergence path,
 P10B-16 governs direction/diversity authority, and P10B-16P-01 preserves the same route coverage
-while converging collection/search/PDP design into maintained root archetypes. P10B-16P-02 and
-P10B-16P-03 remain the prompted-plan and Studio-generation sequence before P10B-17 phase-wide
-responsive/accessibility/performance closure and P10B-18 repeated quality-and-scale gate.
+while converging collection/search/PDP design into maintained root archetypes. P10B-16P-02A now
+provides the strict transient prompted intent boundary. P10B-16P-02B deterministic compilation,
+P10B-16P-03 Studio wiring and P10B-16P-04 live V2 acceptance/bridge disposition remain sequential
+before P10B-17 phase-wide responsive/accessibility/performance closure and P10B-18 repeated
+quality-and-scale gate.
 
 ### 10.16 P10B-15 bounded storefront synthesis and narrative authority
 
@@ -953,10 +965,58 @@ fingerprint. Acceptance replays the migration against current catalogue authorit
 reproduce the reviewed storefront exactly. Provider-originated transitions, page/section scope,
 stale authority, or an unsafe migration fail before acceptance.
 
-P10B-16P-01 is Baseline. P10B-16P-02 owns the separately governed prompted design-plan contract,
-and P10B-16P-03 owns the final Storefront Studio generation journey; both remain Planned.
+P10B-16P-01 is Baseline. P10B-16P-02A owns the strict transient prompted Design Intent V2
+boundary and is Baseline. P10B-16P-02 is Partial; Part B compilation, final Storefront Studio wiring
+and live V2 acceptance remain Planned under P10B-16P-02B, P10B-16P-03 and P10B-16P-04.
 
-### 10.19 Remaining planned commercial generation authority
+### 10.19 P10B-16P-02A prompted Storefront Design Intent V2 authority
+
+P10B-16P-02A adds a compact deterministic provider-safe projection over current Design DNA,
+shared-frame, PageBlueprint/profile, component/anatomy, dynamic-commerce archetype, content/utility,
+responsive and art-direction authority. Stable preference keys carry dimension, context,
+availability and server-retained current-authority references without creating another registry,
+plan or page graph. Search is represented truthfully as registered presentation authority whose
+runtime remains fail closed until a first-class canonical query/results adapter exists.
+
+The strict versioned request binds the exact unchanged merchant prompt and deterministic prompt,
+request, project/draft/snapshot, dynamic-commerce, capability, PageBlueprint, Design DNA,
+brief/evidence, asset and aggregate catalogue/commerce fingerprints. It includes approved safe
+merchant context, bounded catalogue/product-type characteristics, evidence/asset availability and
+compact capabilities. Full products, prices, stock, customers, orders, raw media, unnecessary raw
+evidence, credentials and authorization data are excluded.
+
+The strict closed result is transient, untrusted, non-canonical and non-executable. It expresses
+hard merchant constraints, ranked soft preferences, optional suggestions and avoidances across
+Design DNA, frame, homepage narrative, collection/search and PDP archetypes, canonical aggregate
+product-type posture, content/support, registered component/meaningful variants, bounded parameters,
+responsive behavior and approved art direction. It cannot emit an `executableIntentId`, arbitrary
+route/page/section tree, concrete product or collection design entry, component, code, CSS,
+commerce value, proposal, PageBlueprint or `StorefrontSnapshot`.
+
+After strict schema parsing, every preference must match a key advertised by that exact request,
+use the dimension required by its result field and retain valid availability. Context metadata is
+preserved for P10B-16P-02B compatibility resolution. Unknown, invented, wrong-dimension,
+concrete-route, unavailable required, fingerprint-mismatched or stale references fail without fuzzy
+repair, named-preset substitution, retry, fallback or partial result.
+Normalization makes the projection, request and intent fingerprints stable under unordered source
+iteration; all material preference semantics affect the intent fingerprint.
+
+The server-only OpenAI adapter uses strict structured output, `store: false`, zero SDK and
+application retries, one bounded-time transport attempt, no repair call/fallback, exact fingerprint
+verification and safe refusal/timeout/transport/malformed/schema/reference/stale classification.
+Only safe provider/model, call/retry, fingerprint, bounded usage and outcome metadata may be
+retained; raw prompts, provider bodies, credentials and headers are not logged or retained.
+
+Before the provider response, this path may calculate capability knowledge only. It cannot execute
+P10B-15, execute complete P10B-16 candidates, create a complete plan, materialize PageBlueprints,
+create proposal operations or construct a candidate snapshot. The prior P10B-16L real OpenAI call
+completed the earlier strict v1 direction/posture result and failed coordinated synthesis; the
+corrected executable-option bridge has made zero live calls. Neither is prompt-driven generation
+evidence. Part B owns deterministic post-provider compilation, P10B-16P-03 owns Studio wiring, and
+P10B-16P-04 owns live V2 acceptance and legacy bridge disposition. Full audit and contracts are in
+[`P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md`](P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md).
+
+### 10.20 Remaining planned commercial generation authority
 
 `BrandSystem` owns merchant-wide bounded Design DNA across semantic colour, approved font roles and
 pairing, type scale/weights, spacing and section rhythm, gutters/containers, grid/card/control
@@ -996,7 +1056,7 @@ drift, and exact or meaningful near duplicates. A deterministic storefront-desig
 covers structural and non-colour dimensions; hundreds or thousands of outcomes arise from bounded
 combinations, not manually authored templates.
 
-### 10.20 Commercial acceptance
+### 10.21 Commercial acceptance
 
 P10B closes only when at least 100 complete bounded storefront configurations pass deterministic
 validity, protected-state, exact-duplicate, near-duplicate, and structural-distribution analysis,
@@ -1137,8 +1197,8 @@ The binding sequence is:
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
    formal P10A phase closure record.
 2. **P10B — Commercial Storefront Generation System v1.** **Partial / active phase.** P10B-01
-   through P10B-16 and P10B-16P-01 are Baseline; P10B-16P-02, P10B-16P-03, P10B-17, and
-   P10B-18 remain Planned.
+   through P10B-16, P10B-16P-01, and P10B-16P-02A are Baseline; P10B-16P-02 is Partial;
+   P10B-16P-02B, P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain Planned.
    Deliver complete commercially credible storefronts with bounded material diversity through
    registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
@@ -1180,6 +1240,9 @@ The following are compatibility-only or superseded authorities and must not guid
 - independently executable recipe, template, direction, or storefront-plan representations;
 - concrete collection/search/PDP `PageModel`s used as current design authority instead of the
   root dynamic-commerce archetype contract;
+- P10B-16L `executableIntentId` selection and normal whole-storefront `selectionId` semantics for
+  prompted initial generation after P10B-16P-04 proves V2 and explicitly disposes their
+  compatibility use;
 - legacy product-card implementations duplicated outside the canonical commercial family;
 - v1.2.2 phase descriptions that keep Phase 9 active or assign merchant editing outside P10C.
 
@@ -1202,8 +1265,10 @@ Version 1.3.0 does not claim:
 - that Vesko staging or production evidence exists;
 - that authentication, tenancy, observability, deployment, and operations are production complete;
 - that P10D advanced media is required for the first commercial storefront or pilot;
-- that the P10B-16P-02 prompted design-plan contract or P10B-16P-03 final Storefront Studio
-  generation journey is implemented;
+- that P10B-16P-02B deterministic intent compilation, P10B-16P-03 final Storefront Studio
+  generation wiring, or P10B-16P-04 live V2 acceptance/legacy-bridge disposition is implemented;
+- that P10B-16P-02A materializes a storefront, creates a proposal or snapshot, provides executable
+  search, or has live Design Intent V2 provider evidence;
 - that archived v1.2.2 prose describes current implementation or phase status.
 
 ## Appendix A — Authoritative requirement and acceptance traceability

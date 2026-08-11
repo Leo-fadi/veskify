@@ -1,10 +1,4 @@
-import {
-  boundedParametersById,
-  resolveBoundedParameterInheritance,
-  type CommerceBindingSourceType,
-  type ComponentDefinitionV2,
-} from "@/domain/component-platform";
-import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
+import type { CommerceBindingSourceType, ComponentDefinitionV2 } from "@/domain/component-platform";
 import { validateNarrativeComposition } from "./design-vocabulary-validation";
 import {
   executablePageBlueprintProfileSchema,
@@ -18,6 +12,10 @@ import {
 } from "./contract";
 import { getCommercialSharedFrameProfile } from "@/domain/storefront/commercial-shared-frame";
 import { requireCanonicalProductCardAnatomy } from "@/domain/product-card";
+import {
+  ExecutablePageBlueprintAuthorityError,
+  validateExecutablePageBlueprintAuthority,
+} from "./profile-authority";
 
 export type ExecutablePageBlueprintMaterialization = Readonly<{
   profileId: string;
@@ -171,32 +169,20 @@ export function materializeExecutablePageBlueprint(
       getCommercialSharedFrameProfile,
     );
   }
-  if (
-    profile.scope !== pagePlan.pageType ||
-    canonicalValueString(profile.orderedNarrativeRoles) !==
-      canonicalValueString(pagePlan.slots.map((slot) => slot.narrativeRole)) ||
-    profile.componentSelections.length !== pagePlan.slots.length
-  ) {
-    throw new ExecutablePageBlueprintMaterializationError(
-      "invalid-profile",
-      `Profile ${profile.id} does not match the canonical PageBlueprint structure.`,
-    );
-  }
-  pagePlan.slots.forEach((slot, index) => {
-    const selection = profile.componentSelections[index];
-    if (
-      !selection ||
-      selection.slotId !== slot.id ||
-      selection.component !== slot.sectionType ||
-      selection.defaultVariant !== slot.defaultVariant ||
-      canonicalValueString(selection.variants) !== canonicalValueString(slot.allowedVariants)
-    ) {
-      throw new ExecutablePageBlueprintMaterializationError(
-        "invalid-profile",
-        `Profile ${profile.id} does not match canonical slot ${slot.id}.`,
-      );
+  let profileAuthority;
+  try {
+    profileAuthority = validateExecutablePageBlueprintAuthority({
+      pagePlan,
+      ...(input.brandSystemParameterValues
+        ? { brandSystemParameterValues: input.brandSystemParameterValues }
+        : {}),
+    });
+  } catch (cause) {
+    if (cause instanceof ExecutablePageBlueprintAuthorityError) {
+      throw new ExecutablePageBlueprintMaterializationError(cause.code, cause.message);
     }
-  });
+    throw cause;
+  }
   const definitions = new Map(
     input.componentDefinitions.map((definition) => [definition.type, definition]),
   );
@@ -216,53 +202,7 @@ export function materializeExecutablePageBlueprint(
         `Profile ${profile.id} cannot materialize ${slot.id} as ${slot.sectionType}/${slot.defaultVariant}.`,
       );
     }
-    const boundedParameters = Object.fromEntries(
-      [
-        ...new Set([
-          ...Object.keys(input.brandSystemParameterValues ?? {}),
-          ...Object.keys(profile.parameterDefaults),
-        ]),
-      ].map((parameterId) => {
-        const value = profile.parameterDefaults[parameterId];
-        const parameter = boundedParametersById.get(parameterId);
-        if (!parameter) {
-          throw new ExecutablePageBlueprintMaterializationError(
-            "invalid-parameter",
-            `Profile ${profile.id} references unknown bounded parameter ${parameterId}.`,
-          );
-        }
-        const resolved = resolveBoundedParameterInheritance(parameterId, [
-          ...(input.brandSystemParameterValues?.[parameterId] === undefined
-            ? []
-            : [
-                {
-                  level: "brandSystem" as const,
-                  value: input.brandSystemParameterValues[parameterId],
-                },
-              ]),
-          ...(pagePlan.pageBlueprint.boundedParameterConstraints.some(
-            (constraint) => constraint.parameterId === parameterId,
-          )
-            ? [
-                {
-                  level: "pageBlueprint" as const,
-                  constraint: pagePlan.pageBlueprint.boundedParameterConstraints.find(
-                    (constraint) => constraint.parameterId === parameterId,
-                  ),
-                },
-              ]
-            : []),
-          ...(value === undefined ? [] : [{ level: "pageBlueprint" as const, value }]),
-        ]);
-        if (resolved.issues.length > 0 || resolved.value === undefined) {
-          throw new ExecutablePageBlueprintMaterializationError(
-            "invalid-parameter",
-            `Profile ${profile.id} has invalid inherited ${parameterId} parameters.`,
-          );
-        }
-        return [parameterId, resolved.value];
-      }),
-    );
+    const boundedParameters = profileAuthority.boundedParametersBySlotId[slot.id] ?? {};
     return {
       slotId: slot.id,
       component: slot.sectionType,
@@ -359,7 +299,7 @@ export function materializeExecutablePageBlueprint(
   };
   return freeze({
     ...materialization,
-    fingerprint: `page-blueprint-${canonicalValueFingerprint(canonicalValueString(materialization))}`,
+    fingerprint: profileAuthority.fingerprint,
   });
 }
 

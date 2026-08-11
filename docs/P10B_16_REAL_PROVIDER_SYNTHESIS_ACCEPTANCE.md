@@ -2,17 +2,19 @@
 
 ## Status
 
-**Partial — local bridge and mocked-provider acceptance implemented; real-provider acceptance is
-pending.** P10B-16 and P10B-16P-01 remain **Baseline**, P10B remains **Partial**, and P10B-16P-02,
-P10B-16P-03, P10B-17, and P10B-18 remain **Planned**.
+**Partial — compatibility bridge and mocked-provider acceptance implemented; no live Design Intent
+V2 acceptance exists.** P10B-16, P10B-16P-01, and P10B-16P-02A are **Baseline**. P10B-16P-02 is
+**Partial**; P10B-16P-02B, P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain **Planned**.
+P10B remains **Partial**.
 
-Provider calls during this executable-intent compatibility correction: **zero**. One earlier,
-separately authorized failed attempt made the single call retained below.
+Provider calls during the P10B-16P-02A Design Intent V2 implementation: **zero**. One earlier,
+separately authorized call used the pre-correction v1 direction/posture contract retained below.
 
-This record must not claim a successful real-provider acceptance until a separately authorized W1
-run succeeds. Deterministic and mocked-transport evidence proves the corrected boundary and
-lifecycle, while the retained failed attempt proves only that the earlier strict provider boundary
-completed—not commercial visual quality or a valid live synthesis result.
+The retained call proves only that the earlier strict v1 provider result completed. Coordinated
+synthesis failed afterward, and the call did not generate a storefront design plan from the prompt.
+P10B-16P-04 owns any separately authorized live V2 acceptance and the disposition of this bridge.
+Deterministic and mocked-transport evidence proves corrected compatibility behavior only—not
+commercial visual quality or live V2 synthesis.
 
 ## Why this bridge exists
 
@@ -27,19 +29,23 @@ P10B-16L adds a separate local-only path:
 
 ```text
 raw approved Karvonen merchant and commerce truth
-→ one bounded real-provider synthesis intent
-→ current P10B-16 coordinated direction narrowing
-→ current P10B-15 bounded synthesis
-→ transient complete canonical StorefrontSnapshot proposal
+→ current P10B-16 coordinated direction candidate execution
+→ current P10B-15 bounded synthesis and complete candidate materialization
+→ one bounded real-provider selection among already completed executable options
+→ retained completed-result resolution
+→ transient complete canonical StorefrontSnapshot proposal projection
 → normal Storefront Studio proposal review
 → explicit accept or reject / Undo / Redo / Save / reload / Preview
 → normal explicit Publish path only if the merchant chooses it
 ```
 
-The bridge never asks the provider to restyle an existing designed storefront and never sends a
-precomputed complete storefront for the provider to repeat.
+The bridge never asks the provider to restyle an existing designed storefront and does not send
+snapshot bytes to the provider. It does, however, execute and materialize complete compatible
+candidate storefronts before the provider call. The provider chooses an advertised completed result
+by `executableIntentId`; this is governed bounded preset selection, not prompted storefront-plan
+generation.
 
-## Retained failed live attempt
+## Retained strict v1 result and failed acceptance
 
 The first separately authorized W1 attempt made exactly one real provider call. Safe retained
 evidence records:
@@ -47,8 +53,9 @@ evidence records:
 - provider `openai-p10b-complete-storefront-synthesis-intent`;
 - model `gpt-5.6-sol`;
 - provider call count `1`, with no retry;
-- the strict provider boundary completed successfully;
-- failure stage `coordinated-synthesis` with the then-reported safe code `malformed-state`;
+- the strict v1 direction/posture provider result completed successfully;
+- downstream acceptance failed at stage `coordinated-synthesis` with the then-reported safe code
+  `malformed-state`;
 - authoritative revision `0` and no generated proposal;
 - the raw presentation remained one page with zero sections; and
 - commerce, draft, save and publication authority remained unchanged.
@@ -56,9 +63,9 @@ evidence records:
 The reset was consumed and was not retried. The exact provider response was intentionally not
 retained, so this record does not invent its posture values. Deterministic reproduction instead
 proved the broader v1.0.0 defect: Premium Editorial advertised 72 independently valid posture
-tuples while only 2 were executable under the exact raw authority. This failed attempt is not a
-real-provider acceptance pass. No prompt, response, credential, token, header or merchant-private
-payload is retained here.
+tuples while only 2 were executable under the exact raw authority. This is neither a real-provider
+acceptance pass nor prompt-driven design generation. No prompt, response, credential, token, header
+or merchant-private payload is retained here.
 
 ## Raw Karvonen acceptance authority
 
@@ -127,10 +134,11 @@ returns a safe unavailable result; it never selects the mock or historical deter
 Each reset has a one-call budget. A completed, failed or concurrent generation cannot call the
 provider again without an explicit reset. OpenAI SDK retries and per-request retries are both zero.
 
-## Executable bounded real-provider intent contract
+## Executable bounded preset-selection compatibility contract
 
-Contract version **2.0.0** replaces the incompatible v1.0.0 independent-posture contract. A
-v1.0.0 request or result fingerprint is never reinterpreted as v2 and fails closed.
+Contract version **2.0.0** replaces the incompatible v1.0.0 independent-posture contract. It is the
+compatibility bridge contract, not the P10B-16P-02A Design Intent V2 contract. A v1.0.0 request or
+result fingerprint is never reinterpreted as v2 and fails closed.
 
 The provider request contains only:
 
@@ -189,9 +197,10 @@ direction/option fingerprint or bounded failure category/stage. Credentials,
 authorization headers, merchant instructions, raw provider requests and raw responses are neither
 logged nor returned.
 
-## P10B-16 to P10B-15 execution
+## Pre-provider P10B-16 to P10B-15 execution
 
-A validated intent becomes the existing `CoordinatedDirectionRequest`. Current P10B-16 then:
+Before the provider call, each candidate becomes an existing `CoordinatedDirectionRequest`.
+Current P10B-16 then:
 
 1. resolves the exact registered direction version and authority fingerprint;
 2. filters candidates through current evidence, approved-asset, Design DNA, profile and shared-frame
@@ -215,8 +224,9 @@ authoritative acceptance. Rejection discards the transient proposal and reloads 
 Acceptance commits the exact complete snapshot through the canonical repository draft operation;
 it never accepts a content fingerprint alone or replaces the project aggregate wholesale.
 
-This creates no second page graph, component registry, template engine, snapshot type, proposal
-contract or provider-owned layout.
+After the provider returns, its strict option identity resolves the already completed retained
+result; it does not cause first-time synthesis. This creates no second page graph, component
+registry, template engine, snapshot type, proposal contract or provider-owned layout.
 
 ## Complete storefront coverage
 
@@ -324,51 +334,22 @@ mock Responses transport. No network or provider call occurs. Focused evidence c
 - token, same-origin, opaque-session and production-disable boundaries.
 
 The corrected executable-intent contract has contract, deterministic unit and integration evidence
-only. The earlier failed call is retained as failed real-provider evidence, not a real-provider
-acceptance pass. No retained human visual, Vesko staging or production evidence is claimed.
+only and has made zero live calls. The earlier v1 call is retained as a technically successful
+strict direction/posture result plus failed coordinated synthesis, not executable-option selection,
+a Design Intent V2 call, or a real-provider acceptance pass. No retained human visual, Vesko staging
+or production evidence is claimed.
 
-## Future separately authorized W1 live acceptance
+## P10B-16P-04 live V2 acceptance and bridge disposition
 
-Another live attempt requires separate explicit authorization and a fresh reset; this correction
-does not authorize it. When authorized, the product owner may run acceptance in W1 using the
-existing trusted server OpenAI configuration. Do not inspect, print, copy or modify `.env.local`, credentials,
-authorization headers, raw prompts or raw responses.
+The new prompted contract and its transition are specified in
+[`P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md`](P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md).
+P10B-16P-02A makes the strict transient Design Intent V2 boundary structurally available without a
+provider call. P10B-16P-02B must compile that intent against refreshed authority, and P10B-16P-03
+must wire it into the normal Storefront Studio proposal journey before live V2 acceptance.
 
-Before the first call:
-
-1. use the merged bridge on a clean W1 worktree;
-2. confirm the trusted selector reports eligible OpenAI provider/model metadata without exposing a
-   credential;
-3. start an integrated non-production server with the explicit local-acceptance flag and a fresh
-   32-byte-or-longer acceptance token;
-4. confirm the mock-transport switch is unset;
-5. reset and verify `pageCount: 1`, `sectionCount: 0`, no shared frame, no Design DNA, no page-family
-   selection and `providerCallCount: 0`; and
-6. stop before calling if any baseline or authority field differs.
-
-Run independent resets for:
-
-1. `premium-editorial`;
-2. `modern-technical`;
-3. `minimal-commerce`; and
-4. one general merchant instruction with `requestedDirectionId: null`.
-
-Each reset may make exactly one provider call and must not retry. Stop that run on any refusal,
-timeout, malformed/unsupported output, stale authority, validation failure, second-call attempt,
-commerce/media difference or non-2xx response. A failed run is evidence of failure, not permission
-to fall back or silently rerun.
-
-For each successful result, inspect the normal Studio proposal, accept, Undo, Redo, Save, reload
-and Preview representative home, collection, simple PDP, configurable PDP, About and utility
-surfaces. Compare the three named results using the retained structural diversity fingerprints and
-visible composition; palette-only difference does not pass. Publish only if separately and
-explicitly chosen, and do not treat publication as part of provider acceptance.
-
-Retain only safe provider/model identity, start/end timestamps, selected direction, call count,
-authority/direction/synthesis/diversity/site-map/snapshot fingerprints, page/profile summary,
-sanitized terminal outcome and commerce/media/asset preservation verdict. Never retain the token,
-credential, raw request, raw response or headers.
-
-After a successful authorized run, update this document with the safe retained outcome before
-claiming real-provider evidence. Until then, the bridge remains Partial and does not change the
-status of P10B-16P-02, P10B-16P-03, P10B-17, or P10B-18.
+P10B-16P-04, not this compatibility record, owns separately authorized real-provider acceptance and
+the decision to retire, migrate or retain P10B-16L. Repeating the executable-option selector cannot
+prove Design Intent V2 because it continues to materialize candidates before the provider call.
+Until P10B-16P-04 passes, no live V2 acceptance, commercial provider-generation, retained V2 human
+visual review, or P10B-17/P10B-18 closure is claimed. No provider call is authorized by this
+documentation update.

@@ -39,6 +39,7 @@ export {
   listCommercialHomepageProfiles,
   validateCommercialHomepageProfileLibrary,
   resolveCommercialHomepageProfileSlots,
+  resolveCommercialHomepageEvidenceAvailability,
   resolveCommercialHomepageSlotItemCardinality,
   resolveCommercialHomepageSlotItemLimit,
   CommercialHomepageProfileError,
@@ -87,7 +88,6 @@ export {
   validateCommercialUtilityProfileLibrary,
   type CommercialUtilityProfileId,
 } from "./commercial-utility-profiles";
-export { materializeCommerceUtilityPage } from "./commerce-utility-materializer";
 
 const createdAt = "2026-07-18T00:00:00.000Z";
 const allPageTypes = ["home", "collection", "product"] as const;

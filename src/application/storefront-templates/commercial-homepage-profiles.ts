@@ -51,6 +51,31 @@ export class CommercialHomepageProfileError extends Error {
   }
 }
 
+export function resolveCommercialHomepageEvidenceAvailability(
+  input: Readonly<{
+    canonicalProductCount: number;
+    canonicalCollectionCount: number;
+    merchantDescription: string;
+    briefApprovalStatus: string;
+    approvedEvidenceFingerprint: string | null;
+  }>,
+): Readonly<{
+  canonicalCommerce: boolean;
+  canonicalProductCount: number;
+  canonicalCollectionCount: number;
+  approvedMerchantEvidence: boolean;
+}> {
+  return deepFreeze({
+    canonicalCommerce: input.canonicalProductCount > 0 && input.canonicalCollectionCount > 0,
+    canonicalProductCount: input.canonicalProductCount,
+    canonicalCollectionCount: input.canonicalCollectionCount,
+    approvedMerchantEvidence:
+      input.merchantDescription.trim().length > 0 &&
+      input.briefApprovalStatus === "approved" &&
+      input.approvedEvidenceFingerprint !== null,
+  });
+}
+
 type SlotInput = Readonly<{
   id: string;
   required: boolean;

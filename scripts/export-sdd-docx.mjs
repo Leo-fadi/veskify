@@ -13,7 +13,7 @@ exportMarkdownDocx({
   subtitle: "Version 1.3.0",
   coverLines: [
     "Verified baseline: 11 August 2026",
-    "P10B-16P-01 dynamic commerce route archetype authority",
+    "P10B-16P-02A prompted Storefront Design Intent V2 authority",
     "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
     "Authoritative source: docs/VESKIFY_SDD.md",
   ],

@@ -20,6 +20,14 @@ describe("P4-06 server-only secret boundary", () => {
       `${root}/src/integrations/ai/openai/whole-storefront-planning-provider.ts`,
       "utf8",
     );
+    const promptedIntentServerClient = await readFile(
+      `${root}/src/integrations/ai/openai/prompted-storefront-design-intent-v2-client.server.ts`,
+      "utf8",
+    );
+    const promptedIntentAdapter = await readFile(
+      `${root}/src/integrations/ai/openai/prompted-storefront-design-intent-v2-provider.server.ts`,
+      "utf8",
+    );
     const prompt = await readFile(`${root}/src/integrations/ai/openai/prompt.ts`, "utf8");
 
     expect(serverClient).toMatch(/^import "server-only";/);
@@ -31,8 +39,18 @@ describe("P4-06 server-only secret boundary", () => {
     expect(planningServerClient).toContain('from "openai"');
     expect(planningServerClient).toContain("OPENAI_API_KEY");
     expect(planningAdapter).not.toContain("OPENAI_API_KEY");
+    expect(promptedIntentServerClient).toMatch(/^import "server-only";/);
+    expect(promptedIntentServerClient).toContain('from "openai"');
+    expect(promptedIntentServerClient).toContain("process.env");
+    expect(promptedIntentServerClient).toContain("OPENAI_API_KEY");
+    expect(promptedIntentServerClient).toContain("maxRetries: 0");
+    expect(promptedIntentAdapter).toMatch(/^import "server-only";/);
+    expect(promptedIntentAdapter).not.toContain("OPENAI_API_KEY");
+    expect(promptedIntentAdapter).not.toContain("process.env");
     expect(prompt).not.toContain("OPENAI_API_KEY");
-    expect(`${serverClient}${adapter}${prompt}`).not.toContain("NEXT_PUBLIC_OPENAI");
+    expect(
+      `${serverClient}${adapter}${planningServerClient}${planningAdapter}${promptedIntentServerClient}${promptedIntentAdapter}${prompt}`,
+    ).not.toContain("NEXT_PUBLIC_OPENAI");
   });
 
   it("protects the production route with the same server-only marker", async () => {
