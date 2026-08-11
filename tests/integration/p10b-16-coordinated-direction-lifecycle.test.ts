@@ -60,9 +60,13 @@ describe("P10B-16 canonical proposal, persistence and publication lifecycle", ()
 
   it("21. compiles one current coordinated proposal rather than a direction-specific renderer", () => {
     const value = result();
+    const dynamicRouteCount =
+      value.synthesis.materialization.snapshot.dynamicCommercePresentation?.routeInventory.length ??
+      0;
     expect(value.synthesis.materialization.proposal.proposedStorefront.pages.length).toBe(
-      value.synthesis.materialization.snapshot.pages.length,
+      value.synthesis.materialization.snapshot.pages.length + dynamicRouteCount,
     );
+    expect(dynamicRouteCount).toBeGreaterThan(0);
     expect(value.synthesis.materialization.plan.designSystemSelection.directionId).toBe(
       value.narrowing.directionId,
     );
@@ -126,9 +130,15 @@ describe("P10B-16 canonical proposal, persistence and publication lifecycle", ()
       canonicalValueString(source.fixture.planningInput.catalogue),
     );
     expect(
-      value.synthesis.materialization.snapshot.pages
-        .filter(({ pageFamily }) => pageFamily?.familyId === "product-detail")
-        .every(({ sections }) => (sections[0]?.approvedAssetPlacements?.length ?? 0) === 0),
+      value.synthesis.materialization.snapshot.dynamicCommercePresentation?.productDetailArchetypes.every(
+        ({ componentPresentations }) =>
+          componentPresentations.every(
+            (presentation) =>
+              presentation.component === "dynamicProductDetail" &&
+              !("productId" in presentation.content) &&
+              !("approvedAssetPlacements" in presentation),
+          ),
+      ),
     ).toBe(true);
   });
 

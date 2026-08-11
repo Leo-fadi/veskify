@@ -78,7 +78,10 @@ describe("Karvonen canonical demo seed", () => {
     expect(
       karvonenSnapshot.navigation.primary.map((item) => {
         expect(item.target.type).toBe("page");
-        return item.target.type === "page" ? item.target.pageId : item.target.url;
+        if (item.target.type !== "page") {
+          throw new Error("The legacy Karvonen fixture must retain page navigation targets.");
+        }
+        return item.target.pageId;
       }),
     ).toEqual(["page_karvonen_home", "page_karvonen_collection_myrskyluodon_maija"]);
   });

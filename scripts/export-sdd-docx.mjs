@@ -12,8 +12,8 @@ exportMarkdownDocx({
   title: "Veskify Software Design Document",
   subtitle: "Version 1.3.0",
   coverLines: [
-    "Verified baseline: 10 August 2026",
-    "P10B-16 coordinated directions and diversity control",
+    "Verified baseline: 11 August 2026",
+    "P10B-16P-01 dynamic commerce route archetype authority",
     "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
     "Authoritative source: docs/VESKIFY_SDD.md",
   ],

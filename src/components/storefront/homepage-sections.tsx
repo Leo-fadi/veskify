@@ -94,9 +94,13 @@ function navigationHref(
   item: StorefrontRenderContext["navigation"]["primary"][number],
   context: StorefrontRenderContext,
 ) {
-  return item.target.type === "external"
-    ? item.target.url
-    : (context.pagePaths[item.target.pageId] ?? "#");
+  if (item.target.type === "external") return item.target.url;
+  if (item.target.type === "page") return context.pagePaths[item.target.pageId] ?? "#";
+  const routeId = item.target.routeId;
+  const route = context.dynamicCommercePresentation?.routeInventory.find(
+    ({ id }) => id === routeId,
+  );
+  return route?.kind === "search" ? undefined : (context.pagePaths[routeId] ?? "#");
 }
 
 export function StoreHeader({
@@ -115,6 +119,8 @@ export function StoreHeader({
   variant?: "centered" | "split" | "compact" | "transparent" | "editorial";
 }) {
   if (!context.sharedFrame) {
+    const searchPage = context.pages.find((page) => page.pageFamily?.familyId === "search-results");
+    const searchPath = searchPage ? context.pagePaths[searchPage.id] : undefined;
     return (
       <header className={`store-header ${className ?? ""}`}>
         <a className="store-brand" href={context.homePath ?? "/"}>
@@ -122,21 +128,21 @@ export function StoreHeader({
         </a>
         <nav aria-label={text({ en: "Primary navigation", fi: "Päänavigaatio" }, context)}>
           <ul>
-            {context.navigation.primary.map((item) => (
-              <li key={item.id}>
-                <a href={navigationHref(item, context)}>{text(item.label, context)}</a>
-              </li>
-            ))}
+            {context.navigation.primary.map((item) => {
+              const href = navigationHref(item, context);
+              return href ? (
+                <li key={item.id}>
+                  <a href={href}>{text(item.label, context)}</a>
+                </li>
+              ) : null;
+            })}
           </ul>
         </nav>
         <div className="store-header__tools">
-          {showSearch ? (
-            <button
-              aria-label={text({ en: "Search (demo)", fi: "Haku (demo)" }, context)}
-              type="button"
-            >
+          {showSearch && searchPath ? (
+            <a aria-label={text({ en: "Search", fi: "Haku" }, context)} href={searchPath}>
               ⌕
-            </button>
+            </a>
           ) : null}
           {showCart ? (
             <button

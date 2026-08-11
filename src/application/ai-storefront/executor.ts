@@ -1,4 +1,8 @@
 import { validateDesignOperationAgainstPage } from "@/application/design-operations";
+import {
+  migrateLegacyDynamicCommerceRoutes,
+  validateCurrentDynamicCommercePresentationAuthority,
+} from "@/application/dynamic-commerce-routes";
 import { validateRegisteredSnapshot } from "@/components/registry";
 import { catalogueDisplayModelSchema, type CatalogueDisplayModel } from "@/domain/catalogue";
 import { applyBrandSystemFoundationPatch, brandSystemSchema } from "@/domain/design-system";
@@ -62,6 +66,11 @@ export function projectAiStorefrontSnapshot(snapshotInput: unknown): AiStorefron
     pages: structuredClone(snapshot.pages),
     navigation: structuredClone(snapshot.navigation),
     brandSystem: structuredClone(snapshot.brandSystem),
+    ...(snapshot.dynamicCommercePresentation
+      ? {
+          dynamicCommercePresentation: structuredClone(snapshot.dynamicCommercePresentation),
+        }
+      : {}),
   };
 }
 
@@ -412,6 +421,50 @@ export function executeAiStorefrontProposal({
       cause,
     );
   }
+  const migrationAuthority = proposal.dynamicCommerceMigration;
+  if (migrationAuthority) {
+    const legacyProjection = projectAiStorefrontSnapshot(validated);
+    if (
+      canonicalValueFingerprint(legacyProjection) !== migrationAuthority.legacyProjectionFingerprint
+    ) {
+      invalid(
+        "final-projection-mismatch",
+        "Applied storefront operations do not reproduce the reviewed legacy migration source.",
+      );
+    }
+    try {
+      const migration = migrateLegacyDynamicCommerceRoutes(validated, context.catalogue);
+      if (migration.status !== "migrated") {
+        invalid(
+          "final-storefront-validation-failed",
+          "The reviewed dynamic-commerce migration is stale or requires a new authority decision.",
+        );
+      }
+      validateCurrentDynamicCommercePresentationAuthority(migration.snapshot);
+      const resultingProjection = projectAiStorefrontSnapshot(migration.snapshot);
+      if (
+        canonicalValueFingerprint(resultingProjection) !==
+          migrationAuthority.resultingProjectionFingerprint ||
+        migration.snapshot.dynamicCommercePresentation?.authorityFingerprint !==
+          migrationAuthority.resultingAuthorityFingerprint ||
+        canonicalValueString(resultingProjection) !==
+          canonicalValueString(proposal.proposedStorefront)
+      ) {
+        invalid(
+          "final-projection-mismatch",
+          "The deterministic dynamic-commerce migration does not reproduce the reviewed storefront.",
+        );
+      }
+      return structuredClone(migration.snapshot);
+    } catch (cause) {
+      if (cause instanceof AiStorefrontApplicationError) throw cause;
+      return invalid(
+        "final-storefront-validation-failed",
+        "The reviewed dynamic-commerce migration could not be applied safely.",
+        cause,
+      );
+    }
+  }
   if (
     canonicalValueString(projectAiStorefrontSnapshot(validated)) !==
     canonicalValueString(proposal.proposedStorefront)
@@ -421,5 +474,19 @@ export function executeAiStorefrontProposal({
       "Applied storefront operations do not reproduce the validated proposal projection.",
     );
   }
-  return structuredClone(validated);
+  try {
+    // Without the explicit migration authority handled above, acceptance
+    // returns exactly the operation-produced storefront that was reviewed and
+    // never introduces a structural transition of its own.
+    if (validated.dynamicCommercePresentation) {
+      validateCurrentDynamicCommercePresentationAuthority(validated);
+    }
+    return structuredClone(validated);
+  } catch (cause) {
+    return invalid(
+      "final-storefront-validation-failed",
+      "The reviewed storefront contains invalid canonical dynamic-route authority.",
+      cause,
+    );
+  }
 }

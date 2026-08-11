@@ -5,6 +5,7 @@ import type { Locale } from "@/domain/shared";
 import type {
   NavigationModel,
   ContentSupportFactDocument,
+  DynamicCommercePresentationAuthority,
   PageFactEvidenceReference,
   PageModel,
   PageType,
@@ -24,6 +25,7 @@ export type StorefrontRenderContext = {
   navigation: NavigationModel;
   sharedFrame?: SharedFrameModel;
   pages: readonly PageModel[];
+  dynamicCommercePresentation?: DynamicCommercePresentationAuthority;
   brandSystem: BrandSystem;
   pagePaths: Readonly<Record<string, string>>;
   homePath?: string;
@@ -50,7 +52,9 @@ export function resolveStorefrontNavigationPath(
     if (!item) return undefined;
     return item.target.type === "external"
       ? item.target.url
-      : context.pagePaths[item.target.pageId];
+      : item.target.type === "dynamic-commerce-route"
+        ? context.pagePaths[item.target.routeId]
+        : context.pagePaths[item.target.pageId];
   }
   const requiredComponent =
     intent.type === "navigateToProduct"
@@ -64,7 +68,13 @@ export function resolveStorefrontNavigationPath(
         (section.content.productId === bindingId || section.content.collectionId === bindingId),
     ),
   );
-  return page ? context.pagePaths[page.id] : undefined;
+  if (page) return context.pagePaths[page.id];
+  const dynamicRoute = context.dynamicCommercePresentation?.routeInventory.find((route) =>
+    intent.type === "navigateToProduct"
+      ? route.kind === "product" && route.productId === bindingId
+      : route.kind === "collection" && route.collectionId === bindingId,
+  );
+  return dynamicRoute ? context.pagePaths[dynamicRoute.id] : undefined;
 }
 
 export type EditorFieldMetadata = {

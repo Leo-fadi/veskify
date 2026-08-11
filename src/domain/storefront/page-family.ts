@@ -592,12 +592,10 @@ function assertCommerceContext(
         `Page ${page.id} references an unknown collection.`,
       );
     }
-    if (collection && page.slug !== `/collections/${collection.slug}`) {
-      throw new PageFamilyValidationError(
-        "route-family-mismatch",
-        `Page ${page.id} route does not match its canonical collection context.`,
-      );
-    }
+    // The accepted storefront route is presentation authority. Canonical
+    // commerce supplies the stable collection identity, but a later Vesko slug
+    // change must not silently rewrite an already stored public route. Product
+    // routes follow the same identity/namespace boundary.
     const boundIds = page.sections.flatMap((section) =>
       typeof section.content.collectionId === "string" ? [section.content.collectionId] : [],
     );
@@ -645,11 +643,31 @@ export function validateCanonicalStorefrontSiteMap(
 
   const routes = new Set<string>();
   const pagesById = new Map(snapshot.pages.map((page) => [page.id, page]));
+  const dynamicCandidates: PageFamilyPresenceCandidate[] =
+    snapshot.dynamicCommercePresentation?.routeInventory.map((route) =>
+      route.kind === "collection"
+        ? {
+            familyId: "collection" as const,
+            commerceContext: { kind: "collection" as const, collectionId: route.collectionId },
+          }
+        : route.kind === "product"
+          ? {
+              familyId: "product-detail" as const,
+              commerceContext: { kind: "product" as const, productId: route.productId },
+            }
+          : {
+              familyId: "search-results" as const,
+              commerceContext: { kind: "search" as const },
+            },
+    ) ?? [];
   validateCompleteStorefrontPageFamilyPresence(
-    snapshot.pages.map((page) => ({
-      familyId: page.pageFamily!.familyId,
-      commerceContext: page.pageFamily!.commerceContext,
-    })),
+    [
+      ...snapshot.pages.map((page) => ({
+        familyId: page.pageFamily!.familyId,
+        commerceContext: page.pageFamily!.commerceContext,
+      })),
+      ...dynamicCandidates,
+    ],
     options.catalogue,
   );
   for (const page of snapshot.pages) {
@@ -736,6 +754,62 @@ export function validateCanonicalStorefrontSiteMap(
     assertCommerceContext(page, definition, options.catalogue);
   }
 
+  if (snapshot.dynamicCommercePresentation) {
+    for (const route of snapshot.dynamicCommercePresentation.routeInventory) {
+      if (routes.has(route.route)) {
+        throw new PageFamilyValidationError("duplicate-route", `Duplicate route ${route.route}.`);
+      }
+      routes.add(route.route);
+      if (route.kind === "collection") {
+        // Route paths are immutable storefront presentation here; validate the
+        // current commerce identity without deriving the path from mutable
+        // catalogue slug metadata.
+        if (
+          options.catalogue &&
+          !options.catalogue.collections.some(({ id }) => id === route.collectionId)
+        ) {
+          throw new PageFamilyValidationError(
+            "invalid-commerce-context",
+            `Dynamic route ${route.id} references an unknown collection.`,
+          );
+        }
+      } else if (
+        route.kind === "product" &&
+        options.catalogue &&
+        !options.catalogue.products.some(({ id }) => id === route.productId)
+      ) {
+        throw new PageFamilyValidationError(
+          "invalid-commerce-context",
+          `Dynamic route ${route.id} references an unknown product.`,
+        );
+      }
+    }
+    for (const archetype of [
+      ...snapshot.dynamicCommercePresentation.collectionSearchArchetypes,
+      ...snapshot.dynamicCommercePresentation.productDetailArchetypes,
+    ]) {
+      const familyIds =
+        archetype.family === "product-detail"
+          ? (["product-detail"] as const)
+          : archetype.supportedContexts.map((context) =>
+              context === "search" ? ("search-results" as const) : ("collection" as const),
+            );
+      if (
+        familyIds.some((familyId) =>
+          getPageFamilyDefinition(familyId).allowedProfileReferences.every(
+            ({ id, version }) =>
+              id !== archetype.profile.profileId || version !== archetype.profile.profileVersion,
+          ),
+        )
+      ) {
+        throw new PageFamilyValidationError(
+          "stale-profile-reference",
+          `Dynamic archetype ${archetype.id} references an unavailable PageBlueprint profile.`,
+        );
+      }
+    }
+  }
+
   for (const page of snapshot.pages) {
     const parentId = page.pageFamily!.parentPageId;
     if (parentId && (!pagesById.has(parentId) || parentId === page.id)) {
@@ -776,6 +850,18 @@ export function validateCanonicalStorefrontSiteMap(
     ["primary" | "footer", StorefrontSnapshot["navigation"]["primary"]]
   >) {
     for (const item of items) {
+      if (item.target.type === "dynamic-commerce-route") {
+        const routeId = item.target.routeId;
+        if (
+          !snapshot.dynamicCommercePresentation?.routeInventory.some(({ id }) => id === routeId)
+        ) {
+          throw new PageFamilyValidationError(
+            "navigation-target-missing",
+            `Navigation ${item.id} targets a missing dynamic route.`,
+          );
+        }
+        continue;
+      }
       if (item.target.type !== "page") continue;
       const page = pagesById.get(item.target.pageId);
       if (!page) {
@@ -832,6 +918,18 @@ export function canonicalStorefrontSiteMapFingerprint(snapshot: StorefrontSnapsh
   validateCanonicalStorefrontSiteMap(snapshot);
   return `site-map-${canonicalValueFingerprint({
     pages: snapshot.pages.map(({ id, type, slug, pageFamily }) => ({ id, type, slug, pageFamily })),
+    ...(snapshot.dynamicCommercePresentation
+      ? {
+          dynamicCommerce: {
+            routeInventory: snapshot.dynamicCommercePresentation.routeInventory,
+            collectionRouteMappings: snapshot.dynamicCommercePresentation.collectionRouteMappings,
+            productTypeMappings: snapshot.dynamicCommercePresentation.productTypeMappings,
+            searchArchetypeId: snapshot.dynamicCommercePresentation.searchArchetypeId,
+            fallbacks: snapshot.dynamicCommercePresentation.fallbacks,
+            authorityFingerprint: snapshot.dynamicCommercePresentation.authorityFingerprint,
+          },
+        }
+      : {}),
     navigation: snapshot.navigation,
   })}`;
 }

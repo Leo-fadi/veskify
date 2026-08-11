@@ -182,7 +182,7 @@ requireText("docs/P10A_PHASE_CLOSURE.md", [
 ]);
 
 requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
-  "**Status:** Binding architecture. P10B-01 through P10B-16 are **Baseline**; P10B-17 and P10B-18\nremain **Planned**.",
+  "**Status:** Binding architecture. P10B-01 through P10B-16 and P10B-16P-01 are **Baseline**;\nP10B-16P-02, P10B-16P-03, P10B-17, and P10B-18 remain **Planned**.",
   "**Phase:** P10B — Commercial Storefront Generation System v1",
   "Veskify owns storefront creation",
   "Vesko owns operational commerce truth",
@@ -233,15 +233,15 @@ for (const relativePath of [
 
 requireText("docs/DEVELOPMENT_GUIDE.md", [
   "Phase 9 is\nclosed by product-owner handoff, and P10A is **Baseline / closed**",
-  "P10B-09 commercial homepage profiles, P10B-10 commercial collection/search profiles, P10B-11\ncommercial PDP profiles, P10B-12 content/support page families, P10B-13 commerce-utility\npresentation, the P10B-14 complete-store convergence proof, P10B-15 bounded storefront synthesis,\nand P10B-16 coordinated direction/diversity control are **Baseline**; P10B-17 and P10B-18 remain\n**Planned**.",
+  "P10B-16 coordinated direction/diversity control, and P10B-16P-01 dynamic commerce route archetypes\nare **Baseline**; P10B-16P-02, P10B-16P-03, P10B-17, and P10B-18 remain **Planned**.",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
   "P10D remains advanced media, P11 remains Vesko\nintegration readiness, and P12 remains production hardening",
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 23) {
-  failures.push("Delivery tracker must contain exactly twenty-three completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 24) {
+  failures.push("Delivery tracker must contain exactly twenty-four completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -287,11 +287,14 @@ if (
   !/^\| ☑\s+\| P10B-14\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-15\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-16\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-16P-01\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| ☐\s+\| P10B-16P-02\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
+  !/^\| ☐\s+\| P10B-16P-03\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must mark P10B-01 through P10B-16 Baseline and keep P10B-17 and P10B-18 Planned and unchecked",
+    "Delivery tracker must mark P10B-01 through P10B-16 and P10B-16P-01 Baseline, and keep P10B-16P-02, P10B-16P-03, P10B-17, and P10B-18 Planned and unchecked",
   );
 }
 
@@ -328,7 +331,7 @@ requireText("docs/P10B_15_BOUNDED_STOREFRONT_SYNTHESIS_AND_NARRATIVE_ENGINE.md",
   "Restrained/minimal",
   "25-case deterministic matrix",
   "480\ncorrelated scenarios total",
-  "P10B-16 remains responsible",
+  "P10B-16 now owns",
   "Provider calls: **zero**",
 ]);
 

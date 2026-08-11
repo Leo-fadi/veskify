@@ -3,8 +3,8 @@
 ## Status
 
 **Partial — local bridge and mocked-provider acceptance implemented; real-provider acceptance is
-pending.** P10B-16 remains **Baseline**, P10B remains **Partial**, and P10B-17 and P10B-18 remain
-**Planned**.
+pending.** P10B-16 and P10B-16P-01 remain **Baseline**, P10B remains **Partial**, and P10B-16P-02,
+P10B-16P-03, P10B-17, and P10B-18 remain **Planned**.
 
 Provider calls during this executable-intent compatibility correction: **zero**. One earlier,
 separately authorized failed attempt made the single call retained below.
@@ -148,7 +148,7 @@ and fully executes each retained tuple through P10B-16 and P10B-15. Duplicate st
 are removed. Every advertised option therefore represents one exact currently executable tuple,
 not the Cartesian product of independently allowed fields. The deterministic raw-fixture audit found
 2 Premium Editorial, 3 Modern Technical and 14 Minimal Commerce executable tuples, all with distinct
-structural fingerprints and complete 28-page results. Provider input is deliberately bounded to at
+structural fingerprints and complete 28-route results. Provider input is deliberately bounded to at
 most three structurally distinct choices per direction: the current request exposes 2 Premium
 Editorial, 3 Modern Technical and 3 Minimal Commerce choices, while the retained deterministic audit
 records all 14 executable Minimal tuples.
@@ -199,30 +199,37 @@ A validated intent becomes the existing `CoordinatedDirectionRequest`. Current P
 3. selects a deterministic compatible narrowing; and
 4. invokes P10B-15 through `executeCoordinatedDirection`.
 
-P10B-15 materializes the current registered site map, Design DNA, shared frame, homepage,
-collection/search and PDP profiles, content/utility profiles, component variants, product-card
-anatomies, narrative roles, bounded parameters and responsive/art-direction posture. The output
-continues through the existing authoritative whole-storefront plan and proposal projection. Server
-replay must equal the expected synthesized `StorefrontSnapshot` before the proposal can be retained.
+P10B-15 materializes the current registered site map, Design DNA, shared frame, homepage, dynamic
+collection/search and PDP archetype profiles, content/utility profiles, component variants,
+product-card anatomies, narrative roles, bounded parameters and responsive/art-direction posture.
+P10B-16P-01 converges concrete commerce route pages into compact route inventory plus maintained
+root archetypes before canonical retention. The output continues through the existing authoritative
+whole-storefront plan and proposal projection. Server replay must equal the expected synthesized
+`StorefrontSnapshot` before the proposal can be retained.
 
-The resulting 28-page materialization is retained only as transient review authority. Generation
-does not replace the process-local repository draft or its saved aggregate: both remain the raw
-one-page baseline until authoritative acceptance. Rejection discards the transient proposal and
-reloads the raw baseline. Acceptance commits the exact complete snapshot through the canonical
-repository draft operation; it never accepts a content fingerprint alone or replaces the project
-aggregate wholesale.
+The resulting 28-route storefront is retained only as transient review authority before acceptance.
+Its snapshot contains genuinely static design pages plus one dynamic-commerce route/archetype
+authority, not 28 independently editable page structures. Generation does not replace the process-
+local repository draft or its saved aggregate: both remain the raw one-page baseline until
+authoritative acceptance. Rejection discards the transient proposal and reloads the raw baseline.
+Acceptance commits the exact complete snapshot through the canonical repository draft operation;
+it never accepts a content fingerprint alone or replaces the project aggregate wholesale.
 
 This creates no second page graph, component registry, template engine, snapshot type, proposal
 contract or provider-owned layout.
 
 ## Complete storefront coverage
 
-The current fixture supplies 28 required pages, including one evidence-backed About page. The
-required set contains:
+The current fixture supplies 28 required public routes, including one evidence-backed About page.
+The required route set contains:
 
 - home;
-- one collection page per canonical collection and the search-results page;
-- one PDP per canonical product, preserving both simple and configurable product behavior;
+- one collection route per canonical collection, resolved through maintained collection
+  archetypes, plus `/search` inventory and registered archetype selection; operational search
+  materialization remains fail closed without exact transient query/result authority from the
+  still-missing canonical search adapter;
+- one PDP route per canonical product, resolved through maintained PDP archetypes while preserving
+  both simple and configurable product behavior;
 - cart and checkout-boundary presentation;
 - no-results and generic empty presentation;
 - recoverable error presentation; and
@@ -235,8 +242,9 @@ utility authority rather than another persisted page.
 
 The returned developer-safe metadata includes provider/model identity, one-call count, selected
 direction and authority fingerprint, direction/synthesis/diversity/site-map/snapshot fingerprints,
-page count, page-family counts, selected registered profile IDs, validation state and the editor
-route. It contains no raw provider payload or credential.
+static design-page count, collection/search and PDP archetype counts, runtime route count,
+page-family route counts, selected registered profile IDs, validation state and the editor route.
+It contains no raw provider payload or credential.
 
 Representative content and utility previews use the normal registered storefront renderer through
 the local canonical project catch-all route. Evidence-backed content receives the exact current
@@ -363,4 +371,4 @@ credential, raw request, raw response or headers.
 
 After a successful authorized run, update this document with the safe retained outcome before
 claiming real-provider evidence. Until then, the bridge remains Partial and does not change the
-status of P10B-17 or P10B-18.
+status of P10B-16P-02, P10B-16P-03, P10B-17, or P10B-18.

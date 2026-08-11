@@ -214,17 +214,24 @@ describe("P10B-15 bounded storefront synthesis contract and selection", () => {
       contentFactAuthority: source.contentFactAuthority,
       approvedAssetPresentations: source.fixture.assetPresentations,
     });
-    const discoverySections = result.materialization.snapshot.pages
-      .filter(({ pageFamily }) =>
-        ["collection", "search-results"].includes(pageFamily?.familyId ?? ""),
-      )
-      .map(({ sections }) => sections[0]);
+    const authority = result.materialization.snapshot.dynamicCommercePresentation;
+    const discoveryRoutes = authority?.routeInventory.filter(({ kind }) =>
+      ["collection", "search"].includes(kind),
+    );
     expect(selected.commercialProfiles.collectionProfileId).toBe("collection-dense-search");
     expect(selected.informationDensityPosture).toBe("compact");
-    expect(discoverySections).toHaveLength(2);
-    expect(new Set(discoverySections.map(({ id }) => id)).size).toBe(2);
+    expect(discoveryRoutes).toHaveLength(2);
+    expect(new Set(discoveryRoutes?.map(({ id }) => id)).size).toBe(2);
+    expect(authority?.collectionSearchArchetypes.length).toBeGreaterThan(0);
+    expect(authority?.collectionSearchArchetypes.length).toBeLessThanOrEqual(4);
     expect(
-      discoverySections.every(({ id }) => id.length <= 80 && id.startsWith("section_collection_")),
+      authority?.collectionSearchArchetypes.find(({ id }) => id === authority.searchArchetypeId)
+        ?.profile.profileId,
+    ).toBe("collection-dense-search");
+    expect(
+      authority?.collectionRouteMappings.every(({ archetypeId }) =>
+        authority.collectionSearchArchetypes.some(({ id }) => id === archetypeId),
+      ),
     ).toBe(true);
   });
 
@@ -266,12 +273,21 @@ describe("P10B-15 bounded storefront synthesis contract and selection", () => {
       contentFactAuthority: source.contentFactAuthority,
       approvedAssetPresentations: source.fixture.assetPresentations,
     });
-    const longProductSection = result.materialization.snapshot.pages
-      .flatMap(({ sections }) => sections)
-      .find(({ content }) => content.productId === longProductId);
+    const authority = result.materialization.snapshot.dynamicCommercePresentation;
+    const longProductRoute = authority?.routeInventory.find(
+      (route) => route.kind === "product" && route.productId === longProductId,
+    );
+    const mappedArchetypeId = authority?.productTypeMappings[0]?.archetypeId;
     expect(longProductId.length).toBeGreaterThan(45);
-    expect(longProductSection?.id).toMatch(/^section_product_[a-f0-9]{32}$/);
-    expect(longProductSection?.id.length).toBeLessThanOrEqual(80);
+    expect(longProductRoute).toBeDefined();
+    expect(mappedArchetypeId).toBe("archetype_pdp_high_consideration");
+    expect(
+      authority?.productDetailArchetypes.find(({ id }) => id === mappedArchetypeId)?.profile
+        .profileId,
+    ).toBe("pdp-high-consideration");
+    expect(canonicalValueString(authority?.productDetailArchetypes).includes(longProductId)).toBe(
+      false,
+    );
   });
 
   it("18. rejects unsupported request vocabulary and impossible campaign narrowing", () => {
@@ -329,14 +345,16 @@ describe("P10B-15 canonical materialization and lifecycle", () => {
 
   it("6. keeps product-media identity in canonical commerce authority", () => {
     const result = execute("restrained-minimal");
-    const productPages = result.materialization.snapshot.pages.filter(
-      ({ pageFamily }) => pageFamily?.familyId === "product-detail",
-    );
+    const productArchetypes =
+      result.materialization.snapshot.dynamicCommercePresentation?.productDetailArchetypes ?? [];
     expect(
-      productPages.every(
-        (page) =>
-          page.sections[0]?.component === "dynamicProductDetail" &&
-          (page.sections[0]?.approvedAssetPlacements?.length ?? 0) === 0,
+      productArchetypes.every(
+        ({ componentPresentations }) =>
+          componentPresentations.length === 1 &&
+          componentPresentations[0] !== undefined &&
+          componentPresentations[0]?.component === "dynamicProductDetail" &&
+          !("productId" in componentPresentations[0].content) &&
+          !("approvedAssetPlacements" in componentPresentations[0]),
       ),
     ).toBe(true);
     expect(
@@ -408,7 +426,11 @@ describe("P10B-15 canonical materialization and lifecycle", () => {
     expect(
       (await repository.getActiveCompiledPublication(source.fixture.aggregate.project.id))?.artifact
         .compiledResult.pages,
-    ).toHaveLength(17);
+    ).toHaveLength(13);
+    expect(
+      (await repository.getActiveCompiledPublication(source.fixture.aggregate.project.id))?.artifact
+        .compiledResult.dynamicCommercePresentation?.routeInventory,
+    ).toHaveLength(4);
   });
 
   it("23. materializes several materially different complete canonical outcomes", () => {
@@ -418,7 +440,19 @@ describe("P10B-15 canonical materialization and lifecycle", () => {
       new Set(outcomes.map(({ materialization }) => materialization.snapshotFingerprint)).size,
     ).toBe(3);
     expect(
-      outcomes.every(({ materialization }) => materialization.snapshot.pages.length === 17),
+      outcomes.every(({ materialization }) => materialization.snapshot.pages.length === 13),
+    ).toBe(true);
+    expect(
+      outcomes.every(
+        ({ materialization }) =>
+          materialization.snapshot.dynamicCommercePresentation?.routeInventory.length === 4 &&
+          materialization.snapshot.dynamicCommercePresentation.collectionSearchArchetypes.length >
+            0 &&
+          materialization.snapshot.dynamicCommercePresentation.collectionSearchArchetypes.length <=
+            4 &&
+          materialization.snapshot.dynamicCommercePresentation.productDetailArchetypes.length > 1 &&
+          materialization.snapshot.dynamicCommercePresentation.productDetailArchetypes.length <= 5,
+      ),
     ).toBe(true);
   });
 
@@ -436,7 +470,8 @@ describe("P10B-15 canonical materialization and lifecycle", () => {
         enabledLocales: source.fixture.aggregate.project.enabledLocales,
       }),
     ).not.toThrow();
-    expect(source.slice.snapshot.pages).toHaveLength(17);
+    expect(source.slice.snapshot.pages).toHaveLength(13);
+    expect(source.slice.snapshot.dynamicCommercePresentation?.routeInventory).toHaveLength(4);
     expect(source.slice.snapshotFingerprint).toBe(
       canonicalStorefrontContentFingerprint(source.slice.snapshot),
     );

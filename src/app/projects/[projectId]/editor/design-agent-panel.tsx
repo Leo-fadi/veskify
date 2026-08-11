@@ -576,6 +576,29 @@ export function DesignAgentPanel({
               </ul>
             </div>
           ) : null}
+          {storefrontReview.dynamicCommerceConvergence ? (
+            <div data-testid="dynamic-commerce-migration-review">
+              <strong>{storefrontReview.dynamicCommerceConvergence.heading}</strong>
+              <p>{storefrontReview.dynamicCommerceConvergence.summary}</p>
+              <dl className={styles.reviewFacts}>
+                <div>
+                  <dt>{locale === "fi" ? "Staattiset sivut" : "Static pages"}</dt>
+                  <dd>{storefrontReview.dynamicCommerceConvergence.staticPageCount}</dd>
+                </div>
+                <div>
+                  <dt>{locale === "fi" ? "Kaupan ulkoasumallit" : "Commerce archetypes"}</dt>
+                  <dd>{storefrontReview.dynamicCommerceConvergence.archetypeCount}</dd>
+                </div>
+                <div>
+                  <dt>
+                    {locale === "fi" ? "Ajonaikaiset kauppareitit" : "Runtime commerce routes"}
+                  </dt>
+                  <dd>{storefrontReview.dynamicCommerceConvergence.runtimeRouteCount}</dd>
+                </div>
+              </dl>
+              <p>{storefrontReview.dynamicCommerceConvergence.protectedBindingSummary}</p>
+            </div>
+          ) : null}
           <div>
             <strong>{text.pageChanges}</strong>
             <div className={styles.storefrontPages}>

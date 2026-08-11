@@ -10,6 +10,7 @@ import {
   compileStorefrontPublication,
   createCurrentPublishCompilerInput,
 } from "@/application/publishing";
+import { assembleValidatedEditorDraft } from "@/application/draft-save";
 import {
   approveStorefrontDesignBrief,
   createStorefrontDesignBrief,
@@ -39,6 +40,7 @@ import {
   type PageFamilyId,
 } from "@/domain/storefront";
 import { InMemoryProjectRepository, type ProjectAggregate } from "@/services/storage";
+import { p10b16p01DynamicCommerceAggregate } from "../fixtures/p10b-16p-01-dynamic-commerce";
 
 const localized = (en: string, fi: string) => ({ en, fi });
 const now = "2026-08-08T08:00:00.000Z";
@@ -767,7 +769,7 @@ describe("P10B-05 site-map and page-family authority", () => {
     expectCode(() => materialize(stale), "stale-profile-reference");
   });
 
-  it("survives repository save/reload and deterministic compile/publish projection", async () => {
+  it("survives repository save/reload but requires migration before publication", async () => {
     const result = materialize();
     const canonicalEvidenceReference = result.snapshot.pages.find(
       ({ pageFamily }) => pageFamily?.familyId === "about",
@@ -793,20 +795,83 @@ describe("P10B-05 site-map and page-family authority", () => {
         .evidenceReferences[0],
     ).toEqual(canonicalEvidenceReference);
 
+    const legacyInput = createCurrentPublishCompilerInput({
+      aggregate: reloaded,
+      snapshot: draft,
+      sourceAuthority: { kind: "manual" },
+    });
+    expect(legacyInput.authority.migrationStatus).toBe("unresolved");
+    expectCode(() => compileStorefrontPublication(legacyInput), "unresolved-migration");
+  });
+
+  it("keeps stored collection and product paths authoritative across catalogue slug changes", () => {
+    const result = materialize();
+    const dynamicFixture = p10b16p01DynamicCommerceAggregate();
+    const dynamicAuthority = dynamicFixture.snapshots[1].dynamicCommercePresentation;
+    if (!dynamicAuthority) throw new Error("Expected compact dynamic-commerce authority.");
+    const removedPageIds = new Set(
+      result.snapshot.pages
+        .filter(({ pageFamily }) =>
+          ["collection", "search-results", "product-detail"].includes(pageFamily?.familyId ?? ""),
+        )
+        .map(({ id }) => id),
+    );
+    const snapshot = {
+      ...structuredClone(result.snapshot),
+      pages: result.snapshot.pages.filter(({ id }) => !removedPageIds.has(id)),
+      navigation: Object.fromEntries(
+        Object.entries(result.snapshot.navigation).map(([area, items]) => [
+          area,
+          items.filter(
+            ({ target }) => target.type !== "page" || !removedPageIds.has(target.pageId),
+          ),
+        ]),
+      ) as typeof result.snapshot.navigation,
+      dynamicCommercePresentation: structuredClone(dynamicAuthority),
+    };
+    const catalogue = structuredClone(aurumNordicSeed.catalogue);
+    const collectionRoute = dynamicAuthority.routeInventory.find(
+      (route) => route.kind === "collection",
+    );
+    if (!collectionRoute || collectionRoute.kind !== "collection") {
+      throw new Error("Expected a stored collection route.");
+    }
+    const collection = catalogue.collections.find(({ id }) => id === collectionRoute.collectionId);
+    if (!collection) throw new Error("Expected the routed canonical collection.");
+    const storedCollectionPath = collectionRoute.route;
+    collection.slug = "renamed-after-route-acceptance";
+    const aggregate: ProjectAggregate = {
+      project: structuredClone(aurumNordicSeed.project),
+      catalogue,
+      snapshots: [snapshot],
+    };
+
+    expect(() =>
+      validateCanonicalStorefrontSiteMap(snapshot, {
+        catalogue,
+        enabledLocales: ["en", "fi"],
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assembleValidatedEditorDraft({
+        baseDraft: snapshot,
+        replacementSnapshot: snapshot,
+        aggregate,
+        primaryLocale: "en",
+      }),
+    ).not.toThrow();
     const compilation = compileStorefrontPublication(
       createCurrentPublishCompilerInput({
-        aggregate: reloaded,
-        snapshot: draft,
+        aggregate,
+        snapshot,
         sourceAuthority: { kind: "manual" },
       }),
     );
-    expect(compilation.result.pages.map(({ page }) => page)).toEqual(result.snapshot.pages);
     expect(
-      compilation.result.pages.find(({ page }) => page.pageFamily?.familyId === "about")!.page
-        .pageFamily!.evidenceReferences[0],
-    ).toEqual(canonicalEvidenceReference);
-    expect(compilation.result.sharedFrame.navigation).toEqual(result.snapshot.navigation);
-    expect(compilation.result.rendererTarget).toBe("published");
+      compilation.result.dynamicCommercePresentation?.routeInventory.find(
+        ({ id }) => id === collectionRoute.id,
+      )?.route,
+    ).toBe(storedCollectionPath);
   });
 
   it("keeps legacy P10A home/collection/PDP snapshots valid without implicit migration", () => {

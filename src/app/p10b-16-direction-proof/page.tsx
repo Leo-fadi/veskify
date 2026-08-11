@@ -1,3 +1,4 @@
+import { resolveDynamicCommerceRoutePage } from "@/application/dynamic-commerce-routes";
 import {
   P10B16_REPRESENTATIVE_DIRECTION_IDS,
   createP10B16RepresentativeAuthority,
@@ -26,9 +27,21 @@ export default async function P10B16DirectionProofPage({
   const locale = query.locale === "fi" ? "fi" : "en";
   const proof = createP10B16RepresentativeAuthority();
   const outcome = createP10B16RepresentativeOutcome(directionId, alternative);
-  const page = outcome.synthesis.materialization.snapshot.pages.find(
-    (candidate) => candidate.slug === route,
+  const snapshot = outcome.synthesis.materialization.snapshot;
+  const dynamicRoute = snapshot.dynamicCommercePresentation?.routeInventory.find(
+    (candidate) => candidate.route === route,
   );
+  const isDynamicCommercePath =
+    route === "/search" || route.startsWith("/collections/") || route.startsWith("/products/");
+  const page = dynamicRoute
+    ? resolveDynamicCommerceRoutePage({
+        snapshot,
+        catalogue: proof.source.fixture.aggregate.catalogue,
+        routeId: dynamicRoute.id,
+      }).page
+    : snapshot.dynamicCommercePresentation && isDynamicCommercePath
+      ? undefined
+      : snapshot.pages.find((candidate) => candidate.slug === route);
   if (!page) throw new Error(`Unknown P10B-16 proof route: ${route}`);
   return (
     <P10B15SynthesisProofClient
@@ -36,14 +49,14 @@ export default async function P10B16DirectionProofPage({
       evidenceReferences={proof.source.approvedEvidenceReferences}
       intent={directionId}
       locale={locale}
-      pageId={page.id}
+      page={page}
       p10b16={{
         directionId,
         alternative,
         directionFingerprint: outcome.directionFingerprint,
         diversityFingerprint: outcome.diversity.structuralFingerprint,
       }}
-      snapshot={outcome.synthesis.materialization.snapshot}
+      snapshot={snapshot}
       snapshotFingerprint={outcome.synthesis.materialization.snapshotFingerprint}
       synthesisFingerprint={outcome.decision.synthesisFingerprint}
       target="preview"

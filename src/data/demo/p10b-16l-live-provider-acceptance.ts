@@ -51,7 +51,15 @@ export const P10B16L_DRAFT_ID = "snapshot_p10b16l_karvonen_raw_draft";
 export const P10B16L_PUBLISHED_ID = "snapshot_p10b16l_karvonen_raw_published";
 export const P10B16L_BRIEF_ID = "brief_p10b16l_karvonen_raw";
 export const P10B16L_RAW_HOME_PAGE_ID = "page_p10b16l_karvonen_raw_home";
+/** Merchant-visible route count in the complete acceptance site map. */
 export const P10B16L_CORE_PAGE_COUNT = 28;
+/** Persisted static PageModels after compact dynamic-commerce migration. */
+export const P10B16L_STATIC_DESIGN_PAGE_COUNT = 8;
+export const P10B16L_DYNAMIC_ROUTE_COUNT = 20;
+export const P10B16L_PREMIUM_EDITORIAL_COLLECTION_SEARCH_ARCHETYPE_COUNT = 3;
+export const P10B16L_PREMIUM_EDITORIAL_PRODUCT_DETAIL_ARCHETYPE_COUNT = 3;
+export const P10B16L_MAX_COLLECTION_SEARCH_ARCHETYPE_COUNT = 4;
+export const P10B16L_MAX_PRODUCT_DETAIL_ARCHETYPE_COUNT = 5;
 
 const FIXED_TIME = "2026-08-10T09:00:00.000Z";
 const ABOUT_EVIDENCE_ID = "evidence_p10b16l_karvonen_about";

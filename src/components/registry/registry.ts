@@ -18,6 +18,16 @@ import {
   contentSupportBridgeDefinitions,
   validateContentSupportPageDocuments,
 } from "./content-support-bridge";
+import {
+  dynamicCollectionCommerceContentSchema,
+  dynamicCollectionCommercePropsSchema,
+  dynamicCollectionCommerceStyleOverridesSchema,
+} from "./dynamic-collection-commerce";
+import {
+  dynamicProductDetailContentSchema,
+  dynamicProductDetailPropsSchema,
+  dynamicProductDetailStyleOverridesSchema,
+} from "./dynamic-product-detail";
 import type { ComponentDefinition, StorefrontRenderContext } from "./contract";
 import { veskifyLegacyComponentRegistry } from "./legacy-registry";
 import type { CommerceUtilityIntent, CommerceUtilityRuntimeState } from "@/domain/commerce-utility";
@@ -65,6 +75,39 @@ export function validateRegisteredPage(
   return page;
 }
 
+function validateDynamicCommercePresentationComponents(snapshot: StorefrontSnapshot): void {
+  const authority = snapshot.dynamicCommercePresentation;
+  if (!authority) return;
+  for (const archetype of authority.collectionSearchArchetypes) {
+    for (const presentation of archetype.componentPresentations) {
+      if (presentation.component !== "dynamicCollectionCommerce") {
+        throw new Error(
+          "A collection/search archetype must use the registered dynamic collection component.",
+        );
+      }
+      dynamicCollectionCommerceContentSchema.parse(presentation.content);
+      dynamicCollectionCommercePropsSchema.parse(presentation.props);
+      if (presentation.styleOverrides) {
+        dynamicCollectionCommerceStyleOverridesSchema.parse(presentation.styleOverrides);
+      }
+    }
+  }
+  for (const archetype of authority.productDetailArchetypes) {
+    for (const presentation of archetype.componentPresentations) {
+      if (presentation.component !== "dynamicProductDetail") {
+        throw new Error(
+          "A product-detail archetype must use the registered dynamic product component.",
+        );
+      }
+      dynamicProductDetailContentSchema.parse(presentation.content);
+      dynamicProductDetailPropsSchema.parse(presentation.props);
+      if (presentation.styleOverrides) {
+        dynamicProductDetailStyleOverridesSchema.parse(presentation.styleOverrides);
+      }
+    }
+  }
+}
+
 export function validateRegisteredSnapshot(
   input: unknown,
   catalogue?: CatalogueDisplayModel,
@@ -106,6 +149,7 @@ export function validateRegisteredSnapshot(
     }
   }
   snapshot.pages.forEach((page) => validateRegisteredPage(page, context));
+  validateDynamicCommercePresentationComponents(snapshot);
   validateCanonicalStorefrontSiteMap(snapshot, { catalogue, enabledLocales });
   return snapshot;
 }
@@ -116,16 +160,23 @@ export function createStorefrontPagePaths({
   pagePathPrefix = "",
   pagePathSuffix = "",
 }: {
-  snapshot: Pick<StorefrontSnapshot, "pages">;
+  snapshot: Pick<StorefrontSnapshot, "pages"> &
+    Partial<Pick<StorefrontSnapshot, "dynamicCommercePresentation">>;
   pagePathPrefix?: string;
   pagePathSuffix?: string;
 }): Readonly<Record<string, string>> {
-  return Object.fromEntries(
-    snapshot.pages.map((page) => [
+  return Object.fromEntries([
+    ...snapshot.pages.map((page): readonly [string, string] => [
       page.id,
       `${pagePathPrefix ? `${pagePathPrefix}${page.slug === "/" ? "" : page.slug}` : page.slug}${pagePathSuffix}`,
     ]),
-  );
+    ...(snapshot.dynamicCommercePresentation?.routeInventory.map(
+      (route): readonly [string, string] => [
+        route.id,
+        `${pagePathPrefix ? `${pagePathPrefix}${route.route}` : route.route}${pagePathSuffix}`,
+      ],
+    ) ?? []),
+  ]);
 }
 
 export function createStorefrontRenderContext({
@@ -149,7 +200,9 @@ export function createStorefrontRenderContext({
   onLocaleChange?: (locale: Locale) => void;
   catalogue: CatalogueDisplayModel;
   snapshot: Pick<StorefrontSnapshot, "navigation" | "pages" | "brandSystem" | "sharedFrame"> &
-    Partial<Pick<StorefrontSnapshot, "contentSupportFactDocuments">>;
+    Partial<
+      Pick<StorefrontSnapshot, "contentSupportFactDocuments" | "dynamicCommercePresentation">
+    >;
   pagePathPrefix?: string;
   pagePathSuffix?: string;
   renderTarget?: StorefrontRenderContext["renderTarget"];
@@ -181,6 +234,9 @@ export function createStorefrontRenderContext({
     navigation: navigationModelSchema.parse(snapshot.navigation),
     ...(snapshot.sharedFrame ? { sharedFrame: structuredClone(snapshot.sharedFrame) } : {}),
     pages: snapshot.pages,
+    ...(snapshot.dynamicCommercePresentation
+      ? { dynamicCommercePresentation: snapshot.dynamicCommercePresentation }
+      : {}),
     brandSystem: snapshot.brandSystem,
     pagePaths,
     homePath: homePage ? pagePaths[homePage.id] : undefined,

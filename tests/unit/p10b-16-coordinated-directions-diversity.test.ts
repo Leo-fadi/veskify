@@ -155,13 +155,18 @@ describe("P10B-16 governed coordinated direction authority", () => {
         values.every(({ synthesis }) => synthesis.materialization.snapshot.pages.length >= 5),
       ).toBe(true);
       expect(
-        values.every(({ synthesis }) =>
-          ["home", "collection", "search-results", "product-detail"].every((familyId) =>
-            synthesis.materialization.snapshot.pages.some(
-              ({ pageFamily }) => pageFamily?.familyId === familyId,
-            ),
-          ),
-        ),
+        values.every(({ synthesis }) => {
+          const snapshot = synthesis.materialization.snapshot;
+          const dynamicKinds = new Set(
+            snapshot.dynamicCommercePresentation?.routeInventory.map(({ kind }) => kind) ?? [],
+          );
+          return (
+            snapshot.pages.some(({ pageFamily }) => pageFamily?.familyId === "home") &&
+            dynamicKinds.has("collection") &&
+            dynamicKinds.has("search") &&
+            dynamicKinds.has("product")
+          );
+        }),
       ).toBe(true);
     }
   });
@@ -318,7 +323,77 @@ describe("P10B-16 deterministic diversity analysis", () => {
     );
   });
 
-  it("18. repetition avoidance selects unused material configurations", () => {
+  it("18. ignores dynamic route cardinality but fingerprints archetype and profile authority", () => {
+    const value = alternatives("premium-editorial")[0];
+    const originalMaterial = storefrontDiversityMaterialFromDecision({
+      decision: value.decision,
+      designDna: value.designDna,
+      direction: value.direction,
+    });
+    const routeExpandedDecision = {
+      ...structuredClone(value.decision),
+      siteMap: {
+        ...structuredClone(value.decision.siteMap),
+        pageKeys: [...value.decision.siteMap.pageKeys, "product_same_archetype_extra"],
+      },
+    };
+    const routeExpandedMaterial = storefrontDiversityMaterialFromDecision({
+      decision: routeExpandedDecision,
+      designDna: value.designDna,
+      direction: value.direction,
+    });
+    expect(routeExpandedDecision.siteMap.pageKeys).not.toEqual(value.decision.siteMap.pageKeys);
+    expect(routeExpandedMaterial.pageSet).toEqual(originalMaterial.pageSet);
+    expect(createStorefrontDiversityFingerprintFromMaterial(routeExpandedMaterial)).toEqual(
+      createStorefrontDiversityFingerprintFromMaterial(originalMaterial),
+    );
+
+    const dynamicProfileIndex = value.decision.pageProfileSelections.findIndex(({ familyId }) =>
+      ["collection", "search-results", "product-detail"].includes(familyId),
+    );
+    expect(dynamicProfileIndex).toBeGreaterThanOrEqual(0);
+    const profileChangedDecision = {
+      ...structuredClone(value.decision),
+      pageProfileSelections: value.decision.pageProfileSelections.map((selection, index) =>
+        index === dynamicProfileIndex
+          ? { ...structuredClone(selection), profileId: `${selection.profileId}-alternate` }
+          : structuredClone(selection),
+      ),
+    };
+    const profileChangedMaterial = storefrontDiversityMaterialFromDecision({
+      decision: profileChangedDecision,
+      designDna: value.designDna,
+      direction: value.direction,
+    });
+    expect(
+      createStorefrontDiversityFingerprintFromMaterial(profileChangedMaterial)
+        .structuralFingerprint,
+    ).not.toBe(
+      createStorefrontDiversityFingerprintFromMaterial(originalMaterial).structuralFingerprint,
+    );
+
+    const archetypeChangedDecision = {
+      ...structuredClone(value.decision),
+      pageProfileSelections: value.decision.pageProfileSelections.map((selection, index) =>
+        index === dynamicProfileIndex
+          ? { ...structuredClone(selection), pageKey: `${selection.pageKey}_alternate` }
+          : structuredClone(selection),
+      ),
+    };
+    const archetypeChangedMaterial = storefrontDiversityMaterialFromDecision({
+      decision: archetypeChangedDecision,
+      designDna: value.designDna,
+      direction: value.direction,
+    });
+    expect(
+      createStorefrontDiversityFingerprintFromMaterial(archetypeChangedMaterial)
+        .structuralFingerprint,
+    ).not.toBe(
+      createStorefrontDiversityFingerprintFromMaterial(originalMaterial).structuralFingerprint,
+    );
+  });
+
+  it("19. repetition avoidance selects unused material configurations", () => {
     const values = alternatives("premium-editorial");
     for (let index = 1; index < values.length; index += 1) {
       expect(
@@ -328,7 +403,7 @@ describe("P10B-16 deterministic diversity analysis", () => {
     }
   });
 
-  it("19. impossible novelty fails closed instead of bypassing validation", () => {
+  it("20. impossible novelty fails closed instead of bypassing validation", () => {
     const first = alternatives("minimal-commerce")[0];
     const used = [first.diversity];
     expect(() =>

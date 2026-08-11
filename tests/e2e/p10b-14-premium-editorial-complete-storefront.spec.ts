@@ -10,7 +10,6 @@ const primaryEvidence = [
 const routes = [
   "/",
   "/collections/jewellery",
-  "/search",
   "/products/arc-studs",
   "/products/custom-halo-ring",
   "/pages/about",

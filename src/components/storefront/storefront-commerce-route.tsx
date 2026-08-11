@@ -32,16 +32,29 @@ function chrome(page: PageModel, context: StorefrontRenderContext, component: "h
   if (context.sharedFrame) {
     return renderRegisteredSection(context.sharedFrame[component], context);
   }
-  const section = page.sections.find(
-    (candidate) => candidate.visible && candidate.component === component,
-  );
+  const section =
+    page.sections.find((candidate) => candidate.visible && candidate.component === component) ??
+    context.pages
+      .find((candidate) => candidate.type === "home")
+      ?.sections.find((candidate) => candidate.visible && candidate.component === component);
   return section ? renderRegisteredSection(section, context, page.type) : null;
 }
 
 function announcement(page: PageModel, context: StorefrontRenderContext) {
-  return context.sharedFrame?.announcement
-    ? renderRegisteredSection(context.sharedFrame.announcement, context)
-    : null;
+  if (context.sharedFrame) {
+    return context.sharedFrame.announcement
+      ? renderRegisteredSection(context.sharedFrame.announcement, context)
+      : null;
+  }
+  const pageSection = page.sections.find(
+    (candidate) => candidate.visible && candidate.component === "announcementBar",
+  );
+  if (pageSection) return renderRegisteredSection(pageSection, context, page.type);
+  const home = context.pages.find((candidate) => candidate.type === "home");
+  const homeSection = home?.sections.find(
+    (candidate) => candidate.visible && candidate.component === "announcementBar",
+  );
+  return home && homeSection ? renderRegisteredSection(homeSection, context, home.type) : null;
 }
 
 export function StorefrontProductCommerceRoute(

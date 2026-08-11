@@ -251,11 +251,17 @@
 
 .sidebar {
   display: grid;
+  min-width: 0;
   gap: 1.25rem;
   align-content: start;
   padding: 1.25rem;
   border-bottom: 1px solid #d6dae0;
   background: white;
+}
+
+.sidebar > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .sidebar section,
@@ -274,8 +280,11 @@
 }
 
 .sidebar select {
+  width: 100%;
+  min-width: 0;
   min-height: 2.75rem;
   max-width: 100%;
+  box-sizing: border-box;
   padding: 0.5rem;
   border: 1px solid #aab1ba;
   border-radius: 0.45rem;
@@ -294,13 +303,25 @@
   color: #59616d;
   font-size: 0.78rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .sectionActions {
+  min-width: 0;
   padding: 0.85rem !important;
   border: 1px solid #d6dae0 !important;
   border-radius: 0.6rem;
   background: #f8faf9;
+}
+
+.sectionActions > *,
+.sectionActions select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.sectionActions select {
+  width: 100%;
 }
 
 .sectionActions h2 {
@@ -313,12 +334,24 @@
   gap: 0.15rem;
 }
 
+.sectionActions ul {
+  min-width: 0;
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.sectionActions li,
+.sectionActions strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .sectionActions p span {
   color: #59616d;
   font-size: 0.75rem;
 }
 
-.sectionActions div {
+.sectionActionButtons {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
@@ -549,7 +582,7 @@
   gap: 0.15rem;
 }
 
-.sectionActions div {
+.sectionActionButtons {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.4rem;

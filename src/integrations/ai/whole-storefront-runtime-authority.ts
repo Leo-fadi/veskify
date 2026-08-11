@@ -13,14 +13,18 @@ import {
   validateAiStorefrontProviderResponse,
 } from "@/application/ai-storefront-generation";
 import {
+  aiStorefrontProposalSchema,
   canonicalizeAiStorefrontPermissionGrants,
   canonicalizeAiStorefrontTarget,
   createAiStorefrontBaselineFingerprint,
   createAiStorefrontPermissionFingerprint,
   createAiStorefrontProposalId,
   createAiStorefrontTargetFingerprint,
+  executeAiStorefrontProposal,
+  projectAiStorefrontSnapshot,
   type AiStorefrontOperation,
 } from "@/application/ai-storefront";
+import { migrateLegacyDynamicCommerceRoutes } from "@/application/dynamic-commerce-routes";
 import { resolveStorefrontGenerationScope } from "@/application/ai-storefront-generation";
 import { StorefrontGenerationScopeError } from "@/application/ai-storefront-generation";
 import { recordStorefrontDiagnostic } from "@/application/ai-storefront-generation";
@@ -41,7 +45,6 @@ import {
   protectedDesignPaths,
   storefrontStyleDirectionForRegisteredDirection,
 } from "@/application/design-skills";
-import { projectAiStorefrontSnapshot } from "@/application/ai-storefront";
 import {
   createWholeStorefrontRecipeContext,
   createWholeStorefrontGenerationTarget,
@@ -79,6 +82,7 @@ import {
 } from "@/domain/source-discovery";
 import { idSchema, type Locale } from "@/domain/shared";
 import {
+  canonicalStorefrontContentFingerprint,
   canonicalValueString,
   pageFactEvidenceReferenceSchema,
   storefrontSnapshotSchema,
@@ -829,14 +833,79 @@ export function createServerAuthoritativeTrustedPlanProposalResponse(input: {
       validateLegacyRequestDirection: false,
     }),
   );
-  if (
-    response.metadata.authoritativePlanningFingerprint !== input.plan.fingerprint ||
-    canonicalValueString(response.proposal.proposedStorefront) !==
-      canonicalValueString(projectAiStorefrontSnapshot(input.expectedSnapshot))
-  ) {
+  if (response.metadata.authoritativePlanningFingerprint !== input.plan.fingerprint) {
     throw new ServerWholeStorefrontAuthorityError("malformed-state");
   }
-  return response;
+  let trustedResponse = response;
+  try {
+    const expectedSnapshot = storefrontSnapshotSchema.parse(
+      structuredClone(input.expectedSnapshot),
+    );
+    let applied = executeAiStorefrontProposal({
+      proposal: response.proposal,
+      activeDraft: planningInput.draft,
+      catalogue: planningInput.catalogue,
+      enabledLocales: planningInput.project.enabledLocales,
+      activeLocale: request.activeLocale,
+      primaryLocale: request.activeLocale,
+    });
+    if (
+      canonicalStorefrontContentFingerprint(applied) !==
+      canonicalStorefrontContentFingerprint(expectedSnapshot)
+    ) {
+      const migration = migrateLegacyDynamicCommerceRoutes(applied, planningInput.catalogue);
+      if (
+        migration.status !== "migrated" ||
+        canonicalStorefrontContentFingerprint(migration.snapshot) !==
+          canonicalStorefrontContentFingerprint(expectedSnapshot) ||
+        !migration.snapshot.dynamicCommercePresentation
+      ) {
+        throw new ServerWholeStorefrontAuthorityError("malformed-state");
+      }
+      const legacyProjection = projectAiStorefrontSnapshot(applied);
+      const resultingProjection = projectAiStorefrontSnapshot(migration.snapshot);
+      const dynamicCommerceMigration = {
+        kind: "canonicalDynamicCommerceMigration" as const,
+        contractVersion: "1.0.0" as const,
+        legacyProjectionFingerprint: canonicalValueFingerprint(legacyProjection),
+        resultingProjectionFingerprint: canonicalValueFingerprint(resultingProjection),
+        resultingAuthorityFingerprint:
+          migration.snapshot.dynamicCommercePresentation.authorityFingerprint,
+      };
+      const proposal = aiStorefrontProposalSchema.parse({
+        ...structuredClone(response.proposal),
+        id: createAiStorefrontProposalId(
+          response.proposal.requestId,
+          response.proposal.targetFingerprint,
+          response.proposal.permissionFingerprint,
+          response.proposal.operations,
+          response.proposal.assetPlacementOperations,
+          dynamicCommerceMigration,
+        ),
+        proposedStorefront: resultingProjection,
+        dynamicCommerceMigration,
+      });
+      applied = executeAiStorefrontProposal({
+        proposal,
+        activeDraft: planningInput.draft,
+        catalogue: planningInput.catalogue,
+        enabledLocales: planningInput.project.enabledLocales,
+        activeLocale: request.activeLocale,
+        primaryLocale: request.activeLocale,
+      });
+      trustedResponse = { ...response, proposal };
+    }
+    if (
+      canonicalStorefrontContentFingerprint(applied) !==
+      canonicalStorefrontContentFingerprint(expectedSnapshot)
+    ) {
+      throw new ServerWholeStorefrontAuthorityError("malformed-state");
+    }
+  } catch (error) {
+    if (error instanceof ServerWholeStorefrontAuthorityError) throw error;
+    throw new ServerWholeStorefrontAuthorityError("malformed-state");
+  }
+  return trustedResponse;
 }
 
 /**

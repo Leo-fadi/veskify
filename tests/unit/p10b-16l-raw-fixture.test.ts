@@ -3,7 +3,11 @@ import { executeCoordinatedDirection } from "@/application/bounded-storefront-sy
 import {
   P10B16L_CATALOGUE_ID,
   P10B16L_CORE_PAGE_COUNT,
+  P10B16L_DYNAMIC_ROUTE_COUNT,
+  P10B16L_MAX_COLLECTION_SEARCH_ARCHETYPE_COUNT,
+  P10B16L_MAX_PRODUCT_DETAIL_ARCHETYPE_COUNT,
   P10B16L_PROJECT_ID,
+  P10B16L_STATIC_DESIGN_PAGE_COUNT,
   createP10B16LRawKarvonenAcceptanceFixture,
 } from "@/data/demo/p10b-16l-live-provider-acceptance";
 import { karvonenSeed } from "@/data/seed/karvonen";
@@ -105,9 +109,25 @@ describe("P10B-16L raw Karvonen acceptance fixture", () => {
       },
     });
 
-    expect(outcome.synthesis.materialization.snapshot.pages.length).toBeGreaterThanOrEqual(
-      P10B16L_CORE_PAGE_COUNT,
+    expect(outcome.synthesis.materialization.snapshot.pages).toHaveLength(
+      P10B16L_STATIC_DESIGN_PAGE_COUNT,
     );
+    expect(
+      outcome.synthesis.materialization.snapshot.dynamicCommercePresentation?.routeInventory,
+    ).toHaveLength(P10B16L_DYNAMIC_ROUTE_COUNT);
+    expect(
+      outcome.synthesis.materialization.snapshot.dynamicCommercePresentation
+        ?.collectionSearchArchetypes.length,
+    ).toBeLessThanOrEqual(P10B16L_MAX_COLLECTION_SEARCH_ARCHETYPE_COUNT);
+    expect(
+      outcome.synthesis.materialization.snapshot.dynamicCommercePresentation
+        ?.productDetailArchetypes.length,
+    ).toBeLessThanOrEqual(P10B16L_MAX_PRODUCT_DETAIL_ARCHETYPE_COUNT);
+    expect(
+      outcome.synthesis.materialization.snapshot.pages.length +
+        outcome.synthesis.materialization.snapshot.dynamicCommercePresentation!.routeInventory
+          .length,
+    ).toBe(P10B16L_CORE_PAGE_COUNT);
     expect(outcome.synthesis.materialization.snapshot.sharedFrame).toBeDefined();
     expect(outcome.synthesis.materialization.snapshot.brandSystem.designDna).toBeDefined();
     expect(outcome.synthesis.materialization.snapshot.sharedFrame?.profileId).toBe(

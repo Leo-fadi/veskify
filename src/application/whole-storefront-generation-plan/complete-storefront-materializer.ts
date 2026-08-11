@@ -2,6 +2,7 @@ import {
   materializeContentSupportSnapshot,
   type ContentSupportFactAuthority,
 } from "@/application/content-support-pages";
+import { requireMigratedDynamicCommerceSnapshot } from "@/application/dynamic-commerce-routes";
 import {
   materializeStorefrontSiteMap,
   type PageFactEvidenceAuthority,
@@ -27,6 +28,7 @@ import {
 } from "@/components/registry";
 import {
   canonicalStorefrontContentFingerprint,
+  canonicalStorefrontSiteMapFingerprint,
   canonicalValueFingerprint,
   storefrontSnapshotSchema,
   validateCanonicalStorefrontSiteMap,
@@ -281,11 +283,15 @@ export function materializeCompleteStorefrontSelection(
     designSystemNarrowing: input.designSystemNarrowing,
   });
   const proposal = compileWholeStorefrontProposal({ plan, planningInput });
-  const materialized = materializeWholeStorefrontRuntimeSnapshot({
+  const legacyMaterialized = materializeWholeStorefrontRuntimeSnapshot({
     runtime: proposal.proposedStorefront,
     planningInput,
     approvedAssetPresentations: input.approvedAssetPresentations,
   });
+  const materialized = requireMigratedDynamicCommerceSnapshot(
+    legacyMaterialized,
+    planningInput.catalogue,
+  );
   validateCanonicalStorefrontSiteMap(materialized, {
     catalogue: planningInput.catalogue,
     enabledLocales: planningInput.project.enabledLocales,
@@ -302,7 +308,7 @@ export function materializeCompleteStorefrontSelection(
     planningInput: structuredClone(planningInput),
     plan: structuredClone(plan),
     proposal: structuredClone(proposal),
-    siteMapFingerprint: siteMap.fingerprint,
+    siteMapFingerprint: canonicalStorefrontSiteMapFingerprint(materialized),
     snapshotFingerprint: canonicalStorefrontContentFingerprint(materialized),
   });
 }

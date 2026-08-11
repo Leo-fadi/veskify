@@ -365,14 +365,19 @@ a {
   display: flex;
   gap: 0.5rem;
 }
+.store-header__tools a,
 .store-header__tools button {
+  display: inline-flex;
   min-width: 2.75rem;
   min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--brand-color-border);
   border-radius: 999px;
   background: transparent;
   color: inherit;
   font: inherit;
+  text-decoration: none;
 }
 .store-hero,
 .campaign-banner,

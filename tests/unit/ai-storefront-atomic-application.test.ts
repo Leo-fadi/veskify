@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { AiOperationPermissionGrant } from "@/application/ai-provider";
 import {
+  acceptedSnapshotPublishReceiptFingerprint,
+  assertAcceptedSnapshotReceiptCurrent,
+  type AcceptedSnapshotCurrentAuthority,
+  type AcceptedSnapshotPublishReceipt,
+} from "@/application/accepted-snapshot-publishing";
+import {
   CanonicalStorefrontHistory,
   StorefrontProposalAcceptanceCoordinator,
   compositeStorefrontHistoryTransactionSchema,
@@ -19,10 +25,13 @@ import { validateRegisteredPage, validateRegisteredSnapshot } from "@/components
 import { aurumNordicSeed } from "@/data/seed";
 import {
   canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
   canonicalValueString,
+  createDynamicCommercePresentationAuthority,
   type PageModel,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
+import { p10b16p01DynamicCommerceAggregate } from "../fixtures/p10b-16p-01-dynamic-commerce";
 
 const draft = structuredClone(aurumNordicSeed.draftSnapshot);
 const storedDraft = structuredClone(aurumNordicSeed.draftSnapshot);
@@ -338,6 +347,55 @@ describe("P4-05C transactional storefront executor", () => {
     expect(result.pages.map((page) => page.id)).toEqual(draft.pages.map((page) => page.id));
     expect(result.navigation).toEqual(draft.navigation);
     expect(result.catalogueRef).toBe(draft.catalogueRef);
+    expect(draft.dynamicCommercePresentation).toBeUndefined();
+    expect(result.dynamicCommercePresentation).toBeUndefined();
+  });
+
+  it("never turns a page-scoped legacy proposal into an undisclosed whole-snapshot migration", () => {
+    const proposal = threeOperationProposal();
+    proposal.target.scope = "page";
+    const context = proposalContext();
+    proposal.targetFingerprint = createAiStorefrontTargetFingerprint(context, proposal.target);
+    proposal.permissionFingerprint = createAiStorefrontPermissionFingerprint(
+      proposal.permissionGrants,
+      proposal.target,
+      context,
+    );
+    const result = executeAiStorefrontProposal({ proposal, ...applicationContext() });
+
+    expect(projectAiStorefrontSnapshot(result)).toEqual(proposal.proposedStorefront);
+    expect(result.pages.map(({ id }) => id)).toEqual(draft.pages.map(({ id }) => id));
+    expect(result.dynamicCommercePresentation).toBeUndefined();
+  });
+
+  it("rejects explicit canonical migration authority outside whole-storefront scope", () => {
+    const proposal = threeOperationProposal();
+    proposal.target.scope = "page";
+    const legacyProjection = structuredClone(proposal.proposedStorefront);
+    proposal.proposedStorefront.dynamicCommercePresentation = structuredClone(
+      p10b16p01DynamicCommerceAggregate().snapshots.find(
+        ({ id }) => id === p10b16p01DynamicCommerceAggregate().project.draftSnapshotId,
+      )!.dynamicCommercePresentation!,
+    );
+    proposal.dynamicCommerceMigration = {
+      kind: "canonicalDynamicCommerceMigration",
+      contractVersion: "1.0.0",
+      legacyProjectionFingerprint: canonicalValueFingerprint(legacyProjection),
+      resultingProjectionFingerprint: canonicalValueFingerprint(proposal.proposedStorefront),
+      resultingAuthorityFingerprint:
+        proposal.proposedStorefront.dynamicCommercePresentation.authorityFingerprint,
+    };
+    const context = proposalContext();
+    proposal.targetFingerprint = createAiStorefrontTargetFingerprint(context, proposal.target);
+    proposal.permissionFingerprint = createAiStorefrontPermissionFingerprint(
+      proposal.permissionGrants,
+      proposal.target,
+      context,
+    );
+
+    expect(() => executeAiStorefrontProposal({ proposal, ...applicationContext() })).toThrow(
+      /whole-storefront reviewed transition/i,
+    );
   });
 
   it("applies multiple pages plus explicitly granted colour and typography state", () => {
@@ -573,6 +631,7 @@ describe("P4-05C composite storefront history", () => {
     expect(accepted.transaction?.resultingAffectedPages).toHaveLength(2);
     expect(accepted.transaction?.originalDesignSystem).toEqual(draft.brandSystem);
     expect(accepted.transaction?.resultingDesignSystem).toEqual(accepted.activeDraft.brandSystem);
+    expect(accepted.transaction?.structuralTransition).toBeUndefined();
     expect(accepted.transaction?.unaffectedPages.map((page) => page.pageId)).toEqual([
       productPage.id,
     ]);
@@ -584,6 +643,132 @@ describe("P4-05C composite storefront history", () => {
     const redone = value.redo();
     expect(redone).toEqual(accepted.activeDraft);
     expect(value.inspectHistory().past).toHaveLength(1);
+  });
+
+  it("applies, undoes, and redoes exact dynamic-commerce mappings while stale history and receipts fail closed", () => {
+    const aggregate = p10b16p01DynamicCommerceAggregate();
+    const original = aggregate.snapshots.find(
+      ({ id }) => id === aggregate.project.draftSnapshotId,
+    )!;
+    const originalAuthority = original.dynamicCommercePresentation!;
+    const { authorityFingerprint: _originalFingerprint, ...material } =
+      structuredClone(originalAuthority);
+    void _originalFingerprint;
+    const alternateArchetype = structuredClone(material.collectionSearchArchetypes[0]);
+    const remappedRoute = material.collectionRouteMappings[0];
+    if (!alternateArchetype || !remappedRoute) {
+      throw new Error("The dynamic-commerce history fixture is incomplete.");
+    }
+    alternateArchetype.id = "archetype_collection_history_alternate";
+    alternateArchetype.componentPresentations[0].props.gridDensity = "spacious";
+    const resultingAuthority = createDynamicCommercePresentationAuthority({
+      ...material,
+      authorityRevision: material.authorityRevision + 1,
+      collectionSearchArchetypes: [...material.collectionSearchArchetypes, alternateArchetype],
+      collectionRouteMappings: material.collectionRouteMappings.map((mapping) =>
+        mapping.routeId === remappedRoute.routeId
+          ? { ...mapping, archetypeId: alternateArchetype.id }
+          : mapping,
+      ),
+    });
+    const resulting = structuredClone(original);
+    resulting.dynamicCommercePresentation = resultingAuthority;
+    const proposal = twoPageProposal();
+    proposal.id = "storefront_proposal_c05c0004";
+    proposal.projectId = original.projectId;
+    proposal.draftSnapshotId = original.id;
+    proposal.draftRevision = original.revision;
+    proposal.target = {
+      ...proposal.target,
+      projectId: original.projectId,
+      draftSnapshotId: original.id,
+      draftRevision: original.revision,
+      affectedPageIds: [original.pages[0].id],
+      affectedSectionTargets: [],
+    };
+    const transaction = deriveCompositeStorefrontHistoryTransaction({
+      original,
+      resulting,
+      proposal,
+      acceptedAt: "2026-08-11T14:00:00.000Z",
+      transactionId: "storefront_transaction_dynamic_history",
+    });
+
+    expect(transaction.structuralTransition?.originalDynamicCommercePresentation).toEqual(
+      originalAuthority,
+    );
+    expect(transaction.structuralTransition?.resultingDynamicCommercePresentation).toEqual(
+      resultingAuthority,
+    );
+    expect(
+      transaction.structuralTransition?.resultingDynamicCommercePresentation
+        ?.collectionRouteMappings,
+    ).toEqual(resultingAuthority.collectionRouteMappings);
+    expect(resultingAuthority.authorityFingerprint).not.toBe(
+      originalAuthority.authorityFingerprint,
+    );
+
+    const history = new CanonicalStorefrontHistory();
+    history.initialize(original);
+    expect(history.commit(transaction).dynamicCommercePresentation).toEqual(resultingAuthority);
+    expect(history.undo()?.dynamicCommercePresentation).toEqual(originalAuthority);
+    expect(history.redo()?.dynamicCommercePresentation).toEqual(resultingAuthority);
+
+    const staleHistory = new CanonicalStorefrontHistory();
+    staleHistory.initialize(resulting);
+    expect(() => staleHistory.commit(transaction)).toThrow(/no longer matches/i);
+    expect(staleHistory.inspectTransactions()).toEqual({ past: [], future: [] });
+
+    const currentAuthority = {
+      proposalId: proposal.id,
+      proposalRevision: 1,
+      proposalFingerprint: "proposal_dynamic_history",
+      reviewRevision: 1,
+      reviewFingerprint: "review_dynamic_history",
+      acceptedRuntimeFingerprint: "runtime_dynamic_history",
+      componentRegistryFingerprint: "registry_dynamic_history",
+      manifest: null,
+      packageRegistry: null,
+      profileAuthorities: [],
+      commerceFingerprint: "commerce_dynamic_history",
+      approvedAssetFingerprint: null,
+    } satisfies AcceptedSnapshotCurrentAuthority;
+    const unsignedReceipt: Omit<AcceptedSnapshotPublishReceipt, "fingerprint"> = {
+      id: "acceptance_receipt_dynamic_history",
+      version: "1.0.0",
+      projectId: original.projectId,
+      draftId: original.id,
+      proposalId: proposal.id,
+      proposalRevision: currentAuthority.proposalRevision,
+      proposalFingerprint: currentAuthority.proposalFingerprint,
+      reviewRevision: currentAuthority.reviewRevision,
+      reviewFingerprint: currentAuthority.reviewFingerprint,
+      acceptedRuntimeFingerprint: currentAuthority.acceptedRuntimeFingerprint,
+      acceptedSnapshotId: original.id,
+      acceptedSnapshotFingerprint: canonicalStorefrontContentFingerprint(original),
+      projectRevision: aggregate.project.revision,
+      draftRevision: original.revision,
+      componentRegistryFingerprint: currentAuthority.componentRegistryFingerprint,
+      manifest: null,
+      packageRegistry: null,
+      profileAuthorities: [],
+      commerceFingerprint: currentAuthority.commerceFingerprint,
+      approvedAssetFingerprint: null,
+      acceptanceActionId: "acceptance_action_dynamic_history",
+      acceptedAt: "2026-08-11T14:00:00.000Z",
+      sourceKind: "initialGeneration",
+    };
+    const receipt: AcceptedSnapshotPublishReceipt = {
+      ...unsignedReceipt,
+      fingerprint: acceptedSnapshotPublishReceiptFingerprint(unsignedReceipt),
+    };
+    const aggregateAfterRootMutation = structuredClone(aggregate);
+    aggregateAfterRootMutation.snapshots = aggregateAfterRootMutation.snapshots.map((snapshot) =>
+      snapshot.id === original.id ? resulting : snapshot,
+    );
+    expect(() =>
+      assertAcceptedSnapshotReceiptCurrent(receipt, aggregateAfterRootMutation, currentAuthority),
+    ).toThrow(expect.objectContaining({ code: "stale-current-snapshot" }));
   });
 
   it("rejects an invalid final storefront without committing partial history", () => {

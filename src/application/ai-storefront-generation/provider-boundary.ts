@@ -249,6 +249,12 @@ export function validateAiStorefrontProviderResponse(
   if (response.proposal.status !== "pending") {
     invalid("invalid-proposal-status", "Generated storefront proposals must begin as pending.");
   }
+  if (response.proposal.dynamicCommerceMigration) {
+    invalid(
+      "unsupported-provider-transition",
+      "Provider responses cannot originate canonical dynamic-commerce migration authority.",
+    );
+  }
   if (
     canonicalValueString(response.proposal.target) !== canonicalValueString(request.target) ||
     canonicalValueString(response.proposal.permissionGrants) !==
@@ -267,6 +273,7 @@ export function validateAiStorefrontProviderResponse(
     request.permissionFingerprint,
     response.proposal.operations,
     response.proposal.assetPlacementOperations ?? [],
+    response.proposal.dynamicCommerceMigration,
   );
   if (response.proposal.id !== expectedProposalId) {
     invalid("proposal-identity-mismatch", "The storefront proposal identity is invalid.");

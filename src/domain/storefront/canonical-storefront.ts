@@ -7,6 +7,7 @@ export type StorefrontContent = Omit<
     | "navigation"
     | "sharedFrame"
     | "pages"
+    | "dynamicCommercePresentation"
     | "contentSupportFactDocuments"
     | "catalogueRef"
   >,
@@ -36,6 +37,9 @@ export function storefrontContent(snapshot: StorefrontSnapshot): StorefrontConte
     navigation: snapshot.navigation,
     ...(snapshot.sharedFrame ? { sharedFrame: snapshot.sharedFrame } : {}),
     pages: snapshot.pages,
+    ...(snapshot.dynamicCommercePresentation
+      ? { dynamicCommercePresentation: snapshot.dynamicCommercePresentation }
+      : {}),
     // The empty collection is a P10B-12 schema normalization. Omitting it
     // preserves accepted fingerprints for stored snapshots from before that
     // optional authority existed, while non-empty approved facts remain part

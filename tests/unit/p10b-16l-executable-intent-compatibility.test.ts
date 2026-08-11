@@ -11,6 +11,10 @@ import {
 } from "@/application/bounded-storefront-synthesis";
 import {
   P10B16L_CORE_PAGE_COUNT,
+  P10B16L_DYNAMIC_ROUTE_COUNT,
+  P10B16L_MAX_COLLECTION_SEARCH_ARCHETYPE_COUNT,
+  P10B16L_MAX_PRODUCT_DETAIL_ARCHETYPE_COUNT,
+  P10B16L_STATIC_DESIGN_PAGE_COUNT,
   createP10B16LRawKarvonenAcceptanceFixture,
 } from "@/data/demo/p10b-16l-live-provider-acceptance";
 import { canonicalValueString } from "@/domain/storefront";
@@ -220,10 +224,16 @@ describe("P10B-16L executable live-intent compatibility", () => {
         new Set(audited.map(({ result }) => result.diversity.structuralFingerprint)).size,
       ).toBe(audited.length);
       expect(
-        audited.every(
-          ({ result }) =>
-            result.synthesis.materialization.snapshot.pages.length === P10B16L_CORE_PAGE_COUNT,
-        ),
+        audited.every(({ result }) => {
+          const snapshot = result.synthesis.materialization.snapshot;
+          return (
+            snapshot.pages.length === P10B16L_STATIC_DESIGN_PAGE_COUNT &&
+            snapshot.dynamicCommercePresentation?.routeInventory.length ===
+              P10B16L_DYNAMIC_ROUTE_COUNT &&
+            snapshot.pages.length + snapshot.dynamicCommercePresentation.routeInventory.length ===
+              P10B16L_CORE_PAGE_COUNT
+          );
+        }),
       ).toBe(true);
     }
   }, 120_000);
@@ -249,8 +259,31 @@ describe("P10B-16L executable live-intent compatibility", () => {
           option.expectedExecutionFingerprint,
         );
         expect(result.synthesis.materialization.snapshot.pages).toHaveLength(
-          P10B16L_CORE_PAGE_COUNT,
+          P10B16L_STATIC_DESIGN_PAGE_COUNT,
         );
+        expect(
+          result.synthesis.materialization.snapshot.dynamicCommercePresentation?.routeInventory,
+        ).toHaveLength(P10B16L_DYNAMIC_ROUTE_COUNT);
+        const routeAuthority =
+          result.synthesis.materialization.snapshot.dynamicCommercePresentation;
+        expect(routeAuthority?.collectionSearchArchetypes.length).toBeGreaterThan(0);
+        expect(routeAuthority?.collectionSearchArchetypes.length).toBeLessThanOrEqual(
+          P10B16L_MAX_COLLECTION_SEARCH_ARCHETYPE_COUNT,
+        );
+        expect(routeAuthority?.productDetailArchetypes.length).toBeGreaterThan(1);
+        expect(routeAuthority?.productDetailArchetypes.length).toBeLessThanOrEqual(
+          P10B16L_MAX_PRODUCT_DETAIL_ARCHETYPE_COUNT,
+        );
+        expect(
+          routeAuthority?.collectionRouteMappings.every(({ archetypeId }) =>
+            routeAuthority.collectionSearchArchetypes.some(({ id }) => id === archetypeId),
+          ),
+        ).toBe(true);
+        expect(
+          routeAuthority?.productTypeMappings.every(({ archetypeId }) =>
+            routeAuthority.productDetailArchetypes.some(({ id }) => id === archetypeId),
+          ),
+        ).toBe(true);
         deterministicSeeds.add(validated.directionRequest.deterministicSeed);
         structuralFingerprints.add(result.diversity.structuralFingerprint);
       }

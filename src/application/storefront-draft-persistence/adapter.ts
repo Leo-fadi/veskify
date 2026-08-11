@@ -226,6 +226,16 @@ function changedPages(
   });
 }
 
+function dynamicCommercePresentationChanged(
+  current: StorefrontSnapshot,
+  candidate: StorefrontSnapshot,
+): boolean {
+  return (
+    canonicalValueString(current.dynamicCommercePresentation) !==
+    canonicalValueString(candidate.dynamicCommercePresentation)
+  );
+}
+
 function mapPersistenceFailure(error: unknown): VeskoIntegrationError {
   if (error instanceof VeskoIntegrationError) return error;
   if (error instanceof ProjectNotFoundError) return new VeskoIntegrationError("projectNotFound");
@@ -437,12 +447,14 @@ export function createStorefrontDraftPersistenceAdapter({
         }
 
         const candidateChangedPages = changedPages(draft, candidate);
+        const replaceCompleteSnapshot = dynamicCommercePresentationChanged(draft, candidate);
         const validatedCandidate = assembleValidatedEditorDraft({
           baseDraft: draft,
-          changedPages: candidateChangedPages,
           aggregate,
           primaryLocale: aggregate.project.primaryLocale,
-          brandSystem: candidate.brandSystem,
+          ...(replaceCompleteSnapshot
+            ? { replacementSnapshot: candidate }
+            : { changedPages: candidateChangedPages, brandSystem: candidate.brandSystem }),
         });
         if (canonicalValueString(validatedCandidate) !== canonicalValueString(candidate)) {
           throw new VeskoIntegrationError("draftRevisionConflict");
@@ -468,8 +480,9 @@ export function createStorefrontDraftPersistenceAdapter({
           repository: projectRepository,
           projectId: context.storefrontProjectId,
           loadedDraft: draft,
-          changedPages: candidateChangedPages,
-          brandSystem: candidate.brandSystem,
+          ...(replaceCompleteSnapshot
+            ? { replacementSnapshot: candidate }
+            : { changedPages: candidateChangedPages, brandSystem: candidate.brandSystem }),
           primaryLocale: aggregate.project.primaryLocale,
           now: () => savedAt,
           createSnapshotId: () => createSnapshotId({ savedAt, lineage }),

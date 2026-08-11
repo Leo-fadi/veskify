@@ -1,11 +1,11 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01 through P10B-16 are **Baseline**; P10B-17 and P10B-18
-remain **Planned**.
+**Status:** Binding architecture. P10B-01 through P10B-16 and P10B-16P-01 are **Baseline**;
+P10B-16P-02, P10B-16P-03, P10B-17, and P10B-18 remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 10 August 2026, P10B-14 Premium Editorial complete-storefront vertical slice
+**Baseline:** 11 August 2026, P10B-16P-01 dynamic commerce route archetype authority
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -47,8 +47,11 @@ P10B-11 is Baseline under
 [`P10B_11_COMMERCIAL_PDP_PROFILE_LIBRARY.md`](P10B_11_COMMERCIAL_PDP_PROFILE_LIBRARY.md).
 P10B-12 is Baseline under
 [`P10B_12_CONTENT_AND_SUPPORT_PAGE_FAMILIES.md`](P10B_12_CONTENT_AND_SUPPORT_PAGE_FAMILIES.md).
-P10B is **Partial / active**; P10B-17 and P10B-18 remain Planned. P10B-16 evidence is retained in
-[`P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md`](P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md).
+P10B is **Partial / active**. P10B-16 evidence is retained in
+[`P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md`](P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md),
+and P10B-16P-01 is Baseline under
+[`P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md`](P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md).
+P10B-16P-02, P10B-16P-03, P10B-17, and P10B-18 remain Planned.
 
 ## 2. Storefront and commerce ownership
 
@@ -234,7 +237,7 @@ invent, or own protected commerce.
 - Commerce utility: governed search/no-results, cart, checkout, empty, error, and 404 presentation;
   operational cart, checkout, and payment behavior remains Vesko-owned.
 
-## 8. Site-map and page-family authority
+## 8. Site-map, page-family, and dynamic-route authority
 
 P10B adds a bounded Veskify-owned site-map decision over the existing `PageBlueprint` and
 `StorefrontSnapshot` authorities. It selects a registered page set from approved merchant evidence,
@@ -242,20 +245,36 @@ canonical catalogue shape, supported locales, and required commerce/service surf
 
 The decision must validate unique routes, required shared frame, navigation reachability, page
 family/profile compatibility, locale coverage, canonical commerce context, approved facts,
-optional-page omission, and utility/error coverage. Materialization creates ordinary canonical
-pages inside `StorefrontSnapshot`; the decision is not persisted as a second page graph.
+optional-page omission, and utility/error coverage. Static pages materialize as canonical
+`PageModel`s inside `StorefrontSnapshot`. Concrete collection, search, and product routes do not
+materialize as independent editable design pages: the root snapshot retains their compact route
+inventory and the P10B-16P-01 dynamic presentation authority, and runtime binds each route to a
+maintained collection/search or PDP archetype.
 
-Unknown page families, duplicate or unsafe routes, missing required commerce context, unsupported
-locale combinations, unapproved policy/service content, orphan navigation, and incompatible
-profiles fail before proposal or snapshot mutation.
+The registered `/search` inventory entry and search archetype are presentation authority only.
+Runtime search materialization requires exact transient query/results from a first-class canonical
+search adapter; until P11 supplies that seam, missing search context fails closed and must never be
+replaced by an arbitrary collection.
+
+The binding distinction is route instance ≠ design authority. A route inventory entry owns only
+the concrete URL and canonical collection/product identity. An archetype owns the registered
+PageBlueprint profile, component/anatomy/variant, bounded presentation, responsive and art-
+direction posture, compatible frames, and Design DNA narrowing. Product type and bounded
+collection context map route instances to archetypes. The exact current commerce binding is a
+transient renderer input, not archetype design state.
+
+Unknown page families, duplicate or unsafe routes, missing required commerce context, unresolved
+or stale archetype mappings, protected commerce inside archetype state, unsupported locale
+combinations, unapproved policy/service content, orphan navigation, and incompatible profiles fail
+before proposal or snapshot mutation.
 
 ## 9. Bounded combinatorial storefront synthesis
 
 The synthesis authority selects compatible combinations across:
 
 - Design DNA;
-- site map and page set;
-- `PageBlueprint` profiles;
+- site map, static page set, and dynamic route inventory;
+- static-page and dynamic-archetype `PageBlueprint` profiles;
 - shared-frame family and variants;
 - component anatomies and meaningful variants;
 - bounded structural and visual parameters;
@@ -272,9 +291,11 @@ of manually authored templates.
 ### 9.1 Compatibility sequence
 
 1. Resolve current merchant evidence, catalogue, locale, registry, profile, and asset authority.
-2. Select a supported page set and validate navigation/route completeness.
+2. Select a supported static page set, dynamic route inventory, and archetype mappings; validate
+   navigation/route completeness without creating one design node per commerce URL.
 3. Select one compatible Design DNA and registered direction constraints.
-4. Select a profile for every page and one shared frame for the storefront.
+4. Select a profile for every static page and maintained dynamic archetype, plus one shared frame
+   for the storefront.
 5. Select compatible family anatomies, variants, parameters, and approved assets.
 6. Validate narrative roles, adjacency, omission, cardinality, and cross-page repetition.
 7. Resolve canonical bindings and protected-commerce parity.
@@ -289,8 +310,8 @@ Every synthesized storefront must have a deterministic fingerprint covering enou
 design authority to distinguish structure rather than colour alone:
 
 - Design DNA identity and resolved semantic posture;
-- page set and routes;
-- PageBlueprint profile per page;
+- static page set, dynamic route inventory, and route coverage;
+- PageBlueprint profile per static page and dynamic archetype;
 - shared-frame selection;
 - component family/anatomy/variant selections;
 - structural bounded parameters;
@@ -302,7 +323,9 @@ The fingerprint must support exact duplicate detection, meaningful near-duplicat
 pairwise generated-store comparison, and final scale evidence. A colour-only, font-only, or spacing-
 only difference is not material diversity. Near-duplicate scoring must weight page structure,
 anatomy, merchandising, responsive transformation, and narrative flow more heavily than finishing
-details.
+details. Reusing one archetype across additional concrete product or collection routes does not
+create a materially different design outcome, although route completeness remains part of
+publication validity.
 
 ## 11. Coordinated commercial directions
 
@@ -335,9 +358,14 @@ commercial review. It does not wait for P10B-18 and does not itself complete the
 
 ## 13. Locked implementation sequence
 
-P10B-01 through P10B-16 are **Baseline**. P10B-17 and P10B-18 are **Planned**. Parent tasks
-may use A/B/C slices only when required to keep contract, renderer, profile/generation, or evidence
-PRs reviewable. A parent remains Planned or Partial until every required slice and its evidence passes.
+P10B-01 through P10B-16 and P10B-16P-01 are **Baseline**. P10B-16P-02, P10B-16P-03, P10B-17,
+and P10B-18 are **Planned**. Parent tasks may use A/B/C slices only when required to keep contract,
+renderer, profile/generation, or evidence PRs reviewable. A parent remains Planned or Partial until
+every required slice and its evidence passes.
+
+The P10B-16P-01 → P10B-16P-02 → P10B-16P-03 package is a mandatory sequential convergence between
+P10B-16 and P10B-17. It supplements the locked P10B-01 through P10B-18 inventory without
+renumbering or weakening those tasks.
 
 | Task                                                             | Locked outcome                                                                                                                                                   | Dependency                                                           |
 | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
@@ -357,7 +385,10 @@ PRs reviewable. A parent remains Planned or Partial until every required slice a
 | P10B-14 — Premium Editorial complete-storefront vertical slice   | Prove one commercially credible complete multi-page storefront before broad synthesis/direction expansion.                                                       | Minimum accepted capability from P10B-02 through P10B-13             |
 | P10B-15 — Bounded storefront synthesis and narrative engine      | Generate coherent stores by selecting compatible Design DNA, page set, profiles, variants, parameters, assets, and narrative roles.                              | P10B-14 and sufficient implemented family/profile authority          |
 | P10B-16 — Coordinated directions and diversity control           | Make all three directions coordinated constraint packages and add deterministic duplicate/near-duplicate prevention.                                             | P10B-15                                                              |
-| P10B-17 — Responsive, accessibility and performance closure      | Preserve deliberate hierarchy and usability across four widths, EN/FI, keyboard/accessibility, and bounded performance budgets.                                  | Implemented commercial families/profiles/directions through P10B-16  |
+| P10B-16P-01 — Dynamic commerce route archetype authority         | Separate static pages, maintained collection/search and PDP archetypes, and concrete route inventory inside one `StorefrontSnapshot`.                            | P10B-16 and current P10B-05/P10B-10/P10B-11 authority                |
+| P10B-16P-02 — Prompted design-plan contract                      | Add the separately governed provider-facing design-plan contract over current bounded archetype and synthesis authority.                                         | P10B-16P-01                                                          |
+| P10B-16P-03 — Storefront Studio generation journey               | Complete the separately governed Storefront Studio prompt-to-review generation journey without changing canonical authority.                                     | P10B-16P-02                                                          |
+| P10B-17 — Responsive, accessibility and performance closure      | Preserve deliberate hierarchy and usability across four widths, EN/FI, keyboard/accessibility, and bounded performance budgets.                                  | P10B-16P-03 and implemented commercial families/profiles/directions  |
 | P10B-18 — Commercial quality and scale gate                      | Prove repeated generation of publishable, premium, materially different complete storefronts.                                                                    | P10B-17 and every prior P10B task                                    |
 
 ## 14. Concrete completion contract by task
@@ -548,6 +579,41 @@ keep distinct approved facts where their reading structure is shared.
 - Reject colour-only distinction, fixed-template direction authority, incompatible packages, and
   fingerprint exclusions that hide material structure.
 
+### P10B-16P-01 — Dynamic commerce route archetype authority
+
+- Store static pages separately from a compact, versioned root authority for collection/search
+  and PDP archetypes, product-type/collection mappings, fallbacks, and concrete route inventory.
+- Project archetypes rather than every product/collection URL into Storefront Studio; keep the
+  representative product or collection transient.
+- Resolve preview and published URLs by binding exact current commerce to the selected archetype;
+  preserve the authority through save/reload, history, compiler, immutable publication, and
+  deterministic migration.
+- For legacy whole-storefront proposal compatibility, authorize convergence only through an
+  explicit server-owned, storefront-scoped transition that fingerprints the operation-produced
+  legacy projection and exact reviewed canonical result; reject provider-originated or page-scoped
+  structural transitions.
+- Retain `/search` inventory and its registered archetype while failing closed unless an exact
+  transient canonical query/result projection is supplied; do not fabricate results or bind a
+  collection as a search substitute.
+- Reject protected commerce in design state, unresolved or stale mappings, material legacy-route
+  conflicts, per-product/per-collection design documents, and any second page graph or renderer.
+- Delivered authority is recorded in
+  [`P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md`](P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md).
+
+### P10B-16P-02 — Prompted design-plan contract
+
+- Add a separately reviewed provider-facing contract over the current bounded synthesis,
+  direction, archetype, and route authority.
+- Do not reinterpret route instances as design authorities or let provider output own commerce,
+  page trees, components, styles, or executable code.
+- **Status:** Planned.
+
+### P10B-16P-03 — Storefront Studio generation journey
+
+- Connect the approved prompted design-plan authority to the normal Storefront Studio
+  generation/review journey without creating another snapshot or bypassing proposal governance.
+- **Status:** Planned.
+
 ### P10B-17 — Responsive, accessibility and performance closure
 
 - Prove all implemented page families/directions at 375, 768, 1024, and 1440 px and EN/FI with
@@ -608,6 +674,9 @@ P10B-02…13 minimum accepted capability
   → P10B-14 Premium Editorial complete-storefront slice
   → P10B-15 synthesis/narrative
   → P10B-16 directions/diversity
+  → P10B-16P-01 dynamic commerce route archetypes
+  → P10B-16P-02 prompted design-plan contract
+  → P10B-16P-03 Storefront Studio generation journey
   → P10B-17 responsive/a11y/performance
   → P10B-18 commercial quality and scale
 ```
@@ -639,6 +708,7 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01 through P10B-16 are Baseline under the disjoint ownership constraints in
-section 15. No later implementation task is complete merely because this architecture is approved
-or the completed foundations passed.
+P10B-01 through P10B-16 and P10B-16P-01 are Baseline under the disjoint ownership constraints in
+section 15. P10B-16P-02, P10B-16P-03, P10B-17, and P10B-18 remain Planned. No later
+implementation task is complete merely because this architecture is approved or the completed
+foundations passed.

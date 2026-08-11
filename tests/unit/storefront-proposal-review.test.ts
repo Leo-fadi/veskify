@@ -11,8 +11,10 @@ import {
 import { createStorefrontProposalReview } from "@/app/projects/[projectId]/editor/storefront-proposal-review";
 import { DesignAgentPanel } from "@/app/projects/[projectId]/editor/design-agent-panel";
 import type { DesignAgentSessionController } from "@/app/projects/[projectId]/editor/use-design-agent-session";
+import { migrateLegacyDynamicCommerceRoutes } from "@/application/dynamic-commerce-routes";
 import { aurumNordicSeed } from "@/data/seed";
 import { generateP905aHomepageOnlyScenarioFromBaseline } from "../helpers/p9-05a-generation-harness";
+import { createLegacyDynamicCommerceRouteScenario } from "../fixtures/p10b-16p-01-dynamic-commerce-route-scenarios";
 
 const snapshot = aurumNordicSeed.draftSnapshot;
 let proposal: AiStorefrontProposal;
@@ -106,7 +108,133 @@ function homepageController(): DesignAgentSessionController {
   };
 }
 
+function dynamicCommerceMigrationProposal(): AiStorefrontProposal {
+  const { catalogue, legacySnapshot } = createLegacyDynamicCommerceRouteScenario();
+  const migration = migrateLegacyDynamicCommerceRoutes(legacySnapshot, catalogue);
+  if (migration.status !== "migrated") throw new Error("The review fixture did not migrate.");
+  const operations: AiStorefrontProposal["operations"] = legacySnapshot.pages.map(
+    (page, order) => ({
+      order,
+      target: { kind: "page", pageId: page.id },
+      operation: {
+        type: "APPLY_REGISTERED_PAGE_SECTIONS",
+        sections: structuredClone(page.sections),
+        removedSectionIds: [],
+      },
+    }),
+  );
+  return {
+    ...structuredClone(proposal),
+    projectId: legacySnapshot.projectId,
+    draftSnapshotId: legacySnapshot.id,
+    draftRevision: legacySnapshot.revision,
+    target: {
+      ...structuredClone(proposal.target),
+      scope: "storefront",
+      projectId: legacySnapshot.projectId,
+      draftSnapshotId: legacySnapshot.id,
+      draftRevision: legacySnapshot.revision,
+      affectedPageIds: legacySnapshot.pages.map(({ id }) => id),
+      affectedSectionTargets: [],
+      designSystemTarget: null,
+    },
+    originalStorefront: {
+      pageOrder: legacySnapshot.pages.map(({ id }) => id),
+      pages: structuredClone(legacySnapshot.pages),
+      navigation: structuredClone(legacySnapshot.navigation),
+      brandSystem: structuredClone(legacySnapshot.brandSystem),
+    },
+    proposedStorefront: {
+      pageOrder: migration.snapshot.pages.map(({ id }) => id),
+      pages: structuredClone(migration.snapshot.pages),
+      navigation: structuredClone(migration.snapshot.navigation),
+      brandSystem: structuredClone(migration.snapshot.brandSystem),
+      dynamicCommercePresentation: structuredClone(migration.authority),
+    },
+    affectedPages: structuredClone(legacySnapshot.pages),
+    affectedDesignState: null,
+    operations,
+    dynamicCommerceMigration: {
+      kind: "canonicalDynamicCommerceMigration",
+      contractVersion: "1.0.0",
+      legacyProjectionFingerprint: `v1_1_${"a".repeat(64)}`,
+      resultingProjectionFingerprint: `v1_1_${"b".repeat(64)}`,
+      resultingAuthorityFingerprint: migration.authority.authorityFingerprint,
+    },
+  };
+}
+
 describe("P4-05D storefront proposal review projection", () => {
+  it("reviews legacy route convergence as canonical static pages and reusable archetypes", () => {
+    const migrationProposal = dynamicCommerceMigrationProposal();
+    const migrationAuthority = migrationProposal.proposedStorefront.dynamicCommercePresentation;
+    if (!migrationAuthority) throw new Error("The review fixture has no migration authority.");
+    const review = createStorefrontProposalReview(migrationProposal, "en", "en");
+
+    expect(review.complete).toBe(true);
+    expect(review.blockers).toEqual([]);
+    expect(review.pages).toHaveLength(migrationProposal.proposedStorefront.pages.length);
+    expect(review.affectedPageCount).toBe(
+      migrationProposal.proposedStorefront.pages.length +
+        migrationAuthority.collectionSearchArchetypes.length +
+        migrationAuthority.productDetailArchetypes.length,
+    );
+    expect(review.dynamicCommerceConvergence).toMatchObject({
+      staticPageCount: migrationProposal.proposedStorefront.pages.length,
+      collectionSearchArchetypeCount: 3,
+      productDetailArchetypeCount: 3,
+      archetypeCount: 6,
+      runtimeRouteCount: 20,
+      collectionRouteCount: 9,
+      productRouteCount: 10,
+      searchRouteCount: 1,
+    });
+    expect(review.dynamicCommerceConvergence?.operationIndexes).toHaveLength(20);
+    expect(review.dynamicCommerceConvergence?.summary).toMatch(
+      /20 product, collection, and search route-specific designs converge into 6 reusable design archetypes/i,
+    );
+    expect(review.dynamicCommerceConvergence?.protectedBindingSummary).toMatch(
+      /ordered collection membership.*canonical product media remain protected/i,
+    );
+    expect(review.confirmationBody).toMatch(
+      /route-specific pages converge.*protected Vesko commerce bindings remain unchanged/i,
+    );
+    expect(review.representedOperationIndexes).toEqual(
+      migrationProposal.operations.map((_operation, index) => index),
+    );
+  });
+
+  it("discloses canonical migration counts and protected bindings before acceptance", () => {
+    const migrationProposal = dynamicCommerceMigrationProposal();
+    render(
+      createElement(DesignAgentPanel, {
+        controller: {
+          ...homepageController(),
+          generatedStorefrontProposal: migrationProposal,
+          session: {
+            ...homepageController().session!,
+            affectedSectionIds: migrationProposal.operations.flatMap(({ operation }) =>
+              "sectionId" in operation ? [operation.sectionId] : [],
+            ),
+          },
+          controlledStorefrontAcceptance: true,
+        },
+        locale: "en",
+        primaryLocale: "en",
+        pageTitle: "Homepage",
+        storefrontPageCount: 14,
+      }),
+    );
+
+    const disclosure = screen.getByTestId("dynamic-commerce-migration-review");
+    expect(disclosure).toHaveTextContent("Canonical dynamic-commerce route convergence");
+    expect(disclosure).toHaveTextContent("Static pages13");
+    expect(disclosure).toHaveTextContent("Commerce archetypes6");
+    expect(disclosure).toHaveTextContent("Runtime commerce routes20");
+    expect(disclosure).toHaveTextContent("canonical product media remain protected");
+    expect(screen.getByRole("button", { name: "Accept and apply" })).toBeEnabled();
+  });
+
   it("keeps a controlled imported proposal available for accept or reject only", () => {
     render(
       createElement(DesignAgentPanel, {

@@ -9,7 +9,7 @@ import {
   registeredBrandSystemForDirection,
   storefrontDesignSystemV1,
 } from "@/application/storefront-design-system";
-import { canonicalValueString } from "@/domain/storefront";
+import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 import {
   aiStorefrontContextSchema,
   aiStorefrontReadyProposalSchema,
@@ -122,7 +122,39 @@ function assertProjectionPreservation(
 ) {
   const original = proposal.originalStorefront;
   const proposed = proposal.proposedStorefront;
-  if (canonicalValueString(original.pageOrder) !== canonicalValueString(proposed.pageOrder)) {
+  const migration = proposal.dynamicCommerceMigration;
+  if (migration) {
+    const allOriginalPageIds = [...original.pageOrder].sort((left, right) =>
+      left.localeCompare(right),
+    );
+    if (
+      target.scope !== "storefront" ||
+      target.designSystemTarget === null ||
+      original.dynamicCommercePresentation !== undefined ||
+      proposed.dynamicCommercePresentation === undefined ||
+      canonicalValueString(target.affectedPageIds) !== canonicalValueString(allOriginalPageIds) ||
+      migration.resultingProjectionFingerprint !== canonicalValueFingerprint(proposed) ||
+      migration.resultingAuthorityFingerprint !==
+        proposed.dynamicCommercePresentation.authorityFingerprint
+    ) {
+      invalid(
+        "invalid-dynamic-commerce-migration",
+        "Canonical dynamic-commerce migration requires an exact whole-storefront reviewed transition.",
+      );
+    }
+  } else if (
+    canonicalValueString(original.dynamicCommercePresentation) !==
+    canonicalValueString(proposed.dynamicCommercePresentation)
+  ) {
+    invalid(
+      "unsupported-dynamic-commerce-transition",
+      "Dynamic-commerce authority cannot change without an explicit canonical migration transition.",
+    );
+  }
+  if (
+    !migration &&
+    canonicalValueString(original.pageOrder) !== canonicalValueString(proposed.pageOrder)
+  ) {
     invalid(
       "page-order-mismatch",
       "Storefront proposals cannot add, remove, or reorder pages without a supported operation.",
@@ -130,13 +162,19 @@ function assertProjectionPreservation(
   }
   const originalPageIds = original.pages.map((page) => page.id);
   const proposedPageIds = proposed.pages.map((page) => page.id);
-  if (canonicalValueString(originalPageIds) !== canonicalValueString(proposedPageIds)) {
+  if (
+    !migration &&
+    canonicalValueString(originalPageIds) !== canonicalValueString(proposedPageIds)
+  ) {
     invalid(
       "page-set-mismatch",
       "Storefront proposals must preserve the complete canonical page set.",
     );
   }
-  if (canonicalValueString(original.navigation) !== canonicalValueString(proposed.navigation)) {
+  if (
+    !migration &&
+    canonicalValueString(original.navigation) !== canonicalValueString(proposed.navigation)
+  ) {
     invalid(
       "navigation-mismatch",
       "Navigation cannot change without an explicitly supported operation and grant.",
@@ -293,6 +331,16 @@ function assertProjectionMatchesOperations(
       "proposal-projection-mismatch",
       "Affected design state must match exactly the global design changes derived from validated operations.",
     );
+  }
+  const migration = proposal.dynamicCommerceMigration;
+  if (migration) {
+    if (migration.legacyProjectionFingerprint !== canonicalValueFingerprint(projected)) {
+      invalid(
+        "dynamic-commerce-migration-projection-mismatch",
+        "Canonical dynamic-commerce migration must bind the exact operation-produced legacy storefront.",
+      );
+    }
+    return;
   }
   if (canonicalValueString(projected) !== canonicalValueString(proposal.proposedStorefront)) {
     invalid(

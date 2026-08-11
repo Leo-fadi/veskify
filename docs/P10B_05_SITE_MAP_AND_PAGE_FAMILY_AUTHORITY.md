@@ -150,3 +150,15 @@ P10B-05 does not implement BrandSystem/Design DNA, component anatomy, rich conte
 renderers, operational utility logic, commercial profile diversity, responsive browser evidence,
 or human visual-quality acceptance. Those remain in P10B-02 through P10B-04 and P10B-06 through
 P10B-18. No P10C editor wiring is required or claimed.
+
+## Current P10B-16P-01 convergence
+
+This document retains the P10B-05 delivery evidence for route, family, navigation, and complete
+page-set authority. P10B-16P-01 supersedes only its concrete dynamic-route storage shape: static
+pages remain `PageModel`s, while collection/search/PDP routes now live in a compact route inventory
+and resolve through maintained root archetypes. The P10B-05 site-map validator still owns route
+completeness and navigation; it does not own another page graph. See
+[`P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md`](P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md).
+`/search` inventory and archetype selection do not fill the still-missing canonical search-result
+adapter: runtime search materialization requires exact transient query/result authority and fails
+closed without it.

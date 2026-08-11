@@ -6,6 +6,7 @@ import {
 import type { Locale } from "@/domain/shared";
 import type { BrandSystem } from "@/domain/design-system";
 import type { PageFactEvidenceReference, PageModel, StorefrontSnapshot } from "@/domain/storefront";
+import { validateCurrentDynamicCommercePresentationAuthority } from "@/application/dynamic-commerce-routes";
 import {
   DraftConflictError,
   type ProjectAggregate,
@@ -132,7 +133,7 @@ export function assembleValidatedEditorDraft({
     (replacementSnapshot ? candidate.pages : changedPages).forEach((page) =>
       validateRegisteredPage(page, context),
     );
-    return validateRegisteredSnapshot(
+    const validated = validateRegisteredSnapshot(
       candidate,
       aggregate.catalogue,
       primaryLocale,
@@ -141,6 +142,8 @@ export function assembleValidatedEditorDraft({
       evidenceReferences,
       candidate.contentSupportFactDocuments,
     );
+    validateCurrentDynamicCommercePresentationAuthority(validated);
+    return validated;
   } catch (cause) {
     if (cause instanceof EditorDraftValidationError) throw cause;
     throw new EditorDraftValidationError({ cause });

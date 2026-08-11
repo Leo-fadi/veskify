@@ -90,8 +90,15 @@ export type P10bLiveSynthesisAcceptanceMetadata = Readonly<{
   structuralDiversityFingerprint: string;
   siteMapFingerprint: string;
   snapshotFingerprint: string;
+  /** Total merchant-visible static and runtime-resolved storefront routes. */
   pageCount: number;
+  /** Canonical persisted PageModels. Dynamic commerce routes are not PageModels. */
+  staticDesignPageCount: number;
+  dynamicRouteCount: number;
+  collectionSearchArchetypeCount: number;
+  productDetailArchetypeCount: number;
   pageFamilyCounts: Readonly<Record<string, number>>;
+  dynamicRouteFamilyCounts: Readonly<Record<string, number>>;
   selectedProfileIds: readonly string[];
   protectedCommerce: "unchanged";
   canonicalProductMedia: "unchanged";
@@ -444,14 +451,38 @@ function assertSynchronizedAggregateAuthority(input: {
 }
 
 function pageFamilyCounts(snapshot: StorefrontSnapshot): Record<string, number> {
+  const counts = new Map<string, number>();
+  for (const page of snapshot.pages) {
+    const familyId = page.pageFamily?.familyId ?? page.type;
+    counts.set(familyId, (counts.get(familyId) ?? 0) + 1);
+  }
+  for (const route of snapshot.dynamicCommercePresentation?.routeInventory ?? []) {
+    const familyId =
+      route.kind === "product"
+        ? "product-detail"
+        : route.kind === "search"
+          ? "search-results"
+          : "collection";
+    counts.set(familyId, (counts.get(familyId) ?? 0) + 1);
+  }
   return Object.fromEntries(
-    [...new Set(snapshot.pages.map((page) => page.pageFamily?.familyId ?? page.type))]
-      .sort((left, right) => left.localeCompare(right))
-      .map((familyId) => [
-        familyId,
-        snapshot.pages.filter((page) => (page.pageFamily?.familyId ?? page.type) === familyId)
-          .length,
-      ]),
+    [...counts.entries()].sort(([left], [right]) => left.localeCompare(right)),
+  );
+}
+
+function dynamicRouteFamilyCounts(snapshot: StorefrontSnapshot): Record<string, number> {
+  const counts = new Map<string, number>();
+  for (const route of snapshot.dynamicCommercePresentation?.routeInventory ?? []) {
+    const familyId =
+      route.kind === "product"
+        ? "product-detail"
+        : route.kind === "search"
+          ? "search-results"
+          : "collection";
+    counts.set(familyId, (counts.get(familyId) ?? 0) + 1);
+  }
+  return Object.fromEntries(
+    [...counts.entries()].sort(([left], [right]) => left.localeCompare(right)),
   );
 }
 
@@ -657,15 +688,29 @@ export async function generateP10bLiveSynthesisAcceptance(input: {
         exactDiversityFingerprint: result.diversity.exactFingerprint,
         structuralDiversityFingerprint: result.diversity.structuralFingerprint,
         siteMapFingerprint: materialization.siteMapFingerprint,
-        snapshotFingerprint: materialization.snapshotFingerprint,
-        pageCount: materialization.snapshot.pages.length,
-        pageFamilyCounts: pageFamilyCounts(materialization.snapshot),
+        snapshotFingerprint: canonicalStorefrontContentFingerprint(applied),
+        pageCount:
+          applied.pages.length + (applied.dynamicCommercePresentation?.routeInventory.length ?? 0),
+        staticDesignPageCount: applied.pages.length,
+        dynamicRouteCount: applied.dynamicCommercePresentation?.routeInventory.length ?? 0,
+        collectionSearchArchetypeCount:
+          applied.dynamicCommercePresentation?.collectionSearchArchetypes.length ?? 0,
+        productDetailArchetypeCount:
+          applied.dynamicCommercePresentation?.productDetailArchetypes.length ?? 0,
+        pageFamilyCounts: pageFamilyCounts(applied),
+        dynamicRouteFamilyCounts: dynamicRouteFamilyCounts(applied),
         selectedProfileIds: [
-          ...new Set(
-            materialization.snapshot.pages.flatMap((page) =>
+          ...new Set([
+            ...applied.pages.flatMap((page) =>
               page.pageFamily?.profileId ? [page.pageFamily.profileId] : [],
             ),
-          ),
+            ...(applied.dynamicCommercePresentation?.collectionSearchArchetypes.map(
+              ({ profile }) => profile.profileId,
+            ) ?? []),
+            ...(applied.dynamicCommercePresentation?.productDetailArchetypes.map(
+              ({ profile }) => profile.profileId,
+            ) ?? []),
+          ]),
         ].sort((left, right) => left.localeCompare(right)),
         protectedCommerce: "unchanged",
         canonicalProductMedia: "unchanged",
@@ -674,7 +719,7 @@ export async function generateP10bLiveSynthesisAcceptance(input: {
       };
       current.session.generated = {
         proposal: clone(response.proposal),
-        expectedSnapshot: clone(materialization.snapshot),
+        expectedSnapshot: clone(applied),
         reviewAggregate: clone(stagingAggregate),
         reviewBaselineFingerprint: canonicalStorefrontContentFingerprint(
           materialization.planningInput.draft,

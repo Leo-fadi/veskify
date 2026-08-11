@@ -7,7 +7,11 @@ import {
 } from "@/application/design-operations";
 import { brandSystemSchema } from "@/domain/design-system";
 import { idSchema, localeSchema, localizedTextSchema } from "@/domain/shared";
-import { navigationModelSchema, pageModelSchema } from "@/domain/storefront";
+import {
+  dynamicCommercePresentationAuthoritySchema,
+  navigationModelSchema,
+  pageModelSchema,
+} from "@/domain/storefront";
 import { approvedAssetPlacementOperationSchema } from "@/application/ai-storefront-generation/approved-asset-context";
 
 export const storefrontDesignSystemTargetSchema = z
@@ -111,6 +115,7 @@ export const aiStorefrontProjectionSchema = z
     pages: z.array(pageModelSchema).min(1),
     navigation: navigationModelSchema,
     brandSystem: brandSystemSchema,
+    dynamicCommercePresentation: dynamicCommercePresentationAuthoritySchema.optional(),
   })
   .strict()
   .superRefine((projection, context) => {
@@ -149,6 +154,9 @@ export const aiStorefrontProjectionSchema = z
       });
     }
     const knownPageIds = new Set(pageIds);
+    const knownDynamicRouteIds = new Set(
+      projection.dynamicCommercePresentation?.routeInventory.map(({ id }) => id) ?? [],
+    );
     for (const [area, items] of Object.entries(projection.navigation)) {
       items.forEach((item, index) => {
         if (item.target.type === "page" && !knownPageIds.has(item.target.pageId)) {
@@ -156,6 +164,16 @@ export const aiStorefrontProjectionSchema = z
             code: "custom",
             path: ["navigation", area, index, "target", "pageId"],
             message: "Navigation targets must resolve to a projected page.",
+          });
+        }
+        if (
+          item.target.type === "dynamic-commerce-route" &&
+          !knownDynamicRouteIds.has(item.target.routeId)
+        ) {
+          context.addIssue({
+            code: "custom",
+            path: ["navigation", area, index, "target", "routeId"],
+            message: "Dynamic navigation targets must resolve to the current route inventory.",
           });
         }
       });
@@ -203,6 +221,21 @@ export const aiStorefrontOperationSchema = z
   })
   .strict();
 
+/**
+ * Explicit, replayable authority for converging an operation-produced legacy
+ * dynamic-commerce page set into the canonical compact route root. It is
+ * optional solely for historical proposal compatibility.
+ */
+export const aiStorefrontDynamicCommerceMigrationSchema = z
+  .object({
+    kind: z.literal("canonicalDynamicCommerceMigration"),
+    contractVersion: z.literal("1.0.0"),
+    legacyProjectionFingerprint: z.string().regex(/^v1_\d+_[0-9a-f]{64}$/),
+    resultingProjectionFingerprint: z.string().regex(/^v1_\d+_[0-9a-f]{64}$/),
+    resultingAuthorityFingerprint: z.string().trim().min(1).max(240),
+  })
+  .strict();
+
 export const aiStorefrontProposalSchema = z
   .object({
     id: z.string().regex(/^storefront_proposal_[a-f0-9]{8}$/),
@@ -219,6 +252,7 @@ export const aiStorefrontProposalSchema = z
     targetFingerprint: z.string().startsWith("storefront-target-"),
     permissionFingerprint: z.string().startsWith("storefront-permissions-"),
     operations: z.array(aiStorefrontOperationSchema).min(1),
+    dynamicCommerceMigration: aiStorefrontDynamicCommerceMigrationSchema.optional(),
     assetPlacementOperations: z.array(approvedAssetPlacementOperationSchema).optional(),
     summary: localizedTextSchema,
     validation: proposalValidationResultSchema,
@@ -252,6 +286,9 @@ export type AiStorefrontProjection = z.infer<typeof aiStorefrontProjectionSchema
 export type AiStorefrontContext = z.infer<typeof aiStorefrontContextSchema>;
 export type AiStorefrontOperationTarget = z.infer<typeof aiStorefrontOperationTargetSchema>;
 export type AiStorefrontOperation = z.infer<typeof aiStorefrontOperationSchema>;
+export type AiStorefrontDynamicCommerceMigration = z.infer<
+  typeof aiStorefrontDynamicCommerceMigrationSchema
+>;
 export type AiStorefrontProposal = z.infer<typeof aiStorefrontProposalSchema>;
 export type AiStorefrontReadyProposal = z.infer<typeof aiStorefrontReadyProposalSchema>;
 export type AiStorefrontPermissionGrant = z.infer<typeof aiOperationPermissionGrantSchema>;

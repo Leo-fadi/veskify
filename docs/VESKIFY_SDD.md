@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 10 August 2026, P10B-16 coordinated directions and diversity control |
+| Verified baseline         | 11 August 2026, P10B-16P-01 dynamic commerce route archetype authority |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B-16P-01 | 11 August 2026 | P10B-16P-01 delivery | Separate static design pages, maintained collection/search and PDP archetypes, and concrete commerce route inventory inside one fingerprinted `StorefrontSnapshot`; add deterministic mapping/migration, transient Studio/runtime projections, lifecycle/compiler/publication preservation, and exact route rendering without per-product or per-collection design documents. |
 | 1.3.0 P10B-15 | 10 August 2026 | P10B-15 delivery | Generalize complete-store generation into one versioned deterministic bounded synthesis and cross-page narrative authority with exact evidence, commerce, asset, Design DNA, page/profile/frame/component fingerprints; three complete outcomes; lifecycle publication; browser evidence; and retained human review. |
 | 1.3.0 P10B-16 | 10 August 2026 | P10B-16 delivery | Register Premium Editorial, Modern Technical and Minimal Commerce as versioned narrowing packages; add deterministic direction/diversity fingerprints, duplicate and near-duplicate classification, bounded repetition avoidance, nine representative complete outcomes and retained browser/human evidence. |
 | 1.3.0 P10B-14 | 10 August 2026 | P10B-14 delivery | Prove one 17-route Premium Editorial storefront through current Design DNA, site-map, profile, proposal, snapshot, persistence, publication, canonical renderer, four-width browser and retained human-review authority. |
@@ -82,8 +83,9 @@ commercial shared-frame families, P10B-07 hero/editorial/campaign/proof families
 canonical product-card authority, P10B-09 commercial homepage profiles, and P10B-10 commercial
 collection/search profiles, P10B-11 commercial PDP profiles, P10B-12 content/support page families,
 P10B-13 commerce utility presentation, the P10B-14 Premium Editorial complete-storefront vertical
-slice, the P10B-15 bounded synthesis engine and P10B-16 direction/diversity authority are Baseline. P10B-17 and P10B-18
-remain Planned. The
+slice, the P10B-15 bounded synthesis engine, P10B-16 direction/diversity authority, and
+P10B-16P-01 dynamic commerce route archetype authority are Baseline. P10B-16P-02,
+P10B-16P-03, P10B-17, and P10B-18 remain Planned. The
 current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
@@ -164,7 +166,7 @@ The canonical storefront lifecycle is:
 approved evidence and read-only Vesko commerce
   → Veskify site-map and page-set decision
   → bounded BrandSystem / Design DNA
-  → registered PageBlueprint profile per page
+  → registered PageBlueprint profile per static page or maintained dynamic archetype
   → compatible component family and meaningful structural variant
   → bounded validated parameters
   → approved asset placement and art direction
@@ -223,7 +225,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
-| Commercial storefront generation system              | **Partial**  | P10B-01 through P10B-14 provide the commercial grammar, Design DNA, assets, page/frame/component/profile/utility authorities and first complete 17-route proof; P10B-15 generalizes them into deterministic bounded complete-store synthesis; P10B-16 adds three coordinated constraint packages, structural diversity classification and repetition control with retained lifecycle/browser/human evidence. Phase-wide responsive/performance and 100+ quality/scale closure remain Planned. |
+| Commercial storefront generation system              | **Partial**  | P10B-01 through P10B-14 provide the commercial grammar, Design DNA, assets, page/frame/component/profile/utility authorities and first complete 17-route proof; P10B-15 generalizes them into deterministic bounded complete-store synthesis; P10B-16 adds three coordinated constraint packages, structural diversity classification and repetition control; P10B-16P-01 replaces copied commerce-route design pages with one maintained dynamic-archetype authority. P10B-16P-02, P10B-16P-03, phase-wide responsive/performance, and 100+ quality/scale closure remain Planned. |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
 
@@ -328,6 +330,18 @@ all option groups supplied by canonical commerce, resolve selected variant price
 and media without mutation, handle incomplete and unavailable selections, and retain unknown
 attributes through a safe generic fallback.
 
+Concrete collection, search, and product URLs are runtime route instances, not independently
+editable design authorities. Static pages remain canonical `PageModel`s. Dynamic commerce
+presentation is a versioned, fingerprinted member of the same `StorefrontSnapshot`: it owns a
+small maintained set of collection/search and PDP archetypes plus product-type/collection mappings
+and fallbacks, while a compact route inventory retains only each URL and canonical commerce
+identity. Runtime resolves the current mapping, validates the exact registered profile/frame/
+component authority, and binds current protected commerce into a transient renderer projection.
+
+The `/search` route and archetype are registered presentation authority, but operational search
+materialization still requires an exact transient query/result projection from a first-class
+canonical adapter. Without it, search fails closed and never substitutes a collection.
+
 ### 7.5 Registered `dynamicCollectionCommerce` contract
 
 The registered `dynamicCollectionCommerce` component uses a required, revision-bound
@@ -354,9 +368,12 @@ registered component renders through editor, preview, and published targets.
 
 ### 8.1 Canonical state
 
-`StorefrontSnapshot` contains the editable brand system, shared frame/navigation, pages, sections,
-bindings, presentation references, revisions, and provenance needed by the controlled lifecycle.
-`PageModel` is a member of that aggregate, not a competing canonical graph.
+`StorefrontSnapshot` contains the editable brand system, shared frame/navigation, static pages,
+sections, dynamic commerce presentation authority, bindings, presentation references, revisions,
+and provenance needed by the controlled lifecycle. `PageModel` is a member of that aggregate, not
+a competing canonical graph. A transient dynamic route or editor projection may use the
+`PageModel` renderer contract, but it is derived from an archetype plus exact route commerce and is
+not persisted as another page.
 
 Draft mutation occurs only through validated commands and proposal acceptance. Every operation is
 scoped, reversible where required, and correlated to the current revision. A stale operation must
@@ -422,6 +439,12 @@ write-free and provider-free. It validates component/profile/renderer reachabili
 protected commerce, routes, locales, assets, accessibility, and migrations. Confirmation reloads
 authority and recompiles; any identity drift fails before publication.
 
+For a current dynamic-commerce snapshot, compilation validates every archetype component and
+profile, preserves the exact root authority in the immutable result, and binds its fingerprint into
+compiler authority, migration, receipt, navigation/route, and runtime fingerprints. Older valid
+artifacts may omit the optional authority; a current artifact cannot silently drop it or persist a
+representative editor context.
+
 ### 9.3 Atomic compiled publication and rollback
 
 P10A-08C-02B atomically persists the canonical published snapshot, immutable compiled artifact,
@@ -470,7 +493,8 @@ authorities. The internal commercial design system is one P10B subsystem; the ph
 site map, complete registered page set, navigation composition, bounded storefront synthesis,
 diversity control, responsive presentation, and commercial evidence.
 
-The binding model and locked 18-task sequence live in
+The binding model, locked 18-task sequence, and post-P10B-16 three-stage generation-journey
+correction live in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
 The architecture produces one complete Premium Editorial storefront before broad synthesis and
 direction expansion. P10B-01 is Baseline; its executable contract and evidence are recorded in
@@ -537,11 +561,13 @@ Each family declares its route class, required or optional commerce context, all
 profile references, navigation eligibility, all-enabled-locale coverage, shared-frame requirement,
 approved-fact requirements, omission/fallback policy, and commerce-operation boundary.
 
-One bounded transient site-map decision deterministically materializes the existing canonical
-`StorefrontSnapshot.pages` and `StorefrontSnapshot.navigation`. Each resulting `PageModel` retains
-its exact family/profile/context/locale/shared-frame/evidence reference. There is no persisted site
-map beside the snapshot and no second page graph. Deterministic IDs and a canonical site-map
-fingerprint make repeated materialization stable.
+One bounded transient site-map decision deterministically materializes canonical static
+`StorefrontSnapshot.pages`, `StorefrontSnapshot.navigation`, and the compact dynamic-commerce route
+inventory. Each static `PageModel` retains its exact family/profile/context/locale/shared-frame/
+evidence reference; each dynamic entry retains only its URL and canonical commerce identity while
+the root archetype authority owns presentation. There is no persisted site map beside the snapshot
+and no second page graph. Deterministic IDs and a canonical site-map fingerprint make repeated
+materialization stable.
 
 Validation fails before mutation for unsafe or duplicate routes, missing or duplicate root,
 family/type/route mismatch, reserved namespace conflict, missing/cyclic parents, orphan or missing
@@ -756,6 +782,10 @@ The campaign profile requires approved collection/editorial media and its P10B-0
 canonical product media remains product-owned. A transient search context validates exact canonical
 revision and result IDs; zero results retain the query and emit no fabricated cards. This task does
 not create a search route, pagination authority, collection model, filter engine, or commerce write.
+P10B-16P-01 later registers `/search` in compact route inventory and selects its maintained
+archetype, but a first-class canonical search-result adapter is still absent: runtime search
+materialization requires exact transient query/result authority and otherwise fails closed without
+substituting a collection.
 
 Deterministic coverage proves materialization, planning, proposal/compiler/snapshot preservation,
 all renderer targets, save/reload, publication compilation, canonical fact/media/order guards,
@@ -806,16 +836,17 @@ product media remains protected.
 
 The current site-map, PageBlueprint, whole-storefront proposal, `StorefrontSnapshot`, save/reload,
 deterministic publication and registered render paths preserve the same complete authority. The
-dedicated canonical proof route covers all 17 pages and retains 15 reviewed screenshots across the
+dedicated canonical proof route covers all 17 routes and retains 15 reviewed screenshots across the
 required 375/768/1024/1440 widths. The existing human commercial-review protocol retains a passing
 160-scenario record tied to exact snapshot, manifest, frame, Design DNA, profile, commerce, asset,
 route and component/art-direction fingerprints. See
 [`P10B_14_PREMIUM_EDITORIAL_COMPLETE_STOREFRONT_VERTICAL_SLICE.md`](P10B_14_PREMIUM_EDITORIAL_COMPLETE_STOREFRONT_VERTICAL_SLICE.md).
 
-This establishes one representative complete store. P10B-15 generalizes that convergence path and
-P10B-16 now governs direction/diversity authority; P10B-17 phase-wide
-responsive/accessibility/performance closure and P10B-18 repeated quality-and-scale gate remain
-separate.
+This establishes one representative complete store. P10B-15 generalizes that convergence path,
+P10B-16 governs direction/diversity authority, and P10B-16P-01 preserves the same route coverage
+while converging collection/search/PDP design into maintained root archetypes. P10B-16P-02 and
+P10B-16P-03 remain the prompted-plan and Studio-generation sequence before P10B-17 phase-wide
+responsive/accessibility/performance closure and P10B-18 repeated quality-and-scale gate.
 
 ### 10.16 P10B-15 bounded storefront synthesis and narrative authority
 
@@ -871,7 +902,61 @@ save/reload and compiled publication, protects commerce/evidence/product media, 
 fingerprints. See
 [`P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md`](P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md).
 
-### 10.18 Remaining planned commercial generation authority
+### 10.18 P10B-16P-01 dynamic commerce route archetype authority
+
+P10B-16P-01 corrects the earlier complete-store representation in which each collection and
+product URL became an independently visible/editable `PageModel`. Collection and PDP public-route
+coverage is unchanged; `/search` retains registered route and presentation authority but fails
+closed pending an exact transient result adapter. Route instance and design authority are now
+separate. Static home, content, campaign, policy, and utility pages remain canonical pages.
+Collection/search and PDP design live in one versioned, fingerprinted
+`dynamicCommercePresentation` authority inside the same `StorefrontSnapshot`.
+
+The root authority records a compact collection/product/search route inventory, four maintained
+collection/search archetypes, four maintained PDP profiles plus a generic PDP fallback, exact
+PageBlueprint profile versions/fingerprints, compatible frames, Design DNA narrowing, component/
+anatomy/variant and bounded parameter selections, responsive/art-direction posture,
+collection-route mappings, product-type mappings, bounded matching rules, fallbacks, revision, and
+authority fingerprint. Editable archetype state cannot contain route or membership identities,
+canonical revisions, SKU/price/stock/availability, variant or option structures, or canonical
+product media.
+
+Every known product type maps to one PDP archetype and several product types may reuse one
+archetype. Unknown types use the generic canonical-option fallback. Every collection route has one
+collection-compatible mapping; `/search` retains registered search archetype selection. At runtime
+the exact collection or PDP URL resolves its current route entry and mapping, revalidates current
+profile/frame/component authority, binds exact current protected product or collection commerce,
+and renders through the existing `dynamicProductDetail` or `dynamicCollectionCommerce`
+implementation. Search materialization additionally requires an exact transient query/result
+projection from a first-class canonical search adapter. That adapter is not yet available, so
+search fails closed rather than fabricating results or binding a collection. Catalogue size
+therefore changes route inventory, not editable design cardinality.
+
+Storefront Studio lists static pages and archetypes, not every product and collection URL. A chosen
+representative product or collection is transient view state and is never saved or published.
+Archetype edits update root authority revision/fingerprint. Draft save/reload, history/restore,
+proposal projection, compiler, manual and accepted-AI publication, immutable artifacts, preview,
+and published routes preserve the same authority.
+
+Legacy snapshots remain parseable. Deterministic migration converges compatible concrete commerce
+pages while preserving routes, primary and related-product bindings, profile/variant choices,
+navigation, and static pages.
+Missing identity, unsupported layout, a static child of a dynamic route, materially different
+legacy presentations, or incompatible per-product-type profiles returns a typed explicit-decision
+result instead of choosing or discarding authority. Details are in
+[`P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md`](P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md).
+
+Existing whole-storefront proposal compatibility uses an explicit server-owned canonical
+dynamic-commerce migration transition. It is valid only for whole-storefront scope and binds the
+exact operation-produced legacy projection, reviewed canonical projection, and resulting authority
+fingerprint. Acceptance replays the migration against current catalogue authority and must
+reproduce the reviewed storefront exactly. Provider-originated transitions, page/section scope,
+stale authority, or an unsafe migration fail before acceptance.
+
+P10B-16P-01 is Baseline. P10B-16P-02 owns the separately governed prompted design-plan contract,
+and P10B-16P-03 owns the final Storefront Studio generation journey; both remain Planned.
+
+### 10.19 Remaining planned commercial generation authority
 
 `BrandSystem` owns merchant-wide bounded Design DNA across semantic colour, approved font roles and
 pairing, type scale/weights, spacing and section rhythm, gutters/containers, grid/card/control
@@ -911,7 +996,7 @@ drift, and exact or meaningful near duplicates. A deterministic storefront-desig
 covers structural and non-colour dimensions; hundreds or thousands of outcomes arise from bounded
 combinations, not manually authored templates.
 
-### 10.19 Commercial acceptance
+### 10.20 Commercial acceptance
 
 P10B closes only when at least 100 complete bounded storefront configurations pass deterministic
 validity, protected-state, exact-duplicate, near-duplicate, and structural-distribution analysis,
@@ -1052,7 +1137,8 @@ The binding sequence is:
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
    formal P10A phase closure record.
 2. **P10B — Commercial Storefront Generation System v1.** **Partial / active phase.** P10B-01
-   through P10B-16 are Baseline; P10B-17 and P10B-18 remain Planned.
+   through P10B-16 and P10B-16P-01 are Baseline; P10B-16P-02, P10B-16P-03, P10B-17, and
+   P10B-18 remain Planned.
    Deliver complete commercially credible storefronts with bounded material diversity through
    registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
@@ -1092,12 +1178,16 @@ The following are compatibility-only or superseded authorities and must not guid
 - browser-owned publication methods or browser-created accepted-AI authority;
 - raw Puck persistence or Puck-shaped canonical page state;
 - independently executable recipe, template, direction, or storefront-plan representations;
+- concrete collection/search/PDP `PageModel`s used as current design authority instead of the
+  root dynamic-commerce archetype contract;
 - legacy product-card implementations duplicated outside the canonical commercial family;
 - v1.2.2 phase descriptions that keep Phase 9 active or assign merchant editing outside P10C.
 
 Migration must preserve canonical IDs, bindings, commerce truth, snapshot history, and published
 authority. An unresolved migration blocks compilation or rendering rather than silently dropping
-content or selecting a fallback variant.
+content or selecting a fallback variant. Legacy concrete commerce-route pages remain loadable,
+but convergence to root archetypes requires deterministic equality; materially different route
+presentations require an explicit typed migration decision.
 
 ## 17. Explicit current non-claims
 
@@ -1112,6 +1202,8 @@ Version 1.3.0 does not claim:
 - that Vesko staging or production evidence exists;
 - that authentication, tenancy, observability, deployment, and operations are production complete;
 - that P10D advanced media is required for the first commercial storefront or pilot;
+- that the P10B-16P-02 prompted design-plan contract or P10B-16P-03 final Storefront Studio
+  generation journey is implemented;
 - that archived v1.2.2 prose describes current implementation or phase status.
 
 ## Appendix A — Authoritative requirement and acceptance traceability
@@ -1143,8 +1235,8 @@ binding document depends on the outcome as a current delivery gate. Pre-consolid
 | **FR-108** | Functional requirement | AI design changes MUST use controlled proposals, approved skills, structured operations, target-bound permissions, validation, and merchant review before draft mutation. | §6; P10A internal authority and P10C merchant operation | **Retained unchanged** | ADR-002; proposal lifecycle tests |
 | **FR-109** | Functional requirement | The component platform MUST provide reusable ComponentDefinitionV2 families, variants, slots, bindings, PageBlueprints/profiles, migrations, and shared editor/preview/published renderers. | §§4.2, 7; P10A/P10B/P10C | **Clarified** | Component registry; generated manifest; P10B audit |
 | **FR-110** | Functional requirement | Storefront components MUST bind to a canonical read-only Vesko commerce projection and MUST NOT create a competing product, product-type, option, variant, or catalogue model. | §§3.3, 7.4, 12; all phases and P11 | **Retained unchanged** | ADR-004; protected-commerce regressions |
-| **FR-111** | Functional requirement | Dynamic product-detail pages MUST render option groups, dependencies, required states, variant resolution, media, price, and availability from canonical product configuration. | §7.4; P10B/P10C | **Retained unchanged** | ADR-004; PDP materialization and renderer tests |
-| **FR-112** | Functional requirement | Collection-page presentation MUST bind collection headers, filters, product grids, merchandising rows, and no-results states to canonical collection/product data without changing membership or commerce truth. | §7.4; P10B/P10C | **Retained unchanged** | Collection materialization and renderer tests |
+| **FR-111** | Functional requirement | Dynamic product-detail routes MUST select one maintained PDP archetype through governed product-type/complexity mapping and render option groups, dependencies, required states, variant resolution, media, price, and availability from canonical product configuration without one design document per product. | §§7.4, 10.18; P10B/P10C | **Clarified** | ADR-004; dynamic-route/PDP materialization and renderer tests |
+| **FR-112** | Functional requirement | Dynamic collection/search routes MUST select one maintained archetype through governed mapping and bind collection headers, filters, product grids, merchandising rows, and no-results states to canonical collection/product data without changing membership or commerce truth; search MUST require exact transient query/result authority and fail closed when its canonical adapter is unavailable. | §§7.4, 10.18; P10B/P10C/P11 | **Clarified** | Dynamic-route/collection materialization, search fail-closed, and renderer tests |
 | **FR-113** | Functional requirement | Whole-storefront design changes MUST coordinate global tokens, navigation, footer, and representative pages through one validated proposal and atomic application/undo path. | §§6, 8–9; P10A/P10C | **Retained unchanged** | Governed proposal compiler and lifecycle tests |
 | **FR-114** | Functional requirement | Generated and edited storefronts MUST meet responsive and accessibility quality requirements across onboarding, storefront output, Storefront Studio, proposal review, dynamic PDP, collection, and publishing surfaces. | §§7.4, 10–11, 14; P10B/P10C | **Clarified** | Responsive/accessibility gates; P10B human review |
 | **FR-115** | Functional requirement | Draft acceptance, history, Save draft, Publish, and Restore MUST remain separate: accepted changes mutate the active draft only, Save persists draft only, Publish requires explicit confirmation and authoritative compilation, and Restore creates a draft. | §§8–9; P10A/P10C/P11 | **Clarified** | Draft/history tests; publishing gateway/compiler authority |
@@ -1181,16 +1273,16 @@ binding document depends on the outcome as a current delivery gate. Pre-consolid
 | **AC-102** | Acceptance criterion | Discovered website prices, stock, and variant values never replace canonical Vesko commerce data. | §§3.3, 12; all phases | **Retained unchanged** | ADR-003/004; protected-commerce tests |
 | **AC-103** | Acceptance criterion | A merchant with only a logo, business description, and canonical catalogue can approve a coherent Storefront Design Brief. | §§3.1, 5; retained baseline | **Retained unchanged** | Brief contracts and onboarding evidence |
 | **AC-104** | Acceptance criterion | The brief lists reused assets, missing assets, page plan, assumptions, and protected commerce source. | §§3.1, 5; retained baseline | **Retained unchanged** | Brief/schema and asset evidence |
-| **AC-105** | Acceptance criterion | Initial generation creates a coherent homepage, collection page, and dynamic product page using registered components and bindings. | §§5–7; P10A internal authority/P10B quality | **Clarified** | Governed generation and materialization tests; ADR-004 |
+| **AC-105** | Acceptance criterion | Initial generation creates a coherent homepage plus complete collection/search and PDP route coverage using registered static-page and dynamic-archetype components and bindings. | §§5–7, 10.18; P10A internal authority/P10B quality | **Clarified** | Governed generation, route-archetype, and materialization tests; ADR-004 |
 | **AC-106** | Acceptance criterion | A watch with one colour dimension renders only the relevant compact selector and technical attributes. | §7.4; retained baseline/P10B | **Retained unchanged** | ADR-004; PDP renderer tests |
 | **AC-107** | Acceptance criterion | A ring with five or six configured dimensions/options renders every required group, dependencies, unavailable states, and completion guidance. | §7.4; retained baseline/P10B | **Retained unchanged** | ADR-004; configurable PDP tests |
 | **AC-108** | Acceptance criterion | Changing PDP layout or selector style does not change canonical option values, variants, prices, stock, or SKUs. | §§3.3, 7.4; all phases | **Retained unchanged** | Protected-commerce and binding tests |
 | **AC-109** | Acceptance criterion | The selected canonical variant controls displayed price, availability, and variant media through the resolver adapter. | §7.4; retained baseline/P11 adapter | **Retained unchanged** | Variant resolver and media tests |
-| **AC-110** | Acceptance criterion | Unknown product types render with a generic dynamic fallback without dropping available attributes or options. | §7.4; retained baseline/P10B | **Retained unchanged** | ADR-004; unknown-type fallback tests |
+| **AC-110** | Acceptance criterion | Unknown product types resolve through the governed generic PDP archetype and render without dropping available attributes or options. | §§7.4, 10.18; retained baseline/P10B | **Clarified** | ADR-004; dynamic-route unknown-type fallback tests |
 | **AC-111** | Acceptance criterion | Product cards render valid price, compare-at-price, or explicit unavailable-price state without inventing a value. | §§3.3, 7.4; P10B | **Retained unchanged** | Product-card and commerce-binding tests |
 | **AC-112** | Acceptance criterion | The same registered component implementations render in editor, preview, and published routes. | §§4.2, 7.4; P10B/P10C | **Retained unchanged** | Registry renderer identity and route tests |
 | **AC-113** | Acceptance criterion | A merchant can request an exact valid brand palette and receive a validated token proposal rather than a generic unsupported failure. | §§6, 7.3; P10A/P10C | **Retained unchanged** | Brand-token proposal tests |
-| **AC-114** | Acceptance criterion | Whole-storefront restyling coordinates global tokens, navigation, footer, homepage, collection, and representative product pages atomically. | §§6, 8; P10A/P10C | **Retained unchanged** | Whole-storefront compiler/lifecycle tests |
+| **AC-114** | Acceptance criterion | Whole-storefront restyling coordinates global tokens, navigation, footer, static pages, and maintained collection/search and PDP archetypes atomically; representative route contexts remain transient. | §§6, 8, 10.18; P10A/P10B/P10C | **Clarified** | Whole-storefront compiler/lifecycle and dynamic-route editor tests |
 | **AC-115** | Acceptance criterion | A failed provider call, invalid operation, or stale commerce revision preserves the active draft and history. | §§6, 8, 14.2; P10A/P10C | **Retained unchanged** | Failure, validation, and stale-context tests |
 | **AC-116** | Acceptance criterion | Accepted whole-storefront changes undo and redo as one complete transaction. | §8; P10A/P10C | **Retained unchanged** | Atomic proposal lifecycle tests |
 | **AC-117** | Acceptance criterion | Generated storefronts contain no seed-brand or fixture-specific copy unrelated to the selected merchant. | §§3.1, 6; P10A/P10B | **Retained unchanged** | Generation regressions and human review |
@@ -1209,7 +1301,7 @@ binding document depends on the outcome as a current delivery gate. Pre-consolid
 | **AC-130** | Acceptance criterion | Unknown, stale, incompatible, or schema-invalid component, variant, binding, PageBlueprint/profile, and skill references are rejected before a proposal can classify them as reachable or mutate a draft. | §§6–7; P10A | **Clarified** | Manifest/router/compiler fail-closed tests |
 | **AC-131** | Acceptance criterion | Initial storefront generation and follow-up editing have separately identified governed package contracts with separate schemas, declared authority, quality gates, and evidence; merchant-operable execution belongs to P10C. | §6.2; P10A internal authority/P10C merchant operation | **Clarified** | P10A package contracts and integration tests |
 | **AC-132** | Acceptance criterion | Scope classification and strict routing reject any plan whose declared authority silently widens beyond selected section, page, shared frame, design system, or whole-storefront scope; merchant controls and clarification belong to P10C. | §6.2; P10A internal authority/P10C merchant operation | **Clarified** | Strict-router tests; P10A/P10C boundary |
-| **AC-133** | Acceptance criterion | Every executable PageBlueprint compiles through controlled operations into the same canonical `StorefrontSnapshot` used by editor, preview, save, history, and publish. | §§4.1, 7–9; P10A | **Retained unchanged** | Proposal compiler and canonical lifecycle tests |
+| **AC-133** | Acceptance criterion | Every executable static-page or dynamic-archetype PageBlueprint compiles through controlled operations into the same canonical `StorefrontSnapshot` used by editor, preview, save, history, and publish; concrete commerce route projections remain transient. | §§4.1, 7–10; P10A/P10B | **Clarified** | Proposal compiler, dynamic-route, and canonical lifecycle tests |
 | **AC-134** | Acceptance criterion | Golden-store evaluation proves grounded composition, canonical-commerce preservation, accessibility, and responsive functional quality across representative catalogue shapes and at least one non-jewellery merchant; commercial visual acceptance remains P10B. | §§10, 13; P10A functional gate/P10B visual gate | **Clarified** | Golden-store evaluation; human review protocol |
 | **AC-135** | Acceptance criterion | Publication deterministically validates and compiles the authorized accepted `StorefrontSnapshot` without an AI call, provider payload, or provider-owned page graph at publish time. | §9; P10A | **Clarified** | Publish compiler/gateway authority and zero-provider tests |
 | **AC-136** | Acceptance criterion | Proposal and PageBlueprint validation accept only registered profiles, compatible families/variants, permitted slots/order/bindings/assets, and typed parameters within registered bounds; arbitrary trees, raw CSS/classes, executable code, unrestricted font imports, and out-of-contract values are rejected before acceptance. | §§6.3, 7, 10; P10B on P10A authority | **Clarified** | P10B audit; manifest and validation gates |

@@ -24,9 +24,13 @@ function navigationHref(
   item: StorefrontRenderContext["navigation"]["primary"][number],
   context: StorefrontRenderContext,
 ) {
-  return item.target.type === "external"
-    ? item.target.url
-    : (context.pagePaths[item.target.pageId] ?? "#");
+  if (item.target.type === "external") return item.target.url;
+  if (item.target.type === "page") return context.pagePaths[item.target.pageId] ?? "#";
+  const routeId = item.target.routeId;
+  const route = context.dynamicCommercePresentation?.routeInventory.find(
+    ({ id }) => id === routeId,
+  );
+  return route?.kind === "search" ? undefined : (context.pagePaths[routeId] ?? "#");
 }
 
 function fallbackByHeader(variant: HeaderVariant): CommercialSharedFrameProfile {
@@ -134,13 +138,16 @@ function PrimaryNavigation({
   return (
     <nav aria-label={label} data-frame-region="primary-navigation">
       <ul>
-        {context.navigation.primary.map((item) => (
-          <li key={item.id}>
-            <a href={navigationHref(item, context)} onClick={onNavigate}>
-              {localized(item.label, context)}
-            </a>
-          </li>
-        ))}
+        {context.navigation.primary.map((item) => {
+          const href = navigationHref(item, context);
+          return href ? (
+            <li key={item.id}>
+              <a href={href} onClick={onNavigate}>
+                {localized(item.label, context)}
+              </a>
+            </li>
+          ) : null;
+        })}
       </ul>
     </nav>
   );
@@ -221,11 +228,14 @@ export function CommercialStoreHeader({
           className={styles.serviceStrip}
           data-frame-region="service-strip"
         >
-          {context.navigation.footer.slice(0, 3).map((item) => (
-            <a href={navigationHref(item, context)} key={item.id}>
-              {localized(item.label, context)}
-            </a>
-          ))}
+          {context.navigation.footer.slice(0, 3).map((item) => {
+            const href = navigationHref(item, context);
+            return href ? (
+              <a href={href} key={item.id}>
+                {localized(item.label, context)}
+              </a>
+            ) : null;
+          })}
         </nav>
       ) : null}
       <div className={styles.desktopFrame} data-desktop-composition={profile.desktopComposition}>
@@ -300,11 +310,14 @@ function NavigationList({
 }) {
   return (
     <ul>
-      {items.map((item) => (
-        <li key={item.id}>
-          <a href={navigationHref(item, context)}>{localized(item.label, context)}</a>
-        </li>
-      ))}
+      {items.map((item) => {
+        const href = navigationHref(item, context);
+        return href ? (
+          <li key={item.id}>
+            <a href={href}>{localized(item.label, context)}</a>
+          </li>
+        ) : null;
+      })}
     </ul>
   );
 }

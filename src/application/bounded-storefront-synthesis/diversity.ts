@@ -53,6 +53,19 @@ function structuralDesignDna(designDna: DesignDna) {
   return structural;
 }
 
+function designScopePageSet(
+  decision: BoundedStorefrontSynthesisDecision,
+): StorefrontDiversityMaterial["pageSet"] {
+  // Concrete collection/product route cardinality is commerce inventory, not
+  // design diversity. pageProfileSelections is the canonical synthesis view
+  // of static page scopes plus deduplicated dynamic archetype scopes.
+  return [
+    ...new Set(
+      decision.pageProfileSelections.map(({ pageKey, familyId }) => `${familyId}:${pageKey}`),
+    ),
+  ].sort((left, right) => left.localeCompare(right));
+}
+
 export function createStorefrontDiversityFingerprintFromMaterial(
   material: StorefrontDiversityMaterial,
 ): StorefrontDiversityFingerprint {
@@ -95,7 +108,7 @@ export function storefrontDiversityMaterialFromDecision(input: {
       authorityFingerprint: input.direction.authorityFingerprint,
     },
     designDna: structuredClone(input.designDna),
-    pageSet: [...input.decision.siteMap.pageKeys],
+    pageSet: designScopePageSet(input.decision),
     pageProfiles: input.decision.pageProfileSelections.map(
       ({ pageKey, familyId, profileId, profileVersion }) => ({
         pageKey,
