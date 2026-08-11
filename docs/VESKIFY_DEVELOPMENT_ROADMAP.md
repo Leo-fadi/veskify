@@ -2,7 +2,7 @@
 
 **Version:** 1.3.0
 
-**Baseline:** 11 August 2026, P10B-16P-01 dynamic commerce route archetype authority
+**Baseline:** 11 August 2026, P10B-16P-02A prompted Storefront Design Intent V2 authority
 
 **Active development phase:** P10B — Commercial Storefront Generation System v1 (**Partial**)
 
@@ -51,24 +51,24 @@ phase; each remaining task stays Planned until implemented and evidenced.
 The binding architecture, coverage targets, concrete Done conditions, synthesis/fingerprint model,
 and parallelization rules live in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B is **Partial / active**. P10B-01 through P10B-16 and P10B-16P-01 are Baseline;
-P10B-16P-02, P10B-16P-03, P10B-17, and P10B-18 remain **Planned**.
-The original locked P10B-01 through P10B-18 sequence remains intact. P10B-16P-01 through
-P10B-16P-03 are a mandatory sequential convergence package between P10B-16 and P10B-17; a slice
-does not renumber or independently complete the parent phase.
+P10B is **Partial / active**. P10B-01 through P10B-16, P10B-16P-01, and P10B-16P-02A are
+Baseline. P10B-16P-02 is **Partial**; P10B-16P-02B, P10B-16P-03, P10B-16P-04, P10B-17, and
+P10B-18 remain **Planned**. The original locked P10B-01 through P10B-18 sequence remains intact.
+P10B-16P-01 through P10B-16P-04 are a mandatory sequential convergence package between P10B-16
+and P10B-17; a slice does not renumber or independently complete the parent phase.
 
 ### 3.1 Dependency waves
 
-| Wave                           | Planned work                                         | Gate                                                                                                                 |
-| ------------------------------ | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| 1 — Grammar                    | P10B-01 (**Baseline**)                               | Existing authorities have executable vocabulary; no visual implementation claim.                                     |
-| 2 — Parallel foundations       | P10B-02, P10B-03, P10B-05 (**Baseline**)             | Disjoint ownership of BrandSystem, component anatomy, and page-set/PageBlueprint authority.                          |
-| 3 — Art direction and families | P10B-04, P10B-06, P10B-07, P10B-08 (**Baseline**)    | Real registered frame/content/merchandising authority reaches renderers.                                             |
-| 4 — Page profiles              | P10B-09 through P10B-13 (**Baseline**)               | Complete home, commerce, content/support, and utility page coverage.                                                 |
-| 5 — Early complete store       | P10B-14 (**Baseline**)                               | One credible Premium Editorial multi-page storefront passes retained human review.                                   |
-| 6 — Synthesis and diversity    | P10B-15, P10B-16 (**Baseline**)                      | Bounded synthesis, three coordinated direction packages and deterministic duplicate/near-duplicate control are live. |
-| 6P — Generation convergence    | P10B-16P-01 (**Baseline**), P10B-16P-02, P10B-16P-03 | Route instances no longer own design; then the prompted plan and final Studio generation journey close sequentially. |
-| 7 — Closure                    | P10B-17, P10B-18                                     | Responsive/a11y/performance and 100+ configuration quality/diversity gates pass.                                     |
+| Wave                           | Planned work                                                                        | Gate                                                                                                                                                |
+| ------------------------------ | ----------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 — Grammar                    | P10B-01 (**Baseline**)                                                              | Existing authorities have executable vocabulary; no visual implementation claim.                                                                    |
+| 2 — Parallel foundations       | P10B-02, P10B-03, P10B-05 (**Baseline**)                                            | Disjoint ownership of BrandSystem, component anatomy, and page-set/PageBlueprint authority.                                                         |
+| 3 — Art direction and families | P10B-04, P10B-06, P10B-07, P10B-08 (**Baseline**)                                   | Real registered frame/content/merchandising authority reaches renderers.                                                                            |
+| 4 — Page profiles              | P10B-09 through P10B-13 (**Baseline**)                                              | Complete home, commerce, content/support, and utility page coverage.                                                                                |
+| 5 — Early complete store       | P10B-14 (**Baseline**)                                                              | One credible Premium Editorial multi-page storefront passes retained human review.                                                                  |
+| 6 — Synthesis and diversity    | P10B-15, P10B-16 (**Baseline**)                                                     | Bounded synthesis, three coordinated direction packages and deterministic duplicate/near-duplicate control are live.                                |
+| 6P — Generation convergence    | P10B-16P-01 and P10B-16P-02A (**Baseline**); P10B-16P-02B, P10B-16P-03, P10B-16P-04 | Route instances no longer own design; strict transient intent, deterministic compilation, Studio wiring, and live V2 acceptance close sequentially. |
+| 7 — Closure                    | P10B-17, P10B-18                                                                    | Responsive/a11y/performance and 100+ configuration quality/diversity gates pass.                                                                    |
 
 ### 3.2 Locked tasks
 
@@ -91,20 +91,23 @@ does not renumber or independently complete the parent phase.
 | P10B-15 — Bounded storefront synthesis and narrative engine      | Generate coherent complete stores from compatible Design DNA, page set, profiles, variants, parameters, assets, and narrative roles.          | **Baseline** | P10B-14 and sufficient real family/profile authority            | Storefront generation                | Versioned deterministic authority; 25-case matrix; three complete 17-route outcomes; lifecycle publication; four-width browser and 480-scenario retained human review       | Arbitrary trees/styles, best-effort mutation, or P10B-16 diversity control                   |
 | P10B-16 — Coordinated directions and diversity control           | Make the three directions constraint packages and add deterministic duplicate/near-duplicate prevention.                                      | **Baseline** | P10B-15                                                         | Direction selection and evaluation   | Three versioned packages; nine complete outcomes; structural fingerprint/classification; repetition control; 31 focused cases; four-width browser and retained human review | Fixed templates, aesthetic AI scoring, 100+ scale gate or colour-only diversity              |
 | P10B-16P-01 — Dynamic commerce route archetype authority         | Separate static design pages, maintained collection/search and PDP archetypes, and concrete runtime route inventory in one snapshot.          | **Baseline** | P10B-16 and P10B-05/P10B-10/P10B-11 authority                   | Storefront domain and runtime routes | Versioned/fingerprinted authority; deterministic mapping/migration; Studio projection; lifecycle/compiler/publication; exact route and browser evidence                     | One design page per product/collection, provider-plan changes, or individual route overrides |
-| P10B-16P-02 — Prompted design-plan contract                      | Add the governed provider-facing design-plan contract over current bounded synthesis and archetype authority.                                 | **Planned**  | P10B-16P-01                                                     | Provider and design-plan authority   | Contract, strict validation, stale/no-partial rejection, deterministic mock and separately authorized provider evidence                                                     | Provider-owned page graph, commerce, code, or final Studio journey                           |
-| P10B-16P-03 — Storefront Studio generation journey               | Complete the normal prompt-to-review storefront generation journey through existing proposal and snapshot authority.                          | **Planned**  | P10B-16P-02                                                     | Storefront Studio and generation     | Merchant-language integration, browser/E2E, proposal lifecycle, save/publish boundary and retained review                                                                   | New snapshot, bypassed review, or P10C general editing                                       |
-| P10B-17 — Responsive, accessibility and performance closure      | Preserve deliberate hierarchy and usability across 375/768/1024/1440, EN/FI, accessibility, and bounded budgets.                              | **Planned**  | P10B-16P-03 and implemented families/profiles/directions        | Design system and QA                 | Correlated geometry/a11y/performance/browser/human evidence                                                                                                                 | Desktop-only acceptance                                                                      |
+| P10B-16P-02 — Prompted design-plan contract                      | Establish strict transient provider design intent, then compile it deterministically through current authority.                               | **Partial**  | P10B-16P-01                                                     | Provider and design-plan authority   | Part A strict contract/mock evidence; Part B compiler, stale/no-partial and lifecycle evidence                                                                              | Provider-owned page graph, commerce, code, or final Studio journey                           |
+| P10B-16P-02A — Prompted Storefront Design Intent V2              | Project current capability safely and accept one strict non-executable preference-rich provider intent without pre-provider materialization.  | **Baseline** | P10B-16P-01                                                     | Provider contract and adapter        | Strict schema/reference/fingerprint/failure tests, mocked OpenAI transport, dependency boundary                                                                             | Deterministic intent compilation, proposal/snapshot creation, live provider acceptance       |
+| P10B-16P-02B — Deterministic design-intent compiler              | Compile refreshed V2 preferences into exact registered compatible selections and the existing canonical synthesis/proposal path.              | **Planned**  | P10B-16P-02A                                                    | Design-plan compiler                 | Deterministic resolution, stale/incompatible/no-partial rejection, lifecycle preservation                                                                                   | Provider-owned materialization or Studio UX                                                  |
+| P10B-16P-03 — Storefront Studio generation journey               | Complete the normal prompt-to-review storefront generation journey through existing proposal and snapshot authority.                          | **Planned**  | P10B-16P-02B                                                    | Storefront Studio and generation     | Merchant-language integration, browser/E2E, proposal lifecycle, save/publish boundary and retained review                                                                   | New snapshot, bypassed review, or P10C general editing                                       |
+| P10B-16P-04 — Live V2 acceptance and bridge disposition          | Prove the prompt-driven V2 path with separately authorized real-provider evidence and decide the P10B-16L compatibility bridge disposition.   | **Planned**  | P10B-16P-03                                                     | Provider acceptance and architecture | Safe real-provider evidence, no pre-provider materialization, full proposal lifecycle, explicit bridge disposition                                                          | Automatic provider calls or treating preset selection as V2 evidence                         |
+| P10B-17 — Responsive, accessibility and performance closure      | Preserve deliberate hierarchy and usability across 375/768/1024/1440, EN/FI, accessibility, and bounded budgets.                              | **Planned**  | P10B-16P-04 and implemented families/profiles/directions        | Design system and QA                 | Correlated geometry/a11y/performance/browser/human evidence                                                                                                                 | Desktop-only acceptance                                                                      |
 | P10B-18 — Commercial quality and scale gate                      | Prove repeated generation of publishable, premium, materially different complete storefronts.                                                 | **Planned**  | P10B-17 and all prior P10B tasks                                | Product owner, generation, QA        | 100+ deterministic complete configurations plus fingerprint-stratified retained human review                                                                                | Closure from one store, tests, screenshots, counts, or placeholders alone                    |
 
 ### 3.3 Slicing and concurrency
 
 Use A/B/C slices only for necessary contract/anatomy, renderer/variant, or
 PageBlueprint/generation/evidence separation. A parent is not complete until all required slices
-and evidence pass. With P10B-01 through P10B-16 and P10B-16P-01 Baseline, their disjoint authority
-ownership remains defined by the architecture lock. Shared schema exports, registry
-indexes, migrations, manifests, direction/synthesis/dynamic-route authority, and renderer
-boundaries require one integration owner and cannot be edited concurrently. P10B-16P-02 and
-P10B-16P-03 remain sequential dependencies before P10B-17.
+and evidence pass. With P10B-01 through P10B-16, P10B-16P-01, and P10B-16P-02A Baseline, their
+disjoint authority ownership remains defined by the architecture lock. Shared schema exports,
+registry indexes, migrations, manifests, direction/synthesis/dynamic-route authority, and renderer
+boundaries require one integration owner and cannot be edited concurrently. P10B-16P-02B,
+P10B-16P-03, and P10B-16P-04 remain sequential dependencies before P10B-17.
 
 ## 4. P10C — Storefront Studio Editing Experience v1
 

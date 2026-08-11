@@ -17,9 +17,11 @@ import {
   type OpenAiResponsesTransport,
 } from "./contract";
 import { buildOpenAiProviderInput, openAiProviderInstructions } from "./prompt";
+import { mapOpenAiFailure } from "./failure-classification";
+import { defaultOpenAiModel, defaultOpenAiTimeoutMs } from "./provider-defaults";
 
-export const defaultOpenAiModel = "gpt-5.6-sol";
-export const defaultOpenAiTimeoutMs = 30_000;
+export { mapOpenAiFailure } from "./failure-classification";
+export { defaultOpenAiModel, defaultOpenAiTimeoutMs } from "./provider-defaults";
 const providerId = "openai" as const;
 
 const rawOpenAiResponseSchema = {
@@ -60,36 +62,6 @@ function safeUsage(response: Record<string, unknown>) {
     outputTokens: numberOrUndefined(usage.output_tokens),
     totalTokens: numberOrUndefined(usage.total_tokens),
   };
-}
-
-function errorIdentity(error: unknown) {
-  if (!isRecord(error)) return { name: "", status: undefined, code: undefined };
-  return {
-    name: typeof error.name === "string" ? error.name : "",
-    status: typeof error.status === "number" ? error.status : undefined,
-    code: typeof error.code === "string" ? error.code : undefined,
-  };
-}
-
-export function mapOpenAiFailure(error: unknown, signal?: AbortSignal): AiProviderFailureCategory {
-  if (signal?.aborted) return "cancelled";
-  const { name, status, code } = errorIdentity(error);
-  if (name === "APIUserAbortError" || name === "AbortError") return "cancelled";
-  if (name === "APIConnectionTimeoutError") return "timeout";
-  if (name === "AuthenticationError" || status === 401 || status === 403) {
-    return "authenticationFailed";
-  }
-  if (name === "RateLimitError" || status === 429) return "rateLimited";
-  if (
-    name === "NotFoundError" ||
-    status === 404 ||
-    code === "model_not_found" ||
-    code === "invalid_model"
-  ) {
-    return "unavailableModel";
-  }
-  if (name === "APIConnectionError" || name === "TypeError") return "networkFailure";
-  return "unexpectedProviderFailure";
 }
 
 function safeProviderError(category: AiProviderFailureCategory) {

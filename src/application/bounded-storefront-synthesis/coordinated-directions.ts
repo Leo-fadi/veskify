@@ -4,6 +4,7 @@ import {
   getCommercialHomepageProfile,
   getCommercialPdpProfile,
   getExecutablePageBlueprintProfile,
+  resolveCommercialHomepageEvidenceAvailability,
   resolveCommercialHomepageProfileSlots,
 } from "@/application/storefront-templates";
 import { resolveBrandSystemDesignDna, type DesignDna } from "@/domain/design-system";
@@ -225,16 +226,15 @@ function candidateHasSupportedAssetPosture(
   const homepage = getCommercialHomepageProfile(candidate.homepageProfileId);
   if (!homepage) return false;
   try {
-    resolveCommercialHomepageProfileSlots(candidate.homepageProfileId, {
-      canonicalCommerce:
-        input.planningInput.catalogue.products.length > 0 &&
-        input.planningInput.catalogue.collections.length > 0,
+    const homepageEvidence = resolveCommercialHomepageEvidenceAvailability({
       canonicalProductCount: input.planningInput.catalogue.products.length,
       canonicalCollectionCount: input.planningInput.catalogue.collections.length,
-      approvedMerchantEvidence:
-        input.planningInput.brief.businessIdentity.shortDescription.trim().length > 0 &&
-        input.planningInput.brief.approval.status === "approved" &&
-        input.planningInput.brief.approvedEvidenceFingerprint !== null,
+      merchantDescription: input.planningInput.brief.businessIdentity.shortDescription,
+      briefApprovalStatus: input.planningInput.brief.approval.status,
+      approvedEvidenceFingerprint: input.planningInput.brief.approvedEvidenceFingerprint,
+    });
+    resolveCommercialHomepageProfileSlots(candidate.homepageProfileId, {
+      ...homepageEvidence,
       approvedMediaSlotIds: homepage.slots.flatMap((slot) => {
         const definition = input.planningInput.componentDefinitions.find(
           ({ type }) => type === slot.sectionType,

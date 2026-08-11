@@ -1,4 +1,4 @@
-import { ZodError, z } from "zod";
+import { ZodError } from "zod";
 import {
   registeredTokenRefinementPlanSchema,
   type RegisteredTokenRefinementPlan,
@@ -14,13 +14,7 @@ import {
   WholeStorefrontGenerationPlanError,
 } from "./contract";
 
-/** Safe provider/model identity shared by configured adapters and acceptance gates. */
-export const providerModelIdentifierSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(160)
-  .regex(/^[A-Za-z0-9][A-Za-z0-9._:/-]*$/);
+export { providerModelIdentifierSchema } from "@/application/ai-provider/model-identity";
 
 export type WholeStorefrontPlanningProviderCapability = Readonly<{
   wholeStorefrontPlanning: boolean;

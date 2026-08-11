@@ -67,6 +67,7 @@ import {
   commercialHomepageProfileIdSchema,
   commercialPdpProfileIdSchema,
   commercialCollectionSearchProfileIdSchema,
+  resolveCommercialHomepageEvidenceAvailability,
   resolveCommercialHomepageProfileSlots,
   resolveCommercialHomepageSlotItemCardinality,
   type CommercialCollectionSearchProfileAuthority,
@@ -1171,16 +1172,15 @@ function authoritativeHomepageProfileComponents(input: {
   let includedCommercialSlots: ReadonlySet<string> | undefined;
   if (materialization.commercialHomepage) {
     try {
-      const resolved = resolveCommercialHomepageProfileSlots(materialization.profileId, {
-        canonicalCommerce:
-          planningInput.catalogue.products.length > 0 &&
-          planningInput.catalogue.collections.length > 0,
+      const homepageEvidence = resolveCommercialHomepageEvidenceAvailability({
         canonicalProductCount: planningInput.catalogue.products.length,
         canonicalCollectionCount: planningInput.catalogue.collections.length,
-        approvedMerchantEvidence:
-          planningInput.brief.businessIdentity.shortDescription.trim().length > 0 &&
-          planningInput.brief.approval.status === "approved" &&
-          planningInput.brief.approvedEvidenceFingerprint !== null,
+        merchantDescription: planningInput.brief.businessIdentity.shortDescription,
+        briefApprovalStatus: planningInput.brief.approval.status,
+        approvedEvidenceFingerprint: planningInput.brief.approvedEvidenceFingerprint,
+      });
+      const resolved = resolveCommercialHomepageProfileSlots(materialization.profileId, {
+        ...homepageEvidence,
         approvedMediaSlotIds: materialization.slots.flatMap((slot) => {
           const acceptedRoles = new Set(
             definitionFor(definitions, slot.component).assetSlots.flatMap(

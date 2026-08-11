@@ -1,8 +1,6 @@
 import { createComponentCapabilityManifestAuthority } from "@/domain/component-platform";
-import {
-  executablePageBlueprintProfileSchema,
-  listExecutablePageBlueprintProfiles,
-} from "@/application/storefront-templates";
+import { executablePageBlueprintProfileSchema } from "@/application/storefront-templates/contract";
+import { listExecutablePageBlueprintProfiles } from "@/application/storefront-templates/registry";
 import { veskifyComponentDefinitionsV2 } from "./v2-registry";
 
 /**

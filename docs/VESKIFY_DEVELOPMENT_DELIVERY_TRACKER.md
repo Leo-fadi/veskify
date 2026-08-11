@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 11 August 2026, P10B-16P-01 dynamic commerce route archetype authority                                              |
+| Baseline                    | 11 August 2026, P10B-16P-02A prompted Storefront Design Intent V2 authority                                         |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -39,29 +39,32 @@ required evidence are accepted.
 
 ## P10B checklist
 
-| Done | Task        | Outcome                                              | Status       | Owner                            | Dependency                            | Required evidence                                                                                                        |
-| ---- | ----------- | ---------------------------------------------------- | ------------ | -------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| ☑    | P10B-01     | Commercial grammar and compatibility vocabulary      | **Baseline** | Canonical design contracts       | P10A closure; architecture lock       | Schema/queryability, migration, compatibility and typed rejection                                                        |
-| ☑    | P10B-02     | Parametric BrandSystem / Design DNA                  | **Baseline** | BrandSystem                      | P10B-01                               | Cross-page projection, migration, responsive and lifecycle evidence                                                      |
-| ☑    | P10B-03     | Component anatomy and meaningful variant contract    | **Baseline** | Component platform               | P10B-01                               | 29 definitions/126 variants; structural, query, migration and rejection evidence                                         |
-| ☑    | P10B-04     | Responsive image and art-direction authority         | **Baseline** | Asset presentation and media     | P10B-02, P10B-03                      | 35-case authority, integration/lifecycle and four-width browser evidence                                                 |
-| ☑    | P10B-05     | Veskify site-map and page-family authority           | **Baseline** | PageBlueprint/storefront domain  | P10B-01                               | Page-set/navigation/generation/lifecycle and rejection evidence                                                          |
-| ☑    | P10B-06     | Commercial shared-frame families                     | **Baseline** | Shared frame                     | P10B-02, P10B-03, P10B-05             | Four frames, three mobile modes, four footers, lifecycle and retained browser review                                     |
-| ☑    | P10B-07     | Hero, editorial, campaign and proof families         | **Baseline** | Commercial content families      | P10B-02 through P10B-05               | Six heroes, story/campaign/proof chain, provenance and four-width browser review                                         |
-| ☑    | P10B-08     | Canonical product-card and merchandising family      | **Baseline** | Commerce presentation            | P10B-02 through P10B-04               | One renderer; five anatomies; protected facts/media; lifecycle and four-width browser evidence                           |
-| ☑    | P10B-09     | Commercial homepage profile library                  | **Baseline** | PageBlueprint profiles           | P10B-05 through P10B-08               | Six profiles, materialization-to-render and 24-view visual review                                                        |
-| ☑    | P10B-10     | Commercial collection and search profiles            | **Baseline** | Collection/search presentation   | P10B-04 through P10B-06, P10B-08      | Four profiles, exact commerce/intents, lifecycle and 16-view browser review                                              |
-| ☑    | P10B-11     | Commercial PDP profile library                       | **Baseline** | PDP presentation                 | P10B-03 through P10B-06, P10B-08      | Four profiles, generic options/commerce and visual review                                                                |
-| ☑    | P10B-12     | Content and support page families                    | **Baseline** | Content page presentation        | P10B-03 through P10B-07               | 15 profiles, approved facts, localization, lifecycle, and 61 Chromium checks                                             |
-| ☑    | P10B-13     | Commerce utility presentation pages                  | **Baseline** | Utility presentation             | P10B-03, P10B-05, P10B-06, P10B-08    | Six profiles plus route-local loading, canonical action boundary, snapshot/publication preservation, 16 responsive views |
-| ☑    | P10B-14     | Premium Editorial complete-storefront vertical slice | **Baseline** | Storefront generation and QA     | Minimum P10B-02 through P10B-13       | 17 routes; canonical generation/save/publish; 15 screenshots; passing 160-scenario human review                          |
-| ☑    | P10B-15     | Bounded storefront synthesis and narrative engine    | **Baseline** | Storefront generation            | P10B-14                               | 25-case matrix; three complete outcomes; lifecycle; four-width browser; 480-scenario retained human review               |
-| ☑    | P10B-16     | Coordinated directions and diversity control         | **Baseline** | Direction/evaluation authority   | P10B-15                               | Three packages; nine outcomes; fingerprint/classification/repetition control; browser and retained human review          |
-| ☑    | P10B-16P-01 | Dynamic commerce route archetype authority           | **Baseline** | Storefront domain/runtime routes | P10B-16 and dynamic profile authority | Cardinality, mapping/migration, editor projection, lifecycle/compiler/publication and exact route/browser evidence       |
-| ☐    | P10B-16P-02 | Prompted design-plan contract                        | **Planned**  | Provider/design-plan authority   | P10B-16P-01                           | Strict contract, stale/no-partial rejection, deterministic mock and separately authorized provider evidence              |
-| ☐    | P10B-16P-03 | Storefront Studio generation journey                 | **Planned**  | Storefront Studio/generation     | P10B-16P-02                           | Merchant-language integration, proposal lifecycle, browser/E2E and save/publish boundary evidence                        |
-| ☐    | P10B-17     | Responsive, accessibility and performance closure    | **Planned**  | Design system and QA             | P10B-16P-03 and implemented families  | Four-width EN/FI geometry, a11y, performance and visual evidence                                                         |
-| ☐    | P10B-18     | Commercial quality and scale gate                    | **Planned**  | Product owner, generation, QA    | All prior P10B tasks                  | 100+ configurations and fingerprint-stratified human review                                                              |
+| Done | Task         | Outcome                                              | Status       | Owner                            | Dependency                            | Required evidence                                                                                                        |
+| ---- | ------------ | ---------------------------------------------------- | ------------ | -------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| ☑    | P10B-01      | Commercial grammar and compatibility vocabulary      | **Baseline** | Canonical design contracts       | P10A closure; architecture lock       | Schema/queryability, migration, compatibility and typed rejection                                                        |
+| ☑    | P10B-02      | Parametric BrandSystem / Design DNA                  | **Baseline** | BrandSystem                      | P10B-01                               | Cross-page projection, migration, responsive and lifecycle evidence                                                      |
+| ☑    | P10B-03      | Component anatomy and meaningful variant contract    | **Baseline** | Component platform               | P10B-01                               | 29 definitions/126 variants; structural, query, migration and rejection evidence                                         |
+| ☑    | P10B-04      | Responsive image and art-direction authority         | **Baseline** | Asset presentation and media     | P10B-02, P10B-03                      | 35-case authority, integration/lifecycle and four-width browser evidence                                                 |
+| ☑    | P10B-05      | Veskify site-map and page-family authority           | **Baseline** | PageBlueprint/storefront domain  | P10B-01                               | Page-set/navigation/generation/lifecycle and rejection evidence                                                          |
+| ☑    | P10B-06      | Commercial shared-frame families                     | **Baseline** | Shared frame                     | P10B-02, P10B-03, P10B-05             | Four frames, three mobile modes, four footers, lifecycle and retained browser review                                     |
+| ☑    | P10B-07      | Hero, editorial, campaign and proof families         | **Baseline** | Commercial content families      | P10B-02 through P10B-05               | Six heroes, story/campaign/proof chain, provenance and four-width browser review                                         |
+| ☑    | P10B-08      | Canonical product-card and merchandising family      | **Baseline** | Commerce presentation            | P10B-02 through P10B-04               | One renderer; five anatomies; protected facts/media; lifecycle and four-width browser evidence                           |
+| ☑    | P10B-09      | Commercial homepage profile library                  | **Baseline** | PageBlueprint profiles           | P10B-05 through P10B-08               | Six profiles, materialization-to-render and 24-view visual review                                                        |
+| ☑    | P10B-10      | Commercial collection and search profiles            | **Baseline** | Collection/search presentation   | P10B-04 through P10B-06, P10B-08      | Four profiles, exact commerce/intents, lifecycle and 16-view browser review                                              |
+| ☑    | P10B-11      | Commercial PDP profile library                       | **Baseline** | PDP presentation                 | P10B-03 through P10B-06, P10B-08      | Four profiles, generic options/commerce and visual review                                                                |
+| ☑    | P10B-12      | Content and support page families                    | **Baseline** | Content page presentation        | P10B-03 through P10B-07               | 15 profiles, approved facts, localization, lifecycle, and 61 Chromium checks                                             |
+| ☑    | P10B-13      | Commerce utility presentation pages                  | **Baseline** | Utility presentation             | P10B-03, P10B-05, P10B-06, P10B-08    | Six profiles plus route-local loading, canonical action boundary, snapshot/publication preservation, 16 responsive views |
+| ☑    | P10B-14      | Premium Editorial complete-storefront vertical slice | **Baseline** | Storefront generation and QA     | Minimum P10B-02 through P10B-13       | 17 routes; canonical generation/save/publish; 15 screenshots; passing 160-scenario human review                          |
+| ☑    | P10B-15      | Bounded storefront synthesis and narrative engine    | **Baseline** | Storefront generation            | P10B-14                               | 25-case matrix; three complete outcomes; lifecycle; four-width browser; 480-scenario retained human review               |
+| ☑    | P10B-16      | Coordinated directions and diversity control         | **Baseline** | Direction/evaluation authority   | P10B-15                               | Three packages; nine outcomes; fingerprint/classification/repetition control; browser and retained human review          |
+| ☑    | P10B-16P-01  | Dynamic commerce route archetype authority           | **Baseline** | Storefront domain/runtime routes | P10B-16 and dynamic profile authority | Cardinality, mapping/migration, editor projection, lifecycle/compiler/publication and exact route/browser evidence       |
+| ☐    | P10B-16P-02  | Prompted design-plan contract                        | **Partial**  | Provider/design-plan authority   | P10B-16P-01                           | Part A strict intent/mock evidence plus Part B deterministic compiler and no-partial lifecycle evidence                  |
+| ☑    | P10B-16P-02A | Prompted Storefront Design Intent V2                 | **Baseline** | Provider contract/adapter        | P10B-16P-01                           | Safe capability/request projection, strict intent/reference/fingerprint/failure tests and mocked OpenAI transport        |
+| ☐    | P10B-16P-02B | Deterministic design-intent compiler                 | **Planned**  | Design-plan compiler             | P10B-16P-02A                          | Exact refreshed-authority resolution, deterministic compilation, stale/incompatible/no-partial rejection                 |
+| ☐    | P10B-16P-03  | Storefront Studio generation journey                 | **Planned**  | Storefront Studio/generation     | P10B-16P-02B                          | Merchant-language integration, proposal lifecycle, browser/E2E and save/publish boundary evidence                        |
+| ☐    | P10B-16P-04  | Live V2 acceptance and bridge disposition            | **Planned**  | Provider acceptance/architecture | P10B-16P-03                           | Separately authorized real-provider V2 evidence and explicit P10B-16L bridge disposition                                 |
+| ☐    | P10B-17      | Responsive, accessibility and performance closure    | **Planned**  | Design system and QA             | P10B-16P-04 and implemented families  | Four-width EN/FI geometry, a11y, performance and visual evidence                                                         |
+| ☐    | P10B-18      | Commercial quality and scale gate                    | **Planned**  | Product owner, generation, QA    | All prior P10B tasks                  | 100+ configurations and fingerprint-stratified human review                                                              |
 
 ## P10C checklist
 
@@ -167,10 +170,11 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 through P10B-16 and P10B-16P-01 are **Baseline**. P10B-16P-02, P10B-16P-03, P10B-17,
-and P10B-18 remain **Planned**. The remaining Done conditions are implementation gates, not claims
-about the current repository. The P10B-16P sequence is a mandatory convergence package between
-P10B-16 and P10B-17; it supplements rather than renumbers the locked P10B-01 through P10B-18 plan.
+P10B-01 through P10B-16, P10B-16P-01, and P10B-16P-02A are **Baseline**. P10B-16P-02 is
+**Partial**. P10B-16P-02B, P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain **Planned**.
+The remaining Done conditions are implementation gates, not claims about the current repository.
+The P10B-16P sequence is a mandatory convergence package between P10B-16 and P10B-17; it
+supplements rather than renumbers the locked P10B-01 through P10B-18 plan.
 
 #### P10B-01 — Commercial design grammar and compatibility vocabulary
 
@@ -517,25 +521,66 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
 
 #### P10B-16P-02 — Prompted design-plan contract
 
-- **Outcome:** Add a governed provider-facing design-plan contract over current bounded
-  synthesis, direction, archetype, and route authority.
-- **Status:** **Planned**.
+- **Outcome:** Establish a strict transient prompted intent, then deterministically compile it
+  against refreshed bounded synthesis, direction, archetype, and route authority.
+- **Status:** **Partial**; Part A is Baseline and Part B remains Planned.
 - **Depends on:** P10B-16P-01.
-- **Done when:** Provider input/output can select only current bounded authority; unknown, stale,
-  malformed, broadening, provider-owned layout/commerce/code, and partial results fail before
-  proposal creation; deterministic mock and separately authorized real-provider evidence pass.
-- **Non-goal:** The final normal Storefront Studio generation journey.
+- **Done when:** Both Part A and Part B pass; provider intent references only advertised current
+  capability, and deterministic refreshed-authority compilation preserves the canonical lifecycle
+  while rejecting unknown, stale, malformed, broadening, provider-owned or partial results.
+- **Non-goal:** The final normal Storefront Studio generation journey or live V2 acceptance.
+
+#### P10B-16P-02A — Prompted Storefront Design Intent V2 — **Baseline**
+
+- **Outcome:** Expose a compact provider-safe view of current capability and accept one strict,
+  preference-rich, non-executable V2 intent tied to exact prompt/request/authority fingerprints.
+- **Authority:** Read-only capability projection, versioned request and intent schemas, exact
+  reference validation, deterministic normalization/fingerprints, and server-only OpenAI adapter.
+- **Depends on:** P10B-16P-01.
+- **Done when:** Hard, ranked soft, optional and avoidance preferences cover Design DNA, frame,
+  home, dynamic commerce archetypes, content/utility, components, responsive and art direction;
+  every reference is advertised and correctly dimensioned; strict extra/unknown/unavailable/stale
+  values fail safely; mocked transport proves `store: false`, bounded timeout, zero retries, no
+  repair/fallback, and sanitized evidence.
+- **Evidence:** Contract/schema, deterministic unit, architecture and mocked-transport integration;
+  zero provider and Vesko calls. No live V2 provider evidence is claimed.
+- **Non-goal:** P10B-15 execution, complete candidate materialization, deterministic intent
+  compilation, proposal/snapshot creation, Studio wiring, search adapter, or live provider call.
+- **Record:**
+  [`P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md`](P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md).
+
+#### P10B-16P-02B — Deterministic design-intent compiler
+
+- **Outcome:** Refresh current authority and deterministically compile validated V2 preferences
+  into exact registered compatible selections and the canonical P10B-15/P10B-16 proposal path.
+- **Status:** **Planned**.
+- **Depends on:** P10B-16P-02A.
+- **Done when:** Hard constraints are exact, soft/optional preferences are resolved predictably,
+  unavailable/stale/incompatible authority creates no partial result, and the compiled result
+  preserves protected commerce, `StorefrontSnapshot`, proposal, lifecycle and fingerprints.
+- **Non-goal:** Provider-owned layout, normal Studio UX, live acceptance, or search execution.
 
 #### P10B-16P-03 — Storefront Studio generation journey
 
 - **Outcome:** Complete the normal merchant-language prompt-to-review generation journey through
   the existing proposal and canonical snapshot lifecycle.
 - **Status:** **Planned**.
-- **Depends on:** P10B-16P-02.
+- **Depends on:** P10B-16P-02B.
 - **Done when:** Storefront Studio invokes current plan authority, presents bounded review,
   preserves accept/reject/undo/redo and save/publish separation, and passes browser/E2E and
   retained review without another snapshot or bypass.
 - **Non-goal:** P10C general manual/scoped editing implementation.
+
+#### P10B-16P-04 — Live V2 acceptance and bridge disposition
+
+- **Outcome:** Prove the prompt-driven Design Intent V2 path with separately authorized real
+  provider evidence and explicitly retire, migrate or retain the P10B-16L compatibility bridge.
+- **Status:** **Planned**.
+- **Depends on:** P10B-16P-03.
+- **Done when:** The provider receives capability knowledge before any complete-store execution,
+  returns a strict intent, current authority compiles it through normal Studio proposal review, and
+  safe retained evidence proves call/retry limits, lifecycle, protection and bridge disposition.
+- **Non-goal:** Treating another preset-selection run as V2 evidence or automatic provider calls.
 
 #### P10B-17 — Responsive, accessibility and performance closure
 
@@ -543,7 +588,7 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
   locales, accessibility, and bounded performance budgets.
 - **Authority:** Existing responsive/a11y contracts, registered transformations, renderers, and
   evidence protocol.
-- **Depends on:** P10B-16P-03 and implemented commercial families/profiles/directions.
+- **Depends on:** P10B-16P-04 and implemented commercial families/profiles/directions.
 - **Done when:** All supported page families/directions pass 375/768/1024/1440 and EN/FI geometry,
   declared transformations, keyboard/focus/semantics/contrast, content/commerce retention, and
   explicit performance budgets with correlated evidence.
