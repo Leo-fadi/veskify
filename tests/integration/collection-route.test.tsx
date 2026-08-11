@@ -3,6 +3,10 @@ import { describe, expect, it, vi } from "vitest";
 import { CollectionPreviewClient } from "@/app/projects/[projectId]/collections/[collectionSlug]/collection-preview-client";
 import { aurumNordicSeed } from "@/data/seed";
 import {
+  createCatalogueStorefrontCommerceRouteAdapter,
+  type StorefrontCommerceRouteAdapter,
+} from "@/integrations/storefront-commerce-routes";
+import {
   ProjectNotFoundError,
   type ProjectAggregate,
   type ProjectRepository,
@@ -34,9 +38,11 @@ function route(
   repo: ProjectRepository,
   slug = "rings",
   snapshotKind: "draft" | "published" = "draft",
+  commerceAdapter?: StorefrontCommerceRouteAdapter,
 ) {
   return render(
     <CollectionPreviewClient
+      commerceAdapter={commerceAdapter}
       projectId={aurumNordicSeed.project.id}
       collectionSlug={slug}
       repositoryFactory={() => repo}
@@ -114,15 +120,63 @@ describe("collection route", () => {
     if (!draft || !storedPage || !collection) {
       throw new Error("The legacy collection route fixture is incomplete.");
     }
+    const expectedProductIds = [...collection.productIds];
+    const canonicalAdapter = createCatalogueStorefrontCommerceRouteAdapter();
+    const collectionProjection = vi.fn(canonicalAdapter.collection);
+    const commerceAdapter: StorefrontCommerceRouteAdapter = {
+      ...canonicalAdapter,
+      collection: collectionProjection,
+    };
     collection.slug = "renamed-rings";
 
     const retainedRoute = route(
       repository(() => Promise.resolve(value)),
       "rings",
+      "draft",
+      commerceAdapter,
     );
     expect(await screen.findByRole("heading", { level: 1, name: "Rings" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Collection not found" })).not.toBeInTheDocument();
+    expect(
+      [...retainedRoute.container.querySelectorAll("[data-product-id]")].map((element) =>
+        element.getAttribute("data-product-id"),
+      ),
+    ).toEqual(expectedProductIds);
+    const draftProjectionInput = collectionProjection.mock.lastCall?.[0];
+    expect(draftProjectionInput?.collection.id).toBe(primaryCollectionId);
+    expect(draftProjectionInput?.collection.productIds).toEqual(expectedProductIds);
+    expect(draftProjectionInput?.page.slug).toBe("/collections/rings");
+    expect(
+      within(screen.getByRole("navigation", { name: "Primary navigation" })).getByRole("link", {
+        name: "Rings",
+      }),
+    ).toHaveAttribute("href", "/projects/project_aurum_nordic/collections/rings");
     retainedRoute.unmount();
+
+    collectionProjection.mockClear();
+    const publishedRoute = route(
+      repository(() => Promise.resolve(value)),
+      "rings",
+      "published",
+      commerceAdapter,
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "Rings" })).toBeVisible();
+    expect(screen.getByText("Published storefront")).toBeVisible();
+    expect(
+      [...publishedRoute.container.querySelectorAll("[data-product-id]")].map((element) =>
+        element.getAttribute("data-product-id"),
+      ),
+    ).toEqual(expectedProductIds);
+    const publishedProjectionInput = collectionProjection.mock.lastCall?.[0];
+    expect(publishedProjectionInput?.collection.id).toBe(primaryCollectionId);
+    expect(publishedProjectionInput?.collection.productIds).toEqual(expectedProductIds);
+    expect(publishedProjectionInput?.page.slug).toBe("/collections/rings");
+    expect(
+      within(screen.getByRole("navigation", { name: "Primary navigation" })).getByRole("link", {
+        name: "Rings",
+      }),
+    ).toHaveAttribute("href", "/projects/project_aurum_nordic/published/collections/rings");
+    publishedRoute.unmount();
 
     route(
       repository(() => Promise.resolve(value)),
@@ -132,7 +186,11 @@ describe("collection route", () => {
       await screen.findByRole("heading", { name: "Collection page unavailable" }),
     ).toBeVisible();
     expect(draft.dynamicCommercePresentation).toBeUndefined();
-    expect(draft.pages.some(({ slug }) => slug === "/collections/renamed-rings")).toBe(false);
+    expect(
+      value.snapshots.some((snapshot) =>
+        snapshot.pages.some(({ slug }) => slug === "/collections/renamed-rings"),
+      ),
+    ).toBe(false);
   });
 
   it.each([

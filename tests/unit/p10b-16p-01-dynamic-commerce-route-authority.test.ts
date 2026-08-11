@@ -354,6 +354,9 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     const fallbackProduct = catalogue.products.find(({ productType }) =>
       productType.startsWith("scale-type-"),
     )!;
+    expect(fallbackProduct.orderOptions ?? []).toHaveLength(0);
+    expect(fallbackProduct.variants).toHaveLength(0);
+    expect(fallbackProduct.images).toHaveLength(1);
     const fallbackRoute = authority.routeInventory.find(
       (route) => route.kind === "product" && route.productId === fallbackProduct.id,
     )!;
@@ -379,8 +382,8 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     ).toBe(fallbackAuthority.fallbacks.productDetailArchetypeId);
   });
 
-  it("uses the safe generic fallback for an unknown or renamed canonical product type", () => {
-    const { catalogue, result } = migratedScenario();
+  it("uses the generic fallback for an unmapped high-consideration type without changing commerce", () => {
+    const { catalogue, project, result } = migratedScenario();
     const authority = result.authority;
     const fallbackArchetypeId = authority.fallbacks.productDetailArchetypeId;
     const configurableProduct = catalogue.products.find(
@@ -405,6 +408,9 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     )!;
     renamedProduct.productType = "new-unregistered-configurable-product-type";
     const renamedProductTypeId = canonicalProductTypePresentationId(renamedProduct.productType);
+    expect(renamedProduct.orderOptions?.length ?? 0).toBeGreaterThanOrEqual(4);
+    expect(renamedProduct.variants.length).toBeGreaterThan(1);
+    expect(renamedProduct.images.length).toBeGreaterThan(1);
 
     expect(
       authority.productTypeMappings.some(
@@ -417,13 +423,55 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
         rules: authority.productComplexityRules,
       }),
     ).not.toBe(fallbackArchetypeId);
-    expect(
-      resolveDynamicCommerceRoutePage({
-        snapshot: result.snapshot,
-        catalogue: renamedCatalogue,
-        routeId: productRoute.id,
-      }).archetype.id,
-    ).toBe(fallbackArchetypeId);
+    const resolved = resolveDynamicCommerceRoutePage({
+      snapshot: result.snapshot,
+      catalogue: renamedCatalogue,
+      routeId: productRoute.id,
+    });
+    expect(resolved.archetype.id).toBe(fallbackArchetypeId);
+    expect(resolved.page.sections[0]?.content).toMatchObject({
+      productId: renamedProduct.id,
+    });
+
+    const aggregate: ProjectAggregate = {
+      project: structuredClone(project),
+      catalogue: structuredClone(renamedCatalogue),
+      snapshots: [structuredClone(result.snapshot)],
+    };
+    const protectedBaseline = structuredClone(aggregate.catalogue);
+    const protectedProduct = aggregate.catalogue.products.find(
+      ({ id }) => id === renamedProduct.id,
+    )!;
+    const presentation = createCatalogueStorefrontCommerceRouteAdapter().product({
+      aggregate,
+      snapshot: result.snapshot,
+      page: resolved.page,
+      product: protectedProduct,
+    });
+
+    expect(presentation?.instance.bindings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          slotId: "primaryProduct",
+          source: "product",
+          productId: protectedProduct.id,
+        }),
+      ]),
+    );
+    expect(presentation?.productContext).toMatchObject({
+      productId: protectedProduct.id,
+      productTypeId: renamedProductTypeId,
+      sku: protectedProduct.sku,
+      price: protectedProduct.price,
+      availability: protectedProduct.availabilityLabel,
+    });
+    expect(presentation?.productContext.optionGroups.length).toBeGreaterThanOrEqual(
+      protectedProduct.orderOptions?.length ?? 0,
+    );
+    expect(presentation?.productContext.media.map(({ assetId }) => assetId)).toEqual(
+      protectedProduct.images.map(({ id }) => id),
+    );
+    expect(aggregate.catalogue).toEqual(protectedBaseline);
   });
 
   it("recomputes runtime archetypes from canonical mappings and reserves overrides for editor projection", () => {
