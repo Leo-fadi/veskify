@@ -147,12 +147,6 @@ export function CollectionPreviewClient({
           const dynamicRoute = draft.dynamicCommercePresentation?.routeInventory.find(
             (entry) => entry.kind === "collection" && entry.route === route,
           );
-          const legacyCollection = draft.dynamicCommercePresentation
-            ? undefined
-            : aggregate.catalogue.collections.find(({ slug }) => slug === collectionSlug);
-          if (!draft.dynamicCommercePresentation && !legacyCollection) {
-            return setState({ status: "collectionNotFound" });
-          }
           const page = draft.dynamicCommercePresentation
             ? dynamicRoute
               ? resolveDynamicCommerceRoutePage({
@@ -162,18 +156,33 @@ export function CollectionPreviewClient({
                 }).page
               : undefined
             : draft.pages.find((item) => item.type === "collection" && item.slug === route);
-          if (!page) return setState({ status: "missingPage" });
+          if (!page) {
+            const currentCatalogueSlugExists = aggregate.catalogue.collections.some(
+              ({ slug }) => slug === collectionSlug,
+            );
+            return setState({
+              status:
+                !draft.dynamicCommercePresentation && !currentCatalogueSlugExists
+                  ? "collectionNotFound"
+                  : "missingPage",
+            });
+          }
+          const primaryCollectionSection =
+            page.sections.find(({ component }) => component === "dynamicCollectionCommerce") ??
+            page.sections.find(({ component }) => component === "collectionHeader");
           const canonicalCollectionId =
             (dynamicRoute?.kind === "collection" ? dynamicRoute.collectionId : undefined) ??
-            page.sections.find(
-              (section) =>
-                section.component === "dynamicCollectionCommerce" ||
-                section.component === "collectionHeader",
-            )?.content.collectionId;
-          const collection = draft.dynamicCommercePresentation
-            ? aggregate.catalogue.collections.find(({ id }) => id === canonicalCollectionId)
-            : legacyCollection;
-          if (!collection) return setState({ status: "collectionNotFound" });
+            primaryCollectionSection?.content.collectionId;
+          const collection = aggregate.catalogue.collections.find(
+            ({ id }) => id === canonicalCollectionId,
+          );
+          if (!collection) {
+            return setState({
+              status: draft.dynamicCommercePresentation
+                ? "collectionNotFound"
+                : "validationFailure",
+            });
+          }
           const context = createStorefrontRenderContext({
             activeLocale: aggregate.project.primaryLocale,
             primaryLocale: aggregate.project.primaryLocale,

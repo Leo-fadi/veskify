@@ -101,6 +101,40 @@ describe("collection route", () => {
     );
   });
 
+  it("keeps a stored legacy collection URL authoritative after the canonical slug changes", async () => {
+    const value = aggregate();
+    const draft = value.snapshots.find((snapshot) => snapshot.id === value.project.draftSnapshotId);
+    const storedPage = draft?.pages.find(
+      (page) => page.type === "collection" && page.slug === "/collections/rings",
+    );
+    const primaryCollectionId = storedPage?.sections.find(
+      ({ component }) => component === "collectionHeader",
+    )?.content.collectionId;
+    const collection = value.catalogue.collections.find(({ id }) => id === primaryCollectionId);
+    if (!draft || !storedPage || !collection) {
+      throw new Error("The legacy collection route fixture is incomplete.");
+    }
+    collection.slug = "renamed-rings";
+
+    const retainedRoute = route(
+      repository(() => Promise.resolve(value)),
+      "rings",
+    );
+    expect(await screen.findByRole("heading", { level: 1, name: "Rings" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Collection not found" })).not.toBeInTheDocument();
+    retainedRoute.unmount();
+
+    route(
+      repository(() => Promise.resolve(value)),
+      "renamed-rings",
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Collection page unavailable" }),
+    ).toBeVisible();
+    expect(draft.dynamicCommercePresentation).toBeUndefined();
+    expect(draft.pages.some(({ slug }) => slug === "/collections/renamed-rings")).toBe(false);
+  });
+
   it.each([
     [
       "project",

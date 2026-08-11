@@ -1657,11 +1657,7 @@ export function resolveDynamicCommerceRoutePage(
       authority.productTypeMappings.find(
         ({ productTypeId }) =>
           productTypeId === canonicalProductTypePresentationId(product.productType),
-      )?.archetypeId ??
-      resolveProductComplexityArchetype({
-        product,
-        rules: authority.productComplexityRules,
-      });
+      )?.archetypeId ?? authority.fallbacks.productDetailArchetypeId;
   }
   const archetype =
     authority.collectionSearchArchetypes.find(({ id }) => id === archetypeId) ??

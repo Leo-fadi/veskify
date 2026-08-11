@@ -118,7 +118,7 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
     expect(scaled.snapshot.pages).toHaveLength(result.snapshot.pages.length);
   });
 
-  it("executes the stored matching rules deterministically and lets rule changes alter selection", () => {
+  it("executes stored matching rules deterministically while runtime requires a type mapping", () => {
     const { catalogue, result } = migratedScenario();
     const authority = result.authority;
     const productRoute = authority.routeInventory.find(({ kind }) => kind === "product");
@@ -140,11 +140,10 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
       ...result.snapshot,
       dynamicCommercePresentation: ruleOnlyAuthority,
     });
-    const baselineProductArchetype = resolveDynamicCommerceRoutePage({
-      snapshot: ruleOnlySnapshot,
-      catalogue,
-      routeId: productRoute.id,
-    }).archetype.id;
+    const baselineProductArchetype = resolveProductComplexityArchetype({
+      product,
+      rules: ruleOnlyAuthority.productComplexityRules,
+    });
     const alternativeProductArchetype = authority.productDetailArchetypes.find(
       ({ id }) => id !== baselineProductArchetype,
     )?.id;
@@ -164,12 +163,25 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
       dynamicCommercePresentation: changedProductAuthority,
     });
     expect(
+      resolveProductComplexityArchetype({
+        product,
+        rules: changedProductAuthority.productComplexityRules,
+      }),
+    ).toBe(alternativeProductArchetype);
+    expect(
+      resolveDynamicCommerceRoutePage({
+        snapshot: ruleOnlySnapshot,
+        catalogue,
+        routeId: productRoute.id,
+      }).archetype.id,
+    ).toBe(ruleOnlyAuthority.fallbacks.productDetailArchetypeId);
+    expect(
       resolveDynamicCommerceRoutePage({
         snapshot: changedProductSnapshot,
         catalogue,
         routeId: productRoute.id,
       }).archetype.id,
-    ).toBe(alternativeProductArchetype);
+    ).toBe(changedProductAuthority.fallbacks.productDetailArchetypeId);
 
     const collectionContext = {
       depth: 0,
@@ -364,12 +376,54 @@ describe("P10B-16P-01 dynamic commerce route archetype authority", () => {
         catalogue,
         routeId: fallbackRoute.id,
       }).archetype.id,
-    ).toBe(
-      resolveProductComplexityArchetype({
-        product: fallbackProduct,
-        rules: fallbackAuthority.productComplexityRules,
-      }),
+    ).toBe(fallbackAuthority.fallbacks.productDetailArchetypeId);
+  });
+
+  it("uses the safe generic fallback for an unknown or renamed canonical product type", () => {
+    const { catalogue, result } = migratedScenario();
+    const authority = result.authority;
+    const fallbackArchetypeId = authority.fallbacks.productDetailArchetypeId;
+    const configurableProduct = catalogue.products.find(
+      (product) =>
+        (product.orderOptions?.length ?? 0) > 1 &&
+        product.images.length > 1 &&
+        resolveProductComplexityArchetype({
+          product,
+          rules: authority.productComplexityRules,
+        }) !== fallbackArchetypeId,
     );
+    if (!configurableProduct) {
+      throw new Error("Expected a configurable, media-rich product with a non-generic rule match.");
+    }
+    const productRoute = authority.routeInventory.find(
+      (route) => route.kind === "product" && route.productId === configurableProduct.id,
+    );
+    if (!productRoute) throw new Error("Expected the configurable product route.");
+    const renamedCatalogue = structuredClone(catalogue);
+    const renamedProduct = renamedCatalogue.products.find(
+      ({ id }) => id === configurableProduct.id,
+    )!;
+    renamedProduct.productType = "new-unregistered-configurable-product-type";
+    const renamedProductTypeId = canonicalProductTypePresentationId(renamedProduct.productType);
+
+    expect(
+      authority.productTypeMappings.some(
+        ({ productTypeId }) => productTypeId === renamedProductTypeId,
+      ),
+    ).toBe(false);
+    expect(
+      resolveProductComplexityArchetype({
+        product: renamedProduct,
+        rules: authority.productComplexityRules,
+      }),
+    ).not.toBe(fallbackArchetypeId);
+    expect(
+      resolveDynamicCommerceRoutePage({
+        snapshot: result.snapshot,
+        catalogue: renamedCatalogue,
+        routeId: productRoute.id,
+      }).archetype.id,
+    ).toBe(fallbackArchetypeId);
   });
 
   it("recomputes runtime archetypes from canonical mappings and reserves overrides for editor projection", () => {
