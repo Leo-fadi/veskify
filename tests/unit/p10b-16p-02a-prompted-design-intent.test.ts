@@ -846,6 +846,14 @@ describe("P10B-16P-02A prompted storefront design intent", () => {
     );
   });
 
+  it("allows presentation-oriented material language without a commerce fact claim", () => {
+    const created = createPromptedStorefrontDesignRequestV2(approvedRequestInput());
+    const candidate = validIntent(created);
+    candidate.concept.summary = "A calm editorial experience crafted with warm gold accents.";
+
+    expect(() => validate(created, candidate)).not.toThrow();
+  });
+
   it("fails closed for unknown, wrong-dimension, unavailable, product-type, route and code output", () => {
     const created = createPromptedStorefrontDesignRequestV2(approvedRequestInput());
     const base = validIntent(created);
@@ -995,6 +1003,26 @@ describe("P10B-16P-02A prompted storefront design intent", () => {
           concept: {
             ...base.concept,
             summary: "Prioritize SKU ABC-123; all products are ready to ship and half price.",
+          },
+        },
+        "protected-content",
+      ],
+      [
+        {
+          ...base,
+          concept: {
+            ...base.concept,
+            summary: "Every ring is made from solid gold.",
+          },
+        },
+        "protected-content",
+      ],
+      [
+        {
+          ...base,
+          concept: {
+            ...base.concept,
+            summary: "Our rings are made from solid gold for lasting wear.",
           },
         },
         "protected-content",

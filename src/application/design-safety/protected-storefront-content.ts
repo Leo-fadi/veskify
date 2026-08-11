@@ -9,6 +9,7 @@ const protectedStorefrontClaimPatterns = [
   /\b(?:free shipping|same[- ]day delivery|next[- ]day delivery|ships? within|delivery (?:within|in) \d+|guaranteed delivery)\b/i,
   /\b(?:ships?|shipping|delivery)\b.{0,24}\b(?:in|within|takes?)\s+(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve)\s+(?:business\s+)?(?:hours?|days?|weeks?)\b/i,
   /\b(?:certified|certification|compliant|compliance|warranty|warranties|guaranteed)\b/i,
+  /\b(?:a|an|every|each|all|our|the|this|these|those)\s+(?!(?:[\p{L}\d-]+\s+){0,3}(?:designs?|layouts?|compositions?|experiences?|palettes?|themes?|visuals?|surfaces?|treatments?|accents?|tones?|colou?rs?|interfaces?|storefronts?|pages?|sections?|cards?|images?|identit(?:y|ies))\s+(?:is|are)\b)(?:[\p{L}\d-]+\s+){1,4}(?:is|are)\s+(?:made|crafted|constructed|produced)\s+(?:from|of)\s+(?:(?:solid|pure|genuine|recycled|natural|sterling|14k|18k|24k)\s+){0,2}(?:gold|silver|platinum|titanium|steel|leather|wood|ceramic|cotton|wool|silk|linen|cashmere|diamonds?|gemstones?)\b(?=\s*(?:[.,;:!?]|$|\b(?:for|to|that|which|while|because|and)\b))/iu,
   /\b(?:asset|product|collection|variant|sku)[:_][a-z0-9][a-z0-9_-]{2,}\b/i,
   /\bsku\s*(?:[:#=_-]\s*|\s+)(?=[a-z0-9_-]{3,}\b)(?=[a-z0-9_-]*(?:\d|-))[a-z0-9][a-z0-9_-]{2,}\b/i,
   /\b\d+(?:[.,]\d{1,2})?\s*(?:euroa?|dollaria|puntaa|kruunua)(?![\p{L}\p{N}_])/iu,
