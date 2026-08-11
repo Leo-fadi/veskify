@@ -9,6 +9,7 @@ import {
 import { resolveBrandSystemDesignDna, type DesignDna } from "@/domain/design-system";
 import { canonicalValueFingerprint } from "@/domain/storefront";
 import {
+  BoundedStorefrontSynthesisError,
   boundedStorefrontSynthesisSelectionNarrowingSchema,
   type BoundedStorefrontSynthesisDecision,
   type BoundedStorefrontSynthesisSelectionNarrowing,
@@ -17,6 +18,7 @@ import {
   coordinatedDirectionRequestSchema,
   CoordinatedStorefrontDirectionError,
   type CoordinatedDirectionRequest,
+  type CoordinatedStorefrontDirectionId,
   type CoordinatedStorefrontDirectionPackage,
   type StorefrontDiversityFingerprint,
 } from "./direction-contract";
@@ -55,6 +57,36 @@ export type CoordinatedDirectionExecutionInput = Omit<
 
 export type CoordinatedDirectionResult = CoordinatedDirectionSelection &
   Readonly<{ synthesis: BoundedStorefrontSynthesisResult }>;
+
+export type ExecutableCoordinatedDirectionCharacteristics = Readonly<
+  Required<
+    Pick<
+      NonNullable<CoordinatedDirectionRequest["characteristics"]>,
+      | "narrativePosture"
+      | "merchandisingPosture"
+      | "informationDensityPosture"
+      | "artDirectionPosture"
+      | "responsiveMode"
+    >
+  >
+>;
+
+export type ExecutableCoordinatedDirectionIntent = Readonly<{
+  intentId: string;
+  deterministicSeed: string;
+  characteristics: ExecutableCoordinatedDirectionCharacteristics;
+  result: CoordinatedDirectionResult;
+}>;
+
+export const MAX_EXECUTABLE_COORDINATED_DIRECTION_INTENTS = 3 as const;
+
+export function executableCoordinatedDirectionDeterministicSeed(input: {
+  currentAuthorityFingerprint: string;
+  directionAuthorityFingerprint: string;
+  intentId: string;
+}): string {
+  return `coordinated-executable-${canonicalValueFingerprint(input)}`;
+}
 
 function product<T>(values: readonly (readonly T[])[]): T[][] {
   return values.reduce<T[][]>(
@@ -131,6 +163,18 @@ function characteristicsMatch(
     return Array.isArray(value)
       ? canonicalValueFingerprint(candidateValue) === canonicalValueFingerprint(value)
       : candidateValue === value;
+  });
+}
+
+function postureCharacteristics(
+  candidate: CandidateMaterial,
+): ExecutableCoordinatedDirectionCharacteristics {
+  return Object.freeze({
+    narrativePosture: candidate.narrativePosture,
+    merchandisingPosture: candidate.merchandisingPosture,
+    informationDensityPosture: candidate.informationDensityPosture,
+    artDirectionPosture: candidate.artDirectionPosture,
+    responsiveMode: candidate.responsiveMode,
   });
 }
 
@@ -291,6 +335,28 @@ function candidateMatchesPageSetFrame(
     });
 }
 
+function compatibleCandidateMaterial(
+  direction: CoordinatedStorefrontDirectionPackage,
+  input: BoundedStorefrontSynthesisInput,
+): CandidateMaterial[] {
+  return candidateMaterial(direction)
+    .filter((candidate) => candidateHasSupportedAssetPosture(candidate, input))
+    .filter((candidate) => candidateMatchesProfileDesignDna(candidate, input))
+    .filter((candidate) => candidateMatchesPageSetFrame(candidate, input));
+}
+
+function mayTryAnotherCandidate(error: unknown): boolean {
+  if (error instanceof CoordinatedStorefrontDirectionError) {
+    return ["unsupported-characteristic", "incompatible-direction", "no-valid-diversity"].includes(
+      error.code,
+    );
+  }
+  if (error instanceof BoundedStorefrontSynthesisError) {
+    return !["stale-authority", "non-deterministic-selection"].includes(error.code);
+  }
+  return false;
+}
+
 export function createCoordinatedDirectionSelection(
   input: BoundedStorefrontSynthesisInput &
     Readonly<{
@@ -311,11 +377,8 @@ export function createCoordinatedDirectionSelection(
     intent: direction.intent,
     deterministicSeed: request.data.deterministicSeed,
   } as const;
-  const rankedCandidates = candidateMaterial(direction)
+  const rankedCandidates = compatibleCandidateMaterial(direction, input)
     .filter((candidate) => characteristicsMatch(candidate, request.data))
-    .filter((candidate) => candidateHasSupportedAssetPosture(candidate, input))
-    .filter((candidate) => candidateMatchesProfileDesignDna(candidate, input))
-    .filter((candidate) => candidateMatchesPageSetFrame(candidate, input))
     .map((candidate) => ({
       candidate,
       rank: canonicalValueFingerprint({
@@ -379,6 +442,7 @@ export function createCoordinatedDirectionSelection(
         diversity: structuredClone(diversity),
       });
     } catch (error) {
+      if (!mayTryAnotherCandidate(error)) throw error;
       lastFailure = error;
     }
   }
@@ -414,6 +478,83 @@ export function executeCoordinatedDirection(
     decision: selection.decision,
   });
   return Object.freeze({ ...selection, synthesis });
+}
+
+/**
+ * Enumerates only posture tuples that the current coordinated-direction and bounded-synthesis
+ * authorities can fully execute. The candidate inventory and compatibility checks remain singular
+ * in this module; provider adapters receive only the safe projection built from these results.
+ */
+export function listExecutableCoordinatedDirectionIntents(
+  input: Omit<
+    CoordinatedDirectionExecutionInput,
+    "directionRequest" | "usedDiversityFingerprints"
+  > &
+    Readonly<{
+      directionId: CoordinatedStorefrontDirectionId;
+      currentAuthorityFingerprint: string;
+    }>,
+  options: Readonly<{ maximumIntents?: number }> = {},
+): readonly ExecutableCoordinatedDirectionIntent[] {
+  const maximumIntents = options.maximumIntents ?? Number.POSITIVE_INFINITY;
+  if (
+    maximumIntents !== Number.POSITIVE_INFINITY &&
+    (!Number.isInteger(maximumIntents) || maximumIntents < 1)
+  ) {
+    throw new CoordinatedStorefrontDirectionError(
+      "unsupported-characteristic",
+      "Executable coordinated-direction intent enumeration requires a positive limit.",
+    );
+  }
+  const direction = getCoordinatedStorefrontDirection(input.directionId);
+  const authorityInput: BoundedStorefrontSynthesisInput = {
+    planningInput: input.planningInput,
+    siteMapDecision: input.siteMapDecision,
+    approvedEvidenceReferences: input.approvedEvidenceReferences,
+    request: { intent: direction.intent, deterministicSeed: "executable-intent-enumeration" },
+  };
+  const uniqueCharacteristics = new Map<string, ExecutableCoordinatedDirectionCharacteristics>();
+  for (const candidate of compatibleCandidateMaterial(direction, authorityInput)) {
+    const characteristics = postureCharacteristics(candidate);
+    uniqueCharacteristics.set(canonicalValueFingerprint(characteristics), characteristics);
+  }
+
+  const executable: ExecutableCoordinatedDirectionIntent[] = [];
+  const structuralFingerprints = new Set<string>();
+  for (const [characteristicsFingerprint, characteristics] of [...uniqueCharacteristics].sort(
+    ([left], [right]) => left.localeCompare(right),
+  )) {
+    const intentId = `coordinated-executable-intent-${direction.id}-${characteristicsFingerprint}`;
+    const deterministicSeed = executableCoordinatedDirectionDeterministicSeed({
+      currentAuthorityFingerprint: input.currentAuthorityFingerprint,
+      directionAuthorityFingerprint: direction.authorityFingerprint,
+      intentId,
+    });
+    let result: CoordinatedDirectionResult;
+    try {
+      result = executeCoordinatedDirection({
+        planningInput: input.planningInput,
+        siteMapDecision: input.siteMapDecision,
+        approvedEvidenceReferences: input.approvedEvidenceReferences,
+        pageEvidenceAuthority: input.pageEvidenceAuthority,
+        contentFactAuthority: input.contentFactAuthority,
+        approvedAssetPresentations: input.approvedAssetPresentations,
+        directionRequest: {
+          directionId: direction.id,
+          deterministicSeed,
+          characteristics,
+        },
+      });
+    } catch (error) {
+      if (!mayTryAnotherCandidate(error)) throw error;
+      continue;
+    }
+    if (structuralFingerprints.has(result.diversity.structuralFingerprint)) continue;
+    structuralFingerprints.add(result.diversity.structuralFingerprint);
+    executable.push(Object.freeze({ intentId, deterministicSeed, characteristics, result }));
+    if (executable.length === maximumIntents) break;
+  }
+  return Object.freeze(executable);
 }
 
 export function executeCoordinatedDirectionAlternatives(

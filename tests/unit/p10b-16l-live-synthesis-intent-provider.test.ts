@@ -5,11 +5,20 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 
 import {
+  executeCoordinatedDirection,
+  P10B_LIVE_SYNTHESIS_INTENT_CONTRACT_VERSION,
+  p10bLiveSynthesisExecutableResultFingerprint,
+  type CoordinatedDirectionExecutionInput,
+  type CoordinatedStorefrontDirectionId,
+} from "@/application/bounded-storefront-synthesis";
+import {
   createP10bLiveSynthesisIntentProviderRequest,
   p10bLiveSynthesisIntentProviderRequestSchema,
   validateP10bLiveSynthesisIntentProviderResult,
   type P10bLiveSynthesisIntentProviderRequest,
+  type P10bLiveSynthesisIntentProviderResult,
 } from "@/application/bounded-storefront-synthesis/live-provider-acceptance";
+import { createP10B16LRawKarvonenAcceptanceFixture } from "@/data/demo/p10b-16l-live-provider-acceptance";
 import {
   assertOpenAiStrictSchemaIsClosed,
   type OpenAiProviderTelemetry,
@@ -23,46 +32,88 @@ import {
   openAiP10bLiveSynthesisIntentOutputSchema,
   OpenAiP10bLiveSynthesisIntentProvider,
 } from "@/integrations/ai/openai/p10b-live-synthesis-intent-provider";
-import { canonicalValueFingerprint } from "@/domain/storefront";
 
-function request(
-  requestedDirectionId: "premium-editorial" | "modern-technical" | "minimal-commerce" | null,
-) {
-  return createP10bLiveSynthesisIntentProviderRequest({
+const fixture = createP10B16LRawKarvonenAcceptanceFixture();
+const currentAuthorityFingerprint = "p10b16l-current-authority-test";
+const executionAuthority: Omit<
+  CoordinatedDirectionExecutionInput,
+  "directionRequest" | "usedDiversityFingerprints"
+> = {
+  planningInput: fixture.executionPlanningInput,
+  siteMapDecision: fixture.siteMapDecision,
+  approvedEvidenceReferences: fixture.approvedEvidenceReferences,
+  pageEvidenceAuthority: fixture.pageEvidenceAuthority,
+  contentFactAuthority: fixture.contentFactAuthority,
+  approvedAssetPresentations: fixture.approvedAssetPresentations,
+};
+const requestCache = new Map<
+  CoordinatedStorefrontDirectionId | "general",
+  P10bLiveSynthesisIntentProviderRequest
+>();
+
+function request(requestedDirectionId: CoordinatedStorefrontDirectionId | null) {
+  const cacheKey = requestedDirectionId ?? "general";
+  const cached = requestCache.get(cacheKey);
+  if (cached) return cached;
+  const { brief, planningInput } = fixture;
+  const catalogue = planningInput.catalogue;
+  const created = createP10bLiveSynthesisIntentProviderRequest({
     merchantInstruction:
       requestedDirectionId === null
         ? "Create a complete storefront with a coherent direction for this merchant."
         : `Create a ${requestedDirectionId} complete storefront.`,
     requestedDirectionId,
     merchantContext: {
-      businessName: "Karvonen",
-      shortDescription: "A Finnish jewellery merchant with an approved factual brief.",
-      industry: "jewellery",
-      targetCustomer: "Customers choosing lasting Finnish jewellery.",
-      primaryMarket: "Finland",
-      enabledLocales: ["en", "fi"],
+      businessName: brief.businessIdentity.businessName,
+      shortDescription: brief.businessIdentity.shortDescription,
+      industry: brief.businessIdentity.industry,
+      targetCustomer: brief.businessIdentity.targetCustomer,
+      primaryMarket: brief.businessIdentity.primaryMarket,
+      enabledLocales: planningInput.project.enabledLocales,
     },
     catalogueCharacteristics: {
-      productCount: 12,
-      collectionCount: 3,
-      configurableProductCount: 2,
-      optionGroupCount: 5,
-      productsWithMultipleMedia: 9,
-      productsWithoutPrice: 0,
+      productCount: catalogue.products.length,
+      collectionCount: catalogue.collections.length,
+      configurableProductCount: catalogue.products.filter(
+        ({ orderOptions }) => (orderOptions?.length ?? 0) > 0,
+      ).length,
+      optionGroupCount: catalogue.products.reduce(
+        (count, { orderOptions }) => count + (orderOptions?.length ?? 0),
+        0,
+      ),
+      productsWithMultipleMedia: catalogue.products.filter(({ images }) => images.length > 1)
+        .length,
+      productsWithoutPrice: catalogue.products.filter(({ price }) => price === undefined).length,
       canonicalCommerceFingerprint: "commerce-p10b16l-test",
     },
     evidenceRichness: {
-      approvedBriefRevision: 1,
-      approvedFactFamilies: ["about", "contact", "faq"],
-      approvedFactCount: 8,
+      approvedBriefRevision: brief.revision,
+      approvedFactFamilies: ["about"],
+      approvedFactCount: fixture.approvedEvidenceReferences.length,
     },
     approvedAssetPosture: {
-      approvedAssetCount: 1,
-      approvedRoles: ["logo"],
+      approvedAssetCount: fixture.approvedAssetPresentations.length,
+      approvedRoles: [],
       editorialMediaAvailable: false,
     },
-    currentAuthorityFingerprint: "p10b16l-current-authority-test",
+    currentAuthorityFingerprint,
+    executionAuthority,
   });
+  requestCache.set(cacheKey, created);
+  return created;
+}
+
+function selectedResult(
+  providerRequest: P10bLiveSynthesisIntentProviderRequest,
+  index = 0,
+): P10bLiveSynthesisIntentProviderResult {
+  const selected = providerRequest.executableIntents[index];
+  if (!selected) throw new Error("The test requires an advertised executable intent.");
+  return {
+    requestFingerprint: providerRequest.requestFingerprint,
+    executableIntentId: selected.intentId,
+    executableIntentFingerprint: selected.executableIntentFingerprint,
+  };
 }
 
 function completedResponse(
@@ -73,15 +124,7 @@ function completedResponse(
     id: "resp_p10b16l_safe",
     status: "completed",
     output: [{ type: "message", content: [{ type: "output_text", text: "structured" }] }],
-    output_text: JSON.stringify({
-      requestFingerprint: providerRequest.requestFingerprint,
-      directionId: providerRequest.directionOptions[0]?.id,
-      narrativePosture: null,
-      merchandisingPosture: null,
-      informationDensityPosture: null,
-      artDirectionPosture: null,
-      responsiveMode: null,
-    }),
+    output_text: JSON.stringify(selectedResult(providerRequest)),
     usage: { input_tokens: 80, output_tokens: 20, total_tokens: 100 },
     ...overrides,
   };
@@ -116,125 +159,154 @@ function provider(transport: RecordingTransport, telemetry?: OpenAiProviderTelem
 }
 
 describe("P10B-16L bounded live synthesis intent provider", () => {
-  it("exposes all current P10B-16 directions generally and only the exact named direction", () => {
+  it("versions v2 and exposes only executable options for general and exact named directions", () => {
+    expect(P10B_LIVE_SYNTHESIS_INTENT_CONTRACT_VERSION).toBe("2.0.0");
     const general = request(null);
-    expect(general.directionOptions.map(({ id }) => id)).toEqual([
-      "premium-editorial",
-      "modern-technical",
-      "minimal-commerce",
-    ]);
-    expect(general.directionOptions.every(({ authorityFingerprint }) => authorityFingerprint)).toBe(
-      true,
-    );
+    expect(general.contractVersion).toBe("2.0.0");
+    expect(Object.isFrozen(general)).toBe(true);
+    expect(Object.isFrozen(general.executableIntents)).toBe(true);
+    expect(Object.isFrozen(general.executableIntents[0])).toBe(true);
+    expect(Object.isFrozen(general.executableIntents[0].characteristics)).toBe(true);
+    expect(general.executableIntents).toHaveLength(8);
+    expect(
+      Object.fromEntries(
+        ["premium-editorial", "modern-technical", "minimal-commerce"].map((directionId) => [
+          directionId,
+          general.executableIntents.filter((option) => option.directionId === directionId).length,
+        ]),
+      ),
+    ).toEqual({
+      "premium-editorial": 2,
+      "modern-technical": 3,
+      "minimal-commerce": 3,
+    });
+    expect(
+      general.executableIntents.every(
+        ({ intentId, executableIntentFingerprint, expectedExecutionFingerprint }) =>
+          intentId.length > 0 &&
+          executableIntentFingerprint.startsWith("p10b-live-executable-intent-") &&
+          expectedExecutionFingerprint.startsWith("p10b-live-executable-result-"),
+      ),
+    ).toBe(true);
     expect(JSON.stringify(general)).not.toMatch(
-      /premiumEditorial|modernTechnical|warmApproachable|homepageProfileId|componentSelections/,
+      /premiumEditorial|modernTechnical|warmApproachable|homepageProfileId|sharedFrameProfileId|componentSelections|productCardAnatomyIds/,
     );
 
-    for (const directionId of [
-      "premium-editorial",
-      "modern-technical",
-      "minimal-commerce",
-    ] as const) {
-      const named = request(directionId);
-      expect(named.requestedDirectionId).toBe(directionId);
-      expect(named.directionOptions.map(({ id }) => id)).toEqual([directionId]);
-    }
-  });
+    const named = request("premium-editorial");
+    expect(named.requestedDirectionId).toBe("premium-editorial");
+    expect(named.executableIntents).toHaveLength(2);
+    expect(new Set(named.executableIntents.map(({ directionId }) => directionId))).toEqual(
+      new Set(["premium-editorial"]),
+    );
+  }, 90_000);
 
-  it("binds the request and result to exact current authority and validated bounded characteristics", () => {
-    const current = request("modern-technical");
+  it("fails closed for v1 and stale request authority", () => {
+    const current = request(null);
     expect(p10bLiveSynthesisIntentProviderRequestSchema.safeParse(current).success).toBe(true);
+    const v1Request = { ...current, contractVersion: "1.0.0" };
+    expect(p10bLiveSynthesisIntentProviderRequestSchema.safeParse(v1Request).success).toBe(false);
+    expect(() =>
+      validateP10bLiveSynthesisIntentProviderResult(v1Request, selectedResult(current)),
+    ).toThrow(expect.objectContaining({ code: "invalid-request" }));
     expect(
       p10bLiveSynthesisIntentProviderRequestSchema.safeParse({
         ...current,
         currentAuthorityFingerprint: "changed-current-authority",
       }).success,
     ).toBe(false);
+    expect(() =>
+      validateP10bLiveSynthesisIntentProviderResult(current, {
+        ...selectedResult(current),
+        requestFingerprint: "p10b-live-synthesis-intent-stale",
+      }),
+    ).toThrow(expect.objectContaining({ code: "stale-authority" }));
+  });
 
-    const providerResult = {
-      requestFingerprint: current.requestFingerprint,
-      directionId: "modern-technical",
-      narrativePosture: "catalogue-dense",
-      merchandisingPosture: "dense",
-      informationDensityPosture: "compact",
-      artDirectionPosture: "contained",
-      responsiveMode: "commerce-first",
-    } as const;
-    const result = validateP10bLiveSynthesisIntentProviderResult(current, providerResult);
-    expect(result).toEqual({
-      directionId: "modern-technical",
-      deterministicSeed: `p10b-live-${canonicalValueFingerprint(providerResult)}`,
-      characteristics: {
-        narrativePosture: "catalogue-dense",
-        merchandisingPosture: "dense",
-        informationDensityPosture: "compact",
-        artDirectionPosture: "contained",
-        responsiveMode: "commerce-first",
+  it("binds an advertised option exactly and preserves its seed, selection, and execution", () => {
+    const current = request(null);
+    const minimalOptionIndexes = current.executableIntents.flatMap((option, index) =>
+      option.directionId === "minimal-commerce" ? [index] : [],
+    );
+    const firstIndex = minimalOptionIndexes[0];
+    const secondIndex = minimalOptionIndexes[1];
+    const firstOption = current.executableIntents[firstIndex];
+    const secondOption = current.executableIntents[secondIndex];
+    const first = validateP10bLiveSynthesisIntentProviderResult(
+      current,
+      selectedResult(current, firstIndex),
+    );
+    const second = validateP10bLiveSynthesisIntentProviderResult(
+      current,
+      selectedResult(current, secondIndex),
+    );
+
+    expect(first).toMatchObject({
+      executableIntentId: firstOption.intentId,
+      executableIntentFingerprint: firstOption.executableIntentFingerprint,
+      expectedExecutionFingerprint: firstOption.expectedExecutionFingerprint,
+      directionRequest: {
+        directionId: firstOption.directionId,
+        characteristics: firstOption.characteristics,
       },
     });
-    const differentlyNarrowed = validateP10bLiveSynthesisIntentProviderResult(current, {
-      ...providerResult,
-      merchandisingPosture: null,
-      informationDensityPosture: null,
-      artDirectionPosture: null,
-      responsiveMode: null,
+    expect(second.directionRequest.characteristics).toEqual(secondOption.characteristics);
+    expect(second.directionRequest.deterministicSeed).not.toBe(
+      first.directionRequest.deterministicSeed,
+    );
+
+    const firstExecution = executeCoordinatedDirection({
+      ...executionAuthority,
+      directionRequest: first.directionRequest,
     });
-    expect(differentlyNarrowed.deterministicSeed).not.toBe(result.deterministicSeed);
+    const secondExecution = executeCoordinatedDirection({
+      ...executionAuthority,
+      directionRequest: second.directionRequest,
+    });
+    expect(p10bLiveSynthesisExecutableResultFingerprint(firstExecution)).toBe(
+      first.expectedExecutionFingerprint,
+    );
+    expect(p10bLiveSynthesisExecutableResultFingerprint(secondExecution)).toBe(
+      second.expectedExecutionFingerprint,
+    );
+    expect(secondExecution.diversity.structuralFingerprint).not.toBe(
+      firstExecution.diversity.structuralFingerprint,
+    );
+  });
 
+  it("rejects stale intent fingerprints and unadvertised intent identities", () => {
+    const current = request(null);
     expect(() =>
       validateP10bLiveSynthesisIntentProviderResult(current, {
-        requestFingerprint: current.requestFingerprint,
-        directionId: "modern-technical",
-        narrativePosture: null,
-        merchandisingPosture: null,
-        informationDensityPosture: null,
-        artDirectionPosture: null,
-        responsiveMode: null,
-      }),
-    ).toThrow(expect.objectContaining({ code: "unsupported-selection" }));
-
-    expect(() =>
-      validateP10bLiveSynthesisIntentProviderResult(current, {
-        requestFingerprint: "p10b-live-synthesis-intent-stale",
-        directionId: "modern-technical",
-        narrativePosture: null,
-        merchandisingPosture: null,
-        informationDensityPosture: null,
-        artDirectionPosture: null,
-        responsiveMode: null,
+        ...selectedResult(current),
+        executableIntentFingerprint: "p10b-live-executable-intent-stale",
       }),
     ).toThrow(expect.objectContaining({ code: "stale-authority" }));
     expect(() =>
       validateP10bLiveSynthesisIntentProviderResult(current, {
-        requestFingerprint: current.requestFingerprint,
-        directionId: "modern-technical",
-        narrativePosture: "story-led",
-        merchandisingPosture: null,
-        informationDensityPosture: null,
-        artDirectionPosture: null,
-        responsiveMode: null,
+        ...selectedResult(current),
+        executableIntentId: "coordinated-executable-intent-unadvertised",
       }),
     ).toThrow(expect.objectContaining({ code: "unsupported-selection" }));
   });
 
-  it("uses a closed output schema and rejects unknown layout, code, and commerce fields", () => {
-    const current = request("premium-editorial");
+  it("uses a closed output schema and rejects old posture, layout, code, and commerce fields", () => {
+    const current = request(null);
     expect(() =>
       assertOpenAiStrictSchemaIsClosed(openAiP10bLiveSynthesisIntentOutputSchema),
     ).not.toThrow();
     expect(openAiP10bLiveSynthesisIntentOutputSchema).toMatchObject({
       additionalProperties: false,
     });
-    const base = {
-      requestFingerprint: current.requestFingerprint,
-      directionId: "premium-editorial",
-      narrativePosture: null,
-      merchandisingPosture: null,
-      informationDensityPosture: null,
-      artDirectionPosture: null,
-      responsiveMode: null,
-    };
+    const base = selectedResult(current);
     for (const forbidden of [
+      {
+        directionId: "premium-editorial",
+        narrativePosture: "story-led",
+        merchandisingPosture: "curated",
+        informationDensityPosture: "balanced",
+        artDirectionPosture: "editorial",
+        responsiveMode: "content-first",
+      },
       { homepageProfileId: "homepage-invented" },
       { componentIds: ["arbitrary-component"] },
       { sectionTree: [{ type: "hero" }] },
@@ -249,15 +321,12 @@ describe("P10B-16L bounded live synthesis intent provider", () => {
   });
 
   it("makes exactly one non-stored structured transport call with retries disabled", async () => {
-    const current = request("minimal-commerce");
+    const current = request(null);
     const telemetry = { record: vi.fn<(event: OpenAiProviderTelemetryEvent) => void>() };
     const transport = new RecordingTransport(() => Promise.resolve(completedResponse(current)));
     const selected = await provider(transport, telemetry).selectIntent(current);
 
-    expect(selected).toMatchObject({
-      requestFingerprint: current.requestFingerprint,
-      directionId: "minimal-commerce",
-    });
+    expect(selected).toEqual(selectedResult(current));
     expect(transport.calls).toHaveLength(1);
     expect(transport.calls[0]).toMatchObject({
       request: {
@@ -271,16 +340,16 @@ describe("P10B-16L bounded live synthesis intent provider", () => {
       transport.calls[0]?.request,
     );
     expect(telemetry.record).toHaveBeenCalledOnce();
-    expect(telemetry.record).toHaveBeenCalledWith(
-      expect.objectContaining({
-        providerId: "openai",
-        modelId: "p10b16l-test-model",
-        operation: "completeStorefrontSynthesisIntent",
-        outcome: "success",
-        providerRequestId: "resp_p10b16l_safe",
-        totalTokens: 100,
-      }),
-    );
+    const telemetryEvent = telemetry.record.mock.calls[0]?.[0];
+    expect(telemetryEvent).toMatchObject({
+      providerId: "openai",
+      modelId: "p10b16l-test-model",
+      operation: "completeStorefrontSynthesisIntent",
+      outcome: "success",
+      totalTokens: 100,
+    });
+    expect(telemetryEvent?.providerRequestId).toMatch(/^openai-response-v1_/);
+    expect(JSON.stringify(telemetry.record.mock.calls)).not.toContain("resp_p10b16l_safe");
     expect(JSON.stringify(telemetry.record.mock.calls)).not.toContain(current.merchantInstruction);
   });
 

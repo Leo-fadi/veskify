@@ -6,11 +6,13 @@
 pending.** P10B-16 remains **Baseline**, P10B remains **Partial**, and P10B-17 and P10B-18 remain
 **Planned**.
 
-Provider calls during implementation: **zero**.
+Provider calls during this executable-intent compatibility correction: **zero**. One earlier,
+separately authorized failed attempt made the single call retained below.
 
-This record must not claim real-provider evidence until a separately authorized W1 run succeeds.
-Deterministic and mocked-transport evidence proves the boundary and lifecycle, not OpenAI behavior
-or commercial visual quality from a live result.
+This record must not claim a successful real-provider acceptance until a separately authorized W1
+run succeeds. Deterministic and mocked-transport evidence proves the corrected boundary and
+lifecycle, while the retained failed attempt proves only that the earlier strict provider boundary
+completed—not commercial visual quality or a valid live synthesis result.
 
 ## Why this bridge exists
 
@@ -36,6 +38,27 @@ raw approved Karvonen merchant and commerce truth
 
 The bridge never asks the provider to restyle an existing designed storefront and never sends a
 precomputed complete storefront for the provider to repeat.
+
+## Retained failed live attempt
+
+The first separately authorized W1 attempt made exactly one real provider call. Safe retained
+evidence records:
+
+- provider `openai-p10b-complete-storefront-synthesis-intent`;
+- model `gpt-5.6-sol`;
+- provider call count `1`, with no retry;
+- the strict provider boundary completed successfully;
+- failure stage `coordinated-synthesis` with the then-reported safe code `malformed-state`;
+- authoritative revision `0` and no generated proposal;
+- the raw presentation remained one page with zero sections; and
+- commerce, draft, save and publication authority remained unchanged.
+
+The reset was consumed and was not retried. The exact provider response was intentionally not
+retained, so this record does not invent its posture values. Deterministic reproduction instead
+proved the broader v1.0.0 defect: Premium Editorial advertised 72 independently valid posture
+tuples while only 2 were executable under the exact raw authority. This failed attempt is not a
+real-provider acceptance pass. No prompt, response, credential, token, header or merchant-private
+payload is retained here.
 
 ## Raw Karvonen acceptance authority
 
@@ -104,7 +127,10 @@ returns a safe unavailable result; it never selects the mock or historical deter
 Each reset has a one-call budget. A completed, failed or concurrent generation cannot call the
 provider again without an explicit reset. OpenAI SDK retries and per-request retries are both zero.
 
-## Bounded real-provider intent contract
+## Executable bounded real-provider intent contract
+
+Contract version **2.0.0** replaces the incompatible v1.0.0 independent-posture contract. A
+v1.0.0 request or result fingerprint is never reinterpreted as v2 and fails closed.
 
 The provider request contains only:
 
@@ -113,38 +139,53 @@ The provider request contains only:
 - aggregate catalogue characteristics, not products or commerce values;
 - approved-evidence richness and evidence-backed page-family availability;
 - approved-asset role posture;
-- the current three P10B-16 direction options, versions, authority fingerprints and compatible
-  high-level posture vocabularies; and
+- current executable intent options derived from the singular P10B-16 candidate authority; and
 - an exact current-authority and request fingerprint.
 
-For a named Premium Editorial, Modern Technical or Minimal Commerce run, the request exposes only
-that exact P10B-16 direction and requires at least one compatible non-null bounded posture so the
-provider result materially narrows synthesis. A general request exposes all three and allows the
-provider to choose one.
+Before the provider is called, the server applies current evidence, approved-asset, profile,
+Design DNA, shared-frame, site-map and commerce compatibility, fixes one deterministic option seed,
+and fully executes each retained tuple through P10B-16 and P10B-15. Duplicate structural results
+are removed. Every advertised option therefore represents one exact currently executable tuple,
+not the Cartesian product of independently allowed fields. The deterministic raw-fixture audit found
+2 Premium Editorial, 3 Modern Technical and 14 Minimal Commerce executable tuples, all with distinct
+structural fingerprints and complete 28-page results. Provider input is deliberately bounded to at
+most three structurally distinct choices per direction: the current request exposes 2 Premium
+Editorial, 3 Modern Technical and 3 Minimal Commerce choices, while the retained deterministic audit
+records all 14 executable Minimal tuples.
+
+For a named run, the request exposes only executable options inside that direction. A general run
+exposes the executable options across all three directions. Each safe option contains a stable
+intent ID, exact five-field posture tuple, direction/version authority, bounded description,
+execution fingerprint and current-authority-bound option fingerprint. It does not expose profile,
+frame, component, section, product, price or media identities.
 
 The strict provider result contains only:
 
 - the exact request fingerprint;
-- one registered P10B-16 direction ID; and
-- nullable registered narrative, merchandising, information-density, art-direction and responsive
-  postures.
+- one advertised executable intent ID; and
+- that same option's exact executable-intent fingerprint.
 
 The provider cannot return profiles, frames, components, product-card anatomies, section trees,
 products, prices, media, assets, facts, presentation copy, JSX, CSS, HTML, JavaScript, URLs or
-executable code. Unknown or extra fields fail strict validation. The server owns the deterministic
-seed and all structural selection.
+executable code. It also cannot construct or combine independent posture fields. Unknown or extra
+fields fail strict validation. The server owns the deterministic seed and all structural selection.
 
-After the asynchronous result returns, the server rebuilds the request from current aggregate,
-commerce, evidence, site-map and direction authority. Any difference rejects the result as stale
-before synthesis. The selected direction and each non-null posture must remain inside the exact
-advertised package constraints. The server-owned deterministic seed includes the canonical
-fingerprint of the validated provider result, so different valid bounded intent is part of the
-synthesis decision rather than a server echo. Provider refusal, malformed output, unsupported
-selection, credentials failure or transport failure returns a merchant-safe non-retryable category
-and creates no proposal or partial storefront.
+After the asynchronous result returns, the server recomputes the exact current-authority fingerprint
+from current aggregate, commerce, evidence, site-map and direction authority.
+Any difference rejects the result as stale before synthesis. When authority is unchanged, the
+server validates the selection against the immutable request and reuses that option's already
+validated preflight result; it does not synchronously rebuild and rematerialize the whole bounded
+inventory after the provider call. The selected option resolves its exact five-field tuple and fixed
+seed; no field is discarded and no alternate candidate is substituted. The retained coordinated
+result must match the preflight execution fingerprint before a proposal can exist. Different valid
+options retain distinct seeds and structural fingerprints, so the provider still makes a material
+bounded choice within a named direction. Provider refusal, malformed output, unsupported selection,
+unavailable compatible intent, stale authority, candidate failure, materialization failure or
+transport failure returns an accurate merchant-safe non-retryable category and creates no proposal
+or partial storefront.
 
-Safe diagnostics contain only a redacted session prefix, provider/model identity, single-call
-count, authority revision, selected direction or bounded failure category/stage. Credentials,
+Safe diagnostics contain only provider/model identity, call count, authority revision, selected
+direction/option fingerprint or bounded failure category/stage. Credentials,
 authorization headers, merchant instructions, raw provider requests and raw responses are neither
 logged nor returned.
 
@@ -257,8 +298,10 @@ mock Responses transport. No network or provider call occurs. Focused evidence c
 
 - the raw one-page, zero-section baseline and neutral execution prerequisites;
 - exact preservation of every canonical Karvonen product, collection and media fact;
-- general and exact named P10B-16 direction exposure;
-- request/current-authority fingerprint and stale-result binding;
+- general and exact named executable-intent exposure;
+- request/current-authority/option/execution fingerprint and stale-result binding;
+- deterministic reproduction of the v1.0.0 Cartesian compatibility gap;
+- full preflight execution for every advertised option and material structural influence;
 - strict rejection of arbitrary layout, component, code and commerce fields;
 - one non-stored structured transport invocation with retries disabled;
 - provider failure without fallback or a second call;
@@ -272,13 +315,15 @@ mock Responses transport. No network or provider call occurs. Focused evidence c
   rejection; and
 - token, same-origin, opaque-session and production-disable boundaries.
 
-This is contract, deterministic unit and integration evidence only. No real-provider, retained
-human visual, Vesko staging or production evidence is claimed.
+The corrected executable-intent contract has contract, deterministic unit and integration evidence
+only. The earlier failed call is retained as failed real-provider evidence, not a real-provider
+acceptance pass. No retained human visual, Vesko staging or production evidence is claimed.
 
-## Manual W1 live acceptance after merge
+## Future separately authorized W1 live acceptance
 
-The product owner will run live acceptance separately in W1 using the existing trusted server
-OpenAI configuration. Do not inspect, print, copy or modify `.env.local`, credentials,
+Another live attempt requires separate explicit authorization and a fresh reset; this correction
+does not authorize it. When authorized, the product owner may run acceptance in W1 using the
+existing trusted server OpenAI configuration. Do not inspect, print, copy or modify `.env.local`, credentials,
 authorization headers, raw prompts or raw responses.
 
 Before the first call:

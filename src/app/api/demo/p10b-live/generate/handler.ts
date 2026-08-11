@@ -28,7 +28,17 @@ type ProviderConfiguration = ReturnType<
 
 function failure(
   status: number,
-  category: "permissionDenied" | "stale" | "validation" | "providerUnavailable",
+  category:
+    | "permissionDenied"
+    | "stale"
+    | "validation"
+    | "providerUnavailable"
+    | "providerResponseInvalid"
+    | "unsupportedProviderSelection"
+    | "noExecutableCompatibleIntent"
+    | "noValidCoordinatedCandidate"
+    | "synthesisMaterializationFailure"
+    | "internalFailure",
 ) {
   return Response.json({ ok: false, failure: { category, retryable: false } }, { status });
 }
@@ -38,10 +48,28 @@ function mappedFailure(error: unknown): Response {
     return failure(500, "providerUnavailable");
   }
   if (error.code === "unauthorized") return failure(401, "permissionDenied");
-  if (error.code === "stale") return failure(409, "stale");
+  if (error.code === "stale" || error.code === "stale-authority") {
+    return failure(409, "stale");
+  }
   if (error.code === "provider-unavailable" || error.code === "unavailable") {
     return failure(error.code === "unavailable" ? 404 : 503, "providerUnavailable");
   }
+  if (error.code === "provider-response-invalid") {
+    return failure(422, "providerResponseInvalid");
+  }
+  if (error.code === "unsupported-provider-selection") {
+    return failure(422, "unsupportedProviderSelection");
+  }
+  if (error.code === "no-executable-compatible-intent") {
+    return failure(422, "noExecutableCompatibleIntent");
+  }
+  if (error.code === "no-valid-coordinated-candidate") {
+    return failure(422, "noValidCoordinatedCandidate");
+  }
+  if (error.code === "synthesis-materialization-failure") {
+    return failure(422, "synthesisMaterializationFailure");
+  }
+  if (error.code === "malformed-state") return failure(500, "internalFailure");
   return failure(400, "validation");
 }
 
