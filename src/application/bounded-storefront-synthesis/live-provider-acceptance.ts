@@ -261,6 +261,14 @@ function normalizedInstruction(value: string): string {
   return normalized;
 }
 
+function freezeAuthorityValue<T>(value: T): T {
+  if (typeof value === "object" && value !== null && !Object.isFrozen(value)) {
+    Object.values(value as Record<string, unknown>).forEach(freezeAuthorityValue);
+    Object.freeze(value);
+  }
+  return value;
+}
+
 function executableIntentDescription(
   directionLabel: string,
   characteristics: z.infer<typeof executableCharacteristicsSchema>,
@@ -282,9 +290,16 @@ function executableIntentFingerprint(
   })}`;
 }
 
-export function createP10bLiveSynthesisIntentProviderRequest(
+export type P10bLiveSynthesisIntentPreflightAuthority = Readonly<{
+  request: P10bLiveSynthesisIntentProviderRequest;
+  resolveExecutableResult: (
+    executableIntentFingerprint: string,
+  ) => CoordinatedDirectionResult | null;
+}>;
+
+export function createP10bLiveSynthesisIntentPreflightAuthority(
   input: CreateP10bLiveSynthesisIntentRequestInput,
-): P10bLiveSynthesisIntentProviderRequest {
+): P10bLiveSynthesisIntentPreflightAuthority {
   const requestedDirectionId =
     input.requestedDirectionId === null
       ? null
@@ -292,6 +307,7 @@ export function createP10bLiveSynthesisIntentProviderRequest(
   const registeredDirections = listCoordinatedStorefrontDirections().filter(
     ({ id }) => requestedDirectionId === null || id === requestedDirectionId,
   );
+  const executableResults = new Map<string, CoordinatedDirectionResult>();
   const executableIntents = registeredDirections.flatMap((direction) =>
     listExecutableCoordinatedDirectionIntents(
       {
@@ -314,13 +330,15 @@ export function createP10bLiveSynthesisIntentProviderRequest(
         z.infer<typeof safeExecutableIntentOptionSchema>,
         "executableIntentFingerprint"
       >;
-      return {
+      const option = {
         ...optionMaterial,
         executableIntentFingerprint: executableIntentFingerprint(
           input.currentAuthorityFingerprint,
           optionMaterial,
         ),
       };
+      executableResults.set(option.executableIntentFingerprint, intent.result);
+      return option;
     }),
   );
   if (executableIntents.length === 0) {
@@ -337,10 +355,24 @@ export function createP10bLiveSynthesisIntentProviderRequest(
     executableIntents,
     currentAuthorityFingerprint: input.currentAuthorityFingerprint,
   });
-  return p10bLiveSynthesisIntentProviderRequestSchema.parse({
-    ...material,
-    requestFingerprint: `p10b-live-synthesis-intent-${canonicalValueFingerprint(material)}`,
+  const request = freezeAuthorityValue(
+    p10bLiveSynthesisIntentProviderRequestSchema.parse({
+      ...material,
+      requestFingerprint: `p10b-live-synthesis-intent-${canonicalValueFingerprint(material)}`,
+    }),
+  );
+  return Object.freeze({
+    request,
+    resolveExecutableResult(executableIntentFingerprint: string) {
+      return executableResults.get(executableIntentFingerprint) ?? null;
+    },
   });
+}
+
+export function createP10bLiveSynthesisIntentProviderRequest(
+  input: CreateP10bLiveSynthesisIntentRequestInput,
+): P10bLiveSynthesisIntentProviderRequest {
+  return createP10bLiveSynthesisIntentPreflightAuthority(input).request;
 }
 
 export type ValidatedP10bLiveSynthesisIntent = Readonly<{

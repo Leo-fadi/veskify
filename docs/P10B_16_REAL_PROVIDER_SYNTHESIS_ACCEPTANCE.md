@@ -170,16 +170,19 @@ products, prices, media, assets, facts, presentation copy, JSX, CSS, HTML, JavaS
 executable code. It also cannot construct or combine independent posture fields. Unknown or extra
 fields fail strict validation. The server owns the deterministic seed and all structural selection.
 
-After the asynchronous result returns, the server rebuilds the request from current aggregate,
-commerce, evidence, site-map and direction authority. Any difference rejects the result as stale
-before synthesis. The selected option resolves its exact five-field tuple and fixed seed; no field
-is discarded and no alternate candidate is substituted. Actual coordinated synthesis must match
-the preflight execution fingerprint before a proposal can exist. Different valid options retain
-distinct seeds and structural fingerprints, so the provider still makes a material bounded choice
-within a named direction. Provider refusal, malformed output, unsupported selection, unavailable
-compatible intent, stale authority, candidate failure, materialization failure or transport failure
-returns an accurate merchant-safe non-retryable category and creates no proposal or partial
-storefront.
+After the asynchronous result returns, the server recomputes the exact current-authority fingerprint
+from current aggregate, commerce, evidence, site-map and direction authority.
+Any difference rejects the result as stale before synthesis. When authority is unchanged, the
+server validates the selection against the immutable request and reuses that option's already
+validated preflight result; it does not synchronously rebuild and rematerialize the whole bounded
+inventory after the provider call. The selected option resolves its exact five-field tuple and fixed
+seed; no field is discarded and no alternate candidate is substituted. The retained coordinated
+result must match the preflight execution fingerprint before a proposal can exist. Different valid
+options retain distinct seeds and structural fingerprints, so the provider still makes a material
+bounded choice within a named direction. Provider refusal, malformed output, unsupported selection,
+unavailable compatible intent, stale authority, candidate failure, materialization failure or
+transport failure returns an accurate merchant-safe non-retryable category and creates no proposal
+or partial storefront.
 
 Safe diagnostics contain only provider/model identity, call count, authority revision, selected
 direction/option fingerprint or bounded failure category/stage. Credentials,

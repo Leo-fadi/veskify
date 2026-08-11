@@ -163,6 +163,10 @@ describe("P10B-16L bounded live synthesis intent provider", () => {
     expect(P10B_LIVE_SYNTHESIS_INTENT_CONTRACT_VERSION).toBe("2.0.0");
     const general = request(null);
     expect(general.contractVersion).toBe("2.0.0");
+    expect(Object.isFrozen(general)).toBe(true);
+    expect(Object.isFrozen(general.executableIntents)).toBe(true);
+    expect(Object.isFrozen(general.executableIntents[0])).toBe(true);
+    expect(Object.isFrozen(general.executableIntents[0].characteristics)).toBe(true);
     expect(general.executableIntents).toHaveLength(8);
     expect(
       Object.fromEntries(

@@ -311,6 +311,54 @@ describe("P10B-16L local real-provider synthesis acceptance bridge", () => {
     expect(metadata.directionId).toBe("modern-technical");
   }, 240_000);
 
+  it("reuses preflight results only while post-provider authority remains exact", async () => {
+    const session = p10bLiveSynthesisAcceptanceSession(environment);
+    const acceptanceState = globalThis.__veskifyP10b16lLiveSynthesisAcceptanceState;
+    if (!acceptanceState) throw new Error("The stale-authority test requires acceptance state.");
+    const selectIntent = vi.fn<P10bLiveSynthesisIntentProvider["selectIntent"]>(async (request) => {
+      const current = p10bLiveSynthesisIntentProviderRequestSchema.parse(request);
+      const aggregate = await acceptanceState.repository.get(session.projectId);
+      const draft = aggregate.snapshots.find(({ id }) => id === aggregate.project.draftSnapshotId);
+      if (!draft) throw new Error("The stale-authority test requires the raw draft.");
+      const changedDraft = structuredClone(draft);
+      changedDraft.createdAt = "2026-08-10T10:00:00.001Z";
+      await acceptanceState.repository.saveDraft(session.projectId, changedDraft, {
+        id: draft.id,
+        revision: draft.revision,
+      });
+      return {
+        requestFingerprint: current.requestFingerprint,
+        executableIntentId: current.executableIntents[0].intentId,
+        executableIntentFingerprint: current.executableIntents[0].executableIntentFingerprint,
+      };
+    });
+    const provider: P10bLiveSynthesisIntentProvider = {
+      id: "post-provider-stale-authority-test",
+      modelId: "mocked-post-provider-stale-authority",
+      selectIntent,
+    };
+
+    await expect(
+      generateP10bLiveSynthesisAcceptance({
+        ...session,
+        merchantInstruction: "Create a Premium Editorial storefront.",
+        requestedDirectionId: "premium-editorial",
+        providerConfiguration: { provider, modelId: provider.modelId, category: "eligible" },
+        environment,
+      }),
+    ).rejects.toMatchObject({ code: "stale-authority" });
+    expect(selectIntent).toHaveBeenCalledOnce();
+    expect(await inspectP10bLiveSynthesisAcceptance(environment)).toMatchObject({
+      authoritativeRevision: 0,
+      generationStatus: "failed",
+      providerCallCount: 1,
+      rawPresentation: { pageCount: 1, sectionCount: 0 },
+    });
+    expect(
+      (await loadP10bLiveSynthesisEditorSession({ ...session, environment }))?.proposal,
+    ).toBeNull();
+  }, 60_000);
+
   it("maps typed provider, coordinated-direction and synthesis failures to bounded safe categories", () => {
     const cases: Array<readonly [unknown, string]> = [
       [new P10bLiveSynthesisIntentError("stale-authority"), "stale-authority"],

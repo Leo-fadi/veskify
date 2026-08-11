@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   CoordinatedStorefrontDirectionError,
-  createP10bLiveSynthesisIntentProviderRequest,
+  createP10bLiveSynthesisIntentPreflightAuthority,
   createCoordinatedDirectionSelection,
-  executeCoordinatedDirection,
   getCoordinatedStorefrontDirection,
   listExecutableCoordinatedDirectionIntents,
   p10bLiveSynthesisExecutableResultFingerprint,
@@ -20,7 +19,8 @@ const directionIds = ["premium-editorial", "modern-technical", "minimal-commerce
 
 type LiveRequest = Readonly<{
   fixture: ReturnType<typeof createP10B16LRawKarvonenAcceptanceFixture>;
-  request: ReturnType<typeof createP10bLiveSynthesisIntentProviderRequest>;
+  authority: ReturnType<typeof createP10bLiveSynthesisIntentPreflightAuthority>;
+  request: ReturnType<typeof createP10bLiveSynthesisIntentPreflightAuthority>["request"];
 }>;
 const liveRequestCache = new Map<string, LiveRequest>();
 
@@ -43,54 +43,56 @@ function liveRequest(
     about.profile.id = "content-profile-unavailable";
   }
   const catalogue = fixture.planningInput.catalogue;
+  const authority = createP10bLiveSynthesisIntentPreflightAuthority({
+    merchantInstruction: "Create a complete storefront from current registered authority.",
+    requestedDirectionId,
+    merchantContext: {
+      businessName: "Karvonen",
+      shortDescription: "A Finnish jewellery merchant with approved evidence.",
+      industry: "jewellery",
+      targetCustomer: "Customers choosing lasting Finnish jewellery.",
+      primaryMarket: "Finland",
+      enabledLocales: fixture.planningInput.project.enabledLocales,
+    },
+    catalogueCharacteristics: {
+      productCount: catalogue.products.length,
+      collectionCount: catalogue.collections.length,
+      configurableProductCount: catalogue.products.filter(
+        ({ orderOptions }) => (orderOptions?.length ?? 0) > 0,
+      ).length,
+      optionGroupCount: catalogue.products.reduce(
+        (count, { orderOptions }) => count + (orderOptions?.length ?? 0),
+        0,
+      ),
+      productsWithMultipleMedia: catalogue.products.filter(({ images }) => images.length > 1)
+        .length,
+      productsWithoutPrice: catalogue.products.filter(({ price }) => price === undefined).length,
+      canonicalCommerceFingerprint: "p10b16l-executable-commerce",
+    },
+    evidenceRichness: {
+      approvedBriefRevision: fixture.planningInput.brief.revision,
+      approvedFactFamilies: ["about"],
+      approvedFactCount: fixture.approvedEvidenceReferences.length,
+    },
+    approvedAssetPosture: {
+      approvedAssetCount: 0,
+      approvedRoles: [],
+      editorialMediaAvailable: false,
+    },
+    currentAuthorityFingerprint: "p10b16l-executable-current-authority",
+    executionAuthority: {
+      planningInput: fixture.executionPlanningInput,
+      siteMapDecision,
+      approvedEvidenceReferences: fixture.approvedEvidenceReferences,
+      pageEvidenceAuthority: fixture.pageEvidenceAuthority,
+      contentFactAuthority: fixture.contentFactAuthority,
+      approvedAssetPresentations: fixture.approvedAssetPresentations,
+    },
+  });
   const created = {
     fixture,
-    request: createP10bLiveSynthesisIntentProviderRequest({
-      merchantInstruction: "Create a complete storefront from current registered authority.",
-      requestedDirectionId,
-      merchantContext: {
-        businessName: "Karvonen",
-        shortDescription: "A Finnish jewellery merchant with approved evidence.",
-        industry: "jewellery",
-        targetCustomer: "Customers choosing lasting Finnish jewellery.",
-        primaryMarket: "Finland",
-        enabledLocales: fixture.planningInput.project.enabledLocales,
-      },
-      catalogueCharacteristics: {
-        productCount: catalogue.products.length,
-        collectionCount: catalogue.collections.length,
-        configurableProductCount: catalogue.products.filter(
-          ({ orderOptions }) => (orderOptions?.length ?? 0) > 0,
-        ).length,
-        optionGroupCount: catalogue.products.reduce(
-          (count, { orderOptions }) => count + (orderOptions?.length ?? 0),
-          0,
-        ),
-        productsWithMultipleMedia: catalogue.products.filter(({ images }) => images.length > 1)
-          .length,
-        productsWithoutPrice: catalogue.products.filter(({ price }) => price === undefined).length,
-        canonicalCommerceFingerprint: "p10b16l-executable-commerce",
-      },
-      evidenceRichness: {
-        approvedBriefRevision: fixture.planningInput.brief.revision,
-        approvedFactFamilies: ["about"],
-        approvedFactCount: fixture.approvedEvidenceReferences.length,
-      },
-      approvedAssetPosture: {
-        approvedAssetCount: 0,
-        approvedRoles: [],
-        editorialMediaAvailable: false,
-      },
-      currentAuthorityFingerprint: "p10b16l-executable-current-authority",
-      executionAuthority: {
-        planningInput: fixture.executionPlanningInput,
-        siteMapDecision,
-        approvedEvidenceReferences: fixture.approvedEvidenceReferences,
-        pageEvidenceAuthority: fixture.pageEvidenceAuthority,
-        contentFactAuthority: fixture.contentFactAuthority,
-        approvedAssetPresentations: fixture.approvedAssetPresentations,
-      },
-    }),
+    authority,
+    request: authority.request,
   };
   if (!overrideSiteMap) liveRequestCache.set(cacheKey, created);
   return created;
@@ -228,7 +230,7 @@ describe("P10B-16L executable live-intent compatibility", () => {
 
   it("executes every advertised option exactly and preserves its complete bounded tuple", () => {
     for (const directionId of directionIds) {
-      const { fixture, request } = liveRequest(directionId);
+      const { authority, fixture, request } = liveRequest(directionId);
       const rawBefore = canonicalValueString(fixture.rawDraft);
       const commerceBefore = canonicalValueString(fixture.planningInput.catalogue);
       const structuralFingerprints = new Set<string>();
@@ -241,15 +243,8 @@ describe("P10B-16L executable live-intent compatibility", () => {
           executableIntentFingerprint: option.executableIntentFingerprint,
         });
         expect(validated.directionRequest.characteristics).toEqual(option.characteristics);
-        const result = executeCoordinatedDirection({
-          planningInput: fixture.executionPlanningInput,
-          siteMapDecision: fixture.siteMapDecision,
-          approvedEvidenceReferences: fixture.approvedEvidenceReferences,
-          pageEvidenceAuthority: fixture.pageEvidenceAuthority,
-          contentFactAuthority: fixture.contentFactAuthority,
-          approvedAssetPresentations: fixture.approvedAssetPresentations,
-          directionRequest: validated.directionRequest,
-        });
+        const result = authority.resolveExecutableResult(option.executableIntentFingerprint);
+        if (result === null) throw new Error("The executable preflight result was not retained.");
         expect(p10bLiveSynthesisExecutableResultFingerprint(result)).toBe(
           option.expectedExecutionFingerprint,
         );

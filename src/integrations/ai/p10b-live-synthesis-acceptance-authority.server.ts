@@ -4,8 +4,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import {
   BoundedStorefrontSynthesisError,
   CoordinatedStorefrontDirectionError,
-  createP10bLiveSynthesisIntentProviderRequest,
-  executeCoordinatedDirection,
+  createP10bLiveSynthesisIntentPreflightAuthority,
   listCoordinatedStorefrontDirections,
   p10bLiveSynthesisExecutableResultFingerprint,
   P10bLiveSynthesisIntentError,
@@ -268,14 +267,14 @@ function authorityFingerprint(
   })}`;
 }
 
-function intentRequest(input: {
+function intentPreflightAuthority(input: {
   fixture: ReturnType<typeof createP10B16LRawKarvonenAcceptanceFixture>;
   aggregate: ProjectAggregate;
   merchantInstruction: string;
   requestedDirectionId: CoordinatedStorefrontDirectionId | null;
 }) {
   const { catalogue, brief } = input.fixture.planningInput;
-  return createP10bLiveSynthesisIntentProviderRequest({
+  return createP10bLiveSynthesisIntentPreflightAuthority({
     merchantInstruction: input.merchantInstruction,
     requestedDirectionId: input.requestedDirectionId,
     merchantContext: {
@@ -571,7 +570,8 @@ export async function generateP10bLiveSynthesisAcceptance(input: {
       ) {
         throw new P10bLiveSynthesisAcceptanceError("stale");
       }
-      const request = intentRequest({ ...input, fixture, aggregate });
+      const preflightAuthority = intentPreflightAuthority({ ...input, fixture, aggregate });
+      const request = preflightAuthority.request;
       if (current.session.providerCallCount !== 0) {
         throw new P10bLiveSynthesisAcceptanceError("stale");
       }
@@ -581,30 +581,24 @@ export async function generateP10bLiveSynthesisAcceptance(input: {
       const providerResult = await input.providerConfiguration.provider.selectIntent(request);
       generationStage = "authority-refresh";
       const currentAggregate = await current.repository.get(input.projectId);
-      const currentRequest = intentRequest({ ...input, fixture, aggregate: currentAggregate });
-      if (canonicalValueString(currentRequest) !== canonicalValueString(request)) {
+      if (authorityFingerprint(fixture, currentAggregate) !== request.currentAuthorityFingerprint) {
         throw new P10bLiveSynthesisIntentError("stale-authority");
       }
       generationStage = "provider-selection";
       const validatedIntent = validateP10bLiveSynthesisIntentProviderResult(
-        currentRequest,
+        request,
         providerResult,
       );
       selectedDirectionId = validatedIntent.directionRequest.directionId;
       selectedExecutableIntentFingerprint = validatedIntent.executableIntentFingerprint;
       generationStage = "coordinated-synthesis";
-      const result = executeCoordinatedDirection({
-        planningInput: fixture.executionPlanningInput,
-        siteMapDecision: fixture.siteMapDecision,
-        approvedEvidenceReferences: fixture.approvedEvidenceReferences,
-        pageEvidenceAuthority: fixture.pageEvidenceAuthority,
-        contentFactAuthority: fixture.contentFactAuthority,
-        approvedAssetPresentations: fixture.approvedAssetPresentations,
-        directionRequest: validatedIntent.directionRequest,
-      });
+      const result = preflightAuthority.resolveExecutableResult(
+        validatedIntent.executableIntentFingerprint,
+      );
       if (
+        result === null ||
         p10bLiveSynthesisExecutableResultFingerprint(result) !==
-        validatedIntent.expectedExecutionFingerprint
+          validatedIntent.expectedExecutionFingerprint
       ) {
         throw new P10bLiveSynthesisAcceptanceError("malformed-state");
       }
