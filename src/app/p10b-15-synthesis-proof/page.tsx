@@ -1,3 +1,4 @@
+import { resolveDynamicCommerceRoutePage } from "@/application/dynamic-commerce-routes";
 import { P10B15_REPRESENTATIVE_INTENTS } from "@/data/demo/p10b-15-bounded-synthesis";
 import { createP10B15BoundedSynthesisFixture } from "@/data/demo/p10b-15-bounded-synthesis";
 import { P10B15SynthesisProofClient } from "./proof-client";
@@ -20,7 +21,21 @@ export default async function P10B15SynthesisProofPage({
     : "preview";
   const proof = createP10B15BoundedSynthesisFixture();
   const outcome = proof.outcomes[intent];
-  const page = outcome.materialization.snapshot.pages.find((candidate) => candidate.slug === route);
+  const dynamicRoute =
+    outcome.materialization.snapshot.dynamicCommercePresentation?.routeInventory.find(
+      (candidate) => candidate.route === route,
+    );
+  const isDynamicCommercePath =
+    route === "/search" || route.startsWith("/collections/") || route.startsWith("/products/");
+  const page = dynamicRoute
+    ? resolveDynamicCommerceRoutePage({
+        snapshot: outcome.materialization.snapshot,
+        catalogue: proof.source.fixture.aggregate.catalogue,
+        routeId: dynamicRoute.id,
+      }).page
+    : outcome.materialization.snapshot.dynamicCommercePresentation && isDynamicCommercePath
+      ? undefined
+      : outcome.materialization.snapshot.pages.find((candidate) => candidate.slug === route);
   if (!page) throw new Error(`Unknown P10B-15 proof route: ${route}`);
   return (
     <P10B15SynthesisProofClient
@@ -28,7 +43,7 @@ export default async function P10B15SynthesisProofPage({
       evidenceReferences={proof.source.approvedEvidenceReferences}
       intent={intent}
       locale={locale}
-      pageId={page.id}
+      page={page}
       snapshot={outcome.materialization.snapshot}
       snapshotFingerprint={outcome.materialization.snapshotFingerprint}
       synthesisFingerprint={outcome.decision.synthesisFingerprint}

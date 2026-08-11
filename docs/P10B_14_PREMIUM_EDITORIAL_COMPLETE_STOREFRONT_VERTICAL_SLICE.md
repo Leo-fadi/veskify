@@ -35,7 +35,7 @@ authorities:
 
 These 17 routes form one P10B-05 site map with exact singleton/cardinality, locale, navigation,
 parent-chain and reachability validation. The P10B-13 loading presentation remains a transient
-route-local runtime state; it is deliberately not persisted as an eighteenth page.
+route-local runtime state; it is deliberately not persisted as an eighteenth static page.
 
 ## Canonical generation and evidence
 
@@ -53,7 +53,7 @@ approved Lumo brief/facts + read-only catalogue + approved asset presentations
 → registered P10B-09/P10B-10/P10B-11 profile selections
 → current whole-storefront generation plan
 → current proposal compiler and runtime materializer
-→ one 17-page StorefrontSnapshot
+→ one 17-route StorefrontSnapshot with static pages plus dynamic commerce archetypes
 → canonical preview/editor/published renderers
 → save/reload and authoritative deterministic publication
 ```
@@ -77,7 +77,7 @@ selections, approved asset lineage, product bindings and utility configuration a
 Transient cart/search/checkout runtime projections and actions are absent from persisted state.
 
 The authoritative manual preparation/confirmation path compiles that saved snapshot, commits the
-immutable compiled artifact/version/pointer transaction and retains the same 17-page canonical
+immutable compiled artifact/version/pointer transaction and retains the same 17-route canonical
 snapshot fingerprint. Published rendering uses the same registered component implementations as
 editor and preview. No production deployment, Vesko write, save side channel or alternate publish
 model is involved.
@@ -126,14 +126,21 @@ the current P10B-06 singular shared-frame model while retaining its legacy-frame
 Two upstream convergence gaps were corrected centrally: site-map materialization now validates the
 selected shared frame against every current commercial profile authority, and P10B-12 factual pages
 can flow through the current whole-storefront plan/proposal lifecycle with their exact localized
-content binding and bounded surface override. Search and multiple PDP pages retain their exact
+content binding and bounded surface override. Search and multiple PDP routes retain their exact
 materialized authority without weakening protected commerce.
+
+P10B-16P-01 subsequently converges the collection, search and two PDP routes into compact route
+inventory plus maintained collection/search and PDP archetypes in the same snapshot. The 17-route
+coverage and retained P10B-14 commercial evidence remain valid; the dynamic routes are no longer
+separate editable design pages. See
+[`P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md`](P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md).
 
 ## Deferred work
 
-P10B remains **Partial**. P10B-15 owns bounded multi-store synthesis and narrative selection;
-P10B-16 owns coordinated direction packages and duplicate/near-duplicate control; P10B-17 owns
-phase-wide responsive, accessibility and performance closure; and P10B-18 owns repeated 100+
-configuration diversity plus representative retained human quality acceptance. P10C still owns the
-merchant-facing Storefront Studio. Vesko operational adapters and production deployment remain P11
-and P12 work respectively.
+P10B remains **Partial**. P10B-15 and P10B-16 are Baseline for bounded synthesis, coordinated
+directions and diversity control; P10B-16P-01 is Baseline for dynamic route/archetype convergence.
+P10B-16P-02 owns the prompted design-plan contract, P10B-16P-03 owns the final Studio generation
+journey, P10B-17 owns phase-wide responsive, accessibility and performance closure, and P10B-18
+owns repeated 100+ configuration diversity plus representative retained human quality acceptance.
+P10C still owns general merchant-facing Storefront Studio editing. Vesko operational adapters and
+production deployment remain P11 and P12 work respectively.

@@ -20,6 +20,11 @@ import {
 } from "@/domain/component-platform";
 import { brandSystemSchema, resolveBrandSystemDesignDna } from "@/domain/design-system";
 import { validateResponsiveImageAuthority } from "@/application/responsive-image-authority";
+import {
+  DynamicCommerceRouteAuthorityError,
+  migrateLegacyDynamicCommerceRoutes,
+  validateCurrentDynamicCommercePresentationAuthority,
+} from "@/application/dynamic-commerce-routes";
 import type { Project } from "@/domain/project";
 import { canonicalLocaleOrder, idSchema, localeSchema } from "@/domain/shared";
 import {
@@ -27,6 +32,7 @@ import {
   canonicalValueFingerprint,
   canonicalValueString,
   contentSupportFactDocumentSchema,
+  dynamicCommercePresentationAuthoritySchema,
   navigationModelSchema,
   pageModelSchema,
   pageFactEvidenceReferenceSchema,
@@ -110,6 +116,7 @@ const compilerAuthoritySchema = z
     productMediaFingerprint: fingerprintSchema,
     productCardAuthorityFingerprint: fingerprintSchema,
     approvedAssetFingerprint: fingerprintSchema,
+    dynamicCommercePresentationFingerprint: fingerprintSchema.optional(),
     migrationStatus: z.enum(["current", "unresolved"]),
     migrationFingerprint: fingerprintSchema,
   })
@@ -175,6 +182,9 @@ export const compiledPublicationResultSchema = z
         })
         .strict(),
     ),
+    // Optional only for artifacts compiled from pre-P10B-16P-01 snapshots.
+    // When present, the exact canonical authority is included in the runtime fingerprint.
+    dynamicCommercePresentation: dynamicCommercePresentationAuthoritySchema.optional(),
     contentSupportFactDocuments: z.array(contentSupportFactDocumentSchema).default([]),
     rendererTarget: z.literal("published"),
     localeAuthority: localeAuthoritySchema,
@@ -208,6 +218,7 @@ export const publishCompileReceiptSchema = z
     productMediaFingerprint: fingerprintSchema,
     productCardAuthorityFingerprint: fingerprintSchema,
     approvedAssetFingerprint: fingerprintSchema,
+    dynamicCommercePresentationFingerprint: fingerprintSchema.optional(),
     localeAuthority: localeAuthoritySchema,
     migrationStatus: z.literal("current"),
     migrationFingerprint: fingerprintSchema,
@@ -263,6 +274,7 @@ export type PublishCompilerErrorCode =
   | "navigation-route-violation"
   | "product-media-violation"
   | "stale-product-card-authority"
+  | "stale-dynamic-commerce-authority"
   | "invalid-approved-asset"
   | "invalid-locale-authority"
   | "duplicate-published-route"
@@ -323,7 +335,7 @@ function rendererAuthorityFingerprint(): string {
 
 function publishedRouteAuthority(snapshot: StorefrontSnapshot) {
   const pagePaths = createStorefrontPagePaths({ snapshot });
-  const routes = snapshot.pages
+  const staticRoutes = snapshot.pages
     .map((page) => ({
       pageId: page.id,
       pageType: page.type,
@@ -335,6 +347,23 @@ function publishedRouteAuthority(snapshot: StorefrontSnapshot) {
         compare(left.pageType, right.pageType) ||
         compare(left.pageId, right.pageId),
     );
+  const dynamicPresentation = snapshot.dynamicCommercePresentation;
+  const routes = dynamicPresentation
+    ? [
+        ...staticRoutes,
+        ...dynamicPresentation.routeInventory.map((route) => ({
+          routeId: route.id,
+          routeKind: route.kind,
+          path: route.route,
+          ...(route.kind === "collection" ? { collectionId: route.collectionId } : {}),
+          ...(route.kind === "product" ? { productId: route.productId } : {}),
+        })),
+      ].sort(
+        (left, right) =>
+          compare(left.path, right.path) ||
+          canonicalValueString(left).localeCompare(canonicalValueString(right)),
+      )
+    : staticRoutes;
   const seenPaths = new Set<string>();
   for (const route of routes) {
     if (seenPaths.has(route.path)) {
@@ -342,7 +371,7 @@ function publishedRouteAuthority(snapshot: StorefrontSnapshot) {
     }
     seenPaths.add(route.path);
   }
-  const homeRoutes = routes.filter(({ pageType }) => pageType === "home");
+  const homeRoutes = staticRoutes.filter(({ pageType }) => pageType === "home");
   if (homeRoutes.length > 1) {
     throw new PublishCompilerError("duplicate-published-route");
   }
@@ -433,14 +462,71 @@ function projectLocaleAuthority(
   };
 }
 
-function migrationFingerprint(): string {
-  return `publish-migrations-${canonicalValueFingerprint(
-    veskifyComponentCapabilityManifest.manifest.entries.map((entry) => ({
-      componentType: entry.componentType,
-      version: entry.componentDefinitionVersion,
-      migration: entry.migration,
-    })),
-  )}`;
+function componentMigrationAuthority() {
+  return veskifyComponentCapabilityManifest.manifest.entries.map((entry) => ({
+    componentType: entry.componentType,
+    version: entry.componentDefinitionVersion,
+    migration: entry.migration,
+  }));
+}
+
+function hasGovernedLegacyDynamicCommerceRoutes(snapshot: StorefrontSnapshot): boolean {
+  return snapshot.pages.some((page) =>
+    ["collection", "search-results", "product-detail"].includes(page.pageFamily?.familyId ?? ""),
+  );
+}
+
+function migrationAuthority(
+  snapshot: StorefrontSnapshot,
+  catalogue: CatalogueDisplayModel,
+): Readonly<{
+  status: "current" | "unresolved";
+  fingerprint: string;
+}> {
+  const componentMigrations = componentMigrationAuthority();
+  if (snapshot.dynamicCommercePresentation) {
+    return {
+      status: "current",
+      fingerprint: `publish-migrations-${canonicalValueFingerprint({
+        componentMigrations,
+        dynamicCommercePresentationContractVersion:
+          snapshot.dynamicCommercePresentation.contractVersion,
+      })}`,
+    };
+  }
+
+  // Pre-page-family snapshots remain a retained compatibility input. A
+  // governed per-route collection/search/PDP snapshot, however, is an
+  // explicitly migratable predecessor of the compact authority and must not
+  // be stamped as current by the publication compiler.
+  if (!hasGovernedLegacyDynamicCommerceRoutes(snapshot)) {
+    return {
+      status: "current",
+      fingerprint: `publish-migrations-${canonicalValueFingerprint(componentMigrations)}`,
+    };
+  }
+
+  const migration = migrateLegacyDynamicCommerceRoutes(snapshot, catalogue);
+  const migrationDecision =
+    migration.status === "migrated"
+      ? {
+          status: migration.status,
+          authorityFingerprint: migration.authority.authorityFingerprint,
+          migratedRouteCount: migration.migratedRouteCount,
+        }
+      : migration.status === "requires-decision"
+        ? { status: migration.status, decisions: migration.decisions }
+        : {
+            status: migration.status,
+            authorityFingerprint: migration.authority.authorityFingerprint,
+          };
+  return {
+    status: "unresolved",
+    fingerprint: `publish-migrations-${canonicalValueFingerprint({
+      componentMigrations,
+      dynamicCommerceMigration: migrationDecision,
+    })}`,
+  };
 }
 
 function componentAuthorities() {
@@ -495,6 +581,7 @@ export function createCurrentPublishCompilerInput(
     primaryLocale: input.aggregate.project.primaryLocale,
     enabledLocales: input.aggregate.project.enabledLocales,
   });
+  const migration = migrationAuthority(input.snapshot, input.aggregate.catalogue);
   return publishCompilerInputSchema.parse({
     contractVersion: publishCompilerContractVersion,
     projectId: input.aggregate.project.id,
@@ -527,13 +614,23 @@ export function createCurrentPublishCompilerInput(
       productMediaFingerprint: productMediaFingerprint(input.aggregate.catalogue),
       productCardAuthorityFingerprint: canonicalProductCardAuthority.fingerprint,
       approvedAssetFingerprint: approvedAssetFingerprint(input.snapshot),
-      migrationStatus: "current",
-      migrationFingerprint: migrationFingerprint(),
+      ...(input.snapshot.dynamicCommercePresentation
+        ? {
+            dynamicCommercePresentationFingerprint:
+              input.snapshot.dynamicCommercePresentation.authorityFingerprint,
+          }
+        : {}),
+      migrationStatus: migration.status,
+      migrationFingerprint: migration.fingerprint,
     },
   });
 }
 
-function assertExactAuthority(input: PublishCompilerInput): void {
+function assertExactAuthority(
+  input: PublishCompilerInput,
+  snapshot: StorefrontSnapshot,
+  catalogue: CatalogueDisplayModel,
+): void {
   const authority = input.authority;
   const manifest = veskifyComponentCapabilityManifest.manifest;
   if (authority.snapshotContractVersion !== storefrontSnapshotContractVersion) {
@@ -548,9 +645,11 @@ function assertExactAuthority(input: PublishCompilerInput): void {
   if (authority.registryFingerprint !== runtimeRegistryFingerprint()) {
     throw new PublishCompilerError("stale-registry-authority");
   }
+  const migration = migrationAuthority(snapshot, catalogue);
   if (
-    authority.migrationStatus !== "current" ||
-    authority.migrationFingerprint !== migrationFingerprint()
+    migration.status !== "current" ||
+    authority.migrationStatus !== migration.status ||
+    authority.migrationFingerprint !== migration.fingerprint
   ) {
     throw new PublishCompilerError("unresolved-migration");
   }
@@ -561,6 +660,12 @@ function assertExactAuthority(input: PublishCompilerInput): void {
   }
   if (authority.productCardAuthorityFingerprint !== canonicalProductCardAuthority.fingerprint) {
     throw new PublishCompilerError("stale-product-card-authority");
+  }
+  if (
+    authority.dynamicCommercePresentationFingerprint !==
+    snapshot.dynamicCommercePresentation?.authorityFingerprint
+  ) {
+    throw new PublishCompilerError("stale-dynamic-commerce-authority");
   }
   if (
     authority.sharedFrameFingerprint !==
@@ -600,8 +705,8 @@ function assertComponentAndRendererAuthority(
   const supplied = new Map(
     input.authority.componentAuthorities.map((authority) => [authority.componentType, authority]),
   );
-  const assertSection = (
-    section: StorefrontSnapshot["pages"][number]["sections"][number],
+  const assertComponentSelection = (
+    section: Pick<StorefrontSnapshot["pages"][number]["sections"][number], "component" | "variant">,
     pageType: StorefrontSnapshot["pages"][number]["type"],
   ) => {
     const entry = veskifyComponentCapabilityManifest.getByComponentType(section.component);
@@ -645,12 +750,22 @@ function assertComponentAndRendererAuthority(
       snapshot.sharedFrame.footer,
       snapshot.sharedFrame.announcement,
     ]) {
-      if (section) assertSection(section, "home");
+      if (section) assertComponentSelection(section, "home");
     }
   }
   for (const page of snapshot.pages) {
     for (const section of page.sections) {
-      assertSection(section, page.type);
+      assertComponentSelection(section, page.type);
+    }
+  }
+  for (const archetype of snapshot.dynamicCommercePresentation?.collectionSearchArchetypes ?? []) {
+    for (const presentation of archetype.componentPresentations) {
+      assertComponentSelection(presentation, "collection");
+    }
+  }
+  for (const archetype of snapshot.dynamicCommercePresentation?.productDetailArchetypes ?? []) {
+    for (const presentation of archetype.componentPresentations) {
+      assertComponentSelection(presentation, "product");
     }
   }
 }
@@ -667,6 +782,47 @@ function assertProfiles(input: PublishCompilerInput, snapshot: StorefrontSnapsho
           snapshot.sharedFrame.footer,
         ]
       : page.sections;
+  const dynamicArchetypes = [
+    ...(snapshot.dynamicCommercePresentation?.collectionSearchArchetypes ?? []),
+    ...(snapshot.dynamicCommercePresentation?.productDetailArchetypes ?? []),
+  ];
+  const dynamicProfiles = dynamicArchetypes.map(({ profile }) => profile);
+  for (const archetype of dynamicArchetypes) {
+    const current = veskifyComponentCapabilityManifest.getByProfileId(archetype.profile.profileId);
+    const pagePlan = listExecutablePageBlueprintProfiles().find(
+      (candidate) => candidate.profile?.id === archetype.profile.profileId,
+    );
+    if (
+      !current ||
+      !pagePlan?.profile ||
+      current.profileVersion !== archetype.profile.profileVersion
+    ) {
+      throw new PublishCompilerError("stale-profile-authority");
+    }
+    const materialization = materializeExecutablePageBlueprint({
+      pagePlan,
+      componentDefinitions: veskifyComponentDefinitionsV2,
+      availableBindingCategories: pagePlan.profile.requiredBindingCategories,
+    });
+    if (archetype.profile.fingerprint !== materialization.fingerprint) {
+      throw new PublishCompilerError("stale-profile-authority");
+    }
+    if (
+      archetype.componentPresentations.length !== materialization.slots.length ||
+      archetype.componentPresentations.some((presentation, index) => {
+        const selection = pagePlan.profile!.componentSelections[index];
+        const slot = materialization.slots[index];
+        return (
+          slot?.slotId !== presentation.slotId ||
+          slot.component !== presentation.component ||
+          selection?.slotId !== presentation.slotId ||
+          !selection.variants.includes(presentation.variant)
+        );
+      })
+    ) {
+      throw new PublishCompilerError("invalid-ordering-or-omission");
+    }
+  }
   const canonicalProfileIds = [...input.authority.profileAuthorities]
     .map(({ profileId }) => profileId)
     .sort(compare);
@@ -696,6 +852,16 @@ function assertProfiles(input: PublishCompilerInput, snapshot: StorefrontSnapsho
     const materializedProfileAuthority = materialization.fingerprint === supplied.fingerprint;
     if (!registeredProfileAuthority && !materializedProfileAuthority) {
       throw new PublishCompilerError("stale-profile-authority");
+    }
+    if (
+      dynamicProfiles.some(
+        (profile) =>
+          profile.profileId === supplied.profileId &&
+          profile.profileVersion === supplied.profileVersion &&
+          profile.fingerprint === supplied.fingerprint,
+      )
+    ) {
+      continue;
     }
     if (registeredProfileAuthority) {
       const exactRegisteredPage = snapshot.pages.find(
@@ -755,6 +921,17 @@ function assertProfiles(input: PublishCompilerInput, snapshot: StorefrontSnapsho
       return projected.slice(projectedIndex).every((entry) => !entry.required);
     });
     if (!exactPage) throw new PublishCompilerError("invalid-ordering-or-omission");
+  }
+}
+
+function assertDynamicCommercePresentationAuthority(snapshot: StorefrontSnapshot): void {
+  try {
+    validateCurrentDynamicCommercePresentationAuthority(snapshot);
+  } catch (cause) {
+    if (cause instanceof DynamicCommerceRouteAuthorityError && cause.code === "stale-profile") {
+      throw new PublishCompilerError("stale-profile-authority", { cause });
+    }
+    throw new PublishCompilerError("invalid-binding", { cause });
   }
 }
 
@@ -896,6 +1073,10 @@ function assertSnapshotAuthority(
   if (authority.approvedAssetFingerprint !== approvedAssetFingerprint(snapshot)) {
     throw new PublishCompilerError("invalid-approved-asset");
   }
+  const dynamicComponentPresentations = [
+    ...(snapshot.dynamicCommercePresentation?.collectionSearchArchetypes ?? []),
+    ...(snapshot.dynamicCommercePresentation?.productDetailArchetypes ?? []),
+  ].flatMap(({ componentPresentations }) => componentPresentations);
   if (
     [
       ...(snapshot.sharedFrame
@@ -906,10 +1087,15 @@ function assertSnapshotAuthority(
           ].filter((section): section is NonNullable<typeof section> => section !== undefined)
         : []),
       ...snapshot.pages.flatMap((page) => page.sections),
+      ...dynamicComponentPresentations,
     ].some(
       (section) =>
         containsProtectedCommerceTruth(section.content) ||
-        containsProtectedCommerceTruth(section.props),
+        containsProtectedCommerceTruth(section.props) ||
+        containsProtectedCommerceTruth("styleOverrides" in section ? section.styleOverrides : {}) ||
+        containsProtectedCommerceTruth(
+          "boundedParameters" in section ? section.boundedParameters : {},
+        ),
     )
   ) {
     throw new PublishCompilerError("protected-commerce-violation");
@@ -973,6 +1159,26 @@ function assertCurrentContentSupportFacts(
         }
       }
     }
+    for (const archetype of snapshot.dynamicCommercePresentation?.collectionSearchArchetypes ??
+      []) {
+      for (const presentation of archetype.componentPresentations) {
+        requireCanonicalProductCardAnatomy(
+          z.object({ cardVariant: z.string() }).passthrough().parse(presentation.props).cardVariant,
+          "collectionResults",
+        );
+      }
+    }
+    for (const archetype of snapshot.dynamicCommercePresentation?.productDetailArchetypes ?? []) {
+      for (const presentation of archetype.componentPresentations) {
+        requireCanonicalProductCardAnatomy(
+          z
+            .object({ relatedCardVariant: z.string().default("standard") })
+            .passthrough()
+            .parse(presentation.props).relatedCardVariant,
+          "relatedProducts",
+        );
+      }
+    }
   } catch (cause) {
     throw new PublishCompilerError("invalid-binding", { cause });
   }
@@ -1023,6 +1229,12 @@ function compileResult(
     productMediaFingerprint: input.authority.productMediaFingerprint,
     productCardAuthorityFingerprint: input.authority.productCardAuthorityFingerprint,
     approvedAssetFingerprint: input.authority.approvedAssetFingerprint,
+    ...(input.authority.dynamicCommercePresentationFingerprint
+      ? {
+          dynamicCommercePresentationFingerprint:
+            input.authority.dynamicCommercePresentationFingerprint,
+        }
+      : {}),
     localeAuthority,
     migrationFingerprint: input.authority.migrationFingerprint,
   };
@@ -1066,6 +1278,9 @@ function compileResult(
       page,
       componentExecutions: page.sections.map(componentExecution),
     })),
+    ...(snapshot.dynamicCommercePresentation
+      ? { dynamicCommercePresentation: snapshot.dynamicCommercePresentation }
+      : {}),
     contentSupportFactDocuments: snapshot.contentSupportFactDocuments,
     rendererTarget: "published" as const,
     localeAuthority,
@@ -1103,6 +1318,12 @@ function compileReceipt(
     productMediaFingerprint: input.authority.productMediaFingerprint,
     productCardAuthorityFingerprint: input.authority.productCardAuthorityFingerprint,
     approvedAssetFingerprint: input.authority.approvedAssetFingerprint,
+    ...(input.authority.dynamicCommercePresentationFingerprint
+      ? {
+          dynamicCommercePresentationFingerprint:
+            input.authority.dynamicCommercePresentationFingerprint,
+        }
+      : {}),
     localeAuthority: result.localeAuthority,
     migrationStatus: "current" as const,
     migrationFingerprint: input.authority.migrationFingerprint,
@@ -1160,7 +1381,8 @@ export function compileStorefrontPublication(inputValue: unknown): TrustedPublis
   }
   const localeAuthority = projectLocaleAuthority(input.projectLocales);
   publishedRouteAuthority(snapshot.data);
-  assertExactAuthority(input);
+  assertExactAuthority(input, snapshot.data, catalogue.data);
+  assertDynamicCommercePresentationAuthority(snapshot.data);
   assertSnapshotAuthority(input, snapshot.data, catalogue.data);
   assertCurrentProofEvidence(snapshot.data, input.currentEvidenceReferences);
   assertCurrentContentSupportFacts(snapshot.data, input.currentEvidenceReferences);

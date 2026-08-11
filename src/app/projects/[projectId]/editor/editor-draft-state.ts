@@ -1,10 +1,18 @@
-import type { AiStorefrontProjection } from "@/application/ai-storefront";
+import type { AiStorefrontProjection, AiStorefrontProposal } from "@/application/ai-storefront";
+import {
+  applyDynamicCommerceArchetypePage,
+  projectDynamicCommerceArchetypePages,
+} from "@/application/dynamic-commerce-routes";
+import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import type { BrandSystem } from "@/domain/design-system";
 import {
   canonicalValueFingerprint,
   type PageModel,
+  type PageType,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
+
+const legacyEditorPageTypes = new Set<PageType>(["home", "collection", "product"]);
 
 export type AcceptedAiReceiptClientAuthority = Readonly<{
   receiptId: string;
@@ -43,11 +51,43 @@ export function composeActiveEditorDraft({
   sessionPages: Readonly<Record<string, PageModel>>;
   brandSystem?: BrandSystem;
 }): StorefrontSnapshot {
-  return {
+  let active = {
     ...structuredClone(draft),
     pages: draft.pages.map((page) => structuredClone(sessionPages[page.id] ?? page)),
     brandSystem: structuredClone(brandSystem ?? draft.brandSystem),
   };
+  if (active.dynamicCommercePresentation) {
+    for (const sessionPage of Object.values(sessionPages)) {
+      if (!active.pages.some(({ id }) => id === sessionPage.id)) {
+        active = applyDynamicCommerceArchetypePage(active, sessionPage);
+      }
+    }
+  }
+  return active;
+}
+
+export function projectCanonicalEditorPages({
+  draft,
+  catalogue,
+  includeAllLegacyPages = false,
+  representativeRouteIds = {},
+}: {
+  draft: StorefrontSnapshot;
+  catalogue: CatalogueDisplayModel;
+  includeAllLegacyPages?: boolean;
+  representativeRouteIds?: Readonly<Record<string, string>>;
+}): PageModel[] {
+  if (!draft.dynamicCommercePresentation) {
+    return draft.pages
+      .filter((page) => includeAllLegacyPages || legacyEditorPageTypes.has(page.type))
+      .map((page) => structuredClone(page));
+  }
+  return [
+    ...draft.pages.map((page) => structuredClone(page)),
+    ...projectDynamicCommerceArchetypePages(draft, catalogue, representativeRouteIds).map(
+      ({ page }) => page,
+    ),
+  ];
 }
 
 export function changedPagesForActiveDraft({
@@ -78,4 +118,39 @@ export function proposalStorefrontPreview({
   if (!previewActive || proposal?.status !== "pending") return undefined;
   if (visibleState !== "proposalReady" && visibleState !== "accepting") return undefined;
   return proposal.proposedStorefront;
+}
+
+/**
+ * Projects a migration proposal into the canonical snapshot shape used only by the read-only
+ * review canvas. The accepted draft remains the untouched baseline passed to proposal execution.
+ */
+export function proposalCanonicalReviewSnapshot({
+  proposal,
+  previewActive,
+  visibleState,
+  acceptanceBaseline,
+}: {
+  proposal: Pick<
+    AiStorefrontProposal,
+    "status" | "proposedStorefront" | "dynamicCommerceMigration"
+  > | null;
+  previewActive: boolean;
+  visibleState: string;
+  acceptanceBaseline: StorefrontSnapshot;
+}): StorefrontSnapshot | undefined {
+  const projection = proposalStorefrontPreview({ proposal, previewActive, visibleState });
+  if (
+    !projection ||
+    !proposal?.dynamicCommerceMigration ||
+    !projection.dynamicCommercePresentation
+  ) {
+    return undefined;
+  }
+  return {
+    ...structuredClone(acceptanceBaseline),
+    brandSystem: structuredClone(projection.brandSystem),
+    navigation: structuredClone(projection.navigation),
+    pages: structuredClone(projection.pages),
+    dynamicCommercePresentation: structuredClone(projection.dynamicCommercePresentation),
+  };
 }

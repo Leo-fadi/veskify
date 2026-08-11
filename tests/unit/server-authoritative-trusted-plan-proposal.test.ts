@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { AiStorefrontProviderRequest } from "@/application/ai-storefront-generation";
 import {
+  executeAiStorefrontProposal,
   projectAiStorefrontSnapshot,
   validateAiStorefrontProposal,
 } from "@/application/ai-storefront";
@@ -10,7 +11,7 @@ import { designOperationSchema } from "@/application/design-operations";
 import type { WholeStorefrontPlanningInput } from "@/application/whole-storefront-generation-plan";
 import { createP10B14PremiumEditorialFixture } from "@/data/demo/p10b-14-premium-editorial";
 import { createP10B16LRawKarvonenAcceptanceFixture } from "@/data/demo/p10b-16l-live-provider-acceptance";
-import { canonicalValueString } from "@/domain/storefront";
+import { canonicalStorefrontContentFingerprint, canonicalValueString } from "@/domain/storefront";
 import {
   createServerAuthoritativeTrustedPlanProposalTransport,
   createServerAuthoritativeTrustedPlanProposalResponse,
@@ -66,8 +67,22 @@ describe("server-authoritative trusted whole-storefront plan proposal projection
     expect(source.slice.plan.designSystemSelection.directionId).toBe("premiumEditorial");
     expect(response.proposal.operations).not.toHaveLength(0);
     expect(response.metadata.authoritativePlanningFingerprint).toBe(source.slice.plan.fingerprint);
-    expect(canonicalValueString(response.proposal.proposedStorefront)).toBe(
-      canonicalValueString(projectAiStorefrontSnapshot(source.slice.snapshot)),
+    expect(canonicalValueString(response.proposal.originalStorefront)).toBe(
+      canonicalValueString(projectAiStorefrontSnapshot(source.slice.planningInput.draft)),
+    );
+    expect(response.proposal.dynamicCommerceMigration).toMatchObject({
+      kind: "canonicalDynamicCommerceMigration",
+      resultingAuthorityFingerprint:
+        source.slice.snapshot.dynamicCommercePresentation!.authorityFingerprint,
+    });
+    expect(response.proposal.proposedStorefront.dynamicCommercePresentation).toEqual(
+      source.slice.snapshot.dynamicCommercePresentation,
+    );
+    expect(response.proposal.proposedStorefront.pageOrder).toEqual(
+      source.slice.snapshot.pages.map(({ id }) => id),
+    );
+    expect(new Set(response.proposal.proposedStorefront.pageOrder)).toEqual(
+      new Set(source.slice.snapshot.pages.map(({ id }) => id)),
     );
   });
 
@@ -145,6 +160,23 @@ describe("server-authoritative trusted whole-storefront plan proposal projection
     });
     expect(response.metadata.authoritativePlanningFingerprint).toBe(
       materialization.plan.fingerprint,
+    );
+    expect(response.proposal.proposedStorefront.pages).toHaveLength(
+      materialization.snapshot.pages.length,
+    );
+    expect(response.proposal.proposedStorefront.dynamicCommercePresentation).toEqual(
+      materialization.snapshot.dynamicCommercePresentation,
+    );
+    const applied = executeAiStorefrontProposal({
+      proposal: response.proposal,
+      activeDraft: materialization.planningInput.draft,
+      catalogue: fixture.planningInput.catalogue,
+      enabledLocales: fixture.aggregate.project.enabledLocales,
+      activeLocale: request.activeLocale,
+      primaryLocale: request.activeLocale,
+    });
+    expect(canonicalStorefrontContentFingerprint(applied)).toBe(
+      canonicalStorefrontContentFingerprint(materialization.snapshot),
     );
 
     const tampered = structuredClone(response.proposal);

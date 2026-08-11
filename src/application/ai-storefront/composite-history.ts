@@ -4,6 +4,8 @@ import {
   canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
   canonicalValueString,
+  dynamicCommercePresentationAuthoritySchema,
+  navigationModelSchema,
   pageModelSchema,
   storefrontSnapshotSchema,
   type PageModel,
@@ -21,6 +23,17 @@ export const unaffectedStorefrontPageFingerprintSchema = z
   })
   .strict();
 
+const compositeStorefrontStructuralTransitionSchema = z
+  .object({
+    originalPageOrder: z.array(idSchema).min(1),
+    resultingPageOrder: z.array(idSchema).min(1),
+    originalNavigation: navigationModelSchema,
+    resultingNavigation: navigationModelSchema,
+    originalDynamicCommercePresentation: dynamicCommercePresentationAuthoritySchema.optional(),
+    resultingDynamicCommercePresentation: dynamicCommercePresentationAuthoritySchema.optional(),
+  })
+  .strict();
+
 export const compositeStorefrontHistoryTransactionSchema = z
   .object({
     transactionId: idSchema,
@@ -31,11 +44,12 @@ export const compositeStorefrontHistoryTransactionSchema = z
     acceptedAt: isoDateTimeSchema,
     summary: localizedTextSchema,
     affectedPageIds: z.array(idSchema).min(1),
-    originalAffectedPages: z.array(pageModelSchema).min(1),
-    resultingAffectedPages: z.array(pageModelSchema).min(1),
+    originalAffectedPages: z.array(pageModelSchema),
+    resultingAffectedPages: z.array(pageModelSchema),
     originalDesignSystem: brandSystemSchema,
     resultingDesignSystem: brandSystemSchema,
     unaffectedPages: z.array(unaffectedStorefrontPageFingerprintSchema),
+    structuralTransition: compositeStorefrontStructuralTransitionSchema.optional(),
     originalStorefrontFingerprint: storefrontFingerprintSchema,
     resultingStorefrontFingerprint: storefrontFingerprintSchema,
   })
@@ -48,6 +62,40 @@ export const compositeStorefrontHistoryTransactionSchema = z
         path: ["affectedPageIds"],
         message: "Composite history affected page IDs must be unique.",
       });
+    }
+    if (transaction.structuralTransition) {
+      for (const [key, pages, order] of [
+        [
+          "originalAffectedPages",
+          transaction.originalAffectedPages,
+          transaction.structuralTransition.originalPageOrder,
+        ],
+        [
+          "resultingAffectedPages",
+          transaction.resultingAffectedPages,
+          transaction.structuralTransition.resultingPageOrder,
+        ],
+      ] as const) {
+        if (
+          pages.length !== order.length ||
+          pages.some((page, index) => page.id !== order[index]) ||
+          new Set(order).size !== order.length
+        ) {
+          context.addIssue({
+            code: "custom",
+            path: [key],
+            message: "Structural history pages must match their exact canonical page order.",
+          });
+        }
+      }
+      if (transaction.unaffectedPages.length !== 0) {
+        context.addIssue({
+          code: "custom",
+          path: ["unaffectedPages"],
+          message: "Structural history transitions cannot declare unaffected page projections.",
+        });
+      }
+      return;
     }
     for (const [key, pages] of [
       ["originalAffectedPages", transaction.originalAffectedPages],
@@ -159,10 +207,7 @@ export function deriveCompositeStorefrontHistoryTransaction({
     original.id !== resulting.id ||
     original.projectId !== resulting.projectId ||
     original.revision !== resulting.revision ||
-    original.catalogueRef !== resulting.catalogueRef ||
-    canonicalValueString(original.navigation) !== canonicalValueString(resulting.navigation) ||
-    canonicalValueString(original.pages.map((page) => page.id)) !==
-      canonicalValueString(resulting.pages.map((page) => page.id))
+    original.catalogueRef !== resulting.catalogueRef
   ) {
     throw new CompositeStorefrontHistoryError(
       "A composite history transaction must preserve canonical storefront identity.",
@@ -173,6 +218,13 @@ export function deriveCompositeStorefrontHistoryTransaction({
   const resultingById = new Map(resulting.pages.map((page) => [page.id, page]));
   const originalStorefrontFingerprint = canonicalStorefrontContentFingerprint(original);
   const resultingStorefrontFingerprint = canonicalStorefrontContentFingerprint(resulting);
+  const originalPageOrder = original.pages.map(({ id }) => id);
+  const resultingPageOrder = resulting.pages.map(({ id }) => id);
+  const structuralTransition =
+    canonicalValueString(originalPageOrder) !== canonicalValueString(resultingPageOrder) ||
+    canonicalValueString(original.navigation) !== canonicalValueString(resulting.navigation) ||
+    canonicalValueString(original.dynamicCommercePresentation) !==
+      canonicalValueString(resulting.dynamicCommercePresentation);
   const transaction = compositeStorefrontHistoryTransactionSchema.parse({
     transactionId:
       transactionId ?? stableTransactionId(proposal.id, acceptedAt, originalStorefrontFingerprint),
@@ -183,20 +235,49 @@ export function deriveCompositeStorefrontHistoryTransaction({
     acceptedAt,
     summary: structuredClone(proposal.summary),
     affectedPageIds,
-    originalAffectedPages: affectedPageIds.map((pageId) => {
-      const page = originalById.get(pageId);
-      if (!page) throw new CompositeStorefrontHistoryError("An affected original page is missing.");
-      return structuredClone(page);
-    }),
-    resultingAffectedPages: affectedPageIds.map((pageId) => {
-      const page = resultingById.get(pageId);
-      if (!page)
-        throw new CompositeStorefrontHistoryError("An affected resulting page is missing.");
-      return structuredClone(page);
-    }),
+    originalAffectedPages: structuralTransition
+      ? structuredClone(original.pages)
+      : affectedPageIds.map((pageId) => {
+          const page = originalById.get(pageId);
+          if (!page)
+            throw new CompositeStorefrontHistoryError("An affected original page is missing.");
+          return structuredClone(page);
+        }),
+    resultingAffectedPages: structuralTransition
+      ? structuredClone(resulting.pages)
+      : affectedPageIds.map((pageId) => {
+          const page = resultingById.get(pageId);
+          if (!page)
+            throw new CompositeStorefrontHistoryError("An affected resulting page is missing.");
+          return structuredClone(page);
+        }),
     originalDesignSystem: structuredClone(original.brandSystem),
     resultingDesignSystem: structuredClone(resulting.brandSystem),
-    unaffectedPages: unaffectedPages(original, affectedPageIds),
+    unaffectedPages: structuralTransition ? [] : unaffectedPages(original, affectedPageIds),
+    ...(structuralTransition
+      ? {
+          structuralTransition: {
+            originalPageOrder,
+            resultingPageOrder,
+            originalNavigation: structuredClone(original.navigation),
+            resultingNavigation: structuredClone(resulting.navigation),
+            ...(original.dynamicCommercePresentation
+              ? {
+                  originalDynamicCommercePresentation: structuredClone(
+                    original.dynamicCommercePresentation,
+                  ),
+                }
+              : {}),
+            ...(resulting.dynamicCommercePresentation
+              ? {
+                  resultingDynamicCommercePresentation: structuredClone(
+                    resulting.dynamicCommercePresentation,
+                  ),
+                }
+              : {}),
+          },
+        }
+      : {}),
     originalStorefrontFingerprint,
     resultingStorefrontFingerprint,
   });
@@ -230,17 +311,36 @@ function applyTransaction(
     );
   }
   assertUnchangedPages(snapshot, transaction.unaffectedPages);
-  const pages =
+  const affectedPages =
     direction === "forward"
       ? transaction.resultingAffectedPages
       : transaction.originalAffectedPages;
-  const pagesById = new Map(pages.map((page) => [page.id, page]));
+  const pagesById = new Map(affectedPages.map((page) => [page.id, page]));
   const brandSystem: BrandSystem =
     direction === "forward" ? transaction.resultingDesignSystem : transaction.originalDesignSystem;
+  const structural = transaction.structuralTransition;
+  const { dynamicCommercePresentation: _currentDynamicCommercePresentation, ...snapshotBase } =
+    structuredClone(snapshot);
+  void _currentDynamicCommercePresentation;
+  const dynamicCommercePresentation = structural
+    ? direction === "forward"
+      ? structural.resultingDynamicCommercePresentation
+      : structural.originalDynamicCommercePresentation
+    : snapshot.dynamicCommercePresentation;
   const candidate = validateSnapshot({
-    ...structuredClone(snapshot),
-    pages: snapshot.pages.map((page) => structuredClone(pagesById.get(page.id) ?? page)),
+    ...snapshotBase,
+    pages: structural
+      ? structuredClone(affectedPages)
+      : snapshot.pages.map((page) => structuredClone(pagesById.get(page.id) ?? page)),
+    navigation: structural
+      ? structuredClone(
+          direction === "forward" ? structural.resultingNavigation : structural.originalNavigation,
+        )
+      : structuredClone(snapshot.navigation),
     brandSystem: structuredClone(brandSystem),
+    ...(dynamicCommercePresentation
+      ? { dynamicCommercePresentation: structuredClone(dynamicCommercePresentation) }
+      : {}),
   });
   assertUnchangedPages(candidate, transaction.unaffectedPages);
   if (canonicalStorefrontContentFingerprint(candidate) !== resultingFingerprint) {

@@ -76,6 +76,9 @@ export const publishChangeSummarySchema = z
     ),
     brandSystemChanges: z.array(z.string().trim().min(1).max(160)),
     navigationChanges: z.array(z.enum(["primary", "footer"])),
+    // Optional so retained preparations created before P10B-16P-01 remain parseable
+    // without changing their canonical payload.
+    dynamicCommercePresentationChanged: z.boolean().optional(),
     totalChangedPages: z.number().int().nonnegative(),
     totalChangedSections: z.number().int().nonnegative(),
   })

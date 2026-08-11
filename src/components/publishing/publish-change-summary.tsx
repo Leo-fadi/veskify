@@ -100,6 +100,12 @@ export function merchantPublishChanges(
     );
   if (summary.navigationChanges.length > 0)
     changes.push(fi ? "Navigointia päivitettiin." : "Navigation was updated.");
+  if (summary.dynamicCommercePresentationChanged)
+    changes.push(
+      fi
+        ? "Tuote- ja kokoelmasivujen esitystapaa päivitettiin."
+        : "Product and collection page presentation was updated.",
+    );
   if (summary.pageMetadataChanges.length > 0)
     changes.push(fi ? "Sivun tietoja päivitettiin." : "Page details were updated.");
 

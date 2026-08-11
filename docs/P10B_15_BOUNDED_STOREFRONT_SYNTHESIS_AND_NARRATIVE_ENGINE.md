@@ -3,8 +3,9 @@
 ## Status
 
 **Baseline — 10 August 2026.** P10B remains **Partial**. P10B-16 coordinated directions and
-diversity control, P10B-17 responsive/accessibility/performance closure, and P10B-18 commercial
-quality and scale remain **Planned**.
+diversity control and P10B-16P-01 dynamic commerce route archetypes are now **Baseline**.
+P10B-16P-02, P10B-16P-03, P10B-17 responsive/accessibility/performance closure, and P10B-18
+commercial quality and scale remain **Planned**.
 
 Provider calls: **zero**.
 
@@ -12,7 +13,8 @@ Provider calls: **zero**.
 
 P10B-15 generalizes the P10B-14 complete-store convergence proof into one deterministic bounded
 synthesis authority. A typed merchant intent now narrows current registered authority into a
-coherent page set, shared frame, Design DNA direction, PageBlueprint profile set, component
+coherent static page set, dynamic route archetype set, shared frame, Design DNA direction,
+PageBlueprint profile set, component
 anatomies, bounded parameters, narrative sequence, evidence composition, merchandising posture,
 art direction, and responsive posture.
 
@@ -38,8 +40,11 @@ then converges the existing P10B-05, P10B-09 through P10B-13, proposal, snapshot
 renderer authorities. The P10B-14 materializer now delegates to this same canonical convergence
 layer while retaining its prior deterministic section identities and evidence.
 
-`StorefrontSnapshot` remains the sole editable and rendering aggregate. The synthesis decision is
-traceability metadata; it never becomes a second persisted page representation.
+`StorefrontSnapshot` remains the sole editable and rendering aggregate. P10B-16P-01 now converges
+concrete collection/search/PDP routes into its root dynamic presentation authority before the
+canonical result is retained. Compatibility consumers may receive a transient derived route-page
+projection, but neither that projection nor the synthesis decision becomes a second persisted page
+representation.
 
 ## Versioned synthesis contract
 
@@ -51,9 +56,11 @@ Contract version `1` records:
 - exact canonical commerce fingerprint;
 - approved-asset authority fingerprint;
 - selected registered Design DNA direction and fingerprint;
-- chosen site-map/page-set fingerprint and page keys;
+- chosen site-map/page-set fingerprint, static page keys, dynamic route inventory, and maintained
+  archetype identities;
 - one shared-frame profile/version/authority fingerprint;
-- homepage, collection, search, and PDP profile selections;
+- homepage and other static-page profile selections plus collection/search and PDP archetype
+  profile selections;
 - every page-family/profile version and structural fingerprint;
 - cross-page narrative posture, role sequence, contributions, discovery path, and conversion path;
 - merchandising, information-density, art-direction, and responsive posture;
@@ -115,10 +122,13 @@ requested evidence is unavailable are omitted before site-map mutation and recor
 The synthesis decision cannot add filler or fabricate merchant, policy, delivery, guarantee,
 certification, service, or compliance claims.
 
-Catalogue size, collection membership, and configurable order options influence bounded profile
-selection. Products, variants, options, SKUs, prices, availability, stock, collections, and
-membership remain unchanged. Collection materialization resolves the page's exact canonical
-collection context. Product pages continue through the generic dynamic PDP and P6 option authority.
+Catalogue size, collection membership, and configurable order options influence bounded archetype
+and profile selection. Products, variants, options, SKUs, prices, availability, stock,
+collections, and membership remain unchanged. Collection routes resolve their exact canonical
+collection context through the selected collection/search archetype. Product routes resolve their
+product-type mapping or governed generic fallback and continue through the generic dynamic PDP and
+P6 option authority. Adding another route that reuses the same archetype does not add another
+design authority.
 
 Approved assets remain bound by their existing approval fingerprint, revision, provenance,
 presentation role, focal/safe area, derivative authority, and material fingerprint. Editorial
@@ -160,11 +170,12 @@ The same approved two-product Lumo authority produces three canonical 17-route o
 | Commerce/discovery-heavy | `warmApproachable` | `homepage-high-consideration`     | Small-catalogue-safe editorial discovery | `pdp-high-consideration` | Discovery-led, balanced/editorial  |
 | Restrained/minimal       | `warmApproachable` | `homepage-minimal-brand-commerce` | `collection-editorial-discovery`         | `pdp-standard-commerce`  | Restrained, balanced/contained     |
 
-All three retain the complete required site map, one `centered-minimal` frame, exact current content
-and utility profiles, unchanged commerce/evidence/assets, and distinct synthesis and snapshot
-fingerprints. The collection/search/PDP/profile policy can select additional registered outcomes as
-canonical catalogue and page-set conditions permit. P10B-15 proves the bounded synthesis space; it
-does not claim P10B-16 duplicate/near-duplicate or direction-scale control.
+All three retain the complete required route inventory, static page set, maintained dynamic
+archetypes, one `centered-minimal` frame, exact current content and utility profiles, unchanged
+commerce/evidence/assets, and distinct synthesis and snapshot fingerprints. The collection/search/
+PDP archetype policy can select additional registered outcomes as canonical catalogue and page-set
+conditions permit. P10B-15 proves the bounded synthesis space; it does not claim P10B-16
+duplicate/near-duplicate or direction-scale control.
 
 ## Lifecycle and retained evidence
 
@@ -194,7 +205,9 @@ occurs before `StorefrontSnapshot` mutation and creates no partial proposal or s
 
 ## Deferred authority
 
-P10B-16 remains responsible for coordinated commercial direction packages, diversity measurement,
-exact and meaningful near-duplicate control, pairwise comparison, and scale-oriented design
-fingerprints. P10B-17 remains responsible for phase-wide responsive, accessibility, and performance
+P10B-16 now owns coordinated commercial direction packages, diversity measurement, exact and
+meaningful near-duplicate control, pairwise comparison, and scale-oriented design fingerprints.
+P10B-16P-01 now owns the static-page/archetype/route distinction. P10B-16P-02 remains responsible
+for the prompted design-plan contract and P10B-16P-03 for the final Storefront Studio generation
+journey. P10B-17 remains responsible for phase-wide responsive, accessibility, and performance
 closure. P10B-18 remains the 100+ configuration commercial quality and diversity gate.

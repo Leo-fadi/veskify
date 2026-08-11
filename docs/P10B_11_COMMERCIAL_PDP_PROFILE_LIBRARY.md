@@ -96,3 +96,12 @@ are Baseline; P10B-14 through P10B-18 remain Planned. P10B-11 does
 not implement collection/search profiles, content/support pages, commerce utility pages, Storefront
 Studio editing, real-provider work, a product-type-specific renderer, a new product model or any
 commercial facts outside approved evidence and canonical commerce.
+
+## Current P10B-16P-01 convergence
+
+The four P10B-11 profiles and generic option architecture remain the registered PDP design
+authority. P10B-16P-01 stores maintained PDP archetypes once, maps canonical product types to them,
+and uses the governed generic fallback for unknown types; concrete product URLs no longer persist
+independent editable PDP section trees. Runtime binding still supplies every exact product, option,
+variant, price, availability, stock, and canonical media value. See
+[`P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md`](P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md).

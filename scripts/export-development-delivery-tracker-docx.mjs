@@ -12,7 +12,7 @@ exportMarkdownDocx({
   title: "Veskify Development Delivery Tracker",
   subtitle: "Version 1.3.0",
   coverLines: [
-    "Delivery status baseline: 10 August 2026, P10B-16 coordinated directions and diversity control",
+    "Delivery status baseline: 11 August 2026, P10B-16P-01 dynamic commerce route archetype authority",
     "Overall product status: Partial",
     "Active phase: P10B Commercial Storefront Generation System v1 (Partial)",
     "Authoritative source: docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md",

@@ -20,6 +20,7 @@ import {
   veskifyComponentDefinitionsV2,
 } from "@/components/registry";
 import { renderStorefrontPage } from "@/components/storefront/storefront-page";
+import { createP10B14PremiumEditorialFixture } from "@/data/demo/p10b-14-premium-editorial";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import { validateComponentDefinitionV2 } from "@/domain/component-platform";
 import { brandSystemToCssVariables } from "@/domain/design-system";
@@ -338,6 +339,60 @@ describe("P10B-06 commercial shared-frame families", () => {
     expect(markup).toContain(">Haku<");
     expect(markup).toContain('href="/cart"');
     expect(markup).toContain(">Ostoskori<");
+  });
+
+  it("does not project an inventory-only search route before executable search runtime exists", () => {
+    const fixture = createP10B14PremiumEditorialFixture();
+    const snapshot = fixture.slice.snapshot;
+    expect(
+      snapshot.dynamicCommercePresentation?.routeInventory.some(({ kind }) => kind === "search"),
+    ).toBe(true);
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: fixture.fixture.aggregate.catalogue,
+      snapshot,
+      evidenceReferences: fixture.approvedEvidenceReferences,
+    });
+    const homepage = snapshot.pages.find(({ type }) => type === "home")!;
+    const markup = renderToStaticMarkup(renderStorefrontPage(homepage, context));
+    expect(markup).not.toContain('href="/search"');
+    expect(markup).not.toContain(">Search<");
+  });
+
+  it("projects legacy header search as a link only when a static executable search page exists", () => {
+    const snapshot = structuredClone(aurumNordicSeed.draftSnapshot);
+    const source = snapshot.pages[0];
+    snapshot.pages.push({
+      ...emptyPage(source, {
+        id: "page_static_search_frame_proof",
+        slug: "/search",
+        type: "collection",
+      }),
+      pageFamily: {
+        familyId: "search-results",
+        familyVersion: "1.0.0",
+        profileId: "blueprint-site-map-search-baseline",
+        profileVersion: "1.0.0",
+        localeCoverage: ["en"],
+        sharedFrameId: "shared-frame",
+        sharedFrameVersion: "1.0.0",
+        commerceContext: { kind: "search" },
+        commerceOperationAuthority: "read-only-presentation",
+        navigationAreas: [],
+        evidenceReferences: [],
+      },
+    });
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      catalogue: aurumNordicSeed.catalogue,
+      snapshot,
+    });
+    const markup = renderToStaticMarkup(renderStorefrontPage(source, context));
+    expect(markup).toContain('aria-label="Search"');
+    expect(markup).toContain('href="/search"');
+    expect(markup).not.toContain("Search (demo)");
   });
 
   it("compiles an exact bounded proposal and fails closed when its source snapshot is stale", () => {

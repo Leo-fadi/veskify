@@ -75,7 +75,7 @@ export function P10B14PremiumEditorialProofClient({
   aggregate,
   evidenceReferences,
   locale,
-  pageId,
+  page,
   snapshot,
   snapshotFingerprint,
   target,
@@ -83,13 +83,12 @@ export function P10B14PremiumEditorialProofClient({
   aggregate: ProjectAggregate;
   evidenceReferences: readonly PageFactEvidenceReference[];
   locale: "en" | "fi";
-  pageId: string;
+  page: StorefrontSnapshot["pages"][number];
   snapshot: StorefrontSnapshot;
   snapshotFingerprint: string;
   target: "proposal" | "editor" | "preview" | "published";
 }) {
   const [lastUtilityIntent, setLastUtilityIntent] = useState<CommerceUtilityIntent | null>(null);
-  const page = snapshot.pages.find((candidate) => candidate.id === pageId)!;
   const runtime = utilityRuntime(page.pageFamily!.familyId, aggregate);
   const renderTarget = target === "proposal" ? "preview" : target;
   const context = createStorefrontRenderContext({

@@ -4,7 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-import { StorefrontProposalAcceptanceCoordinator } from "@/application/ai-storefront";
+import {
+  createAiStorefrontProposalId,
+  StorefrontProposalAcceptanceCoordinator,
+} from "@/application/ai-storefront";
 import { assembleValidatedEditorDraft, saveValidatedEditorDraft } from "@/application/draft-save";
 import {
   BoundedStorefrontSynthesisError,
@@ -15,9 +18,17 @@ import {
   type P10bLiveSynthesisIntentProvider,
 } from "@/application/bounded-storefront-synthesis";
 import { createP10bLiveSynthesisGenerateHandler } from "@/app/api/demo/p10b-live/generate/handler";
-import { createP10B16LRawKarvonenAcceptanceFixture } from "@/data/demo/p10b-16l-live-provider-acceptance";
+import {
+  P10B16L_CORE_PAGE_COUNT,
+  P10B16L_DYNAMIC_ROUTE_COUNT,
+  P10B16L_PREMIUM_EDITORIAL_COLLECTION_SEARCH_ARCHETYPE_COUNT,
+  P10B16L_PREMIUM_EDITORIAL_PRODUCT_DETAIL_ARCHETYPE_COUNT,
+  P10B16L_STATIC_DESIGN_PAGE_COUNT,
+  createP10B16LRawKarvonenAcceptanceFixture,
+} from "@/data/demo/p10b-16l-live-provider-acceptance";
 import {
   canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
   canonicalValueString,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
@@ -105,7 +116,20 @@ describe("P10B-16L local real-provider synthesis acceptance bridge", () => {
     });
     expect(metadata.executableIntentId).toMatch(/^coordinated-executable-intent-/);
     expect(metadata.executableIntentFingerprint).toMatch(/^p10b-live-executable-intent-/);
-    expect(metadata.pageCount).toBe(28);
+    expect(metadata.pageCount).toBe(P10B16L_CORE_PAGE_COUNT);
+    expect(metadata.staticDesignPageCount).toBe(P10B16L_STATIC_DESIGN_PAGE_COUNT);
+    expect(metadata.dynamicRouteCount).toBe(P10B16L_DYNAMIC_ROUTE_COUNT);
+    expect(metadata.collectionSearchArchetypeCount).toBe(
+      P10B16L_PREMIUM_EDITORIAL_COLLECTION_SEARCH_ARCHETYPE_COUNT,
+    );
+    expect(metadata.productDetailArchetypeCount).toBe(
+      P10B16L_PREMIUM_EDITORIAL_PRODUCT_DETAIL_ARCHETYPE_COUNT,
+    );
+    expect(metadata.dynamicRouteFamilyCounts).toEqual({
+      collection: fixture.planningInput.catalogue.collections.length,
+      "product-detail": fixture.planningInput.catalogue.products.length,
+      "search-results": 1,
+    });
     expect(metadata.pageFamilyCounts).toMatchObject({
       home: 1,
       collection: fixture.planningInput.catalogue.collections.length,
@@ -129,6 +153,33 @@ describe("P10B-16L local real-provider synthesis acceptance bridge", () => {
     expect(bridge).not.toBeNull();
     expect(bridge?.kind).toBe("p10b-16l");
     expect(bridge?.proposal).not.toBeNull();
+    const reviewedProposal = bridge!.proposal!;
+    const migration = reviewedProposal.dynamicCommerceMigration;
+    expect(reviewedProposal.originalStorefront.pages).toHaveLength(P10B16L_CORE_PAGE_COUNT);
+    expect(reviewedProposal.originalStorefront.dynamicCommercePresentation).toBeUndefined();
+    expect(reviewedProposal.proposedStorefront.pages).toHaveLength(
+      P10B16L_STATIC_DESIGN_PAGE_COUNT,
+    );
+    expect(reviewedProposal.proposedStorefront.dynamicCommercePresentation).toBeDefined();
+    expect(migration).toMatchObject({
+      kind: "canonicalDynamicCommerceMigration",
+      contractVersion: "1.0.0",
+      resultingProjectionFingerprint: canonicalValueFingerprint(
+        reviewedProposal.proposedStorefront,
+      ),
+      resultingAuthorityFingerprint:
+        reviewedProposal.proposedStorefront.dynamicCommercePresentation?.authorityFingerprint,
+    });
+    expect(reviewedProposal.id).toBe(
+      createAiStorefrontProposalId(
+        reviewedProposal.requestId,
+        reviewedProposal.targetFingerprint,
+        reviewedProposal.permissionFingerprint,
+        reviewedProposal.operations,
+        reviewedProposal.assetPlacementOperations,
+        migration,
+      ),
+    );
     expect(await loadP10bLiveSynthesisPreviewSession({ ...session, environment })).toBeNull();
     expect(canonicalValueString(bridge?.aggregate.catalogue)).toBe(
       canonicalValueString(fixture.aggregate.catalogue),
@@ -152,6 +203,12 @@ describe("P10B-16L local real-provider synthesis acceptance bridge", () => {
     expect(coordinator.inspect().state).toBe("ready");
     const accepted = coordinator.accept();
     expect(accepted.state).toBe("accepted");
+    expect(
+      accepted.transaction?.structuralTransition?.originalDynamicCommercePresentation,
+    ).toBeUndefined();
+    expect(
+      accepted.transaction?.structuralTransition?.resultingDynamicCommercePresentation,
+    ).toEqual(accepted.activeDraft.dynamicCommercePresentation);
     expect(canonicalStorefrontContentFingerprint(accepted.activeDraft)).toBe(
       metadata.snapshotFingerprint,
     );
@@ -203,10 +260,9 @@ describe("P10B-16L local real-provider synthesis acceptance bridge", () => {
     ).toThrowError();
     const validatedAcceptedDraft = assembleValidatedEditorDraft({
       baseDraft: draft,
-      changedPages: accepted.activeDraft.pages,
+      replacementSnapshot: accepted.activeDraft,
       aggregate: bridge!.aggregate,
       primaryLocale: bridge!.aggregate.project.primaryLocale,
-      brandSystem: accepted.activeDraft.brandSystem,
       evidenceReferences: bridge!.evidenceReferences,
     });
     expect(canonicalStorefrontContentFingerprint(validatedAcceptedDraft)).toBe(
@@ -254,6 +310,60 @@ describe("P10B-16L local real-provider synthesis acceptance bridge", () => {
       ({ id }) => id === preview.aggregate.project.draftSnapshotId,
     );
     expect(canonicalStorefrontContentFingerprint(previewDraft!)).toBe(metadata.snapshotFingerprint);
+  }, 120_000);
+
+  it("rejects every tampered canonical migration fingerprint without partial acceptance", async () => {
+    const { session } = await generated("premium-editorial");
+    const bridge = await loadP10bLiveSynthesisEditorSession({ ...session, environment });
+    expect(bridge?.proposal?.dynamicCommerceMigration).toBeDefined();
+    const activeDraft = bridge!.aggregate.snapshots.find(
+      ({ id }) => id === bridge!.aggregate.project.draftSnapshotId,
+    )!;
+    const publishedSnapshot = bridge!.aggregate.snapshots.find(
+      ({ id }) => id === bridge!.aggregate.project.publishedSnapshotId,
+    )!;
+    const cases = [
+      {
+        field: "legacyProjectionFingerprint",
+        value: `v1_1_${"a".repeat(64)}`,
+      },
+      {
+        field: "resultingProjectionFingerprint",
+        value: `v1_1_${"b".repeat(64)}`,
+      },
+      {
+        field: "resultingAuthorityFingerprint",
+        value: "tampered-dynamic-commerce-authority",
+      },
+    ] as const;
+
+    for (const { field, value } of cases) {
+      const proposal = structuredClone(bridge!.proposal!);
+      proposal.dynamicCommerceMigration![field] = value;
+      const coordinator = new StorefrontProposalAcceptanceCoordinator({
+        proposal,
+        activeDraft,
+        storedDraft: activeDraft,
+        publishedSnapshot,
+        catalogue: bridge!.aggregate.catalogue,
+        enabledLocales: bridge!.aggregate.project.enabledLocales,
+        activeLocale: bridge!.aggregate.project.primaryLocale,
+        primaryLocale: bridge!.aggregate.project.primaryLocale,
+      });
+      const before = coordinator.inspect();
+
+      const rejected = coordinator.accept();
+
+      expect(rejected.state, field).toBe("failed");
+      expect(rejected.failure?.code, field).toBe("invalidProposal");
+      expect(rejected.proposal.status, field).toBe("pending");
+      expect(rejected.transaction, field).toBeNull();
+      expect(rejected.activeDraft, field).toEqual(before.activeDraft);
+      expect(rejected.storedDraft, field).toEqual(before.storedDraft);
+      expect(rejected.publishedSnapshot, field).toEqual(before.publishedSnapshot);
+      expect(rejected.activeDraft.dynamicCommercePresentation, field).toBeUndefined();
+      expect(coordinator.inspectHistory(), field).toEqual({ past: [], future: [] });
+    }
   }, 120_000);
 
   it("keeps synthesis scaffolding transient and restores the raw aggregate on rejection", async () => {

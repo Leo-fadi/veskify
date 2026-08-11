@@ -1,4 +1,5 @@
 import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
+import { canonicalProductTypePresentationId } from "@/domain/product-card";
 import type { P10B14PremiumEditorialSlice } from "./vertical-slice";
 
 export type P10B14BrowserEvidence = Readonly<{
@@ -43,6 +44,49 @@ export function createP10B14CompleteStorefrontEvidenceManifest(
     throw new Error("P10B-14 evidence requires canonical frame and Design DNA authority.");
   }
   const designDnaFingerprint = `design-dna-${canonicalValueFingerprint(designDna)}`;
+  const dynamicAuthority = snapshot.dynamicCommercePresentation;
+  const dynamicRouteProfiles = (dynamicAuthority?.routeInventory ?? []).map((route) => {
+    const archetype =
+      route.kind === "collection"
+        ? dynamicAuthority!.collectionSearchArchetypes.find(
+            ({ id }) =>
+              id ===
+              dynamicAuthority!.collectionRouteMappings.find(({ routeId }) => routeId === route.id)
+                ?.archetypeId,
+          )
+        : route.kind === "search"
+          ? dynamicAuthority!.collectionSearchArchetypes.find(
+              ({ id }) => id === dynamicAuthority!.searchArchetypeId,
+            )
+          : (() => {
+              const product = planningInput.catalogue.products.find(
+                ({ id }) => id === route.productId,
+              );
+              const archetypeId = product
+                ? dynamicAuthority!.productTypeMappings.find(
+                    ({ productTypeId }) =>
+                      productTypeId === canonicalProductTypePresentationId(product.productType),
+                  )?.archetypeId
+                : undefined;
+              return dynamicAuthority!.productDetailArchetypes.find(
+                ({ id }) =>
+                  id === (archetypeId ?? dynamicAuthority!.fallbacks.productDetailArchetypeId),
+              );
+            })();
+    if (!archetype) {
+      throw new Error(`P10B-14 evidence cannot resolve dynamic route ${route.id}.`);
+    }
+    return {
+      route: route.route,
+      familyId:
+        route.kind === "product"
+          ? "product-detail"
+          : route.kind === "search"
+            ? "search-results"
+            : "collection",
+      profileId: archetype.profile.profileId,
+    };
+  });
   const material = {
     version: "1.0.0" as const,
     fixtureId: input.fixtureId,
@@ -51,22 +95,34 @@ export function createP10B14CompleteStorefrontEvidenceManifest(
     siteMapFingerprint: input.slice.siteMapFingerprint,
     designDnaFingerprint,
     frame: { profileId: frame.profileId, authorityFingerprint: frame.authorityFingerprint },
-    pageProfiles: snapshot.pages
-      .map((page) => ({
+    pageProfiles: [
+      ...snapshot.pages.map((page) => ({
         route: page.slug,
         familyId: page.pageFamily!.familyId,
         profileId: page.pageFamily!.profileId,
-      }))
-      .sort((left, right) => left.route.localeCompare(right.route)),
+      })),
+      ...dynamicRouteProfiles,
+    ].sort((left, right) => left.route.localeCompare(right.route)),
     componentSelections: [
-      ...new Set(
-        snapshot.pages.flatMap((page) =>
+      ...new Set([
+        ...snapshot.pages.flatMap((page) =>
           page.sections.map((section) => {
             const cardVariant = section.props.cardVariant;
             return `${page.slug}:${section.component}:${section.variant}:${typeof cardVariant === "string" ? cardVariant : ""}`;
           }),
         ),
-      ),
+        ...(dynamicAuthority
+          ? [
+              ...dynamicAuthority.collectionSearchArchetypes,
+              ...dynamicAuthority.productDetailArchetypes,
+            ].flatMap((archetype) =>
+              archetype.componentPresentations.map((presentation) => {
+                const cardVariant = presentation.props.cardVariant;
+                return `archetype:${archetype.id}:${presentation.component}:${presentation.variant}:${typeof cardVariant === "string" ? cardVariant : ""}`;
+              }),
+            )
+          : []),
+      ]),
     ].sort(),
     approvedEvidenceRefs: [
       ...new Set([

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { resolveDynamicCommerceRoutePage } from "@/application/dynamic-commerce-routes";
 import {
   createCatalogueStorefrontCommerceRouteAdapter,
   type ProductCommerceRoutePresentation,
@@ -139,20 +140,33 @@ function ProductPreviewLoader({
             selectedSnapshotId(aggregate.project, snapshotKind, historicalSnapshotId),
         );
         if (!draft) return setState({ status: "missingDraft" });
-        const productPage = draft.pages.find(
-          (page) => page.type === "product" && page.slug === `/products/${productSlug}`,
-        );
-        if (!productPage) return setState({ status: "missingProductPage" });
-        const dynamicProduct = productPage.sections.find(
-          (section) => section.component === "dynamicProductDetail",
-        );
-        const canonicalProductId =
-          dynamicProduct?.content.productId ??
-          productPage.sections.find((section) => section.component === "productInfo")?.content
-            .productId;
-        const product = aggregate.catalogue.products.find((item) => item.id === canonicalProductId);
-        if (!product) return setState({ status: "productNotFound" });
         try {
+          const route = `/products/${productSlug}`;
+          const dynamicRoute = draft.dynamicCommercePresentation?.routeInventory.find(
+            (entry) => entry.kind === "product" && entry.route === route,
+          );
+          const productPage = draft.dynamicCommercePresentation
+            ? dynamicRoute
+              ? resolveDynamicCommerceRoutePage({
+                  snapshot: draft,
+                  catalogue: aggregate.catalogue,
+                  routeId: dynamicRoute.id,
+                }).page
+              : undefined
+            : draft.pages.find((page) => page.type === "product" && page.slug === route);
+          if (!productPage) return setState({ status: "missingProductPage" });
+          const dynamicProduct = productPage.sections.find(
+            (section) => section.component === "dynamicProductDetail",
+          );
+          const canonicalProductId =
+            (dynamicRoute?.kind === "product" ? dynamicRoute.productId : undefined) ??
+            dynamicProduct?.content.productId ??
+            productPage.sections.find((section) => section.component === "productInfo")?.content
+              .productId;
+          const product = aggregate.catalogue.products.find(
+            (item) => item.id === canonicalProductId,
+          );
+          if (!product) return setState({ status: "productNotFound" });
           const context = createStorefrontRenderContext({
             activeLocale: aggregate.project.primaryLocale,
             primaryLocale: aggregate.project.primaryLocale,

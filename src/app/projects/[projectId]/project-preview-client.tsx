@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { resolveDynamicCommerceRoutePage } from "@/application/dynamic-commerce-routes";
 import { createStorefrontRenderContext, type StorefrontRenderContext } from "@/components/registry";
 import {
   renderStorefrontPage,
@@ -123,12 +124,27 @@ export function ProjectPreviewClient({
           setState({ status: "missingDraft" });
           return;
         }
-        const page = draft.pages.find((candidate) => candidate.slug === pageSlug);
-        if (!page) {
-          setState({ status: "missingPage" });
-          return;
-        }
         try {
+          const dynamicRoute = draft.dynamicCommercePresentation?.routeInventory.find(
+            (candidate) => candidate.route === pageSlug,
+          );
+          const isDynamicCommercePath =
+            pageSlug === "/search" ||
+            pageSlug.startsWith("/collections/") ||
+            pageSlug.startsWith("/products/");
+          const page = dynamicRoute
+            ? resolveDynamicCommerceRoutePage({
+                snapshot: draft,
+                catalogue: aggregate.catalogue,
+                routeId: dynamicRoute.id,
+              }).page
+            : draft.dynamicCommercePresentation && isDynamicCommercePath
+              ? undefined
+              : draft.pages.find((candidate) => candidate.slug === pageSlug);
+          if (!page) {
+            setState({ status: "missingPage" });
+            return;
+          }
           if (page.type === "home") validateStorefrontHomepage(page);
           const context = createStorefrontRenderContext({
             activeLocale: aggregate.project.primaryLocale,
@@ -146,12 +162,12 @@ export function ProjectPreviewClient({
             renderTarget: snapshotKind === "published" ? "published" : "preview",
           });
           void renderStorefrontPage(page, context);
+          setActiveLocale(aggregate.project.primaryLocale);
+          setState({ status: "success", aggregate, draft, page, evidenceReferences });
         } catch {
           setState({ status: "validationFailure" });
           return;
         }
-        setActiveLocale(aggregate.project.primaryLocale);
-        setState({ status: "success", aggregate, draft, page, evidenceReferences });
       })
       .catch((error: unknown) => {
         if (cancelled) return;

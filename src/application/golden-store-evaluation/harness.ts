@@ -4,6 +4,7 @@ import {
   sharedStorefrontFrameProfile,
   validateExecutablePageBlueprintRealization,
 } from "@/application/storefront-templates";
+import { resolveDynamicCommerceRoutePage } from "@/application/dynamic-commerce-routes";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry";
 import { veskifyComponentCapabilityManifest } from "@/components/registry/capability-manifest";
 import {
@@ -235,12 +236,50 @@ function assertSharedFrame(snapshot: GoldenStoreLifecycleEvidence["snapshot"]): 
   }
 }
 
+function transientDynamicNavigation(snapshot: GoldenStoreLifecycleEvidence["snapshot"]) {
+  const authority = snapshot.dynamicCommercePresentation;
+  if (!authority) return structuredClone(snapshot.navigation);
+  const project = (item: (typeof snapshot.navigation.primary)[number]) => {
+    const target = item.target;
+    if (target.type !== "dynamic-commerce-route") return [structuredClone(item)];
+    const route = authority.routeInventory.find(({ id }) => id === target.routeId);
+    // Search stays registered but cannot be rendered as a concrete collection
+    // page without exact transient search-result authority.
+    if (!route || route.kind === "search") return [];
+    return [{ ...structuredClone(item), target: { type: "page" as const, pageId: route.id } }];
+  };
+  return {
+    primary: snapshot.navigation.primary.flatMap(project),
+    footer: snapshot.navigation.footer.flatMap(project),
+  };
+}
+
 function assertSnapshotRealization(
   entries: Map<(typeof goldenStoreEvaluationLifecycleStates)[number], GoldenStoreLifecycleEvidence>,
   materializations: Map<string, WholeStorefrontPageBlueprintMaterialization>,
 ): void {
   for (const state of goldenStoreEvaluationLifecycleStates) {
-    const snapshot = entries.get(state)!.snapshot;
+    const entry = entries.get(state)!;
+    const { dynamicCommercePresentation, ...staticSnapshot } = entry.snapshot;
+    const snapshot = dynamicCommercePresentation
+      ? {
+          ...staticSnapshot,
+          navigation: transientDynamicNavigation(entry.snapshot),
+          pages: [
+            ...staticSnapshot.pages,
+            ...dynamicCommercePresentation.routeInventory
+              .filter(({ kind }) => kind !== "search")
+              .map(
+                ({ id }) =>
+                  resolveDynamicCommerceRoutePage({
+                    snapshot: entry.snapshot,
+                    catalogue: entry.canonicalCommerce,
+                    routeId: id,
+                  }).page,
+              ),
+          ],
+        }
+      : entry.snapshot;
     assertSharedFrame(snapshot);
     for (const pageType of ["home", "collection", "product"] as const) {
       const pages = snapshot.pages.filter((candidate) => candidate.type === pageType);

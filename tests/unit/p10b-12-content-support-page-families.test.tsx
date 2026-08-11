@@ -47,6 +47,7 @@ import {
 } from "@/domain/storefront";
 import type { StorefrontSiteMapDecision } from "@/application/storefront-site-map";
 import { InMemoryProjectRepository, type ProjectAggregate } from "@/services/storage";
+import { p10b16p01DynamicCommerceAggregate } from "../fixtures/p10b-16p-01-dynamic-commerce";
 
 const now = "2026-08-09T18:00:00.000Z";
 const localized = (en: string, fi: string) => ({ en, fi });
@@ -844,17 +845,37 @@ describe("P10B-12 content and support page families", () => {
       pageId: about.id,
       factAuthority,
     });
-    const snapshot = storefrontSnapshotSchema.parse(materializedSnapshot.snapshot);
+    const aggregate = p10b16p01DynamicCommerceAggregate();
+    const currentAuthority = aggregate.snapshots.find(
+      ({ id }) => id === aggregate.project.draftSnapshotId,
+    )!.dynamicCommercePresentation!;
+    const legacy = storefrontSnapshotSchema.parse(materializedSnapshot.snapshot);
+    const removedDynamicPageIds = new Set(
+      legacy.pages
+        .filter(({ pageFamily }) =>
+          ["collection", "search-results", "product-detail"].includes(pageFamily?.familyId ?? ""),
+        )
+        .map(({ id }) => id),
+    );
+    const snapshot = storefrontSnapshotSchema.parse({
+      ...structuredClone(legacy),
+      pages: legacy.pages.filter(({ id }) => !removedDynamicPageIds.has(id)),
+      navigation: Object.fromEntries(
+        Object.entries(legacy.navigation).map(([area, items]) => [
+          area,
+          items.filter(
+            ({ target }) => target.type !== "page" || !removedDynamicPageIds.has(target.pageId),
+          ),
+        ]),
+      ) as typeof legacy.navigation,
+      dynamicCommercePresentation: structuredClone(currentAuthority),
+    });
     if (!materializedSnapshot.materialization.page.pageFamily)
       throw new Error("The materialized content/support page must retain page-family authority.");
     const evidence = materializedSnapshot.materialization.page.pageFamily.evidenceReferences[0];
     const compilation = compileStorefrontPublication(
       createCurrentPublishCompilerInput({
-        aggregate: {
-          project: structuredClone(aurumNordicSeed.project),
-          catalogue: structuredClone(aurumNordicSeed.catalogue),
-          snapshots: [structuredClone(aurumNordicSeed.publishedSnapshot), snapshot],
-        },
+        aggregate: { ...aggregate, snapshots: [snapshot] },
         snapshot,
         sourceAuthority: { kind: "manual" },
         currentEvidenceReferences: [evidence],

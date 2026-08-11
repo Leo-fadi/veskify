@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import {
   confirmPublish,
+  compileStorefrontPublication,
+  createCurrentPublishCompilerInput,
   createPublishChangeSummary,
   InvalidPublishPreparationError,
   NoPublishableChangesError,
@@ -11,15 +13,22 @@ import {
   publishPreparationSchema,
   StalePublishPreparationError,
 } from "@/application/publishing";
+import {
+  expandDynamicCommerceRoutePages,
+  migrateLegacyDynamicCommerceRoutes,
+} from "@/application/dynamic-commerce-routes";
 import { aurumNordicSeed } from "@/data/seed";
 import {
   canonicalStorefrontContentEqual,
   canonicalStorefrontContentFingerprint,
   canonicalStorefrontContentString,
+  createDynamicCommercePresentationAuthority,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import { InMemoryProjectRepository, type ProjectRepository } from "@/services/storage";
 import { merchantPublishChanges } from "@/components/publishing/publish-change-summary";
+import { veskifyComponentCapabilityManifest } from "@/components/registry";
+import { p10b16p01DynamicCommerceAggregate } from "../fixtures/p10b-16p-01-dynamic-commerce";
 
 const projectId = aurumNordicSeed.project.id;
 const preparedAt = new Date("2026-07-17T18:00:00.000Z");
@@ -68,6 +77,157 @@ async function meaningfulPreparation(value: InMemoryProjectRepository, label: st
 }
 
 describe("P2-11 publishing preparation", () => {
+  it("preserves exact dynamic-commerce authority and fingerprints its concrete route inventory", () => {
+    const value = p10b16p01DynamicCommerceAggregate();
+    const snapshot = value.snapshots[1];
+    const authority = snapshot.dynamicCommercePresentation;
+    if (!authority) throw new Error("Missing dynamic-commerce publication authority.");
+    const first = compileStorefrontPublication(
+      createCurrentPublishCompilerInput({
+        aggregate: value,
+        snapshot,
+        sourceAuthority: { kind: "manual" },
+      }),
+    );
+
+    expect(first.result.dynamicCommercePresentation).toEqual(authority);
+    expect(first.receipt.dynamicCommercePresentationFingerprint).toBe(
+      authority.authorityFingerprint,
+    );
+
+    const changed = structuredClone(value);
+    const changedSnapshot = changed.snapshots[1];
+    const current = changedSnapshot.dynamicCommercePresentation!;
+    const { authorityFingerprint: _fingerprint, ...material } = current;
+    void _fingerprint;
+    const productRoute = material.routeInventory.find(({ kind }) => kind === "product");
+    if (!productRoute || productRoute.kind !== "product") {
+      throw new Error("Missing product route publication fixture.");
+    }
+    productRoute.route = `${productRoute.route}-updated`;
+    changedSnapshot.dynamicCommercePresentation =
+      createDynamicCommercePresentationAuthority(material);
+    const second = compileStorefrontPublication(
+      createCurrentPublishCompilerInput({
+        aggregate: changed,
+        snapshot: changedSnapshot,
+        sourceAuthority: { kind: "manual" },
+      }),
+    );
+
+    expect(second.receipt.navigationRoutesFingerprint).not.toBe(
+      first.receipt.navigationRoutesFingerprint,
+    );
+    expect(second.result.runtimeFingerprint).not.toBe(first.result.runtimeFingerprint);
+    expect(second.result.dynamicCommercePresentation).toEqual(
+      changedSnapshot.dynamicCommercePresentation,
+    );
+    const summary = createPublishChangeSummary(snapshot, changedSnapshot);
+    expect(summary.dynamicCommercePresentationChanged).toBe(true);
+    expect(summary.changedPages).toEqual([]);
+    expect(merchantPublishChanges(summary, "en", "en")).toContain(
+      "Product and collection page presentation was updated.",
+    );
+  });
+
+  it("requires exact materialized dynamic profiles and registered presentation schemas", () => {
+    const profileDrift = p10b16p01DynamicCommerceAggregate();
+    const profileSnapshot = profileDrift.snapshots[1];
+    const profileAuthority = profileSnapshot.dynamicCommercePresentation!;
+    const { authorityFingerprint: _profileFingerprint, ...profileMaterial } = profileAuthority;
+    void _profileFingerprint;
+    const collectionArchetype = profileMaterial.collectionSearchArchetypes[0];
+    const manifestProfile = veskifyComponentCapabilityManifest.getByProfileId(
+      collectionArchetype.profile.profileId,
+    );
+    if (!manifestProfile) throw new Error("Missing collection capability profile fixture.");
+    expect(manifestProfile.fingerprint).not.toBe(collectionArchetype.profile.fingerprint);
+    collectionArchetype.profile.fingerprint = manifestProfile.fingerprint;
+    profileSnapshot.dynamicCommercePresentation =
+      createDynamicCommercePresentationAuthority(profileMaterial);
+
+    let profileFailure: unknown;
+    try {
+      compileStorefrontPublication(
+        createCurrentPublishCompilerInput({
+          aggregate: profileDrift,
+          snapshot: profileSnapshot,
+          sourceAuthority: { kind: "manual" },
+        }),
+      );
+    } catch (cause) {
+      profileFailure = cause;
+    }
+    expect(profileFailure).toMatchObject({ code: "stale-profile-authority" });
+
+    const schemaDrift = p10b16p01DynamicCommerceAggregate();
+    const schemaSnapshot = schemaDrift.snapshots[1];
+    const schemaAuthority = schemaSnapshot.dynamicCommercePresentation!;
+    const { authorityFingerprint: _schemaFingerprint, ...schemaMaterial } = schemaAuthority;
+    void _schemaFingerprint;
+    schemaMaterial.productDetailArchetypes[0].componentPresentations[0].content = {
+      ...schemaMaterial.productDetailArchetypes[0].componentPresentations[0].content,
+      unregisteredCopy: { en: "Not in the component contract" },
+    };
+    schemaSnapshot.dynamicCommercePresentation =
+      createDynamicCommercePresentationAuthority(schemaMaterial);
+
+    let schemaFailure: unknown;
+    try {
+      compileStorefrontPublication(
+        createCurrentPublishCompilerInput({
+          aggregate: schemaDrift,
+          snapshot: schemaSnapshot,
+          sourceAuthority: { kind: "manual" },
+        }),
+      );
+    } catch (cause) {
+      schemaFailure = cause;
+    }
+    expect(schemaFailure).toMatchObject({ code: "invalid-binding" });
+  });
+
+  it("does not stamp governed legacy per-route commerce pages as migration-current", () => {
+    const value = p10b16p01DynamicCommerceAggregate();
+    const current = value.snapshots[1];
+    const legacy = expandDynamicCommerceRoutePages(current, value.catalogue);
+    const legacyAggregate = structuredClone(value);
+    legacyAggregate.snapshots[1] = legacy;
+    const migration = migrateLegacyDynamicCommerceRoutes(legacy, value.catalogue);
+    expect(migration.status).toBe("migrated");
+
+    const first = createCurrentPublishCompilerInput({
+      aggregate: legacyAggregate,
+      snapshot: legacy,
+      sourceAuthority: { kind: "manual" },
+    });
+    const second = createCurrentPublishCompilerInput({
+      aggregate: structuredClone(legacyAggregate),
+      snapshot: structuredClone(legacy),
+      sourceAuthority: { kind: "manual" },
+    });
+
+    expect(first.authority.migrationStatus).toBe("unresolved");
+    expect(first.authority.migrationFingerprint).toBe(second.authority.migrationFingerprint);
+    let unresolved: unknown;
+    try {
+      compileStorefrontPublication(first);
+    } catch (cause) {
+      unresolved = cause;
+    }
+    expect(unresolved).toMatchObject({ code: "unresolved-migration" });
+
+    const forgedCurrent = structuredClone(first);
+    forgedCurrent.authority.migrationStatus = "current";
+    let forgedFailure: unknown;
+    try {
+      compileStorefrontPublication(forgedCurrent);
+    } catch (cause) {
+      forgedFailure = cause;
+    }
+    expect(forgedFailure).toMatchObject({ code: "unresolved-migration" });
+  });
+
   it("uses a deterministic SHA-256 fingerprint of canonical storefront content", () => {
     const canonical = canonicalStorefrontContentString(aurumNordicSeed.draftSnapshot);
     const expected = createHash("sha256").update(canonical).digest("hex");
@@ -137,6 +297,7 @@ describe("P2-11 publishing preparation", () => {
         totalChangedSections: 0,
         brandSystemChanges: [],
         navigationChanges: [],
+        dynamicCommercePresentationChanged: false,
       }),
     );
   });

@@ -258,6 +258,10 @@ export function createPublishChangeSummary(
     navigationChanges: (["primary", "footer"] as const).filter(
       (area) => !sameValue(published.navigation[area], draft.navigation[area]),
     ),
+    dynamicCommercePresentationChanged: !sameValue(
+      published.dynamicCommercePresentation,
+      draft.dynamicCommercePresentation,
+    ),
     totalChangedPages: changedPageIds.size,
     totalChangedSections: changedSectionIds.size,
   };

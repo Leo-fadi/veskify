@@ -76,7 +76,7 @@ export function P10B15SynthesisProofClient({
   evidenceReferences,
   intent,
   locale,
-  pageId,
+  page,
   snapshot,
   snapshotFingerprint,
   synthesisFingerprint,
@@ -87,7 +87,7 @@ export function P10B15SynthesisProofClient({
   evidenceReferences: readonly PageFactEvidenceReference[];
   intent: string;
   locale: "en" | "fi";
-  pageId: string;
+  page: StorefrontSnapshot["pages"][number];
   snapshot: StorefrontSnapshot;
   snapshotFingerprint: string;
   synthesisFingerprint: string;
@@ -100,7 +100,6 @@ export function P10B15SynthesisProofClient({
   }>;
 }) {
   const [lastUtilityIntent, setLastUtilityIntent] = useState<CommerceUtilityIntent | null>(null);
-  const page = snapshot.pages.find((candidate) => candidate.id === pageId)!;
   const runtime = utilityRuntime(page.pageFamily!.familyId, aggregate);
   const renderTarget = target === "proposal" ? "preview" : target;
   const context = createStorefrontRenderContext({

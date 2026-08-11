@@ -16,10 +16,12 @@ import type { StorefrontDraftPersistencePort } from "@/application/vesko-integra
 import {
   canonicalStorefrontContentEqual,
   canonicalStorefrontContentFingerprint,
+  createDynamicCommercePresentationAuthority,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import { InMemoryProjectRepository, type ProjectAggregate } from "@/services/storage";
+import { p10b16p01DynamicCommerceAggregate } from "../fixtures/p10b-16p-01-dynamic-commerce";
 
 const tenantId = "tenant_standalone";
 const fixedDate = new Date("2026-07-26T09:00:00.000Z");
@@ -168,6 +170,72 @@ function registerAi(
 }
 
 describe("P9-05A canonical storefront draft persistence adapter", () => {
+  it("preserves root dynamic-commerce authority through the complete replacement boundary", async () => {
+    const source = p10b16p01DynamicCommerceAggregate();
+    const projectRepository = new InMemoryProjectRepository([source]);
+    const provenance = provenanceSource();
+    const port = createAdapter(projectRepository, provenance.source);
+    const context = await contextFor(projectRepository, source.project.id);
+    const base = source.snapshots.find(({ id }) => id === source.project.draftSnapshotId)!;
+    const candidate = structuredClone(base);
+    const current = candidate.dynamicCommercePresentation;
+    if (!current) throw new Error("Missing dynamic-commerce persistence fixture.");
+    const { authorityFingerprint: _fingerprint, ...material } = current;
+    void _fingerprint;
+    material.authorityRevision += 1;
+    candidate.dynamicCommercePresentation = createDynamicCommercePresentationAuthority(material);
+    const request = saveRequest({
+      context,
+      base,
+      candidate,
+      requestId: "request_dynamic_commerce_authority",
+    });
+    registerManual(provenance, request);
+
+    const saved = await port.save(request);
+
+    expect(saved.snapshot.dynamicCommercePresentation).toEqual(
+      candidate.dynamicCommercePresentation,
+    );
+    expect(saved.snapshot.pages).toEqual(candidate.pages);
+    expect(canonicalStorefrontContentEqual(saved.snapshot, candidate)).toBe(true);
+
+    const restored = await projectRepository.restore(source.project.id, base.id);
+    expect(restored.dynamicCommercePresentation).toEqual(base.dynamicCommercePresentation);
+    expect(restored.pages).toEqual(base.pages);
+  });
+
+  it("rejects unregistered dynamic-commerce props before any durable write", async () => {
+    const source = p10b16p01DynamicCommerceAggregate();
+    const projectRepository = new InMemoryProjectRepository([source]);
+    const provenance = provenanceSource();
+    const port = createAdapter(projectRepository, provenance.source);
+    const context = await contextFor(projectRepository, source.project.id);
+    const base = source.snapshots.find(({ id }) => id === source.project.draftSnapshotId)!;
+    const candidate = structuredClone(base);
+    const current = candidate.dynamicCommercePresentation!;
+    const { authorityFingerprint: _fingerprint, ...material } = current;
+    void _fingerprint;
+    material.productDetailArchetypes[0].componentPresentations[0].props = {
+      ...material.productDetailArchetypes[0].componentPresentations[0].props,
+      unsupportedOperationalToggle: true,
+    };
+    candidate.dynamicCommercePresentation = createDynamicCommercePresentationAuthority(material);
+    const request = saveRequest({
+      context,
+      base,
+      candidate,
+      requestId: "request_invalid_dynamic_commerce_props",
+    });
+    registerManual(provenance, request);
+    const before = await projectRepository.get(source.project.id);
+
+    await expect(port.save(request)).rejects.toMatchObject({
+      code: "malformedIntegrationResponse",
+    });
+    expect(await projectRepository.get(source.project.id)).toEqual(before);
+  });
+
   it("is exactly assignable to the canonical P9-01 draft port", () => {
     const projectRepository = repository();
     const provenance = provenanceSource();

@@ -863,6 +863,32 @@ describe("P4-05B deterministic provider and security boundary", () => {
     expect(proposal.summary.fi).toBeTruthy();
   });
 
+  it("rejects provider-originated dynamic-commerce migration and binds it into proposal identity", async () => {
+    const { request, response } = await requestAndResponse();
+    const dynamicCommerceMigration = {
+      kind: "canonicalDynamicCommerceMigration" as const,
+      contractVersion: "1.0.0" as const,
+      legacyProjectionFingerprint: `v1_1_${"0".repeat(64)}`,
+      resultingProjectionFingerprint: `v1_1_${"1".repeat(64)}`,
+      resultingAuthorityFingerprint: "dynamic-commerce-presentation-provider-forbidden",
+    };
+    const originalId = response.proposal.id;
+    response.proposal.dynamicCommerceMigration = dynamicCommerceMigration;
+    response.proposal.id = createAiStorefrontProposalId(
+      request.requestId,
+      request.targetFingerprint,
+      request.permissionFingerprint,
+      response.proposal.operations,
+      response.proposal.assetPlacementOperations,
+      dynamicCommerceMigration,
+    );
+
+    expect(response.proposal.id).not.toBe(originalId);
+    expect(() => validateAiStorefrontProviderResponse(request, response)).toThrow(
+      /cannot originate canonical dynamic-commerce migration/i,
+    );
+  });
+
   const projectionMutations: Array<[string, (response: AiStorefrontProviderResponse) => void]> = [
     ["page removal", (response) => response.proposal.proposedStorefront.pages.pop()],
     [

@@ -107,7 +107,7 @@ test("non-editor project routes still show the storefront preview", async ({ pag
   await page.goto(projectUrl);
 
   await expect(page.getByRole("heading", { name: "Aurum Nordic", level: 1 })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Search (demo)" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Search (demo)" })).toHaveCount(0);
   await expect(page.getByLabel("Visual editor canvas")).not.toBeVisible();
 });
 

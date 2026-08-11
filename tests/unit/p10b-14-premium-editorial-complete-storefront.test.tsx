@@ -27,6 +27,7 @@ import {
   canonicalValueFingerprint,
   canonicalValueString,
   applyCommercialSharedFrame,
+  createDynamicCommercePresentationAuthority,
   validateCanonicalStorefrontSiteMap,
 } from "@/domain/storefront";
 import { InMemoryProjectRepository } from "@/services/storage";
@@ -41,12 +42,11 @@ function currentEvidence() {
 describe("P10B-14 Premium Editorial complete-storefront vertical slice", () => {
   it("materializes the complete canonical page set through one plan, proposal, and snapshot", () => {
     const { snapshot, plan, proposal } = result.slice;
-    expect(snapshot.pages).toHaveLength(17);
+    expect(snapshot.pages).toHaveLength(13);
     expect(snapshot.pages.map((page) => page.pageFamily!.familyId).sort()).toEqual([
       "about",
       "cart",
       "checkout",
-      "collection",
       "contact",
       "empty-state",
       "error-state",
@@ -55,14 +55,15 @@ describe("P10B-14 Premium Editorial complete-storefront vertical slice", () => {
       "no-results",
       "not-found",
       "policy-legal",
-      "product-detail",
-      "product-detail",
       "returns-information",
-      "search-results",
       "shipping-information",
     ]);
-    expect(plan.target.pages).toHaveLength(snapshot.pages.length);
-    expect(proposal.proposedStorefront.pages).toHaveLength(snapshot.pages.length);
+    expect(snapshot.dynamicCommercePresentation?.routeInventory).toHaveLength(4);
+    expect(
+      snapshot.dynamicCommercePresentation?.routeInventory.map(({ kind }) => kind).sort(),
+    ).toEqual(["collection", "product", "product", "search"]);
+    expect(plan.target.pages).toHaveLength(17);
+    expect(proposal.proposedStorefront.pages).toHaveLength(17);
     expect(() =>
       validateCanonicalStorefrontSiteMap(snapshot, {
         catalogue: result.fixture.aggregate.catalogue,
@@ -170,47 +171,67 @@ describe("P10B-14 Premium Editorial complete-storefront vertical slice", () => {
     expect(slice.snapshot.pages.find((page) => page.slug === "/")?.pageFamily?.profileId).toBe(
       P10B14_PREMIUM_EDITORIAL_SELECTION.homepageProfileId,
     );
+    const authority = slice.snapshot.dynamicCommercePresentation!;
+    const collectionRoute = authority.routeInventory.find(({ kind }) => kind === "collection")!;
+    const collectionArchetypeId = authority.collectionRouteMappings.find(
+      ({ routeId }) => routeId === collectionRoute.id,
+    )?.archetypeId;
     expect(
-      slice.snapshot.pages.find((page) => page.slug === "/collections/jewellery")?.pageFamily
-        ?.profileId,
+      authority.collectionSearchArchetypes.find(({ id }) => id === collectionArchetypeId)?.profile
+        .profileId,
     ).toBe(P10B14_PREMIUM_EDITORIAL_SELECTION.collectionProfileId);
     expect(
-      slice.snapshot.pages
-        .filter((page) => page.pageFamily?.familyId === "product-detail")
-        .every(
-          (page) => page.pageFamily?.profileId === P10B14_PREMIUM_EDITORIAL_SELECTION.pdpProfileId,
+      authority.collectionSearchArchetypes.find(({ id }) => id === authority.searchArchetypeId)
+        ?.profile.profileId,
+    ).toBe(P10B14_PREMIUM_EDITORIAL_SELECTION.searchProfileId);
+    expect(
+      authority.productTypeMappings.every(({ archetypeId }) =>
+        authority.productDetailArchetypes.some(
+          ({ id, profile }) =>
+            id === archetypeId &&
+            profile.profileId === P10B14_PREMIUM_EDITORIAL_SELECTION.pdpProfileId,
         ),
+      ),
     ).toBe(true);
   });
 
   it("uses canonical P10B-07/P10B-08/P10B-10/P10B-11/P10B-12/P10B-13 components without local card or frame authority", () => {
     const { slice } = result;
     const home = slice.snapshot.pages.find((page) => page.slug === "/")!;
-    const collection = slice.snapshot.pages.find((page) => page.slug === "/collections/jewellery")!;
-    const search = slice.snapshot.pages.find((page) => page.slug === "/search")!;
+    const authority = slice.snapshot.dynamicCommercePresentation!;
+    const collectionRoute = authority.routeInventory.find(({ kind }) => kind === "collection")!;
+    const collectionArchetypeId = authority.collectionRouteMappings.find(
+      ({ routeId }) => routeId === collectionRoute.id,
+    )?.archetypeId;
+    const collection = authority.collectionSearchArchetypes.find(
+      ({ id }) => id === collectionArchetypeId,
+    )!;
+    const search = authority.collectionSearchArchetypes.find(
+      ({ id }) => id === authority.searchArchetypeId,
+    )!;
     expect(home.sections.map(({ component }) => component)).toEqual(
       expect.arrayContaining(["homepageHero", "homepageEditorial", "homepageFeaturedProducts"]),
     );
     expect(
-      collection.sections.some(
-        (section) =>
-          section.component === "dynamicCollectionCommerce" &&
-          section.props.cardVariant === "editorial",
+      collection.componentPresentations.some(
+        (presentation) =>
+          presentation.component === "dynamicCollectionCommerce" &&
+          presentation.props.cardVariant === "editorial",
       ),
     ).toBe(true);
     expect(
-      search.sections.some(
-        (section) =>
-          section.component === "dynamicCollectionCommerce" &&
-          section.props.cardVariant === "compact",
+      search.componentPresentations.some(
+        (presentation) =>
+          presentation.component === "dynamicCollectionCommerce" &&
+          presentation.props.cardVariant === "compact",
       ),
     ).toBe(true);
     expect(
-      slice.snapshot.pages
-        .filter((page) => page.pageFamily?.familyId === "product-detail")
-        .every((page) =>
-          page.sections.some((section) => section.component === "dynamicProductDetail"),
+      authority.productDetailArchetypes.every((archetype) =>
+        archetype.componentPresentations.some(
+          (presentation) => presentation.component === "dynamicProductDetail",
         ),
+      ),
     ).toBe(true);
     expect(
       slice.snapshot.pages
@@ -246,10 +267,10 @@ describe("P10B-14 Premium Editorial complete-storefront vertical slice", () => {
     expect(canonicalValueString(result.slice.planningInput.catalogue)).toBe(
       canonicalValueString(result.fixture.aggregate.catalogue),
     );
-    const productPages = result.slice.snapshot.pages.filter(
-      (page) => page.pageFamily?.familyId === "product-detail",
+    const authority = result.slice.snapshot.dynamicCommercePresentation!;
+    const productIds = authority.routeInventory.flatMap((route) =>
+      route.kind === "product" ? [route.productId] : [],
     );
-    const productIds = productPages.map((page) => page.sections[0]?.content.productId).sort();
     expect(productIds).toEqual(
       result.fixture.aggregate.catalogue.products.map(({ id }) => id).sort(),
     );
@@ -258,11 +279,15 @@ describe("P10B-14 Premium Editorial complete-storefront vertical slice", () => {
     expect(configurable.orderOptions?.length).toBeGreaterThan(1);
     expect(configurable.variants.length).toBeGreaterThan(1);
     expect(
-      productPages.every((page) => page.sections[0]?.component === "dynamicProductDetail"),
+      authority.productDetailArchetypes.every((archetype) =>
+        archetype.componentPresentations.every(
+          (presentation) => presentation.component === "dynamicProductDetail",
+        ),
+      ),
     ).toBe(true);
   });
 
-  it("renders every page through the shared registered preview renderer", () => {
+  it("renders every static design page through the shared registered preview renderer", () => {
     const context = createStorefrontRenderContext({
       activeLocale: "en",
       primaryLocale: "en",
@@ -302,13 +327,19 @@ describe("P10B-14 Premium Editorial complete-storefront vertical slice", () => {
     expect(canonicalStorefrontContentFingerprint(confirmation.publishedSnapshot)).toBe(
       result.slice.snapshotFingerprint,
     );
-    expect(confirmation.publishedSnapshot.pages).toHaveLength(17);
+    expect(confirmation.publishedSnapshot.pages).toHaveLength(13);
+    expect(confirmation.publishedSnapshot.dynamicCommercePresentation?.routeInventory).toHaveLength(
+      4,
+    );
     const active = await repository.getActiveCompiledPublication(result.slice.snapshot.projectId);
     const versions = await repository.listPublishedStorefrontVersions(
       result.slice.snapshot.projectId,
     );
     expect(active?.version.id).toBe(versions[0]?.id);
-    expect(active?.artifact.compiledResult.pages).toHaveLength(17);
+    expect(active?.artifact.compiledResult.pages).toHaveLength(13);
+    expect(
+      active?.artifact.compiledResult.dynamicCommercePresentation?.routeInventory,
+    ).toHaveLength(4);
   });
 
   it("creates a deterministic traceability-only evidence manifest", () => {
@@ -373,7 +404,7 @@ describe("P10B-14 Premium Editorial complete-storefront vertical slice", () => {
     );
   });
 
-  it("fails closed for missing pages, stale profiles/evidence, wrong product media, and unsupported utility actions", async () => {
+  it("fails closed for missing pages, stale profiles/evidence, wrong product media, and unsupported utility actions", () => {
     const sourceFingerprint = canonicalValueString(result.fixture.planningInput.draft);
     const baseInput = {
       planningInput: {
@@ -424,59 +455,15 @@ describe("P10B-14 Premium Editorial complete-storefront vertical slice", () => {
       }),
     ).toThrow(/stale/i);
 
-    const wrongMediaSnapshot = structuredClone(result.slice.snapshot);
-    const productSection = wrongMediaSnapshot.pages
-      .find((page) => page.pageFamily?.familyId === "product-detail")!
-      .sections.find((section) => section.component === "dynamicProductDetail")!;
-    const sourceSection = wrongMediaSnapshot.pages
-      .flatMap((page) => page.sections)
-      .find((section) => (section.approvedAssetPlacements?.length ?? 0) > 0)!;
-    const sourcePlacementAuthority = sourceSection.approvedAssetPlacements?.[0];
-    const sourcePresentationAuthority = sourceSection.approvedAssetPresentations?.[0];
-    if (!sourcePlacementAuthority || !sourcePresentationAuthority) {
-      throw new Error("Expected approved asset authority in the canonical fixture");
-    }
-    const sourcePlacement = structuredClone(sourcePlacementAuthority);
-    const sourcePresentation = structuredClone(sourcePresentationAuthority);
-    productSection.approvedAssetPlacements = [
-      {
-        ...sourcePlacement,
-        pageId: wrongMediaSnapshot.pages.find((page) =>
-          page.sections.some((section) => section.id === productSection.id),
-        )!.id,
-        componentId: productSection.id,
-        componentType: productSection.component,
-        assetSlotId: "productMedia",
-        role: "productMainImage",
-      },
-    ];
-    productSection.approvedAssetPresentations = [
-      {
-        ...sourcePresentation,
-        role: "productMainImage",
-        ...(sourcePresentation.artDirection
-          ? {
-              artDirection: {
-                ...sourcePresentation.artDirection,
-                source: {
-                  ...sourcePresentation.artDirection.source,
-                  role: "productMainImage",
-                },
-              },
-            }
-          : {}),
-      },
-    ];
-    const wrongMediaAggregate = structuredClone(result.fixture.aggregate);
-    wrongMediaAggregate.snapshots = wrongMediaAggregate.snapshots.map((snapshot) =>
-      snapshot.id === wrongMediaSnapshot.id ? wrongMediaSnapshot : snapshot,
+    const wrongMediaAuthority = structuredClone(result.slice.snapshot.dynamicCommercePresentation!);
+    const { authorityFingerprint: _fingerprint, ...wrongMediaMaterial } = wrongMediaAuthority;
+    void _fingerprint;
+    wrongMediaMaterial.productDetailArchetypes[0].componentPresentations[0].content = {
+      productMedia: [{ id: "asset_not_design_authority" }],
+    };
+    expect(() => createDynamicCommercePresentationAuthority(wrongMediaMaterial)).toThrow(
+      /protected commerce bindings/i,
     );
-    const wrongMediaRepository = new InMemoryProjectRepository([wrongMediaAggregate]);
-    await expect(
-      preparePublish(result.slice.snapshot.projectId, wrongMediaRepository, {
-        authority: { kind: "manual", currentEvidenceReferences: currentEvidence() },
-      }),
-    ).rejects.toThrow(/compile|commerce|binding|revision|media/i);
 
     const cart = result.slice.snapshot.pages.find((page) => page.pageFamily?.familyId === "cart")!;
     expect(cart.sections[0]?.content).not.toHaveProperty("actions");

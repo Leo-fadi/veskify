@@ -18,7 +18,7 @@ The canonical lifecycle remains:
 approved merchant evidence + read-only canonical commerce
 → P10B-15 bounded synthesis authority
 → registered P10B-16 direction narrowing
-→ current profile/frame/component/evidence validation
+→ current static-page/dynamic-archetype/profile/frame/component/evidence validation
 → coordinated whole-storefront plan and proposal
 → canonical StorefrontSnapshot
 → save/reload and deterministic publication
@@ -37,10 +37,13 @@ characteristic, incompatible frame/profile pair, unavailable asset posture, or i
 composition fails closed before proposal compilation.
 
 Direction packages can omit only page families already marked optional by current site-map/evidence
-authority. Home, search, contextual collection/PDP coverage, cart, checkout, no-results, empty,
-error and 404 authority remain required. The bounded Design DNA finishing carried by the plan is
-recomputed by the proposal compiler, so Modern Technical can use its registered standard/subtle
-complete-store posture without reverting to a legacy fixed compact selection.
+authority. Home, search, contextual collection/PDP route coverage, cart, checkout, no-results,
+empty, error and 404 authority remain required. P10B-16P-01 now expresses collection/search/PDP
+design through maintained root archetypes and compact route inventory; a direction narrows those
+archetypes, not every product or collection URL independently. The bounded Design DNA finishing
+carried by the plan is recomputed by the proposal compiler, so Modern Technical can use its
+registered standard/subtle complete-store posture without reverting to a legacy fixed compact
+selection.
 
 ### Premium Editorial (`premium-editorial`)
 
@@ -79,7 +82,8 @@ merchandising, narrative and responsive posture.
 The independent diversity fingerprint contains machine-evaluable dimensions for:
 
 - Design DNA structure, with palette isolated;
-- page set and exact versioned PageBlueprint profiles;
+- static page set, dynamic route coverage, and exact versioned static-page/archetype PageBlueprint
+  profiles;
 - shared frame;
 - meaningful component variants and canonical product-card anatomies;
 - bounded parameter projection;
@@ -89,7 +93,8 @@ The comparator deterministically classifies `exact-duplicate`, `palette-only`,
 `shallow-component-swap`, `near-duplicate`, or `materially-different`. Colour-only change never
 changes the structural fingerprint. A material classification requires at least three changed
 dimensions and at least one rendered architecture dimension. Direction names alone cannot create
-diversity.
+diversity. Multiple concrete routes reusing one archetype do not count as additional material
+design dimensions.
 
 ## Repetition avoidance and deterministic alternatives
 
@@ -100,11 +105,11 @@ exists, it returns the typed `no-valid-diversity` error; it never broadens a pac
 invalid novelty.
 
 The retained representative batch contains three complete outcomes per direction (nine total).
-Across the batch, optional factual page composition, compatible homepage/collection/PDP profiles,
-component anatomy, bounded Design DNA finishing, density, art and narrative postures vary while
-required page/commerce authority remains intact. Pairwise outcomes within each direction classify
-as materially different, and the three direction representatives are structurally distinct without
-using palette.
+Across the batch, optional factual page composition, compatible homepage and dynamic collection/
+PDP archetype profiles, component anatomy, bounded Design DNA finishing, density, art and narrative
+postures vary while required route/commerce authority remains intact. Pairwise outcomes within each
+direction classify as materially different, and the three direction representatives are
+structurally distinct without using palette.
 
 ## Evidence
 
@@ -123,7 +128,9 @@ using palette.
 
 ## Boundaries
 
-P10B-16 does not implement the P10B-17 phase-wide responsive/accessibility/performance closure,
-the P10B-18 100+ configuration quality/scale gate, aesthetic AI scoring, generated code, P10C
-editing, Vesko operations, save as an implicit generation action, or publication without explicit
-authority. P10B remains Partial; P10B-17 and P10B-18 remain Planned.
+P10B-16 does not implement the P10B-16P-02 prompted design-plan contract, P10B-16P-03 final Studio
+generation journey, P10B-17 phase-wide responsive/accessibility/performance closure, the P10B-18
+100+ configuration quality/scale gate, aesthetic AI scoring, generated code, P10C editing, Vesko
+operations, save as an implicit generation action, or publication without explicit authority.
+P10B-16P-01 is now Baseline and supplies the dynamic route/archetype correction. P10B remains
+Partial; P10B-16P-02, P10B-16P-03, P10B-17, and P10B-18 remain Planned.

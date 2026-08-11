@@ -39,6 +39,11 @@ function parseFingerprintContext(input: unknown): AiStorefrontContext {
         pages: candidate.storefront.pages,
         navigation: candidate.storefront.navigation,
         brandSystem: candidate.storefront.brandSystem,
+        ...(candidate.storefront.dynamicCommercePresentation
+          ? {
+              dynamicCommercePresentation: candidate.storefront.dynamicCommercePresentation,
+            }
+          : {}),
       },
     });
     return { ...parsed, enabledLocales: canonicalLocaleOrder(parsed.enabledLocales) };
@@ -87,6 +92,11 @@ function relevantTargetContext(context: AiStorefrontContext, target: AiStorefron
     pageOrder: context.storefront.pageOrder,
     navigation: context.storefront.navigation,
     brandSystem: context.storefront.brandSystem,
+    ...(context.storefront.dynamicCommercePresentation
+      ? {
+          dynamicCommercePresentation: context.storefront.dynamicCommercePresentation,
+        }
+      : {}),
   };
 }
 
@@ -127,6 +137,7 @@ export function createAiStorefrontProposalId(
   permissionFingerprint: string,
   operations: AiStorefrontProposal["operations"],
   assetPlacementOperations: AiStorefrontProposal["assetPlacementOperations"] = [],
+  dynamicCommerceMigration?: AiStorefrontProposal["dynamicCommerceMigration"],
 ) {
   const digest = canonicalValueFingerprint({
     requestId,
@@ -134,6 +145,7 @@ export function createAiStorefrontProposalId(
     permissionFingerprint,
     operations,
     assetPlacementOperations: assetPlacementOperations ?? [],
+    dynamicCommerceMigration: dynamicCommerceMigration ?? null,
   });
   return `storefront_proposal_${digest.slice(-64, -56)}`;
 }

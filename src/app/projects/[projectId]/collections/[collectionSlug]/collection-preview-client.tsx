@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import {
+  dynamicCommerceRouteForCollection,
+  dynamicCommerceRouteForProduct,
+  resolveDynamicCommerceRoutePage,
+} from "@/application/dynamic-commerce-routes";
+import {
   createCatalogueStorefrontCommerceRouteAdapter,
   type CollectionCommerceRoutePresentation,
   type StorefrontCommerceRouteAdapter,
@@ -137,15 +142,38 @@ export function CollectionPreviewClient({
             selectedSnapshotId(aggregate.project, snapshotKind, historicalSnapshotId),
         );
         if (!draft) return setState({ status: "missingDraft" });
-        const collection = aggregate.catalogue.collections.find(
-          (item) => item.slug === collectionSlug,
-        );
-        if (!collection) return setState({ status: "collectionNotFound" });
-        const page = draft.pages.find(
-          (item) => item.type === "collection" && item.slug === `/collections/${collection.slug}`,
-        );
-        if (!page) return setState({ status: "missingPage" });
         try {
+          const route = `/collections/${collectionSlug}`;
+          const dynamicRoute = draft.dynamicCommercePresentation?.routeInventory.find(
+            (entry) => entry.kind === "collection" && entry.route === route,
+          );
+          const legacyCollection = draft.dynamicCommercePresentation
+            ? undefined
+            : aggregate.catalogue.collections.find(({ slug }) => slug === collectionSlug);
+          if (!draft.dynamicCommercePresentation && !legacyCollection) {
+            return setState({ status: "collectionNotFound" });
+          }
+          const page = draft.dynamicCommercePresentation
+            ? dynamicRoute
+              ? resolveDynamicCommerceRoutePage({
+                  snapshot: draft,
+                  catalogue: aggregate.catalogue,
+                  routeId: dynamicRoute.id,
+                }).page
+              : undefined
+            : draft.pages.find((item) => item.type === "collection" && item.slug === route);
+          if (!page) return setState({ status: "missingPage" });
+          const canonicalCollectionId =
+            (dynamicRoute?.kind === "collection" ? dynamicRoute.collectionId : undefined) ??
+            page.sections.find(
+              (section) =>
+                section.component === "dynamicCollectionCommerce" ||
+                section.component === "collectionHeader",
+            )?.content.collectionId;
+          const collection = draft.dynamicCommercePresentation
+            ? aggregate.catalogue.collections.find(({ id }) => id === canonicalCollectionId)
+            : legacyCollection;
+          if (!collection) return setState({ status: "collectionNotFound" });
           const context = createStorefrontRenderContext({
             activeLocale: aggregate.project.primaryLocale,
             primaryLocale: aggregate.project.primaryLocale,
@@ -282,19 +310,21 @@ export function CollectionPreviewClient({
   const navigateProduct =
     onNavigateProduct ??
     ((intent: ProductNavigationIntent) => {
-      const productPage = state.draft.pages.find(
-        (candidate) =>
-          candidate.type === "product" &&
-          candidate.sections.some(
-            (section) =>
-              (section.component === "productInfo" ||
-                section.component === "dynamicProductDetail") &&
-              section.content.productId === intent.productId,
-          ),
-      );
-      if (productPage)
+      const productRoute = state.draft.dynamicCommercePresentation
+        ? dynamicCommerceRouteForProduct(state.draft, intent.productId)
+        : state.draft.pages.find(
+            (candidate) =>
+              candidate.type === "product" &&
+              candidate.sections.some(
+                (section) =>
+                  (section.component === "productInfo" ||
+                    section.component === "dynamicProductDetail") &&
+                  section.content.productId === intent.productId,
+              ),
+          )?.slug;
+      if (productRoute)
         window.location.assign(
-          `${pathPrefix}${productPage.slug}${
+          `${pathPrefix}${productRoute}${
             publishedSessionId ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}` : ""
           }`,
         );
@@ -302,19 +332,21 @@ export function CollectionPreviewClient({
   const navigateCollection =
     onNavigateCollection ??
     ((intent: CollectionNavigationIntent) => {
-      const collectionPage = state.draft.pages.find(
-        (candidate) =>
-          candidate.type === "collection" &&
-          candidate.sections.some(
-            (section) =>
-              (section.component === "collectionHeader" ||
-                section.component === "dynamicCollectionCommerce") &&
-              section.content.collectionId === intent.collectionId,
-          ),
-      );
-      if (collectionPage)
+      const collectionRoute = state.draft.dynamicCommercePresentation
+        ? dynamicCommerceRouteForCollection(state.draft, intent.collectionId)
+        : state.draft.pages.find(
+            (candidate) =>
+              candidate.type === "collection" &&
+              candidate.sections.some(
+                (section) =>
+                  (section.component === "collectionHeader" ||
+                    section.component === "dynamicCollectionCommerce") &&
+                  section.content.collectionId === intent.collectionId,
+              ),
+          )?.slug;
+      if (collectionRoute)
         window.location.assign(
-          `${pathPrefix}${collectionPage.slug}${
+          `${pathPrefix}${collectionRoute}${
             publishedSessionId ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}` : ""
           }`,
         );

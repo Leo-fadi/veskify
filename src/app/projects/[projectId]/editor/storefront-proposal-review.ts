@@ -21,6 +21,21 @@ export type StorefrontProposalPageReview = {
   items: StorefrontProposalReviewItem[];
 };
 
+export type StorefrontProposalDynamicCommerceReview = {
+  heading: string;
+  summary: string;
+  protectedBindingSummary: string;
+  staticPageCount: number;
+  collectionSearchArchetypeCount: number;
+  productDetailArchetypeCount: number;
+  archetypeCount: number;
+  runtimeRouteCount: number;
+  collectionRouteCount: number;
+  productRouteCount: number;
+  searchRouteCount: number;
+  operationIndexes: number[];
+};
+
 export type StorefrontProposalReview = {
   scope: "homepage" | "storefront";
   scopeLabel: string;
@@ -34,6 +49,7 @@ export type StorefrontProposalReview = {
   operationCount: number;
   globalChanges: StorefrontProposalReviewItem[];
   pages: StorefrontProposalPageReview[];
+  dynamicCommerceConvergence: StorefrontProposalDynamicCommerceReview | null;
   warnings: string[];
   blockers: string[];
   representedOperationIndexes: number[];
@@ -72,6 +88,30 @@ export function createStorefrontProposalReview(
   const represented = new Set<number>();
   const blockers: string[] = [];
   const globalChanges: StorefrontProposalReviewItem[] = [];
+  const migrationAuthority = proposal.dynamicCommerceMigration
+    ? proposal.proposedStorefront.dynamicCommercePresentation
+    : undefined;
+  if (proposal.dynamicCommerceMigration && !migrationAuthority) {
+    blockers.push(
+      locale === "fi"
+        ? "Dynaamisen kaupankäynnin ehdotettua rakennetta ei voida näyttää turvallisesti."
+        : "The proposed dynamic-commerce structure cannot be represented safely.",
+    );
+  }
+  const migratedAwayPageIds = new Set(
+    proposal.dynamicCommerceMigration && migrationAuthority
+      ? proposal.target.affectedPageIds.filter((pageId) => {
+          const original = originalById.get(pageId);
+          return (
+            original !== undefined &&
+            !proposedById.has(pageId) &&
+            migrationAuthority.routeInventory.some(({ id }) => id === pageId) &&
+            (original.type === "collection" || original.type === "product")
+          );
+        })
+      : [],
+  );
+  const convergenceOperationIndexes: number[] = [];
 
   proposal.operations.forEach((envelope, operationIndex) => {
     if (envelope.target.kind !== "storefrontDesignSystem") return;
@@ -85,13 +125,25 @@ export function createStorefrontProposalReview(
     });
   });
 
+  if (migrationAuthority) {
+    proposal.operations.forEach((envelope, operationIndex) => {
+      if (
+        envelope.target.kind !== "storefrontDesignSystem" &&
+        migratedAwayPageIds.has(envelope.target.pageId)
+      ) {
+        represented.add(operationIndex);
+        convergenceOperationIndexes.push(operationIndex);
+      }
+    });
+  }
+
   const affectedPageIds = new Set(proposal.target.affectedPageIds);
   const pageIdsInCanonicalOrder = [
     ...proposal.originalStorefront.pageOrder.filter((pageId) => affectedPageIds.has(pageId)),
     ...proposal.target.affectedPageIds.filter(
       (pageId) => !proposal.originalStorefront.pageOrder.includes(pageId),
     ),
-  ];
+  ].filter((pageId) => !migratedAwayPageIds.has(pageId));
   const pages = pageIdsInCanonicalOrder.map((pageId) => {
     const original = originalById.get(pageId);
     const proposed = proposedById.get(pageId);
@@ -185,13 +237,52 @@ export function createStorefrontProposalReview(
     : locale === "fi"
       ? "Koko verkkokauppa"
       : "Entire storefront";
+  const collectionSearchArchetypeCount = migrationAuthority?.collectionSearchArchetypes.length ?? 0;
+  const productDetailArchetypeCount = migrationAuthority?.productDetailArchetypes.length ?? 0;
+  const archetypeCount = collectionSearchArchetypeCount + productDetailArchetypeCount;
+  const dynamicCommerceConvergence = migrationAuthority
+    ? {
+        heading:
+          locale === "fi"
+            ? "Kanoninen dynaamisten kauppareittien yhdistäminen"
+            : "Canonical dynamic-commerce route convergence",
+        summary:
+          locale === "fi"
+            ? `${migratedAwayPageIds.size} tuotteen, kokoelman ja haun reittikohtaista ulkoasua yhdistetään ${archetypeCount} uudelleenkäytettäväksi ulkoasumalliksi. ${migrationAuthority.routeInventory.length} kauppareittiä säilyy ajonaikaisena reittivaltuutena, eikä niitä muuteta erillisiksi muokattaviksi sivuiksi.`
+            : `${migratedAwayPageIds.size} product, collection, and search route-specific designs converge into ${archetypeCount} reusable design archetypes. ${migrationAuthority.routeInventory.length} commerce routes remain runtime route authority and do not become separately editable pages.`,
+        protectedBindingSummary:
+          locale === "fi"
+            ? "Tuotteiden ja kokoelmien identiteetit, kokoelmien tarkka tuotejärjestys, hinnat, saatavuus, varasto, vaihtoehdot ja kanoninen tuotemedia pysyvät suojattuina Vesko-kauppasidoksina."
+            : "Product and collection identities, exact ordered collection membership, prices, availability, stock, options, and canonical product media remain protected Vesko commerce bindings.",
+        staticPageCount: proposal.proposedStorefront.pages.length,
+        collectionSearchArchetypeCount,
+        productDetailArchetypeCount,
+        archetypeCount,
+        runtimeRouteCount: migrationAuthority.routeInventory.length,
+        collectionRouteCount: migrationAuthority.routeInventory.filter(
+          ({ kind }) => kind === "collection",
+        ).length,
+        productRouteCount: migrationAuthority.routeInventory.filter(
+          ({ kind }) => kind === "product",
+        ).length,
+        searchRouteCount: migrationAuthority.routeInventory.filter(({ kind }) => kind === "search")
+          .length,
+        operationIndexes: [...new Set(convergenceOperationIndexes)].sort(
+          (left, right) => left - right,
+        ),
+      }
+    : null;
   const heading = homepageScope
     ? locale === "fi"
       ? `Etusivuehdotus · ${pageOperationCount} suunniteltua asettelumuutosta`
       : `Homepage proposal · ${pageOperationCount} planned layout ${pageOperationCount === 1 ? "change" : "changes"}`
-    : locale === "fi"
-      ? `Verkkokauppaehdotus · ${pageOperationCount} sivumuutosta${globalOperationCount > 0 ? ` · ${globalOperationCount} yhteisen ilmeen muutosta` : ""}`
-      : `Storefront proposal · ${pageOperationCount} page ${pageOperationCount === 1 ? "change" : "changes"}${globalOperationCount > 0 ? ` · ${globalOperationCount} shared design ${globalOperationCount === 1 ? "change" : "changes"}` : ""}`;
+    : dynamicCommerceConvergence
+      ? locale === "fi"
+        ? `Verkkokauppaehdotus · ${dynamicCommerceConvergence.staticPageCount} staattista sivua · ${dynamicCommerceConvergence.archetypeCount} kaupan ulkoasumallia`
+        : `Storefront proposal · ${dynamicCommerceConvergence.staticPageCount} static pages · ${dynamicCommerceConvergence.archetypeCount} commerce design archetypes`
+      : locale === "fi"
+        ? `Verkkokauppaehdotus · ${pageOperationCount} sivumuutosta${globalOperationCount > 0 ? ` · ${globalOperationCount} yhteisen ilmeen muutosta` : ""}`
+        : `Storefront proposal · ${pageOperationCount} page ${pageOperationCount === 1 ? "change" : "changes"}${globalOperationCount > 0 ? ` · ${globalOperationCount} shared design ${globalOperationCount === 1 ? "change" : "changes"}` : ""}`;
 
   return {
     scope,
@@ -223,9 +314,13 @@ export function createStorefrontProposalReview(
       ? locale === "fi"
         ? "Tämä päivittää vain etusivun yhtenä tallentamattomana luonnosmuutoksena. Voit kumota muutoksen yhdellä toiminnolla."
         : "This updates only the homepage as one unsaved draft change. You can undo the change in one step."
-      : locale === "fi"
-        ? "Tämä päivittää tarkistuksessa luetellut sivut ja yhteisen ilmeen muutokset yhtenä tallentamattomana luonnosmuutoksena. Voit kumota koko muutoksen yhdellä toiminnolla."
-        : "This updates the pages and shared design changes listed in the review as one unsaved draft change. You can undo the complete change in one step.",
+      : dynamicCommerceConvergence
+        ? locale === "fi"
+          ? "Tämä ottaa staattiset sivut ja uudelleenkäytettävät kaupan ulkoasumallit käyttöön yhtenä tallentamattomana luonnosmuutoksena. Reittikohtaiset sivut yhdistyvät kanoniseen rakenteeseen, ja suojatut Vesko-kauppasidokset säilyvät muuttumattomina. Voit kumota koko muutoksen yhdellä toiminnolla."
+          : "This applies the static pages and reusable commerce design archetypes as one unsaved draft change. Route-specific pages converge into the canonical structure while protected Vesko commerce bindings remain unchanged. You can undo the complete change in one step."
+        : locale === "fi"
+          ? "Tämä päivittää tarkistuksessa luetellut sivut ja yhteisen ilmeen muutokset yhtenä tallentamattomana luonnosmuutoksena. Voit kumota koko muutoksen yhdellä toiminnolla."
+          : "This updates the pages and shared design changes listed in the review as one unsaved draft change. You can undo the complete change in one step.",
     confirmationApplyLabel: homepageScope
       ? locale === "fi"
         ? "Ota etusivuehdotus käyttöön"
@@ -233,16 +328,19 @@ export function createStorefrontProposalReview(
       : locale === "fi"
         ? "Ota kauppaehdotus käyttöön"
         : "Apply storefront proposal",
-    affectedPageCount: proposal.target.affectedPageIds.length,
+    affectedPageCount: dynamicCommerceConvergence
+      ? dynamicCommerceConvergence.staticPageCount + dynamicCommerceConvergence.archetypeCount
+      : proposal.target.affectedPageIds.length,
     operationCount: proposal.operations.length,
     globalChanges,
     pages,
+    dynamicCommerceConvergence,
     warnings: [],
     blockers,
     representedOperationIndexes,
     complete:
       blockers.length === 0 &&
-      pages.length === proposal.target.affectedPageIds.length &&
+      pages.length === pageIdsInCanonicalOrder.length &&
       representedOperationIndexes.every((operationIndex, index) => operationIndex === index),
   };
 }

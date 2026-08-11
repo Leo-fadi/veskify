@@ -312,9 +312,11 @@ const markdownBodyXml = (markdown, { layout, pageWidth, hyperlinks }) => {
       }
       const rowsPerChunk =
         isTraceabilityHeaders(rows[0]) && rows.length > 17
-          ? 6
+          ? stripInlineMarkdown(rows[1]?.[0] ?? "").startsWith("FR-")
+            ? 5
+            : 6
           : layout === "tracker" && rows[0].length === 7 && rows.length > 12
-            ? 9
+            ? 7
             : undefined;
       if (rowsPerChunk) {
         const dataRows = rows.slice(1);
@@ -438,7 +440,7 @@ const numberingXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </w:numbering>`;
 
 const footerXml = (label, pageWidth) => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:pStyle w:val="Footer"/><w:pBdr><w:top w:val="single" w:sz="4" w:space="6" w:color="D8E0E8"/></w:pBdr><w:tabs><w:tab w:val="right" w:pos="${pageWidth}"/></w:tabs></w:pPr>${runXml(label)}${runXml("\tPage ")}<w:fldSimple w:instr=" PAGE "><w:r><w:t>1</w:t></w:r></w:fldSimple>${runXml(" of ")}<w:fldSimple w:instr=" NUMPAGES "><w:r><w:t>1</w:t></w:r></w:fldSimple></w:p></w:ftr>`;
+<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:pStyle w:val="Footer"/><w:pBdr><w:top w:val="single" w:sz="4" w:space="6" w:color="D8E0E8"/></w:pBdr><w:tabs><w:tab w:val="right" w:pos="${pageWidth - 1440}"/></w:tabs></w:pPr>${runXml(label)}<w:r><w:tab/></w:r>${runXml("Page ")}<w:fldSimple w:instr=" PAGE "><w:r><w:t>1</w:t></w:r></w:fldSimple>${runXml(" of ")}<w:fldSimple w:instr=" NUMPAGES "><w:r><w:t>1</w:t></w:r></w:fldSimple></w:p></w:ftr>`;
 
 const collectArchiveEntries = (directory, prefix = "") =>
   readdirSync(directory)

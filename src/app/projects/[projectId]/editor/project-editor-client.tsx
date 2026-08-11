@@ -55,9 +55,10 @@ import {
   canonicalValueFingerprint,
   type PageFactEvidenceReference,
   type PageModel,
-  type PageType,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
+import { canonicalProductTypePresentationId } from "@/domain/product-card";
+import { projectDynamicCommerceArchetypePages } from "@/application/dynamic-commerce-routes";
 import { VeskifyPuckCanvas } from "@/integrations/puck/veskify-puck-editor";
 import {
   createBrowserProjectRepository,
@@ -88,6 +89,8 @@ import {
   canonicalPagesEqual,
   composeActiveEditorDraft,
   establishAcceptedAiReceiptClientAuthority,
+  projectCanonicalEditorPages,
+  proposalCanonicalReviewSnapshot,
   proposalStorefrontPreview,
   reconcileAcceptedAiReceiptClientAuthority,
   type AcceptedAiReceiptClientAuthority,
@@ -136,16 +139,20 @@ type SaveUiState =
   | { status: "success"; message: string }
   | { status: "validation" | "storage" | "stale"; message: string };
 
-const editorPageTypes = new Set<PageType>(["home", "collection", "product"]);
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
 
 function editorPagesFor(
   draft: StorefrontSnapshot,
+  catalogue: ProjectAggregate["catalogue"],
   localDemoBridge: LocalDemoBridge | undefined,
+  representativeRouteIds: Readonly<Record<string, string>> = {},
 ): PageModel[] {
-  return draft.pages.filter(
-    (page) => localDemoBridge?.kind === "p10b-16l" || editorPageTypes.has(page.type),
-  );
+  return projectCanonicalEditorPages({
+    draft,
+    catalogue,
+    includeAllLegacyPages: localDemoBridge?.kind === "p10b-16l",
+    representativeRouteIds,
+  });
 }
 
 function p10bLiveHistorySnapshot(
@@ -190,6 +197,7 @@ function snapshotDesign(snapshot: StorefrontSnapshot) {
     brandSystem: snapshot.brandSystem,
     navigation: snapshot.navigation,
     pages: snapshot.pages,
+    dynamicCommercePresentation: snapshot.dynamicCommercePresentation,
     catalogueRef: snapshot.catalogueRef,
   };
 }
@@ -238,6 +246,49 @@ function isTypingTarget(target: EventTarget | null) {
 }
 
 function editorPageName(page: PageModel, locale: Locale, primaryLocale: Locale) {
+  const archetypeNames: Readonly<Record<string, { en: string; fi: string }>> = {
+    "collection-editorial-discovery": {
+      en: "Editorial collection design archetype",
+      fi: "Toimituksellinen kokoelmanäkymä",
+    },
+    "collection-catalogue-comparison": {
+      en: "Catalogue comparison design archetype",
+      fi: "Vertaileva kokoelmanäkymä",
+    },
+    "collection-campaign-led-discovery": {
+      en: "Campaign-led collection design archetype",
+      fi: "Kampanjavetoinen kokoelmanäkymä",
+    },
+    "collection-dense-search": {
+      en: "Dense collection and search design archetype",
+      fi: "Tiivis kokoelma- ja hakunäkymä",
+    },
+    "pdp-standard-commerce": {
+      en: "Standard product-page design archetype",
+      fi: "Tavallinen tuotesivumalli",
+    },
+    "pdp-high-consideration": {
+      en: "High-consideration product-page design archetype",
+      fi: "Harkitun oston tuotesivumalli",
+    },
+    "pdp-gallery-led": {
+      en: "Gallery-led product-page design archetype",
+      fi: "Galleriavetoinen tuotesivumalli",
+    },
+    "pdp-variant-led": {
+      en: "Configurable product-page design archetype",
+      fi: "Muunneltavan tuotteen tuotesivumalli",
+    },
+  };
+  if (page.id.startsWith("archetype_")) {
+    if (page.id === "archetype_pdp_generic_fallback") {
+      return locale === "fi"
+        ? "Yleinen turvallinen tuotesivumalli"
+        : "Safe generic product-page design archetype";
+    }
+    const name = page.pageFamily?.profileId ? archetypeNames[page.pageFamily.profileId] : undefined;
+    if (name) return name[locale];
+  }
   return page.type === "home"
     ? locale === "fi"
       ? "Etusivu"
@@ -366,6 +417,7 @@ export function ProjectEditorClient({
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [selectedPageId, setSelectedPageId] = useState<string>();
   const [selectedSectionId, setSelectedSectionId] = useState<string>();
+  const [representativeRouteIds, setRepresentativeRouteIds] = useState<Record<string, string>>({});
   const [activeLocale, setActiveLocale] = useState<Locale>();
   const [sessionPages, setSessionPages] = useState<Record<string, PageModel>>({});
   const [sessionBrandSystem, setSessionBrandSystem] = useState<BrandSystem>();
@@ -478,6 +530,9 @@ export function ProjectEditorClient({
           return;
         }
         try {
+          const retainedEvidenceReferences =
+            localDemoBridge?.evidenceReferences ??
+            draft.contentSupportFactDocuments.map(({ evidence }) => structuredClone(evidence));
           const context = createStorefrontRenderContext({
             activeLocale: aggregate.project.primaryLocale,
             primaryLocale: aggregate.project.primaryLocale,
@@ -485,9 +540,9 @@ export function ProjectEditorClient({
             catalogue: aggregate.catalogue,
             snapshot: draft,
             pagePathPrefix: `/projects/${projectId}`,
-            evidenceReferences: localDemoBridge?.evidenceReferences,
+            evidenceReferences: retainedEvidenceReferences,
           });
-          const pages = editorPagesFor(draft, localDemoBridge);
+          const pages = editorPagesFor(draft, aggregate.catalogue, localDemoBridge);
           pages.forEach((page) => validateRegisteredPage(page, context));
           if (pages.length === 0) throw new Error("No supported draft pages are available.");
           const nextHistory = new CanonicalEditorHistory({
@@ -499,8 +554,10 @@ export function ProjectEditorClient({
           setSelectedSectionId(undefined);
           setActiveLocale(aggregate.project.primaryLocale);
           setSessionPages({});
+          setRepresentativeRouteIds({});
           setSessionBrandSystem(undefined);
           setSessionStorefrontDraft(undefined);
+          setCurrentEvidenceReferences(retainedEvidenceReferences);
           setImportedDemoProposal(localDemoBridge?.proposal ?? undefined);
           setAuthoritativeRevision(localDemoBridge?.authoritativeRevision ?? null);
           setAcceptedReceiptAuthority(undefined);
@@ -532,7 +589,15 @@ export function ProjectEditorClient({
 
   const readyState = state.status === "ready" ? state : undefined;
   const editorDraftBase = sessionStorefrontDraft ?? readyState?.draft;
-  const editorDraftPages = editorDraftBase ? editorPagesFor(editorDraftBase, localDemoBridge) : [];
+  const editorDraftPages =
+    editorDraftBase && readyState
+      ? editorPagesFor(
+          editorDraftBase,
+          readyState.aggregate.catalogue,
+          localDemoBridge,
+          representativeRouteIds,
+        )
+      : [];
   const readyOriginalPage =
     editorDraftPages.find((item) => item.id === selectedPageId) ?? editorDraftPages[0];
   const readyPage = readyOriginalPage
@@ -546,7 +611,15 @@ export function ProjectEditorClient({
         brandSystem: sessionBrandSystem,
       })
     : undefined;
-  const visiblePages = activeDraft ? editorPagesFor(activeDraft, localDemoBridge) : [];
+  const visiblePages =
+    activeDraft && readyState
+      ? editorPagesFor(
+          activeDraft,
+          readyState.aggregate.catalogue,
+          localDemoBridge,
+          representativeRouteIds,
+        )
+      : [];
   const readyContext =
     readyState && readyLocale && activeDraft
       ? createStorefrontRenderContext({
@@ -691,26 +764,30 @@ export function ProjectEditorClient({
       setSessionPages({});
       setSessionBrandSystem(undefined);
       setSessionStorefrontDraft(structuredClone(authoritativeSnapshot));
-      authoritativeSnapshot.pages.forEach((snapshotPage) => editorHistory?.rebase(snapshotPage));
+      const authoritativePages = editorPagesFor(
+        authoritativeSnapshot,
+        readyState.aggregate.catalogue,
+        localDemoBridge,
+        representativeRouteIds,
+      );
+      authoritativePages.forEach((snapshotPage) => editorHistory?.rebase(snapshotPage));
       setResetKeys((current) =>
         Object.fromEntries(
-          authoritativeSnapshot.pages.map((snapshotPage) => [
+          authoritativePages.map((snapshotPage) => [
             snapshotPage.id,
             (current[snapshotPage.id] ?? 0) + 1,
           ]),
         ),
       );
       setSelectedPageId((current) =>
-        current && authoritativeSnapshot.pages.some((item) => item.id === current)
+        current && authoritativePages.some((item) => item.id === current)
           ? current
-          : (authoritativeSnapshot.pages.find((item) => item.type === "home")?.id ??
-            authoritativeSnapshot.pages[0]?.id),
+          : (authoritativePages.find((item) => item.type === "home")?.id ??
+            authoritativePages[0]?.id),
       );
       setSelectedSectionId((current) =>
         current &&
-        authoritativeSnapshot.pages.some((item) =>
-          item.sections.some((section) => section.id === current),
-        )
+        authoritativePages.some((item) => item.sections.some((section) => section.id === current))
           ? current
           : undefined,
       );
@@ -774,44 +851,97 @@ export function ProjectEditorClient({
 
   const originalPage = readyOriginalPage;
   const page = readyPage!;
-  const currentPageHasUnsavedChanges = !canonicalPagesEqual(page, originalPage);
-  const hasUnsavedChanges =
-    canonicalStorefrontContentFingerprint(activeDraft!) !==
-    canonicalStorefrontContentFingerprint(state.draft);
-  const locale = readyLocale!;
-  const title = resolveLocalizedText(page.title, locale, state.aggregate.project.primaryLocale);
-  const pageRepeatsProjectName =
-    title.trim().localeCompare(state.aggregate.project.name.trim(), locale, {
-      sensitivity: "accent",
-    }) === 0;
-  const identity = storefrontShellCopy[locale];
-  const context = {
-    ...readyContext!,
-    onLocaleChange: (nextLocale: Locale) => {
-      if (nextLocale !== locale) agent.closeForLocaleChange();
-      setActiveLocale(nextLocale);
-    },
-  };
-  const previewHref = `/projects/${projectId}${page.slug === "/" ? "" : page.slug}${
-    localDemoBridge?.kind === "p10b-16l"
-      ? `?p10b-16l-session=${encodeURIComponent(localDemoBridge.sessionId)}`
-      : ""
-  }`;
   const previewStorefront = proposalStorefrontPreview({
     proposal: agent.generatedStorefrontProposal,
     previewActive: agent.previewActive,
     visibleState: agent.visibleState,
   });
-  const displayedBrandSystem = previewStorefront?.brandSystem ?? activeDraft!.brandSystem;
-  const style = brandSystemToCssVariables(displayedBrandSystem) as CSSProperties;
+  const proposalReviewSnapshot = proposalCanonicalReviewSnapshot({
+    proposal: agent.generatedStorefrontProposal,
+    previewActive: agent.previewActive,
+    visibleState: agent.visibleState,
+    acceptanceBaseline: activeDraft!,
+  });
   const showingProposal =
     (agent.generatedProposal !== null || previewStorefront !== undefined) &&
     agent.previewActive &&
     (agent.visibleState === "proposalReady" || agent.visibleState === "accepting");
+  const displayedDraft = proposalReviewSnapshot ?? activeDraft!;
+  const displayedPages = proposalReviewSnapshot
+    ? editorPagesFor(
+        proposalReviewSnapshot,
+        state.aggregate.catalogue,
+        undefined,
+        representativeRouteIds,
+      )
+    : visiblePages;
+  const workspacePage =
+    displayedPages.find(({ id }) => id === selectedPageId) ??
+    displayedPages.find(({ type }) => type === "home") ??
+    displayedPages[0] ??
+    page;
+  const currentPageHasUnsavedChanges = !canonicalPagesEqual(page, originalPage);
+  const hasUnsavedChanges =
+    canonicalStorefrontContentFingerprint(activeDraft!) !==
+    canonicalStorefrontContentFingerprint(state.draft);
+  const locale = readyLocale!;
+  const dynamicAuthority = displayedDraft.dynamicCommercePresentation;
+  const selectedArchetypeProjection = dynamicAuthority
+    ? projectDynamicCommerceArchetypePages(
+        displayedDraft,
+        state.aggregate.catalogue,
+        representativeRouteIds,
+      ).find(({ page: projectedPage }) => projectedPage.id === workspacePage.id)
+    : undefined;
+  const selectedArchetype = selectedArchetypeProjection?.archetype;
+  const representativeRoutes = selectedArchetype
+    ? dynamicAuthority!.routeInventory.filter((route) =>
+        selectedArchetype.family === "product-detail"
+          ? route.kind === "product"
+          : route.kind === "collection",
+      )
+    : [];
+  const title = resolveLocalizedText(
+    workspacePage.title,
+    locale,
+    state.aggregate.project.primaryLocale,
+  );
+  const pageRepeatsProjectName =
+    title.trim().localeCompare(state.aggregate.project.name.trim(), locale, {
+      sensitivity: "accent",
+    }) === 0;
+  const identity = storefrontShellCopy[locale];
+  const displayedRenderContext = proposalReviewSnapshot
+    ? createStorefrontRenderContext({
+        activeLocale: locale,
+        primaryLocale: state.aggregate.project.primaryLocale,
+        enabledLocales: state.aggregate.project.enabledLocales,
+        catalogue: state.aggregate.catalogue,
+        snapshot: proposalReviewSnapshot,
+        pagePathPrefix: `/projects/${projectId}`,
+        evidenceReferences: currentEvidenceReferences,
+      })
+    : readyContext!;
+  const context = {
+    ...displayedRenderContext,
+    onLocaleChange: (nextLocale: Locale) => {
+      if (nextLocale !== locale) agent.closeForLocaleChange();
+      setActiveLocale(nextLocale);
+    },
+  };
+  const previewHref = `/projects/${projectId}${workspacePage.slug === "/" ? "" : workspacePage.slug}${
+    localDemoBridge?.kind === "p10b-16l"
+      ? `?p10b-16l-session=${encodeURIComponent(localDemoBridge.sessionId)}`
+      : ""
+  }`;
+  const displayedBrandSystem = previewStorefront?.brandSystem ?? activeDraft!.brandSystem;
+  const style = brandSystemToCssVariables(displayedBrandSystem) as CSSProperties;
   const canvasPage =
     (showingProposal ? agent.generatedProposal?.proposal.proposedPage : undefined) ??
-    previewStorefront?.pages.find((item) => item.id === page.id) ??
-    page;
+    (proposalReviewSnapshot
+      ? workspacePage
+      : previewStorefront?.pages.find((item) => item.id === page.id)) ??
+    workspacePage;
   const canvasCollection =
     canvasPage.type === "collection"
       ? state.aggregate.catalogue.collections.find(
@@ -825,7 +955,7 @@ export function ProjectEditorClient({
       canvasCollectionPresentation =
         commerceRouteAdapter.collection({
           aggregate: state.aggregate,
-          snapshot: activeDraft!,
+          snapshot: displayedDraft,
           page: canvasPage,
           collection: canvasCollection,
         }) ?? undefined;
@@ -834,7 +964,7 @@ export function ProjectEditorClient({
     }
   }
   const selectedSection = selectedSectionId
-    ? page.sections.find((section) => section.id === selectedSectionId)
+    ? workspacePage.sections.find((section) => section.id === selectedSectionId)
     : undefined;
   let completeDraftIsValid = false;
   if (hasUnsavedChanges) {
@@ -996,21 +1126,53 @@ export function ProjectEditorClient({
     ) {
       return;
     }
-    const nextOriginalPage = visiblePages.find((candidate) => candidate.id === nextPageId);
+    const nextOriginalPage = displayedPages.find((candidate) => candidate.id === nextPageId);
     const nextPage = nextOriginalPage
-      ? (sessionPages[nextOriginalPage.id] ?? nextOriginalPage)
+      ? proposalReviewSnapshot
+        ? nextOriginalPage
+        : (sessionPages[nextOriginalPage.id] ?? nextOriginalPage)
       : undefined;
-    if (!nextPage || nextPage.id === page.id) return;
-    agent.closeForPageSwitch(nextPage);
+    if (!nextPage || nextPage.id === workspacePage.id) return;
+    if (!proposalReviewSnapshot) agent.closeForPageSwitch(nextPage);
     setSelectedPageId(nextPageId);
     setSelectedSectionId(undefined);
     setValidationMessage("");
     setHistoryStatus("");
   };
 
+  const selectRepresentativeContext = (routeId: string) => {
+    if (!selectedArchetypeProjection || savePending.current) return;
+    const nextRepresentativeRouteIds = {
+      ...representativeRouteIds,
+      [selectedArchetypeProjection.archetype.id]: routeId,
+    };
+    const nextProjection = projectDynamicCommerceArchetypePages(
+      displayedDraft,
+      state.aggregate.catalogue,
+      nextRepresentativeRouteIds,
+    ).find(({ page: projectedPage }) => projectedPage.id === workspacePage.id);
+    if (!nextProjection) return;
+    setRepresentativeRouteIds(nextRepresentativeRouteIds);
+    if (!proposalReviewSnapshot) {
+      setSessionPages((current) => ({
+        ...current,
+        [nextProjection.page.id]: structuredClone(nextProjection.page),
+      }));
+      editorHistory?.rebase(nextProjection.page);
+    }
+    remountPage(nextProjection.page.id);
+    setSelectedSectionId(undefined);
+    setValidationMessage("");
+    setHistoryStatus(
+      locale === "fi"
+        ? "Edustava esikatselukohde vaihtui. Valinta ei muuta luonnosta."
+        : "Representative preview context changed. This selection does not change the draft.",
+    );
+  };
+
   const selectSection = (nextSectionId: string) => {
     if (savePending.current || mutationsBlocked) return;
-    if (!page.sections.some((section) => section.id === nextSectionId)) return;
+    if (!workspacePage.sections.some((section) => section.id === nextSectionId)) return;
     if (nextSectionId === selectedSectionId) return;
     agent.closeForSelectionChange(nextSectionId);
     setSelectedSectionId(nextSectionId);
@@ -1051,7 +1213,7 @@ export function ProjectEditorClient({
     if (mutationsBlocked || !selectedSection) return;
     try {
       const allSectionIds = new Set(
-        state.draft.pages.flatMap((baselinePage) =>
+        visiblePages.flatMap((baselinePage) =>
           (sessionPages[baselinePage.id] ?? baselinePage).sections.map((section) => section.id),
         ),
       );
@@ -1118,11 +1280,115 @@ export function ProjectEditorClient({
     }
   };
 
+  const representativeContextControls = selectedArchetypeProjection ? (
+    <Card className={styles.sectionActions} data-testid="dynamic-commerce-representative-context">
+      <p className={styles.eyebrow}>
+        {locale === "fi" ? "Edustava esikatselu" : "Representative preview"}
+      </p>
+      <h2>
+        {selectedArchetype?.family === "product-detail"
+          ? locale === "fi"
+            ? "Näytä tuote tällä tuotesivumallilla"
+            : "Preview a product with this archetype"
+          : locale === "fi"
+            ? "Näytä kokoelma tällä kokoelmamallilla"
+            : "Preview a collection with this archetype"}
+      </h2>
+      <p>
+        {locale === "fi"
+          ? "Valinta vaihtaa vain esikatselun tietoja. Se ei luo tuote- tai kokoelmakohtaista ulkoasua eikä tallennu luonnokseen."
+          : "This changes preview data only. It does not create a product- or collection-specific design and is not saved to the draft."}
+      </p>
+      <Field
+        id="dynamic-commerce-representative-route"
+        label={
+          selectedArchetype?.family === "product-detail"
+            ? locale === "fi"
+              ? "Edustava tuote"
+              : "Representative product"
+            : locale === "fi"
+              ? "Edustava kokoelma"
+              : "Representative collection"
+        }
+      >
+        <select
+          id="dynamic-commerce-representative-route"
+          onChange={(event) => selectRepresentativeContext(event.target.value)}
+          value={selectedArchetypeProjection.representativeRouteId}
+        >
+          {representativeRoutes.map((route) => {
+            const commerceLabel =
+              route.kind === "product"
+                ? state.aggregate.catalogue.products.find(({ id }) => id === route.productId)?.title
+                : route.kind === "collection"
+                  ? state.aggregate.catalogue.collections.find(
+                      ({ id }) => id === route.collectionId,
+                    )?.title
+                  : undefined;
+            return (
+              <option key={route.id} value={route.id}>
+                {commerceLabel
+                  ? resolveLocalizedText(
+                      commerceLabel,
+                      locale,
+                      state.aggregate.project.primaryLocale,
+                    )
+                  : locale === "fi"
+                    ? "Hakutulokset"
+                    : "Search results"}
+                {` — ${route.route}`}
+              </option>
+            );
+          })}
+        </select>
+      </Field>
+    </Card>
+  ) : null;
+
+  const productTypeMappingList = dynamicAuthority ? (
+    <Card className={styles.sectionActions} data-testid="dynamic-commerce-product-type-mappings">
+      <p className={styles.eyebrow}>
+        {locale === "fi" ? "Tuotetyyppien esitystapa" : "Product-type presentation"}
+      </p>
+      <h2>
+        {locale === "fi" ? "Tuotesivumallien määritykset" : "Product-page archetype mappings"}
+      </h2>
+      <ul>
+        {dynamicAuthority.productTypeMappings.map((mapping) => {
+          const productType = state.aggregate.catalogue.products.find(
+            (product) =>
+              canonicalProductTypePresentationId(product.productType) === mapping.productTypeId,
+          )?.productType;
+          const archetypePage = displayedPages.find(({ id }) => id === mapping.archetypeId);
+          return (
+            <li key={mapping.productTypeId}>
+              <strong>
+                {productType ??
+                  (locale === "fi" ? "Tuntematon tuotetyyppi" : "Unknown product type")}
+              </strong>
+              {" → "}
+              {archetypePage
+                ? editorPageName(archetypePage, locale, state.aggregate.project.primaryLocale)
+                : locale === "fi"
+                  ? "Yleinen turvallinen tuotesivumalli"
+                  : "Safe generic product-page archetype"}
+            </li>
+          );
+        })}
+      </ul>
+      <p>
+        {locale === "fi"
+          ? "Uudet ja tuntemattomat tuotetyypit käyttävät hallittua yleistä varamallia."
+          : "New and unknown product types use the governed generic fallback."}
+      </p>
+    </Card>
+  ) : null;
+
   const outlineList = (
     <ol aria-label={text.navigation.outline} className={styles.outlineList}>
-      {visiblePages.map((item) => {
-        const itemIsCurrent = item.id === page.id;
-        const itemPage = sessionPages[item.id] ?? item;
+      {displayedPages.map((item) => {
+        const itemIsCurrent = item.id === workspacePage.id;
+        const itemPage = proposalReviewSnapshot ? item : (sessionPages[item.id] ?? item);
         return (
           <li key={item.id}>
             <button
@@ -1170,10 +1436,10 @@ export function ProjectEditorClient({
         {selectedSection ? (
           <>
             <p>
-              <strong>{merchantEditorSectionLabel(page, selectedSection, locale)}</strong>
+              <strong>{merchantEditorSectionLabel(workspacePage, selectedSection, locale)}</strong>
               <span>{selectedSection.visible ? text.section.visible : text.section.hidden}</span>
             </p>
-            <div>
+            <div className={styles.sectionActionButtons}>
               <Button
                 disabled={!canDuplicateSection(selectedSection) || mutationsBlocked}
                 onClick={duplicateSelectedSection}
@@ -1212,14 +1478,16 @@ export function ProjectEditorClient({
       pageTitle={title}
       primaryLocale={state.aggregate.project.primaryLocale}
       selectedSectionLabel={
-        selectedSection ? merchantEditorSectionLabel(page, selectedSection, locale) : undefined
+        selectedSection
+          ? merchantEditorSectionLabel(workspacePage, selectedSection, locale)
+          : undefined
       }
-      storefrontPageCount={activeDraft!.pages.length}
+      storefrontPageCount={displayedPages.length}
       onConfirmationDialogOpenChange={setToolDrawerNestedModalOpen}
       onReviewPage={(pageId) => {
-        const candidate = visiblePages.find((item) => item.id === pageId);
-        if (!candidate || candidate.id === page.id) return;
-        agent.closeForPageSwitch(candidate);
+        const candidate = displayedPages.find((item) => item.id === pageId);
+        if (!candidate || candidate.id === workspacePage.id) return;
+        if (!proposalReviewSnapshot) agent.closeForPageSwitch(candidate);
         setSelectedPageId(candidate.id);
         setSelectedSectionId(undefined);
         setValidationMessage("");
@@ -1349,7 +1617,12 @@ export function ProjectEditorClient({
         (snapshot) => snapshot.id === result.aggregate.project.publishedSnapshotId,
       );
       if (!published) throw new EditorDraftValidationError();
-      const pages = editorPagesFor(result.draft, localDemoBridge);
+      const pages = editorPagesFor(
+        result.draft,
+        result.aggregate.catalogue,
+        localDemoBridge,
+        representativeRouteIds,
+      );
       pages.forEach((savedPage) => editorHistory?.rebase(savedPage));
       setState({
         status: "ready",
@@ -1362,7 +1635,7 @@ export function ProjectEditorClient({
       setSessionPages((current) =>
         Object.fromEntries(
           Object.entries(current).filter(([pageId, sessionPage]) => {
-            const savedPage = result.draft.pages.find((item) => item.id === pageId);
+            const savedPage = pages.find((item) => item.id === pageId);
             return !savedPage || !canonicalPagesEqual(sessionPage, savedPage);
           }),
         ),
@@ -1637,15 +1910,17 @@ export function ProjectEditorClient({
                   disabled={saving}
                   id="editor-page"
                   onChange={(event) => selectPage(event.target.value)}
-                  value={page.id}
+                  value={workspacePage.id}
                 >
-                  {visiblePages.map((item) => (
+                  {displayedPages.map((item) => (
                     <option key={item.id} value={item.id}>
                       {editorPageName(item, locale, state.aggregate.project.primaryLocale)}
                     </option>
                   ))}
                 </select>
               </Field>
+              {representativeContextControls}
+              {productTypeMappingList}
               {outlineList}
               {sectionActions}
               {previewBlocked ? (
@@ -1681,7 +1956,7 @@ export function ProjectEditorClient({
                 onPageChange={changePage}
                 onSelectedSectionChange={(sectionId) => {
                   const nextSectionId =
-                    sectionId && page.sections.some((section) => section.id === sectionId)
+                    sectionId && workspacePage.sections.some((section) => section.id === sectionId)
                       ? sectionId
                       : undefined;
                   if (nextSectionId === selectedSectionId) return;
@@ -1724,6 +1999,8 @@ export function ProjectEditorClient({
           title={text.panels.workspace}
         >
           <div className={styles.drawerContent}>
+            {representativeContextControls}
+            {productTypeMappingList}
             {outlineList}
             {sectionActions}
             {drawerViewport ? renderDraftSafeguards(true) : null}

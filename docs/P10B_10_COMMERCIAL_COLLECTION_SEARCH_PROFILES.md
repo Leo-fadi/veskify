@@ -121,3 +121,15 @@ P10B-10 does not implement P10B-11 PDP profiles, P10B-12 content/support familie
 search/cart/checkout routes or operational search, P10B-14 complete-store proof, P10C editor
 controls, provider calls, commerce writes, new schemas, generated media, or a second
 collection/search/card/membership/filter engine.
+
+## Current P10B-16P-01 convergence
+
+The four P10B-10 profiles remain the registered collection/search design authority. P10B-16P-01
+stores them once as maintained root archetypes and maps concrete collection/search routes to them;
+it no longer copies their composite presentation into one editable `PageModel` per collection.
+Exact collection membership, ordering, filters, search context, product cards, and media remain
+runtime-bound canonical commerce. See
+[`P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md`](P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md).
+The `/search` route inventory entry and maintained archetype do not claim an operational search
+adapter. Exact transient query/result authority is required at materialization; without it the
+runtime fails closed and never treats a collection as search results.

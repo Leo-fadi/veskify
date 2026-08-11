@@ -416,6 +416,7 @@ function profileMaterial(siteMap: StorefrontSiteMapDecision, input: WholeStorefr
   const componentChoices: BoundedStorefrontSynthesisDecision["componentChoices"] = [];
   const pageContributions: BoundedStorefrontSynthesisDecision["narrative"]["pageContributions"] =
     [];
+  const selectedDesignScopes = new Set<string>();
   for (const page of siteMap.pages) {
     const plan = getExecutablePageBlueprintProfile(page.profile.id);
     if (!plan?.profile || plan.profile.version !== page.profile.version) {
@@ -436,15 +437,31 @@ function profileMaterial(siteMap: StorefrontSiteMapDecision, input: WholeStorefr
     if (roles.some((role) => role === undefined)) {
       fail("unsupported-narrative-role", `Page ${page.key} has an unsupported narrative role.`);
     }
+
+    // Collection, search and PDP routes are runtime instances of compact root
+    // archetypes. They remain distinct in the site-map/route inventory, but one
+    // route must not count as one independently designed profile or component
+    // anatomy. Static pages retain their page-specific design scope.
+    const dynamicFamily = ["collection", "search-results", "product-detail"].includes(
+      page.familyId,
+    );
+    const designScopeKey = dynamicFamily
+      ? `dynamic:${page.familyId}:${plan.profile.id}:${plan.profile.version}`
+      : `static:${page.key}`;
+    if (selectedDesignScopes.has(designScopeKey)) continue;
+    selectedDesignScopes.add(designScopeKey);
+    const designPageKey = dynamicFamily
+      ? `archetype_${page.familyId.replaceAll("-", "_")}_${plan.profile.id.replaceAll("-", "_")}`
+      : page.key;
     pageProfileSelections.push({
-      pageKey: page.key,
+      pageKey: designPageKey,
       familyId: page.familyId,
       profileId: plan.profile.id,
       profileVersion: plan.profile.version,
       profileFingerprint: `page-blueprint-profile-${canonicalValueFingerprint(plan)}`,
       narrativeRoles: roles,
     });
-    pageContributions.push({ pageKey: page.key, roles });
+    pageContributions.push({ pageKey: designPageKey, roles });
     for (const slot of plan.slots) {
       const definition = input.componentDefinitions.find(
         (candidate) => candidate.type === slot.sectionType,
@@ -461,7 +478,7 @@ function profileMaterial(siteMap: StorefrontSiteMapDecision, input: WholeStorefr
         plan.profile.commercialProductDetail?.relatedProductCardAnatomyId ??
         null;
       componentChoices.push({
-        pageKey: page.key,
+        pageKey: designPageKey,
         slotId: slot.id,
         component: slot.sectionType,
         variant: slot.defaultVariant,

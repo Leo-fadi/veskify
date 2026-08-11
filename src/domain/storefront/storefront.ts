@@ -15,6 +15,10 @@ import {
 } from "./approved-asset-placement";
 import { contentSupportFactDocumentSchema } from "./content-support-facts";
 import { pageFactEvidenceReferenceSchema } from "./page-fact-evidence";
+import {
+  dynamicCommerceNavigationTargetSchema,
+  dynamicCommercePresentationAuthoritySchema,
+} from "./dynamic-commerce-route";
 
 export {
   pageFactEvidenceReferenceSchema,
@@ -255,6 +259,7 @@ export const navigationItemSchema = z
     label: localizedTextSchema,
     target: z.discriminatedUnion("type", [
       internalNavigationTargetSchema,
+      dynamicCommerceNavigationTargetSchema,
       externalNavigationTargetSchema,
     ]),
   })
@@ -323,6 +328,9 @@ export const storefrontSnapshotSchema = z
     navigation: navigationModelSchema,
     sharedFrame: sharedFrameModelSchema.optional(),
     pages: z.array(pageModelSchema).min(1),
+    // Optional only for historical snapshots created before P10B-16P-01.
+    // New complete-storefront synthesis materializes this root authority.
+    dynamicCommercePresentation: dynamicCommercePresentationAuthoritySchema.optional(),
     contentSupportFactDocuments: z.array(contentSupportFactDocumentSchema).default([]),
     catalogueRef: idSchema,
     createdAt: isoDateTimeSchema,
@@ -369,6 +377,45 @@ export const storefrontSnapshotSchema = z
     }
 
     const knownPageIds = new Set(pageIds);
+    const knownDynamicRouteIds = new Set(
+      snapshot.dynamicCommercePresentation?.routeInventory.map(({ id }) => id) ?? [],
+    );
+    const knownDynamicArchetypeIds = new Set(
+      snapshot.dynamicCommercePresentation
+        ? [
+            ...snapshot.dynamicCommercePresentation.collectionSearchArchetypes.map(({ id }) => id),
+            ...snapshot.dynamicCommercePresentation.productDetailArchetypes.map(({ id }) => id),
+          ]
+        : [],
+    );
+    const collidingDynamicRouteIds = pageIds.filter((id) => knownDynamicRouteIds.has(id));
+    if (collidingDynamicRouteIds.length > 0) {
+      context.addIssue({
+        code: "custom",
+        message: "Static page IDs and dynamic commerce route IDs must be globally unique.",
+        path: ["dynamicCommercePresentation", "routeInventory"],
+      });
+    }
+    const collidingDynamicArchetypeIds = pageIds.filter((id) => knownDynamicArchetypeIds.has(id));
+    if (collidingDynamicArchetypeIds.length > 0) {
+      context.addIssue({
+        code: "custom",
+        message: "Static page IDs and dynamic commerce archetype IDs must be globally unique.",
+        path: ["dynamicCommercePresentation"],
+      });
+    }
+    const derivedEditorSectionIds = new Set(
+      [...knownDynamicArchetypeIds].map((archetypeId) => `section_${archetypeId}`),
+    );
+    const collidingEditorSectionIds = sectionIds.filter((id) => derivedEditorSectionIds.has(id));
+    if (collidingEditorSectionIds.length > 0) {
+      context.addIssue({
+        code: "custom",
+        message:
+          "Canonical section IDs and derived dynamic commerce editor section IDs must be globally unique.",
+        path: ["dynamicCommercePresentation"],
+      });
+    }
     for (const [area, items] of Object.entries(snapshot.navigation)) {
       items.forEach((item, index) => {
         if (item.target.type === "page" && !knownPageIds.has(item.target.pageId)) {
@@ -376,6 +423,16 @@ export const storefrontSnapshotSchema = z
             code: "custom",
             message: "Navigation targets must resolve to a page in this snapshot.",
             path: ["navigation", area, index, "target", "pageId"],
+          });
+        }
+        if (
+          item.target.type === "dynamic-commerce-route" &&
+          !knownDynamicRouteIds.has(item.target.routeId)
+        ) {
+          context.addIssue({
+            code: "custom",
+            message: "Dynamic navigation targets must resolve to current route inventory.",
+            path: ["navigation", area, index, "target", "routeId"],
           });
         }
       });
