@@ -675,11 +675,35 @@ function addPageBlueprintCapabilities(
   approvedAssetContext: ApprovedGenerationAssetContext | null,
   entries: PromptedStorefrontCapabilityEntry[],
   references: Map<string, PromptedStorefrontCapabilityAuthorityReference>,
-): Map<string, Set<string>> {
+): Readonly<{
+  reachableVariants: Map<string, Set<string>>;
+  exactCandidateComponents: Set<string>;
+}> {
   const reachableVariants = new Map<string, Set<string>>();
-  const approvedEvidenceFamilies = new Set(
-    draft.contentSupportFactDocuments.map(({ payload }) => payload.familyId),
-  );
+  const exactCandidateComponents = new Set<string>();
+  const exactContentSupportAvailability = (
+    profile: ExecutablePageBlueprintProfile,
+    familyId: string,
+  ): PromptedStorefrontCapabilityEntry["availability"] => {
+    const currentPages = draft.pages.filter(
+      ({ pageFamily }) =>
+        pageFamily?.familyId === familyId &&
+        pageFamily.profileId === profile.id &&
+        pageFamily.profileVersion === profile.version,
+    );
+    if (currentPages.length === 0) return "registered-fail-closed";
+    const hasExactApprovedEvidence = currentPages.every(({ pageFamily }) => {
+      if (!pageFamily || pageFamily.evidenceReferences.length === 0) return false;
+      return pageFamily.evidenceReferences.every((reference) =>
+        draft.contentSupportFactDocuments.some(
+          (document) =>
+            document.payload.familyId === familyId &&
+            canonicalValueString(document.evidence) === canonicalValueString(reference),
+        ),
+      );
+    });
+    return hasExactApprovedEvidence ? "available" : "evidence-dependent";
+  };
   const homepageEvidence = resolveCommercialHomepageEvidenceAvailability({
     canonicalProductCount: catalogue.products.length,
     canonicalCollectionCount: catalogue.collections.length,
@@ -774,6 +798,11 @@ function addPageBlueprintCapabilities(
               }).includedSlotIds,
             )
           : new Set(plan.slots.map((slot) => slot.id));
+      if (availability === "available") {
+        profile.componentSelections
+          .filter(({ slotId }) => includedSlotIds.has(slotId))
+          .forEach(({ component }) => exactCandidateComponents.add(component));
+      }
       addEntry(
         entries,
         references,
@@ -930,6 +959,11 @@ function addPageBlueprintCapabilities(
       const requirements = missingAssetRoles.map(
         (role) => `Requires an approved ${designLabel(role)} asset.`,
       );
+      if (availability === "available") {
+        profile.componentSelections.forEach(({ component }) =>
+          exactCandidateComponents.add(component),
+        );
+      }
       const capabilities = [
         [
           "collection-search.archetype",
@@ -1005,6 +1039,11 @@ function addPageBlueprintCapabilities(
         ({ authority: evidenceAuthority }) =>
           `Requires current ${designLabel(evidenceAuthority)} authority.`,
       );
+      if (availability === "available") {
+        profile.componentSelections.forEach(({ component }) =>
+          exactCandidateComponents.add(component),
+        );
+      }
       const reference = {
         ...profileReference(profile),
         intentRoles: pdpIntentRoles(authority.presentation),
@@ -1055,7 +1094,15 @@ function addPageBlueprintCapabilities(
     if (profile.commercialContentSupport) {
       const authority = profile.commercialContentSupport;
       for (const familyId of [...authority.pageFamilyIds].sort(compareCanonical)) {
-        const evidenceAvailable = approvedEvidenceFamilies.has(familyId);
+        const availability = exactContentSupportAvailability(profile, familyId);
+        const requirements =
+          availability === "available"
+            ? []
+            : availability === "evidence-dependent"
+              ? ["Requires current approved merchant facts for this exact page family."]
+              : [
+                  "Requires this exact profile to be selected by the current canonical page-family authority.",
+                ];
         addEntry(
           entries,
           references,
@@ -1064,10 +1111,8 @@ function addPageBlueprintCapabilities(
             dimension: "content-support.profile",
             description: `Use the ${designLabel(profile.id)} approved-fact composition for ${designLabel(familyId)}.`,
             contexts: [familyId],
-            availability: evidenceAvailable ? "available" : "evidence-dependent",
-            requirements: evidenceAvailable
-              ? []
-              : ["Requires current approved merchant facts for this exact page family."],
+            availability,
+            requirements,
             selection: { kind: "capability" },
           },
           {
@@ -1084,10 +1129,8 @@ function addPageBlueprintCapabilities(
               dimension: "content-support.narrative-purpose",
               description: `Use the ${designLabel(role)} narrative purpose for approved ${designLabel(familyId)} content.`,
               contexts: [familyId],
-              availability: evidenceAvailable ? "available" : "evidence-dependent",
-              requirements: evidenceAvailable
-                ? []
-                : ["Requires current approved merchant facts for this exact page family."],
+              availability,
+              requirements,
               selection: { kind: "capability" },
             },
             {
@@ -1149,15 +1192,69 @@ function addPageBlueprintCapabilities(
       },
     );
   }
-  return reachableVariants;
+  return { reachableVariants, exactCandidateComponents };
+}
+
+function exactGenericOverrideComponents(
+  profiles: readonly ExecutablePageBlueprintProfile[],
+): ReadonlySet<string> {
+  const occurrences = new Map<
+    string,
+    { scopes: Set<"home" | "product">; maximumPerProfile: number }
+  >();
+  for (const profile of profiles) {
+    const scope = profile.commercialHomepage
+      ? ("home" as const)
+      : profile.commercialProductDetail
+        ? ("product" as const)
+        : null;
+    // Collection and search plans are materialized together and share generic component
+    // identities. Content/support and utility plans have no canonical instance-override path.
+    if (!scope) continue;
+    const counts = new Map<string, number>();
+    profile.componentSelections.forEach(({ component }) =>
+      counts.set(component, (counts.get(component) ?? 0) + 1),
+    );
+    counts.forEach((count, component) => {
+      const current = occurrences.get(component) ?? {
+        scopes: new Set<"home" | "product">(),
+        maximumPerProfile: 0,
+      };
+      current.scopes.add(scope);
+      current.maximumPerProfile = Math.max(current.maximumPerProfile, count);
+      occurrences.set(component, current);
+    });
+  }
+  return new Set(
+    [...occurrences.entries()].flatMap(([component, authority]) =>
+      authority.scopes.size === 1 && authority.maximumPerProfile === 1 ? [component] : [],
+    ),
+  );
+}
+
+function candidateInfluencingComponents(
+  profiles: readonly ExecutablePageBlueprintProfile[],
+): ReadonlySet<string> {
+  return new Set(
+    profiles.flatMap((profile) =>
+      profile.commercialHomepage ||
+      profile.commercialCollectionSearch ||
+      profile.commercialProductDetail
+        ? profile.componentSelections.map(({ component }) => component)
+        : [],
+    ),
+  );
 }
 
 function addComponentCapabilities(
   profiles: readonly ExecutablePageBlueprintProfile[],
   reachableVariants: ReadonlyMap<string, ReadonlySet<string>>,
+  exactCandidateComponents: ReadonlySet<string>,
   entries: PromptedStorefrontCapabilityEntry[],
   references: Map<string, PromptedStorefrontCapabilityAuthorityReference>,
 ): void {
+  const exactOverrideComponents = exactGenericOverrideComponents(profiles);
+  const candidateComponents = candidateInfluencingComponents(profiles);
   const componentContexts = new Map<string, Set<string>>();
   profiles.forEach((profile) =>
     profile.componentSelections.forEach(({ component }) => {
@@ -1172,6 +1269,11 @@ function addComponentCapabilities(
     );
     const reachable = reachableVariants.get(component.componentType);
     if (!component.commercialAnatomy || !reachable || contexts.length === 0) continue;
+    const reachesExactCandidate = exactCandidateComponents.has(component.componentType);
+    const hasExactOverrideTarget =
+      reachesExactCandidate && exactOverrideComponents.has(component.componentType);
+    const influencesCoreCandidate =
+      candidateComponents.has(component.componentType) && reachesExactCandidate;
     addEntry(
       entries,
       references,
@@ -1180,8 +1282,12 @@ function addComponentCapabilities(
         dimension: "component.family",
         description: `Use the registered ${designLabel(component.componentType)} ${designLabel(component.family)} family.`,
         contexts,
-        availability: "available",
-        requirements: [],
+        availability: influencesCoreCandidate ? "available" : "registered-fail-closed",
+        requirements: influencesCoreCandidate
+          ? []
+          : [
+              "No selected core storefront candidate or canonical materialization consumes this generic component family.",
+            ],
         selection: { kind: "capability" },
       },
       {
@@ -1200,8 +1306,10 @@ function addComponentCapabilities(
           dimension: "homepage.component-family",
           description: `Use ${designLabel(component.componentType)} in a compatible homepage profile.`,
           contexts: ["home"],
-          availability: "available",
-          requirements: [],
+          availability: reachesExactCandidate ? "available" : "registered-fail-closed",
+          requirements: reachesExactCandidate
+            ? []
+            : ["Current evidence does not permit a materialized homepage slot using this family."],
           selection: { kind: "capability" },
         },
         {
@@ -1230,8 +1338,10 @@ function addComponentCapabilities(
           dimension: "component.meaningful-variant",
           description: `Use the materially distinct ${designLabel(variant.id)} ${designLabel(component.componentType)} anatomy.`,
           contexts,
-          availability: "available",
-          requirements: [],
+          availability: hasExactOverrideTarget ? "available" : "registered-fail-closed",
+          requirements: hasExactOverrideTarget
+            ? []
+            : ["No single exact materialized PageBlueprint slot accepts this generic variant."],
           selection: { kind: "capability" },
         },
         reference,
@@ -1245,8 +1355,10 @@ function addComponentCapabilities(
             dimension: "homepage.meaningful-variant",
             description: `Use the ${designLabel(variant.id)} ${designLabel(component.componentType)} homepage anatomy.`,
             contexts: ["home"],
-            availability: "available",
-            requirements: [],
+            availability: hasExactOverrideTarget ? "available" : "registered-fail-closed",
+            requirements: hasExactOverrideTarget
+              ? []
+              : ["No single exact materialized PageBlueprint slot accepts this generic variant."],
             selection: { kind: "capability" },
           },
           reference,
@@ -1278,7 +1390,9 @@ function addComponentCapabilities(
         throw new PromptedStorefrontDesignIntentError("stale-authority");
       }
       const materiallyAvailable =
-        parameter.authority.instanceOverrideAllowed && runtimeProjection !== null;
+        parameter.authority.instanceOverrideAllowed &&
+        runtimeProjection !== null &&
+        hasExactOverrideTarget;
       addEntry(
         entries,
         references,
@@ -1291,9 +1405,11 @@ function addComponentCapabilities(
           requirements: materiallyAvailable
             ? []
             : [
-                parameter.authority.instanceOverrideAllowed
-                  ? "This bounded value has no exact current renderer projection and cannot be selected materially."
-                  : "This value is registered for PageBlueprint or component-variant authority and cannot be selected as an instance override.",
+                parameter.authority.instanceOverrideAllowed && runtimeProjection !== null
+                  ? "No single exact materialized PageBlueprint slot accepts this generic bounded parameter."
+                  : parameter.authority.instanceOverrideAllowed
+                    ? "This bounded value has no exact current renderer projection and cannot be selected materially."
+                    : "This value is registered for PageBlueprint or component-variant authority and cannot be selected as an instance override.",
               ],
           selection,
         },
@@ -1593,7 +1709,7 @@ function addDynamicCommerceCapabilities(
           description:
             "Use registered search-result presentation only when canonical results exist.",
           contexts: ["search"],
-          availability: "registered-fail-closed",
+          availability: "available",
           requirements: [
             "No first-class canonical search query and results adapter is currently executable.",
           ],
@@ -1996,7 +2112,7 @@ export function createPromptedStorefrontCapabilityAuthority(
       plan.profile ? [[plan.profile.id, plan] as const] : [],
     ),
   );
-  const reachableVariants = addPageBlueprintCapabilities(
+  const { reachableVariants, exactCandidateComponents } = addPageBlueprintCapabilities(
     draft,
     catalogue,
     approvedBrief,
@@ -2004,7 +2120,13 @@ export function createPromptedStorefrontCapabilityAuthority(
     entries,
     references,
   );
-  addComponentCapabilities(profiles, reachableVariants, entries, references);
+  addComponentCapabilities(
+    profiles,
+    reachableVariants,
+    exactCandidateComponents,
+    entries,
+    references,
+  );
   addProductCardCapabilities(entries, references);
   addDynamicCommerceCapabilities(draft, catalogue, plansByProfileId, entries, references);
   addResponsiveAndAssetCapabilities(draft, approvedAssetContext, profiles, entries, references);

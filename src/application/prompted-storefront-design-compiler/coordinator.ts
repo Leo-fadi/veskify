@@ -13,6 +13,7 @@ import {
   canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
   canonicalValueString,
+  contentSupportPageFamilyIdSchema,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import {
@@ -20,6 +21,7 @@ import {
   type CompiledPromptedStorefrontDesignDecisionV2,
 } from "./contract";
 import {
+  assertPromptedStorefrontPlanningAuthorityBound,
   compilePromptedStorefrontDesignIntentV2,
   type CompilePromptedStorefrontDesignIntentV2Input,
 } from "./compiler";
@@ -66,6 +68,7 @@ export type PromptedStorefrontDesignCompilationEvidence = Readonly<{
   structuralFingerprint: string;
   candidateSnapshotFingerprint: string;
   currentAuthorityFingerprints: readonly string[];
+  materializationAuthorityFingerprint: string;
   protectedCommerceBeforeFingerprint: string;
   protectedCommerceAfterFingerprint: string;
   protectedMediaBeforeFingerprint: string;
@@ -81,6 +84,15 @@ export type PromptedStorefrontDesignCompilationResult = Readonly<{
 
 function stale(message: string): never {
   throw new PromptedStorefrontDesignCompilerError("stale-authority", message);
+}
+
+function assertBoundPlanningAuthority(
+  authority: PromptedStorefrontDesignCompilationAuthority,
+): void {
+  assertPromptedStorefrontPlanningAuthorityBound({
+    currentRequestInput: authority.requestInput,
+    compatibilityInput: authority.compatibilityInput,
+  });
 }
 
 function assertSameAuthority(
@@ -116,6 +128,69 @@ function protectedRouteInventory(snapshot: StorefrontSnapshot) {
     .sort((left, right) => left.id.localeCompare(right.id));
 }
 
+function materializationAuthorityFingerprint(
+  authority: PromptedStorefrontDesignCompilationAuthority,
+): string {
+  try {
+    const approvedEvidence = new Set(
+      authority.compatibilityInput.approvedEvidenceReferences
+        .filter(({ status }) => status === "approved")
+        .map(({ source, authorityId, revision }) => `${source}:${authorityId}:${revision}`),
+    );
+    const materializedPages = authority.compatibilityInput.siteMapDecision.pages.filter((page) =>
+      page.evidenceReferences.every(({ source, authorityId, revision }) =>
+        approvedEvidence.has(`${source}:${authorityId}:${revision}`),
+      ),
+    );
+    const pageEvidenceResolutions = materializedPages.map((page) => ({
+      pageKey: page.key,
+      familyId: page.familyId,
+      evidence: page.evidenceReferences.map((reference) =>
+        authority.pageEvidenceAuthority.resolve({
+          familyId: page.familyId,
+          reference,
+        }),
+      ),
+    }));
+    const pageEvidenceByKey = new Map(
+      pageEvidenceResolutions.map(({ pageKey, evidence }) => [pageKey, evidence] as const),
+    );
+    const contentFactResolutions = materializedPages.flatMap((page) => {
+      const familyId = contentSupportPageFamilyIdSchema.safeParse(page.familyId);
+      const evidence = pageEvidenceByKey.get(page.key)?.[0];
+      if (!familyId.success || !evidence) return [];
+      return [
+        {
+          pageKey: page.key,
+          familyId: familyId.data,
+          fact: authority.contentFactAuthority.resolve({
+            familyId: familyId.data,
+            reference: {
+              source: evidence.source,
+              authorityId: evidence.authorityId,
+              revision: evidence.revision,
+            },
+          }),
+        },
+      ];
+    });
+    return `materialization-authority-${canonicalValueFingerprint({
+      planningInput: authority.compatibilityInput.planningInput,
+      siteMapDecision: authority.compatibilityInput.siteMapDecision,
+      approvedEvidenceReferences: authority.compatibilityInput.approvedEvidenceReferences,
+      pageEvidenceResolutions,
+      contentFactResolutions,
+      approvedAssetPresentations: authority.approvedAssetPresentations,
+    })}`;
+  } catch (cause) {
+    throw new PromptedStorefrontDesignCompilerError(
+      "stale-authority",
+      "Current materialization authority could not be resolved exactly.",
+      { cause },
+    );
+  }
+}
+
 function protectedAuthorityFingerprints(
   input: PromptedStorefrontDesignCompilationAuthority,
   catalogueRef = input.requestInput.draft.catalogueRef,
@@ -130,6 +205,95 @@ function protectedAuthorityFingerprints(
     media: protectedMediaAuthorityFingerprint(input.requestInput, catalogueRef),
     canonicalCommerceAuthorityFingerprint,
   };
+}
+
+type MaterializedRuntimePage =
+  ExecutedPromptedStorefrontDesignDecisionV2["synthesis"]["materialization"]["proposal"]["proposedStorefront"]["pages"][number];
+
+function bindingsForSlot(page: MaterializedRuntimePage, slotId: string) {
+  return page.components.flatMap((component) =>
+    component.bindings
+      .filter((binding) => binding.slotId === slotId)
+      .map((binding) => ({ component: component.component, binding })),
+  );
+}
+
+function assertRouteExactCommerceBindings(
+  authority: PromptedStorefrontDesignCompilationAuthority,
+  pages: readonly MaterializedRuntimePage[],
+): void {
+  const routeInventory =
+    authority.requestInput.draft.dynamicCommercePresentation?.routeInventory ?? [];
+  const expectedRouteIds = routeInventory
+    .filter(({ kind }) => kind !== "search")
+    .map(({ id }) => id)
+    .sort((left, right) => left.localeCompare(right));
+  const emittedRouteIds = pages
+    .filter(({ role }) => role === "collection-template" || role === "product-template")
+    .map(({ pageId }) => pageId)
+    .sort((left, right) => left.localeCompare(right));
+  if (canonicalValueString(emittedRouteIds) !== canonicalValueString(expectedRouteIds)) {
+    stale(
+      "Materialized collection and product runtime pages must match the exact current route inventory one-to-one.",
+    );
+  }
+  const collections = new Map(
+    authority.requestInput.catalogue.collections.map((collection) => [collection.id, collection]),
+  );
+
+  for (const route of routeInventory) {
+    if (route.kind === "search") continue;
+    const matchingPages = pages.filter(({ pageId }) => pageId === route.id);
+    if (matchingPages.length !== 1) {
+      stale("Every retained collection and product route requires exactly one runtime page.");
+    }
+    const page = matchingPages[0];
+
+    if (route.kind === "collection") {
+      const primary = bindingsForSlot(page, "primaryCollection");
+      const membership = bindingsForSlot(page, "collectionProducts");
+      const collection = collections.get(route.collectionId);
+      if (
+        page.role !== "collection-template" ||
+        primary.length !== 1 ||
+        primary[0]?.component !== "dynamicCollectionCommerce" ||
+        primary[0].binding.source !== "collection" ||
+        primary[0].binding.collectionId !== route.collectionId ||
+        membership.length !== 1 ||
+        membership[0]?.component !== "dynamicCollectionCommerce" ||
+        membership[0].binding.source !== "productList" ||
+        canonicalValueString(membership[0].binding.productIds) !==
+          canonicalValueString(collection?.productIds ?? null)
+      ) {
+        stale(
+          "A materialized collection route does not retain its exact canonical collection and ordered membership bindings.",
+        );
+      }
+      continue;
+    }
+
+    const primary = bindingsForSlot(page, "primaryProduct");
+    const related = bindingsForSlot(page, "relatedProducts");
+    const expectedRelatedProductIds = route.relatedProductIds ?? [];
+    if (
+      page.role !== "product-template" ||
+      primary.length !== 1 ||
+      primary[0]?.component !== "dynamicProductDetail" ||
+      primary[0].binding.source !== "product" ||
+      primary[0].binding.productId !== route.productId ||
+      (expectedRelatedProductIds.length === 0
+        ? related.length !== 0
+        : related.length !== 1 ||
+          related[0]?.component !== "dynamicProductDetail" ||
+          related[0].binding.source !== "productList" ||
+          canonicalValueString(related[0].binding.productIds) !==
+            canonicalValueString(expectedRelatedProductIds))
+    ) {
+      stale(
+        "A materialized product route does not retain its exact canonical product and ordered related-product bindings.",
+      );
+    }
+  }
 }
 
 function assertMaterializedProtectedAuthority(
@@ -161,6 +325,7 @@ function assertMaterializedProtectedAuthority(
       collection.productIds,
     ]),
   );
+  assertRouteExactCommerceBindings(authority, runtime.pages);
   for (const page of runtime.pages) {
     for (const component of page.components) {
       const primaryCollection = component.bindings.find(
@@ -238,6 +403,13 @@ function assertMaterializedProtectedAuthority(
   };
 }
 
+function requireExactlyOneMaterialization(materializationCount: number): 1 {
+  if (materializationCount !== 1) {
+    stale("Prompted storefront compilation must execute exactly one complete materialization.");
+  }
+  return materializationCount;
+}
+
 /**
  * Provider-neutral, server-side post-response sequence. It has no Studio or
  * route wiring: P10B-16P-03 owns merchant-facing invocation. This function
@@ -249,8 +421,10 @@ export async function runPromptedStorefrontDesignCompilation(
   input: RunPromptedStorefrontDesignCompilationInput,
 ): Promise<PromptedStorefrontDesignCompilationResult> {
   const before = input.loadCurrentAuthority();
+  assertBoundPlanningAuthority(before);
   const initial = createPromptedStorefrontDesignRequestV2(before.requestInput);
   const protectedBefore = protectedAuthorityFingerprints(before);
+  const materializationAuthorityBefore = materializationAuthorityFingerprint(before);
 
   const providerIntent = await input.provider.createDesignIntent(initial.request, {
     capabilityAuthority: initial.capabilityAuthority,
@@ -258,8 +432,13 @@ export async function runPromptedStorefrontDesignCompilation(
   });
 
   const refreshed = input.loadCurrentAuthority();
+  assertBoundPlanningAuthority(refreshed);
   const current = createPromptedStorefrontDesignRequestV2(refreshed.requestInput);
   assertSameAuthority(initial, current);
+  const refreshedMaterializationAuthority = materializationAuthorityFingerprint(refreshed);
+  if (materializationAuthorityBefore !== refreshedMaterializationAuthority) {
+    stale("Materialization authority changed after the provider response.");
+  }
   const refreshedProtectedAuthority = protectedAuthorityFingerprints(refreshed);
   if (
     protectedBefore.commerce !== refreshedProtectedAuthority.commerce ||
@@ -293,15 +472,24 @@ export async function runPromptedStorefrontDesignCompilation(
       : { maximumCandidateEvaluations: input.maximumCandidateEvaluations }),
   };
   const compiledDecision = compilePromptedStorefrontDesignIntentV2(compileInput);
-  const execute =
+  const executeCompiledDecision =
     input.executeCompiledDecision ?? executeCompiledPromptedStorefrontDesignDecisionV2;
-  const execution = execute({
+  let materializationCount = 0;
+  const executeMaterialization: CompiledDecisionExecutor = (executionInput) => {
+    materializationCount += 1;
+    if (materializationCount > 1) {
+      stale("Prompted storefront compilation attempted more than one complete materialization.");
+    }
+    return executeCompiledDecision(executionInput);
+  };
+  const execution = executeMaterialization({
     ...compileInput,
     compiledDecision,
     pageEvidenceAuthority: refreshed.pageEvidenceAuthority,
     contentFactAuthority: refreshed.contentFactAuthority,
     approvedAssetPresentations: refreshed.approvedAssetPresentations,
   });
+  const completedMaterializationCount = requireExactlyOneMaterialization(materializationCount);
   const candidate = execution.synthesis.materialization.snapshot;
   const protectedAfter = assertMaterializedProtectedAuthority(refreshed, execution);
 
@@ -319,11 +507,12 @@ export async function runPromptedStorefrontDesignCompilation(
       structuralFingerprint: compiledDecision.structuralFingerprint,
       candidateSnapshotFingerprint: canonicalStorefrontContentFingerprint(candidate),
       currentAuthorityFingerprints: [...compiledDecision.exactAuthorityFingerprints],
+      materializationAuthorityFingerprint: refreshedMaterializationAuthority,
       protectedCommerceBeforeFingerprint: protectedBefore.commerce,
       protectedCommerceAfterFingerprint: protectedAfter.commerce,
       protectedMediaBeforeFingerprint: protectedBefore.media,
       protectedMediaAfterFingerprint: protectedAfter.media,
-      materializationCount: 1,
+      materializationCount: completedMaterializationCount,
     }),
   });
 }

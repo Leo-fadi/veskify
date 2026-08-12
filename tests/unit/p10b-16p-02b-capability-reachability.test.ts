@@ -204,7 +204,116 @@ describe("P10B-16P-02B capability reachability truth", () => {
       authority.projection.capabilities.find(
         ({ dimension }) => dimension === "collection-search.search-relationship",
       ),
-    ).toMatchObject({ availability: "registered-fail-closed" });
+    ).toMatchObject({ availability: "available" });
+    expect(authority.projection.search).toEqual({
+      registration: "registered-presentation-authority",
+      execution: "unavailable",
+      behavior: "fail-closed",
+      reason: "missing-canonical-search-results-adapter",
+    });
+
+    expect(entries.get("component.family.homepageHero")).toMatchObject({
+      availability: "available",
+    });
+    expect(entries.get("homepage.component-family.homepageHero")).toMatchObject({
+      availability: "available",
+    });
+    expect(entries.get("component.family.contentSupport")).toMatchObject({
+      availability: "registered-fail-closed",
+    });
+    expect(entries.get("component.family.commerceUtility")).toMatchObject({
+      availability: "registered-fail-closed",
+    });
+    expect(
+      authority.projection.capabilities
+        .filter(
+          ({ key, contexts }) =>
+            key.startsWith("component.bounded-parameter.") &&
+            contexts.some((context) => ["content", "landing"].includes(context)),
+        )
+        .every(({ availability }) => availability === "registered-fail-closed"),
+    ).toBe(true);
+    expect(
+      authority.projection.capabilities
+        .filter(
+          ({ key }) =>
+            key.startsWith("component.meaningful-variant.dynamicCollectionCommerce.") ||
+            key.startsWith("component.bounded-parameter.dynamicCollectionCommerce."),
+        )
+        .every(({ availability }) => availability === "registered-fail-closed"),
+    ).toBe(true);
+  });
+
+  it("advertises only the exact current content/support profile with its exact approved facts", () => {
+    const input = p10b14ProjectionInput();
+    const authority = createPromptedStorefrontCapabilityAuthority(input);
+    const aboutPage = input.draft.pages.find(({ pageFamily }) => pageFamily?.familyId === "about");
+    if (!aboutPage?.pageFamily) throw new Error("Missing exact about page authority.");
+    const exactKey = `content-support.profile.${aboutPage.pageFamily.profileId}.about`;
+    const alternate = authority.projection.capabilities.find(
+      ({ key, dimension }) =>
+        dimension === "content-support.profile" && key.endsWith(".about") && key !== exactKey,
+    );
+
+    expect(authority.projection.capabilities.find(({ key }) => key === exactKey)).toMatchObject({
+      availability: "available",
+      contexts: ["about"],
+    });
+    expect(alternate).toMatchObject({ availability: "registered-fail-closed" });
+  });
+
+  it("fails closed for component families with no current evidence-compatible core slot", () => {
+    const input = p10b14ProjectionInput();
+    const authority = createPromptedStorefrontCapabilityAuthority({
+      ...input,
+      catalogue: { ...input.catalogue, collections: [] },
+    });
+    const entries = new Map(
+      authority.projection.capabilities.map((entry) => [entry.key, entry] as const),
+    );
+
+    expect(entries.get("component.family.homepageFeaturedCollections")).toMatchObject({
+      availability: "registered-fail-closed",
+    });
+    expect(entries.get("homepage.component-family.homepageFeaturedCollections")).toMatchObject({
+      availability: "registered-fail-closed",
+    });
+  });
+
+  it("requires exact approved evidence for every repeatable current content page", () => {
+    const input = p10b14ProjectionInput();
+    const aboutPage = input.draft.pages.find(({ pageFamily }) => pageFamily?.familyId === "about");
+    if (!aboutPage?.pageFamily || aboutPage.pageFamily.evidenceReferences.length === 0) {
+      throw new Error("Missing exact about page evidence authority.");
+    }
+    const repeatedPage = {
+      ...structuredClone(aboutPage),
+      id: `${aboutPage.id}_repeated`,
+      slug: "/pages/about-repeated",
+      pageFamily: {
+        ...structuredClone(aboutPage.pageFamily),
+        evidenceReferences: aboutPage.pageFamily.evidenceReferences.map((reference) => ({
+          ...structuredClone(reference),
+          authorityId: `${reference.authorityId}_unapproved_repeat`,
+        })),
+      },
+      sections: aboutPage.sections.map((section) => ({
+        ...structuredClone(section),
+        id: `${section.id}_repeated`,
+      })),
+    };
+    const authority = createPromptedStorefrontCapabilityAuthority({
+      ...input,
+      draft: {
+        ...input.draft,
+        pages: [...input.draft.pages, repeatedPage],
+      },
+    });
+    const exactKey = `content-support.profile.${aboutPage.pageFamily.profileId}.about`;
+
+    expect(authority.projection.capabilities.find(({ key }) => key === exactKey)).toMatchObject({
+      availability: "evidence-dependent",
+    });
   });
 
   it("makes responsive modes available only through exact executable profile variants or product cards", () => {

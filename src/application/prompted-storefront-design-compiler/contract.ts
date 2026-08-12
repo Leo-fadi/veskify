@@ -40,6 +40,7 @@ export const promptedStorefrontCompilerReasonCodeSchema = z.enum([
   "incompatible-context",
   "unavailable-capability",
   "lower-ranked-compatible",
+  "recent-structural-repeat-substituted",
 ]);
 
 export const promptedStorefrontResolutionDiagnosticSchema = z

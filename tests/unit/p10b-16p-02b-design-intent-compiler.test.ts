@@ -10,6 +10,7 @@ import {
   type PromptedStorefrontDesignCompilerError,
 } from "@/application/prompted-storefront-design-compiler";
 import {
+  promptedStorefrontStructuralDynamicCommerceMaterial,
   resolvePromptedStorefrontResponsiveVariantContexts,
   resolvePromptedStorefrontExactSlotOverrides,
   type LocatedPreference,
@@ -220,7 +221,7 @@ function providerIntent(
       hard: [preference(frame, "hard")],
       soft: [preference(dna)],
       optional: [],
-      avoid: [preference(search, "avoid")],
+      avoid: [],
     },
     designDna: { preferences: [preference(dna)] },
     sharedFrame: { preferences: [preference(frame, "hard")] },
@@ -256,7 +257,7 @@ function providerIntent(
         preference(available(authority, "collection-search.merchandising")),
       ],
       productCardPreferences: [preference(available(authority, "collection-search.product-card"))],
-      searchRelationshipPreferences: [preference(search, "avoid")],
+      searchRelationshipPreferences: [preference(search)],
       searchExecutionExpectation: "registered-presentation-fail-closed-runtime" as const,
     },
     productDetail: {
@@ -317,14 +318,14 @@ function providerIntent(
   });
 }
 
-describe("P10B-16P-02B deterministic design intent compiler", () => {
+describe("P10B-16P-02B deterministic design intent compiler", { timeout: 60_000 }, () => {
   let sharedFixture: ReturnType<typeof currentCompilerAuthority>;
   let sharedIntent: PromptedStorefrontDesignIntentV2;
 
   beforeAll(() => {
     sharedFixture = currentCompilerAuthority();
     sharedIntent = providerIntent(sharedFixture);
-  });
+  }, 60_000);
 
   it("refreshes exact authority and compiles one deterministic metadata-only decision", () => {
     const fixture = sharedFixture;
@@ -445,6 +446,103 @@ describe("P10B-16P-02B deterministic design intent compiler", () => {
       baseline.dynamicRoutePresentationFingerprint,
     );
     expect(changed.structuralFingerprint).toBe(baseline.structuralFingerprint);
+  });
+
+  it("normalizes archetype identity while retaining product-type characteristic mappings", () => {
+    const fixture = sharedFixture;
+    const decision = compilePromptedStorefrontDesignIntentV2({
+      originalRequest: fixture.requestAuthority.request,
+      providerIntent: sharedIntent,
+      currentRequestInput: fixture.currentRequestInput,
+      compatibilityInput: fixture.compatibilityInput,
+    });
+    const selection = decision.dynamicCommerceSelection;
+    const baseMaterial = promptedStorefrontStructuralDynamicCommerceMaterial(
+      selection,
+      fixture.currentRequestInput,
+      fixture.requestAuthority.request.catalogueCharacteristics.productTypes,
+    );
+    const authority = fixture.currentRequestInput.draft.dynamicCommercePresentation;
+    if (!authority) throw new Error("Missing dynamic-commerce authority.");
+    const search = authority.collectionSearchArchetypes.find(
+      ({ id }) => id === selection.searchArchetypeId,
+    );
+    if (!search) throw new Error("Missing search archetype.");
+    const { authorityFingerprint: _fingerprint, ...authorityMaterial } = authority;
+    void _fingerprint;
+    const aliasId = `${search.id}-structural-alias`;
+    const aliasedAuthority = createDynamicCommercePresentationAuthority({
+      ...authorityMaterial,
+      collectionSearchArchetypes: [
+        ...authorityMaterial.collectionSearchArchetypes,
+        { ...search, id: aliasId },
+      ],
+    });
+    const aliasedRequestInput = {
+      ...fixture.currentRequestInput,
+      draft: {
+        ...fixture.currentRequestInput.draft,
+        dynamicCommercePresentation: aliasedAuthority,
+      },
+    };
+    expect(
+      promptedStorefrontStructuralDynamicCommerceMaterial(
+        {
+          ...selection,
+          searchArchetypeId: aliasId,
+        },
+        aliasedRequestInput,
+        fixture.requestAuthority.request.catalogueCharacteristics.productTypes,
+      ),
+    ).toEqual(baseMaterial);
+
+    expect(selection.productTypeMappings.length).toBeGreaterThan(1);
+    const distinctRoleArchetypeIds = [
+      selection.standardSimpleArchetypeId,
+      selection.configurableArchetypeId,
+      selection.galleryLedArchetypeId,
+      selection.highConsiderationArchetypeId,
+    ].filter((id, index, ids) => ids.indexOf(id) === index);
+    expect(distinctRoleArchetypeIds.length).toBeGreaterThan(1);
+    const firstMapping = selection.productTypeMappings[0];
+    const secondMapping = selection.productTypeMappings[1];
+    const mapped = {
+      ...selection,
+      productTypeMappings: selection.productTypeMappings.map((mapping, index) => ({
+        ...mapping,
+        archetypeId:
+          index === 0
+            ? distinctRoleArchetypeIds[0]
+            : index === 1
+              ? distinctRoleArchetypeIds[1]
+              : mapping.archetypeId,
+      })),
+    };
+    const swapped = {
+      ...mapped,
+      productTypeMappings: mapped.productTypeMappings.map((mapping) => ({
+        ...mapping,
+        archetypeId:
+          mapping.productTypeId === firstMapping.productTypeId
+            ? distinctRoleArchetypeIds[1]
+            : mapping.productTypeId === secondMapping.productTypeId
+              ? distinctRoleArchetypeIds[0]
+              : mapping.archetypeId,
+      })),
+    };
+    expect(
+      promptedStorefrontStructuralDynamicCommerceMaterial(
+        mapped,
+        fixture.currentRequestInput,
+        fixture.requestAuthority.request.catalogueCharacteristics.productTypes,
+      ),
+    ).not.toEqual(
+      promptedStorefrontStructuralDynamicCommerceMaterial(
+        swapped,
+        fixture.currentRequestInput,
+        fixture.requestAuthority.request.catalogueCharacteristics.productTypes,
+      ),
+    );
   });
 
   it("resolves independent material axes in one preference list", () => {

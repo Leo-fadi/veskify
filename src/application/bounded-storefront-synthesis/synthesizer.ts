@@ -48,10 +48,8 @@ import {
   type BoundedStorefrontSynthesisRequest,
   type BoundedStorefrontSynthesisSelectionNarrowing,
 } from "./contract";
-import {
-  getCoordinatedStorefrontDirection,
-  validateDirectionSelectionNarrowing,
-} from "./direction-registry";
+import { validateDirectionSelectionNarrowing } from "./direction-registry";
+import { isCurrentCompatibleCoordinatedDirectionExactSelection } from "./compatible-direction-selections";
 
 type Selection = Readonly<{
   directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
@@ -116,46 +114,15 @@ function selectionFor(
     if (!exact.success || input.selectionNarrowing) {
       fail("unsupported-constraint", "The exact prompted synthesis selection is invalid.");
     }
-    const directionId =
-      exact.data.directionId === "premiumEditorial"
-        ? "premium-editorial"
-        : exact.data.directionId === "modernTechnical"
-          ? "modern-technical"
-          : "minimal-commerce";
-    const constraints = getCoordinatedStorefrontDirection(directionId).constraints;
-    const checks: readonly [string, string, readonly string[]][] = [
-      ["Design DNA", exact.data.directionId, constraints.designSystemDirectionIds],
-      ["spacing", exact.data.designSystemSpacingDensity, constraints.designSystemSpacingDensities],
-      ["surface", exact.data.designSystemSurfaceDepth, constraints.designSystemSurfaceDepths],
-      ["frame", exact.data.sharedFrameProfileId, constraints.sharedFrameProfileIds],
-      ["homepage", exact.data.homepageProfileId, constraints.homepageProfileIds],
-      ["collection", exact.data.collectionProfileId, constraints.collectionProfileIds],
-      ["search", exact.data.searchProfileId, constraints.searchProfileIds],
-      ["PDP", exact.data.pdpProfileId, constraints.pdpProfileIds],
-      ["narrative", exact.data.narrativePosture, constraints.narrativePostures],
-      ["merchandising", exact.data.merchandisingPosture, constraints.merchandisingPostures],
-      ["density", exact.data.informationDensityPosture, constraints.informationDensityPostures],
-      ["art direction", exact.data.artDirectionPosture, constraints.artDirectionPostures],
-      ["responsive", exact.data.responsiveMode, constraints.responsiveModes],
-    ];
-    for (const [label, selected, allowed] of checks) {
-      if (!allowed.includes(selected)) {
-        fail(
-          "unsupported-constraint",
-          `The exact prompted ${label} selection is outside current direction compatibility authority.`,
-        );
-      }
-    }
     if (
-      !constraints.optionalPageFamilyCompositions.some(
-        (composition) =>
-          canonicalValueString([...composition].sort()) ===
-          canonicalValueString([...exact.data.includedOptionalPageFamilyIds].sort()),
-      )
+      !isCurrentCompatibleCoordinatedDirectionExactSelection({
+        authority: input,
+        exactSelection: exact.data,
+      })
     ) {
       fail(
         "unsupported-constraint",
-        "The exact prompted optional page composition is outside current direction compatibility authority.",
+        "The exact prompted selection does not match one complete current compatible direction tuple.",
       );
     }
     return {

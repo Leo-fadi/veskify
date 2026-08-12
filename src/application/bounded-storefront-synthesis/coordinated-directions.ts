@@ -1,17 +1,8 @@
 import { registeredBrandSystemForDirection } from "@/application/storefront-design-system";
-import {
-  getCommercialCollectionSearchProfile,
-  getCommercialHomepageProfile,
-  getCommercialPdpProfile,
-  getExecutablePageBlueprintProfile,
-  resolveCommercialHomepageEvidenceAvailability,
-  resolveCommercialHomepageProfileSlots,
-} from "@/application/storefront-templates";
 import { resolveBrandSystemDesignDna, type DesignDna } from "@/domain/design-system";
 import { canonicalValueFingerprint } from "@/domain/storefront";
 import {
   BoundedStorefrontSynthesisError,
-  boundedStorefrontSynthesisSelectionNarrowingSchema,
   type BoundedStorefrontSynthesisDecision,
   type BoundedStorefrontSynthesisSelectionNarrowing,
 } from "./contract";
@@ -23,12 +14,17 @@ import {
   type CoordinatedStorefrontDirectionPackage,
   type StorefrontDiversityFingerprint,
 } from "./direction-contract";
-import {
-  getCoordinatedStorefrontDirection,
-  listCoordinatedStorefrontDirections,
-  validateDirectionSelectionNarrowing,
-} from "./direction-registry";
+import { getCoordinatedStorefrontDirection } from "./direction-registry";
 import { compareStorefrontDiversity, createStorefrontDiversityFingerprint } from "./diversity";
+import {
+  CompatibleCoordinatedDirectionCandidateBudgetError,
+  compatibleCoordinatedDirectionCandidateMaterial,
+  coordinatedDirectionNarrowingForCandidate,
+  listCompatibleCoordinatedDirectionSelectionNarrowings,
+  type CompatibleCoordinatedDirectionCandidateEnumerationOptions,
+  type CompatibleCoordinatedDirectionCandidateMaterial,
+  type CompatibleCoordinatedDirectionNarrowingInput,
+} from "./compatible-direction-selections";
 import {
   createBoundedStorefrontSynthesisDecision,
   executeBoundedStorefrontSynthesis,
@@ -36,11 +32,6 @@ import {
   type BoundedStorefrontSynthesisInput,
   type BoundedStorefrontSynthesisResult,
 } from "./synthesizer";
-
-type CandidateMaterial = Omit<
-  BoundedStorefrontSynthesisSelectionNarrowing,
-  "authorityId" | "authorityVersion" | "authorityFingerprint" | "selectionId"
->;
 
 export type CoordinatedDirectionSelection = Readonly<{
   direction: CoordinatedStorefrontDirectionPackage;
@@ -85,10 +76,14 @@ export type ExecutableCoordinatedDirectionIntent = Readonly<{
 
 export const MAX_EXECUTABLE_COORDINATED_DIRECTION_INTENTS = 3 as const;
 
-export type CompatibleCoordinatedDirectionNarrowingInput = Omit<
-  BoundedStorefrontSynthesisInput,
-  "request"
->;
+export {
+  CompatibleCoordinatedDirectionCandidateBudgetError,
+  compatibleCoordinatedDirectionCandidateMaterial,
+  listCompatibleCoordinatedDirectionSelectionNarrowings,
+  type CompatibleCoordinatedDirectionCandidateEnumerationOptions,
+  type CompatibleCoordinatedDirectionCandidateMaterial,
+  type CompatibleCoordinatedDirectionNarrowingInput,
+};
 
 export function executableCoordinatedDirectionDeterministicSeed(input: {
   currentAuthorityFingerprint: string;
@@ -98,78 +93,14 @@ export function executableCoordinatedDirectionDeterministicSeed(input: {
   return `coordinated-executable-${canonicalValueFingerprint(input)}`;
 }
 
-function product<T>(values: readonly (readonly T[])[]): T[][] {
-  return values.reduce<T[][]>(
-    (combinations, dimension) =>
-      combinations.flatMap((combination) => dimension.map((value) => [...combination, value])),
-    [[]],
-  );
-}
-
-function candidateMaterial(direction: CoordinatedStorefrontDirectionPackage): CandidateMaterial[] {
-  const c = direction.constraints;
-  const pick = <T>(values: readonly T[], label: string, material: unknown): T => {
-    const fingerprint = canonicalValueFingerprint({ label, material });
-    const digest = fingerprint.split("_").at(-1)!;
-    return values[Number.parseInt(digest.slice(0, 8), 16) % values.length];
-  };
-  return product<string>([
-    c.designSystemDirectionIds,
-    c.designSystemSpacingDensities,
-    c.designSystemSurfaceDepths,
-    c.sharedFrameProfileIds,
-    c.homepageProfileIds,
-    c.collectionProfileIds,
-    c.searchProfileIds,
-    c.pdpProfileIds,
-  ]).flatMap(
-    ([
-      directionId,
-      designSystemSpacingDensity,
-      designSystemSurfaceDepth,
-      sharedFrameProfileId,
-      homepageProfileId,
-      collectionProfileId,
-      searchProfileId,
-      pdpProfileId,
-    ]) => {
-      const architecture = {
-        directionId,
-        designSystemSpacingDensity,
-        designSystemSurfaceDepth,
-        sharedFrameProfileId,
-        homepageProfileId,
-        collectionProfileId,
-        searchProfileId,
-        pdpProfileId,
-      };
-      return c.optionalPageFamilyCompositions.map(
-        (includedOptionalPageFamilyIds) =>
-          ({
-            ...architecture,
-            includedOptionalPageFamilyIds: [...includedOptionalPageFamilyIds],
-            narrativePosture: pick(c.narrativePostures, "narrative", {
-              ...architecture,
-              includedOptionalPageFamilyIds,
-            }),
-            merchandisingPosture: pick(c.merchandisingPostures, "merchandising", architecture),
-            informationDensityPosture: pick(c.informationDensityPostures, "density", architecture),
-            artDirectionPosture: pick(c.artDirectionPostures, "art", architecture),
-            responsiveMode: pick(c.responsiveModes, "responsive", architecture),
-          }) as CandidateMaterial,
-      );
-    },
-  );
-}
-
 function characteristicsMatch(
-  candidate: CandidateMaterial,
+  candidate: CompatibleCoordinatedDirectionCandidateMaterial,
   request: CoordinatedDirectionRequest,
 ): boolean {
   const characteristics = request.characteristics;
   if (!characteristics) return true;
   return Object.entries(characteristics).every(([key, value]) => {
-    const candidateValue = candidate[key as keyof CandidateMaterial];
+    const candidateValue = candidate[key as keyof CompatibleCoordinatedDirectionCandidateMaterial];
     return Array.isArray(value)
       ? canonicalValueFingerprint(candidateValue) === canonicalValueFingerprint(value)
       : candidateValue === value;
@@ -177,7 +108,7 @@ function characteristicsMatch(
 }
 
 function postureCharacteristics(
-  candidate: CandidateMaterial,
+  candidate: CompatibleCoordinatedDirectionCandidateMaterial,
 ): ExecutableCoordinatedDirectionCharacteristics {
   return Object.freeze({
     narrativePosture: candidate.narrativePosture,
@@ -208,192 +139,6 @@ function validateDesignDna(
       );
     }
   }
-}
-
-function narrowingFor(
-  direction: CoordinatedStorefrontDirectionPackage,
-  candidate: CandidateMaterial,
-): BoundedStorefrontSynthesisSelectionNarrowing {
-  const selectionId = `direction-selection-${canonicalValueFingerprint(candidate)}`;
-  return boundedStorefrontSynthesisSelectionNarrowingSchema.parse({
-    authorityId: `coordinated-direction:${direction.id}`,
-    authorityVersion: direction.version,
-    authorityFingerprint: direction.authorityFingerprint,
-    selectionId,
-    ...candidate,
-  });
-}
-
-function candidateHasSupportedAssetPosture(
-  candidate: CandidateMaterial,
-  input: BoundedStorefrontSynthesisInput,
-): boolean {
-  const availableRoles = new Set(
-    input.planningInput.approvedAssetContext?.assets.map(({ role }) => role) ?? [],
-  );
-  const includedOptional = new Set(candidate.includedOptionalPageFamilyIds);
-  const homepage = getCommercialHomepageProfile(candidate.homepageProfileId);
-  if (!homepage) return false;
-  try {
-    const homepageEvidence = resolveCommercialHomepageEvidenceAvailability({
-      canonicalProductCount: input.planningInput.catalogue.products.length,
-      canonicalCollectionCount: input.planningInput.catalogue.collections.length,
-      merchantDescription: input.planningInput.brief.businessIdentity.shortDescription,
-      briefApprovalStatus: input.planningInput.brief.approval.status,
-      approvedEvidenceFingerprint: input.planningInput.brief.approvedEvidenceFingerprint,
-    });
-    resolveCommercialHomepageProfileSlots(candidate.homepageProfileId, {
-      ...homepageEvidence,
-      approvedMediaSlotIds: homepage.slots.flatMap((slot) => {
-        const definition = input.planningInput.componentDefinitions.find(
-          ({ type }) => type === slot.sectionType,
-        );
-        const acceptedRoles = new Set(
-          definition?.assetSlots.flatMap(({ acceptedRoles }) => acceptedRoles) ?? [],
-        );
-        return input.planningInput.approvedAssetContext?.assets.some(({ role }) =>
-          acceptedRoles.has(role),
-        )
-          ? [slot.id]
-          : [];
-      }),
-    });
-  } catch {
-    return false;
-  }
-  return input.siteMapDecision.pages
-    .filter((page) => page.required || includedOptional.has(page.familyId))
-    .every((page) => {
-      const profileId =
-        page.familyId === "home"
-          ? candidate.homepageProfileId
-          : page.familyId === "collection"
-            ? candidate.collectionProfileId
-            : page.familyId === "search-results"
-              ? candidate.searchProfileId
-              : page.familyId === "product-detail"
-                ? candidate.pdpProfileId
-                : page.profile.id;
-      const profile = getExecutablePageBlueprintProfile(profileId)?.profile;
-      return (
-        profile !== undefined &&
-        profile.requiredAssetRoles.every((requiredRole) => availableRoles.has(requiredRole))
-      );
-    });
-}
-
-function candidateMatchesProfileDesignDna(
-  candidate: CandidateMaterial,
-  input: BoundedStorefrontSynthesisInput,
-): boolean {
-  const selection = input.planningInput.recipeContext.designSystem.directions.find(
-    ({ id }) => id === candidate.directionId,
-  );
-  if (!selection) return false;
-  const imagePosture = {
-    premiumEditorial: "editorial",
-    modernTechnical: "contained",
-    warmApproachable: "editorial",
-  }[selection.id] as "contained" | "editorial" | "immersive";
-  const narrowings = [
-    getCommercialHomepageProfile(candidate.homepageProfileId)?.profile?.commercialHomepage
-      ?.designDnaNarrowing,
-    getCommercialCollectionSearchProfile(candidate.collectionProfileId)?.profile
-      ?.commercialCollectionSearch?.designDnaNarrowing,
-    getCommercialCollectionSearchProfile(candidate.searchProfileId)?.profile
-      ?.commercialCollectionSearch?.designDnaNarrowing,
-    getCommercialPdpProfile(candidate.pdpProfileId)?.profile?.commercialProductDetail
-      ?.designDnaNarrowing,
-  ];
-  return narrowings.every(
-    (narrowing) =>
-      narrowing !== undefined &&
-      narrowing.spacingDensity.includes(candidate.designSystemSpacingDensity) &&
-      narrowing.surfaceDepth.includes(candidate.designSystemSurfaceDepth) &&
-      narrowing.imagePosture.includes(imagePosture),
-  );
-}
-
-function candidateMatchesPageSetFrame(
-  candidate: CandidateMaterial,
-  input: BoundedStorefrontSynthesisInput,
-): boolean {
-  const includedOptional = new Set(candidate.includedOptionalPageFamilyIds);
-  return input.siteMapDecision.pages
-    .filter((page) => page.required || includedOptional.has(page.familyId))
-    .every((page) => {
-      const profileId =
-        page.familyId === "home"
-          ? candidate.homepageProfileId
-          : page.familyId === "collection"
-            ? candidate.collectionProfileId
-            : page.familyId === "search-results"
-              ? candidate.searchProfileId
-              : page.familyId === "product-detail"
-                ? candidate.pdpProfileId
-                : page.profile.id;
-      const profile = getExecutablePageBlueprintProfile(profileId)?.profile;
-      if (!profile) return false;
-      const frames =
-        profile.commercialHomepage?.compatibleSharedFrameProfileIds ??
-        profile.commercialCollectionSearch?.compatibleSharedFrameProfileIds ??
-        profile.commercialProductDetail?.compatibleSharedFrameProfileIds ??
-        profile.commercialContentSupport?.compatibleSharedFrameProfileIds ??
-        profile.commercialUtility?.compatibleSharedFrameProfileIds;
-      return frames === undefined || frames.includes(candidate.sharedFrameProfileId);
-    });
-}
-
-function compatibleCandidateMaterial(
-  direction: CoordinatedStorefrontDirectionPackage,
-  input: BoundedStorefrontSynthesisInput,
-): CandidateMaterial[] {
-  return candidateMaterial(direction)
-    .filter((candidate) => candidateHasSupportedAssetPosture(candidate, input))
-    .filter((candidate) => candidateMatchesProfileDesignDna(candidate, input))
-    .filter((candidate) => candidateMatchesPageSetFrame(candidate, input));
-}
-
-/**
- * Lists the exact coordinated-direction selections that are compatible with current registered,
- * evidence, asset, page-set and Design DNA authority. This is deliberately the read-only boundary
- * before synthesis decisions, proposal compilation and storefront materialization.
- *
- * Direction packages retain their canonical registry order. Selections within each package are
- * ordered by their content-derived selection IDs, so neither object insertion order nor runtime
- * timing can influence the inventory.
- */
-export function listCompatibleCoordinatedDirectionSelectionNarrowings(
-  input: CompatibleCoordinatedDirectionNarrowingInput,
-  options: Readonly<{ directionId?: CoordinatedStorefrontDirectionId }> = {},
-): readonly BoundedStorefrontSynthesisSelectionNarrowing[] {
-  const seenSelectionIds = new Set<string>();
-  const narrowings: BoundedStorefrontSynthesisSelectionNarrowing[] = [];
-  const directions = listCoordinatedStorefrontDirections().filter(
-    ({ id }) => options.directionId === undefined || id === options.directionId,
-  );
-
-  for (const direction of directions) {
-    const authorityInput: BoundedStorefrontSynthesisInput = {
-      ...input,
-      request: {
-        intent: direction.intent,
-        deterministicSeed: "compatible-direction-narrowing-inventory",
-      },
-    };
-    const directionNarrowings = compatibleCandidateMaterial(direction, authorityInput)
-      .map((candidate) => narrowingFor(direction, candidate))
-      .sort((left, right) => left.selectionId.localeCompare(right.selectionId));
-
-    for (const narrowing of directionNarrowings) {
-      if (seenSelectionIds.has(narrowing.selectionId)) continue;
-      validateDirectionSelectionNarrowing(narrowing);
-      seenSelectionIds.add(narrowing.selectionId);
-      narrowings.push(Object.freeze(structuredClone(narrowing)));
-    }
-  }
-
-  return Object.freeze(narrowings);
 }
 
 function mayTryAnotherCandidate(error: unknown): boolean {
@@ -428,7 +173,7 @@ export function createCoordinatedDirectionSelection(
     intent: direction.intent,
     deterministicSeed: request.data.deterministicSeed,
   } as const;
-  const rankedCandidates = compatibleCandidateMaterial(direction, input)
+  const rankedCandidates = compatibleCoordinatedDirectionCandidateMaterial(direction, input)
     .filter((candidate) => characteristicsMatch(candidate, request.data))
     .map((candidate) => ({
       candidate,
@@ -448,7 +193,7 @@ export function createCoordinatedDirectionSelection(
 
   let lastFailure: unknown;
   for (const { candidate } of rankedCandidates) {
-    const narrowing = narrowingFor(direction, candidate);
+    const narrowing = coordinatedDirectionNarrowingForCandidate(direction, candidate);
     try {
       const decision = createBoundedStorefrontSynthesisDecision({
         ...input,
@@ -565,7 +310,10 @@ export function listExecutableCoordinatedDirectionIntents(
     request: { intent: direction.intent, deterministicSeed: "executable-intent-enumeration" },
   };
   const uniqueCharacteristics = new Map<string, ExecutableCoordinatedDirectionCharacteristics>();
-  for (const candidate of compatibleCandidateMaterial(direction, authorityInput)) {
+  for (const candidate of compatibleCoordinatedDirectionCandidateMaterial(
+    direction,
+    authorityInput,
+  )) {
     const characteristics = postureCharacteristics(candidate);
     uniqueCharacteristics.set(canonicalValueFingerprint(characteristics), characteristics);
   }

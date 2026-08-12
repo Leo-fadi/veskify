@@ -1,9 +1,11 @@
 import {
+  CompatibleCoordinatedDirectionCandidateBudgetError,
   listCompatibleCoordinatedDirectionSelectionNarrowings,
   type CompatibleCoordinatedDirectionNarrowingInput,
   type BoundedStorefrontSynthesisSelectionNarrowing,
 } from "@/application/bounded-storefront-synthesis";
 import {
+  createPromptedStorefrontCatalogueCharacteristics,
   createPromptedStorefrontDesignRequestV2,
   validatePromptedStorefrontDesignIntentV2,
   type CreatePromptedStorefrontDesignRequestV2Input,
@@ -108,6 +110,46 @@ function fail(
   cause?: unknown,
 ): never {
   throw new PromptedStorefrontDesignCompilerError(code, message, cause ? { cause } : undefined);
+}
+
+/**
+ * The prompted request and bounded-synthesis input duplicate a small set of canonical authority.
+ * Bind those values at the public compiler boundary so direct compiler/executor callers cannot
+ * validate an intent against one project and materialize it from another.
+ */
+export function assertPromptedStorefrontPlanningAuthorityBound(
+  input: Pick<
+    CompilePromptedStorefrontDesignIntentV2Input,
+    "currentRequestInput" | "compatibilityInput"
+  >,
+): void {
+  const request = input.currentRequestInput;
+  const planning = input.compatibilityInput.planningInput;
+  const duplicatedAuthority = [
+    [
+      "project",
+      {
+        id: request.project.id,
+        revision: request.project.revision,
+        enabledLocales: request.project.enabledLocales,
+      },
+      planning.project,
+    ],
+    ["draft", request.draft, planning.draft],
+    ["catalogue", request.catalogue, planning.catalogue],
+    ["approved brief", request.approvedBrief, planning.brief],
+    ["approved asset context", request.approvedAssetContext ?? null, planning.approvedAssetContext],
+  ] as const;
+  const mismatch = duplicatedAuthority.find(
+    ([, requestValue, planningValue]) =>
+      canonicalValueString(requestValue) !== canonicalValueString(planningValue),
+  );
+  if (mismatch) {
+    fail(
+      "stale-authority",
+      `Prompted request and materialization ${mismatch[0]} authority do not match exactly.`,
+    );
+  }
 }
 
 function compareCanonical(left: string, right: string): number {
@@ -685,9 +727,12 @@ function candidateReferenceMatches(
   if (reference.authorityKind === "dynamic-commerce") {
     if (preference.dimension.startsWith("collection-search.")) {
       if (preference.dimension === "collection-search.search-relationship") {
-        // Search execution is unavailable. A provider may explicitly avoid that relationship
-        // without invalidating the separately retained presentation-only safe default.
-        return false;
+        if (!isPresentationOnlySearchRelationshipPreference(preference, reference)) return false;
+        const archetype = dynamicCollections.find(({ id }) => id === reference.authorityId);
+        return archetype
+          ? archetype.supportedContexts.includes("search") &&
+              archetype.profile.profileId === candidate.narrowing.searchProfileId
+          : null;
       }
       const archetype = dynamicCollections.find(({ id }) => id === reference.authorityId);
       if (!archetype) return null;
@@ -723,11 +768,14 @@ function candidateReferenceMatches(
       preference.dimension === "component.family" ||
       preference.dimension === "homepage.component-family"
     ) {
-      return selectedPlans(candidate).some(
-        (plan) =>
-          (!preference.dimension.startsWith("homepage.") || plan.pageType === "home") &&
-          plan.slots.some(({ sectionType }) => sectionType === reference.authorityId),
-      );
+      return selectedPlans(candidate).some((plan) => {
+        if (preference.dimension.startsWith("homepage.") && plan.pageType !== "home") return false;
+        return plan.slots.some(
+          ({ id, sectionType }) =>
+            sectionType === reference.authorityId &&
+            (plan.pageType !== "home" || candidate.homepageSlotIds.includes(id)),
+        );
+      });
     }
   }
   if (
@@ -748,6 +796,17 @@ function candidateReferenceMatches(
     );
   }
   return null;
+}
+
+function isPresentationOnlySearchRelationshipPreference(
+  preference: LocatedPreference,
+  reference: PromptedStorefrontCapabilityAuthorityReference,
+): boolean {
+  return (
+    reference.dimension === "collection-search.search-relationship" &&
+    reference.authorityKind === "dynamic-commerce" &&
+    reference.availability === "available"
+  );
 }
 
 function authorityPrefix(authorityId: string): string {
@@ -1063,37 +1122,125 @@ function promptedCandidateStructuralMaterial(input: {
         .filter(({ profile }) => utilityProfileIds.has(profile.id))
         .map(({ profile }) => `${profile.id}@${profile.version}`),
     ),
-    dynamicCommercePresentation: {
-      collectionArchetypeId: input.dynamicCommerceSelection.collectionArchetypeId,
-      searchArchetypeId: input.dynamicCommerceSelection.searchArchetypeId,
-      standardSimpleArchetypeId: input.dynamicCommerceSelection.standardSimpleArchetypeId,
-      configurableArchetypeId: input.dynamicCommerceSelection.configurableArchetypeId,
-      galleryLedArchetypeId: input.dynamicCommerceSelection.galleryLedArchetypeId,
-      highConsiderationArchetypeId: input.dynamicCommerceSelection.highConsiderationArchetypeId,
-      genericFallbackArchetypeId: input.dynamicCommerceSelection.genericFallbackArchetypeId,
-      productTypeMappings: input.dynamicCommerceSelection.productTypeMappings,
-    },
+    dynamicCommercePresentation: promptedStorefrontStructuralDynamicCommerceMaterial(
+      input.dynamicCommerceSelection,
+      input.compilerInput.currentRequestInput,
+      input.compilerInput.originalRequest.catalogueCharacteristics.productTypes,
+    ),
     productCardAnatomyIds,
   };
+}
+
+export function promptedStorefrontStructuralDynamicCommerceMaterial(
+  selection: CompiledPromptedStorefrontDesignDecisionV2["dynamicCommerceSelection"],
+  currentRequestInput: CreatePromptedStorefrontDesignRequestV2Input,
+  productTypes = createPromptedStorefrontCatalogueCharacteristics(currentRequestInput.catalogue)
+    .productTypes,
+) {
+  const authority = currentRequestInput.draft.dynamicCommercePresentation;
+  if (!authority) fail("stale-authority", "Dynamic-commerce authority is missing.");
+  const collectionById = new Map(
+    authority.collectionSearchArchetypes.map((archetype) => [archetype.id, archetype]),
+  );
+  const productById = new Map(
+    authority.productDetailArchetypes.map((archetype) => [archetype.id, archetype]),
+  );
+  const structuralArchetype = (
+    archetypeId: string,
+    index: ReadonlyMap<
+      string,
+      DynamicCommerceCollectionSearchArchetype | DynamicCommerceProductDetailArchetype
+    >,
+  ) => {
+    const archetype = index.get(archetypeId);
+    if (!archetype) fail("stale-authority", `Dynamic archetype ${archetypeId} is unavailable.`);
+    const { id: _id, ...material } = archetype;
+    void _id;
+    return material;
+  };
+  const productTypeCharacteristics = new Map(
+    productTypes.map(
+      ({
+        productTypeKey,
+        safeLabel: _safeLabel,
+        productCount: _productCount,
+        simpleProductCount,
+        configurableProductCount,
+        highConsiderationPresentationCount,
+        ...ranges
+      }) => {
+        void _safeLabel;
+        void _productCount;
+        return [
+          productTypeKey.replace(/^pdp\.product-type\./, ""),
+          {
+            ...ranges,
+            hasSimpleProducts: simpleProductCount > 0,
+            hasConfigurableProducts: configurableProductCount > 0,
+            hasHighConsiderationProducts: highConsiderationPresentationCount > 0,
+          },
+        ] as const;
+      },
+    ),
+  );
+  return {
+    collectionArchetype: structuralArchetype(selection.collectionArchetypeId, collectionById),
+    searchArchetype: structuralArchetype(selection.searchArchetypeId, collectionById),
+    standardSimpleArchetype: structuralArchetype(selection.standardSimpleArchetypeId, productById),
+    configurableArchetype: structuralArchetype(selection.configurableArchetypeId, productById),
+    galleryLedArchetype: structuralArchetype(selection.galleryLedArchetypeId, productById),
+    highConsiderationArchetype: structuralArchetype(
+      selection.highConsiderationArchetypeId,
+      productById,
+    ),
+    genericFallbackArchetype: structuralArchetype(
+      selection.genericFallbackArchetypeId,
+      productById,
+    ),
+    // Merchant labels, product-type IDs and route cardinality are protected commerce authority,
+    // not design structure. Preserve the material mapping relationship through the canonical
+    // type-characteristic signature so swapping two type experiences remains structurally
+    // visible while equivalent catalogues do not diverge merely by identity or count.
+    productTypeArchetypeMappings: selection.productTypeMappings
+      .map(({ productTypeId, archetypeId }) => {
+        const characteristics = productTypeCharacteristics.get(productTypeId);
+        if (!characteristics) {
+          fail("stale-authority", `Product type ${productTypeId} characteristics are unavailable.`);
+        }
+        return {
+          characteristics,
+          archetype: structuralArchetype(archetypeId, productById),
+        };
+      })
+      .sort((left, right) =>
+        compareCanonical(canonicalValueString(left), canonicalValueString(right)),
+      ),
+  };
+}
+
+function promptedStructuralFingerprint(
+  material: ReturnType<typeof promptedCandidateStructuralMaterial>,
+): string {
+  return `compiled-prompted-structural-${canonicalValueFingerprint(material)}`;
 }
 
 function promptedCandidateStructuralFingerprint(
   input: Parameters<typeof promptedCandidateStructuralMaterial>[0],
 ): string {
-  return `compiled-prompted-structural-${canonicalValueFingerprint(
-    promptedCandidateStructuralMaterial(input),
-  )}`;
+  return promptedStructuralFingerprint(promptedCandidateStructuralMaterial(input));
 }
+
+type PromptedCandidateSelection = Readonly<{
+  candidate: CandidateContext;
+  skippedPriorStructuralFingerprints: readonly string[];
+}>;
 
 function chooseCandidate(
   input: CompilePromptedStorefrontDesignIntentV2Input,
   intent: PromptedStorefrontDesignIntentV2,
   authority: PromptedStorefrontCapabilityAuthority,
   preferences: readonly LocatedPreference[],
-): CandidateContext {
-  const narrowings = listCompatibleCoordinatedDirectionSelectionNarrowings(
-    input.compatibilityInput,
-  );
+): PromptedCandidateSelection {
   const maximum = input.maximumCandidateEvaluations ?? MAX_PROMPTED_STOREFRONT_COMPILER_CANDIDATES;
   if (
     !Number.isInteger(maximum) ||
@@ -1101,6 +1248,17 @@ function chooseCandidate(
     maximum > MAX_PROMPTED_STOREFRONT_COMPILER_CANDIDATES
   ) {
     fail("invalid-input", "The compiler candidate budget is invalid.");
+  }
+  let narrowings: readonly BoundedStorefrontSynthesisSelectionNarrowing[];
+  try {
+    narrowings = listCompatibleCoordinatedDirectionSelectionNarrowings(input.compatibilityInput, {
+      maximumCandidateEvaluations: maximum,
+    });
+  } catch (error) {
+    if (error instanceof CompatibleCoordinatedDirectionCandidateBudgetError) {
+      fail("candidate-budget-exceeded", error.message, error);
+    }
+    throw error;
   }
   if (narrowings.length > maximum) {
     fail(
@@ -1121,6 +1279,14 @@ function chooseCandidate(
     readonly WholeStorefrontPageBlueprintSelectionOverride[]
   >();
   const exactResponsiveAuthorityBySelection = new Map<string, ReadonlySet<string>>();
+  const approvedAssetResolutionBySelection = new Map<
+    string,
+    ReturnType<typeof resolveExactApprovedAssetSelections>
+  >();
+  const dynamicCommerceSelectionByProfiles = new Map<
+    string,
+    ReturnType<typeof buildDynamicSelection>["selection"]
+  >();
   const exactSelectionFailures: PromptedStorefrontDesignCompilerError[] = [];
   const candidates = narrowings
     .flatMap((narrowing) => {
@@ -1150,6 +1316,30 @@ function chooseCandidate(
       const matches = new Map<string, boolean | null>();
       const siteMapAuthority = selectedSiteMapAuthorityIds(input, candidate);
       const omittedEvidenceFamilies = omittedEvidenceFamilyIds(input);
+      const rejectedByCheapExactConstraint = preferences.some((preference) => {
+        if (preference.semantics !== "hard" && preference.semantics !== "avoid") return false;
+        const reference = referenceFor(authority, preference);
+        if (reference.availability !== "available") return false;
+        // Search relationship preferences resolve against the exact presentation archetype below.
+        // A PageBlueprint-profile match is not sufficient to reject an exact archetype here,
+        // because multiple registered search presentations may share that profile.
+        if (isPresentationOnlySearchRelationshipPreference(preference, reference)) return false;
+        const match = candidateReferenceMatches(
+          candidate,
+          preference,
+          reference,
+          dynamic.collectionSearchArchetypes,
+          dynamic.productDetailArchetypes,
+          siteMapAuthority,
+          omittedEvidenceFamilies,
+          candidate.homepageSlotIds.length,
+        );
+        return (
+          (preference.semantics === "hard" && match === false) ||
+          (preference.semantics === "avoid" && match === true)
+        );
+      });
+      if (rejectedByCheapExactConstraint) return [];
       const responsiveSelectionKey = canonicalValueString({
         homepageProfileId: candidate.narrowing.homepageProfileId,
         collectionProfileId: candidate.narrowing.collectionProfileId,
@@ -1184,23 +1374,41 @@ function chooseCandidate(
             exactResponsiveAuthorityIds,
           );
         }
-        const approvedAssetResolution = resolveExactApprovedAssetSelections({
-          currentRequestInput: input.currentRequestInput,
-          candidate,
+        const approvedAssetSelectionKey = canonicalValueString({
+          homepageProfileId: candidate.narrowing.homepageProfileId,
+          homepageSlotIds: candidate.homepageSlotIds,
           slotOverrides,
-          authority,
-          preferences,
         });
+        let approvedAssetResolution =
+          approvedAssetResolutionBySelection.get(approvedAssetSelectionKey);
+        if (!approvedAssetResolution) {
+          approvedAssetResolution = resolveExactApprovedAssetSelections({
+            currentRequestInput: input.currentRequestInput,
+            candidate,
+            slotOverrides,
+            authority,
+            preferences,
+          });
+          approvedAssetResolutionBySelection.set(
+            approvedAssetSelectionKey,
+            approvedAssetResolution,
+          );
+        }
         exactApprovedAssetAuthorityIds = new Set(
           approvedAssetResolution.selections.map(approvedAssetSelectionAuthorityId),
         );
-        dynamicCommerceSelection = buildDynamicSelection(
-          input,
-          intent,
-          candidate,
-          authority,
-          preferences,
-        ).selection;
+        const dynamicSelectionKey = canonicalValueString({
+          collectionProfileId: candidate.narrowing.collectionProfileId,
+          searchProfileId: candidate.narrowing.searchProfileId,
+          pdpProfileId: candidate.narrowing.pdpProfileId,
+        });
+        const cachedDynamicSelection = dynamicCommerceSelectionByProfiles.get(dynamicSelectionKey);
+        dynamicCommerceSelection =
+          cachedDynamicSelection ??
+          buildDynamicSelection(input, intent, candidate, authority, preferences).selection;
+        if (!cachedDynamicSelection) {
+          dynamicCommerceSelectionByProfiles.set(dynamicSelectionKey, dynamicCommerceSelection);
+        }
       } catch (error) {
         if (
           error instanceof PromptedStorefrontDesignCompilerError &&
@@ -1217,8 +1425,13 @@ function chooseCandidate(
       }
       for (const preference of preferences) {
         const reference = referenceFor(authority, preference);
-        const selected =
-          reference.availability === "available"
+        const presentationOnlySearch = isPresentationOnlySearchRelationshipPreference(
+          preference,
+          reference,
+        );
+        const selected = presentationOnlySearch
+          ? dynamicCommerceSelection.searchArchetypeId === reference.authorityId
+          : reference.availability === "available"
             ? candidateReferenceMatches(
                 candidate,
                 preference,
@@ -1281,26 +1494,32 @@ function chooseCandidate(
           score -= 10;
         }
       }
+      const structuralMaterial = promptedCandidateStructuralMaterial({
+        compilerInput: input,
+        candidate,
+        slotOverrides,
+        dynamicCommerceSelection,
+      });
       return [
         {
           candidate,
           score,
-          structuralFingerprint: promptedCandidateStructuralFingerprint({
-            compilerInput: input,
-            candidate,
-            slotOverrides,
-            dynamicCommerceSelection,
-          }),
+          canonicalStructuralMaterial: canonicalValueString(structuralMaterial),
+          // Structural identity intentionally omits non-structural exact values such as the
+          // coordinated direction label. Keep a final, content-derived tuple tie-break so equal
+          // score and equal structural material never inherit registry/source iteration order.
+          canonicalExactValueTuple: canonicalValueString(
+            exactSynthesisSelection(candidate.narrowing),
+          ),
+          structuralFingerprint: promptedStructuralFingerprint(structuralMaterial),
         },
       ];
     })
     .sort(
       (left, right) =>
         right.score - left.score ||
-        compareCanonical(
-          left.candidate.narrowing.selectionId,
-          right.candidate.narrowing.selectionId,
-        ),
+        compareCanonical(left.canonicalStructuralMaterial, right.canonicalStructuralMaterial) ||
+        compareCanonical(left.canonicalExactValueTuple, right.canonicalExactValueTuple),
     );
   if (candidates.length === 0) {
     const hardFailure = exactSelectionFailures.find(
@@ -1314,16 +1533,26 @@ function chooseCandidate(
       "No current metadata-only coordinated direction is compatible with the exact provider intent.",
     );
   }
-  const selected = candidates.find(
+  const selectedIndex = candidates.findIndex(
     ({ structuralFingerprint }) => !priorStructuralFingerprints.has(structuralFingerprint),
-  )?.candidate;
-  if (!selected) {
+  );
+  if (selectedIndex < 0) {
     fail(
       "no-compatible-selection",
       "Every compatible metadata-only coordinated direction duplicates a recently accepted or rejected structure.",
     );
   }
-  return selected;
+  const selected = candidates[selectedIndex];
+  if (!selected) fail("no-compatible-selection", "No compatible candidate remains.");
+  return {
+    candidate: selected.candidate,
+    skippedPriorStructuralFingerprints: stableUnique(
+      candidates
+        .slice(0, selectedIndex)
+        .map(({ structuralFingerprint }) => structuralFingerprint)
+        .filter((fingerprint) => priorStructuralFingerprints.has(fingerprint)),
+    ),
+  };
 }
 
 function exactProfileReference(
@@ -1552,7 +1781,12 @@ function buildDynamicSelection(
                 preference.path.startsWith("collectionSearch.") &&
                 preference.dimension !== "collection-search.search-relationship",
             )
-          : [],
+          : preferences.filter((preference) =>
+              isPresentationOnlySearchRelationshipPreference(
+                preference,
+                referenceFor(authority, preference),
+              ),
+            ),
       authority,
       matches: (archetype, reference) => {
         if (reference.authorityKind === "dynamic-commerce") {
@@ -2752,7 +2986,12 @@ function selectedReferenceKeys(
   ]);
   for (const preference of preferences) {
     const reference = referenceFor(authority, preference);
-    if (reference.availability !== "available") continue;
+    if (
+      reference.availability !== "available" &&
+      !isPresentationOnlySearchRelationshipPreference(preference, reference)
+    ) {
+      continue;
+    }
     if (preference.semantics === "avoid") {
       if (
         reference.authorityKind === "component-manifest" &&
@@ -2951,6 +3190,35 @@ function diagnosticsFor(
   });
 }
 
+function structuralRepetitionDiagnostics(
+  request: PromptedStorefrontDesignRequestV2,
+  skippedFingerprints: readonly string[],
+): PromptedStorefrontResolutionDiagnostic[] {
+  return skippedFingerprints.map((fingerprint) => {
+    const acceptedIndex =
+      request.priorDiversityEvidence.recentAcceptedStructuralFingerprints.indexOf(fingerprint);
+    const rejectedIndex =
+      request.priorDiversityEvidence.recentRejectedStructuralFingerprints.indexOf(fingerprint);
+    const preferencePath =
+      acceptedIndex >= 0
+        ? `priorDiversityEvidence.recentAcceptedStructuralFingerprints[${acceptedIndex}]`
+        : rejectedIndex >= 0
+          ? `priorDiversityEvidence.recentRejectedStructuralFingerprints[${rejectedIndex}]`
+          : fail("stale-authority", "A skipped structural fingerprint has no current evidence.");
+    return {
+      preferencePath,
+      preferenceKey: fingerprint,
+      semantics: "optional",
+      requestedRank: null,
+      requestedValue: null,
+      outcome: "substituted",
+      selectedAuthority: null,
+      reasonCode: "recent-structural-repeat-substituted",
+      authorityFingerprint: fingerprint,
+    };
+  });
+}
+
 /**
  * Refreshes exact request authority, validates one provider intent, evaluates only bounded
  * compatibility metadata, and returns one transient executable decision. It never creates a
@@ -2959,6 +3227,7 @@ function diagnosticsFor(
 export function compilePromptedStorefrontDesignIntentV2(
   input: CompilePromptedStorefrontDesignIntentV2Input,
 ): CompiledPromptedStorefrontDesignDecisionV2 {
+  assertPromptedStorefrontPlanningAuthorityBound(input);
   let current: ReturnType<typeof createPromptedStorefrontDesignRequestV2>;
   try {
     current = createPromptedStorefrontDesignRequestV2(input.currentRequestInput);
@@ -2973,11 +3242,7 @@ export function compilePromptedStorefrontDesignIntentV2(
     input.currentRequestInput.merchantPrompt !== input.originalRequest.merchantPrompt ||
     current.request.requestFingerprint !== input.originalRequest.requestFingerprint ||
     canonicalValueString(current.request.currentAuthority) !==
-      canonicalValueString(input.originalRequest.currentAuthority) ||
-    canonicalValueString(input.compatibilityInput.planningInput.draft) !==
-      canonicalValueString(input.currentRequestInput.draft) ||
-    canonicalValueString(input.compatibilityInput.planningInput.catalogue) !==
-      canonicalValueString(input.currentRequestInput.catalogue)
+      canonicalValueString(input.originalRequest.currentAuthority)
   ) {
     fail("stale-authority", "The prompted request or synthesis compatibility authority changed.");
   }
@@ -3005,7 +3270,13 @@ export function compilePromptedStorefrontDesignIntentV2(
     ...collectPreferences(intent),
     ...diversityAvoidancePreferences(current.request, current.capabilityAuthority),
   ].sort((left, right) => compareCanonical(left.path, right.path));
-  const candidate = chooseCandidate(input, intent, current.capabilityAuthority, preferences);
+  const candidateSelection = chooseCandidate(
+    input,
+    intent,
+    current.capabilityAuthority,
+    preferences,
+  );
+  const candidate = candidateSelection.candidate;
   const dynamicResolution = buildDynamicSelection(
     input,
     intent,
@@ -3253,6 +3524,10 @@ export function compilePromptedStorefrontDesignIntentV2(
   );
   const diagnostics = [
     ...baseDiagnostics,
+    ...structuralRepetitionDiagnostics(
+      current.request,
+      candidateSelection.skippedPriorStructuralFingerprints,
+    ),
     ...exactBoundedParameterDefaults,
     ...defaultReferences.map((reference): PromptedStorefrontResolutionDiagnostic => ({
       preferencePath: `defaults.${reference.dimension}.${reference.key}`,

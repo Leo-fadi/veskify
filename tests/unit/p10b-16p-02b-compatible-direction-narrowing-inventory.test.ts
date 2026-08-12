@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  compatibleCoordinatedDirectionCandidateMaterial,
   listCompatibleCoordinatedDirectionSelectionNarrowings,
   listCoordinatedStorefrontDirections,
+  type CompatibleCoordinatedDirectionCandidateBudgetError,
   validateDirectionSelectionNarrowing,
 } from "@/application/bounded-storefront-synthesis";
 import { createP10B14PremiumEditorialFixture } from "@/data/demo/p10b-14-premium-editorial";
@@ -84,6 +86,40 @@ describe("P10B-16P-02B compatible coordinated-direction narrowing inventory", ()
     );
     expect(filtered.every(({ authorityId }) => authorityId.endsWith("modern-technical"))).toBe(
       true,
+    );
+  });
+
+  it("fails before expanding an oversized coordinated-direction candidate authority", () => {
+    const { input } = currentAuthority();
+    const direction = listCoordinatedStorefrontDirections()[0];
+    const homepageProfileId = direction?.constraints.homepageProfileIds[0];
+    if (!direction || !homepageProfileId)
+      throw new Error("Expected registered direction authority.");
+    const oversizedDirection = {
+      ...direction,
+      constraints: {
+        ...direction.constraints,
+        homepageProfileIds: Array.from({ length: 100 }, () => homepageProfileId),
+      },
+    };
+
+    expect(() =>
+      compatibleCoordinatedDirectionCandidateMaterial(
+        oversizedDirection,
+        {
+          ...input,
+          request: {
+            intent: direction.intent,
+            deterministicSeed: "oversized-candidate-authority",
+          },
+        },
+        { maximumCandidateEvaluations: 8 },
+      ),
+    ).toThrow(
+      expect.objectContaining<Partial<CompatibleCoordinatedDirectionCandidateBudgetError>>({
+        code: "candidate-budget-exceeded",
+        maximumCandidateEvaluations: 8,
+      }),
     );
   });
 });
