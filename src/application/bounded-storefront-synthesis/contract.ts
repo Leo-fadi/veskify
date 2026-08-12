@@ -9,14 +9,20 @@ import {
   canonicalValueFingerprint,
   commercialSharedFrameProfileIdSchema,
 } from "@/domain/storefront";
+import { dynamicCommerceDesignSelectionSchema } from "@/application/dynamic-commerce-routes";
+import {
+  wholeStorefrontApprovedAssetRoleSelectionsSchema,
+  wholeStorefrontPageBlueprintSelectionOverridesSchema,
+} from "@/application/whole-storefront-generation-plan/contract";
 
-export const BOUNDED_STOREFRONT_SYNTHESIS_CONTRACT_VERSION = 1 as const;
+export const BOUNDED_STOREFRONT_SYNTHESIS_CONTRACT_VERSION = 2 as const;
 
 const fingerprintSchema = z.string().trim().min(1).max(240);
 const referenceSchema = z.string().trim().min(1).max(200);
 const boundedValueSchema = z.union([z.string(), z.number(), z.boolean()]);
 
 export const boundedStorefrontSynthesisIntentSchema = z.enum([
+  "prompted-design-v2",
   "editorial-led",
   "commerce-led",
   "restrained-minimal",
@@ -74,6 +80,20 @@ export const boundedStorefrontSynthesisSelectionNarrowingSchema = z
     responsiveMode: z.enum(["content-first", "commerce-first", "balanced"]),
   })
   .strict();
+
+/**
+ * Exact transient synthesis authority emitted by the prompted V2 compiler.
+ * Unlike the compatibility-only coordinated-direction narrowing, this is not
+ * a retained candidate/selection identity. It carries only the registered
+ * values that canonical synthesis must execute.
+ */
+export const boundedStorefrontSynthesisExactSelectionSchema =
+  boundedStorefrontSynthesisSelectionNarrowingSchema.omit({
+    authorityId: true,
+    authorityVersion: true,
+    authorityFingerprint: true,
+    selectionId: true,
+  });
 
 const narrativeRoleSchema = z.enum([
   "orientation",
@@ -189,6 +209,17 @@ const synthesisMaterialSchema = z
         })
         .strict(),
     ),
+    pageBlueprintSelectionOverrides: wholeStorefrontPageBlueprintSelectionOverridesSchema,
+    approvedAssetRoleSelections: wholeStorefrontApprovedAssetRoleSelectionsSchema,
+    dynamicCommerceSelection: dynamicCommerceDesignSelectionSchema.nullable(),
+    exactSelectionAuthority: z
+      .object({
+        pageBlueprintSelectionFingerprint: fingerprintSchema,
+        approvedAssetRoleSelectionFingerprint: fingerprintSchema,
+        dynamicCommerceAuthorityFingerprint: fingerprintSchema.nullable(),
+        dynamicCommerceSelectionFingerprint: fingerprintSchema.nullable(),
+      })
+      .strict(),
     boundedParameters: z.record(referenceSchema, boundedValueSchema),
     evidenceComposition: z
       .object({
@@ -203,6 +234,16 @@ const synthesisMaterialSchema = z
         mode: z.enum(["content-first", "commerce-first", "balanced"]),
       })
       .strict(),
+    promptedExecutionAuthority: z
+      .object({
+        responsiveCapabilityKeys: z.array(referenceSchema).max(32),
+        artDirectionCapabilityKeys: z.array(referenceSchema).max(32),
+        approvedAssetRoleKeys: z.array(referenceSchema).max(32),
+        desktopNarrativePriority: z.array(referenceSchema).max(24),
+        mobileNarrativePriority: z.array(referenceSchema).max(24),
+      })
+      .strict()
+      .nullable(),
     currentAuthority: z
       .object({
         wholeStorefrontTargetFingerprint: fingerprintSchema,
@@ -235,6 +276,60 @@ export const boundedStorefrontSynthesisDecisionSchema = synthesisMaterialSchema
         message: "The bounded storefront synthesis fingerprint is stale.",
       });
     }
+    const expectedPageBlueprintFingerprint = `bounded-page-blueprint-selections-${canonicalValueFingerprint(
+      decision.pageBlueprintSelectionOverrides,
+    )}`;
+    if (
+      decision.exactSelectionAuthority.pageBlueprintSelectionFingerprint !==
+      expectedPageBlueprintFingerprint
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["exactSelectionAuthority", "pageBlueprintSelectionFingerprint"],
+        message: "The exact PageBlueprint selection fingerprint is stale.",
+      });
+    }
+    const expectedAssetSelectionFingerprint = `bounded-approved-asset-role-selections-${canonicalValueFingerprint(
+      decision.approvedAssetRoleSelections,
+    )}`;
+    if (
+      decision.exactSelectionAuthority.approvedAssetRoleSelectionFingerprint !==
+      expectedAssetSelectionFingerprint
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["exactSelectionAuthority", "approvedAssetRoleSelectionFingerprint"],
+        message: "The exact approved asset-role selection fingerprint is stale.",
+      });
+    }
+    if (decision.dynamicCommerceSelection === null) {
+      if (
+        decision.exactSelectionAuthority.dynamicCommerceAuthorityFingerprint !== null ||
+        decision.exactSelectionAuthority.dynamicCommerceSelectionFingerprint !== null
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["exactSelectionAuthority", "dynamicCommerceSelectionFingerprint"],
+          message: "Absent dynamic-commerce selection cannot claim execution authority.",
+        });
+      }
+    } else {
+      const expectedDynamicFingerprint = `bounded-dynamic-commerce-selection-${canonicalValueFingerprint(
+        decision.dynamicCommerceSelection,
+      )}`;
+      if (
+        decision.exactSelectionAuthority.dynamicCommerceAuthorityFingerprint !==
+          decision.dynamicCommerceSelection.authorityFingerprint ||
+        decision.exactSelectionAuthority.dynamicCommerceSelectionFingerprint !==
+          expectedDynamicFingerprint
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["exactSelectionAuthority", "dynamicCommerceSelectionFingerprint"],
+          message: "The exact dynamic-commerce selection authority is stale.",
+        });
+      }
+    }
   });
 
 export type BoundedStorefrontSynthesisIntent = z.infer<
@@ -245,6 +340,9 @@ export type BoundedStorefrontSynthesisRequest = z.infer<
 >;
 export type BoundedStorefrontSynthesisSelectionNarrowing = z.infer<
   typeof boundedStorefrontSynthesisSelectionNarrowingSchema
+>;
+export type BoundedStorefrontSynthesisExactSelection = z.infer<
+  typeof boundedStorefrontSynthesisExactSelectionSchema
 >;
 export type BoundedStorefrontSynthesisDecision = z.infer<
   typeof boundedStorefrontSynthesisDecisionSchema

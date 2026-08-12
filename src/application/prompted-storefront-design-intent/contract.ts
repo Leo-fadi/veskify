@@ -350,7 +350,7 @@ const approvedEvidenceAndAssetsSchema = z
     approvedPresentationAssetRoles: z.array(stableKeySchema).max(16),
     editorialOrBrandImageryAvailable: z.boolean(),
     responsiveAssetTreatmentAvailable: z.boolean(),
-    evidenceDependentCapabilityKeys: z.array(stableKeySchema).max(100),
+    evidenceDependentCapabilityKeys: z.array(stableKeySchema).max(800),
     unresolvedSafeOmissions: z.array(z.string().min(1).max(500)).max(32),
   })
   .strict();

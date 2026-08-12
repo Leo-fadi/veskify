@@ -7,17 +7,19 @@ storefront.
 
 The overall product is **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
 orchestration and publishing is **Baseline / closed**. P10B Commercial Storefront Generation System
-v1 is **Partial / active**: P10B-01 through P10B-16, P10B-16P-01, and P10B-16P-02A are Baseline.
+v1 is **Partial / active**: P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-02B are
+Baseline.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
 product-card family,
 homepage, collection/search, PDP, fifteen approved-fact content/support profiles, governed
 commerce-utility presentation, one retained 17-route Premium Editorial complete-storefront proof,
 bounded synthesis, three coordinated direction/diversity packages, and canonical dynamic-commerce
-route archetypes and the strict transient prompted Design Intent V2 provider boundary.
-P10B-16P-02 is Partial: its deterministic post-provider compiler (P10B-16P-02B) remains Planned,
-as do P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18. No live V2 provider acceptance has
-occurred.
+route archetypes, the strict transient prompted Design Intent V2 provider boundary, and its
+deterministic post-provider compiler into exact registered synthesis and isolated proposal
+authority. P10B-16P-02 and both of its slices are Baseline. P10B-16P-03, P10B-16P-04, P10B-17,
+and P10B-18 remain Planned. No normal Storefront Studio wiring or live V2 provider acceptance has
+occurred; P10B-16P-02B made zero provider calls.
 
 ## Product boundary
 

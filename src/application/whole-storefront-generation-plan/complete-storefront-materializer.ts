@@ -2,7 +2,12 @@ import {
   materializeContentSupportSnapshot,
   type ContentSupportFactAuthority,
 } from "@/application/content-support-pages";
-import { requireMigratedDynamicCommerceSnapshot } from "@/application/dynamic-commerce-routes";
+import {
+  materializeCurrentDynamicCommercePresentationAuthority,
+  requireMigratedDynamicCommerceSnapshot,
+  validateDynamicCommerceDesignSelection,
+  type DynamicCommerceDesignSelection,
+} from "@/application/dynamic-commerce-routes";
 import {
   materializeStorefrontSiteMap,
   type PageFactEvidenceAuthority,
@@ -39,7 +44,13 @@ import {
   createWholeStorefrontGenerationPlan,
   createWholeStorefrontGenerationTarget,
 } from "./planner";
-import type { WholeStorefrontGenerationPlan, WholeStorefrontPlanningInput } from "./contract";
+import { WholeStorefrontGenerationPlanError } from "./contract";
+import type {
+  WholeStorefrontGenerationPlan,
+  WholeStorefrontApprovedAssetRoleSelection,
+  WholeStorefrontPageBlueprintSelectionOverride,
+  WholeStorefrontPlanningInput,
+} from "./contract";
 import type { ApprovedAssetPresentation } from "./approved-brand-story-media";
 
 const contentSupportFamilyIds = new Set([
@@ -53,6 +64,71 @@ const contentSupportFamilyIds = new Set([
   "generic-content",
   "store-locations",
 ]);
+
+type DynamicRouteInventoryEntry = NonNullable<
+  StorefrontSnapshot["dynamicCommercePresentation"]
+>["routeInventory"][number];
+
+function routeIdentityMatchesSiteMapPage(
+  route: DynamicRouteInventoryEntry,
+  page: StorefrontSiteMapDecision["pages"][number],
+): boolean {
+  if (route.route !== page.route) return false;
+  if (route.kind === "collection") {
+    return (
+      page.familyId === "collection" &&
+      page.commerceContext.kind === "collection" &&
+      page.commerceContext.collectionId === route.collectionId
+    );
+  }
+  if (route.kind === "product") {
+    return (
+      page.familyId === "product-detail" &&
+      page.commerceContext.kind === "product" &&
+      page.commerceContext.productId === route.productId
+    );
+  }
+  return page.familyId === "search-results" && page.commerceContext.kind === "search";
+}
+
+/**
+ * Migrated commerce routes are canonical identities even though they are no longer persisted as
+ * concrete pages. Site-map rematerialization still needs an exact existing-page projection so it
+ * can preserve those identities. The projection is deliberately transient: the later migration
+ * boundary folds these pages back into the one compact dynamic-commerce authority.
+ */
+function reconcileMigratedRoutePageIdentities(
+  draft: StorefrontSnapshot,
+  decision: StorefrontSiteMapDecision,
+): StorefrontSnapshot {
+  const baseSnapshot = structuredClone(draft);
+  const authority = baseSnapshot.dynamicCommercePresentation;
+  if (!authority) return baseSnapshot;
+
+  const existingPageIds = new Set(baseSnapshot.pages.map(({ id }) => id));
+  const routesById = new Map(authority.routeInventory.map((route) => [route.id, route]));
+  const transientRoutePages = decision.pages.flatMap((page) => {
+    if (!page.existingPageId || existingPageIds.has(page.existingPageId)) return [];
+    const route = routesById.get(page.existingPageId);
+    if (!route || !routeIdentityMatchesSiteMapPage(route, page)) return [];
+    return [
+      {
+        id: route.id,
+        type: route.kind === "product" ? ("product" as const) : ("collection" as const),
+        slug: route.route,
+        title: structuredClone(page.title),
+        seo: structuredClone(page.seo),
+        sections: [],
+      },
+    ];
+  });
+
+  baseSnapshot.pages = [...baseSnapshot.pages, ...transientRoutePages];
+  // A canonical snapshot cannot persist both concrete route pages and the compact route
+  // inventory. Remove the compact authority only after its referenced identities are projected.
+  delete baseSnapshot.dynamicCommercePresentation;
+  return baseSnapshot;
+}
 
 export type CompleteStorefrontMaterialization = Readonly<{
   snapshot: StorefrontSnapshot;
@@ -188,13 +264,43 @@ export function materializeCompleteStorefrontSelection(
       spacingDensity: "compact" | "standard" | "spacious";
       surfaceDepth: "flat" | "subtle" | "layered";
     }>;
+    pageBlueprintSelectionOverrides?: readonly WholeStorefrontPageBlueprintSelectionOverride[];
+    approvedAssetRoleSelections?: readonly WholeStorefrontApprovedAssetRoleSelection[];
+    dynamicCommerceSelection?: DynamicCommerceDesignSelection;
     materializationIdPrefix?: string;
   }>,
 ): CompleteStorefrontMaterialization {
   const materializationIdPrefix = input.materializationIdPrefix ?? "complete";
+  for (const selection of input.approvedAssetRoleSelections ?? []) {
+    const presentation = input.approvedAssetPresentations.find(
+      (candidate) =>
+        candidate.assetId === selection.assetId &&
+        candidate.role === selection.role &&
+        candidate.revision === selection.assetRevision &&
+        candidate.materialFingerprint === selection.materialFingerprint &&
+        candidate.asset.id === selection.assetId,
+    );
+    if (!presentation) {
+      throw new WholeStorefrontGenerationPlanError(
+        "stale-approved-asset",
+        "An exact approved asset-role selection has no matching renderer presentation authority.",
+      );
+    }
+  }
+  const sourceDynamicSelection = input.dynamicCommerceSelection
+    ? validateDynamicCommerceDesignSelection(
+        input.planningInput.draft,
+        input.planningInput.catalogue,
+        input.dynamicCommerceSelection,
+      )
+    : null;
+  const baseSnapshot = reconcileMigratedRoutePageIdentities(
+    input.planningInput.draft,
+    input.siteMapDecision,
+  );
   const siteMap = materializeStorefrontSiteMap({
     decision: input.siteMapDecision,
-    baseSnapshot: input.planningInput.draft,
+    baseSnapshot,
     catalogue: input.planningInput.catalogue,
     evidenceAuthority: input.pageEvidenceAuthority,
   });
@@ -210,10 +316,10 @@ export function materializeCompleteStorefrontSelection(
     }
   }
 
-  const target = createWholeStorefrontGenerationTarget({
+  const canonicalCommerceFingerprint = createWholeStorefrontGenerationTarget({
     ...input.planningInput,
     draft: snapshot,
-  });
+  }).canonicalCommerceFingerprint;
   snapshot = storefrontSnapshotSchema.parse({
     ...snapshot,
     pages: snapshot.pages.map((page) => {
@@ -245,15 +351,24 @@ export function materializeCompleteStorefrontSelection(
         if (!productId) {
           throw new Error("A product-detail page requires canonical product context.");
         }
+        const retainedProductRoute =
+          input.planningInput.draft.dynamicCommercePresentation?.routeInventory.find(
+            (route) => route.kind === "product" && route.id === page.id,
+          );
+        const retainedRelatedProductIds =
+          retainedProductRoute?.kind === "product"
+            ? [...(retainedProductRoute.relatedProductIds ?? [])]
+            : undefined;
         return {
           ...page,
           sections: [
             productSection(
               productId,
-              input.planningInput.catalogue.products
-                .map(({ id }) => id)
-                .filter((id) => id !== productId),
-              target.canonicalCommerceFingerprint,
+              retainedRelatedProductIds ??
+                input.planningInput.catalogue.products
+                  .map(({ id }) => id)
+                  .filter((id) => id !== productId),
+              canonicalCommerceFingerprint,
               commercialPdpProfileIdSchema.parse(page.pageFamily.profileId),
               materializationIdPrefix,
               page.id,
@@ -265,6 +380,21 @@ export function materializeCompleteStorefrontSelection(
     }),
   });
 
+  const currentDynamicAuthority = materializeCurrentDynamicCommercePresentationAuthority(
+    snapshot,
+    input.planningInput.catalogue,
+  );
+  const reboundDynamicSelection = sourceDynamicSelection
+    ? validateDynamicCommerceDesignSelection(
+        snapshot,
+        input.planningInput.catalogue,
+        {
+          ...sourceDynamicSelection,
+          authorityFingerprint: currentDynamicAuthority.authorityFingerprint,
+        },
+        currentDynamicAuthority,
+      )
+    : null;
   const planningInput = {
     ...structuredClone(input.planningInput),
     draft: snapshot,
@@ -281,6 +411,9 @@ export function materializeCompleteStorefrontSelection(
       selectedProfile(snapshot, "product-detail", "PDP"),
     ),
     designSystemNarrowing: input.designSystemNarrowing,
+    pageBlueprintSelectionOverrides: input.pageBlueprintSelectionOverrides,
+    approvedAssetRoleSelections: input.approvedAssetRoleSelections,
+    dynamicCommerceSelection: reboundDynamicSelection,
   });
   const proposal = compileWholeStorefrontProposal({ plan, planningInput });
   const legacyMaterialized = materializeWholeStorefrontRuntimeSnapshot({

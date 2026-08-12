@@ -283,11 +283,7 @@ function validIntent(created: ReturnType<typeof createPromptedStorefrontDesignRe
   const childCollection = capability(created, "collection-search.child-collection", "available");
   const merchandising = capability(created, "collection-search.merchandising", "available");
   const collectionCard = capability(created, "collection-search.product-card", "available");
-  const search = capability(
-    created,
-    "collection-search.search-relationship",
-    "registered-fail-closed",
-  );
+  const search = capability(created, "collection-search.search-relationship", "available");
   const pdpStandard = created.request.capabilityProjection.capabilities.find(
     ({ key, availability }) =>
       key.startsWith("pdp.archetype.profile.pdp-standard-commerce.") &&
@@ -551,13 +547,13 @@ describe("P10B-16P-02A prompted storefront design intent", () => {
       byKey.get("content-support.profile.content-service-details.shipping-information"),
     ).toMatchObject({
       contexts: ["shipping-information"],
-      availability: "available",
+      availability: "registered-fail-closed",
     });
     expect(
       byKey.get("content-support.profile.content-service-details.returns-information"),
     ).toMatchObject({
       contexts: ["returns-information"],
-      availability: "evidence-dependent",
+      availability: "registered-fail-closed",
     });
   });
 
@@ -718,7 +714,10 @@ describe("P10B-16P-02A prompted storefront design intent", () => {
     );
 
     expect(byKey.get("responsive.crop.approved-responsive-focal-treatment")).toMatchObject({
-      availability: "available",
+      availability: "evidence-dependent",
+      requirements: [
+        "Approved focal or responsive-crop evidence exists, but exact asset, placement, and presentation authority must be bound before selection.",
+      ],
     });
     expect(byKey.get("responsive.crop.safe-area.unavailable")).toMatchObject({
       availability: "unavailable",
@@ -858,9 +857,9 @@ describe("P10B-16P-02A prompted storefront design intent", () => {
     const created = createPromptedStorefrontDesignRequestV2(approvedRequestInput());
     const base = validIntent(created);
     const dna = base.designDna.preferences[0];
-    const search = capability(
+    const unavailable = capability(
       created,
-      "collection-search.search-relationship",
+      "component.bounded-parameter",
       "registered-fail-closed",
     );
     const cases: readonly [unknown, PromptedStorefrontDesignIntentError["code"]][] = [
@@ -893,7 +892,7 @@ describe("P10B-16P-02A prompted storefront design intent", () => {
           ...base,
           constraints: {
             ...base.constraints,
-            hard: [preference(search, "hard")],
+            hard: [preference(unavailable, "hard")],
             avoid: [],
           },
           collectionSearch: {
