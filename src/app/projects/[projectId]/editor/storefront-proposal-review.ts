@@ -36,6 +36,17 @@ export type StorefrontProposalDynamicCommerceReview = {
   operationIndexes: number[];
 };
 
+export type StorefrontProposalCanonicalGenerationReview = {
+  heading: string;
+  summary: string;
+  protectedBindingSummary: string;
+  staticPageCount: number;
+  collectionSearchArchetypeCount: number;
+  productDetailArchetypeCount: number;
+  archetypeCount: number;
+  runtimeRouteCount: number;
+};
+
 export type StorefrontProposalReview = {
   scope: "homepage" | "storefront";
   scopeLabel: string;
@@ -47,9 +58,11 @@ export type StorefrontProposalReview = {
   confirmationApplyLabel: string;
   affectedPageCount: number;
   operationCount: number;
+  materialChangeCount: number;
   globalChanges: StorefrontProposalReviewItem[];
   pages: StorefrontProposalPageReview[];
   dynamicCommerceConvergence: StorefrontProposalDynamicCommerceReview | null;
+  canonicalGeneration: StorefrontProposalCanonicalGenerationReview | null;
   warnings: string[];
   blockers: string[];
   representedOperationIndexes: number[];
@@ -88,6 +101,16 @@ export function createStorefrontProposalReview(
   const represented = new Set<number>();
   const blockers: string[] = [];
   const globalChanges: StorefrontProposalReviewItem[] = [];
+  const canonicalGenerationAuthority = proposal.wholeStorefrontGeneration
+    ? proposal.proposedStorefront.dynamicCommercePresentation
+    : undefined;
+  if (proposal.wholeStorefrontGeneration && !canonicalGenerationAuthority) {
+    blockers.push(
+      locale === "fi"
+        ? "Luodun verkkokaupan dynaamista kauppa-auktoriteettia ei voida näyttää turvallisesti."
+        : "The generated storefront's dynamic-commerce authority cannot be represented safely.",
+    );
+  }
   const migrationAuthority = proposal.dynamicCommerceMigration
     ? proposal.proposedStorefront.dynamicCommercePresentation
     : undefined;
@@ -125,6 +148,17 @@ export function createStorefrontProposalReview(
     });
   });
 
+  if (proposal.wholeStorefrontGeneration) {
+    globalChanges.push({
+      title: locale === "fi" ? "Koko verkkokaupan suunnittelu" : "Complete storefront design",
+      summary:
+        locale === "fi"
+          ? "Rajattu brändijärjestelmä, yhteinen kehys ja navigaatio korvautuvat yhtenä koottuna verkkokauppasuunnitelmana."
+          : "The brand design, shared layout, and navigation are updated together as one complete storefront design.",
+      operationIndexes: [],
+    });
+  }
+
   if (migrationAuthority) {
     proposal.operations.forEach((envelope, operationIndex) => {
       if (
@@ -138,16 +172,18 @@ export function createStorefrontProposalReview(
   }
 
   const affectedPageIds = new Set(proposal.target.affectedPageIds);
-  const pageIdsInCanonicalOrder = [
-    ...proposal.originalStorefront.pageOrder.filter((pageId) => affectedPageIds.has(pageId)),
-    ...proposal.target.affectedPageIds.filter(
-      (pageId) => !proposal.originalStorefront.pageOrder.includes(pageId),
-    ),
-  ].filter((pageId) => !migratedAwayPageIds.has(pageId));
+  const pageIdsInCanonicalOrder = proposal.wholeStorefrontGeneration
+    ? [...proposal.proposedStorefront.pageOrder]
+    : [
+        ...proposal.originalStorefront.pageOrder.filter((pageId) => affectedPageIds.has(pageId)),
+        ...proposal.target.affectedPageIds.filter(
+          (pageId) => !proposal.originalStorefront.pageOrder.includes(pageId),
+        ),
+      ].filter((pageId) => !migratedAwayPageIds.has(pageId));
   const pages = pageIdsInCanonicalOrder.map((pageId) => {
     const original = originalById.get(pageId);
     const proposed = proposedById.get(pageId);
-    if (!original || !proposed) {
+    if ((!proposal.wholeStorefrontGeneration && !original) || !proposed) {
       blockers.push(
         locale === "fi"
           ? "Yhtä kohdesivua ei voida näyttää turvallisesti."
@@ -190,6 +226,16 @@ export function createStorefrontProposalReview(
       summary: sentence(group.parts, locale),
       operationIndexes: [...new Set(group.operationIndexes)],
     }));
+    if (proposal.wholeStorefrontGeneration && proposed) {
+      items.push({
+        title: pageTitle(proposed, locale, primaryLocale),
+        summary:
+          locale === "fi"
+            ? `Koottu rekisteröity sivurakenne, jossa on ${proposed.sections.length} osiota.`
+            : `Complete page composition with ${proposed.sections.length} sections.`,
+        operationIndexes: [],
+      });
+    }
     return {
       pageId,
       title: pageTitle(proposed ?? original, locale, primaryLocale),
@@ -272,17 +318,43 @@ export function createStorefrontProposalReview(
         ),
       }
     : null;
+  const canonicalGeneration = canonicalGenerationAuthority
+    ? {
+        heading:
+          locale === "fi" ? "Kanoninen koottu verkkokauppa" : "Complete storefront generation",
+        summary:
+          locale === "fi"
+            ? `${proposal.proposedStorefront.pages.length} staattista sivua ja ${canonicalGenerationAuthority.collectionSearchArchetypes.length + canonicalGenerationAuthority.productDetailArchetypes.length} uudelleenkäytettävää kaupan ulkoasumallia korvaavat raakalähtötilan yhtenä atomisena ehdotuksena.`
+            : `${proposal.proposedStorefront.pages.length} static pages and ${canonicalGenerationAuthority.collectionSearchArchetypes.length + canonicalGenerationAuthority.productDetailArchetypes.length} reusable commerce design archetypes replace the raw starting state as one atomic proposal.`,
+        protectedBindingSummary:
+          locale === "fi"
+            ? "Tuotteet, kokoelmat, hinnat, saatavuus, varasto, vaihtoehdot ja kanoninen tuotemedia pysyvät suojattuna Vesko-auktoriteettina."
+            : "Products, collections, prices, availability, stock, options, and canonical product media remain protected Vesko authority.",
+        staticPageCount: proposal.proposedStorefront.pages.length,
+        collectionSearchArchetypeCount:
+          canonicalGenerationAuthority.collectionSearchArchetypes.length,
+        productDetailArchetypeCount: canonicalGenerationAuthority.productDetailArchetypes.length,
+        archetypeCount:
+          canonicalGenerationAuthority.collectionSearchArchetypes.length +
+          canonicalGenerationAuthority.productDetailArchetypes.length,
+        runtimeRouteCount: canonicalGenerationAuthority.routeInventory.length,
+      }
+    : null;
   const heading = homepageScope
     ? locale === "fi"
       ? `Etusivuehdotus · ${pageOperationCount} suunniteltua asettelumuutosta`
       : `Homepage proposal · ${pageOperationCount} planned layout ${pageOperationCount === 1 ? "change" : "changes"}`
-    : dynamicCommerceConvergence
+    : canonicalGeneration
       ? locale === "fi"
-        ? `Verkkokauppaehdotus · ${dynamicCommerceConvergence.staticPageCount} staattista sivua · ${dynamicCommerceConvergence.archetypeCount} kaupan ulkoasumallia`
-        : `Storefront proposal · ${dynamicCommerceConvergence.staticPageCount} static pages · ${dynamicCommerceConvergence.archetypeCount} commerce design archetypes`
-      : locale === "fi"
-        ? `Verkkokauppaehdotus · ${pageOperationCount} sivumuutosta${globalOperationCount > 0 ? ` · ${globalOperationCount} yhteisen ilmeen muutosta` : ""}`
-        : `Storefront proposal · ${pageOperationCount} page ${pageOperationCount === 1 ? "change" : "changes"}${globalOperationCount > 0 ? ` · ${globalOperationCount} shared design ${globalOperationCount === 1 ? "change" : "changes"}` : ""}`;
+        ? `Verkkokauppaehdotus · ${canonicalGeneration.staticPageCount} staattista sivua · ${canonicalGeneration.archetypeCount} kaupan ulkoasumallia`
+        : `Storefront proposal · ${canonicalGeneration.staticPageCount} static pages · ${canonicalGeneration.archetypeCount} commerce design archetypes`
+      : dynamicCommerceConvergence
+        ? locale === "fi"
+          ? `Verkkokauppaehdotus · ${dynamicCommerceConvergence.staticPageCount} staattista sivua · ${dynamicCommerceConvergence.archetypeCount} kaupan ulkoasumallia`
+          : `Storefront proposal · ${dynamicCommerceConvergence.staticPageCount} static pages · ${dynamicCommerceConvergence.archetypeCount} commerce design archetypes`
+        : locale === "fi"
+          ? `Verkkokauppaehdotus · ${pageOperationCount} sivumuutosta${globalOperationCount > 0 ? ` · ${globalOperationCount} yhteisen ilmeen muutosta` : ""}`
+          : `Storefront proposal · ${pageOperationCount} page ${pageOperationCount === 1 ? "change" : "changes"}${globalOperationCount > 0 ? ` · ${globalOperationCount} shared design ${globalOperationCount === 1 ? "change" : "changes"}` : ""}`;
 
   return {
     scope,
@@ -314,13 +386,17 @@ export function createStorefrontProposalReview(
       ? locale === "fi"
         ? "Tämä päivittää vain etusivun yhtenä tallentamattomana luonnosmuutoksena. Voit kumota muutoksen yhdellä toiminnolla."
         : "This updates only the homepage as one unsaved draft change. You can undo the change in one step."
-      : dynamicCommerceConvergence
+      : canonicalGeneration
         ? locale === "fi"
-          ? "Tämä ottaa staattiset sivut ja uudelleenkäytettävät kaupan ulkoasumallit käyttöön yhtenä tallentamattomana luonnosmuutoksena. Reittikohtaiset sivut yhdistyvät kanoniseen rakenteeseen, ja suojatut Vesko-kauppasidokset säilyvät muuttumattomina. Voit kumota koko muutoksen yhdellä toiminnolla."
-          : "This applies the static pages and reusable commerce design archetypes as one unsaved draft change. Route-specific pages converge into the canonical structure while protected Vesko commerce bindings remain unchanged. You can undo the complete change in one step."
-        : locale === "fi"
-          ? "Tämä päivittää tarkistuksessa luetellut sivut ja yhteisen ilmeen muutokset yhtenä tallentamattomana luonnosmuutoksena. Voit kumota koko muutoksen yhdellä toiminnolla."
-          : "This updates the pages and shared design changes listed in the review as one unsaved draft change. You can undo the complete change in one step.",
+          ? "Tämä korvaa raakalähtötilan kootulla brändijärjestelmällä, yhteisellä kehyksellä, staattisilla sivuilla ja uudelleenkäytettävillä kaupan ulkoasumalleilla yhtenä tallentamattomana luonnosmuutoksena. Suojattu Vesko-kauppatotuus säilyy muuttumattomana, ja voit kumota koko muutoksen yhdellä toiminnolla."
+          : "This replaces the raw starting state with the complete brand design, shared layout, static pages, and reusable commerce design archetypes as one unsaved draft change. Protected Vesko commerce truth remains unchanged, and you can undo the complete change in one step."
+        : dynamicCommerceConvergence
+          ? locale === "fi"
+            ? "Tämä ottaa staattiset sivut ja uudelleenkäytettävät kaupan ulkoasumallit käyttöön yhtenä tallentamattomana luonnosmuutoksena. Reittikohtaiset sivut yhdistyvät kanoniseen rakenteeseen, ja suojatut Vesko-kauppasidokset säilyvät muuttumattomina. Voit kumota koko muutoksen yhdellä toiminnolla."
+            : "This applies the static pages and reusable commerce design archetypes as one unsaved draft change. Route-specific pages converge into the canonical structure while protected Vesko commerce bindings remain unchanged. You can undo the complete change in one step."
+          : locale === "fi"
+            ? "Tämä päivittää tarkistuksessa luetellut sivut ja yhteisen ilmeen muutokset yhtenä tallentamattomana luonnosmuutoksena. Voit kumota koko muutoksen yhdellä toiminnolla."
+            : "This updates the pages and shared design changes listed in the review as one unsaved draft change. You can undo the complete change in one step.",
     confirmationApplyLabel: homepageScope
       ? locale === "fi"
         ? "Ota etusivuehdotus käyttöön"
@@ -330,11 +406,18 @@ export function createStorefrontProposalReview(
         : "Apply storefront proposal",
     affectedPageCount: dynamicCommerceConvergence
       ? dynamicCommerceConvergence.staticPageCount + dynamicCommerceConvergence.archetypeCount
-      : proposal.target.affectedPageIds.length,
-    operationCount: proposal.operations.length,
+      : canonicalGeneration
+        ? canonicalGeneration.staticPageCount + canonicalGeneration.archetypeCount
+        : proposal.target.affectedPageIds.length,
+    operationCount:
+      proposal.operations.length + (proposal.wholeStorefrontGeneration === undefined ? 0 : 1),
+    materialChangeCount: canonicalGeneration
+      ? canonicalGeneration.staticPageCount + canonicalGeneration.archetypeCount + 1
+      : proposal.operations.length,
     globalChanges,
     pages,
     dynamicCommerceConvergence,
+    canonicalGeneration,
     warnings: [],
     blockers,
     representedOperationIndexes,

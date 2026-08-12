@@ -385,6 +385,15 @@ describe("P9-01 runtime whole-storefront provider boundary", () => {
 
   it("keeps authentication unavailability distinct from permission denial", () => {
     expect(
+      mapServerWholeStorefrontFailure(
+        new ServerWholeStorefrontAuthorityError("authentication-unavailable"),
+      ),
+    ).toEqual({
+      status: 503,
+      category: "authenticationUnavailable",
+      retryable: false,
+    });
+    expect(
       mapServerWholeStorefrontFailure(new VeskoIntegrationError("authenticationUnavailable")),
     ).toEqual({
       status: 503,

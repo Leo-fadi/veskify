@@ -18,7 +18,9 @@ import {
   type AiStorefrontTarget,
 } from "./contract";
 import {
+  createAiStorefrontGenerationPermissionFingerprint,
   createAiStorefrontPermissionFingerprint,
+  createAiStorefrontProposalId,
   createAiStorefrontTargetFingerprint,
 } from "./fingerprint";
 import {
@@ -103,16 +105,31 @@ function assertProposalFingerprints(
       "The storefront proposal target fingerprint is stale or invalid.",
     );
   }
-  const permissionFingerprint = createAiStorefrontPermissionFingerprint(
-    proposal.permissionGrants,
-    target,
-    context,
-  );
+  const permissionFingerprint = proposal.wholeStorefrontGeneration
+    ? createAiStorefrontGenerationPermissionFingerprint(proposal.wholeStorefrontGeneration)
+    : createAiStorefrontPermissionFingerprint(proposal.permissionGrants, target, context);
   if (proposal.permissionFingerprint !== permissionFingerprint) {
     invalid(
       "permission-fingerprint-mismatch",
       "The storefront proposal permission fingerprint is stale or invalid.",
     );
+  }
+  if (proposal.wholeStorefrontGeneration) {
+    const expectedProposalId = createAiStorefrontProposalId(
+      proposal.requestId,
+      targetFingerprint,
+      permissionFingerprint,
+      proposal.operations,
+      proposal.assetPlacementOperations,
+      proposal.dynamicCommerceMigration,
+      proposal.wholeStorefrontGeneration,
+    );
+    if (proposal.id !== expectedProposalId) {
+      invalid(
+        "proposal-fingerprint-mismatch",
+        "The whole-storefront generation proposal does not bind its exact structural operation.",
+      );
+    }
   }
 }
 
@@ -123,6 +140,28 @@ function assertProjectionPreservation(
   const original = proposal.originalStorefront;
   const proposed = proposal.proposedStorefront;
   const migration = proposal.dynamicCommerceMigration;
+  const generation = proposal.wholeStorefrontGeneration;
+  if (generation) {
+    const allOriginalPageIds = [...original.pageOrder].sort((left, right) =>
+      left.localeCompare(right),
+    );
+    if (
+      target.scope !== "storefront" ||
+      target.designSystemTarget === null ||
+      canonicalValueString(target.affectedPageIds) !== canonicalValueString(allOriginalPageIds) ||
+      generation.target.projectId !== target.projectId ||
+      generation.target.draftSnapshotId !== target.draftSnapshotId ||
+      generation.target.draftRevision !== target.draftRevision ||
+      generation.sourceProjectionFingerprint !== canonicalValueFingerprint(original) ||
+      generation.resultingProjectionFingerprint !== canonicalValueFingerprint(proposed) ||
+      proposed.dynamicCommercePresentation === undefined
+    ) {
+      invalid(
+        "invalid-whole-storefront-generation",
+        "Canonical whole-storefront generation requires one exact reviewed storefront transition.",
+      );
+    }
+  }
   if (migration) {
     const allOriginalPageIds = [...original.pageOrder].sort((left, right) =>
       left.localeCompare(right),
@@ -143,8 +182,9 @@ function assertProjectionPreservation(
       );
     }
   } else if (
+    !generation &&
     canonicalValueString(original.dynamicCommercePresentation) !==
-    canonicalValueString(proposed.dynamicCommercePresentation)
+      canonicalValueString(proposed.dynamicCommercePresentation)
   ) {
     invalid(
       "unsupported-dynamic-commerce-transition",
@@ -153,6 +193,7 @@ function assertProjectionPreservation(
   }
   if (
     !migration &&
+    !generation &&
     canonicalValueString(original.pageOrder) !== canonicalValueString(proposed.pageOrder)
   ) {
     invalid(
@@ -164,6 +205,7 @@ function assertProjectionPreservation(
   const proposedPageIds = proposed.pages.map((page) => page.id);
   if (
     !migration &&
+    !generation &&
     canonicalValueString(originalPageIds) !== canonicalValueString(proposedPageIds)
   ) {
     invalid(
@@ -173,6 +215,7 @@ function assertProjectionPreservation(
   }
   if (
     !migration &&
+    !generation &&
     canonicalValueString(original.navigation) !== canonicalValueString(proposed.navigation)
   ) {
     invalid(
@@ -216,6 +259,7 @@ function assertProjectionPreservation(
       );
     }
   }
+  if (generation) return;
   proposed.pages.forEach((page) => {
     if (affectedIds.has(page.id)) return;
     const originalPage = originalById.get(page.id);
@@ -342,6 +386,20 @@ function assertProjectionMatchesOperations(
     }
     return;
   }
+  const generation = proposal.wholeStorefrontGeneration;
+  if (generation) {
+    if (
+      generation.operationProjectionFingerprint !== canonicalValueFingerprint(projected) ||
+      generation.resultingProjectionFingerprint !==
+        canonicalValueFingerprint(proposal.proposedStorefront)
+    ) {
+      invalid(
+        "whole-storefront-generation-projection-mismatch",
+        "Canonical whole-storefront generation must bind its exact operation and result projections.",
+      );
+    }
+    return;
+  }
   if (canonicalValueString(projected) !== canonicalValueString(proposal.proposedStorefront)) {
     invalid(
       "proposal-projection-mismatch",
@@ -375,8 +433,10 @@ export function validateAiStorefrontProposal(
   assertProposalIdentity(proposal, target, context);
   assertProposalFingerprints(proposal, target, context);
   assertProjectionPreservation(proposal, target);
-  assertSupportedDesignStateProjection(proposal);
-  validateAiStorefrontOperations(proposal.operations, target, proposal.permissionGrants, context);
+  if (!proposal.wholeStorefrontGeneration) assertSupportedDesignStateProjection(proposal);
+  if (!proposal.wholeStorefrontGeneration) {
+    validateAiStorefrontOperations(proposal.operations, target, proposal.permissionGrants, context);
+  }
   assertProjectionMatchesOperations(proposal, context);
   return proposal;
 }

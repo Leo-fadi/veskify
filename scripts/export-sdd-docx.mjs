@@ -13,7 +13,7 @@ exportMarkdownDocx({
   subtitle: "Version 1.3.0",
   coverLines: [
     "Verified baseline: 12 August 2026",
-    "P10B-16P-02B deterministic design-intent compilation and canonical proposal materialization",
+    "P10B-16P-03 Storefront Studio prompted generation journey",
     "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
     "Authoritative source: docs/VESKIFY_SDD.md",
   ],

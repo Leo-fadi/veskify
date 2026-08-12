@@ -128,9 +128,9 @@ structurally distinct without using palette.
 
 ## Boundaries
 
-P10B-16 does not implement the P10B-16P-02 prompted design-plan contract, P10B-16P-03 final Studio
-generation journey, P10B-17 phase-wide responsive/accessibility/performance closure, the P10B-18
-100+ configuration quality/scale gate, aesthetic AI scoring, generated code, P10C editing, Vesko
+P10B-16 itself did not implement the later prompted design-plan contract or final Studio generation
+journey, P10B-17 phase-wide responsive/accessibility/performance closure, the P10B-18 100+
+configuration quality/scale gate, aesthetic AI scoring, generated code, P10C editing, Vesko
 operations, save as an implicit generation action, or publication without explicit authority.
-P10B-16P-01 is now Baseline and supplies the dynamic route/archetype correction. P10B remains
-Partial; P10B-16P-02, P10B-16P-03, P10B-17, and P10B-18 remain Planned.
+P10B-16P-01, P10B-16P-02, and P10B-16P-03 are now Baseline through their own subsequent tasks.
+P10B remains Partial; P10B-16P-04, P10B-17, and P10B-18 remain Planned.

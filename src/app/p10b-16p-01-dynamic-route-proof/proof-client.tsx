@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { PageFactEvidenceReference } from "@/domain/storefront";
 import { createBrowserProjectRepository, type ProjectAggregate } from "@/services/storage";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
 
 export function DynamicRouteArchetypeEditorProofClient({
   aggregate,
+  evidenceReferences,
 }: {
   aggregate: ProjectAggregate;
+  evidenceReferences: readonly PageFactEvidenceReference[];
 }) {
   const [status, setStatus] = useState<"seeding" | "ready" | "error">("seeding");
 
@@ -35,5 +38,10 @@ export function DynamicRouteArchetypeEditorProofClient({
   if (status === "error") {
     return <p role="alert">The dynamic commerce archetype proof could not be prepared.</p>;
   }
-  return <ProjectEditorClient projectId={aggregate.project.id} />;
+  return (
+    <ProjectEditorClient
+      projectId={aggregate.project.id}
+      initialEvidenceReferences={evidenceReferences}
+    />
+  );
 }

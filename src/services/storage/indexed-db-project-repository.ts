@@ -1,4 +1,10 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
+import {
+  P10B16P03_CATALOGUE_ID,
+  P10B16P03_DRAFT_ID,
+  P10B16P03_PROJECT_ID,
+  P10B16P03_PUBLISHED_ID,
+} from "@/data/demo/p10b-16p-03-studio-identity";
 import type { CatalogueDisplayModel } from "@/domain/catalogue";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
 import { projectSchema, type Project } from "@/domain/project";
@@ -412,6 +418,9 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
 
   async get(projectId: string): Promise<ProjectAggregate> {
     const database = await this.#database();
+    if (projectId === P10B16P03_PROJECT_ID) {
+      await this.#seedP10B16P03RawStudioIfSafe(database);
+    }
     const transaction = database.transaction(
       ["projects", "catalogues", "snapshots", "snapshotHistoryMetadata"],
       "readonly",
@@ -1413,6 +1422,47 @@ export class IndexedDbProjectRepository implements AuthoritativePublishingProjec
       .put(managedDraftProvenance(aggregate.project.id, aggregate.project.draftSnapshotId));
     await projects.put(aggregate.project);
     await seedKarvonenIfSafe();
+    await transaction.done;
+  }
+
+  async #seedP10B16P03RawStudioIfSafe(database: IDBPDatabase<VeskifyDatabase>): Promise<void> {
+    if (await database.get("projects", P10B16P03_PROJECT_ID)) return;
+
+    // The P03 fixture constructs current dynamic-commerce and compiler authority. Import it only
+    // for the explicit raw-project route so unrelated projects never pay that synthesis cost.
+    const { createP10B16P03RawKarvonenStudioFixture } =
+      await import("@/data/demo/p10b-16p-03-studio-prompt-generation");
+    const aggregate = validateProjectAggregate(
+      clone(createP10B16P03RawKarvonenStudioFixture().aggregate),
+    );
+    const transaction = database.transaction(
+      ["projects", "catalogues", "snapshots", "snapshotProvenance"],
+      "readwrite",
+    );
+    const projects = transaction.objectStore("projects");
+    const catalogues = transaction.objectStore("catalogues");
+    const snapshots = transaction.objectStore("snapshots");
+    const snapshotProvenance = transaction.objectStore("snapshotProvenance");
+    if (await projects.get(P10B16P03_PROJECT_ID)) {
+      await transaction.done;
+      return;
+    }
+    const identifiersOccupied =
+      (await catalogues.get(P10B16P03_CATALOGUE_ID)) !== undefined ||
+      (await snapshots.get(P10B16P03_PUBLISHED_ID)) !== undefined ||
+      (await snapshots.get(P10B16P03_DRAFT_ID)) !== undefined ||
+      (await snapshotProvenance.get(P10B16P03_DRAFT_ID)) !== undefined;
+    if (identifiersOccupied) {
+      await transaction.done;
+      return;
+    }
+
+    await catalogues.add(aggregate.catalogue);
+    for (const snapshot of aggregate.snapshots) await snapshots.add(snapshot);
+    await snapshotProvenance.add(
+      managedDraftProvenance(aggregate.project.id, aggregate.project.draftSnapshotId),
+    );
+    await projects.add(aggregate.project);
     await transaction.done;
   }
 }

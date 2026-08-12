@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ProjectPreviewClient } from "./project-preview-client";
 import { loadP10bLiveSynthesisPreviewSession } from "@/integrations/ai/p10b-live-synthesis-acceptance-authority.server";
+import { loadP10B16P03CurrentEvidenceReferences } from "@/integrations/ai/prompted-storefront-studio-authority.server";
 
 export default async function ProjectPage({
   params,
@@ -15,14 +16,16 @@ export default async function ProjectPage({
     ? await loadP10bLiveSynthesisPreviewSession({ projectId, sessionId }).catch(() => null)
     : null;
   if (sessionId && !bridge) notFound();
+  const initialEvidenceReferences =
+    bridge?.evidenceReferences ?? (await loadP10B16P03CurrentEvidenceReferences({ projectId }));
   return (
     <ProjectPreviewClient
       projectId={projectId}
+      initialEvidenceReferences={initialEvidenceReferences}
       {...(bridge
         ? {
             draftSessionId: bridge.sessionId,
             initialAggregate: bridge.aggregate,
-            initialEvidenceReferences: bridge.evidenceReferences,
           }
         : {})}
     />

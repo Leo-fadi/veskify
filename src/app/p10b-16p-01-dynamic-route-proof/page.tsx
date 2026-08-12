@@ -77,5 +77,10 @@ export default function DynamicRouteArchetypeEditorProofPage() {
     ],
   };
 
-  return <DynamicRouteArchetypeEditorProofClient aggregate={aggregate} />;
+  return (
+    <DynamicRouteArchetypeEditorProofClient
+      aggregate={aggregate}
+      evidenceReferences={source.approvedEvidenceReferences}
+    />
+  );
 }

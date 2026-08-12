@@ -100,6 +100,7 @@ import {
 
 export type ServerWholeStorefrontAuthorityErrorCode =
   | "unauthorized"
+  | "authentication-unavailable"
   | "stale"
   | "unavailable"
   | "invalid"
@@ -991,6 +992,9 @@ export function mapServerWholeStorefrontFailure(error: unknown): ServerWholeStor
   if (error instanceof ServerWholeStorefrontAuthorityError) {
     if (error.code === "unauthorized") {
       return { status: 401, category: "permissionDenied", retryable: false };
+    }
+    if (error.code === "authentication-unavailable") {
+      return { status: 503, category: "authenticationUnavailable", retryable: false };
     }
     if (["stale", "project-draft-mismatch"].includes(error.code)) {
       return { status: 409, category: "stale", retryable: false };

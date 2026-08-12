@@ -14,6 +14,7 @@ import {
   canonicalValueFingerprint,
   canonicalValueString,
   contentSupportPageFamilyIdSchema,
+  type PageFactEvidenceReference,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
 import {
@@ -51,7 +52,9 @@ type CompiledDecisionExecutor = (
 export type RunPromptedStorefrontDesignCompilationInput = Readonly<{
   provider: PromptedStorefrontDesignIntentProvider;
   /** Reloads the authoritative project, snapshot, capability, evidence, asset and commerce state. */
-  loadCurrentAuthority: () => PromptedStorefrontDesignCompilationAuthority;
+  loadCurrentAuthority: () =>
+    | PromptedStorefrontDesignCompilationAuthority
+    | Promise<PromptedStorefrontDesignCompilationAuthority>;
   maximumCandidateEvaluations?: number;
   /** Test-only seam that instruments the one permitted complete materialization. */
   executeCompiledDecision?: CompiledDecisionExecutor;
@@ -67,6 +70,7 @@ export type PromptedStorefrontDesignCompilationEvidence = Readonly<{
   synthesisFingerprint: string;
   structuralFingerprint: string;
   candidateSnapshotFingerprint: string;
+  sourceProposalFingerprint: string;
   currentAuthorityFingerprints: readonly string[];
   materializationAuthorityFingerprint: string;
   protectedCommerceBeforeFingerprint: string;
@@ -77,6 +81,10 @@ export type PromptedStorefrontDesignCompilationEvidence = Readonly<{
 }>;
 
 export type PromptedStorefrontDesignCompilationResult = Readonly<{
+  /** Exact refreshed current draft from which the isolated candidate was compiled. */
+  sourceDraft: StorefrontSnapshot;
+  /** Safe current evidence authority required to validate the exact candidate after transport. */
+  currentEvidenceReferences: readonly PageFactEvidenceReference[];
   compiledDecision: CompiledPromptedStorefrontDesignDecisionV2;
   execution: ExecutedPromptedStorefrontDesignDecisionV2;
   evidence: PromptedStorefrontDesignCompilationEvidence;
@@ -420,7 +428,7 @@ function requireExactlyOneMaterialization(materializationCount: number): 1 {
 export async function runPromptedStorefrontDesignCompilation(
   input: RunPromptedStorefrontDesignCompilationInput,
 ): Promise<PromptedStorefrontDesignCompilationResult> {
-  const before = input.loadCurrentAuthority();
+  const before = await input.loadCurrentAuthority();
   assertBoundPlanningAuthority(before);
   const initial = createPromptedStorefrontDesignRequestV2(before.requestInput);
   const protectedBefore = protectedAuthorityFingerprints(before);
@@ -431,7 +439,7 @@ export async function runPromptedStorefrontDesignCompilation(
     currentAuthority: () => initial.request.currentAuthority,
   });
 
-  const refreshed = input.loadCurrentAuthority();
+  const refreshed = await input.loadCurrentAuthority();
   assertBoundPlanningAuthority(refreshed);
   const current = createPromptedStorefrontDesignRequestV2(refreshed.requestInput);
   assertSameAuthority(initial, current);
@@ -494,6 +502,10 @@ export async function runPromptedStorefrontDesignCompilation(
   const protectedAfter = assertMaterializedProtectedAuthority(refreshed, execution);
 
   return Object.freeze({
+    sourceDraft: structuredClone(refreshed.requestInput.draft),
+    currentEvidenceReferences: structuredClone(
+      refreshed.compatibilityInput.approvedEvidenceReferences,
+    ),
     compiledDecision: structuredClone(compiledDecision),
     execution,
     evidence: Object.freeze({
@@ -506,6 +518,9 @@ export async function runPromptedStorefrontDesignCompilation(
       synthesisFingerprint: execution.synthesis.decision.synthesisFingerprint,
       structuralFingerprint: compiledDecision.structuralFingerprint,
       candidateSnapshotFingerprint: canonicalStorefrontContentFingerprint(candidate),
+      sourceProposalFingerprint: canonicalValueFingerprint(
+        execution.synthesis.materialization.proposal,
+      ),
       currentAuthorityFingerprints: [...compiledDecision.exactAuthorityFingerprints],
       materializationAuthorityFingerprint: refreshedMaterializationAuthority,
       protectedCommerceBeforeFingerprint: protectedBefore.commerce,

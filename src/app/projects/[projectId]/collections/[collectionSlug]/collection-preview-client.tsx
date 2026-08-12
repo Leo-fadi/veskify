@@ -12,7 +12,7 @@ import {
   type CollectionCommerceRoutePresentation,
   type StorefrontCommerceRouteAdapter,
 } from "@/integrations/storefront-commerce-routes";
-import { createStorefrontRenderContext } from "@/components/registry";
+import { createStorefrontRenderContext, type StorefrontRenderContext } from "@/components/registry";
 import {
   validateDynamicCollectionCommerceRoutePresentation,
   type CollectionFilterIntent,
@@ -61,6 +61,7 @@ type LoadState =
 
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
 const defaultCommerceAdapter = createCatalogueStorefrontCommerceRouteAdapter();
+const emptyEvidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]> = [];
 const ignoreFilterIntent = () => undefined;
 const ignoreSortIntent = () => undefined;
 
@@ -105,6 +106,7 @@ export function CollectionPreviewClient({
   onFilterIntent = ignoreFilterIntent,
   onSortIntent = ignoreSortIntent,
   publishedSessionId,
+  initialEvidenceReferences = emptyEvidenceReferences,
 }: {
   projectId: string;
   collectionSlug: string;
@@ -119,6 +121,7 @@ export function CollectionPreviewClient({
   onFilterIntent?: (intent: CollectionFilterIntent) => void;
   onSortIntent?: (intent: CollectionSortIntent) => void;
   publishedSessionId?: string;
+  initialEvidenceReferences?: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
 }) {
   const effectiveRenderTarget =
     renderTarget ?? (snapshotKind === "published" ? "published" : "preview");
@@ -131,10 +134,15 @@ export function CollectionPreviewClient({
   useEffect(() => {
     let cancelled = false;
     (snapshotKind === "published" && publishedSessionId
-      ? loadP905bLocalDemoPublishedProjection({ projectId, sessionId: publishedSessionId })
-      : repository.current!.get(projectId)
+      ? loadP905bLocalDemoPublishedProjection({ projectId, sessionId: publishedSessionId }).then(
+          ({ evidenceReferences, ...aggregate }) => ({ aggregate, evidenceReferences }),
+        )
+      : repository.current!.get(projectId).then((aggregate) => ({
+          aggregate,
+          evidenceReferences: structuredClone(initialEvidenceReferences),
+        }))
     )
-      .then((aggregate) => {
+      .then(({ aggregate, evidenceReferences }) => {
         if (cancelled) return;
         const draft = aggregate.snapshots.find(
           (snapshot) =>
@@ -189,6 +197,7 @@ export function CollectionPreviewClient({
             enabledLocales: aggregate.project.enabledLocales,
             catalogue: aggregate.catalogue,
             snapshot: draft,
+            evidenceReferences,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
             pagePathSuffix: publishedSessionId
               ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
@@ -198,6 +207,7 @@ export function CollectionPreviewClient({
           void renderStorefrontPage(page, context);
           const commercePresentation = commerceAdapter.collection({
             aggregate,
+            evidenceReferences,
             snapshot: draft,
             page,
             collection,
@@ -231,6 +241,7 @@ export function CollectionPreviewClient({
     effectiveRenderTarget,
     snapshotKind,
     publishedSessionId,
+    initialEvidenceReferences,
   ]);
 
   const retry = () => {

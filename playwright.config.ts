@@ -15,6 +15,7 @@ export default defineConfig({
     "p10b-09-commercial-homepage-profile-library.spec.ts",
     "p10b-11-commercial-pdp-profile-library.spec.ts",
     "p10b-16l-live-synthesis-acceptance.spec.ts",
+    "p10b-16p-03-studio-prompt-generation.spec.ts",
   ],
   // Project state and browser evidence are intentionally isolated per run.
   workers: 1,

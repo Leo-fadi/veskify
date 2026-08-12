@@ -8,6 +8,7 @@ import { catalogueDisplayModelSchema, type CatalogueDisplayModel } from "@/domai
 import { applyBrandSystemFoundationPatch, brandSystemSchema } from "@/domain/design-system";
 import { canonicalLocaleOrder, localeSchema, type Locale } from "@/domain/shared";
 import {
+  canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
   canonicalValueString,
   storefrontSnapshotSchema,
@@ -66,9 +67,15 @@ export function projectAiStorefrontSnapshot(snapshotInput: unknown): AiStorefron
     pages: structuredClone(snapshot.pages),
     navigation: structuredClone(snapshot.navigation),
     brandSystem: structuredClone(snapshot.brandSystem),
+    ...(snapshot.sharedFrame ? { sharedFrame: structuredClone(snapshot.sharedFrame) } : {}),
     ...(snapshot.dynamicCommercePresentation
       ? {
           dynamicCommercePresentation: structuredClone(snapshot.dynamicCommercePresentation),
+        }
+      : {}),
+    ...(snapshot.contentSupportFactDocuments.length > 0
+      ? {
+          contentSupportFactDocuments: structuredClone(snapshot.contentSupportFactDocuments),
         }
       : {}),
   };
@@ -355,7 +362,7 @@ export function executeAiStorefrontProposal({
   }
   assertActiveFingerprint(proposal, context.activeDraft);
   assertGlobalColourPayloads(proposal);
-  assertAffectedDesignState(proposal);
+  if (!proposal.wholeStorefrontGeneration) assertAffectedDesignState(proposal);
 
   let candidate = structuredClone(context.activeDraft);
   for (const operation of proposal.operations) {
@@ -422,6 +429,65 @@ export function executeAiStorefrontProposal({
     );
   }
   const migrationAuthority = proposal.dynamicCommerceMigration;
+  const generationAuthority = proposal.wholeStorefrontGeneration;
+  if (generationAuthority) {
+    try {
+      const {
+        sharedFrame: _currentSharedFrame,
+        dynamicCommercePresentation: _currentDynamicCommercePresentation,
+        contentSupportFactDocuments: _currentContentSupportFactDocuments,
+        ...identity
+      } = structuredClone(context.activeDraft);
+      void _currentSharedFrame;
+      void _currentDynamicCommercePresentation;
+      void _currentContentSupportFactDocuments;
+      const projected = proposal.proposedStorefront;
+      const generated = validateRegisteredSnapshot(
+        storefrontSnapshotSchema.parse({
+          ...identity,
+          brandSystem: structuredClone(projected.brandSystem),
+          navigation: structuredClone(projected.navigation),
+          pages: structuredClone(projected.pages),
+          ...(projected.sharedFrame ? { sharedFrame: structuredClone(projected.sharedFrame) } : {}),
+          ...(projected.dynamicCommercePresentation
+            ? {
+                dynamicCommercePresentation: structuredClone(projected.dynamicCommercePresentation),
+              }
+            : {}),
+          contentSupportFactDocuments: structuredClone(projected.contentSupportFactDocuments ?? []),
+        }),
+        context.catalogue,
+        context.activeLocale,
+        context.primaryLocale,
+      );
+      if (
+        canonicalValueFingerprint(projectAiStorefrontSnapshot(candidate)) !==
+          generationAuthority.operationProjectionFingerprint ||
+        canonicalValueFingerprint(projectAiStorefrontSnapshot(generated)) !==
+          generationAuthority.resultingProjectionFingerprint ||
+        canonicalStorefrontContentFingerprint(generated) !==
+          generationAuthority.resultingSnapshotFingerprint ||
+        canonicalValueString(projectAiStorefrontSnapshot(generated)) !==
+          canonicalValueString(projected)
+      ) {
+        invalid(
+          "final-projection-mismatch",
+          "The canonical whole-storefront generation operation does not reproduce the reviewed storefront.",
+        );
+      }
+      if (generated.dynamicCommercePresentation) {
+        validateCurrentDynamicCommercePresentationAuthority(generated);
+      }
+      return structuredClone(generated);
+    } catch (cause) {
+      if (cause instanceof AiStorefrontApplicationError) throw cause;
+      return invalid(
+        "final-storefront-validation-failed",
+        "The reviewed whole-storefront generation could not be applied safely.",
+        cause,
+      );
+    }
+  }
   if (migrationAuthority) {
     const legacyProjection = projectAiStorefrontSnapshot(validated);
     if (

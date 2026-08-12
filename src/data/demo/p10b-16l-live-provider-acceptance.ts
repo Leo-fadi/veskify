@@ -40,15 +40,21 @@ import {
   type PageFamilyId,
   type StorefrontSnapshot,
 } from "@/domain/storefront";
+import {
+  P10B16_RAW_KARVONEN_CATALOGUE_ID,
+  P10B16_RAW_KARVONEN_DRAFT_ID,
+  P10B16_RAW_KARVONEN_PROJECT_ID,
+  P10B16_RAW_KARVONEN_PUBLISHED_ID,
+} from "@/data/demo/p10b-16-raw-karvonen-identity";
 import type { LocalizedText } from "@/domain/shared";
 import type { ProjectAggregate } from "@/services/storage";
 import { validateProjectAggregate } from "@/services/storage/repository-validation";
 
 export const P10B16L_FIXTURE_ID = "p10b16l-karvonen-live-provider-acceptance";
-export const P10B16L_PROJECT_ID = "project_p10b16l_karvonen_raw";
-export const P10B16L_CATALOGUE_ID = "catalogue_p10b16l_karvonen";
-export const P10B16L_DRAFT_ID = "snapshot_p10b16l_karvonen_raw_draft";
-export const P10B16L_PUBLISHED_ID = "snapshot_p10b16l_karvonen_raw_published";
+export const P10B16L_PROJECT_ID = P10B16_RAW_KARVONEN_PROJECT_ID;
+export const P10B16L_CATALOGUE_ID = P10B16_RAW_KARVONEN_CATALOGUE_ID;
+export const P10B16L_DRAFT_ID = P10B16_RAW_KARVONEN_DRAFT_ID;
+export const P10B16L_PUBLISHED_ID = P10B16_RAW_KARVONEN_PUBLISHED_ID;
 export const P10B16L_BRIEF_ID = "brief_p10b16l_karvonen_raw";
 export const P10B16L_RAW_HOME_PAGE_ID = "page_p10b16l_karvonen_raw_home";
 /** Merchant-visible route count in the complete acceptance site map. */
