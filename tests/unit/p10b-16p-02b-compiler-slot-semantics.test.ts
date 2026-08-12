@@ -200,6 +200,114 @@ describe("P10B-16P-02B compiler exact slot semantics", () => {
     );
   });
 
+  it("fails rather than broadcasting one generic variant avoid across ambiguous instances", () => {
+    const variant = reference({
+      key: "avoid-editorial-brand-story",
+      dimension: "component.meaningful-variant",
+      authorityId: "homepageEditorial:brandStory",
+    });
+
+    expect(() =>
+      resolve(
+        [
+          preference({
+            path: "components.meaningfulVariantPreferences[0]",
+            key: variant.key,
+            dimension: variant.dimension,
+            semantics: "avoid",
+          }),
+        ],
+        [variant],
+      ),
+    ).toThrow(
+      expect.objectContaining<Partial<PromptedStorefrontDesignCompilerError>>({
+        code: "incompatible-component-selection",
+      }),
+    );
+  });
+
+  it("fails rather than broadcasting one generic parameter avoid across ambiguous instances", () => {
+    const parameter = reference({
+      key: "avoid-editorial-alignment",
+      dimension: "component.bounded-parameter",
+      authorityId: "homepageEditorial:contentAlignment",
+      selection: { kind: "enum", allowedValues: ["start", "center", "end"] },
+    });
+
+    expect(() =>
+      resolve(
+        [
+          preference({
+            path: "components.boundedParameterPreferences[0]",
+            key: parameter.key,
+            dimension: parameter.dimension,
+            semantics: "avoid",
+            value: "start",
+          }),
+        ],
+        [parameter],
+      ),
+    ).toThrow(
+      expect.objectContaining<Partial<PromptedStorefrontDesignCompilerError>>({
+        code: "incompatible-component-selection",
+      }),
+    );
+  });
+
+  it("fails closed instead of applying one collection-commerce variant while search stays unchanged", () => {
+    const variant = reference({
+      key: "collection-commerce-comparison",
+      dimension: "component.meaningful-variant",
+      authorityId: "dynamicCollectionCommerce:catalogueComparison",
+    });
+
+    expect(() =>
+      resolve(
+        [
+          preference({
+            path: "components.meaningfulVariantPreferences[0]",
+            key: variant.key,
+            dimension: variant.dimension,
+            semantics: "hard",
+          }),
+        ],
+        [variant],
+      ),
+    ).toThrow(
+      expect.objectContaining<Partial<PromptedStorefrontDesignCompilerError>>({
+        code: "incompatible-component-selection",
+      }),
+    );
+  });
+
+  it("fails closed instead of applying one collection-commerce parameter while search stays unchanged", () => {
+    const parameter = reference({
+      key: "collection-commerce-density",
+      dimension: "component.bounded-parameter",
+      authorityId: "dynamicCollectionCommerce:density",
+      selection: { kind: "enum", allowedValues: ["compact", "standard", "spacious"] },
+    });
+
+    expect(() =>
+      resolve(
+        [
+          preference({
+            path: "components.boundedParameterPreferences[0]",
+            key: parameter.key,
+            dimension: parameter.dimension,
+            semantics: "hard",
+            value: "compact",
+          }),
+        ],
+        [parameter],
+      ),
+    ).toThrow(
+      expect.objectContaining<Partial<PromptedStorefrontDesignCompilerError>>({
+        code: "incompatible-component-selection",
+      }),
+    );
+  });
+
   it("binds one exact parameter slot and preserves hard parameter precedence", () => {
     const parameter = reference({
       key: "featured-product-columns",

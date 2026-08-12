@@ -5,10 +5,16 @@ import {
   type CreatePromptedStorefrontDesignRequestV2Input,
   type PromptedStorefrontDesignIntentProvider,
 } from "@/application/prompted-storefront-design-intent";
+import { createWholeStorefrontGenerationTarget } from "@/application/whole-storefront-generation-plan";
 import type { ContentSupportFactAuthority } from "@/application/content-support-pages";
 import type { PageFactEvidenceAuthority } from "@/application/storefront-site-map";
 import type { ApprovedAssetPresentation } from "@/application/whole-storefront-generation-plan";
-import { canonicalStorefrontContentFingerprint, canonicalValueString } from "@/domain/storefront";
+import {
+  canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
+  canonicalValueString,
+  type StorefrontSnapshot,
+} from "@/domain/storefront";
 import {
   PromptedStorefrontDesignCompilerError,
   type CompiledPromptedStorefrontDesignDecisionV2,
@@ -92,14 +98,144 @@ function assertSameAuthority(
   }
 }
 
-function protectedAuthorityFingerprints(input: CreatePromptedStorefrontDesignRequestV2Input) {
-  const commerce = canonicalValueString(input.catalogue);
-  const media = canonicalValueString(
-    input.catalogue.products
+function protectedMediaAuthorityFingerprint(
+  input: CreatePromptedStorefrontDesignRequestV2Input,
+  catalogueRef: string,
+): string {
+  return `protected-product-media-${canonicalValueFingerprint({
+    catalogueRef,
+    products: input.catalogue.products
       .map(({ id, images }) => ({ id, images }))
       .sort((left, right) => left.id.localeCompare(right.id)),
+  })}`;
+}
+
+function protectedRouteInventory(snapshot: StorefrontSnapshot) {
+  return [...(snapshot.dynamicCommercePresentation?.routeInventory ?? [])]
+    .map((route) => structuredClone(route))
+    .sort((left, right) => left.id.localeCompare(right.id));
+}
+
+function protectedAuthorityFingerprints(
+  input: PromptedStorefrontDesignCompilationAuthority,
+  catalogueRef = input.requestInput.draft.catalogueRef,
+) {
+  const canonicalCommerceAuthorityFingerprint = createWholeStorefrontGenerationTarget(
+    input.compatibilityInput.planningInput,
+  ).canonicalCommerceFingerprint;
+  return {
+    commerce: `protected-commerce-${canonicalValueFingerprint(
+      canonicalCommerceAuthorityFingerprint,
+    )}`,
+    media: protectedMediaAuthorityFingerprint(input.requestInput, catalogueRef),
+    canonicalCommerceAuthorityFingerprint,
+  };
+}
+
+function assertMaterializedProtectedAuthority(
+  authority: PromptedStorefrontDesignCompilationAuthority,
+  execution: ExecutedPromptedStorefrontDesignDecisionV2,
+) {
+  const expected = protectedAuthorityFingerprints(authority);
+  const materialization = execution.synthesis.materialization;
+  const proposal = materialization.proposal;
+  const runtime = proposal.proposedStorefront;
+  const snapshot = materialization.snapshot;
+  if (
+    materialization.plan.target.canonicalCommerceFingerprint !==
+      expected.canonicalCommerceAuthorityFingerprint ||
+    proposal.preconditions.canonicalCommerceFingerprint !==
+      expected.canonicalCommerceAuthorityFingerprint ||
+    runtime.canonicalCommerceFingerprint !== expected.canonicalCommerceAuthorityFingerprint ||
+    snapshot.catalogueRef !== authority.requestInput.draft.catalogueRef ||
+    canonicalValueString(protectedRouteInventory(snapshot)) !==
+      canonicalValueString(protectedRouteInventory(authority.requestInput.draft))
+  ) {
+    stale("The materialized storefront changed protected commerce authority.");
+  }
+
+  const products = new Set(authority.requestInput.catalogue.products.map(({ id }) => id));
+  const collections = new Map(
+    authority.requestInput.catalogue.collections.map((collection) => [
+      collection.id,
+      collection.productIds,
+    ]),
   );
-  return { commerce, media };
+  for (const page of runtime.pages) {
+    for (const component of page.components) {
+      const primaryCollection = component.bindings.find(
+        (binding) => binding.source === "collection" && binding.slotId === "primaryCollection",
+      );
+      for (const binding of component.bindings) {
+        if (
+          ["product", "productList", "collection", "collectionList"].includes(binding.source) &&
+          binding.revision !== expected.canonicalCommerceAuthorityFingerprint
+        ) {
+          stale("A materialized commerce binding uses stale canonical authority.");
+        }
+        if (binding.source === "product" && !products.has(binding.productId)) {
+          stale("A materialized product binding escaped canonical commerce authority.");
+        }
+        if (
+          binding.source === "productList" &&
+          binding.productIds.some((productId) => !products.has(productId))
+        ) {
+          stale("A materialized product-list binding escaped canonical commerce authority.");
+        }
+        if (binding.source === "collection" && !collections.has(binding.collectionId)) {
+          stale("A materialized collection binding escaped canonical commerce authority.");
+        }
+        if (
+          binding.source === "collectionList" &&
+          binding.collectionIds.some((collectionId) => !collections.has(collectionId))
+        ) {
+          stale("A materialized collection-list binding escaped canonical commerce authority.");
+        }
+        if (
+          binding.source === "productList" &&
+          binding.slotId === "collectionProducts" &&
+          primaryCollection?.source === "collection" &&
+          canonicalValueString(binding.productIds) !==
+            canonicalValueString(collections.get(primaryCollection.collectionId) ?? null)
+        ) {
+          stale("A materialized collection changed canonical ordered product membership.");
+        }
+      }
+      if (
+        component.assetAssignments.some(({ role }) =>
+          ["productMainImage", "productAlternativeImage"].includes(role),
+        )
+      ) {
+        stale("A materialized component replaced protected canonical product media.");
+      }
+    }
+  }
+  const snapshotSections = [
+    ...(snapshot.sharedFrame
+      ? [
+          snapshot.sharedFrame.header,
+          snapshot.sharedFrame.footer,
+          ...(snapshot.sharedFrame.announcement ? [snapshot.sharedFrame.announcement] : []),
+        ]
+      : []),
+    ...snapshot.pages.flatMap(({ sections }) => sections),
+  ];
+  if (
+    snapshotSections.some(
+      ({ approvedAssetPlacements }) =>
+        approvedAssetPlacements?.some(({ role }) =>
+          ["productMainImage", "productAlternativeImage"].includes(role),
+        ) ?? false,
+    )
+  ) {
+    stale("The materialized snapshot replaced protected canonical product media.");
+  }
+  return {
+    commerce: `protected-commerce-${canonicalValueFingerprint(
+      runtime.canonicalCommerceFingerprint,
+    )}`,
+    media: protectedMediaAuthorityFingerprint(authority.requestInput, snapshot.catalogueRef),
+  };
 }
 
 /**
@@ -114,7 +250,7 @@ export async function runPromptedStorefrontDesignCompilation(
 ): Promise<PromptedStorefrontDesignCompilationResult> {
   const before = input.loadCurrentAuthority();
   const initial = createPromptedStorefrontDesignRequestV2(before.requestInput);
-  const protectedBefore = protectedAuthorityFingerprints(before.requestInput);
+  const protectedBefore = protectedAuthorityFingerprints(before);
 
   const providerIntent = await input.provider.createDesignIntent(initial.request, {
     capabilityAuthority: initial.capabilityAuthority,
@@ -124,10 +260,10 @@ export async function runPromptedStorefrontDesignCompilation(
   const refreshed = input.loadCurrentAuthority();
   const current = createPromptedStorefrontDesignRequestV2(refreshed.requestInput);
   assertSameAuthority(initial, current);
-  const protectedAfter = protectedAuthorityFingerprints(refreshed.requestInput);
+  const refreshedProtectedAuthority = protectedAuthorityFingerprints(refreshed);
   if (
-    protectedBefore.commerce !== protectedAfter.commerce ||
-    protectedBefore.media !== protectedAfter.media
+    protectedBefore.commerce !== refreshedProtectedAuthority.commerce ||
+    protectedBefore.media !== refreshedProtectedAuthority.media
   ) {
     stale(
       "Protected commerce or canonical product-media authority changed after the provider response.",
@@ -167,6 +303,7 @@ export async function runPromptedStorefrontDesignCompilation(
     approvedAssetPresentations: refreshed.approvedAssetPresentations,
   });
   const candidate = execution.synthesis.materialization.snapshot;
+  const protectedAfter = assertMaterializedProtectedAuthority(refreshed, execution);
 
   return Object.freeze({
     compiledDecision: structuredClone(compiledDecision),

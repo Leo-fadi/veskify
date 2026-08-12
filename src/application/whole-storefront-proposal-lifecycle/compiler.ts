@@ -244,6 +244,7 @@ function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
         : {}),
       tokenRefinementPlan: input.plan.tokenRefinementPlan,
       pageBlueprintSelectionOverrides: input.plan.pageBlueprintSelectionOverrides,
+      approvedAssetRoleSelections: input.plan.approvedAssetRoleSelections,
       dynamicCommerceSelection: input.plan.dynamicCommerceSelection,
     });
   } catch (error) {

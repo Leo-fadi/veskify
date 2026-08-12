@@ -1048,11 +1048,16 @@ structural, dynamic-route and exact-authority fingerprints change with material 
 
 Only a successfully validated compiled decision may be consumed. It becomes one exact extension
 of the existing bounded synthesis decision and is then materialized once through the canonical
-P10B generation plan and isolated whole-storefront proposal lifecycle. `PageBlueprint` remains the
-composition authority and `StorefrontSnapshot` remains the sole canonical editable state. Invalid,
-stale, incompatible, budget-exceeded, unsupported bounded-runtime, protected-commerce or partial
-results fail closed with no snapshot/proposal mutation. P10B-16P-02B made zero provider and Vesko
-calls and does not provide normal Storefront Studio wiring, executable search or live V2 acceptance.
+P10B generation plan and isolated whole-storefront proposal lifecycle. This executable boundary
+carries the selected exact authority values, never a coordinated-direction `selectionId`,
+compatibility-package wrapper or precomputed-candidate identity. Those identifiers may support
+bounded internal solving and diagnostics only. `PageBlueprint` remains the composition authority
+and `StorefrontSnapshot` remains the sole canonical editable state. Invalid, stale, incompatible,
+budget-exceeded, unsupported bounded-runtime, protected-commerce or partial results fail closed
+with no snapshot/proposal mutation. Protected-commerce evidence verifies the actual materialized
+plan, proposal and proposed snapshot rather than trusting only compiler metadata. P10B-16P-02B made
+zero provider and Vesko calls and does not provide normal Storefront Studio wiring, executable
+search or live V2 acceptance.
 
 ### 10.21 Remaining planned commercial generation authority
 

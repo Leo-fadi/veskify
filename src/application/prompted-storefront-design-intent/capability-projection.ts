@@ -132,6 +132,19 @@ function exactAbsenceFingerprint(authority: string): string {
   return `${authority}-${canonicalValueFingerprint({ state: "absent" })}`;
 }
 
+function exactHomepageAssetAuthorityId(material: {
+  profileId: string;
+  slotId: string;
+  component: string;
+  assetSlotId: string;
+  role: string;
+  assetId: string;
+  assetRevision: string;
+  materialFingerprint: string;
+}): string {
+  return `approved-homepage-asset-${canonicalValueFingerprint(material)}`;
+}
+
 function commercialAuthority(profile: ExecutablePageBlueprintProfile) {
   return (
     profile.commercialHomepage ??
@@ -640,21 +653,6 @@ function pdpIntentRoles(
   return genericFallback ? [role, "pdp-generic-fallback"] : [role];
 }
 
-function homepageCompatibleAssetRoles(
-  profile: ExecutablePageBlueprintProfile,
-): ExecutablePageBlueprintProfile["requiredAssetRoles"][number][] {
-  const componentRoles = profile.componentSelections.flatMap(({ component }) => {
-    const manifestEntry = veskifyComponentCapabilityManifest.getByComponentType(component);
-    if (!manifestEntry) {
-      throw new PromptedStorefrontDesignIntentError("stale-authority");
-    }
-    return manifestEntry.supportedAssetRoles;
-  });
-  return sortedUnique([...profile.requiredAssetRoles, ...componentRoles]).filter(
-    (role) => role !== "productMainImage" && role !== "productAlternativeImage",
-  );
-}
-
 function homepageSlotHasApprovedMedia(
   profile: ExecutablePageBlueprintProfile,
   slotId: string,
@@ -793,16 +791,12 @@ function addPageBlueprintCapabilities(
         },
         profileReference(profile),
       );
-      const minimum = authority.sectionCardinality.reduce(
-        (sum, cardinality) =>
-          sum + (includedSlotIds.has(cardinality.slotId) ? cardinality.minimum : 0),
-        0,
-      );
-      const maximum = authority.sectionCardinality.reduce(
-        (sum, cardinality) =>
-          sum + (includedSlotIds.has(cardinality.slotId) ? cardinality.maximum : 0),
-        0,
-      );
+      // The current materializer includes every evidence-resolved slot exactly once; it does
+      // not expose provider-controlled optional cardinality. Advertise that executable count,
+      // rather than the wider registered design-time range, so a valid hard count can never be
+      // accepted and then silently materialized differently.
+      const minimum = includedSlotIds.size;
+      const maximum = includedSlotIds.size;
       addEntry(
         entries,
         references,
@@ -855,22 +849,76 @@ function addPageBlueprintCapabilities(
           },
         );
       }
-      for (const role of homepageCompatibleAssetRoles(profile)) {
-        const roleAvailable = approvedAssetRoles.has(role);
-        addEntry(
-          entries,
-          references,
-          {
-            key: `homepage.asset-role.${profile.id}.${role}`,
-            dimension: "homepage.asset-role",
-            description: `Use approved ${designLabel(role)} imagery in this homepage profile.`,
-            contexts: ["home", profile.id],
-            availability: roleAvailable ? "available" : "evidence-dependent",
-            requirements: roleAvailable ? [] : [`Requires an approved ${designLabel(role)} asset.`],
-            selection: { kind: "capability" },
-          },
-          profileReference(profile),
+      for (const selection of [...profile.componentSelections].sort((left, right) =>
+        compareCanonical(left.slotId, right.slotId),
+      )) {
+        const manifestEntry = veskifyComponentCapabilityManifest.getByComponentType(
+          selection.component,
         );
+        if (!manifestEntry?.commercialAnatomy) {
+          throw new PromptedStorefrontDesignIntentError("stale-authority");
+        }
+        const executableAssetSlots = new Set(
+          selection.variants.flatMap((variantId) => {
+            const variant = manifestEntry.variants.find(({ id }) => id === variantId);
+            const anatomyVariant = manifestEntry.commercialAnatomy?.variants.find(
+              ({ variantId: candidateId }) => candidateId === variantId,
+            );
+            return variant &&
+              anatomyVariant &&
+              (variantId === selection.defaultVariant ||
+                variant.structuralClassification === "meaningfulStructuralVariant")
+              ? anatomyVariant.structure.assetPlacements.map(({ slotId }) => slotId)
+              : [];
+          }),
+        );
+        for (const assetSlot of [...manifestEntry.assetSlots]
+          .filter(({ id }) => executableAssetSlots.has(id))
+          .sort((left, right) => compareCanonical(left.id, right.id))) {
+          for (const role of [...assetSlot.acceptedRoles]
+            .filter(
+              (candidate) =>
+                candidate !== "productMainImage" && candidate !== "productAlternativeImage",
+            )
+            .sort(compareCanonical)) {
+            const approvedAsset = approvedAssetContext?.assets
+              .filter((asset) => asset.role === role)
+              .sort((left, right) => compareCanonical(left.assetId, right.assetId))[0];
+            addEntry(
+              entries,
+              references,
+              {
+                key: `homepage.asset-role.${profile.id}.${selection.slotId}.${assetSlot.id}.${role}`,
+                dimension: "homepage.asset-role",
+                description: `Use approved ${designLabel(role)} imagery in the registered ${designLabel(selection.slotId)} homepage placement.`,
+                contexts: ["home", profile.id, selection.slotId, selection.component],
+                availability: approvedAsset ? "available" : "evidence-dependent",
+                requirements: approvedAsset
+                  ? []
+                  : [`Requires an approved ${designLabel(role)} asset.`],
+                selection: { kind: "capability" },
+              },
+              {
+                authorityKind: "approved-assets",
+                authorityId: approvedAsset
+                  ? exactHomepageAssetAuthorityId({
+                      profileId: profile.id,
+                      slotId: selection.slotId,
+                      component: selection.component,
+                      assetSlotId: assetSlot.id,
+                      role,
+                      assetId: approvedAsset.assetId,
+                      assetRevision: approvedAsset.revision,
+                      materialFingerprint: approvedAsset.materialFingerprint,
+                    })
+                  : `approved-assets:none:${profile.id}:${selection.slotId}:${selection.component}:${assetSlot.id}:${role}`,
+                authorityFingerprint:
+                  approvedAssetContext?.fingerprint ?? exactAbsenceFingerprint("approved-assets"),
+                productTypeKey: false,
+              },
+            );
+          }
+        }
       }
     }
     if (profile.commercialCollectionSearch) {
@@ -1796,9 +1844,9 @@ function addResponsiveAndAssetCapabilities(
             ? [
                 "Approved presentation evidence exists, but exact asset, placement, and responsive-image authority must be bound before selection.",
               ]
-          : [
-              "Requires exact current Design DNA, dynamic-commerce art direction, or approved asset-presentation authority.",
-            ],
+            : [
+                "Requires exact current Design DNA, dynamic-commerce art direction, or approved asset-presentation authority.",
+              ],
         selection: { kind: "capability" },
       },
       {
@@ -1819,7 +1867,7 @@ function addResponsiveAndAssetCapabilities(
   const protectedProductAssetRoles = new Set(["productMainImage", "productAlternativeImage"]);
   for (const role of registeredRoles) {
     const protectedProductRole = protectedProductAssetRoles.has(role);
-    const available = !protectedProductRole && (approvedByRole.get(role) ?? 0) > 0;
+    const evidenceAvailable = !protectedProductRole && (approvedByRole.get(role) ?? 0) > 0;
     addEntry(
       entries,
       references,
@@ -1830,13 +1878,17 @@ function addResponsiveAndAssetCapabilities(
         contexts: ["storefront", "approved-media"],
         availability: protectedProductRole
           ? "registered-fail-closed"
-          : available
-            ? "available"
+          : evidenceAvailable
+            ? "registered-fail-closed"
             : "evidence-dependent",
         requirements: protectedProductRole
-          ? ["Canonical product media is protected and cannot be selected as an approved source asset."]
-          : available
-            ? []
+          ? [
+              "Canonical product media is protected and cannot be selected as an approved source asset.",
+            ]
+          : evidenceAvailable
+            ? [
+                "Approved role evidence exists, but an exact PageBlueprint slot and component-variant placement must be selected.",
+              ]
             : [`Requires an approved ${designLabel(role)} asset.`],
         selection: { kind: "capability" },
       },

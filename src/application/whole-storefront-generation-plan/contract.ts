@@ -182,6 +182,42 @@ export const wholeStorefrontPageBlueprintSelectionOverridesSchema = z
     }
   });
 
+/**
+ * Exact transient authority for one approved presentation asset selected for a
+ * registered homepage PageBlueprint slot. The planner revalidates every field
+ * against the current profile, component anatomy and approved-asset context
+ * before creating an assignment.
+ */
+export const wholeStorefrontApprovedAssetRoleSelectionSchema = z
+  .object({
+    profileId: z.string().trim().min(1).max(120),
+    slotId: z.string().trim().min(1).max(80),
+    component: z.string().trim().min(1).max(80),
+    assetSlotId: z.string().trim().min(1).max(80),
+    role: assetRoleSchema,
+    assetId: idSchema,
+    assetRevision: z.string().trim().min(1).max(120),
+    materialFingerprint: fingerprintSchema,
+    authorityFingerprint: fingerprintSchema,
+  })
+  .strict();
+
+export const wholeStorefrontApprovedAssetRoleSelectionsSchema = z
+  .array(wholeStorefrontApprovedAssetRoleSelectionSchema)
+  .max(24)
+  .superRefine((selections, context) => {
+    const targets = selections.map(
+      ({ profileId, slotId, component, assetSlotId }) =>
+        `${profileId}:${slotId}:${component}:${assetSlotId}`,
+    );
+    if (new Set(targets).size !== targets.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Approved asset-role selections must identify each PageBlueprint asset slot once.",
+      });
+    }
+  });
+
 export const wholeStorefrontTargetSchema = z
   .object({
     projectId: idSchema,
@@ -431,6 +467,7 @@ export const wholeStorefrontGenerationPlanSchema = z
       .array(wholeStorefrontPageBlueprintMaterializationSchema)
       .length(3),
     pageBlueprintSelectionOverrides: wholeStorefrontPageBlueprintSelectionOverridesSchema,
+    approvedAssetRoleSelections: wholeStorefrontApprovedAssetRoleSelectionsSchema.default([]),
     dynamicCommerceSelection: dynamicCommerceDesignSelectionSchema.nullable(),
     sharedDesignDirection: wholeStorefrontSharedDesignDirectionSchema,
     sharedChrome: wholeStorefrontSharedChromePlanSchema,
@@ -487,6 +524,58 @@ export const wholeStorefrontGenerationPlanSchema = z
         });
       }
     }
+    for (const [selectionIndex, selection] of plan.approvedAssetRoleSelections.entries()) {
+      const materialization = plan.pageBlueprintMaterializations.find(
+        ({ pageType }) => pageType === "home",
+      );
+      const slot = materialization?.slots.find(({ slotId }) => slotId === selection.slotId);
+      const selectedComponent = plan.pagePlans
+        .filter(({ role }) => role === "homepage")
+        .flatMap(({ components }) => components)
+        .find(
+          (component) =>
+            "instance" in component &&
+            component.pageBlueprintSlotId === selection.slotId &&
+            component.instance.component === selection.component,
+        );
+      const assignment =
+        selectedComponent && "instance" in selectedComponent
+          ? selectedComponent.instance.assetAssignments.find(
+              ({ slotId, assetId, role }) =>
+                slotId === selection.assetSlotId &&
+                assetId === selection.assetId &&
+                role === selection.role,
+            )
+          : undefined;
+      const placement =
+        selectedComponent && "instance" in selectedComponent
+          ? plan.approvedAssetPlacements.find(
+              (candidate) =>
+                candidate.componentId === selectedComponent.instance.id &&
+                candidate.assetSlotId === selection.assetSlotId &&
+                candidate.assetId === selection.assetId &&
+                candidate.role === selection.role &&
+                candidate.assetRevision === selection.assetRevision &&
+                candidate.materialFingerprint === selection.materialFingerprint,
+            )
+          : undefined;
+      if (
+        !materialization ||
+        materialization.profileId !== selection.profileId ||
+        !slot ||
+        slot.component !== selection.component ||
+        !assignment ||
+        !placement ||
+        selection.authorityFingerprint !== plan.approvedAssetContextFingerprint
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["approvedAssetRoleSelections", selectionIndex],
+          message:
+            "An approved asset-role selection must be consumed by the exact materialized homepage slot and placement.",
+        });
+      }
+    }
     const componentIds = plan.pagePlans.flatMap((page) =>
       page.components.map((component) =>
         "instance" in component ? component.instance.id : component.componentId,
@@ -540,6 +629,9 @@ export type WholeStorefrontPageBlueprintSelectionOverride = Readonly<{
     boundedParameters?: Readonly<Record<string, string | number>>;
   }>[];
 }>;
+export type WholeStorefrontApprovedAssetRoleSelection = z.infer<
+  typeof wholeStorefrontApprovedAssetRoleSelectionSchema
+>;
 export type WholeStorefrontReviewSummary = z.infer<typeof wholeStorefrontReviewSummarySchema>;
 
 export type WholeStorefrontGenerationPlanErrorCode =

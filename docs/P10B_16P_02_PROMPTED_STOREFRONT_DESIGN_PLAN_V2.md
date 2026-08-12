@@ -261,7 +261,11 @@ One validated compiled decision extends the existing P10B bounded synthesis deci
 canonical generation-plan materializer consumes exact PageBlueprint/dynamic authority once and the
 existing whole-storefront lifecycle creates one isolated proposal. `StorefrontSnapshot` remains
 the sole canonical editable aggregate. No failed compilation or materialization creates a partial
-decision, proposal, snapshot or history mutation, and protected commerce remains unchanged.
+decision, proposal, snapshot or history mutation, and protected commerce remains unchanged. The
+executable decision carries the selected exact authority values, not a coordinated-direction
+`selectionId`, compatibility-package wrapper or precomputed-candidate identity. Those identifiers
+may support bounded internal solving and diagnostics only; the synthesis/materialization boundary
+revalidates and consumes the exact values themselves.
 
 ## 10. Transitional delivery
 
@@ -282,7 +286,8 @@ Intent V2 acceptance.
 Part A has contract/schema, deterministic unit and mocked-transport integration evidence. Part B
 has contract/schema, deterministic unit and integration evidence for capability reachability,
 metadata-only bounded resolution, exact PageBlueprint/dynamic selections, canonical synthesis and
-isolated proposal creation, protected commerce, fingerprints, diagnostics and no-partial failures.
+isolated proposal creation, materialized-plan/proposal/snapshot protected-commerce verification,
+fingerprints, diagnostics and no-partial failures.
 Existing P10B-15/P10B-16 synthesis, P10B-16P-01 archetype, legacy provider and publication
 regressions remain compatible. Provider and Vesko call count for both parts is zero.
 

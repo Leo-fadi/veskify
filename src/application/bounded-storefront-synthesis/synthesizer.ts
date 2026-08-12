@@ -16,6 +16,7 @@ import {
   type ApprovedAssetPresentation,
   type CompleteStorefrontMaterialization,
   type WholeStorefrontGenerationPlan,
+  wholeStorefrontApprovedAssetRoleSelectionsSchema,
   wholeStorefrontPageBlueprintSelectionOverridesSchema,
   type WholeStorefrontPlanningInput,
 } from "@/application/whole-storefront-generation-plan";
@@ -38,14 +39,19 @@ import {
 import {
   BOUNDED_STOREFRONT_SYNTHESIS_CONTRACT_VERSION,
   boundedStorefrontSynthesisDecisionSchema,
+  boundedStorefrontSynthesisExactSelectionSchema,
   boundedStorefrontSynthesisRequestSchema,
   boundedStorefrontSynthesisSelectionNarrowingSchema,
   BoundedStorefrontSynthesisError,
   type BoundedStorefrontSynthesisDecision,
+  type BoundedStorefrontSynthesisExactSelection,
   type BoundedStorefrontSynthesisRequest,
   type BoundedStorefrontSynthesisSelectionNarrowing,
 } from "./contract";
-import { validateDirectionSelectionNarrowing } from "./direction-registry";
+import {
+  getCoordinatedStorefrontDirection,
+  validateDirectionSelectionNarrowing,
+} from "./direction-registry";
 
 type Selection = Readonly<{
   directionId: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
@@ -67,7 +73,9 @@ export type BoundedStorefrontSynthesisInput = Readonly<{
   approvedEvidenceReferences: readonly PageFactEvidenceReference[];
   request: BoundedStorefrontSynthesisRequest;
   selectionNarrowing?: BoundedStorefrontSynthesisSelectionNarrowing;
+  exactSelection?: BoundedStorefrontSynthesisExactSelection;
   pageBlueprintSelectionOverrides?: WholeStorefrontGenerationPlan["pageBlueprintSelectionOverrides"];
+  approvedAssetRoleSelections?: WholeStorefrontGenerationPlan["approvedAssetRoleSelections"];
   dynamicCommerceSelection?: DynamicCommerceDesignSelection;
   promptedExecutionAuthority?: NonNullable<
     BoundedStorefrontSynthesisDecision["promptedExecutionAuthority"]
@@ -103,6 +111,73 @@ function selectionFor(
   input: BoundedStorefrontSynthesisInput,
   request: BoundedStorefrontSynthesisRequest,
 ): Selection {
+  if (input.exactSelection) {
+    const exact = boundedStorefrontSynthesisExactSelectionSchema.safeParse(input.exactSelection);
+    if (!exact.success || input.selectionNarrowing) {
+      fail("unsupported-constraint", "The exact prompted synthesis selection is invalid.");
+    }
+    const directionId =
+      exact.data.directionId === "premiumEditorial"
+        ? "premium-editorial"
+        : exact.data.directionId === "modernTechnical"
+          ? "modern-technical"
+          : "minimal-commerce";
+    const constraints = getCoordinatedStorefrontDirection(directionId).constraints;
+    const checks: readonly [string, string, readonly string[]][] = [
+      ["Design DNA", exact.data.directionId, constraints.designSystemDirectionIds],
+      ["spacing", exact.data.designSystemSpacingDensity, constraints.designSystemSpacingDensities],
+      ["surface", exact.data.designSystemSurfaceDepth, constraints.designSystemSurfaceDepths],
+      ["frame", exact.data.sharedFrameProfileId, constraints.sharedFrameProfileIds],
+      ["homepage", exact.data.homepageProfileId, constraints.homepageProfileIds],
+      ["collection", exact.data.collectionProfileId, constraints.collectionProfileIds],
+      ["search", exact.data.searchProfileId, constraints.searchProfileIds],
+      ["PDP", exact.data.pdpProfileId, constraints.pdpProfileIds],
+      ["narrative", exact.data.narrativePosture, constraints.narrativePostures],
+      ["merchandising", exact.data.merchandisingPosture, constraints.merchandisingPostures],
+      ["density", exact.data.informationDensityPosture, constraints.informationDensityPostures],
+      ["art direction", exact.data.artDirectionPosture, constraints.artDirectionPostures],
+      ["responsive", exact.data.responsiveMode, constraints.responsiveModes],
+    ];
+    for (const [label, selected, allowed] of checks) {
+      if (!allowed.includes(selected)) {
+        fail(
+          "unsupported-constraint",
+          `The exact prompted ${label} selection is outside current direction compatibility authority.`,
+        );
+      }
+    }
+    if (
+      !constraints.optionalPageFamilyCompositions.some(
+        (composition) =>
+          canonicalValueString([...composition].sort()) ===
+          canonicalValueString([...exact.data.includedOptionalPageFamilyIds].sort()),
+      )
+    ) {
+      fail(
+        "unsupported-constraint",
+        "The exact prompted optional page composition is outside current direction compatibility authority.",
+      );
+    }
+    return {
+      directionId: exact.data.directionId,
+      homepageProfileId: exact.data.homepageProfileId,
+      collectionProfileId: exact.data.collectionProfileId,
+      searchProfileId: exact.data.searchProfileId,
+      pdpProfileId: exact.data.pdpProfileId,
+      narrativePosture: exact.data.narrativePosture,
+      merchandisingPosture: exact.data.merchandisingPosture,
+      densityPosture: exact.data.informationDensityPosture,
+      artDirectionPosture: exact.data.artDirectionPosture,
+      responsiveMode: exact.data.responsiveMode,
+      decisions: [
+        {
+          code: "prompted-v2-exact-selection",
+          outcome: canonicalValueFingerprint(exact.data),
+          authorityReferences: [`request:${request.intent}`],
+        },
+      ],
+    };
+  }
   if (input.selectionNarrowing) {
     const narrowing = boundedStorefrontSynthesisSelectionNarrowingSchema.safeParse(
       input.selectionNarrowing,
@@ -147,7 +222,7 @@ function selectionFor(
   if (request.intent === "prompted-design-v2") {
     fail(
       "unsupported-constraint",
-      "Prompted Design Intent V2 requires one exact governed synthesis narrowing.",
+      "Prompted Design Intent V2 requires one exact compiler-owned synthesis selection.",
     );
   }
   const productCount = input.planningInput.catalogue.products.length;
@@ -359,7 +434,10 @@ function preferredFrames(selection: Selection): readonly CommercialSharedFramePr
 function selectedFrame(
   siteMap: StorefrontSiteMapDecision,
   selection: Selection,
-  narrowing: BoundedStorefrontSynthesisSelectionNarrowing | undefined,
+  narrowing:
+    | BoundedStorefrontSynthesisSelectionNarrowing
+    | BoundedStorefrontSynthesisExactSelection
+    | undefined,
 ): CommercialSharedFrameProfileId {
   if (!narrowing) return selectSharedFrame(siteMap, preferredFrames(selection));
   const resolved = selectSharedFrame(siteMap, [narrowing.sharedFrameProfileId]);
@@ -540,6 +618,45 @@ function normalizeDynamicCommerceSelection(input: BoundedStorefrontSynthesisInpu
       error,
     );
   }
+}
+
+function normalizeApprovedAssetRoleSelections(
+  input: BoundedStorefrontSynthesisInput,
+  selection: Selection,
+): WholeStorefrontGenerationPlan["approvedAssetRoleSelections"] {
+  const parsed = wholeStorefrontApprovedAssetRoleSelectionsSchema.safeParse(
+    input.approvedAssetRoleSelections ?? [],
+  );
+  if (!parsed.success) {
+    fail(
+      "invalid-bounded-override",
+      "Exact approved asset-role selections do not satisfy the canonical execution contract.",
+      parsed.error,
+    );
+  }
+  const currentFingerprint = input.planningInput.approvedAssetContext?.fingerprint;
+  const normalized = [...parsed.data]
+    .sort(
+      (left, right) =>
+        left.profileId.localeCompare(right.profileId) ||
+        left.slotId.localeCompare(right.slotId) ||
+        left.component.localeCompare(right.component) ||
+        left.assetSlotId.localeCompare(right.assetSlotId),
+    )
+    .map((entry) => {
+      if (
+        !currentFingerprint ||
+        entry.authorityFingerprint !== currentFingerprint ||
+        entry.profileId !== selection.homepageProfileId
+      ) {
+        fail(
+          "stale-authority",
+          "Exact approved asset-role selection does not target current selected authority.",
+        );
+      }
+      return structuredClone(entry);
+    });
+  return wholeStorefrontApprovedAssetRoleSelectionsSchema.parse(normalized);
 }
 
 function profileMaterial(
@@ -724,18 +841,24 @@ export function createBoundedStorefrontSynthesisDecision(
   const siteMap = selectedSiteMap(
     evidenceAware.siteMap,
     selection,
-    input.selectionNarrowing?.includedOptionalPageFamilyIds,
+    input.exactSelection?.includedOptionalPageFamilyIds ??
+      input.selectionNarrowing?.includedOptionalPageFamilyIds,
   );
   const directionOmittedPageKeys = evidenceAware.siteMap.pages
     .filter((page) => !siteMap.pages.some(({ key }) => key === page.key))
     .map(({ key }) => key);
-  const frameId = selectedFrame(siteMap, selection, input.selectionNarrowing);
+  const frameId = selectedFrame(
+    siteMap,
+    selection,
+    input.exactSelection ?? input.selectionNarrowing,
+  );
   const frame = getCommercialSharedFrameProfile(frameId);
   const pageBlueprintSelectionOverrides = normalizePageBlueprintSelectionOverrides(
     input,
     selection,
     siteMap,
   );
+  const approvedAssetRoleSelections = normalizeApprovedAssetRoleSelections(input, selection);
   const dynamicCommerce = normalizeDynamicCommerceSelection(input);
   const profileAuthority = profileMaterial(
     siteMap,
@@ -747,10 +870,12 @@ export function createBoundedStorefrontSynthesisDecision(
     input.planningInput.draft.brandSystem,
     input.planningInput.recipeContext.designSystem,
     selection.directionId,
-    input.selectionNarrowing
+    (input.exactSelection ?? input.selectionNarrowing)
       ? {
-          spacingDensity: input.selectionNarrowing.designSystemSpacingDensity,
-          surfaceDepth: input.selectionNarrowing.designSystemSurfaceDepth,
+          spacingDensity: (input.exactSelection ?? input.selectionNarrowing)!
+            .designSystemSpacingDensity,
+          surfaceDepth: (input.exactSelection ?? input.selectionNarrowing)!
+            .designSystemSurfaceDepth,
         }
       : undefined,
   );
@@ -773,9 +898,13 @@ export function createBoundedStorefrontSynthesisDecision(
     designDna: {
       directionId: selection.directionId,
       spacingDensity:
-        input.selectionNarrowing?.designSystemSpacingDensity ?? selectedDirection.spacingDensity,
+        input.exactSelection?.designSystemSpacingDensity ??
+        input.selectionNarrowing?.designSystemSpacingDensity ??
+        selectedDirection.spacingDensity,
       surfaceDepth:
-        input.selectionNarrowing?.designSystemSurfaceDepth ?? selectedDirection.surfaceDepth,
+        input.exactSelection?.designSystemSurfaceDepth ??
+        input.selectionNarrowing?.designSystemSurfaceDepth ??
+        selectedDirection.surfaceDepth,
       fingerprint: `design-dna-${canonicalValueFingerprint(brandSystem.designDna)}`,
     },
     siteMap: {
@@ -814,10 +943,14 @@ export function createBoundedStorefrontSynthesisDecision(
     artDirectionPosture: selection.artDirectionPosture,
     componentChoices: profileAuthority.componentChoices,
     pageBlueprintSelectionOverrides,
+    approvedAssetRoleSelections,
     dynamicCommerceSelection: dynamicCommerce.selection,
     exactSelectionAuthority: {
       pageBlueprintSelectionFingerprint: `bounded-page-blueprint-selections-${canonicalValueFingerprint(
         pageBlueprintSelectionOverrides,
+      )}`,
+      approvedAssetRoleSelectionFingerprint: `bounded-approved-asset-role-selections-${canonicalValueFingerprint(
+        approvedAssetRoleSelections,
       )}`,
       dynamicCommerceAuthorityFingerprint: dynamicCommerce.authorityFingerprint,
       dynamicCommerceSelectionFingerprint: dynamicCommerce.selectionFingerprint,
@@ -901,6 +1034,7 @@ export function executeBoundedStorefrontSynthesis(
       surfaceDepth: decision.designDna.surfaceDepth,
     },
     pageBlueprintSelectionOverrides: decision.pageBlueprintSelectionOverrides,
+    approvedAssetRoleSelections: decision.approvedAssetRoleSelections,
     ...(decision.dynamicCommerceSelection
       ? { dynamicCommerceSelection: decision.dynamicCommerceSelection }
       : {}),

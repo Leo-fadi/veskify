@@ -12,8 +12,8 @@ exportMarkdownDocx({
   title: "Veskify Software Design Document",
   subtitle: "Version 1.3.0",
   coverLines: [
-    "Verified baseline: 11 August 2026",
-    "P10B-16P-02A prompted Storefront Design Intent V2 authority",
+    "Verified baseline: 12 August 2026",
+    "P10B-16P-02B deterministic design-intent compilation and canonical proposal materialization",
     "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
     "Authoritative source: docs/VESKIFY_SDD.md",
   ],

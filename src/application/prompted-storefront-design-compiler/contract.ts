@@ -1,10 +1,13 @@
 import { z } from "zod";
-import { boundedStorefrontSynthesisSelectionNarrowingSchema } from "@/application/bounded-storefront-synthesis";
+import { boundedStorefrontSynthesisExactSelectionSchema } from "@/application/bounded-storefront-synthesis";
 import {
   promptedStorefrontCapabilityAuthorityReferenceSchema,
   promptedStorefrontPreferenceSemanticsSchema,
 } from "@/application/prompted-storefront-design-intent";
-import { wholeStorefrontPageBlueprintSelectionOverridesSchema } from "@/application/whole-storefront-generation-plan";
+import {
+  wholeStorefrontApprovedAssetRoleSelectionsSchema,
+  wholeStorefrontPageBlueprintSelectionOverridesSchema,
+} from "@/application/whole-storefront-generation-plan";
 import { designDnaSchema } from "@/domain/design-system";
 import { canonicalValueFingerprint } from "@/domain/storefront";
 
@@ -91,7 +94,7 @@ const promptedStorefrontCompiledDecisionMaterialSchema = z
         baseSnapshotRevision: z.number().int().nonnegative(),
       })
       .strict(),
-    selectionNarrowing: boundedStorefrontSynthesisSelectionNarrowingSchema,
+    exactSelection: boundedStorefrontSynthesisExactSelectionSchema,
     designDna: z
       .object({
         directionId: referenceSchema,
@@ -116,6 +119,7 @@ const promptedStorefrontCompiledDecisionMaterialSchema = z
       .strict(),
     dynamicCommerceSelection: dynamicCommerceSelectionSchema,
     pageBlueprintSelectionOverrides: wholeStorefrontPageBlueprintSelectionOverridesSchema,
+    approvedAssetRoleSelections: wholeStorefrontApprovedAssetRoleSelectionsSchema,
     productCardAnatomyIds: z.array(referenceSchema).max(8),
     selectedCapabilityReferences: z
       .array(promptedStorefrontCapabilityAuthorityReferenceSchema)

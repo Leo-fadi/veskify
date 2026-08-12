@@ -718,7 +718,10 @@ describe("P10B-16P-02A prompted storefront design intent", () => {
     );
 
     expect(byKey.get("responsive.crop.approved-responsive-focal-treatment")).toMatchObject({
-      availability: "available",
+      availability: "evidence-dependent",
+      requirements: [
+        "Approved focal or responsive-crop evidence exists, but exact asset, placement, and presentation authority must be bound before selection.",
+      ],
     });
     expect(byKey.get("responsive.crop.safe-area.unavailable")).toMatchObject({
       availability: "unavailable",

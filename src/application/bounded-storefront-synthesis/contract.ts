@@ -10,7 +10,10 @@ import {
   commercialSharedFrameProfileIdSchema,
 } from "@/domain/storefront";
 import { dynamicCommerceDesignSelectionSchema } from "@/application/dynamic-commerce-routes";
-import { wholeStorefrontPageBlueprintSelectionOverridesSchema } from "@/application/whole-storefront-generation-plan/contract";
+import {
+  wholeStorefrontApprovedAssetRoleSelectionsSchema,
+  wholeStorefrontPageBlueprintSelectionOverridesSchema,
+} from "@/application/whole-storefront-generation-plan/contract";
 
 export const BOUNDED_STOREFRONT_SYNTHESIS_CONTRACT_VERSION = 2 as const;
 
@@ -77,6 +80,20 @@ export const boundedStorefrontSynthesisSelectionNarrowingSchema = z
     responsiveMode: z.enum(["content-first", "commerce-first", "balanced"]),
   })
   .strict();
+
+/**
+ * Exact transient synthesis authority emitted by the prompted V2 compiler.
+ * Unlike the compatibility-only coordinated-direction narrowing, this is not
+ * a retained candidate/selection identity. It carries only the registered
+ * values that canonical synthesis must execute.
+ */
+export const boundedStorefrontSynthesisExactSelectionSchema =
+  boundedStorefrontSynthesisSelectionNarrowingSchema.omit({
+    authorityId: true,
+    authorityVersion: true,
+    authorityFingerprint: true,
+    selectionId: true,
+  });
 
 const narrativeRoleSchema = z.enum([
   "orientation",
@@ -193,10 +210,12 @@ const synthesisMaterialSchema = z
         .strict(),
     ),
     pageBlueprintSelectionOverrides: wholeStorefrontPageBlueprintSelectionOverridesSchema,
+    approvedAssetRoleSelections: wholeStorefrontApprovedAssetRoleSelectionsSchema,
     dynamicCommerceSelection: dynamicCommerceDesignSelectionSchema.nullable(),
     exactSelectionAuthority: z
       .object({
         pageBlueprintSelectionFingerprint: fingerprintSchema,
+        approvedAssetRoleSelectionFingerprint: fingerprintSchema,
         dynamicCommerceAuthorityFingerprint: fingerprintSchema.nullable(),
         dynamicCommerceSelectionFingerprint: fingerprintSchema.nullable(),
       })
@@ -270,6 +289,19 @@ export const boundedStorefrontSynthesisDecisionSchema = synthesisMaterialSchema
         message: "The exact PageBlueprint selection fingerprint is stale.",
       });
     }
+    const expectedAssetSelectionFingerprint = `bounded-approved-asset-role-selections-${canonicalValueFingerprint(
+      decision.approvedAssetRoleSelections,
+    )}`;
+    if (
+      decision.exactSelectionAuthority.approvedAssetRoleSelectionFingerprint !==
+      expectedAssetSelectionFingerprint
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["exactSelectionAuthority", "approvedAssetRoleSelectionFingerprint"],
+        message: "The exact approved asset-role selection fingerprint is stale.",
+      });
+    }
     if (decision.dynamicCommerceSelection === null) {
       if (
         decision.exactSelectionAuthority.dynamicCommerceAuthorityFingerprint !== null ||
@@ -308,6 +340,9 @@ export type BoundedStorefrontSynthesisRequest = z.infer<
 >;
 export type BoundedStorefrontSynthesisSelectionNarrowing = z.infer<
   typeof boundedStorefrontSynthesisSelectionNarrowingSchema
+>;
+export type BoundedStorefrontSynthesisExactSelection = z.infer<
+  typeof boundedStorefrontSynthesisExactSelectionSchema
 >;
 export type BoundedStorefrontSynthesisDecision = z.infer<
   typeof boundedStorefrontSynthesisDecisionSchema
