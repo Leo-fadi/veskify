@@ -1,11 +1,25 @@
 import { describe, expect, it } from "vitest";
+import { createApprovedGenerationAssetContextFingerprint } from "@/application/ai-storefront-generation/approved-asset-context";
 import { createPromptedStorefrontCapabilityAuthority } from "@/application/prompted-storefront-design-intent";
 import {
   approveStorefrontDesignBrief,
   createStorefrontDesignBrief,
 } from "@/application/source-discovery";
+import { listExecutablePageBlueprintProfiles } from "@/application/storefront-templates";
+import {
+  registeredBrandSystemForDirection,
+  storefrontDesignSystemV1,
+} from "@/application/storefront-design-system";
+import {
+  createResponsiveImageAuthority,
+  responsiveImageCropSchema,
+  responsiveImageOverlaySchema,
+  responsiveImageRatioSchema,
+} from "@/domain/asset-presentation";
 import { veskifyComponentCapabilityManifest } from "@/components/registry";
+import { createP10B14PremiumEditorialFixture } from "@/data/demo/p10b-14-premium-editorial";
 import { resolveBrandSystemDesignDna } from "@/domain/design-system";
+import { canonicalProductCardAuthority } from "@/domain/product-card";
 import { p10b16p01DynamicCommerceAggregate } from "../fixtures/p10b-16p-01-dynamic-commerce";
 
 const now = "2026-08-12T08:00:00.000Z";
@@ -58,6 +72,71 @@ function capabilityAuthority() {
       approvedBrief,
       approvedAssetContext: null,
     }),
+  };
+}
+
+function commercialProfileResponsiveModes(): ReadonlySet<string> {
+  const modes = new Set<string>();
+  const profiles = listExecutablePageBlueprintProfiles().flatMap(({ profile }) =>
+    profile &&
+    (profile.commercialHomepage ||
+      profile.commercialCollectionSearch ||
+      profile.commercialProductDetail ||
+      profile.commercialContentSupport ||
+      profile.commercialUtility)
+      ? [profile]
+      : [],
+  );
+  profiles.forEach((profile) => {
+    profile.componentSelections.forEach((selection) => {
+      const component = veskifyComponentCapabilityManifest.getByComponentType(selection.component);
+      const anatomy = component?.commercialAnatomy;
+      if (!component || !anatomy) return;
+      const registeredComponent = component;
+      selection.variants.forEach((variantId) => {
+        const variant = registeredComponent.variants.find(({ id }) => id === variantId);
+        const anatomyVariant = anatomy.variants.find(
+          (candidate) => candidate.variantId === variantId,
+        );
+        if (
+          !variant ||
+          !anatomyVariant ||
+          (variantId !== selection.defaultVariant &&
+            variant.structuralClassification !== "meaningfulStructuralVariant")
+        ) {
+          return;
+        }
+        anatomyVariant.structure.responsiveTransformationIds.forEach((transformationId) => {
+          const transformation = anatomy.responsiveTransformations.find(
+            ({ id }) => id === transformationId,
+          );
+          if (!transformation) throw new Error(`Missing ${transformationId}.`);
+          modes.add(transformation.mode);
+        });
+      });
+    });
+    [
+      profile.commercialHomepage?.productCardAnatomyId,
+      profile.commercialCollectionSearch?.productCardAnatomyId,
+      profile.commercialProductDetail?.relatedProductCardAnatomyId,
+    ].forEach((anatomyId) => {
+      if (!anatomyId) return;
+      const anatomy = canonicalProductCardAuthority.anatomies.find(({ id }) => id === anatomyId);
+      if (!anatomy) throw new Error(`Missing ${anatomyId}.`);
+      anatomy.responsiveTransformations.forEach(({ mode }) => modes.add(mode));
+    });
+  });
+  return modes;
+}
+
+function p10b14ProjectionInput() {
+  const source = createP10B14PremiumEditorialFixture();
+  return {
+    source,
+    draft: structuredClone(source.slice.snapshot),
+    catalogue: source.fixture.planningInput.catalogue,
+    approvedBrief: source.fixture.brief,
+    approvedAssetContext: structuredClone(source.fixture.assetContext),
   };
 }
 
@@ -126,5 +205,181 @@ describe("P10B-16P-02B capability reachability truth", () => {
         ({ dimension }) => dimension === "collection-search.search-relationship",
       ),
     ).toMatchObject({ availability: "registered-fail-closed" });
+  });
+
+  it("makes responsive modes available only through exact executable profile variants or product cards", () => {
+    const { authority } = capabilityAuthority();
+    const exactModes = commercialProfileResponsiveModes();
+    const responsiveEntries = authority.projection.capabilities.filter(({ key }) =>
+      authority.referencesByPreferenceKey.get(key)?.authorityId.startsWith("responsive:"),
+    );
+
+    expect(responsiveEntries.length).toBeGreaterThan(0);
+    responsiveEntries.forEach((entry) => {
+      const mode = authority.referencesByPreferenceKey
+        .get(entry.key)!
+        .authorityId.replace("responsive:", "");
+      expect(entry.availability).toBe(
+        exactModes.has(mode) ? "available" : "registered-fail-closed",
+      );
+    });
+  });
+
+  it("projects media traits from every reachable registered Design DNA", () => {
+    const { draft, authority } = capabilityAuthority();
+    const entries = new Map(
+      authority.projection.capabilities.map((entry) => [entry.key, entry] as const),
+    );
+
+    storefrontDesignSystemV1.directions.forEach((direction) => {
+      const dna = resolveBrandSystemDesignDna(
+        registeredBrandSystemForDirection(
+          draft.brandSystem,
+          storefrontDesignSystemV1,
+          direction.id,
+          {
+            spacingDensity: direction.spacingDensity,
+            surfaceDepth: direction.surfaceDepth,
+          },
+        ),
+      );
+      expect(entries.get(`responsive.image.ratio.${dna.media.ratio}`)).toMatchObject({
+        availability: "available",
+      });
+      expect(entries.get(`responsive.crop.crop.${dna.media.crop}`)).toMatchObject({
+        availability: "available",
+      });
+      expect(entries.get(`responsive.overlay.overlay.${dna.media.overlay}`)).toMatchObject({
+        availability: "available",
+      });
+    });
+  });
+
+  it("fails closed for protected source-media roles and unbound approved art direction", () => {
+    const input = p10b14ProjectionInput();
+    const initial = createPromptedStorefrontCapabilityAuthority(input);
+    const evidenceDependentValue = (prefix: string) => {
+      const entry = initial.projection.capabilities.find(
+        ({ key, availability }) => key.startsWith(prefix) && availability === "evidence-dependent",
+      );
+      if (!entry) throw new Error(`Missing evidence-dependent ${prefix}.`);
+      return entry.key.slice(prefix.length);
+    };
+    const ratio = responsiveImageRatioSchema.parse(
+      evidenceDependentValue("responsive.image.ratio."),
+    );
+    const crop = responsiveImageCropSchema.shape.mode.parse(
+      evidenceDependentValue("responsive.crop.crop."),
+    );
+    const overlay = responsiveImageOverlaySchema.parse(
+      evidenceDependentValue("responsive.overlay.overlay."),
+    );
+    const target = input.draft.pages
+      .flatMap((page) => page.sections)
+      .map((section) => {
+        const presentation = section.approvedAssetPresentations?.[0];
+        const placement = presentation
+          ? section.approvedAssetPlacements?.find(
+              (candidate) =>
+                candidate.assetId === presentation.assetId && candidate.role === presentation.role,
+            )
+          : undefined;
+        return presentation && placement ? { section, presentation, placement } : null;
+      })
+      .find((candidate) => candidate !== null);
+    if (!target) throw new Error("Missing approved presentation fixture.");
+    const component = veskifyComponentCapabilityManifest.getByComponentType(
+      target.section.component,
+    );
+    const anatomy = component?.commercialAnatomy;
+    const variant = anatomy?.variants.find(({ variantId }) => variantId === target.section.variant);
+    const anatomyPlacement = variant?.structure.assetPlacements.find(
+      ({ slotId }) => slotId === target.placement.assetSlotId,
+    );
+    const assetSlot = component?.assetSlots.find(({ id }) => id === target.placement.assetSlotId);
+    if (!component || !anatomy || !variant || !anatomyPlacement || !assetSlot) {
+      throw new Error("Missing exact approved-presentation component authority.");
+    }
+    const version = component.componentDefinitionVersion;
+    const anatomyVersion = anatomy.version;
+    const artDirection = createResponsiveImageAuthority({
+      contractVersion: "1.0.0",
+      source: {
+        assetId: target.presentation.assetId,
+        role: target.presentation.role,
+        revision: target.presentation.revision,
+        materialFingerprint: target.presentation.materialFingerprint,
+        provenanceKind: target.placement.sourceProvenanceKind ?? "merchantProvided",
+        sourceOwnerId: target.placement.sourceReferenceId,
+      },
+      placement: {
+        componentType: target.section.component,
+        componentVersion: `${version.major}.${version.minor}.${version.patch}`,
+        variant: target.section.variant,
+        anatomyContractVersion: anatomy.contractVersion,
+        anatomyIdentity: anatomy.identity,
+        anatomyVersion: `${anatomyVersion.major}.${anatomyVersion.minor}.${anatomyVersion.patch}`,
+        anatomyRegion: anatomyPlacement.region,
+        assetSlotId: assetSlot.id,
+        required: assetSlot.required,
+      },
+      sourceTreatment: {
+        ratio,
+        crop: { mode: crop },
+        focalPoint: { x: 0.5, y: 0.5 },
+        overlay,
+      },
+      responsiveTreatments: [],
+      derivatives: [],
+    });
+    target.section.approvedAssetPresentations = target.section.approvedAssetPresentations?.map(
+      (presentation) =>
+        presentation.assetId === target.presentation.assetId
+          ? { ...presentation, artDirection }
+          : presentation,
+    );
+
+    const firstAsset = input.approvedAssetContext.assets[0];
+    const secondAsset = input.approvedAssetContext.assets[1];
+    if (!firstAsset || !secondAsset) throw new Error("Missing approved asset fixtures.");
+    firstAsset.role = "productMainImage";
+    firstAsset.presentation.responsiveCrops = [
+      {
+        cropId: "crop_reachability_mobile",
+        breakpoint: "mobile",
+        aspectRatio: "4:5",
+        focalPoint: { x: 0.5, y: 0.5 },
+      },
+    ];
+    secondAsset.role = "productAlternativeImage";
+    const { fingerprint: _fingerprint, ...assetMaterial } = input.approvedAssetContext;
+    void _fingerprint;
+    input.approvedAssetContext = {
+      ...assetMaterial,
+      fingerprint: createApprovedGenerationAssetContextFingerprint(assetMaterial),
+    };
+    const projected = createPromptedStorefrontCapabilityAuthority(input);
+    const entries = new Map(
+      projected.projection.capabilities.map((entry) => [entry.key, entry] as const),
+    );
+
+    expect(entries.get(`responsive.image.ratio.${ratio}`)).toMatchObject({
+      availability: "evidence-dependent",
+    });
+    expect(entries.get(`responsive.crop.crop.${crop}`)).toMatchObject({
+      availability: "evidence-dependent",
+    });
+    expect(entries.get(`responsive.overlay.overlay.${overlay}`)).toMatchObject({
+      availability: "evidence-dependent",
+    });
+    expect(entries.get("responsive.crop.approved-responsive-focal-treatment")).toMatchObject({
+      availability: "evidence-dependent",
+    });
+    expect(entries.get("responsive.asset-role.productMainImage")).toMatchObject({
+      availability: "registered-fail-closed",
+    });
+    expect(entries.get("responsive.asset-role.productAlternativeImage")).toMatchObject({
+      availability: "registered-fail-closed",
+    });
   });
 });
