@@ -51,6 +51,9 @@ const copy = {
     placeholder: "For example: Make the homepage feel more luxurious.",
     keyboardGuidance: "Press Control or Command + Enter to create the proposal.",
     create: "Create proposal",
+    generateStorefront: "Generate storefront",
+    generateStorefrontGuidance:
+      "Press Control or Command + Enter to generate a storefront proposal.",
     retry: "Retry",
     examples: "Try an example",
     clarification: "Your answer",
@@ -128,6 +131,8 @@ const copy = {
     placeholder: "Esimerkiksi: Tee etusivusta ylellisempi.",
     keyboardGuidance: "Luo ehdotus painamalla Control tai Command + Enter.",
     create: "Luo ehdotus",
+    generateStorefront: "Luo verkkokauppa",
+    generateStorefrontGuidance: "Luo verkkokauppaehdotus painamalla Control tai Command + Enter.",
     retry: "Yritä uudelleen",
     examples: "Kokeile esimerkkiä",
     clarification: "Vastauksesi",
@@ -348,8 +353,9 @@ export function DesignAgentPanel({
       if (trigger?.isConnected) trigger.focus();
     };
   }, [closeConfirmation, confirmationDialogOpen]);
-  const examples =
-    controller.targetScope === "storefront"
+  const examples = controller.promptedInitialGeneration
+    ? []
+    : controller.targetScope === "storefront"
       ? storefrontExamplePrompts[locale]
       : designAgentExamplePrompts[locale];
   const targetSummary =
@@ -370,6 +376,7 @@ export function DesignAgentPanel({
       aria-label={text.panel}
       className={styles.panel}
       data-agent-state={controller.visibleState}
+      data-prompted-generation-stage={controller.promptedGenerationStage}
     >
       <div className={styles.introduction}>
         <p className={styles.eyebrow}>{text.eyebrow}</p>
@@ -390,7 +397,9 @@ export function DesignAgentPanel({
 
       <fieldset
         className={styles.targetSelector}
-        disabled={busy || controller.controlledStorefrontAcceptance}
+        disabled={
+          busy || controller.controlledStorefrontAcceptance || controller.promptedProposalActive
+        }
       >
         <legend>{text.target}</legend>
         {(
@@ -442,7 +451,9 @@ export function DesignAgentPanel({
           value={controller.request}
         />
         <p className={styles.guidance} id="design-request-guidance">
-          {text.keyboardGuidance}
+          {controller.promptedInitialGeneration
+            ? text.generateStorefrontGuidance
+            : text.keyboardGuidance}
         </p>
         <button
           disabled={
@@ -454,26 +465,28 @@ export function DesignAgentPanel({
           }
           type="submit"
         >
-          {text.create}
+          {controller.promptedInitialGeneration ? text.generateStorefront : text.create}
         </button>
-        <div className={styles.examples}>
-          <span>{text.examples}</span>
-          {examples.map((prompt) => (
-            <button
-              disabled={
-                controller.controlsDisabled ||
-                controller.controlledStorefrontAcceptance ||
-                controller.previewActive ||
-                needsClarification
-              }
-              key={prompt}
-              onClick={() => controller.setRequest(prompt)}
-              type="button"
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
+        {examples.length > 0 ? (
+          <div className={styles.examples}>
+            <span>{text.examples}</span>
+            {examples.map((prompt) => (
+              <button
+                disabled={
+                  controller.controlsDisabled ||
+                  controller.controlledStorefrontAcceptance ||
+                  controller.previewActive ||
+                  needsClarification
+                }
+                key={prompt}
+                onClick={() => controller.setRequest(prompt)}
+                type="button"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </form>
 
       <div
@@ -560,7 +573,7 @@ export function DesignAgentPanel({
             </div>
             <div>
               <dt>{text.operationCount}</dt>
-              <dd>{storefrontReview.operationCount}</dd>
+              <dd>{storefrontReview.materialChangeCount}</dd>
             </div>
           </dl>
           {storefrontReview.globalChanges.length > 0 ? (
@@ -597,6 +610,29 @@ export function DesignAgentPanel({
                 </div>
               </dl>
               <p>{storefrontReview.dynamicCommerceConvergence.protectedBindingSummary}</p>
+            </div>
+          ) : null}
+          {storefrontReview.canonicalGeneration ? (
+            <div data-testid="canonical-storefront-generation-review">
+              <strong>{storefrontReview.canonicalGeneration.heading}</strong>
+              <p>{storefrontReview.canonicalGeneration.summary}</p>
+              <dl className={styles.reviewFacts}>
+                <div>
+                  <dt>{locale === "fi" ? "Staattiset sivut" : "Static pages"}</dt>
+                  <dd>{storefrontReview.canonicalGeneration.staticPageCount}</dd>
+                </div>
+                <div>
+                  <dt>{locale === "fi" ? "Kaupan ulkoasumallit" : "Commerce archetypes"}</dt>
+                  <dd>{storefrontReview.canonicalGeneration.archetypeCount}</dd>
+                </div>
+                <div>
+                  <dt>
+                    {locale === "fi" ? "Ajonaikaiset kauppareitit" : "Runtime commerce routes"}
+                  </dt>
+                  <dd>{storefrontReview.canonicalGeneration.runtimeRouteCount}</dd>
+                </div>
+              </dl>
+              <p>{storefrontReview.canonicalGeneration.protectedBindingSummary}</p>
             </div>
           ) : null}
           <div>
@@ -671,7 +707,9 @@ export function DesignAgentPanel({
             >
               {accepting ? text.accepting : applicationFailed ? text.retryAccept : text.accept}
             </button>
-            {!applicationFailed && !controller.controlledStorefrontAcceptance ? (
+            {!applicationFailed &&
+            !controller.controlledStorefrontAcceptance &&
+            !controller.promptedProposalActive ? (
               <button
                 disabled={controller.controlsDisabled}
                 onClick={() => {
@@ -693,7 +731,7 @@ export function DesignAgentPanel({
             >
               {text.reject}
             </button>
-            {!controller.controlledStorefrontAcceptance ? (
+            {!controller.controlledStorefrontAcceptance && !controller.promptedProposalActive ? (
               <button
                 disabled={controller.controlsDisabled}
                 onClick={() => {
@@ -706,7 +744,9 @@ export function DesignAgentPanel({
               </button>
             ) : null}
           </div>
-          {!applicationFailed && !controller.controlledStorefrontAcceptance ? (
+          {!applicationFailed &&
+          !controller.controlledStorefrontAcceptance &&
+          !controller.promptedProposalActive ? (
             <form className={styles.form} onSubmit={revise}>
               <label htmlFor="storefront-design-revision">{text.revision}</label>
               <textarea

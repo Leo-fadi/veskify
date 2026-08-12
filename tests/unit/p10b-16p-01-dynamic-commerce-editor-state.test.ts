@@ -61,6 +61,37 @@ describe("P10B-16P-01 dynamic commerce editor projection", () => {
     expect(legacySnapshot.dynamicCommercePresentation).toBeUndefined();
   });
 
+  it("shows an already canonical prompted proposal without requiring a migration envelope", () => {
+    const { catalogue, snapshot } = currentScenario();
+    const baselineBeforeReview = structuredClone(snapshot);
+    const proposedStorefront = {
+      pageOrder: snapshot.pages.map(({ id }) => id),
+      pages: structuredClone(snapshot.pages),
+      navigation: structuredClone(snapshot.navigation),
+      brandSystem: structuredClone(snapshot.brandSystem),
+      dynamicCommercePresentation: structuredClone(snapshot.dynamicCommercePresentation),
+    };
+    proposedStorefront.brandSystem.colors.primary = "#123456";
+
+    const preview = proposalCanonicalReviewSnapshot({
+      proposal: {
+        status: "pending",
+        proposedStorefront,
+      },
+      previewActive: true,
+      visibleState: "proposalReady",
+      acceptanceBaseline: snapshot,
+    });
+
+    if (!preview) throw new Error("The canonical prompted proposal did not produce a preview.");
+    expect(preview.brandSystem.colors.primary).toBe("#123456");
+    expect(preview.dynamicCommercePresentation).toEqual(snapshot.dynamicCommercePresentation);
+    expect(projectCanonicalEditorPages({ draft: preview, catalogue }).length).toBeGreaterThan(
+      preview.pages.length,
+    );
+    expect(snapshot).toEqual(baselineBeforeReview);
+  });
+
   it("lists bounded archetypes rather than every concrete collection and product route", () => {
     const { authority, catalogue, snapshot } = currentScenario();
     const editorPages = projectCanonicalEditorPages({ draft: snapshot, catalogue });

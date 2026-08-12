@@ -13,6 +13,13 @@ import {
   pageFactEvidenceReferenceSchema,
   type PageFactEvidenceReference,
 } from "@/domain/storefront";
+import {
+  promptedStorefrontStudioGenerationResponseSchema,
+  type PromptedStorefrontStudioGenerationFailureCategory,
+  type PromptedStorefrontStudioGenerationRequest,
+  type PromptedStorefrontStudioGenerationSuccess,
+} from "@/application/prompted-storefront-studio";
+import { promptedStorefrontPromptFingerprint } from "@/application/prompted-storefront-design-intent";
 import { z } from "zod";
 
 const successSchema = z
@@ -170,4 +177,101 @@ export class ServerWholeStorefrontPlanningClient implements StorefrontAIProvider
 
 export function createServerWholeStorefrontPlanningClient(options?: { p905bSessionId?: string }) {
   return new ServerWholeStorefrontPlanningClient(options);
+}
+
+export type PromptedStorefrontRuntimeStage =
+  "requesting-design-intent" | "validating-intent" | "compiling-design" | "materializing-proposal";
+
+export type PromptedStorefrontRuntimeClientOptions = Readonly<{
+  signal?: AbortSignal;
+  onStage?: (stage: PromptedStorefrontRuntimeStage) => void;
+}>;
+
+export interface PromptedStorefrontStudioClient {
+  generateStorefront(
+    request: PromptedStorefrontStudioGenerationRequest,
+    options?: PromptedStorefrontRuntimeClientOptions,
+  ): Promise<PromptedStorefrontStudioGenerationSuccess>;
+}
+
+export class PromptedStorefrontStudioClientError extends Error {
+  constructor(
+    readonly category: PromptedStorefrontStudioGenerationFailureCategory,
+    readonly retryable: boolean,
+    readonly status: number,
+  ) {
+    super(category);
+    this.name = "PromptedStorefrontStudioClientError";
+  }
+}
+
+export class PromptedStorefrontStudioClientAbortedError extends Error {
+  constructor() {
+    super("The prompted storefront request was aborted.");
+    this.name = "PromptedStorefrontStudioClientAbortedError";
+  }
+}
+
+export class ServerPromptedStorefrontStudioClient implements PromptedStorefrontStudioClient {
+  async generateStorefront(
+    request: PromptedStorefrontStudioGenerationRequest,
+    options: PromptedStorefrontRuntimeClientOptions = {},
+  ): Promise<PromptedStorefrontStudioGenerationSuccess> {
+    options.onStage?.("requesting-design-intent");
+    let response: Response;
+    try {
+      response = await fetch("/api/ai/whole-storefront-proposals", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(request),
+        ...(options.signal ? { signal: options.signal } : {}),
+      });
+    } catch (error) {
+      if (
+        options.signal?.aborted ||
+        (error instanceof DOMException && error.name === "AbortError")
+      ) {
+        throw new PromptedStorefrontStudioClientAbortedError();
+      }
+      throw new PromptedStorefrontStudioClientError("providerUnavailable", false, 0);
+    }
+
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      throw new PromptedStorefrontStudioClientError("malformedResponse", false, response.status);
+    }
+    const parsed = promptedStorefrontStudioGenerationResponseSchema.safeParse(body);
+    if (!parsed.success) {
+      throw new PromptedStorefrontStudioClientError("malformedResponse", false, response.status);
+    }
+    if (!response.ok || !parsed.data.ok) {
+      const failure = parsed.data.ok
+        ? { category: "internalFailure" as const, retryable: false }
+        : parsed.data.failure;
+      throw new PromptedStorefrontStudioClientError(
+        failure.category,
+        failure.retryable,
+        response.status,
+      );
+    }
+    if (
+      parsed.data.lineage.promptFingerprint !==
+      promptedStorefrontPromptFingerprint(request.merchantPrompt)
+    ) {
+      throw new PromptedStorefrontStudioClientError("malformedResponse", false, response.status);
+    }
+
+    // These stages are reported only after the complete strict response and its safe lineage
+    // have passed schema validation. No raw provider internals cross the browser boundary.
+    options.onStage?.("validating-intent");
+    options.onStage?.("compiling-design");
+    options.onStage?.("materializing-proposal");
+    return parsed.data;
+  }
+}
+
+export function createServerPromptedStorefrontStudioClient() {
+  return new ServerPromptedStorefrontStudioClient();
 }

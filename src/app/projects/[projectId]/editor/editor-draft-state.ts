@@ -121,8 +121,10 @@ export function proposalStorefrontPreview({
 }
 
 /**
- * Projects a migration proposal into the canonical snapshot shape used only by the read-only
- * review canvas. The accepted draft remains the untouched baseline passed to proposal execution.
+ * Projects a canonical structural proposal into the snapshot shape used only by the read-only
+ * review canvas. This covers legacy dynamic-commerce migration and canonical complete-storefront
+ * generation while preserving the exact reviewed shared frame and content-fact projection. The
+ * accepted draft remains the untouched baseline passed to proposal execution.
  */
 export function proposalCanonicalReviewSnapshot({
   proposal,
@@ -139,18 +141,25 @@ export function proposalCanonicalReviewSnapshot({
   acceptanceBaseline: StorefrontSnapshot;
 }): StorefrontSnapshot | undefined {
   const projection = proposalStorefrontPreview({ proposal, previewActive, visibleState });
-  if (
-    !projection ||
-    !proposal?.dynamicCommerceMigration ||
-    !projection.dynamicCommercePresentation
-  ) {
+  if (!projection || !proposal?.proposedStorefront.dynamicCommercePresentation) {
     return undefined;
   }
+  const {
+    sharedFrame: _baselineSharedFrame,
+    dynamicCommercePresentation: _baselineDynamicCommercePresentation,
+    contentSupportFactDocuments: _baselineContentSupportFactDocuments,
+    ...baselineIdentity
+  } = structuredClone(acceptanceBaseline);
+  void _baselineSharedFrame;
+  void _baselineDynamicCommercePresentation;
+  void _baselineContentSupportFactDocuments;
   return {
-    ...structuredClone(acceptanceBaseline),
+    ...baselineIdentity,
     brandSystem: structuredClone(projection.brandSystem),
     navigation: structuredClone(projection.navigation),
     pages: structuredClone(projection.pages),
+    ...(projection.sharedFrame ? { sharedFrame: structuredClone(projection.sharedFrame) } : {}),
     dynamicCommercePresentation: structuredClone(projection.dynamicCommercePresentation),
+    contentSupportFactDocuments: structuredClone(projection.contentSupportFactDocuments ?? []),
   };
 }

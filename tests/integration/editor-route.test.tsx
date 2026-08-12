@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -16,10 +16,21 @@ import {
   type StorefrontAIProvider,
 } from "@/application/ai-storefront-generation";
 import {
+  createAiStorefrontGenerationPermissionFingerprint,
+  canonicalizeAiStorefrontTarget,
   createAiStorefrontPermissionFingerprint,
   createAiStorefrontProposalId,
   createAiStorefrontTargetFingerprint,
+  projectAiStorefrontSnapshot,
+  validateAiStorefrontProposal,
+  type AiStorefrontWholeStorefrontGeneration,
 } from "@/application/ai-storefront";
+import { executeCoordinatedDirection } from "@/application/bounded-storefront-synthesis";
+import { saveValidatedEditorDraft } from "@/application/draft-save";
+import {
+  promptedStorefrontStudioGenerationSuccessSchema,
+  type PromptedStorefrontStudioGenerationRequest,
+} from "@/application/prompted-storefront-studio";
 import type { ProposalAnalyticsEvent } from "@/application/analytics";
 import { ProjectEditorClient } from "@/app/projects/[projectId]/editor/project-editor-client";
 import { storefrontFailureDiagnosticCategory } from "@/app/projects/[projectId]/editor/use-design-agent-session";
@@ -27,8 +38,21 @@ import { ProjectPreviewClient } from "@/app/projects/[projectId]/project-preview
 import { CollectionPreviewClient } from "@/app/projects/[projectId]/collections/[collectionSlug]/collection-preview-client";
 import { ProductPreviewClient } from "@/app/projects/[projectId]/products/[productSlug]/product-preview-client";
 import { aurumNordicSeed, karvonenSeed } from "@/data/seed";
-import type { PageModel } from "@/domain/storefront";
-import { createServerWholeStorefrontPlanningClient } from "@/integrations/ai/whole-storefront-runtime-client";
+import {
+  P10B16P03_PROJECT_ID,
+  createP10B16P03RawKarvonenStudioFixture,
+} from "@/data/demo/p10b-16p-03-studio-prompt-generation";
+import {
+  canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
+  type PageModel,
+} from "@/domain/storefront";
+import {
+  createServerWholeStorefrontPlanningClient,
+  PromptedStorefrontStudioClientError,
+  type PromptedStorefrontRuntimeClientOptions,
+  type PromptedStorefrontStudioClient,
+} from "@/integrations/ai/whole-storefront-runtime-client";
 import type { StorefrontCommerceRouteAdapter } from "@/integrations/storefront-commerce-routes";
 import { browserProposalAnalyticsEventType } from "@/services/analytics";
 import {
@@ -225,6 +249,343 @@ describe("P4-05D editor storefront integration", () => {
     expect(screen.getByRole("radio", { name: "Current page" })).toBeChecked();
     expect(screen.getByRole("radio", { name: "Selected section" })).toBeDisabled();
     expect(screen.getByRole("radio", { name: "Entire storefront" })).toBeEnabled();
+  });
+
+  it("opens the raw P10B-16P-03 merchant project ready for explicit whole-storefront generation", async () => {
+    const fixture = createP10B16P03RawKarvonenStudioFixture();
+    const promptedClient = new DeferredPromptedStorefrontClient();
+    render(
+      <ProjectEditorClient
+        initialDesignAgentTarget="storefront"
+        projectId={P10B16P03_PROJECT_ID}
+        promptedInitialDraftAuthority={promptedInitialDraftAuthority(fixture)}
+        promptedStorefrontClient={promptedClient}
+        repositoryFactory={() => repository(() => Promise.resolve(fixture.aggregate))}
+      />,
+    );
+
+    await screen.findByText("Canvas: home / fi");
+    expect(screen.getByRole("radio", { name: "Koko verkkokauppa" })).toBeChecked();
+    expect(screen.getByLabelText("Pyyntösi")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Luo verkkokauppa" })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Pyyntösi"), {
+      target: { value: "Luo hienostunut toimituksellinen korukauppa." },
+    });
+    expect(screen.getByRole("button", { name: "Luo verkkokauppa" })).toBeEnabled();
+    expect(screen.queryByLabelText("Verkkokaupan suunnitteluehdotus")).not.toBeInTheDocument();
+    expect(promptedClient.calls).toHaveLength(0);
+  });
+
+  it("requires independently resolved evidence to preview saved generated content pages", async () => {
+    const fixture = createP10B16P03RawKarvonenStudioFixture();
+    const execution = executeCoordinatedDirection({
+      planningInput: fixture.executionPlanningInput,
+      siteMapDecision: fixture.siteMapDecision,
+      approvedEvidenceReferences: fixture.approvedEvidenceReferences,
+      pageEvidenceAuthority: fixture.pageEvidenceAuthority,
+      contentFactAuthority: fixture.contentFactAuthority,
+      approvedAssetPresentations: fixture.approvedAssetPresentations,
+      directionRequest: {
+        directionId: "premium-editorial",
+        deterministicSeed: "p10b-16p-03-normal-content-preview-v1",
+      },
+    });
+    const candidate = execution.synthesis.materialization.snapshot;
+    const repository = new InMemoryProjectRepository([fixture.aggregate]);
+    const saved = await saveValidatedEditorDraft({
+      repository,
+      projectId: P10B16P03_PROJECT_ID,
+      loadedDraft: fixture.rawDraft,
+      replacementSnapshot: candidate,
+      primaryLocale: fixture.aggregate.project.primaryLocale,
+      evidenceReferences: fixture.approvedEvidenceReferences,
+      now: () => new Date("2026-08-12T12:00:00.000Z"),
+      createSnapshotId: () => "snapshot_p10b16p03_saved_content_preview",
+    });
+    const contentPages = saved.draft.pages.filter((page) =>
+      page.sections.some(({ component }) => component === "contentSupport"),
+    );
+    const about = contentPages.find(({ pageFamily }) => pageFamily?.familyId === "about");
+    if (!about) throw new Error("The generated About page is unavailable.");
+    const secondContentPage = contentPages.find(({ id }) => id !== about.id);
+
+    const selfAuthorizedPreview = render(
+      <ProjectPreviewClient
+        pageSlug={about.slug}
+        projectId={P10B16P03_PROJECT_ID}
+        repositoryFactory={() => repository}
+      />,
+    );
+    expect(await screen.findByText("Storefront could not be displayed")).toBeVisible();
+    selfAuthorizedPreview.unmount();
+
+    for (const page of [about, ...(secondContentPage ? [secondContentPage] : [])]) {
+      const preview = render(
+        <ProjectPreviewClient
+          pageSlug={page.slug}
+          projectId={P10B16P03_PROJECT_ID}
+          initialEvidenceReferences={fixture.approvedEvidenceReferences}
+          repositoryFactory={() => repository}
+        />,
+      );
+      expect(await screen.findByLabelText("Draft storefront")).toBeVisible();
+      expect(screen.queryByText("Storefront could not be displayed")).not.toBeInTheDocument();
+      preview.unmount();
+    }
+  }, 30_000);
+
+  it("selects the compact prompted operation for the normal Studio instead of legacy initial-generation authority", async () => {
+    const fixture = createP10B16P03RawKarvonenStudioFixture();
+    const fetchMock = vi.fn<(url: RequestInfo | URL, init?: RequestInit) => Promise<Response>>();
+    fetchMock.mockResolvedValue(
+      Response.json(
+        { ok: false, failure: { category: "providerUnavailable", retryable: false } },
+        { status: 503 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    try {
+      render(
+        <ProjectEditorClient
+          initialDesignAgentTarget="storefront"
+          projectId={P10B16P03_PROJECT_ID}
+          promptedInitialDraftAuthority={promptedInitialDraftAuthority(fixture)}
+          repositoryFactory={() => repository(() => Promise.resolve(fixture.aggregate))}
+        />,
+      );
+      await screen.findByText("Canvas: home / fi");
+      fireEvent.click(screen.getByRole("radio", { name: "English" }));
+      await screen.findByText("Canvas: home / en");
+      expect(screen.getByRole("radio", { name: "Entire storefront" })).toBeChecked();
+      const prompt = "Create a normal Studio storefront through Design Intent V2.";
+      fireEvent.change(screen.getByLabelText("Your request"), { target: { value: prompt } });
+      fireEvent.click(screen.getByRole("button", { name: "Generate storefront" }));
+
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe("/api/ai/whole-storefront-proposals");
+      if (typeof init?.body !== "string") throw new Error("Expected a serialized request body.");
+      const body: unknown = JSON.parse(init.body) as unknown;
+      expect(body).toMatchObject({
+        operation: "promptedStorefrontDesignV2",
+        contractVersion: "2.0.0",
+        merchantPrompt: prompt,
+        targetScope: "storefront",
+      });
+      expect(body).not.toHaveProperty("selectionId");
+      expect(body).not.toHaveProperty("executableIntentId");
+      expect(body).not.toHaveProperty("storefront");
+      expect(body).not.toHaveProperty("candidateSnapshot");
+      expect(await screen.findByRole("alert")).toHaveTextContent(/draft has not changed/i);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("uses the prompted V2 client only after an explicit storefront Generate action and preserves exact intent", async () => {
+    const legacyProvider = new RejectingRegisteredStorefrontProvider();
+    const promptedClient = new DeferredPromptedStorefrontClient();
+    const fixture = createP10B16P03RawKarvonenStudioFixture();
+    const repo = repository(() => Promise.resolve(fixture.aggregate));
+    render(
+      <ProjectEditorClient
+        initialDesignAgentTarget="storefront"
+        projectId={P10B16P03_PROJECT_ID}
+        promptedInitialDraftAuthority={promptedInitialDraftAuthority(fixture)}
+        promptedStorefrontClient={promptedClient}
+        repositoryFactory={() => repo}
+        storefrontAiProvider={legacyProvider}
+      />,
+    );
+
+    await screen.findByText("Canvas: home / fi");
+    fireEvent.click(screen.getByRole("radio", { name: "English" }));
+    await screen.findByText("Canvas: home / en");
+    expect(promptedClient.calls).toHaveLength(0);
+    expect(legacyProvider.calls).toHaveLength(0);
+    await openStorefrontTarget();
+    expect(
+      screen.queryByRole("button", {
+        name: "Apply a warm premium style across the storefront.",
+      }),
+    ).not.toBeInTheDocument();
+
+    const exactPrompt =
+      "  Create a refined premium jewellery storefront with strong editorial storytelling.\n";
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: exactPrompt },
+    });
+    const generate = screen.getByRole("button", { name: "Generate storefront" });
+    fireEvent.click(generate);
+    fireEvent.click(generate);
+
+    expect(promptedClient.calls).toHaveLength(1);
+    expect(promptedClient.calls[0]).toMatchObject({
+      operation: "promptedStorefrontDesignV2",
+      contractVersion: "2.0.0",
+      targetScope: "storefront",
+      merchantPrompt: exactPrompt,
+      projectId: P10B16P03_PROJECT_ID,
+      draftSnapshotId: fixture.rawDraft.id,
+      draftRevision: fixture.rawDraft.revision,
+    });
+    expect(legacyProvider.calls).toHaveLength(0);
+    expect(screen.getByLabelText("Design request")).toHaveAttribute(
+      "data-prompted-generation-stage",
+      "requesting-design-intent",
+    );
+
+    await act(() => promptedClient.resolve(0));
+    expect(await screen.findByLabelText("Storefront design proposal")).toBeVisible();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(repo.saveDraft).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Regenerate" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Revise" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Close" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Design request")).toHaveAttribute(
+      "data-prompted-generation-stage",
+      "proposal-ready",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Reject" }));
+    expect(screen.queryByLabelText("Storefront design proposal")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(screen.getByLabelText("Your request")).toBeEnabled();
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Create a materially different restrained commerce storefront." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate storefront" }));
+    expect(promptedClient.calls).toHaveLength(2);
+    await act(() => promptedClient.resolve(1));
+    expect(await screen.findByLabelText("Storefront design proposal")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Accept and apply" }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply storefront proposal" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes"),
+    );
+    expect(promptedClient.calls).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save draft" })).toBeDisabled());
+    fireEvent.click(screen.getByRole("button", { name: "Redo" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled());
+    expect(promptedClient.calls).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: "Generate storefront" })).not.toBeInTheDocument();
+
+    const followUpPrompt = p9r07ExactDesignSystemRequest;
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: followUpPrompt },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/temporarily unavailable/i);
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    expect(promptedClient.calls).toHaveLength(2);
+    expect(legacyProvider.calls).toHaveLength(1);
+    expect(legacyProvider.calls[0]).toMatchObject({
+      capability: "approvedColorTypographyDirection",
+      instruction: followUpPrompt,
+    });
+  });
+
+  it("does not re-enter prompted initial generation for a saved generated P03 draft", async () => {
+    const fixture = createP10B16P03RawKarvonenStudioFixture();
+    const execution = executeCoordinatedDirection({
+      planningInput: fixture.executionPlanningInput,
+      siteMapDecision: fixture.siteMapDecision,
+      approvedEvidenceReferences: fixture.approvedEvidenceReferences,
+      pageEvidenceAuthority: fixture.pageEvidenceAuthority,
+      contentFactAuthority: fixture.contentFactAuthority,
+      approvedAssetPresentations: fixture.approvedAssetPresentations,
+      directionRequest: {
+        directionId: "premium-editorial",
+        deterministicSeed: "p10b-16p-03-saved-follow-up-routing-v1",
+      },
+    });
+    const persistedRepository = new InMemoryProjectRepository([fixture.aggregate]);
+    await saveValidatedEditorDraft({
+      repository: persistedRepository,
+      projectId: P10B16P03_PROJECT_ID,
+      loadedDraft: fixture.rawDraft,
+      replacementSnapshot: execution.synthesis.materialization.snapshot,
+      primaryLocale: fixture.aggregate.project.primaryLocale,
+      evidenceReferences: fixture.approvedEvidenceReferences,
+      now: () => new Date("2026-08-12T13:00:00.000Z"),
+      createSnapshotId: () => "snapshot_p10b16p03_saved_follow_up",
+    });
+    const legacyProvider = new RejectingRegisteredStorefrontProvider();
+    const promptedClient = new DeferredPromptedStorefrontClient();
+    render(
+      <ProjectEditorClient
+        initialDesignAgentTarget="storefront"
+        initialEvidenceReferences={fixture.approvedEvidenceReferences}
+        projectId={P10B16P03_PROJECT_ID}
+        promptedInitialDraftAuthority={promptedInitialDraftAuthority(fixture)}
+        promptedStorefrontClient={promptedClient}
+        repositoryFactory={() => persistedRepository}
+        storefrontAiProvider={legacyProvider}
+      />,
+    );
+
+    await screen.findByText("Canvas: home / fi");
+    fireEvent.click(screen.getByRole("radio", { name: "English" }));
+    await screen.findByText("Canvas: home / en");
+    expect(screen.getByRole("button", { name: "Create proposal" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Generate storefront" })).not.toBeInTheDocument();
+
+    const followUpPrompt = p9r07ExactDesignSystemRequest;
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: followUpPrompt },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/temporarily unavailable/i);
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(legacyProvider.calls).toHaveLength(1);
+    expect(legacyProvider.calls[0]).toMatchObject({
+      capability: "approvedColorTypographyDirection",
+      instruction: followUpPrompt,
+    });
+    expect(promptedClient.calls).toHaveLength(0);
+  }, 30_000);
+
+  it("preserves the prompted request after failure and discards a late response after context change", async () => {
+    const promptedClient = new DeferredPromptedStorefrontClient();
+    const fixture = createP10B16P03RawKarvonenStudioFixture();
+    render(
+      <ProjectEditorClient
+        initialDesignAgentTarget="storefront"
+        projectId={P10B16P03_PROJECT_ID}
+        promptedInitialDraftAuthority={promptedInitialDraftAuthority(fixture)}
+        promptedStorefrontClient={promptedClient}
+        repositoryFactory={() => repository(() => Promise.resolve(fixture.aggregate))}
+      />,
+    );
+    await screen.findByText("Canvas: home / fi");
+    fireEvent.click(screen.getByRole("radio", { name: "English" }));
+    await screen.findByText("Canvas: home / en");
+    const failedPrompt = "Create a valid storefront while the provider is unavailable.";
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: failedPrompt },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate storefront" }));
+    act(() => promptedClient.reject(0));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/draft has not changed/i);
+    expect(screen.getByLabelText("Your request")).toHaveValue(failedPrompt);
+    expect(screen.queryByRole("button", { name: "Retry" })).not.toBeInTheDocument();
+    expect(promptedClient.calls).toHaveLength(1);
+
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: "Create another valid storefront." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate storefront" }));
+    expect(promptedClient.calls).toHaveLength(2);
+    fireEvent.click(screen.getByRole("radio", { name: "Suomi" }));
+    await act(() => promptedClient.resolve(1));
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Storefront design proposal")).not.toBeInTheDocument(),
+    );
+    expect(promptedClient.calls).toHaveLength(2);
+    expect(screen.getByTestId("draft-status")).toHaveTextContent("Ei tallentamattomia muutoksia");
   });
 
   it("enables and automatically selects section scope for an eligible canvas selection", async () => {
@@ -788,6 +1149,34 @@ describe("P4-05D editor storefront integration", () => {
     });
   });
 
+  it("preserves manual page history across a non-structural storefront proposal", async () => {
+    const value = statefulRepository();
+    const before = await value.get(aurumNordicSeed.project.id);
+    route(value);
+    await screen.findByText("Canvas: home / en");
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit current page" }));
+    expect(visibleCanvasPage().title.en).toBe("Edited home");
+    expect(screen.getByRole("button", { name: "Undo" })).toBeEnabled();
+
+    await createWarmStorefrontProposal();
+    confirmStorefrontProposal();
+    await waitFor(() =>
+      expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes"),
+    );
+    await screen.findByLabelText("Visual editor canvas");
+    expect(visibleCanvasPage().title.en).toBe("Edited home");
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Redo" })).toBeEnabled());
+    expect(visibleCanvasPage().title.en).toBe("Edited home");
+    expect(screen.getByRole("button", { name: "Undo" })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    await waitFor(() => expect(visibleCanvasPage().title.en).toBe("Home"));
+    expect(await value.get(aurumNordicSeed.project.id)).toEqual(before);
+  });
+
   it("preserves conflicting direction language as ambiguous without invoking the registered provider", async () => {
     const value = statefulRepository();
     const before = await value.get(aurumNordicSeed.project.id);
@@ -1207,6 +1596,7 @@ const route = (
   aiProvider?: AIProvider,
   storefrontAiProvider?: StorefrontAIProvider,
   commerceRouteAdapter?: StorefrontCommerceRouteAdapter,
+  promptedStorefrontClient?: PromptedStorefrontStudioClient,
 ) =>
   render(
     <ProjectEditorClient
@@ -1215,6 +1605,7 @@ const route = (
       repositoryFactory={() => value}
       storefrontAiProvider={storefrontAiProvider ?? createDeterministicMockStorefrontAIProvider()}
       commerceRouteAdapter={commerceRouteAdapter}
+      promptedStorefrontClient={promptedStorefrontClient}
     />,
   );
 
@@ -1263,6 +1654,205 @@ class DeferredStorefrontProvider implements StorefrontAIProvider {
       this.calls[index],
     );
     this.#resolvers[index](response);
+  }
+}
+
+function promptedInitialDraftAuthority(
+  fixture: ReturnType<typeof createP10B16P03RawKarvonenStudioFixture>,
+) {
+  return {
+    draftSnapshotId: fixture.rawDraft.id,
+    draftRevision: fixture.rawDraft.revision,
+    contentFingerprint: canonicalStorefrontContentFingerprint(fixture.rawDraft),
+  } as const;
+}
+
+function promptedStudioSuccess(request: PromptedStorefrontStudioGenerationRequest) {
+  const fixture = createP10B16P03RawKarvonenStudioFixture();
+  if (
+    request.projectId !== fixture.rawDraft.projectId ||
+    request.draftSnapshotId !== fixture.rawDraft.id ||
+    request.draftRevision !== fixture.rawDraft.revision
+  ) {
+    throw new Error("The prompted Studio test response requires the exact raw P03 draft.");
+  }
+  const execution = executeCoordinatedDirection({
+    planningInput: fixture.executionPlanningInput,
+    siteMapDecision: fixture.siteMapDecision,
+    approvedEvidenceReferences: fixture.approvedEvidenceReferences,
+    pageEvidenceAuthority: fixture.pageEvidenceAuthority,
+    contentFactAuthority: fixture.contentFactAuthority,
+    approvedAssetPresentations: fixture.approvedAssetPresentations,
+    directionRequest: {
+      directionId: "premium-editorial",
+      deterministicSeed: `p10b-16p-03-editor-${request.requestId}`,
+    },
+  });
+  const sourceProposal = execution.synthesis.materialization.proposal;
+  const candidate = execution.synthesis.materialization.snapshot;
+  const storefront = projectAiStorefrontSnapshot(fixture.rawDraft);
+  const proposedStorefront = projectAiStorefrontSnapshot(candidate);
+  const target = canonicalizeAiStorefrontTarget({
+    scope: "storefront",
+    projectId: request.projectId,
+    draftSnapshotId: request.draftSnapshotId,
+    draftRevision: request.draftRevision,
+    affectedPageIds: fixture.rawDraft.pages.map(({ id }) => id),
+    affectedSectionTargets: [],
+    designSystemTarget: { kind: "storefrontDesignSystem", projectId: request.projectId },
+    enabledLocales: fixture.aggregate.project.enabledLocales,
+    activeLocale: request.activeLocale,
+  });
+  const proposalContext = {
+    projectId: request.projectId,
+    draftSnapshotId: request.draftSnapshotId,
+    draftRevision: request.draftRevision,
+    enabledLocales: fixture.aggregate.project.enabledLocales,
+    activeLocale: request.activeLocale,
+    storefront,
+  };
+  const targetFingerprint = createAiStorefrontTargetFingerprint(proposalContext, target);
+  const generationTarget = {
+    kind: "storefront" as const,
+    projectId: request.projectId,
+    draftSnapshotId: request.draftSnapshotId,
+    draftRevision: request.draftRevision,
+  };
+  const candidateSnapshotFingerprint = canonicalStorefrontContentFingerprint(candidate);
+  const lineage = {
+    providerId: "p10b-16p-03-editor-mock",
+    modelId: null,
+    requestFingerprint: canonicalValueFingerprint({ request }),
+    promptFingerprint: canonicalValueFingerprint({ prompt: request.merchantPrompt }),
+    providerIntentFingerprint: canonicalValueFingerprint({ intent: request.merchantPrompt }),
+    sourceProposalFingerprint: canonicalValueFingerprint(sourceProposal),
+    compiledDecisionFingerprint: canonicalValueFingerprint({ compiled: request.requestId }),
+    synthesisFingerprint: canonicalValueFingerprint({ synthesis: request.requestId }),
+    structuralFingerprint: canonicalValueFingerprint({ structural: request.requestId }),
+    candidateSnapshotFingerprint,
+    currentAuthorityFingerprints: [canonicalValueFingerprint({ authority: request.projectId })],
+    materializationAuthorityFingerprint: canonicalValueFingerprint({
+      materialization: request.projectId,
+    }),
+    protectedCommerceBeforeFingerprint: canonicalValueFingerprint({ commerce: "before" }),
+    protectedCommerceAfterFingerprint: canonicalValueFingerprint({ commerce: "before" }),
+    protectedMediaBeforeFingerprint: canonicalValueFingerprint({ media: "before" }),
+    protectedMediaAfterFingerprint: canonicalValueFingerprint({ media: "before" }),
+    materializationCount: 1 as const,
+    providerCallCount: 1 as const,
+    retryCount: 0 as const,
+  };
+  const wholeStorefrontGeneration: AiStorefrontWholeStorefrontGeneration = {
+    kind: "canonicalWholeStorefrontGeneration" as const,
+    contractVersion: "1.0.0" as const,
+    order: 0 as const,
+    operationType: "APPLY_CANONICAL_WHOLE_STOREFRONT_GENERATION" as const,
+    target: generationTarget,
+    permission: {
+      skillId: "compilePromptedStorefrontDesignIntentV2" as const,
+      skillVersion: "2.0.0" as const,
+      skillScope: "storefront" as const,
+      operationTypes: ["APPLY_CANONICAL_WHOLE_STOREFRONT_GENERATION"],
+      target: generationTarget,
+    },
+    requestFingerprint: lineage.requestFingerprint,
+    promptFingerprint: lineage.promptFingerprint,
+    providerIntentFingerprint: lineage.providerIntentFingerprint,
+    sourceProposalFingerprint: lineage.sourceProposalFingerprint,
+    synthesisFingerprint: lineage.synthesisFingerprint,
+    structuralFingerprint: lineage.structuralFingerprint,
+    candidateSnapshotFingerprint,
+    sourceProjectionFingerprint: canonicalValueFingerprint(storefront),
+    operationProjectionFingerprint: canonicalValueFingerprint(storefront),
+    resultingProjectionFingerprint: canonicalValueFingerprint(proposedStorefront),
+    resultingSnapshotFingerprint: candidateSnapshotFingerprint,
+    compiledDecisionFingerprint: lineage.compiledDecisionFingerprint,
+    materializationAuthorityFingerprint: lineage.materializationAuthorityFingerprint,
+  };
+  const permissionFingerprint =
+    createAiStorefrontGenerationPermissionFingerprint(wholeStorefrontGeneration);
+  const promptedProposal = {
+    id: createAiStorefrontProposalId(
+      request.requestId,
+      targetFingerprint,
+      permissionFingerprint,
+      [],
+      [],
+      undefined,
+      wholeStorefrontGeneration,
+    ),
+    requestId: request.requestId,
+    projectId: request.projectId,
+    draftSnapshotId: request.draftSnapshotId,
+    draftRevision: request.draftRevision,
+    target,
+    originalStorefront: storefront,
+    proposedStorefront,
+    affectedPages: structuredClone(fixture.rawDraft.pages),
+    affectedDesignState: null,
+    permissionGrants: [],
+    targetFingerprint,
+    permissionFingerprint,
+    operations: [],
+    assetPlacementOperations: [],
+    wholeStorefrontGeneration,
+    summary: {
+      en: "Prepared one complete storefront proposal for review.",
+      fi: "Valmisteltiin yksi kokonainen verkkokauppaehdotus tarkistettavaksi.",
+    },
+    validation: { valid: true as const, errors: [] },
+    status: "pending" as const,
+  };
+  validateAiStorefrontProposal(promptedProposal, proposalContext);
+  return promptedStorefrontStudioGenerationSuccessSchema.parse({
+    ok: true,
+    proposal: {
+      providerRequestId: request.requestId,
+      providerId: lineage.providerId,
+      proposal: promptedProposal,
+      metadata: {
+        operationCount: 1,
+        durationMs: 0,
+        validation: "valid",
+        wholeStorefrontProposalFingerprint: lineage.sourceProposalFingerprint,
+      },
+    },
+    currentEvidenceReferences: fixture.approvedEvidenceReferences,
+    lineage,
+  });
+}
+
+class DeferredPromptedStorefrontClient implements PromptedStorefrontStudioClient {
+  readonly calls: PromptedStorefrontStudioGenerationRequest[] = [];
+  readonly #options: PromptedStorefrontRuntimeClientOptions[] = [];
+  readonly #resolvers: Array<{
+    resolve: (value: Awaited<ReturnType<typeof promptedStudioSuccess>>) => void;
+    reject: (reason: unknown) => void;
+  }> = [];
+
+  generateStorefront(
+    request: PromptedStorefrontStudioGenerationRequest,
+    options: PromptedStorefrontRuntimeClientOptions = {},
+  ): Promise<Awaited<ReturnType<typeof promptedStudioSuccess>>> {
+    this.calls.push(structuredClone(request));
+    this.#options.push(options);
+    options.onStage?.("requesting-design-intent");
+    return new Promise((resolve, reject) => this.#resolvers.push({ resolve, reject }));
+  }
+
+  resolve(index: number) {
+    const options = this.#options[index];
+    options.onStage?.("validating-intent");
+    options.onStage?.("compiling-design");
+    options.onStage?.("materializing-proposal");
+    this.#resolvers[index].resolve(promptedStudioSuccess(this.calls[index]));
+    return Promise.resolve();
+  }
+
+  reject(index: number, category: "providerUnavailable" | "stale" = "providerUnavailable") {
+    this.#resolvers[index].reject(
+      new PromptedStorefrontStudioClientError(category, false, category === "stale" ? 409 : 503),
+    );
   }
 }
 

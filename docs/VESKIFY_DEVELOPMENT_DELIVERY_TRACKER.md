@@ -5,7 +5,7 @@
 | Field                       | Value                                                                                                               |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Version                     | 1.3.0                                                                                                               |
-| Baseline                    | 12 August 2026, P10B-16P-02B deterministic design-intent compiler and canonical proposal materialization            |
+| Baseline                    | 12 August 2026, P10B-16P-03 Storefront Studio prompted generation journey                                           |
 | Active development phase    | P10B — Commercial Storefront Generation System v1 (**Partial**)                                                     |
 | Overall product status      | **Partial**                                                                                                         |
 | Authoritative specification | [`VESKIFY_SDD.md`](VESKIFY_SDD.md)                                                                                  |
@@ -61,8 +61,8 @@ required evidence are accepted.
 | ☑    | P10B-16P-02  | Prompted design-plan contract                        | **Baseline** | Provider/design-plan authority   | P10B-16P-01                           | Strict intent/mock evidence, bounded metadata compiler, exact current-authority synthesis/proposal and no-partial lifecycle evidence                               |
 | ☑    | P10B-16P-02A | Prompted Storefront Design Intent V2                 | **Baseline** | Provider contract/adapter        | P10B-16P-01                           | Safe capability/request projection, strict intent/reference/fingerprint/failure tests and mocked OpenAI transport                                                  |
 | ☑    | P10B-16P-02B | Deterministic design-intent compiler                 | **Baseline** | Design-plan compiler             | P10B-16P-02A                          | Exact refreshed-authority resolution, bounded metadata compilation, canonical one-shot synthesis/proposal, diagnostics and stale/incompatible/no-partial rejection |
-| ☐    | P10B-16P-03  | Storefront Studio generation journey                 | **Planned**  | Storefront Studio/generation     | P10B-16P-02B                          | Merchant-language integration, proposal lifecycle, browser/E2E and save/publish boundary evidence                                                                  |
-| ☐    | P10B-16P-04  | Live V2 acceptance and bridge disposition            | **Planned**  | Provider acceptance/architecture | P10B-16P-03                           | Separately authorized real-provider V2 evidence and explicit P10B-16L bridge disposition                                                                           |
+| ☑    | P10B-16P-03  | Storefront Studio generation journey                 | **Baseline** | Storefront Studio/generation     | P10B-16P-02B                          | Standalone/mock authority; integrated auth fail-closed; one registered operation; exact source/lineage/evidence; full mocked lifecycle and browser/E2E             |
+| ☐    | P10B-16P-04  | Live V2 acceptance and bridge disposition            | **Planned**  | Provider acceptance/architecture | P10B-16P-03                           | Injected authenticated tenant/project authority, separately authorized real-provider V2 evidence and explicit P10B-16L bridge disposition                          |
 | ☐    | P10B-17      | Responsive, accessibility and performance closure    | **Planned**  | Design system and QA             | P10B-16P-04 and implemented families  | Four-width EN/FI geometry, a11y, performance and visual evidence                                                                                                   |
 | ☐    | P10B-18      | Commercial quality and scale gate                    | **Planned**  | Product owner, generation, QA    | All prior P10B tasks                  | 100+ configurations and fingerprint-stratified human review                                                                                                        |
 
@@ -170,8 +170,8 @@ required evidence are accepted.
 
 The binding details and minimum coverage are in
 [`P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md`](P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md).
-P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-02B are **Baseline**. P10B-16P-02 is
-**Baseline**. P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain **Planned**.
+P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-03 are **Baseline**. P10B-16P-02 is
+**Baseline**. P10B-16P-04, P10B-17, and P10B-18 remain **Planned**.
 The remaining Done conditions are implementation gates, not claims about the current repository.
 The P10B-16P sequence is a mandatory convergence package between P10B-16 and P10B-17; it
 supplements rather than renumbers the locked P10B-01 through P10B-18 plan.
@@ -570,12 +570,29 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
 
 - **Outcome:** Complete the normal merchant-language prompt-to-review generation journey through
   the existing proposal and canonical snapshot lifecycle.
-- **Status:** **Planned**.
+- **Status:** **Baseline**. Completed 12 August 2026 with mocked providers and zero real-provider or
+  Vesko calls.
 - **Depends on:** P10B-16P-02B.
-- **Done when:** Storefront Studio invokes current plan authority, presents bounded review,
-  preserves accept/reject/undo/redo and save/publish separation, and passes browser/E2E and
-  retained review without another snapshot or bypass.
-- **Non-goal:** P10C general manual/scoped editing implementation.
+- **Done:** Normal Storefront Studio opens an idempotently seeded raw Karvonen project with no
+  request on load; an explicit Generate action sends the exact prompt and compact current identity
+  to one server route; standalone/mock server-owned current authority invokes one mocked Design
+  Intent V2 provider attempt and P10B-16P-02B once; one registered
+  `APPLY_CANONICAL_WHOLE_STOREFRONT_GENERATION` operation with the target-bound
+  `compilePromptedStorefrontDesignIntentV2@2.0.0` permission cross-binds the exact P02B
+  source-proposal fingerprint and compiler lineage; one isolated proposal supports homepage, representative dynamic
+  collection/PDP, content and utility review with current approved evidence references; Reject and
+  Generate another preserve the draft; Accept commits one atomic unsaved change; Undo/Redo,
+  Save/reload and normal dynamic-route Preview preserve the exact result. Current content/support
+  evidence is independently resolved from trusted server authority and checked against retained
+  snapshot provenance; snapshots never authorize themselves. Integrated requests without injected
+  authenticated tenant/project and evidence authority fail closed before provider selection.
+  Failures and stale/late responses cause no draft/history mutation and no retry or fallback. Search
+  execution remains explicitly unavailable.
+- **Evidence:** Contract/schema, deterministic unit, integration, dedicated mocked browser/E2E at
+  375/768/1024/1440 and focused lifecycle/persistence/preview regressions. No real-provider or human
+  commercial-quality claim.
+- **Non-goal:** Live V2 provider evidence, P10B-16L disposition, executable search, P10C general
+  manual/scoped editing, publication, or commercial-quality closure.
 
 #### P10B-16P-04 — Live V2 acceptance and bridge disposition
 
@@ -584,8 +601,10 @@ lifecycle and 16-view Chromium evidence pass with zero provider calls. See
 - **Status:** **Planned**.
 - **Depends on:** P10B-16P-03.
 - **Done when:** The provider receives capability knowledge before any complete-store execution,
-  returns a strict intent, current authority compiles it through normal Studio proposal review, and
-  safe retained evidence proves call/retry limits, lifecycle, protection and bridge disposition.
+  authenticated tenant/project-backed current authority is injected before provider selection, the
+  provider returns a strict intent, current authority compiles it through normal Studio proposal
+  review, and safe retained evidence proves call/retry limits, lifecycle, protection and bridge
+  disposition.
 - **Non-goal:** Treating another preset-selection run as V2 evidence or automatic provider calls.
 
 #### P10B-17 — Responsive, accessibility and performance closure

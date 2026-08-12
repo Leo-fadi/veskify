@@ -7,6 +7,7 @@ import {
   type AiStorefrontContext,
   type AiStorefrontProposal,
   type AiStorefrontTarget,
+  type AiStorefrontWholeStorefrontGeneration,
 } from "./contract";
 import {
   AiStorefrontValidationError,
@@ -39,9 +40,17 @@ function parseFingerprintContext(input: unknown): AiStorefrontContext {
         pages: candidate.storefront.pages,
         navigation: candidate.storefront.navigation,
         brandSystem: candidate.storefront.brandSystem,
+        ...(candidate.storefront.sharedFrame
+          ? { sharedFrame: candidate.storefront.sharedFrame }
+          : {}),
         ...(candidate.storefront.dynamicCommercePresentation
           ? {
               dynamicCommercePresentation: candidate.storefront.dynamicCommercePresentation,
+            }
+          : {}),
+        ...(candidate.storefront.contentSupportFactDocuments
+          ? {
+              contentSupportFactDocuments: candidate.storefront.contentSupportFactDocuments,
             }
           : {}),
       },
@@ -92,9 +101,15 @@ function relevantTargetContext(context: AiStorefrontContext, target: AiStorefron
     pageOrder: context.storefront.pageOrder,
     navigation: context.storefront.navigation,
     brandSystem: context.storefront.brandSystem,
+    ...(context.storefront.sharedFrame ? { sharedFrame: context.storefront.sharedFrame } : {}),
     ...(context.storefront.dynamicCommercePresentation
       ? {
           dynamicCommercePresentation: context.storefront.dynamicCommercePresentation,
+        }
+      : {}),
+    ...(context.storefront.contentSupportFactDocuments
+      ? {
+          contentSupportFactDocuments: context.storefront.contentSupportFactDocuments,
         }
       : {}),
   };
@@ -131,6 +146,23 @@ export function createAiStorefrontPermissionFingerprint(
   return `storefront-permissions-${canonicalValueFingerprint(grants)}`;
 }
 
+/**
+ * Canonical permission marker for the server-minted whole-storefront generation operation.
+ * The registered structural operation has its own explicit permission contract because generic
+ * page-edit grants cannot express an atomic page-set, frame, navigation and archetype transition.
+ */
+export function createAiStorefrontGenerationPermissionFingerprint(
+  generation: AiStorefrontWholeStorefrontGeneration,
+): string {
+  return `storefront-permissions-${canonicalValueFingerprint({
+    kind: generation.kind,
+    contractVersion: generation.contractVersion,
+    operationType: generation.operationType,
+    target: generation.target,
+    permission: generation.permission,
+  })}`;
+}
+
 export function createAiStorefrontProposalId(
   requestId: string,
   targetFingerprint: string,
@@ -138,6 +170,7 @@ export function createAiStorefrontProposalId(
   operations: AiStorefrontProposal["operations"],
   assetPlacementOperations: AiStorefrontProposal["assetPlacementOperations"] = [],
   dynamicCommerceMigration?: AiStorefrontProposal["dynamicCommerceMigration"],
+  wholeStorefrontGeneration?: AiStorefrontProposal["wholeStorefrontGeneration"],
 ) {
   const digest = canonicalValueFingerprint({
     requestId,
@@ -146,6 +179,7 @@ export function createAiStorefrontProposalId(
     operations,
     assetPlacementOperations: assetPlacementOperations ?? [],
     dynamicCommerceMigration: dynamicCommerceMigration ?? null,
+    ...(wholeStorefrontGeneration ? { wholeStorefrontGeneration } : {}),
   });
   return `storefront_proposal_${digest.slice(-64, -56)}`;
 }

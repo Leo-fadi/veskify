@@ -110,7 +110,7 @@ export function ProjectPreviewClient({
           }).then(({ evidenceReferences, ...aggregate }) => ({ aggregate, evidenceReferences }))
         : repository.current!.get(projectId).then((aggregate) => ({
             aggregate,
-            evidenceReferences: [],
+            evidenceReferences: structuredClone(initialEvidenceReferences),
           }));
     aggregateSource
       .then(({ aggregate, evidenceReferences }) => {

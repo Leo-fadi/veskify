@@ -8,9 +8,11 @@ import {
 import { brandSystemSchema } from "@/domain/design-system";
 import { idSchema, localeSchema, localizedTextSchema } from "@/domain/shared";
 import {
+  contentSupportFactDocumentSchema,
   dynamicCommercePresentationAuthoritySchema,
   navigationModelSchema,
   pageModelSchema,
+  sharedFrameModelSchema,
 } from "@/domain/storefront";
 import { approvedAssetPlacementOperationSchema } from "@/application/ai-storefront-generation/approved-asset-context";
 
@@ -115,7 +117,9 @@ export const aiStorefrontProjectionSchema = z
     pages: z.array(pageModelSchema).min(1),
     navigation: navigationModelSchema,
     brandSystem: brandSystemSchema,
+    sharedFrame: sharedFrameModelSchema.optional(),
     dynamicCommercePresentation: dynamicCommercePresentationAuthoritySchema.optional(),
+    contentSupportFactDocuments: z.array(contentSupportFactDocumentSchema).optional(),
   })
   .strict()
   .superRefine((projection, context) => {
@@ -236,6 +240,59 @@ export const aiStorefrontDynamicCommerceMigrationSchema = z
   })
   .strict();
 
+export const aiStorefrontWholeStorefrontGenerationTargetSchema = z
+  .object({
+    kind: z.literal("storefront"),
+    projectId: idSchema,
+    draftSnapshotId: idSchema,
+    draftRevision: z.number().int().nonnegative(),
+  })
+  .strict();
+
+export const aiStorefrontWholeStorefrontGenerationPermissionSchema = z
+  .object({
+    skillId: z.literal("compilePromptedStorefrontDesignIntentV2"),
+    skillVersion: z.literal("2.0.0"),
+    skillScope: z.literal("storefront"),
+    operationTypes: z.tuple([z.literal("APPLY_CANONICAL_WHOLE_STOREFRONT_GENERATION")]),
+    target: aiStorefrontWholeStorefrontGenerationTargetSchema,
+  })
+  .strict();
+
+/**
+ * Server-minted structured operation for one exact whole-storefront generation transition.
+ *
+ * Normal section/page editing remains operation-replayable. Initial complete-storefront
+ * generation is structurally different: it may replace the raw page set, navigation, shared
+ * frame, content evidence projection and dynamic-commerce presentation atomically. This
+ * operation binds that replacement to the approved P02B proposal, exact compiler lineage, the
+ * operation-produced intermediate projection and the exact reviewed canonical result. It is
+ * never accepted from a provider or browser request.
+ */
+export const aiStorefrontWholeStorefrontGenerationSchema = z
+  .object({
+    kind: z.literal("canonicalWholeStorefrontGeneration"),
+    contractVersion: z.literal("1.0.0"),
+    order: z.literal(0),
+    operationType: z.literal("APPLY_CANONICAL_WHOLE_STOREFRONT_GENERATION"),
+    target: aiStorefrontWholeStorefrontGenerationTargetSchema,
+    permission: aiStorefrontWholeStorefrontGenerationPermissionSchema,
+    requestFingerprint: z.string().trim().min(1).max(240),
+    promptFingerprint: z.string().trim().min(1).max(240),
+    providerIntentFingerprint: z.string().trim().min(1).max(240),
+    sourceProposalFingerprint: z.string().trim().min(1).max(240),
+    synthesisFingerprint: z.string().trim().min(1).max(240),
+    structuralFingerprint: z.string().trim().min(1).max(240),
+    candidateSnapshotFingerprint: z.string().trim().min(1).max(240),
+    sourceProjectionFingerprint: z.string().regex(/^v1_\d+_[0-9a-f]{64}$/),
+    operationProjectionFingerprint: z.string().regex(/^v1_\d+_[0-9a-f]{64}$/),
+    resultingProjectionFingerprint: z.string().regex(/^v1_\d+_[0-9a-f]{64}$/),
+    resultingSnapshotFingerprint: z.string().regex(/^v1_\d+_[0-9a-f]{64}$/),
+    compiledDecisionFingerprint: z.string().trim().min(1).max(240),
+    materializationAuthorityFingerprint: z.string().trim().min(1).max(240),
+  })
+  .strict();
+
 export const aiStorefrontProposalSchema = z
   .object({
     id: z.string().regex(/^storefront_proposal_[a-f0-9]{8}$/),
@@ -248,17 +305,65 @@ export const aiStorefrontProposalSchema = z
     proposedStorefront: aiStorefrontProjectionSchema,
     affectedPages: z.array(pageModelSchema).min(1),
     affectedDesignState: brandSystemSchema.partial().nullable(),
-    permissionGrants: z.array(aiOperationPermissionGrantSchema).min(1),
+    permissionGrants: z.array(aiOperationPermissionGrantSchema),
     targetFingerprint: z.string().startsWith("storefront-target-"),
     permissionFingerprint: z.string().startsWith("storefront-permissions-"),
-    operations: z.array(aiStorefrontOperationSchema).min(1),
+    operations: z.array(aiStorefrontOperationSchema),
     dynamicCommerceMigration: aiStorefrontDynamicCommerceMigrationSchema.optional(),
+    wholeStorefrontGeneration: aiStorefrontWholeStorefrontGenerationSchema.optional(),
     assetPlacementOperations: z.array(approvedAssetPlacementOperationSchema).optional(),
     summary: localizedTextSchema,
     validation: proposalValidationResultSchema,
     status: z.enum(["pending", "accepted", "rejected"]),
   })
-  .strict();
+  .strict()
+  .superRefine((proposal, context) => {
+    if (proposal.dynamicCommerceMigration && proposal.wholeStorefrontGeneration) {
+      context.addIssue({
+        code: "custom",
+        path: ["wholeStorefrontGeneration"],
+        message: "A storefront proposal cannot declare two structural transitions.",
+      });
+    }
+    if (proposal.wholeStorefrontGeneration) {
+      const generation = proposal.wholeStorefrontGeneration;
+      if (
+        proposal.operations.length !== 0 ||
+        proposal.permissionGrants.length !== 0 ||
+        proposal.affectedDesignState !== null ||
+        (proposal.assetPlacementOperations?.length ?? 0) !== 0
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["wholeStorefrontGeneration"],
+          message:
+            "Canonical whole-storefront generation must use only its exact server-minted structural operation authority.",
+        });
+      }
+      if (
+        generation.target.projectId !== proposal.projectId ||
+        generation.target.draftSnapshotId !== proposal.draftSnapshotId ||
+        generation.target.draftRevision !== proposal.draftRevision ||
+        generation.permission.target.projectId !== generation.target.projectId ||
+        generation.permission.target.draftSnapshotId !== generation.target.draftSnapshotId ||
+        generation.permission.target.draftRevision !== generation.target.draftRevision ||
+        generation.candidateSnapshotFingerprint !== generation.resultingSnapshotFingerprint
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["wholeStorefrontGeneration"],
+          message:
+            "Canonical whole-storefront generation operation, permission, proposal identity and candidate must match exactly.",
+        });
+      }
+    } else if (proposal.operations.length === 0 || proposal.permissionGrants.length === 0) {
+      context.addIssue({
+        code: "custom",
+        path: ["operations"],
+        message: "Storefront edit proposals require operations and permission grants.",
+      });
+    }
+  });
 
 export const aiStorefrontReadyProposalSchema = aiStorefrontProposalSchema.superRefine(
   (proposal, context) => {
@@ -288,6 +393,9 @@ export type AiStorefrontOperationTarget = z.infer<typeof aiStorefrontOperationTa
 export type AiStorefrontOperation = z.infer<typeof aiStorefrontOperationSchema>;
 export type AiStorefrontDynamicCommerceMigration = z.infer<
   typeof aiStorefrontDynamicCommerceMigrationSchema
+>;
+export type AiStorefrontWholeStorefrontGeneration = z.infer<
+  typeof aiStorefrontWholeStorefrontGenerationSchema
 >;
 export type AiStorefrontProposal = z.infer<typeof aiStorefrontProposalSchema>;
 export type AiStorefrontReadyProposal = z.infer<typeof aiStorefrontReadyProposalSchema>;

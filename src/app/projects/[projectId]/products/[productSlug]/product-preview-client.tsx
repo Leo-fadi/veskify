@@ -57,6 +57,7 @@ type LoadState =
 
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
 const defaultCommerceAdapter = createCatalogueStorefrontCommerceRouteAdapter();
+const emptyEvidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]> = [];
 const ignorePrimaryAction: ProductPrimaryActionIntentCallback = () => undefined;
 function StatusPanel({
   title,
@@ -97,6 +98,7 @@ type ProductPreviewClientProps = {
   commerceAdapter?: StorefrontCommerceRouteAdapter;
   onPrimaryAction?: ProductPrimaryActionIntentCallback;
   publishedSessionId?: string;
+  initialEvidenceReferences?: NonNullable<StorefrontRenderContext["evidenceReferences"]>;
 };
 
 export function ProductPreviewClient(props: ProductPreviewClientProps) {
@@ -113,6 +115,7 @@ function ProductPreviewLoader({
   commerceAdapter = defaultCommerceAdapter,
   onPrimaryAction = ignorePrimaryAction,
   publishedSessionId,
+  initialEvidenceReferences = emptyEvidenceReferences,
 }: ProductPreviewClientProps) {
   const effectiveRenderTarget =
     renderTarget ?? (snapshotKind === "published" ? "published" : "preview");
@@ -128,9 +131,10 @@ function ProductPreviewLoader({
       ? loadP905bLocalDemoPublishedProjection({ projectId, sessionId: publishedSessionId }).then(
           ({ evidenceReferences, ...aggregate }) => ({ aggregate, evidenceReferences }),
         )
-      : repository
-          .current!.get(projectId)
-          .then((aggregate) => ({ aggregate, evidenceReferences: [] }))
+      : repository.current!.get(projectId).then((aggregate) => ({
+          aggregate,
+          evidenceReferences: structuredClone(initialEvidenceReferences),
+        }))
     )
       .then(({ aggregate, evidenceReferences }) => {
         if (cancelled) return;
@@ -237,6 +241,7 @@ function ProductPreviewLoader({
     effectiveRenderTarget,
     snapshotKind,
     publishedSessionId,
+    initialEvidenceReferences,
   ]);
 
   const retry = () => {

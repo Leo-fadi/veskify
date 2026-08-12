@@ -3,8 +3,8 @@
 ## Status
 
 **Partial — compatibility bridge and mocked-provider acceptance implemented; no live Design Intent
-V2 acceptance exists.** P10B-16, P10B-16P-01, P10B-16P-02A, and P10B-16P-02B are **Baseline**.
-P10B-16P-02 is **Baseline**; P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain **Planned**.
+V2 acceptance exists.** P10B-16, P10B-16P-01, P10B-16P-02A, P10B-16P-02B, and P10B-16P-03 are
+**Baseline**. P10B-16P-02 is **Baseline**; P10B-16P-04, P10B-17, and P10B-18 remain **Planned**.
 P10B remains **Partial**.
 
 Provider calls during the P10B-16P-02A and P10B-16P-02B Design Intent V2 implementation:
@@ -263,7 +263,7 @@ fact references. Utility pages retain their registered read-only presentation an
 unavailable posture when no operational cart or checkout runtime is present; the bridge does not
 invent operational state.
 
-## Normal Storefront Studio bridge
+## P10B-16L special Storefront Studio bridge
 
 Generation returns the normal editor route with an opaque `p10b-16l-session` query value. The
 server keeps the raw saved aggregate in the browser repository and projects the transient review
@@ -347,12 +347,18 @@ The new prompted contract and its transition are specified in
 P10B-16P-02A makes the strict transient Design Intent V2 boundary structurally available without a
 provider call. P10B-16P-02B now compiles that intent against refreshed authority through a bounded
 metadata-only solver and consumes one exact result through canonical synthesis and isolated
-proposal materialization, also without a provider call. P10B-16P-03 must wire it into the normal
-Storefront Studio proposal journey before live V2 acceptance.
+proposal materialization, also without a provider call. P10B-16P-03 now wires the normal mocked
+Storefront Studio prompt-to-review/accept/save/preview journey through this current V2 authority,
+including one registered `APPLY_CANONICAL_WHOLE_STOREFRONT_GENERATION` operation with exact P02B
+source-proposal fingerprint, compiler lineage, and retained snapshot evidence, without using the
+P10B-16L `executableIntentId` selector and without a real provider call. See
+[`P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md`](P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md).
 
 P10B-16P-04, not this compatibility record, owns separately authorized real-provider acceptance and
-the decision to retire, migrate or retain P10B-16L. Repeating the executable-option selector cannot
-prove Design Intent V2 because it continues to materialize candidates before the provider call.
-Until P10B-16P-04 passes, no live V2 acceptance, commercial provider-generation, retained V2 human
-visual review, or P10B-17/P10B-18 closure is claimed. No provider call is authorized by this
-documentation update.
+the decision to retire, migrate or retain P10B-16L. It must first inject authenticated
+tenant/project-backed current authority because the integrated route intentionally fails closed
+before provider selection without it; P03's standalone/mock authority is not integrated
+authentication. Repeating the executable-option selector cannot prove Design Intent V2 because it
+continues to materialize candidates before the provider call. Until P10B-16P-04 passes, no live V2
+acceptance, commercial provider-generation, retained V2 human visual review, or P10B-17/P10B-18
+closure is claimed. No provider call is authorized by this documentation update.

@@ -2,8 +2,8 @@
 
 ## Status and ownership
 
-**Parent status: Baseline.** P10B-16P-02A and P10B-16P-02B are **Baseline**. P10B-16P-03 and
-P10B-16P-04 remain **Planned**. P10B remains **Partial**; P10B-17 and P10B-18 remain **Planned**.
+**Parent status: Baseline.** P10B-16P-02A, P10B-16P-02B, and P10B-16P-03 are **Baseline**.
+P10B-16P-04 remains **Planned**. P10B remains **Partial**; P10B-17 and P10B-18 remain **Planned**.
 
 Part A establishes the provider-safe capability projection, strict versioned request, transient
 Design Intent V2 result, exact reference validation, deterministic normalization/fingerprints,
@@ -14,8 +14,8 @@ has occurred.
 
 Part B implements the deterministic post-provider preference compiler against refreshed current
 authority and consumes its exact decision once through canonical synthesis and isolated proposal
-materialization. It made zero provider and Vesko calls. P10B-16P-03 owns normal Studio prompt
-routing and proposal review. P10B-16P-04 owns a separately authorized live Design Intent V2
+materialization. It made zero provider and Vesko calls. P10B-16P-03 now owns the implemented mocked
+normal Studio prompt routing and proposal review. P10B-16P-04 owns a separately authorized live Design Intent V2
 acceptance and the final disposition of the legacy P10B-16L bridge.
 
 ## 1. Provider-boundary audit
@@ -84,7 +84,7 @@ Reusable infrastructure includes server-only trusted provider configuration, inj
 transport, strict closed JSON schemas, `store: false`, zero-retry configuration, bounded timeout,
 provider failure mapping, safe usage telemetry, and deterministic authority fingerprints. The
 coarse `selectionId` semantics are obsolete for V2 initial generation but remain functional for
-existing compatibility consumers until P10B-16P-03/P10B-16P-04 closes migration.
+existing compatibility consumers until P10B-16P-04 closes migration.
 
 ## 2. Singular authority boundary
 
@@ -269,17 +269,26 @@ revalidates and consumes the exact values themselves.
 
 ## 10. Transitional delivery
 
-P10B-16L and the current normal whole-storefront selector remain operational for compatibility.
-The V2 adapter/compiler is not wired to `/api/ai/whole-storefront-proposals`, the P10B live demo,
-`use-design-agent-session` or live-provider authorization. Its direct execution API does reach the
-existing isolated proposal materializer only after deterministic compilation succeeds.
+P10B-16L and the legacy whole-storefront selector remain operational for compatibility. P10B-16P-03
+now wires the V2 adapter/compiler to the normal Studio whole-storefront generation operation and
+`use-design-agent-session` while leaving follow-up scopes on their existing bounded paths. It does
+not wire the P10B live demo or authorize a live provider. Its server authority reaches the existing
+isolated proposal materializer only after deterministic compilation succeeds. The P03 standalone/
+mock composition mints exactly one registered `APPLY_CANONICAL_WHOLE_STOREFRONT_GENERATION`
+structured operation with the target-bound `compilePromptedStorefrontDesignIntentV2@2.0.0`
+permission. It binds the exact P02B source-proposal fingerprint and compiler lineage to proposal
+metadata and the response. The candidate and saved snapshot preserve exact evidence references as
+provenance, while review and normal Preview resolve current approved evidence independently from
+trusted server/session authority; persisted snapshot references never authorize themselves.
 
 P10B-16P-02B refreshes exact authority, deterministically compiles V2 preferences into registered
 compatible selections, and only then invokes existing P10B-15/P10B-16 materialization and the
-canonical proposal path. P10B-16P-03 connects the normal Storefront Studio prompt-to-review journey.
-P10B-16P-04 performs separately authorized live V2 acceptance and decides whether to retire,
-migrate or retain the legacy P10B-16L bridge. Running the legacy selector again cannot prove Design
-Intent V2 acceptance.
+canonical proposal path. P10B-16P-03 connects the normal mocked Storefront Studio
+prompt-to-review/accept/save/preview journey. The local P03 authority is not integrated
+authentication: integrated requests fail closed before provider selection until P10B-16P-04 injects
+authenticated tenant/project-backed current authority. P10B-16P-04 then performs separately
+authorized live V2 acceptance and decides whether to retire, migrate or retain the legacy P10B-16L
+bridge. Running the legacy selector again cannot prove Design Intent V2 acceptance.
 
 ## 11. Evidence and explicit non-claims
 
@@ -291,7 +300,7 @@ fingerprints, diagnostics and no-partial failures.
 Existing P10B-15/P10B-16 synthesis, P10B-16P-01 archetype, legacy provider and publication
 regressions remain compatible. Provider and Vesko call count for both parts is zero.
 
-Part A alone does not claim deterministic intent compilation or materialization. Part B does not
-claim normal Studio reachability, live V2 provider evidence, executable search, retained V2 human
-visual review, P10B-17 responsive/performance closure, P10B-18 commercial quality/scale closure,
-Vesko staging or production readiness.
+Part A alone does not claim deterministic intent compilation or materialization. Part B alone does
+not claim normal Studio reachability. P10B-16P-03 does not claim live V2 provider evidence,
+executable search, retained V2 human visual review, P10B-17 responsive/performance closure,
+P10B-18 commercial quality/scale closure, Vesko staging, or production readiness.

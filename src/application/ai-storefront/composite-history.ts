@@ -4,9 +4,11 @@ import {
   canonicalStorefrontContentFingerprint,
   canonicalValueFingerprint,
   canonicalValueString,
+  contentSupportFactDocumentSchema,
   dynamicCommercePresentationAuthoritySchema,
   navigationModelSchema,
   pageModelSchema,
+  sharedFrameModelSchema,
   storefrontSnapshotSchema,
   type PageModel,
   type StorefrontSnapshot,
@@ -29,8 +31,12 @@ const compositeStorefrontStructuralTransitionSchema = z
     resultingPageOrder: z.array(idSchema).min(1),
     originalNavigation: navigationModelSchema,
     resultingNavigation: navigationModelSchema,
+    originalSharedFrame: sharedFrameModelSchema.optional(),
+    resultingSharedFrame: sharedFrameModelSchema.optional(),
     originalDynamicCommercePresentation: dynamicCommercePresentationAuthoritySchema.optional(),
     resultingDynamicCommercePresentation: dynamicCommercePresentationAuthoritySchema.optional(),
+    originalContentSupportFactDocuments: z.array(contentSupportFactDocumentSchema).optional(),
+    resultingContentSupportFactDocuments: z.array(contentSupportFactDocumentSchema).optional(),
   })
   .strict();
 
@@ -223,8 +229,11 @@ export function deriveCompositeStorefrontHistoryTransaction({
   const structuralTransition =
     canonicalValueString(originalPageOrder) !== canonicalValueString(resultingPageOrder) ||
     canonicalValueString(original.navigation) !== canonicalValueString(resulting.navigation) ||
+    canonicalValueString(original.sharedFrame) !== canonicalValueString(resulting.sharedFrame) ||
     canonicalValueString(original.dynamicCommercePresentation) !==
-      canonicalValueString(resulting.dynamicCommercePresentation);
+      canonicalValueString(resulting.dynamicCommercePresentation) ||
+    canonicalValueString(original.contentSupportFactDocuments) !==
+      canonicalValueString(resulting.contentSupportFactDocuments);
   const transaction = compositeStorefrontHistoryTransactionSchema.parse({
     transactionId:
       transactionId ?? stableTransactionId(proposal.id, acceptedAt, originalStorefrontFingerprint),
@@ -261,6 +270,12 @@ export function deriveCompositeStorefrontHistoryTransaction({
             resultingPageOrder,
             originalNavigation: structuredClone(original.navigation),
             resultingNavigation: structuredClone(resulting.navigation),
+            ...(original.sharedFrame
+              ? { originalSharedFrame: structuredClone(original.sharedFrame) }
+              : {}),
+            ...(resulting.sharedFrame
+              ? { resultingSharedFrame: structuredClone(resulting.sharedFrame) }
+              : {}),
             ...(original.dynamicCommercePresentation
               ? {
                   originalDynamicCommercePresentation: structuredClone(
@@ -268,6 +283,12 @@ export function deriveCompositeStorefrontHistoryTransaction({
                   ),
                 }
               : {}),
+            originalContentSupportFactDocuments: structuredClone(
+              original.contentSupportFactDocuments,
+            ),
+            resultingContentSupportFactDocuments: structuredClone(
+              resulting.contentSupportFactDocuments,
+            ),
             ...(resulting.dynamicCommercePresentation
               ? {
                   resultingDynamicCommercePresentation: structuredClone(
@@ -319,14 +340,30 @@ function applyTransaction(
   const brandSystem: BrandSystem =
     direction === "forward" ? transaction.resultingDesignSystem : transaction.originalDesignSystem;
   const structural = transaction.structuralTransition;
-  const { dynamicCommercePresentation: _currentDynamicCommercePresentation, ...snapshotBase } =
-    structuredClone(snapshot);
+  const {
+    sharedFrame: _currentSharedFrame,
+    dynamicCommercePresentation: _currentDynamicCommercePresentation,
+    contentSupportFactDocuments: _currentContentSupportFactDocuments,
+    ...snapshotBase
+  } = structuredClone(snapshot);
+  void _currentSharedFrame;
   void _currentDynamicCommercePresentation;
+  void _currentContentSupportFactDocuments;
   const dynamicCommercePresentation = structural
     ? direction === "forward"
       ? structural.resultingDynamicCommercePresentation
       : structural.originalDynamicCommercePresentation
     : snapshot.dynamicCommercePresentation;
+  const sharedFrame = structural
+    ? direction === "forward"
+      ? structural.resultingSharedFrame
+      : structural.originalSharedFrame
+    : snapshot.sharedFrame;
+  const contentSupportFactDocuments = structural
+    ? direction === "forward"
+      ? (structural.resultingContentSupportFactDocuments ?? snapshot.contentSupportFactDocuments)
+      : (structural.originalContentSupportFactDocuments ?? snapshot.contentSupportFactDocuments)
+    : snapshot.contentSupportFactDocuments;
   const candidate = validateSnapshot({
     ...snapshotBase,
     pages: structural
@@ -338,9 +375,11 @@ function applyTransaction(
         )
       : structuredClone(snapshot.navigation),
     brandSystem: structuredClone(brandSystem),
+    ...(sharedFrame ? { sharedFrame: structuredClone(sharedFrame) } : {}),
     ...(dynamicCommercePresentation
       ? { dynamicCommercePresentation: structuredClone(dynamicCommercePresentation) }
       : {}),
+    contentSupportFactDocuments: structuredClone(contentSupportFactDocuments),
   });
   assertUnchangedPages(candidate, transaction.unaffectedPages);
   if (canonicalStorefrontContentFingerprint(candidate) !== resultingFingerprint) {

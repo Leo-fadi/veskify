@@ -10,9 +10,12 @@ import {
 } from "@/application/draft-save";
 import type { AIProvider } from "@/application/ai-provider";
 import type { StorefrontAIProvider } from "@/application/ai-storefront-generation";
+import { P10B16P03_PROJECT_ID } from "@/data/demo/p10b-16p-03-studio-identity";
 import {
+  createServerPromptedStorefrontStudioClient,
   createServerWholeStorefrontPlanningClient,
   ServerWholeStorefrontPlanningClient,
+  type PromptedStorefrontStudioClient,
 } from "@/integrations/ai/whole-storefront-runtime-client";
 import {
   createCatalogueStorefrontCommerceRouteAdapter,
@@ -99,10 +102,13 @@ import {
   storefrontProposalHistoryStatus,
   useDesignAgentSession,
   type DesignAgentSessionController,
+  type DesignAgentTargetScope,
+  type PromptedInitialStorefrontDraftAuthority,
 } from "./use-design-agent-session";
 
 type RepositoryFactory = () => ProjectRepository;
 const defaultCommerceRouteAdapter = createCatalogueStorefrontCommerceRouteAdapter();
+const emptyEvidenceReferences: readonly PageFactEvidenceReference[] = [];
 type LocalDemoBridgeBase = {
   aggregate: ProjectAggregate;
   proposal: AiStorefrontProposal | null;
@@ -197,7 +203,9 @@ function snapshotDesign(snapshot: StorefrontSnapshot) {
     brandSystem: snapshot.brandSystem,
     navigation: snapshot.navigation,
     pages: snapshot.pages,
+    sharedFrame: snapshot.sharedFrame,
     dynamicCommercePresentation: snapshot.dynamicCommercePresentation,
+    contentSupportFactDocuments: snapshot.contentSupportFactDocuments,
     catalogueRef: snapshot.catalogueRef,
   };
 }
@@ -397,16 +405,24 @@ function EditorToolRail({
 
 export function ProjectEditorClient({
   projectId,
+  initialDesignAgentTarget,
+  initialEvidenceReferences = emptyEvidenceReferences,
   repositoryFactory = defaultRepositoryFactory,
   aiProvider,
   storefrontAiProvider,
+  promptedStorefrontClient,
+  promptedInitialDraftAuthority,
   localDemoBridge,
   commerceRouteAdapter = defaultCommerceRouteAdapter,
 }: {
   projectId: string;
+  initialDesignAgentTarget?: DesignAgentTargetScope;
+  initialEvidenceReferences?: readonly PageFactEvidenceReference[];
   repositoryFactory?: RepositoryFactory;
   aiProvider?: AIProvider;
   storefrontAiProvider?: StorefrontAIProvider;
+  promptedStorefrontClient?: PromptedStorefrontStudioClient;
+  promptedInitialDraftAuthority?: PromptedInitialStorefrontDraftAuthority;
   localDemoBridge?: LocalDemoBridge;
   commerceRouteAdapter?: StorefrontCommerceRouteAdapter;
 }) {
@@ -443,7 +459,7 @@ export function ProjectEditorClient({
     useState<AcceptedAiReceiptClientAuthority>();
   const [currentEvidenceReferences, setCurrentEvidenceReferences] = useState<
     readonly PageFactEvidenceReference[]
-  >(() => structuredClone(localDemoBridge?.evidenceReferences ?? []));
+  >(() => structuredClone(localDemoBridge?.evidenceReferences ?? initialEvidenceReferences));
   const pendingAcceptedReceiptAuthority = useRef<AcceptedAiReceiptClientAuthority | undefined>(
     undefined,
   );
@@ -461,6 +477,14 @@ export function ProjectEditorClient({
           : {}),
       }),
     [localDemoBridge, storefrontAiProvider],
+  );
+  const resolvedPromptedStorefrontClient = useMemo(
+    () =>
+      promptedStorefrontClient ??
+      (storefrontAiProvider || localDemoBridge || projectId !== P10B16P03_PROJECT_ID
+        ? undefined
+        : createServerPromptedStorefrontStudioClient()),
+    [localDemoBridge, projectId, promptedStorefrontClient, storefrontAiProvider],
   );
 
   useEffect(() => {
@@ -530,9 +554,9 @@ export function ProjectEditorClient({
           return;
         }
         try {
-          const retainedEvidenceReferences =
-            localDemoBridge?.evidenceReferences ??
-            draft.contentSupportFactDocuments.map(({ evidence }) => structuredClone(evidence));
+          const retainedEvidenceReferences = structuredClone(
+            localDemoBridge?.evidenceReferences ?? initialEvidenceReferences,
+          );
           const context = createStorefrontRenderContext({
             activeLocale: aggregate.project.primaryLocale,
             primaryLocale: aggregate.project.primaryLocale,
@@ -585,7 +609,7 @@ export function ProjectEditorClient({
     return () => {
       cancelled = true;
     };
-  }, [attempt, localDemoBridge, projectId]);
+  }, [attempt, initialEvidenceReferences, localDemoBridge, projectId]);
 
   const readyState = state.status === "ready" ? state : undefined;
   const editorDraftBase = sessionStorefrontDraft ?? readyState?.draft;
@@ -635,6 +659,7 @@ export function ProjectEditorClient({
   const agent = useDesignAgentSession({
     lifecycleKey: `${projectId}:${attempt}`,
     projectId,
+    initialTargetScope: initialDesignAgentTarget,
     draftSnapshotId: readyState?.draft.id,
     draftRevision: readyState?.draft.revision,
     page: readyPage,
@@ -651,6 +676,8 @@ export function ProjectEditorClient({
     disabled: saveState.status === "saving",
     provider: aiProvider,
     storefrontProvider: resolvedStorefrontAiProvider,
+    promptedStorefrontClient: resolvedPromptedStorefrontClient,
+    promptedInitialDraftAuthority,
     currentEvidenceReferencesForStorefrontProposal:
       resolvedStorefrontAiProvider instanceof ServerWholeStorefrontPlanningClient
         ? (proposalId) =>
@@ -754,7 +781,7 @@ export function ProjectEditorClient({
           }));
       setAuthoritativeRevision(synchronization.authoritativeRevision);
     },
-    onStorefrontSnapshot: (snapshot, scope, action) => {
+    onStorefrontSnapshot: (snapshot, scope, action, transition) => {
       if (!readyState) return;
       const authoritativeSnapshot = p10bLiveHistorySnapshot(snapshot, localDemoBridge);
       setAcceptedReceiptAuthority(
@@ -770,7 +797,32 @@ export function ProjectEditorClient({
         localDemoBridge,
         representativeRouteIds,
       );
-      authoritativePages.forEach((snapshotPage) => editorHistory?.rebase(snapshotPage));
+      // Current evidence is established independently by the server/session authority. Snapshot
+      // fact references are retained provenance and may never authorize their own rendering.
+      const authoritativeEvidenceReferences = structuredClone(currentEvidenceReferences);
+      const authoritativeContext = createStorefrontRenderContext({
+        activeLocale: readyLocale ?? readyState.aggregate.project.primaryLocale,
+        primaryLocale: readyState.aggregate.project.primaryLocale,
+        enabledLocales: readyState.aggregate.project.enabledLocales,
+        catalogue: readyState.aggregate.catalogue,
+        snapshot: authoritativeSnapshot,
+        pagePathPrefix: `/projects/${projectId}`,
+        evidenceReferences: authoritativeEvidenceReferences,
+      });
+      authoritativePages.forEach((snapshotPage) =>
+        validateRegisteredPage(snapshotPage, authoritativeContext),
+      );
+      if (transition.replaceEditorHistory || !editorHistory) {
+        const nextHistory = new CanonicalEditorHistory({
+          validatePage: (snapshotPage) =>
+            validateRegisteredPage(snapshotPage, authoritativeContext),
+        });
+        authoritativePages.forEach((snapshotPage) => nextHistory.initialize(snapshotPage));
+        setEditorHistory(nextHistory);
+      } else {
+        authoritativePages.forEach((snapshotPage) => editorHistory.rebase(snapshotPage));
+      }
+      setCurrentEvidenceReferences(authoritativeEvidenceReferences);
       setResetKeys((current) =>
         Object.fromEntries(
           authoritativePages.map((snapshotPage) => [
@@ -1299,6 +1351,14 @@ export function ProjectEditorClient({
           ? "Valinta vaihtaa vain esikatselun tietoja. Se ei luo tuote- tai kokoelmakohtaista ulkoasua eikä tallennu luonnokseen."
           : "This changes preview data only. It does not create a product- or collection-specific design and is not saved to the draft."}
       </p>
+      {selectedArchetype?.family === "collection-search" &&
+      selectedArchetype.supportedContexts.includes("search") ? (
+        <p data-testid="dynamic-commerce-search-unavailable">
+          {locale === "fi"
+            ? "Haun esitystapa kuuluu tähän malliin, mutta haun suoritus ei ole vielä käytettävissä. Alla näkyy vain edustava kokoelmakonteksti — ei hakutuloksia."
+            : "Search presentation belongs to this archetype, but search execution is not yet available. The representative preview below shows collection context only — not search results."}
+        </p>
+      ) : null}
       <Field
         id="dynamic-commerce-representative-route"
         label={
@@ -1334,8 +1394,8 @@ export function ProjectEditorClient({
                       state.aggregate.project.primaryLocale,
                     )
                   : locale === "fi"
-                    ? "Hakutulokset"
-                    : "Search results"}
+                    ? "Kokoelma ei saatavilla"
+                    : "Collection unavailable"}
                 {` — ${route.route}`}
               </option>
             );

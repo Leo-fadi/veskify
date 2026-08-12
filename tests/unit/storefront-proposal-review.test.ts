@@ -164,7 +164,113 @@ function dynamicCommerceMigrationProposal(): AiStorefrontProposal {
   };
 }
 
+function canonicalGenerationProposal(): AiStorefrontProposal {
+  const { snapshot } = (() => {
+    const scenario = createLegacyDynamicCommerceRouteScenario();
+    const migration = migrateLegacyDynamicCommerceRoutes(
+      scenario.legacySnapshot,
+      scenario.catalogue,
+    );
+    if (migration.status !== "migrated") throw new Error("The generation fixture did not migrate.");
+    return { snapshot: migration.snapshot };
+  })();
+  const sourcePage = snapshot.pages.find(({ type }) => type === "home") ?? snapshot.pages[0];
+  if (!sourcePage) throw new Error("The generation fixture requires one raw source page.");
+  const proposedStorefront = {
+    pageOrder: snapshot.pages.map(({ id }) => id),
+    pages: structuredClone(snapshot.pages),
+    navigation: structuredClone(snapshot.navigation),
+    brandSystem: structuredClone(snapshot.brandSystem),
+    dynamicCommercePresentation: structuredClone(snapshot.dynamicCommercePresentation),
+  };
+  return {
+    ...structuredClone(proposal),
+    target: {
+      ...structuredClone(proposal.target),
+      scope: "storefront",
+      affectedPageIds: [sourcePage.id],
+      affectedSectionTargets: [],
+    },
+    originalStorefront: {
+      pageOrder: [sourcePage.id],
+      pages: [structuredClone(sourcePage)],
+      navigation: structuredClone(snapshot.navigation),
+      brandSystem: structuredClone(snapshot.brandSystem),
+      dynamicCommercePresentation: structuredClone(snapshot.dynamicCommercePresentation),
+    },
+    proposedStorefront,
+    affectedPages: [structuredClone(sourcePage)],
+    affectedDesignState: null,
+    permissionGrants: [],
+    operations: [],
+    assetPlacementOperations: [],
+    dynamicCommerceMigration: undefined,
+    wholeStorefrontGeneration: {
+      kind: "canonicalWholeStorefrontGeneration",
+      contractVersion: "1.0.0",
+      order: 0,
+      operationType: "APPLY_CANONICAL_WHOLE_STOREFRONT_GENERATION",
+      target: {
+        kind: "storefront",
+        projectId: proposal.projectId,
+        draftSnapshotId: proposal.draftSnapshotId,
+        draftRevision: proposal.draftRevision,
+      },
+      permission: {
+        skillId: "compilePromptedStorefrontDesignIntentV2",
+        skillVersion: "2.0.0",
+        skillScope: "storefront",
+        operationTypes: ["APPLY_CANONICAL_WHOLE_STOREFRONT_GENERATION"],
+        target: {
+          kind: "storefront",
+          projectId: proposal.projectId,
+          draftSnapshotId: proposal.draftSnapshotId,
+          draftRevision: proposal.draftRevision,
+        },
+      },
+      requestFingerprint: "request-fingerprint",
+      promptFingerprint: "prompt-fingerprint",
+      providerIntentFingerprint: "provider-intent-fingerprint",
+      sourceProposalFingerprint: "source-proposal-fingerprint",
+      synthesisFingerprint: "synthesis-fingerprint",
+      structuralFingerprint: "structural-fingerprint",
+      candidateSnapshotFingerprint: "resulting-snapshot",
+      sourceProjectionFingerprint: "source-projection",
+      operationProjectionFingerprint: "source-projection",
+      resultingProjectionFingerprint: "resulting-projection",
+      resultingSnapshotFingerprint: "resulting-snapshot",
+      compiledDecisionFingerprint: "compiled-decision",
+      materializationAuthorityFingerprint: "materialization-authority",
+    },
+  };
+}
+
 describe("P4-05D storefront proposal review projection", () => {
+  it("represents the exact canonical generation candidate instead of reporting zero legacy operations", () => {
+    const generated = canonicalGenerationProposal();
+    const authority = generated.proposedStorefront.dynamicCommercePresentation;
+    if (!authority) throw new Error("The generated review fixture requires route authority.");
+    const review = createStorefrontProposalReview(generated, "en", "en");
+
+    expect(review.complete).toBe(true);
+    expect(review.operationCount).toBe(1);
+    expect(review.materialChangeCount).toBeGreaterThan(1);
+    expect(review.pages.map(({ pageId }) => pageId)).toEqual(
+      generated.proposedStorefront.pageOrder,
+    );
+    expect(review.pages.every(({ items }) => items.length === 1)).toBe(true);
+    expect(review.pages[0]?.items[0]?.summary).toMatch(/complete page composition/i);
+    expect(review.dynamicCommerceConvergence).toBeNull();
+    expect(review.canonicalGeneration).toMatchObject({
+      staticPageCount: generated.proposedStorefront.pages.length,
+      collectionSearchArchetypeCount: authority.collectionSearchArchetypes.length,
+      productDetailArchetypeCount: authority.productDetailArchetypes.length,
+      runtimeRouteCount: authority.routeInventory.length,
+    });
+    expect(review.heading).toMatch(/static pages.*commerce design archetypes/i);
+    expect(review.confirmationBody).toMatch(/raw starting state.*one unsaved draft change/i);
+  });
+
   it("reviews legacy route convergence as canonical static pages and reusable archetypes", () => {
     const migrationProposal = dynamicCommerceMigrationProposal();
     const migrationAuthority = migrationProposal.proposedStorefront.dynamicCommercePresentation;
