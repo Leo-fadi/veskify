@@ -258,6 +258,7 @@ describe("P4-05D editor storefront integration", () => {
       <ProjectEditorClient
         initialDesignAgentTarget="storefront"
         projectId={P10B16P03_PROJECT_ID}
+        promptedInitialDraftAuthority={promptedInitialDraftAuthority(fixture)}
         promptedStorefrontClient={promptedClient}
         repositoryFactory={() => repository(() => Promise.resolve(fixture.aggregate))}
       />,
@@ -334,6 +335,7 @@ describe("P4-05D editor storefront integration", () => {
   }, 30_000);
 
   it("selects the compact prompted operation for the normal Studio instead of legacy initial-generation authority", async () => {
+    const fixture = createP10B16P03RawKarvonenStudioFixture();
     const fetchMock = vi.fn<(url: RequestInfo | URL, init?: RequestInit) => Promise<Response>>();
     fetchMock.mockResolvedValue(
       Response.json(
@@ -347,9 +349,8 @@ describe("P4-05D editor storefront integration", () => {
         <ProjectEditorClient
           initialDesignAgentTarget="storefront"
           projectId={P10B16P03_PROJECT_ID}
-          repositoryFactory={() =>
-            repository(() => Promise.resolve(createP10B16P03RawKarvonenStudioFixture().aggregate))
-          }
+          promptedInitialDraftAuthority={promptedInitialDraftAuthority(fixture)}
+          repositoryFactory={() => repository(() => Promise.resolve(fixture.aggregate))}
         />,
       );
       await screen.findByText("Canvas: home / fi");
@@ -383,7 +384,7 @@ describe("P4-05D editor storefront integration", () => {
   });
 
   it("uses the prompted V2 client only after an explicit storefront Generate action and preserves exact intent", async () => {
-    const legacyProvider = new DeferredStorefrontProvider();
+    const legacyProvider = new RejectingRegisteredStorefrontProvider();
     const promptedClient = new DeferredPromptedStorefrontClient();
     const fixture = createP10B16P03RawKarvonenStudioFixture();
     const repo = repository(() => Promise.resolve(fixture.aggregate));
@@ -391,6 +392,7 @@ describe("P4-05D editor storefront integration", () => {
       <ProjectEditorClient
         initialDesignAgentTarget="storefront"
         projectId={P10B16P03_PROJECT_ID}
+        promptedInitialDraftAuthority={promptedInitialDraftAuthority(fixture)}
         promptedStorefrontClient={promptedClient}
         repositoryFactory={() => repo}
         storefrontAiProvider={legacyProvider}
@@ -468,7 +470,82 @@ describe("P4-05D editor storefront integration", () => {
     fireEvent.click(screen.getByRole("button", { name: "Redo" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Save draft" })).toBeEnabled());
     expect(promptedClient.calls).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: "Generate storefront" })).not.toBeInTheDocument();
+
+    const followUpPrompt = p9r07ExactDesignSystemRequest;
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: followUpPrompt },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/temporarily unavailable/i);
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("Unsaved changes");
+    expect(promptedClient.calls).toHaveLength(2);
+    expect(legacyProvider.calls).toHaveLength(1);
+    expect(legacyProvider.calls[0]).toMatchObject({
+      capability: "approvedColorTypographyDirection",
+      instruction: followUpPrompt,
+    });
   });
+
+  it("does not re-enter prompted initial generation for a saved generated P03 draft", async () => {
+    const fixture = createP10B16P03RawKarvonenStudioFixture();
+    const execution = executeCoordinatedDirection({
+      planningInput: fixture.executionPlanningInput,
+      siteMapDecision: fixture.siteMapDecision,
+      approvedEvidenceReferences: fixture.approvedEvidenceReferences,
+      pageEvidenceAuthority: fixture.pageEvidenceAuthority,
+      contentFactAuthority: fixture.contentFactAuthority,
+      approvedAssetPresentations: fixture.approvedAssetPresentations,
+      directionRequest: {
+        directionId: "premium-editorial",
+        deterministicSeed: "p10b-16p-03-saved-follow-up-routing-v1",
+      },
+    });
+    const persistedRepository = new InMemoryProjectRepository([fixture.aggregate]);
+    await saveValidatedEditorDraft({
+      repository: persistedRepository,
+      projectId: P10B16P03_PROJECT_ID,
+      loadedDraft: fixture.rawDraft,
+      replacementSnapshot: execution.synthesis.materialization.snapshot,
+      primaryLocale: fixture.aggregate.project.primaryLocale,
+      evidenceReferences: fixture.approvedEvidenceReferences,
+      now: () => new Date("2026-08-12T13:00:00.000Z"),
+      createSnapshotId: () => "snapshot_p10b16p03_saved_follow_up",
+    });
+    const legacyProvider = new RejectingRegisteredStorefrontProvider();
+    const promptedClient = new DeferredPromptedStorefrontClient();
+    render(
+      <ProjectEditorClient
+        initialDesignAgentTarget="storefront"
+        initialEvidenceReferences={fixture.approvedEvidenceReferences}
+        projectId={P10B16P03_PROJECT_ID}
+        promptedInitialDraftAuthority={promptedInitialDraftAuthority(fixture)}
+        promptedStorefrontClient={promptedClient}
+        repositoryFactory={() => persistedRepository}
+        storefrontAiProvider={legacyProvider}
+      />,
+    );
+
+    await screen.findByText("Canvas: home / fi");
+    fireEvent.click(screen.getByRole("radio", { name: "English" }));
+    await screen.findByText("Canvas: home / en");
+    expect(screen.getByRole("button", { name: "Create proposal" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: "Generate storefront" })).not.toBeInTheDocument();
+
+    const followUpPrompt = p9r07ExactDesignSystemRequest;
+    fireEvent.change(screen.getByLabelText("Your request"), {
+      target: { value: followUpPrompt },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Create proposal" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/temporarily unavailable/i);
+    expect(screen.getByLabelText("Draft status")).toHaveTextContent("No unsaved changes");
+    expect(legacyProvider.calls).toHaveLength(1);
+    expect(legacyProvider.calls[0]).toMatchObject({
+      capability: "approvedColorTypographyDirection",
+      instruction: followUpPrompt,
+    });
+    expect(promptedClient.calls).toHaveLength(0);
+  }, 30_000);
 
   it("preserves the prompted request after failure and discards a late response after context change", async () => {
     const promptedClient = new DeferredPromptedStorefrontClient();
@@ -477,6 +554,7 @@ describe("P4-05D editor storefront integration", () => {
       <ProjectEditorClient
         initialDesignAgentTarget="storefront"
         projectId={P10B16P03_PROJECT_ID}
+        promptedInitialDraftAuthority={promptedInitialDraftAuthority(fixture)}
         promptedStorefrontClient={promptedClient}
         repositoryFactory={() => repository(() => Promise.resolve(fixture.aggregate))}
       />,
@@ -1577,6 +1655,16 @@ class DeferredStorefrontProvider implements StorefrontAIProvider {
     );
     this.#resolvers[index](response);
   }
+}
+
+function promptedInitialDraftAuthority(
+  fixture: ReturnType<typeof createP10B16P03RawKarvonenStudioFixture>,
+) {
+  return {
+    draftSnapshotId: fixture.rawDraft.id,
+    draftRevision: fixture.rawDraft.revision,
+    contentFingerprint: canonicalStorefrontContentFingerprint(fixture.rawDraft),
+  } as const;
 }
 
 function promptedStudioSuccess(request: PromptedStorefrontStudioGenerationRequest) {

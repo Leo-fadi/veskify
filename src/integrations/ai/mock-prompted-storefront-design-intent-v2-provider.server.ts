@@ -26,6 +26,81 @@ export const p10b16p03MockPromptScenarios = [
 ] as const;
 export type P10B16P03MockPromptScenario = (typeof p10b16p03MockPromptScenarios)[number];
 
+const mockPromptScenarioSignals = {
+  "premium-editorial": [
+    ["premium", 5],
+    ["editorial", 5],
+    ["story led", 4],
+    ["storytelling", 3],
+    ["story", 2],
+    ["refined", 2],
+    ["elegant", 2],
+    ["sophisticated", 2],
+    ["craftsmanship", 2],
+    ["expressive", 1],
+  ],
+  "modern-technical": [
+    ["modern", 4],
+    ["technical", 5],
+    ["information rich", 4],
+    ["catalogue led", 4],
+    ["catalog led", 4],
+    ["catalogue", 3],
+    ["catalog", 3],
+    ["precise", 2],
+    ["specification", 2],
+    ["comparison", 2],
+    ["product first", 2],
+    ["structured", 1],
+    ["dense", 1],
+  ],
+  "minimal-commerce": [
+    ["minimal commerce", 8],
+    ["minimal", 5],
+    ["conversion led", 4],
+    ["restrained", 3],
+    ["pared back", 3],
+    ["conversion", 2],
+    ["focused", 2],
+    ["quiet", 2],
+    ["direct", 2],
+    ["sparse", 2],
+    ["uncluttered", 2],
+  ],
+} as const satisfies Record<P10B16P03MockPromptScenario, readonly (readonly [string, number])[]>;
+
+function normalizedSemanticPrompt(merchantPrompt: string): string {
+  const words = merchantPrompt
+    .normalize("NFKD")
+    .toLocaleLowerCase("en")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  return ` ${words} `;
+}
+
+/**
+ * Selects the deterministic standalone mock direction from merchant language.
+ * Signal ties follow the stable registered-scenario order and prompts without
+ * a material direction signal use the safe premium-editorial default.
+ */
+export function selectP10B16P03MockPromptScenario(
+  merchantPrompt: string,
+): P10B16P03MockPromptScenario {
+  const normalizedPrompt = normalizedSemanticPrompt(merchantPrompt);
+  const scored = p10b16p03MockPromptScenarios.map((scenario) => ({
+    scenario,
+    score: mockPromptScenarioSignals[scenario].reduce(
+      (total, [signal, weight]) => total + (normalizedPrompt.includes(` ${signal} `) ? weight : 0),
+      0,
+    ),
+  }));
+  const highestScore = Math.max(...scored.map(({ score }) => score));
+  return (
+    scored.find(({ score }) => score === highestScore && score > 0)?.scenario ?? "premium-editorial"
+  );
+}
+
 export type P10B16P03MockPromptFailure =
   | "provider-refusal"
   | "provider-timeout"

@@ -71,6 +71,11 @@ export type DesignAgentTargetScope = "section" | "page" | "storefront";
 type ResolvedStorefrontWorkflowScope = StorefrontGenerationScope["kind"];
 export type StorefrontProposalHistoryAction = "applied" | "undone" | "redone";
 type ValidatedStorefrontProposalScope = AiStorefrontProposal["target"]["scope"];
+export type PromptedInitialStorefrontDraftAuthority = Readonly<{
+  draftSnapshotId: string;
+  draftRevision: number;
+  contentFingerprint: string;
+}>;
 
 export function storefrontMinimalRevisionInstruction(
   locale: Locale,
@@ -220,6 +225,7 @@ type UseDesignAgentSessionInput = {
   provider?: AIProvider;
   storefrontProvider?: StorefrontAIProvider;
   promptedStorefrontClient?: PromptedStorefrontStudioClient;
+  promptedInitialDraftAuthority?: PromptedInitialStorefrontDraftAuthority;
   currentEvidenceReferencesForStorefrontProposal?: (
     proposalId: string,
   ) => readonly PageFactEvidenceReference[];
@@ -514,6 +520,7 @@ export function useDesignAgentSession({
   provider,
   storefrontProvider,
   promptedStorefrontClient,
+  promptedInitialDraftAuthority,
   currentEvidenceReferencesForStorefrontProposal,
   analytics = noopProposalAnalyticsSink,
   analyticsRoute = `/projects/${projectId}/editor`,
@@ -576,7 +583,20 @@ export function useDesignAgentSession({
   const fallbackLocale = primaryLocale ?? locale;
   const localize = (value: LocalizedText) => resolveLocalizedText(value, locale, fallbackLocale);
   const promptedInitialGeneration = Boolean(
-    promptedStorefrontClient && !controlledStorefrontAcceptance && targetScope === "storefront",
+    promptedStorefrontClient &&
+    promptedInitialDraftAuthority &&
+    !controlledStorefrontAcceptance &&
+    targetScope === "storefront" &&
+    activeDraft &&
+    storedDraft &&
+    activeDraft.id === promptedInitialDraftAuthority.draftSnapshotId &&
+    activeDraft.revision === promptedInitialDraftAuthority.draftRevision &&
+    storedDraft.id === promptedInitialDraftAuthority.draftSnapshotId &&
+    storedDraft.revision === promptedInitialDraftAuthority.draftRevision &&
+    canonicalStorefrontContentFingerprint(activeDraft) ===
+      promptedInitialDraftAuthority.contentFingerprint &&
+    canonicalStorefrontContentFingerprint(storedDraft) ===
+      promptedInitialDraftAuthority.contentFingerprint,
   );
 
   useEffect(() => {
@@ -1004,7 +1024,8 @@ export function useDesignAgentSession({
       generationPending.current ||
       generatedStorefrontProposal ||
       pendingStorefrontAcceptance.current ||
-      !promptedStorefrontClient
+      !promptedStorefrontClient ||
+      !promptedInitialGeneration
     ) {
       return;
     }
@@ -1314,7 +1335,7 @@ export function useDesignAgentSession({
     merchantInstruction.current = instruction;
     setGenerationRetryUsed(false);
     if (targetScope === "storefront") {
-      if (promptedStorefrontClient) {
+      if (promptedInitialGeneration) {
         void generatePromptedStorefront(instruction);
         return;
       }
@@ -1836,7 +1857,7 @@ export function useDesignAgentSession({
 
   const closeForPageSwitch = (nextPage: PageModel) => {
     if (targetScope === "storefront") {
-      if (promptedStorefrontClient && session?.state === "generating") {
+      if (promptedInitialGeneration && session?.state === "generating") {
         supersedeForContextChange(nextPage, undefined, statuses.contextSwitch);
         return;
       }

@@ -103,6 +103,7 @@ import {
   useDesignAgentSession,
   type DesignAgentSessionController,
   type DesignAgentTargetScope,
+  type PromptedInitialStorefrontDraftAuthority,
 } from "./use-design-agent-session";
 
 type RepositoryFactory = () => ProjectRepository;
@@ -410,6 +411,7 @@ export function ProjectEditorClient({
   aiProvider,
   storefrontAiProvider,
   promptedStorefrontClient,
+  promptedInitialDraftAuthority,
   localDemoBridge,
   commerceRouteAdapter = defaultCommerceRouteAdapter,
 }: {
@@ -420,6 +422,7 @@ export function ProjectEditorClient({
   aiProvider?: AIProvider;
   storefrontAiProvider?: StorefrontAIProvider;
   promptedStorefrontClient?: PromptedStorefrontStudioClient;
+  promptedInitialDraftAuthority?: PromptedInitialStorefrontDraftAuthority;
   localDemoBridge?: LocalDemoBridge;
   commerceRouteAdapter?: StorefrontCommerceRouteAdapter;
 }) {
@@ -674,6 +677,7 @@ export function ProjectEditorClient({
     provider: aiProvider,
     storefrontProvider: resolvedStorefrontAiProvider,
     promptedStorefrontClient: resolvedPromptedStorefrontClient,
+    promptedInitialDraftAuthority,
     currentEvidenceReferencesForStorefrontProposal:
       resolvedStorefrontAiProvider instanceof ServerWholeStorefrontPlanningClient
         ? (proposalId) =>

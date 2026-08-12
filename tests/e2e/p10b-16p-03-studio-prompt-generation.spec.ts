@@ -13,7 +13,6 @@ const promptB =
 const promptC =
   "Create a restrained minimal commerce jewellery storefront with focused product discovery, quiet typography and direct conversion-led hierarchy.";
 
-type Scenario = "premium-editorial" | "modern-technical" | "minimal-commerce";
 type MockFailure =
   | "provider-refusal"
   | "malformed-output"
@@ -57,7 +56,6 @@ type GenerationSuccess = Readonly<{
 }>;
 
 type GenerationControl = {
-  scenario: Scenario;
   failure?: MockFailure | "stale" | "transport";
   requests: CapturedGenerationRequest[];
   externalProviderRequests: string[];
@@ -100,7 +98,6 @@ async function readStoredDraft(page: Page): Promise<string> {
 
 async function installGenerationControl(page: Page): Promise<GenerationControl> {
   const control: GenerationControl = {
-    scenario: "premium-editorial",
     requests: [],
     externalProviderRequests: [],
   };
@@ -128,7 +125,6 @@ async function installGenerationControl(page: Page): Promise<GenerationControl> 
     }
     const headers = {
       ...request.headers(),
-      "x-veskify-p10b-16p-03-mock-scenario": control.scenario,
       ...(control.failure ? { "x-veskify-p10b-16p-03-mock-failure": control.failure } : {}),
     };
     await route.continue({ headers });
@@ -153,9 +149,7 @@ async function generate(
   page: Page,
   control: GenerationControl,
   prompt: string,
-  scenario: Scenario,
 ): Promise<GenerationSuccess> {
-  control.scenario = scenario;
   control.failure = undefined;
   const requestCount = control.requests.length;
   const field = page.getByLabel("Your request");
@@ -296,7 +290,7 @@ test("raw Studio generates, reviews, rejects, accepts, restores, saves and previ
   expect(control.requests).toEqual([]);
   expect(control.externalProviderRequests).toEqual([]);
 
-  const first = await generate(page, control, promptA, "premium-editorial");
+  const first = await generate(page, control, promptA);
   const proposalOutline = await pageSelector.locator("option").allTextContents();
   expect(proposalOutline.length).toBeGreaterThan(rawOutline.length);
   expect(proposalOutline).not.toEqual(expect.arrayContaining(["Myrskyluodon Maija", "Feeniks"]));
@@ -380,7 +374,7 @@ test("raw Studio generates, reviews, rejects, accepts, restores, saves and previ
   await expect(page.getByTestId("draft-status")).toContainText("No unsaved changes");
   expect(control.requests).toHaveLength(1);
 
-  const second = await generate(page, control, promptB, "modern-technical");
+  const second = await generate(page, control, promptB);
   const generatedHomeId = await pageSelector.locator("option").first().getAttribute("value");
   if (!generatedHomeId) throw new Error("The generated homepage is unavailable.");
   await pageSelector.selectOption(generatedHomeId);
@@ -476,14 +470,14 @@ test("raw Studio generates, reviews, rejects, accepts, restores, saves and previ
   expect(control.externalProviderRequests).toEqual([]);
 });
 
-test("a third exact prompt reaches the minimal-commerce mock once without terminal reset", async ({
+test("a third merchant intent reaches the minimal-commerce mock once without terminal reset", async ({
   page,
 }) => {
   const control = await installGenerationControl(page);
   await page.goto(editorUrl);
   await expect(page.getByLabel("Visual editor canvas")).toBeVisible({ timeout: 60_000 });
   await useEntireStorefrontPrompt(page);
-  const result = await generate(page, control, promptC, "minimal-commerce");
+  const result = await generate(page, control, promptC);
   expect(result.lineage.providerCallCount).toBe(1);
   expect(result.lineage.retryCount).toBe(0);
   expect(control.requests.map(({ merchantPrompt }) => merchantPrompt)).toEqual([promptC]);

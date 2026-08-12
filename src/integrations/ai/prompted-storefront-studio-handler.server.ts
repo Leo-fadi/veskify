@@ -30,9 +30,8 @@ import {
 import { P10B16P03_PROJECT_ID } from "@/data/demo/p10b-16p-03-studio-identity";
 import {
   createP10B16P03MockPromptedStorefrontDesignIntentProvider,
-  p10b16p03MockPromptScenarios,
+  selectP10B16P03MockPromptScenario,
   type P10B16P03MockPromptFailure,
-  type P10B16P03MockPromptScenario,
 } from "@/integrations/ai/mock-prompted-storefront-design-intent-v2-provider.server";
 import { selectServerPromptedStorefrontDesignIntentProviderConfiguration } from "@/integrations/ai/openai/prompted-storefront-design-intent-v2-client.server";
 import {
@@ -45,7 +44,6 @@ import {
 } from "@/domain/storefront";
 import type { ServerPromptedStorefrontStudioAuthority } from "./prompted-storefront-studio-authority.server";
 
-export const P10B16P03_MOCK_SCENARIO_HEADER = "x-veskify-p10b-16p-03-mock-scenario" as const;
 export const P10B16P03_MOCK_FAILURE_HEADER = "x-veskify-p10b-16p-03-mock-failure" as const;
 
 type Environment = Readonly<Record<string, string | undefined>>;
@@ -55,13 +53,6 @@ export type SelectServerPromptedStorefrontDesignIntentProvider = (input: {
   httpRequest: Request;
   currentAuthority: PromptedStorefrontDesignCompilationAuthority;
 }) => PromptedStorefrontDesignIntentProvider;
-
-function mockScenario(httpRequest: Request): P10B16P03MockPromptScenario {
-  const requested = httpRequest.headers.get(P10B16P03_MOCK_SCENARIO_HEADER);
-  return (
-    p10b16p03MockPromptScenarios.find((scenario) => scenario === requested) ?? "premium-editorial"
-  );
-}
 
 const mockFailures: readonly P10B16P03MockPromptFailure[] = [
   "provider-refusal",
@@ -110,7 +101,7 @@ export function createDefaultServerPromptedStorefrontDesignIntentProviderSelecto
     if (standaloneP03 || explicitlyMocked) {
       const failure = mockFailure(httpRequest);
       return createP10B16P03MockPromptedStorefrontDesignIntentProvider({
-        scenario: mockScenario(httpRequest),
+        scenario: selectP10B16P03MockPromptScenario(request.merchantPrompt),
         compatibilityInput: currentAuthority.compatibilityInput,
         ...(failure === undefined ? {} : { failure }),
       });

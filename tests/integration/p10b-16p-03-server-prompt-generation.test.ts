@@ -19,14 +19,20 @@ import {
   P10B16P03_PROJECT_ID,
   createP10B16P03RawKarvonenStudioFixture,
 } from "@/data/demo/p10b-16p-03-studio-prompt-generation";
-import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
+import {
+  canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
+  canonicalValueString,
+} from "@/domain/storefront";
 import {
   P10B16P03_MOCK_PROMPTED_STOREFRONT_PROVIDER_ID,
   createP10B16P03MockPromptedStorefrontDesignIntentProvider,
+  selectP10B16P03MockPromptScenario,
 } from "@/integrations/ai/mock-prompted-storefront-design-intent-v2-provider.server";
 import {
   createP10B16P03ServerPromptedStorefrontStudioAuthority,
   loadP10B16P03CurrentEvidenceReferences,
+  loadP10B16P03InitialDraftAuthority,
 } from "@/integrations/ai/prompted-storefront-studio-authority.server";
 import type { SelectServerPromptedStorefrontDesignIntentProvider } from "@/integrations/ai/prompted-storefront-studio-handler.server";
 import { projectPromptedStorefrontCompilationToStudioProposal } from "@/integrations/ai/prompted-storefront-studio-handler.server";
@@ -133,6 +139,28 @@ function request(
 }
 
 describe("P10B-16P-03 canonical server prompt generation", () => {
+  it("selects the bounded mock direction from semantic merchant intent with a safe default", () => {
+    expect(selectP10B16P03MockPromptScenario("Give the brand an elegant story-led posture.")).toBe(
+      "premium-editorial",
+    );
+    expect(
+      selectP10B16P03MockPromptScenario(
+        "Prioritise precise technical comparison in a dense catalogue.",
+      ),
+    ).toBe("modern-technical");
+    expect(
+      selectP10B16P03MockPromptScenario(
+        "Keep the purchase path uncluttered, quiet and conversion-led.",
+      ),
+    ).toBe("minimal-commerce");
+    expect(selectP10B16P03MockPromptScenario("Create a coherent complete storefront.")).toBe(
+      "premium-editorial",
+    );
+    expect(selectP10B16P03MockPromptScenario("Use editorial and technical cues.")).toBe(
+      "premium-editorial",
+    );
+  });
+
   it("resolves current evidence only from exact standalone server authority", async () => {
     const fixture = createP10B16P03RawKarvonenStudioFixture();
     const current = await loadP10B16P03CurrentEvidenceReferences({
@@ -159,6 +187,32 @@ describe("P10B-16P-03 canonical server prompt generation", () => {
         environment: { VESKIFY_RUNTIME_MODE: "integrated" },
       }),
     ).resolves.toEqual([]);
+  });
+
+  it("issues initial-generation draft authority only for the exact standalone raw project", async () => {
+    const fixture = createP10B16P03RawKarvonenStudioFixture();
+    await expect(
+      loadP10B16P03InitialDraftAuthority({
+        projectId: P10B16P03_PROJECT_ID,
+        environment: { VESKIFY_RUNTIME_MODE: "standalone" },
+      }),
+    ).resolves.toEqual({
+      draftSnapshotId: fixture.rawDraft.id,
+      draftRevision: fixture.rawDraft.revision,
+      contentFingerprint: canonicalStorefrontContentFingerprint(fixture.rawDraft),
+    });
+    await expect(
+      loadP10B16P03InitialDraftAuthority({
+        projectId: "project_unknown",
+        environment: { VESKIFY_RUNTIME_MODE: "standalone" },
+      }),
+    ).resolves.toBeUndefined();
+    await expect(
+      loadP10B16P03InitialDraftAuthority({
+        projectId: P10B16P03_PROJECT_ID,
+        environment: { VESKIFY_RUNTIME_MODE: "integrated" },
+      }),
+    ).resolves.toBeUndefined();
   });
 
   it("compiles the exact raw server authority through the async reload boundary", async () => {
@@ -288,7 +342,7 @@ describe("P10B-16P-03 canonical server prompt generation", () => {
     }
   });
 
-  it("produces distinct safe lineage for three exact mocked prompt scenarios", async () => {
+  it("produces distinct safe lineage for three semantic merchant directions", async () => {
     const route = createWholeStorefrontPlanningRouteHandler({
       environment: { VESKIFY_RUNTIME_MODE: "standalone" },
     });
@@ -316,13 +370,10 @@ describe("P10B-16P-03 canonical server prompt generation", () => {
     }[] = [];
     for (const [index, scenario] of scenarios.entries()) {
       const response = await route(
-        request(
-          {
-            requestId: `p10b16p03-scenario-${index + 1}`,
-            merchantPrompt: scenario.prompt,
-          },
-          { "x-veskify-p10b-16p-03-mock-scenario": scenario.id },
-        ),
+        request({
+          requestId: `p10b16p03-scenario-${index + 1}`,
+          merchantPrompt: scenario.prompt,
+        }),
       );
       const body = promptedStorefrontStudioGenerationResponseSchema.parse(await response.json());
       expect(response.status, `${scenario.id}: ${JSON.stringify(body)}`).toBe(200);

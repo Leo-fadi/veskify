@@ -148,6 +148,13 @@ The merchant prompt is checked for non-blank input but is otherwise transmitted 
 normal initial entire-storefront composer uses Generate storefront language and does not present
 obsolete preset-style initial-generation examples. AI-determined direction is the default.
 
+Design Intent V2 initial generation is available only while the active and stored draft still match
+the exact raw project identity and content fingerprint issued by trusted server authority. While an
+accepted/generated or otherwise modified draft remains active, and after a generated draft is saved
+and reloaded, later whole-storefront requests remain on the existing bounded follow-up path; the
+configured prompted client alone cannot re-enable raw initial generation. Undo may restore exact raw
+eligibility only when both the active and stored drafts again satisfy that same authority.
+
 The merchant-safe lifecycle distinguishes:
 
 1. idle;
@@ -252,9 +259,11 @@ provider transport without exposing raw provider output or internal authority pa
 The mocked evidence covers premium-editorial/story-led, modern-technical/catalogue-led, and
 minimal-commerce/conversion-led prompts over the same merchant, catalogue, evidence, and asset
 authority. Each explicit prompt reaches its provider request unchanged and produces one provider
-call. The scenarios retain distinct intent, compiled-decision, structural, and candidate snapshot
-fingerprints and differ materially across at least four registered structural/narrative/
-merchandising/responsive dimensions. Protected commerce and canonical product media remain equal.
+call. The standalone deterministic mock derives its registered direction from normalized semantic
+signals in that submitted prompt; no browser or test header selects the result. The scenarios retain
+distinct intent, compiled-decision, structural, and candidate snapshot fingerprints and differ
+materially across at least four registered structural/narrative/merchandising/responsive
+dimensions. Protected commerce and canonical product media remain equal.
 
 Focused unit and integration evidence covers:
 

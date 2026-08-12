@@ -13,7 +13,10 @@ import {
   type P10B16P03RawKarvonenStudioFixture,
 } from "@/data/demo/p10b-16p-03-studio-prompt-generation";
 import { InMemoryProjectRepository, ProjectNotFoundError } from "@/services/storage";
-import type { PageFactEvidenceReference } from "@/domain/storefront";
+import {
+  canonicalStorefrontContentFingerprint,
+  type PageFactEvidenceReference,
+} from "@/domain/storefront";
 import { ServerWholeStorefrontAuthorityError } from "./whole-storefront-runtime-authority";
 
 export type ServerPromptedStorefrontStudioContext = Readonly<{
@@ -151,6 +154,38 @@ export function loadP10B16P03CurrentEvidenceReferences({
   }
   return Promise.resolve(
     structuredClone(createP10B16P03RawKarvonenStudioFixture().approvedEvidenceReferences),
+  );
+}
+
+/**
+ * Identifies the one exact raw draft that may enter the P03 initial-generation path. The value is
+ * derived from trusted standalone server authority and is only a client routing hint: the
+ * generation endpoint independently reloads and verifies the same project, snapshot and revision.
+ */
+export function loadP10B16P03InitialDraftAuthority({
+  projectId,
+  environment = process.env,
+}: {
+  projectId: string;
+  environment?: Readonly<Record<string, string | undefined>>;
+}): Promise<
+  | Readonly<{
+      draftSnapshotId: string;
+      draftRevision: number;
+      contentFingerprint: string;
+    }>
+  | undefined
+> {
+  if (environment.VESKIFY_RUNTIME_MODE !== "standalone" || projectId !== P10B16P03_PROJECT_ID) {
+    return Promise.resolve(undefined);
+  }
+  const fixture = createP10B16P03RawKarvonenStudioFixture();
+  return Promise.resolve(
+    Object.freeze({
+      draftSnapshotId: fixture.rawDraft.id,
+      draftRevision: fixture.rawDraft.revision,
+      contentFingerprint: canonicalStorefrontContentFingerprint(fixture.rawDraft),
+    }),
   );
 }
 
