@@ -3,12 +3,13 @@
 ## Status
 
 **Partial — compatibility bridge and mocked-provider acceptance implemented; no live Design Intent
-V2 acceptance exists.** P10B-16, P10B-16P-01, and P10B-16P-02A are **Baseline**. P10B-16P-02 is
-**Partial**; P10B-16P-02B, P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain **Planned**.
+V2 acceptance exists.** P10B-16, P10B-16P-01, P10B-16P-02A, and P10B-16P-02B are **Baseline**.
+P10B-16P-02 is **Baseline**; P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain **Planned**.
 P10B remains **Partial**.
 
-Provider calls during the P10B-16P-02A Design Intent V2 implementation: **zero**. One earlier,
-separately authorized call used the pre-correction v1 direction/posture contract retained below.
+Provider calls during the P10B-16P-02A and P10B-16P-02B Design Intent V2 implementation:
+**zero**. One earlier, separately authorized call used the pre-correction v1 direction/posture
+contract retained below.
 
 The retained call proves only that the earlier strict v1 provider result completed. Coordinated
 synthesis failed afterward, and the call did not generate a storefront design plan from the prompt.
@@ -344,8 +345,10 @@ or production evidence is claimed.
 The new prompted contract and its transition are specified in
 [`P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md`](P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md).
 P10B-16P-02A makes the strict transient Design Intent V2 boundary structurally available without a
-provider call. P10B-16P-02B must compile that intent against refreshed authority, and P10B-16P-03
-must wire it into the normal Storefront Studio proposal journey before live V2 acceptance.
+provider call. P10B-16P-02B now compiles that intent against refreshed authority through a bounded
+metadata-only solver and consumes one exact result through canonical synthesis and isolated
+proposal materialization, also without a provider call. P10B-16P-03 must wire it into the normal
+Storefront Studio proposal journey before live V2 acceptance.
 
 P10B-16P-04, not this compatibility record, owns separately authorized real-provider acceptance and
 the decision to retire, migrate or retain P10B-16L. Repeating the executable-option selector cannot

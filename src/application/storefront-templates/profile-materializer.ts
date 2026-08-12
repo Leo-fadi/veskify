@@ -1,4 +1,12 @@
-import type { CommerceBindingSourceType, ComponentDefinitionV2 } from "@/domain/component-platform";
+import {
+  boundedParametersById,
+  projectBoundedParametersToComponentRuntime,
+  resolveBoundedParameterInheritance,
+  type CommerceBindingSourceType,
+  type ComponentDefinitionV2,
+  type NarrativeRoleDefinition,
+} from "@/domain/component-platform";
+import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 import { validateNarrativeComposition } from "./design-vocabulary-validation";
 import {
   executablePageBlueprintProfileSchema,
@@ -21,12 +29,12 @@ export type ExecutablePageBlueprintMaterialization = Readonly<{
   profileId: string;
   profileVersion: string;
   pageType: StorefrontTemplatePagePlan["pageType"];
-  roleOrder: readonly string[];
+  roleOrder: readonly NarrativeRoleDefinition["id"][];
   slots: readonly Readonly<{
     slotId: string;
     component: string;
     variant: string;
-    narrativeRole: string;
+    narrativeRole: NarrativeRoleDefinition["id"];
     visualWeight: string;
     transitionIntent?: string;
     boundedParameters: Readonly<Record<string, string | number>>;
@@ -39,6 +47,19 @@ export type ExecutablePageBlueprintMaterialization = Readonly<{
   commercialCollectionSearch?: CommercialCollectionSearchProfileAuthority;
   commercialUtility?: CommercialUtilityProfileAuthority;
   fingerprint: string;
+}>;
+
+/**
+ * A bounded, transient selection over one registered PageBlueprint slot. It
+ * cannot replace the slot component or introduce unregistered variants or
+ * parameters; it only selects authority already permitted by the profile and
+ * current component definition.
+ */
+export type ExecutablePageBlueprintSlotSelectionOverride = Readonly<{
+  slotId: string;
+  component: string;
+  variant: string;
+  boundedParameters?: Readonly<Record<string, string | number>>;
 }>;
 
 export class ExecutablePageBlueprintMaterializationError extends Error {
@@ -103,6 +124,7 @@ export function materializeExecutablePageBlueprint(
     componentDefinitions: readonly ComponentDefinitionV2[];
     availableBindingCategories: readonly CommerceBindingSourceType[];
     brandSystemParameterValues?: Readonly<Record<string, string | number>>;
+    slotSelectionOverrides?: readonly ExecutablePageBlueprintSlotSelectionOverride[];
   }>,
 ): ExecutablePageBlueprintMaterialization {
   const parsedPagePlan = storefrontTemplatePagePlanSchema.safeParse(input.pagePlan);
@@ -186,27 +208,169 @@ export function materializeExecutablePageBlueprint(
   const definitions = new Map(
     input.componentDefinitions.map((definition) => [definition.type, definition]),
   );
+  const suppliedSlotSelectionOverrides = input.slotSelectionOverrides;
+  if (
+    suppliedSlotSelectionOverrides !== undefined &&
+    !Array.isArray(suppliedSlotSelectionOverrides)
+  ) {
+    throw new ExecutablePageBlueprintMaterializationError(
+      "incompatible-component",
+      `Profile ${profile.id} received invalid slot-selection authority.`,
+    );
+  }
+  const slotSelectionOverrides: readonly ExecutablePageBlueprintSlotSelectionOverride[] =
+    suppliedSlotSelectionOverrides ?? [];
+  const selectionOverrides = new Map<string, ExecutablePageBlueprintSlotSelectionOverride>();
+  for (const selection of slotSelectionOverrides) {
+    if (
+      !selection ||
+      typeof selection !== "object" ||
+      typeof selection.slotId !== "string" ||
+      typeof selection.component !== "string" ||
+      typeof selection.variant !== "string" ||
+      selectionOverrides.has(selection.slotId)
+    ) {
+      throw new ExecutablePageBlueprintMaterializationError(
+        "incompatible-component",
+        `Profile ${profile.id} received an invalid or duplicate slot selection.`,
+      );
+    }
+    selectionOverrides.set(selection.slotId, selection);
+  }
+  for (const slotId of selectionOverrides.keys()) {
+    if (!pagePlan.slots.some((slot) => slot.id === slotId)) {
+      throw new ExecutablePageBlueprintMaterializationError(
+        "incompatible-component",
+        `Profile ${profile.id} has no registered slot ${slotId}.`,
+      );
+    }
+  }
   const slots = pagePlan.slots.map((slot) => {
     const expected = profile.componentSelections.find((selection) => selection.slotId === slot.id);
     const definition = definitions.get(slot.sectionType);
+    const selectionOverride = selectionOverrides.get(slot.id);
+    const variant = selectionOverride?.variant ?? slot.defaultVariant;
+    const variantAuthority = definition?.commercialAnatomy?.variants.find(
+      (candidate) => candidate.variantId === variant,
+    );
+    const hasParameterOverrides =
+      selectionOverride?.boundedParameters !== undefined &&
+      selectionOverride.boundedParameters !== null &&
+      typeof selectionOverride.boundedParameters === "object" &&
+      !Array.isArray(selectionOverride.boundedParameters) &&
+      Object.keys(selectionOverride.boundedParameters).length > 0;
     if (
       !expected ||
       expected.component !== slot.sectionType ||
       expected.defaultVariant !== slot.defaultVariant ||
       !definition ||
       !definition.supportedPageTypes.includes(pagePlan.pageType) ||
-      !definition.variants.some((variant) => variant.id === slot.defaultVariant)
+      (selectionOverride?.component !== undefined &&
+        selectionOverride.component !== slot.sectionType)
     ) {
       throw new ExecutablePageBlueprintMaterializationError(
         "incompatible-component",
-        `Profile ${profile.id} cannot materialize ${slot.id} as ${slot.sectionType}/${slot.defaultVariant}.`,
+        `Profile ${profile.id} cannot materialize ${slot.id} as its registered component.`,
       );
     }
-    const boundedParameters = profileAuthority.boundedParametersBySlotId[slot.id] ?? {};
+    if (
+      !slot.allowedVariants.includes(variant) ||
+      !expected.variants.includes(variant) ||
+      !definition.variants.some((candidate) => candidate.id === variant) ||
+      (selectionOverride !== undefined &&
+        (variant !== slot.defaultVariant || !hasParameterOverrides) &&
+        variantAuthority?.classification !== "meaningfulStructuralVariant")
+    ) {
+      throw new ExecutablePageBlueprintMaterializationError(
+        "incompatible-component",
+        `Profile ${profile.id} cannot materialize ${slot.id} as ${slot.sectionType}/${variant}.`,
+      );
+    }
+    const parameterOverrides = selectionOverride?.boundedParameters ?? {};
+    if (
+      !parameterOverrides ||
+      typeof parameterOverrides !== "object" ||
+      Array.isArray(parameterOverrides)
+    ) {
+      throw new ExecutablePageBlueprintMaterializationError(
+        "invalid-parameter",
+        `Profile ${profile.id} received invalid bounded parameters for slot ${slot.id}.`,
+      );
+    }
+    const boundedParameters = {
+      ...(profileAuthority.boundedParametersBySlotId[slot.id] ?? {}),
+    };
+    const resolvedParameterOverrides: Record<string, string | number> = {};
+    for (const [parameterId, value] of Object.entries(parameterOverrides).sort(([left], [right]) =>
+      left.localeCompare(right),
+    )) {
+      const parameter = boundedParametersById.get(parameterId);
+      if (
+        !parameter ||
+        !definition.designCompatibility.boundedParameterIds.includes(parameterId) ||
+        !parameter.authority.instanceOverrideAllowed ||
+        !parameter.compatibleComponentFamilies.includes(definition.family) ||
+        !parameter.compatiblePageTypes.includes(pagePlan.pageType) ||
+        (parameter.compatibleVariants.length > 0 && !parameter.compatibleVariants.includes(variant))
+      ) {
+        throw new ExecutablePageBlueprintMaterializationError(
+          "invalid-parameter",
+          `Profile ${profile.id} cannot apply bounded parameter ${parameterId} to ${slot.sectionType}/${variant}.`,
+        );
+      }
+      const pageConstraint = pagePlan.pageBlueprint.boundedParameterConstraints.find(
+        (constraint) => constraint.parameterId === parameterId,
+      );
+      const slotConstraint = slot.boundedParameterConstraints.find(
+        (constraint) => constraint.parameterId === parameterId,
+      );
+      const resolved = resolveBoundedParameterInheritance(parameterId, [
+        ...(input.brandSystemParameterValues?.[parameterId] === undefined
+          ? []
+          : [
+              {
+                level: "brandSystem" as const,
+                value: input.brandSystemParameterValues[parameterId],
+              },
+            ]),
+        ...(pageConstraint
+          ? [{ level: "pageBlueprint" as const, constraint: pageConstraint }]
+          : []),
+        ...(slotConstraint
+          ? [{ level: "pageBlueprint" as const, constraint: slotConstraint }]
+          : []),
+        ...(profile.parameterDefaults[parameterId] === undefined
+          ? []
+          : [
+              {
+                level: "pageBlueprint" as const,
+                value: profile.parameterDefaults[parameterId],
+              },
+            ]),
+        { level: "instance" as const, value },
+      ]);
+      if (resolved.issues.length > 0 || resolved.value === undefined) {
+        throw new ExecutablePageBlueprintMaterializationError(
+          "invalid-parameter",
+          `Profile ${profile.id} received an invalid current-authority value for ${parameterId} in slot ${slot.id}.`,
+        );
+      }
+      boundedParameters[parameterId] = resolved.value;
+      resolvedParameterOverrides[parameterId] = resolved.value;
+    }
+    if (
+      projectBoundedParametersToComponentRuntime(slot.sectionType, resolvedParameterOverrides) ===
+      null
+    ) {
+      throw new ExecutablePageBlueprintMaterializationError(
+        "invalid-parameter",
+        `Profile ${profile.id} cannot project the selected bounded parameters for slot ${slot.id} into its current renderer.`,
+      );
+    }
     return {
       slotId: slot.id,
       component: slot.sectionType,
-      variant: slot.defaultVariant,
+      variant,
       narrativeRole: slot.narrativeRole,
       visualWeight: slot.visualWeight,
       ...(slot.transitionIntent === undefined ? {} : { transitionIntent: slot.transitionIntent }),
@@ -299,7 +463,15 @@ export function materializeExecutablePageBlueprint(
   };
   return freeze({
     ...materialization,
-    fingerprint: profileAuthority.fingerprint,
+    fingerprint:
+      selectionOverrides.size === 0
+        ? profileAuthority.fingerprint
+        : `page-blueprint-${canonicalValueFingerprint(
+            canonicalValueString({
+              authorityFingerprint: profileAuthority.fingerprint,
+              materialization,
+            }),
+          )}`,
   });
 }
 

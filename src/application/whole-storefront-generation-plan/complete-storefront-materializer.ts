@@ -2,7 +2,12 @@ import {
   materializeContentSupportSnapshot,
   type ContentSupportFactAuthority,
 } from "@/application/content-support-pages";
-import { requireMigratedDynamicCommerceSnapshot } from "@/application/dynamic-commerce-routes";
+import {
+  materializeCurrentDynamicCommercePresentationAuthority,
+  requireMigratedDynamicCommerceSnapshot,
+  validateDynamicCommerceDesignSelection,
+  type DynamicCommerceDesignSelection,
+} from "@/application/dynamic-commerce-routes";
 import {
   materializeStorefrontSiteMap,
   type PageFactEvidenceAuthority,
@@ -39,7 +44,11 @@ import {
   createWholeStorefrontGenerationPlan,
   createWholeStorefrontGenerationTarget,
 } from "./planner";
-import type { WholeStorefrontGenerationPlan, WholeStorefrontPlanningInput } from "./contract";
+import type {
+  WholeStorefrontGenerationPlan,
+  WholeStorefrontPageBlueprintSelectionOverride,
+  WholeStorefrontPlanningInput,
+} from "./contract";
 import type { ApprovedAssetPresentation } from "./approved-brand-story-media";
 
 const contentSupportFamilyIds = new Set([
@@ -188,13 +197,24 @@ export function materializeCompleteStorefrontSelection(
       spacingDensity: "compact" | "standard" | "spacious";
       surfaceDepth: "flat" | "subtle" | "layered";
     }>;
+    pageBlueprintSelectionOverrides?: readonly WholeStorefrontPageBlueprintSelectionOverride[];
+    dynamicCommerceSelection?: DynamicCommerceDesignSelection;
     materializationIdPrefix?: string;
   }>,
 ): CompleteStorefrontMaterialization {
   const materializationIdPrefix = input.materializationIdPrefix ?? "complete";
+  const sourceDynamicSelection = input.dynamicCommerceSelection
+    ? validateDynamicCommerceDesignSelection(
+        input.planningInput.draft,
+        input.planningInput.catalogue,
+        input.dynamicCommerceSelection,
+      )
+    : null;
+  const baseSnapshot = structuredClone(input.planningInput.draft);
+  delete baseSnapshot.dynamicCommercePresentation;
   const siteMap = materializeStorefrontSiteMap({
     decision: input.siteMapDecision,
-    baseSnapshot: input.planningInput.draft,
+    baseSnapshot,
     catalogue: input.planningInput.catalogue,
     evidenceAuthority: input.pageEvidenceAuthority,
   });
@@ -210,10 +230,10 @@ export function materializeCompleteStorefrontSelection(
     }
   }
 
-  const target = createWholeStorefrontGenerationTarget({
+  const canonicalCommerceFingerprint = createWholeStorefrontGenerationTarget({
     ...input.planningInput,
     draft: snapshot,
-  });
+  }).canonicalCommerceFingerprint;
   snapshot = storefrontSnapshotSchema.parse({
     ...snapshot,
     pages: snapshot.pages.map((page) => {
@@ -253,7 +273,7 @@ export function materializeCompleteStorefrontSelection(
               input.planningInput.catalogue.products
                 .map(({ id }) => id)
                 .filter((id) => id !== productId),
-              target.canonicalCommerceFingerprint,
+              canonicalCommerceFingerprint,
               commercialPdpProfileIdSchema.parse(page.pageFamily.profileId),
               materializationIdPrefix,
               page.id,
@@ -265,6 +285,21 @@ export function materializeCompleteStorefrontSelection(
     }),
   });
 
+  const currentDynamicAuthority = materializeCurrentDynamicCommercePresentationAuthority(
+    snapshot,
+    input.planningInput.catalogue,
+  );
+  const reboundDynamicSelection = sourceDynamicSelection
+    ? validateDynamicCommerceDesignSelection(
+        snapshot,
+        input.planningInput.catalogue,
+        {
+          ...sourceDynamicSelection,
+          authorityFingerprint: currentDynamicAuthority.authorityFingerprint,
+        },
+        currentDynamicAuthority,
+      )
+    : null;
   const planningInput = {
     ...structuredClone(input.planningInput),
     draft: snapshot,
@@ -281,6 +316,8 @@ export function materializeCompleteStorefrontSelection(
       selectedProfile(snapshot, "product-detail", "PDP"),
     ),
     designSystemNarrowing: input.designSystemNarrowing,
+    pageBlueprintSelectionOverrides: input.pageBlueprintSelectionOverrides,
+    dynamicCommerceSelection: reboundDynamicSelection,
   });
   const proposal = compileWholeStorefrontProposal({ plan, planningInput });
   const legacyMaterialized = materializeWholeStorefrontRuntimeSnapshot({

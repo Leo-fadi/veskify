@@ -1,12 +1,12 @@
 # P10B — Commercial Storefront Generation Architecture and Delivery Lock
 
-**Status:** Binding architecture. P10B-01 through P10B-16, P10B-16P-01, and P10B-16P-02A are
-**Baseline**; P10B-16P-02 is **Partial**; P10B-16P-02B, P10B-16P-03, P10B-16P-04, P10B-17,
-and P10B-18 remain **Planned**.
+**Status:** Binding architecture. P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-02B
+are **Baseline**; P10B-16P-02 is **Baseline**; P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18
+remain **Planned**.
 
 **Phase:** P10B — Commercial Storefront Generation System v1
 
-**Baseline:** 11 August 2026, P10B-16P-02A prompted Storefront Design Intent V2 authority
+**Baseline:** 12 August 2026, P10B-16P-02B deterministic design-intent compiler and canonical proposal materialization
 
 **Historical evidence:**
 [`P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md`](P10B_01_STOREFRONT_DESIGN_SYSTEM_CAPABILITY_AUDIT.md)
@@ -52,10 +52,9 @@ P10B is **Partial / active**. P10B-16 evidence is retained in
 [`P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md`](P10B_16_COORDINATED_DIRECTIONS_AND_DIVERSITY_CONTROL.md),
 and P10B-16P-01 is Baseline under
 [`P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md`](P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md).
-P10B-16P-02A is Baseline under
+P10B-16P-02A and P10B-16P-02B are Baseline under
 [`P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md`](P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md).
-P10B-16P-02 is Partial; P10B-16P-02B, P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain
-Planned.
+P10B-16P-02 is Baseline; P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain Planned.
 
 ## 2. Storefront and commerce ownership
 
@@ -362,8 +361,8 @@ commercial review. It does not wait for P10B-18 and does not itself complete the
 
 ## 13. Locked implementation sequence
 
-P10B-01 through P10B-16, P10B-16P-01, and P10B-16P-02A are **Baseline**. P10B-16P-02 is
-**Partial**. P10B-16P-02B, P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 are **Planned**.
+P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-02B are **Baseline**. P10B-16P-02 is
+**Baseline**. P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 are **Planned**.
 Parent tasks may use A/B/C slices only when required to keep contract, renderer,
 profile/generation, or evidence PRs reviewable. A parent remains Planned or Partial until every
 required slice and its evidence passes.
@@ -610,13 +609,14 @@ keep distinct approved facts where their reading structure is shared.
 
 ### P10B-16P-02 — Prompted design-plan contract
 
-- **Status:** **Partial**. P10B-16P-02A is Baseline; P10B-16P-02B remains Planned.
+- **Status:** **Baseline**. P10B-16P-02A and P10B-16P-02B are Baseline.
 - Part A projects current registered capability and accepts only strict transient non-executable
   preferences. Before its provider response, no complete candidate or plan, proposal operation, or
   new candidate `StorefrontSnapshot` may be constructed; the current canonical draft remains
   read-only input authority.
-- Part B must refresh authority and compile those preferences deterministically into existing
-  registered selection and synthesis authority.
+- Part B refreshes authority and compiles those preferences deterministically through a bounded
+  metadata-only solver into existing registered selection and synthesis authority; complete
+  storefront materialization begins only after the compiled decision succeeds.
 - Do not reinterpret route instances as design authorities or let provider output own commerce,
   page trees, components, styles, executable code, or canonical state.
 - The binding Part A contract and provider-path audit are in
@@ -640,11 +640,25 @@ keep distinct approved facts where their reading structure is shared.
 
 ### P10B-16P-02B — Deterministic design-intent compiler
 
-- Refresh every authority fingerprint and resolve the V2 constraint/preference model into exact
-  compatible registered profiles, frame, families, meaningful variants and bounded parameters.
-- Invoke existing P10B-15/P10B-16 and proposal authority only after the validated provider response;
-  preserve protected commerce and reject stale/incompatible/no-complete-result cases atomically.
-- **Status:** Planned.
+- Refresh every request, prompt, snapshot revision, capability-reference, Design DNA,
+  PageBlueprint, dynamic-commerce, approved evidence/asset and aggregate catalogue authority
+  fingerprint before compilation.
+- Apply hard, ranked-soft, optional and avoidance semantics plus a material-intent gate through an
+  explicitly bounded, deterministic metadata-only compatibility solver. Never score completed
+  storefront candidates or use the legacy executable-intent result path.
+- Resolve exact Design DNA/frame/profile/archetype/product-type mapping, product-card,
+  component/meaningful-variant/bounded-parameter, static/utility, narrative, responsive,
+  art-direction and approved asset-role authority. Preserve registered presentation-only search
+  while execution remains fail closed.
+- Retain machine-readable accepted/substituted/rejected/omitted/defaulted diagnostics and exact
+  compiled, structural, dynamic-route and authority fingerprints.
+- Extend the existing P10B synthesis decision with those exact selections and invoke canonical
+  materialization plus one isolated proposal only after successful compilation; preserve protected
+  commerce and reject stale, contradictory, incompatible, unsupported-runtime, budget and partial
+  results without state mutation.
+- **Status:** **Baseline**. Contract/schema, deterministic unit and integration evidence passed with
+  zero provider and Vesko calls. Normal Storefront Studio wiring, live V2 acceptance and executable
+  search remain Planned.
 
 ### P10B-16P-03 — Storefront Studio generation journey
 
@@ -758,7 +772,7 @@ PR.
 
 ## 17. Locked handoff
 
-P10B-01 through P10B-16, P10B-16P-01, and P10B-16P-02A are Baseline under the disjoint ownership
-constraints in section 15. P10B-16P-02 is Partial. P10B-16P-02B, P10B-16P-03, P10B-16P-04,
-P10B-17, and P10B-18 remain Planned. No later implementation task is complete merely because this
+P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-02B are Baseline under the disjoint
+ownership constraints in section 15. P10B-16P-02 is Baseline. P10B-16P-03, P10B-16P-04, P10B-17,
+and P10B-18 remain Planned. No later implementation task is complete merely because this
 architecture is approved or the completed foundations passed.

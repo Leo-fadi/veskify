@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dynamicCommerceDesignSelectionSchema } from "@/application/dynamic-commerce-routes";
 import { registeredTokenRefinementPlanSchema } from "@/application/storefront-design-system/token-refinement";
 import {
   wholeStorefrontGenerationPlanSchema,
@@ -12,6 +13,7 @@ import { idSchema, localeSchema } from "@/domain/shared";
 import {
   approvedAssetPlacementOperationSchema,
   canonicalValueFingerprint,
+  dynamicCommercePresentationAuthoritySchema,
   navigationModelSchema,
   pageTypeSchema,
 } from "@/domain/storefront";
@@ -53,6 +55,7 @@ export const wholeStorefrontRuntimeStateSchema = z
     approvedAssetContextFingerprint: fingerprintSchema.nullable(),
     brandSystem: brandSystemSchema,
     navigation: navigationModelSchema,
+    dynamicCommercePresentation: dynamicCommercePresentationAuthoritySchema.nullable(),
     pages: z.array(wholeStorefrontRuntimePageSchema).min(1),
     approvedAssetPlacements: z.array(approvedAssetPlacementOperationSchema),
   })
@@ -134,6 +137,14 @@ export const wholeStorefrontProposalOperationSchema = z.discriminatedUnion("type
     .object({
       type: z.literal("RETAIN_NAVIGATION"),
       navigation: navigationModelSchema,
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal("APPLY_DYNAMIC_COMMERCE_PRESENTATION"),
+      sourceAuthorityFingerprint: fingerprintSchema,
+      selection: dynamicCommerceDesignSelectionSchema,
+      presentation: dynamicCommercePresentationAuthoritySchema,
     })
     .strict(),
   z
@@ -276,12 +287,16 @@ export const coordinatedFollowUpPlanSchema = z
     for (const operation of plan.sharedOperations) {
       if (
         operation.type === "APPLY_PAGE_COMPONENTS" ||
-        operation.type === "PLACE_APPROVED_SOURCE_ASSET"
+        operation.type === "PLACE_APPROVED_SOURCE_ASSET" ||
+        operation.type === "APPLY_DYNAMIC_COMMERCE_PRESENTATION"
       ) {
         context.addIssue({
           code: "custom",
           path: ["sharedOperations"],
-          message: "Page and approved-asset operations require explicit page ownership.",
+          message:
+            operation.type === "APPLY_DYNAMIC_COMMERCE_PRESENTATION"
+              ? "Governed follow-up plans cannot replace aggregate dynamic-commerce authority."
+              : "Page and approved-asset operations require explicit page ownership.",
         });
       }
     }
@@ -357,6 +372,7 @@ export function coordinatedProtectedStateFingerprint(state: WholeStorefrontRunti
     draftFingerprint: state.draftFingerprint,
     canonicalCommerceFingerprint: state.canonicalCommerceFingerprint,
     approvedAssetContextFingerprint: state.approvedAssetContextFingerprint,
+    dynamicCommercePresentation: state.dynamicCommercePresentation,
     navigation: state.navigation,
     pages: state.pages.map((page) => ({
       pageId: page.pageId,

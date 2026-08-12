@@ -223,21 +223,49 @@ export function materializeWholeStorefrontRuntimeSnapshot(input: {
     ) {
       invalid();
     }
+    const baseMaterial = structuredClone(base);
+    delete baseMaterial.dynamicCommercePresentation;
+    const dynamicRouteIds = new Set(
+      runtime.dynamicCommercePresentation?.routeInventory.map(({ id }) => id) ?? [],
+    );
+    const navigation = Object.fromEntries(
+      Object.entries(runtime.navigation).map(([area, items]) => [
+        area,
+        items.map((item) =>
+          item.target.type === "page" && dynamicRouteIds.has(item.target.pageId)
+            ? {
+                ...structuredClone(item),
+                target: {
+                  type: "dynamic-commerce-route" as const,
+                  routeId: item.target.pageId,
+                },
+              }
+            : structuredClone(item),
+        ),
+      ]),
+    );
     const materialized = storefrontSnapshotSchema.parse({
-      ...structuredClone(base),
+      ...baseMaterial,
       brandSystem: structuredClone(runtime.brandSystem),
-      navigation: structuredClone(runtime.navigation),
-      pages: base.pages.map((page) => {
-        const runtimePage = runtimePages.get(page.id);
-        if (!runtimePage) return invalid();
-        return projectWholeStorefrontRuntimePage(
-          page,
-          runtimePage.components,
-          planningInput,
-          presentations,
-          runtime.approvedAssetPlacements,
-        );
-      }),
+      navigation,
+      ...(runtime.dynamicCommercePresentation
+        ? {
+            dynamicCommercePresentation: structuredClone(runtime.dynamicCommercePresentation),
+          }
+        : {}),
+      pages: base.pages
+        .filter(({ id }) => !dynamicRouteIds.has(id))
+        .map((page) => {
+          const runtimePage = runtimePages.get(page.id);
+          if (!runtimePage) return invalid();
+          return projectWholeStorefrontRuntimePage(
+            page,
+            runtimePage.components,
+            planningInput,
+            presentations,
+            runtime.approvedAssetPlacements,
+          );
+        }),
     });
     const sortPlacements = (placements: readonly ApprovedAssetPlacementOperation[]) =>
       [...placements].sort((left, right) =>

@@ -86,8 +86,8 @@ Owns adapter interfaces and standalone implementations. Features depend on inter
 
 ## 3. Current implementation baseline
 
-The verified v1.3.0 source baseline includes P10B-16P-02A prompted Storefront Design Intent V2
-authority on 11 August 2026. Phase 9 is
+The verified v1.3.0 source baseline includes P10B-16P-02B deterministic Design Intent V2
+compilation and canonical proposal materialization on 12 August 2026. Phase 9 is
 closed by product-owner handoff, and P10A is **Baseline / closed**. The overall product remains
 **Partial**. P10B is the active development phase. P10B-01 commercial grammar, P10B-02 parametric
 BrandSystem / Design DNA, P10B-03 component anatomy, P10B-04 responsive image/art-direction
@@ -97,8 +97,16 @@ P10B-09 commercial homepage profiles, P10B-10 commercial collection/search profi
 commercial PDP profiles, P10B-12 content/support page families, P10B-13 commerce-utility
 presentation, the P10B-14 complete-store convergence proof, P10B-15 bounded storefront synthesis,
 P10B-16 coordinated direction/diversity control, P10B-16P-01 dynamic commerce route archetypes,
-and P10B-16P-02A prompted Design Intent V2 authority are **Baseline**. P10B-16P-02 is **Partial**;
-P10B-16P-02B, P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain **Planned**.
+and P10B-16P-02A/P10B-16P-02B prompted Design Intent V2 authority and deterministic compilation are
+**Baseline**. P10B-16P-02 is **Baseline**; P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain
+**Planned**.
+
+The P10B-16P-02B boundary refreshes exact request/current authority, applies a bounded
+metadata-only deterministic compatibility solver, and compiles exact Design DNA, shared frame,
+PageBlueprint, dynamic-commerce, component/variant/parameter, narrative and responsive/art
+authority with machine-readable diagnostics. A valid decision reaches existing synthesis and one
+isolated proposal; stale, incompatible or partial results mutate nothing. It made zero provider
+calls and is not yet wired into the normal Storefront Studio or live V2 acceptance path.
 
 The current baseline includes canonical storefront/brand contracts, ComponentDefinitionV2 and its
 generated manifest, executable PageBlueprint profiles, registered complete page-set/site-map
@@ -221,8 +229,8 @@ validated instance override`; manual Puck editing is not a dependency. P10B clos
 complete configurations pass deterministic diversity/protected-state gates and a representative
 fingerprint-stratified subset passes retained human review at 375, 768, 1024, and 1440 px.
 
-P10B-01 through P10B-16, P10B-16P-01, and P10B-16P-02A are Baseline; P10B-16P-02 is Partial;
-P10B-16P-02B, P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain Planned. Their ownership
+P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-02B are Baseline; P10B-16P-02 is
+Baseline; P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain Planned. Their ownership
 remains disjoint: P10B-05 owns
 site-map/PageBlueprint page-set authority,
 while P10B-03 consumes P10B-02 Design DNA compatibility where relevant without copying or replacing

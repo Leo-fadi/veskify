@@ -2,9 +2,8 @@
 
 ## Status and ownership
 
-**Parent status: Partial.** P10B-16P-02A is **Baseline**. P10B-16P-02B remains **Planned**.
-P10B-16P-03 and P10B-16P-04 also remain **Planned**. P10B remains **Partial**; P10B-17 and
-P10B-18 remain **Planned**.
+**Parent status: Baseline.** P10B-16P-02A and P10B-16P-02B are **Baseline**. P10B-16P-03 and
+P10B-16P-04 remain **Planned**. P10B remains **Partial**; P10B-17 and P10B-18 remain **Planned**.
 
 Part A establishes the provider-safe capability projection, strict versioned request, transient
 Design Intent V2 result, exact reference validation, deterministic normalization/fingerprints,
@@ -13,10 +12,11 @@ zero provider and Vesko calls. It does not compile the intent, materialize a sto
 proposal or snapshot, or wire the normal Storefront Studio journey. No live V2 provider acceptance
 has occurred.
 
-Part B owns the deterministic post-provider preference compiler against refreshed current
-authority. P10B-16P-03 owns normal Studio prompt routing and proposal review. P10B-16P-04 owns a
-separately authorized live Design Intent V2 acceptance and the final disposition of the legacy
-P10B-16L bridge.
+Part B implements the deterministic post-provider preference compiler against refreshed current
+authority and consumes its exact decision once through canonical synthesis and isolated proposal
+materialization. It made zero provider and Vesko calls. P10B-16P-03 owns normal Studio prompt
+routing and proposal review. P10B-16P-04 owns a separately authorized live Design Intent V2
+acceptance and the final disposition of the legacy P10B-16L bridge.
 
 ## 1. Provider-boundary audit
 
@@ -226,26 +226,67 @@ unavailable capability, unknown product-type key and stale current authority. Ev
 no proposal, storefront, snapshot or history entry; mutates no draft or commerce; and triggers no
 retry or fallback.
 
-## 9. Transitional delivery
+## 9. Deterministic compilation and canonical materialization
 
-P10B-16L and the current normal whole-storefront selector remain operational for compatibility in
-Part A. The V2 adapter is not wired to `/api/ai/whole-storefront-proposals`, the P10B live demo,
-`use-design-agent-session`, proposal materialization or live-provider authorization.
+Part B introduces one strict versioned `CompiledPromptedStorefrontDesignDecisionV2`. It binds the
+exact request, prompt, provider-intent, refreshed current authority, capability-reference authority,
+base snapshot identity and revision. The result is transient execution authority, not a second
+storefront plan, page graph, snapshot, component registry or provider reasoning record.
 
-P10B-16P-02B must refresh the exact authority, deterministically compile V2 preferences into
-registered compatible selections, and only then invoke the existing P10B-15/P10B-16 materialization
-and canonical proposal path. P10B-16P-03 connects the normal Storefront Studio prompt-to-review
-journey. P10B-16P-04 performs separately authorized live V2 acceptance and decides whether to
-retire, migrate or retain the legacy P10B-16L bridge. Running the legacy selector again cannot prove
-Design Intent V2 acceptance.
+Compilation reconstructs the exact current request and rejects any stale prompt/request/snapshot,
+manifest, PageBlueprint, Design DNA, dynamic-commerce, approved evidence/asset or aggregate
+catalogue authority. A bounded metadata-only compatibility solver then applies exact hard,
+ranked-soft, optional and avoidance semantics with canonical stable tie-breaking and an explicit
+candidate budget. It requires material usable intent across Design DNA, shared frame, homepage
+composition/narrative, collection, PDP and responsive/art direction. Contradictory hard choices,
+insufficient intent, unavailable evidence/assets, unsupported runtime projection or a budget
+overflow fails before synthesis.
 
-## 10. Evidence and explicit non-claims
+The compiler resolves exact registered Design DNA, shared frame, homepage/collection/search/PDP
+profiles, collection/search and PDP archetypes, complete product-type mappings with a generic
+fallback, product-card anatomies, component families, meaningful variants, bounded values,
+static/support and utility selections, narrative priorities, responsive posture, art direction and
+approved asset-role use. Material component selections are expressed only as canonical
+PageBlueprint slot overrides and must validate against the selected profile and renderer-consumed
+runtime authority. Search retains one exact registered presentation choice while operational
+execution remains unavailable and fail closed.
 
-Part A has contract/schema, deterministic unit and mocked-transport integration evidence. Existing
-P10B-15/P10B-16 synthesis, P10B-16P-01 archetype, legacy provider and publication regressions remain
-compatible. Provider and Vesko call count for Part A is zero.
+Every material preference retains an `accepted`, `substituted`, `rejected`, `omitted`, or
+`defaulted` diagnostic with path, key, semantics, requested rank/value, selected exact authority,
+stable reason and authority fingerprint. Equivalent input and authority produce identical
+compiled, structural and dynamic-route fingerprints; a material preference or selection change
+changes the appropriate fingerprint.
 
-Part A does not claim deterministic intent compilation, exact selected profile/frame/component
-authority, complete storefront materialization, proposal generation, Studio reachability, live V2
-provider evidence, executable search, P10B-17 responsive/performance closure, P10B-18 commercial
-quality/scale closure, Vesko staging or production readiness.
+One validated compiled decision extends the existing P10B bounded synthesis decision. The
+canonical generation-plan materializer consumes exact PageBlueprint/dynamic authority once and the
+existing whole-storefront lifecycle creates one isolated proposal. `StorefrontSnapshot` remains
+the sole canonical editable aggregate. No failed compilation or materialization creates a partial
+decision, proposal, snapshot or history mutation, and protected commerce remains unchanged.
+
+## 10. Transitional delivery
+
+P10B-16L and the current normal whole-storefront selector remain operational for compatibility.
+The V2 adapter/compiler is not wired to `/api/ai/whole-storefront-proposals`, the P10B live demo,
+`use-design-agent-session` or live-provider authorization. Its direct execution API does reach the
+existing isolated proposal materializer only after deterministic compilation succeeds.
+
+P10B-16P-02B refreshes exact authority, deterministically compiles V2 preferences into registered
+compatible selections, and only then invokes existing P10B-15/P10B-16 materialization and the
+canonical proposal path. P10B-16P-03 connects the normal Storefront Studio prompt-to-review journey.
+P10B-16P-04 performs separately authorized live V2 acceptance and decides whether to retire,
+migrate or retain the legacy P10B-16L bridge. Running the legacy selector again cannot prove Design
+Intent V2 acceptance.
+
+## 11. Evidence and explicit non-claims
+
+Part A has contract/schema, deterministic unit and mocked-transport integration evidence. Part B
+has contract/schema, deterministic unit and integration evidence for capability reachability,
+metadata-only bounded resolution, exact PageBlueprint/dynamic selections, canonical synthesis and
+isolated proposal creation, protected commerce, fingerprints, diagnostics and no-partial failures.
+Existing P10B-15/P10B-16 synthesis, P10B-16P-01 archetype, legacy provider and publication
+regressions remain compatible. Provider and Vesko call count for both parts is zero.
+
+Part A alone does not claim deterministic intent compilation or materialization. Part B does not
+claim normal Studio reachability, live V2 provider evidence, executable search, retained V2 human
+visual review, P10B-17 responsive/performance closure, P10B-18 commercial quality/scale closure,
+Vesko staging or production readiness.

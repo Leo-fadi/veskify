@@ -4,6 +4,11 @@ import {
   validateWholeStorefrontGenerationPlan,
 } from "@/application/whole-storefront-generation-plan/planner";
 import {
+  materializeCurrentDynamicCommercePresentationAuthority,
+  materializeDynamicCommerceDesignSelectionAuthority,
+  materializeDynamicCommerceDesignSelectionFromAuthority,
+} from "@/application/dynamic-commerce-routes";
+import {
   wholeStorefrontGenerationPlanSchema,
   wholeStorefrontPlanningInputSchema,
   type WholeStorefrontPlanningInput,
@@ -238,6 +243,8 @@ function createPlanFromInputs(input: WholeStorefrontProposalCompilationInput) {
           }
         : {}),
       tokenRefinementPlan: input.plan.tokenRefinementPlan,
+      pageBlueprintSelectionOverrides: input.plan.pageBlueprintSelectionOverrides,
+      dynamicCommerceSelection: input.plan.dynamicCommerceSelection,
     });
   } catch (error) {
     if (error instanceof WholeStorefrontProposalError) throw error;
@@ -450,6 +457,15 @@ function createOriginalState(
     approvedAssetContextFingerprint: input.planningInput.approvedAssetContext?.fingerprint ?? null,
     brandSystem: structuredClone(input.planningInput.draft.brandSystem),
     navigation: structuredClone(input.planningInput.draft.navigation),
+    dynamicCommercePresentation: structuredClone(
+      input.planningInput.draft.dynamicCommercePresentation ??
+        (plan.dynamicCommerceSelection
+          ? materializeCurrentDynamicCommercePresentationAuthority(
+              input.planningInput.draft,
+              input.planningInput.catalogue,
+            )
+          : null),
+    ),
     pages,
     approvedAssetPlacements: [],
   };
@@ -838,6 +854,25 @@ export function replayWholeStorefrontProposalOperations(
           );
         }
         break;
+      case "APPLY_DYNAMIC_COMMERCE_PRESENTATION": {
+        const current = state.dynamicCommercePresentation;
+        const expected = current
+          ? materializeDynamicCommerceDesignSelectionFromAuthority(current, operation.selection)
+          : null;
+        if (
+          !current ||
+          current.authorityFingerprint !== operation.sourceAuthorityFingerprint ||
+          !expected ||
+          canonicalValueString(operation.presentation) !== canonicalValueString(expected)
+        ) {
+          invalid(
+            "stale-plan",
+            "Dynamic-commerce presentation operation does not advance the exact current authority.",
+          );
+        }
+        state.dynamicCommercePresentation = structuredClone(operation.presentation);
+        break;
+      }
       case "APPLY_PAGE_COMPONENTS": {
         if (!("page" in operation)) {
           invalid("unsupported-plan-operation", "The whole-storefront page operation is invalid.");
@@ -986,7 +1021,12 @@ function reviewSummary(
     })
     .sort((left, right) => left.componentId.localeCompare(right.componentId));
   return {
-    sharedDesignSystemChanges: [...plan.reviewSummary.sharedDesignSystemChanges],
+    sharedDesignSystemChanges: [
+      ...plan.reviewSummary.sharedDesignSystemChanges,
+      ...(plan.dynamicCommerceSelection
+        ? ["Updates registered collection, search and product-detail presentation authority."]
+        : []),
+    ],
     pages: plan.pagePlans
       .map((page) => ({
         pageId: page.pageId,
@@ -1169,6 +1209,26 @@ export function compileWholeStorefrontProposal(inputValue: unknown): WholeStoref
         },
   );
   add({ type: "RETAIN_NAVIGATION", navigation: structuredClone(original.navigation) });
+  if (plan.dynamicCommerceSelection) {
+    const selected = materializeDynamicCommerceDesignSelectionAuthority(
+      input.planningInput.draft,
+      input.planningInput.catalogue,
+      plan.dynamicCommerceSelection,
+      original.dynamicCommercePresentation ?? undefined,
+    );
+    if (!original.dynamicCommercePresentation) {
+      invalid(
+        "incomplete-required-operation-compilation",
+        "The exact dynamic-commerce selection did not produce canonical presentation authority.",
+      );
+    }
+    add({
+      type: "APPLY_DYNAMIC_COMMERCE_PRESENTATION",
+      sourceAuthorityFingerprint: original.dynamicCommercePresentation.authorityFingerprint,
+      selection: structuredClone(plan.dynamicCommerceSelection),
+      presentation: structuredClone(selected),
+    });
+  }
   plan.pagePlans
     .slice()
     .sort((left, right) => left.pageId.localeCompare(right.pageId))
@@ -1331,6 +1391,8 @@ function validateCoordinatedFollowUpProjection(
     original.draftRevision !== proposed.draftRevision ||
     original.draftFingerprint !== proposed.draftFingerprint ||
     original.canonicalCommerceFingerprint !== proposed.canonicalCommerceFingerprint ||
+    canonicalValueString(original.dynamicCommercePresentation) !==
+      canonicalValueString(proposed.dynamicCommercePresentation) ||
     canonicalValueString(original.navigation) !== canonicalValueString(proposed.navigation)
   ) {
     invalid(

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dynamicCommerceDesignSelectionSchema } from "@/application/dynamic-commerce-routes";
 import { storefrontDesignDirectionComponentSelectionsSchema } from "@/application/storefront-design-system/contract";
 import { approvedGenerationAssetContextSchema } from "@/application/ai-storefront-generation/approved-asset-context";
 import {
@@ -6,6 +7,7 @@ import {
   commerceBindingSourceTypeSchema,
   componentDefinitionV2Schema,
   componentInstanceV2Schema,
+  narrativeRoleSchema,
   presentationBindingSchema,
 } from "@/domain/component-platform";
 import { catalogueDisplayModelSchema } from "@/domain/catalogue";
@@ -115,7 +117,7 @@ export const wholeStorefrontPageBlueprintMaterializationSchema = z
     pageType: z.enum(["home", "collection", "product"]),
     profileId: z.string().trim().min(1).max(120),
     profileVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
-    roleOrder: z.array(z.string().trim().min(1).max(80)).min(1),
+    roleOrder: z.array(narrativeRoleSchema).min(1),
     slots: z
       .array(
         z
@@ -123,7 +125,7 @@ export const wholeStorefrontPageBlueprintMaterializationSchema = z
             slotId: z.string().trim().min(1).max(80),
             component: z.string().trim().min(1).max(80),
             variant: z.string().trim().min(1).max(80),
-            narrativeRole: z.string().trim().min(1).max(80),
+            narrativeRole: narrativeRoleSchema,
             visualWeight: z.string().trim().min(1).max(80),
             transitionIntent: z.string().trim().min(1).max(80).optional(),
             boundedParameters: z.record(
@@ -142,6 +144,43 @@ export const wholeStorefrontPageBlueprintMaterializationSchema = z
     fingerprint: fingerprintSchema,
   })
   .strict();
+
+export const wholeStorefrontPageBlueprintSlotSelectionOverrideSchema = z
+  .object({
+    slotId: z.string().trim().min(1).max(80),
+    component: z.string().trim().min(1).max(80),
+    variant: z.string().trim().min(1).max(80),
+    boundedParameters: z
+      .record(z.string().trim().min(1).max(80), z.union([z.string(), z.number()]))
+      .optional(),
+  })
+  .strict();
+
+/**
+ * Transient caller-selected authority for registered PageBlueprint slots. The
+ * executable profile materializer remains responsible for proving that every
+ * variant and bounded parameter is permitted by current registry authority.
+ */
+export const wholeStorefrontPageBlueprintSelectionOverrideSchema = z
+  .object({
+    pageType: z.enum(["home", "collection", "product"]),
+    profileId: z.string().trim().min(1).max(120),
+    slotSelections: z.array(wholeStorefrontPageBlueprintSlotSelectionOverrideSchema).min(1),
+  })
+  .strict();
+
+export const wholeStorefrontPageBlueprintSelectionOverridesSchema = z
+  .array(wholeStorefrontPageBlueprintSelectionOverrideSchema)
+  .max(3)
+  .superRefine((entries, context) => {
+    const pageTypes = entries.map(({ pageType }) => pageType);
+    if (new Set(pageTypes).size !== pageTypes.length) {
+      context.addIssue({
+        code: "custom",
+        message: "PageBlueprint selection overrides must identify each page type at most once.",
+      });
+    }
+  });
 
 export const wholeStorefrontTargetSchema = z
   .object({
@@ -391,6 +430,8 @@ export const wholeStorefrontGenerationPlanSchema = z
     pageBlueprintMaterializations: z
       .array(wholeStorefrontPageBlueprintMaterializationSchema)
       .length(3),
+    pageBlueprintSelectionOverrides: wholeStorefrontPageBlueprintSelectionOverridesSchema,
+    dynamicCommerceSelection: dynamicCommerceDesignSelectionSchema.nullable(),
     sharedDesignDirection: wholeStorefrontSharedDesignDirectionSchema,
     sharedChrome: wholeStorefrontSharedChromePlanSchema,
     pagePlans: z.array(wholeStorefrontPagePlanSchema).min(1),
@@ -432,6 +473,19 @@ export const wholeStorefrontGenerationPlanSchema = z
         message:
           "Whole-storefront plans must retain one canonical executable PageBlueprint per page family.",
       });
+    }
+    for (const selectionOverride of plan.pageBlueprintSelectionOverrides) {
+      const materialization = plan.pageBlueprintMaterializations.find(
+        ({ pageType }) => pageType === selectionOverride.pageType,
+      );
+      if (!materialization || materialization.profileId !== selectionOverride.profileId) {
+        context.addIssue({
+          code: "custom",
+          path: ["pageBlueprintSelectionOverrides"],
+          message:
+            "PageBlueprint selection overrides must target the exact materialized page profile.",
+        });
+      }
     }
     const componentIds = plan.pagePlans.flatMap((page) =>
       page.components.map((component) =>
@@ -476,6 +530,16 @@ export type WholeStorefrontPlanningInput = z.infer<typeof wholeStorefrontPlannin
 export type WholeStorefrontRecipeContext = z.infer<typeof wholeStorefrontRecipeContextSchema>;
 export type WholeStorefrontGenerationTarget = z.infer<typeof wholeStorefrontTargetSchema>;
 export type WholeStorefrontGenerationPlan = z.infer<typeof wholeStorefrontGenerationPlanSchema>;
+export type WholeStorefrontPageBlueprintSelectionOverride = Readonly<{
+  pageType: "home" | "collection" | "product";
+  profileId: string;
+  slotSelections: readonly Readonly<{
+    slotId: string;
+    component: string;
+    variant: string;
+    boundedParameters?: Readonly<Record<string, string | number>>;
+  }>[];
+}>;
 export type WholeStorefrontReviewSummary = z.infer<typeof wholeStorefrontReviewSummarySchema>;
 
 export type WholeStorefrontGenerationPlanErrorCode =

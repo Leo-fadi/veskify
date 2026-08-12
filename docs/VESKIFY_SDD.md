@@ -6,7 +6,7 @@
 | ------------------------- | --------------------------------------------------------------------- |
 | Document                  | Veskify Software Design Document                                      |
 | Version                   | 1.3.0                                                                 |
-| Verified baseline         | 11 August 2026, P10B-16P-02A prompted Storefront Design Intent V2 authority |
+| Verified baseline         | 12 August 2026, P10B-16P-02B deterministic design-intent compilation and canonical proposal materialization |
 | Merchant-facing product   | Vesko Storefront Studio                                               |
 | Internal controlled engine | Veskify                                                              |
 | Status                    | Authoritative source specification                                    |
@@ -17,6 +17,7 @@
 
 | Revision | Date | Baseline | Purpose |
 | -------- | ---- | -------- | ------- |
+| 1.3.0 P10B-16P-02B | 12 August 2026 | P10B-16P-02B delivery | Refresh and validate exact prompted authority, resolve complete material intent through a bounded metadata-only compatibility solver, compile exact Design DNA/frame/PageBlueprint/dynamic-commerce/component selections and diagnostics, and consume the result once through canonical P10B synthesis and isolated proposal authority with zero provider calls. |
 | 1.3.0 P10B-16P-02A | 11 August 2026 | P10B-16P-02A delivery | Establish the strict transient provider-safe capability projection, prompted request, preference-rich Design Intent V2, exact capability-reference validation, deterministic fingerprints, server-only OpenAI adapter and safe mocked-transport evidence without compiling or materializing a storefront before the provider response. |
 | 1.3.0 P10B-16P-01 | 11 August 2026 | P10B-16P-01 delivery | Separate static design pages, maintained collection/search and PDP archetypes, and concrete commerce route inventory inside one fingerprinted `StorefrontSnapshot`; add deterministic mapping/migration, transient Studio/runtime projections, lifecycle/compiler/publication preservation, and exact route rendering without per-product or per-collection design documents. |
 | 1.3.0 P10B-15 | 10 August 2026 | P10B-15 delivery | Generalize complete-store generation into one versioned deterministic bounded synthesis and cross-page narrative authority with exact evidence, commerce, asset, Design DNA, page/profile/frame/component fingerprints; three complete outcomes; lifecycle publication; browser evidence; and retained human review. |
@@ -85,9 +86,10 @@ canonical product-card authority, P10B-09 commercial homepage profiles, and P10B
 collection/search profiles, P10B-11 commercial PDP profiles, P10B-12 content/support page families,
 P10B-13 commerce utility presentation, the P10B-14 Premium Editorial complete-storefront vertical
 slice, the P10B-15 bounded synthesis engine, P10B-16 direction/diversity authority, and
-P10B-16P-01 dynamic commerce route archetype authority, and P10B-16P-02A prompted Design Intent V2
-authority are Baseline. P10B-16P-02 is Partial; P10B-16P-02B, P10B-16P-03, P10B-16P-04,
-P10B-17, and P10B-18 remain Planned. The current
+P10B-16P-01 dynamic commerce route archetype authority, P10B-16P-02A prompted Design Intent V2
+authority, and P10B-16P-02B deterministic intent compilation/canonical proposal materialization
+are Baseline. P10B-16P-02 is Baseline; P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain
+Planned. The current
 merchant editor does not yet expose the governed routing and scoped editing authorities; that is
 intentionally P10C work, not a P10A closure requirement.
 
@@ -226,7 +228,7 @@ The current baseline is code-grounded in the capability evidence ledger and trut
 | Deterministic publish compiler                       | **Baseline** | Exact snapshot and live authority compile to deterministic immutable output.    |
 | Compiled-artifact persistence and rollback           | **Baseline** | One atomic transaction retains immutable artifacts, versions, history, operations, and active pointers; rollback restores a new draft before explicit republish. |
 | Published home, collection, and PDP rendering        | **Baseline** | Canonical published routes bind the exact active compiled version, artifact, and snapshot for manual and accepted-AI publication. |
-| Commercial storefront generation system              | **Partial**  | P10B-01 through P10B-14 provide the commercial grammar, Design DNA, assets, page/frame/component/profile/utility authorities and first complete 17-route proof; P10B-15 generalizes them into deterministic bounded complete-store synthesis; P10B-16 adds three coordinated constraint packages, structural diversity classification and repetition control; P10B-16P-01 replaces copied commerce-route design pages with one maintained dynamic-archetype authority; P10B-16P-02A adds the strict transient prompted Design Intent V2 boundary. Deterministic intent compilation, Studio wiring, live V2 acceptance, phase-wide responsive/performance, and 100+ quality/scale closure remain Planned. |
+| Commercial storefront generation system              | **Partial**  | P10B-01 through P10B-14 provide the commercial grammar, Design DNA, assets, page/frame/component/profile/utility authorities and first complete 17-route proof; P10B-15 generalizes them into deterministic bounded complete-store synthesis; P10B-16 adds three coordinated constraint packages, structural diversity classification and repetition control; P10B-16P-01 replaces copied commerce-route design pages with one maintained dynamic-archetype authority; P10B-16P-02A adds the strict transient prompted Design Intent V2 boundary; P10B-16P-02B refreshes authority, deterministically compiles exact registered selections, and consumes them once through canonical synthesis and isolated proposal authority. Studio wiring, live V2 acceptance, phase-wide responsive/performance, and 100+ quality/scale closure remain Planned. |
 | Vesko reference integration                          | **Blocked**  | OpenAPI exists but is incomplete and no staging authority or evidence exists.   |
 | Authentication, tenancy, observability, deployment   | **Partial**  | Foundations exist; production service closure belongs to P11/P12.               |
 
@@ -287,7 +289,9 @@ failed coordinated synthesis with safe code `malformed-state`. The corrected v2 
 now pre-executes and materializes compatible storefront candidates before asking the provider to
 select an advertised `executableIntentId`, but that corrected path has made zero live calls. Neither
 path is prompt-driven storefront generation. P10B-16P-02A instead defines a strict non-executable
-preference-rich Design Intent V2 before any complete-store execution; no live V2 provider call has
+preference-rich Design Intent V2 before any complete-store execution. P10B-16P-02B now compiles
+that result deterministically and invokes canonical synthesis/proposal materialization only after
+successful compilation. Both slices made zero provider calls, and no live V2 provider call has
 occurred.
 
 ## 7. Component, PageBlueprint and direction model
@@ -854,11 +858,11 @@ route and component/art-direction fingerprints. See
 
 This establishes one representative complete store. P10B-15 generalizes that convergence path,
 P10B-16 governs direction/diversity authority, and P10B-16P-01 preserves the same route coverage
-while converging collection/search/PDP design into maintained root archetypes. P10B-16P-02A now
-provides the strict transient prompted intent boundary. P10B-16P-02B deterministic compilation,
-P10B-16P-03 Studio wiring and P10B-16P-04 live V2 acceptance/bridge disposition remain sequential
-before P10B-17 phase-wide responsive/accessibility/performance closure and P10B-18 repeated
-quality-and-scale gate.
+while converging collection/search/PDP design into maintained root archetypes. P10B-16P-02A
+provides the strict transient prompted intent boundary, and P10B-16P-02B compiles its result into
+one exact canonical synthesis/proposal execution. P10B-16P-03 Studio wiring and P10B-16P-04 live
+V2 acceptance/bridge disposition remain sequential before P10B-17 phase-wide
+responsive/accessibility/performance closure and P10B-18 repeated quality-and-scale gate.
 
 ### 10.16 P10B-15 bounded storefront synthesis and narrative authority
 
@@ -966,8 +970,9 @@ reproduce the reviewed storefront exactly. Provider-originated transitions, page
 stale authority, or an unsafe migration fail before acceptance.
 
 P10B-16P-01 is Baseline. P10B-16P-02A owns the strict transient prompted Design Intent V2
-boundary and is Baseline. P10B-16P-02 is Partial; Part B compilation, final Storefront Studio wiring
-and live V2 acceptance remain Planned under P10B-16P-02B, P10B-16P-03 and P10B-16P-04.
+boundary, and P10B-16P-02B owns deterministic compilation plus canonical one-shot
+synthesis/proposal consumption; both are Baseline, so P10B-16P-02 is Baseline. Final Storefront
+Studio wiring and live V2 acceptance remain Planned under P10B-16P-03 and P10B-16P-04.
 
 ### 10.19 P10B-16P-02A prompted Storefront Design Intent V2 authority
 
@@ -1012,11 +1017,44 @@ P10B-15, execute complete P10B-16 candidates, create a complete plan, materializ
 create proposal operations or construct a candidate snapshot. The prior P10B-16L real OpenAI call
 completed the earlier strict v1 direction/posture result and failed coordinated synthesis; the
 corrected executable-option bridge has made zero live calls. Neither is prompt-driven generation
-evidence. Part B owns deterministic post-provider compilation, P10B-16P-03 owns Studio wiring, and
-P10B-16P-04 owns live V2 acceptance and legacy bridge disposition. Full audit and contracts are in
+evidence. P10B-16P-02B now owns deterministic post-provider compilation, P10B-16P-03 owns Studio
+wiring, and P10B-16P-04 owns live V2 acceptance and legacy bridge disposition. Full audit and contracts are in
 [`P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md`](P10B_16P_02_PROMPTED_STOREFRONT_DESIGN_PLAN_V2.md).
 
-### 10.20 Remaining planned commercial generation authority
+### 10.20 P10B-16P-02B deterministic design-intent compiler
+
+`CompiledPromptedStorefrontDesignDecisionV2` is the strict, versioned, transient execution
+authority between a validated provider intent and the existing P10B synthesis lifecycle. The
+compiler first reconstructs the current provider request and requires exact prompt, request,
+snapshot revision, capability-reference, manifest, PageBlueprint, Design DNA, dynamic-commerce,
+approved evidence/asset and aggregate catalogue authority. A stale or mismatched identity fails
+before compilation and leaves draft, history and proposal state unchanged.
+
+The deterministic solver evaluates only bounded compatibility metadata after the provider result;
+it never materializes completed candidate storefronts for scoring. It enforces an explicit
+candidate budget and stable tie-breaking, exact hard constraints, ranked compatible soft choices,
+evidence/asset-gated optional choices, avoidance and contradiction rejection, and a
+complete-storefront material-intent gate covering Design DNA, frame, homepage narrative,
+collection, PDP and responsive/art-direction authority. Search remains a registered presentation
+selection with fail-closed execution; the compiler does not invent query/results authority.
+
+The compiled decision binds exact Design DNA material, shared frame, homepage/collection/search/PDP
+profiles and archetypes, complete product-type-to-PDP mappings with a generic fallback, canonical
+product-card anatomies, material PageBlueprint slot/meaningful-variant/bounded-parameter overrides,
+static/support and utility selections, narrative, responsive/art-direction and approved asset-role
+use. Every material provider preference records an `accepted`, `substituted`, `rejected`,
+`omitted`, or `defaulted` diagnostic with its exact authority and stable reason. Compiled,
+structural, dynamic-route and exact-authority fingerprints change with material decisions.
+
+Only a successfully validated compiled decision may be consumed. It becomes one exact extension
+of the existing bounded synthesis decision and is then materialized once through the canonical
+P10B generation plan and isolated whole-storefront proposal lifecycle. `PageBlueprint` remains the
+composition authority and `StorefrontSnapshot` remains the sole canonical editable state. Invalid,
+stale, incompatible, budget-exceeded, unsupported bounded-runtime, protected-commerce or partial
+results fail closed with no snapshot/proposal mutation. P10B-16P-02B made zero provider and Vesko
+calls and does not provide normal Storefront Studio wiring, executable search or live V2 acceptance.
+
+### 10.21 Remaining planned commercial generation authority
 
 `BrandSystem` owns merchant-wide bounded Design DNA across semantic colour, approved font roles and
 pairing, type scale/weights, spacing and section rhythm, gutters/containers, grid/card/control
@@ -1056,7 +1094,7 @@ drift, and exact or meaningful near duplicates. A deterministic storefront-desig
 covers structural and non-colour dimensions; hundreds or thousands of outcomes arise from bounded
 combinations, not manually authored templates.
 
-### 10.21 Commercial acceptance
+### 10.22 Commercial acceptance
 
 P10B closes only when at least 100 complete bounded storefront configurations pass deterministic
 validity, protected-state, exact-duplicate, near-duplicate, and structural-distribution analysis,
@@ -1197,8 +1235,8 @@ The binding sequence is:
 1. **P10A — Grounded orchestration and publishing closure.** **Baseline / closed** through the
    formal P10A phase closure record.
 2. **P10B — Commercial Storefront Generation System v1.** **Partial / active phase.** P10B-01
-   through P10B-16, P10B-16P-01, and P10B-16P-02A are Baseline; P10B-16P-02 is Partial;
-   P10B-16P-02B, P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain Planned.
+   through P10B-16 and P10B-16P-01 through P10B-16P-02B are Baseline; P10B-16P-02 is Baseline;
+   P10B-16P-03, P10B-16P-04, P10B-17, and P10B-18 remain Planned.
    Deliver complete commercially credible storefronts with bounded material diversity through
    registered authority and retained human review.
 3. **P10C — Storefront Studio Editing Experience v1.** Deliver merchant-operable assets, manual and
@@ -1265,10 +1303,12 @@ Version 1.3.0 does not claim:
 - that Vesko staging or production evidence exists;
 - that authentication, tenancy, observability, deployment, and operations are production complete;
 - that P10D advanced media is required for the first commercial storefront or pilot;
-- that P10B-16P-02B deterministic intent compilation, P10B-16P-03 final Storefront Studio
-  generation wiring, or P10B-16P-04 live V2 acceptance/legacy-bridge disposition is implemented;
+- that P10B-16P-03 final Storefront Studio generation wiring or P10B-16P-04 live V2
+  acceptance/legacy-bridge disposition is implemented;
 - that P10B-16P-02A materializes a storefront, creates a proposal or snapshot, provides executable
   search, or has live Design Intent V2 provider evidence;
+- that P10B-16P-02B provides executable search, normal Studio reachability, live Design Intent V2
+  provider evidence, retained V2 human review, or phase-closure evidence;
 - that archived v1.2.2 prose describes current implementation or phase status.
 
 ## Appendix A — Authoritative requirement and acceptance traceability

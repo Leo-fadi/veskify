@@ -8,6 +8,10 @@ import {
   resolveCommercialHomepageEvidenceAvailability,
   resolveCommercialHomepageProfileSlots,
 } from "@/application/storefront-templates/registry";
+import {
+  registeredBrandSystemForDirection,
+  storefrontDesignSystemV1,
+} from "@/application/storefront-design-system";
 import type {
   ExecutablePageBlueprintProfile,
   StorefrontTemplatePagePlan,
@@ -36,7 +40,10 @@ import {
   type CatalogueDisplayModel,
   type ProductDisplayModel,
 } from "@/domain/catalogue";
-import type { CommercialGrammarCategory } from "@/domain/component-platform";
+import {
+  getBoundedParameterRuntimeProjectionAuthority,
+  type CommercialGrammarCategory,
+} from "@/domain/component-platform";
 import {
   brandSystemDesignDnaFingerprint,
   designDnaSchema,
@@ -318,13 +325,39 @@ function addEntry(
 }
 
 function addGrammarCapabilities(
+  draft: StorefrontSnapshot,
   entries: PromptedStorefrontCapabilityEntry[],
   references: Map<string, PromptedStorefrontCapabilityAuthorityReference>,
 ): void {
   const grammar = veskifyComponentCapabilityManifest.manifest.commercialDesignGrammar;
+  const designDnaFingerprint = brandSystemDesignDnaFingerprint(draft.brandSystem);
+  const reachableDna = reachableRegisteredDesignDna(draft);
+  const values = <T extends string>(project: (dna: (typeof reachableDna)[number]) => T) =>
+    new Set(reachableDna.map(project));
+  const designDnaValues: Readonly<Record<string, readonly string[]>> = {
+    "typography.scale": [...values(({ typography }) => typography.scale.posture)],
+    "typography.weight": [...values(({ typography }) => String(typography.weightPosture))],
+    "typography.tracking": [...values(({ typography }) => typography.trackingPosture)],
+    "typography.lineHeight": [...values(({ typography }) => typography.lineHeightPosture)],
+    "layout.sectionRhythm": [...values(({ spacing }) => spacing.sectionRhythm)],
+    "layout.pageGutter": [...values(({ spacing }) => spacing.pageGutter)],
+    "layout.gridRhythm": [...values(({ spacing }) => spacing.gridGap)],
+    "layout.density": [
+      ...values(({ density }) => (density.posture === "balanced" ? "standard" : density.posture)),
+    ],
+    "control.posture": [...values(({ controls }) => controls.height)],
+    "shape.border": [...values(({ surfaces }) => surfaces.border)],
+    "shape.radius": [...values(({ surfaces }) => surfaces.radius)],
+    "shape.elevation": [...values(({ surfaces }) => surfaces.elevation)],
+    "media.ratio": [...values(({ media }) => media.ratio)],
+    "media.crop": [...values(({ media }) => media.crop)],
+    "media.overlay": [...values(({ media }) => media.overlay)],
+    "media.emphasis": [...values(({ media }) => media.prominence)],
+  };
   for (const category of grammar.categories) {
     const dimension = grammarDimension(category.id);
     for (const value of category.values) {
+      const designDnaConsumesValue = designDnaValues[category.id]?.includes(value) ?? false;
       addEntry(
         entries,
         references,
@@ -333,14 +366,18 @@ function addGrammarCapabilities(
           dimension,
           description: `Use the registered ${designLabel(value)} ${designLabel(category.id)} posture.`,
           contexts: ["storefront"],
-          availability: "available",
-          requirements: [],
+          availability: designDnaConsumesValue ? "available" : "registered-fail-closed",
+          requirements: designDnaConsumesValue
+            ? []
+            : [
+                "Requires an exact PageBlueprint slot, component variant, or other canonical runtime consumer before material selection.",
+              ],
           selection: { kind: "capability" },
         },
         {
-          authorityKind: "commercial-grammar",
+          authorityKind: designDnaConsumesValue ? "design-dna" : "commercial-grammar",
           authorityId: `${category.id}:${value}`,
-          authorityFingerprint: grammar.fingerprint,
+          authorityFingerprint: designDnaConsumesValue ? designDnaFingerprint : grammar.fingerprint,
           productTypeKey: false,
         },
       );
@@ -348,53 +385,116 @@ function addGrammarCapabilities(
   }
 }
 
+function reachableRegisteredDesignDna(draft: StorefrontSnapshot) {
+  return storefrontDesignSystemV1.directions.map((direction) =>
+    resolveBrandSystemDesignDna(
+      registeredBrandSystemForDirection(draft.brandSystem, storefrontDesignSystemV1, direction.id, {
+        spacingDensity: direction.spacingDensity,
+        surfaceDepth: direction.surfaceDepth,
+      }),
+    ),
+  );
+}
+
+function exactExecutableResponsiveModes(
+  profiles: readonly ExecutablePageBlueprintProfile[],
+): ReadonlySet<string> {
+  const modes = new Set<string>();
+  const addComponentVariant = (
+    componentType: string,
+    variantId: string,
+    defaultVariant: string,
+  ) => {
+    const component = veskifyComponentCapabilityManifest.getByComponentType(componentType);
+    const anatomy = component?.commercialAnatomy;
+    const variant = component?.variants.find(({ id }) => id === variantId);
+    const anatomyVariant = anatomy?.variants.find((candidate) => candidate.variantId === variantId);
+    if (
+      !component ||
+      !anatomy ||
+      !variant ||
+      !anatomyVariant ||
+      (variantId !== defaultVariant &&
+        variant.structuralClassification !== "meaningfulStructuralVariant")
+    ) {
+      return;
+    }
+    for (const transformationId of anatomyVariant.structure.responsiveTransformationIds) {
+      const transformation = anatomy.responsiveTransformations.find(
+        ({ id }) => id === transformationId,
+      );
+      if (!transformation) throw new PromptedStorefrontDesignIntentError("stale-authority");
+      modes.add(transformation.mode);
+    }
+  };
+  const addProductCard = (anatomyId: string | undefined) => {
+    if (!anatomyId) return;
+    const anatomy = canonicalProductCardAuthority.anatomies.find(({ id }) => id === anatomyId);
+    if (!anatomy) throw new PromptedStorefrontDesignIntentError("stale-authority");
+    anatomy.responsiveTransformations.forEach(({ mode }) => modes.add(mode));
+  };
+
+  for (const profile of profiles) {
+    for (const selection of profile.componentSelections) {
+      selection.variants.forEach((variantId) =>
+        addComponentVariant(selection.component, variantId, selection.defaultVariant),
+      );
+    }
+    addProductCard(profile.commercialHomepage?.productCardAnatomyId);
+    addProductCard(profile.commercialCollectionSearch?.productCardAnatomyId);
+    addProductCard(profile.commercialProductDetail?.relatedProductCardAnatomyId);
+  }
+  return modes;
+}
+
 function addDesignDnaCapabilities(
   draft: StorefrontSnapshot,
   entries: PromptedStorefrontCapabilityEntry[],
   references: Map<string, PromptedStorefrontCapabilityAuthorityReference>,
 ): void {
-  const currentDna = resolveBrandSystemDesignDna(draft.brandSystem);
+  const reachableDna = reachableRegisteredDesignDna(draft);
   const fingerprint = brandSystemDesignDnaFingerprint(draft.brandSystem);
   const dimensions = [
     {
       dimension: "design-dna.typography-pairing" as const,
       authorityId: "typography.pairing",
       values: designDnaSchema.shape.typography.shape.pairing.options,
-      current: currentDna.typography.pairing,
+      reachable: new Set<string>(reachableDna.map(({ typography }) => typography.pairing)),
     },
     {
       dimension: "design-dna.colour" as const,
       authorityId: "colour.surfaceRelationship",
       values: designDnaSchema.shape.colour.shape.surfaceRelationship.options,
-      current: currentDna.colour.surfaceRelationship,
+      reachable: new Set<string>(reachableDna.map(({ colour }) => colour.surfaceRelationship)),
     },
     {
       dimension: "design-dna.colour" as const,
       authorityId: "colour.actionRelationship",
       values: designDnaSchema.shape.colour.shape.actionRelationship.options,
-      current: currentDna.colour.actionRelationship,
+      reachable: new Set<string>(reachableDna.map(({ colour }) => colour.actionRelationship)),
     },
     {
       dimension: "design-dna.media" as const,
       authorityId: "media.posture",
       values: designDnaSchema.shape.media.shape.posture.options,
-      current: currentDna.media.posture,
+      reachable: new Set<string>(reachableDna.map(({ media }) => media.posture)),
     },
   ];
-  dimensions.forEach(({ dimension, authorityId, values, current }) => {
-    values.forEach((value) =>
-      addEntry(
+  dimensions.forEach(({ dimension, authorityId, values, reachable }) => {
+    values.forEach((value) => {
+      const materiallyReachable = (reachable as ReadonlySet<string>).has(value);
+      return addEntry(
         entries,
         references,
         {
           key: `${dimension}.${authorityId}.${value}`,
           dimension,
-          description: `Use the bounded ${designLabel(value)} ${designLabel(authorityId)} posture${
-            value === current ? ", matching the current draft" : ""
-          }.`,
+          description: `Use the bounded ${designLabel(value)} ${designLabel(authorityId)} posture.`,
           contexts: ["storefront"],
-          availability: "available",
-          requirements: [],
+          availability: materiallyReachable ? "available" : "registered-fail-closed",
+          requirements: materiallyReachable
+            ? []
+            : ["No exact registered BrandSystem materialization currently produces this value."],
           selection: { kind: "capability" },
         },
         {
@@ -403,8 +503,8 @@ function addDesignDnaCapabilities(
           authorityFingerprint: fingerprint,
           productTypeKey: false,
         },
-      ),
-    );
+      );
+    });
   });
 }
 
@@ -1106,18 +1206,31 @@ function addComponentCapabilities(
       }
     }
     for (const parameter of component.boundedParameters) {
+      const runtimeProjection = getBoundedParameterRuntimeProjectionAuthority(
+        component.componentType,
+        parameter.id,
+      );
       let selection: PromptedStorefrontCapabilityEntry["selection"];
-      if (parameter.allowedValues) {
-        const allowedValues = parameter.allowedValues.map(String).sort(compareCanonical);
+      if (runtimeProjection?.allowedValues) {
+        const allowedValues = runtimeProjection.allowedValues.map(String).sort(compareCanonical);
         if (allowedValues.length > 32) {
           throw new PromptedStorefrontDesignIntentError("stale-authority");
         }
         selection = { kind: "enum", allowedValues };
+      } else if (runtimeProjection?.numericRange) {
+        selection = { kind: "number", ...runtimeProjection.numericRange };
+      } else if (parameter.allowedValues) {
+        selection = {
+          kind: "enum",
+          allowedValues: parameter.allowedValues.map(String).sort(compareCanonical),
+        };
       } else if (parameter.numericRange) {
         selection = { kind: "number", ...parameter.numericRange };
       } else {
         throw new PromptedStorefrontDesignIntentError("stale-authority");
       }
+      const materiallyAvailable =
+        parameter.authority.instanceOverrideAllowed && runtimeProjection !== null;
       addEntry(
         entries,
         references,
@@ -1126,10 +1239,14 @@ function addComponentCapabilities(
           dimension: "component.bounded-parameter",
           description: `Set the bounded ${designLabel(parameter.id)} parameter for ${designLabel(component.componentType)}.`,
           contexts,
-          availability: "available",
-          requirements: parameter.authority.instanceOverrideAllowed
+          availability: materiallyAvailable ? "available" : "registered-fail-closed",
+          requirements: materiallyAvailable
             ? []
-            : ["This value is selected only at its registered authority level."],
+            : [
+                parameter.authority.instanceOverrideAllowed
+                  ? "This bounded value has no exact current renderer projection and cannot be selected materially."
+                  : "This value is registered for PageBlueprint or component-variant authority and cannot be selected as an instance override.",
+              ],
           selection,
         },
         {
@@ -1547,21 +1664,24 @@ function addDynamicCommerceCapabilities(
 }
 
 function addResponsiveAndAssetCapabilities(
+  draft: StorefrontSnapshot,
   approvedAssetContext: ApprovedGenerationAssetContext | null,
+  profiles: readonly ExecutablePageBlueprintProfile[],
   entries: PromptedStorefrontCapabilityEntry[],
   references: Map<string, PromptedStorefrontCapabilityAuthorityReference>,
 ): void {
   const manifest = veskifyComponentCapabilityManifest.manifest;
-  const transformationModes = new Set<string>();
+  const registeredTransformationModes = new Set<string>();
   manifest.entries.forEach(({ commercialAnatomy }) =>
     commercialAnatomy?.responsiveTransformations.forEach(({ mode }) =>
-      transformationModes.add(mode),
+      registeredTransformationModes.add(mode),
     ),
   );
   canonicalProductCardAuthority.anatomies.forEach(({ responsiveTransformations }) =>
-    responsiveTransformations.forEach(({ mode }) => transformationModes.add(mode)),
+    responsiveTransformations.forEach(({ mode }) => registeredTransformationModes.add(mode)),
   );
-  for (const mode of [...transformationModes].sort(compareCanonical)) {
+  const executableTransformationModes = exactExecutableResponsiveModes(profiles);
+  for (const mode of [...registeredTransformationModes].sort(compareCanonical)) {
     const dimension: PromptedStorefrontCapabilityDimension = [
       "condense",
       "simplify",
@@ -1579,8 +1699,14 @@ function addResponsiveAndAssetCapabilities(
         dimension,
         description: `Use the registered ${designLabel(mode)} responsive transformation.`,
         contexts: ["storefront", "mobile"],
-        availability: "available",
-        requirements: [],
+        availability: executableTransformationModes.has(mode)
+          ? "available"
+          : "registered-fail-closed",
+        requirements: executableTransformationModes.has(mode)
+          ? []
+          : [
+              "No exact current executable PageBlueprint variant or product-card anatomy consumes this responsive mode.",
+            ],
         selection: { kind: "capability" },
       },
       {
@@ -1602,7 +1728,59 @@ function addResponsiveAndAssetCapabilities(
       (value) => ["responsive.overlay", "overlay", value] as const,
     ),
   ];
-  imageTraits.forEach(([dimension, trait, value]) =>
+  const reachableDna = reachableRegisteredDesignDna(draft);
+  const dynamicArchetypes = [
+    ...(draft.dynamicCommercePresentation?.collectionSearchArchetypes ?? []),
+    ...(draft.dynamicCommercePresentation?.productDetailArchetypes ?? []),
+  ];
+  const approvedArtDirections = draft.pages.flatMap(({ sections }) =>
+    sections.flatMap(({ approvedAssetPresentations }) =>
+      (approvedAssetPresentations ?? []).flatMap(({ artDirection }) =>
+        artDirection ? [artDirection] : [],
+      ),
+    ),
+  );
+  imageTraits.forEach(([dimension, trait, value]) => {
+    const reachableDnaConsumesValue = reachableDna.some(({ media }) => media[trait] === value);
+    const dynamicAuthorityConsumesValue = dynamicArchetypes.some(
+      ({ artDirectionPosture }) => artDirectionPosture[trait] === value,
+    );
+    const approvedAssetConsumesValue = approvedArtDirections.some(
+      ({ sourceTreatment, responsiveTreatments, derivatives }) =>
+        (trait === "crop" ? sourceTreatment.crop.mode : sourceTreatment[trait]) === value ||
+        responsiveTreatments.some(
+          ({ treatment }) => (trait === "crop" ? treatment.crop.mode : treatment[trait]) === value,
+        ) ||
+        derivatives.some(
+          ({ transform }) => (trait === "crop" ? transform.crop.mode : transform[trait]) === value,
+        ),
+    );
+    const materiallyAvailable = reachableDnaConsumesValue || dynamicAuthorityConsumesValue;
+    const exactAuthority = reachableDnaConsumesValue
+      ? {
+          authorityKind: "design-dna" as const,
+          authorityId: `media.${trait}:${value}`,
+          authorityFingerprint: brandSystemDesignDnaFingerprint(draft.brandSystem),
+        }
+      : dynamicAuthorityConsumesValue
+        ? {
+            authorityKind: "dynamic-commerce" as const,
+            authorityId: `art-direction:${trait}:${value}`,
+            authorityFingerprint: draft.dynamicCommercePresentation!.authorityFingerprint,
+          }
+        : approvedAssetConsumesValue
+          ? {
+              authorityKind: "approved-assets" as const,
+              authorityId: `responsive-image:${trait}:${value}`,
+              authorityFingerprint:
+                approvedAssetContext?.fingerprint ??
+                `approved-presentations-${canonicalValueFingerprint(approvedArtDirections)}`,
+            }
+          : {
+              authorityKind: "component-manifest" as const,
+              authorityId: `responsive-image:${trait}:${value}`,
+              authorityFingerprint: manifest.fingerprint,
+            };
     addEntry(
       entries,
       references,
@@ -1611,18 +1789,24 @@ function addResponsiveAndAssetCapabilities(
         dimension,
         description: `Use the approved ${designLabel(value)} image ${designLabel(trait)} posture.`,
         contexts: ["storefront", "approved-media"],
-        availability: "available",
-        requirements: ["Canonical product media may be presented but never modified."],
+        availability: materiallyAvailable ? "available" : "evidence-dependent",
+        requirements: materiallyAvailable
+          ? ["Canonical product media may be presented but never modified."]
+          : approvedAssetConsumesValue
+            ? [
+                "Approved presentation evidence exists, but exact asset, placement, and responsive-image authority must be bound before selection.",
+              ]
+          : [
+              "Requires exact current Design DNA, dynamic-commerce art direction, or approved asset-presentation authority.",
+            ],
         selection: { kind: "capability" },
       },
       {
-        authorityKind: "component-manifest",
-        authorityId: `responsive-image:${trait}:${value}`,
-        authorityFingerprint: manifest.fingerprint,
+        ...exactAuthority,
         productTypeKey: false,
       },
-    ),
-  );
+    );
+  });
   const assetFingerprint =
     approvedAssetContext?.fingerprint ?? exactAbsenceFingerprint("approved-assets");
   const approvedByRole = new Map<string, number>();
@@ -1632,8 +1816,10 @@ function addResponsiveAndAssetCapabilities(
   const registeredRoles = sortedUnique(
     manifest.entries.flatMap(({ supportedAssetRoles }) => supportedAssetRoles),
   );
+  const protectedProductAssetRoles = new Set(["productMainImage", "productAlternativeImage"]);
   for (const role of registeredRoles) {
-    const available = (approvedByRole.get(role) ?? 0) > 0;
+    const protectedProductRole = protectedProductAssetRoles.has(role);
+    const available = !protectedProductRole && (approvedByRole.get(role) ?? 0) > 0;
     addEntry(
       entries,
       references,
@@ -1642,8 +1828,16 @@ function addResponsiveAndAssetCapabilities(
         dimension: "responsive.asset-role",
         description: `Use approved ${designLabel(role)} assets where registered slots permit them.`,
         contexts: ["storefront", "approved-media"],
-        availability: available ? "available" : "evidence-dependent",
-        requirements: available ? [] : [`Requires an approved ${designLabel(role)} asset.`],
+        availability: protectedProductRole
+          ? "registered-fail-closed"
+          : available
+            ? "available"
+            : "evidence-dependent",
+        requirements: protectedProductRole
+          ? ["Canonical product media is protected and cannot be selected as an approved source asset."]
+          : available
+            ? []
+            : [`Requires an approved ${designLabel(role)} asset.`],
         selection: { kind: "capability" },
       },
       {
@@ -1654,7 +1848,7 @@ function addResponsiveAndAssetCapabilities(
       },
     );
   }
-  const responsiveTreatmentAvailable =
+  const responsiveTreatmentEvidencePresent =
     approvedAssetContext?.assets.some(({ presentation }) =>
       presentation.responsiveCrops.some(({ breakpoint }) => breakpoint !== undefined),
     ) ?? false;
@@ -1667,9 +1861,11 @@ function addResponsiveAndAssetCapabilities(
       description:
         "Preserve approved focal and responsive crop authority without exposing coordinates.",
       contexts: ["storefront", "approved-media"],
-      availability: responsiveTreatmentAvailable ? "available" : "evidence-dependent",
-      requirements: responsiveTreatmentAvailable
-        ? []
+      availability: "evidence-dependent",
+      requirements: responsiveTreatmentEvidencePresent
+        ? [
+            "Approved focal or responsive-crop evidence exists, but exact asset, placement, and presentation authority must be bound before selection.",
+          ]
         : ["Requires approved responsive crop or focal-point evidence."],
       selection: { kind: "capability" },
     },
@@ -1739,7 +1935,7 @@ export function createPromptedStorefrontCapabilityAuthority(
 
   const entries: PromptedStorefrontCapabilityEntry[] = [];
   const references = new Map<string, PromptedStorefrontCapabilityAuthorityReference>();
-  addGrammarCapabilities(entries, references);
+  addGrammarCapabilities(draft, entries, references);
   addDesignDnaCapabilities(draft, entries, references);
   addSharedFrameCapabilities(entries, references);
   const profiles = currentCommercialProfiles();
@@ -1759,7 +1955,7 @@ export function createPromptedStorefrontCapabilityAuthority(
   addComponentCapabilities(profiles, reachableVariants, entries, references);
   addProductCardCapabilities(entries, references);
   addDynamicCommerceCapabilities(draft, catalogue, plansByProfileId, entries, references);
-  addResponsiveAndAssetCapabilities(approvedAssetContext, entries, references);
+  addResponsiveAndAssetCapabilities(draft, approvedAssetContext, profiles, entries, references);
 
   const capabilities = [...entries].sort((left, right) =>
     compareCanonical(`${left.dimension}:${left.key}`, `${right.dimension}:${right.key}`),

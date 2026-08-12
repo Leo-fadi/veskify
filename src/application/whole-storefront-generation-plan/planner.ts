@@ -27,10 +27,17 @@ import {
 import {
   componentInstanceV2Schema,
   createComponentRegistryV2,
+  projectBoundedParametersToComponentRuntime,
   type ComponentDefinitionV2,
   type ComponentInstanceV2,
   type PresentationBinding,
 } from "@/domain/component-platform";
+import {
+  dynamicCommerceDesignSelectionSchema,
+  materializeCurrentDynamicCommercePresentationAuthority,
+  validateDynamicCommerceDesignSelection,
+  type DynamicCommerceDesignSelection,
+} from "@/application/dynamic-commerce-routes";
 import { canonicalLocaleOrder } from "@/domain/shared";
 import {
   canonicalValueFingerprint,
@@ -39,11 +46,13 @@ import {
 } from "@/domain/storefront";
 import {
   wholeStorefrontGenerationPlanSchema,
+  wholeStorefrontPageBlueprintSelectionOverridesSchema,
   wholeStorefrontPlanningInputSchema,
   type WholeStorefrontGenerationPlan,
   type WholeStorefrontGenerationPlanErrorCode,
   type WholeStorefrontGenerationTarget,
   type WholeStorefrontPlanningInput,
+  type WholeStorefrontPageBlueprintSelectionOverride,
   WholeStorefrontGenerationPlanError,
 } from "./contract";
 import { selectStorefrontDesignDirection } from "@/application/storefront-design-system";
@@ -576,6 +585,7 @@ function materializeDirectionPageBlueprints(
   homepageProfileId?: CommercialHomepageProfileId,
   pdpProfileId?: CommercialPdpProfileId,
   collectionProfileId?: CommercialCollectionSearchProfileId,
+  pageBlueprintSelectionOverrides: readonly WholeStorefrontPageBlueprintSelectionOverride[] = [],
 ) {
   const templateId = templateForDirection(directionId);
   const contextTemplate = input.recipeContext.templates.find(
@@ -608,10 +618,20 @@ function materializeDirectionPageBlueprints(
       );
     }
     try {
+      const selectionOverride = pageBlueprintSelectionOverrides.find(
+        (entry) => entry.pageType === pageType,
+      );
+      if (selectionOverride && selectionOverride.profileId !== pagePlan.profile?.id) {
+        invalid(
+          "unsupported-page-family",
+          `The selected ${pageType} PageBlueprint override does not target the active profile.`,
+        );
+      }
       return materializeExecutablePageBlueprint({
         pagePlan,
         componentDefinitions: input.componentDefinitions,
         availableBindingCategories: resolvedWholeStorefrontBindingCategories(input, pageType),
+        ...(selectionOverride ? { slotSelectionOverrides: selectionOverride.slotSelections } : {}),
       });
     } catch (cause) {
       invalid(
@@ -1153,6 +1173,7 @@ function authoritativeHomepageProfileComponents(input: {
   materialization: ExecutablePageBlueprintMaterialization;
   revision: string;
   productCardAnatomyId: WholeStorefrontGenerationPlan["designSystemSelection"]["collectionPresentation"]["cardVariant"];
+  selectionOverride?: WholeStorefrontPageBlueprintSelectionOverride;
 }): WholeStorefrontGenerationPlan["pagePlans"][number]["components"] {
   const {
     planningInput,
@@ -1163,6 +1184,7 @@ function authoritativeHomepageProfileComponents(input: {
     materialization,
     revision,
     productCardAnatomyId,
+    selectionOverride,
   } = input;
   if (page.type !== "home") return [];
   const pagePlan = getExecutablePageBlueprintProfile(materialization.profileId);
@@ -1288,6 +1310,18 @@ function authoritativeHomepageProfileComponents(input: {
       const mappedContent: Record<string, unknown> = Object.fromEntries(
         Object.entries(mappedPresentation.content),
       );
+      const parameterProjection = projectBoundedParametersToComponentRuntime(
+        slot.component,
+        selectionOverride?.slotSelections.find(({ slotId }) => slotId === slot.slotId)
+          ?.boundedParameters ?? {},
+      );
+      if (!parameterProjection) {
+        invalid(
+          "invalid-component-contract",
+          `The selected bounded parameters for ${slot.component} have no current renderer projection.`,
+        );
+      }
+      Object.assign(mappedProps, parameterProjection.props);
       if (bridgeComponent === "homepageHero" && slot.variant === "campaignMerchandising") {
         const locale = planningInput.brief.languagePlan.primaryLanguage ?? "en";
         mappedContent.eyebrow = {
@@ -1337,7 +1371,10 @@ function authoritativeHomepageProfileComponents(input: {
         variant: slot.variant,
         content: mappedContent,
         props: mappedProps,
-        styleOverrides: bridgeComponent ? { surface: "plain" } : {},
+        styleOverrides: {
+          ...(bridgeComponent ? { surface: "plain" } : {}),
+          ...parameterProjection.styleOverrides,
+        },
         bindings: bridgeComponent
           ? homepageBindings(
               bridgeComponent,
@@ -1613,6 +1650,7 @@ function dynamicProductComponent(
   presentation: WholeStorefrontGenerationPlan["designSystemSelection"]["productPresentation"],
   replacementId?: string,
   commercialPdp?: CommercialProductDetailProfileAuthority,
+  exactVariant?: string,
 ): ComponentInstanceV2 {
   const id = replacementId ?? generatedComponentId(pageId, definition.type, usedComponentIds);
   usedComponentIds.add(id);
@@ -1620,7 +1658,7 @@ function dynamicProductComponent(
     id,
     component: "dynamicProductDetail",
     componentVersion: definition.version,
-    variant: commercialPdp?.dynamicProductDetailVariant ?? presentation.variant,
+    variant: exactVariant ?? commercialPdp?.dynamicProductDetailVariant ?? presentation.variant,
     content: structuredClone(dynamicProductDetailDefaultContent),
     props: {
       ...structuredClone(dynamicProductDetailDefaultProps),
@@ -1860,26 +1898,60 @@ function validateAssetPlacements(
   return placements;
 }
 
+export type WholeStorefrontGenerationPlanOptions = Readonly<{
+  directionId?: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
+  homepageProfileId?: CommercialHomepageProfileId;
+  pdpProfileId?: CommercialPdpProfileId;
+  collectionProfileId?: CommercialCollectionSearchProfileId;
+  designSystemNarrowing?: Readonly<{
+    spacingDensity: "compact" | "standard" | "spacious";
+    surfaceDepth: "flat" | "subtle" | "layered";
+  }>;
+  tokenRefinementPlan?: RegisteredTokenRefinementPlan | null;
+  pageBlueprintSelectionOverrides?: readonly WholeStorefrontPageBlueprintSelectionOverride[];
+  dynamicCommerceSelection?: DynamicCommerceDesignSelection | null;
+}>;
+
 export function createWholeStorefrontGenerationPlan(
   inputValue: unknown,
-  options: {
-    directionId?: WholeStorefrontGenerationPlan["designSystemSelection"]["directionId"];
-    homepageProfileId?: CommercialHomepageProfileId;
-    pdpProfileId?: CommercialPdpProfileId;
-    collectionProfileId?: CommercialCollectionSearchProfileId;
-    designSystemNarrowing?: Readonly<{
-      spacingDensity: "compact" | "standard" | "spacious";
-      surfaceDepth: "flat" | "subtle" | "layered";
-    }>;
-    tokenRefinementPlan?: RegisteredTokenRefinementPlan | null;
-  } = {},
+  options: WholeStorefrontGenerationPlanOptions = {},
 ): WholeStorefrontGenerationPlan {
   const input = parsePlanningInput(inputValue);
+  const pageBlueprintSelectionOverrides = [
+    ...wholeStorefrontPageBlueprintSelectionOverridesSchema.parse(
+      options.pageBlueprintSelectionOverrides ?? [],
+    ),
+  ]
+    .sort((left, right) => left.pageType.localeCompare(right.pageType))
+    .map((entry) => ({
+      ...structuredClone(entry),
+      slotSelections: [...entry.slotSelections].sort((left, right) =>
+        left.slotId.localeCompare(right.slotId),
+      ),
+    }));
   const tokenRefinementPlan =
     options.tokenRefinementPlan === undefined || options.tokenRefinementPlan === null
       ? null
       : registeredTokenRefinementPlanSchema.parse(options.tokenRefinementPlan);
   const tokenOnly = tokenRefinementPlan !== null;
+  const dynamicCommerceSelection =
+    options.dynamicCommerceSelection === undefined || options.dynamicCommerceSelection === null
+      ? null
+      : dynamicCommerceDesignSelectionSchema.parse(
+          validateDynamicCommerceDesignSelection(
+            input.draft,
+            input.catalogue,
+            options.dynamicCommerceSelection,
+            input.draft.dynamicCommercePresentation ??
+              materializeCurrentDynamicCommercePresentationAuthority(input.draft, input.catalogue),
+          ),
+        );
+  if (tokenOnly && (pageBlueprintSelectionOverrides.length > 0 || dynamicCommerceSelection)) {
+    invalid(
+      "invalid-component-contract",
+      "Token-only refinement cannot carry structural PageBlueprint or dynamic-commerce selections.",
+    );
+  }
   const target = createWholeStorefrontGenerationTarget(input);
   const definitions = normalizedDefinitions(input);
   const registry = createComponentRegistryV2(definitions);
@@ -1953,10 +2025,14 @@ export function createWholeStorefrontGenerationPlan(
     options.homepageProfileId,
     options.pdpProfileId,
     options.collectionProfileId,
+    pageBlueprintSelectionOverrides,
   );
-  const commercialCollectionProfileVariant = options.collectionProfileId
-    ? getCommercialCollectionSearchProfile(options.collectionProfileId)?.slots[0]?.defaultVariant
-    : undefined;
+  const commercialCollectionProfileVariant = pageBlueprintMaterializations
+    .find(({ pageType }) => pageType === "collection")
+    ?.slots.find(({ component }) => component === "dynamicCollectionCommerce")?.variant;
+  const commercialPdpProfileVariant = pageBlueprintMaterializations
+    .find(({ pageType }) => pageType === "product")
+    ?.slots.find(({ component }) => component === "dynamicProductDetail")?.variant;
   if (commercialCollectionSearchAuthority && !commercialCollectionProfileVariant) {
     invalid(
       "unsupported-page-family",
@@ -2080,6 +2156,7 @@ export function createWholeStorefrontGenerationPlan(
         designSystemSelection.productPresentation,
         page.sections.find((section) => section.component === "dynamicProductDetail")?.id,
         commercialPdpAuthority,
+        commercialPdpProfileVariant,
       );
       try {
         registry.validateInstance(instance);
@@ -2124,6 +2201,9 @@ export function createWholeStorefrontGenerationPlan(
           productCardAnatomyId:
             commercialHomepageAuthority?.productCardAnatomyId ??
             designSystemSelection.collectionPresentation.cardVariant,
+          selectionOverride: pageBlueprintSelectionOverrides.find(
+            ({ pageType }) => pageType === "home",
+          ),
         }),
       );
     }
@@ -2218,6 +2298,9 @@ export function createWholeStorefrontGenerationPlan(
       productComponentDefinition,
       usedComponentIds,
       designSystemSelection.productPresentation,
+      undefined,
+      commercialPdpAuthority,
+      commercialPdpProfileVariant,
     );
     try {
       registry.validateInstance(instance);
@@ -2438,6 +2521,8 @@ export function createWholeStorefrontGenerationPlan(
         homepageProfileId: options.homepageProfileId ?? null,
         pdpProfileId: options.pdpProfileId ?? null,
         collectionProfileId: options.collectionProfileId ?? null,
+        pageBlueprintSelectionOverrides,
+        dynamicCommerceSelection,
       },
       "whole-storefront-request",
     ),
@@ -2459,6 +2544,8 @@ export function createWholeStorefrontGenerationPlan(
     tokenRefinementPlan,
     designSystemSelection,
     pageBlueprintMaterializations,
+    pageBlueprintSelectionOverrides,
+    dynamicCommerceSelection,
     sharedDesignDirection,
     sharedChrome,
     pagePlans,
@@ -2515,6 +2602,8 @@ export function validateWholeStorefrontGenerationPlan(
         }
       : {}),
     tokenRefinementPlan: plan.tokenRefinementPlan,
+    pageBlueprintSelectionOverrides: plan.pageBlueprintSelectionOverrides,
+    dynamicCommerceSelection: plan.dynamicCommerceSelection,
   });
   if (canonicalValueString(plan) !== canonicalValueString(expected)) {
     invalid(

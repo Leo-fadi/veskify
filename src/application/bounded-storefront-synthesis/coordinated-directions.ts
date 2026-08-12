@@ -23,7 +23,11 @@ import {
   type CoordinatedStorefrontDirectionPackage,
   type StorefrontDiversityFingerprint,
 } from "./direction-contract";
-import { getCoordinatedStorefrontDirection } from "./direction-registry";
+import {
+  getCoordinatedStorefrontDirection,
+  listCoordinatedStorefrontDirections,
+  validateDirectionSelectionNarrowing,
+} from "./direction-registry";
 import { compareStorefrontDiversity, createStorefrontDiversityFingerprint } from "./diversity";
 import {
   createBoundedStorefrontSynthesisDecision,
@@ -80,6 +84,11 @@ export type ExecutableCoordinatedDirectionIntent = Readonly<{
 }>;
 
 export const MAX_EXECUTABLE_COORDINATED_DIRECTION_INTENTS = 3 as const;
+
+export type CompatibleCoordinatedDirectionNarrowingInput = Omit<
+  BoundedStorefrontSynthesisInput,
+  "request"
+>;
 
 export function executableCoordinatedDirectionDeterministicSeed(input: {
   currentAuthorityFingerprint: string;
@@ -343,6 +352,48 @@ function compatibleCandidateMaterial(
     .filter((candidate) => candidateHasSupportedAssetPosture(candidate, input))
     .filter((candidate) => candidateMatchesProfileDesignDna(candidate, input))
     .filter((candidate) => candidateMatchesPageSetFrame(candidate, input));
+}
+
+/**
+ * Lists the exact coordinated-direction selections that are compatible with current registered,
+ * evidence, asset, page-set and Design DNA authority. This is deliberately the read-only boundary
+ * before synthesis decisions, proposal compilation and storefront materialization.
+ *
+ * Direction packages retain their canonical registry order. Selections within each package are
+ * ordered by their content-derived selection IDs, so neither object insertion order nor runtime
+ * timing can influence the inventory.
+ */
+export function listCompatibleCoordinatedDirectionSelectionNarrowings(
+  input: CompatibleCoordinatedDirectionNarrowingInput,
+  options: Readonly<{ directionId?: CoordinatedStorefrontDirectionId }> = {},
+): readonly BoundedStorefrontSynthesisSelectionNarrowing[] {
+  const seenSelectionIds = new Set<string>();
+  const narrowings: BoundedStorefrontSynthesisSelectionNarrowing[] = [];
+  const directions = listCoordinatedStorefrontDirections().filter(
+    ({ id }) => options.directionId === undefined || id === options.directionId,
+  );
+
+  for (const direction of directions) {
+    const authorityInput: BoundedStorefrontSynthesisInput = {
+      ...input,
+      request: {
+        intent: direction.intent,
+        deterministicSeed: "compatible-direction-narrowing-inventory",
+      },
+    };
+    const directionNarrowings = compatibleCandidateMaterial(direction, authorityInput)
+      .map((candidate) => narrowingFor(direction, candidate))
+      .sort((left, right) => left.selectionId.localeCompare(right.selectionId));
+
+    for (const narrowing of directionNarrowings) {
+      if (seenSelectionIds.has(narrowing.selectionId)) continue;
+      validateDirectionSelectionNarrowing(narrowing);
+      seenSelectionIds.add(narrowing.selectionId);
+      narrowings.push(Object.freeze(structuredClone(narrowing)));
+    }
+  }
+
+  return Object.freeze(narrowings);
 }
 
 function mayTryAnotherCandidate(error: unknown): boolean {
