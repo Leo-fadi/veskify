@@ -1183,6 +1183,28 @@ export function promptedStorefrontStructuralDynamicCommerceMaterial(
       },
     ),
   );
+  const normalizedProductTypeArchetypeMappings = selection.productTypeMappings.map(
+    ({ productTypeId, archetypeId }) => {
+      const characteristics = productTypeCharacteristics.get(productTypeId);
+      if (!characteristics) {
+        fail("stale-authority", `Product type ${productTypeId} characteristics are unavailable.`);
+      }
+      return {
+        characteristics,
+        archetype: structuralArchetype(archetypeId, productById),
+      };
+    },
+  );
+  const productTypeArchetypeMappings = [
+    ...new Map(
+      normalizedProductTypeArchetypeMappings.map((mapping) => [
+        canonicalValueString(mapping),
+        mapping,
+      ]),
+    ).values(),
+  ].sort((left, right) =>
+    compareCanonical(canonicalValueString(left), canonicalValueString(right)),
+  );
   return {
     collectionArchetype: structuralArchetype(selection.collectionArchetypeId, collectionById),
     searchArchetype: structuralArchetype(selection.searchArchetypeId, collectionById),
@@ -1201,20 +1223,7 @@ export function promptedStorefrontStructuralDynamicCommerceMaterial(
     // not design structure. Preserve the material mapping relationship through the canonical
     // type-characteristic signature so swapping two type experiences remains structurally
     // visible while equivalent catalogues do not diverge merely by identity or count.
-    productTypeArchetypeMappings: selection.productTypeMappings
-      .map(({ productTypeId, archetypeId }) => {
-        const characteristics = productTypeCharacteristics.get(productTypeId);
-        if (!characteristics) {
-          fail("stale-authority", `Product type ${productTypeId} characteristics are unavailable.`);
-        }
-        return {
-          characteristics,
-          archetype: structuralArchetype(archetypeId, productById),
-        };
-      })
-      .sort((left, right) =>
-        compareCanonical(canonicalValueString(left), canonicalValueString(right)),
-      ),
+    productTypeArchetypeMappings,
   };
 }
 

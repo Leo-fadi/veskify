@@ -543,6 +543,40 @@ describe("P10B-16P-02B deterministic design intent compiler", { timeout: 60_000 
         fixture.requestAuthority.request.catalogueCharacteristics.productTypes,
       ),
     );
+
+    const firstProductType =
+      fixture.requestAuthority.request.catalogueCharacteristics.productTypes.find(
+        ({ productTypeKey }) =>
+          productTypeKey.replace(/^pdp\.product-type\./, "") === firstMapping?.productTypeId,
+      );
+    if (!firstMapping || !firstProductType) {
+      throw new Error("Missing product-type characteristic mapping fixture.");
+    }
+    const equivalentProductTypeId = `${firstMapping.productTypeId}-equivalent`;
+    expect(
+      promptedStorefrontStructuralDynamicCommerceMaterial(
+        {
+          ...selection,
+          productTypeMappings: [
+            ...selection.productTypeMappings,
+            {
+              productTypeId: equivalentProductTypeId,
+              archetypeId: firstMapping.archetypeId,
+            },
+          ],
+        },
+        fixture.currentRequestInput,
+        [
+          ...fixture.requestAuthority.request.catalogueCharacteristics.productTypes,
+          {
+            ...firstProductType,
+            productTypeKey: `pdp.product-type.${equivalentProductTypeId}`,
+            safeLabel: "Equivalent catalogue cohort",
+            productCount: firstProductType.productCount + 1,
+          },
+        ],
+      ),
+    ).toEqual(baseMaterial);
   });
 
   it("resolves independent material axes in one preference list", () => {
