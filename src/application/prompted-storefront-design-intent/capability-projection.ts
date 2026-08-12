@@ -678,9 +678,38 @@ function addPageBlueprintCapabilities(
 ): Readonly<{
   reachableVariants: Map<string, Set<string>>;
   exactCandidateComponents: Set<string>;
+  exactHomepageComponents: Set<string>;
+  exactOverrideTargets: Map<
+    string,
+    Array<Readonly<{ pageType: "home" | "product"; variants: readonly string[] }>>
+  >;
 }> {
   const reachableVariants = new Map<string, Set<string>>();
   const exactCandidateComponents = new Set<string>();
+  const exactHomepageComponents = new Set<string>();
+  const exactOverrideTargets = new Map<
+    string,
+    Array<Readonly<{ pageType: "home" | "product"; variants: readonly string[] }>>
+  >();
+  const addExactOverrideTargets = (
+    pageType: "home" | "product",
+    selections: ExecutablePageBlueprintProfile["componentSelections"],
+  ) => {
+    const targetsByComponent = new Map<string, typeof selections>();
+    selections.forEach((selection) => {
+      const targets = targetsByComponent.get(selection.component) ?? [];
+      targetsByComponent.set(selection.component, [...targets, selection]);
+    });
+    targetsByComponent.forEach((targets, component) => {
+      const target = targets.length === 1 ? targets[0] : undefined;
+      if (!target) return;
+      const current = exactOverrideTargets.get(component) ?? [];
+      exactOverrideTargets.set(component, [
+        ...current,
+        { pageType, variants: [...target.variants] },
+      ]);
+    });
+  };
   const exactContentSupportAvailability = (
     profile: ExecutablePageBlueprintProfile,
     familyId: string,
@@ -799,9 +828,14 @@ function addPageBlueprintCapabilities(
             )
           : new Set(plan.slots.map((slot) => slot.id));
       if (availability === "available") {
-        profile.componentSelections
-          .filter(({ slotId }) => includedSlotIds.has(slotId))
-          .forEach(({ component }) => exactCandidateComponents.add(component));
+        const exactSelections = profile.componentSelections.filter(({ slotId }) =>
+          includedSlotIds.has(slotId),
+        );
+        exactSelections.forEach(({ component }) => {
+          exactCandidateComponents.add(component);
+          exactHomepageComponents.add(component);
+        });
+        addExactOverrideTargets("home", exactSelections);
       }
       addEntry(
         entries,
@@ -963,6 +997,9 @@ function addPageBlueprintCapabilities(
         profile.componentSelections.forEach(({ component }) =>
           exactCandidateComponents.add(component),
         );
+        // Collection and search profiles are selected together. Their shared component identity
+        // is therefore not a single generic instance-override target; exact profile authority
+        // remains available, while generic variant/parameter authority stays fail closed.
       }
       const capabilities = [
         [
@@ -1043,6 +1080,7 @@ function addPageBlueprintCapabilities(
         profile.componentSelections.forEach(({ component }) =>
           exactCandidateComponents.add(component),
         );
+        addExactOverrideTargets("product", profile.componentSelections);
       }
       const reference = {
         ...profileReference(profile),
@@ -1192,44 +1230,12 @@ function addPageBlueprintCapabilities(
       },
     );
   }
-  return { reachableVariants, exactCandidateComponents };
-}
-
-function exactGenericOverrideComponents(
-  profiles: readonly ExecutablePageBlueprintProfile[],
-): ReadonlySet<string> {
-  const occurrences = new Map<
-    string,
-    { scopes: Set<"home" | "product">; maximumPerProfile: number }
-  >();
-  for (const profile of profiles) {
-    const scope = profile.commercialHomepage
-      ? ("home" as const)
-      : profile.commercialProductDetail
-        ? ("product" as const)
-        : null;
-    // Collection and search plans are materialized together and share generic component
-    // identities. Content/support and utility plans have no canonical instance-override path.
-    if (!scope) continue;
-    const counts = new Map<string, number>();
-    profile.componentSelections.forEach(({ component }) =>
-      counts.set(component, (counts.get(component) ?? 0) + 1),
-    );
-    counts.forEach((count, component) => {
-      const current = occurrences.get(component) ?? {
-        scopes: new Set<"home" | "product">(),
-        maximumPerProfile: 0,
-      };
-      current.scopes.add(scope);
-      current.maximumPerProfile = Math.max(current.maximumPerProfile, count);
-      occurrences.set(component, current);
-    });
-  }
-  return new Set(
-    [...occurrences.entries()].flatMap(([component, authority]) =>
-      authority.scopes.size === 1 && authority.maximumPerProfile === 1 ? [component] : [],
-    ),
-  );
+  return {
+    reachableVariants,
+    exactCandidateComponents,
+    exactHomepageComponents,
+    exactOverrideTargets,
+  };
 }
 
 function candidateInfluencingComponents(
@@ -1250,10 +1256,14 @@ function addComponentCapabilities(
   profiles: readonly ExecutablePageBlueprintProfile[],
   reachableVariants: ReadonlyMap<string, ReadonlySet<string>>,
   exactCandidateComponents: ReadonlySet<string>,
+  exactHomepageComponents: ReadonlySet<string>,
+  exactOverrideTargets: ReadonlyMap<
+    string,
+    ReadonlyArray<Readonly<{ pageType: "home" | "product"; variants: readonly string[] }>>
+  >,
   entries: PromptedStorefrontCapabilityEntry[],
   references: Map<string, PromptedStorefrontCapabilityAuthorityReference>,
 ): void {
-  const exactOverrideComponents = exactGenericOverrideComponents(profiles);
   const candidateComponents = candidateInfluencingComponents(profiles);
   const componentContexts = new Map<string, Set<string>>();
   profiles.forEach((profile) =>
@@ -1270,8 +1280,7 @@ function addComponentCapabilities(
     const reachable = reachableVariants.get(component.componentType);
     if (!component.commercialAnatomy || !reachable || contexts.length === 0) continue;
     const reachesExactCandidate = exactCandidateComponents.has(component.componentType);
-    const hasExactOverrideTarget =
-      reachesExactCandidate && exactOverrideComponents.has(component.componentType);
+    const componentOverrideTargets = exactOverrideTargets.get(component.componentType) ?? [];
     const influencesCoreCandidate =
       candidateComponents.has(component.componentType) && reachesExactCandidate;
     addEntry(
@@ -1306,8 +1315,10 @@ function addComponentCapabilities(
           dimension: "homepage.component-family",
           description: `Use ${designLabel(component.componentType)} in a compatible homepage profile.`,
           contexts: ["home"],
-          availability: reachesExactCandidate ? "available" : "registered-fail-closed",
-          requirements: reachesExactCandidate
+          availability: exactHomepageComponents.has(component.componentType)
+            ? "available"
+            : "registered-fail-closed",
+          requirements: exactHomepageComponents.has(component.componentType)
             ? []
             : ["Current evidence does not permit a materialized homepage slot using this family."],
           selection: { kind: "capability" },
@@ -1324,6 +1335,12 @@ function addComponentCapabilities(
       ({ id, structuralClassification }) =>
         reachable.has(id) && structuralClassification === "meaningfulStructuralVariant",
     )) {
+      const hasExactVariantTarget = componentOverrideTargets.some(({ variants }) =>
+        variants.includes(variant.id),
+      );
+      const hasExactHomepageVariantTarget = componentOverrideTargets.some(
+        ({ pageType, variants }) => pageType === "home" && variants.includes(variant.id),
+      );
       const reference = {
         authorityKind: "component-manifest" as const,
         authorityId: `${component.componentType}:${variant.id}`,
@@ -1338,8 +1355,8 @@ function addComponentCapabilities(
           dimension: "component.meaningful-variant",
           description: `Use the materially distinct ${designLabel(variant.id)} ${designLabel(component.componentType)} anatomy.`,
           contexts,
-          availability: hasExactOverrideTarget ? "available" : "registered-fail-closed",
-          requirements: hasExactOverrideTarget
+          availability: hasExactVariantTarget ? "available" : "registered-fail-closed",
+          requirements: hasExactVariantTarget
             ? []
             : ["No single exact materialized PageBlueprint slot accepts this generic variant."],
           selection: { kind: "capability" },
@@ -1355,8 +1372,8 @@ function addComponentCapabilities(
             dimension: "homepage.meaningful-variant",
             description: `Use the ${designLabel(variant.id)} ${designLabel(component.componentType)} homepage anatomy.`,
             contexts: ["home"],
-            availability: hasExactOverrideTarget ? "available" : "registered-fail-closed",
-            requirements: hasExactOverrideTarget
+            availability: hasExactHomepageVariantTarget ? "available" : "registered-fail-closed",
+            requirements: hasExactHomepageVariantTarget
               ? []
               : ["No single exact materialized PageBlueprint slot accepts this generic variant."],
             selection: { kind: "capability" },
@@ -1392,7 +1409,12 @@ function addComponentCapabilities(
       const materiallyAvailable =
         parameter.authority.instanceOverrideAllowed &&
         runtimeProjection !== null &&
-        hasExactOverrideTarget;
+        componentOverrideTargets.some(
+          ({ pageType, variants }) =>
+            parameter.compatiblePageTypes.includes(pageType) &&
+            (parameter.compatibleVariants.length === 0 ||
+              variants.some((variant) => parameter.compatibleVariants.includes(variant))),
+        );
       addEntry(
         entries,
         references,
@@ -2112,7 +2134,12 @@ export function createPromptedStorefrontCapabilityAuthority(
       plan.profile ? [[plan.profile.id, plan] as const] : [],
     ),
   );
-  const { reachableVariants, exactCandidateComponents } = addPageBlueprintCapabilities(
+  const {
+    reachableVariants,
+    exactCandidateComponents,
+    exactHomepageComponents,
+    exactOverrideTargets,
+  } = addPageBlueprintCapabilities(
     draft,
     catalogue,
     approvedBrief,
@@ -2124,6 +2151,8 @@ export function createPromptedStorefrontCapabilityAuthority(
     profiles,
     reachableVariants,
     exactCandidateComponents,
+    exactHomepageComponents,
+    exactOverrideTargets,
     entries,
     references,
   );

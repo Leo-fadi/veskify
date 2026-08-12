@@ -280,6 +280,27 @@ describe("P10B-16P-02B capability reachability truth", () => {
     });
   });
 
+  it("keeps single-slot override authority reachable when other profiles repeat the component", () => {
+    const input = p10b14ProjectionInput();
+    const homepageEditorialCounts = listExecutablePageBlueprintProfiles()
+      .flatMap(({ profile }) => (profile?.commercialHomepage ? [profile] : []))
+      .map(
+        (profile) =>
+          profile.componentSelections.filter(({ component }) => component === "homepageEditorial")
+            .length,
+      );
+    expect(homepageEditorialCounts.some((count) => count === 1)).toBe(true);
+    expect(homepageEditorialCounts.some((count) => count > 1)).toBe(true);
+
+    const authority = createPromptedStorefrontCapabilityAuthority(input);
+    const editorialVariants = authority.projection.capabilities.filter(({ key }) =>
+      key.startsWith("homepage.meaningful-variant.homepageEditorial."),
+    );
+
+    expect(editorialVariants.length).toBeGreaterThan(0);
+    expect(editorialVariants.some(({ availability }) => availability === "available")).toBe(true);
+  });
+
   it("requires exact approved evidence for every repeatable current content page", () => {
     const input = p10b14ProjectionInput();
     const aboutPage = input.draft.pages.find(({ pageFamily }) => pageFamily?.familyId === "about");
