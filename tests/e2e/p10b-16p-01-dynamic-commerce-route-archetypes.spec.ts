@@ -209,7 +209,7 @@ test("two concrete product URLs share one archetype while binding exact simple a
   const searchLinks = page.getByRole("link", { name: "Search" });
   await expect(searchLinks).toHaveCount(2);
   for (const searchLink of await searchLinks.all()) {
-    await expect(searchLink).toHaveAttribute("href", `/projects/${projectId}/search`);
+    await expect(searchLink).toHaveAttribute("href", `/projects/${projectId}/search?locale=en`);
   }
   const simpleVariant = await simple.getAttribute("data-variant");
   const simpleComposition = await simple.getAttribute("data-pdp-composition");
