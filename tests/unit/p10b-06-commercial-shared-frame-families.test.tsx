@@ -359,14 +359,15 @@ describe("P10B-06 commercial shared-frame families", () => {
       snapshot,
     });
     const markup = renderToStaticMarkup(renderStorefrontPage(snapshot.pages[0], context));
-    expect(markup).toContain('href="/search"');
-    expect(markup).toContain(">Haku<");
+    expect(markup).toContain('role="search" action="/search" method="get"');
+    expect(markup).toContain('aria-label="Hae tuotteita"');
+    expect(markup).toContain(">Hae</button>");
     expect(markup).toContain('href="/cart"');
     expect(markup).toContain(">Ostoskori<");
     expect(markup.match(/data-frame-utility="cart"/g)).toHaveLength(2);
   });
 
-  it("does not project an inventory-only search route before executable search runtime exists", () => {
+  it("projects the executable dynamic search route through the shared-frame search form", () => {
     const fixture = createP10B14PremiumEditorialFixture();
     const snapshot = fixture.slice.snapshot;
     expect(
@@ -381,11 +382,12 @@ describe("P10B-06 commercial shared-frame families", () => {
     });
     const homepage = snapshot.pages.find(({ type }) => type === "home")!;
     const markup = renderToStaticMarkup(renderStorefrontPage(homepage, context));
-    expect(markup).not.toContain('href="/search"');
-    expect(markup).not.toContain(">Search<");
+    expect(markup).toContain('role="search" action="/search" method="get"');
+    expect(markup).toContain('aria-label="Search products"');
+    expect(markup).toContain(">Search</button>");
   });
 
-  it("projects legacy header search as a link only when a static executable search page exists", () => {
+  it("projects the legacy header search as a canonical GET form", () => {
     const snapshot = structuredClone(aurumNordicSeed.draftSnapshot);
     const source = snapshot.pages[0];
     snapshot.pages.push({
@@ -415,9 +417,10 @@ describe("P10B-06 commercial shared-frame families", () => {
       snapshot,
     });
     const markup = renderToStaticMarkup(renderStorefrontPage(source, context));
-    expect(markup).toContain('aria-label="Search"');
-    expect(markup).toContain('href="/search"');
-    expect(markup).not.toContain("Search (demo)");
+    expect(markup).toContain('role="search" action="/search" method="get"');
+    expect(markup).toContain('aria-label="Search products"');
+    expect(markup).toContain('name="q"');
+    expect(markup).toContain(">Search</button>");
   });
 
   it("compiles an exact bounded proposal and fails closed when its source snapshot is stale", () => {

@@ -34,6 +34,8 @@ export type StorefrontRenderContext = {
   evidenceReferences?: readonly PageFactEvidenceReference[];
   /** Read-only operational state from a commerce/runtime adapter; never snapshot-persisted. */
   commerceUtilityRuntime?: CommerceUtilityRuntimeState;
+  /** Transient customer search input for the current render only; never snapshot-persisted. */
+  searchQuery?: string;
   /** Present only when the adapter has declared the rendered utility action executable. */
   onCommerceUtilityIntent?: (intent: CommerceUtilityIntent) => void;
   /** Current, externally resolved support facts. Snapshot sections carry only document IDs. */

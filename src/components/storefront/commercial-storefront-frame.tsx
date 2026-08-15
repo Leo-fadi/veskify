@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { StorefrontRenderContext } from "@/components/registry/contract";
+import { splitStorefrontSearchFormTarget } from "@/application/storefront-search";
 import {
   commercialSharedFrameProfiles,
   resolveCommercialSharedFrameProfile,
@@ -26,11 +27,7 @@ function navigationHref(
 ) {
   if (item.target.type === "external") return item.target.url;
   if (item.target.type === "page") return context.pagePaths[item.target.pageId] ?? "#";
-  const routeId = item.target.routeId;
-  const route = context.dynamicCommercePresentation?.routeInventory.find(
-    ({ id }) => id === routeId,
-  );
-  return route?.kind === "search" ? undefined : (context.pagePaths[routeId] ?? "#");
+  return context.pagePaths[item.target.routeId] ?? "#";
 }
 
 function fallbackByHeader(variant: HeaderVariant): CommercialSharedFrameProfile {
@@ -71,7 +68,50 @@ function profileFor(
 
 function frameDestination(context: StorefrontRenderContext, familyId: "search-results" | "cart") {
   const page = context.pages.find((candidate) => candidate.pageFamily?.familyId === familyId);
-  return page ? context.pagePaths[page.id] : undefined;
+  if (page) return context.pagePaths[page.id];
+  if (familyId !== "search-results") return undefined;
+  const route = context.dynamicCommercePresentation?.routeInventory.find(
+    (candidate) => candidate.kind === "search",
+  );
+  return route ? context.pagePaths[route.id] : undefined;
+}
+
+export function StorefrontSearchForm({
+  context,
+  routePath,
+  onNavigate,
+}: {
+  context: StorefrontRenderContext;
+  routePath: string;
+  onNavigate?: () => void;
+}) {
+  const target = splitStorefrontSearchFormTarget({ routePath, locale: context.activeLocale });
+  const label = context.activeLocale === "fi" ? "Hae tuotteita" : "Search products";
+  return (
+    <form
+      action={target.action}
+      className={styles.searchForm}
+      data-frame-utility="search"
+      method="get"
+      onSubmit={onNavigate}
+      role="search"
+    >
+      {target.hiddenInputs.map(({ name, value }) => (
+        <input key={name} name={name} type="hidden" value={value} />
+      ))}
+      <label>
+        <span className={styles.searchLabel}>{label}</span>
+        <input
+          aria-label={label}
+          defaultValue={context.searchQuery}
+          maxLength={120}
+          name="q"
+          type="search"
+        />
+      </label>
+      <button type="submit">{context.activeLocale === "fi" ? "Hae" : "Search"}</button>
+    </form>
+  );
 }
 
 function UtilityControls({
@@ -100,9 +140,7 @@ function UtilityControls({
   return (
     <div className={styles.utilities} data-frame-region="utilities">
       {showSearch && searchPath ? (
-        <a data-frame-utility="search" href={searchPath} onClick={onNavigate}>
-          {context.activeLocale === "fi" ? "Haku" : "Search"}
-        </a>
+        <StorefrontSearchForm context={context} onNavigate={onNavigate} routePath={searchPath} />
       ) : null}
       {showCart && cartPath ? (
         <a data-frame-utility="cart" href={cartPath} onClick={onNavigate}>
@@ -177,7 +215,7 @@ export function CommercialStoreHeader({
 
   useEffect(() => {
     if (!open) return;
-    panelRef.current?.querySelector<HTMLElement>("a, button")?.focus();
+    panelRef.current?.querySelector<HTMLElement>("a, button, input:not([type='hidden'])")?.focus();
     if (!trapsFocus) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -198,7 +236,11 @@ export function CommercialStoreHeader({
       return;
     }
     if (!trapsFocus || event.key !== "Tab") return;
-    const focusable = [...(panelRef.current?.querySelectorAll<HTMLElement>("a, button") ?? [])];
+    const focusable = [
+      ...(panelRef.current?.querySelectorAll<HTMLElement>(
+        "a, button, input:not([type='hidden'])",
+      ) ?? []),
+    ];
     if (!focusable.length) return;
     const first = focusable[0];
     const last = focusable.at(-1)!;

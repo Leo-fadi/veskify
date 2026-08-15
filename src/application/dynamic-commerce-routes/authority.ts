@@ -2200,6 +2200,8 @@ function routeSection(
   route: DynamicCommerceRouteInventoryEntry,
   catalogue: CatalogueDisplayModel,
   projection: "runtime" | "editor" | undefined,
+  searchBinding?: DynamicCommerceSearchRuntimeBinding,
+  publicProductRouteIds: ReadonlySet<string> = new Set(),
 ): SectionInstance {
   const presentation = archetype.componentPresentations[0];
   if (!presentation) return fail("invalid-presentation", "The selected archetype is empty.");
@@ -2282,10 +2284,50 @@ function routeSection(
     };
   }
   if (route.kind === "search" && archetype.family === "collection-search") {
-    return fail(
-      "unknown-commerce-identity",
-      "Search presentation requires an exact transient canonical search-result projection.",
-    );
+    if (!searchBinding) {
+      return fail(
+        "unknown-commerce-identity",
+        "Search presentation requires an exact transient canonical search-result projection.",
+      );
+    }
+    if (searchBinding.canonicalRevision !== revision) {
+      return fail(
+        "stale-authority",
+        "The transient search result revision no longer matches the canonical catalogue.",
+      );
+    }
+    if (new Set(searchBinding.resultProductIds).size !== searchBinding.resultProductIds.length) {
+      return fail("invalid-presentation", "Transient search result identities must be unique.");
+    }
+    for (const productId of searchBinding.resultProductIds) {
+      if (!catalogue.products.some(({ id }) => id === productId)) {
+        return fail(
+          "unknown-commerce-identity",
+          "A transient search result is unavailable in the current catalogue.",
+        );
+      }
+      if (!publicProductRouteIds.has(productId)) {
+        return fail(
+          "unknown-commerce-identity",
+          "A transient search result has no current public product route authority.",
+        );
+      }
+    }
+    return {
+      id: sectionId,
+      component: "dynamicCollectionCommerce",
+      variant: presentation.variant,
+      visible: presentation.visible,
+      content: {
+        ...structuredClone(presentation.content),
+        productIds: [...searchBinding.resultProductIds],
+        canonicalRevision: revision,
+      },
+      props: structuredClone(presentation.props),
+      styleOverrides: structuredClone(projectSectionStyleOverrides(presentation.styleOverrides)),
+      approvedAssetPlacements,
+      approvedAssetPresentations,
+    };
   }
   return fail(
     "unknown-archetype",
@@ -2299,11 +2341,42 @@ export type ResolvedDynamicCommerceRoutePage = Readonly<{
   page: PageModel;
 }>;
 
+/**
+ * Exact runtime-only product membership for the single persisted search route. This binding is
+ * derived from the current catalogue by StorefrontProductSearchPort and is never snapshot state.
+ */
+export type DynamicCommerceSearchRuntimeBinding = Readonly<{
+  canonicalRevision: string;
+  resultProductIds: readonly string[];
+}>;
+
+export type DynamicCommerceRuntimeBindingPolicy =
+  "runtime-collection-membership" | "runtime-search-results";
+
+/**
+ * The persisted v1 field describes the collection half of a shared collection/search archetype.
+ * Runtime execution is truthfully discriminated by the selected route context without changing
+ * historical snapshot or compiled-artifact fingerprints.
+ */
+export function resolveDynamicCommerceRuntimeBindingPolicy(
+  archetype: DynamicCommerceCollectionSearchArchetype,
+  context: "collection" | "search",
+): DynamicCommerceRuntimeBindingPolicy {
+  if (!archetype.supportedContexts.includes(context)) {
+    return fail(
+      "unknown-archetype",
+      `The selected collection/search archetype does not support ${context} runtime binding.`,
+    );
+  }
+  return context === "search" ? "runtime-search-results" : "runtime-collection-membership";
+}
+
 type DynamicCommerceRouteResolutionInput = Readonly<{
   snapshot: StorefrontSnapshot;
   catalogue: CatalogueDisplayModel;
   route?: string;
   routeId?: string;
+  searchBinding?: DynamicCommerceSearchRuntimeBinding;
 }> &
   (
     | Readonly<{ projection: "editor"; archetypeId?: string }>
@@ -2342,6 +2415,9 @@ export function resolveDynamicCommerceRoutePage(
     authority.productDetailArchetypes.find(({ id }) => id === archetypeId);
   if (!archetype)
     return fail("unknown-archetype", "The selected dynamic-commerce archetype is unavailable.");
+  if (route.kind === "search" && archetype.family === "collection-search") {
+    resolveDynamicCommerceRuntimeBindingPolicy(archetype, "search");
+  }
   assertCurrentArchetype(input.snapshot, archetype);
   const product =
     route.kind === "product"
@@ -2379,7 +2455,20 @@ export function resolveDynamicCommerceRoutePage(
         metaDescription: structuredClone(description),
       },
       pageFamily: pageAuthority(input.snapshot, archetype, commerceContext),
-      sections: [routeSection(archetype, route, input.catalogue, input.projection)],
+      sections: [
+        routeSection(
+          archetype,
+          route,
+          input.catalogue,
+          input.projection,
+          input.searchBinding,
+          new Set(
+            authority.routeInventory.flatMap((candidate) =>
+              candidate.kind === "product" ? [candidate.productId] : [],
+            ),
+          ),
+        ),
+      ],
     },
   };
 }

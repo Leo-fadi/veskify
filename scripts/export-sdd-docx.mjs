@@ -234,7 +234,7 @@ try {
     subtitle: "Version 1.3.0",
     coverLines: [
       "Verified baseline: 15 August 2026",
-      "P10B-16P-05A active production-path and compiler rationalisation",
+      "P10B-16P-06 canonical search query/results adapter",
       "Merchant product: Vesko Storefront Studio | Controlled engine: Veskify",
       "Authoritative source: docs/VESKIFY_SDD.md",
     ],

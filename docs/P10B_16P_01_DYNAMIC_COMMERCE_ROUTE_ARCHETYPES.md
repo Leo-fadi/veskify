@@ -12,7 +12,8 @@
 
 P10B-16P-01 removes the accidental equation between a concrete commerce URL and an editable
 storefront design page. Collection and product URLs remain complete public routes, while `/search`
-retains registered route and presentation authority pending its exact transient result adapter.
+retains one registered route and presentation authority and receives exact transient result context
+from the later P10B-16P-06 adapter.
 All three families resolve their design through one versioned, fingerprinted
 `dynamicCommercePresentation` authority inside the canonical `StorefrontSnapshot`.
 
@@ -106,10 +107,11 @@ collection availability, catalogue density, and the safe editorial default. Sear
 registered search archetype and its family fallback; no-results remains the governed P10B-13
 utility relationship rather than a fabricated collection.
 
-The `/search` inventory entry and registered archetype do not create operational search authority.
-Runtime search materialization requires an exact transient query/result projection from a
-first-class canonical search adapter. That adapter does not yet exist, so missing query/result
-authority fails closed and never substitutes a collection or fabricated membership. This remains
+The `/search` inventory entry and registered archetype do not themselves create operational search
+authority. Runtime materialization requires an exact transient query/result projection from a
+first-class canonical adapter. P10B-16P-06 now supplies that projection from the standalone current
+`CatalogueDisplayModel`; missing, invalid, stale, or unresolved query/result authority still fails
+closed and never substitutes a collection or fabricated membership. A Vesko-backed adapter remains
 an explicit P11 integration gap.
 
 At runtime, the selected archetype receives the exact current collection identity, revision, and
@@ -262,16 +264,18 @@ for the Studio archetype outline, two products sharing an archetype, two collect
 archetype, and the configurable PDP at every required width. Cross-platform assertions continue to
 prove exact commerce identity, representative-context non-persistence, save/reload, and geometry.
 
-Search evidence proves registered archetype selection, retained `/search` inventory, P10B-13
-no-results relationship, and fail-closed missing-runtime-context behavior. It does not claim a
-first-class operational search-result adapter. Until that adapter exists, the shared frame does not
-project the inventory-only `/search` route as a clickable utility; an executable static search page
-may still supply the utility destination through the canonical page-family authority.
+P10B-16P-01 evidence proves registered archetype selection, retained `/search` inventory, P10B-13
+no-results relationship, and fail-closed missing-runtime-context behavior. P10B-16P-06 subsequently
+adds the first-class transient query/results adapter and makes supported shared-frame search controls
+submit to the same `/search` route. It does not change this persisted archetype authority or turn a
+query into a `PageModel`.
 
 P10B-16P-01 does not implement the P10B-16P-02 prompted design-plan contract, the P10B-16P-03 final
 Storefront Studio prompt-generation journey, individual product/collection design overrides,
 P10B-17, P10B-18, P10C general editing, operational commerce, arbitrary code generation, or
 repository cleanup.
 
-P10B remains **Partial**. P10B-16P-01 is **Baseline**; P10B-16P-02, P10B-16P-03, P10B-17, and
-P10B-18 remain **Planned**.
+P10B remains **Partial**. P10B-16P-01 through P10B-16P-05A plus P10B-16P-06 are **Baseline**;
+P10B-17 and P10B-18 remain **Planned**, and P10B-16P-05B remains Planned after P10B-18.
+P10B-16P-06 claims standalone canonical catalogue search only, not Vesko integration, provider
+calls, AI/semantic/vector/fuzzy search, recommendations, personalization, or analytics.

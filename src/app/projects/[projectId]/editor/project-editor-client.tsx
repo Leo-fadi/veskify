@@ -8,6 +8,7 @@ import {
   saveValidatedEditorDraft,
   StaleEditorDraftError,
 } from "@/application/draft-save";
+import { buildStorefrontSearchUrl } from "@/application/storefront-search";
 import type { AIProvider } from "@/application/ai-provider";
 import type { StorefrontAIProvider } from "@/application/ai-storefront-generation";
 import { P10B16P03_PROJECT_ID } from "@/data/demo/p10b-16p-03-studio-identity";
@@ -416,6 +417,7 @@ export function ProjectEditorClient({
   const [selectedPageId, setSelectedPageId] = useState<string>();
   const [selectedSectionId, setSelectedSectionId] = useState<string>();
   const [representativeRouteIds, setRepresentativeRouteIds] = useState<Record<string, string>>({});
+  const [representativeSearchQuery, setRepresentativeSearchQuery] = useState("");
   const [p10b16p04CartContext, setP10b16p04CartContext] = useState<"empty" | "populated">("empty");
   const [activeLocale, setActiveLocale] = useState<Locale>();
   const [sessionPages, setSessionPages] = useState<Record<string, PageModel>>({});
@@ -580,6 +582,7 @@ export function ProjectEditorClient({
           setActiveLocale(aggregate.project.primaryLocale);
           setSessionPages({});
           setRepresentativeRouteIds({});
+          setRepresentativeSearchQuery("");
           setSessionBrandSystem(undefined);
           setSessionStorefrontDraft(undefined);
           setCurrentEvidenceReferences(retainedEvidenceReferences);
@@ -905,6 +908,23 @@ export function ProjectEditorClient({
   const selectedRepresentativeRoute = representativeRoutes.find(
     ({ id }) => id === selectedArchetypeProjection?.representativeRouteId,
   );
+  const representativeSearchRoute = dynamicAuthority?.routeInventory.find(
+    (route) => route.kind === "search",
+  );
+  const representativeProposalFingerprint =
+    p10b16p04Acceptance && showingProposal
+      ? agent.generatedStorefrontProposal?.wholeStorefrontGeneration?.candidateSnapshotFingerprint
+      : undefined;
+  const representativeSearchRoutePath = representativeSearchRoute
+    ? `/projects/${projectId}${representativeSearchRoute.route}${representativeProposalFingerprint ? `?p10b-16p-04-proposal=${encodeURIComponent(representativeProposalFingerprint)}` : ""}`
+    : undefined;
+  const representativeSearchHref = representativeSearchRoutePath
+    ? buildStorefrontSearchUrl({
+        routePath: representativeSearchRoutePath,
+        rawQuery: representativeSearchQuery,
+        locale,
+      })
+    : undefined;
   const title = resolveLocalizedText(
     workspacePage.title,
     locale,
@@ -1371,11 +1391,33 @@ export function ProjectEditorClient({
       </p>
       {selectedArchetype?.family === "collection-search" &&
       selectedArchetype.supportedContexts.includes("search") ? (
-        <p data-testid="dynamic-commerce-search-unavailable">
-          {locale === "fi"
-            ? "Haun esitystapa kuuluu tähän malliin, mutta haun suoritus ei ole vielä käytettävissä. Alla näkyy vain edustava kokoelmakonteksti — ei hakutuloksia."
-            : "Search presentation belongs to this archetype, but search execution is not yet available. The representative preview below shows collection context only — not search results."}
-        </p>
+        <Field
+          hint={
+            locale === "fi"
+              ? "Haku käyttää nykyistä luetteloa vain tässä esikatselussa. Hakua tai tuloksia ei tallenneta luonnokseen."
+              : "Search uses the current catalogue only for this preview. Neither the query nor results are saved to the draft."
+          }
+          id="dynamic-commerce-representative-search"
+          label={locale === "fi" ? "Edustava hakukysely" : "Representative search query"}
+        >
+          <input
+            id="dynamic-commerce-representative-search"
+            maxLength={120}
+            onChange={(event) => setRepresentativeSearchQuery(event.target.value)}
+            placeholder={locale === "fi" ? "Esimerkiksi sormus" : "For example, ring"}
+            type="search"
+            value={representativeSearchQuery}
+          />
+          {representativeSearchHref ? (
+            <Link
+              className={styles.previewLink}
+              data-testid="dynamic-commerce-representative-search-link"
+              href={representativeSearchHref}
+            >
+              {locale === "fi" ? "Esikatsele hakutuloksia" : "Preview search results"}
+            </Link>
+          ) : null}
+        </Field>
       ) : null}
       <Field
         id="dynamic-commerce-representative-route"

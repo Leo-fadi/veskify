@@ -16,7 +16,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 const ARCHIVE_TIMESTAMP = new Date("2000-01-01T00:00:00Z");
-const EXPORTER_VERSION = "1.1.0";
+const EXPORTER_VERSION = "1.1.1";
 const PORTRAIT_WIDTH = 9360;
 const LANDSCAPE_WIDTH = 12960;
 const HYPERLINK_RELATIONSHIP_TYPE =
@@ -440,7 +440,7 @@ const numberingXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </w:numbering>`;
 
 const footerXml = (label, pageWidth) => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:pStyle w:val="Footer"/><w:pBdr><w:top w:val="single" w:sz="4" w:space="6" w:color="D8E0E8"/></w:pBdr><w:tabs><w:tab w:val="right" w:pos="${pageWidth - 1440}"/></w:tabs></w:pPr>${runXml(label)}<w:r><w:tab/></w:r>${runXml("Page ")}<w:fldSimple w:instr=" PAGE "><w:r><w:t>1</w:t></w:r></w:fldSimple>${runXml(" of ")}<w:fldSimple w:instr=" NUMPAGES "><w:r><w:t>1</w:t></w:r></w:fldSimple></w:p></w:ftr>`;
+<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:pStyle w:val="Footer"/><w:jc w:val="left"/><w:pBdr><w:top w:val="single" w:sz="4" w:space="6" w:color="D8E0E8"/></w:pBdr><w:tabs><w:tab w:val="right" w:pos="${pageWidth}"/></w:tabs></w:pPr>${runXml(label)}<w:r><w:tab/></w:r>${runXml("Page ")}<w:fldSimple w:instr=" PAGE "><w:r><w:t>1</w:t></w:r></w:fldSimple>${runXml(" of ")}<w:fldSimple w:instr=" NUMPAGES "><w:r><w:t>1</w:t></w:r></w:fldSimple></w:p></w:ftr>`;
 
 const collectArchiveEntries = (directory, prefix = "") =>
   readdirSync(directory)

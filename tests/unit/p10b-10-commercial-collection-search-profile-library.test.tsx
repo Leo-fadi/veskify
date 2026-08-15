@@ -17,6 +17,11 @@ import {
   compileStorefrontPublication,
   createCurrentPublishCompilerInput,
 } from "@/application/publishing";
+import {
+  STOREFRONT_SEARCH_RESULTS_CONTRACT_VERSION,
+  storefrontSearchResultFingerprint,
+  type StorefrontSearchResultMaterialV1,
+} from "@/application/storefront-search";
 import { createStorefrontRenderContext, renderRegisteredSection } from "@/components/registry";
 import { dynamicCollectionCommerceBridgeDefinition } from "@/components/registry/dynamic-commerce-bridge";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry/v2-registry";
@@ -26,6 +31,7 @@ import { createCatalogueStorefrontCommerceRouteAdapter } from "@/integrations/st
 import {
   applyCommercialSharedFrame,
   canonicalStorefrontContentFingerprint,
+  canonicalValueFingerprint,
   canonicalValueString,
   listPageFamilyDefinitions,
   type SectionInstance,
@@ -427,14 +433,38 @@ describe("P10B-10 commercial collection and search profile library", () => {
     const result = lifecycle("collection-dense-search");
     const instance = structuredClone(result.presentation.instance);
     const projection = structuredClone(result.presentation.projection);
+    const material: StorefrontSearchResultMaterialV1 = {
+      contractVersion: STOREFRONT_SEARCH_RESULTS_CONTRACT_VERSION,
+      state: "results",
+      requestFingerprint: "p10b10-no-results-request",
+      catalogueFingerprint: canonicalValueFingerprint(result.fixture.aggregate.catalogue),
+      authorityFingerprint: "p10b10-search-authority",
+      normalizedQuery: "nonexistent ring",
+      normalizedTerms: ["nonexistent", "ring"],
+      totalCount: 0,
+      page: 1,
+      pageSize: 12,
+      productIds: [],
+      availableFacets: [],
+      appliedFilters: [],
+      sort: "relevance",
+    };
+    const search = {
+      ...material,
+      resultFingerprint: storefrontSearchResultFingerprint(material),
+    };
     const productList = instance.bindings.find((binding) => binding.source === "productList");
     if (!productList || productList.source !== "productList")
       throw new Error("Missing product list.");
     productList.productIds = [];
+    productList.revision = search.resultFingerprint;
+    instance.bindings = instance.bindings.filter(
+      ({ slotId }) => slotId !== "primaryCollection" && slotId !== "childCollections",
+    );
     projection.products = [];
     projection.assets = [];
-    projection.collections[0].productIds = [];
-    projection.collections[0].assets = [];
+    projection.collections = [];
+    projection.productListRevision = search.resultFingerprint;
     instance.assetAssignments = [];
     const markup = renderToStaticMarkup(
       renderDynamicCollectionCommerce({
@@ -444,16 +474,13 @@ describe("P10B-10 commercial collection and search profile library", () => {
         activeLocale: "en",
         primaryLocale: "en",
         loading: { status: "ready" },
-        search: {
-          query: "nonexistent ring",
-          canonicalRevision: projection.collections[0].revision,
-          resultProductIds: [],
-        },
+        search,
         resolveAssetUrl: result.presentation.resolveAssetUrl,
         onNavigateProduct: () => undefined,
         onNavigateCollection: () => undefined,
         onFilterIntent: () => undefined,
         onSortIntent: () => undefined,
+        onContinueShopping: () => undefined,
       }),
     );
     expect(markup).toContain('data-search-zero-results="true"');

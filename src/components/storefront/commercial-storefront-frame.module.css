@@ -181,6 +181,46 @@
   gap: calc(var(--brand-grid-gap, 1.5rem) * var(--brand-density-navigation, 1) / 2);
 }
 
+.searchForm {
+  display: flex;
+  min-width: min(18rem, 36vw);
+  align-items: end;
+  gap: 0.4rem;
+}
+
+.searchForm label {
+  display: grid;
+  min-width: 0;
+  gap: 0.2rem;
+}
+
+.searchLabel {
+  font-size: 0.7rem;
+  font-weight: var(--brand-type-utility-weight, 500);
+  letter-spacing: var(--brand-type-utility-tracking, 0.04em);
+}
+
+.searchForm input[type="search"] {
+  width: 100%;
+  min-height: var(--brand-control-height, 2.75rem);
+  border: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  border-radius: var(--brand-control-radius, var(--brand-radius));
+  background: var(--brand-surface-page, var(--brand-color-surface));
+  color: inherit;
+  padding-inline: var(--brand-control-padding-inline, 0.75rem);
+}
+
+.searchForm button {
+  min-height: var(--brand-control-height, 2.75rem);
+  border: var(--brand-border-width, 1px) solid var(--brand-color-border);
+  border-radius: var(--brand-control-radius, var(--brand-radius));
+  background: var(--brand-color-text);
+  color: var(--brand-color-background);
+  cursor: pointer;
+  font: inherit;
+  padding-inline: var(--brand-control-padding-inline, 0.75rem);
+}
+
 .utilities > div {
   display: flex;
   gap: 0.35rem;

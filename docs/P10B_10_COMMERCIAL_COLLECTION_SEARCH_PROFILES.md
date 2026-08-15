@@ -66,9 +66,10 @@ never catalogue ownership or facts.
 Filters, selection state, and sort options remain canonical projection data and emit typed intent
 only. Where the projection supplies child collections, their binding must exactly equal the
 canonical child-collection IDs and order. The profile never invents, drops, reorders, or stores
-membership. The current catalogue model does not yet provide pagination or a first-class search
-route; P10B-10 therefore does not claim either as a second authority. P10B-13 remains responsible
-for governed utility-page and search-route closure.
+membership. P10B-10 itself did not provide pagination or a first-class search adapter and did not
+claim either as a second authority. P10B-13 remains responsible for governed search
+orientation/no-results presentation; P10B-16P-06 now supplies the separate transient query/results
+runtime authority.
 
 The campaign-led profile requires an approved editorial collection asset before planning. The
 existing P10B-04 art-direction metadata, provenance, crop/focal treatment, and approved placement
@@ -130,6 +131,23 @@ it no longer copies their composite presentation into one editable `PageModel` p
 Exact collection membership, ordering, filters, search context, product cards, and media remain
 runtime-bound canonical commerce. See
 [`P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md`](P10B_16P_01_DYNAMIC_COMMERCE_ROUTE_ARCHETYPES.md).
-The `/search` route inventory entry and maintained archetype do not claim an operational search
-adapter. Exact transient query/result authority is required at materialization; without it the
-runtime fails closed and never treats a collection as search results.
+The `/search` route inventory entry and maintained archetype do not themselves own operational
+search. Exact transient query/result authority remains required at materialization; missing,
+invalid, stale, or unresolved authority fails closed and never treats a collection as search
+results.
+
+## Current P10B-16P-06 runtime continuation
+
+P10B-16P-06 makes the selected P10B-10 search presentation executable without changing this profile
+authority. One provider-neutral read-only port and standalone `CatalogueDisplayModel` adapter
+validate the current query, supported filter/sort/page state, locale, catalogue fingerprint, and
+public product-route authority, then return unique exact product IDs in deterministic ranked order.
+The existing `dynamicCollectionCommerce`, P10B-08 product-card, shared-frame, Design DNA, and
+P10B-13-governed orientation/no-results states consume that transient result page across draft,
+proposal, saved/history, and published routes.
+
+Only the `/search` route identity and selected presentation archetype persist. Query text, filters,
+sort, page, result IDs, and result count remain runtime-only and are absent from `PageModel`,
+`StorefrontSnapshot`, history, compiled design decisions, and publication records as editable
+authority. This standalone Baseline does not claim a Vesko search endpoint, AI/semantic/vector/fuzzy
+search, typo correction, recommendations, personalization, analytics, or any commerce/media write.

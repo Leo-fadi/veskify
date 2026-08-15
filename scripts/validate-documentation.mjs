@@ -153,7 +153,7 @@ requireText("docs/VESKIFY_SDD.md", [
   "There is no Vesko staging or production evidence",
   "VESKIFY_SDD_v1.3.0.docx",
   "archive/VESKIFY_SDD_v1.2.2.docx",
-  "P10B-16P-05A active-path/compiler rationalisation are Baseline",
+  "P10B-16P-05A active-path/compiler rationalisation, and P10B-16P-06 canonical search query/results\nauthority are Baseline",
   "### 10.20 P10B-16P-02B deterministic design-intent compiler",
   "### 10.22 P10B-16P-04 real Storefront Studio Design Intent acceptance",
   "### 10.23 P10B-16P-05A active production-path and compiler rationalisation",
@@ -191,7 +191,7 @@ requireText("docs/P10A_PHASE_CLOSURE.md", [
 ]);
 
 requireText("docs/P10B_COMMERCIAL_STOREFRONT_GENERATION_ARCHITECTURE.md", [
-  "**Status:** Binding architecture. P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-05A\nare **Baseline**; P10B-16P-02 is **Baseline**; P10B-16P-05B, P10B-17, and P10B-18 remain\n**Planned**.",
+  "**Status:** Binding architecture. P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and\nP10B-16P-06 are **Baseline**; P10B-16P-02 is **Baseline**; P10B-16P-05B, P10B-17, and P10B-18\nremain **Planned**.",
   "**Phase:** P10B — Commercial Storefront Generation System v1",
   "Veskify owns storefront creation",
   "Vesko owns operational commerce truth",
@@ -252,7 +252,7 @@ for (const relativePath of [
 
 requireText("docs/DEVELOPMENT_GUIDE.md", [
   "Phase 9 is\nclosed by product-owner handoff, and P10A is **Baseline / closed**",
-  "P10B-16P-03 normal Studio generation, P10B-16P-04 real-provider acceptance, and P10B-16P-05A\nactive-path/compiler rationalisation are **Baseline**.",
+  "P10B-16P-03 normal Studio generation, P10B-16P-04 real-provider acceptance, P10B-16P-05A\nactive-path/compiler rationalisation, and P10B-16P-06 canonical search query/results authority are\n**Baseline**.",
   "P10B-16P-05B, P10B-17, and P10B-18 remain **Planned**.",
   "Completed P10A capability includes governed initial and follow-up\nexecution",
   "merchant-facing routing, clarification, scope controls,\nand normal-editor execution belong to P10C",
@@ -260,8 +260,8 @@ requireText("docs/DEVELOPMENT_GUIDE.md", [
 ]);
 
 const tracker = contents.get("docs/VESKIFY_DEVELOPMENT_DELIVERY_TRACKER.md");
-if ((tracker.match(/☑/g) ?? []).length !== 30) {
-  failures.push("Delivery tracker must contain exactly thirty completed checkboxes");
+if ((tracker.match(/☑/g) ?? []).length !== 31) {
+  failures.push("Delivery tracker must contain exactly thirty-one completed checkboxes");
 }
 
 const plannedP10bChecklistIds = [...tracker.matchAll(/^\| ☐\s+\| (P10B-\d{2})\s+\|/gm)].map(
@@ -314,12 +314,13 @@ if (
   !/^\| ☑\s+\| P10B-16P-03\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-16P-04\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☑\s+\| P10B-16P-05A\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
+  !/^\| ☑\s+\| P10B-16P-06\s+\|[^\n]*\| \*\*Baseline\*\*/m.test(tracker) ||
   !/^\| ☐\s+\| P10B-16P-05B\s+\|[^\n]*\| \*\*Planned\*\*/m.test(tracker) ||
   plannedP10bChecklistIds.length !== expectedPlannedP10bChecklistIds.length ||
   plannedP10bChecklistIds.some((taskId, index) => taskId !== expectedPlannedP10bChecklistIds[index])
 ) {
   failures.push(
-    "Delivery tracker must mark P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-05A Baseline, and keep P10B-16P-05B, P10B-17 and P10B-18 Planned",
+    "Delivery tracker must mark P10B-01 through P10B-16, P10B-16P-01 through P10B-16P-05A, and P10B-16P-06 Baseline, and keep P10B-16P-05B, P10B-17 and P10B-18 Planned",
   );
 }
 
@@ -703,8 +704,12 @@ for (const { source, output, script, requiredXml } of exportsToValidate) {
   const footerXml = execFileSync("/usr/bin/unzip", ["-p", outputPath, "word/footer1.xml"], {
     encoding: "utf8",
   });
-  for (const field of ['w:instr=" PAGE "', 'w:instr=" NUMPAGES "']) {
+  for (const field of ['w:instr=" PAGE "', 'w:instr=" NUMPAGES "', '<w:jc w:val="left"/>']) {
     if (!footerXml.includes(field)) failures.push(`${output}: missing footer field ${field}`);
+  }
+  const expectedFooterTabPosition = source.endsWith("VESKIFY_SDD.md") ? "9360" : "12960";
+  if (!footerXml.includes(`<w:tab w:val="right" w:pos="${expectedFooterTabPosition}"/>`)) {
+    failures.push(`${output}: footer tab must align to the exact writable page width`);
   }
 }
 

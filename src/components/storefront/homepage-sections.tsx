@@ -10,7 +10,11 @@ import type { StorefrontRenderContext } from "@/components/registry/contract";
 import { CanonicalProductCard } from "./canonical-product-card";
 import { projectLegacyProductCardProduct } from "@/domain/product-card";
 import type { CanonicalProductCardAnatomyId } from "@/domain/product-card";
-import { CommercialStoreFooter, CommercialStoreHeader } from "./commercial-storefront-frame";
+import {
+  CommercialStoreFooter,
+  CommercialStoreHeader,
+  StorefrontSearchForm,
+} from "./commercial-storefront-frame";
 
 export type SafeLink = { label: LocalizedText; href: string };
 
@@ -96,11 +100,7 @@ function navigationHref(
 ) {
   if (item.target.type === "external") return item.target.url;
   if (item.target.type === "page") return context.pagePaths[item.target.pageId] ?? "#";
-  const routeId = item.target.routeId;
-  const route = context.dynamicCommercePresentation?.routeInventory.find(
-    ({ id }) => id === routeId,
-  );
-  return route?.kind === "search" ? undefined : (context.pagePaths[routeId] ?? "#");
+  return context.pagePaths[item.target.routeId] ?? "#";
 }
 
 export function StoreHeader({
@@ -120,7 +120,14 @@ export function StoreHeader({
 }) {
   if (!context.sharedFrame) {
     const searchPage = context.pages.find((page) => page.pageFamily?.familyId === "search-results");
-    const searchPath = searchPage ? context.pagePaths[searchPage.id] : undefined;
+    const searchRoute = context.dynamicCommercePresentation?.routeInventory.find(
+      (route) => route.kind === "search",
+    );
+    const searchPath = searchPage
+      ? context.pagePaths[searchPage.id]
+      : searchRoute
+        ? context.pagePaths[searchRoute.id]
+        : undefined;
     return (
       <header className={`store-header ${className ?? ""}`}>
         <a className="store-brand" href={context.homePath ?? "/"}>
@@ -140,16 +147,14 @@ export function StoreHeader({
         </nav>
         <div className="store-header__tools">
           {showSearch && searchPath ? (
-            <a aria-label={text({ en: "Search", fi: "Haku" }, context)} href={searchPath}>
-              ⌕
-            </a>
+            <StorefrontSearchForm context={context} routePath={searchPath} />
           ) : null}
           {showCart ? (
             <button
               aria-label={text({ en: "Cart (demo)", fi: "Ostoskori (demo)" }, context)}
               type="button"
             >
-              Bag <span aria-hidden="true">0</span>
+              <span aria-hidden="true">{text({ en: "Bag 0", fi: "Ostoskori 0" }, context)}</span>
             </button>
           ) : null}
         </div>
@@ -555,15 +560,6 @@ export function StoreFooter({
         <div>
           <h2>{text({ en: "Information", fi: "Tiedot" }, context)}</h2>
           <p>{text(policyLabel, context)}</p>
-          <p className="store-footer__legal">
-            {text(
-              {
-                en: "Draft placeholder — review before publishing",
-                fi: "Luonnospaikkamerkki — tarkista ennen julkaisua",
-              },
-              context,
-            )}
-          </p>
         </div>
         <p className="store-footer__copyright">{text(copyright, context)}</p>
       </footer>
