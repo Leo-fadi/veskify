@@ -784,6 +784,7 @@ function collectionFilterIsSelected(filter: CollectionFilterPresentation): boole
 }
 
 function collectionFilterIsEligible(filter: CollectionFilterPresentation): boolean {
+  if (collectionFilterIsSelected(filter)) return true;
   if (filter.presentation === "range") {
     return filter.range !== undefined && filter.range.min < filter.range.max;
   }

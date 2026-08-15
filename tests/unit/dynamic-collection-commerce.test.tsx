@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
@@ -427,6 +427,65 @@ describe("P6-04 dynamic collection commerce", () => {
     expect(screen.getByRole("slider", { name: "Price maximum" })).toHaveAccessibleDescription(
       "Allowed 100–1000 EUR. Step 50 EUR.",
     );
+  });
+
+  it("keeps selected categorical and collapsed range filters visible and clearable", async () => {
+    const user = userEvent.setup();
+    const onFilterIntent = vi.fn();
+    const collapsedFilters: CollectionPresentationContext = {
+      ...structuredClone(collection),
+      filters: [
+        {
+          id: "material",
+          label: localized("Material", "Materiaali"),
+          presentation: "enumerated",
+          values: [
+            { id: "gold", label: localized("Gold", "Kulta"), count: 0, selected: true },
+            { id: "silver", label: localized("Silver", "Hopea"), count: 0 },
+          ],
+        },
+        {
+          id: "price",
+          label: localized("Price", "Hinta"),
+          presentation: "range",
+          values: [],
+          range: { min: 500, max: 500, selectedMin: 500, selectedMax: 500 },
+        },
+      ],
+    };
+    const rendered = render(
+      renderDynamicCollectionCommerce(rendererInput(collapsedFilters, { onFilterIntent })),
+    );
+
+    expect(rendered.container.querySelector('[data-filter-id="material"]')).not.toBeNull();
+    expect(rendered.container.querySelector('[data-filter-id="price"]')).not.toBeNull();
+    expect(screen.getByRole("checkbox", { name: /Gold.*0/ })).toBeChecked();
+    const activeFilters = screen.getByLabelText("Active filters");
+    const materialChip = within(activeFilters).getByRole("button", { name: /Material/ });
+    const priceChip = within(activeFilters).getByRole("button", { name: /Price/ });
+    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeEnabled();
+
+    await user.click(materialChip);
+    await user.click(priceChip);
+    await user.click(screen.getByRole("button", { name: "Clear all filters" }));
+
+    expect(onFilterIntent).toHaveBeenNthCalledWith(1, {
+      type: "clearCollectionFilter",
+      collectionId: collapsedFilters.collectionId,
+      collectionRevision: collapsedFilters.revision,
+      filterId: "material",
+    });
+    expect(onFilterIntent).toHaveBeenNthCalledWith(2, {
+      type: "clearCollectionFilter",
+      collectionId: collapsedFilters.collectionId,
+      collectionRevision: collapsedFilters.revision,
+      filterId: "price",
+    });
+    expect(onFilterIntent).toHaveBeenNthCalledWith(3, {
+      type: "clearAllCollectionFilters",
+      collectionId: collapsedFilters.collectionId,
+      collectionRevision: collapsedFilters.revision,
+    });
   });
 
   it("clamps minimum and maximum slider intents to the selected opposite bound", () => {

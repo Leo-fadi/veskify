@@ -83,11 +83,13 @@ function StatusPanel({
   title,
   message,
   retry,
+  returnToStoreHref,
   snapshotKind,
 }: {
   title: string;
   message: string;
   retry?: () => void;
+  returnToStoreHref: string;
   snapshotKind: SnapshotKind;
 }) {
   return (
@@ -101,7 +103,7 @@ function StatusPanel({
             Try again
           </button>
         ) : null}
-        <Link href="./">Return to store</Link>
+        <Link href={returnToStoreHref}>Return to store</Link>
       </section>
     </main>
   );
@@ -251,11 +253,13 @@ export function ProjectPreviewClient({
     setState({ status: "loading" });
     setAttempt((current) => current + 1);
   };
+  const returnToStoreHref = `/projects/${projectId}`;
 
   if (state.status === "loading") {
     return (
       <StatusPanel
         message="Preparing the saved storefront…"
+        returnToStoreHref={returnToStoreHref}
         snapshotKind={snapshotKind}
         title="Loading your storefront"
       />
@@ -266,6 +270,7 @@ export function ProjectPreviewClient({
       <StatusPanel
         title="Project not found"
         message="We could not find this saved storefront on this device."
+        returnToStoreHref={returnToStoreHref}
         snapshotKind={snapshotKind}
       />
     );
@@ -276,6 +281,7 @@ export function ProjectPreviewClient({
         title="Draft unavailable"
         message="This project does not currently have a draft storefront to preview."
         retry={retry}
+        returnToStoreHref={returnToStoreHref}
         snapshotKind={snapshotKind}
       />
     );
@@ -290,6 +296,7 @@ export function ProjectPreviewClient({
             : "The saved draft does not contain this storefront page."
         }
         retry={retry}
+        returnToStoreHref={returnToStoreHref}
         snapshotKind={snapshotKind}
       />
     );
@@ -300,6 +307,7 @@ export function ProjectPreviewClient({
         title="Storefront could not be displayed"
         message="Some saved storefront content needs attention before it can be shown safely."
         retry={retry}
+        returnToStoreHref={returnToStoreHref}
         snapshotKind={snapshotKind}
       />
     );
@@ -310,6 +318,7 @@ export function ProjectPreviewClient({
         title="Storefront could not be loaded"
         message="We could not open the saved project. Your draft has not been changed."
         retry={retry}
+        returnToStoreHref={returnToStoreHref}
         snapshotKind={snapshotKind}
       />
     );
