@@ -12,6 +12,10 @@ import {
   compileStorefrontPublication,
   createCurrentPublishCompilerInput,
 } from "@/application/publishing";
+import {
+  registeredBrandSystemForDirection,
+  storefrontDesignSystemV1,
+} from "@/application/storefront-design-system";
 import { veskifyComponentDefinitionsV2 } from "@/components/registry";
 import { aurumNordicSeed } from "@/data/seed";
 import {
@@ -31,6 +35,7 @@ import {
   projectBrandSystemDesignDna,
   projectDesignDna,
   readableForegroundAcrossBackgrounds,
+  resolveBrandSystemDesignDna,
   standardTextContrastMinimum,
 } from "@/domain/design-system";
 import { InMemoryProjectRepository } from "@/services/storage";
@@ -84,6 +89,22 @@ describe("P10B-02 parametric BrandSystem Design DNA", () => {
     expect(first.colors).toEqual(aurumNordicBrandSystem.colors);
     expect(first.typography).toEqual(aurumNordicBrandSystem.typography);
     expect(brandSystemDesignDnaFingerprint(first)).toMatch(/^design-dna-/);
+  });
+
+  it("preserves exact registered Premium DNA while retaining merchant colour authority", () => {
+    const selected = registeredBrandSystemForDirection(
+      aurumNordicBrandSystem,
+      storefrontDesignSystemV1,
+      "premiumEditorial",
+      { spacingDensity: "spacious", surfaceDepth: "layered" },
+    );
+    const actual = resolveBrandSystemDesignDna(selected);
+    const { colour: expectedExampleColour, ...expectedNonColour } = premiumEditorialDesignDna;
+    const { colour: actualColour, ...actualNonColour } = actual;
+    void expectedExampleColour;
+
+    expect(actualNonColour).toEqual(expectedNonColour);
+    expect(actualColour).toEqual(migrateLegacyFoundationToDesignDna(aurumNordicBrandSystem).colour);
   });
 
   it("migrates black page, white surface and white legacy text across both backgrounds", () => {
@@ -236,7 +257,7 @@ describe("P10B-02 parametric BrandSystem Design DNA", () => {
       /\.surface_contrast\s*\{[\s\S]*background:\s*var\(--brand-surface-contrast\);[\s\S]*color:\s*var\(--brand-surface-contrast-text\);/,
     );
     expect(css).toMatch(
-      /\.surface_plain\s*\{[\s\S]*background:\s*var\(--brand-surface-page\);[\s\S]*color:\s*var\(--brand-surface-page-text\);/,
+      /\.surface_plain\s*\{[\s\S]*background:\s*var\(--brand-surface-page,\s*var\(--brand-color-background\)\);[\s\S]*color:\s*var\(--brand-surface-page-text\);/,
     );
     expect(css).toContain("--brand-surface-contrast-muted-text");
     expect(variables["--brand-surface-contrast"]).not.toBe(variables["--brand-surface-default"]);

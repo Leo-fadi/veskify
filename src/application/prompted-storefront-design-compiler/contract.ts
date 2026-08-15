@@ -147,6 +147,19 @@ const promptedStorefrontCompiledDecisionMaterialSchema = z
     exactAuthorityFingerprints: z.array(fingerprintSchema).min(1).max(240),
     structuralFingerprint: fingerprintSchema,
     dynamicRoutePresentationFingerprint: fingerprintSchema,
+    semanticResolution: z
+      .object({
+        semanticAuthorityFingerprint: fingerprintSchema,
+        semanticIntentFingerprint: fingerprintSchema,
+        semanticResolutionFingerprint: fingerprintSchema,
+        diagnosticFingerprint: fingerprintSchema,
+        initialCandidateCount: z.number().int().nonnegative(),
+        finalCandidateCount: z.number().int().nonnegative(),
+        acceptedSemanticPaths: z.array(referenceSchema).max(80),
+        substitutedSemanticPaths: z.array(referenceSchema).max(80),
+      })
+      .strict()
+      .optional(),
   })
   .strict();
 

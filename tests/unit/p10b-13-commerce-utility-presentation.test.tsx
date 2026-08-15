@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
+  commercialUtilityProfileIds,
   getCommercialUtilityProfile,
   listCommercialUtilityProfiles,
   materializeCommerceUtilityPage,
@@ -75,6 +77,32 @@ function pageFor(profileId: CommercialUtilityProfileId): PageModel {
   );
 }
 
+function runtimeFor(profileId: CommercialUtilityProfileId): CommerceUtilityRuntimeState {
+  const authority = getCommercialUtilityProfile(profileId)?.profile?.commercialUtility;
+  if (!authority) throw new Error(`Missing utility profile ${profileId}.`);
+  const state = authority.state;
+  const common = { revision: `${state}-commerce-frame-r1`, actions: [] };
+  if (state === "cart") return { ...common, kind: state, lines: [] };
+  if (state === "checkout") {
+    return { ...common, kind: state, boundaryLabel: { en: "Checkout", fi: "Kassa" } };
+  }
+  if (state === "no-results") {
+    return { ...common, kind: state, query: "missing", activeFilters: [] };
+  }
+  if (state === "empty") {
+    return { ...common, kind: state, message: { en: "Empty", fi: "Tyhjä" } };
+  }
+  if (state === "error") {
+    return {
+      ...common,
+      kind: state,
+      message: { en: "Recoverable", fi: "Korjattavissa" },
+      recoverable: true,
+    };
+  }
+  return { ...common, kind: "not-found" };
+}
+
 describe("P10B-13 commerce utility presentation", () => {
   it("registers deterministic PageBlueprint utility profiles with exact state boundaries", () => {
     const profiles = listCommercialUtilityProfiles();
@@ -101,6 +129,35 @@ describe("P10B-13 commerce utility presentation", () => {
       "continue-checkot",
     ]);
     expect(() => validateCommercialUtilityProfileLibrary([malformed])).toThrow();
+  });
+
+  it("renders every required utility profile through the commerce-utility shared frame", () => {
+    const fixture = createP905aFreshMerchantFixture("modernTechnical");
+    for (const profileId of commercialUtilityProfileIds) {
+      const authority = getCommercialUtilityProfile(profileId)?.profile?.commercialUtility;
+      if (!authority) throw new Error(`Missing utility profile ${profileId}.`);
+      expect(authority.compatibleSharedFrameProfileIds).toContain("commerce-utility");
+      const utilityPage = pageFor(profileId);
+      const snapshot = applyCommercialSharedFrame(
+        {
+          ...fixture.planningInput.draft,
+          pages: [...fixture.planningInput.draft.pages, utilityPage],
+        },
+        "commerce-utility",
+      );
+      const context = createStorefrontRenderContext({
+        activeLocale: "en",
+        primaryLocale: "en",
+        enabledLocales: ["en", "fi"],
+        catalogue: fixture.aggregate.catalogue,
+        snapshot,
+        commerceUtilityRuntime: runtimeFor(profileId),
+      });
+      const html = renderToStaticMarkup(renderStorefrontPage(utilityPage, context));
+      expect(snapshot.sharedFrame?.profileId).toBe("commerce-utility");
+      expect(html).toContain('data-frame-profile="commerce-utility"');
+      expect(html).toContain("<main>");
+    }
   });
 
   it("renders cart facts from a read-only runtime projection and never persists cart contents", () => {
@@ -140,14 +197,27 @@ describe("P10B-13 commerce utility presentation", () => {
       commerceUtilityRuntime: runtime,
       onCommerceUtilityIntent: action,
     });
-    render(<>{renderStorefrontPage(cartPage, context)}</>);
+    const { container } = render(<>{renderStorefrontPage(cartPage, context)}</>);
     expect(screen.getByRole("heading", { name: "Cart" })).toBeVisible();
     expect(screen.getByRole("heading", { name: product.title.en })).toBeVisible();
+    expect(container.querySelector('[data-cart-region="line-items"]')).toBeVisible();
+    expect(container.querySelector(`[data-product-id="${product.id}"] img`)).toHaveAccessibleName(
+      product.images[0].alt?.en ?? product.title.en,
+    );
+    expect(screen.getByRole("button", { name: "Increase quantity" })).toHaveAttribute(
+      "data-action-tone",
+      "quiet",
+    );
+    expect(screen.getByRole("button", { name: "Continue to checkout" })).toHaveAttribute(
+      "data-action-tone",
+      "primary",
+    );
     expect(
       screen.getAllByText(
         new Intl.NumberFormat("en-FI", {
           style: "currency",
           currency: price.currency,
+          minimumFractionDigits: Number.isInteger(price.amount) ? 0 : 2,
           maximumFractionDigits: 2,
         }).format(price.amount),
       ).length,
@@ -162,6 +232,49 @@ describe("P10B-13 commerce utility presentation", () => {
     );
     expect(JSON.stringify(snapshot)).not.toContain("line_1");
     expect(JSON.stringify(snapshot)).not.toContain("cart-r1");
+  });
+
+  it("promotes truthful shopping continuation when checkout is unavailable", () => {
+    const fixture = createP905aFreshMerchantFixture("premiumEditorial");
+    const product = fixture.aggregate.catalogue.products[0];
+    if (!product?.price) throw new Error("Expected canonical fixture product price.");
+    const cartPage = pageFor("commerce-utility-cart");
+    const snapshot = applyCommercialSharedFrame(
+      { ...fixture.planningInput.draft, pages: [...fixture.planningInput.draft.pages, cartPage] },
+      "centered-minimal",
+    );
+    const context = createStorefrontRenderContext({
+      activeLocale: "en",
+      primaryLocale: "en",
+      enabledLocales: ["en", "fi"],
+      catalogue: fixture.aggregate.catalogue,
+      snapshot,
+      commerceUtilityRuntime: {
+        kind: "cart",
+        revision: "cart-read-only-r1",
+        lines: [
+          {
+            lineId: "line_read_only",
+            productId: product.id,
+            quantity: 1,
+            minimumQuantity: 1,
+            unitPrice: product.price,
+            linePrice: product.price,
+          },
+        ],
+        subtotal: product.price,
+        total: product.price,
+        actions: ["continue-shopping"],
+      },
+      onCommerceUtilityIntent: vi.fn(),
+    });
+
+    render(<>{renderStorefrontPage(cartPage, context)}</>);
+    expect(screen.queryByRole("button", { name: "Continue to checkout" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Continue shopping" })).toHaveAttribute(
+      "data-action-tone",
+      "primary",
+    );
   });
 
   it("keeps no-results, error, and not-found semantically distinct and fails closed for mismatched state", () => {
@@ -187,6 +300,7 @@ describe("P10B-13 commerce utility presentation", () => {
     });
     render(<>{renderStorefrontPage(noResults, context)}</>);
     expect(screen.getByRole("heading", { name: "No results" })).toBeVisible();
+    expect(document.body).not.toHaveTextContent(/Vesko home|Return to Vesko/i);
     const errorPage = pageFor("commerce-utility-error");
     expect(() => renderStorefrontPage(errorPage, context)).toThrow(
       /matching canonical runtime state/i,

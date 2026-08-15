@@ -21,6 +21,25 @@ const storefrontTemplateRegistryPath = join(
   "src/application/storefront-templates/registry.ts",
 );
 const storefrontTemplateIndexPath = join(root, "src/application/storefront-templates/index.ts");
+const compilerRoot = join(root, "src/application/prompted-storefront-design-compiler");
+const semanticCapabilityFeaturesPath = join(compilerRoot, "semantic-capability-features.ts");
+const semanticInfluenceAuthorityPath = join(compilerRoot, "semantic-influence-authority.ts");
+const semanticCompatibilityResolutionPath = join(
+  compilerRoot,
+  "semantic-compatibility-resolution.ts",
+);
+const semanticCompilerPath = join(compilerRoot, "semantic-compiler.ts");
+const semanticExecutorPath = join(compilerRoot, "semantic-executor.ts");
+const exactExecutorPath = join(compilerRoot, "executor.ts");
+const factorizedSelectionPath = join(
+  root,
+  "src/application/bounded-storefront-synthesis/compatible-direction-selections.ts",
+);
+const studioHandlerPath = join(
+  root,
+  "src/integrations/ai/prompted-storefront-studio-handler.server.ts",
+);
+const proposalRoutePath = join(root, "src/app/api/ai/whole-storefront-proposals/handler.ts");
 
 function sourceFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -98,7 +117,6 @@ describe("P10B-16P-02A prompted design-intent architecture boundaries", () => {
       'from "@/application/storefront-templates"',
       "whole-storefront-generation-plan",
       "complete-storefront-materializer",
-      "bounded-storefront-synthesis",
       "whole-storefront-proposal-lifecycle",
       "ai-storefront/proposal",
       "integrations/puck",
@@ -157,12 +175,10 @@ describe("P10B-16P-02A prompted design-intent architecture boundaries", () => {
     }
   });
 
-  it("keeps the complete runtime dependency closure outside execution lifecycles", () => {
+  it("keeps the core request and projection dependency closure outside execution lifecycles", () => {
     const closure = runtimeDependencyClosure([
       join(applicationRoot, "request.ts"),
       join(applicationRoot, "capability-projection.ts"),
-      providerPath,
-      clientPath,
     ]);
     const forbidden = [
       "src/application/bounded-storefront-synthesis/",
@@ -196,13 +212,117 @@ describe("P10B-16P-02A prompted design-intent architecture boundaries", () => {
     expect(storefrontTemplateIndex).toContain('export * from "./commerce-utility-materializer"');
   });
 
-  it("keeps V2 out of the normal Studio route and proposal compiler during Part A", () => {
-    const normalRoute = source(join(root, "src/app/api/ai/whole-storefront-proposals/handler.ts"));
-    const runtimeAuthority = source(
-      join(root, "src/integrations/ai/whole-storefront-runtime-authority.ts"),
+  it("derives semantic influence from current registered compatibility authority", () => {
+    const features = source(semanticCapabilityFeaturesPath);
+    const influence = source(semanticInfluenceAuthorityPath);
+    const resolution = source(semanticCompatibilityResolutionPath);
+    const semanticRegistryFiles = sourceFiles(compilerRoot).filter((path) =>
+      /(?:semantic.*registry|registry.*semantic)/u.test(path),
     );
 
-    expect(normalRoute).not.toContain("prompted-storefront-design-intent");
-    expect(runtimeAuthority).not.toContain("prompted-storefront-design-intent");
+    expect(features).toContain("getCommercialHomepageProfile");
+    expect(features).toContain("getCommercialCollectionSearchProfile");
+    expect(features).toContain("getCommercialPdpProfile");
+    expect(features).toContain("getCommercialSharedFrameProfile");
+    expect(influence).toContain("deriveSemanticInfluenceAuthority");
+    expect(resolution).toContain("listCompatibleCoordinatedDirectionFactorizedCandidates");
+    expect(resolution).toContain("projectionFor(selection, input.authority)");
+    expect(resolution).toContain("deriveSemanticInfluenceAuthority(influenceSamples)");
+    expect(semanticRegistryFiles).toEqual([]);
+  });
+
+  it("keeps semantic resolution and factorized selection outside Studio and execution lifecycles", () => {
+    const metadataOnlyPaths = [
+      semanticCapabilityFeaturesPath,
+      semanticInfluenceAuthorityPath,
+      semanticCompatibilityResolutionPath,
+      factorizedSelectionPath,
+    ];
+    const forbiddenImports = [
+      "prompted-storefront-studio",
+      "storefront-draft-persistence",
+      "whole-storefront-proposal-lifecycle",
+      "/publishing",
+      "complete-storefront-materializer",
+      "storefront-templates/materializer",
+      "storefront-templates/profile-materializer",
+      "storefront-templates/commerce-utility-materializer",
+    ] as const;
+
+    for (const path of metadataOnlyPaths) {
+      const imports = runtimeImportSpecifiers(path);
+      for (const forbidden of forbiddenImports) {
+        expect(
+          imports.some((specifier) => specifier.includes(forbidden)),
+          `${relative(root, path)} imports ${forbidden}`,
+        ).toBe(false);
+      }
+      expect(source(path), relative(root, path)).not.toMatch(
+        /\b(?:executeBoundedStorefrontSynthesis|materializeExecutablePageBlueprint)\b/u,
+      );
+    }
+  });
+
+  it("keeps complete storefront materialization behind the semantic and exact executors", () => {
+    const semanticExecutor = source(semanticExecutorPath);
+    const exactExecutor = source(exactExecutorPath);
+
+    expect(semanticExecutor).toContain('from "./executor"');
+    expect(semanticExecutor).toContain("executeExactCompiledPromptedStorefrontDecision");
+    expect(exactExecutor).toContain("executeBoundedStorefrontSynthesis");
+    for (const path of [
+      semanticCapabilityFeaturesPath,
+      semanticInfluenceAuthorityPath,
+      semanticCompatibilityResolutionPath,
+      semanticCompilerPath,
+      factorizedSelectionPath,
+    ]) {
+      expect(source(path), relative(root, path)).not.toMatch(
+        /\bexecuteBoundedStorefrontSynthesis\b/u,
+      );
+    }
+  });
+
+  it("keeps the OpenAI semantic provider independent of exact registry and compiler internals", () => {
+    const providerModules = [
+      providerPath,
+      clientPath,
+      join(root, "src/integrations/ai/openai/semantic-storefront-design-intent-v1-wire.ts"),
+    ];
+    const forbiddenImports = [
+      "prompted-storefront-design-compiler",
+      "bounded-storefront-synthesis",
+      "storefront-templates",
+      "whole-storefront-generation-plan",
+      "components/registry",
+      "dynamic-commerce-routes",
+    ] as const;
+
+    for (const path of providerModules) {
+      const imports = runtimeImportSpecifiers(path);
+      for (const forbidden of forbiddenImports) {
+        expect(
+          imports.some((specifier) => specifier.includes(forbidden)),
+          `${relative(root, path)} imports ${forbidden}`,
+        ).toBe(false);
+      }
+    }
+  });
+
+  it("routes the normal prompted Studio operation through semantic V2 without an exact-key fallback", () => {
+    const normalRoute = source(proposalRoutePath);
+    const studioHandler = source(studioHandlerPath);
+    const provider = source(providerPath);
+
+    expect(normalRoute).toContain("PROMPTED_STOREFRONT_STUDIO_OPERATION");
+    expect(normalRoute).toContain("return promptedHandler(request)");
+    expect(normalRoute.indexOf("return promptedHandler(request)")).toBeLessThan(
+      normalRoute.indexOf("return legacyHandler(request)"),
+    );
+    expect(studioHandler).toContain("runPromptedStorefrontDesignCompilation");
+    expect(studioHandler).toContain("SemanticStorefrontDesignIntentProvider");
+    expect(studioHandler).not.toMatch(/\b(?:selectionId|executableIntentId)\b/u);
+    expect(provider).not.toMatch(/\b(?:selectionId|executableIntentId)\b/u);
+    expect(provider).not.toContain("createDeterministicWholeStorefrontPlanningProvider");
   });
 });

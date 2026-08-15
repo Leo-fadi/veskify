@@ -133,4 +133,4 @@ journey, P10B-17 phase-wide responsive/accessibility/performance closure, the P1
 configuration quality/scale gate, aesthetic AI scoring, generated code, P10C editing, Vesko
 operations, save as an implicit generation action, or publication without explicit authority.
 P10B-16P-01, P10B-16P-02, and P10B-16P-03 are now Baseline through their own subsequent tasks.
-P10B remains Partial; P10B-16P-04, P10B-17, and P10B-18 remain Planned.
+P10B remains Partial; P10B-16P-04 is Baseline, while P10B-17 and P10B-18 remain Planned.

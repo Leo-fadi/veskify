@@ -379,12 +379,15 @@ describe("P10B-05 site-map and page-family authority", () => {
 
   it("rejects a commerce-utility profile whose current shared frame is incompatible", () => {
     const input = decision();
-    const cart = input.pages.find((page) => page.familyId === "cart");
-    if (!cart) throw new Error("Expected the required cart page.");
-    Reflect.set(cart, "profile", { id: "commerce-utility-cart", version: "1.0.0" });
+    const checkout = input.pages.find((page) => page.familyId === "checkout");
+    if (!checkout) throw new Error("Expected the required checkout page.");
+    Reflect.set(checkout, "profile", {
+      id: "commerce-utility-checkout",
+      version: "1.0.0",
+    });
     const incompatibleBase = applyCommercialSharedFrame(
       structuredClone(aurumNordicSeed.draftSnapshot),
-      "editorial-masthead",
+      "compact-technical",
     );
     expectCode(
       () =>

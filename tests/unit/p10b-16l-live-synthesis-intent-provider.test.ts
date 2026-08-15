@@ -167,7 +167,7 @@ describe("P10B-16L bounded live synthesis intent provider", () => {
     expect(Object.isFrozen(general.executableIntents)).toBe(true);
     expect(Object.isFrozen(general.executableIntents[0])).toBe(true);
     expect(Object.isFrozen(general.executableIntents[0].characteristics)).toBe(true);
-    expect(general.executableIntents).toHaveLength(8);
+    expect(general.executableIntents).toHaveLength(3);
     expect(
       Object.fromEntries(
         ["premium-editorial", "modern-technical", "minimal-commerce"].map((directionId) => [
@@ -176,9 +176,9 @@ describe("P10B-16L bounded live synthesis intent provider", () => {
         ]),
       ),
     ).toEqual({
-      "premium-editorial": 2,
-      "modern-technical": 3,
-      "minimal-commerce": 3,
+      "premium-editorial": 1,
+      "modern-technical": 1,
+      "minimal-commerce": 1,
     });
     expect(
       general.executableIntents.every(
@@ -194,7 +194,7 @@ describe("P10B-16L bounded live synthesis intent provider", () => {
 
     const named = request("premium-editorial");
     expect(named.requestedDirectionId).toBe("premium-editorial");
-    expect(named.executableIntents).toHaveLength(2);
+    expect(named.executableIntents).toHaveLength(1);
     expect(new Set(named.executableIntents.map(({ directionId }) => directionId))).toEqual(
       new Set(["premium-editorial"]),
     );
@@ -222,13 +222,10 @@ describe("P10B-16L bounded live synthesis intent provider", () => {
     ).toThrow(expect.objectContaining({ code: "stale-authority" }));
   });
 
-  it("binds an advertised option exactly and preserves its seed, selection, and execution", () => {
+  it("binds advertised options exactly and preserves their seeds, selections, and executions", () => {
     const current = request(null);
-    const minimalOptionIndexes = current.executableIntents.flatMap((option, index) =>
-      option.directionId === "minimal-commerce" ? [index] : [],
-    );
-    const firstIndex = minimalOptionIndexes[0];
-    const secondIndex = minimalOptionIndexes[1];
+    const firstIndex = 0;
+    const secondIndex = 1;
     const firstOption = current.executableIntents[firstIndex];
     const secondOption = current.executableIntents[secondIndex];
     const first = validateP10bLiveSynthesisIntentProviderResult(
@@ -250,6 +247,7 @@ describe("P10B-16L bounded live synthesis intent provider", () => {
       },
     });
     expect(second.directionRequest.characteristics).toEqual(secondOption.characteristics);
+    expect(second.directionRequest.directionId).not.toBe(first.directionRequest.directionId);
     expect(second.directionRequest.deterministicSeed).not.toBe(
       first.directionRequest.deterministicSeed,
     );

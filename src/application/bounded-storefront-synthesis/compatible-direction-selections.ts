@@ -1,25 +1,29 @@
 import {
-  getCommercialCollectionSearchProfile,
-  getCommercialHomepageProfile,
-  getCommercialPdpProfile,
-  getExecutablePageBlueprintProfile,
-  resolveCommercialHomepageEvidenceAvailability,
-  resolveCommercialHomepageProfileSlots,
+  getCommercialCollectionSearchProfile as collectionProfile,
+  getCommercialHomepageProfile as homepageProfile,
+  getCommercialPdpProfile as pdpProfile,
+  getExecutablePageBlueprintProfile as executableProfile,
+  resolveCommercialHomepageEvidenceAvailability as homepageEvidence,
+  resolveCommercialHomepageProfileSlots as resolveHomepageSlots,
 } from "@/application/storefront-templates";
-import { canonicalValueFingerprint } from "@/domain/storefront";
 import {
-  boundedStorefrontSynthesisExactSelectionSchema,
-  boundedStorefrontSynthesisSelectionNarrowingSchema,
+  canonicalValueFingerprint as fingerprint,
+  isDynamicCommerceArchetypeCompatibleWithSharedFrame as supportsSharedFrame,
+} from "@/domain/storefront";
+import {
+  boundedStorefrontSynthesisExactSelectionSchema as exactSelectionSchema,
+  boundedStorefrontSynthesisSelectionNarrowingSchema as narrowingSchema,
   type BoundedStorefrontSynthesisExactSelection,
   type BoundedStorefrontSynthesisSelectionNarrowing,
 } from "./contract";
-import type {
-  CoordinatedStorefrontDirectionId,
-  CoordinatedStorefrontDirectionPackage,
+import {
+  CoordinatedStorefrontDirectionError as DirectionError,
+  type CoordinatedStorefrontDirectionId,
+  type CoordinatedStorefrontDirectionPackage,
 } from "./direction-contract";
 import {
-  listCoordinatedStorefrontDirections,
-  validateDirectionSelectionNarrowing,
+  listCoordinatedStorefrontDirections as listDirections,
+  validateDirectionSelectionNarrowing as validateNarrowing,
 } from "./direction-registry";
 import type { BoundedStorefrontSynthesisInput } from "./synthesizer";
 
@@ -33,11 +37,63 @@ export type CompatibleCoordinatedDirectionCandidateMaterial = Omit<
   "authorityId" | "authorityVersion" | "authorityFingerprint" | "selectionId"
 >;
 
+const postureFactorKeys = [
+  "narrativePosture",
+  "merchandisingPosture",
+  "informationDensityPosture",
+  "artDirectionPosture",
+  "responsiveMode",
+] as const;
+type PostureFactorKey = (typeof postureFactorKeys)[number];
+
+export type CompatibleCoordinatedDirectionPostureFactors = Readonly<
+  Pick<CompatibleCoordinatedDirectionCandidateMaterial, PostureFactorKey>
+>;
+
+export type CompatibleCoordinatedDirectionPostureFactorOptions = Readonly<{
+  [
+    Factor in keyof CompatibleCoordinatedDirectionPostureFactors as `${Factor}Options`
+  ]: readonly CompatibleCoordinatedDirectionPostureFactors[Factor][];
+}>;
+
+export type CompatibleCoordinatedDirectionFactorizedCandidate = Readonly<
+  CompatibleCoordinatedDirectionPostureFactorOptions & {
+    backbone: BoundedStorefrontSynthesisSelectionNarrowing;
+    factorAuthorityFingerprint: string;
+  }
+>;
+
 export type CompatibleCoordinatedDirectionCandidateEnumerationOptions = Readonly<{
   maximumCandidateEvaluations?: number;
 }>;
 
+type Candidate = CompatibleCoordinatedDirectionCandidateMaterial;
+type Direction = CoordinatedStorefrontDirectionPackage;
+type FactorizedCandidate = CompatibleCoordinatedDirectionFactorizedCandidate;
+type FactorOptions = CompatibleCoordinatedDirectionPostureFactorOptions;
+type Factors = CompatibleCoordinatedDirectionPostureFactors;
+type SynthesisInput = BoundedStorefrontSynthesisInput;
+type NarrowingInput = CompatibleCoordinatedDirectionNarrowingInput;
+type InventoryOptions = CompatibleCoordinatedDirectionCandidateEnumerationOptions;
+type CandidateListOptions = Readonly<
+  InventoryOptions & { directionId?: CoordinatedStorefrontDirectionId }
+>;
+
 export const MAX_COMPATIBLE_COORDINATED_DIRECTION_CANDIDATES = 8_192 as const;
+const COMPATIBLE_COORDINATED_DIRECTION_INVENTORY_DIAGNOSTIC_VERSION = "1.1.0" as const;
+export const COMPATIBLE_COORDINATED_DIRECTION_POSTURE_FACTOR_AUTHORITY_VERSION = "1.0.0" as const;
+
+type InventoryStageId = "registered-direction-tuples" | (typeof inventoryFilters)[number][0];
+type InventoryReasonCode = (typeof inventoryFilters)[number][1];
+type InventoryStage = Readonly<{
+  stage: InventoryStageId;
+  enteringCandidateCount: number;
+  remainingCandidateCount: number;
+  eliminationReasons: readonly Readonly<{
+    reasonCode: InventoryReasonCode;
+    count: number;
+  }>[];
+}>;
 
 export class CompatibleCoordinatedDirectionCandidateBudgetError extends Error {
   readonly code = "candidate-budget-exceeded" as const;
@@ -53,116 +109,93 @@ export class CompatibleCoordinatedDirectionCandidateBudgetError extends Error {
   }
 }
 
-function candidateEnumerationCardinality(direction: CoordinatedStorefrontDirectionPackage): bigint {
-  const constraints = direction.constraints;
+function candidateDimensions(direction: Direction) {
+  const c = direction.constraints;
   return [
-    constraints.designSystemDirectionIds.length,
-    constraints.designSystemSpacingDensities.length,
-    constraints.designSystemSurfaceDepths.length,
-    constraints.sharedFrameProfileIds.length,
-    constraints.homepageProfileIds.length,
-    constraints.collectionProfileIds.length,
-    constraints.searchProfileIds.length,
-    constraints.pdpProfileIds.length,
-    constraints.optionalPageFamilyCompositions.length,
-  ].reduce((cardinality, dimension) => cardinality * BigInt(dimension), 1n);
+    ["directionId", c.designSystemDirectionIds],
+    ["designSystemSpacingDensity", c.designSystemSpacingDensities],
+    ["designSystemSurfaceDepth", c.designSystemSurfaceDepths],
+    ["sharedFrameProfileId", c.sharedFrameProfileIds],
+    ["homepageProfileId", c.homepageProfileIds],
+    ["collectionProfileId", c.collectionProfileIds],
+    ["searchProfileId", c.searchProfileIds],
+    ["pdpProfileId", c.pdpProfileIds],
+    ["includedOptionalPageFamilyIds", c.optionalPageFamilyCompositions],
+  ] as const;
 }
 
-function assertCandidateEnumerationBudget(
-  directions: readonly CoordinatedStorefrontDirectionPackage[],
-  requestedMaximumCandidateEvaluations: number | undefined,
+function assertCandidateBudget(
+  directions: readonly Direction[],
+  maximum: number = MAX_COMPATIBLE_COORDINATED_DIRECTION_CANDIDATES,
 ): void {
-  const maximumCandidateEvaluations =
-    requestedMaximumCandidateEvaluations ?? MAX_COMPATIBLE_COORDINATED_DIRECTION_CANDIDATES;
-  if (!Number.isSafeInteger(maximumCandidateEvaluations) || maximumCandidateEvaluations < 1) {
+  if (!Number.isSafeInteger(maximum) || maximum < 1) {
     throw new TypeError(
       "The coordinated-direction candidate budget must be a positive safe integer.",
     );
   }
   const requiredCandidateEvaluations = directions.reduce(
-    (total, direction) => total + candidateEnumerationCardinality(direction),
+    (total, direction) =>
+      total +
+      candidateDimensions(direction).reduce(
+        (cardinality, [, values]) => cardinality * BigInt(values.length),
+        1n,
+      ),
     0n,
   );
-  if (requiredCandidateEvaluations > BigInt(maximumCandidateEvaluations)) {
+  if (requiredCandidateEvaluations > BigInt(maximum)) {
     throw new CompatibleCoordinatedDirectionCandidateBudgetError(
       requiredCandidateEvaluations,
-      maximumCandidateEvaluations,
+      maximum,
     );
   }
 }
 
-function product<T>(values: readonly (readonly T[])[]): T[][] {
-  return values.reduce<T[][]>(
-    (combinations, dimension) =>
-      combinations.flatMap((combination) => dimension.map((value) => [...combination, value])),
-    [[]],
-  );
+function postureFactorOptions(direction: Direction): FactorOptions {
+  return Object.freeze(
+    Object.fromEntries(
+      postureFactorKeys.map((factor) => [
+        `${factor}Options`,
+        Object.freeze([...direction.constraints[`${factor}s`]]),
+      ]),
+    ),
+  ) as FactorOptions;
 }
 
-function candidateMaterial(
-  direction: CoordinatedStorefrontDirectionPackage,
-): CompatibleCoordinatedDirectionCandidateMaterial[] {
-  const c = direction.constraints;
-  const pick = <T>(values: readonly T[], label: string, material: unknown): T => {
-    const fingerprint = canonicalValueFingerprint({ label, material });
-    const digest = fingerprint.split("_").at(-1)!;
-    return values[Number.parseInt(digest.slice(0, 8), 16) % values.length];
-  };
-  return product<string>([
-    c.designSystemDirectionIds,
-    c.designSystemSpacingDensities,
-    c.designSystemSurfaceDepths,
-    c.sharedFrameProfileIds,
-    c.homepageProfileIds,
-    c.collectionProfileIds,
-    c.searchProfileIds,
-    c.pdpProfileIds,
-  ]).flatMap(
-    ([
-      directionId,
-      designSystemSpacingDensity,
-      designSystemSurfaceDepth,
-      sharedFrameProfileId,
-      homepageProfileId,
-      collectionProfileId,
-      searchProfileId,
-      pdpProfileId,
-    ]) => {
-      const architecture = {
-        directionId,
-        designSystemSpacingDensity,
-        designSystemSurfaceDepth,
-        sharedFrameProfileId,
-        homepageProfileId,
-        collectionProfileId,
-        searchProfileId,
-        pdpProfileId,
-      };
-      return c.optionalPageFamilyCompositions.map(
-        (includedOptionalPageFamilyIds) =>
-          ({
-            ...architecture,
-            includedOptionalPageFamilyIds: [...includedOptionalPageFamilyIds],
-            narrativePosture: pick(c.narrativePostures, "narrative", {
-              ...architecture,
-              includedOptionalPageFamilyIds,
-            }),
-            merchandisingPosture: pick(c.merchandisingPostures, "merchandising", architecture),
-            informationDensityPosture: pick(c.informationDensityPostures, "density", architecture),
-            artDirectionPosture: pick(c.artDirectionPostures, "art", architecture),
-            responsiveMode: pick(c.responsiveModes, "responsive", architecture),
-          }) as CompatibleCoordinatedDirectionCandidateMaterial,
-      );
-    },
-  );
+function immutableCopy<T>(value: T): Readonly<T> {
+  return Object.freeze(structuredClone(value));
+}
+
+function factorAuthorityFingerprint(direction: Direction, options: FactorOptions): string {
+  return `coordinated-direction-posture-factors-${fingerprint({
+    contractVersion: COMPATIBLE_COORDINATED_DIRECTION_POSTURE_FACTOR_AUTHORITY_VERSION,
+    directionId: direction.id,
+    directionAuthorityFingerprint: direction.authorityFingerprint,
+    options,
+  })}`;
+}
+
+function candidateMaterial(direction: Direction): Candidate[] {
+  let candidates: Record<string, unknown>[] = [{}];
+  for (const [key, values] of candidateDimensions(direction)) {
+    candidates = candidates.flatMap((candidate) =>
+      values.map((value) => ({
+        ...candidate,
+        [key]: Array.isArray(value) ? [...value] : value,
+      })),
+    );
+  }
+  return candidates.map((candidate) => ({
+    ...candidate,
+    ...immutableCopy(direction.constraints.postureDefaults),
+  })) as Candidate[];
 }
 
 export function coordinatedDirectionNarrowingForCandidate(
-  direction: CoordinatedStorefrontDirectionPackage,
-  candidate: CompatibleCoordinatedDirectionCandidateMaterial,
+  direction: Direction,
+  candidate: Candidate,
 ): BoundedStorefrontSynthesisSelectionNarrowing {
-  const selectionId = `direction-selection-${canonicalValueFingerprint(candidate)}`;
-  return boundedStorefrontSynthesisSelectionNarrowingSchema.parse({
+  const selectionId = `direction-selection-${fingerprint(candidate)}`;
+  return narrowingSchema.parse({
     authorityId: `coordinated-direction:${direction.id}`,
     authorityVersion: direction.version,
     authorityFingerprint: direction.authorityFingerprint,
@@ -171,68 +204,61 @@ export function coordinatedDirectionNarrowingForCandidate(
   });
 }
 
-function candidateHasSupportedAssetPosture(
-  candidate: CompatibleCoordinatedDirectionCandidateMaterial,
-  input: BoundedStorefrontSynthesisInput,
-): boolean {
-  const availableRoles = new Set(
-    input.planningInput.approvedAssetContext?.assets.map(({ role }) => role) ?? [],
-  );
+function factorizedCandidate(direction: Direction, candidate: Candidate): FactorizedCandidate {
+  const options = postureFactorOptions(direction);
+  return Object.freeze({
+    backbone: immutableCopy(coordinatedDirectionNarrowingForCandidate(direction, candidate)),
+    ...options,
+    factorAuthorityFingerprint: factorAuthorityFingerprint(direction, options),
+  });
+}
+
+function selectedPageProfiles(candidate: Candidate, input: SynthesisInput) {
+  const selected = {
+    home: candidate.homepageProfileId,
+    collection: candidate.collectionProfileId,
+    "search-results": candidate.searchProfileId,
+    "product-detail": candidate.pdpProfileId,
+  } as Readonly<Record<string, string>>;
   const includedOptional = new Set(candidate.includedOptionalPageFamilyIds);
-  const homepage = getCommercialHomepageProfile(candidate.homepageProfileId);
+  return input.siteMapDecision.pages
+    .filter((page) => page.required || includedOptional.has(page.familyId))
+    .map((page) => executableProfile(selected[page.familyId] ?? page.profile.id)?.profile);
+}
+
+function assetsCompatible(candidate: Candidate, input: SynthesisInput): boolean {
+  const { approvedAssetContext, brief, catalogue, componentDefinitions } = input.planningInput;
+  const availableRoles = new Set(approvedAssetContext?.assets.map(({ role }) => role));
+  const homepage = homepageProfile(candidate.homepageProfileId);
   if (!homepage) return false;
+  const supportsAsset = ({ sectionType }: (typeof homepage.slots)[number]) =>
+    componentDefinitions
+      .find(({ type }) => type === sectionType)
+      ?.assetSlots.some(({ acceptedRoles }) =>
+        acceptedRoles.some((role) => availableRoles.has(role)),
+      );
   try {
-    const homepageEvidence = resolveCommercialHomepageEvidenceAvailability({
-      canonicalProductCount: input.planningInput.catalogue.products.length,
-      canonicalCollectionCount: input.planningInput.catalogue.collections.length,
-      merchantDescription: input.planningInput.brief.businessIdentity.shortDescription,
-      briefApprovalStatus: input.planningInput.brief.approval.status,
-      approvedEvidenceFingerprint: input.planningInput.brief.approvedEvidenceFingerprint,
-    });
-    resolveCommercialHomepageProfileSlots(candidate.homepageProfileId, {
-      ...homepageEvidence,
-      approvedMediaSlotIds: homepage.slots.flatMap((slot) => {
-        const definition = input.planningInput.componentDefinitions.find(
-          ({ type }) => type === slot.sectionType,
-        );
-        const acceptedRoles = new Set(
-          definition?.assetSlots.flatMap(({ acceptedRoles }) => acceptedRoles) ?? [],
-        );
-        return input.planningInput.approvedAssetContext?.assets.some(({ role }) =>
-          acceptedRoles.has(role),
-        )
-          ? [slot.id]
-          : [];
+    resolveHomepageSlots(candidate.homepageProfileId, {
+      ...homepageEvidence({
+        canonicalProductCount: catalogue.products.length,
+        canonicalCollectionCount: catalogue.collections.length,
+        merchantDescription: brief.businessIdentity.shortDescription,
+        briefApprovalStatus: brief.approval.status,
+        approvedEvidenceFingerprint: brief.approvedEvidenceFingerprint,
       }),
+      approvedMediaSlotIds: homepage.slots.filter(supportsAsset).map(({ id }) => id),
     });
   } catch {
     return false;
   }
-  return input.siteMapDecision.pages
-    .filter((page) => page.required || includedOptional.has(page.familyId))
-    .every((page) => {
-      const profileId =
-        page.familyId === "home"
-          ? candidate.homepageProfileId
-          : page.familyId === "collection"
-            ? candidate.collectionProfileId
-            : page.familyId === "search-results"
-              ? candidate.searchProfileId
-              : page.familyId === "product-detail"
-                ? candidate.pdpProfileId
-                : page.profile.id;
-      const profile = getExecutablePageBlueprintProfile(profileId)?.profile;
-      return (
-        profile !== undefined &&
-        profile.requiredAssetRoles.every((requiredRole) => availableRoles.has(requiredRole))
-      );
-    });
+  return selectedPageProfiles(candidate, input).every(
+    (profile) =>
+      profile !== undefined &&
+      profile.requiredAssetRoles.every((requiredRole) => availableRoles.has(requiredRole)),
+  );
 }
 
-function candidateMatchesProfileDesignDna(
-  candidate: CompatibleCoordinatedDirectionCandidateMaterial,
-  input: BoundedStorefrontSynthesisInput,
-): boolean {
+function designDnaCompatible(candidate: Candidate, input: SynthesisInput): boolean {
   const selection = input.planningInput.recipeContext.designSystem.directions.find(
     ({ id }) => id === candidate.directionId,
   );
@@ -243,14 +269,12 @@ function candidateMatchesProfileDesignDna(
     warmApproachable: "editorial",
   }[selection.id] as "contained" | "editorial" | "immersive";
   const narrowings = [
-    getCommercialHomepageProfile(candidate.homepageProfileId)?.profile?.commercialHomepage
+    homepageProfile(candidate.homepageProfileId)?.profile?.commercialHomepage?.designDnaNarrowing,
+    collectionProfile(candidate.collectionProfileId)?.profile?.commercialCollectionSearch
       ?.designDnaNarrowing,
-    getCommercialCollectionSearchProfile(candidate.collectionProfileId)?.profile
-      ?.commercialCollectionSearch?.designDnaNarrowing,
-    getCommercialCollectionSearchProfile(candidate.searchProfileId)?.profile
-      ?.commercialCollectionSearch?.designDnaNarrowing,
-    getCommercialPdpProfile(candidate.pdpProfileId)?.profile?.commercialProductDetail
+    collectionProfile(candidate.searchProfileId)?.profile?.commercialCollectionSearch
       ?.designDnaNarrowing,
+    pdpProfile(candidate.pdpProfileId)?.profile?.commercialProductDetail?.designDnaNarrowing,
   ];
   return narrowings.every(
     (narrowing) =>
@@ -261,137 +285,284 @@ function candidateMatchesProfileDesignDna(
   );
 }
 
-function candidateMatchesPageSetFrame(
-  candidate: CompatibleCoordinatedDirectionCandidateMaterial,
-  input: BoundedStorefrontSynthesisInput,
-): boolean {
-  const includedOptional = new Set(candidate.includedOptionalPageFamilyIds);
-  return input.siteMapDecision.pages
-    .filter((page) => page.required || includedOptional.has(page.familyId))
-    .every((page) => {
-      const profileId =
-        page.familyId === "home"
-          ? candidate.homepageProfileId
-          : page.familyId === "collection"
-            ? candidate.collectionProfileId
-            : page.familyId === "search-results"
-              ? candidate.searchProfileId
-              : page.familyId === "product-detail"
-                ? candidate.pdpProfileId
-                : page.profile.id;
-      const profile = getExecutablePageBlueprintProfile(profileId)?.profile;
-      if (!profile) return false;
-      const frames =
-        profile.commercialHomepage?.compatibleSharedFrameProfileIds ??
-        profile.commercialCollectionSearch?.compatibleSharedFrameProfileIds ??
-        profile.commercialProductDetail?.compatibleSharedFrameProfileIds ??
-        profile.commercialContentSupport?.compatibleSharedFrameProfileIds ??
-        profile.commercialUtility?.compatibleSharedFrameProfileIds;
-      return frames === undefined || frames.includes(candidate.sharedFrameProfileId);
-    });
+// Validate dynamic profile/context metadata without resolving or materializing an archetype.
+function dynamicCommerceCompatible(candidate: Candidate, input: SynthesisInput): boolean {
+  const dynamic = input.planningInput.draft.dynamicCommercePresentation;
+  // Initial generation has no dynamic authority; existing drafts must match their current one.
+  if (!dynamic) return true;
+  const supportsFrame = (archetype: { compatibleSharedFrameProfileIds: readonly string[] }) =>
+    supportsSharedFrame(archetype, candidate.sharedFrameProfileId);
+  const supportsCollection = (profileId: string, context: "collection" | "search") =>
+    dynamic.collectionSearchArchetypes.some(
+      (archetype) =>
+        archetype.profile.profileId === profileId &&
+        archetype.supportedContexts.includes(context) &&
+        supportsFrame(archetype),
+    );
+  const genericFallback = dynamic.productDetailArchetypes.find(
+    ({ id }) => id === dynamic.fallbacks.productDetailArchetypeId,
+  );
+  return (
+    genericFallback !== undefined &&
+    supportsFrame(genericFallback) &&
+    supportsCollection(candidate.collectionProfileId, "collection") &&
+    supportsCollection(candidate.searchProfileId, "search") &&
+    dynamic.productDetailArchetypes.some(
+      (archetype) =>
+        archetype.profile.profileId === candidate.pdpProfileId && supportsFrame(archetype),
+    )
+  );
+}
+
+function pageSetFrameCompatible(candidate: Candidate, input: SynthesisInput): boolean {
+  return selectedPageProfiles(candidate, input).every((profile) => {
+    if (!profile) return false;
+    const frames =
+      profile.commercialHomepage?.compatibleSharedFrameProfileIds ??
+      profile.commercialCollectionSearch?.compatibleSharedFrameProfileIds ??
+      profile.commercialProductDetail?.compatibleSharedFrameProfileIds ??
+      profile.commercialContentSupport?.compatibleSharedFrameProfileIds ??
+      profile.commercialUtility?.compatibleSharedFrameProfileIds;
+    return frames === undefined || frames.includes(candidate.sharedFrameProfileId);
+  });
+}
+
+function inventoryStage(
+  stage: InventoryStageId,
+  enteringCandidateCount: number,
+  remainingCandidateCount: number,
+  reasonCode?: InventoryReasonCode,
+): InventoryStage {
+  return Object.freeze({
+    stage,
+    enteringCandidateCount,
+    remainingCandidateCount,
+    eliminationReasons:
+      reasonCode === undefined || enteringCandidateCount === remainingCandidateCount
+        ? []
+        : [Object.freeze({ reasonCode, count: enteringCandidateCount - remainingCandidateCount })],
+  });
+}
+
+const inventoryFilters = [
+  ["approved-asset-posture", "unsupported-approved-asset-posture", assetsCompatible],
+  ["profile-design-dna", "incompatible-profile-design-dna", designDnaCompatible],
+  [
+    "dynamic-commerce-profile-context",
+    "incompatible-dynamic-commerce-profile-context",
+    dynamicCommerceCompatible,
+  ],
+  ["page-set-shared-frame", "incompatible-page-set-shared-frame", pageSetFrameCompatible],
+] as const;
+
+function evaluateDirection(direction: Direction, input: SynthesisInput) {
+  let candidates = candidateMaterial(direction);
+  const stages: InventoryStage[] = [
+    inventoryStage("registered-direction-tuples", candidates.length, candidates.length),
+  ];
+  for (const [stageId, reasonCode, accepts] of inventoryFilters) {
+    const entering = candidates.length;
+    candidates = candidates.filter((candidate) => accepts(candidate, input));
+    stages.push(inventoryStage(stageId, entering, candidates.length, reasonCode));
+  }
+  return Object.freeze({ candidates, stages: Object.freeze(stages) });
+}
+
+function directionInput(input: NarrowingInput, direction: Direction): SynthesisInput {
+  return {
+    ...input,
+    request: { intent: direction.intent, deterministicSeed: "compatible-direction-inventory" },
+  };
+}
+
+function firstEmptyStage(stages: readonly InventoryStage[]) {
+  return stages.find(({ remainingCandidateCount }) => remainingCandidateCount === 0)?.stage ?? null;
 }
 
 export function compatibleCoordinatedDirectionCandidateMaterial(
-  direction: CoordinatedStorefrontDirectionPackage,
-  input: BoundedStorefrontSynthesisInput,
-  options: CompatibleCoordinatedDirectionCandidateEnumerationOptions = {},
-): CompatibleCoordinatedDirectionCandidateMaterial[] {
-  // Check the exact raw metadata cardinality before `product()` allocates any combinations. The
-  // post-filters are deliberately not allowed to turn an oversized authority into unbounded work.
-  assertCandidateEnumerationBudget([direction], options.maximumCandidateEvaluations);
-  return candidateMaterial(direction)
-    .filter((candidate) => candidateHasSupportedAssetPosture(candidate, input))
-    .filter((candidate) => candidateMatchesProfileDesignDna(candidate, input))
-    .filter((candidate) => candidateMatchesPageSetFrame(candidate, input));
+  direction: Direction,
+  input: SynthesisInput,
+  options: InventoryOptions = {},
+): Candidate[] {
+  // Enforce the raw metadata budget before allocating any combinations.
+  assertCandidateBudget([direction], options.maximumCandidateEvaluations);
+  return evaluateDirection(direction, input).candidates;
 }
 
-/**
- * Lists the exact coordinated-direction selections that are compatible with current registered,
- * evidence, asset, page-set and Design DNA authority. This is deliberately the read-only boundary
- * before synthesis decisions, proposal compilation and storefront materialization.
- *
- * Direction packages retain their canonical registry order. Selections within each package are
- * ordered by their content-derived selection IDs, so neither object insertion order nor runtime
- * timing can influence the inventory.
- */
-export function listCompatibleCoordinatedDirectionSelectionNarrowings(
-  input: CompatibleCoordinatedDirectionNarrowingInput,
-  options: Readonly<
-    CompatibleCoordinatedDirectionCandidateEnumerationOptions & {
-      directionId?: CoordinatedStorefrontDirectionId;
-    }
-  > = {},
-): readonly BoundedStorefrontSynthesisSelectionNarrowing[] {
-  const seenSelectionIds = new Set<string>();
-  const narrowings: BoundedStorefrontSynthesisSelectionNarrowing[] = [];
-  const directions = listCoordinatedStorefrontDirections().filter(
+// Report bounded metadata-only elimination counts without exposing or materializing candidates.
+export function inspectCompatibleCoordinatedDirectionCandidateInventory(
+  input: NarrowingInput,
+  options: InventoryOptions = {},
+) {
+  const directions = listDirections();
+  assertCandidateBudget(directions, options.maximumCandidateEvaluations);
+  const rows = directions.map((direction) => {
+    const evaluation = evaluateDirection(direction, directionInput(input, direction));
+    return Object.freeze({
+      stages: evaluation.stages,
+    });
+  });
+  const stages = rows[0].stages.map((entry, index) => {
+    const sameStage = rows.map(({ stages }) => stages[index]);
+    const total = (field: "enteringCandidateCount" | "remainingCandidateCount") =>
+      sameStage.reduce((sum, stage) => sum + stage[field], 0);
+    const reasonCode = inventoryFilters.find(([stage]) => stage === entry.stage)?.[1];
+    return inventoryStage(
+      entry.stage,
+      total("enteringCandidateCount"),
+      total("remainingCandidateCount"),
+      reasonCode,
+    );
+  });
+  const material = {
+    contractVersion: COMPATIBLE_COORDINATED_DIRECTION_INVENTORY_DIAGNOSTIC_VERSION,
+    initialCandidateCount: stages[0]?.enteringCandidateCount ?? 0,
+    finalCandidateCount: stages.at(-1)?.remainingCandidateCount ?? 0,
+    stages,
+    firstEmptyStage: firstEmptyStage(stages),
+  };
+  return Object.freeze({
+    ...material,
+    diagnosticFingerprint: `compatible-direction-inventory-${fingerprint(material)}`,
+  });
+}
+
+// Carry posture options beside each backbone instead of expanding their Cartesian product.
+export function listCompatibleCoordinatedDirectionFactorizedCandidates(
+  input: NarrowingInput,
+  options: CandidateListOptions = {},
+): readonly FactorizedCandidate[] {
+  const directions = listDirections().filter(
     ({ id }) => options.directionId === undefined || id === options.directionId,
   );
-  assertCandidateEnumerationBudget(directions, options.maximumCandidateEvaluations);
+  assertCandidateBudget(directions, options.maximumCandidateEvaluations);
+  const seenBackboneSelectionIds = new Set<string>();
+  const candidates = directions.flatMap((direction) =>
+    evaluateDirection(direction, directionInput(input, direction))
+      .candidates.map((candidate) => factorizedCandidate(direction, candidate))
+      .sort((left, right) => left.backbone.selectionId.localeCompare(right.backbone.selectionId)),
+  );
+  return Object.freeze(
+    candidates.filter((candidate) => {
+      validateNarrowing(candidate.backbone);
+      if (seenBackboneSelectionIds.has(candidate.backbone.selectionId)) return false;
+      seenBackboneSelectionIds.add(candidate.backbone.selectionId);
+      return true;
+    }),
+  );
+}
 
-  for (const direction of directions) {
-    const authorityInput: BoundedStorefrontSynthesisInput = {
-      ...input,
-      request: {
-        intent: direction.intent,
-        deterministicSeed: "compatible-direction-narrowing-inventory",
-      },
-    };
-    const directionNarrowings = compatibleCoordinatedDirectionCandidateMaterial(
-      direction,
-      authorityInput,
+function candidateFactorOptions(candidate: FactorizedCandidate): FactorOptions {
+  return Object.fromEntries(
+    postureFactorKeys.map((factor) => {
+      const optionKey: keyof FactorOptions = `${factor}Options`;
+      return [optionKey, candidate[optionKey]];
+    }),
+  ) as FactorOptions;
+}
+
+function staleFactorAuthority(message: string): never {
+  throw new DirectionError("stale-direction-authority", message);
+}
+
+// Resolve explicit factors against current authority; never infer, hash, soften, or default them.
+export function resolveCompatibleCoordinatedDirectionPostureFactors(input: {
+  factorizedCandidate: FactorizedCandidate;
+  factors: Factors;
+}): BoundedStorefrontSynthesisSelectionNarrowing {
+  const { factorizedCandidate: candidate } = input;
+  const directionId = candidate.backbone.authorityId.replace(/^coordinated-direction:/, "");
+  const direction = listDirections().find(({ id }) => id === directionId);
+  if (!direction)
+    staleFactorAuthority("The candidate does not reference current direction authority.");
+  validateNarrowing(candidate.backbone);
+
+  const suppliedOptions = candidateFactorOptions(candidate);
+  const currentOptions = postureFactorOptions(direction);
+  const factorFingerprint = (options: FactorOptions) =>
+    factorAuthorityFingerprint(direction, options);
+  const expectedFactorFingerprint = candidate.factorAuthorityFingerprint;
+  if (
+    [suppliedOptions, currentOptions].some(
+      (options) => factorFingerprint(options) !== expectedFactorFingerprint,
     )
-      .map((candidate) => coordinatedDirectionNarrowingForCandidate(direction, candidate))
-      .sort((left, right) => left.selectionId.localeCompare(right.selectionId));
+  )
+    staleFactorAuthority("The coordinated-direction posture factor authority is stale.");
 
-    for (const narrowing of directionNarrowings) {
-      if (seenSelectionIds.has(narrowing.selectionId)) continue;
-      validateDirectionSelectionNarrowing(narrowing);
-      seenSelectionIds.add(narrowing.selectionId);
-      narrowings.push(Object.freeze(structuredClone(narrowing)));
+  const backboneExact = exactSelectionMaterial(candidate.backbone);
+  const canonicalBackbone = coordinatedDirectionNarrowingForCandidate(direction, {
+    ...backboneExact,
+    ...immutableCopy(direction.constraints.postureDefaults),
+  });
+  if (fingerprint(canonicalBackbone) !== fingerprint(candidate.backbone))
+    staleFactorAuthority("The coordinated-direction factorized backbone is not current.");
+
+  for (const factorKey of postureFactorKeys) {
+    const optionKey: keyof FactorOptions = `${factorKey}Options`;
+    const selected = input.factors[factorKey];
+    if (!(currentOptions[optionKey] as readonly string[]).includes(selected)) {
+      const label = factorKey.replace(/([A-Z])/g, " $1").toLowerCase();
+      throw new DirectionError(
+        "unsupported-characteristic",
+        `${selected} is outside the current ${label} factor authority.`,
+      );
     }
   }
 
-  return Object.freeze(narrowings);
+  const resolved = coordinatedDirectionNarrowingForCandidate(
+    direction,
+    exactSelectionSchema.parse({ ...backboneExact, ...input.factors }),
+  );
+  validateNarrowing(resolved);
+  return immutableCopy(resolved);
+}
+
+// Preserve registry direction order and content-derived backbone ordering.
+export function listCompatibleCoordinatedDirectionSelectionNarrowings(
+  input: NarrowingInput,
+  options: CandidateListOptions = {},
+): readonly BoundedStorefrontSynthesisSelectionNarrowing[] {
+  return Object.freeze(
+    listCompatibleCoordinatedDirectionFactorizedCandidates(input, options).map(
+      ({ backbone }) => backbone,
+    ),
+  );
 }
 
 function exactSelectionMaterial(
   narrowing: BoundedStorefrontSynthesisSelectionNarrowing,
 ): BoundedStorefrontSynthesisExactSelection {
-  const {
-    authorityId: _authorityId,
-    authorityVersion: _authorityVersion,
-    authorityFingerprint: _authorityFingerprint,
-    selectionId: _selectionId,
-    ...exact
-  } = narrowing;
-  void _authorityId;
-  void _authorityVersion;
-  void _authorityFingerprint;
-  void _selectionId;
-  return boundedStorefrontSynthesisExactSelectionSchema.parse(exact);
+  const { authorityId, authorityVersion, authorityFingerprint, selectionId, ...exact } = narrowing;
+  void [authorityId, authorityVersion, authorityFingerprint, selectionId];
+  return exactSelectionSchema.parse(exact);
 }
 
-/**
- * Exact prompted execution values carry no historical selection identity. They are nevertheless
- * authorized only when the complete value tuple matches one current compatible inventory entry.
- */
+// Exact execution remains authorized only while its complete tuple matches current inventory.
 export function isCurrentCompatibleCoordinatedDirectionExactSelection(input: {
-  authority: CompatibleCoordinatedDirectionNarrowingInput;
+  authority: NarrowingInput;
   exactSelection: BoundedStorefrontSynthesisExactSelection;
 }): boolean {
-  const exact = boundedStorefrontSynthesisExactSelectionSchema.parse(input.exactSelection);
-  const exactFingerprint = canonicalValueFingerprint(exact);
-  const directionId: CoordinatedStorefrontDirectionId =
-    exact.directionId === "premiumEditorial"
-      ? "premium-editorial"
-      : exact.directionId === "modernTechnical"
-        ? "modern-technical"
-        : "minimal-commerce";
-  return listCompatibleCoordinatedDirectionSelectionNarrowings(input.authority, {
+  const exact = exactSelectionSchema.parse(input.exactSelection);
+  const exactFingerprint = fingerprint(exact);
+  const directionId = listDirections().find(({ constraints }) =>
+    constraints.designSystemDirectionIds.includes(exact.directionId),
+  )?.id;
+  if (!directionId) return false;
+  const factors = Object.fromEntries(
+    postureFactorKeys.map((factor) => [factor, exact[factor]]),
+  ) as Factors;
+  return listCompatibleCoordinatedDirectionFactorizedCandidates(input.authority, {
     directionId,
-  }).some(
-    (narrowing) =>
-      canonicalValueFingerprint(exactSelectionMaterial(narrowing)) === exactFingerprint,
-  );
+  }).some((factorizedCandidate) => {
+    try {
+      const resolved = resolveCompatibleCoordinatedDirectionPostureFactors({
+        factorizedCandidate,
+        factors,
+      });
+      return fingerprint(exactSelectionMaterial(resolved)) === exactFingerprint;
+    } catch (error) {
+      if (error instanceof DirectionError) return false;
+      throw error;
+    }
+  });
 }

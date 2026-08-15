@@ -1342,7 +1342,7 @@ export const homepagePromotionDefinition = marketingDefinition({
     {
       id: "promotionMedia",
       title: { en: "Promotional media", fi: "Kampanjamedia" },
-      acceptedRoles: ["heroDesktop", "heroMobile", "editorialImage"],
+      acceptedRoles: ["collectionImage", "editorialImage", "heroDesktop", "heroMobile"],
       required: false,
       minItems: 0,
       maxItems: 1,

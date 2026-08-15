@@ -531,7 +531,10 @@ function normalizePageBlueprintSelectionOverrides(
   return wholeStorefrontPageBlueprintSelectionOverridesSchema.parse(normalized);
 }
 
-function normalizeDynamicCommerceSelection(input: BoundedStorefrontSynthesisInput): Readonly<{
+function normalizeDynamicCommerceSelection(
+  input: BoundedStorefrontSynthesisInput,
+  sharedFrameProfileId: CommercialSharedFrameProfileId,
+): Readonly<{
   selection: DynamicCommerceDesignSelection | null;
   authorityFingerprint: string | null;
   selectionFingerprint: string | null;
@@ -566,8 +569,15 @@ function normalizeDynamicCommerceSelection(input: BoundedStorefrontSynthesisInpu
     ),
   });
   try {
-    const selection = validateDynamicCommerceDesignSelection(
+    // The exact frame is already selected at this point. Validate the exact dynamic selection
+    // against that transient frame projection rather than the source draft's previous frame.
+    // This does not materialize a candidate or alter the source authority fingerprint.
+    const draftWithSelectedFrame = applyCommercialSharedFrame(
       input.planningInput.draft,
+      sharedFrameProfileId,
+    );
+    const selection = validateDynamicCommerceDesignSelection(
+      draftWithSelectedFrame,
       input.planningInput.catalogue,
       normalizedSelection,
     );
@@ -826,7 +836,7 @@ export function createBoundedStorefrontSynthesisDecision(
     siteMap,
   );
   const approvedAssetRoleSelections = normalizeApprovedAssetRoleSelections(input, selection);
-  const dynamicCommerce = normalizeDynamicCommerceSelection(input);
+  const dynamicCommerce = normalizeDynamicCommerceSelection(input, frame.id);
   const profileAuthority = profileMaterial(
     siteMap,
     input.planningInput,

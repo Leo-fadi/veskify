@@ -273,6 +273,16 @@ describe("P10B-10 commercial collection and search profile library", () => {
       const projectionCollection = result.presentation.projection.collections[0];
       expect(projectionCollection.productIds).toEqual(result.collection.productIds);
       expect(projectionCollection.filters.length).toBeGreaterThan(0);
+      expect(projectionCollection.filters.length).toBeLessThanOrEqual(8);
+      projectionCollection.filters.forEach((filter) => {
+        if (filter.presentation === "range") {
+          expect(filter.range?.min).toBeLessThan(filter.range?.max ?? Number.NEGATIVE_INFINITY);
+        } else {
+          expect(filter.values.filter(({ disabled }) => !disabled).length).toBeGreaterThanOrEqual(
+            2,
+          );
+        }
+      });
       expect(projectionCollection.sorting).toEqual(
         expect.arrayContaining([expect.objectContaining({ id: "featured", default: true })]),
       );
@@ -301,18 +311,28 @@ describe("P10B-10 commercial collection and search profile library", () => {
         expect(markup).toContain('data-card-context="collectionResults"');
         expect(markup).toContain(`data-card-anatomy="${result.authority.productCardAnatomyId}"`);
       }
+      expect(section.approvedAssetPlacements).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            assetSlotId: "collectionCommerceMedia",
+            role: "collectionImage",
+          }),
+        ]),
+      );
       if (profileId === "collection-campaign-led-discovery") {
         const markup = renderPresentation(result, "preview");
         expect(markup).toContain('data-layout-region="campaign-lead"');
-        expect(section.approvedAssetPlacements).toEqual([
-          expect.objectContaining({
-            assetSlotId: "collectionCommerceMedia",
-            role: "editorialImage",
-          }),
-        ]);
-        expect(section.approvedAssetPresentations).toHaveLength(1);
+        expect(section.approvedAssetPlacements).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              assetSlotId: "collectionCommerceMedia",
+              role: "editorialImage",
+            }),
+          ]),
+        );
+        expect(section.approvedAssetPresentations).toHaveLength(2);
       } else {
-        expect(section.approvedAssetPlacements).toEqual([]);
+        expect(section.approvedAssetPresentations).toHaveLength(1);
       }
       expect(canonicalValueString(result.fixture.aggregate.catalogue)).toBe(
         canonicalValueString(result.fixture.planningInput.catalogue),
@@ -438,7 +458,8 @@ describe("P10B-10 commercial collection and search profile library", () => {
     );
     expect(markup).toContain('data-search-zero-results="true"');
     expect(markup).toContain('data-search-query="nonexistent ring"');
-    expect(markup).toContain("No canonical products match");
+    expect(markup).toContain("No products match");
+    expect(markup).not.toMatch(/canonical products/i);
     expect(markup).not.toContain('data-card-context="searchResults"');
   });
 

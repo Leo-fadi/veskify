@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import { z } from "zod";
 import {
   componentProjectionContextSchema,
@@ -461,8 +461,29 @@ function CollectionHeader({
   const titleId = useId();
   const hero = input.collection.assets.find((asset) => asset.role === "hero");
   const image = hero ? input.assetFor(hero.assetId, input.collection.title) : undefined;
+  const campaignEditorial =
+    input.variant === "campaignLedDiscovery"
+      ? input.collection.assets.find((asset) => asset.role === "editorial")
+      : undefined;
+  const campaignImage = campaignEditorial
+    ? input.assetFor(campaignEditorial.assetId, input.collection.title)
+    : undefined;
+  const repeatsAdjacentCampaignMedia = Boolean(
+    image &&
+    campaignImage &&
+    (image.asset.id === campaignImage.asset.id || image.asset.url === campaignImage.asset.url),
+  );
   return (
-    <header className={styles.collectionHeader}>
+    <header
+      className={styles.collectionHeader}
+      data-collection-hero-treatment={
+        repeatsAdjacentCampaignMedia
+          ? "text-only-adjacent-media-deduped"
+          : image
+            ? "media"
+            : "text-only"
+      }
+    >
       {input.collection.breadcrumbs?.length ? (
         <nav aria-label={fallback("Breadcrumb", "Murupolku", locale)}>
           <ol>
@@ -496,7 +517,7 @@ function CollectionHeader({
             </p>
           ) : null}
         </div>
-        {image ? (
+        {image && !repeatsAdjacentCampaignMedia ? (
           <figure
             data-asset-id={hero!.assetId}
             data-asset-provenance={image.provenance.kind}
@@ -556,6 +577,7 @@ function CampaignLead({
   const image = input.assetFor(editorial.assetId, input.collection.title);
   return (
     <section
+      aria-label={fallback("Collection editorial", "Malliston toimituksellinen kuva", locale)}
       className={styles.campaignLead}
       data-layout-region="campaign-lead"
       data-asset-id={editorial.assetId}
@@ -565,11 +587,6 @@ function CampaignLead({
       <figure>
         <CommerceImage locale={locale} resolved={image} />
       </figure>
-      <div>
-        <p>{fallback("Collection spotlight", "Malliston nosto", locale)}</p>
-        <h2>{text(input.collection.title, locale)}</h2>
-        {input.collection.description ? <p>{text(input.collection.description, locale)}</p> : null}
-      </div>
     </section>
   );
 }
@@ -606,12 +623,8 @@ function SearchZeroResults({
     >
       <h3>{fallback("No results found", "Hakutuloksia ei löytynyt", locale)}</h3>
       <p>
-        {fallback(
-          "No canonical products match",
-          "Yhtään kanonista tuotetta ei vastaa hakua",
-          locale,
-        )}{" "}
-        “{input.search.query}”.
+        {fallback("No products match", "Tuotteita ei löytynyt haulla", locale)} “
+        {input.search.query}”.
       </p>
       <button
         onClick={() =>
@@ -757,6 +770,107 @@ function CollectionRangeFilter({
   );
 }
 
+type CollectionFilterPresentation = CollectionPresentationContext["filters"][number];
+
+const PRIMARY_COLLECTION_FILTER_LIMIT = 4;
+
+function collectionFilterIsSelected(filter: CollectionFilterPresentation): boolean {
+  return (
+    filter.values.some((value) => value.selected) ||
+    (filter.presentation === "range" &&
+      filter.range !== undefined &&
+      (filter.range.selectedMin !== undefined || filter.range.selectedMax !== undefined))
+  );
+}
+
+function collectionFilterIsEligible(filter: CollectionFilterPresentation): boolean {
+  if (filter.presentation === "range") {
+    return filter.range !== undefined && filter.range.min < filter.range.max;
+  }
+  return filter.values.filter((value) => !value.disabled && (value.count ?? 1) > 0).length >= 2;
+}
+
+function CollectionFilterFieldset({
+  collection,
+  emit,
+  filter,
+  content,
+  locale,
+}: {
+  collection: CollectionPresentationContext;
+  emit: (intent: CollectionFilterIntent) => void;
+  filter: CollectionFilterPresentation;
+  content: DynamicCollectionCommerceContent;
+  locale: LocaleContext;
+}) {
+  const isRange = filter.presentation === "range";
+  const range = filter.range;
+  const selected = collectionFilterIsSelected(filter);
+  const visibleValues = filter.values.filter(
+    (value) => (value.count ?? 1) > 0 || value.selected === true,
+  );
+  return (
+    <fieldset
+      data-filter-id={filter.id}
+      data-filter-value-count={isRange ? 2 : visibleValues.length}
+    >
+      <legend>{text(filter.label, locale)}</legend>
+      {isRange && range ? (
+        <CollectionRangeFilter
+          collection={collection}
+          emit={emit}
+          filter={filter}
+          locale={locale}
+          range={range}
+        />
+      ) : (
+        <ul>
+          {visibleValues.map((value) => (
+            <li key={value.id}>
+              <label>
+                <input
+                  checked={value.selected ?? false}
+                  disabled={value.disabled ?? false}
+                  onChange={() => {
+                    if (!value.disabled) {
+                      emit({
+                        type: "setCollectionFilterValue",
+                        collectionId: collection.collectionId,
+                        collectionRevision: collection.revision,
+                        filterId: filter.id,
+                        valueId: value.id,
+                        selected: !(value.selected ?? false),
+                      });
+                    }
+                  }}
+                  type="checkbox"
+                />
+                <span>{text(value.label, locale)}</span>
+                {value.count !== undefined ? <span>({value.count})</span> : null}
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
+      {selected ? (
+        <button
+          onClick={() =>
+            emit({
+              type: "clearCollectionFilter",
+              collectionId: collection.collectionId,
+              collectionRevision: collection.revision,
+              filterId: filter.id,
+            })
+          }
+          type="button"
+        >
+          {text(content.clearLabel, locale)} {text(filter.label, locale)}
+        </button>
+      ) : null}
+    </fieldset>
+  );
+}
+
 function CollectionFilters({
   input,
   locale,
@@ -764,121 +878,125 @@ function CollectionFilters({
   input: PreparedDynamicCollectionCommerce;
   locale: LocaleContext;
 }) {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
-    const expandedRail = window.matchMedia(
-      input.props.filterLayout === "horizontal" ? "(min-width: 48rem)" : "(min-width: 64rem)",
-    );
-    const syncWithViewport = () => setOpen(expandedRail.matches);
-    syncWithViewport();
-    expandedRail.addEventListener("change", syncWithViewport);
-    return () => expandedRail.removeEventListener("change", syncWithViewport);
-  }, [input.props.filterLayout]);
-  if (input.collection.filters.length === 0) return null;
-  const hasSelected = input.collection.filters.some(
-    (filter) =>
-      filter.values.some((value) => value.selected) ||
-      (filter.presentation === "range" &&
-        filter.range !== undefined &&
-        (filter.range.selectedMin !== undefined || filter.range.selectedMax !== undefined)),
-  );
+  const [showAllFilters, setShowAllFilters] = useState(false);
+  const filters = input.collection.filters.filter(collectionFilterIsEligible);
+  if (filters.length === 0) return null;
+  const activeFilters = filters.filter(collectionFilterIsSelected);
+  const visibleFilters = showAllFilters
+    ? filters
+    : filters.slice(0, PRIMARY_COLLECTION_FILTER_LIMIT);
+  const groups = [
+    {
+      id: "details",
+      label: fallback("Product details", "Tuotetiedot", locale),
+      filters: visibleFilters.filter((filter) => filter.id !== "price"),
+    },
+    {
+      id: "commerce",
+      label: fallback("Price", "Hinta", locale),
+      filters: visibleFilters.filter((filter) => filter.id === "price"),
+    },
+  ].filter(({ filters: groupFilters }) => groupFilters.length > 0);
   const emit = (intent: CollectionFilterIntent) =>
     input.onFilterIntent(collectionFilterIntentSchema.parse(intent));
   return (
-    <details
-      className={`${styles.filters} ${styles[`filters_${input.props.filterLayout}`]}`}
+    <div
+      className={styles.filterToolbar}
+      data-additional-filter-count={Math.max(0, filters.length - PRIMARY_COLLECTION_FILTER_LIMIT)}
+      data-eligible-filter-count={filters.length}
       data-layout-region="filters"
-      onToggle={(event) => setOpen(event.currentTarget.open)}
-      open={open}
+      data-primary-filter-count={Math.min(filters.length, PRIMARY_COLLECTION_FILTER_LIMIT)}
     >
-      <summary role="button">{text(input.content.filterTriggerLabel, locale)}</summary>
-      <div className={styles.filterPanel}>
-        <div className={styles.filterHeading}>
-          <h2>{text(input.content.filtersHeading, locale)}</h2>
-          <button
-            disabled={!hasSelected}
-            onClick={() =>
-              emit({
-                type: "clearAllCollectionFilters",
-                collectionId: input.collection.collectionId,
-                collectionRevision: input.collection.revision,
-              })
-            }
-            type="button"
-          >
-            {text(input.content.clearAllLabel, locale)}
-          </button>
-        </div>
-        {input.collection.filters.map((filter) => {
-          const isRange = filter.presentation === "range";
-          const range = filter.range;
-          return (
-            <fieldset key={filter.id}>
-              <legend>{text(filter.label, locale)}</legend>
-              {isRange && range ? (
-                <CollectionRangeFilter
-                  collection={input.collection}
-                  emit={emit}
-                  filter={filter}
-                  locale={locale}
-                  range={range}
-                />
-              ) : (
-                <ul>
-                  {filter.values.map((value) => (
-                    <li key={value.id}>
-                      <label>
-                        <input
-                          checked={value.selected ?? false}
-                          disabled={value.disabled ?? false}
-                          onChange={() => {
-                            if (!value.disabled) {
-                              emit({
-                                type: "setCollectionFilterValue",
-                                collectionId: input.collection.collectionId,
-                                collectionRevision: input.collection.revision,
-                                filterId: filter.id,
-                                valueId: value.id,
-                                selected: !(value.selected ?? false),
-                              });
-                            }
-                          }}
-                          type="checkbox"
-                        />
-                        <span>{text(value.label, locale)}</span>
-                        {value.count !== undefined ? <span>({value.count})</span> : null}
-                      </label>
-                    </li>
-                  ))}
-                </ul>
-              )}
+      <details
+        className={`${styles.filters} ${styles[`filters_${input.props.filterLayout}`]}`}
+        data-filter-panel-mode="disclosure"
+      >
+        <summary>
+          {text(input.content.filterTriggerLabel, locale)}
+          {activeFilters.length ? (
+            <span aria-label={fallback("active filters", "aktiivista suodatinta", locale)}>
+              {activeFilters.length}
+            </span>
+          ) : null}
+        </summary>
+        <div className={styles.filterPanel}>
+          <div className={styles.filterHeading}>
+            <h2>{text(input.content.filtersHeading, locale)}</h2>
+            {activeFilters.length ? (
               <button
-                disabled={
-                  !filter.values.some((value) => value.selected) &&
-                  !(
-                    isRange &&
-                    range &&
-                    (range.selectedMin !== undefined || range.selectedMax !== undefined)
-                  )
-                }
                 onClick={() =>
                   emit({
-                    type: "clearCollectionFilter",
+                    type: "clearAllCollectionFilters",
                     collectionId: input.collection.collectionId,
                     collectionRevision: input.collection.revision,
-                    filterId: filter.id,
                   })
                 }
                 type="button"
               >
-                {text(input.content.clearLabel, locale)} {text(filter.label, locale)}
+                {text(input.content.clearAllLabel, locale)}
               </button>
-            </fieldset>
-          );
-        })}
-      </div>
-    </details>
+            ) : null}
+          </div>
+          {groups.map((group) => (
+            <section
+              aria-label={group.label}
+              className={styles.filterGroup}
+              data-filter-group={group.id}
+              data-filter-group-count={group.filters.length}
+              key={group.id}
+            >
+              <h3>{group.label}</h3>
+              <div className={styles.filterGroupFields}>
+                {group.filters.map((filter) => (
+                  <CollectionFilterFieldset
+                    collection={input.collection}
+                    content={input.content}
+                    emit={emit}
+                    filter={filter}
+                    key={filter.id}
+                    locale={locale}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+          {filters.length > PRIMARY_COLLECTION_FILTER_LIMIT ? (
+            <button
+              className={styles.filterDisclosure}
+              onClick={() => setShowAllFilters((current) => !current)}
+              type="button"
+            >
+              {showAllFilters
+                ? fallback("Show fewer filters", "Näytä vähemmän suodattimia", locale)
+                : `${fallback("Show more filters", "Näytä lisää suodattimia", locale)} (${filters.length - PRIMARY_COLLECTION_FILTER_LIMIT})`}
+            </button>
+          ) : null}
+        </div>
+      </details>
+      {activeFilters.length ? (
+        <div
+          aria-label={fallback("Active filters", "Aktiiviset suodattimet", locale)}
+          className={styles.activeFilterChips}
+        >
+          {activeFilters.map((filter) => (
+            <button
+              key={filter.id}
+              onClick={() =>
+                emit({
+                  type: "clearCollectionFilter",
+                  collectionId: input.collection.collectionId,
+                  collectionRevision: input.collection.revision,
+                  filterId: filter.id,
+                })
+              }
+              type="button"
+            >
+              {text(filter.label, locale)} <span aria-hidden="true">×</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -889,7 +1007,7 @@ function CollectionSort({
   input: PreparedDynamicCollectionCommerce;
   locale: LocaleContext;
 }) {
-  if (input.collection.sorting.length === 0) return null;
+  if (input.collection.sorting.length < 2) return null;
   const defaultSort =
     input.collection.sorting.find((sort) => sort.default) ?? input.collection.sorting[0];
   return (
@@ -917,6 +1035,15 @@ function CollectionSort({
       </select>
     </label>
   );
+}
+
+function wideCollectionGridColumns(productCount: number): 1 | 2 | 3 | 4 {
+  if (productCount <= 1) return 1;
+  if (productCount === 2) return 2;
+  if (productCount === 3) return 3;
+  if (productCount === 4) return 4;
+  if (productCount % 4 === 1 && productCount % 3 !== 1) return 3;
+  return 4;
 }
 
 export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommerce) {
@@ -961,6 +1088,7 @@ export function DynamicCollectionCommerce(input: PreparedDynamicCollectionCommer
           <div
             className={`${styles.productGrid} ${styles[`density_${input.props.gridDensity}`]}`}
             data-product-count={input.products.length}
+            data-wide-grid-columns={wideCollectionGridColumns(input.products.length)}
           >
             {input.products.map((product) => (
               <DynamicCollectionProductCard

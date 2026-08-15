@@ -324,6 +324,15 @@
   width: 100%;
 }
 
+.representativeRoute {
+  display: block;
+  min-width: 0;
+  color: #59616d;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
 .sectionActions h2 {
   margin: 0;
   font-size: 0.9rem;

@@ -6,7 +6,15 @@ import {
   createDefaultServerPromptedStorefrontDesignIntentProviderSelector,
   createServerPromptedStorefrontStudioHandler,
   type SelectServerPromptedStorefrontDesignIntentProvider,
+  type ServerPromptedStorefrontStudioGenerationLifecycle,
 } from "@/integrations/ai/prompted-storefront-studio-handler.server";
+import {
+  createP10B16P04PromptedStorefrontProviderSelector,
+  createP10B16P04ServerPromptedStorefrontStudioAuthority,
+  isP10B16P04RealStudioAcceptanceConfigured,
+  recordP10B16P04CompilationFailure,
+  recordP10B16P04CompilationSuccess,
+} from "@/integrations/ai/p10b-16p-04-real-studio-acceptance-authority.server";
 import {
   createP10B16P03ServerPromptedStorefrontStudioAuthority,
   unavailableServerPromptedStorefrontStudioAuthority,
@@ -30,12 +38,14 @@ export function createWholeStorefrontPlanningRouteHandler({
   selectProvider,
   promptedAuthority,
   selectPromptedProvider,
+  promptedLifecycle,
   environment = process.env,
 }: {
   authority?: ServerWholeStorefrontPlanningAuthority;
   selectProvider?: () => WholeStorefrontPlanningProvider;
   promptedAuthority?: ServerPromptedStorefrontStudioAuthority;
   selectPromptedProvider?: SelectServerPromptedStorefrontDesignIntentProvider;
+  promptedLifecycle?: ServerPromptedStorefrontStudioGenerationLifecycle;
   environment?: Readonly<Record<string, string | undefined>>;
 } = {}) {
   const runtimeMode = environment.VESKIFY_RUNTIME_MODE;
@@ -43,6 +53,7 @@ export function createWholeStorefrontPlanningRouteHandler({
   const integrated = runtimeMode === "integrated" && environment.VESKIFY_AI_PROVIDER === "openai";
   const localDemo = isP905bLocalDemoConfigured(environment);
   const localDemoDeterministic = localDemo && environment.VESKIFY_AI_PROVIDER === "deterministic";
+  const p10b16p04 = isP10B16P04RealStudioAcceptanceConfigured(environment);
   const legacyHandler = createServerWholeStorefrontPlanningHandler({
     authority:
       authority ??
@@ -64,16 +75,30 @@ export function createWholeStorefrontPlanningRouteHandler({
   // integrated authentication. Integrated callers must inject an authority backed by their
   // authenticated tenant/project context; otherwise the V2 route fails closed before provider
   // selection.
-  const promptedConfigured = standalone;
+  const useConfiguredP10B16P04Composition =
+    p10b16p04 && promptedAuthority === undefined && selectPromptedProvider === undefined;
+  const promptedConfigured = standalone || p10b16p04;
   const promptedHandler = createServerPromptedStorefrontStudioHandler({
     authority:
       promptedAuthority ??
-      (promptedConfigured
-        ? createP10B16P03ServerPromptedStorefrontStudioAuthority()
-        : unavailableServerPromptedStorefrontStudioAuthority),
+      (p10b16p04
+        ? createP10B16P04ServerPromptedStorefrontStudioAuthority({ environment })
+        : promptedConfigured
+          ? createP10B16P03ServerPromptedStorefrontStudioAuthority()
+          : unavailableServerPromptedStorefrontStudioAuthority),
     selectProvider:
       selectPromptedProvider ??
-      createDefaultServerPromptedStorefrontDesignIntentProviderSelector({ environment }),
+      (p10b16p04
+        ? createP10B16P04PromptedStorefrontProviderSelector({ environment })
+        : createDefaultServerPromptedStorefrontDesignIntentProviderSelector({ environment })),
+    lifecycle:
+      promptedLifecycle ??
+      (useConfiguredP10B16P04Composition
+        ? {
+            success: recordP10B16P04CompilationSuccess,
+            failure: recordP10B16P04CompilationFailure,
+          }
+        : undefined),
   });
   return async function POST(request: Request): Promise<Response> {
     const body: unknown = await request

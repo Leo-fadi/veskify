@@ -5,7 +5,11 @@ import type {
   CollectionCommerceRoutePresentation,
   ProductCommerceRoutePresentation,
 } from "@/integrations/storefront-commerce-routes";
-import { renderRegisteredSection, type StorefrontRenderContext } from "@/components/registry";
+import {
+  renderRegisteredSection,
+  resolveStorefrontNavigationPath,
+  type StorefrontRenderContext,
+} from "@/components/registry";
 import type { Locale } from "@/domain/shared";
 import type { PageModel } from "@/domain/storefront";
 import {
@@ -72,6 +76,10 @@ export function StorefrontProductCommerceRoute(
         <IntegratedDynamicProductDetail
           activeLocale={props.activeLocale}
           instance={props.presentation.instance}
+          onNavigateProduct={(intent) => {
+            const path = resolveStorefrontNavigationPath(props.context, intent);
+            if (path && typeof window !== "undefined") window.location.assign(path);
+          }}
           onPrimaryAction={props.onPrimaryAction}
           primaryLocale={props.primaryLocale}
           productContext={props.presentation.productContext}

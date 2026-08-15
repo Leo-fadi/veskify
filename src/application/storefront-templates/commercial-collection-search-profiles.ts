@@ -269,7 +269,12 @@ const profileInputs: readonly ProfileInput[] = [
     id: "collection-dense-search",
     variant: "denseSearch",
     narrativeRole: "secondary-discovery",
-    compatibleSharedFrameProfileIds: ["commerce-utility", "compact-technical", "centered-minimal"],
+    compatibleSharedFrameProfileIds: [
+      "commerce-utility",
+      "compact-technical",
+      "centered-minimal",
+      "editorial-masthead",
+    ],
     defaultSharedFrameProfileId: "compact-technical",
     presentationMode: "dense-search",
     productCardAnatomyId: "compact",
@@ -280,8 +285,11 @@ const profileInputs: readonly ProfileInput[] = [
     campaignEvidencePolicy: "not-required",
     responsiveTransformationIds: ["denseFilterDisclosure", "denseGridReflow", "compactSimplify"],
     designDnaNarrowing: {
-      spacingDensity: ["compact", "standard"],
-      surfaceDepth: ["flat", "subtle"],
+      // Search keeps its own compact grid and disclosure posture while inheriting
+      // the storefront-wide Design DNA and frame. Those local controls do not
+      // require the global storefront to abandon spacious/layered authority.
+      spacingDensity: ["compact", "standard", "spacious"],
+      surfaceDepth: ["flat", "subtle", "layered"],
       imagePosture: ["contained", "editorial"],
     },
   },

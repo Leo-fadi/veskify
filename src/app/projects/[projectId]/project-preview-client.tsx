@@ -9,6 +9,7 @@ import {
   validateStorefrontHomepage,
 } from "@/components/storefront/storefront-page";
 import { brandSystemToCssVariables } from "@/domain/design-system";
+import type { CommerceUtilityRuntimeState } from "@/domain/commerce-utility";
 import type { Locale } from "@/domain/shared";
 import type { ProjectAggregate, ProjectRepository } from "@/services/storage";
 import { createBrowserProjectRepository, ProjectNotFoundError } from "@/services/storage";
@@ -41,6 +42,43 @@ type LoadState =
 const defaultRepositoryFactory: RepositoryFactory = () => createBrowserProjectRepository();
 const emptyEvidenceReferences: NonNullable<StorefrontRenderContext["evidenceReferences"]> = [];
 
+function p10b16p04CartRuntime(
+  aggregate: ProjectAggregate,
+  context: "empty" | "populated" | undefined,
+): CommerceUtilityRuntimeState | undefined {
+  if (!context) return undefined;
+  if (context === "empty") {
+    return {
+      kind: "cart",
+      revision: "p10b16p04-cart-empty-v1",
+      lines: [],
+      actions: ["continue-shopping"],
+    };
+  }
+  const product = aggregate.catalogue.products.find(
+    (candidate) => candidate.id === "product_sisu_automatic_watch",
+  );
+  if (!product?.price) return undefined;
+  return {
+    kind: "cart",
+    revision: "p10b16p04-cart-populated-v1",
+    lines: [
+      {
+        lineId: "p10b16p04-cart-line-sisu",
+        productId: product.id,
+        quantity: 1,
+        minimumQuantity: 1,
+        maximumQuantity: 3,
+        unitPrice: product.price,
+        linePrice: product.price,
+      },
+    ],
+    subtotal: product.price,
+    total: product.price,
+    actions: ["change-quantity", "remove-line", "continue-shopping"],
+  };
+}
+
 function StatusPanel({
   title,
   message,
@@ -63,7 +101,7 @@ function StatusPanel({
             Try again
           </button>
         ) : null}
-        <Link href="/">Return to Vesko home</Link>
+        <Link href="./">Return to store</Link>
       </section>
     </main>
   );
@@ -79,6 +117,8 @@ export function ProjectPreviewClient({
   publishedSessionId,
   pageSlug = "/",
   draftSessionId,
+  proposalCandidateFingerprint,
+  p10b16p04UtilityContext,
 }: {
   projectId: string;
   repositoryFactory?: RepositoryFactory;
@@ -89,12 +129,27 @@ export function ProjectPreviewClient({
   publishedSessionId?: string;
   pageSlug?: string;
   draftSessionId?: string;
+  proposalCandidateFingerprint?: string;
+  p10b16p04UtilityContext?: "empty" | "populated";
 }) {
   const repository = useRef<ProjectRepository | undefined>(undefined);
   repository.current ??= repositoryFactory();
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [activeLocale, setActiveLocale] = useState<Locale | undefined>(undefined);
+  const previewQuerySuffix = publishedSessionId
+    ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
+    : draftSessionId
+      ? `?p10b-16l-session=${encodeURIComponent(draftSessionId)}`
+      : proposalCandidateFingerprint
+        ? `?p10b-16p-04-proposal=${encodeURIComponent(proposalCandidateFingerprint)}${
+            p10b16p04UtilityContext
+              ? `&p10b-16p-04-utility=${encodeURIComponent(p10b16p04UtilityContext)}`
+              : ""
+          }`
+        : p10b16p04UtilityContext
+          ? `?p10b-16p-04-utility=${encodeURIComponent(p10b16p04UtilityContext)}`
+          : "";
 
   useEffect(() => {
     let cancelled = false;
@@ -154,12 +209,10 @@ export function ProjectPreviewClient({
             snapshot: draft,
             evidenceReferences,
             pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
-            pagePathSuffix: publishedSessionId
-              ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
-              : draftSessionId
-                ? `?p10b-16l-session=${encodeURIComponent(draftSessionId)}`
-                : "",
+            pagePathSuffix: previewQuerySuffix,
             renderTarget: snapshotKind === "published" ? "published" : "preview",
+            commerceUtilityRuntime: p10b16p04CartRuntime(aggregate, p10b16p04UtilityContext),
+            ...(p10b16p04UtilityContext ? { onCommerceUtilityIntent: () => undefined } : {}),
           });
           void renderStorefrontPage(page, context);
           setActiveLocale(aggregate.project.primaryLocale);
@@ -188,6 +241,9 @@ export function ProjectPreviewClient({
     pageSlug,
     projectId,
     publishedSessionId,
+    proposalCandidateFingerprint,
+    p10b16p04UtilityContext,
+    previewQuerySuffix,
     snapshotKind,
   ]);
 
@@ -270,12 +326,10 @@ export function ProjectPreviewClient({
     snapshot: state.draft,
     evidenceReferences: state.evidenceReferences,
     pagePathPrefix: previewPathPrefix(projectId, snapshotKind, historicalSnapshotId),
-    pagePathSuffix: publishedSessionId
-      ? `?p9-05b-session=${encodeURIComponent(publishedSessionId)}`
-      : draftSessionId
-        ? `?p10b-16l-session=${encodeURIComponent(draftSessionId)}`
-        : "",
+    pagePathSuffix: previewQuerySuffix,
     renderTarget: snapshotKind === "published" ? "published" : "preview",
+    commerceUtilityRuntime: p10b16p04CartRuntime(state.aggregate, p10b16p04UtilityContext),
+    ...(p10b16p04UtilityContext ? { onCommerceUtilityIntent: () => undefined } : {}),
   });
 
   return (

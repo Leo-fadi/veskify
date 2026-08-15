@@ -657,6 +657,124 @@ function executableHomepageAssetSlot(
   return null;
 }
 
+export type RegisteredCollectionApprovedAssetSelection = Readonly<{
+  selectionFingerprint: string;
+  profileId: CommercialCollectionSearchProfileId;
+  slotId: string;
+  component: "dynamicCollectionCommerce";
+  variant: string;
+  assetSlotId: "collectionCommerceMedia";
+  role: "collectionImage" | "editorialImage";
+  assetId: string;
+  assetRevision: string;
+  materialFingerprint: string;
+  sourceReferenceId: string;
+  sourceProvenanceKind: "merchantProvided" | "sourceDiscovered";
+  required: boolean;
+  authorityFingerprint: string;
+}>;
+
+/**
+ * Resolves exact collection presentation assets from the selected registered PageBlueprint and
+ * current approved-asset authority. This is transient compiler/materializer authority, not a
+ * second asset registry and never changes canonical collection or product media.
+ */
+export function resolveRegisteredCollectionApprovedAssetSelections(
+  input: Readonly<{
+    planningInput: WholeStorefrontPlanningInput;
+    profileId: CommercialCollectionSearchProfileId;
+    variant?: string;
+  }>,
+): readonly RegisteredCollectionApprovedAssetSelection[] {
+  const profile = getCommercialCollectionSearchProfile(input.profileId);
+  const authority = profile?.profile?.commercialCollectionSearch;
+  if (!profile?.profile || !authority) {
+    invalid("unsupported-page-family", `Collection profile ${input.profileId} is unavailable.`);
+  }
+  const materialized = materializeExecutablePageBlueprint({
+    pagePlan: profile,
+    componentDefinitions: input.planningInput.componentDefinitions,
+    availableBindingCategories: ["collection", "productList"],
+  });
+  const slot = materialized.slots.find(
+    ({ component }) => component === "dynamicCollectionCommerce",
+  );
+  const definition = input.planningInput.componentDefinitions.find(
+    ({ type }) => type === "dynamicCollectionCommerce",
+  );
+  const assetSlot = definition?.assetSlots.find(({ id }) => id === "collectionCommerceMedia");
+  const variant = input.variant ?? slot?.variant;
+  const anatomy = definition?.commercialAnatomy?.variants.find(
+    ({ variantId }) => variantId === variant,
+  );
+  if (
+    !slot ||
+    !definition ||
+    !assetSlot ||
+    !variant ||
+    !anatomy?.structure.assetPlacements.some(({ slotId }) => slotId === assetSlot.id) ||
+    !assetSlot.acceptedRoles.includes("collectionImage") ||
+    !assetSlot.acceptedRoles.includes("editorialImage")
+  ) {
+    invalid(
+      "asset-role-slot-incompatible",
+      "The selected collection profile has no current approved collection-media slot authority.",
+    );
+  }
+  const context = input.planningInput.approvedAssetContext;
+  const selectedRoles = [
+    ...(input.planningInput.catalogue.collections.length === 1
+      ? (["collectionImage"] as const)
+      : []),
+    ...(authority.campaignEvidencePolicy === "approved-editorial-media-required"
+      ? (["editorialImage"] as const)
+      : []),
+  ];
+  return selectedRoles.flatMap((role) => {
+    const candidates = context?.assets.filter((candidate) => candidate.role === role) ?? [];
+    if (candidates.length > 1) {
+      invalid(
+        "asset-role-slot-incompatible",
+        `The selected collection profile has ambiguous approved ${role} authority.`,
+      );
+    }
+    const asset = candidates[0];
+    if (!asset) {
+      if (role === "editorialImage") {
+        invalid(
+          "missing-required-recipe-asset",
+          `Commercial collection/search profile ${input.profileId} requires approved editorial campaign media.`,
+        );
+      }
+      return [];
+    }
+    const material = {
+      profileId: input.profileId,
+      slotId: slot.slotId,
+      component: "dynamicCollectionCommerce" as const,
+      variant,
+      assetSlotId: "collectionCommerceMedia" as const,
+      role,
+      assetId: asset.assetId,
+      assetRevision: asset.revision,
+      materialFingerprint: asset.materialFingerprint,
+      sourceReferenceId: asset.sourceReferenceId,
+      sourceProvenanceKind:
+        asset.provenance.location === "merchant-upload"
+          ? ("merchantProvided" as const)
+          : ("sourceDiscovered" as const),
+      required: assetSlot.required,
+      authorityFingerprint: context!.fingerprint,
+    };
+    return [
+      Object.freeze({
+        ...material,
+        selectionFingerprint: `registered-collection-asset-${canonicalValueFingerprint(material)}`,
+      }),
+    ];
+  });
+}
+
 function validateApprovedAssetRoleSelections(input: {
   planningInput: WholeStorefrontPlanningInput;
   materializations: readonly ExecutablePageBlueprintMaterialization[];
@@ -945,7 +1063,7 @@ function homepageBindings(
   source?: WholeStorefrontPlanningInput["draft"]["pages"][number]["sections"][number],
   assetAssignments: readonly ComponentInstanceV2["assetAssignments"][number][] = [],
   allowSourceAssetFallback = true,
-  itemCardinality?: Readonly<{ minimum: number; maximum: number }>,
+  itemCardinality?: Readonly<{ minimum: number; ideal: number; maximum: number }>,
 ): ComponentInstanceV2["bindings"] {
   const sourceCollectionIds = Array.isArray(source?.content.collectionIds)
     ? source.content.collectionIds.filter(
@@ -961,7 +1079,7 @@ function homepageBindings(
       )
     : [];
   const actionHref = objectValue(source?.content.cta)?.href;
-  const actionNavigationItem =
+  const sourceActionNavigationItem =
     typeof actionHref === "string"
       ? [...input.draft.navigation.primary, ...input.draft.navigation.footer].find((item) => {
           if (item.target.type !== "page") return false;
@@ -969,6 +1087,8 @@ function homepageBindings(
           return input.draft.pages.find((page) => page.id === pageId)?.slug === actionHref;
         })
       : undefined;
+  const actionNavigationItem =
+    sourceActionNavigationItem ?? generatedHomepageCollectionAction(input)?.navigationItem;
   const bindings: ComponentInstanceV2["bindings"] = [
     {
       slotId: "presentationContext",
@@ -997,7 +1117,7 @@ function homepageBindings(
             source: "productList" as const,
             productIds: boundedHomepageItems(
               sourceProductIds,
-              input.catalogue.products.map((product) => product.id),
+              boundedHomepageMerchandisingProductIds(input, itemCardinality),
               itemCardinality,
             ),
             revision,
@@ -1062,18 +1182,93 @@ function objectValue(value: unknown): Record<string, unknown> | undefined {
 function boundedHomepageItems<T>(
   preservedItems: readonly T[],
   canonicalFallbackItems: readonly T[],
-  cardinality?: Readonly<{ minimum: number; maximum: number }>,
+  cardinality?: Readonly<{ minimum: number; ideal: number; maximum: number }>,
 ): T[] {
   const items =
     preservedItems.length > 0 &&
     (cardinality === undefined || preservedItems.length >= cardinality.minimum)
       ? preservedItems
       : canonicalFallbackItems;
-  return cardinality === undefined ? [...items] : items.slice(0, cardinality.maximum);
+  return cardinality === undefined ? [...items] : items.slice(0, cardinality.ideal);
+}
+
+function boundedHomepageMerchandisingProductIds(
+  input: WholeStorefrontPlanningInput,
+  cardinality?: Readonly<{ minimum: number; ideal: number; maximum: number }>,
+): readonly string[] {
+  const eligible = input.catalogue.products.filter(
+    (product) =>
+      product.images.length > 0 &&
+      product.price !== undefined &&
+      (product.stockStatus === "inStock" || product.stockStatus === "lowStock"),
+  );
+  const configurable = eligible.filter((product) => (product.orderOptions?.length ?? 0) > 0);
+  const firstByProductType = eligible.filter(
+    (product, index, products) =>
+      products.findIndex((candidate) => candidate.productType === product.productType) === index,
+  );
+  const ordered = [...configurable, ...firstByProductType, ...eligible].filter(
+    (product, index, products) => products.findIndex(({ id }) => id === product.id) === index,
+  );
+  const minimum = cardinality?.minimum ?? 1;
+  const target = cardinality?.ideal ?? ordered.length;
+  const selectedIds = new Set(ordered.slice(0, target).map(({ id }) => id));
+  const selected = input.catalogue.products
+    .filter(({ id }) => selectedIds.has(id))
+    .map(({ id }) => id);
+  return selected.length >= minimum
+    ? selected
+    : input.catalogue.products.slice(0, target).map(({ id }) => id);
+}
+
+function approvedHomepageContentDocument(planningInput: WholeStorefrontPlanningInput) {
+  return planningInput.draft.contentSupportFactDocuments.find(
+    ({ payload }) => payload.familyId === "about" && payload.story !== undefined,
+  );
+}
+
+function approvedHomepageStory(planningInput: WholeStorefrontPlanningInput) {
+  return approvedHomepageContentDocument(planningInput)?.payload.story;
+}
+
+function approvedHomepageCampaign(planningInput: WholeStorefrontPlanningInput) {
+  return planningInput.draft.contentSupportFactDocuments.find(
+    ({ payload }) => payload.familyId === "about" && payload.campaign !== undefined,
+  )?.payload.campaign;
+}
+
+function generatedHomepageCollectionAction(input: WholeStorefrontPlanningInput) {
+  const navigation = [...input.draft.navigation.primary, ...input.draft.navigation.footer];
+  const rankedCollections = input.catalogue.collections
+    .map((collection, index) => ({ collection, index }))
+    .sort(
+      (left, right) =>
+        right.collection.productIds.length - left.collection.productIds.length ||
+        left.index - right.index,
+    );
+  for (const { collection } of rankedCollections) {
+    const navigationItem = navigation.find((item) => {
+      const target = item.target;
+      if (target.type === "page") {
+        return (
+          input.draft.pages.find(({ id }) => id === target.pageId)?.slug ===
+          `/collections/${collection.slug}`
+        );
+      }
+      if (target.type !== "dynamic-commerce-route") return false;
+      const route = input.draft.dynamicCommercePresentation?.routeInventory.find(
+        ({ id }) => id === target.routeId,
+      );
+      return route?.kind === "collection" && route.collectionId === collection.id;
+    });
+    if (navigationItem) return { collection, navigationItem };
+  }
+  return undefined;
 }
 
 function mappedHomepageBridgePresentation(
   component: HomepageCommerceBridgeComponent,
+  variant: string,
   source: WholeStorefrontPlanningInput["draft"]["pages"][number]["sections"][number] | undefined,
   planningInput: WholeStorefrontPlanningInput,
   productCardAnatomyId: WholeStorefrontGenerationPlan["designSystemSelection"]["collectionPresentation"]["cardVariant"],
@@ -1082,6 +1277,16 @@ function mappedHomepageBridgePresentation(
   const defaults = homepageCommerceBridgeDefaults[component];
   const content: Record<string, unknown> = structuredClone(defaults.content);
   const props: Record<string, unknown> = structuredClone(defaults.props);
+  const primaryLocale = planningInput.brief.languagePlan.primaryLanguage ?? "en";
+  const approvedBrandName = planningInput.brief.businessIdentity.businessName.trim();
+  const approvedDescription = planningInput.brief.businessIdentity.shortDescription.trim();
+  const approvedBrandText = { [primaryLocale]: approvedBrandName };
+  const approvedDescriptionText = { [primaryLocale]: approvedDescription };
+  const approvedStory = approvedHomepageStory(planningInput);
+  const approvedCampaign = approvedHomepageCampaign(planningInput);
+  const approvedContentDocument = approvedHomepageContentDocument(planningInput);
+  const collectionAction = generatedHomepageCollectionAction(planningInput);
+  const boundedCopy = (en: string, fi: string) => ({ en, fi });
   if (source?.component === component && component !== "homepageProof") {
     Object.assign(content, structuredClone(source.content));
     Object.assign(props, structuredClone(source.props));
@@ -1134,30 +1339,78 @@ function mappedHomepageBridgePresentation(
       const cta = objectValue(source.content.cta);
       if (cta?.label !== undefined) content.actionLabel = cta.label;
     }
+  } else if (component === "homepageHero") {
+    content.eyebrow = approvedBrandText;
+    content.heading = approvedBrandText;
+    if (approvedDescription) content.supportingCopy = approvedDescriptionText;
+    content.primaryActionLabel = boundedCopy("Explore the collection", "Tutustu mallistoon");
+    props.contentWidth = "wide";
+    props.imagePresentation =
+      planningInput.brief.approvedBrandDirection?.imageryDirection === "product-focused"
+        ? "contain"
+        : "cover";
+  } else if (component === "homepageFeaturedProducts") {
+    content.heading = boundedCopy("Explore the collection", "Tutustu mallistoon");
+    delete content.supportingCopy;
+    props.cardVariant = productCardAnatomyId;
+    props.columns = 4;
+  } else if (component === "homepagePromotion" && (approvedCampaign || approvedStory)) {
+    content.heading = approvedCampaign?.heading ?? approvedStory!.heading;
+    content.description = approvedCampaign?.description ?? approvedStory!.body;
+    if (approvedCampaign?.actionLabel) content.actionLabel = approvedCampaign.actionLabel;
+  } else if (component === "homepageEditorial") {
+    if (variant === "continuationCta") {
+      content.eyebrow = approvedBrandText;
+      content.heading = boundedCopy("Continue exploring", "Jatka tutustumista");
+      content.body =
+        collectionAction?.collection.description ??
+        boundedCopy("Explore the current collection.", "Tutustu nykyiseen mallistoon.");
+      content.actionLabel = collectionAction
+        ? {
+            en: `Explore ${collectionAction.collection.title.en ?? collectionAction.collection.title.fi}`,
+            fi: `Tutustu: ${collectionAction.collection.title.fi ?? collectionAction.collection.title.en}`,
+          }
+        : boundedCopy("Explore the collection", "Tutustu mallistoon");
+    } else if (approvedStory) {
+      content.eyebrow = approvedStory.eyebrow ?? approvedBrandText;
+      content.heading = approvedStory.heading;
+      content.body = approvedStory.body;
+    }
   }
 
   if (component === "homepageProof") {
     const description = planningInput.brief.businessIdentity.shortDescription.trim();
     const sourceLocale = planningInput.brief.languagePlan.primaryLanguage ?? "en";
-    content.heading = { [sourceLocale]: planningInput.brief.businessIdentity.businessName };
+    const storySteps = approvedStory?.steps ?? [];
+    content.heading = approvedStory?.eyebrow ?? {
+      [sourceLocale]: planningInput.brief.businessIdentity.businessName,
+    };
     content.items =
-      description && planningInput.brief.approval.actorId
-        ? [
-            {
-              id: "approved_brand_fact",
-              kind: "brandFact",
-              statement: { [sourceLocale]: description },
-              evidence: {
-                source: "merchant-approved",
-                authorityId: planningInput.brief.id,
-                revision: String(planningInput.brief.revision),
-                status: "approved",
-                approvalAuthorityId: planningInput.brief.approval.actorId,
-                approvalFingerprint: planningInput.brief.approvedEvidenceFingerprint,
+      approvedContentDocument && storySteps.length > 0
+        ? storySteps.map((step) => ({
+            id: `approved_story_${step.id}`,
+            kind: "brandFact" as const,
+            statement: step.description,
+            attribution: step.title,
+            evidence: approvedContentDocument.evidence,
+          }))
+        : description && planningInput.brief.approval.actorId
+          ? [
+              {
+                id: "approved_brand_fact",
+                kind: "brandFact",
+                statement: { [sourceLocale]: description },
+                evidence: {
+                  source: "merchant-approved",
+                  authorityId: planningInput.brief.id,
+                  revision: String(planningInput.brief.revision),
+                  status: "approved",
+                  approvalAuthorityId: planningInput.brief.approval.actorId,
+                  approvalFingerprint: planningInput.brief.approvedEvidenceFingerprint,
+                },
               },
-            },
-          ]
-        : [];
+            ]
+          : [];
   }
 
   const preferredAssetId =
@@ -1166,7 +1419,7 @@ function mappedHomepageBridgePresentation(
     component === "homepageHero"
       ? ["heroDesktop", "heroMobile", "editorialImage"]
       : component === "homepagePromotion"
-        ? ["editorialImage", "heroDesktop", "heroMobile"]
+        ? ["collectionImage", "editorialImage", "heroDesktop", "heroMobile"]
         : component === "homepageEditorial"
           ? ["editorialImage", "heroDesktop", "heroMobile"]
           : component === "homepageFeaturedCollections" ||
@@ -1297,6 +1550,7 @@ function authoritativeHomepageProfileComponents(input: {
   productCardAnatomyId: WholeStorefrontGenerationPlan["designSystemSelection"]["collectionPresentation"]["cardVariant"];
   selectionOverride?: WholeStorefrontPageBlueprintSelectionOverride;
   approvedAssetRoleSelections: readonly WholeStorefrontApprovedAssetRoleSelection[];
+  surfaceDepth: WholeStorefrontGenerationPlan["designSystemSelection"]["surfaceDepth"];
 }): WholeStorefrontGenerationPlan["pagePlans"][number]["components"] {
   const {
     planningInput,
@@ -1309,6 +1563,7 @@ function authoritativeHomepageProfileComponents(input: {
     productCardAnatomyId,
     selectionOverride,
     approvedAssetRoleSelections,
+    surfaceDepth,
   } = input;
   if (page.type !== "home") return [];
   const pagePlan = getExecutablePageBlueprintProfile(materialization.profileId);
@@ -1424,6 +1679,7 @@ function authoritativeHomepageProfileComponents(input: {
       const mappedPresentation = bridgeComponent
         ? mappedHomepageBridgePresentation(
             bridgeComponent,
+            slot.variant,
             replacementSource,
             planningInput,
             productCardAnatomyId,
@@ -1509,7 +1765,24 @@ function authoritativeHomepageProfileComponents(input: {
         content: mappedContent,
         props: mappedProps,
         styleOverrides: {
-          ...(bridgeComponent ? { surface: "plain" } : {}),
+          ...(bridgeComponent
+            ? {
+                surface:
+                  !materialization.commercialHomepage || surfaceDepth === "flat"
+                    ? "plain"
+                    : surfaceDepth === "subtle"
+                      ? profileSlot.visualWeight === "heavy"
+                        ? "soft"
+                        : "plain"
+                      : profileSlot.narrativeRole === "brand-proof" ||
+                          profileSlot.narrativeRole === "continuation"
+                        ? "contrast"
+                        : profileSlot.narrativeRole === "brand-story" ||
+                            profileSlot.narrativeRole === "education"
+                          ? "soft"
+                          : "plain",
+              }
+            : {}),
           ...parameterProjection.styleOverrides,
         },
         bindings: bridgeComponent
@@ -1727,18 +2000,15 @@ function dynamicCollectionComponent(
   commercialProfile?: Readonly<{
     authority: CommercialCollectionSearchProfileAuthority;
     variant: string;
-    approvedAssetContext: WholeStorefrontPlanningInput["approvedAssetContext"];
+    approvedAssetSelections: readonly RegisteredCollectionApprovedAssetSelection[];
   }>,
   replacementId?: string,
 ): ComponentInstanceV2 {
   const id = replacementId ?? generatedComponentId(pageId, definition.type, usedComponentIds);
   usedComponentIds.add(id);
-  const campaignAsset =
-    commercialProfile?.authority.campaignEvidencePolicy === "approved-editorial-media-required"
-      ? commercialProfile.approvedAssetContext?.assets.find(
-          (asset) => asset.role === "editorialImage",
-        )
-      : undefined;
+  const campaignAsset = commercialProfile?.approvedAssetSelections.find(
+    (asset) => asset.role === "editorialImage",
+  );
   if (
     commercialProfile?.authority.campaignEvidencePolicy === "approved-editorial-media-required" &&
     !campaignAsset
@@ -1774,15 +2044,12 @@ function dynamicCollectionComponent(
         revision,
       },
     ],
-    assetAssignments: campaignAsset
-      ? [
-          {
-            slotId: "collectionCommerceMedia",
-            assetId: campaignAsset.assetId,
-            role: campaignAsset.role,
-          },
-        ]
-      : [],
+    assetAssignments:
+      commercialProfile?.approvedAssetSelections.map((asset) => ({
+        slotId: asset.assetSlotId,
+        assetId: asset.assetId,
+        role: asset.role,
+      })) ?? [],
   };
 }
 
@@ -2208,6 +2475,14 @@ export function createWholeStorefrontGenerationPlan(
       "Commercial collection/search profile is missing its registered component slot.",
     );
   }
+  const registeredCollectionApprovedAssetSelections =
+    options.collectionProfileId && commercialCollectionProfileVariant
+      ? resolveRegisteredCollectionApprovedAssetSelections({
+          planningInput: input,
+          profileId: options.collectionProfileId,
+          variant: commercialCollectionProfileVariant,
+        })
+      : [];
   const collectionComponentDefinition = definitionFor(definitions, "dynamicCollectionCommerce");
   const productComponentDefinition = definitionFor(definitions, "dynamicProductDetail");
   const usedComponentIds = new Set(
@@ -2279,7 +2554,7 @@ export function createWholeStorefrontGenerationPlan(
           ? {
               authority: commercialCollectionSearchAuthority,
               variant: commercialCollectionProfileVariant,
-              approvedAssetContext: input.approvedAssetContext,
+              approvedAssetSelections: registeredCollectionApprovedAssetSelections,
             }
           : undefined,
         page.sections.find((section) => section.component === "dynamicCollectionCommerce")?.id,
@@ -2374,6 +2649,7 @@ export function createWholeStorefrontGenerationPlan(
             ({ pageType }) => pageType === "home",
           ),
           approvedAssetRoleSelections,
+          surfaceDepth: designSystemSelection.surfaceDepth,
         }),
       );
     }
@@ -2425,7 +2701,7 @@ export function createWholeStorefrontGenerationPlan(
         ? {
             authority: commercialCollectionSearchAuthority,
             variant: commercialCollectionProfileVariant,
-            approvedAssetContext: input.approvedAssetContext,
+            approvedAssetSelections: registeredCollectionApprovedAssetSelections,
           }
         : undefined,
     );

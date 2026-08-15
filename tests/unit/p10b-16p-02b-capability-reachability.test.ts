@@ -156,8 +156,13 @@ describe("P10B-16P-02B capability reachability truth", () => {
       ),
     ).toMatchObject({ authorityKind: "design-dna" });
     expect(entries.get("design-dna.typography-scale.typography.scale.expressive")).toMatchObject({
-      availability: "registered-fail-closed",
+      availability: "available",
     });
+    expect(
+      authority.referencesByPreferenceKey.get(
+        "design-dna.typography-scale.typography.scale.expressive",
+      ),
+    ).toMatchObject({ authorityKind: "design-dna" });
     expect(entries.get("design-dna.typography-hierarchy.typography.role.display")).toMatchObject({
       availability: "registered-fail-closed",
     });

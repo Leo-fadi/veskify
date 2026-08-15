@@ -1143,7 +1143,7 @@ export function resolveCommercialHomepageSlotItemCardinality(
   slotId: string,
   resource: "products" | "collections",
   availableCount: number,
-): Readonly<{ minimum: number; maximum: number }> {
+): Readonly<{ minimum: number; ideal: number; maximum: number }> {
   const plan = getCommercialHomepageProfile(profileId);
   const authority = plan?.profile?.commercialHomepage;
   if (!authority) {
@@ -1155,7 +1155,9 @@ export function resolveCommercialHomepageSlotItemCardinality(
   const cardinality = authority.contentCardinality.find(
     (entry) => entry.slotId === slotId && entry.resource === resource,
   );
-  if (!cardinality) return { minimum: 0, maximum: availableCount };
+  if (!cardinality) {
+    return { minimum: 0, ideal: availableCount, maximum: availableCount };
+  }
   if (availableCount < cardinality.minimum) {
     throw new CommercialHomepageProfileError(
       "invalid-cardinality",
@@ -1164,6 +1166,7 @@ export function resolveCommercialHomepageSlotItemCardinality(
   }
   return {
     minimum: cardinality.minimum,
+    ideal: Math.min(availableCount, cardinality.ideal),
     maximum: Math.min(availableCount, cardinality.maximum),
   };
 }

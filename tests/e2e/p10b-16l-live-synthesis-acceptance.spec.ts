@@ -212,17 +212,22 @@ test("mocked P10B-16L synthesis reaches normal Studio review, history, save, rel
   );
   const migrationReview = proposalReview.getByTestId("dynamic-commerce-migration-review");
   await expect(migrationReview).toContainText(
-    /Kanoninen dynaamisten kauppareittien yhdistäminen|Canonical dynamic-commerce route convergence/,
+    /Yhtenäinen verkkokaupan sivuilme|Coordinated storefront page design/,
   );
-  await expect(migrationReview).toContainText(/Staattiset sivut8|Static pages8/);
-  await expect(migrationReview).toContainText(/Kaupan ulkoasumallit6|Commerce archetypes6/);
+  await expect(migrationReview).toContainText(/Verkkokaupan sivut8|Storefront pages8/);
   await expect(migrationReview).toContainText(
-    /Ajonaikaiset kauppareitit20|Runtime commerce routes20/,
+    /Uudelleenkäytettävät kaupan asettelut6|Reusable shopping layouts6/,
   );
-  await expect(migrationReview).toContainText(/suojattuina Vesko|protected Vesko commerce/i);
+  await expect(migrationReview).toContainText(
+    /Tuote-, kokoelma- ja hakusivut20|Product, collection, and search pages20/,
+  );
+  await expect(migrationReview).toContainText(/säilyvät ennallaan|stay unchanged/i);
+  await expect(migrationReview).not.toContainText(
+    /kanoninen|canonical|ulkoasumalli|archetype|ajonaikainen|runtime|suojattu Vesko|protected Vesko/i,
+  );
   await expect(
     page.getByText(
-      /valvotussa hyväksynnässä käytetään luotua ehdotusta|controlled acceptance uses the generated proposal/i,
+      /tarkista ehdotus ja hyväksy tai hylkää se|review this proposal, then accept or reject it/i,
     ),
   ).toBeVisible();
   await expect(

@@ -2,21 +2,23 @@
 
 ## Status and ownership
 
-**Parent status: Baseline.** P10B-16P-02A, P10B-16P-02B, and P10B-16P-03 are **Baseline**.
-P10B-16P-04 remains **Planned**. P10B remains **Partial**; P10B-17 and P10B-18 remain **Planned**.
+**Parent status: Baseline.** P10B-16P-02A, P10B-16P-02B, P10B-16P-03, and P10B-16P-04 are
+**Baseline**. P10B remains **Partial**; P10B-17 and P10B-18 remain **Planned**.
 
 Part A establishes the provider-safe capability projection, strict versioned request, transient
 Design Intent V2 result, exact reference validation, deterministic normalization/fingerprints,
 server-only OpenAI adapter, safe failure classification, and mocked-transport evidence. It makes
 zero provider and Vesko calls. It does not compile the intent, materialize a storefront, create a
 proposal or snapshot, or wire the normal Storefront Studio journey. No live V2 provider acceptance
-has occurred.
+occurred in P10B-16P-02A itself.
 
 Part B implements the deterministic post-provider preference compiler against refreshed current
 authority and consumes its exact decision once through canonical synthesis and isolated proposal
-materialization. It made zero provider and Vesko calls. P10B-16P-03 now owns the implemented mocked
-normal Studio prompt routing and proposal review. P10B-16P-04 owns a separately authorized live Design Intent V2
-acceptance and the final disposition of the legacy P10B-16L bridge.
+materialization. It made zero provider and Vesko calls. P10B-16P-03 owns normal Studio prompt
+routing and proposal review. P10B-16P-04 subsequently completed separately authorized live Design
+Intent acceptance, narrowed the provider wire to bounded semantics, and classified P10B-16L as
+Deprecated compatibility-only. Current implementation and retained evidence take precedence over
+this historical delivery plan.
 
 ## 1. Provider-boundary audit
 
@@ -56,9 +58,8 @@ Neither the retained v1 call nor the corrected bridge proves prompt-driven store
 `p10bLiveSynthesisIntentProviderResultSchema`,
 `createP10bLiveSynthesisIntentPreflightAuthority`,
 `validateP10bLiveSynthesisIntentProviderResult`, the retained-result map, and
-`OpenAiP10bLiveSynthesisIntentProvider` selection semantics are compatibility candidates for
-deprecation after P10B-16P-04 proves the V2 path and decides bridge disposition. They are not
-removed or rerouted in Part A.
+`OpenAiP10bLiveSynthesisIntentProvider` selection semantics are now Deprecated compatibility-only
+after P10B-16P-04 accepted the V2 path. They were not removed or rerouted in Part A.
 
 ### 1.2 Existing normal Studio provider path
 
@@ -83,8 +84,8 @@ callback. This is controlled registered-direction selection, not Design Intent V
 Reusable infrastructure includes server-only trusted provider configuration, injected Responses
 transport, strict closed JSON schemas, `store: false`, zero-retry configuration, bounded timeout,
 provider failure mapping, safe usage telemetry, and deterministic authority fingerprints. The
-coarse `selectionId` semantics are obsolete for V2 initial generation but remain functional for
-existing compatibility consumers until P10B-16P-04 closes migration.
+coarse `selectionId` semantics are Deprecated compatibility-only for V2 initial generation.
+Removal still requires a consumer-proven, separately authorized cleanup task.
 
 ## 2. Singular authority boundary
 
@@ -285,10 +286,10 @@ P10B-16P-02B refreshes exact authority, deterministically compiles V2 preference
 compatible selections, and only then invokes existing P10B-15/P10B-16 materialization and the
 canonical proposal path. P10B-16P-03 connects the normal mocked Storefront Studio
 prompt-to-review/accept/save/preview journey. The local P03 authority is not integrated
-authentication: integrated requests fail closed before provider selection until P10B-16P-04 injects
-authenticated tenant/project-backed current authority. P10B-16P-04 then performs separately
-authorized live V2 acceptance and decides whether to retire, migrate or retain the legacy P10B-16L
-bridge. Running the legacy selector again cannot prove Design Intent V2 acceptance.
+authentication. P10B-16P-04 subsequently supplied a production-disabled trusted server-owned
+acceptance composition, completed separately authorized live V2 acceptance, and classified the
+legacy P10B-16L bridge as Deprecated compatibility-only. Running the legacy selector again cannot
+prove Design Intent V2 acceptance.
 
 ## 11. Evidence and explicit non-claims
 

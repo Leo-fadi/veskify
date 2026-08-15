@@ -2,10 +2,9 @@
 
 ## Status
 
-**Partial — compatibility bridge and mocked-provider acceptance implemented; no live Design Intent
-V2 acceptance exists.** P10B-16, P10B-16P-01, P10B-16P-02A, P10B-16P-02B, and P10B-16P-03 are
-**Baseline**. P10B-16P-02 is **Baseline**; P10B-16P-04, P10B-17, and P10B-18 remain **Planned**.
-P10B remains **Partial**.
+**Deprecated — compatibility-only acceptance infrastructure.** P10B-16, P10B-16P-01,
+P10B-16P-02A, P10B-16P-02B, P10B-16P-03, and P10B-16P-04 are **Baseline**. P10B-16P-02 is
+**Baseline**; P10B-17 and P10B-18 remain **Planned**. P10B remains **Partial**.
 
 Provider calls during the P10B-16P-02A and P10B-16P-02B Design Intent V2 implementation:
 **zero**. One earlier, separately authorized call used the pre-correction v1 direction/posture
@@ -13,9 +12,9 @@ contract retained below.
 
 The retained call proves only that the earlier strict v1 provider result completed. Coordinated
 synthesis failed afterward, and the call did not generate a storefront design plan from the prompt.
-P10B-16P-04 owns any separately authorized live V2 acceptance and the disposition of this bridge.
-Deterministic and mocked-transport evidence proves corrected compatibility behavior only—not
-commercial visual quality or live V2 synthesis.
+P10B-16P-04 now owns accepted live V2 evidence and has disposed this bridge as compatibility-only.
+The bridge's deterministic and mocked-transport evidence remains historical migration and safety
+evidence only; it is not the normal prompted Studio path.
 
 ## Why this bridge exists
 
@@ -354,11 +353,19 @@ source-proposal fingerprint, compiler lineage, and retained snapshot evidence, w
 P10B-16L `executableIntentId` selector and without a real provider call. See
 [`P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md`](P10B_16P_03_STUDIO_PROMPT_GENERATION_JOURNEY.md).
 
-P10B-16P-04, not this compatibility record, owns separately authorized real-provider acceptance and
-the decision to retire, migrate or retain P10B-16L. It must first inject authenticated
-tenant/project-backed current authority because the integrated route intentionally fails closed
-before provider selection without it; P03's standalone/mock authority is not integrated
-authentication. Repeating the executable-option selector cannot prove Design Intent V2 because it
-continues to materialize candidates before the provider call. Until P10B-16P-04 passes, no live V2
-acceptance, commercial provider-generation, retained V2 human visual review, or P10B-17/P10B-18
-closure is claimed. No provider call is authorized by this documentation update.
+P10B-16P-04 completed the separately authorized real-provider acceptance through a
+production-disabled, trusted server-owned Aurum acceptance composition. Three final ordered cases
+used the normal Storefront Studio request path, strict compact semantic intent, deterministic exact
+compilation, and exactly one materialization each. Prompts A and B were rejected without draft or
+history mutation; Prompt C completed atomic Accept, Undo/Redo, explicit Save, reload, and normal
+Preview. The cumulative P10B-16P-04 ledger is 16 real calls with zero retries or fallbacks, zero
+publication, and unchanged protected commerce and canonical product media. See
+[`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
+
+The accepted path does not use the P10B-16L `executableIntentId` selector. P10B-16L is retained
+temporarily as Deprecated compatibility-only infrastructure for historical evidence, migration
+regressions, safety comparison, and consumer analysis. Removal requires merged P10B-16P-04
+evidence, equivalent V2 safety regressions, proof that no active production-path consumer depends
+on it, and a separately authorized cleanup task. Executable search, P10B-17/P10B-18 closure, Vesko
+staging, production authentication, and production readiness remain unclaimed. No provider call is
+authorized by this documentation update.

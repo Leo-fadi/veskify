@@ -17,13 +17,21 @@ import {
 import { getCoordinatedStorefrontDirection } from "./direction-registry";
 import { compareStorefrontDiversity, createStorefrontDiversityFingerprint } from "./diversity";
 import {
+  COMPATIBLE_COORDINATED_DIRECTION_POSTURE_FACTOR_AUTHORITY_VERSION,
   CompatibleCoordinatedDirectionCandidateBudgetError,
   compatibleCoordinatedDirectionCandidateMaterial,
   coordinatedDirectionNarrowingForCandidate,
+  inspectCompatibleCoordinatedDirectionCandidateInventory,
+  isCurrentCompatibleCoordinatedDirectionExactSelection,
+  listCompatibleCoordinatedDirectionFactorizedCandidates,
   listCompatibleCoordinatedDirectionSelectionNarrowings,
+  resolveCompatibleCoordinatedDirectionPostureFactors,
   type CompatibleCoordinatedDirectionCandidateEnumerationOptions,
+  type CompatibleCoordinatedDirectionFactorizedCandidate,
   type CompatibleCoordinatedDirectionCandidateMaterial,
   type CompatibleCoordinatedDirectionNarrowingInput,
+  type CompatibleCoordinatedDirectionPostureFactorOptions,
+  type CompatibleCoordinatedDirectionPostureFactors,
 } from "./compatible-direction-selections";
 import {
   createBoundedStorefrontSynthesisDecision,
@@ -77,12 +85,20 @@ export type ExecutableCoordinatedDirectionIntent = Readonly<{
 export const MAX_EXECUTABLE_COORDINATED_DIRECTION_INTENTS = 3 as const;
 
 export {
+  COMPATIBLE_COORDINATED_DIRECTION_POSTURE_FACTOR_AUTHORITY_VERSION,
   CompatibleCoordinatedDirectionCandidateBudgetError,
   compatibleCoordinatedDirectionCandidateMaterial,
+  inspectCompatibleCoordinatedDirectionCandidateInventory,
+  isCurrentCompatibleCoordinatedDirectionExactSelection,
+  listCompatibleCoordinatedDirectionFactorizedCandidates,
   listCompatibleCoordinatedDirectionSelectionNarrowings,
+  resolveCompatibleCoordinatedDirectionPostureFactors,
   type CompatibleCoordinatedDirectionCandidateEnumerationOptions,
   type CompatibleCoordinatedDirectionCandidateMaterial,
+  type CompatibleCoordinatedDirectionFactorizedCandidate,
   type CompatibleCoordinatedDirectionNarrowingInput,
+  type CompatibleCoordinatedDirectionPostureFactorOptions,
+  type CompatibleCoordinatedDirectionPostureFactors,
 };
 
 export function executableCoordinatedDirectionDeterministicSeed(input: {

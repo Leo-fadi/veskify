@@ -1,6 +1,8 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import OpenAI from "openai";
+import { z } from "zod";
 
 vi.mock("server-only", () => ({}));
 
@@ -14,16 +16,20 @@ import {
 import { createStorefrontRenderContext, getComponentDefinition } from "@/components/registry";
 import { aurumNordicSeed } from "@/data/seed";
 import {
+  assertOpenAiStrictSchemaCompatibility,
   buildOpenAiResponsesRequest,
+  canonicalizeOpenAiStrictSchemaReferences,
   createOpenAiStrictJsonSchema,
   defaultOpenAiModel,
   mapOpenAiFailure,
+  inspectOpenAiStrictSchemaCompatibility,
   openAiModelOutputSchema,
   openAiStructuredOutputJsonSchema,
   openAiUnsupportedStrictSchemaKeywords,
   OpenAiProvider,
 } from "@/integrations/ai/openai";
 import { selectServerAiProvider } from "@/integrations/ai/openai/openai-client.server";
+import { inspectOpenAiFailure } from "@/integrations/ai/openai/failure-classification";
 import type {
   OpenAiResponsesRequest,
   OpenAiResponseRequestOptions,
@@ -168,10 +174,21 @@ function sectionPromptRequest(
   });
 }
 
-function schemaKeys(value: unknown): string[] {
-  if (Array.isArray(value)) return value.flatMap(schemaKeys);
+function schemaKeys(value: unknown, context: "schema" | "named-schema-map" = "schema"): string[] {
+  if (Array.isArray(value)) return value.flatMap((entry) => schemaKeys(entry, context));
   if (typeof value !== "object" || value === null) return [];
-  return Object.entries(value).flatMap(([key, child]) => [key, ...schemaKeys(child)]);
+  if (context === "named-schema-map") {
+    return Object.values(value).flatMap((child) => schemaKeys(child));
+  }
+  return Object.entries(value).flatMap(([key, child]) => [
+    key,
+    ...schemaKeys(
+      child,
+      key === "properties" || key === "definitions" || key === "$defs"
+        ? "named-schema-map"
+        : "schema",
+    ),
+  ]);
 }
 
 function expectStrictObjectRequirements(value: unknown): void {
@@ -232,6 +249,31 @@ describe("P4-06 OpenAI provider adapter", () => {
     );
   });
 
+  it("preserves instance property names that match unsupported schema keywords", () => {
+    const schema = createOpenAiStrictJsonSchema(
+      z.toJSONSchema(
+        z
+          .object({
+            minimum: z.number().int().min(1).max(24),
+            ideal: z.number().int().min(1).max(24),
+            maximum: z.number().int().min(1).max(24),
+          })
+          .strict(),
+        { target: "draft-7", unrepresentable: "throw" },
+      ),
+    ) as {
+      properties: Record<string, Record<string, unknown>>;
+      required: string[];
+      additionalProperties: boolean;
+    };
+
+    expect(Object.keys(schema.properties)).toEqual(["minimum", "ideal", "maximum"]);
+    expect(schema.required).toEqual(["minimum", "ideal", "maximum"]);
+    expect(schema.additionalProperties).toBe(false);
+    expect(schema.properties.minimum).toEqual({ type: "integer" });
+    expect(schema.properties.maximum).toEqual({ type: "integer" });
+  });
+
   it("keeps full local Zod constraints after provider-schema constraints are removed", () => {
     const valid = { operations: [operation()], diagnostics: [], explanation: null };
     expect(openAiModelOutputSchema.safeParse(valid).success).toBe(true);
@@ -242,6 +284,168 @@ describe("P4-06 OpenAI provider adapter", () => {
       }).success,
     ).toBe(false);
     expect(openAiModelOutputSchema.safeParse({ ...valid, operations: [] }).success).toBe(false);
+  });
+
+  it("canonicalizes legacy definitions and references without touching literal values", () => {
+    const canonical = canonicalizeOpenAiStrictSchemaReferences({
+      type: "object",
+      properties: {
+        value: { $ref: "#/definitions/value" },
+        literal: { type: "string", enum: ["#/definitions/not-a-reference"] },
+      },
+      required: ["value", "literal"],
+      additionalProperties: false,
+      definitions: { value: { type: "string" } },
+    });
+
+    expect(canonical).toEqual({
+      type: "object",
+      properties: {
+        value: { $ref: "#/$defs/value" },
+        literal: { type: "string", enum: ["#/definitions/not-a-reference"] },
+      },
+      required: ["value", "literal"],
+      additionalProperties: false,
+      $defs: { value: { type: "string" } },
+    });
+  });
+
+  it("accepts valid compact and inline strict schemas", () => {
+    const compact = {
+      type: "object",
+      properties: { value: { $ref: "#/$defs/value" } },
+      required: ["value"],
+      additionalProperties: false,
+      $defs: { value: { type: "string", enum: ["safe"] } },
+    };
+    const inline = {
+      type: "object",
+      properties: { value: { type: "string", enum: ["safe"] } },
+      required: ["value"],
+      additionalProperties: false,
+    };
+
+    expect(assertOpenAiStrictSchemaCompatibility(compact)).toMatchObject({
+      definitionCount: 1,
+      referenceCount: 1,
+    });
+    expect(assertOpenAiStrictSchemaCompatibility(inline)).toMatchObject({
+      definitionCount: 0,
+      referenceCount: 0,
+    });
+  });
+
+  it.each([
+    [
+      "external-ref",
+      {
+        type: "object",
+        properties: { value: { $ref: "https://example.test/schema" } },
+        required: ["value"],
+        additionalProperties: false,
+      },
+      "invalid-ref",
+    ],
+    [
+      "unresolved-ref",
+      {
+        type: "object",
+        properties: { value: { $ref: "#/$defs/missing" } },
+        required: ["value"],
+        additionalProperties: false,
+        $defs: {},
+      },
+      "unresolved-ref",
+    ],
+    [
+      "unsupported-keyword",
+      {
+        type: "object",
+        properties: { value: { allOf: [{ type: "string" }] } },
+        required: ["value"],
+        additionalProperties: false,
+      },
+      "unsupported-keyword",
+    ],
+    [
+      "root-any-of",
+      {
+        type: "object",
+        properties: {},
+        required: [],
+        additionalProperties: false,
+        anyOf: [{ type: "object", properties: {}, required: [], additionalProperties: false }],
+      },
+      "root-any-of",
+    ],
+    [
+      "open-object",
+      { type: "object", properties: { value: { type: "string" } }, required: ["value"] },
+      "object-not-closed",
+    ],
+    [
+      "required-mismatch",
+      {
+        type: "object",
+        properties: { value: { type: "string" } },
+        required: [],
+        additionalProperties: false,
+      },
+      "required-properties-mismatch",
+    ],
+  ])("rejects the %s strict schema case", (_case, schema, expectedCode) => {
+    const report = inspectOpenAiStrictSchemaCompatibility(schema);
+    expect(report.supported).toBe(false);
+    expect(report.issues.map(({ code }) => code)).toContain(expectedCode);
+    expect(() => assertOpenAiStrictSchemaCompatibility(schema)).toThrow(
+      /OpenAI strict schema is incompatible/,
+    );
+  });
+
+  it("fails locally on every documented structured-output size bound", () => {
+    const strictObject = (properties: Record<string, unknown>) => ({
+      type: "object",
+      properties,
+      required: Object.keys(properties),
+      additionalProperties: false,
+    });
+    const excessiveProperties = strictObject(
+      Object.fromEntries(
+        Array.from({ length: 5_001 }, (_, index) => [`property${index}`, { type: "string" }]),
+      ),
+    );
+    let excessiveNesting: Record<string, unknown> = { type: "string" };
+    for (let index = 0; index < 11; index += 1) {
+      excessiveNesting = strictObject({ child: excessiveNesting });
+    }
+    const excessiveStrings = strictObject({ ["p".repeat(120_001)]: { type: "string" } });
+    const excessiveEnums = strictObject({
+      value: { type: "string", enum: Array.from({ length: 1_001 }, (_, index) => `v${index}`) },
+    });
+    const excessiveLargeEnumStrings = strictObject({
+      value: {
+        type: "string",
+        enum: Array.from({ length: 251 }, (_, index) => `${"x".repeat(60)}${index}`),
+      },
+    });
+
+    expect(
+      inspectOpenAiStrictSchemaCompatibility(excessiveProperties).issues.map(({ code }) => code),
+    ).toContain("object-property-limit");
+    expect(
+      inspectOpenAiStrictSchemaCompatibility(excessiveNesting).issues.map(({ code }) => code),
+    ).toContain("nesting-depth-limit");
+    expect(
+      inspectOpenAiStrictSchemaCompatibility(excessiveStrings).issues.map(({ code }) => code),
+    ).toContain("counted-string-limit");
+    expect(
+      inspectOpenAiStrictSchemaCompatibility(excessiveEnums).issues.map(({ code }) => code),
+    ).toContain("enum-limit");
+    expect(
+      inspectOpenAiStrictSchemaCompatibility(excessiveLargeEnumStrings).issues.map(
+        ({ code }) => code,
+      ),
+    ).toContain("large-enum-string-limit");
   });
 
   it("accepts a mocked exact-palette response only through the canonical brand operation", async () => {
@@ -431,6 +635,196 @@ describe("P4-06 OpenAI provider adapter", () => {
     [{ name: "InternalServerError", status: 500 }, "unexpectedProviderFailure"],
   ] as const)("maps provider failure %j to %s", (error, category) => {
     expect(mapOpenAiFailure(error)).toBe(category);
+  });
+
+  it("recognizes the actual OpenAI SDK timeout class even though it inherits Error.name", () => {
+    const error = new OpenAI.APIConnectionTimeoutError();
+    expect(error.name).toBe("Error");
+    expect(mapOpenAiFailure(error)).toBe("timeout");
+  });
+
+  it("retains only allowlisted OpenAI HTTP transport diagnostics", () => {
+    const error = new OpenAI.InternalServerError(
+      503,
+      {
+        code: "service_unavailable",
+        type: "server_error",
+        message: "raw-provider-body-must-not-be-retained",
+      },
+      "raw-provider-message-must-not-be-retained",
+      new Headers({
+        "retry-after": "15",
+        "x-request-id": "req_safe_transport_503",
+        "x-provider-secret": "raw-provider-header-must-not-be-retained",
+      }),
+    );
+
+    const inspected = inspectOpenAiFailure(error);
+
+    expect(inspected).toMatchObject({
+      category: "unexpectedProviderFailure",
+      diagnostic: {
+        kind: "openai-transport",
+        category: "unexpectedProviderFailure",
+        sdkErrorClass: "internal-server",
+        cause: "http-response",
+        httpStatus: 503,
+        providerCode: "service_unavailable",
+        providerType: "server_error",
+        requestId: "req_safe_transport_503",
+        retryAfterPresent: true,
+        retryAfterSeconds: 15,
+      },
+    });
+    expect(inspected.diagnostic.fingerprint).toMatch(/^openai-transport-v1_/);
+    const retained = JSON.stringify(inspected);
+    expect(retained).not.toContain("raw-provider");
+    expect(retained).not.toContain("x-provider-secret");
+  });
+
+  it.each([
+    "text.format.schema",
+    "text.format.schema.$defs.preference",
+    "model",
+    "max_output_tokens",
+    "input.0.content[12].text",
+    "a".repeat(200),
+  ])("retains the bounded SDK error parameter %s", (providerParam) => {
+    const inspected = inspectOpenAiFailure(
+      new OpenAI.BadRequestError(
+        400,
+        {
+          code: "invalid_request_error",
+          type: "invalid_request_error",
+          param: providerParam,
+          message: "raw-provider-body-must-not-be-retained",
+        },
+        "raw-provider-message-must-not-be-retained",
+        new Headers({ "x-request-id": "req_safe_transport_400" }),
+      ),
+    );
+
+    expect(inspected.diagnostic).toMatchObject({
+      sdkErrorClass: "bad-request",
+      cause: "http-response",
+      httpStatus: 400,
+      providerParam,
+    });
+    const retained = JSON.stringify(inspected);
+    expect(retained).not.toContain("raw-provider");
+  });
+
+  it.each([
+    "text format schema",
+    "text/format/schema",
+    "/text/format/schema",
+    "text..format",
+    ".text",
+    "text.",
+    "text[secret]",
+    "text[-1]",
+    "text\nformat",
+    "tëxt.format",
+    "a".repeat(201),
+  ])("omits the unsafe SDK error parameter %j", (providerParam) => {
+    const inspected = inspectOpenAiFailure(
+      new OpenAI.BadRequestError(
+        400,
+        { type: "invalid_request_error", param: providerParam, message: providerParam },
+        providerParam,
+        new Headers(),
+      ),
+    );
+
+    expect(inspected.diagnostic).not.toHaveProperty("providerParam");
+    expect(JSON.stringify(inspected)).not.toContain(providerParam);
+  });
+
+  it("omits an absent SDK error parameter and fingerprints retained diagnostics stably", () => {
+    const diagnostic = (param?: string) =>
+      inspectOpenAiFailure(
+        new OpenAI.BadRequestError(
+          400,
+          {
+            type: "invalid_request_error",
+            ...(param === undefined ? {} : { param }),
+          },
+          undefined,
+          new Headers({ "x-request-id": "req_safe_stable_400" }),
+        ),
+      ).diagnostic;
+
+    expect(diagnostic()).not.toHaveProperty("providerParam");
+    expect(diagnostic("model").fingerprint).toBe(diagnostic("model").fingerprint);
+    expect(diagnostic("model").fingerprint).not.toBe(diagnostic("max_output_tokens").fingerprint);
+    expect(diagnostic("unsafe provider param").fingerprint).toBe(diagnostic().fingerprint);
+  });
+
+  it.each([
+    [new OpenAI.BadRequestError(400, {}, undefined, new Headers()), "bad-request", 400],
+    [new OpenAI.AuthenticationError(401, {}, undefined, new Headers()), "authentication", 401],
+    [new OpenAI.PermissionDeniedError(403, {}, undefined, new Headers()), "permission-denied", 403],
+    [new OpenAI.NotFoundError(404, {}, undefined, new Headers()), "not-found", 404],
+    [new OpenAI.ConflictError(409, {}, undefined, new Headers()), "conflict", 409],
+    [
+      new OpenAI.UnprocessableEntityError(422, {}, undefined, new Headers()),
+      "unprocessable-entity",
+      422,
+    ],
+    [new OpenAI.RateLimitError(429, {}, undefined, new Headers()), "rate-limit", 429],
+  ] as const)("classifies SDK HTTP %s safely", (error, sdkErrorClass, httpStatus) => {
+    expect(inspectOpenAiFailure(error).diagnostic).toMatchObject({
+      sdkErrorClass,
+      cause: "http-response",
+      httpStatus,
+      retryAfterPresent: false,
+    });
+  });
+
+  it.each([
+    ["ECONNRESET", "connection-reset"],
+    ["ENOTFOUND", "dns"],
+    ["ERR_TLS_CERT_ALTNAME_INVALID", "tls"],
+    ["ECONNREFUSED", "connection-refused"],
+    ["UND_ERR_SOCKET", "socket"],
+  ] as const)("classifies allowlisted connection cause %s as %s", (code, cause) => {
+    const connectionCause = Object.assign(new Error("raw-connection-message"), { code });
+    const inspected = inspectOpenAiFailure(
+      new OpenAI.APIConnectionError({
+        message: "raw-provider-network-message",
+        cause: connectionCause,
+      }),
+    );
+    expect(inspected.diagnostic).toMatchObject({
+      category: "networkFailure",
+      sdkErrorClass: "api-connection",
+      cause,
+      retryAfterPresent: false,
+    });
+    expect(JSON.stringify(inspected)).not.toContain("raw-");
+  });
+
+  it("omits non-allowlisted provider fields and out-of-range Retry-After values", () => {
+    const inspected = inspectOpenAiFailure(
+      new OpenAI.InternalServerError(
+        503,
+        {
+          code: "attacker_controlled_code",
+          type: "attacker_controlled_type",
+          message: "unretained",
+        },
+        "unretained",
+        new Headers({
+          "retry-after": "9999",
+          "x-request-id": "unsafe id with spaces",
+        }),
+      ),
+    );
+    expect(inspected.diagnostic.retryAfterPresent).toBe(true);
+    expect(inspected.diagnostic).not.toHaveProperty("retryAfterSeconds");
+    expect(inspected.diagnostic).not.toHaveProperty("providerCode");
+    expect(inspected.diagnostic).not.toHaveProperty("providerType");
+    expect(inspected.diagnostic).not.toHaveProperty("requestId");
   });
 
   it("prioritizes explicit cancellation over a late transport error", () => {

@@ -7,7 +7,7 @@ storefront.
 
 The overall product is **Partial**. Phase 9 is closed by product-owner handoff, and P10A grounded
 orchestration and publishing is **Baseline / closed**. P10B Commercial Storefront Generation System
-v1 is **Partial / active**: P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-03 are
+v1 is **Partial / active**: P10B-01 through P10B-16 and P10B-16P-01 through P10B-16P-04 are
 Baseline.
 That baseline includes Design DNA, commercial anatomy, art direction, page-family authority, four
 canonical shared-frame families, commercial storytelling families, a five-anatomy canonical
@@ -18,9 +18,12 @@ bounded synthesis, three coordinated direction/diversity packages, and canonical
 route archetypes, the strict transient prompted Design Intent V2 provider boundary, and its
 deterministic post-provider compiler into exact registered synthesis and isolated proposal
 authority. P10B-16P-03 adds the normal mocked Storefront Studio prompt, isolated multi-surface
-review, reject/accept, undo/redo, save/reload, and Preview journey. P10B-16P-02 and both of its
-slices are Baseline. P10B-16P-04, P10B-17, and P10B-18 remain Planned. No live V2 provider
-acceptance has occurred; P10B-16P-03 made zero real-provider calls.
+review, reject/accept, undo/redo, save/reload, and Preview journey. P10B-16P-04 adds separately
+authorized real OpenAI Design Intent evidence through that normal production-disabled Studio path:
+three final materially different Prompt A/B/C proposals, clean A/B rejection, and C
+Accept/Undo/Redo/Save/reload/Preview with zero publication and unchanged protected commerce/media.
+P10B-16P-02 and both of its slices are Baseline. P10B-17 and P10B-18 remain Planned. Search
+execution remains fail closed, and P10B-16L is Deprecated compatibility-only infrastructure.
 
 ## Product boundary
 

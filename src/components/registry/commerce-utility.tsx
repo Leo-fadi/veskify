@@ -2,6 +2,7 @@ import { z } from "zod";
 import { resolveLocalizedText, localizedTextSchema } from "@/domain/shared";
 import { defineComponent, type StorefrontRenderContext } from "./contract";
 import type { CommerceUtilityActionId } from "@/domain/commerce-utility";
+import { ResponsiveStorefrontImage } from "@/components/storefront/responsive-storefront-image";
 import styles from "@/components/storefront/commerce-utility.module.css";
 
 const variants = [
@@ -29,6 +30,8 @@ const labels = (context: StorefrontRenderContext) =>
         retry: "Yritä uudelleen",
         loading: "Ladataan",
         cart: "Ostoskori",
+        decreaseQuantity: "Vähennä määrää",
+        increaseQuantity: "Lisää määrää",
       }
     : {
         quantity: "Quantity",
@@ -43,6 +46,8 @@ const labels = (context: StorefrontRenderContext) =>
         retry: "Try again",
         loading: "Loading",
         cart: "Cart",
+        decreaseQuantity: "Decrease quantity",
+        increaseQuantity: "Increase quantity",
       };
 
 const text = (value: z.infer<typeof localizedTextSchema>, context: StorefrontRenderContext) =>
@@ -51,6 +56,7 @@ const money = (amount: number, currency: "EUR", context: StorefrontRenderContext
   new Intl.NumberFormat(context.activeLocale === "fi" ? "fi-FI" : "en-FI", {
     style: "currency",
     currency,
+    minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(amount);
 
@@ -79,6 +85,8 @@ function UtilityAction({
   lineId,
   quantity,
   checkoutUrl,
+  accessibleLabel,
+  tone = "secondary",
 }: Readonly<{
   action: CommerceUtilityActionId;
   label: string;
@@ -86,12 +94,17 @@ function UtilityAction({
   lineId?: string;
   quantity?: number;
   checkoutUrl?: string;
+  accessibleLabel?: string;
+  tone?: "primary" | "secondary" | "quiet";
 }>) {
   const runtime = context.commerceUtilityRuntime;
   if (!runtime || !supports(context, action)) return null;
   return (
     <button
+      aria-label={accessibleLabel}
       className={styles.action}
+      data-action-tone={tone}
+      data-utility-action={action}
       onClick={() =>
         context.onCommerceUtilityIntent?.({
           action,
@@ -114,6 +127,7 @@ function ContinueShopping({ context }: { context: StorefrontRenderContext }) {
       action="continue-shopping"
       context={context}
       label={labels(context).continueShopping}
+      tone="primary"
     />
   );
 }
@@ -157,7 +171,7 @@ function CartPresentation({
   }
   if (runtime.lines.length === 0) {
     return (
-      <section className={styles.empty} aria-live="polite">
+      <section className={styles.empty} data-utility-state="cart-empty" aria-live="polite">
         <h2>{copy.cart}</h2>
         <p>{context.activeLocale === "fi" ? "Ostoskorisi on tyhjä." : "Your cart is empty."}</p>
         <ContinueShopping context={context} />
@@ -167,23 +181,40 @@ function CartPresentation({
   return (
     <section
       className={styles.cart}
+      data-utility-state="cart-populated"
       data-summary-placement={placement}
       aria-labelledby="utility-cart-heading"
     >
-      <div className={styles.lines}>
+      <div className={styles.lines} data-cart-region="line-items">
         <h1 id="utility-cart-heading">{copy.cart}</h1>
         <ul>
           {resolvedLines.map(({ line, product }) => {
+            const productImage = product.images[0];
             return (
-              <li key={line.lineId} className={styles.line}>
-                <img
-                  alt={text(product.images[0].alt ?? product.title, context)}
-                  src={product.images[0].url}
-                />
-                <div>
+              <li
+                key={line.lineId}
+                className={styles.line}
+                data-cart-line-id={line.lineId}
+                data-product-id={product.id}
+              >
+                {productImage ? (
+                  <ResponsiveStorefrontImage
+                    alt={text(productImage.alt ?? product.title, context)}
+                    asset={productImage}
+                    className={styles.lineMedia}
+                  />
+                ) : null}
+                <div className={styles.lineIdentity}>
                   <h2>{text(product.title, context)}</h2>
                   {line.unitPrice ? (
-                    <p>{money(line.unitPrice.amount, line.unitPrice.currency, context)}</p>
+                    <p className={styles.unitPrice}>
+                      {money(line.unitPrice.amount, line.unitPrice.currency, context)}
+                    </p>
+                  ) : null}
+                  {product.availabilityLabel ? (
+                    <p className={styles.lineAvailability}>
+                      {text(product.availabilityLabel, context)}
+                    </p>
                   ) : null}
                 </div>
                 <div className={styles.lineActions}>
@@ -195,20 +226,24 @@ function CartPresentation({
                       {line.quantity > line.minimumQuantity ? (
                         <UtilityAction
                           action="change-quantity"
+                          accessibleLabel={copy.decreaseQuantity}
                           label="−"
                           context={context}
                           lineId={line.lineId}
                           quantity={line.quantity - 1}
+                          tone="quiet"
                         />
                       ) : null}
                       {line.maximumQuantity === undefined ||
                       line.quantity < line.maximumQuantity ? (
                         <UtilityAction
                           action="change-quantity"
+                          accessibleLabel={copy.increaseQuantity}
                           label="+"
                           context={context}
                           lineId={line.lineId}
                           quantity={line.quantity + 1}
+                          tone="quiet"
                         />
                       ) : null}
                     </div>
@@ -218,6 +253,7 @@ function CartPresentation({
                     label={copy.remove}
                     context={context}
                     lineId={line.lineId}
+                    tone="quiet"
                   />
                 </div>
                 {line.linePrice ? (
@@ -230,7 +266,7 @@ function CartPresentation({
           })}
         </ul>
       </div>
-      <aside className={styles.summary} aria-label={copy.total}>
+      <aside className={styles.summary} aria-label={copy.total} data-cart-region="summary">
         {runtime.subtotal ? (
           <p>
             <span>{copy.subtotal}</span>
@@ -243,8 +279,18 @@ function CartPresentation({
             <strong>{money(runtime.total.amount, runtime.total.currency, context)}</strong>
           </p>
         ) : null}
-        <UtilityAction action="continue-checkout" label={copy.checkout} context={context} />
-        <ContinueShopping context={context} />
+        <UtilityAction
+          action="continue-checkout"
+          label={copy.checkout}
+          context={context}
+          tone="primary"
+        />
+        <UtilityAction
+          action="continue-shopping"
+          context={context}
+          label={copy.continueShopping}
+          tone={supports(context, "continue-checkout") ? "secondary" : "primary"}
+        />
       </aside>
     </section>
   );

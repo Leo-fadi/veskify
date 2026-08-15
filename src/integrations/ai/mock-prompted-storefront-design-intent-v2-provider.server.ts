@@ -1,18 +1,15 @@
 import "server-only";
 
 import {
-  listCompatibleCoordinatedDirectionSelectionNarrowings,
-  type CompatibleCoordinatedDirectionNarrowingInput,
-} from "@/application/bounded-storefront-synthesis";
-import {
   PromptedStorefrontDesignIntentError,
-  promptedStorefrontDesignIntentFingerprint,
-  promptedStorefrontDesignIntentV2Schema,
-  type PromptedStorefrontCapabilityAuthority,
-  type PromptedStorefrontCapabilityAuthorityReference,
-  type PromptedStorefrontCapabilityEntry,
-  type PromptedStorefrontDesignIntentProvider,
-  type PromptedStorefrontDesignIntentV2,
+  semanticStorefrontDesignIntentFingerprint,
+  semanticStorefrontDesignIntentV1MaterialSchema,
+  semanticStorefrontDesignIntentV1Schema,
+  semanticStorefrontDesignRequestV1Schema,
+  type SemanticStorefrontDesignIntentProvider,
+  type SemanticStorefrontDesignIntentV1,
+  type SemanticStorefrontDesignRequestV1,
+  type SemanticProviderDriverPath,
 } from "@/application/prompted-storefront-design-intent";
 
 export const P10B16P03_MOCK_PROMPTED_STOREFRONT_PROVIDER_ID =
@@ -26,78 +23,36 @@ export const p10b16p03MockPromptScenarios = [
 ] as const;
 export type P10B16P03MockPromptScenario = (typeof p10b16p03MockPromptScenarios)[number];
 
-const mockPromptScenarioSignals = {
-  "premium-editorial": [
-    ["premium", 5],
-    ["editorial", 5],
-    ["story led", 4],
-    ["storytelling", 3],
-    ["story", 2],
-    ["refined", 2],
-    ["elegant", 2],
-    ["sophisticated", 2],
-    ["craftsmanship", 2],
-    ["expressive", 1],
-  ],
-  "modern-technical": [
-    ["modern", 4],
-    ["technical", 5],
-    ["information rich", 4],
-    ["catalogue led", 4],
-    ["catalog led", 4],
-    ["catalogue", 3],
-    ["catalog", 3],
-    ["precise", 2],
-    ["specification", 2],
-    ["comparison", 2],
-    ["product first", 2],
-    ["structured", 1],
-    ["dense", 1],
-  ],
-  "minimal-commerce": [
-    ["minimal commerce", 8],
-    ["minimal", 5],
-    ["conversion led", 4],
-    ["restrained", 3],
-    ["pared back", 3],
-    ["conversion", 2],
-    ["focused", 2],
-    ["quiet", 2],
-    ["direct", 2],
-    ["sparse", 2],
-    ["uncluttered", 2],
-  ],
-} as const satisfies Record<P10B16P03MockPromptScenario, readonly (readonly [string, number])[]>;
+const scenarioSignals = {
+  "premium-editorial":
+    "premium:5|editorial:5|story led:4|storytelling:3|story:2|refined:2|elegant:2|sophisticated:2|craftsmanship:2|expressive:1",
+  "modern-technical":
+    "modern:4|technical:5|information rich:4|catalogue led:4|catalog led:4|catalogue:3|catalog:3|precise:2|specification:2|comparison:2|product first:2|structured:1|dense:1",
+  "minimal-commerce":
+    "minimal commerce:8|minimal:5|conversion led:4|restrained:3|pared back:3|conversion:2|focused:2|quiet:2|direct:2|sparse:2|uncluttered:2",
+} as const satisfies Record<P10B16P03MockPromptScenario, string>;
 
-function normalizedSemanticPrompt(merchantPrompt: string): string {
-  const words = merchantPrompt
+export function selectP10B16P03MockPromptScenario(
+  merchantPrompt: string,
+): P10B16P03MockPromptScenario {
+  const prompt = ` ${merchantPrompt
     .normalize("NFKD")
     .toLocaleLowerCase("en")
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-  return ` ${words} `;
-}
-
-/**
- * Selects the deterministic standalone mock direction from merchant language.
- * Signal ties follow the stable registered-scenario order and prompts without
- * a material direction signal use the safe premium-editorial default.
- */
-export function selectP10B16P03MockPromptScenario(
-  merchantPrompt: string,
-): P10B16P03MockPromptScenario {
-  const normalizedPrompt = normalizedSemanticPrompt(merchantPrompt);
-  const scored = p10b16p03MockPromptScenarios.map((scenario) => ({
+    .trim()} `;
+  const scores = p10b16p03MockPromptScenarios.map((scenario) => ({
     scenario,
-    score: mockPromptScenarioSignals[scenario].reduce(
-      (total, [signal, weight]) => total + (normalizedPrompt.includes(` ${signal} `) ? weight : 0),
-      0,
-    ),
+    score: scenarioSignals[scenario].split("|").reduce((score, encoded) => {
+      const separator = encoded.lastIndexOf(":");
+      const signal = encoded.slice(0, separator);
+      const weight = Number(encoded.slice(separator + 1));
+      return score + (prompt.includes(` ${signal} `) ? weight : 0);
+    }, 0),
   }));
-  const highestScore = Math.max(...scored.map(({ score }) => score));
+  const highest = Math.max(...scores.map(({ score }) => score));
   return (
-    scored.find(({ score }) => score === highestScore && score > 0)?.scenario ?? "premium-editorial"
+    scores.find(({ score }) => score === highest && score > 0)?.scenario ?? "premium-editorial"
   );
 }
 
@@ -111,436 +66,166 @@ export type P10B16P03MockPromptFailure =
   | "insufficient-material-intent"
   | "unsupported-hard-constraint";
 
-type Preference = PromptedStorefrontDesignIntentV2["designDna"]["preferences"][number];
-
-const scenarioSelectionTargets = {
+const scenarioDesign = {
   "premium-editorial": {
-    sharedFrameProfileId: "editorial-masthead",
-    homepageProfileId: "homepage-editorial-storytelling",
-    collectionProfileId: "collection-editorial-discovery",
-    pdpProfileId: "pdp-high-consideration",
-    typographyPairing: "serif-led",
-    mediaPosture: "editorial",
+    summary: "Refined editorial storytelling with calm, considered commerce.",
+    commercialPosture: "premium-editorial",
+    density: "low",
+    navigationPosture: "editorial",
+    storyCatalogueBalance: "story-first",
+    discoveryPosture: "editorial",
+    configurableProductPosture: "guided",
+    mobileHierarchy: "story-led",
+    imageProminence: "image-led",
   },
   "modern-technical": {
-    sharedFrameProfileId: "compact-technical",
-    homepageProfileId: "homepage-commerce-led-discovery",
-    collectionProfileId: "collection-catalogue-comparison",
-    pdpProfileId: "pdp-variant-led",
-    typographyPairing: "sans-led",
-    mediaPosture: "product-led",
+    summary: "Technical catalogue depth with precise comparison and decision support.",
+    commercialPosture: "modern-technical",
+    density: "high",
+    navigationPosture: "catalogue",
+    storyCatalogueBalance: "catalogue-first",
+    discoveryPosture: "catalogue-comparison",
+    configurableProductPosture: "technical",
+    mobileHierarchy: "product-led",
+    imageProminence: "balanced",
   },
   "minimal-commerce": {
-    sharedFrameProfileId: "centered-minimal",
-    homepageProfileId: "homepage-minimal-brand-commerce",
-    collectionProfileId: "collection-editorial-discovery",
-    pdpProfileId: "pdp-standard-commerce",
-    typographyPairing: "serif-led",
-    mediaPosture: "restrained",
+    summary: "Restrained product discovery with low visual noise and direct commerce.",
+    commercialPosture: "minimal-commerce",
+    density: "balanced",
+    navigationPosture: "minimal",
+    storyCatalogueBalance: "balanced",
+    discoveryPosture: "dense-search",
+    configurableProductPosture: "standard",
+    mobileHierarchy: "conversion-led",
+    imageProminence: "restrained",
   },
-} as const satisfies Record<
-  P10B16P03MockPromptScenario,
-  Readonly<{
-    sharedFrameProfileId: string;
-    homepageProfileId: string;
-    collectionProfileId: string;
-    pdpProfileId: string;
-    typographyPairing: string;
-    mediaPosture: string;
-  }>
->;
+} as const;
 
-function preference(
-  entry: PromptedStorefrontCapabilityEntry,
-  semantics: Preference["semantics"] = "soft",
-  rank = 1,
-): Preference {
-  return {
-    key: entry.key,
-    dimension: entry.dimension,
-    semantics,
-    rank: semantics === "soft" ? rank : null,
-  };
-}
-
-function entries(
-  authority: PromptedStorefrontCapabilityAuthority,
-  dimension: PromptedStorefrontCapabilityEntry["dimension"],
-  predicate: (
-    reference: PromptedStorefrontCapabilityAuthorityReference | undefined,
-  ) => boolean = () => true,
-): PromptedStorefrontCapabilityEntry[] {
-  return authority.projection.capabilities.filter(
-    (candidate) =>
-      candidate.dimension === dimension &&
-      candidate.availability === "available" &&
-      predicate(authority.referencesByPreferenceKey.get(candidate.key)),
-  );
-}
-
-function requiredEntry(
-  authority: PromptedStorefrontCapabilityAuthority,
-  dimension: PromptedStorefrontCapabilityEntry["dimension"],
-  predicate?: (reference: PromptedStorefrontCapabilityAuthorityReference | undefined) => boolean,
-): PromptedStorefrontCapabilityEntry {
-  const entry = entries(authority, dimension, predicate)[0];
-  if (!entry) throw new PromptedStorefrontDesignIntentError("unknown-capability");
-  return entry;
-}
-
-function mockIntent(input: {
-  scenario: P10B16P03MockPromptScenario;
-  request: Parameters<PromptedStorefrontDesignIntentProvider["createDesignIntent"]>[0];
-  authority: PromptedStorefrontCapabilityAuthority;
-  compatibilityInput: CompatibleCoordinatedDirectionNarrowingInput;
-}): PromptedStorefrontDesignIntentV2 {
-  const narrowings = listCompatibleCoordinatedDirectionSelectionNarrowings(
-    input.compatibilityInput,
-    { directionId: input.scenario },
-  );
-  const scenarioIndex = p10b16p03MockPromptScenarios.indexOf(input.scenario);
-  const target = scenarioSelectionTargets[input.scenario];
-  const narrowing = [...narrowings].sort((left, right) => {
-    const score = (candidate: (typeof narrowings)[number]) =>
-      Number(candidate.homepageProfileId === target.homepageProfileId) * 4 +
-      Number(candidate.collectionProfileId === target.collectionProfileId) * 2 +
-      Number(candidate.pdpProfileId === target.pdpProfileId) +
-      Number(candidate.sharedFrameProfileId === target.sharedFrameProfileId) +
-      (input.scenario === "minimal-commerce"
-        ? Number(candidate.includedOptionalPageFamilyIds.includes("checkout")) * 8
-        : 0);
-    return score(right) - score(left) || left.selectionId.localeCompare(right.selectionId);
-  })[0];
-  if (!narrowing) throw new PromptedStorefrontDesignIntentError("unknown-capability");
-
-  const exactAuthority = (
-    dimension: PromptedStorefrontCapabilityEntry["dimension"],
-    authorityId: string,
-  ) =>
-    requiredEntry(
-      input.authority,
-      dimension,
-      (reference) =>
-        reference?.authorityId === authorityId ||
-        reference?.authorityId.startsWith(`${authorityId}@`) === true,
-    );
-  const available = (dimension: PromptedStorefrontCapabilityEntry["dimension"]) => {
-    const availableEntries = entries(input.authority, dimension);
-    const selected = availableEntries[scenarioIndex % availableEntries.length];
-    if (!selected) throw new PromptedStorefrontDesignIntentError("unknown-capability");
-    return selected;
-  };
-  const pdpRole = (
-    role: NonNullable<PromptedStorefrontCapabilityAuthorityReference["intentRoles"]>[number],
-  ) =>
-    requiredEntry(
-      input.authority,
-      "pdp.archetype",
-      (reference) => reference?.intentRoles?.includes(role) === true,
-    );
-
-  const frame = exactAuthority("shared-frame.profile", narrowing.sharedFrameProfileId);
-  const homepage = exactAuthority("homepage.profile", narrowing.homepageProfileId);
-  const collection = exactAuthority("collection-search.archetype", narrowing.collectionProfileId);
-  const homepageRoles = entries(
-    input.authority,
-    "homepage.narrative-role",
-    (reference) => reference?.authorityId.startsWith(`${narrowing.homepageProfileId}@`) === true,
-  );
-  const role = homepageRoles[scenarioIndex % homepageRoles.length] ?? homepageRoles[0];
-  if (!role) throw new PromptedStorefrontDesignIntentError("unknown-capability");
-  const sectionCount = input.authority.projection.capabilities.find(
-    ({ key }) => key === `homepage.section-count.${narrowing.homepageProfileId}`,
-  );
-  if (!sectionCount || sectionCount.selection.kind !== "number") {
+function supportedSemanticValue(
+  request: SemanticStorefrontDesignRequestV1,
+  path: SemanticProviderDriverPath,
+  preferred: string,
+): string {
+  const field = request.semanticInfluenceAuthority.fields.find((entry) => entry.path === path);
+  const selected = field?.supportedValues.includes(preferred)
+    ? preferred
+    : field?.supportedValues[0];
+  if (!selected) {
     throw new PromptedStorefrontDesignIntentError("unknown-capability");
   }
-  const exactDesignDna = (
-    dimension: PromptedStorefrontCapabilityEntry["dimension"],
-    value: string,
-  ) =>
-    requiredEntry(
-      input.authority,
-      dimension,
-      (reference) => reference?.authorityKind === "design-dna" && reference.authorityId === value,
-    );
-  const designDna = [
-    exactDesignDna(
-      "design-dna.typography-pairing",
-      `typography.pairing:${target.typographyPairing}`,
-    ),
-    exactDesignDna("design-dna.media", `media.posture:${target.mediaPosture}`),
-  ];
-  const exactPdpProfile = exactAuthority("pdp.archetype", narrowing.pdpProfileId);
-  const exactHeroVariant = (variant: string) =>
-    requiredEntry(
-      input.authority,
-      "homepage.meaningful-variant",
-      (reference) => reference?.authorityId === `homepageHero:${variant}`,
-    );
-  const heroVariant = exactHeroVariant(
-    input.scenario === "premium-editorial"
-      ? "fullBleedOverlay"
-      : input.scenario === "modern-technical"
-        ? "imageLed"
-        : "restrained",
-  );
-  const componentVariant =
-    input.scenario === "modern-technical"
-      ? requiredEntry(
-          input.authority,
-          "component.meaningful-variant",
-          (reference) => reference?.authorityId === "homepageHero:imageLed",
-        )
-      : input.scenario === "minimal-commerce"
-        ? requiredEntry(
-            input.authority,
-            "component.meaningful-variant",
-            (reference) => reference?.authorityId === "homepageHero:restrained",
-          )
-        : null;
-  const standard = pdpRole("pdp-standard-simple");
-  const configurable = pdpRole("pdp-configurable");
-  const gallery = pdpRole("pdp-gallery-led");
-  const highConsideration = pdpRole("pdp-high-consideration");
-  const fallback = pdpRole("pdp-generic-fallback");
-  const productType = available("pdp.product-type");
+  return selected;
+}
 
-  const material = {
-    contractVersion: "2.0.0" as const,
-    requestFingerprint: input.request.requestFingerprint,
-    promptFingerprint: input.request.promptFingerprint,
-    concept: {
-      summary: `A ${input.scenario} complete storefront grounded in approved merchant authority.`,
-      commercialPosture: input.scenario,
-      intendedCustomerExperience:
-        "Move from a coherent first impression through truthful discovery into confident purchase.",
+function semanticMaterial(
+  scenario: P10B16P03MockPromptScenario,
+  request: SemanticStorefrontDesignRequestV1,
+) {
+  const design = scenarioDesign[scenario];
+  return semanticStorefrontDesignIntentV1MaterialSchema.parse({
+    contractVersion: "prompted-storefront-semantic-intent-v1",
+    requestFingerprint: request.requestFingerprint,
+    promptFingerprint: request.promptFingerprint,
+    currentAuthorityFingerprint: request.currentAuthorityFingerprint,
+    semanticAuthorityFingerprint: request.semanticAuthorityFingerprint,
+    designConceptSummary: design.summary,
+    commercialPosture: supportedSemanticValue(
+      request,
+      "commercialPosture",
+      design.commercialPosture,
+    ),
+    globalVisualIntent: {
+      density: supportedSemanticValue(request, "globalVisualIntent.density", design.density),
     },
-    constraints: {
-      hard: [preference(frame, "hard")],
-      soft: [],
-      optional: [],
-      avoid: [],
+    sharedFrameIntent: {
+      navigationPosture: supportedSemanticValue(
+        request,
+        "sharedFrameIntent.navigationPosture",
+        design.navigationPosture,
+      ),
     },
-    designDna: { preferences: designDna.map((entry) => preference(entry, "hard")) },
-    sharedFrame: { preferences: [preference(frame, "hard")] },
-    homepage: {
-      profilePreferences: [preference(homepage, "hard")],
-      narrativeRoleSequence: [{ key: role.key, dimension: role.dimension }],
-      requiredRoles: [{ key: role.key, dimension: role.dimension }],
-      preferredRoles: [{ key: role.key, dimension: role.dimension }],
-      optionalRoles: [],
-      avoidedRoles: [],
-      componentFamilyPreferences: [preference(available("homepage.component-family"))],
-      meaningfulVariantPreferences: [preference(heroVariant, "hard")],
-      sectionCount: {
-        key: sectionCount.key,
-        dimension: "homepage.section-count" as const,
-        minimum: sectionCount.selection.minimum,
-        ideal: Math.min(
-          sectionCount.selection.maximum,
-          sectionCount.selection.minimum + scenarioIndex,
-        ),
-        maximum: sectionCount.selection.maximum,
-      },
-      sectionRhythmPreferences: [preference(available("homepage.section-rhythm"))],
-      evidenceDependentOmission: "omit" as const,
-      approvedAssetRolePreferences: [],
+    homepageIntent: {
+      storyCatalogueBalance: supportedSemanticValue(
+        request,
+        "homepageIntent.storyCatalogueBalance",
+        design.storyCatalogueBalance,
+      ),
     },
-    collectionSearch: {
-      archetypePreferences: [preference(collection, "hard")],
-      discoveryPreferences: [preference(available("collection-search.discovery"))],
-      densityPreferences: [preference(available("collection-search.density"))],
-      filterSortPreferences: [preference(available("collection-search.filter-sort"))],
-      childCollectionPreferences: [preference(available("collection-search.child-collection"))],
-      merchandisingPreferences: [preference(available("collection-search.merchandising"))],
-      productCardPreferences: [preference(available("collection-search.product-card"))],
-      searchRelationshipPreferences: [
-        preference(requiredEntry(input.authority, "collection-search.search-relationship")),
-      ],
-      searchExecutionExpectation: "registered-presentation-fail-closed-runtime" as const,
+    collectionIntent: {
+      discoveryPosture: supportedSemanticValue(
+        request,
+        "collectionIntent.discoveryPosture",
+        design.discoveryPosture,
+      ),
     },
-    productDetail: {
-      standardSimplePreferences: [
-        preference(
-          input.authority.referencesByPreferenceKey
-            .get(exactPdpProfile.key)
-            ?.intentRoles?.includes("pdp-standard-simple")
-            ? exactPdpProfile
-            : standard,
-          input.authority.referencesByPreferenceKey
-            .get(exactPdpProfile.key)
-            ?.intentRoles?.includes("pdp-standard-simple")
-            ? "hard"
-            : "soft",
-        ),
-      ],
-      configurablePreferences: [
-        preference(
-          input.authority.referencesByPreferenceKey
-            .get(exactPdpProfile.key)
-            ?.intentRoles?.includes("pdp-configurable")
-            ? exactPdpProfile
-            : configurable,
-          input.authority.referencesByPreferenceKey
-            .get(exactPdpProfile.key)
-            ?.intentRoles?.includes("pdp-configurable")
-            ? "hard"
-            : "soft",
-        ),
-      ],
-      galleryLedPreferences: [
-        preference(
-          input.authority.referencesByPreferenceKey
-            .get(exactPdpProfile.key)
-            ?.intentRoles?.includes("pdp-gallery-led")
-            ? exactPdpProfile
-            : gallery,
-          input.authority.referencesByPreferenceKey
-            .get(exactPdpProfile.key)
-            ?.intentRoles?.includes("pdp-gallery-led")
-            ? "hard"
-            : "soft",
-        ),
-      ],
-      highConsiderationPreferences: [
-        preference(
-          input.authority.referencesByPreferenceKey
-            .get(exactPdpProfile.key)
-            ?.intentRoles?.includes("pdp-high-consideration")
-            ? exactPdpProfile
-            : highConsideration,
-          input.authority.referencesByPreferenceKey
-            .get(exactPdpProfile.key)
-            ?.intentRoles?.includes("pdp-high-consideration")
-            ? "hard"
-            : "soft",
-        ),
-      ],
-      genericFallbackPreferences: [preference(fallback)],
-      productTypeIntentions: [
-        { productTypeKey: productType.key, preferences: [preference(standard)] },
-      ],
-      optionComplexityPreferences: [preference(available("pdp.option-complexity"))],
-      mediaPreferences: [preference(available("pdp.media"))],
-      purchaseDecisionHierarchyPreferences: [preference(available("pdp.purchase-hierarchy"))],
-      relatedMerchandisingPreferences: [preference(available("pdp.related-merchandising"))],
-      productCardPreferences: [preference(available("pdp.product-card"))],
+    pdpIntent: {
+      configurableProductPosture: supportedSemanticValue(
+        request,
+        "pdpIntent.configurableProductPosture",
+        design.configurableProductPosture,
+      ),
     },
-    contentSupport: {
-      pageFamilyPreferences: [],
-      narrativePurposePreferences: [],
-      evidenceRequirements: [],
-      safeOmissionBehavior: "omit" as const,
+    responsiveAndArtDirectionIntent: {
+      mobileHierarchy: supportedSemanticValue(
+        request,
+        "responsiveAndArtDirectionIntent.mobileHierarchy",
+        design.mobileHierarchy,
+      ),
+      imageProminence: supportedSemanticValue(
+        request,
+        "responsiveAndArtDirectionIntent.imageProminence",
+        design.imageProminence,
+      ),
     },
-    components: {
-      familyPreferences: [preference(available("component.family"))],
-      meaningfulVariantPreferences: componentVariant ? [preference(componentVariant, "hard")] : [],
-      boundedParameterPreferences: [],
-    },
-    responsiveArtDirection: {
-      responsivePosturePreferences: [preference(available("responsive.posture"))],
-      mobileHierarchyPreferences: [preference(available("responsive.mobile-hierarchy"))],
-      densityTransformationPreferences: [preference(available("responsive.density"))],
-      desktopNarrativePriority: [{ key: role.key, dimension: role.dimension }],
-      mobileNarrativePriority: [{ key: role.key, dimension: role.dimension }],
-      imagePosturePreferences: [preference(available("responsive.image"))],
-      cropFocalPreferences: [preference(available("responsive.crop"))],
-      overlayPreferences: [preference(available("responsive.overlay"))],
-      approvedMediaRolePreferences: [],
-    },
-  };
-  return promptedStorefrontDesignIntentV2Schema.parse({
-    ...material,
-    intentFingerprint: promptedStorefrontDesignIntentFingerprint(material),
   });
 }
 
+const failureCode = {
+  "provider-refusal": "provider-refusal",
+  "provider-timeout": "provider-timeout",
+  "provider-transport": "provider-transport",
+  "malformed-output": "malformed-output",
+  "strict-schema-invalid": "strict-schema-invalid",
+  "unknown-capability": "unknown-capability",
+  "insufficient-material-intent": "invalid-request",
+  "unsupported-hard-constraint": "unknown-capability",
+} as const;
+
 export function createP10B16P03MockPromptedStorefrontDesignIntentProvider(input: {
   scenario: P10B16P03MockPromptScenario;
-  compatibilityInput: CompatibleCoordinatedDirectionNarrowingInput;
+  compatibilityInput?: unknown;
   failure?: P10B16P03MockPromptFailure;
-  onRequest?: (
-    request: Parameters<PromptedStorefrontDesignIntentProvider["createDesignIntent"]>[0],
-  ) => void;
-}): PromptedStorefrontDesignIntentProvider {
+  onRequest?: (request: SemanticStorefrontDesignRequestV1) => void;
+}): SemanticStorefrontDesignIntentProvider {
+  void input.compatibilityInput;
   return Object.freeze({
     id: P10B16P03_MOCK_PROMPTED_STOREFRONT_PROVIDER_ID,
     modelId: P10B16P03_MOCK_PROMPTED_STOREFRONT_MODEL_ID,
     createDesignIntent(
-      request: Parameters<PromptedStorefrontDesignIntentProvider["createDesignIntent"]>[0],
-      validation: Parameters<PromptedStorefrontDesignIntentProvider["createDesignIntent"]>[1],
-    ) {
-      input.onRequest?.(request);
-      if (
-        input.failure &&
-        input.failure !== "insufficient-material-intent" &&
-        input.failure !== "unsupported-hard-constraint"
-      ) {
-        return Promise.reject(new PromptedStorefrontDesignIntentError(input.failure));
-      }
-      if (
-        validation.currentAuthority().projectId !== request.currentAuthority.projectId ||
-        validation.currentAuthority().storefrontSnapshotFingerprint !==
-          request.currentAuthority.storefrontSnapshotFingerprint
-      ) {
-        return Promise.reject(new PromptedStorefrontDesignIntentError("stale-authority"));
-      }
-      const intent = mockIntent({
-        scenario: input.scenario,
-        request,
-        authority: validation.capabilityAuthority,
-        compatibilityInput: input.compatibilityInput,
+      request: SemanticStorefrontDesignRequestV1,
+      validation: Parameters<SemanticStorefrontDesignIntentProvider["createDesignIntent"]>[1],
+    ): Promise<SemanticStorefrontDesignIntentV1> {
+      return new Promise((resolve) => {
+        input.onRequest?.(request);
+        if (input.failure)
+          throw new PromptedStorefrontDesignIntentError(failureCode[input.failure]);
+        if (!semanticStorefrontDesignRequestV1Schema.safeParse(request).success) {
+          throw new PromptedStorefrontDesignIntentError("invalid-request");
+        }
+        if (
+          validation.currentAuthorityFingerprint() !== request.currentAuthorityFingerprint ||
+          validation.semanticAuthorityFingerprint() !== request.semanticAuthorityFingerprint
+        ) {
+          throw new PromptedStorefrontDesignIntentError("stale-authority");
+        }
+        const material = semanticMaterial(input.scenario, request);
+        resolve(
+          semanticStorefrontDesignIntentV1Schema.parse({
+            ...material,
+            semanticIntentFingerprint: semanticStorefrontDesignIntentFingerprint(material),
+          }),
+        );
       });
-      const { intentFingerprint: _intentFingerprint, ...material } = intent;
-      void _intentFingerprint;
-      if (input.failure === "insufficient-material-intent") {
-        const avoidedDesignDna = intent.designDna.preferences[0];
-        if (!avoidedDesignDna) {
-          return Promise.reject(new PromptedStorefrontDesignIntentError("unknown-capability"));
-        }
-        const insufficient = {
-          ...material,
-          constraints: { ...material.constraints, soft: [] },
-          designDna: {
-            preferences: [
-              {
-                ...avoidedDesignDna,
-                semantics: "avoid" as const,
-                rank: null,
-              },
-            ],
-          },
-        };
-        return Promise.resolve(
-          promptedStorefrontDesignIntentV2Schema.parse({
-            ...insufficient,
-            intentFingerprint: promptedStorefrontDesignIntentFingerprint(insufficient),
-          }),
-        );
-      }
-      if (input.failure === "unsupported-hard-constraint") {
-        const incompatibleFrames = entries(
-          validation.capabilityAuthority,
-          "shared-frame.profile",
-        ).slice(0, 2);
-        if (incompatibleFrames.length !== 2) {
-          return Promise.reject(new PromptedStorefrontDesignIntentError("unknown-capability"));
-        }
-        const unsupported = {
-          ...material,
-          sharedFrame: {
-            preferences: incompatibleFrames.map((entry) => preference(entry, "hard")),
-          },
-        };
-        return Promise.resolve(
-          promptedStorefrontDesignIntentV2Schema.parse({
-            ...unsupported,
-            intentFingerprint: promptedStorefrontDesignIntentFingerprint(unsupported),
-          }),
-        );
-      }
-      return Promise.resolve(intent);
     },
   });
 }

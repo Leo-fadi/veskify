@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { idSchema } from "@/domain/shared";
+import { assetRoleSchema, idSchema } from "@/domain/shared";
+import { approvedAssetPresentationSchema } from "./approved-asset-placement";
 import { canonicalValueFingerprint } from "./canonical-storefront";
 
 export const DYNAMIC_COMMERCE_PRESENTATION_CONTRACT_VERSION = "1.0.0" as const;
@@ -130,6 +131,42 @@ export const dynamicCommerceStyleOverridesSchema = z
   })
   .strict();
 
+/**
+ * Exact reusable approved presentation authority retained while concrete dynamic route pages are
+ * folded into the compact route authority. Route and component placement identities stay derived
+ * by the route resolver because one archetype can serve several canonical routes.
+ */
+export const dynamicCommerceApprovedAssetSelectionSchema = z
+  .object({
+    assetSlotId: z.string().trim().min(1).max(80),
+    assetId: idSchema,
+    role: assetRoleSchema,
+    assetRevision: z.string().trim().min(1).max(120),
+    materialFingerprint: fingerprintSchema,
+    sourceReferenceId: idSchema,
+    sourceProvenanceKind: z
+      .enum(["merchantProvided", "sourceDiscovered", "generated", "preset"])
+      .optional(),
+    required: z.boolean(),
+    presentation: approvedAssetPresentationSchema,
+  })
+  .strict()
+  .superRefine((selection, context) => {
+    if (
+      selection.presentation.assetId !== selection.assetId ||
+      selection.presentation.asset.id !== selection.assetId ||
+      selection.presentation.role !== selection.role ||
+      selection.presentation.revision !== selection.assetRevision ||
+      selection.presentation.materialFingerprint !== selection.materialFingerprint
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["presentation"],
+        message: "Compact dynamic-commerce asset presentation must match its approved selection.",
+      });
+    }
+  });
+
 export const dynamicCommerceComponentPresentationSchema = z
   .object({
     slotId: designTokenSchema,
@@ -141,8 +178,23 @@ export const dynamicCommerceComponentPresentationSchema = z
     props: dynamicCommerceDesignStateSchema,
     styleOverrides: dynamicCommerceStyleOverridesSchema.optional(),
     boundedParameters: z.record(designTokenSchema, dynamicCommerceBoundedParameterValueSchema),
+    // Optional preserves the fingerprints of pre-asset compact authorities. New authorities
+    // always materialize an explicit list and never infer approved assets from repository files.
+    approvedAssetSelections: z.array(dynamicCommerceApprovedAssetSelectionSchema).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((presentation, context) => {
+    const identities = (presentation.approvedAssetSelections ?? []).map(
+      ({ assetSlotId, assetId }) => `${assetSlotId}:${assetId}`,
+    );
+    if (new Set(identities).size !== identities.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["approvedAssetSelections"],
+        message: "Compact dynamic-commerce approved asset selections must be unique.",
+      });
+    }
+  });
 
 export const dynamicCommerceProfileReferenceSchema = z
   .object({
@@ -237,6 +289,17 @@ const archetypeBaseShape = {
   artDirectionPosture: dynamicCommerceArtDirectionPostureSchema,
   fallbackBehavior: dynamicCommerceFallbackBehaviorSchema,
 } as const;
+
+/**
+ * Uses the registered archetype/frame relationship as the single compatibility predicate for
+ * metadata narrowing, exact selection and execution validation.
+ */
+export function isDynamicCommerceArchetypeCompatibleWithSharedFrame(
+  archetype: Readonly<{ compatibleSharedFrameProfileIds: readonly string[] }>,
+  sharedFrameProfileId: string,
+): boolean {
+  return archetype.compatibleSharedFrameProfileIds.includes(sharedFrameProfileId);
+}
 
 function refineArchetype(
   archetype: {
@@ -743,6 +806,9 @@ export type DynamicCommerceCollectionContextRule = z.infer<
 >;
 export type DynamicCommerceProductComplexityRule = z.infer<
   typeof dynamicCommerceProductComplexityRuleSchema
+>;
+export type DynamicCommerceApprovedAssetSelection = z.infer<
+  typeof dynamicCommerceApprovedAssetSelectionSchema
 >;
 export type DynamicCommerceComponentPresentation = z.infer<
   typeof dynamicCommerceComponentPresentationSchema

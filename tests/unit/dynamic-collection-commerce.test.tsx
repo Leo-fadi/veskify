@@ -90,6 +90,7 @@ const collection: CollectionPresentationContext = {
       values: [
         { id: "gold", label: localized("Gold", "Kulta"), count: 1, selected: true },
         { id: "steel", label: localized("Steel", "Teräs"), count: 1, disabled: true },
+        { id: "silver", label: localized("Silver", "Hopea"), count: 1 },
       ],
     },
     {
@@ -779,7 +780,7 @@ describe("P6-04 dynamic collection commerce", () => {
 
   it("localizes merchant-facing labels in EN and FI", () => {
     const english = render(renderDynamicCollectionCommerce(rendererInput()));
-    expect(screen.getByText("Show filters", { selector: "summary" })).toBeVisible();
+    expect(screen.getByText("Show filters", { exact: false, selector: "summary" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Nordic watch" })).toBeVisible();
     english.unmount();
 
@@ -788,9 +789,24 @@ describe("P6-04 dynamic collection commerce", () => {
         rendererInput(collection, { activeLocale: "fi", primaryLocale: "fi" }),
       ),
     );
-    expect(screen.getByText("Näytä suodattimet", { selector: "summary" })).toBeVisible();
+    expect(
+      screen.getByText("Näytä suodattimet", { exact: false, selector: "summary" }),
+    ).toBeVisible();
     expect(screen.getByRole("button", { name: "Pohjoismainen kello" })).toBeVisible();
     expect(screen.getByRole("combobox", { name: "Lajittele tuotteet" })).toBeVisible();
+  });
+
+  it("keeps the bounded filter toolbar collapsed until the merchant opens it", () => {
+    const view = render(renderDynamicCollectionCommerce(rendererInput()));
+    const filters = view.container.querySelector<HTMLDetailsElement>(
+      'details[data-filter-panel-mode="disclosure"]',
+    );
+
+    expect(filters?.open).toBe(false);
+    fireEvent.click(screen.getByText("Show filters", { exact: false, selector: "summary" }));
+    expect(filters?.open).toBe(true);
+    fireEvent.click(screen.getByText("Show filters", { exact: false, selector: "summary" }));
+    expect(filters?.open).toBe(false);
   });
 
   it("supports keyboard product/filter navigation with accessible names", async () => {
@@ -840,7 +856,7 @@ describe("P6-04 dynamic collection commerce", () => {
     }
   });
 
-  it("uses auto-fit product tracks without reserving columns for absent products", () => {
+  it("uses a bounded one-column track for one product", () => {
     const singleProductCollection = {
       ...structuredClone(collection),
       productIds: [watch.productId],
@@ -855,8 +871,180 @@ describe("P6-04 dynamic collection commerce", () => {
     );
 
     expect(grid).toHaveAttribute("data-product-count", "1");
+    expect(grid).toHaveAttribute("data-wide-grid-columns", "1");
     expect(grid?.children).toHaveLength(1);
-    expect(css).toMatch(/\.productGrid\s*\{[\s\S]*grid-template-columns:\s*repeat\(auto-fit,/);
+    expect(css).toMatch(/\.productGrid\s*\{[\s\S]*grid-template-columns:\s*minmax\(0, 1fr\)/);
+  });
+
+  it("renders four canonical products as one deliberate wide row and two tablet columns", () => {
+    const bracelet: ProductPresentationContext = {
+      ...structuredClone(watch),
+      productId: "product_bracelet",
+      sku: "BRACELET-001",
+      title: localized("Harbor bracelet"),
+      media: [{ assetId: "asset_bracelet", role: "main", alt: localized("Harbor bracelet") }],
+      revision: "product-rev-bracelet",
+    };
+    const pendant: ProductPresentationContext = {
+      ...structuredClone(ring),
+      productId: "product_pendant",
+      sku: "PENDANT-001",
+      title: localized("Harbor pendant"),
+      media: [{ assetId: "asset_pendant", role: "main", alt: localized("Harbor pendant") }],
+      revision: "product-rev-pendant",
+    };
+    const fourProducts = [watch, ring, bracelet, pendant];
+    const fourProductCollection: CollectionPresentationContext = {
+      ...structuredClone(collection),
+      collectionId: "collection_harbor",
+      title: localized("Harbor collection"),
+      assets: [],
+      productIds: fourProducts.map(({ productId }) => productId),
+      childCollectionIds: [],
+      revision: "collection-rev-harbor",
+    };
+    const input = rendererInput(fourProductCollection);
+    input.projection = {
+      products: fourProducts,
+      collections: [fourProductCollection],
+      assets: [
+        asset("asset_watch", "productMainImage"),
+        asset("asset_ring", "productMainImage"),
+        asset("asset_bracelet", "productMainImage"),
+        asset("asset_pendant", "productMainImage"),
+      ],
+      navigation: [],
+      projectBrandContexts: [],
+      localizedContents: [],
+      productListRevision: "product-list-rev-1",
+      collectionListRevision: "collection-list-rev-1",
+    };
+    const rendered = render(renderDynamicCollectionCommerce(input));
+    const grid = rendered.container.querySelector('[data-product-count="4"]');
+    const cards = [...rendered.container.querySelectorAll("article[data-card-anatomy]")];
+    const css = readFileSync(
+      "src/components/storefront/dynamic-collection-commerce.module.css",
+      "utf8",
+    );
+
+    expect(grid).toHaveAttribute("data-wide-grid-columns", "4");
+    expect(cards).toHaveLength(4);
+    cards.forEach((card) => {
+      expect(card.querySelector('[data-card-region="heading"]')).not.toBeNull();
+      expect(card.querySelector('[data-card-region="price"]')).not.toBeNull();
+      expect(card.querySelector('[data-card-region="actions"]')).not.toBeNull();
+    });
+    expect(css).toMatch(
+      /@media \(min-width: 48rem\)[\s\S]*\.productGrid\s*\{[\s\S]*repeat\(2, minmax\(0, 1fr\)\)/,
+    );
+    expect(css).toMatch(
+      /@media \(min-width: 80rem\)[\s\S]*data-wide-grid-columns="4"[\s\S]*repeat\(4, minmax\(0, 1fr\)\)/,
+    );
+  });
+
+  it("bounds eligible non-merchant-specific facets behind progressive disclosure", async () => {
+    const user = userEvent.setup();
+    const contextualFilters: CollectionPresentationContext["filters"] = [
+      ...Array.from({ length: 7 }, (_, index) => ({
+        id: `facet_${index + 1}`,
+        label: localized(`Facet ${index + 1}`),
+        presentation: "enumerated" as const,
+        values: [
+          { id: `facet_${index + 1}_a`, label: localized("First"), count: 1 },
+          { id: `facet_${index + 1}_b`, label: localized("Second"), count: 1 },
+          ...(index === 0
+            ? [
+                {
+                  id: "facet_1_unavailable",
+                  label: localized("Unavailable value"),
+                  count: 0,
+                },
+              ]
+            : []),
+        ],
+      })),
+      {
+        id: "length",
+        label: localized("Length"),
+        presentation: "range",
+        values: [],
+        range: { min: 1, max: 10, unit: localized("cm") },
+      },
+      {
+        id: "constant_facet",
+        label: localized("Constant facet"),
+        presentation: "enumerated",
+        values: [{ id: "constant", label: localized("Same"), count: 2 }],
+      },
+      {
+        id: "constant_range",
+        label: localized("Constant range"),
+        presentation: "range",
+        values: [],
+        range: { min: 10, max: 10 },
+      },
+    ];
+    const contextualCollection = {
+      ...structuredClone(collection),
+      collectionId: "collection_contextual_facets",
+      filters: contextualFilters,
+      revision: "collection-rev-contextual-facets",
+    };
+    const rendered = render(renderDynamicCollectionCommerce(rendererInput(contextualCollection)));
+    const toolbar = rendered.container.querySelector('[data-layout-region="filters"]');
+
+    expect(toolbar).toHaveAttribute("data-eligible-filter-count", "8");
+    expect(toolbar).toHaveAttribute("data-primary-filter-count", "4");
+    expect(toolbar).toHaveAttribute("data-additional-filter-count", "4");
+    expect(rendered.container.querySelectorAll("fieldset[data-filter-id]")).toHaveLength(4);
+    expect(rendered.container.querySelector('[data-filter-id="facet_1"]')).toHaveAttribute(
+      "data-filter-value-count",
+      "2",
+    );
+    expect(screen.queryByText("Unavailable value")).not.toBeInTheDocument();
+    expect(rendered.container.querySelector('[data-filter-id="constant_facet"]')).toBeNull();
+    expect(rendered.container.querySelector('[data-filter-id="constant_range"]')).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: /Show more filters/ }));
+    expect(rendered.container.querySelectorAll("fieldset[data-filter-id]")).toHaveLength(8);
+    expect(
+      screen
+        .getByRole("region", { name: "Product details" })
+        .querySelector('[data-filter-id="length"]'),
+    ).not.toBeNull();
+    expect(screen.queryByRole("region", { name: "Price" })).not.toBeInTheDocument();
+  });
+
+  it("uses one image-led campaign placement when adjacent approved media resolve identically", () => {
+    const campaignCollection = {
+      ...structuredClone(collection),
+      assets: [
+        { assetId: "asset_collection", role: "hero" as const },
+        { assetId: "asset_editorial", role: "editorial" as const },
+      ],
+    };
+    const input = rendererInput(campaignCollection, {
+      resolveAssetUrl: (assetId) =>
+        ["asset_collection", "asset_editorial"].includes(assetId)
+          ? "/assets/shared-campaign.jpg"
+          : `/assets/${assetId}.jpg`,
+    });
+    input.instance = instance(campaignCollection, { variant: "campaignLedDiscovery" });
+    input.projection = {
+      ...(input.projection as Record<string, unknown>),
+      assets: [...assets, asset("asset_editorial", "editorialImage")],
+    };
+    const rendered = render(renderDynamicCollectionCommerce(input));
+
+    expect(
+      rendered.container.querySelector('[data-layout-region="campaign-lead"]'),
+    ).toHaveAttribute("data-asset-id", "asset_editorial");
+    expect(rendered.container.querySelector("[data-collection-hero-treatment]")).toHaveAttribute(
+      "data-collection-hero-treatment",
+      "text-only-adjacent-media-deduped",
+    );
+    expect(rendered.container.querySelector('[data-asset-id="asset_collection"]')).toBeNull();
+    expect(screen.getAllByRole("heading", { name: "All products" })).toHaveLength(1);
   });
 
   it("places horizontal filters and products on explicit full-width desktop rows", () => {
@@ -875,7 +1063,7 @@ describe("P6-04 dynamic collection commerce", () => {
     expect(layout.className).toMatch(/layout_horizontal/);
     expect(regions[0]).toHaveAttribute("data-layout-region", "filters");
     expect(regions[1]).toHaveAttribute("data-layout-region", "products");
-    expect(css).toContain(".layout_horizontal > .filters");
+    expect(css).toContain(".layout_horizontal > .filterToolbar");
     expect(css).toContain(".layout_horizontal > .productResults");
     expect(css).toMatch(/\.layout_horizontal[^}]*grid-template-columns: minmax\(0, 1fr\)/s);
   });

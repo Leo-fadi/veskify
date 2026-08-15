@@ -213,32 +213,42 @@ export function CommercialStoreHeader({
 
   const primaryLabel = context.activeLocale === "fi" ? "Päänavigaatio" : "Primary navigation";
   const mobileLabel = context.activeLocale === "fi" ? "Mobiilinavigaatio" : "Mobile navigation";
+  const menuLabel = context.activeLocale === "fi" ? "Valikko" : "Menu";
+  const closeLabel = context.activeLocale === "fi" ? "Sulje" : "Close";
+  const serviceItems = context.navigation.footer.flatMap((item) => {
+    const href = navigationHref(item, context);
+    return href ? [{ href, item }] : [];
+  });
+  const hasSubstantiveServiceNavigation = serviceItems.length >= 2;
   return (
     <header
-      className={`${styles.header} ${className ?? ""}`}
+      className={`store-header ${styles.header} ${className ?? ""}`}
       data-frame-profile={profile.id}
       data-frame-region="header"
+      data-header-variant={profile.headerVariant}
       data-mobile-navigation-mode={profile.mobileNavigationMode}
+      data-responsive-transformations={profile.responsiveTransformationIds.join(" ")}
       data-search-placement={profile.searchPlacement}
     >
-      {profile.serviceStrip === "canonical-footer-navigation" &&
-      context.navigation.footer.length > 0 ? (
+      {profile.serviceStrip === "canonical-footer-navigation" && hasSubstantiveServiceNavigation ? (
         <nav
           aria-label={context.activeLocale === "fi" ? "Palvelulinkit" : "Service links"}
           className={styles.serviceStrip}
           data-frame-region="service-strip"
+          data-service-link-count={serviceItems.length}
         >
-          {context.navigation.footer.slice(0, 3).map((item) => {
-            const href = navigationHref(item, context);
-            return href ? (
-              <a href={href} key={item.id}>
-                {localized(item.label, context)}
-              </a>
-            ) : null;
-          })}
+          {serviceItems.slice(0, 3).map(({ href, item }) => (
+            <a href={href} key={item.id}>
+              {localized(item.label, context)}
+            </a>
+          ))}
         </nav>
       ) : null}
-      <div className={styles.desktopFrame} data-desktop-composition={profile.desktopComposition}>
+      <div
+        className={styles.desktopFrame}
+        data-desktop-composition={profile.desktopComposition}
+        data-frame-region="desktop-header-layout"
+      >
         <a
           aria-label={`${brandName} ${context.activeLocale === "fi" ? "etusivu" : "home"}`}
           className={`store-brand ${styles.brand}`}
@@ -249,11 +259,11 @@ export function CommercialStoreHeader({
         <PrimaryNavigation context={context} label={primaryLabel} />
         <UtilityControls context={context} showCart={showCart} showSearch={showSearch} />
       </div>
-      <div className={styles.mobileFrame}>
+      <div className={styles.mobileFrame} data-frame-region="mobile-header-layout">
         <a className={`store-brand ${styles.brand}`} href={context.homePath ?? "/"}>
           {brandName}
         </a>
-        <UtilityControls context={context} showCart={false} showSearch={showSearch} />
+        <UtilityControls context={context} showCart={showCart} showSearch={showSearch} />
         <button
           aria-controls={menuId}
           aria-expanded={open}
@@ -271,7 +281,7 @@ export function CommercialStoreHeader({
           ref={triggerRef}
           type="button"
         >
-          {open ? "Close" : "Menu"}
+          {open ? closeLabel : menuLabel}
         </button>
       </div>
       {open ? (
@@ -279,6 +289,7 @@ export function CommercialStoreHeader({
           aria-label={mobileLabel}
           aria-modal={trapsFocus || undefined}
           className={styles.mobilePanel}
+          data-frame-region="mobile-navigation"
           data-mobile-mode={profile.mobileNavigationMode}
           id={menuId}
           onKeyDown={handleMenuKeyDown}
@@ -388,10 +399,12 @@ export function CommercialStoreFooter({
           : [brandRegion, informationRegion];
   return (
     <footer
-      className={`${styles.footer} ${className ?? ""}`}
+      className={`store-footer ${styles.footer} ${className ?? ""}`}
       data-footer-composition={profile.footerComposition}
+      data-footer-variant={profile.footerVariant}
       data-frame-profile={profile.id}
       data-frame-region="footer"
+      data-responsive-transformations={profile.responsiveTransformationIds.join(" ")}
     >
       {regions}
     </footer>

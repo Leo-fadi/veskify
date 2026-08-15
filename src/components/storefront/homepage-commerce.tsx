@@ -360,7 +360,7 @@ function SectionHeading({
 }) {
   if (!heading && !supportingCopy) return null;
   return (
-    <header className={styles.sectionHeading}>
+    <header className={styles.sectionHeading} data-region="section-heading">
       {heading ? <h2 id={id}>{text(heading, locale)}</h2> : null}
       {supportingCopy ? <p>{text(supportingCopy, locale)}</p> : null}
     </header>
@@ -447,6 +447,7 @@ export function HomepageHeroSection(input: HomepageCommerceRendererInput) {
       data-asset-id={media.asset.id}
       data-asset-provenance={media.provenance.kind}
       data-asset-role={media.role}
+      data-region="media"
     >
       <ImageAsset locale={locale} resolved={media} />
     </figure>
@@ -473,6 +474,7 @@ export function HomepageHeroSection(input: HomepageCommerceRendererInput) {
       data-overlay-contrast={props.overlayContrast}
       data-presentation-mode={anatomy.presentationMode}
       data-responsive-transformations={anatomy.responsiveTransformations}
+      data-surface={style.surface}
     >
       {isCampaignMerchandising ? (
         <>
@@ -589,6 +591,7 @@ export function HomepageFeaturedCollectionsSection(input: HomepageCommerceRender
       data-variant={instance.variant}
       data-render-target={input.target}
       data-responsive-layout="content-driven"
+      data-surface={style.surface}
     >
       <SectionHeading
         heading={content.heading}
@@ -600,6 +603,7 @@ export function HomepageFeaturedCollectionsSection(input: HomepageCommerceRender
         className={`${styles.collectionGrid} ${styles[`layout_${props.layout}`]}`}
         data-column-count={columnCount}
         data-item-count={collections.length}
+        data-region="collection-grid"
         style={{ "--homepage-columns": columnCount } as CSSProperties}
       >
         <CollectionCards
@@ -656,6 +660,7 @@ export function HomepageFeaturedProductsSection(input: HomepageCommerceRendererI
       data-variant={instance.variant}
       data-render-target={input.target}
       data-responsive-layout="product-type-independent"
+      data-surface={style.surface}
     >
       <SectionHeading
         heading={content.heading}
@@ -671,6 +676,7 @@ export function HomepageFeaturedProductsSection(input: HomepageCommerceRendererI
         <div
           className={`${styles.productGrid} ${styles[`layout_${props.layout}`]}`}
           data-item-count={products.length}
+          data-region="product-grid"
           style={{ "--homepage-columns": columnCount } as CSSProperties}
         >
           {products.map((product) => {
@@ -727,12 +733,14 @@ export function HomepageCollectionNavigationSection(input: HomepageCommerceRende
       data-variant={instance.variant}
       data-render-target={input.target}
       data-responsive-layout="content-driven"
+      data-surface={style.surface}
     >
       <SectionHeading heading={content.heading} id={headingId} locale={locale} />
       <div
         className={styles.collectionGrid}
         data-column-count={columnCount}
         data-item-count={collections.length}
+        data-region="collection-navigation-grid"
         style={{ "--homepage-columns": columnCount } as CSSProperties}
       >
         <CollectionCards
@@ -789,8 +797,12 @@ function EditorialSection({
       data-media-state={media ? "approved" : "omitted"}
       data-render-target={input.target}
       data-responsive-layout="content-driven"
+      data-surface={style.surface}
     >
-      <div className={`${styles.editorialCopy} ${styles[`align_${textAlignment}`]}`}>
+      <div
+        className={`${styles.editorialCopy} ${styles[`align_${textAlignment}`]}`}
+        data-region="content"
+      >
         <h2 id={`${instance.id}-heading`}>{text(heading, locale)}</h2>
         <p>{text(description, locale)}</p>
         <ActionButton
@@ -807,6 +819,7 @@ function EditorialSection({
           data-asset-id={media.asset.id}
           data-asset-provenance={media.provenance.kind}
           data-asset-role={media.role}
+          data-region="media"
         >
           <ImageAsset locale={locale} resolved={media} />
         </figure>
@@ -829,7 +842,7 @@ export function HomepagePromotionSection(input: HomepageCommerceRendererInput) {
     input,
     bindingSlot: "promotionAsset",
     assignmentSlot: "promotionMedia",
-    acceptedRoles: ["heroDesktop", "heroMobile", "editorialImage"],
+    acceptedRoles: ["collectionImage", "editorialImage", "heroDesktop", "heroMobile"],
   });
   return (
     <EditorialSection
@@ -866,6 +879,7 @@ function EditorialMediaGallery({
     <div
       className={`${styles.storyGallery} ${styles[`media_${position}`]}`}
       data-gallery-columns={Math.min(columns, assets.length)}
+      data-region="editorial-media"
       style={{ "--homepage-columns": Math.min(columns, assets.length) } as CSSProperties}
     >
       {assets.map((asset) => (
@@ -910,7 +924,10 @@ export function HomepageEditorialSection(input: HomepageCommerceRendererInput) {
     />
   );
   const copy = (
-    <div className={`${styles.editorialCopy} ${styles[`align_${props.textAlignment}`]}`}>
+    <div
+      className={`${styles.editorialCopy} ${styles[`align_${props.textAlignment}`]}`}
+      data-region="content"
+    >
       {content.eyebrow ? <p className={styles.eyebrow}>{text(content.eyebrow, locale)}</p> : null}
       <h2 id={`${instance.id}-heading`}>{text(content.heading, locale)}</h2>
       <p>{text(content.body, locale)}</p>
@@ -944,6 +961,7 @@ export function HomepageEditorialSection(input: HomepageCommerceRendererInput) {
       data-render-target={input.target}
       data-responsive-layout="governed-editorial"
       data-responsive-transformations={anatomy.responsiveTransformations}
+      data-surface={style.surface}
       data-variant={instance.variant}
     >
       {mediaFirst ? gallery : copy}
@@ -973,11 +991,13 @@ export function HomepageProofSection(input: HomepageCommerceRendererInput) {
       data-render-target={input.target}
       data-responsive-layout="governed-proof"
       data-responsive-transformations={anatomy.responsiveTransformations}
+      data-surface={style.surface}
       data-variant={instance.variant}
     >
       <SectionHeading heading={content.heading} id={headingId} locale={locale} />
       <div
         className={`${styles.proofGrid} ${styles[`align_${props.textAlignment}`]}`}
+        data-region="proof-grid"
         style={
           { "--homepage-columns": Math.min(props.columns, content.items.length) } as CSSProperties
         }
@@ -1033,10 +1053,12 @@ export function HomepageTrustSection(input: HomepageCommerceRendererInput) {
       data-variant={instance.variant}
       data-render-target={input.target}
       data-responsive-layout="content-driven"
+      data-surface={style.surface}
     >
       <SectionHeading heading={content.heading} id={headingId} locale={locale} />
       <div
         className={`${styles.trustGrid} ${styles[`align_${props.textAlignment}`]}`}
+        data-region="trust-grid"
         style={{ "--homepage-columns": props.columns } as CSSProperties}
       >
         {content.items.map((item) => (

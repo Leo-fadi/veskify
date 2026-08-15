@@ -277,67 +277,74 @@ describe("P10B-16P-02B exact extended synthesis decision", () => {
     expect(canonicalValueString(input.planningInput.draft)).toBe(draftBefore);
   });
 
-  it("preserves an omitted migrated related-product list as empty", () => {
+  it("preserves omitted and explicit-empty migrated related-product lists as empty", () => {
     const { source, authority, input } = exactInput();
     const retainedProductRoute = authority.routeInventory.find(({ kind }) => kind === "product");
     if (!retainedProductRoute || retainedProductRoute.kind !== "product") {
       throw new Error("Missing retained product-route fixture authority.");
     }
-    const routeInventory = authority.routeInventory.map((route) => {
-      if (route.id !== retainedProductRoute.id || route.kind !== "product") return route;
-      const { relatedProductIds: _relatedProductIds, ...withoutRelatedProducts } = route;
-      void _relatedProductIds;
-      return withoutRelatedProducts;
-    });
-    const { authorityFingerprint: _authorityFingerprint, ...authorityMaterial } = authority;
-    void _authorityFingerprint;
-    const retainedAuthority = createDynamicCommercePresentationAuthority({
-      ...authorityMaterial,
-      routeInventory,
-    });
-    const planningInput = {
-      ...input.planningInput,
-      draft: {
-        ...input.planningInput.draft,
-        dynamicCommercePresentation: retainedAuthority,
-      },
-    };
-    const siteMapDecision = {
-      ...input.siteMapDecision,
-      pages: input.siteMapDecision.pages.map((page) =>
-        page.familyId === "product-detail" &&
-        page.commerceContext.kind === "product" &&
-        page.commerceContext.productId === retainedProductRoute.productId
-          ? { ...page, existingPageId: retainedProductRoute.id }
-          : page,
-      ),
-    };
-    const retainedInput = {
-      ...input,
-      planningInput,
-      siteMapDecision,
-      dynamicCommerceSelection: {
-        ...input.dynamicCommerceSelection,
-        authorityFingerprint: retainedAuthority.authorityFingerprint,
-      },
-    };
-    const decision = createBoundedStorefrontSynthesisDecision(retainedInput);
-    const result = executeBoundedStorefrontSynthesis({
-      ...retainedInput,
-      decision,
-      pageEvidenceAuthority: source.pageEvidenceAuthority,
-      contentFactAuthority: source.contentFactAuthority,
-      approvedAssetPresentations: source.fixture.assetPresentations,
-    });
-    const finalRoute =
-      result.materialization.snapshot.dynamicCommercePresentation?.routeInventory.find(
-        ({ id }) => id === retainedProductRoute.id,
-      );
+    for (const relatedProductsMode of ["omitted", "explicit-empty"] as const) {
+      const routeInventory = authority.routeInventory.map((route) => {
+        if (route.id !== retainedProductRoute.id || route.kind !== "product") return route;
+        if (relatedProductsMode === "explicit-empty") {
+          return { ...route, relatedProductIds: [] };
+        }
+        const { relatedProductIds: _relatedProductIds, ...withoutRelatedProducts } = route;
+        void _relatedProductIds;
+        return withoutRelatedProducts;
+      });
+      const { authorityFingerprint: _authorityFingerprint, ...authorityMaterial } = authority;
+      void _authorityFingerprint;
+      const retainedAuthority = createDynamicCommercePresentationAuthority({
+        ...authorityMaterial,
+        routeInventory,
+      });
+      const planningInput = {
+        ...input.planningInput,
+        draft: {
+          ...input.planningInput.draft,
+          dynamicCommercePresentation: retainedAuthority,
+        },
+      };
+      const siteMapDecision = {
+        ...input.siteMapDecision,
+        pages: input.siteMapDecision.pages.map((page) =>
+          page.familyId === "product-detail" &&
+          page.commerceContext.kind === "product" &&
+          page.commerceContext.productId === retainedProductRoute.productId
+            ? { ...page, existingPageId: retainedProductRoute.id }
+            : page,
+        ),
+      };
+      const retainedInput = {
+        ...input,
+        planningInput,
+        siteMapDecision,
+        dynamicCommerceSelection: {
+          ...input.dynamicCommerceSelection,
+          authorityFingerprint: retainedAuthority.authorityFingerprint,
+        },
+      };
+      const decision = createBoundedStorefrontSynthesisDecision(retainedInput);
+      const result = executeBoundedStorefrontSynthesis({
+        ...retainedInput,
+        decision,
+        pageEvidenceAuthority: source.pageEvidenceAuthority,
+        contentFactAuthority: source.contentFactAuthority,
+        approvedAssetPresentations: source.fixture.assetPresentations,
+      });
+      const finalRoute =
+        result.materialization.snapshot.dynamicCommercePresentation?.routeInventory.find(
+          ({ id }) => id === retainedProductRoute.id,
+        );
 
-    expect(finalRoute).toMatchObject({ id: retainedProductRoute.id, kind: "product" });
-    expect(finalRoute?.kind === "product" ? (finalRoute.relatedProductIds ?? []) : null).toEqual(
-      [],
-    );
+      expect(finalRoute).toMatchObject({ id: retainedProductRoute.id, kind: "product" });
+      expect({
+        relatedProductsMode,
+        relatedProductIds:
+          finalRoute?.kind === "product" ? (finalRoute.relatedProductIds ?? []) : null,
+      }).toEqual({ relatedProductsMode, relatedProductIds: [] });
+    }
   });
 
   it("fails closed for mismatched profile, stale dynamic authority, or replay without selections", () => {

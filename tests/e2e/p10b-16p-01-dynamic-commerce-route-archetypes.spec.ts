@@ -142,27 +142,45 @@ test("representative product and collection choices remain transient editor cont
 
   await pageSelector.selectOption("archetype_pdp_high_consideration");
   const defaultProductRoute = await representative.inputValue();
-  await expect(representative.locator("option")).toHaveText([
-    /Arc Studs — \/products\/arc-studs/,
-    /Custom Halo Ring — \/products\/custom-halo-ring/,
-  ]);
-  await representative.selectOption({
-    label: "Custom Halo Ring — /products/custom-halo-ring",
+  const productRoutes = await representative
+    .locator("option")
+    .evaluateAll((options) =>
+      Object.fromEntries(
+        options.map((option) => [option.textContent?.trim(), option.getAttribute("data-route")]),
+      ),
+    );
+  expect(productRoutes).toEqual({
+    "Arc Studs": "/products/arc-studs",
+    "Custom Halo Ring": "/products/custom-halo-ring",
   });
+  await representative.selectOption({ label: "Custom Halo Ring" });
+  await expect(page.getByTestId("representative-route-path")).toHaveText(
+    "/products/custom-halo-ring",
+  );
   await expect(productCanvas.getByRole("heading", { name: "Custom Halo Ring" })).toBeVisible();
-  await expect(productCanvas.getByRole("region", { name: "Choose your details" })).toBeVisible();
-  await expect(productCanvas.getByRole("group", { name: /Ring size/ })).toBeVisible();
+  await expect(productCanvas.getByRole("region", { name: "Choose product options" })).toBeVisible();
+  const ringSizeGroups = productCanvas.getByRole("group", { name: /Ring size/ });
+  await expect(ringSizeGroups).toHaveCount(2);
+  await expect(ringSizeGroups.first()).toBeVisible();
   await expect(productCanvas.getByRole("textbox", { name: /Engraving/ })).toBeVisible();
   await expect(page.getByRole("button", { name: "Save draft" })).toBeDisabled();
 
   await pageSelector.selectOption("archetype_collection_editorial");
   const collectionRepresentative = page.locator("#dynamic-commerce-representative-route");
   await expect(collectionRepresentative.locator("option")).toHaveCount(2);
-  await expect(collectionRepresentative).toContainText("Jewellery — /collections/jewellery");
-  await expect(collectionRepresentative).toContainText("Gifts — /collections/gifts");
-  await collectionRepresentative.selectOption({
-    label: "Gifts — /collections/gifts",
+  const collectionRoutes = await collectionRepresentative
+    .locator("option")
+    .evaluateAll((options) =>
+      Object.fromEntries(
+        options.map((option) => [option.textContent?.trim(), option.getAttribute("data-route")]),
+      ),
+    );
+  expect(collectionRoutes).toEqual({
+    Gifts: "/collections/gifts",
+    Jewellery: "/collections/jewellery",
   });
+  await collectionRepresentative.selectOption({ label: "Gifts" });
+  await expect(page.getByTestId("representative-route-path")).toHaveText("/collections/gifts");
   const collectionCanvas = page.getByLabel("Visual editor canvas").frameLocator("iframe");
   await expect(collectionCanvas.getByRole("heading", { name: "Gifts" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Save draft" })).toBeDisabled();

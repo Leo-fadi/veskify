@@ -194,5 +194,6 @@ export function IntegratedDynamicProductDetail(input: IntegratedDynamicProductDe
       settle(controller.reset());
     },
     onPrimaryAction: input.onPrimaryAction,
+    onNavigateProduct: input.onNavigateProduct,
   });
 }

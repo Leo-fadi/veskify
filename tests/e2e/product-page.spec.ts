@@ -15,9 +15,9 @@ test("loads the bilingual Aurora product draft with visual-only controls", async
   await expect(page.getByRole("heading", { level: 1, name: "Aurora Ring 585" })).toBeVisible();
   await expect(page.getByText("Yellow gold", { exact: true })).toBeVisible();
   await expect(page.getByText("14K", { exact: true })).toBeVisible();
-  await expect(page.getByText("1 290 €")).toBeVisible();
+  await expect(page.getByText("€1,290")).toBeVisible();
   await expect(page.getByRole("button", { name: "Add to cart", exact: true })).toBeVisible();
-  await expect(page.getByText(/0\/20 characters.*Allowed length: 0-20 characters/)).toBeVisible();
+  await expect(page.getByText(/0\/20 characters.*Enter 0-20 characters/)).toBeVisible();
   await expect(page.getByRole("heading", { name: "Lumi Halo Ring" })).toBeVisible();
   await expect(page.locator('[data-component="dynamicProductDetail"]')).toBeVisible();
   const gallery = page.getByRole("region", { name: "Product gallery" });

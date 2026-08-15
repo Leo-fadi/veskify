@@ -1,18 +1,30 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { CollectionPreviewClient } from "./collection-preview-client";
 import { ProjectPreviewClient } from "../../project-preview-client";
 import { loadP10bLiveSynthesisPreviewSession } from "@/integrations/ai/p10b-live-synthesis-acceptance-authority.server";
 import { loadP10B16P03CurrentEvidenceReferences } from "@/integrations/ai/prompted-storefront-studio-authority.server";
+import {
+  loadP10B16P04CurrentEvidenceReferences,
+  loadP10B16P04ProposalPreviewAuthority,
+} from "@/integrations/ai/p10b-16p-04-real-studio-acceptance-authority.server";
 
 export default async function CollectionPage({
   params,
   searchParams,
 }: {
   params: Promise<{ projectId: string; collectionSlug: string }>;
-  searchParams: Promise<{ "p10b-16l-session"?: string }>;
+  searchParams: Promise<{
+    "p10b-16l-session"?: string;
+    "p10b-16p-04-proposal"?: string;
+  }>;
 }) {
   const { projectId, collectionSlug } = await params;
-  const sessionId = (await searchParams)["p10b-16l-session"];
+  const httpHeaders = await headers();
+  const query = await searchParams;
+  const sessionId = query["p10b-16l-session"];
+  const proposalFingerprint = query["p10b-16p-04-proposal"];
+  if (sessionId && proposalFingerprint) notFound();
   const bridge = sessionId
     ? await loadP10bLiveSynthesisPreviewSession({ projectId, sessionId }).catch(() => null)
     : null;
@@ -28,12 +40,28 @@ export default async function CollectionPage({
       />
     );
   }
-  const initialEvidenceReferences = await loadP10B16P03CurrentEvidenceReferences({ projectId });
+  const proposalAggregate = proposalFingerprint
+    ? loadP10B16P04ProposalPreviewAuthority({
+        projectId,
+        candidateFingerprint: proposalFingerprint,
+        httpHeaders,
+      })
+    : undefined;
+  if (proposalFingerprint && !proposalAggregate) notFound();
+  const initialEvidenceReferences =
+    loadP10B16P04CurrentEvidenceReferences({ projectId, httpHeaders }) ??
+    (await loadP10B16P03CurrentEvidenceReferences({ projectId }));
   return (
     <CollectionPreviewClient
       projectId={projectId}
       collectionSlug={collectionSlug}
       initialEvidenceReferences={initialEvidenceReferences}
+      {...(proposalAggregate
+        ? {
+            initialAggregate: proposalAggregate,
+            proposalCandidateFingerprint: proposalFingerprint,
+          }
+        : {})}
     />
   );
 }

@@ -12,8 +12,8 @@ test("loads the persisted rings collection and operates bilingual demo controls 
   await expect(page.getByRole("heading", { level: 1, name: "Rings" })).toBeVisible();
   await expect(page.getByText("Aurora Ring 585").first()).toBeVisible();
   await expect(page.getByText("Lumi Halo Ring")).toBeVisible();
-  await expect(page.getByText("1 290 €")).toBeVisible();
-  await expect(page.getByText("1 890 €")).toBeVisible();
+  await expect(page.getByText("€1,290")).toBeVisible();
+  await expect(page.getByText("€1,890")).toBeVisible();
   const commerce = page.locator('[data-component="dynamicCollectionCommerce"]');
   await expect(commerce).toBeVisible();
   const productCards = commerce.getByRole("article");

@@ -1,6 +1,7 @@
 import {
   brandSystemSchema,
   migrateLegacyFoundationToDesignDna,
+  premiumEditorialDesignDna,
   premiumVisualPresets,
   type BrandSystem,
 } from "@/domain/design-system";
@@ -71,8 +72,18 @@ export function registeredBrandSystemForDirection(
       imageTreatment: visualImageTreatmentByTreatment[selected.imageTreatmentId],
     },
   });
+  const migratedDesignDna = migrateLegacyFoundationToDesignDna(materialized);
+  const designDna =
+    directionId === "premiumEditorial" &&
+    selected.spacingDensity === "spacious" &&
+    selected.surfaceDepth === "layered"
+      ? {
+          ...structuredClone(premiumEditorialDesignDna),
+          colour: structuredClone(migratedDesignDna.colour),
+        }
+      : migratedDesignDna;
   return brandSystemSchema.parse({
     ...materialized,
-    designDna: migrateLegacyFoundationToDesignDna(materialized),
+    designDna,
   });
 }

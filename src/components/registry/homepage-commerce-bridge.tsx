@@ -308,9 +308,16 @@ function projectionFor(
             alt: presentation.asset.alt,
             decorative: presentation.asset.decorative,
           }),
-      provenance: { kind: "merchantProvided", sourceId: placement.sourceReferenceId },
+      provenance: {
+        kind:
+          placement.sourceProvenanceKind === "merchantProvided"
+            ? "merchantProvided"
+            : "sourceDiscovered",
+        sourceId: placement.sourceReferenceId,
+      },
       approvalStatus: "approved",
-      usageRights: "merchantOwned",
+      usageRights:
+        placement.sourceProvenanceKind === "merchantProvided" ? "merchantOwned" : "unknown",
       responsiveCrops: [],
       ...(presentation?.artDirection === undefined
         ? {}

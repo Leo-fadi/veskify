@@ -88,7 +88,7 @@ describe("P10B-16P-02B dynamic-commerce proposal lifecycle", () => {
         proposal.originalStorefront.dynamicCommercePresentation?.authorityFingerprint,
     });
     expect(proposal.proposedStorefront.dynamicCommercePresentation).toEqual(
-      snapshot.dynamicCommercePresentation,
+      operation.operation.presentation,
     );
     expect(
       Object.fromEntries(
@@ -105,13 +105,14 @@ describe("P10B-16P-02B dynamic-commerce proposal lifecycle", () => {
       product_rule_simple: roleSelection.standardSimpleArchetypeId,
     });
     expect(validateWholeStorefrontProposal(proposal, currentInput)).toEqual(proposal);
-    expect(
-      materializeWholeStorefrontRuntimeSnapshot({
-        runtime: proposal.proposedStorefront,
-        planningInput,
-        approvedAssetPresentations: source.fixture.assetPresentations,
-      }).dynamicCommercePresentation,
-    ).toEqual(snapshot.dynamicCommercePresentation);
+    const materializedProposal = materializeWholeStorefrontRuntimeSnapshot({
+      runtime: proposal.proposedStorefront,
+      planningInput,
+      approvedAssetPresentations: source.fixture.assetPresentations,
+    });
+    expect(materializedProposal.dynamicCommercePresentation).toEqual(
+      snapshot.dynamicCommercePresentation,
+    );
 
     const coordinator = new WholeStorefrontProposalAcceptanceCoordinator({
       proposal,
@@ -122,6 +123,13 @@ describe("P10B-16P-02B dynamic-commerce proposal lifecycle", () => {
     expect(accepted.activeStorefront.dynamicCommercePresentation).toEqual(
       proposal.proposedStorefront.dynamicCommercePresentation,
     );
+    expect(
+      materializeWholeStorefrontRuntimeSnapshot({
+        runtime: accepted.activeStorefront,
+        planningInput,
+        approvedAssetPresentations: source.fixture.assetPresentations,
+      }).dynamicCommercePresentation,
+    ).toEqual(snapshot.dynamicCommercePresentation);
     expect(coordinator.undo()?.dynamicCommercePresentation).toEqual(
       proposal.originalStorefront.dynamicCommercePresentation,
     );

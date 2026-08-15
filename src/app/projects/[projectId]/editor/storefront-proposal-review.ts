@@ -290,16 +290,16 @@ export function createStorefrontProposalReview(
     ? {
         heading:
           locale === "fi"
-            ? "Kanoninen dynaamisten kauppareittien yhdistäminen"
-            : "Canonical dynamic-commerce route convergence",
+            ? "Yhtenäinen verkkokaupan sivuilme"
+            : "Coordinated storefront page design",
         summary:
           locale === "fi"
-            ? `${migratedAwayPageIds.size} tuotteen, kokoelman ja haun reittikohtaista ulkoasua yhdistetään ${archetypeCount} uudelleenkäytettäväksi ulkoasumalliksi. ${migrationAuthority.routeInventory.length} kauppareittiä säilyy ajonaikaisena reittivaltuutena, eikä niitä muuteta erillisiksi muokattaviksi sivuiksi.`
-            : `${migratedAwayPageIds.size} product, collection, and search route-specific designs converge into ${archetypeCount} reusable design archetypes. ${migrationAuthority.routeInventory.length} commerce routes remain runtime route authority and do not become separately editable pages.`,
+            ? `${migratedAwayPageIds.size} tuote-, kokoelma- ja hakusivun ilmeet yhtenäistetään ${archetypeCount} uudelleenkäytettäväksi kaupan asetteluksi. ${migrationAuthority.routeInventory.length} tuote-, kokoelma- ja hakusivua säilyttävät omat sisältönsä ilman erillisiä muokattavia sivuja.`
+            : `${migratedAwayPageIds.size} product, collection, and search page designs are coordinated into ${archetypeCount} reusable shopping layouts. ${migrationAuthority.routeInventory.length} product, collection, and search pages keep their own content without becoming separate editable pages.`,
         protectedBindingSummary:
           locale === "fi"
-            ? "Tuotteiden ja kokoelmien identiteetit, kokoelmien tarkka tuotejärjestys, hinnat, saatavuus, varasto, vaihtoehdot ja kanoninen tuotemedia pysyvät suojattuina Vesko-kauppasidoksina."
-            : "Product and collection identities, exact ordered collection membership, prices, availability, stock, options, and canonical product media remain protected Vesko commerce bindings.",
+            ? "Tuotteet, kokoelmat, kokoelmien järjestys, hinnat, saatavuus, varasto, valinnat ja tuotekuvat säilyvät ennallaan."
+            : "Products, collections, collection order, prices, availability, stock, options, and product imagery stay unchanged.",
         staticPageCount: proposal.proposedStorefront.pages.length,
         collectionSearchArchetypeCount,
         productDetailArchetypeCount,
@@ -320,16 +320,15 @@ export function createStorefrontProposalReview(
     : null;
   const canonicalGeneration = canonicalGenerationAuthority
     ? {
-        heading:
-          locale === "fi" ? "Kanoninen koottu verkkokauppa" : "Complete storefront generation",
+        heading: locale === "fi" ? "Koko verkkokaupan ehdotus" : "Complete storefront proposal",
         summary:
           locale === "fi"
-            ? `${proposal.proposedStorefront.pages.length} staattista sivua ja ${canonicalGenerationAuthority.collectionSearchArchetypes.length + canonicalGenerationAuthority.productDetailArchetypes.length} uudelleenkäytettävää kaupan ulkoasumallia korvaavat raakalähtötilan yhtenä atomisena ehdotuksena.`
-            : `${proposal.proposedStorefront.pages.length} static pages and ${canonicalGenerationAuthority.collectionSearchArchetypes.length + canonicalGenerationAuthority.productDetailArchetypes.length} reusable commerce design archetypes replace the raw starting state as one atomic proposal.`,
+            ? `${proposal.proposedStorefront.pages.length} verkkokaupan sivua ja ${canonicalGenerationAuthority.collectionSearchArchetypes.length + canonicalGenerationAuthority.productDetailArchetypes.length} uudelleenkäytettävää kaupan asettelua korvaavat nykyisen lähtöilmeen yhtenä kokonaisena ehdotuksena.`
+            : `${proposal.proposedStorefront.pages.length} storefront pages and ${canonicalGenerationAuthority.collectionSearchArchetypes.length + canonicalGenerationAuthority.productDetailArchetypes.length} reusable shopping layouts replace the current starting design as one complete proposal.`,
         protectedBindingSummary:
           locale === "fi"
-            ? "Tuotteet, kokoelmat, hinnat, saatavuus, varasto, vaihtoehdot ja kanoninen tuotemedia pysyvät suojattuna Vesko-auktoriteettina."
-            : "Products, collections, prices, availability, stock, options, and canonical product media remain protected Vesko authority.",
+            ? "Tuotteet, kokoelmat, hinnat, saatavuus, varasto, valinnat ja tuotekuvat säilyvät ennallaan."
+            : "Products, collections, prices, availability, stock, options, and product imagery stay unchanged.",
         staticPageCount: proposal.proposedStorefront.pages.length,
         collectionSearchArchetypeCount:
           canonicalGenerationAuthority.collectionSearchArchetypes.length,
@@ -346,12 +345,12 @@ export function createStorefrontProposalReview(
       : `Homepage proposal · ${pageOperationCount} planned layout ${pageOperationCount === 1 ? "change" : "changes"}`
     : canonicalGeneration
       ? locale === "fi"
-        ? `Verkkokauppaehdotus · ${canonicalGeneration.staticPageCount} staattista sivua · ${canonicalGeneration.archetypeCount} kaupan ulkoasumallia`
-        : `Storefront proposal · ${canonicalGeneration.staticPageCount} static pages · ${canonicalGeneration.archetypeCount} commerce design archetypes`
+        ? `Verkkokauppaehdotus · ${canonicalGeneration.staticPageCount} sivua · ${canonicalGeneration.archetypeCount} uudelleenkäytettävää kaupan asettelua`
+        : `Storefront proposal · ${canonicalGeneration.staticPageCount} pages · ${canonicalGeneration.archetypeCount} reusable shopping layouts`
       : dynamicCommerceConvergence
         ? locale === "fi"
-          ? `Verkkokauppaehdotus · ${dynamicCommerceConvergence.staticPageCount} staattista sivua · ${dynamicCommerceConvergence.archetypeCount} kaupan ulkoasumallia`
-          : `Storefront proposal · ${dynamicCommerceConvergence.staticPageCount} static pages · ${dynamicCommerceConvergence.archetypeCount} commerce design archetypes`
+          ? `Verkkokauppaehdotus · ${dynamicCommerceConvergence.staticPageCount} sivua · ${dynamicCommerceConvergence.archetypeCount} uudelleenkäytettävää kaupan asettelua`
+          : `Storefront proposal · ${dynamicCommerceConvergence.staticPageCount} pages · ${dynamicCommerceConvergence.archetypeCount} reusable shopping layouts`
         : locale === "fi"
           ? `Verkkokauppaehdotus · ${pageOperationCount} sivumuutosta${globalOperationCount > 0 ? ` · ${globalOperationCount} yhteisen ilmeen muutosta` : ""}`
           : `Storefront proposal · ${pageOperationCount} page ${pageOperationCount === 1 ? "change" : "changes"}${globalOperationCount > 0 ? ` · ${globalOperationCount} shared design ${globalOperationCount === 1 ? "change" : "changes"}` : ""}`;
@@ -388,12 +387,12 @@ export function createStorefrontProposalReview(
         : "This updates only the homepage as one unsaved draft change. You can undo the change in one step."
       : canonicalGeneration
         ? locale === "fi"
-          ? "Tämä korvaa raakalähtötilan kootulla brändijärjestelmällä, yhteisellä kehyksellä, staattisilla sivuilla ja uudelleenkäytettävillä kaupan ulkoasumalleilla yhtenä tallentamattomana luonnosmuutoksena. Suojattu Vesko-kauppatotuus säilyy muuttumattomana, ja voit kumota koko muutoksen yhdellä toiminnolla."
-          : "This replaces the raw starting state with the complete brand design, shared layout, static pages, and reusable commerce design archetypes as one unsaved draft change. Protected Vesko commerce truth remains unchanged, and you can undo the complete change in one step."
+          ? "Tämä korvaa nykyisen lähtöilmeen valmiilla brändi-ilmeellä, yhteisellä asettelulla, verkkokaupan sivuilla ja uudelleenkäytettävillä kaupan asetteluilla yhtenä tallentamattomana luonnosmuutoksena. Tuote-, kokoelma-, hinta-, saatavuus-, varasto-, valinta- ja kuvasi säilyvät ennallaan. Voit kumota koko muutoksen yhdellä toiminnolla."
+          : "This replaces the current starting design with the complete brand design, shared layout, storefront pages, and reusable shopping layouts as one unsaved draft change. Your product, collection, price, availability, stock, option, and product imagery details stay unchanged. You can undo the complete change in one step."
         : dynamicCommerceConvergence
           ? locale === "fi"
-            ? "Tämä ottaa staattiset sivut ja uudelleenkäytettävät kaupan ulkoasumallit käyttöön yhtenä tallentamattomana luonnosmuutoksena. Reittikohtaiset sivut yhdistyvät kanoniseen rakenteeseen, ja suojatut Vesko-kauppasidokset säilyvät muuttumattomina. Voit kumota koko muutoksen yhdellä toiminnolla."
-            : "This applies the static pages and reusable commerce design archetypes as one unsaved draft change. Route-specific pages converge into the canonical structure while protected Vesko commerce bindings remain unchanged. You can undo the complete change in one step."
+            ? "Tämä ottaa verkkokaupan sivut ja uudelleenkäytettävät kaupan asettelut käyttöön yhtenä tallentamattomana luonnosmuutoksena. Tuote- ja kokoelmasivut saavat yhtenäisen ilmeen, mutta niiden tuote- ja kokoelmatiedot säilyvät ennallaan. Voit kumota koko muutoksen yhdellä toiminnolla."
+            : "This applies the storefront pages and reusable shopping layouts as one unsaved draft change. Product and collection pages share a consistent design while their product and collection details stay unchanged. You can undo the complete change in one step."
           : locale === "fi"
             ? "Tämä päivittää tarkistuksessa luetellut sivut ja yhteisen ilmeen muutokset yhtenä tallentamattomana luonnosmuutoksena. Voit kumota koko muutoksen yhdellä toiminnolla."
             : "This updates the pages and shared design changes listed in the review as one unsaved draft change. You can undo the complete change in one step.",

@@ -51,8 +51,8 @@ terminal/demo generation
 ```
 
 P10B-16P-03 does not use the P10B-16L session token, query parameter, executable-intent selector,
-proposal injection, or controlled composer state. P10B-16L remains compatibility evidence pending
-the explicit P10B-16P-04 disposition.
+proposal injection, or controlled composer state. P10B-16P-04 subsequently classified P10B-16L as
+Deprecated compatibility-only infrastructure.
 
 Reusable authorities retained by the normal journey are:
 
@@ -288,18 +288,18 @@ commercial visual-quality claim.
 
 ## 11. Status and next acceptance
 
-P10B-16P-01, P10B-16P-02A, P10B-16P-02B, P10B-16P-02, and P10B-16P-03 are **Baseline**. P10B
-remains **Partial**. P10B-16P-04, P10B-17, and P10B-18 remain **Planned**.
+P10B-16P-01, P10B-16P-02A, P10B-16P-02B, P10B-16P-02, P10B-16P-03, and P10B-16P-04 are
+**Baseline**. P10B remains **Partial**. P10B-17 and P10B-18 remain **Planned**.
 
-No real Design Intent V2 provider call occurred in P10B-16P-03. Search execution remains
-unavailable, and commercial visual quality remains unaccepted.
+No real Design Intent V2 provider call occurred in P10B-16P-03 itself. Search execution remains
+unavailable.
 
-The exact next manual acceptance is:
-
-> Open the raw merchant project in Storefront Studio, type three prompts, and generate materially
-> different storefronts through the real OpenAI Design Intent V2 provider.
-
-That work belongs only to P10B-16P-04 and requires separate explicit provider authorization.
+P10B-16P-04 subsequently completed the separately authorized real-provider acceptance through the
+normal production-disabled Studio path. Its three final Prompt A/B/C calls produced materially
+different exact structures; A and B were rejected without draft/history mutation, and C completed
+Accept, Undo/Redo, Save, reload, and normal Preview with publication kept separate. The cumulative
+P10B-16P-04 ledger is 16 calls with zero retry or fallback. See
+[`P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md`](P10B_16P_04_REAL_STUDIO_DESIGN_INTENT_ACCEPTANCE.md).
 
 ## 12. Explicit non-goals
 

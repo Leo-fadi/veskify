@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
@@ -19,7 +19,7 @@ import type {
   StorefrontAssetMetadata,
 } from "@/domain/component-platform";
 import { createResponsiveImageAuthority } from "@/domain/asset-presentation";
-import { canonicalValueFingerprint } from "@/domain/storefront";
+import { canonicalValueFingerprint, canonicalValueString } from "@/domain/storefront";
 
 const localized = (en: string, fi = en) => ({ en, fi });
 
@@ -483,7 +483,7 @@ describe("P6-02 dynamic product-detail component family", () => {
     expect(engraving).toHaveAttribute("maxlength", "20");
     expect(engraving).toHaveAttribute("minlength", "2");
     expect(engraving).toHaveAccessibleDescription(
-      /8\/20 characters.*Allowed length: 2-20.*letters, numbers, spaces and common punctuation/i,
+      /8\/20 characters.*Enter 2-20.*letters, numbers, spaces and common punctuation/i,
     );
     expect(screen.queryByText(/lettersNumbersAndSpaces/i)).not.toBeInTheDocument();
     fireEvent.change(engraving, { target: { value: "LF 2026" } });
@@ -756,6 +756,79 @@ describe("P6-02 dynamic product-detail component family", () => {
     );
   });
 
+  it("deduplicates identical presentation sources without mutating canonical media authority", () => {
+    const before = canonicalValueString(ringProduct.media);
+    const { container } = render(
+      renderDynamicProductDetail(
+        rendererInput(ringProduct, {
+          resolveAssetUrl: (assetId) =>
+            assetId === "asset_ring_main" || assetId === "asset_ring_side"
+              ? "/seed-assets/shared-ring.svg"
+              : `/seed-assets/${assetId}.svg`,
+        }),
+      ),
+    );
+
+    const gallery = container.querySelector('[aria-label="Product gallery"]');
+    expect(gallery).toHaveAttribute("data-canonical-media-count", "2");
+    expect(gallery).toHaveAttribute("data-presented-media-count", "1");
+    expect(screen.queryByRole("group", { name: "Choose product image" })).not.toBeInTheDocument();
+    expect(canonicalValueString(ringProduct.media)).toBe(before);
+  });
+
+  it("keeps high-consideration identity and actions in one opening purchase region", () => {
+    const input = rendererInput(ringProduct, {
+      instance: instance(ringProduct, {
+        variant: "editorialSplit",
+        content: dynamicProductDetailDefaultContent,
+      }),
+    });
+    const { container } = render(renderDynamicProductDetail(input));
+
+    const opening = container.querySelector('[data-purchase-region="opening"]');
+    expect(opening).toHaveAttribute("data-layout-region", "product-purchase-hierarchy");
+    expect(within(opening as HTMLElement).getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Aurora ring",
+    );
+    expect(
+      within(opening as HTMLElement).getByRole("heading", { name: "Choose product options" }),
+    ).toBeVisible();
+    expect(
+      within(opening as HTMLElement).getByRole("region", { name: "Purchase action" }),
+    ).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Specifications" })).toBeVisible();
+    expect(container.querySelectorAll("details[data-attribute-count]").length).toBeGreaterThan(0);
+    const disclosure = screen.getByLabelText("Materials");
+    expect(disclosure.tagName).toBe("SUMMARY");
+    expect(disclosure).toHaveAccessibleName("Materials");
+    disclosure.focus();
+    expect(disclosure).toHaveFocus();
+  });
+
+  it("emits exact related-product navigation without mutating commerce or media", async () => {
+    const user = userEvent.setup();
+    const onNavigateProduct = vi.fn();
+    const before = canonicalValueString({ product: ringProduct, relatedProduct: relatedRing });
+    const { container } = render(
+      renderDynamicProductDetail(rendererInput(ringProduct, { onNavigateProduct })),
+    );
+
+    const relatedCard = container.querySelector('[data-product-id="product_related_ring"]');
+    if (!(relatedCard instanceof HTMLElement))
+      throw new Error("Expected one related-product card.");
+    await user.click(within(relatedCard).getByRole("button", { name: "View product" }));
+
+    expect(onNavigateProduct).toHaveBeenCalledTimes(1);
+    expect(onNavigateProduct).toHaveBeenCalledWith({
+      type: "navigateToProduct",
+      productId: "product_related_ring",
+      catalogueRevision: "product-rev-related",
+    });
+    expect(canonicalValueString({ product: ringProduct, relatedProduct: relatedRing })).toBe(
+      before,
+    );
+  });
+
   it("emits one typed primary-action intent without performing commerce mutations", async () => {
     const user = userEvent.setup();
     const onPrimaryAction = vi.fn();
@@ -925,8 +998,8 @@ describe("P6-02 dynamic product-detail component family", () => {
     const policies = [
       {
         policy: "unicodeText" as const,
-        en: "control characters are not allowed",
-        fi: "ohjausmerkkejä ei sallita",
+        en: "standard symbols",
+        fi: "tavallisia symboleita",
       },
       {
         policy: "lettersAndSpaces" as const,

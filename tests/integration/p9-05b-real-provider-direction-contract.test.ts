@@ -111,6 +111,10 @@ describe("P9-05B real-provider direction contract", () => {
             type: "APPLY_REGISTERED_BRAND_SYSTEM",
             directionId,
             brandSystem: expectedBrandSystem,
+            designSystemNarrowing: {
+              spacingDensity: generated.plan.designSystemSelection.spacingDensity,
+              surfaceDepth: generated.plan.designSystemSelection.surfaceDepth,
+            },
           },
         }),
       );

@@ -1,6 +1,12 @@
-import { componentInstanceV2Schema, type ComponentInstanceV2 } from "@/domain/component-platform";
+import {
+  componentInstanceV2Schema,
+  type ComponentInstanceV2,
+  type ComponentProjectionContext,
+} from "@/domain/component-platform";
 import {
   canonicalValueString,
+  type ApprovedAssetPlacementOperation,
+  type ApprovedAssetPresentation,
   type ContentSupportFactDocument,
   type PageModel,
   type SectionInstance,
@@ -12,6 +18,7 @@ import {
 } from "@/components/storefront/homepage-commerce";
 import {
   defineComponent,
+  resolveStorefrontNavigationPath,
   type ComponentDefinition,
   type StorefrontRenderContext,
 } from "./contract";
@@ -23,8 +30,10 @@ import {
   contentSupportPropsSchema,
   contentSupportStyleOverridesSchema,
   contentSupportVariantSchema,
+  type ContentSupportProps,
   type ContentSupportStyleOverrides,
 } from "./content-support";
+import { homepageEditorialDefinition, homepagePromotionDefinition } from "./homepage-commerce";
 import { veskifyComponentRegistryV2 } from "./v2-registry";
 import styles from "@/components/storefront/content-support.module.css";
 
@@ -89,13 +98,91 @@ function assertDocumentLocales(
   visit(document.payload);
 }
 
-function projectionFor(context: StorefrontRenderContext) {
+type ResolvedContentSupportMedia = Readonly<{
+  placement: ApprovedAssetPlacementOperation;
+  presentation: ApprovedAssetPresentation;
+}>;
+
+function resolvedContentSupportMedia(
+  sectionId: string,
+  placements: readonly ApprovedAssetPlacementOperation[],
+  presentations: readonly ApprovedAssetPresentation[],
+): ResolvedContentSupportMedia | null {
+  const relevantPlacements = placements.filter(
+    (placement) =>
+      placement.componentId === sectionId && placement.componentType === "contentSupport",
+  );
+  if (relevantPlacements.length === 0) {
+    if (presentations.length > 0) {
+      throw new Error("Content/support asset presentation requires one exact approved placement.");
+    }
+    return null;
+  }
+  if (relevantPlacements.length !== 1) {
+    throw new Error("Content/support rendering requires at most one approved editorial asset.");
+  }
+  const placement = relevantPlacements[0];
+  if (
+    !placement ||
+    placement.assetSlotId !== "contentSupportMedia" ||
+    placement.role !== "editorialImage"
+  ) {
+    throw new Error("Content/support media is incompatible with registered asset authority.");
+  }
+  const matchingPresentations = presentations.filter(
+    (presentation) => presentation.assetId === placement.assetId,
+  );
+  const presentation = matchingPresentations[0];
+  if (
+    matchingPresentations.length !== 1 ||
+    !presentation ||
+    presentation.asset.id !== placement.assetId ||
+    presentation.role !== placement.role ||
+    presentation.revision !== placement.assetRevision ||
+    presentation.materialFingerprint !== placement.materialFingerprint
+  ) {
+    throw new Error("Content/support media has no exact current presentation authority.");
+  }
+  return { placement, presentation };
+}
+
+function projectionFor(
+  context: StorefrontRenderContext,
+  media: ResolvedContentSupportMedia | null = null,
+): ComponentProjectionContext {
   const documents = context.contentSupportFactDocuments ?? [];
   const revision = `catalogue-${context.catalogue.id}`;
   return {
     products: [],
     collections: [],
-    assets: [],
+    assets: media
+      ? [
+          {
+            assetId: media.presentation.assetId,
+            role: media.presentation.role,
+            ...(media.presentation.asset.alt === undefined
+              ? { decorative: media.presentation.asset.decorative }
+              : {
+                  alt: media.presentation.asset.alt,
+                  decorative: media.presentation.asset.decorative,
+                }),
+            provenance: {
+              kind: media.placement.sourceProvenanceKind ?? "sourceDiscovered",
+              sourceId: media.placement.sourceReferenceId,
+            },
+            approvalStatus: "approved",
+            usageRights:
+              media.placement.sourceProvenanceKind === "merchantProvided"
+                ? "merchantOwned"
+                : "unknown",
+            responsiveCrops: [],
+            ...(media.presentation.artDirection
+              ? { artDirection: media.presentation.artDirection }
+              : {}),
+            revision: media.presentation.revision,
+          },
+        ]
+      : [],
     navigation: [],
     projectBrandContexts: [
       { projectId: `project_${context.catalogue.id}`, brandSystemRefs: [], revision },
@@ -115,10 +202,22 @@ function instanceFor(
   content: unknown,
   props: unknown,
   styleOverrides: SectionInstance["styleOverrides"],
+  approvedAssetPlacements: readonly ApprovedAssetPlacementOperation[],
+  approvedAssetPresentations: readonly ApprovedAssetPresentation[],
   context: StorefrontRenderContext,
-): Readonly<{ instance: ComponentInstanceV2; styleOverrides: ContentSupportStyleOverrides }> {
+): Readonly<{
+  instance: ComponentInstanceV2;
+  props: ContentSupportProps;
+  styleOverrides: ContentSupportStyleOverrides;
+  media: ResolvedContentSupportMedia | null;
+}> {
   const parsedContent = contentSupportContentSchema.parse(content);
   const document = supportedDocument(context, parsedContent.factDocumentId);
+  const media = resolvedContentSupportMedia(
+    sectionId,
+    approvedAssetPlacements,
+    approvedAssetPresentations,
+  );
   const parsedStyleOverrides = contentSupportStyleOverridesSchema.parse({
     surface: styleOverrides?.surface ?? "default",
   });
@@ -140,14 +239,24 @@ function instanceFor(
         revision: document.fingerprint,
       },
     ],
-    assetAssignments: [],
+    assetAssignments: media
+      ? [
+          {
+            slotId: "contentSupportMedia",
+            assetId: media.placement.assetId,
+            role: media.placement.role,
+          },
+        ]
+      : [],
   });
   return {
     instance: veskifyComponentRegistryV2.validateInstanceConformance(
       instance,
-      projectionFor(context),
+      projectionFor(context, media),
     ),
+    props: contentSupportPropsSchema.parse(instance.props),
     styleOverrides: parsedStyleOverrides,
+    media,
   };
 }
 
@@ -168,47 +277,161 @@ function StorytellingReuse({
   variant,
   document,
   context,
+  props,
   surface,
+  media,
 }: {
   sectionId: string;
   variant: string;
   document: ContentSupportFactDocument;
   context: StorefrontRenderContext;
+  props: ContentSupportProps;
   surface: ContentSupportStyleOverrides["surface"];
+  media: ResolvedContentSupportMedia | null;
 }) {
   const story = document.payload.story;
   if (!story) throw new Error("The selected content/support layout requires approved story facts.");
+  const additionalBlocks = document.payload.blocks.filter(
+    (block) =>
+      block.kind !== "paragraph" ||
+      canonicalValueString(block.body) !== canonicalValueString(story.body),
+  );
+  const firstCollection = context.catalogue.collections[0];
+  const collectionPaths = new Set([
+    ...context.pages
+      .filter((page) => page.type === "collection")
+      .map((page) => context.pagePaths[page.id])
+      .filter((path): path is string => path !== undefined),
+    ...(context.dynamicCommercePresentation?.routeInventory
+      .filter((route) => route.kind === "collection")
+      .map((route) => context.pagePaths[route.id])
+      .filter((path): path is string => path !== undefined) ?? []),
+  ]);
+  const approvedCollectionPath = context.navigation.primary
+    .map((item) =>
+      resolveStorefrontNavigationPath(context, {
+        type: "navigateToApprovedAction",
+        navigationId: item.id,
+      }),
+    )
+    .find((path) => path !== undefined && collectionPaths.has(path));
+  const continuationPath =
+    approvedCollectionPath ??
+    (firstCollection
+      ? resolveStorefrontNavigationPath(context, {
+          type: "navigateToCollection",
+          collectionId: firstCollection.id,
+        })
+      : undefined);
+  const contributionCount =
+    1 +
+    additionalBlocks.filter(({ kind }) => kind === "paragraph").length +
+    (document.payload.campaign?.actionLabel && continuationPath ? 1 : 0);
   return (
-    <HomepageEditorialSection
-      target={context.renderTarget ?? "preview"}
-      instance={{
-        id: `${sectionId}-p10b07-story`,
-        component: "homepageEditorial",
-        componentVersion: { major: 2, minor: 0, patch: 0 },
-        variant: variant === "aboutProcess" ? "craftProcess" : "brandStory",
-        content: { ...story },
-        props: {
-          mediaPosition: "right",
-          textAlignment: "left",
-          galleryColumns: 2,
-        },
-        styleOverrides: { surface: reusableSurface(surface) },
-        bindings: [
-          {
-            slotId: "presentationContext",
-            source: "projectBrandContext",
-            projectId: `project_${context.catalogue.id}`,
-            revision: `catalogue-${context.catalogue.id}`,
+    <div
+      data-component="contentSupport"
+      data-content-contribution-count={contributionCount}
+      data-evidence-id={document.evidence.authorityId}
+      data-page-family={document.payload.familyId}
+      data-render-target={context.renderTarget ?? "preview"}
+      data-responsive-layout="governed-content-support"
+      data-reading-width={props.readingWidth}
+      data-surface={surface}
+      data-text-alignment={props.textAlignment}
+      data-variant={variant}
+    >
+      <section
+        aria-labelledby={`${sectionId}-heading`}
+        className={`${styles.section} ${styles.opening}`}
+      >
+        <div className={styles.reading}>
+          <h1 id={`${sectionId}-heading`}>{text(document.payload.title, context)}</h1>
+          {document.payload.introduction ? (
+            <p className={styles.introduction}>{text(document.payload.introduction, context)}</p>
+          ) : null}
+        </div>
+      </section>
+      <HomepageEditorialSection
+        target={context.renderTarget ?? "preview"}
+        instance={{
+          id: `${sectionId}-p10b07-story`,
+          component: "homepageEditorial",
+          componentVersion: homepageEditorialDefinition.version,
+          variant: variant === "aboutProcess" ? "craftProcess" : "brandStory",
+          content: { ...story },
+          props: {
+            mediaPosition: "right",
+            textAlignment: "left",
+            galleryColumns: 2,
           },
-        ],
-        assetAssignments: [],
-      }}
-      projection={projectionFor(context)}
-      activeLocale={context.activeLocale}
-      primaryLocale={context.primaryLocale}
-      resolveAssetUrl={() => "/seed-assets/placeholder.svg"}
-      onNavigate={() => undefined}
-    />
+          styleOverrides: { surface: reusableSurface(surface) },
+          bindings: [
+            {
+              slotId: "presentationContext",
+              source: "projectBrandContext",
+              projectId: `project_${context.catalogue.id}`,
+              revision: `catalogue-${context.catalogue.id}`,
+            },
+            ...(media
+              ? [
+                  {
+                    slotId: "storyPrimaryAsset" as const,
+                    source: "asset" as const,
+                    assetId: media.placement.assetId,
+                    role: media.placement.role,
+                    revision: media.placement.assetRevision,
+                  },
+                ]
+              : []),
+          ],
+          assetAssignments: media
+            ? [
+                {
+                  slotId: "storyMedia",
+                  assetId: media.placement.assetId,
+                  role: media.placement.role,
+                },
+              ]
+            : [],
+        }}
+        projection={projectionFor(context, media)}
+        activeLocale={context.activeLocale}
+        primaryLocale={context.primaryLocale}
+        resolveAssetUrl={(assetId) => {
+          if (!media || media.presentation.asset.id !== assetId) {
+            throw new Error("Content/support media URL is outside current approved authority.");
+          }
+          return media.presentation.asset.url;
+        }}
+        onNavigate={() => undefined}
+      />
+      {additionalBlocks.length > 0 ? (
+        <section className={`${styles.section} ${styles.factSequence}`}>
+          <div className={`${styles.reading} ${styles.factGrid}`}>
+            {additionalBlocks.map((block) =>
+              block.kind === "paragraph" ? (
+                <article className={styles.article} key={block.id}>
+                  {block.heading ? <h2>{text(block.heading, context)}</h2> : null}
+                  <p>{text(block.body, context)}</p>
+                </article>
+              ) : null,
+            )}
+          </div>
+        </section>
+      ) : null}
+      {document.payload.campaign?.actionLabel && continuationPath ? (
+        <aside className={styles.continuation} data-content-region="continuation">
+          <div className={styles.continuationInner}>
+            {document.payload.campaign.eyebrow ? (
+              <p className={styles.eyebrow}>{text(document.payload.campaign.eyebrow, context)}</p>
+            ) : null}
+            <h2>{text(document.payload.campaign.heading, context)}</h2>
+            <p>{text(document.payload.campaign.description, context)}</p>
+            <a href={continuationPath}>{text(document.payload.campaign.actionLabel, context)}</a>
+          </div>
+        </aside>
+      ) : null}
+    </div>
   );
 }
 
@@ -217,55 +440,65 @@ function CampaignReuse({
   variant,
   document,
   context,
+  props,
   surface,
 }: {
   sectionId: string;
   variant: string;
   document: ContentSupportFactDocument;
   context: StorefrontRenderContext;
+  props: ContentSupportProps;
   surface: ContentSupportStyleOverrides["surface"];
 }) {
   const campaign = document.payload.campaign;
   if (!campaign) throw new Error("The selected campaign layout requires approved campaign facts.");
   return (
-    <HomepagePromotionSection
-      target={context.renderTarget ?? "preview"}
-      instance={{
-        id: `${sectionId}-p10b07-campaign`,
-        component: "homepagePromotion",
-        componentVersion: { major: 2, minor: 0, patch: 0 },
-        variant:
-          variant === "campaignImageLed"
-            ? "imageLed"
-            : variant === "campaignStory"
-              ? "editorial"
-              : "split",
-        content: {
-          heading: campaign.heading,
-          description: campaign.description,
-        },
-        props: {
-          mediaPosition: "right",
-          actionPresentation: "text",
-          textAlignment: "left",
-        },
-        styleOverrides: { surface: reusableSurface(surface) },
-        bindings: [
-          {
-            slotId: "presentationContext",
-            source: "projectBrandContext",
-            projectId: `project_${context.catalogue.id}`,
-            revision: `catalogue-${context.catalogue.id}`,
+    <div
+      data-component="contentSupport"
+      data-reading-width={props.readingWidth}
+      data-surface={surface}
+      data-text-alignment={props.textAlignment}
+      data-variant={variant}
+    >
+      <HomepagePromotionSection
+        target={context.renderTarget ?? "preview"}
+        instance={{
+          id: `${sectionId}-p10b07-campaign`,
+          component: "homepagePromotion",
+          componentVersion: homepagePromotionDefinition.version,
+          variant:
+            variant === "campaignImageLed"
+              ? "imageLed"
+              : variant === "campaignStory"
+                ? "editorial"
+                : "split",
+          content: {
+            heading: campaign.heading,
+            description: campaign.description,
           },
-        ],
-        assetAssignments: [],
-      }}
-      projection={projectionFor(context)}
-      activeLocale={context.activeLocale}
-      primaryLocale={context.primaryLocale}
-      resolveAssetUrl={() => "/seed-assets/placeholder.svg"}
-      onNavigate={() => undefined}
-    />
+          props: {
+            mediaPosition: "right",
+            actionPresentation: "text",
+            textAlignment: "left",
+          },
+          styleOverrides: { surface: reusableSurface(surface) },
+          bindings: [
+            {
+              slotId: "presentationContext",
+              source: "projectBrandContext",
+              projectId: `project_${context.catalogue.id}`,
+              revision: `catalogue-${context.catalogue.id}`,
+            },
+          ],
+          assetAssignments: [],
+        }}
+        projection={projectionFor(context)}
+        activeLocale={context.activeLocale}
+        primaryLocale={context.primaryLocale}
+        resolveAssetUrl={() => "/seed-assets/placeholder.svg"}
+        onNavigate={() => undefined}
+      />
+    </div>
   );
 }
 
@@ -274,13 +507,17 @@ function ContentSupportReading({
   variant,
   document,
   context,
+  props,
   surface,
+  media,
 }: {
   sectionId: string;
   variant: string;
   document: ContentSupportFactDocument;
   context: StorefrontRenderContext;
+  props: ContentSupportProps;
   surface: ContentSupportStyleOverrides["surface"];
+  media: ResolvedContentSupportMedia | null;
 }) {
   const payload = document.payload;
   if (["aboutStory", "aboutProcess", "genericEditorial"].includes(variant)) {
@@ -290,7 +527,9 @@ function ContentSupportReading({
         variant={variant}
         document={document}
         context={context}
+        props={props}
         surface={surface}
+        media={media}
       />
     );
   }
@@ -301,6 +540,7 @@ function ContentSupportReading({
         variant={variant}
         document={document}
         context={context}
+        props={props}
         surface={surface}
       />
     );
@@ -315,7 +555,9 @@ function ContentSupportReading({
       data-page-family={payload.familyId}
       data-render-target={context.renderTarget ?? "preview"}
       data-responsive-layout="governed-content-support"
+      data-reading-width={props.readingWidth}
       data-surface={surface}
+      data-text-alignment={props.textAlignment}
       data-variant={variant}
     >
       <div className={styles.reading}>
@@ -423,11 +665,47 @@ export const contentSupportBridgeDefinitions = {
     protectedFields: {
       readOnlyPaths: ["content.factDocumentId", "bindings.supportFacts", "assets.*.provenance"],
     },
-    validateContext: ({ sectionId, variant, content, props, styleOverrides, context }) => {
-      instanceFor(sectionId, variant, content, props, styleOverrides, context);
+    validateContext: ({
+      sectionId,
+      variant,
+      content,
+      props,
+      styleOverrides,
+      approvedAssetPlacements,
+      approvedAssetPresentations,
+      context,
+    }) => {
+      instanceFor(
+        sectionId,
+        variant,
+        content,
+        props,
+        styleOverrides,
+        approvedAssetPlacements,
+        approvedAssetPresentations,
+        context,
+      );
     },
-    renderer: ({ sectionId, variant, content, props, styleOverrides, context }) => {
-      const resolved = instanceFor(sectionId, variant, content, props, styleOverrides, context);
+    renderer: ({
+      sectionId,
+      variant,
+      content,
+      props,
+      styleOverrides,
+      approvedAssetPlacements,
+      approvedAssetPresentations,
+      context,
+    }) => {
+      const resolved = instanceFor(
+        sectionId,
+        variant,
+        content,
+        props,
+        styleOverrides,
+        approvedAssetPlacements,
+        approvedAssetPresentations,
+        context,
+      );
       const document = supportedDocument(context, content.factDocumentId);
       return (
         <ContentSupportReading
@@ -435,7 +713,9 @@ export const contentSupportBridgeDefinitions = {
           variant={variant}
           document={document}
           context={context}
+          props={resolved.props}
           surface={resolved.styleOverrides.surface}
+          media={resolved.media}
         />
       );
     },

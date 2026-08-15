@@ -5,7 +5,10 @@ import { createPortal } from "react-dom";
 import { Puck, Render, type Data, type OnAction } from "@puckeditor/core";
 import "@puckeditor/core/puck.css";
 import type { StorefrontRenderContext } from "@/components/registry";
-import type { CollectionCommerceRoutePresentation } from "@/integrations/storefront-commerce-routes";
+import type {
+  CollectionCommerceRoutePresentation,
+  ProductCommerceRoutePresentation,
+} from "@/integrations/storefront-commerce-routes";
 import type { BrandSystem } from "@/domain/design-system";
 import type { PageModel } from "@/domain/storefront";
 import {
@@ -41,6 +44,7 @@ export function VeskifyPuckCanvas({
   showDesignFields = false,
   compactFieldsTargetId,
   collectionPresentation,
+  productPresentation,
 }: {
   page: PageModel;
   context: StorefrontRenderContext;
@@ -57,6 +61,7 @@ export function VeskifyPuckCanvas({
   showDesignFields?: boolean;
   compactFieldsTargetId?: string;
   collectionPresentation?: CollectionCommerceRoutePresentation;
+  productPresentation?: ProductCommerceRoutePresentation;
 }) {
   const boundaryKey = `${page.id}-${context.activeLocale}-${resetKey}-${sessionKey}`;
   return (
@@ -75,6 +80,7 @@ export function VeskifyPuckCanvas({
       showDesignFields={showDesignFields}
       compactFieldsTargetId={compactFieldsTargetId}
       collectionPresentation={collectionPresentation}
+      productPresentation={productPresentation}
     />
   );
 }
@@ -93,11 +99,18 @@ function VeskifyPuckCanvasSession({
   showDesignFields,
   compactFieldsTargetId,
   collectionPresentation,
+  productPresentation,
 }: Omit<Parameters<typeof VeskifyPuckCanvas>[0], "resetKey" | "sessionKey">) {
   const [recoveryVersion, setRecoveryVersion] = useState(0);
   const trustedPage = useRef(page);
   const reportedSectionId = useRef<string | undefined>(undefined);
-  const config = generateVeskifyPuckConfig(context, page.type, brandSystem, collectionPresentation);
+  const config = generateVeskifyPuckConfig(
+    context,
+    page.type,
+    brandSystem,
+    collectionPresentation,
+    productPresentation,
+  );
   const data = pageToPuckData(page, context);
 
   function handleChange(nextData: Data) {

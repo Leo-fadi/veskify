@@ -295,10 +295,13 @@ test("raw Studio generates, reviews, rejects, accepts, restores, saves and previ
   expect(proposalOutline.length).toBeGreaterThan(rawOutline.length);
   expect(proposalOutline).not.toEqual(expect.arrayContaining(["Myrskyluodon Maija", "Feeniks"]));
   await expect(page.getByTestId("canonical-storefront-generation-review")).toContainText(
-    /Complete storefront generation/,
+    /Complete storefront proposal/,
   );
   await expect(page.getByTestId("canonical-storefront-generation-review")).toContainText(
-    /remain protected Vesko authority/i,
+    /product imagery stay unchanged/i,
+  );
+  await expect(page.getByTestId("canonical-storefront-generation-review")).not.toContainText(
+    /canonical|archetype|runtime|protected authority/i,
   );
   await expect(page.getByText(/Suggested changes preview/i)).toBeVisible();
   await expect(page.getByRole("button", { name: /Regenerate|Create another/i })).toHaveCount(0);
@@ -313,7 +316,10 @@ test("raw Studio generates, reviews, rejects, accepts, restores, saves and previ
   await selectOption(pageSelector, "archetype_collection_search_dense");
   await page
     .locator("#dynamic-commerce-representative-route")
-    .selectOption({ label: "Myrskyluodon Maija — /collections/myrskyluodon-maija" });
+    .selectOption({ label: "Myrskyluodon Maija" });
+  await expect(page.getByTestId("representative-route-path")).toHaveText(
+    "/collections/myrskyluodon-maija",
+  );
   const proposalCanvas = page.getByLabel(/Proposal preview canvas/).frameLocator("iframe");
   await expect(
     proposalCanvas.getByRole("heading", { name: "Myrskyluodon Maija", exact: true }).first(),
@@ -328,11 +334,14 @@ test("raw Studio generates, reviews, rejects, accepts, restores, saves and previ
 
   await selectOption(pageSelector, "archetype_pdp_standard");
   await page.locator("#dynamic-commerce-representative-route").selectOption({
-    label: "Guldviva Myrskyluodon Maija sormus — /products/product-karvonen-01",
+    label: "Lumoava Yölento, korvakorut",
   });
+  await expect(page.getByTestId("representative-route-path")).toHaveText(
+    "/products/product-karvonen-02",
+  );
   await expect(
     proposalCanvas.getByRole("heading", {
-      name: "Guldviva Myrskyluodon Maija sormus",
+      name: "Lumoava Yölento, korvakorut",
       exact: true,
     }),
   ).toBeVisible();
@@ -340,15 +349,20 @@ test("raw Studio generates, reviews, rejects, accepts, restores, saves and previ
 
   await selectOption(pageSelector, "archetype_pdp_high_consideration");
   await page.locator("#dynamic-commerce-representative-route").selectOption({
-    label: "Festive Feeniks Lux Oval timanttisormus — /products/product-karvonen-06",
+    label: "Festive Feeniks Lux Oval timanttisormus",
   });
+  await expect(page.getByTestId("representative-route-path")).toHaveText(
+    "/products/product-karvonen-06",
+  );
   await expect(
     proposalCanvas.getByRole("heading", {
       name: "Festive Feeniks Lux Oval timanttisormus",
       exact: true,
     }),
   ).toBeVisible();
-  const proposalOptions = proposalCanvas.getByRole("region", { name: "Choose your details" });
+  const proposalOptions = proposalCanvas.getByRole("region", {
+    name: "Choose product options",
+  });
   await expect(proposalOptions).toBeVisible();
   await expect(proposalOptions.getByRole("group")).toHaveCount(2);
 

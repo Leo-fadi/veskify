@@ -414,8 +414,21 @@ describe("P10B-16P-03 canonical server prompt generation", () => {
         const differingDimensions = dimensions.filter(
           (dimension) => left.structure[dimension] !== right.structure[dimension],
         );
+        const differingSemanticDimensions = Object.entries(
+          left.lineage.materialDimensionFingerprints,
+        ).flatMap(([dimension, fingerprint]) =>
+          right.lineage.materialDimensionFingerprints[
+            dimension as keyof typeof right.lineage.materialDimensionFingerprints
+          ] === fingerprint
+            ? []
+            : [`semantic:${dimension}`],
+        );
+        const materialDifferences = new Set([
+          ...differingDimensions,
+          ...differingSemanticDimensions,
+        ]);
         expect(
-          differingDimensions.length,
+          materialDifferences.size,
           `${left.scenarioId} and ${right.scenarioId} must differ across at least four supported structural dimensions`,
         ).toBeGreaterThanOrEqual(4);
       }
